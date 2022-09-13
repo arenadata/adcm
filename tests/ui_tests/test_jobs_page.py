@@ -59,7 +59,7 @@ ON_HOST_ACTION_DISPLAY_NAME = 'Component host action'
 COMPONENT_ACTION_DISPLAY_NAME = 'Component action'
 MULTIJOB_ACTION_DISPLAY_NAME = 'Multijob'
 
-CLUSTER_NAME = 'test_cluster'
+CLUSTER_NAME = 'test cluster'
 SERVICE_NAME = 'test_service'
 COMPONENT_NAME = 'test_component'
 

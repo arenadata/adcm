@@ -1,0 +1,121 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+settings:
+  process-type: exact
+  start-from-first: matched
+
+operations:
+  - update:
+      what: &user
+        type: user
+        name: {{ user.username }}
+      how: update-rbac-object
+      changes:
+        previous:
+          first_name: {{ changes.user.previous.first_name }}
+          group: [
+            {% for i in changes.user.previous.group %}
+            "{{ i }}"{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ]
+        current:
+          first_name: {{ changes.user.current.first_name }}
+          group: [
+            {% for i in changes.user.current.group %}
+            "{{ i }}"{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ]
+  - update: &update-user-no-changes
+      what: *user
+      how: update-rbac-object
+    result: fail
+  - update: *update-user-no-changes
+    result: denied
+    username: {{ user.username }}
+  - update:
+      what: &group
+        type: group
+        name: "{{ group.name }} [local]"
+      how: update-rbac-object
+      changes:
+        previous:
+          description: "{{ changes.group.previous.description }}"
+          user: [
+            {% for i in changes.group.previous.user %}
+            {{ i }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ]
+        current:
+          description: "{{ changes.group.current.description }}"
+          user: [
+            {% for i in changes.group.current.user %}
+            {{ i }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ]
+  - update: &update-group-no-changes
+      what: *group
+      how: update-rbac-object
+    result: fail
+  - update: *update-group-no-changes
+    result: denied
+    username: {{ user.username }}
+  - update:
+      what: &role
+        type: role
+        name: {{ role.name }}
+      how: update-rbac-object
+      changes:
+        previous:
+          description: "{{ changes.role.previous.description }}"
+          child: [
+            {% for i in changes.role.previous.child %}
+            {{ i }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ]
+        current:
+          description: "{{ changes.role.current.description }}"
+          child: [
+            {% for i in changes.role.current.child %}
+            {{ i }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ]
+  - update: &update-role-no-changes
+      what: *role
+      how: update-rbac-object
+    result: fail
+  - update: *update-role-no-changes
+    result: denied
+    username: {{ user.username }}
+  - update:
+      what: &policy
+        type: policy
+        name: {{ policy.name }}
+      how: update-rbac-object
+      changes:
+        previous:
+          description: "{{ changes.policy.previous.description }}"
+          group: {{ changes.policy.previous.group }}
+        current:
+          description: "{{ changes.policy.current.description }}"
+          group: [
+            {% for g in changes.policy.current.group %}
+            "{{ g }}"{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ]
+  - update: &update-policy-no-changes
+      what: *policy
+      how: update-rbac-object
+    result: fail
+  - update: *update-policy-no-changes
+    result: denied
+    username: {{ user.username }}

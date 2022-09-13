@@ -11,13 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import os
 import sys
-import ruyaml
-import argparse
 
-import cm.config
+import ruyaml
+
 import cm.checker
+import cm.config
 
 
 def check_config(data_file, schema_file, print_ok=True):

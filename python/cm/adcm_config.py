@@ -17,20 +17,19 @@ import json
 import os
 from collections import OrderedDict
 from collections.abc import Mapping
-from typing import Any, Tuple, Optional
+from typing import Any, Optional, Tuple
 
 import yspec.checker
-from ansible.parsing.vault import VaultSecret, VaultAES256
+from ansible.parsing.vault import VaultAES256, VaultSecret
 from django.conf import settings
 from django.db.utils import OperationalError
 
-import cm.variant
 from cm import config
-from cm.errors import raise_AdcmEx as err
-from cm.logger import log
+from cm.errors import raise_adcm_ex as err
+from cm.logger import logger
 from cm.models import (
-    Action,
     ADCM,
+    Action,
     ADCMEntity,
     ConfigLog,
     GroupConfig,
@@ -38,7 +37,7 @@ from cm.models import (
     Prototype,
     PrototypeConfig,
 )
-
+from cm.variant import get_variant, process_variant
 
 SECURE_PARAM_TYPES = ('password', 'secrettext')
 
@@ -208,7 +207,7 @@ def load_social_auth():
         cl = ConfigLog.objects.get(obj_ref=adcm[0].config, id=adcm[0].config.current)
         prepare_social_auth(cl.config)
     except OperationalError as e:
-        log.error('load_social_auth error: %s', e)
+        logger.error('load_social_auth error: %s', e)
 
 
 def get_prototype_config(proto: Prototype, action: Action = None) -> Tuple[dict, dict, dict, dict]:
@@ -491,7 +490,7 @@ def ui_config(obj, cl):  # pylint: disable=too-many-locals
         item['read_only'] = bool(config_is_ro(obj, key, spec[key].limits))
         item['activatable'] = bool(group_is_activatable(spec[key]))
         if item['type'] == 'variant':
-            item['limits']['source']['value'] = cm.variant.get_variant(obj, obj_conf, limits)
+            item['limits']['source']['value'] = get_variant(obj, obj_conf, limits)
         item['default'] = get_default(spec[key], obj.prototype)
         if key in flat_conf:
             item['value'] = flat_conf[key]
@@ -521,7 +520,7 @@ def get_action_variant(obj, conf):
             for c in conf:
                 if c.type != 'variant':
                     continue
-                c.limits['source']['value'] = cm.variant.get_variant(obj, cl.config, c.limits)
+                c.limits['source']['value'] = get_variant(obj, cl.config, c.limits)
 
 
 def config_is_ro(obj, key, limits):
@@ -609,7 +608,7 @@ def check_json_config(
         check_value_unselected_field(
             current_config, new_config, current_attr, new_attr, group_keys, config_spec, obj.object
         )
-    cm.variant.process_variant(obj, spec, new_config)
+    process_variant(obj, spec, new_config)
     return check_config_spec(proto, obj, spec, flat_spec, new_config, current_config, new_attr)
 
 
@@ -682,7 +681,7 @@ def check_value_unselected_field(
                     f"Value of `{k}` activatable group is different in current and new attr."
                     f" Current: ({current_attr[k]['active']}), New: ({new_attr[k]['active']})"
                 )
-                log.info(msg)
+                logger.info(msg)
                 err('GROUP_CONFIG_CHANGE_UNSELECTED_FIELD', msg)
             check_value_unselected_field(
                 current_config[k],
@@ -710,7 +709,7 @@ def check_value_unselected_field(
                     f"Value of `{k}` field is different in current and new config."
                     f" Current: ({current_config[k]}), New: ({new_config[k]})"
                 )
-                log.info(msg)
+                logger.info(msg)
                 err('GROUP_CONFIG_CHANGE_UNSELECTED_FIELD', msg)
 
 
@@ -1024,7 +1023,7 @@ def set_object_config(obj, keys, value):
     log_value = value
     if pconf.type in SECURE_PARAM_TYPES:
         log_value = '****'
-    log.info('update %s config %s/%s to "%s"', obj_ref(obj), key, subkey, log_value)
+    logger.info('update %s config %s/%s to "%s"', obj_ref(obj), key, subkey, log_value)
     return value
 
 
@@ -1041,3 +1040,13 @@ def get_main_info(obj: Optional[ADCMEntity]) -> Optional[str]:
         elif '__main_info/' in spec:
             return get_default(spec['__main_info/'], obj.prototype)
     return None
+
+
+def get_adcm_config(section=None):
+    adcm_object = ADCM.objects.last()
+    current_configlog = ConfigLog.objects.get(
+        obj_ref=adcm_object.config, id=adcm_object.config.current
+    )
+    if not section:
+        return current_configlog.attr, current_configlog.config
+    return current_configlog.attr.get(section, None), current_configlog.config.get(section, None)

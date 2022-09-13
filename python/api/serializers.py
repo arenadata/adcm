@@ -10,36 +10,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework import serializers
 from rest_framework.reverse import reverse
+from rest_framework.serializers import (
+    BooleanField,
+    CharField,
+    HyperlinkedIdentityField,
+    HyperlinkedRelatedField,
+    IntegerField,
+    JSONField,
+    ListField,
+    SerializerMethodField,
+)
 from rest_framework_extensions.settings import extensions_api_settings
 
+from adcm.serializers import EmptySerializer
 from api.config.serializers import ConfigSerializerUI
-from api.utils import check_obj, hlink, UrlField
-from cm.adcm_config import ui_config, get_prototype_config, get_action_variant
-from cm.errors import raise_AdcmEx
-from cm.models import GroupConfig, Cluster, HostProvider, PrototypeConfig
+from api.utils import UrlField, check_obj, hlink
+from cm.adcm_config import get_action_variant, get_prototype_config, ui_config
+from cm.errors import raise_adcm_ex
+from cm.models import Cluster, GroupConfig, HostProvider, PrototypeConfig
 
 
-class UpgradeSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(required=False)
-    bundle_id = serializers.IntegerField(read_only=True)
-    description = serializers.CharField(required=False)
-    min_version = serializers.CharField(required=False)
-    max_version = serializers.CharField(required=False)
-    min_strict = serializers.BooleanField(required=False)
-    max_strict = serializers.BooleanField(required=False)
-    upgradable = serializers.BooleanField(required=False)
-    license = serializers.CharField(required=False)
+class UpgradeSerializer(EmptySerializer):
+    id = IntegerField(read_only=True)
+    name = CharField(required=False)
+    bundle_id = IntegerField(read_only=True)
+    description = CharField(required=False)
+    min_version = CharField(required=False)
+    max_version = CharField(required=False)
+    min_strict = BooleanField(required=False)
+    max_strict = BooleanField(required=False)
+    upgradable = BooleanField(required=False)
+    license = CharField(required=False)
     license_url = hlink('bundle-license', 'bundle_id', 'bundle_id')
-    from_edition = serializers.JSONField(required=False)
-    state_available = serializers.JSONField(required=False)
-    state_on_success = serializers.CharField(required=False)
-    ui_options = serializers.SerializerMethodField()
-    config = serializers.SerializerMethodField()
+    from_edition = JSONField(required=False)
+    state_available = JSONField(required=False)
+    state_on_success = CharField(required=False)
+    ui_options = SerializerMethodField()
+    config = SerializerMethodField()
 
-    def get_ui_options(self, instance):
+    @staticmethod
+    def get_ui_options(instance):
         if instance.action:
             return instance.action.ui_options
         return {}
@@ -70,7 +81,7 @@ class ClusterUpgradeSerializer(UpgradeSerializer):
         def get_kwargs(self, obj):
             return {'cluster_id': self.context['cluster_id'], 'upgrade_id': obj.id}
 
-    hostcomponentmap = serializers.SerializerMethodField()
+    hostcomponentmap = SerializerMethodField()
     url = MyUrlField(read_only=True, view_name='cluster-upgrade-details')
     do = MyUrlField(read_only=True, view_name='do-cluster-upgrade')
 
@@ -89,25 +100,25 @@ class ProviderUpgradeSerializer(UpgradeSerializer):
     do = MyUrlField(read_only=True, view_name='do-provider-upgrade')
 
 
-class DoUpgradeSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    upgradable = serializers.BooleanField(read_only=True)
-    config = serializers.JSONField(required=False, default=dict)
-    task_id = serializers.IntegerField(read_only=True)
-    attr = serializers.JSONField(required=False, default=dict)
+class DoUpgradeSerializer(EmptySerializer):
+    id = IntegerField(read_only=True)
+    upgradable = BooleanField(read_only=True)
+    config = JSONField(required=False, default=dict)
+    task_id = IntegerField(read_only=True)
+    attr = JSONField(required=False, default=dict)
 
 
-class StringListSerializer(serializers.ListField):
-    item = serializers.CharField()
+class StringListSerializer(ListField):
+    item = CharField()
 
 
-class UIConfigField(serializers.JSONField):
-    """Serializering config field for UI"""
+class UIConfigField(JSONField):
+    """Serializing config field for UI"""
 
     def to_representation(self, value):
         obj = value.obj_ref.object
         if obj is None:
-            raise_AdcmEx('INVALID_CONFIG_UPDATE', f'unknown object type "{value.obj_ref}"')
+            raise_adcm_ex('INVALID_CONFIG_UPDATE', f'unknown object type "{value.obj_ref}"')
         if isinstance(obj, GroupConfig):
             obj = obj.object
         return ui_config(obj, value)
@@ -116,7 +127,7 @@ class UIConfigField(serializers.JSONField):
         return {'config': data}
 
 
-class MultiHyperlinkedIdentityField(serializers.HyperlinkedIdentityField):
+class MultiHyperlinkedIdentityField(HyperlinkedIdentityField):
     """
     Hyperlinked identity field for nested routers
     """
@@ -125,7 +136,7 @@ class MultiHyperlinkedIdentityField(serializers.HyperlinkedIdentityField):
         self.url_args = args
         super().__init__(view_name=view_name, **kwargs)
 
-    def get_url(self, obj, view_name, request, format):  # pylint: disable=redefined-builtin
+    def get_url(self, obj, view_name, request, _format):  # pylint: disable=redefined-builtin
         kwargs = {}
         for url_arg in self.url_args:
             if url_arg.startswith(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX):
@@ -136,10 +147,10 @@ class MultiHyperlinkedIdentityField(serializers.HyperlinkedIdentityField):
                 kwargs.update({url_arg: parent.id})
             else:
                 kwargs.update({url_arg: obj.id})
-        return reverse(viewname=view_name, kwargs=kwargs, request=request, format=format)
+        return reverse(viewname=view_name, kwargs=kwargs, request=request, format=_format)
 
 
-class MultiHyperlinkedRelatedField(serializers.HyperlinkedRelatedField):
+class MultiHyperlinkedRelatedField(HyperlinkedRelatedField):
     """
     Hyperlinked related field for nested routers
     """
@@ -149,7 +160,7 @@ class MultiHyperlinkedRelatedField(serializers.HyperlinkedRelatedField):
         self.url_args = args
         super().__init__(view_name, **kwargs)
 
-    def get_url(self, obj, view_name, request, format):  # pylint: disable=redefined-builtin
+    def get_url(self, obj, view_name, request, _format):  # pylint: disable=redefined-builtin
         kwargs = {}
         for url_arg in self.url_args:
             if url_arg.startswith(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX):
@@ -164,4 +175,4 @@ class MultiHyperlinkedRelatedField(serializers.HyperlinkedRelatedField):
         if lookup_value is None:
             return lookup_value
         kwargs.update({self.lookup_url_kwarg: lookup_value})
-        return reverse(viewname=view_name, kwargs=kwargs, request=request, format=format)
+        return reverse(viewname=view_name, kwargs=kwargs, request=request, format=_format)

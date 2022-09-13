@@ -10,12 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.test import TestCase
 from django.contrib.auth.models import Group as AuthGroup
+
+from adcm.tests.base import BaseTestCase
 from rbac.models import Group, OriginType
 
 
-class BaseTestCase(TestCase):
+class GroupBaseTestCase(BaseTestCase):
     def test_group_creation_blank(self):
         with self.assertRaisesRegex(
             RuntimeError, r"Check regex. Data: ", msg="group creation with no args is not allowed"
@@ -26,9 +27,9 @@ class BaseTestCase(TestCase):
         for create_args, expected in self.data:
             g = Group.objects.create(**create_args)
             g_pk = g.pk
-            basse_g_pk = g.group_ptr_id
+            base_g_pk = g.group_ptr_id
 
-            self.assertTrue(int(basse_g_pk))
+            self.assertTrue(int(base_g_pk))
 
             for attr, expected_value in expected.items():
                 actual_value = getattr(g, attr)
@@ -41,7 +42,7 @@ class BaseTestCase(TestCase):
             g.delete()
 
             self.assertFalse(Group.objects.filter(pk=g_pk).first())
-            self.assertFalse(AuthGroup.objects.filter(pk=basse_g_pk).first())
+            self.assertFalse(AuthGroup.objects.filter(pk=base_g_pk).first())
 
     def test_group_name_type_mutation(self):
         """test for pre_save signal"""
@@ -54,6 +55,7 @@ class BaseTestCase(TestCase):
 
         g.refresh_from_db()
         ag.refresh_from_db()
+
         self.assertEqual(g.type, OriginType.Local.value)
         self.assertEqual(g.name, ag.name, f"{name} [{OriginType.Local.value}]")
         self.assertEqual(g.display_name, name)
@@ -63,6 +65,7 @@ class BaseTestCase(TestCase):
 
         g.refresh_from_db()
         ag.refresh_from_db()
+
         self.assertEqual(g.type, OriginType.LDAP.value)
         self.assertEqual(g.name, ag.name, f"{name} [{OriginType.LDAP.value}]")
         self.assertEqual(g.display_name, name)

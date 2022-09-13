@@ -59,7 +59,7 @@ def processing_data(sdk_client_fs, request, variant):
     cluster_bundle = sdk_client_fs.upload_from_fs(os.path.join(path, 'cluster'))
     provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(path, 'provider'))
 
-    cluster = cluster_bundle.cluster_create(f'cluster_{config_type}_{variant}')
+    cluster = cluster_bundle.cluster_create(f'cluster {config_type} {variant}'.replace('_', ' '))
     service = cluster.service_add(name=f'service_{config_type}_{variant}')
 
     provider = provider_bundle.provider_create(f'provider_{config_type}_{variant}')
@@ -690,7 +690,7 @@ def cluster(request: SubRequest, sdk_client_fs: ADCMClient) -> Cluster:
     """Upload cluster bundle, create cluster, add service"""
     bundle_subdir = request.param if hasattr(request, 'param') else "simple_config"
     bundle = sdk_client_fs.upload_from_fs(os.path.join(get_data_dir(__file__), bundle_subdir, "cluster"))
-    cluster = bundle.cluster_create(name='test_cluster')
+    cluster = bundle.cluster_create(name='test cluster')
     cluster.service_add(name='test_service')
     return cluster
 

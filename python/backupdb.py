@@ -11,19 +11,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import adcm.init_django  # pylint: disable=unused-import
-
 import datetime
-import sqlite3
 import os
+import sqlite3
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.migrations.executor import MigrationExecutor
 
-from cm.logger import log
-from cm import config
+import adcm.init_django  # pylint: disable=unused-import
 from adcm.settings import DATABASES
+from cm import config
+from cm.logger import logger
 
 
 def check_migrations():
@@ -46,7 +45,7 @@ def backup_sqlite(dbfile):
         old.backup(new)
     new.close()
     old.close()
-    log.info('Backup sqlite db to %s', backupfile)
+    logger.info('Backup sqlite db to %s', backupfile)
 
 
 def backup_db():
@@ -54,7 +53,7 @@ def backup_db():
         return
     db = DATABASES['default']
     if db['ENGINE'] != 'django.db.backends.sqlite3':
-        log.error('Backup for %s not implemented yet', db['ENGINE'])
+        logger.error('Backup for %s not implemented yet', db['ENGINE'])
         return
     backup_sqlite(db['NAME'])
 

@@ -12,39 +12,39 @@
 
 # pylint: disable=too-many-locals, global-statement
 
-import json
 import base64
 import getpass
+import json
 import sys
 from datetime import datetime
+
+from ansible.parsing.vault import VaultAES256, VaultSecret
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from ansible.parsing.vault import VaultSecret, VaultAES256
-
 from django.conf import settings
-from django.core.management.base import BaseCommand
 from django.contrib.contenttypes.models import ContentType
+from django.core.management.base import BaseCommand
 from django.db.transaction import atomic
 from django.db.utils import IntegrityError
 
-from cm.config import ANSIBLE_SECRET, DEFAULT_SALT, ANSIBLE_VAULT_HEADER
-from cm.errors import AdcmEx
 from cm.adcm_config import save_file_type
+from cm.config import ANSIBLE_SECRET, ANSIBLE_VAULT_HEADER, DEFAULT_SALT
+from cm.errors import AdcmEx
 from cm.models import (
     Bundle,
     Cluster,
-    Prototype,
     ClusterObject,
-    ServiceComponent,
-    Host,
-    HostProvider,
-    GroupConfig,
-    ObjectConfig,
     ConfigLog,
-    PrototypeConfig,
+    GroupConfig,
+    Host,
     HostComponent,
+    HostProvider,
+    ObjectConfig,
+    Prototype,
+    PrototypeConfig,
+    ServiceComponent,
 )
 
 OLD_ADCM_PASSWORD = None

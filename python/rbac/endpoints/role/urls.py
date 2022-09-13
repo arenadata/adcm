@@ -12,10 +12,8 @@
 
 from rest_framework.routers import DefaultRouter
 
-from .views import RoleView
+from rbac.endpoints.role.views import RoleViewSet
 
 router = DefaultRouter()
-
-router.register(r'', RoleView, basename='role')
-
+router.register(r'', RoleViewSet, basename='role')
 urlpatterns = router.urls

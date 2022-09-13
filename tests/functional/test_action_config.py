@@ -45,7 +45,7 @@ ACTION_MAP = {
 def cluster(sdk_client_fs: ADCMClient) -> Cluster:
     """Create cluster"""
     uploaded_bundle = sdk_client_fs.upload_from_fs(plugin_utils.get_data_dir(__file__, "cluster"))
-    cluster = uploaded_bundle.cluster_create('test_cluster')
+    cluster = uploaded_bundle.cluster_create('test cluster')
     cluster.service_add(name='test_service')
     return cluster
 

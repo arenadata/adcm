@@ -13,20 +13,23 @@
 # pylint: disable=not-callable, unused-import, too-many-locals
 
 import rest_framework.pagination
-from django.core.exceptions import ObjectDoesNotExist, FieldError
+from django.core.exceptions import FieldError, ObjectDoesNotExist
 from rest_framework import serializers
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import SAFE_METHODS, DjangoModelPermissions, DjangoObjectPermissions
+from rest_framework.permissions import SAFE_METHODS, DjangoModelPermissions
 from rest_framework.response import Response
 from rest_framework.utils.urls import replace_query_param
 from rest_framework.viewsets import ViewSetMixin
 
+from adcm.permissions import DjangoObjectPermissionsAudit
 from adcm.settings import REST_FRAMEWORK
 from api.utils import AdcmFilterBackend, AdcmOrderingFilter, getlist_from_querydict
+from audit.utils import audit
 from cm.errors import AdcmEx
 
 
 class ModelPermOrReadOnlyForAuth(DjangoModelPermissions):
+    @audit
     def has_permission(self, request, view):
         if request.user and request.user.is_authenticated:
             if request.method in SAFE_METHODS:
@@ -35,6 +38,7 @@ class ModelPermOrReadOnlyForAuth(DjangoModelPermissions):
                 queryset = self._queryset(view)
                 perms = self.get_required_permissions(request.method, queryset.model)
                 return request.user.has_perms(perms)
+
         return False
 
 
@@ -44,7 +48,7 @@ class GenericUIView(GenericAPIView):
     (switched by query parameter view=interface)
     """
 
-    permission_classes = (DjangoObjectPermissions,)
+    permission_classes = (DjangoObjectPermissionsAudit,)
     serializer_class_post: serializers.Serializer = None
     serializer_class_put: serializers.Serializer = None
     serializer_class_patch: serializers.Serializer = None
@@ -71,6 +75,7 @@ class GenericUIView(GenericAPIView):
             elif self._is_for_ui():
                 if self.serializer_class_ui:
                     return self.serializer_class_ui
+
         return super().get_serializer_class()
 
 
@@ -87,13 +92,14 @@ class PaginatedView(GenericUIView):
     filter_backends = (AdcmFilterBackend, AdcmOrderingFilter)
     pagination_class = rest_framework.pagination.LimitOffsetPagination
 
-    def get_ordering(self, request, queryset, view):
-        Order = AdcmOrderingFilter()
-        return Order.get_ordering(request, queryset, view)
+    @staticmethod
+    def get_ordering(request, queryset, view):
+        return AdcmOrderingFilter().get_ordering(request, queryset, view)
 
     def is_paged(self, request):
         limit = self.request.query_params.get('limit', False)
         offset = self.request.query_params.get('offset', False)
+
         return bool(limit or offset)
 
     def get_paged_link(self):
@@ -101,11 +107,13 @@ class PaginatedView(GenericUIView):
         url = self.request.build_absolute_uri()
         url = replace_query_param(url, page.limit_query_param, page.limit)
         url = replace_query_param(url, page.offset_query_param, 0)
+
         return url
 
     def get_page(self, obj, request, context=None):
         if not context:
             context = {}
+
         context['request'] = request
         count = obj.count()
         serializer_class = self.get_serializer_class()
@@ -130,6 +138,7 @@ class PaginatedView(GenericUIView):
                     ]
                 )
                 msg = f'Bad query params: {qp}'
+
                 raise AdcmEx('BAD_QUERY_PARAMS', msg=msg) from None
 
         page = self.paginate_queryset(obj)
@@ -137,19 +146,23 @@ class PaginatedView(GenericUIView):
             if serializer_class is not None:
                 serializer = serializer_class(page, many=True, context=context)
                 page = serializer.data
+
             return self.get_paginated_response(page)
 
         if count <= REST_FRAMEWORK['PAGE_SIZE']:
             if serializer_class is not None:
                 serializer = serializer_class(obj, many=True, context=context)
                 obj = serializer.data
+
             return Response(obj)
 
         msg = 'Response is too long, use paginated request'
+
         raise AdcmEx('TOO_LONG', msg=msg, args=self.get_paged_link())
 
     def get(self, request, *args, **kwargs):
         obj = self.filter_queryset(self.get_queryset())
+
         return self.get_page(obj, request)
 
 
@@ -172,9 +185,11 @@ class DetailView(GenericUIView):
         kw_req = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
         obj = self.check_obj(kw_req)
         self.check_object_permissions(self.request, obj)
+
         return obj
 
     def get(self, request, *args, **kwargs):
         obj = self.get_object()
         serializer = self.get_serializer(obj)
+
         return Response(serializer.data)
