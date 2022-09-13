@@ -142,6 +142,8 @@ def get_license_hash(proto, conf, bundle_hash):
 
 
 def process_config_group_customization(actual_config: dict, obj: StagePrototype):
+    if not actual_config:
+        return
     if "config_group_customization" not in actual_config:
         sp = None
         if obj.type == "service":
