@@ -24,7 +24,6 @@ from adcm_client.objects import Cluster, Task
 from adcm_pytest_plugin.steps.commands import clearaudit, logrotate
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
-from tests.functional.audit.checks import check_audit_cef_logs
 from tests.functional.audit.conftest import BUNDLES_DIR, parametrize_audit_scenario_parsing, set_operations_date
 from tests.library.db import set_configs_date, set_jobs_date, set_tasks_date
 
@@ -93,4 +92,3 @@ def test_background_operations_audit(audit_log_checker, adcm_fs, sdk_client_fs):
         time.sleep(61)
         operations_after = len(sdk_client_fs.audit_operation_list())
         assert len(operations) == operations_after, "There should not be any new audit records"
-    check_audit_cef_logs(sdk_client_fs, adcm_fs.container)
