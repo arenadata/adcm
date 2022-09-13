@@ -12,15 +12,15 @@
 
 # pylint: disable=too-many-locals
 
-import json
-import sys
 import base64
 import getpass
+import json
+import sys
+
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
@@ -28,15 +28,15 @@ from cm.config import ANSIBLE_SECRET, DEFAULT_SALT
 from cm.models import (
     Bundle,
     Cluster,
-    Prototype,
     ClusterObject,
-    ServiceComponent,
-    Host,
-    HostProvider,
-    GroupConfig,
-    ObjectConfig,
     ConfigLog,
+    GroupConfig,
+    Host,
     HostComponent,
+    HostProvider,
+    ObjectConfig,
+    Prototype,
+    ServiceComponent,
 )
 
 

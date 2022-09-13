@@ -17,16 +17,16 @@ import os.path
 import shutil
 import tarfile
 
-from django.db import transaction, IntegrityError
+from django.db import IntegrityError, transaction
 from version_utils import rpm
 
 import cm.stack
 import cm.status_api
 from adcm.settings import ADCM_VERSION
 from cm import config
-from cm.adcm_config import proto_ref, init_object_config, switch_config
-from cm.errors import raise_AdcmEx as err
-from cm.logger import log
+from cm.adcm_config import init_object_config, proto_ref, switch_config
+from cm.errors import raise_adcm_ex as err
+from cm.logger import logger
 from cm.models import (
     ADCM,
     Action,
@@ -62,7 +62,7 @@ STAGE = (
 
 
 def load_bundle(bundle_file):
-    log.info('loading bundle file "%s" ...', bundle_file)
+    logger.info('loading bundle file "%s" ...', bundle_file)
     (bundle_hash, path) = process_file(bundle_file)
 
     try:
@@ -152,7 +152,7 @@ def untar(bundle_hash, bundle):
             msg = 'Bundle already exists. Name: {}, version: {}, edition: {}'
             err('BUNDLE_ERROR', msg.format(existed.name, existed.version, existed.edition))
         except Bundle.DoesNotExist:
-            log.warning(
+            logger.warning(
                 (
                     f"There is no bundle with hash {bundle_hash} in DB, ",
                     "but there is a dir on disk with this hash. Dir will be rewrited.",
@@ -187,7 +187,7 @@ def load_adcm():
     adcm_file = os.path.join(config.BASE_DIR, 'conf', 'adcm', 'config.yaml')
     conf = cm.stack.read_definition(adcm_file, 'yaml')
     if not conf:
-        log.warning('Empty adcm config (%s)', adcm_file)
+        logger.warning('Empty adcm config (%s)', adcm_file)
         return
     try:
         cm.stack.save_definition('', adcm_file, conf, {}, 'adcm', True)
@@ -205,7 +205,7 @@ def process_adcm():
         old_proto = adcm[0].prototype
         new_proto = sp
         if old_proto.version == new_proto.version:
-            log.debug('adcm vesrion %s, skip upgrade', old_proto.version)
+            logger.debug('adcm vesrion %s, skip upgrade', old_proto.version)
         elif rpm.compare_versions(old_proto.version, new_proto.version) < 0:
             bundle = copy_stage('adcm', sp)
             upgrade_adcm(adcm[0], bundle)
@@ -224,7 +224,7 @@ def init_adcm(bundle):
         obj_conf = init_object_config(proto, adcm)
         adcm.config = obj_conf
         adcm.save()
-    log.info('init adcm object version %s OK', proto.version)
+    logger.info('init adcm object version %s OK', proto.version)
     return adcm
 
 
@@ -238,7 +238,7 @@ def upgrade_adcm(adcm, bundle):
         adcm.prototype = new_proto
         adcm.save()
         switch_config(adcm, new_proto, old_proto)
-    log.info('upgrade adcm OK from version %s to %s', old_proto.version, adcm.prototype.version)
+    logger.info('upgrade adcm OK from version %s to %s', old_proto.version, adcm.prototype.version)
     return adcm
 
 

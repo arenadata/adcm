@@ -21,7 +21,7 @@ from django.utils import timezone
 from rest_framework import status
 
 from cm.models import ADCMEntity, DummyData
-from rbac.models import User, Policy, PolicyObject, Role, Group
+from rbac.models import Group, Policy, PolicyObject, Role, User
 from rbac.utils import update_m2m_field
 
 

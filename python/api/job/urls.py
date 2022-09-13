@@ -10,23 +10,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path, include
-from . import views
+from django.urls import include, path
+
+from api.job.views import (
+    JobDetail,
+    JobList,
+    LogFile,
+    LogStorageListView,
+    LogStorageView,
+    download_log_file,
+)
 
 # fmt: off
 urlpatterns = [
-    path('', views.JobList.as_view(), name='job'),
+    path('', JobList.as_view(), name='job'),
     path('<int:job_id>/', include([
-        path('', views.JobDetail.as_view(), name='job-details'),
+        path('', JobDetail.as_view(), name='job-details'),
         path('log/', include([
-            path('', views.LogStorageListView.as_view(), name='log-list'),
+            path('', LogStorageListView.as_view(), name='log-list'),
             path('<int:log_id>/', include([
-                path('', views.LogStorageView.as_view(), name='log-storage'),
-                path('download/', views.download_log_file, name='download-log'),
+                path('', LogStorageView.as_view(), name='log-storage'),
+                path('download/', download_log_file, name='download-log'),
             ])),
             path(
                 '<name:tag>/<name:level>/<name:log_type>/',
-                views.LogFile.as_view(),
+                LogFile.as_view(),
                 name='log-file'
             ),
         ])),
