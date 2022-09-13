@@ -14,7 +14,7 @@
 
 from collections import defaultdict
 
-from rest_framework import serializers, mixins
+from rest_framework import mixins, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 

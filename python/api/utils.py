@@ -18,7 +18,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http.request import QueryDict
 from django_filters import rest_framework as drf_filters
 from guardian.shortcuts import get_objects_for_user
-from rest_framework import status, serializers, exceptions
+from rest_framework import exceptions, serializers, status
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -28,26 +28,29 @@ from cm.errors import AdcmEx
 from cm.models import (
     Action,
     ADCMEntity,
-    PrototypeConfig,
     ConcernType,
+    ConfigLog,
+    Host,
     HostComponent,
     MaintenanceModeType,
-    Host,
-    ConfigLog,
+    PrototypeConfig,
 )
 
 
 def get_object_for_user(user, perms, klass, **kwargs):
     try:
         queryset = get_objects_for_user(user, perms, klass)
+
         return queryset.get(**kwargs)
     except ObjectDoesNotExist:
         model = klass
         if not hasattr(klass, '_default_manager'):
             model = klass.model
+
         error_code = 'NO_MODEL_ERROR_CODE'
         if hasattr(model, '__error_code__'):
             error_code = model.__error_code__
+
         raise AdcmEx(error_code) from None
 
 
@@ -56,6 +59,7 @@ def check_obj(model, req, error=None):
         kw = req
     else:
         kw = {'id': req}
+
     return model.obj.get(**kw)
 
 
@@ -74,8 +78,10 @@ def permission_denied(
 def has_custom_permission(user, action_type, model, obj, second_perm):
     if user.has_perm(f'cm.{action_type}_{model}', obj):
         return True
+
     if second_perm is not None and user.has_perm(f'cm.{second_perm}'):
         return True
+
     return False
 
 
@@ -87,7 +93,9 @@ def check_custom_perm(user, action_type, model, obj, second_perm=None):
 def save(serializer, code, **kwargs):
     if serializer.is_valid():
         serializer.save(**kwargs)
+
         return Response(serializer.data, status=code)
+
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -105,6 +113,7 @@ def set_disabling_cause(obj: ADCMEntity, action: Action) -> None:
         current_configlog = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
         if not current_configlog.attr['ldap_integration']['active']:
             action.disabling_cause = 'no_ldap_settings'
+
     if obj.prototype.type == 'cluster':
         mm = Host.objects.filter(cluster=obj, maintenance_mode=MaintenanceModeType.On).exists()
         if not action.allow_in_maintenance_mode and mm:
@@ -146,6 +155,7 @@ def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
                 prototype=action.prototype, action=action
             ).order_by('id')
             set_disabling_cause(obj, action)
+
     return allowed
 
 
@@ -158,9 +168,11 @@ def get_api_url_kwargs(obj, request, no_obj_type=False):
     kwargs = {
         f'{obj_type}_id': obj.id,
     }
+
     # Do not include object_type in kwargs if no_obj_type == True
     if not no_obj_type:
         kwargs['object_type'] = obj_type
+
     if obj_type == 'service':
         if 'cluster' in request.path:
             kwargs['cluster_id'] = obj.cluster.id
@@ -173,34 +185,39 @@ def get_api_url_kwargs(obj, request, no_obj_type=False):
             kwargs['cluster_id'] = obj.cluster.id
         elif 'service' in request.path:
             kwargs['service_id'] = obj.service.id
+
     return kwargs
 
 
 class CommonAPIURL(serializers.HyperlinkedIdentityField):
-    def get_url(self, obj, view_name, request, format):  # pylint: disable=redefined-builtin
+    def get_url(self, obj, view_name, request, _format):
         kwargs = get_api_url_kwargs(obj, request)
-        return reverse(view_name, kwargs=kwargs, request=request, format=format)
+
+        return reverse(view_name, kwargs=kwargs, request=request, format=_format)
 
 
 class ObjectURL(serializers.HyperlinkedIdentityField):
-    def get_url(self, obj, view_name, request, format):  # pylint: disable=redefined-builtin
+    def get_url(self, obj, view_name, request, _format):
         kwargs = get_api_url_kwargs(obj, request, True)
-        return reverse(view_name, kwargs=kwargs, request=request, format=format)
+
+        return reverse(view_name, kwargs=kwargs, request=request, format=_format)
 
 
 class UrlField(serializers.HyperlinkedIdentityField):
     def get_kwargs(self, obj):
         return {}
 
-    def get_url(self, obj, view_name, request, format):  # pylint: disable=redefined-builtin
+    def get_url(self, obj, view_name, request, _format):
         kwargs = self.get_kwargs(obj)
-        return reverse(self.view_name, kwargs=kwargs, request=request, format=format)
+
+        return reverse(self.view_name, kwargs=kwargs, request=request, format=_format)
 
 
 def getlist_from_querydict(query_params, field_name):
     params = query_params.get(field_name)
     if params is None:
         return []
+
     return [param.strip() for param in params.split(',')]
 
 
@@ -208,15 +225,20 @@ def fix_ordering(field, view):
     fix = field
     if fix != 'prototype_id':
         fix = fix.replace('prototype_', 'prototype__')
+
     if fix != 'provider_id':
         fix = fix.replace('provider_', 'provider__')
+
     if fix not in ('cluster_id', 'cluster_is_null'):
         fix = fix.replace('cluster_', 'cluster__')
+
     if view.__class__.__name__ not in ('BundleList',):
         fix = fix.replace('version', 'version_order')
+
     if view.__class__.__name__ in ['ServiceListView', 'ComponentListView']:
         if 'display_name' in fix:
             fix = fix.replace('display_name', 'prototype__display_name')
+
     return fix
 
 
@@ -235,7 +257,7 @@ class AdcmOrderingFilter(OrderingFilter):
         if fields:
             re_fields = [fix_ordering(field, view) for field in fields]
             ordering = self.remove_invalid_fields(queryset, re_fields, view, request)
-        # log.debug('ordering: %s', ordering)
+
         return ordering
 
 
@@ -245,9 +267,22 @@ class AdcmFilterBackend(drf_filters.DjangoFilterBackend):
         fixed_params = QueryDict(mutable=True)
         for key in params:
             fixed_params[fix_ordering(key, view)] = params[key]
-        # log.debug('filtering: %s before: %s, after: %s', view, params, fixed_params)
+
         return {
             'data': fixed_params,
             'queryset': queryset,
             'request': request,
         }
+
+
+class SuperuserOnlyMixin:
+    not_superuser_error_code = None
+
+    def get_queryset(self, *args, **kwargs):
+        if not self.request.user.is_superuser:
+            if self.not_superuser_error_code:
+                raise AdcmEx(self.not_superuser_error_code)
+
+            return self.queryset.model.objects.none()
+
+        return super().get_queryset(*args, **kwargs)

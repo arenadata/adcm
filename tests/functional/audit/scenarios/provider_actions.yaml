@@ -1,0 +1,89 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+settings:
+  process-type: exact
+  start-from-first: matched
+
+operations:
+  # run provider actions
+  - update: &run-succeed-provider-action
+      what: &provider
+        type: provider
+        name: Actions Provider
+      how: &run-succeed
+        operation: launch-action
+        name: Succeed
+    result: denied
+    username: {{ username }}
+  - update: *run-succeed-provider-action
+    result: fail
+  - update: &run-fail-provider-action
+      what: *provider
+      how: &run-fail
+        operation: launch-action
+        name: Fail
+  - update:
+      what: *provider
+      how: &complete-fail
+        operation: complete-action
+        name: Fail
+    result: fail
+  - update: *run-succeed-provider-action
+  - update:
+      what: *provider
+      how: &complete-succeed
+        operation: complete-action
+        name: Succeed
+  # run host actions
+  - update: &run-succeed-host-action
+      what: &host
+        type: host
+        name: host-fqdn
+      how: *run-succeed
+    result: denied
+    username: {{ username }}
+  - update: *run-succeed-host-action
+    result: fail
+  - update: &run-fail-host-action
+      what: *host
+      how: *run-fail
+  - update: &complete-fail-host-action
+      what: *host
+      how: *complete-fail
+    result: fail
+  - update: *run-succeed-host-action
+  - update: &complete-succeed-host-action
+      what: *host
+      how: *complete-succeed
+  # host from provider actions
+  - update: *run-succeed-host-action
+    result: denied
+    username: {{ username }}
+  - update: *run-succeed-host-action
+    result: fail
+  - update: *run-fail-host-action
+  - update: *complete-fail-host-action
+    result: fail
+  - update: *run-succeed-host-action
+  - update: *complete-succeed-host-action
+  # host from cluster actions
+  - update: *run-succeed-host-action
+    result: denied
+    username: {{ username }}
+  - update: *run-succeed-host-action
+    result: fail
+  - update: *run-fail-host-action
+  - update: *complete-fail-host-action
+    result: fail
+  - update: *run-succeed-host-action
+  - update: *complete-succeed-host-action

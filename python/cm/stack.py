@@ -11,31 +11,40 @@
 # limitations under the License.
 # pylint: disable=line-too-long,too-many-statements
 
+import hashlib
+import json
 import os
 import re
+import warnings
 from copy import deepcopy
 from typing import Any
-from version_utils import rpm
 
-import json
-import yaml
 import ruyaml
-import hashlib
-import warnings
+import yaml
 import yspec.checker
 from django.db import IntegrityError
-
 from rest_framework import status
+from version_utils import rpm
 
-from cm.logger import log
-from cm.errors import raise_AdcmEx as err
-from cm import config
 import cm.checker
-
-from cm.adcm_config import proto_ref, check_config_type, type_is_complex, read_bundle_file
-from cm.models import StagePrototype, StageAction, StagePrototypeConfig
-from cm.models import StagePrototypeExport, StagePrototypeImport, StageUpgrade, StageSubAction
-
+from cm import config
+from cm.adcm_config import (
+    check_config_type,
+    proto_ref,
+    read_bundle_file,
+    type_is_complex,
+)
+from cm.errors import raise_adcm_ex as err
+from cm.logger import logger
+from cm.models import (
+    StageAction,
+    StagePrototype,
+    StagePrototypeConfig,
+    StagePrototypeExport,
+    StagePrototypeImport,
+    StageSubAction,
+    StageUpgrade,
+)
 
 NAME_REGEX = r'[0-9a-zA-Z_\.-]+'
 MAX_NAME_LENGTH = 256
@@ -60,7 +69,7 @@ def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm=False)
         return err('INVALID_OBJECT_DEFINITION', msg.format(def_type, fname))
     check_object_definition(fname, conf, def_type, obj_list)
     obj = save_prototype(path, conf, def_type, bundle_hash)
-    log.info('Save definition of %s "%s" %s to stage', def_type, conf['name'], conf['version'])
+    logger.info('Save definition of %s "%s" %s to stage', def_type, conf['name'], conf['version'])
     obj_list[cook_obj_id(conf)] = fname
     return obj
 
@@ -126,9 +135,9 @@ def check_adcm_config(conf_file):
 def read_definition(conf_file, conf_type):
     if os.path.isfile(conf_file):
         conf = check_adcm_config(conf_file)
-        log.info('Read config file: "%s"', conf_file)
+        logger.info('Read config file: "%s"', conf_file)
         return conf
-    log.warning('Can not open config file: "%s"', conf_file)
+    logger.warning('Can not open config file: "%s"', conf_file)
     return {}
 
 

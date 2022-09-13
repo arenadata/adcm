@@ -11,15 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import sys
-import shutil
-import tarfile
 import argparse
+import os
+import shutil
+import sys
+import tarfile
 
 import cm.config
 from check_adcm_config import check_config
-
 
 TMP_DIR = '/tmp/adcm_bundle_tmp'
 

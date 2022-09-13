@@ -58,7 +58,7 @@ def bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
 def cluster(request: SubRequest, sdk_client_fs: ADCMClient):
     """Create community edition cluster"""
     bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
-    return bundle.cluster_create(name="test_cluster")
+    return bundle.cluster_create(name="test cluster")
 
 
 @pytest.fixture()

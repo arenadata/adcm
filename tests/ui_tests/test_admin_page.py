@@ -63,10 +63,10 @@ from tests.ui_tests.conftest import login_over_api
 from tests.ui_tests.utils import expect_rows_amount_change
 
 BUNDLE = "cluster_with_services"
-CLUSTER_NAME = "test_cluster"
+CLUSTER_NAME = "test cluster"
 SERVICE_NAME = "test_service_1"
 FIRST_COMPONENT_NAME = "first"
-PROVIDER_NAME = 'test_provider'
+PROVIDER_NAME = 'test provider'
 HOST_NAME = 'test-host'
 
 
@@ -109,7 +109,7 @@ def create_cluster_with_component(
 
     cluster, service = create_cluster_with_service
     provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), 'provider'))
-    provider = provider_bundle.provider_create('test_provider')
+    provider = provider_bundle.provider_create('test provider')
     host = provider.host_create('test-host')
     cluster.host_add(host)
     cluster.hostcomponent_set((host, service.component(name=FIRST_COMPONENT_NAME)))
@@ -785,7 +785,7 @@ class TestAdminPolicyPage:
                 objects=[cluster],
             )
         with allure.step("Create second cluster"):
-            second_cluster = sdk_client_fs.bundle().cluster_create(name=f"{CLUSTER_NAME}_2")
+            second_cluster = sdk_client_fs.bundle().cluster_create(name=f"{CLUSTER_NAME} 2")
         login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
         login_page.login_user(**another_user)
         AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
@@ -954,7 +954,7 @@ class TestAdminPolicyPage:
                 objects=[cluster],
             )
         with allure.step("Create second cluster"):
-            second_cluster = sdk_client_fs.bundle().cluster_create(name=f"{CLUSTER_NAME}_2")
+            second_cluster = sdk_client_fs.bundle().cluster_create(name=f"{CLUSTER_NAME} 2")
 
         login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
         login_page.login_user(**another_user)
