@@ -12,14 +12,17 @@
 
 from unittest.mock import Mock, patch
 
+from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 
 from adcm.tests.base import BaseTestCase
+from cm.api import update_obj_config
 from cm.inventory import (
     get_cluster_config,
     get_cluster_hosts,
     get_host,
     get_host_groups,
+    get_host_vars,
     get_obj_config,
     get_provider_config,
     get_provider_hosts,
@@ -31,15 +34,53 @@ from cm.models import (
     Bundle,
     Cluster,
     ConfigLog,
+    GroupConfig,
     Host,
     HostProvider,
     JobLog,
     ObjectConfig,
     Prototype,
 )
+from cm.tests.utils import (
+    gen_bundle,
+    gen_cluster,
+    gen_component,
+    gen_config,
+    gen_host,
+    gen_host_component,
+    gen_prototype,
+    gen_prototype_config,
+    gen_provider,
+    gen_service,
+)
 
 
 class TestInventory(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.object_config = ObjectConfig.objects.create(current=1, previous=1)
+        self.config_log = ConfigLog.objects.create(obj_ref=self.object_config, config="{}")
+
+        self.cluster_bundle = gen_bundle()
+        self.cluster_pt = gen_prototype(self.cluster_bundle, "cluster", "cluster")
+        self.cluster = gen_cluster(
+            prototype=self.cluster_pt, config=self.object_config, name="cluster"
+        )
+
+        self.provider_bundle = gen_bundle()
+
+        self.provider_pt = gen_prototype(self.provider_bundle, "provider")
+        self.host_pt = gen_prototype(self.provider_bundle, "host")
+
+        self.provider = gen_provider(prototype=self.provider_pt)
+        self.host = gen_host(self.provider, prototype=self.host_pt, cluster=self.cluster)
+
+    @staticmethod
+    def create_group(name, object_id, model_name):
+        return GroupConfig.objects.create(
+            object_id=object_id, object_type=ContentType.objects.get(model=model_name), name=name
+        )
+
     @patch("cm.inventory.process_config")
     @patch("cm.inventory.get_prototype_config")
     def test_process_config_and_attr(self, mock_get_prototype_config, mock_process_config):
@@ -57,15 +98,9 @@ class TestInventory(BaseTestCase):
 
     @patch("cm.inventory.process_config_and_attr")
     def test_get_obj_config(self, mock_process_config_and_attr):
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle)
-        object_config = ObjectConfig.objects.create(current=1, previous=1)
-        cluster = Cluster.objects.create(prototype=prototype, config=object_config)
-        config_log = ConfigLog.objects.create(obj_ref=object_config, config="{}")
-
-        get_obj_config(cluster)
+        get_obj_config(self.cluster)
         mock_process_config_and_attr.assert_called_once_with(
-            cluster, config_log.config, config_log.attr
+            self.cluster, self.config_log.config, self.config_log.attr
         )
 
     @patch("cm.inventory.get_import")
@@ -73,13 +108,7 @@ class TestInventory(BaseTestCase):
     def test_get_cluster_config(self, mock_get_obj_config, mock_get_import):
         mock_get_obj_config.return_value = {}
         mock_get_import.return_value = {}
-
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle, version="2.2")
-        object_config = ObjectConfig.objects.create(current=1, previous=1)
-        cluster = Cluster.objects.create(prototype=prototype, config=object_config)
-
-        res = get_cluster_config(cluster)
+        res = get_cluster_config(self.cluster)
         test_res = {
             "cluster": {
                 "config": {},
@@ -95,19 +124,13 @@ class TestInventory(BaseTestCase):
         }
         self.assertDictEqual(res, test_res)
 
-        mock_get_obj_config.assert_called_once_with(cluster)
-        mock_get_import.assert_called_once_with(cluster)
+        mock_get_obj_config.assert_called_once_with(self.cluster)
+        mock_get_import.assert_called_once_with(self.cluster)
 
     @patch("cm.inventory.get_obj_config")
     def test_get_provider_config(self, mock_get_obj_config):
         mock_get_obj_config.return_value = {}
-
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle, type="host")
-        object_config = ObjectConfig.objects.create(current=1, previous=1)
-        provider = HostProvider.objects.create(prototype=prototype, config=object_config)
-
-        config = get_provider_config(provider.id)
+        config = get_provider_config(self.provider.id)
 
         test_config = {
             "provider": {
@@ -122,18 +145,13 @@ class TestInventory(BaseTestCase):
         }
 
         self.assertDictEqual(config, test_config)
-        mock_get_obj_config.assert_called_once_with(provider)
+        mock_get_obj_config.assert_called_once_with(self.provider)
 
     @patch("cm.inventory.get_obj_config")
     def test_get_host_groups(self, mock_get_obj_config):
         mock_get_obj_config.return_value = {}
 
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle)
-        object_config = ObjectConfig.objects.create(current=1, previous=1)
-        cluster = Cluster.objects.create(prototype=prototype, config=object_config)
-
-        groups = get_host_groups(cluster, {})
+        groups = get_host_groups(self.cluster, {})
 
         self.assertDictEqual(groups, {})
         mock_get_obj_config.assert_not_called()
@@ -144,28 +162,19 @@ class TestInventory(BaseTestCase):
         mock_get_cluster_config.return_value = []
         mock_get_hosts.return_value = []
 
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle)
-        cluster = Cluster.objects.create(prototype=prototype)
-
         test_cluster_hosts = {"CLUSTER": {"hosts": [], "vars": []}}
 
-        cluster_hosts = get_cluster_hosts(cluster)
+        cluster_hosts = get_cluster_hosts(self.cluster)
 
         self.assertDictEqual(cluster_hosts, test_cluster_hosts)
         mock_get_hosts.assert_called_once()
-        mock_get_cluster_config.assert_called_once_with(cluster)
+        mock_get_cluster_config.assert_called_once_with(self.cluster)
 
     @patch("cm.inventory.get_hosts")
     def test_get_provider_hosts(self, mock_get_hosts):
         mock_get_hosts.return_value = []
 
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle)
-        provider = HostProvider.objects.create(prototype=prototype)
-        Host.objects.create(prototype=prototype, provider=provider)
-
-        provider_hosts = get_provider_hosts(provider)
+        provider_hosts = get_provider_hosts(self.provider)
 
         test_provider_hosts = {"PROVIDER": {"hosts": []}}
 
@@ -178,12 +187,7 @@ class TestInventory(BaseTestCase):
         mock_get_hosts.return_value = []
         mock_get_provider_hosts.return_value = {"PROVIDER": {"hosts": [], "vars": []}}
 
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle, type="host")
-        provider = HostProvider.objects.create(prototype=prototype)
-        host = Host.objects.create(prototype=prototype, provider=provider)
-
-        groups = get_host(host.id)
+        groups = get_host(self.host.id)
         test_groups = {
             "HOST": {
                 "hosts": [],
@@ -201,24 +205,17 @@ class TestInventory(BaseTestCase):
             }
         }
         self.assertDictEqual(groups, test_groups)
-        mock_get_hosts.assert_called_once_with([host], host)
+        mock_get_hosts.assert_called_once_with([self.host], self.host)
 
     @patch("json.dump")
     @patch("cm.inventory.open")
     def test_prepare_job_inventory(self, mock_open, mock_dump):
         # pylint: disable=too-many-locals
 
-        bundle = Bundle.objects.create(edition="community")
-        proto1 = Prototype.objects.create(bundle=bundle, version="2.2", type="cluster")
-        cluster = Cluster.objects.create(prototype=proto1)
-        proto2 = Prototype.objects.create(bundle=bundle, type="provider")
-        host_provider = HostProvider.objects.create(prototype=proto2)
-        proto3 = Prototype.objects.create(bundle=bundle, type="host")
-        host = Host.objects.create(prototype=proto3, provider=host_provider)
         host2 = Host.objects.create(
-            prototype=proto3, fqdn="h2", cluster=cluster, provider=host_provider
+            prototype=self.host_pt, fqdn="h2", cluster=self.cluster, provider=self.provider
         )
-        action = Action.objects.create(prototype=proto1)
+        action = Action.objects.create(prototype=self.cluster_pt)
         job = JobLog.objects.create(
             action=action, start_date=timezone.now(), finish_date=timezone.now()
         )
@@ -259,7 +256,7 @@ class TestInventory(BaseTestCase):
                                 "config": {},
                                 "name": "",
                                 "id": 1,
-                                "host_prototype_id": proto3.id,
+                                "host_prototype_id": self.host_pt.id,
                                 "state": "created",
                                 "multi_state": [],
                                 "before_upgrade": {"state": None},
@@ -284,7 +281,7 @@ class TestInventory(BaseTestCase):
                         "config": {},
                         "name": "",
                         "id": 1,
-                        "host_prototype_id": proto3.id,
+                        "host_prototype_id": self.host_pt.id,
                         "state": "created",
                         "multi_state": [],
                         "before_upgrade": {"state": None},
@@ -294,9 +291,9 @@ class TestInventory(BaseTestCase):
         }
 
         data = [
-            (host, host_inv),
-            (host_provider, provider_inv),
-            (cluster, cluster_inv),
+            (self.host, host_inv),
+            (self.provider, provider_inv),
+            (self.cluster, cluster_inv),
         ]
 
         for obj, inv in data:
@@ -304,3 +301,118 @@ class TestInventory(BaseTestCase):
                 prepare_job_inventory(obj, job.id, action, [])
                 mock_dump.assert_called_once_with(inv, fd, indent=3)
                 mock_dump.reset_mock()
+
+    def test_host_vars(self):
+        object_config = ObjectConfig.objects.create(current=1, previous=1)
+        ConfigLog.objects.create(obj_ref=object_config, config={"some_string": "some_string"})
+
+        service_pt_1 = gen_prototype(self.cluster_bundle, "service", "service_1")
+        service_pt_2 = gen_prototype(self.cluster_bundle, "service", "service_2")
+        component_pt_11 = gen_prototype(self.cluster_bundle, "component", "component_11")
+        component_pt_12 = gen_prototype(self.cluster_bundle, "component", "component_12")
+        component_pt_21 = gen_prototype(self.cluster_bundle, "component", "component_21")
+
+        prototypes = [
+            self.cluster_pt,
+            service_pt_1,
+            service_pt_2,
+            component_pt_11,
+            component_pt_12,
+            component_pt_21,
+        ]
+        for proto in prototypes:
+            gen_prototype_config(
+                prototype=proto,
+                name="some_string",
+                field_type="string",
+                group_customization=True,
+            )
+        update_obj_config(self.cluster.config, {"some_string": "some_string"})
+        self.service_1 = gen_service(
+            self.cluster,
+            prototype=service_pt_1,
+            config=gen_config({"some_string": "some_string"}),
+        )
+        self.service_2 = gen_service(
+            self.cluster,
+            prototype=service_pt_2,
+            config=gen_config({"some_string": "some_string"}),
+        )
+        self.component_11 = gen_component(
+            self.service_1,
+            prototype=component_pt_11,
+            config=gen_config({"some_string": "some_string"}),
+        )
+        self.component_12 = gen_component(
+            self.service_1,
+            prototype=component_pt_12,
+            config=gen_config({"some_string": "some_string"}),
+        )
+        self.component_21 = gen_component(
+            self.service_2,
+            prototype=component_pt_21,
+            config=gen_config({"some_string": "some_string"}),
+        )
+
+        provider_bundle = gen_bundle()
+
+        provider_pt = gen_prototype(provider_bundle, "provider")
+        host_pt = gen_prototype(provider_bundle, "host")
+
+        provider = gen_provider(prototype=provider_pt)
+        self.host = gen_host(provider, prototype=host_pt, cluster=self.cluster)
+        gen_host_component(self.component_11, self.host)
+        gen_host_component(self.component_12, self.host)
+        gen_host_component(self.component_21, self.host)
+
+        groups = []
+        groups.append(self.create_group("cluster", self.cluster.id, "cluster"))
+        groups.append(self.create_group("service_1", self.service_1.id, "clusterobject"))
+        groups.append(self.create_group("service_2", self.service_2.id, "clusterobject"))
+        groups.append(self.create_group("component_1", self.component_11.id, "servicecomponent"))
+        for group in groups:
+            group.hosts.add(self.host)
+            update_obj_config(
+                group.config, {"some_string": group.name}, {"group_keys": {"some_string": True}}
+            )
+
+        self.assertDictEqual(
+            get_host_vars(self.host, self.cluster)["cluster"]["config"], {"some_string": "cluster"}
+        )
+
+        service_1_host_vars = get_host_vars(self.host, self.service_1)
+        self.assertDictEqual(
+            service_1_host_vars["services"]["service_1"]["config"], {"some_string": "service_1"}
+        )
+        self.assertDictEqual(
+            service_1_host_vars["services"]["service_2"]["config"], {"some_string": "service_2"}
+        )
+        self.assertDictEqual(
+            service_1_host_vars["services"]["service_1"]["component_11"]["config"],
+            {"some_string": "component_1"},
+        )
+        self.assertDictEqual(
+            service_1_host_vars["services"]["service_1"]["component_12"]["config"],
+            {"some_string": "some_string"},
+        )
+        self.assertDictEqual(
+            service_1_host_vars["services"]["service_2"]["component_21"]["config"],
+            {"some_string": "some_string"},
+        )
+
+        component_11_host_vars = get_host_vars(self.host, self.component_11)
+        self.assertDictEqual(
+            component_11_host_vars["services"]["service_1"]["config"], {"some_string": "service_1"}
+        )
+        self.assertDictEqual(
+            component_11_host_vars["services"]["service_1"]["component_11"]["config"],
+            {"some_string": "component_1"},
+        )
+        self.assertDictEqual(
+            component_11_host_vars["services"]["service_1"]["component_12"]["config"],
+            {"some_string": "some_string"},
+        )
+        self.assertFalse("service_2" in component_11_host_vars["services"].keys())
+
+        component_12_host_vars = get_host_vars(self.host, self.component_12)
+        self.assertDictEqual(component_12_host_vars, {})
