@@ -20,4 +20,3 @@
 0       8       */1     *       *       python /adcm/python/manage.py logrotate --target all > /proc/1/fd/1 2>&1
 0       10      */1     *       *       python /adcm/python/manage.py clearaudit > /proc/1/fd/1 2>&1
 */1     *       *       *       *       python /adcm/python/manage.py run_ldap_sync > /proc/1/fd/1 2>&1
-*/1     *       *       *       *       python /adcm/python/manage.py simplecommand > /proc/1/fd/1 2>&1
