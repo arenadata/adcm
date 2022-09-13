@@ -23,16 +23,15 @@ from cm.models import Bundle, Prototype, PrototypeConfig
 
 class TestAuditObjects(BaseTestCase):
 
-    cluster_proto: Prototype
-    service_proto: Prototype
-    component_proto: Prototype
-    provider_proto: Prototype
-    host_proto: Prototype
-
     # SET UP
 
     def setUp(self) -> None:
         super().setUp()
+        self.cluster_proto: Prototype = None
+        self.service_proto: Prototype = None
+        self.component_proto: Prototype = None
+        self.provider_proto: Prototype = None
+        self.host_proto: Prototype = None
         self._prepare_prototypes()
 
     def _prepare_prototypes(self):
@@ -50,7 +49,7 @@ class TestAuditObjects(BaseTestCase):
             setattr(self, name, proto)
         self.service_proto.parent = self.cluster_proto
         self.service_proto.save()
-        self.component_proto.parent = self.cluster_proto
+        self.component_proto.parent = self.service_proto
         self.component_proto.save()
         self.host_proto.parent = self.provider_proto
         self.host_proto.save()
