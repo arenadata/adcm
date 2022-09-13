@@ -158,8 +158,18 @@ def get_provider_variables(provider: HostProvider, provider_config: dict = None)
     }
 
 
+def get_group_config(obj, host: Host) -> dict | None:
+    group = host.group_config.filter(
+        object_id=obj.id, object_type=ContentType.objects.get_for_model(obj)
+    ).last()
+    group_config = None
+    if group:
+        conf, attr = group.get_config_and_attr()
+        group_config = process_config_and_attr(group, conf, attr)
+    return group_config
+
+
 def get_host_vars(host: Host, obj):
-    # TODO: add test for this function
     groups = host.group_config.filter(
         object_id=obj.id, object_type=ContentType.objects.get_for_model(obj)
     )
@@ -185,25 +195,32 @@ def get_host_vars(host: Host, obj):
             for service in ClusterObject.objects.filter(cluster=group.object.cluster).exclude(
                 pk=group.object.id
             ):
-                variables["services"][service.prototype.name] = get_service_variables(service)
+                variables["services"][service.prototype.name] = get_service_variables(
+                    service, service_config=get_group_config(service, host)
+                )
                 for component in ServiceComponent.objects.filter(
                     cluster=group.object.cluster, service=service
                 ):
                     variables["services"][service.prototype.name][
                         component.prototype.name
-                    ] = get_component_variables(component)
+                    ] = get_component_variables(
+                        component, component_config=get_group_config(component, host)
+                    )
             for component in ServiceComponent.objects.filter(
                 cluster=group.object.cluster, service=group.object
             ):
                 variables["services"][group.object.prototype.name][
                     component.prototype.name
-                ] = get_component_variables(component)
+                ] = get_component_variables(
+                    component, component_config=get_group_config(component, host)
+                )
         elif isinstance(group.object, ServiceComponent):
             variables.update(
                 {
                     "services": {
                         group.object.service.prototype.name: get_service_variables(
-                            group.object.service
+                            group.object.service,
+                            service_config=get_group_config(group.object.service, host),
                         )
                     }
                 }
@@ -217,7 +234,9 @@ def get_host_vars(host: Host, obj):
             ).exclude(pk=group.object.id):
                 variables["services"][component.service.prototype.name][
                     component.prototype.name
-                ] = get_component_variables(component)
+                ] = get_component_variables(
+                    component, component_config=get_group_config(component, host)
+                )
 
         else:  # HostProvider
             variables.update(
