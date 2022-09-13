@@ -29,7 +29,7 @@ from rbac.ldap import (
     is_tls
 )
 from cm.errors import AdcmEx
-from cm.logger import log
+from cm.logger import logger
 from django.db import DataError, IntegrityError
 
 CERT_ENV_KEY = "LDAPTLS_CACERT"
@@ -143,7 +143,7 @@ class SyncLDAP:
             group.delete()
         msg = "Sync of groups ended successfully."
         msg += f"Couldn\'t synchronize groups: {error_names}\n" if error_names else ""
-        log.debug(msg)
+        logger.debug(msg)
 
     def _sync_ldap_users(self, ldap_users: list) -> None:
         ldap_usernames = set()
@@ -217,7 +217,7 @@ class SyncLDAP:
             # user.save()
         msg = "Sync of users ended successfully."
         msg += f"Couldn\'t synchronize users: {error_names}\n" if error_names else ""
-        log.debug(msg)
+        logger.debug(msg)
 
     def _process_user_ldap_groups(self, user: User, user_dn: str) -> None:
         ldap_group_names, err_msg = get_groups_by_user_dn(

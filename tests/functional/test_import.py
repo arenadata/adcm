@@ -40,7 +40,7 @@ def test_service_import_negative(sdk_client_fs: ADCMClient, path):
         service = cluster.service_add(name="hadoop")
     with allure.step('Create cluster with def import'):
         bundle_import = sdk_client_fs.upload_from_fs(path + '/import')
-        cluster_import = bundle_import.cluster_create("cluster_import")
+        cluster_import = bundle_import.cluster_create("cluster import")
     with allure.step('Bind cluster from cluster with export to cluster with import'):
         cluster_import.bind(cluster)
     with allure.step('Import service and expect backend error because incorrect version for import'):
@@ -64,7 +64,7 @@ def test_cluster_import_negative(sdk_client_fs: ADCMClient, path):
         service = cluster.service_add(name="hadoop")
     with allure.step('Create default cluster with import'):
         bundle_import = sdk_client_fs.upload_from_fs(path + '/import')
-        cluster_import = bundle_import.cluster_create("cluster_import")
+        cluster_import = bundle_import.cluster_create("cluster import")
     with allure.step('Bind service from cluster with export to cluster with import'):
         cluster_import.bind(service)
     with allure.step('Bind cluster and check error because incorrect version for import'):
@@ -82,7 +82,7 @@ def test_service_import(sdk_client_fs: ADCMClient, path):
         service = cluster.service_add(name="hadoop")
     with allure.step('Create cluster with import'):
         bundle_import = sdk_client_fs.upload_from_fs(path + '/import')
-        cluster_import = bundle_import.cluster_create("cluster_import")
+        cluster_import = bundle_import.cluster_create("cluster import")
     with allure.step('Bind service from cluster with export to cluster with import'):
         cluster_import.bind(service)
 
@@ -95,7 +95,7 @@ def test_cluster_import(sdk_client_fs: ADCMClient, path):
         cluster = bundle.cluster_create("test")
     with allure.step('Create cluster with import'):
         bundle_import = sdk_client_fs.upload_from_fs(path + '/import')
-        cluster_import = bundle_import.cluster_create("cluster_import")
+        cluster_import = bundle_import.cluster_create("cluster import")
     with allure.step('Bind cluster from cluster with export to cluster with import'):
         cluster_import.bind(cluster)
 

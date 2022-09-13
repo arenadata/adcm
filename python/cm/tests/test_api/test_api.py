@@ -210,7 +210,7 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_cluster(self):  # pylint: disable=too-many-statements
-        cluster_name = "test_cluster"
+        cluster_name = "test-cluster"
         cluster_url = reverse("cluster")
         self.load_bundle(self.bundle_adh_name)
         bundle_id, proto_id = self.get_cluster_proto_id()
@@ -281,11 +281,6 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")
 
-        response: Response = self.client.put(this_cluster_url, {})
-
-        self.assertEqual(response.status_code, HTTP_405_METHOD_NOT_ALLOWED)
-        self.assertEqual(response.json()["detail"], 'Method "PUT" not allowed.')
-
         response: Response = self.client.delete(this_cluster_url)
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
@@ -307,7 +302,7 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
     def test_cluster_patching(self):
-        name = "test_cluster"
+        name = "test-cluster"
         cluster_url = reverse("cluster")
 
         self.load_bundle(self.bundle_adh_name)
@@ -320,7 +315,7 @@ class TestAPI(BaseTestCase):
         cluster_id = response.json()["id"]
         first_cluster_url = reverse("cluster-details", kwargs={"cluster_id": cluster_id})
 
-        patched_name = "patched_cluster"
+        patched_name = "patched-cluster"
 
         response: Response = self.client.patch(
             first_cluster_url, {"name": patched_name}, content_type=APPLICATION_JSON
@@ -481,7 +476,7 @@ class TestAPI(BaseTestCase):
         service_proto_id = self.get_service_proto_id()
         bundle_id, cluster_proto_id = self.get_cluster_proto_id()
 
-        cluster = "test_cluster"
+        cluster = "test-cluster"
         cluster_url = reverse("cluster")
         response: Response = self.client.post(
             cluster_url, {"name": cluster, "prototype_id": cluster_proto_id}
