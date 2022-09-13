@@ -20,7 +20,7 @@ from rest_framework.status import (
 )
 from rest_framework.views import exception_handler
 
-from cm.logger import log
+from cm.logger import logger
 
 WARN = "warning"
 ERR = "error"
@@ -254,8 +254,7 @@ def raise_adcm_ex(code, msg="", args=""):
     if msg != "":
         err_msg = msg
 
-    log.error(err_msg)
-
+    logger.error(err_msg)
     raise AdcmEx(code, msg=msg, args=args)
 
 

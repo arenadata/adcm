@@ -36,7 +36,7 @@ from cm.job import (
     set_job_status,
     set_task_status,
 )
-from cm.logger import log
+from cm.logger import logger
 from cm.models import (
     ADCM,
     Action,
@@ -63,10 +63,10 @@ from cm.tests.utils import (
 
 class TestJob(BaseTestCase):
     def setUp(self):
-        log.debug = Mock()
-        log.error = Mock()
-        log.info = Mock()
-        log.warning = Mock()
+        logger.debug = Mock()
+        logger.error = Mock()
+        logger.info = Mock()
+        logger.warning = Mock()
 
     def test_set_job_status(self):
         bundle = Bundle.objects.create()

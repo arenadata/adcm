@@ -26,6 +26,7 @@ from api.cluster.serializers import (
     ClusterDetailSerializer,
     ClusterSerializer,
     ClusterUISerializer,
+    ClusterUpdateSerializer,
     DoBindSerializer,
     DoClusterUpgradeSerializer,
     HostComponentSaveSerializer,
@@ -111,6 +112,8 @@ class ClusterDetail(PermissionListMixin, DetailView):
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ['cm.view_cluster']
     serializer_class = ClusterDetailSerializer
+    serializer_class_put = ClusterUpdateSerializer
+    serializer_class_patch = ClusterUpdateSerializer
     serializer_class_ui = ClusterUISerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'cluster_id'
@@ -123,6 +126,12 @@ class ClusterDetail(PermissionListMixin, DetailView):
         """
         obj = self.get_object()
         serializer = self.get_serializer(obj, data=request.data, partial=True)
+        return update(serializer)
+
+    @audit
+    def put(self, request, *args, **kwargs):
+        obj = self.get_object()
+        serializer = self.get_serializer(obj, data=request.data, partial=False)
         return update(serializer)
 
     @audit

@@ -12,7 +12,7 @@
 import { Component, ComponentFactoryResolver, EventEmitter, Inject, OnInit, Type, ViewChild, HostListener } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
-import { DynamicComponent, DynamicDirective, DynamicEvent } from '../directives/dynamic/dynamic.directive';
+import { DynamicComponent, DynamicDirective, DynamicEvent } from '@app/shared/directives';
 import { ChannelService } from '@app/core/services';
 import { keyChannelStrim } from '@app/core/services';
 import { ActionParameters } from '@app/shared/components/actions/actions.directive';
@@ -122,7 +122,8 @@ export class DialogComponent implements OnInit {
   }
 
   _title(): string {
-    if (this._isTypeLdap() && this._isGroupDialog()) return 'Group Info'
+    if (this._isTypeLdap() && this._isGroupDialog()) return 'Group Info';
+    if (this._isUserInactive()) return 'User info';
     return this.data.title || 'Notification';
   }
 
@@ -132,5 +133,9 @@ export class DialogComponent implements OnInit {
 
   _isUserDialog() {
     return this.data.model.name === 'user';
+  }
+
+  _isUserInactive() {
+    return this.data?.model?.value?.is_active === false;
   }
 }

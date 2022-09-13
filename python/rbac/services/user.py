@@ -24,7 +24,7 @@ from rest_framework.authtoken.models import Token
 from rbac import models
 from rbac.utils import Empty, set_not_empty_attr
 
-PW_MASK = '******'
+PW_MASK = "******"
 
 
 def _set_password(user: models.User, value: str) -> None:
@@ -32,7 +32,7 @@ def _set_password(user: models.User, value: str) -> None:
         return
 
     if not value:
-        raise AdwpEx('USER_UPDATE_ERROR', msg='Password could not be empty')
+        raise AdwpEx("USER_UPDATE_ERROR", msg="Password could not be empty")
 
     new_password = make_password(value)
     if user.password == new_password:
@@ -47,7 +47,7 @@ def _update_groups(user: models.User, groups: [Empty, List[dict]]) -> None:
         return
 
     user_groups = {g.id: g.group for g in user.groups.all()}
-    new_groups = [g['id'] for g in groups]
+    new_groups = [g["id"] for g in groups]
 
     for group_id in new_groups:
         if group_id in user_groups:
@@ -55,12 +55,12 @@ def _update_groups(user: models.User, groups: [Empty, List[dict]]) -> None:
         try:
             group = models.Group.objects.get(id=group_id)
         except ObjectDoesNotExist as exc:
-            msg = f'Group with ID {group_id} was not found'
+            msg = f"Group with ID {group_id} was not found"
             raise AdwpEx(
-                'USER_UPDATE_ERROR', msg=msg, http_code=status.HTTP_400_BAD_REQUEST
+                "USER_UPDATE_ERROR", msg=msg, http_code=status.HTTP_400_BAD_REQUEST
             ) from exc
         if group.type == models.OriginType.LDAP:
-            raise AdwpEx('USER_UPDATE_ERROR', msg="You cannot add user to LDAP group")
+            raise AdwpEx("USER_UPDATE_ERROR", msg="You cannot add user to LDAP group")
         user.groups.add(group)
         user_groups[group_id] = group
 
@@ -68,7 +68,7 @@ def _update_groups(user: models.User, groups: [Empty, List[dict]]) -> None:
         if group_id in new_groups:
             continue
         if group.type == models.OriginType.LDAP:
-            raise AdwpEx('USER_UPDATE_ERROR', msg="You cannot remove user from original LDAP group")
+            raise AdwpEx("USER_UPDATE_ERROR", msg="You cannot remove user from original LDAP group")
         user.groups.remove(group)
 
 
@@ -93,40 +93,44 @@ def update(
     password: str = Empty,
     profile: dict = Empty,
     groups: list = Empty,
+    is_active: bool = Empty,
 ) -> models.User:
+    # pylint: disable=too-many-locals
     """Full or partial User update"""
     if (username is not Empty) and (username != user.username):
-        raise AdwpEx('USER_UPDATE_ERROR', msg='Username could not be changed')
+        raise AdwpEx("USER_UPDATE_ERROR", msg="Username could not be changed")
 
-    args = (username, first_name, last_name, email, is_superuser)
+    args = (username, first_name, last_name, email, is_superuser, is_active)
     if not partial and not all((arg is not Empty for arg in args)):
-        raise AdwpEx('USER_UPDATE_ERROR', msg='Full User update with partial argset is forbidden')
+        raise AdwpEx("USER_UPDATE_ERROR", msg="Full User update with partial argset is forbidden")
 
     user_exist = models.User.objects.filter(email=email).exists()
-    if user_exist and (email != ''):
+    if user_exist and (email != ""):
         email_user = models.User.objects.get(email=email)
         if email_user != user:
-            raise AdwpEx('USER_UPDATE_ERROR', msg='User with the same email already exist')
+            raise AdwpEx("USER_UPDATE_ERROR", msg="User with the same email already exist")
     names = {
-        'username': username,
-        'first_name': first_name,
-        'last_name': last_name,
-        'email': email,
-        'is_superuser': is_superuser,
-        'password': password,
+        "username": username,
+        "first_name": first_name,
+        "last_name": last_name,
+        "email": email,
+        "is_superuser": is_superuser,
+        "password": password,
+        "is_active": is_active,
     }
     if user.type == models.OriginType.LDAP and any(
         (value is not Empty and getattr(user, key) != value) for key, value in names.items()
     ):
-        raise AdwpEx('USER_UPDATE_ERROR', msg='You cannot change LDAP type user')
-    set_not_empty_attr(user, partial, 'first_name', first_name, '')
-    set_not_empty_attr(user, partial, 'last_name', last_name, '')
-    set_not_empty_attr(user, partial, 'email', email, '')
-    set_not_empty_attr(user, partial, 'profile', profile, '')
+        raise AdwpEx("USER_UPDATE_ERROR", msg="You cannot change LDAP type user")
+    set_not_empty_attr(user, partial, "first_name", first_name, "")
+    set_not_empty_attr(user, partial, "last_name", last_name, "")
+    set_not_empty_attr(user, partial, "email", email, "")
+    set_not_empty_attr(user, partial, "profile", profile, "")
+    set_not_empty_attr(user, partial, "is_active", is_active, True)
     _set_password(user, password)
 
     if context_user is None or context_user.is_superuser:
-        set_not_empty_attr(user, partial, 'is_superuser', is_superuser, False)
+        set_not_empty_attr(user, partial, "is_superuser", is_superuser, False)
         _update_groups(user, groups)
     user.save()
     return user
@@ -143,6 +147,7 @@ def create(
     is_superuser: bool = None,
     profile: dict = None,
     groups: list = None,
+    is_active: bool = True,
 ) -> models.User:
     """Create User"""
     if is_superuser:
@@ -151,8 +156,8 @@ def create(
         func = models.User.objects.create_user
 
     user_exist = models.User.objects.filter(email=email).exists()
-    if user_exist and (email != ''):
-        raise AdwpEx('USER_CREATE_ERROR', msg='User with the same email already exist')
+    if user_exist and (email != ""):
+        raise AdwpEx("USER_CREATE_ERROR", msg="User with the same email already exist")
 
     try:
         user = func(
@@ -162,9 +167,10 @@ def create(
             last_name=last_name,
             email=email,
             profile=profile,
+            is_active=is_active,
         )
     except IntegrityError as exc:
-        raise AdwpEx('USER_CREATE_ERROR', msg=f'User creation failed with error {exc}') from exc
+        raise AdwpEx("USER_CREATE_ERROR", msg=f"User creation failed with error {exc}") from exc
     _update_groups(user, groups or [])
     _regenerate_token(user)
     return user
