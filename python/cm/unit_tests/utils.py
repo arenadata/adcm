@@ -12,77 +12,107 @@
 
 from uuid import uuid4
 
-from cm import models
 from django.utils import timezone
 
+from cm.errors import AdcmEx
+from cm.models import (
+    ConfigLog,
+    ObjectConfig,
+    JobLog,
+    TaskLog,
+    ADCMEntity,
+    Action,
+    ConcernItem,
+    HostComponent,
+    Host,
+    HostProvider,
+    ServiceComponent,
+    ClusterObject,
+    Cluster,
+    ADCM,
+    Bundle,
+    Prototype,
+    PrototypeConfig,
+)
 
-def _gen_name(prefix: str, name='name'):
+
+def _gen_name(prefix: str, name="name"):
     """Generate unique name"""
     return {name: prefix + uuid4().hex}
 
 
-def gen_bundle(name='') -> models.Bundle:
+def gen_bundle(name: str = "") -> Bundle:
     """Generate some bundle"""
-    return models.Bundle.objects.create(**_gen_name(name or 'bundle_'), version='1.0.0')
+    return Bundle.objects.create(**_gen_name(name or "bundle_"), version="1.0.0")
 
 
-def gen_prototype(bundle: models.Bundle, proto_type, name="") -> models.Prototype:
+def gen_prototype(bundle: Bundle, proto_type: str, name: str = "") -> Prototype:
     """Generate prototype of specified type from bundle"""
-    return models.Prototype.objects.create(
+    return Prototype.objects.create(
         type=proto_type,
-        name=name or '_'.join((proto_type, bundle.name)),
+        name=name or "_".join((proto_type, bundle.name)),
         version=bundle.version,
         bundle=bundle,
     )
 
 
-def gen_prototype_config(prototype: models.Prototype, name: str, field_type: str, **kwargs):
+def gen_prototype_config(prototype: Prototype, name: str, field_type: str, **kwargs):
     """Generate prototype for config field"""
-    return models.PrototypeConfig.objects.create(
-        prototype=prototype, name=name, type=field_type, **kwargs
-    )
+    return PrototypeConfig.objects.create(prototype=prototype, name=name, type=field_type, **kwargs)
 
 
-def gen_adcm() -> models.ADCM:
+def gen_adcm() -> ADCM:
     """Generate or return existing the only ADCM object"""
     try:
-        return models.ADCM.objects.get(name='ADCM')
-    except models.ObjectDoesNotExist:
+        return ADCM.objects.get(name="ADCM")
+    except ADCM.DoesNotExist:
         bundle = gen_bundle()
-        prototype = gen_prototype(bundle, 'adcm')
-        return models.ADCM.objects.create(name='ADCM', prototype=prototype)
+        prototype = gen_prototype(bundle, "adcm")
+        return ADCM.objects.create(name="ADCM", prototype=prototype)
 
 
-def gen_cluster(name='', bundle=None, prototype=None, config=None) -> models.Cluster:
+def gen_cluster(
+    name: str = "", bundle: Bundle = None, prototype: Prototype = None, config: ObjectConfig = None
+) -> Cluster:
     """Generate cluster from specified prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
-        prototype = gen_prototype(bundle, 'cluster')
-    return models.Cluster.objects.create(
-        **_gen_name(name or 'cluster_'),
+        prototype = gen_prototype(bundle, "cluster")
+    return Cluster.objects.create(
+        **_gen_name(name or "cluster_"),
         prototype=prototype,
         config=config,
     )
 
 
-def gen_service(cluster, bundle=None, prototype=None, config=None) -> models.ClusterObject:
+def gen_service(
+    cluster: Cluster,
+    bundle: Bundle = None,
+    prototype: Prototype = None,
+    config: ObjectConfig = None,
+) -> ClusterObject:
     """Generate service of specified cluster and prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
-        prototype = gen_prototype(bundle, 'service')
-    return models.ClusterObject.objects.create(
+        prototype = gen_prototype(bundle, "service")
+    return ClusterObject.objects.create(
         cluster=cluster,
         prototype=prototype,
         config=config,
     )
 
 
-def gen_component(service, bundle=None, prototype=None, config=None) -> models.ServiceComponent:
+def gen_component(
+    service: ClusterObject,
+    bundle: Bundle = None,
+    prototype: Prototype = None,
+    config: ObjectConfig = None,
+) -> ServiceComponent:
     """Generate service component for specified service and prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
-        prototype = gen_prototype(bundle, 'component')
-    return models.ServiceComponent.objects.create(
+        prototype = gen_prototype(bundle, "component")
+    return ServiceComponent.objects.create(
         cluster=service.cluster,
         service=service,
         prototype=prototype,
@@ -90,39 +120,39 @@ def gen_component(service, bundle=None, prototype=None, config=None) -> models.S
     )
 
 
-def gen_provider(name='', bundle=None, prototype=None) -> models.HostProvider:
+def gen_provider(name="", bundle=None, prototype=None) -> HostProvider:
     """Generate host provider for specified prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
-        prototype = gen_prototype(bundle, 'provider')
-    return models.HostProvider.objects.create(
-        **_gen_name(name or 'provider_'),
+        prototype = gen_prototype(bundle, "provider")
+    return HostProvider.objects.create(
+        **_gen_name(name or "provider_"),
         prototype=prototype,
     )
 
 
-def gen_host(provider, cluster=None, fqdn='', bundle=None, prototype=None) -> models.Host:
+def gen_host(provider, cluster=None, fqdn="", bundle=None, prototype=None) -> Host:
     """Generate host for specified cluster, provider, and prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
-        prototype = gen_prototype(bundle, 'host')
-    return models.Host.objects.create(
-        **_gen_name(fqdn or 'host-', 'fqdn'),
+        prototype = gen_prototype(bundle, "host")
+    return Host.objects.create(
+        **_gen_name(fqdn or "host-", "fqdn"),
         cluster=cluster,
         provider=provider,
         prototype=prototype,
     )
 
 
-def gen_host_component(component, host) -> models.HostComponent:
+def gen_host_component(component: ServiceComponent, host: Host) -> HostComponent:
     """Generate host-component for specified host and component"""
     cluster = component.service.cluster
     if not host.cluster:
         host.cluster = cluster
         host.save()
     elif host.cluster != cluster:
-        raise models.AdcmEx('Integrity error')
-    return models.HostComponent.objects.create(
+        raise AdcmEx("Integrity error")
+    return HostComponent.objects.create(
         host=host,
         cluster=cluster,
         service=component.service,
@@ -132,45 +162,45 @@ def gen_host_component(component, host) -> models.HostComponent:
 
 def gen_concern_item(
     concern_type, name=None, reason=None, blocking=True, owner=None
-) -> models.ConcernItem:
+) -> ConcernItem:
     """Generate ConcernItem object"""
-    reason = reason or {'message': 'Test', 'placeholder': {}}
-    return models.ConcernItem.objects.create(
+    reason = reason or {"message": "Test", "placeholder": {}}
+    return ConcernItem.objects.create(
         type=concern_type, name=name, reason=reason, blocking=blocking, owner=owner
     )
 
 
-def gen_action(name='', bundle=None, prototype=None) -> models.Action:
+def gen_action(name="", bundle=None, prototype=None) -> Action:
     """Generate action from specified prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
-        prototype = gen_prototype(bundle, 'service')
-    return models.Action.objects.create(
-        **_gen_name(name or 'action_'),
-        display_name=f'Test {prototype.type} action',
+        prototype = gen_prototype(bundle, "service")
+    return Action.objects.create(
+        **_gen_name(name or "action_"),
+        display_name=f"Test {prototype.type} action",
         prototype=prototype,
-        type='task',
-        script='',
-        script_type='ansible',
+        type="task",
+        script="",
+        script_type="ansible",
     )
 
 
-def gen_task_log(obj: models.ADCMEntity, action: models.Action = None) -> models.TaskLog:
-    return models.TaskLog.objects.create(
+def gen_task_log(obj: ADCMEntity, action: Action = None) -> TaskLog:
+    return TaskLog.objects.create(
         action=action or gen_action(),
         object_id=obj.pk,
-        status='CREATED',
+        status="CREATED",
         task_object=obj,
         start_date=timezone.now(),
         finish_date=timezone.now(),
     )
 
 
-def gen_job_log(task) -> models.JobLog:
-    return models.JobLog.objects.create(
+def gen_job_log(task: TaskLog) -> JobLog:
+    return JobLog.objects.create(
         task=task,
         action=task.action,
-        status='CREATED',
+        status="CREATED",
         start_date=timezone.now(),
         finish_date=timezone.now(),
     )
@@ -188,27 +218,27 @@ def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements
     cluster_bundle = gen_bundle()
     provider_bundle = gen_bundle()
 
-    cluster_pt = gen_prototype(cluster_bundle, 'cluster')
+    cluster_pt = gen_prototype(cluster_bundle, "cluster")
     cluster = gen_cluster(prototype=cluster_pt)
     cluster.config = gen_config()
     cluster.save()
 
-    service_pt = gen_prototype(cluster_bundle, 'service')
+    service_pt = gen_prototype(cluster_bundle, "service")
     service = gen_service(cluster, prototype=service_pt)
     service.config = gen_config()
     service.save()
 
-    component_pt = gen_prototype(cluster_bundle, 'component')
+    component_pt = gen_prototype(cluster_bundle, "component")
     component = gen_component(service, prototype=component_pt)
     component.config = gen_config()
     component.save()
 
-    provider_pt = gen_prototype(provider_bundle, 'provider')
+    provider_pt = gen_prototype(provider_bundle, "provider")
     provider = gen_provider(prototype=provider_pt)
     provider.config = gen_config()
     provider.save()
 
-    host_pt = gen_prototype(provider_bundle, 'host')
+    host_pt = gen_prototype(provider_bundle, "host")
     host = gen_host(provider, cluster, prototype=host_pt)
     host.config = gen_config()
     host.save()
@@ -224,14 +254,14 @@ def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements
     )
 
 
-def gen_config(config: dict = None, attr: dict = None):
+def gen_config(config: dict = None, attr: dict = None) -> ObjectConfig:
     """Generate config, creating `ObjectConfig` object and `ConfigLog` object"""
     if config is None:
         config = {}
     if attr is None:
         attr = {}
-    oc = models.ObjectConfig.objects.create(current=0, previous=0)
-    cl = models.ConfigLog.objects.create(obj_ref=oc, description='init', config=config, attr=attr)
+    oc = ObjectConfig.objects.create(current=0, previous=0)
+    cl = ConfigLog.objects.create(obj_ref=oc, description="init", config=config, attr=attr)
     oc.current = cl.id
     oc.save()
     return oc

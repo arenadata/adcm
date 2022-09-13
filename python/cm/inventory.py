@@ -13,7 +13,6 @@
 import json
 import os
 from itertools import chain
-from typing import Optional
 
 from django.contrib.contenttypes.models import ContentType
 
@@ -159,7 +158,7 @@ def get_provider_variables(provider: HostProvider, provider_config: dict = None)
     }
 
 
-def get_group_config(obj, host: Host) -> Optional[dict]:
+def get_group_config(obj, host: Host) -> dict | None:
     group = host.group_config.filter(
         object_id=obj.id, object_type=ContentType.objects.get_for_model(obj)
     ).last()
