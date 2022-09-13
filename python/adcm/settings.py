@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "social_django",
     "guardian",
+    "silk",
     "adwp_events",
     "cm.apps.CmConfig",
 ]
