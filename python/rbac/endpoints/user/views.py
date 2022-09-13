@@ -34,6 +34,7 @@ class UserViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
         "email",
         "is_superuser",
         "built_in",
+        "is_active",
     )
     ordering_fields = ("id", "username", "first_name", "last_name", "email", "is_superuser")
     search_fields = ("username", "first_name", "last_name", "email")

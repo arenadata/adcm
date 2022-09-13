@@ -162,7 +162,7 @@ class TestUser(BaseTestCase):
         prev_first_name = self.test_user.first_name
         prev_is_superuser = self.test_user.is_superuser
         new_test_first_name = "test_first_name"
-        self.client.put(
+        response = self.client.put(
             path=reverse(self.detail_name, kwargs={"pk": self.test_user.pk}),
             data={
                 "username": self.test_user_username,

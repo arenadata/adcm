@@ -12,23 +12,24 @@
 
 """Test complex scenarios with ADCM LDAP integration"""
 
-from typing import Tuple, Set
+from typing import Set, Tuple
 
 import allure
 import pytest
-from adcm_client.objects import User, Group, ADCMClient
+from adcm_client.objects import ADCMClient, Group, User
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import random_string
 
+from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import (
-    get_ldap_user_from_adcm,
-    get_ldap_group_from_adcm,
-    check_existing_groups,
-    check_existing_users,
-    login_should_succeed,
-    login_should_fail,
     DEFAULT_LOCAL_USERS,
     SYNC_ACTION_NAME,
+    check_existing_groups,
+    check_existing_users,
+    get_ldap_group_from_adcm,
+    get_ldap_user_from_adcm,
+    login_should_fail,
+    login_should_succeed,
 )
 
 # pylint: disable=redefined-outer-name
@@ -36,7 +37,7 @@ from tests.functional.ldap_auth.utils import (
 UserInfo = dict
 GroupInfo = dict
 
-pytestmark = [pytest.mark.ldap()]
+pytestmark = [pytest.mark.ldap(), only_clean_adcm]
 
 
 @pytest.fixture()
@@ -91,6 +92,7 @@ def test_users_in_groups_sync(
     """
     Test ADCM/LDAP users in groups manipulation and sync.
     """
+    sdk_client_fs.adcm().config_set_diff({'ldap_integration': {'sync_interval': 0}})
     adcm_user_1, adcm_user_2 = two_adcm_users
     adcm_user_names = {adcm_user_1.username, adcm_user_2.username, *DEFAULT_LOCAL_USERS}
     adcm_group_1, adcm_group_2 = two_adcm_groups
@@ -144,15 +146,12 @@ def test_users_in_groups_sync(
         check_existing_groups(
             sdk_client_fs, {group_info_1['name'], group_info_2['name']}, {adcm_group_1.name, adcm_group_2.name}
         )
-        check_existing_users(sdk_client_fs, {user_info_1['name']}, adcm_user_names)
-        # Uncomment after ADCM-2944
-        # check_existing_users(sdk_client_fs, {user_info_1['name'], user_info_2['name']}, adcm_user_names)
+        check_existing_users(sdk_client_fs, {user_info_1['name'], user_info_2['name']}, adcm_user_names)
+        assert not get_ldap_user_from_adcm(sdk_client_fs, user_info_2['name']).is_active, 'User should be deactivated'
         _check_users_in_group(ldap_group_1)
         _check_users_in_group(adcm_group_1, adcm_user_1, ldap_user_1)
         _check_users_in_group(ldap_group_2, ldap_user_1)
-        _check_users_in_group(adcm_group_2, adcm_user_2)
-        # Uncomment after ADCM-2944
-        # _check_users_in_group(adcm_group_2, adcm_user_2, ldap_user_2)
+        _check_users_in_group(adcm_group_2, adcm_user_2, ldap_user_2)
     with allure.step('Check login permissions'):
         _check_login_succeed(sdk_client_fs, user_info_1)
         login_should_fail(
@@ -161,11 +160,9 @@ def test_users_in_groups_sync(
     with allure.step('Add "free" LDAP user to a group, sync and check results'):
         ldap_ad.add_user_to_group(user_info_3['dn'], group_info_2['dn'])
         _run_sync(sdk_client_fs)
-        check_existing_users(sdk_client_fs, {user_info_1['name'], user_info_3['name']}, adcm_user_names)
-        # Uncomment after ADCM-2944
-        # check_existing_users(
-        #     sdk_client_fs, {user_info_1['name'], user_info_2['name'], user_info_3['name']}, adcm_user_names
-        # )
+        check_existing_users(
+            sdk_client_fs, {user_info_1['name'], user_info_2['name'], user_info_3['name']}, adcm_user_names
+        )
         ldap_user_3 = get_ldap_user_from_adcm(sdk_client_fs, user_info_3['name'])
         _check_users_in_group(ldap_group_1)
         _check_users_in_group(ldap_group_2, ldap_user_1, ldap_user_3)

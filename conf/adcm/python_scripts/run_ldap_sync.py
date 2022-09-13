@@ -142,7 +142,7 @@ class SyncLDAP:
             sys.stdout.write(f"Delete this group: {group}\n")
             group.delete()
         msg = "Sync of groups ended successfully."
-        msg += f"Couldn\'t synchronize groups: {error_names}\n" if error_names else ""
+        msg = f"{msg} Couldn't synchronize groups: {error_names}" if error_names else f"{msg}"
         logger.debug(msg)
 
     def _sync_ldap_users(self, ldap_users: list) -> None:
@@ -186,37 +186,29 @@ class SyncLDAP:
                     if updated:
                         sys.stdout.write("Updated user: %s\n" % username)
 
-                # Remove condition after ADCM-2944
-                if not user.is_active:
-                    sys.stdout.write(f"Delete this user and deactivate his session: {user}\n")
-                    user.delete()
+                user.save()
+                ldap_usernames.add(username)
+
+                if not self._group_search_configured:
+                    self._process_user_ldap_groups(user, cname)
                 else:
-                    user.save()
-                    ldap_usernames.add(username)
+                    for group in ldap_attributes.get("memberof", []):
+                        name = group.split(",")[0][3:]
+                        try:
+                            group = Group.objects.get(name=f"{name} [ldap]", built_in=False,
+                                                      type=OriginType.LDAP)
+                            group.user_set.add(user)
+                            sys.stdout.write(f"Add user {user} to group {group}\n")
+                        except (IntegrityError, DataError) as e:
+                            sys.stdout.write("Error getting group %s: %s\n" % (name, e))
 
-                    if not self._group_search_configured:
-                        self._process_user_ldap_groups(user, cname)
-                    else:
-                        for group in ldap_attributes.get("memberof", []):
-                            name = group.split(",")[0][3:]
-                            try:
-                                group = Group.objects.get(name=f"{name} [ldap]", built_in=False,
-                                                          type=OriginType.LDAP)
-                                group.user_set.add(user)
-                                sys.stdout.write(f"Add user {user} to group {group}\n")
-                            except (IntegrityError, DataError) as e:
-                                sys.stdout.write("Error getting group %s: %s\n" % (name, e))
-
-        django_usernames = set(User.objects.filter(type=OriginType.LDAP).values_list("username", flat=True))
+        django_usernames = set(User.objects.filter(type=OriginType.LDAP, is_active=True).values_list("username", flat=True))
         for username in django_usernames - ldap_usernames:
             user = User.objects.get(username__iexact=username)
-            sys.stdout.write(f"Delete this user and deactivate his session: {user}\n")
+            sys.stdout.write(f"Deactivate user and his session: {user}\n")
             user.delete()
-            # Uncomment after ADCM-2944
-            # user.is_active = False
-            # user.save()
         msg = "Sync of users ended successfully."
-        msg += f"Couldn\'t synchronize users: {error_names}\n" if error_names else ""
+        msg = f"{msg} Couldn't synchronize users: {error_names}" if error_names else f"{msg}"
         logger.debug(msg)
 
     def _process_user_ldap_groups(self, user: User, user_dn: str) -> None:
