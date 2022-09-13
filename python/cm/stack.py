@@ -159,7 +159,7 @@ def process_config_group_customization(actual_config: dict, obj: StagePrototype)
             try:
                 sp = StagePrototype.objects.get(type="cluster")
             except StagePrototype.DoesNotExist:
-                log.debug("Can't find cluster for service %s", obj)
+                logger.debug("Can't find cluster for service %s", obj)
         if obj.type == "component":
             sp = obj.parent
         if sp:
