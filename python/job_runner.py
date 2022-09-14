@@ -191,6 +191,8 @@ def run_python(job):
 
 
 def switch_hc(task, action):
+    if task.task_object.prototype.type != "cluster":
+        return
     cluster = task.task_object
     old_hc = get_hc(cluster)
     new_hc = []
