@@ -8,7 +8,7 @@ import {
   ContentChild,
   ContentChildren,
   HostBinding,
-  Input, OnChanges, OnDestroy,
+  Input, OnChanges,
   QueryList, SimpleChanges,
   TemplateRef,
   ViewChild,
@@ -31,7 +31,7 @@ import { CONFIG_FIELD, FieldComponent } from '@app/shared/configuration/field/fi
   `,
   styleUrls: ['./attribute-provider.component.scss'],
 })
-export class ConfigFieldAttributeProviderComponent implements OnChanges, AfterViewInit, OnDestroy {
+export class ConfigFieldAttributeProviderComponent implements OnChanges, AfterViewInit {
 
   template: TemplateRef<any>;
 
@@ -86,9 +86,5 @@ export class ConfigFieldAttributeProviderComponent implements OnChanges, AfterVi
     } else {
       this.template = this.field.template;
     }
-  }
-
-  ngOnDestroy() {
-    this.attributesSrv.removeAttributes(this.uniqId);
   }
 }
