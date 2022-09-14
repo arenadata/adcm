@@ -10,16 +10,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test audit of cluster objects' updates: imports, binds, etc."""
+"""Test audit of provider's objects and cluster objects' updates: imports, binds, etc."""
 
 from typing import Optional, Tuple
 
 import allure
 import pytest
 import requests
-from adcm_client.objects import ADCMClient, Bundle, Cluster
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Host
 
-from tests.functional.audit.conftest import BUNDLES_DIR, NEW_USER, check_failed, check_succeed, make_auth_header
+from tests.functional.audit.conftest import (
+    BUNDLES_DIR,
+    NEW_USER,
+    check_failed,
+    check_succeed,
+    make_auth_header,
+    parametrize_audit_scenario_parsing,
+)
 from tests.functional.rbac.conftest import BusinessRoles, create_policy
 from tests.library.audit.checkers import AuditLogChecker
 
@@ -357,3 +364,103 @@ class TestImportAudit:
     @allure.step('Remove bind via DELETE {url}')
     def _unbind(self, url: str, **kwargs) -> requests.Response:
         return requests.delete(url, **kwargs)
+
+
+class TestObjectUpdates:
+    """Test cluster and host objects updates"""
+
+    client: ADCMClient
+    new_user_creds: dict
+    admin_creds: dict
+
+    pytestmark = [pytest.mark.usefixtures('init')]
+
+    @pytest.fixture()
+    def init(self, sdk_client_fs, unauthorized_creds) -> None:
+        """Bind all required "context" to an instance"""
+        self.client = sdk_client_fs
+        self.admin_creds = make_auth_header(sdk_client_fs)
+        self.new_user_creds = unauthorized_creds
+
+    @parametrize_audit_scenario_parsing('objects_update.yaml', NEW_USER)
+    @pytest.mark.parametrize("method", ["put", "patch"])  # pylint: disable-next=too-many-arguments
+    def test_update_objects(
+        self, method: str, bundle_with_license, build_policy, audit_log_checker, generic_provider, sdk_client_fs
+    ):
+        """Test update of cluster/host/host in cluster"""
+        old_cluster_name, new_cluster_name = "Cluster Name", "New Cluster Name"
+        old_fqdn, new_fqdn = "old-fqdn", "new-fqdn"
+        bundle_with_license.license_accept()
+
+        with allure.step("Create host and update it"):
+            host = generic_provider.host_create(old_fqdn)
+            build_policy(BusinessRoles.ViewHostConfigurations, host)
+            self._update_host_object(host, new_fqdn, method)
+        with allure.step("Create cluster and update it"):
+            cluster = bundle_with_license.cluster_create(old_cluster_name)
+            build_policy(BusinessRoles.ViewClusterConfigurations, cluster)
+            self._update_cluster_object(cluster, new_cluster_name, method)
+        with allure.step("Add host to cluster and update host"):
+            cluster.host_add(host)
+            host.reread()
+            self._update_host_in_cluster(host, method)
+
+        audit_log_checker.set_user_map(sdk_client_fs)
+        audit_log_checker.check(sdk_client_fs.audit_operation_list())
+
+    def _update_cluster_object(self, cluster: Cluster, new_name: str, method: str):
+        url = f'{self.client.url}/api/v1/cluster/{cluster.id}/'
+        with allure.step(f'Deny updating cluster {method.upper()} {url}'):
+            check_failed(getattr(requests, method)(url, headers=self.new_user_creds), exact_code=403)
+        body = {"name": new_name, "description": f"Changed to {new_name}"}
+        with allure.step(f'Update cluster via {method.upper()} {url} with body: {body}'):
+            check_succeed(getattr(requests, method)(url, json=body, headers=self.admin_creds))
+        body = {"name": "____"}
+        with allure.step(f'Fail updating cluster via {method.upper()} {url} with body: {body}'):
+            check_failed(getattr(requests, method)(url, json=body, headers=self.admin_creds), exact_code=400)
+
+    def _update_host_object(self, host: Host, new_fqdn: str, method: str):
+        url = f'{self.client.url}/api/v1/host/{host.id}/'
+        with allure.step(f'Deny updating host {method.upper()} {url}'):
+            check_failed(getattr(requests, method)(url, headers=self.new_user_creds), exact_code=403)
+        body = {
+            "fqdn": new_fqdn,
+            "description": f"Changed to {new_fqdn}",
+            **(
+                {
+                    "prototype_id": host.prototype_id,
+                    "provider_id": host.provider_id,
+                    "maintenance_mode": host.maintenance_mode,
+                }
+                if method == "put"
+                else {}
+            ),
+        }
+        with allure.step(f'Update host via {method.upper()} {url} with body: {body}'):
+            check_succeed(getattr(requests, method)(url, json=body, headers=self.admin_creds))
+        body = {**body, "maintenance_mode": "on"}
+        with allure.step(f'Fail updating host via {method.upper()} {url} with body: {body}'):
+            check_failed(getattr(requests, method)(url, json=body, headers=self.admin_creds), exact_code=409)
+
+    def _update_host_in_cluster(self, host: Host, method: str):
+        url = f'{self.client.url}/api/v1/cluster/{host.cluster_id}/host/{host.id}/'
+        with allure.step(f'Deny updating host {method.upper()} {url}'):
+            check_failed(getattr(requests, method)(url, headers=self.new_user_creds), exact_code=403)
+        body = {
+            "fqdn": host.fqdn,
+            "description": host.description,
+            **(
+                {
+                    "prototype_id": host.prototype_id,
+                    "provider_id": host.provider_id,
+                    "maintenance_mode": "on",
+                }
+                if method == "put"
+                else {}
+            ),
+        }
+        with allure.step(f'Update host via {method.upper()} {url} with body: {body}'):
+            check_succeed(getattr(requests, method)(url, json=body, headers=self.admin_creds))
+        body = {**body, "fqdn": "hehehee"}
+        with allure.step(f'Fail updating host via {method.upper()} {url} with body: {body}'):
+            check_failed(getattr(requests, method)(url, json=body, headers=self.admin_creds), exact_code=409)

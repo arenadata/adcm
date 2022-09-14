@@ -340,11 +340,14 @@ class TestHostAPI(BaseTestCase):
             },
             content_type=APPLICATION_JSON,
         )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json()["code"], "WRONG_NAME")
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "HOST_CONFLICT")
         self.assertEqual(response.json()["desc"], "duplicate host")
 
-    def test_host_update_duplicated_fqdn_fail(self):
+    def test_duplicated_host_fqdn(self):
         fqdn = "another"
         Host.objects.create(
             fqdn=fqdn,
@@ -354,7 +357,7 @@ class TestHostAPI(BaseTestCase):
         )
 
         response = self.client.put(
-            path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+            reverse("host-details", kwargs={"host_id": self.host.pk}),
             data={
                 "fqdn": fqdn,
                 "provider_id": self.host.provider.pk,
@@ -368,7 +371,7 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.json()["desc"], "duplicate host")
 
         response = self.client.patch(
-            path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+            reverse("host-details", kwargs={"host_id": self.host.pk}),
             data={
                 "fqdn": fqdn,
                 "provider_id": self.host.provider.pk,
