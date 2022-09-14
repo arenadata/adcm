@@ -18,30 +18,30 @@ import os
 from collections import defaultdict
 
 from ansible.errors import AnsibleError
-from ansible.plugins.action import ActionBase
 from ansible.utils.vars import merge_hash
 
-import cm
+from ansible.plugins.action import ActionBase
+from cm import config
+from cm.adcm_config import set_object_config
 from cm.api import add_hc, get_hc
 from cm.api_context import ctx
-from cm.adcm_config import set_object_config
-from cm import config
-from cm.errors import raise_AdcmEx as err
-from cm.status_api import post_event
+from cm.errors import AdcmEx
+from cm.errors import raise_adcm_ex as err
 from cm.models import (
+    Action,
     ADCMEntity,
     CheckLog,
     Cluster,
     ClusterObject,
     GroupCheckLog,
-    LogStorage,
-    ServiceComponent,
-    HostProvider,
     Host,
-    Prototype,
-    Action,
+    HostProvider,
     JobLog,
+    LogStorage,
+    Prototype,
+    ServiceComponent,
 )
+from cm.status_api import post_event
 
 MSG_NO_CONFIG = (
     "There are no job related vars in inventory. It's mandatory for that module to have some"
@@ -129,7 +129,7 @@ class ContextActionModule(ActionBase):
     def _wrap_call(self, func, *args):
         try:
             func(*args)
-        except cm.errors.AdcmEx as e:
+        except AdcmEx as e:
             return {'failed': True, 'msg': e.msg}
         return {'changed': True}
 

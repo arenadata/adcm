@@ -17,14 +17,14 @@ from typing import Iterable
 import requests
 
 from cm.config import STATUS_SECRET_KEY
-from cm.logger import log
+from cm.logger import logger
 from cm.models import (
     ADCMEntity,
-    ServiceComponent,
-    HostComponent,
-    ClusterObject,
     Cluster,
+    ClusterObject,
     Host,
+    HostComponent,
+    ServiceComponent,
 )
 
 API_URL = "http://localhost:8020/api/v1"
@@ -73,13 +73,13 @@ def api_request(method, url, data=None):
     try:
         request = requests.request(method, url, **kwargs)
         if request.status_code not in (200, 201):
-            log.error("%s %s error %d: %s", method, url, request.status_code, request.text)
+            logger.error("%s %s error %d: %s", method, url, request.status_code, request.text)
         return request
     except requests.exceptions.Timeout:
-        log.error("%s request to %s timed out", method, url)
+        logger.error("%s request to %s timed out", method, url)
         return None
     except requests.exceptions.ConnectionError:
-        log.error("%s request to %s connection failed", method, url)
+        logger.error("%s request to %s connection failed", method, url)
         return None
 
 
@@ -95,7 +95,7 @@ def post_event(event, obj_type, obj_id, det_type=None, det_val=None):
             'details': details,
         },
     }
-    log.debug('post_event %s', data)
+    logger.debug('post_event %s', data)
     return api_request('post', '/event/', data)
 
 
@@ -111,7 +111,7 @@ def set_obj_state(obj_type, obj_id, state):
     if obj_type == 'adcm':
         return None
     if obj_type not in ('cluster', 'service', 'host', 'provider', 'component'):
-        log.error('Unknown object type: "%s"', obj_type)
+        logger.error('Unknown object type: "%s"', obj_type)
         return None
     return post_event('change_state', obj_type, obj_id, 'state', state)
 
@@ -120,7 +120,7 @@ def change_obj_multi_state(obj_type, obj_id, multi_state):
     if obj_type == 'adcm':
         return None
     if obj_type not in ('cluster', 'service', 'host', 'provider', 'component'):
-        log.error('Unknown object type: "%s"', obj_type)
+        logger.error('Unknown object type: "%s"', obj_type)
         return None
     return post_event('change_state', obj_type, obj_id, 'multi_state', multi_state)
 

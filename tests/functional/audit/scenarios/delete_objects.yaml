@@ -1,0 +1,135 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+settings:
+  process-type: sequence
+  start-from-first: matched
+
+operations:
+  # denied
+  - delete: &cluster
+      what:
+        type: cluster
+        name: cluster
+    result: denied
+    username: {{ username }}
+  - delete: &provider
+      what:
+        type: provider
+        name: provider
+    result: denied
+    username: {{ username }}
+  - delete: &host-1
+      what:
+        type: host
+        name: host-1
+    result: denied
+    username: {{ username }}
+  - delete: &bundle
+      what:
+        type: bundle
+    result: denied
+    username: {{ username }}
+  - delete: *bundle
+    result: denied
+    username: {{ username }}
+  - delete: &user
+      what:
+        type: user
+        name: newuser
+    result: denied
+    username: {{ username }}
+  - delete: &group
+      what:
+        type: group
+        name: groupforU [local]
+    result: denied
+    username: {{ username }}
+  - delete: &role
+      what:
+        type: role
+        name: newrole
+    result: denied
+    username: {{ username }}
+  - delete: &policy
+      what:
+        type: policy
+        name: newpolicy
+    result: denied
+    username: {{ username }}
+  - delete: &host-2
+      what:
+        type: host
+        name: host-2
+    result: denied
+    username: {{ username }}
+  - delete: &cluster-group
+      <<: *cluster
+      how:
+        operation: delete-group-config
+        name: cluster-group
+    result: denied
+    username: {{ username }}
+  - delete: &service-group
+      what:
+        type: service
+        name: cluster/service
+      how:
+        operation: delete-group-config
+        name: service-group
+    result: denied
+    username: {{ username }}
+  - delete: &component-group
+      what:
+        type: component
+        name: cluster/service/component
+      how:
+        operation: delete-group-config
+        name: component-group
+    result: denied
+    username: {{ username }}
+  # failed
+  - delete: *provider
+    result: fail
+  - delete: *host-1
+    result: fail
+  - delete: &cluster_bundle
+      what:
+        type: bundle
+        name: cluster
+    result: fail
+  - delete: &provider_bundle
+      what:
+        type: bundle
+        name: provider
+    result: fail
+  - delete: *host-2
+    result: fail
+  - delete:
+      what:
+        type: role
+        name: {{ built_in_role }}
+    result: fail
+  # succeed
+  - delete: *cluster-group
+  - delete: *service-group
+  - delete: *component-group
+  - delete: *cluster
+  - delete: *host-2
+  - delete: *host-1
+  - delete: *provider
+  - delete: *cluster_bundle
+  - delete: *provider_bundle
+  - delete: *user
+  - delete: *group
+  - delete: *role
+  - delete: *policy

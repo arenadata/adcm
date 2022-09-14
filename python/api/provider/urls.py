@@ -10,22 +10,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path, include
-from . import views
+from django.urls import include, path
+
+from api.provider.views import (
+    DoProviderUpgrade,
+    ProviderDetail,
+    ProviderList,
+    ProviderUpgrade,
+    ProviderUpgradeDetail,
+)
 
 # fmt: off
 urlpatterns = [
-    path('', views.ProviderList.as_view(), name='provider'),
+    path('', ProviderList.as_view(), name='provider'),
     path('<int:provider_id>/', include([
-        path('', views.ProviderDetail.as_view(), name='provider-details'),
+        path('', ProviderDetail.as_view(), name='provider-details'),
         path('host/', include('api.host.provider_urls')),
         path('action/', include('api.action.urls'), {'object_type': 'provider'}),
         path('config/', include('api.config.urls'), {'object_type': 'provider'}),
         path('upgrade/', include([
-            path('', views.ProviderUpgrade.as_view(), name='provider-upgrade'),
+            path('', ProviderUpgrade.as_view(), name='provider-upgrade'),
             path('<int:upgrade_id>/', include([
-                path('', views.ProviderUpgradeDetail.as_view(), name='provider-upgrade-details'),
-                path('do/', views.DoProviderUpgrade.as_view(), name='do-provider-upgrade'),
+                path('', ProviderUpgradeDetail.as_view(), name='provider-upgrade-details'),
+                path('do/', DoProviderUpgrade.as_view(), name='do-provider-upgrade'),
             ])),
         ])),
     ])),

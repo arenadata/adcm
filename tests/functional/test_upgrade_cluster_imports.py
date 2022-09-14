@@ -44,7 +44,7 @@ def test_upgrade_cluster_with_import(sdk_client_fs: ADCMClient):
         service_config_before = service.config()
     with allure.step('Create cluster for upgrade with imports'):
         bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_with_import'))
-        cluster_import = bundle_import.cluster_create("cluster_import")
+        cluster_import = bundle_import.cluster_create("cluster import")
     bind_service_and_cluster(cluster_import, service, cluster)
     with allure.step('Upgrade cluster'):
         upgr = cluster.upgrade(name='upgrade to 1.6')
@@ -78,7 +78,7 @@ def test_upgrade_cluster_with_export(sdk_client_fs: ADCMClient):
     with allure.step('Create cluster for upgrade with imports. Load upgradable bundle with import'):
         bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgrade_cluster_with_import'))
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_with_import'))
-        cluster_import = bundle_import.cluster_create("cluster_import")
+        cluster_import = bundle_import.cluster_create("cluster import")
     bind_service_and_cluster(cluster_import, service, cluster)
     with allure.step('Upgrade cluster with import to 1.6'):
         upgr = cluster_import.upgrade(name='upgrade to 1.6')
@@ -110,7 +110,7 @@ def test_incorrect_import_strict_version(sdk_client_fs: ADCMClient, path):
         service = cluster.service_add(name="hadoop")
     with allure.step('Create upgradable cluster with import'):
         bundle_import_correct = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_with_correct_import'))
-        cluster_import = bundle_import_correct.cluster_create("cluster_import")
+        cluster_import = bundle_import_correct.cluster_create("cluster import")
     bind_service_and_cluster(cluster_import, service, cluster)
     with allure.step('Upgrade cluster with import with error'):
         upgr = cluster_import.upgrade(name='upgrade to 1.6')
@@ -138,7 +138,7 @@ def test_incorrect_import_version(sdk_client_fs: ADCMClient, path):
         bundle_import_correct = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_with_correct_import'))
         cluster = bundle.cluster_create("test")
         service = cluster.service_add(name="hadoop")
-        cluster_import = bundle_import_correct.cluster_create("cluster_import")
+        cluster_import = bundle_import_correct.cluster_create("cluster import")
     bind_service_and_cluster(cluster_import, service, cluster)
     with allure.step('Upgrade cluster with import to 1.6 with error'):
         upgr = cluster_import.upgrade(name='upgrade to 1.6')
@@ -163,7 +163,7 @@ def test_upgrade_cluster_without_service_config_in_import(sdk_client_fs: ADCMCli
         bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_without_service'))
         cluster = bundle.cluster_create("test")
         service = cluster.service_add(name="hadoop")
-        cluster_import = bundle_import.cluster_create("cluster_import")
+        cluster_import = bundle_import.cluster_create("cluster import")
     with allure.step('Bind service from cluster with export to cluster with import'):
         cluster_import.bind(service)
         cluster_import.bind(cluster)
@@ -186,7 +186,7 @@ def test_upgrade_cluster_with_new_configuration_variables(sdk_client_fs: ADCMCli
         service = cluster.service_add(name="hadoop")
         cluster_config_before = cluster.config()
         service_config_before = service.config()
-        cluster_import = bundle_import.cluster_create("cluster_import")
+        cluster_import = bundle_import.cluster_create("cluster import")
     bind_service_and_cluster(cluster_import, service, cluster)
     with allure.step('Upgrade cluster with export'):
         upgr = cluster.upgrade(name='upgrade to 1.6')

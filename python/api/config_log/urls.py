@@ -12,7 +12,7 @@
 
 from rest_framework.routers import DefaultRouter
 
-from .views import ConfigLogViewSet
+from api.config_log.views import ConfigLogViewSet
 
 router = DefaultRouter()
 router.register(r'', ConfigLogViewSet, basename='config-log')

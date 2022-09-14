@@ -17,16 +17,18 @@ import json
 import os
 import subprocess
 import sys
+
 from django.db import transaction
 
-import adcm.init_django  # DO NOT DELETE !!!
+import adcm.init_django  # pylint: disable=unused-import
 import cm.job
 from cm import config
 from cm.ansible_plugin import finish_check
+from cm.api import get_hc, save_hc
 from cm.errors import AdcmEx
-from cm.logger import log
-from cm.models import LogStorage, JobLog, Prototype, ServiceComponent
-from cm.status_api import Event
+from cm.logger import logger
+from cm.models import JobLog, LogStorage, Prototype, ServiceComponent
+from cm.status_api import Event, post_event
 from cm.upgrade import bundle_switch
 
 
@@ -78,14 +80,14 @@ def env_configuration(job_config):
     # Since older bundle versions may contain their own ansible.cfg
     if not os.path.exists(os.path.join(stack_dir, 'ansible.cfg')):
         env = set_ansible_config(env, job_id)
-        log.info('set ansible config for job:%s', job_id)
+        logger.info('set ansible config for job:%s', job_id)
     return env
 
 
 def post_log(job_id, log_type, log_name):
     l1 = LogStorage.objects.filter(job__id=job_id, type=log_type, name=log_name).first()
     if l1:
-        cm.status_api.post_event(
+        post_event(
             'add_job_log',
             'job',
             job_id,
@@ -112,11 +114,11 @@ def process_err_out_file(job_id, job_type):
 
 def start_subprocess(job_id, cmd, conf, out_file, err_file):
     event = Event()
-    log.info("job run cmd: %s", ' '.join(cmd))
+    logger.info("job run cmd: %s", ' '.join(cmd))
     proc = subprocess.Popen(cmd, env=env_configuration(conf), stdout=out_file, stderr=err_file)
     cm.job.set_job_status(job_id, config.Job.RUNNING, event, proc.pid)
     event.send_state()
-    log.info("run job #%s, pid %s", job_id, proc.pid)
+    logger.info("run job #%s, pid %s", job_id, proc.pid)
     ret = proc.wait()
     finish_check(job_id)
     ret = set_job_status(job_id, ret, proc.pid, event)
@@ -125,12 +127,12 @@ def start_subprocess(job_id, cmd, conf, out_file, err_file):
     out_file.close()
     err_file.close()
 
-    log.info("finish job subprocess #%s, pid %s, ret %s", job_id, proc.pid, ret)
+    logger.info("finish job subprocess #%s, pid %s, ret %s", job_id, proc.pid, ret)
     return ret
 
 
 def run_ansible(job_id):
-    log.debug("job_runner.py starts to run ansible job %s", job_id)
+    logger.debug("job_runner.py starts to run ansible job %s", job_id)
     conf = read_config(job_id)
     playbook = conf['job']['playbook']
     out_file, err_file = process_err_out_file(job_id, 'ansible')
@@ -189,8 +191,10 @@ def run_python(job):
 
 
 def switch_hc(task, action):
+    if task.task_object.prototype.type != "cluster":
+        return
     cluster = task.task_object
-    old_hc = cm.api.get_hc(cluster)
+    old_hc = get_hc(cluster)
     new_hc = []
     for hc in [*task.post_upgrade_hc_map, *old_hc]:
         if hc not in new_hc:
@@ -206,11 +210,11 @@ def switch_hc(task, action):
             hc['service_id'] = comp.service.id
     host_map, _ = cm.job.check_hostcomponentmap(cluster, action, new_hc)
     if host_map is not None:
-        cm.api.save_hc(cluster, host_map)
+        save_hc(cluster, host_map)
 
 
 def main(job_id):
-    log.debug("job_runner.py called as: %s", sys.argv)
+    logger.debug("job_runner.py called as: %s", sys.argv)
     job = JobLog.objects.get(id=job_id)
     job_type = job.sub_action.script_type if job.sub_action else job.action.script_type
     if job_type == 'internal':

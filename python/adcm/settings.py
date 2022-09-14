@@ -22,31 +22,30 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import json
-import os
-from os.path import dirname
+import sys
+from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = dirname(dirname(dirname(os.path.abspath(__file__))))
-CONF_DIR = BASE_DIR + "/data/conf/"
-SECRET_KEY_FILE = CONF_DIR + "/secret_key.txt"
-CONFIG_FILE = BASE_DIR + "/config.json"
+BASE_DIR = Path(__file__).absolute().parent.parent.parent
+CONF_DIR = BASE_DIR / "data" / "conf"
+SECRET_KEY_FILE = CONF_DIR / "secret_key.txt"
+CONFIG_FILE = BASE_DIR / "config.json"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
 # Load secret key from filesystem
-if os.path.exists(SECRET_KEY_FILE):
+if SECRET_KEY_FILE.is_file():
     with open(SECRET_KEY_FILE, encoding="utf_8") as f:
         SECRET_KEY = f.read().strip()
 else:
     # If we have no SECRET_KEY_FILE than we are running in some tricky fashion.
-    # In that case we will use random key every run. That is usefull for
+    # In that case we will use random key every run. That is useful for
     # manage.py calls during image build
     SECRET_KEY = get_random_secret_key()
 
-if os.path.exists(CONFIG_FILE):
+if CONFIG_FILE.is_file():
     with open(CONFIG_FILE, encoding="utf_8") as f:
         ADCM_VERSION = json.load(f)["version"]
 else:
@@ -60,7 +59,7 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-    "rbac",  # keep it above 'django.contrib.auth' in order to keep 'createsuperuser' working
+    "rbac",  # keep it above 'django.contrib.auth' in order to keep "createsuperuser" working
     "django_generate_secret_key",
     "django_filters",
     "django.contrib.auth",
@@ -77,6 +76,7 @@ INSTALLED_APPS = [
     "guardian",
     "adwp_events",
     "cm.apps.CmConfig",
+    "audit",
 ]
 
 MIDDLEWARE = [
@@ -85,6 +85,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "audit.middleware.AuditLoginMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -114,11 +115,7 @@ LOGIN_URL = "/api/v1/auth/login/"
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
-    "DEFAULT_PERMISSION_CLASSES": [
-        # "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
-        # "rest_framework.permissions.DjangoModelPermissions"
-        "rest_framework.permissions.IsAuthenticated"
-    ],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
@@ -140,22 +137,12 @@ REST_FRAMEWORK = {
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.path.join(BASE_DIR, "data/var/cluster.db"),
-        # "ENGINE": "django.db.backends.postgresql",
-        # "NAME": "adcm",
-        # "HOST": "localhost",
-        # "USER": "adcm",
-        # "PASSWORD": "adcm",
-        # "TEST": {
-        #     "NAME": os.path.join(BASE_DIR, "data/var/test.db"),
-        # },
+        "NAME": BASE_DIR / "data/var/cluster.db",
         "OPTIONS": {
             "timeout": 20,
         },
     },
 }
-# does not work for multi-table inherited model, but works fine as-is without user model swapping
-# AUTH_USER_MODEL = "rbac.User"
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
@@ -164,8 +151,6 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
-    # {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", },
-    # {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",},
     {
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
@@ -210,17 +195,17 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
-STATIC_ROOT = os.path.join(BASE_DIR, "wwwroot/static/")
+STATIC_ROOT = BASE_DIR / "wwwroot/static/"
 STATIC_URL = "/static/"
 
 STATICFILES_DIRS = (
     # Put strings here, like "/home/html/static"
-    # Don't forget to use absolute paths, not relative paths.
+    # Don"t forget to use absolute paths, not relative paths.
 )
 
 ADWP_EVENT_SERVER = {
     # path to json file with Event Server secret token
-    "SECRETS_FILE": os.path.join(BASE_DIR, "data/var/secrets.json"),
+    "SECRETS_FILE": BASE_DIR / "data/var/secrets.json",
     # URL of Event Server REST API
     "API_URL": "http://localhost:8020/api/v1",
 }
@@ -245,13 +230,18 @@ LOGGING = {
             "filters": ["require_debug_false"],
             "formatter": "adwp",
             "class": "logging.FileHandler",
-            "filename": os.path.join(BASE_DIR, "data/log/adcm_debug.log"),
+            "filename": BASE_DIR / "data/log/adcm_debug.log",
         },
         "adwp_file": {
             "level": "DEBUG",
             "formatter": "adwp",
             "class": "logging.FileHandler",
-            "filename": os.path.join(BASE_DIR, "data/log/adwp.log"),
+            "filename": BASE_DIR / "data/log/adwp.log",
+        },
+        "stdout": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,
         },
     },
     "loggers": {
@@ -276,7 +266,19 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": True,
         },
+        "audit": {
+            "handlers": ["stdout"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
     },
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+REGEX_HOST_FQDN = r"^[a-zA-z0-9][a-zA-z0-9\.-]*"
+
+CLUSTER_NAME_PATTERN = (
+    r"^[a-zA-Z0-9]"  # starts with latin letter (upper/lower case) or digit
+    r"[a-zA-Z0-9-\. ]*?"  # latin letters (upper/lower case), digits, hyphens, dots, whitespaces
+    r"[a-zA-Z0-9]$"  # ends with latin letter (upper/lower case) or digit
+)  # as a result of this pattern min_length = 2
