@@ -12,7 +12,6 @@
 
 from unittest.mock import Mock, patch
 
-from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 
 from adcm.tests.base import BaseTestCase
@@ -29,23 +28,13 @@ from cm.inventory import (
     prepare_job_inventory,
     process_config_and_attr,
 )
-from cm.models import (
-    Action,
-    Bundle,
-    Cluster,
-    ConfigLog,
-    GroupConfig,
-    Host,
-    HostProvider,
-    JobLog,
-    ObjectConfig,
-    Prototype,
-)
+from cm.models import Action, ConfigLog, Host, JobLog
 from cm.tests.utils import (
     gen_bundle,
     gen_cluster,
     gen_component,
     gen_config,
+    gen_group,
     gen_host,
     gen_host_component,
     gen_prototype,
@@ -58,14 +47,9 @@ from cm.tests.utils import (
 class TestInventory(BaseTestCase):
     def setUp(self):
         super().setUp()
-        self.object_config = ObjectConfig.objects.create(current=1, previous=1)
-        self.config_log = ConfigLog.objects.create(obj_ref=self.object_config, config="{}")
-
         self.cluster_bundle = gen_bundle()
         self.cluster_pt = gen_prototype(self.cluster_bundle, "cluster", "cluster")
-        self.cluster = gen_cluster(
-            prototype=self.cluster_pt, config=self.object_config, name="cluster"
-        )
+        self.cluster = gen_cluster(prototype=self.cluster_pt, config=gen_config(), name="cluster")
 
         self.provider_bundle = gen_bundle()
 
@@ -73,13 +57,7 @@ class TestInventory(BaseTestCase):
         self.host_pt = gen_prototype(self.provider_bundle, "host")
 
         self.provider = gen_provider(prototype=self.provider_pt)
-        self.host = gen_host(self.provider, prototype=self.host_pt, cluster=self.cluster)
-
-    @staticmethod
-    def create_group(name, object_id, model_name):
-        return GroupConfig.objects.create(
-            object_id=object_id, object_type=ContentType.objects.get(model=model_name), name=name
-        )
+        self.host = gen_host(self.provider, prototype=self.host_pt)
 
     @patch("cm.inventory.process_config")
     @patch("cm.inventory.get_prototype_config")
@@ -99,8 +77,9 @@ class TestInventory(BaseTestCase):
     @patch("cm.inventory.process_config_and_attr")
     def test_get_obj_config(self, mock_process_config_and_attr):
         get_obj_config(self.cluster)
+        config_log = ConfigLog.objects.get(id=self.cluster.config.current)
         mock_process_config_and_attr.assert_called_once_with(
-            self.cluster, self.config_log.config, self.config_log.attr
+            self.cluster, config_log.config, config_log.attr
         )
 
     @patch("cm.inventory.get_import")
@@ -113,9 +92,9 @@ class TestInventory(BaseTestCase):
             "cluster": {
                 "config": {},
                 "edition": "community",
-                "name": "",
+                "name": self.cluster.name,
                 "id": 1,
-                "version": "2.2",
+                "version": "1.0.0",
                 "state": "created",
                 "multi_state": [],
                 "before_upgrade": {"state": None},
@@ -135,9 +114,9 @@ class TestInventory(BaseTestCase):
         test_config = {
             "provider": {
                 "config": {},
-                "name": "",
+                "name": self.provider.name,
                 "id": 1,
-                "host_prototype_id": 1,
+                "host_prototype_id": 3,
                 "state": "created",
                 "multi_state": [],
                 "before_upgrade": {"state": None},
@@ -184,6 +163,7 @@ class TestInventory(BaseTestCase):
     @patch("cm.inventory.get_provider_hosts")
     @patch("cm.inventory.get_hosts")
     def test_get_host(self, mock_get_hosts, mock_get_provider_hosts):
+        self.maxDiff = None
         mock_get_hosts.return_value = []
         mock_get_provider_hosts.return_value = {"PROVIDER": {"hosts": [], "vars": []}}
 
@@ -194,9 +174,9 @@ class TestInventory(BaseTestCase):
                 "vars": {
                     "provider": {
                         "config": {},
-                        "name": "",
+                        "name": self.provider.name,
                         "id": 1,
-                        "host_prototype_id": 1,
+                        "host_prototype_id": 3,
                         "state": "created",
                         "multi_state": [],
                         "before_upgrade": {"state": None},
@@ -232,9 +212,9 @@ class TestInventory(BaseTestCase):
                         "vars": {
                             "cluster": {
                                 "config": {},
-                                "name": "",
+                                "name": "cluster",
                                 "id": 1,
-                                "version": "2.2",
+                                "version": "1.0.0",
                                 "edition": "community",
                                 "state": "created",
                                 "multi_state": [],
@@ -250,11 +230,17 @@ class TestInventory(BaseTestCase):
             "all": {
                 "children": {
                     "HOST": {
-                        "hosts": {"": {"adcm_hostid": 1, "state": "created", "multi_state": []}},
+                        "hosts": {
+                            self.host.fqdn: {
+                                "adcm_hostid": 1,
+                                "state": "created",
+                                "multi_state": [],
+                            }
+                        },
                         "vars": {
                             "provider": {
                                 "config": {},
-                                "name": "",
+                                "name": self.provider.name,
                                 "id": 1,
                                 "host_prototype_id": self.host_pt.id,
                                 "state": "created",
@@ -271,7 +257,11 @@ class TestInventory(BaseTestCase):
                 "children": {
                     "PROVIDER": {
                         "hosts": {
-                            "": {"adcm_hostid": 1, "state": "created", "multi_state": []},
+                            self.host.fqdn: {
+                                "adcm_hostid": 1,
+                                "state": "created",
+                                "multi_state": [],
+                            },
                             "h2": {"adcm_hostid": 2, "state": "created", "multi_state": []},
                         }
                     }
@@ -279,7 +269,7 @@ class TestInventory(BaseTestCase):
                 "vars": {
                     "provider": {
                         "config": {},
-                        "name": "",
+                        "name": self.provider.name,
                         "id": 1,
                         "host_prototype_id": self.host_pt.id,
                         "state": "created",
@@ -303,9 +293,6 @@ class TestInventory(BaseTestCase):
                 mock_dump.reset_mock()
 
     def test_host_vars(self):
-        object_config = ObjectConfig.objects.create(current=1, previous=1)
-        ConfigLog.objects.create(obj_ref=object_config, config={"some_string": "some_string"})
-
         service_pt_1 = gen_prototype(self.cluster_bundle, "service", "service_1")
         service_pt_2 = gen_prototype(self.cluster_bundle, "service", "service_2")
         component_pt_11 = gen_prototype(self.cluster_bundle, "component", "component_11")
@@ -327,7 +314,7 @@ class TestInventory(BaseTestCase):
                 field_type="string",
                 group_customization=True,
             )
-        update_obj_config(self.cluster.config, {"some_string": "some_string"})
+        update_obj_config(self.cluster.config, conf={"some_string": "some_string"}, attr={})
         self.service_1 = gen_service(
             self.cluster,
             prototype=service_pt_1,
@@ -354,22 +341,17 @@ class TestInventory(BaseTestCase):
             config=gen_config({"some_string": "some_string"}),
         )
 
-        provider_bundle = gen_bundle()
-
-        provider_pt = gen_prototype(provider_bundle, "provider")
-        host_pt = gen_prototype(provider_bundle, "host")
-
-        provider = gen_provider(prototype=provider_pt)
-        self.host = gen_host(provider, prototype=host_pt, cluster=self.cluster)
+        self.host.cluster = self.cluster
+        self.host.save()
         gen_host_component(self.component_11, self.host)
         gen_host_component(self.component_12, self.host)
         gen_host_component(self.component_21, self.host)
 
         groups = []
-        groups.append(self.create_group("cluster", self.cluster.id, "cluster"))
-        groups.append(self.create_group("service_1", self.service_1.id, "clusterobject"))
-        groups.append(self.create_group("service_2", self.service_2.id, "clusterobject"))
-        groups.append(self.create_group("component_1", self.component_11.id, "servicecomponent"))
+        groups.append(gen_group("cluster", self.cluster.id, "cluster"))
+        groups.append(gen_group("service_1", self.service_1.id, "clusterobject"))
+        groups.append(gen_group("service_2", self.service_2.id, "clusterobject"))
+        groups.append(gen_group("component_1", self.component_11.id, "servicecomponent"))
         for group in groups:
             group.hosts.add(self.host)
             update_obj_config(
