@@ -298,3 +298,71 @@ class TestHostAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "HOST_CONFLICT")
+
+    def test_update_host_correct_incorrect_fqdn(self):
+        incorrect_values = {
+            "a" * 254,
+            ".startwithdot",
+            "-startwithhypen",
+            "contain space",
+            "have!exclamation",
+        }
+        correct_values = {
+            "a" * 253,
+            "StartWithChar",
+            "0StartWithNumber99",
+            "EndWithDot.",
+            "Contain-Hyphen.Dot",
+        }
+        fqdn = self.host.fqdn
+        default_values = {
+            "provider_id": self.host.provider.pk,
+            "prototype_id": self.host.prototype.pk,
+            "maintenance_mode": self.host.maintenance_mode,
+        }
+        for value in incorrect_values:
+            with self.subTest("incorrect-put", fqdn=value):
+                response: Response = self.client.put(
+                    path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+                    data={"fqdn": value, **default_values},
+                    content_type=APPLICATION_JSON,
+                )
+                self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+                self.assertEqual(response.json()["code"], "HOST_CONFLICT")
+                self.host.refresh_from_db()
+                self.assertEqual(self.host.fqdn, fqdn)
+
+            with self.subTest("incorrect-patch", fqdn=value):
+                response: Response = self.client.patch(
+                    path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+                    data={"fqdn": value},
+                    content_type=APPLICATION_JSON,
+                )
+                self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+                self.assertEqual(response.json()["code"], "HOST_CONFLICT")
+                self.host.refresh_from_db()
+                self.assertEqual(self.host.fqdn, fqdn)
+
+        for value in correct_values:
+            with self.subTest("correct-put", fqdn=value):
+                response: Response = self.client.put(
+                    path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+                    data={"fqdn": value, **default_values},
+                    content_type=APPLICATION_JSON,
+                )
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.host.refresh_from_db()
+                self.assertEqual(self.host.fqdn, value)
+
+            self.host.fqdn = fqdn
+            self.host.save()
+            with self.subTest("correct-patch", fqdn=value):
+                response: Response = self.client.patch(
+                    path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+                    data={"fqdn": value},
+                    content_type=APPLICATION_JSON,
+                )
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.host.refresh_from_db()
+                self.assertEqual(self.host.fqdn, value)
