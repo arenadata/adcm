@@ -29,7 +29,7 @@ def service(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_export'))
     bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_import'))
     cluster = bundle.cluster_create("test")
-    cluster_import = bundle_import.cluster_create("cluster_import")
+    cluster_import = bundle_import.cluster_create("cluster import")
     service = cluster.service_add(name="hadoop")
     cluster_import.bind(service)
     return service
@@ -41,7 +41,7 @@ def service_import(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_export'))
     bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_service_import'))
     cluster = bundle.cluster_create("test")
-    cluster_import = bundle_import.cluster_create("cluster_import")
+    cluster_import = bundle_import.cluster_create("cluster import")
     service = cluster.service_add(name="hadoop")
     import_service = cluster_import.service_add(name='hadoop')
     import_service.bind(service)

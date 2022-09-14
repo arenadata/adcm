@@ -10,30 +10,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework import decorators
-from rest_framework import status
-from rest_framework.authentication import TokenAuthentication, SessionAuthentication
+from rest_framework import decorators, status
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.mixins import CreateModelMixin
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
-import cm.api
-import cm.bundle
 from api.action.serializers import StackActionSerializer
 from api.base_view import (
-    GenericUIView,
     DetailView,
-    PaginatedView,
+    GenericUIView,
     GenericUIViewSet,
     ModelPermOrReadOnlyForAuth,
+    PaginatedView,
 )
+from api.stack import filters, serializers
 from api.utils import check_obj
-from cm.models import Bundle, Prototype, Action
-from cm.models import PrototypeConfig, Upgrade, PrototypeExport
-from cm.models import PrototypeImport
-from . import serializers, filters
+from audit.utils import audit
+from cm.api import accept_license, get_license, load_host_map, load_service_map
+from cm.bundle import delete_bundle, load_bundle, update_bundle
+from cm.models import (
+    Action,
+    Bundle,
+    Prototype,
+    PrototypeConfig,
+    PrototypeExport,
+    PrototypeImport,
+    Upgrade,
+)
 
 
 class CsrfOffSessionAuthentication(SessionAuthentication):
@@ -47,6 +53,7 @@ class UploadBundle(GenericUIView):
     authentication_classes = (CsrfOffSessionAuthentication, TokenAuthentication)
     parser_classes = (MultiPartParser,)
 
+    @audit
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
@@ -61,14 +68,15 @@ class LoadBundle(CreateModelMixin, GenericUIViewSet):
 
     @decorators.action(methods=['put'], detail=False)
     def servicemap(self, request):
-        cm.api.load_service_map()
+        load_service_map()
         return Response(status=status.HTTP_200_OK)
 
     @decorators.action(methods=['put'], detail=False)
     def hostmap(self, request):
-        cm.api.load_host_map()
+        load_host_map()
         return Response(status=status.HTTP_200_OK)
 
+    @audit
     def create(self, request, *args, **kwargs):
         """
         post:
@@ -76,7 +84,7 @@ class LoadBundle(CreateModelMixin, GenericUIViewSet):
         """
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            bundle = cm.bundle.load_bundle(serializer.validated_data.get('bundle_file'))
+            bundle = load_bundle(serializer.validated_data.get('bundle_file'))
             srl = serializers.BundleSerializer(bundle, context={'request': request})
             return Response(srl.data)
         else:
@@ -112,9 +120,10 @@ class BundleDetail(DetailView):
     lookup_url_kwarg = 'bundle_id'
     error_code = 'BUNDLE_NOT_FOUND'
 
+    @audit
     def delete(self, request, *args, **kwargs):
         bundle = self.get_object()
-        cm.bundle.delete_bundle(bundle)
+        delete_bundle(bundle)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -122,12 +131,13 @@ class BundleUpdate(GenericUIView):
     queryset = Bundle.objects.all()
     serializer_class = serializers.BundleSerializer
 
+    @audit
     def put(self, request, bundle_id):
         """
         update bundle
         """
         bundle = check_obj(Bundle, bundle_id, 'BUNDLE_NOT_FOUND')
-        cm.bundle.update_bundle(bundle)
+        update_bundle(bundle)
         serializer = self.get_serializer(bundle)
         return Response(serializer.data)
 
@@ -140,7 +150,7 @@ class BundleLicense(GenericUIView):
 
     def get(self, request, bundle_id):
         bundle = check_obj(Bundle, bundle_id, 'BUNDLE_NOT_FOUND')
-        body = cm.api.get_license(bundle)
+        body = get_license(bundle)
         url = reverse('accept-license', kwargs={'bundle_id': bundle.id}, request=request)
         return Response({'license': bundle.license, 'accept': url, 'text': body})
 
@@ -149,9 +159,10 @@ class AcceptLicense(GenericUIView):
     queryset = Bundle.objects.all()
     serializer_class = serializers.LicenseSerializer
 
+    @audit
     def put(self, request, bundle_id):
         bundle = check_obj(Bundle, bundle_id, 'BUNDLE_NOT_FOUND')
-        cm.api.accept_license(bundle)
+        accept_license(bundle)
         return Response(status=status.HTTP_200_OK)
 
 

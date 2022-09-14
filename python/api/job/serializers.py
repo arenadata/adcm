@@ -16,15 +16,14 @@ import os
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
-import cm.job
-import cm.stack
-import cm.status_api
-from cm import config
-from cm.ansible_plugin import get_check_log
-from cm.errors import AdcmEx
-from cm.models import JobLog, Host, ClusterObject, ServiceComponent, get_object_cluster
-from api.utils import hlink
+from adcm.serializers import EmptySerializer
 from api.concern.serializers import ConcernItemSerializer
+from api.utils import hlink
+from cm.ansible_plugin import get_check_log
+from cm.config import RUN_DIR, Job
+from cm.errors import AdcmEx
+from cm.job import start_task
+from cm.models import ClusterObject, Host, JobLog, ServiceComponent, get_object_cluster
 
 
 def get_object_name(obj):
@@ -40,8 +39,8 @@ def get_job_objects(task):
     if not task.task_object:
         return None
 
-    def cook_obj(obj_type, obj_id, name):
-        return {'type': obj_type, 'id': obj_id, 'name': name}
+    def cook_obj(_obj_type, obj_id, name):
+        return {'type': _obj_type, 'id': obj_id, 'name': name}
 
     obj = task.task_object
     obj_type = obj.prototype.type
@@ -73,18 +72,22 @@ def get_job_objects(task):
                         resp.append(cook_obj('component', component.id, get_object_name(component)))
             else:
                 resp.append(cook_obj('provider', obj.provider.id, get_object_name(obj.provider)))
+
     return resp
 
 
 def get_task_selector(obj, action):
     if not obj:
         return None
+
     selector = {obj.prototype.type: obj.id}
     if obj.prototype.type == 'service':
         selector['cluster'] = obj.cluster.id
+
     if obj.prototype.type == 'component':
         selector['cluster'] = obj.cluster.id
         selector['service'] = obj.service.id
+
     if action and isinstance(obj, Host) and action.host_action:
         cluster = get_object_cluster(obj)
         if cluster:
@@ -99,6 +102,7 @@ def get_task_selector(obj, action):
             elif action.prototype.type == 'service':
                 service = ClusterObject.obj.get(cluster=cluster, prototype=action.prototype)
                 selector['service'] = service.id
+
     return selector
 
 
@@ -114,6 +118,7 @@ def get_job_display_name(self, obj):
 def get_action_url(self, obj):
     if not obj.action_id:
         return None
+
     return reverse(
         'action-details', kwargs={'action_id': obj.action_id}, request=self.context['request']
     )
@@ -124,7 +129,7 @@ class DataField(serializers.CharField):
         return value
 
 
-class JobAction(serializers.Serializer):
+class JobAction(EmptySerializer):
     name = serializers.CharField(read_only=True)
     display_name = serializers.CharField(read_only=True)
     prototype_id = serializers.IntegerField(read_only=True)
@@ -133,7 +138,7 @@ class JobAction(serializers.Serializer):
     prototype_version = serializers.CharField(read_only=True)
 
 
-class JobShort(serializers.Serializer):
+class JobShort(EmptySerializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     display_name = serializers.SerializerMethodField()
@@ -145,7 +150,7 @@ class JobShort(serializers.Serializer):
     get_display_name = get_job_display_name
 
 
-class TaskListSerializer(serializers.Serializer):
+class TaskListSerializer(EmptySerializer):
     id = serializers.IntegerField(read_only=True)
     pid = serializers.IntegerField(read_only=True)
     object_id = serializers.IntegerField(read_only=True)
@@ -175,20 +180,21 @@ class TaskSerializer(TaskListSerializer):
 
     get_action_url = get_action_url
 
-    def get_selector(self, obj):
+    @staticmethod
+    def get_selector(obj):
         return get_task_selector(obj.task_object, obj.action)
 
-    def get_terminatable(self, obj):
+    @staticmethod
+    def get_terminatable(obj):
         if obj.action:
             allow_to_terminate = obj.action.allow_to_terminate
         else:
             allow_to_terminate = False
-        # pylint: disable=simplifiable-if-statement
-        if allow_to_terminate and obj.status in [config.Job.CREATED, config.Job.RUNNING]:
-            # pylint: enable=simplifiable-if-statement
+
+        if allow_to_terminate and obj.status in [Job.CREATED, Job.RUNNING]:
             return True
-        else:
-            return False
+
+        return False
 
     def get_jobs(self, obj):
         return JobShort(obj.joblog_set, many=True, context=self.context).data
@@ -196,19 +202,21 @@ class TaskSerializer(TaskListSerializer):
     def get_action(self, obj):
         return JobAction(obj.action, context=self.context).data
 
-    def get_objects(self, obj):
+    @staticmethod
+    def get_objects(obj):
         return get_job_objects(obj)
 
-    def get_object_type(self, obj):
+    @staticmethod
+    def get_object_type(obj):
         if obj.action:
             return obj.action.prototype.type
-        else:
-            return None
+
+        return None
 
 
 class RunTaskSerializer(TaskSerializer):
     def create(self, validated_data):
-        obj = cm.job.start_task(
+        obj = start_task(
             validated_data.get('action'),
             validated_data.get('task_object'),
             validated_data.get('config', {}),
@@ -218,10 +226,11 @@ class RunTaskSerializer(TaskSerializer):
             validated_data.get('verbose', False),
         )
         obj.jobs = JobLog.objects.filter(task_id=obj.id)
+
         return obj
 
 
-class JobListSerializer(serializers.Serializer):
+class JobListSerializer(EmptySerializer):
     id = serializers.IntegerField(read_only=True)
     pid = serializers.IntegerField(read_only=True)
     task_id = serializers.IntegerField(read_only=True)
@@ -246,33 +255,36 @@ class JobSerializer(JobListSerializer):
     get_display_name = get_job_display_name
     get_action_url = get_action_url
 
-    def get_selector(self, obj):
+    @staticmethod
+    def get_selector(obj):
         return get_task_selector(obj.task.task_object, obj.action)
 
     def get_action(self, obj):
         return JobAction(obj.action, context=self.context).data
 
-    def get_objects(self, obj):
+    @staticmethod
+    def get_objects(obj):
         return get_job_objects(obj.task)
 
 
-class LogStorageSerializer(serializers.Serializer):
+class LogStorageSerializer(EmptySerializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     type = serializers.CharField(read_only=True)
     format = serializers.CharField(read_only=True)
     content = serializers.SerializerMethodField()
 
-    def _get_ansible_content(self, obj):
-        path_file = os.path.join(
-            config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}'
-        )
+    @staticmethod
+    def _get_ansible_content(obj):
+        path_file = os.path.join(RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}')
         try:
             with open(path_file, 'r', encoding='utf_8') as f:
                 content = f.read()
         except FileNotFoundError:
             msg = f'File "{obj.name}-{obj.type}.{obj.format}" not found'
+
             raise AdcmEx('LOG_NOT_FOUND', msg) from None
+
         return content
 
     def get_content(self, obj):
@@ -309,40 +321,46 @@ class LogStorageListSerializer(LogStorageSerializer):
         )
 
 
-class LogSerializer(serializers.Serializer):
+class LogSerializer(EmptySerializer):
     tag = serializers.SerializerMethodField()
     level = serializers.SerializerMethodField()
     type = serializers.SerializerMethodField()
     content = serializers.SerializerMethodField()
 
-    def get_tag(self, obj):
+    @staticmethod
+    def get_tag(obj):
         if obj.type == 'check':
             return obj.type
-        else:
-            return obj.name
 
-    def get_level(self, obj):
+        return obj.name
+
+    @staticmethod
+    def get_level(obj):
         if obj.type == 'check':
             return 'out'
-        else:
-            return obj.type[3:]
 
-    def get_type(self, obj):
+        return obj.type[3:]
+
+    @staticmethod
+    def get_type(obj):
         return obj.format
 
-    def get_content(self, obj):
+    @staticmethod
+    def get_content(obj):
         content = obj.body
 
         if obj.type in ['stdout', 'stderr']:
             if content is None:
                 path_file = os.path.join(
-                    config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}'
+                    RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}'
                 )
                 with open(path_file, 'r', encoding='utf_8') as f:
                     content = f.read()
         elif obj.type == 'check':
             if content is None:
                 content = get_check_log(obj.job_id)
+
             if isinstance(content, str):
                 content = json.loads(content)
+
         return content

@@ -11,37 +11,45 @@
 # limitations under the License.
 
 from django.db import IntegrityError
-from rest_framework import serializers
+from rest_framework.serializers import (
+    BooleanField,
+    CharField,
+    IntegerField,
+    JSONField,
+    SerializerMethodField,
+)
 
-import cm
+from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
-from api.serializers import StringListSerializer, DoUpgradeSerializer
+from api.serializers import DoUpgradeSerializer, StringListSerializer
 from api.utils import (
-    hlink,
+    CommonAPIURL,
+    ObjectURL,
     check_obj,
     filter_actions,
     get_upgradable_func,
-    CommonAPIURL,
-    ObjectURL,
+    hlink,
 )
 from cm.adcm_config import get_main_info
+from cm.api import add_host_provider
 from cm.errors import AdcmEx
 from cm.models import Action, Prototype, Upgrade
 from cm.upgrade import do_upgrade
 
 
-class ProviderSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField()
-    prototype_id = serializers.IntegerField()
-    description = serializers.CharField(required=False)
-    state = serializers.CharField(read_only=True)
-    before_upgrade = serializers.JSONField(read_only=True)
+class ProviderSerializer(EmptySerializer):
+    id = IntegerField(read_only=True)
+    name = CharField()
+    prototype_id = IntegerField()
+    description = CharField(required=False)
+    state = CharField(read_only=True)
+    before_upgrade = JSONField(read_only=True)
     url = hlink('provider-details', 'id', 'provider_id')
 
-    def validate_prototype_id(self, prototype_id):
+    @staticmethod
+    def validate_prototype_id(prototype_id):
         proto = check_obj(
             Prototype, {'id': prototype_id, 'type': 'provider'}, "PROTOTYPE_NOT_FOUND"
         )
@@ -49,7 +57,7 @@ class ProviderSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         try:
-            return cm.api.add_host_provider(
+            return add_host_provider(
                 validated_data.get('prototype_id'),
                 validated_data.get('name'),
                 validated_data.get('description', ''),
@@ -59,9 +67,9 @@ class ProviderSerializer(serializers.Serializer):
 
 
 class ProviderDetailSerializer(ProviderSerializer):
-    edition = serializers.CharField(read_only=True)
-    license = serializers.CharField(read_only=True)
-    bundle_id = serializers.IntegerField(read_only=True)
+    edition = CharField(read_only=True)
+    license = CharField(read_only=True)
+    bundle_id = IntegerField(read_only=True)
     prototype = hlink('provider-type-details', 'prototype_id', 'prototype_id')
     config = CommonAPIURL(view_name='object-config')
     action = CommonAPIURL(view_name='object-action')
@@ -69,19 +77,19 @@ class ProviderDetailSerializer(ProviderSerializer):
     host = ObjectURL(read_only=True, view_name='host')
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
-    locked = serializers.BooleanField(read_only=True)
+    locked = BooleanField(read_only=True)
     group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
 
 
 class ProviderUISerializer(ProviderDetailSerializer):
-    actions = serializers.SerializerMethodField()
-    prototype_version = serializers.SerializerMethodField()
-    prototype_name = serializers.SerializerMethodField()
-    prototype_display_name = serializers.SerializerMethodField()
-    upgradable = serializers.SerializerMethodField()
+    actions = SerializerMethodField()
+    prototype_version = SerializerMethodField()
+    prototype_name = SerializerMethodField()
+    prototype_display_name = SerializerMethodField()
+    upgradable = SerializerMethodField()
     get_upgradable = get_upgradable_func
     concerns = ConcernItemUISerializer(many=True, read_only=True)
-    main_info = serializers.SerializerMethodField()
+    main_info = SerializerMethodField()
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
@@ -90,16 +98,20 @@ class ProviderUISerializer(ProviderDetailSerializer):
         actions = ActionShort(filter_actions(obj, act_set), many=True, context=self.context)
         return actions.data
 
-    def get_prototype_version(self, obj):
+    @staticmethod
+    def get_prototype_version(obj):
         return obj.prototype.version
 
-    def get_prototype_name(self, obj):
+    @staticmethod
+    def get_prototype_name(obj):
         return obj.prototype.name
 
-    def get_prototype_display_name(self, obj):
+    @staticmethod
+    def get_prototype_display_name(obj):
         return obj.prototype.display_name
 
-    def get_main_info(self, obj):
+    @staticmethod
+    def get_main_info(obj):
         return get_main_info(obj)
 
 

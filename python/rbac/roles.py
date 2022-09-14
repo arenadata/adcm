@@ -17,22 +17,30 @@ from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.utils import timezone
-from guardian.models import UserObjectPermission, GroupObjectPermission
+from guardian.models import GroupObjectPermission, UserObjectPermission
 
 from cm.models import (
     Action,
     ClusterObject,
-    ServiceComponent,
+    DummyData,
+    GroupConfig,
     Host,
     HostComponent,
-    GroupConfig,
-    TaskLog,
     JobLog,
     LogStorage,
-    DummyData,
+    ServiceComponent,
+    TaskLog,
 )
-from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission
-from rbac.models import RoleTypes, get_objects_for_policy
+from rbac.models import (
+    Group,
+    Permission,
+    Policy,
+    PolicyPermission,
+    Role,
+    RoleTypes,
+    User,
+    get_objects_for_policy,
+)
 
 
 class AbstractRole:

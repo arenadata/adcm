@@ -15,9 +15,13 @@ from django_filters import rest_framework as drf_filters
 from rest_framework.permissions import IsAuthenticated
 
 from api.base_view import DetailView, PaginatedView
+from api.concern.serializers import (
+    ConcernItemDetailSerializer,
+    ConcernItemSerializer,
+    ConcernItemUISerializer,
+)
 from cm import models
 from cm.errors import AdcmEx
-from . import serializers
 
 OBJECT_TYPES = {
     'adcm': 'adcm',
@@ -85,8 +89,8 @@ class ConcernItemList(PaginatedView):
     """
 
     queryset = models.ConcernItem.objects.all()
-    serializer_class = serializers.ConcernItemSerializer
-    serializer_class_ui = serializers.ConcernItemUISerializer
+    serializer_class = ConcernItemSerializer
+    serializer_class_ui = ConcernItemUISerializer
     permission_classes = (IsAuthenticated,)
     filterset_class = ConcernFilter
     ordering_fields = ('name',)
@@ -99,7 +103,7 @@ class ConcernItemDetail(DetailView):
     """
 
     queryset = models.ConcernItem.objects.all()
-    serializer_class = serializers.ConcernItemDetailSerializer
+    serializer_class = ConcernItemDetailSerializer
     permission_classes = (IsAuthenticated,)
     lookup_field = 'id'
     lookup_url_kwarg = 'concern_id'

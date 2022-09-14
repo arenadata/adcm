@@ -15,10 +15,10 @@
 from rest_framework import serializers
 
 from api.action.serializers import ActionShort
-from api.utils import hlink, filter_actions, CommonAPIURL, ObjectURL
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.serializers import StringListSerializer
+from api.utils import CommonAPIURL, ObjectURL, filter_actions, hlink
 from cm import status_api
 from cm.adcm_config import get_main_info
 from cm.models import Action

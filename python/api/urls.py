@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path, include, register_converter
+from django.urls import include, path, register_converter
 from rest_framework.schemas import get_schema_view
 from rest_framework_swagger.views import get_swagger_view
 
-from api import views, docs
+from api import docs, views
 from rbac.endpoints import token
 
 register_converter(views.NameConverter, 'name')
@@ -40,6 +40,7 @@ urlpatterns = [
     path('task/', include('api.job.task_urls')),
     path('job/', include('api.job.urls')),
     path('concern/', include('api.concern.urls')),
+    path('audit/', include(('audit.urls', 'audit'))),
     path('swagger/', swagger_view),
     path('schema/', schema_view),
     path('auth/', include('rest_framework.urls', namespace='rest_framework')),
