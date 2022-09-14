@@ -10,15 +10,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import io
 import os
 import re
+import tarfile
+from pathlib import Path
 
+from django.conf import settings
 from django.http import HttpResponse
 from guardian.mixins import PermissionListMixin
-from rest_framework import permissions, status
+from rest_framework.permissions import DjangoModelPermissions, IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
+from rest_framework.views import APIView
 
+from adcm.utils import str_remove_non_alnum
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.job.serializers import (
     JobListSerializer,
@@ -31,32 +39,68 @@ from api.job.serializers import (
 )
 from api.utils import check_custom_perm, get_object_for_user
 from audit.utils import audit
-from cm import config
+from cm.config import RUN_DIR
 from cm.errors import AdcmEx
 from cm.job import cancel_task, get_log, restart_task
-from cm.models import JobLog, LogStorage, TaskLog
+from cm.models import (
+    Bundle,
+    Cluster,
+    ClusterObject,
+    Host,
+    HostProvider,
+    JobLog,
+    LogStorage,
+    Prototype,
+    TaskLog,
+)
 from rbac.viewsets import DjangoOnlyObjectPermissions
 
 
-class JobList(PermissionListMixin, PaginatedView):
-    """
-    get:
-    List all jobs
-    """
+def download_log_file(request, job_id, log_id):
+    job = JobLog.obj.get(id=job_id)
+    log_storage = LogStorage.obj.get(id=log_id, job=job)
 
-    queryset = JobLog.objects.order_by('-id')
+    if log_storage.type in ["stdout", "stderr"]:
+        filename = f"{job.id}-{log_storage.name}-{log_storage.type}.{log_storage.format}"
+    else:
+        filename = f"{job.id}-{log_storage.name}.{log_storage.format}"
+
+    filename = re.sub(r"\s+", "_", filename)
+    if log_storage.format == "txt":
+        mime_type = "text/plain"
+    else:
+        mime_type = "application/json"
+
+    if log_storage.body is None:
+        body = ""
+        length = 0
+    else:
+        body = log_storage.body
+        length = len(body)
+
+    response = HttpResponse(body)
+    response["Content-Type"] = mime_type
+    response["Content-Length"] = length
+    response["Content-Encoding"] = "UTF-8"
+    response["Content-Disposition"] = f"attachment; filename={filename}"
+
+    return response
+
+
+class JobList(PermissionListMixin, PaginatedView):
+    queryset = JobLog.objects.order_by("-id")
     serializer_class = JobListSerializer
     serializer_class_ui = JobSerializer
-    filterset_fields = ('action_id', 'task_id', 'pid', 'status', 'start_date', 'finish_date')
-    ordering_fields = ('status', 'start_date', 'finish_date')
-    permission_classes = (permissions.DjangoModelPermissions,)
-    permission_required = ['cm.view_joblog']
+    filterset_fields = ("action_id", "task_id", "pid", "status", "start_date", "finish_date")
+    ordering_fields = ("status", "start_date", "finish_date")
+    permission_classes = (DjangoModelPermissions,)
+    permission_required = ["cm.view_joblog"]
 
     def get_queryset(self, *args, **kwargs):
         if self.request.user.is_superuser:
             exclude_pks = []
         else:
-            exclude_pks = JobLog.get_adcm_jobs_qs().values_list('pk', flat=True)
+            exclude_pks = JobLog.get_adcm_jobs_qs().values_list("pk", flat=True)
 
         return super().get_queryset(*args, **kwargs).exclude(pk__in=exclude_pks)
 
@@ -64,94 +108,69 @@ class JobList(PermissionListMixin, PaginatedView):
 class JobDetail(PermissionListMixin, GenericUIView):
     queryset = JobLog.objects.all()
     permission_classes = (DjangoOnlyObjectPermissions,)
-    permission_required = ['cm.view_joblog']
+    permission_required = ["cm.view_joblog"]
     serializer_class = JobSerializer
 
     def get(self, request, *args, **kwargs):
         """
         Show job
         """
-        job = get_object_for_user(request.user, 'cm.view_joblog', JobLog, id=kwargs['job_id'])
-        job.log_dir = os.path.join(config.RUN_DIR, f'{job.id}')
+        job = get_object_for_user(request.user, "cm.view_joblog", JobLog, id=kwargs["job_id"])
+        job.log_dir = os.path.join(RUN_DIR, f"{job.id}")
         logs = get_log(job)
         for lg in logs:
-            log_id = lg['id']
-            lg['url'] = reverse(
-                'log-storage', kwargs={'job_id': job.id, 'log_id': log_id}, request=request
+            log_id = lg["id"]
+            lg["url"] = reverse(
+                "log-storage", kwargs={"job_id": job.id, "log_id": log_id}, request=request
             )
-            lg['download_url'] = reverse(
-                'download-log', kwargs={'job_id': job.id, 'log_id': log_id}, request=request
+            lg["download_url"] = reverse(
+                "download-log", kwargs={"job_id": job.id, "log_id": log_id}, request=request
             )
 
         job.log_files = logs
         serializer = self.get_serializer(job, data=request.data)
         serializer.is_valid()
+
         return Response(serializer.data)
 
 
 class LogStorageListView(PermissionListMixin, PaginatedView):
     queryset = LogStorage.objects.all()
-    permission_required = ['cm.view_logstorage']
+    permission_required = ["cm.view_logstorage"]
     serializer_class = LogStorageListSerializer
-    filterset_fields = ('name', 'type', 'format')
-    ordering_fields = ('id', 'name')
+    filterset_fields = ("name", "type", "format")
+    ordering_fields = ("id", "name")
 
     def get_queryset(self, *args, **kwargs):
         queryset = super().get_queryset(*args, **kwargs)
-        if 'job_id' not in self.kwargs:
+        if "job_id" not in self.kwargs:
             return queryset
-        return queryset.filter(job_id=self.kwargs['job_id'])
+
+        return queryset.filter(job_id=self.kwargs["job_id"])
 
 
 class LogStorageView(PermissionListMixin, GenericUIView):
     queryset = LogStorage.objects.all()
-    permission_classes = (permissions.IsAuthenticated,)
-    permission_required = ['cm.view_logstorage']
+    permission_classes = (IsAuthenticated,)
+    permission_required = ["cm.view_logstorage"]
     serializer_class = LogStorageSerializer
 
     def get(self, request, *args, **kwargs):
-        job = get_object_for_user(request.user, 'cm.view_joblog', JobLog, id=kwargs['job_id'])
+        job = get_object_for_user(request.user, "cm.view_joblog", JobLog, id=kwargs["job_id"])
         try:
-            log_storage = self.get_queryset().get(id=kwargs['log_id'], job=job)
-        except LogStorage.DoesNotExist:
+            log_storage = self.get_queryset().get(id=kwargs["log_id"], job=job)
+        except LogStorage.DoesNotExist as e:
             raise AdcmEx(
-                'LOG_NOT_FOUND', f'log {kwargs["log_id"]} not found for job {kwargs["job_id"]}'
-            ) from None
+                "LOG_NOT_FOUND", f"log {kwargs['log_id']} not found for job {kwargs['job_id']}"
+            ) from e
+
         serializer = self.get_serializer(log_storage)
+
         return Response(serializer.data)
 
 
-def download_log_file(request, job_id, log_id):
-    job = JobLog.obj.get(id=job_id)
-    log_storage = LogStorage.obj.get(id=log_id, job=job)
-
-    if log_storage.type in ['stdout', 'stderr']:
-        filename = f'{job.id}-{log_storage.name}-{log_storage.type}.{log_storage.format}'
-    else:
-        filename = f'{job.id}-{log_storage.name}.{log_storage.format}'
-    filename = re.sub(r'\s+', '_', filename)
-    if log_storage.format == 'txt':
-        mime_type = 'text/plain'
-    else:
-        mime_type = 'application/json'
-
-    if log_storage.body is None:
-        body = ''
-        length = 0
-    else:
-        body = log_storage.body
-        length = len(body)
-
-    response = HttpResponse(body)
-    response['Content-Type'] = mime_type
-    response['Content-Length'] = length
-    response['Content-Encoding'] = 'UTF-8'
-    response['Content-Disposition'] = f'attachment; filename={filename}'
-    return response
-
-
 class LogFile(GenericUIView):
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     queryset = LogStorage.objects.all()
     serializer_class = LogSerializer
 
@@ -159,74 +178,147 @@ class LogFile(GenericUIView):
         """
         Show log file
         """
-        if tag == 'ansible':
-            _type = f'std{level}'
+        if tag == "ansible":
+            _type = f"std{level}"
         else:
-            _type = 'check'
-            tag = 'ansible'
+            _type = "check"
+            tag = "ansible"
 
         ls = LogStorage.obj.get(job_id=job_id, name=tag, type=_type, format=log_type)
         serializer = self.get_serializer(ls)
+
         return Response(serializer.data)
 
 
 class Task(PermissionListMixin, PaginatedView):
-    """
-    get:
-    List all tasks
-    """
-
-    queryset = TaskLog.objects.order_by('-id')
-    permission_required = ['cm.view_tasklog']
+    queryset = TaskLog.objects.order_by("-id")
+    permission_required = ["cm.view_tasklog"]
     serializer_class = TaskListSerializer
     serializer_class_ui = TaskSerializer
-    filterset_fields = ('action_id', 'pid', 'status', 'start_date', 'finish_date')
-    ordering_fields = ('status', 'start_date', 'finish_date')
+    filterset_fields = ("action_id", "pid", "status", "start_date", "finish_date")
+    ordering_fields = ("status", "start_date", "finish_date")
 
     def get_queryset(self, *args, **kwargs):
         if self.request.user.is_superuser:
             exclude_pks = []
         else:
-            exclude_pks = TaskLog.get_adcm_tasks_qs().values_list('pk', flat=True)
+            exclude_pks = TaskLog.get_adcm_tasks_qs().values_list("pk", flat=True)
 
         return super().get_queryset(*args, **kwargs).exclude(pk__in=exclude_pks)
 
 
 class TaskDetail(PermissionListMixin, DetailView):
-    """
-    get:
-    Show task
-    """
-
     queryset = TaskLog.objects.all()
-    permission_required = ['cm.view_tasklog']
+    permission_required = ["cm.view_tasklog"]
     serializer_class = TaskSerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'task_id'
-    error_code = 'TASK_NOT_FOUND'
+    lookup_field = "id"
+    lookup_url_kwarg = "task_id"
+    error_code = "TASK_NOT_FOUND"
 
 
 class TaskReStart(GenericUIView):
     queryset = TaskLog.objects.all()
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     serializer_class = TaskSerializer
 
     @audit
     def put(self, request, *args, **kwargs):
-        task = get_object_for_user(request.user, 'cm.view_tasklog', TaskLog, id=kwargs['task_id'])
-        check_custom_perm(request.user, 'change', TaskLog, task)
+        task = get_object_for_user(request.user, "cm.view_tasklog", TaskLog, id=kwargs["task_id"])
+        check_custom_perm(request.user, "change", TaskLog, task)
         restart_task(task)
-        return Response(status=status.HTTP_200_OK)
+
+        return Response(status=HTTP_200_OK)
 
 
 class TaskCancel(GenericUIView):
     queryset = TaskLog.objects.all()
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     serializer_class = TaskSerializer
 
     @audit
     def put(self, request, *args, **kwargs):
-        task = get_object_for_user(request.user, 'cm.view_tasklog', TaskLog, id=kwargs['task_id'])
-        check_custom_perm(request.user, 'change', TaskLog, task)
+        task = get_object_for_user(request.user, "cm.view_tasklog", TaskLog, id=kwargs["task_id"])
+        check_custom_perm(request.user, "change", TaskLog, task)
         cancel_task(task)
-        return Response(status=status.HTTP_200_OK)
+
+        return Response(status=HTTP_200_OK)
+
+
+class TaskDownload(PermissionListMixin, APIView):
+    permission_required = ["cm.view_tasklog"]
+
+    @staticmethod
+    def get(request: Request, task_id: int):  # pylint: disable=too-many-locals
+        task = TaskLog.objects.filter(pk=task_id).first()
+        if not task:
+            return Response(status=HTTP_404_NOT_FOUND)
+
+        archive_name = f"{task.pk}.tar.gz"
+        if task.action and task.action.display_name:
+            action_display_name = str_remove_non_alnum(value=task.action.display_name)
+            archive_name = f"{action_display_name}_{archive_name}"
+
+        bundle = Bundle.objects.get(
+            pk=task.object_type.get_object_for_this_type(pk=task.object_id).bundle_id,
+        )
+        cluster_prototype = Prototype.objects.filter(bundle=bundle, type="cluster").first()
+        bundle_cluster = Cluster.objects.filter(prototype=cluster_prototype).first()
+
+        service_prototype = Prototype.objects.filter(bundle=bundle, type="service").first()
+        bundle_service = ClusterObject.objects.filter(prototype=service_prototype).first()
+
+        host_prototype = Prototype.objects.filter(bundle=bundle, type="host").first()
+        bundle_host = Host.objects.filter(prototype=host_prototype).first()
+
+        provider_prototype = Prototype.objects.filter(bundle=bundle, type="provider").first()
+        bundle_provider = HostProvider.objects.filter(prototype=provider_prototype).first()
+
+        if bundle_cluster:
+            if bundle_cluster.prototype.display_name:
+                prototype_display_name = str_remove_non_alnum(bundle_cluster.prototype.display_name)
+                archive_name = f"{prototype_display_name}_{archive_name}"
+
+            bundle_cluster_name = str_remove_non_alnum(value=bundle_cluster.name)
+            archive_name = f"{bundle_cluster_name}_{archive_name}"
+        elif bundle_service:
+            if bundle_service.bundle_cluster.prototype.display_name:
+                cluster_prototype_display_name = str_remove_non_alnum(
+                    value=bundle_service.bundle_cluster.prototype.display_name
+                )
+                archive_name = f"{cluster_prototype_display_name}_{archive_name}"
+
+            bundle_cluster_name = str_remove_non_alnum(value=bundle_service.bundle_cluster.name)
+            archive_name = f"{bundle_cluster_name}_{archive_name}"
+        elif bundle_host and bundle_host.provider:
+            if bundle_host.provider.prototype.display_name:
+                provider_prototype_display_name = str_remove_non_alnum(
+                    value=bundle_host.provider.prototype.display_name
+                )
+                archive_name = f"{provider_prototype_display_name}_{archive_name}"
+
+            bundle_provider_name = str_remove_non_alnum(value=bundle_host.provider.name)
+            archive_name = f"{bundle_provider_name}_{archive_name}"
+        elif bundle_provider:
+            if bundle_provider.prototype.display_name:
+                provider_prototype_display_name = str_remove_non_alnum(
+                    value=bundle_host.provider.prototype.display_name
+                )
+                archive_name = f"{provider_prototype_display_name}_{archive_name}"
+
+            bundle_provider_name = str_remove_non_alnum(value=bundle_provider.name)
+            archive_name = f"{bundle_provider_name}_{archive_name}"
+
+        jobs = JobLog.objects.filter(task=task)
+
+        fh = io.BytesIO()
+        with tarfile.open(fileobj=fh, mode="w:gz") as tar_file:
+            for job in jobs:
+                for log_file in Path(settings.RUN_DIR, str(job.pk)).iterdir():
+                    tarinfo = tarfile.TarInfo(f"{job.pk}-job_name/{log_file.name}")
+                    tarinfo.size = log_file.stat().st_size
+                    tar_file.addfile(tarinfo=tarinfo, fileobj=io.BytesIO(log_file.read_bytes()))
+
+        response = HttpResponse(content=fh.getvalue(), content_type="application/tar+gzip")
+        response["Content-Disposition"] = f'attachment; filename="{archive_name}"'
+
+        return response
