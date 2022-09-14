@@ -127,6 +127,24 @@
           min: 0
           description: |
             You can set the time (number of days) after which the Objects configuration will be deleted from the database. 0 is infinite storing.
+
+    - name: "audit_data_retention"
+      display_name: "Audit data retention"
+      type: "group"
+      subs:
+        - name: "retention_period"
+          display_name: "Retention period"
+          description: |
+            Data storage period (in days) for operations and authorizations in ADCM.
+          type: integer
+          default: 1825
+        - name: "data_archiving"
+          display_name: "Enable archiving"
+          description: |
+            Enable/disable archiving of data on operations and authorizations after the period specified in "retention_period".
+          type: boolean
+          default: false
+          required: no
     - name: "ldap_integration"
       display_name: "LDAP integration"
       type: "group"

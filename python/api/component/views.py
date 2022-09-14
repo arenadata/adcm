@@ -14,12 +14,17 @@ from guardian.mixins import PermissionListMixin
 from rest_framework import permissions
 from rest_framework.response import Response
 
-from api.base_view import GenericUIView, PaginatedView, DetailView
+from api.base_view import DetailView, GenericUIView, PaginatedView
+from api.component.serializers import (
+    ComponentDetailSerializer,
+    ComponentSerializer,
+    ComponentUISerializer,
+    StatusSerializer,
+)
 from api.utils import get_object_for_user
-from cm.models import ServiceComponent, ClusterObject, Cluster, HostComponent
+from cm.models import Cluster, ClusterObject, HostComponent, ServiceComponent
 from cm.status_api import make_ui_component_status
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from . import serializers
 
 
 def get_component_queryset(queryset, user, kwargs):
@@ -39,8 +44,8 @@ def get_component_queryset(queryset, user, kwargs):
 
 class ComponentListView(PermissionListMixin, PaginatedView):
     queryset = ServiceComponent.objects.all()
-    serializer_class = serializers.ComponentSerializer
-    serializer_class_ui = serializers.ComponentUISerializer
+    serializer_class = ComponentSerializer
+    serializer_class_ui = ComponentUISerializer
     filterset_fields = ('cluster_id', 'service_id')
     ordering_fields = ('state', 'prototype__display_name', 'prototype__version_order')
     permission_required = ['cm.view_servicecomponent']
@@ -52,8 +57,8 @@ class ComponentListView(PermissionListMixin, PaginatedView):
 
 class ComponentDetailView(PermissionListMixin, DetailView):
     queryset = ServiceComponent.objects.all()
-    serializer_class = serializers.ComponentDetailSerializer
-    serializer_class_ui = serializers.ComponentUISerializer
+    serializer_class = ComponentDetailSerializer
+    serializer_class_ui = ComponentUISerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ['cm.view_servicecomponent']
     lookup_url_kwarg = 'component_id'
@@ -67,7 +72,7 @@ class ComponentDetailView(PermissionListMixin, DetailView):
 class StatusList(GenericUIView):
     queryset = HostComponent.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
-    serializer_class = serializers.StatusSerializer
+    serializer_class = StatusSerializer
 
     def get(self, request, *args, **kwargs):
         """

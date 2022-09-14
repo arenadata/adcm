@@ -13,7 +13,6 @@
 
 from django.db import migrations, models
 
-
 data = [
     {
         'name': 'object config issue',

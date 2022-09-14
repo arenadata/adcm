@@ -23,10 +23,9 @@ from django_auth_ldap.backend import LDAPBackend, _LDAPUser
 from django_auth_ldap.config import LDAPSearch, MemberDNGroupType
 
 from cm.adcm_config import ansible_decrypt
-from cm.logger import log
+from cm.logger import logger
 from cm.models import ADCM, ConfigLog
-from rbac.models import User, Group, OriginType
-
+from rbac.models import Group, OriginType, User
 
 CERT_ENV_KEY = "LDAPTLS_CACERT"
 CN_PATTERN = re.compile(r"CN=(?P<common_name>.*?)[,$]", re.IGNORECASE)
@@ -117,7 +116,7 @@ def get_groups_by_user_dn(
         if group_name:
             group_cns.append(group_name)
 
-    log.debug("Found %s groups by user dn `%s`: %s", len(group_cns), user_dn, group_cns)
+    logger.debug("Found %s groups by user dn `%s`: %s", len(group_cns), user_dn, group_cns)
     return group_cns, err_msg
 
 
@@ -183,7 +182,7 @@ def get_ldap_default_settings() -> Tuple[dict, Optional[str]]:
             cert_filepath = ldap_config.get("tls_ca_cert_file", "")
             if not cert_filepath or not os.path.exists(cert_filepath):
                 msg = "NO_CERT_FILE"
-                log.warning(msg)
+                logger.warning(msg)
                 return {}, msg
             connection_options = configure_tls(enabled=True, cert_filepath=cert_filepath)
             default_settings.update({"CONNECTION_OPTIONS": connection_options})
@@ -213,7 +212,7 @@ class CustomLDAPBackend(LDAPBackend):
             user_local_groups = self._get_local_groups_by_username(ldap_user._username)
             user_or_none = super().authenticate_ldap_user(ldap_user, password)
         except Exception as e:  # pylint: disable=broad-except
-            log.exception(e)
+            logger.exception(e)
             return None
 
         if isinstance(user_or_none, User):
@@ -255,14 +254,14 @@ class CustomLDAPBackend(LDAPBackend):
     def _get_groups_by_group_search(self) -> List[Tuple[str, dict]]:
         with self._ldap_connection() as conn:
             groups = self.default_settings["GROUP_SEARCH"].execute(conn)
-        log.debug("Found %s groups: %s", len(groups), [i[0] for i in groups])
+        logger.debug("Found %s groups: %s", len(groups), [i[0] for i in groups])
         return groups
 
     def _process_groups(
         self, user: User | _LDAPUser, user_dn: str, additional_groups: List[Group] = ()
     ) -> None:
         if not self._group_search_enabled:
-            log.warning("Group search is disabled. Getting all user groups")
+            logger.warning("Group search is disabled. Getting all user groups")
             with self._ldap_connection() as conn:
                 ldap_group_names, err_msg = get_groups_by_user_dn(
                     user_dn=user_dn, user_search=self.default_settings["USER_SEARCH"], conn=conn
@@ -294,7 +293,7 @@ class CustomLDAPBackend(LDAPBackend):
         username = ldap_user._username  # pylint: disable=protected-access
 
         if User.objects.filter(username__iexact=username, type=OriginType.Local).exists():
-            log.exception("usernames collision: `%s`", username)
+            logger.exception("usernames collision: `%s`", username)
             return False
 
         if self._group_search_enabled:

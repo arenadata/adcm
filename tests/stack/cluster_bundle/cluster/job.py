@@ -10,14 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.logger import log
+from cm.logger import logger
 from cm.errors import AdcmEx
 
 from cm.models import Prototype, Action
 
 
 def task_generator(action, selector):
-    log.debug("call task_generator: %s", action)
+    logger.debug("call task_generator: %s", action)
     try:
         service = Prototype.objects.get(bundle=action.prototype.bundle, type='service', name='ZOOKEEPER', version='1.2')
     except Prototype.DoesNotExist:

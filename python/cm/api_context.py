@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Optional
 
 from cm import models
-from cm.logger import log
+from cm.logger import logger
 from cm.status_api import Event
 
 
@@ -55,7 +55,7 @@ class _Context:
         self.task = getattr(self.job, 'task', None)
         self.lock = getattr(self.task, 'lock', None)
         msg = f'API context was initialized with {self.job}, {self.task}, {self.lock}'
-        log.debug(msg)
+        logger.debug(msg)
 
 
 # initialized on first import

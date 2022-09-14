@@ -1,0 +1,101 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+settings:
+  process-type: sequence
+  start-from-first: matched
+
+operations:
+  # cluster
+  - create:
+      what:
+        type: cluster
+        name: cluster
+  - create:
+      what:
+        type: cluster
+    result: fail
+  - create:
+      what:
+        type: cluster
+    result: denied
+    username: {{ username }}
+  # provider
+  - create:
+      what:
+        type: provider
+        name: provider
+  - create:
+      what:
+        type: provider
+    result: fail
+  - create:
+      what:
+        type: provider
+    result: denied
+    username: {{ username }}
+  # host
+  - create: &hfp
+      what:
+        type: host
+        name: host-from-provider
+  - create: &hfr
+      what:
+        type: host
+        name: host-from-root
+  - create: *hfp
+    result: fail
+  - create: *hfr
+    result: fail
+  - create: *hfp
+    result: denied
+    username: {{ username }}
+  - create: *hfr
+    result: denied
+    username: {{ username }}
+  # group configs
+  - create: &clus-conf-gr
+      what:
+        type: cluster
+        name: cluster
+      how:
+        operation: create-group-config
+        name: cluster-group
+  - create: *clus-conf-gr
+    result: fail
+  - create: *clus-conf-gr
+    result: denied
+    username: {{ username }}
+  - create: &serv-conf-gr
+      what:
+        type: service
+        name: cluster/service
+      how:
+        operation: create-group-config
+        name: service-group
+  - create: *serv-conf-gr
+    result: fail
+  - create: *serv-conf-gr
+    result: denied
+    username: {{ username }}
+  - create: &comp-conf-gr
+      what:
+        type: component
+        name: cluster/service/component
+      how:
+        operation: create-group-config
+        name: component-group
+  - create: *comp-conf-gr
+    result: fail
+  - create: *comp-conf-gr
+    result: denied
+    username: {{ username }}

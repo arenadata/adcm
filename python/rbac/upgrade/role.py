@@ -20,9 +20,16 @@ from django.db import transaction
 from django.utils import timezone
 
 import cm.checker
-from cm.models import ProductCategory, Bundle, Action, get_model_by_type, DummyData, Host
+from cm.models import (
+    Action,
+    Bundle,
+    DummyData,
+    Host,
+    ProductCategory,
+    get_model_by_type,
+)
 from rbac import log
-from rbac.models import Role, RoleMigration, Permission, re_apply_all_polices, RoleTypes
+from rbac.models import Permission, Role, RoleMigration, RoleTypes, re_apply_all_polices
 from rbac.settings import api_settings
 
 
@@ -295,7 +302,7 @@ def init_roles():
     """
     Init or upgrade roles and permissions in DB
     To run upgrade call
-    manage.py upgarderole
+    manage.py upgraderole
     """
     role_data = get_role_spec(api_settings.ROLE_SPEC, api_settings.ROLE_SCHEMA)
     check_roles_child(role_data)

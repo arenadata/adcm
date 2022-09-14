@@ -13,9 +13,13 @@
 from rest_framework import permissions
 from rest_framework.response import Response
 
+from api.adcm.serializers import (
+    AdcmDetailSerializer,
+    AdcmDetailUISerializer,
+    AdcmSerializer,
+)
+from api.base_view import DetailView, GenericUIView
 from cm.models import ADCM
-from api.base_view import GenericUIView, DetailView
-from . import serializers
 
 
 class AdcmList(GenericUIView):
@@ -25,8 +29,8 @@ class AdcmList(GenericUIView):
     """
 
     queryset = ADCM.objects.all()
-    serializer_class = serializers.AdcmSerializer
-    serializer_class_ui = serializers.AdcmDetailUISerializer
+    serializer_class = AdcmSerializer
+    serializer_class_ui = AdcmDetailUISerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -42,8 +46,8 @@ class AdcmDetail(DetailView):
     """
 
     queryset = ADCM.objects.all()
-    serializer_class = serializers.AdcmDetailSerializer
-    serializer_class_ui = serializers.AdcmDetailUISerializer
+    serializer_class = AdcmDetailSerializer
+    serializer_class_ui = AdcmDetailUISerializer
     permission_classes = (permissions.IsAuthenticated,)
     lookup_field = 'id'
     lookup_url_kwarg = 'adcm_id'

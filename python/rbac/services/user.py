@@ -147,7 +147,7 @@ def create(
     is_superuser: bool = None,
     profile: dict = None,
     groups: list = None,
-    is_active: bool = None,
+    is_active: bool = True,
 ) -> models.User:
     """Create User"""
     if is_superuser:

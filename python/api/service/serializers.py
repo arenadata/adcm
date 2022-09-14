@@ -17,17 +17,17 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse
 
 from api.action.serializers import ActionShort
-from api.utils import check_obj, filter_actions, CommonAPIURL, ObjectURL
 from api.cluster.serializers import BindSerializer
 from api.component.serializers import ComponentUISerializer
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.serializers import StringListSerializer
+from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions
 from cm import status_api
 from cm.adcm_config import get_main_info
-from cm.api import add_service_to_cluster, multi_bind, bind
+from cm.api import add_service_to_cluster, bind, multi_bind
 from cm.errors import AdcmEx
-from cm.models import Prototype, Action, ServiceComponent, Cluster
+from cm.models import Action, Cluster, Prototype, ServiceComponent
 
 
 class ServiceSerializer(serializers.Serializer):

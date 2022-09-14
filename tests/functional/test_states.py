@@ -38,11 +38,12 @@ ACTION_SET_MULTISTATE_NAME = "set_multistate"
 def cluster_and_states_checker(sdk_client_fs: ADCMClient, request) -> Tuple[Cluster, Callable]:
     """Create cluster and states checker"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
-    cluster = bundle.cluster_create(name=bundle.name)
-    bundle.cluster_create(name=f"{bundle.name}_second")
+    name = bundle.name.replace('_', ' ')
+    cluster = bundle.cluster_create(name=name)
+    bundle.cluster_create(name=f"{name} second")
     check_objects_state_changed = build_objects_checker(
         field_name='State',
-        changed=cluster.name,
+        changed=cluster.name.replace(' ', '_'),
         extractor=lambda obj: obj.state,
     )
     return cluster, check_objects_state_changed
@@ -52,11 +53,13 @@ def cluster_and_states_checker(sdk_client_fs: ADCMClient, request) -> Tuple[Clus
 def cluster_and_multi_states_checker(sdk_client_fs: ADCMClient, request) -> Tuple[Cluster, Callable]:
     """Create cluster and multi states checker"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
-    cluster = bundle.cluster_create(name=bundle.name)
-    bundle.cluster_create(name=f"{bundle.name}_second")
+    name = bundle.name.replace('_', ' ')
+    cluster = bundle.cluster_create(name=name)
+    bundle.cluster_create(name=f"{name} second")
     check_objects_state_changed = build_objects_checker(
         field_name='Multi state',
-        changed=[cluster.name],
+        # as set in actions
+        changed=[cluster.name.replace(' ', '_')],
         extractor=lambda obj: sorted(obj.multi_state),
     )
     return cluster, check_objects_state_changed
@@ -66,11 +69,13 @@ def cluster_and_multi_states_checker(sdk_client_fs: ADCMClient, request) -> Tupl
 def cluster_and_multi_states_plus_states_checker(sdk_client_fs: ADCMClient, request) -> Tuple[Cluster, Callable]:
     """Create cluster and multi states + states checker"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
-    cluster = bundle.cluster_create(name=bundle.name)
-    bundle.cluster_create(name=f"{bundle.name}_second")
+    name = bundle.name.replace('_', ' ')
+    cluster = bundle.cluster_create(name=name)
+    bundle.cluster_create(name=f"{name} second")
+    expected = cluster.name.replace(' ', '_')
     check_objects_state_changed = build_objects_checker(
         field_name='Multi states and states',
-        changed=dict(state=cluster.name, multi_states=[cluster.name]),
+        changed=dict(state=expected, multi_states=[expected]),
         extractor=lambda obj: dict(state=obj.state, multi_states=sorted(obj.multi_state)),
     )
     return cluster, check_objects_state_changed
