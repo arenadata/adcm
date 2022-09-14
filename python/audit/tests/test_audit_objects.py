@@ -49,8 +49,6 @@ class TestAuditObjects(BaseTestCase):
             setattr(self, name, proto)
         self.component_proto.parent = self.service_proto
         self.component_proto.save()
-        self.host_proto.parent = self.provider_proto
-        self.host_proto.save()
 
     # UTILITIES
 
