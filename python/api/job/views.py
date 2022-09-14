@@ -42,17 +42,7 @@ from audit.utils import audit
 from cm.config import RUN_DIR
 from cm.errors import AdcmEx
 from cm.job import cancel_task, get_log, restart_task
-from cm.models import (
-    Bundle,
-    Cluster,
-    ClusterObject,
-    Host,
-    HostProvider,
-    JobLog,
-    LogStorage,
-    Prototype,
-    TaskLog,
-)
+from cm.models import ActionType, JobLog, LogStorage, TaskLog
 from rbac.viewsets import DjangoOnlyObjectPermissions
 
 
@@ -85,6 +75,41 @@ def download_log_file(request, job_id, log_id):
     response["Content-Disposition"] = f"attachment; filename={filename}"
 
     return response
+
+
+def get_task_download_archive_name(task: TaskLog) -> str:
+    archive_name = f"{task.pk}.tar.gz"
+
+    if not task.action:
+        return archive_name
+
+    action_display_name = str_remove_non_alnum(
+        value=task.action.display_name
+    ) or str_remove_non_alnum(value=task.action.name)
+    if action_display_name:
+        archive_name = f"{action_display_name}_{archive_name}"
+
+    action_prototype_display_name = str_remove_non_alnum(
+        value=task.action.prototype.display_name
+    ) or str_remove_non_alnum(value=task.action.prototype.name)
+    if action_prototype_display_name:
+        archive_name = f"{action_prototype_display_name}_{archive_name}"
+
+    if not task.task_object:
+        return archive_name
+
+    obj_name = None
+    if task.object_type.name == "cluster":
+        obj_name = task.task_object.name
+    elif task.object_type.name == "service":
+        obj_name = task.task_object.cluster.name
+    elif task.object_type.name == "component":
+        obj_name = task.task_object.cluster.name
+
+    if obj_name:
+        archive_name = f"{str_remove_non_alnum(value=obj_name)}_{archive_name}"
+
+    return archive_name
 
 
 class JobList(PermissionListMixin, PaginatedView):
@@ -253,72 +278,30 @@ class TaskDownload(PermissionListMixin, APIView):
         if not task:
             return Response(status=HTTP_404_NOT_FOUND)
 
-        archive_name = f"{task.pk}.tar.gz"
-        if task.action and task.action.display_name:
-            action_display_name = str_remove_non_alnum(value=task.action.display_name)
-            archive_name = f"{action_display_name}_{archive_name}"
-
-        bundle = Bundle.objects.get(
-            pk=task.object_type.get_object_for_this_type(pk=task.object_id).bundle_id,
-        )
-        cluster_prototype = Prototype.objects.filter(bundle=bundle, type="cluster").first()
-        bundle_cluster = Cluster.objects.filter(prototype=cluster_prototype).first()
-
-        service_prototype = Prototype.objects.filter(bundle=bundle, type="service").first()
-        bundle_service = ClusterObject.objects.filter(prototype=service_prototype).first()
-
-        host_prototype = Prototype.objects.filter(bundle=bundle, type="host").first()
-        bundle_host = Host.objects.filter(prototype=host_prototype).first()
-
-        provider_prototype = Prototype.objects.filter(bundle=bundle, type="provider").first()
-        bundle_provider = HostProvider.objects.filter(prototype=provider_prototype).first()
-
-        if bundle_cluster:
-            if bundle_cluster.prototype.display_name:
-                prototype_display_name = str_remove_non_alnum(bundle_cluster.prototype.display_name)
-                archive_name = f"{prototype_display_name}_{archive_name}"
-
-            bundle_cluster_name = str_remove_non_alnum(value=bundle_cluster.name)
-            archive_name = f"{bundle_cluster_name}_{archive_name}"
-        elif bundle_service:
-            if bundle_service.bundle_cluster.prototype.display_name:
-                cluster_prototype_display_name = str_remove_non_alnum(
-                    value=bundle_service.bundle_cluster.prototype.display_name
-                )
-                archive_name = f"{cluster_prototype_display_name}_{archive_name}"
-
-            bundle_cluster_name = str_remove_non_alnum(value=bundle_service.bundle_cluster.name)
-            archive_name = f"{bundle_cluster_name}_{archive_name}"
-        elif bundle_host and bundle_host.provider:
-            if bundle_host.provider.prototype.display_name:
-                provider_prototype_display_name = str_remove_non_alnum(
-                    value=bundle_host.provider.prototype.display_name
-                )
-                archive_name = f"{provider_prototype_display_name}_{archive_name}"
-
-            bundle_provider_name = str_remove_non_alnum(value=bundle_host.provider.name)
-            archive_name = f"{bundle_provider_name}_{archive_name}"
-        elif bundle_provider:
-            if bundle_provider.prototype.display_name:
-                provider_prototype_display_name = str_remove_non_alnum(
-                    value=bundle_host.provider.prototype.display_name
-                )
-                archive_name = f"{provider_prototype_display_name}_{archive_name}"
-
-            bundle_provider_name = str_remove_non_alnum(value=bundle_provider.name)
-            archive_name = f"{bundle_provider_name}_{archive_name}"
-
         jobs = JobLog.objects.filter(task=task)
+
+        if task.action and task.action.type == ActionType.Job:
+            dir_name_suffix = str_remove_non_alnum(
+                value=task.action.display_name
+            ) or str_remove_non_alnum(value=task.action.name)
+        else:
+            dir_name_suffix = None
 
         fh = io.BytesIO()
         with tarfile.open(fileobj=fh, mode="w:gz") as tar_file:
             for job in jobs:
+                if dir_name_suffix is None:
+                    dir_name_suffix = str_remove_non_alnum(
+                        value=job.sub_action.action.display_name
+                    ) or str_remove_non_alnum(value=job.sub_action.action.name)
                 for log_file in Path(settings.RUN_DIR, str(job.pk)).iterdir():
-                    tarinfo = tarfile.TarInfo(f"{job.pk}-job_name/{log_file.name}")
+                    tarinfo = tarfile.TarInfo(f"{job.pk}-{dir_name_suffix}/{log_file.name}")
                     tarinfo.size = log_file.stat().st_size
                     tar_file.addfile(tarinfo=tarinfo, fileobj=io.BytesIO(log_file.read_bytes()))
 
         response = HttpResponse(content=fh.getvalue(), content_type="application/tar+gzip")
-        response["Content-Disposition"] = f'attachment; filename="{archive_name}"'
+        response[
+            "Content-Disposition"
+        ] = f'attachment; filename="{get_task_download_archive_name(task=task)}"'
 
         return response
