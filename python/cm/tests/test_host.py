@@ -299,6 +299,43 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["code"], "WRONG_NAME")
 
+    def test_duplicated_host_fqdn(self):
+        fqdn = "another"
+        Host.objects.create(
+            fqdn=fqdn,
+            prototype=Prototype.objects.all()[0],
+            provider=self.provider,
+            maintenance_mode="disabled",
+        )
+
+        response = self.client.put(
+            reverse("host-details", kwargs={"host_id": self.host.pk}),
+            data={
+                "fqdn": fqdn,
+                "provider_id": self.host.provider.pk,
+                "prototype_id": self.host.prototype.pk,
+                "maintenance_mode": self.host.maintenance_mode,
+            },
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "HOST_CONFLICT")
+        self.assertEqual(response.json()["desc"], "duplicate host")
+
+        response = self.client.patch(
+            reverse("host-details", kwargs={"host_id": self.host.pk}),
+            data={
+                "fqdn": fqdn,
+                "provider_id": self.host.provider.pk,
+                "prototype_id": self.host.prototype.pk,
+                "maintenance_mode": self.host.maintenance_mode,
+            },
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "HOST_CONFLICT")
+        self.assertEqual(response.json()["desc"], "duplicate host")
+
     def test_update_host_correct_incorrect_fqdn(self):
         self.host.maintenance_mode = 'disabled'
         self.host.save()
@@ -365,9 +402,7 @@ class TestHostAPI(BaseTestCase):
             self.assertEqual(err["code"], "WRONG_NAME")
         else:
             self.assertIn("fqdn", err)
-            self.assertEqual(
-                err["fqdn"], ["Ensure this field has no more than 253 characters."]
-            )
+            self.assertEqual(err["fqdn"], ["Ensure this field has no more than 253 characters."])
         self.host.refresh_from_db()
         self.assertEqual(self.host.fqdn, expected_fqdn)
 
