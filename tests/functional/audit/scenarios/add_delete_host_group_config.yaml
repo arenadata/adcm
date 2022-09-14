@@ -1,0 +1,94 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+settings:
+  process-type: exact
+  start-from-first: matched
+
+operations:
+  # cluster group config operations
+  - update:
+      what: &cluster
+        type: cluster
+        name: Cluster for Updates
+      how: &add-host
+        operation: add-host-to-group-config
+        name: cluster-group
+        host: {{ host }}
+  - update: &cluster-update-no-host
+      what: *cluster
+      how:
+        <<: *add-host
+        host: ""  # not existing host
+    result: fail
+  - update: *cluster-update-no-host
+    result: denied
+    username: {{ username }}
+  - update: &remove-host-from-cluster-gc
+      what: *cluster
+      how: &remove-host
+        operation: remove-host-from-group-config
+        name: cluster-group
+        host: {{ host }}
+    result: denied
+    username: {{ username }}
+  - update: *remove-host-from-cluster-gc
+  # service
+  - update:
+      what: &service
+        type: service
+        name: Cluster for Updates/service_for_updates
+      how: &add-host-service
+        <<: *add-host
+        name: service-group
+  - update: &service-update-no-host
+      what: *service
+      how:
+        <<: *add-host-service
+        host: ""  # not existing host
+    result: fail
+  - update: *service-update-no-host
+    result: denied
+    username: {{ username }}
+  - update: &remove-host-from-service-gc
+      what: *service
+      how:
+        <<: *remove-host
+        name: service-group
+    result: denied
+    username: {{ username }}
+  - update: *remove-host-from-service-gc
+  # component
+  - update:
+      what: &component
+        type: component
+        name: Cluster for Updates/service_for_updates/component_for_updates
+      how: &add-host-component
+        <<: *add-host
+        name: component-group
+  - update: &component-update-no-host
+      what: *component
+      how:
+        <<: *add-host-component
+        host: ""  # not existing host
+    result: fail
+  - update: *component-update-no-host
+    result: denied
+    username: {{ username }}
+  - update: &remove-host-from-component-gc
+      what: *component
+      how:
+        <<: *remove-host
+        name: component-group
+    result: denied
+    username: {{ username }}
+  - update: *remove-host-from-component-gc

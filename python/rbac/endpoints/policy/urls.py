@@ -13,10 +13,8 @@
 
 from rest_framework.routers import DefaultRouter
 
-from .views import PolicyViewSet
+from rbac.endpoints.policy.views import PolicyViewSet
 
 router = DefaultRouter()
-
 router.register(r'', PolicyViewSet, basename='policy')
-
 urlpatterns = router.urls

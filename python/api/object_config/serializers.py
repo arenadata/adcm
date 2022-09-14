@@ -13,7 +13,7 @@
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
-from cm.models import ObjectConfig, ConfigLog
+from cm.models import ConfigLog, ObjectConfig
 
 
 class VersionConfigLogURL(serializers.RelatedField):

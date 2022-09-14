@@ -14,14 +14,14 @@
 # pylint: disable=missing-function-docstring, missing-class-docstring, missing-module-docstring
 # pylint: disable=import-error
 
-from cm.logger import log
+from cm.logger import logger
 from cm.errors import AdcmEx
 
 from cm.models import Prototype, Action
 
 
 def task_generator(action, selector):
-    log.debug("call task_generator: %s", action)
+    logger.debug("call task_generator: %s", action)
     try:
         service = Prototype.objects.get(type='service', name='Simple_service', version='new_version')
     except Prototype.DoesNotExist:

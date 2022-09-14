@@ -12,15 +12,15 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.shortcuts import render, redirect
-from django.utils.http import urlencode
-from django.contrib.auth import login
 import social_django.views
-from social_core.exceptions import AuthForbidden
+from django.contrib.auth import login
+from django.shortcuts import redirect, render
+from django.utils.http import urlencode
 from rest_framework.authtoken.models import Token
+from social_core.exceptions import AuthForbidden
 
 from cm import config
-from cm.logger import log
+from cm.logger import logger
 from cm.models import UserProfile
 
 
@@ -37,7 +37,7 @@ def complete(request, *args, **kwargs):
     try:
         return social_django.views.complete(request, 'google-oauth2', *args, **kwargs)
     except AuthForbidden as e:
-        log.error("social AUTH_ERROR: %s", e)
+        logger.error("social AUTH_ERROR: %s", e)
         params = urlencode({'error_code': 'AUTH_ERROR', 'error_msg': e})
         return redirect(f"/login/?{params}")
 
@@ -46,7 +46,7 @@ def get_token(strategy, user, response, *args, **kwargs):
     try:
         token = Token.objects.get(user=user)
     except Token.DoesNotExist:
-        log.info("Create auth token for social user %s", user)
+        logger.info("Create auth token for social user %s", user)
         token = Token(user=user)
         token.key = token.generate_key()
         token.save()
@@ -54,7 +54,7 @@ def get_token(strategy, user, response, *args, **kwargs):
         up.save()
         user.is_superuser = True
         user.save()
-    log.info("authorize social user %s", user)
+    logger.info("authorize social user %s", user)
     login(strategy.request, user, backend='django.contrib.auth.backends.ModelBackend')
     return render(strategy.request, 'token.html', {'login': user.username, 'token': token.key})
 

@@ -31,7 +31,7 @@ from tests.library.assertions import sets_are_equal, dicts_are_equal
 from tests.functional.tools import AnyADCMObject, get_object_represent
 
 
-CLUSTER_NAME = 'test_cluster_to_export'
+CLUSTER_NAME = 'test cluster to export'
 PROVIDER_NAME = 'test_provider_to_export'
 DEFAULT_CONFIG_SERVICE = 'service_with_defaults'
 CHANGED_CONFIG_SERVICE = 'service_with_changed_config'

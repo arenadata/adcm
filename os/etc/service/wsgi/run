@@ -16,8 +16,5 @@ source /etc/adcmenv
 waitforinit
 
 echo "Run main wsgi application ..."
-exec 1>>"${adcmlog}/service_wsgi.out"
-exec 2>>"${adcmlog}/service_wsgi.err"
-
 cd "${adcmroot}/python"
-uwsgi --venv "${adcmroot}/venv/default" --socket "${wsgisocketfile}" --pidfile "/run/uwsgi.pid" --module adcm.wsgi --chmod-socket=777 --logger file:logfile="${adcmlog}/wsgi.log",maxsize=2000000
+uwsgi --venv "${adcmroot}/venv/default" --socket "${wsgisocketfile}" --pidfile "/run/uwsgi.pid" --module adcm.wsgi --chmod-socket=777 --disable-logging

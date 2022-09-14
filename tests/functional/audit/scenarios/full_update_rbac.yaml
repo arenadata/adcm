@@ -1,0 +1,90 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+settings:
+  process-type: exact
+  start-from-first: matched
+
+operations:
+  - update:
+      what:
+        type: user
+        name: newuser
+      how: update-rbac-object
+      changes:
+        previous:
+          first_name: young
+          last_name: manager
+          email: does@notexi.st
+          is_superuser: false
+          password: "******"
+          profile: ""
+          group: []
+        current:
+          first_name: BrandNewFirstName
+          last_name: BrandNewSecondName
+          email: brand@new.com
+          is_superuser: true
+          password: "******"
+          profile: what should be here
+          group: ["groupforU [local]"]
+  - update:
+      what:
+        type: group
+        name: "ChangedGroupName [local]"
+      how:  update-rbac-object
+      changes:
+        previous:
+          name: "groupforU"
+          description: ""
+          user: ["newuser"]  # this user is added in previous step
+        current:
+          name: "ChangedGroupName"
+          description: "Whole new description"
+          user: ["admin"]
+  - update:
+      what:
+        type: role
+        name: "newrole"
+      how:  update-rbac-object
+      changes:
+        previous:
+          display_name: "New Role"
+          description: "Awesome role"
+          child: ["View ADCM settings"]
+        current:
+          display_name: "New Role Name"
+          description: "Whole new description"
+          child: ["View roles"]
+  - update:
+      what:
+        type: policy
+        name: "NewPolicyName"
+      how:  update-rbac-object
+      changes:
+        previous:
+          name: "newpolicy"
+          description: "Best policy ever"
+          role: "ADCM User"
+          user: ["admin"]
+          group: []
+          object: []
+        current:
+          name: "NewPolicyName"
+          description: "Whole new description"
+          role: "New Custom Role"
+          user: ["newuser"]
+          group: ["ChangedGroupName [local]"]
+          object:
+            - id: {{ provider.id }}
+              name: {{ provider.name }}
+              type: provider

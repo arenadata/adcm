@@ -19,7 +19,7 @@ from _pytest.outcomes import Failed
 
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.utils import catch_failed
+from adcm_pytest_plugin.utils import catch_failed, random_string
 
 from tests.library import errorcodes as err
 
@@ -42,13 +42,11 @@ def test_bundle_should_have_any_cluster_definition(sdk_client_fs: ADCMClient, bu
         err.BUNDLE_ERROR.equal(e, "There isn't any cluster or host provider definition in bundle")
 
 
-def test_bundle_cant_removed_when_some_object_associated_with(
-    sdk_client_fs: ADCMClient,
-):
+def test_bundle_cant_removed_when_some_object_associated_with(sdk_client_fs: ADCMClient):
     """Test bundle can't be removed when related objects are present"""
     bundle_path = utils.get_data_dir(__file__, "cluster_inventory_tests")
     bundle = sdk_client_fs.upload_from_fs(bundle_path)
-    bundle.cluster_prototype().cluster_create(name=__file__)
+    bundle.cluster_prototype().cluster_create(name=random_string(12))
     with allure.step("Removing bundle"):
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             bundle.delete()

@@ -9,14 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from typing import Type, Tuple, Any
+from typing import Any, Tuple, Type
 
 from django.db.models import Model
 from rest_framework import serializers
 
+from adcm.serializers import EmptySerializer
 
-class BaseRelatedSerializer(serializers.Serializer):
+
+class BaseRelatedSerializer(EmptySerializer):
     def to_internal_value(self, data):
         data = super().to_internal_value(data)
         if "id" not in data:

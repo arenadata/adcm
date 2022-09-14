@@ -35,7 +35,7 @@ from django.utils import timezone
 
 from cm.config import FILE_DIR, Job
 from cm.errors import AdcmEx
-from cm.logger import log
+from cm.logger import logger
 
 
 def validate_line_break_character(value: str) -> None:
@@ -455,7 +455,7 @@ class ADCMEntity(ADCMModel):
         self.save()
         if event:
             event.set_object_state(self.prototype.type, self.id, state)
-        log.info('set %s state to "%s"', self, state)
+        logger.info('set %s state to "%s"', self, state)
 
     def get_id_chain(self) -> dict:
         """
@@ -485,7 +485,7 @@ class ADCMEntity(ADCMModel):
         self.save()
         if event:
             event.change_object_multi_state(self.prototype.type, self.id, multi_state)
-        log.info('add "%s" to "%s" multi_state', multi_state, self)
+        logger.info('add "%s" to "%s" multi_state', multi_state, self)
 
     def unset_multi_state(self, multi_state: str, event=None) -> None:
         """Remove specified multi_state from entity._multi_state"""
@@ -496,7 +496,7 @@ class ADCMEntity(ADCMModel):
         self.save()
         if event:
             event.change_object_multi_state(self.prototype.type, self.id, multi_state)
-        log.info('remove "%s" from "%s" multi_state', multi_state, self)
+        logger.info('remove "%s" from "%s" multi_state', multi_state, self)
 
     def has_multi_state_intersection(self, multi_states: List[str]) -> bool:
         """Check if entity._multi_state has an intersection with list of multi_states"""
@@ -667,6 +667,10 @@ class Host(ADCMEntity):
     @property
     def monitoring(self):
         return self.prototype.monitoring
+
+    @property
+    def name(self):
+        return self.fqdn
 
     @property
     def display_name(self):

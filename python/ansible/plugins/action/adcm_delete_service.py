@@ -38,7 +38,9 @@ RETURN = r'''
 '''
 
 import sys
+
 from ansible.errors import AnsibleError
+
 from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm/python')
@@ -46,7 +48,7 @@ import adcm.init_django  # pylint: disable=unused-import
 import cm.api
 from cm.ansible_plugin import get_object_id_from_context
 from cm.errors import AdcmEx
-from cm.logger import log
+from cm.logger import logger
 
 
 class ActionModule(ActionBase):
@@ -60,7 +62,7 @@ class ActionModule(ActionBase):
         if service:
             msg = 'You can delete service by name only in cluster context'
             cluster_id = get_object_id_from_context(task_vars, 'cluster_id', 'cluster', err_msg=msg)
-            log.info('ansible module adcm_delete_service: service "%s"', service)
+            logger.info('ansible module adcm_delete_service: service "%s"', service)
             try:
                 cm.api.delete_service_by_name(service, cluster_id)
             except AdcmEx as e:
@@ -68,7 +70,7 @@ class ActionModule(ActionBase):
         else:
             msg = 'You can delete service only in service context'
             service_id = get_object_id_from_context(task_vars, 'service_id', 'service', err_msg=msg)
-            log.info('ansible module adcm_delete_service: service #%s', service_id)
+            logger.info('ansible module adcm_delete_service: service #%s', service_id)
             try:
                 cm.api.delete_service_by_id(service_id)
             except AdcmEx as e:
