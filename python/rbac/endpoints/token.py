@@ -13,14 +13,13 @@
 """View and serializer for Authentication token"""
 
 import django.contrib.auth
-
-import rest_framework
 import rest_framework.authtoken.serializers
+from adwp_base.errors import AdwpEx
+from rest_framework import authentication, permissions
 from rest_framework.authtoken.models import Token
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-
-from adwp_base.errors import AdwpEx
+from rest_framework.status import HTTP_401_UNAUTHORIZED
 
 
 class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
@@ -31,16 +30,22 @@ class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
             username=attrs.get('username'), password=attrs.get('password')
         )
         if not user:
-            raise AdwpEx('AUTH_ERROR', 'Wrong user or password')
+            raise AdwpEx('AUTH_ERROR', 'Wrong user or password', http_code=HTTP_401_UNAUTHORIZED)
         attrs['user'] = user
         return attrs
+
+    def update(self, instance, validated_data):
+        pass  # Class must implement all abstract methods
+
+    def create(self, validated_data):
+        pass  # Class must implement all abstract methods
 
 
 class GetAuthToken(GenericAPIView):
     """Authentication token view"""
 
-    authentication_classes = (rest_framework.authentication.TokenAuthentication,)
-    permission_classes = (rest_framework.permissions.AllowAny,)
+    authentication_classes = (authentication.TokenAuthentication,)
+    permission_classes = (permissions.AllowAny,)
     serializer_class = AuthSerializer
 
     def post(self, request, *args, **kwargs):

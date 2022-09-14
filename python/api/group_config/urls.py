@@ -13,32 +13,38 @@
 
 from rest_framework_extensions.routers import ExtendedDefaultRouter as DefaultRouter
 
-from . import views
+from api.group_config.views import (
+    GroupConfigConfigLogViewSet,
+    GroupConfigConfigViewSet,
+    GroupConfigHostCandidateViewSet,
+    GroupConfigHostViewSet,
+    GroupConfigViewSet,
+)
 
 router = DefaultRouter()
 
-root = router.register(r'', views.GroupConfigViewSet, basename='group-config')
+root = router.register(r'', GroupConfigViewSet, basename='group-config')
 root.register(
     r'host',
-    views.GroupConfigHostViewSet,
+    GroupConfigHostViewSet,
     basename='group-config-host',
     parents_query_lookups=['group_config'],
 )
 root.register(
     r'host-candidate',
-    views.GroupConfigHostCandidateViewSet,
+    GroupConfigHostCandidateViewSet,
     basename='group-config-host-candidate',
     parents_query_lookups=['group_config'],
 )
 config = root.register(
     r'config',
-    views.GroupConfigConfigViewSet,
+    GroupConfigConfigViewSet,
     basename='group-config-config',
     parents_query_lookups=['group_config'],
 )
 config.register(
     r'config-log',
-    views.GroupConfigConfigLogViewSet,
+    GroupConfigConfigLogViewSet,
     basename='group-config-config-log',
     parents_query_lookups=['obj_ref__group_config', 'obj_ref'],
 )

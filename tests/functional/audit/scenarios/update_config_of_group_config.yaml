@@ -1,0 +1,97 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+settings:
+  process-type: exact
+  start-from-first: matched
+
+operations:
+  # cluster group config update info
+  - update: &update-cluster-group-config
+      what: &cluster
+        type: cluster
+        name: Cluster for Updates
+      how: &update-group-config
+        operation: update-group-config
+        name: cluster-group
+  - update: *update-cluster-group-config
+  - update: *update-cluster-group-config
+    result: fail
+  - update: *update-cluster-group-config
+    result: fail
+  - update: *update-cluster-group-config
+    result: denied
+    username: {{ username }}
+  - update: *update-cluster-group-config
+    result: denied
+    username: {{ username }}
+  # cluster group config update config
+  - update: *update-cluster-group-config
+  - update: *update-cluster-group-config
+    result: fail
+  - update: *update-cluster-group-config
+    result: denied
+    username: {{ username }}
+
+  # service group config update info
+  - update: &update-service-group-config
+      what: &service
+        type: service
+        name: Cluster for Updates/service_for_updates
+      how:
+        operation: update-group-config
+        name: service-group
+  - update: *update-service-group-config
+  - update: *update-service-group-config
+    result: fail
+  - update: *update-service-group-config
+    result: fail
+  - update: *update-service-group-config
+    result: denied
+    username: {{ username }}
+  - update: *update-service-group-config
+    result: denied
+    username: {{ username }}
+  # service group config update config
+  - update: *update-service-group-config
+  - update: *update-service-group-config
+    result: fail
+  - update: *update-service-group-config
+    result: denied
+    username: {{ username }}
+
+  # component group config update info
+  - update: &update-component-group-config
+      what: &component
+        type: component
+        name: Cluster for Updates/service_for_updates/component_for_updates
+      how:
+        operation: update-group-config
+        name: component-group
+  - update: *update-component-group-config
+  - update: *update-component-group-config
+    result: fail
+  - update: *update-component-group-config
+    result: fail
+  - update: *update-component-group-config
+    result: denied
+    username: {{ username }}
+  - update: *update-component-group-config
+    result: denied
+    username: {{ username }}
+  # component group config update config
+  - update: *update-component-group-config
+  - update: *update-component-group-config
+    result: fail
+  - update: *update-component-group-config
+    result: denied
+    username: {{ username }}

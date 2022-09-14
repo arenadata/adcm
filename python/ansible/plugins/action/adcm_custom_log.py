@@ -62,18 +62,17 @@ EXAMPLES = r'''
 RETURN = r'''
 '''
 
-import sys
 import base64
+import sys
 from binascii import Error
 
 from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm/python')
 import adcm.init_django  # pylint: disable=unused-import
-
-from cm.job import log_custom
 from cm.errors import AdcmEx
-from cm.logger import log
+from cm.job import log_custom
+from cm.logger import logger
 
 
 class ActionModule(ActionBase):
@@ -96,12 +95,14 @@ class ActionModule(ActionBase):
 
         try:
             if path is None:
-                log.debug(
+                logger.debug(
                     'ansible adcm_custom_log: %s, %s, %s, %s', job_id, name, log_format, content
                 )
                 log_custom(job_id, name, log_format, content)
             else:
-                log.debug('ansible adcm_custom_log: %s, %s, %s, %s', job_id, name, log_format, path)
+                logger.debug(
+                    'ansible adcm_custom_log: %s, %s, %s, %s', job_id, name, log_format, path
+                )
                 slurp_return = self._execute_module(
                     module_name='slurp', module_args={'src': path}, task_vars=task_vars, tmp=tmp
                 )

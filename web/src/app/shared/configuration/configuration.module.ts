@@ -20,6 +20,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from '@angular/material/list';
+import { MatMenuModule } from "@angular/material/menu";
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -48,6 +49,8 @@ import { ConfigGroupModule } from '@app/config-groups';
 import { AttributesModule } from '@app/shared/configuration/attributes/attributes.module';
 import { ConfigAttributeNames } from '@app/shared/configuration/attributes/attribute.service';
 import { GroupKeysWrapperComponent } from '@app/shared/configuration/attributes/attributes/group-keys/group-keys-wrapper.component';
+import { FilterComponent } from "@app/shared/configuration/tools/filter/filter.component";
+import { FilterListComponent } from "@app/shared/configuration/tools/filter/filter-list/filter-list.component";
 
 const material = [
   MatIconModule,
@@ -62,6 +65,7 @@ const material = [
   MatExpansionModule,
   MatSlideToggleModule,
   MatListModule,
+  MatMenuModule,
 ];
 
 @NgModule({
@@ -72,6 +76,8 @@ const material = [
     ConfigComponent,
     HistoryComponent,
     SearchComponent,
+    FilterComponent,
+    FilterListComponent,
     ColorOptionDirective,
     ToolsComponent,
     SchemeComponent,
@@ -102,9 +108,9 @@ const material = [
           tooltipText: 'This parameter can not be added to config group'
         }
       }
-    })
+    }),
   ],
-  exports: [ConfigComponent, ConfigFieldsComponent],
+  exports: [ConfigComponent, ConfigFieldsComponent, FilterComponent, FilterListComponent],
   providers: [FieldService, YspecService, SchemeService, ConfigService],
 })
 export class ConfigurationModule {
