@@ -47,8 +47,6 @@ class TestAuditObjects(BaseTestCase):
             )
             PrototypeConfig.objects.create(name="param", type="integer", prototype=proto)
             setattr(self, name, proto)
-        self.service_proto.parent = self.cluster_proto
-        self.service_proto.save()
         self.component_proto.parent = self.service_proto
         self.component_proto.save()
         self.host_proto.parent = self.provider_proto
