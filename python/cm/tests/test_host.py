@@ -279,12 +279,12 @@ class TestHostAPI(BaseTestCase):
     def test_host_update_wrong_fqdn_fail(self):
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": ".new_test_fqdn", "maintenance_mode": "on"},
+            data={"fqdn": ".new_test_fqdn"},
             content_type=APPLICATION_JSON,
         )
 
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.json()["code"], "HOST_CONFLICT")
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json()["code"], "WRONG_NAME")
 
     def test_host_update_not_created_state_wrong_fqdn_fail(self):
         self.host.state = "active"
@@ -292,14 +292,16 @@ class TestHostAPI(BaseTestCase):
 
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": ".new_test_fqdn", "maintenance_mode": "on"},
+            data={"fqdn": ".new_test_fqdn"},
             content_type=APPLICATION_JSON,
         )
 
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.json()["code"], "HOST_CONFLICT")
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json()["code"], "WRONG_NAME")
 
     def test_update_host_correct_incorrect_fqdn(self):
+        self.host.maintenance_mode = 'disabled'
+        self.host.save()
         incorrect_values = {
             "a" * 254,
             ".startwithdot",
@@ -327,10 +329,7 @@ class TestHostAPI(BaseTestCase):
                     data={"fqdn": value, **default_values},
                     content_type=APPLICATION_JSON,
                 )
-                self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-                self.assertEqual(response.json()["code"], "HOST_CONFLICT")
-                self.host.refresh_from_db()
-                self.assertEqual(self.host.fqdn, fqdn)
+                self._check_incorrect_fqdn_update(response, fqdn)
 
             with self.subTest("incorrect-patch", fqdn=value):
                 response: Response = self.client.patch(
@@ -338,10 +337,7 @@ class TestHostAPI(BaseTestCase):
                     data={"fqdn": value},
                     content_type=APPLICATION_JSON,
                 )
-                self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-                self.assertEqual(response.json()["code"], "HOST_CONFLICT")
-                self.host.refresh_from_db()
-                self.assertEqual(self.host.fqdn, fqdn)
+                self._check_incorrect_fqdn_update(response, fqdn)
 
         for value in correct_values:
             with self.subTest("correct-put", fqdn=value):
@@ -350,9 +346,7 @@ class TestHostAPI(BaseTestCase):
                     data={"fqdn": value, **default_values},
                     content_type=APPLICATION_JSON,
                 )
-                self.assertEqual(response.status_code, HTTP_200_OK)
-                self.host.refresh_from_db()
-                self.assertEqual(self.host.fqdn, value)
+                self._check_success_fqdn_update(response, value)
 
             self.host.fqdn = fqdn
             self.host.save()
@@ -362,7 +356,22 @@ class TestHostAPI(BaseTestCase):
                     data={"fqdn": value},
                     content_type=APPLICATION_JSON,
                 )
+                self._check_success_fqdn_update(response, value)
 
-                self.assertEqual(response.status_code, HTTP_200_OK)
-                self.host.refresh_from_db()
-                self.assertEqual(self.host.fqdn, value)
+    def _check_incorrect_fqdn_update(self, response: Response, expected_fqdn: str):
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        err = response.json()
+        if "code" in err:
+            self.assertEqual(err["code"], "WRONG_NAME")
+        else:
+            self.assertIn("fqdn", err)
+            self.assertEqual(
+                err["fqdn"], ["Ensure this field has no more than 253 characters."]
+            )
+        self.host.refresh_from_db()
+        self.assertEqual(self.host.fqdn, expected_fqdn)
+
+    def _check_success_fqdn_update(self, response: Response, expected_fqdn: str):
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.host.refresh_from_db()
+        self.assertEqual(self.host.fqdn, expected_fqdn)

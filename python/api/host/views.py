@@ -273,9 +273,11 @@ class HostDetail(PermissionListMixin, DetailView):
         )
 
         if serializer.is_valid(raise_exception=True):
-            self.__check_maintenance_mode_constraint(
-                host.maintenance_mode, serializer.validated_data["maintenance_mode"]
-            )
+            if "maintenance_mode" in serializer.validated_data:
+                self.__check_maintenance_mode_constraint(
+                    host.maintenance_mode, serializer.validated_data["maintenance_mode"]
+                )
+
             if (
                 "fqdn" in request.data
                 and request.data["fqdn"] != host.fqdn
@@ -292,6 +294,8 @@ class HostDetail(PermissionListMixin, DetailView):
 
     @staticmethod
     def __check_maintenance_mode_constraint(old_mode, new_mode):
+        if old_mode == new_mode:
+            return
         if old_mode == MaintenanceModeType.Disabled or new_mode not in (
             MaintenanceModeType.On,
             MaintenanceModeType.Off,
