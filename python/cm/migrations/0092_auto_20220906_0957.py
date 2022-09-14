@@ -114,8 +114,6 @@ def get_selector(apps, schema_editor):
         if task.selector:
             selector = _fix_selector(task.selector, _models)
             task.selector = selector
-            task.joblog_set.filter().update(selector=selector)
-
         else:
 
             if not task.object_type:
@@ -154,9 +152,9 @@ def get_selector(apps, schema_editor):
                         "name": obj.provider.name,
                     }
             task.selector = selector
-            task.joblog_set.filter().update(selector=selector)
 
-        task.save()
+        task.save(update_fields=["selector"])
+        task.joblog_set.filter().update(selector=selector)
 
 
 class Migration(migrations.Migration):
