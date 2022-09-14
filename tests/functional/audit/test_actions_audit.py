@@ -268,8 +268,13 @@ class TestUpgrade(RunActionTestMixin):
         )
 
     @pytest.mark.parametrize("parse_with_context", ["upgrade.yaml"], indirect=True)
-    @pytest.mark.parametrize("type_to_pick", [Cluster, Provider])
-    @pytest.mark.usefixtures("grant_view_on_cluster", "grant_view_on_provider", "upload_new_bundles", "init")
+    @pytest.mark.parametrize(
+        "type_to_pick",
+        [Cluster, pytest.param(Provider, marks=pytest.mark.skip(reason="https://tracker.yandex.ru/ADCM-3179"))],
+    )
+    @pytest.mark.usefixtures(
+        "grant_view_on_cluster", "grant_view_on_provider", "upload_new_bundles", "init"
+    )  # pylint: disable-next=too-many-locals
     def test_upgrade(self, type_to_pick: Type, cluster, provider, parse_with_context):
         """Test audit of cluster/provider simple upgrade/upgrade with action"""
         if type_to_pick == Cluster:
@@ -281,16 +286,25 @@ class TestUpgrade(RunActionTestMixin):
         type_name = type_to_pick.__name__.lower()
         upgrade_base = f"{self.client.url}/api/v1/{type_name}/{obj.id}/upgrade/"
         # we can run them in for loop even though it's success, because of how bundle is written
-        for name in (self.SIMPLE, self.FAIL, self.SUCCEED):
+        url = f"{upgrade_base}{obj.upgrade(name=self.SIMPLE).id}/do/"
+        for headers, actual_url, check_response in (
+            (self.unauth_creds, url, check_403),
+            (self.admin_creds, f"{upgrade_base}1000/do/", check_404),
+            (self.admin_creds, url, check_succeed),
+        ):
+            with allure.step(f"Run upgrade '{self.SIMPLE}' on {type_name} {obj.name} via POST to {actual_url}"):
+                check_response(requests.post(actual_url, headers=headers))
+            _wait_all_finished(self.client)
+        for name in (self.FAIL, self.SUCCEED):
             upgrade = obj.upgrade(name=name)
             url = f"{upgrade_base}{upgrade.id}/do/"
-            for headers, actual_url, check_response in (
-                (self.unauth_creds, url, check_403),
-                (self.admin_creds, f"{upgrade_base}1000/do/", check_404),
-                (self.admin_creds, url, check_succeed),
+            for headers, data, check_response in (
+                (self.unauth_creds, {}, check_403),
+                (self.admin_creds, {}, check_409),
+                (self.admin_creds, {"config": {"param": "asdklj"}}, check_succeed),
             ):
-                with allure.step(f"Run upgrade '{name}' on {type_name} {obj.name} via POST to {actual_url}"):
-                    check_response(requests.post(actual_url, headers=headers))
+                with allure.step(f"Run upgrade '{name}' on {type_name} {obj.name} via POST to {url} with body: {data}"):
+                    check_response(requests.post(url, json=data, headers=headers))
                 _wait_all_finished(self.client)
         checker = AuditLogChecker(
             parse_with_context({"username": NEW_USER["username"], "name": obj.name, "object_type": type_name})
@@ -353,6 +367,7 @@ class TestTaskCancelRestart(RunActionTestMixin):
         with allure.step("Cancel task with result: denied, success, fail"):
             check_404(self._cancel(task, self.unauth_creds))
             check_succeed(self._cancel(task, self.admin_creds))
+            _wait_all_finished(self.client)
             check_409(self._cancel(task, self.admin_creds))
         with allure.step("Restart task with result: denied, fail, success"):
             check_404(self._restart(task, self.unauth_creds))

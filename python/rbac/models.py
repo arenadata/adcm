@@ -60,6 +60,11 @@ class User(AuthUser):
 
     profile = models.JSONField(default=str)
     built_in = models.BooleanField(default=False, null=False)
+
+    def delete(self, using=None, keep_parents=False):
+        self.is_active = False
+        self.save()
+
     type = models.CharField(
         max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local
     )

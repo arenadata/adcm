@@ -91,7 +91,7 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
     group = GroupSerializer(many=True, required=False, source="groups")
     built_in = BooleanField(read_only=True)
     type = CharField(read_only=True)
-    is_active = BooleanField(read_only=True)
+    is_active = BooleanField(required=False, default=True)
 
     class Meta:
         expandable_fields = {"group": (ExpandedGroupSerializer, {"many": True, "source": "groups"})}

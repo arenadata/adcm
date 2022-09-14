@@ -141,13 +141,16 @@ class TestService(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertFalse(log.audit_object)
-        self.assertEqual(log.operation_name, "service added")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
-        self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
-        self.assertEqual(log.object_changes, {})
+        self.check_log(
+            log=log,
+            obj=cluster,
+            obj_name=cluster.name,
+            object_type=AuditObjectType.Cluster,
+            operation_name="service added",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Fail,
+            user=self.test_user,
+        )
 
     def get_service_and_cluster(self) -> tuple[ClusterObject, Cluster]:
         bundle = Bundle.objects.create(name="test_bundle_2")
@@ -277,6 +280,23 @@ class TestService(BaseTestCase):
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
         )
+
+        response: Response = self.client.delete(
+            path=reverse("service-details", kwargs={"service_id": self.service.pk}),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(log.operation_name, "service removed")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.object_changes, {})
+
+        self.assertFalse(log.audit_object)
 
     def test_delete_denied(self):
         init_roles()

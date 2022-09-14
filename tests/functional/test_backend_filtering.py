@@ -79,7 +79,7 @@ def one_cluster_prototype_bundle_id_attr(one_cluster_prototype: ClusterPrototype
 def clusters(cluster_bundles: ADCMClient):
     """Create clusters"""
     for i in range(51):
-        cluster_bundles.bundle(name='14').cluster_create(name=str(i))
+        cluster_bundles.bundle(name='14').cluster_create(name=f'cluster {i}')
     return cluster_bundles
 
 
@@ -439,7 +439,7 @@ def test_filter(sdk_client: ADCMClient, tested_class, tested_list_class, search_
 def cluster_with_actions(sdk_client_fs: ADCMClient):
     """Create cluster with actions"""
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_with_actions'))
-    return bundle.cluster_create(name="cluster_with_actions")
+    return bundle.cluster_create(name="cluster with actions")
 
 
 @pytest.fixture()

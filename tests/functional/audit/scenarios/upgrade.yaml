@@ -25,7 +25,11 @@ operations:
         name: Simple Upgrade
     result: denied
     username: {{ username }}
-  - update: *simple-upgrade
+  - update:
+      what: *object
+      how:
+        operation: do-upgrade
+        name: ""  # because "not found"
     result: fail
   - update: *simple-upgrade
   # fail upgrade

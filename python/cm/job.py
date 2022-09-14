@@ -27,10 +27,10 @@ from cm import adcm_config, api, config, inventory, issue, variant
 from cm.adcm_config import process_file_type
 from cm.api_context import ctx
 from cm.errors import AdcmEx
-from cm.errors import raise_AdcmEx as err
+from cm.errors import raise_adcm_ex as err
 from cm.hierarchy import Tree
 from cm.inventory import get_obj_config, process_config_and_attr
-from cm.logger import log
+from cm.logger import logger
 from cm.models import (
     ADCM,
     Action,
@@ -49,6 +49,7 @@ from cm.models import (
     ServiceComponent,
     SubAction,
     TaskLog,
+    Upgrade,
     get_object_cluster,
 )
 from cm.status_api import post_event
@@ -262,9 +263,9 @@ def cook_delta(  # pylint: disable=too-many-branches
             for host in value:
                 add_delta(delta, 'remove', key, host, value[host])
 
-    log.debug('OLD: %s', old)
-    log.debug('NEW: %s', new)
-    log.debug('DELTA: %s', delta)
+    logger.debug('OLD: %s', old)
+    logger.debug('NEW: %s', new)
+    logger.debug('DELTA: %s', delta)
     return delta
 
 
@@ -657,15 +658,15 @@ def get_state(
         multi_state_unset = action.multi_state_on_success_unset
         state = action.state_on_success
         if not state:
-            log.warning('action "%s" success state is not set', action.name)
+            logger.warning('action "%s" success state is not set', action.name)
     elif status == config.Job.FAILED:
         state = getattr_first('state_on_fail', sub_action, action)
         multi_state_set = getattr_first('multi_state_on_fail_set', sub_action, action)
         multi_state_unset = getattr_first('multi_state_on_fail_unset', sub_action, action)
         if not state:
-            log.warning('action "%s" fail state is not set', action.name)
+            logger.warning('action "%s" fail state is not set', action.name)
     else:
-        log.error('unknown task status: %s', status)
+        logger.error('unknown task status: %s', status)
         state = None
         multi_state_set = []
         multi_state_unset = []
@@ -681,9 +682,9 @@ def set_action_state(
     multi_state_unset: List[str] = None,
 ):
     if not obj:
-        log.warning('empty object for action %s of task #%s', action.name, task.pk)
+        logger.warning('empty object for action %s of task #%s', action.name, task.pk)
         return
-    log.info(
+    logger.info(
         'action "%s" of task #%s will set %s state to "%s" '
         'add to multi_states "%s" and remove from multi_states "%s"',
         action.name,
@@ -712,7 +713,7 @@ def restore_hc(task: TaskLog, action: Action, status: str):
 
     cluster = get_object_cluster(task.task_object)
     if cluster is None:
-        log.error('no cluster in task #%s', task.pk)
+        logger.error('no cluster in task #%s', task.pk)
         return
 
     host_comp_list = []
@@ -722,7 +723,7 @@ def restore_hc(task: TaskLog, action: Action, status: str):
         comp = ServiceComponent.objects.get(id=hc['component_id'], cluster=cluster, service=service)
         host_comp_list.append((service, host, comp))
 
-    log.warning('task #%s is failed, restore old hc', task.pk)
+    logger.warning('task #%s is failed, restore old hc', task.pk)
     api.save_hc(cluster, host_comp_list)
 
 
@@ -748,9 +749,15 @@ def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
         task.unlock_affected()
         set_task_status(task, status, ctx.event)
 
+    upgrade = Upgrade.objects.filter(action=action).first()
+    if upgrade:
+        operation_name = f"{action.display_name} upgrade completed"
+    else:
+        operation_name = f"{action.display_name} action completed"
+
     audit_finish_task(
         obj=obj,
-        action_display_name=action.display_name,
+        operation_name=operation_name,
         status=status,
     )
 
@@ -800,12 +807,12 @@ def run_task(task: TaskLog, event, args: str = ''):
         str(task.pk),
         args,
     ]
-    log.info("task run cmd: %s", ' '.join(cmd))
+    logger.info("task run cmd: %s", ' '.join(cmd))
     proc = subprocess.Popen(
         cmd,
         stderr=err_file,
     )
-    log.info("task run #%s, python process %s", task.pk, proc.pid)
+    logger.info("task run #%s, python process %s", task.pk, proc.pid)
 
     set_task_status(task, config.Job.RUNNING, event)
 

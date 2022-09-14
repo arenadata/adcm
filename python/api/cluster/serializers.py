@@ -37,6 +37,7 @@ from api.utils import (
     get_upgradable_func,
     hlink,
 )
+from api.validators import ClusterNameRegExValidator
 from cm.adcm_config import get_main_info
 from cm.api import add_cluster, add_hc, bind, multi_bind
 from cm.errors import AdcmEx
@@ -65,7 +66,10 @@ class ClusterSerializer(Serializer):
     prototype_id = IntegerField(help_text="ID of Cluster type")
     name = CharField(
         help_text="Cluster name",
-        validators=[ClusterUniqueValidator(queryset=Cluster.objects.all())],
+        validators=[
+            ClusterUniqueValidator(queryset=Cluster.objects.all()),
+            ClusterNameRegExValidator,
+        ],
     )
     description = CharField(help_text="Cluster description", required=False)
     state = CharField(read_only=True)
@@ -114,6 +118,26 @@ class ClusterDetailSerializer(ClusterSerializer):
     @staticmethod
     def get_status(obj):
         return get_cluster_status(obj)
+
+
+class ClusterUpdateSerializer(EmptySerializer):
+    id = IntegerField(read_only=True)
+    name = CharField(
+        max_length=80,
+        validators=[
+            ClusterUniqueValidator(queryset=Cluster.objects.all()),
+            ClusterNameRegExValidator,
+        ],
+        required=False,
+        help_text="Cluster name",
+    )
+    description = CharField(required=False, help_text="Cluster description")
+
+    def update(self, instance, validated_data):
+        instance.name = validated_data.get("name", instance.name)
+        instance.description = validated_data.get("description", instance.description)
+        instance.save()
+        return instance
 
 
 class ClusterUISerializer(ClusterDetailSerializer):
