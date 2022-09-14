@@ -192,9 +192,9 @@ class LogStorageSerializer(serializers.Serializer):
         try:
             with open(path_file, "r", encoding="utf_8") as f:
                 content = f.read()
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             msg = f'File "{obj.name}-{obj.type}.{obj.format}" not found'
-            raise AdcmEx("LOG_NOT_FOUND", msg) from None
+            raise AdcmEx("LOG_NOT_FOUND", msg) from e
         return content
 
     def get_content(self, obj):

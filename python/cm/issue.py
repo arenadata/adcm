@@ -26,9 +26,11 @@ from cm.models import (
     ConfigLog,
     Host,
     HostComponent,
+    MessageTemplate,
+    ObjectType,
+    Prototype,
+    PrototypeImport,
 )
-from cm.models import MessageTemplate as MsgTpl
-from cm.models import ObjectType, Prototype, PrototypeImport
 
 
 def check_config(obj):  # pylint: disable=too-many-branches
@@ -281,10 +283,10 @@ _prototype_issue_map = {
     ObjectType.Host: (ConcernCause.Config,),
 }
 _issue_template_map = {
-    ConcernCause.Config: MsgTpl.KnownNames.ConfigIssue,
-    ConcernCause.Import: MsgTpl.KnownNames.RequiredImportIssue,
-    ConcernCause.Service: MsgTpl.KnownNames.RequiredServiceIssue,
-    ConcernCause.HostComponent: MsgTpl.KnownNames.HostComponentIssue,
+    ConcernCause.Config: MessageTemplate.KnownNames.ConfigIssue,
+    ConcernCause.Import: MessageTemplate.KnownNames.RequiredImportIssue,
+    ConcernCause.Service: MessageTemplate.KnownNames.RequiredServiceIssue,
+    ConcernCause.HostComponent: MessageTemplate.KnownNames.HostComponentIssue,
 }
 
 
@@ -298,7 +300,7 @@ def create_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
     issue = obj.get_own_issue(issue_cause)
     if issue is None:
         msg_name = _issue_template_map[issue_cause]
-        reason = MsgTpl.get_message_from_template(msg_name.value, source=obj)
+        reason = MessageTemplate.get_message_from_template(msg_name.value, source=obj)
         issue_name = _gen_issue_name(obj, issue_cause)
         issue = ConcernItem.objects.create(
             type=ConcernType.Issue, name=issue_name, reason=reason, owner=obj, cause=issue_cause

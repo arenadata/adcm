@@ -31,8 +31,10 @@ def _get_host_action_context(apps, obj, task):
     ServiceComponent = apps.get_model("cm", "ServiceComponent")
     cluster = obj.cluster
     context = {"cluster": {"id": cluster.pk, "name": cluster.name}}
-    try:
-        if task.action.prototype.type == "service":
+
+    if task.action.prototype.type == "service":
+
+        try:
             service_prototype = Prototype.objects.get(
                 type=task.action.prototype.type,
                 name=task.action.prototype.name,
@@ -42,7 +44,12 @@ def _get_host_action_context(apps, obj, task):
             )
             service = ClusterObject.objects.get(prototype=service_prototype, cluster=cluster)
             context["service"] = {"id": service.pk, "name": service.prototype.display_name}
-        elif task.action.prototype.type == "component":
+        except ObjectDoesNotExist:
+            context = {}
+
+    elif task.action.prototype.type == "component":
+
+        try:
             service_prototype = Prototype.objects.get(
                 type=task.action.prototype.parent.type,
                 name=task.action.prototype.parent.name,
@@ -68,8 +75,8 @@ def _get_host_action_context(apps, obj, task):
                 "id": component.pk,
                 "name": component.prototype.display_name,
             }
-    except ObjectDoesNotExist:
-        context = {}
+        except ObjectDoesNotExist:
+            context = {}
     return context
 
 
@@ -108,10 +115,13 @@ def get_selector(apps, schema_editor):
             task.joblog_set.filter().update(selector=selector)
 
         else:
+            model, _ = _models.get(MODEL_TYPE[task.object_type.model], (None, None))
+
+            if not model:
+                continue
+
             try:
-                model, _ = _models.get(MODEL_TYPE[task.object_type.model], (None, None))
-                if model:
-                    obj = model.objects.get(pk=task.object_id)
+                obj = model.objects.get(pk=task.object_id)
             except ObjectDoesNotExist:
                 continue
             selector = {}
