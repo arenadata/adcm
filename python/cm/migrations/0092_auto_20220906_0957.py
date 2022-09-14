@@ -43,9 +43,10 @@ def _get_host_action_context(apps, obj, task):
                 parent=None,
             )
             service = ClusterObject.objects.get(prototype=service_prototype, cluster=cluster)
-            context["service"] = {"id": service.pk, "name": service.prototype.display_name}
         except ObjectDoesNotExist:
             context = {}
+        else:
+            context["service"] = {"id": service.pk, "name": service.prototype.display_name}
 
     elif task.action.prototype.type == "component":
 
@@ -70,13 +71,14 @@ def _get_host_action_context(apps, obj, task):
                 service=service,
                 prototype=component_prototype,
             )
+        except ObjectDoesNotExist:
+            context = {}
+        else:
             context["service"] = {"id": service.pk, "name": service.prototype.display_name}
             context["component"] = {
                 "id": component.pk,
                 "name": component.prototype.display_name,
             }
-        except ObjectDoesNotExist:
-            context = {}
     return context
 
 
@@ -115,6 +117,10 @@ def get_selector(apps, schema_editor):
             task.joblog_set.filter().update(selector=selector)
 
         else:
+
+            if not task.object_type:
+                continue
+
             model, _ = _models.get(MODEL_TYPE[task.object_type.model], (None, None))
 
             if not model:

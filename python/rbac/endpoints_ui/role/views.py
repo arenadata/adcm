@@ -14,25 +14,30 @@
 
 from collections import defaultdict
 
-from rest_framework import mixins, serializers
 from rest_framework.decorators import action
+from rest_framework.mixins import ListModelMixin
 from rest_framework.response import Response
+from rest_framework.serializers import (
+    CharField,
+    HyperlinkedIdentityField,
+    IntegerField,
+    JSONField,
+    Serializer,
+)
 
 from api.base_view import GenericUIViewSet
 from cm import models as cm_models
 from rbac import models
 
 
-class RoleSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-    parametrized_by_type = serializers.JSONField()
-    object_candidate_url = serializers.HyperlinkedIdentityField(
-        view_name="rbac-ui:role-object-candidate"
-    )
+class RoleSerializer(Serializer):
+    id = IntegerField()
+    name = CharField()
+    parametrized_by_type = JSONField()
+    object_candidate_url = HyperlinkedIdentityField(view_name="rbac-ui:role-object-candidate")
 
 
-class RoleViewSet(mixins.ListModelMixin, GenericUIViewSet):
+class RoleViewSet(ListModelMixin, GenericUIViewSet):
     queryset = models.Role.objects.all()
     serializer_class = RoleSerializer
 
