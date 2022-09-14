@@ -17,6 +17,26 @@ class TestCluster(BaseTestCase):
         )
         self.cluster = Cluster.objects.create(name="test_cluster_name", prototype=self.prototype)
 
+    def test_cluster_duplicate_name(self):
+        new_cluster = Cluster.objects.create(name="new_name", prototype=self.prototype)
+        url = reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
+        response = self.client.patch(
+            path=url, data={"name": new_cluster.name}, content_type=APPLICATION_JSON
+        )
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")
+        self.assertEqual(
+            response.json()["desc"], f'Cluster with name "{new_cluster.name}" already exists'
+        )
+        response = self.client.put(
+            path=url, data={"name": new_cluster.name}, content_type=APPLICATION_JSON
+        )
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")
+        self.assertEqual(
+            response.json()["desc"], f'Cluster with name "{new_cluster.name}" already exists'
+        )
+
     def test_cluster_name_validation(self):
         url = reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
         valid_names = [
@@ -41,27 +61,31 @@ class TestCluster(BaseTestCase):
 
         with self.another_user_logged_in(username="admin", password="admin"):
             for name in valid_names:
-                response = self.client.patch(
-                    path=url, data={"name": name}, content_type=APPLICATION_JSON
-                )
-                self.assertEqual(response.status_code, status.HTTP_200_OK)
-                self.assertEqual(response.json()["name"], name)
+                with self.subTest("correct-patch", name=name):
+                    response = self.client.patch(
+                        path=url, data={"name": name}, content_type=APPLICATION_JSON
+                    )
+                    self.assertEqual(response.status_code, status.HTTP_200_OK)
+                    self.assertEqual(response.json()["name"], name)
 
-                response = self.client.put(
-                    path=url, data={"name": name}, content_type=APPLICATION_JSON
-                )
-                self.assertEqual(response.status_code, status.HTTP_200_OK)
-                self.assertEqual(response.json()["name"], name)
+                with self.subTest("correct-put", name=name):
+                    response = self.client.put(
+                        path=url, data={"name": name}, content_type=APPLICATION_JSON
+                    )
+                    self.assertEqual(response.status_code, status.HTTP_200_OK)
+                    self.assertEqual(response.json()["name"], name)
 
             for name in invalid_names:
-                response = self.client.patch(
-                    path=url, data={"name": name}, content_type=APPLICATION_JSON
-                )
-                self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
-                self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")
+                with self.subTest("incorrect-patch", name=name):
+                    response = self.client.patch(
+                        path=url, data={"name": name}, content_type=APPLICATION_JSON
+                    )
+                    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+                    self.assertEqual(response.json()["code"], "WRONG_NAME")
 
-                response = self.client.put(
-                    path=url, data={"name": name}, content_type=APPLICATION_JSON
-                )
-                self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
-                self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")
+                with self.subTest("incorrect-put", name=name):
+                    response = self.client.put(
+                        path=url, data={"name": name}, content_type=APPLICATION_JSON
+                    )
+                    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+                    self.assertEqual(response.json()["code"], "WRONG_NAME")
