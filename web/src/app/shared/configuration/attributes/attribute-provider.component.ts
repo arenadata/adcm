@@ -80,9 +80,7 @@ export class ConfigFieldAttributeProviderComponent implements OnChanges, AfterVi
           this.containerRef.instance.fieldOptions = this.options;
           this.containerRef.instance.attributeForm = attribute.form;
           this.containerRef.instance.parametersForm = this.parametersForm;
-          Promise.resolve().then(() => {
-            this.containerRef.instance.field = this.fieldComponent.first
-          });
+          setTimeout(() => this.containerRef.instance.field = this.fieldComponent.first, 0);
         }
       });
     } else {
