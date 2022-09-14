@@ -294,6 +294,7 @@ class TestInventory(BaseTestCase):
                 mock_dump.reset_mock()
 
     def test_host_vars(self):
+        # pylint: disable=too-many-locals
         service_pt_1 = gen_prototype(self.cluster_bundle, "service", "service_1")
         service_pt_2 = gen_prototype(self.cluster_bundle, "service", "service_2")
         component_pt_11 = gen_prototype(self.cluster_bundle, "component", "component_11")
