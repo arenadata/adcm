@@ -85,7 +85,7 @@ class ServiceListView(PermissionListMixin, PaginatedView):
 class ServiceDetailView(PermissionListMixin, DetailView):
     queryset = ClusterObject.objects.all()
     serializer_class = serializers.ServiceDetailSerializer
-    serializer_class_ui = serializers.ServiceUISerializer
+    serializer_class_ui = serializers.ServiceDetailUISerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
     lookup_url_kwarg = 'service_id'
     permission_required = ['cm.view_clusterobject']

@@ -52,6 +52,30 @@ class ServiceSerializer(serializers.Serializer):
             raise AdcmEx('SERVICE_CONFLICT') from None
 
 
+class ServiceUISerializer(ServiceSerializer):
+    action = CommonAPIURL(read_only=True, view_name='object-action')
+    actions = serializers.SerializerMethodField()
+    name = serializers.CharField(read_only=True)
+    version = serializers.SerializerMethodField()
+    concerns = ConcernItemUISerializer(many=True, read_only=True)
+    locked = serializers.BooleanField(read_only=True)
+    status = serializers.SerializerMethodField()
+
+    def get_actions(self, obj):
+        act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
+        self.context['service_id'] = obj.id
+        actions = filter_actions(obj, act_set)
+        acts = ActionShort(actions, many=True, context=self.context)
+        return acts.data
+
+    def get_version(self, obj):
+        return obj.prototype.version
+
+    def get_status(self, obj):
+        return status_api.get_service_status(obj)
+
+
 class ClusterServiceSerializer(ServiceSerializer):
     cluster_id = serializers.IntegerField(read_only=True)
 
@@ -90,13 +114,11 @@ class ServiceDetailSerializer(ServiceSerializer):
         return status_api.get_service_status(obj)
 
 
-class ServiceUISerializer(ServiceDetailSerializer):
+class ServiceDetailUISerializer(ServiceDetailSerializer):
     actions = serializers.SerializerMethodField()
     components = serializers.SerializerMethodField()
     name = serializers.CharField(read_only=True)
     version = serializers.SerializerMethodField()
-    action = CommonAPIURL(view_name='object-action')
-    config = CommonAPIURL(view_name='object-config')
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     main_info = serializers.SerializerMethodField()
 
