@@ -45,6 +45,9 @@ from cm.job import cancel_task, get_log, restart_task
 from cm.models import ActionType, JobLog, LogStorage, TaskLog
 from rbac.viewsets import DjangoOnlyObjectPermissions
 
+VIEW_JOBLOG_PERMISSION = "cm.view_joblog"
+VIEW_TASKLOG_PERMISSION = "cm.view_tasklog"
+
 
 def download_log_file(request, job_id, log_id):
     job = JobLog.obj.get(id=job_id)
@@ -161,7 +164,7 @@ class JobList(PermissionListMixin, PaginatedView):
     filterset_fields = ("action_id", "task_id", "pid", "status", "start_date", "finish_date")
     ordering_fields = ("status", "start_date", "finish_date")
     permission_classes = (DjangoModelPermissions,)
-    permission_required = ["cm.view_joblog"]
+    permission_required = [VIEW_JOBLOG_PERMISSION]
 
     def get_queryset(self, *args, **kwargs):
         if self.request.user.is_superuser:
@@ -175,14 +178,14 @@ class JobList(PermissionListMixin, PaginatedView):
 class JobDetail(PermissionListMixin, GenericUIView):
     queryset = JobLog.objects.all()
     permission_classes = (DjangoOnlyObjectPermissions,)
-    permission_required = ["cm.view_joblog"]
+    permission_required = [VIEW_JOBLOG_PERMISSION]
     serializer_class = JobSerializer
 
     def get(self, request, *args, **kwargs):
         """
         Show job
         """
-        job = get_object_for_user(request.user, "cm.view_joblog", JobLog, id=kwargs["job_id"])
+        job = get_object_for_user(request.user, VIEW_JOBLOG_PERMISSION, JobLog, id=kwargs["job_id"])
         job.log_dir = os.path.join(RUN_DIR, f"{job.id}")
         logs = get_log(job)
         for lg in logs:
@@ -223,7 +226,7 @@ class LogStorageView(PermissionListMixin, GenericUIView):
     serializer_class = LogStorageSerializer
 
     def get(self, request, *args, **kwargs):
-        job = get_object_for_user(request.user, "cm.view_joblog", JobLog, id=kwargs["job_id"])
+        job = get_object_for_user(request.user, VIEW_JOBLOG_PERMISSION, JobLog, id=kwargs["job_id"])
         try:
             log_storage = self.get_queryset().get(id=kwargs["log_id"], job=job)
         except LogStorage.DoesNotExist as e:
@@ -259,7 +262,7 @@ class LogFile(GenericUIView):
 
 class Task(PermissionListMixin, PaginatedView):
     queryset = TaskLog.objects.order_by("-id")
-    permission_required = ["cm.view_tasklog"]
+    permission_required = [VIEW_TASKLOG_PERMISSION]
     serializer_class = TaskListSerializer
     serializer_class_ui = TaskSerializer
     filterset_fields = ("action_id", "pid", "status", "start_date", "finish_date")
@@ -276,7 +279,7 @@ class Task(PermissionListMixin, PaginatedView):
 
 class TaskDetail(PermissionListMixin, DetailView):
     queryset = TaskLog.objects.all()
-    permission_required = ["cm.view_tasklog"]
+    permission_required = [VIEW_TASKLOG_PERMISSION]
     serializer_class = TaskSerializer
     lookup_field = "id"
     lookup_url_kwarg = "task_id"
@@ -290,7 +293,9 @@ class TaskReStart(GenericUIView):
 
     @audit
     def put(self, request, *args, **kwargs):
-        task = get_object_for_user(request.user, "cm.view_tasklog", TaskLog, id=kwargs["task_id"])
+        task = get_object_for_user(
+            request.user, VIEW_TASKLOG_PERMISSION, TaskLog, id=kwargs["task_id"]
+        )
         check_custom_perm(request.user, "change", TaskLog, task)
         restart_task(task)
 
@@ -304,7 +309,9 @@ class TaskCancel(GenericUIView):
 
     @audit
     def put(self, request, *args, **kwargs):
-        task = get_object_for_user(request.user, "cm.view_tasklog", TaskLog, id=kwargs["task_id"])
+        task = get_object_for_user(
+            request.user, VIEW_TASKLOG_PERMISSION, TaskLog, id=kwargs["task_id"]
+        )
         check_custom_perm(request.user, "change", TaskLog, task)
         cancel_task(task)
 
@@ -312,7 +319,7 @@ class TaskCancel(GenericUIView):
 
 
 class TaskDownload(PermissionListMixin, APIView):
-    permission_required = ["cm.view_tasklog"]
+    permission_required = [VIEW_TASKLOG_PERMISSION]
 
     @staticmethod
     def get(request: Request, task_id: int):  # pylint: disable=too-many-locals
