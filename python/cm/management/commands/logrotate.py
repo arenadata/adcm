@@ -9,8 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
+import logging
 import os
 import shutil
 from datetime import datetime, timedelta
@@ -24,7 +23,6 @@ from django.utils import timezone
 from audit.models import AuditLogOperationResult
 from audit.utils import make_audit_log
 from cm import config
-from cm.logger import log_cron_task as log
 from cm.models import (
     ADCM,
     Cluster,
@@ -39,6 +37,9 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+
+logger = logging.getLogger("background_tasks")
+
 
 LOGROTATE_CONF_FILE_TEMPLATE = """
 /adcm/data/log/nginx/*.log {{
@@ -272,4 +273,4 @@ class Command(BaseCommand):
     def __log(self, msg, method="debug"):
         self.stdout.write(msg)
         if self.verbose:
-            getattr(log, method)(msg)
+            getattr(logger, method)(msg)
