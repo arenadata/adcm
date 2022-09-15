@@ -12,9 +12,9 @@
 
 import copy
 import json
-import os
 import subprocess
 from configparser import ConfigParser
+from pathlib import Path
 from typing import Any, Hashable, List, Optional, Tuple, Union
 
 from django.db import transaction
@@ -397,20 +397,25 @@ def check_adcm(adcm_id: int) -> ADCM:
     return ADCM.obj.get(id=adcm_id)
 
 
-def get_bundle_root(action: Action) -> str:
+def get_bundle_root(action: Action) -> Path:
+
     if action.prototype.type == "adcm":
-        return os.path.join(config.BASE_DIR, "conf")
+        return Path(config.BASE_DIR, "conf")
+
     return config.BUNDLE_DIR
 
 
 def cook_script(action: Action, sub_action: SubAction):
     prefix = action.prototype.bundle.hash
     script = action.script
+
     if sub_action:
         script = sub_action.script
+
     if script[0:2] == "./":
-        script = os.path.join(action.prototype.path, script[2:])
-    return os.path.join(get_bundle_root(action), prefix, script)
+        script = Path(action.prototype.path, script[2:])
+
+    return Path(get_bundle_root(action), prefix, script)
 
 
 def get_adcm_config():
@@ -541,8 +546,8 @@ def prepare_job_config(
         "env": {
             "run_dir": config.RUN_DIR,
             "log_dir": config.LOG_DIR,
-            "tmp_dir": os.path.join(config.RUN_DIR, f"{job_id}", "tmp"),
-            "stack_dir": get_bundle_root(action) + "/" + action.prototype.bundle.hash,
+            "tmp_dir": Path(config.RUN_DIR, f"{job_id}", "tmp"),
+            "stack_dir": Path(get_bundle_root(action), action.prototype.bundle.hash),
             "status_api_token": config.STATUS_SECRET_KEY,
         },
         "job": {
@@ -555,6 +560,7 @@ def prepare_job_config(
             "playbook": cook_script(action, sub_action),
         },
     }
+
     if action.params:
         job_conf["job"]["params"] = action.params
 
@@ -613,7 +619,7 @@ def prepare_job_config(
     if conf:
         job_conf["job"]["config"] = conf
 
-    fd = open(os.path.join(config.RUN_DIR, f"{job_id}/config.json"), "w", encoding="utf_8")
+    fd = open(Path(config.RUN_DIR, f"{job_id}", "config.json"), "w", encoding="utf_8")
     json.dump(job_conf, fd, indent=3, sort_keys=True)
     fd.close()
 
@@ -666,7 +672,7 @@ def create_task(
         LogStorage.objects.create(job=job, name=log_type, type="stdout", format="txt")
         LogStorage.objects.create(job=job, name=log_type, type="stderr", format="txt")
         set_job_status(job.pk, config.Job.CREATED, ctx.event)
-        os.makedirs(os.path.join(config.RUN_DIR, f"{job.pk}", "tmp"), exist_ok=True)
+        Path(config.RUN_DIR, f"{job.pk}", "tmp").mkdir(parents=True, exist_ok=True)
 
     tree = Tree(obj)
     affected = (node.value for node in tree.get_all_affected(tree.built_from))
@@ -828,11 +834,11 @@ def check_all_status():
 
 
 def run_task(task: TaskLog, event, args: str = ""):
-    err_file = open(os.path.join(config.LOG_DIR, "task_runner.err"), "a+", encoding="utf_8")
+    err_file = open(Path(config.LOG_DIR, "task_runner.err"), "a+", encoding="utf_8")
     cmd = [
         "/adcm/python/job_venv_wrapper.sh",
         task.action.venv,
-        os.path.join(config.CODE_DIR, "task_runner.py"),
+        Path(config.CODE_DIR, "task_runner.py"),
         str(task.pk),
         args,
     ]
@@ -856,15 +862,18 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
     cl = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
     adcm_conf = cl.config
     mitogen = adcm_conf["ansible_settings"]["mitogen"]
+
     if mitogen:
         config_parser["defaults"]["strategy"] = "mitogen_linear"
-        config_parser["defaults"]["strategy_plugins"] = os.path.join(
-            config.PYTHON_SITE_PACKAGES, "ansible_mitogen/plugins/strategy"
+        config_parser["defaults"]["strategy_plugins"] = str(
+            Path(config.PYTHON_SITE_PACKAGES, "ansible_mitogen", "plugins", "strategy")
         )
         config_parser["defaults"]["host_key_checking"] = "False"
+
     forks = adcm_conf["ansible_settings"]["forks"]
     config_parser["defaults"]["forks"] = str(forks)
     params = action.params
+
     if sub_action:
         params = sub_action.params
 
@@ -872,7 +881,7 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
         config_parser["defaults"]["jinja2_native"] = str(params["jinja2_native"])
 
     with open(
-        os.path.join(config.RUN_DIR, f"{job_id}/ansible.cfg"), "w", encoding="utf_8"
+        Path(config.RUN_DIR, f"{job_id}", "ansible.cfg"), "w", encoding="utf_8"
     ) as config_file:
         config_parser.write(config_file)
 

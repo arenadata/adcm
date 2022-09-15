@@ -85,15 +85,20 @@ def _get_host_action_context(apps, obj, task):
 def _fix_selector(selector, _models):
     fixed_selector = {}
     for object_type, object_id in selector.items():
-        try:
-            model, name_attr = _models.get(object_type, (None, None))
-            if model:
-                obj = model.objects.get(pk=object_id)
-                if object_type in {"service", "component"}:
-                    obj = obj.prototype
-                fixed_selector[object_type] = {"id": object_id, "name": getattr(obj, name_attr)}
-        except ObjectDoesNotExist:
-            pass
+        model, name_attr = _models.get(object_type, (None, None))
+
+        if not model:
+            continue
+
+        obj = model.objects.filter(pk=object_id).first()
+        if not obj:
+            continue
+
+        if object_type in {"service", "component"}:
+            obj = obj.prototype
+
+        fixed_selector[object_type] = {"id": object_id, "name": getattr(obj, name_attr)}
+
     return fixed_selector
 
 
@@ -113,7 +118,6 @@ def get_selector(apps, schema_editor):
 
         if task.selector:
             selector = _fix_selector(task.selector, _models)
-            task.selector = selector
         else:
 
             if not task.object_type:
@@ -124,11 +128,12 @@ def get_selector(apps, schema_editor):
             if not model:
                 continue
 
-            try:
-                obj = model.objects.get(pk=task.object_id)
-            except ObjectDoesNotExist:
+            obj = model.objects.filter(pk=task.object_id).first()
+            if not obj:
                 continue
+
             selector = {}
+
             if obj.prototype.type in {"adcm", "cluster", "provider"}:
                 selector[obj.prototype.type] = {"id": obj.pk, "name": obj.name}
             elif obj.prototype.type == "service":
@@ -151,8 +156,8 @@ def get_selector(apps, schema_editor):
                         "id": obj.provider.pk,
                         "name": obj.provider.name,
                     }
-            task.selector = selector
 
+        task.selector = selector
         task.save(update_fields=["selector"])
         task.joblog_set.filter().update(selector=selector)
 
