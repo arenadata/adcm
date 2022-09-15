@@ -20,6 +20,6 @@ class RegExValidator(RegexValidator):
 
 ClusterNameRegExValidator = RegExValidator(
     regex=settings.CLUSTER_NAME_PATTERN,
-    error_code="CLUSTER_CONFLICT",
+    error_code="WRONG_NAME",
     error_msg="Name `{value}` doesn't meets requirements",
 )

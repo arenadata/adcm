@@ -213,6 +213,7 @@ class TestHostListPage:
         wait_and_assert_ui_info(
             expected_values,
             page.get_host_info_from_row,
+            timeout=10,
         )
 
     @pytest.mark.parametrize("_create_many_hosts", [12], indirect=True)
