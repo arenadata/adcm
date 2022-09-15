@@ -6,6 +6,14 @@ export enum ConcernEventType {
   ServiceComponent = 'service-component-concerns',
 }
 
+export enum CauseType {
+  Config = 'config',
+  Job = 'job',
+  HostComponent = 'host-component',
+  Import = 'import',
+  Service = 'service',
+}
+
 export enum IMPlaceholderItemType {
   ComponentActionRun = 'component_action_run',
   ComponentConfig = 'component_config',

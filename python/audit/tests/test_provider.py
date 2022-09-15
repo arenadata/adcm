@@ -39,7 +39,8 @@ from cm.models import (
     Prototype,
     Upgrade,
 )
-from rbac.models import User
+from rbac.models import Policy, Role, User
+from rbac.upgrade.role import init_roles
 
 
 class TestProvider(BaseTestCase):
@@ -188,6 +189,36 @@ class TestProvider(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_provider_deleted(
+            log=log,
+            provider=provider,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
+
+    def test_delete_denied_view_permission(self):
+        provider = HostProvider.objects.create(
+            name="test_provider",
+            prototype=self.prototype,
+        )
+
+        init_roles()
+        role = Role.objects.get(name="View provider configurations")
+        policy = Policy.objects.create(name="test_policy", role=role)
+        policy.user.add(self.no_rights_user)
+        policy.add_object(provider)
+        policy.apply()
+
+        with self.no_rights_user_logged_in:
+            response: Response = self.client.delete(
+                path=reverse("provider-details", kwargs={"provider_id": provider.pk}),
+                content_type=APPLICATION_JSON,
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertIsNotNone(log.audit_object)
         self.check_provider_deleted(
             log=log,
             provider=provider,

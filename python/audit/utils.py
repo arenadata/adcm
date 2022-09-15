@@ -100,6 +100,8 @@ def _get_deleted_obj(view: View, request: Request, kwargs) -> Model | None:
             deleted_obj = Cluster.objects.filter(pk=kwargs["cluster_id"]).first()
         elif "service_id" in kwargs:
             deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
+        elif "provider_id" in kwargs:
+            deleted_obj = HostProvider.objects.filter(pk=kwargs["provider_id"]).first()
         else:
             deleted_obj = None
 

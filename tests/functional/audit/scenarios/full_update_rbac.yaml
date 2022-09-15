@@ -40,7 +40,7 @@ operations:
   - update:
       what:
         type: group
-        name: "groupforU [local]"
+        name: "ChangedGroupName [local]"
       how:  update-rbac-object
       changes:
         previous:
@@ -68,7 +68,7 @@ operations:
   - update:
       what:
         type: policy
-        name: "newpolicy"
+        name: "NewPolicyName"
       how:  update-rbac-object
       changes:
         previous:

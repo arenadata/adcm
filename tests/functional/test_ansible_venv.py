@@ -37,7 +37,7 @@ def _prepare_cluster(client: ADCMClient, name):
     Prepared cluster for test: create cluster, couple services and couple components.
     """
     cluster_bundle = client.upload_from_fs(get_data_dir(__file__) + "/cluster_" + name)
-    cluster = cluster_bundle.cluster_prototype().cluster_create(name)
+    cluster = cluster_bundle.cluster_prototype().cluster_create(name.replace('_', ' '))
     cluster.service_add(name=name)
     return cluster
 
