@@ -26,6 +26,7 @@ from cm.models import (
     Cluster,
     ConcernType,
     JobLog,
+    LogStorage,
     Prototype,
     SubAction,
     TaskLog,
@@ -128,6 +129,14 @@ class TaskLogLockTest(BaseTestCase):
             ),
             name="test_cluster_4",
         )
+        cluster_5 = Cluster.objects.create(
+            prototype=Prototype.objects.create(
+                bundle=bundle,
+                type="cluster",
+                name="test_cluster_prototype_5",
+            ),
+            name="test_cluster_5",
+        )
         JobLog.objects.create(
             task=task,
             start_date=datetime.now(tz=ZoneInfo("UTC")),
@@ -167,6 +176,22 @@ class TaskLogLockTest(BaseTestCase):
                 )
             ),
         )
+        job_no_files = JobLog.objects.create(
+            task=task,
+            start_date=datetime.now(tz=ZoneInfo("UTC")),
+            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            sub_action=SubAction.objects.create(
+                action=Action.objects.create(
+                    display_name="test_subaction_job_4",
+                    prototype=cluster_5.prototype,
+                    type="job",
+                    state_available="any",
+                )
+            ),
+        )
+        LogStorage.objects.create(job=job_no_files, body="stdout db", type="stdout", format="txt")
+        LogStorage.objects.create(job=job_no_files, body="stderr db", type="stderr", format="txt")
+
         response: Response = self.client.get(
             path=reverse("task-download", kwargs={"task_id": task.pk}),
         )
@@ -176,4 +201,4 @@ class TaskLogLockTest(BaseTestCase):
             response.headers["Content-Disposition"],
             'attachment; filename="testcluster_testclusterprototype_testclusteraction_1.tar.gz"',
         )
-        self.assertEqual(response.headers["Content-Length"], "343")
+        self.assertEqual(response.headers["Content-Length"], "375")

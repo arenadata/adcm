@@ -89,11 +89,12 @@ def get_task_download_archive_name(task: TaskLog) -> str:
     if action_display_name:
         archive_name = f"{action_display_name}_{archive_name}"
 
-    action_prototype_display_name = str_remove_non_alnum(
-        value=task.action.prototype.display_name
-    ) or str_remove_non_alnum(value=task.action.prototype.name)
-    if action_prototype_display_name:
-        archive_name = f"{action_prototype_display_name}_{archive_name}"
+    if task.object_type.name in {"adcm", "cluster", "service", "component", "provider"}:
+        action_prototype_display_name = str_remove_non_alnum(
+            value=task.action.prototype.display_name
+        ) or str_remove_non_alnum(value=task.action.prototype.name)
+        if action_prototype_display_name:
+            archive_name = f"{action_prototype_display_name}_{archive_name}"
 
     if not task.task_object:
         return archive_name
@@ -105,11 +106,52 @@ def get_task_download_archive_name(task: TaskLog) -> str:
         obj_name = task.task_object.cluster.name
     elif task.object_type.name == "component":
         obj_name = task.task_object.cluster.name
+    elif task.object_type.name == "provider":
+        obj_name = task.task_object.name
+    elif task.object_type.name == "host":
+        obj_name = task.task_object.fqdn
 
     if obj_name:
         archive_name = f"{str_remove_non_alnum(value=obj_name)}_{archive_name}"
 
     return archive_name
+
+
+def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
+    jobs = JobLog.objects.filter(task=task)
+
+    if task.action and task.action.type == ActionType.Job:
+        dir_name_suffix = str_remove_non_alnum(
+            value=task.action.display_name
+        ) or str_remove_non_alnum(value=task.action.name)
+    else:
+        dir_name_suffix = None
+
+    fh = io.BytesIO()
+    with tarfile.open(fileobj=fh, mode="w:gz") as tar_file:
+        for job in jobs:
+            if dir_name_suffix is None:
+                dir_name_suffix = str_remove_non_alnum(
+                    value=job.sub_action.action.display_name
+                ) or str_remove_non_alnum(value=job.sub_action.action.name)
+
+            directory = Path(settings.RUN_DIR, str(job.pk))
+            if directory.is_dir():
+                for log_file in Path(settings.RUN_DIR, str(job.pk)).iterdir():
+                    tarinfo = tarfile.TarInfo(f"{job.pk}-{dir_name_suffix}/{log_file.name}")
+                    tarinfo.size = log_file.stat().st_size
+                    tar_file.addfile(tarinfo=tarinfo, fileobj=io.BytesIO(log_file.read_bytes()))
+            else:
+                log_storages = LogStorage.objects.filter(job=job, type__in={"stdout", "stderr"})
+                for log_storage in log_storages:
+                    tarinfo = tarfile.TarInfo(
+                        f"{job.pk}-{dir_name_suffix}/ansible-{log_storage.type}.txt"
+                    )
+                    body = io.BytesIO(bytes(log_storage.body, "utf-8"))
+                    tarinfo.size = body.getbuffer().nbytes
+                    tar_file.addfile(tarinfo=tarinfo, fileobj=body)
+
+    return fh
 
 
 class JobList(PermissionListMixin, PaginatedView):
@@ -278,28 +320,10 @@ class TaskDownload(PermissionListMixin, APIView):
         if not task:
             return Response(status=HTTP_404_NOT_FOUND)
 
-        jobs = JobLog.objects.filter(task=task)
-
-        if task.action and task.action.type == ActionType.Job:
-            dir_name_suffix = str_remove_non_alnum(
-                value=task.action.display_name
-            ) or str_remove_non_alnum(value=task.action.name)
-        else:
-            dir_name_suffix = None
-
-        fh = io.BytesIO()
-        with tarfile.open(fileobj=fh, mode="w:gz") as tar_file:
-            for job in jobs:
-                if dir_name_suffix is None:
-                    dir_name_suffix = str_remove_non_alnum(
-                        value=job.sub_action.action.display_name
-                    ) or str_remove_non_alnum(value=job.sub_action.action.name)
-                for log_file in Path(settings.RUN_DIR, str(job.pk)).iterdir():
-                    tarinfo = tarfile.TarInfo(f"{job.pk}-{dir_name_suffix}/{log_file.name}")
-                    tarinfo.size = log_file.stat().st_size
-                    tar_file.addfile(tarinfo=tarinfo, fileobj=io.BytesIO(log_file.read_bytes()))
-
-        response = HttpResponse(content=fh.getvalue(), content_type="application/tar+gzip")
+        response = HttpResponse(
+            content=get_task_download_archive_file_handler(task=task).getvalue(),
+            content_type="application/tar+gzip",
+        )
         response[
             "Content-Disposition"
         ] = f'attachment; filename="{get_task_download_archive_name(task=task)}"'
