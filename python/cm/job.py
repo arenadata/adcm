@@ -397,10 +397,10 @@ def check_adcm(adcm_id: int) -> ADCM:
     return ADCM.obj.get(id=adcm_id)
 
 
-def get_bundle_root(action: Action) -> Path:
+def get_bundle_root(action: Action) -> str:
 
     if action.prototype.type == "adcm":
-        return Path(config.BASE_DIR, "conf")
+        return str(Path(config.BASE_DIR, "conf"))
 
     return config.BUNDLE_DIR
 
@@ -415,7 +415,7 @@ def cook_script(action: Action, sub_action: SubAction):
     if script[0:2] == "./":
         script = Path(action.prototype.path, script[2:])
 
-    return Path(get_bundle_root(action), prefix, script)
+    return str(Path(get_bundle_root(action), prefix, script))
 
 
 def get_adcm_config():
@@ -546,8 +546,8 @@ def prepare_job_config(
         "env": {
             "run_dir": config.RUN_DIR,
             "log_dir": config.LOG_DIR,
-            "tmp_dir": Path(config.RUN_DIR, f"{job_id}", "tmp"),
-            "stack_dir": Path(get_bundle_root(action), action.prototype.bundle.hash),
+            "tmp_dir": str(Path(config.RUN_DIR, f"{job_id}", "tmp")),
+            "stack_dir": str(Path(get_bundle_root(action), action.prototype.bundle.hash)),
             "status_api_token": config.STATUS_SECRET_KEY,
         },
         "job": {
@@ -838,7 +838,7 @@ def run_task(task: TaskLog, event, args: str = ""):
     cmd = [
         "/adcm/python/job_venv_wrapper.sh",
         task.action.venv,
-        Path(config.CODE_DIR, "task_runner.py"),
+        str(Path(config.CODE_DIR, "task_runner.py")),
         str(task.pk),
         args,
     ]
