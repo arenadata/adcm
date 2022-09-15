@@ -244,11 +244,15 @@ LOGGING = {
             "formatter": "simple_formatter",
             "class": "logging.handlers.TimedRotatingFileHandler",
             "filename": BASE_DIR / "data/log/cron_task.log",
+            "when": "midnight",
+            "backupCount": 10,
         },
         "audit_file_handler": {
             "level": "DEBUG",
             "class": "logging.handlers.TimedRotatingFileHandler",
             "filename": BASE_DIR / "data/log/audit.log",
+            "when": "midnight",
+            "backupCount": 10,
         },
     },
     "loggers": {
