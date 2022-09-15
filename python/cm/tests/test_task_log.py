@@ -201,4 +201,3 @@ class TaskLogLockTest(BaseTestCase):
             response.headers["Content-Disposition"],
             'attachment; filename="testcluster_testclusterprototype_testclusteraction_1.tar.gz"',
         )
-        self.assertEqual(response.headers["Content-Length"], "375")
