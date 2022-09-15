@@ -31,6 +31,21 @@ from cm.models import Bundle, Cluster, Host, HostProvider, Prototype
 
 
 class TestHostAPI(BaseTestCase):
+    _incorrect_values = {
+        "a" * 254,
+        ".startwithdot",
+        "-startwithhypen",
+        "contain space",
+        "have!exclamation",
+    }
+    _correct_values = {
+        "a" * 253,
+        "StartWithChar",
+        "0StartWithNumber99",
+        "EndWithDot.",
+        "Contain-Hyphen.Dot",
+    }
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -299,7 +314,21 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["code"], "WRONG_NAME")
 
-    def test_duplicated_host_fqdn(self):
+    def test_host_create_duplicated_fqdn_fail(self):
+        response = self.client.post(
+            reverse("host"),
+            data={
+                "fqdn": self.host.fqdn,
+                "provider_id": self.host.provider.pk,
+                "prototype_id": self.host.prototype.pk,
+            },
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "HOST_CONFLICT")
+        self.assertEqual(response.json()["desc"], "duplicate host")
+
+    def test_host_update_duplicated_fqdn_fail(self):
         fqdn = "another"
         Host.objects.create(
             fqdn=fqdn,
@@ -336,30 +365,50 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.json()["code"], "HOST_CONFLICT")
         self.assertEqual(response.json()["desc"], "duplicate host")
 
-    def test_update_host_correct_incorrect_fqdn(self):
+    def test_host_create_fqdn_validation(self):
+        url = reverse("host")
+        amount_of_hosts = Host.objects.count()
+        extra_payload = {
+            "prototype_id": self.host.prototype.pk,
+            "provider_id": self.host.provider.pk,
+        }
+        for fqdn in self._incorrect_values:
+            with self.subTest("invalid", fqdn=fqdn):
+                response = self.client.post(
+                    path=url,
+                    data={"fqdn": fqdn, **extra_payload},
+                    content_type=APPLICATION_JSON,
+                )
+                self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+                err = response.json()
+                if "code" in err:
+                    self.assertEqual(err["code"], "WRONG_NAME")
+                else:
+                    self.assertIn("fqdn", err)
+                    self.assertEqual(
+                        err["fqdn"], ["Ensure this field has no more than 253 characters."]
+                    )
+                self.assertEqual(Host.objects.count(), amount_of_hosts)
+        for fqdn in self._correct_values:
+            with self.subTest("valid", fqdn=fqdn):
+                response = self.client.post(
+                    path=url,
+                    data={"fqdn": fqdn, **extra_payload},
+                    content_type=APPLICATION_JSON,
+                )
+                self.assertEqual(response.status_code, HTTP_201_CREATED)
+                self.assertEqual(response.json()["fqdn"], fqdn)
+
+    def test_host_update_fqdn_validation(self):
         self.host.maintenance_mode = 'disabled'
         self.host.save()
-        incorrect_values = {
-            "a" * 254,
-            ".startwithdot",
-            "-startwithhypen",
-            "contain space",
-            "have!exclamation",
-        }
-        correct_values = {
-            "a" * 253,
-            "StartWithChar",
-            "0StartWithNumber99",
-            "EndWithDot.",
-            "Contain-Hyphen.Dot",
-        }
         fqdn = self.host.fqdn
         default_values = {
             "provider_id": self.host.provider.pk,
             "prototype_id": self.host.prototype.pk,
             "maintenance_mode": self.host.maintenance_mode,
         }
-        for value in incorrect_values:
+        for value in self._incorrect_values:
             with self.subTest("incorrect-put", fqdn=value):
                 response: Response = self.client.put(
                     path=reverse("host-details", kwargs={"host_id": self.host.pk}),
@@ -376,7 +425,7 @@ class TestHostAPI(BaseTestCase):
                 )
                 self._check_incorrect_fqdn_update(response, fqdn)
 
-        for value in correct_values:
+        for value in self._correct_values:
             with self.subTest("correct-put", fqdn=value):
                 response: Response = self.client.put(
                     path=reverse("host-details", kwargs={"host_id": self.host.pk}),
