@@ -419,7 +419,7 @@ class TestHostAPI(BaseTestCase):
 
     def test_host_update_fqdn_validation(self):
         self.host.maintenance_mode = "disabled"
-        self.host.save(update_fields="maintenance_mode")
+        self.host.save(update_fields=["maintenance_mode"])
         fqdn = self.host.fqdn
         default_values = {
             "provider_id": self.host.provider.pk,
