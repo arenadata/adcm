@@ -22,7 +22,6 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import json
-import sys
 from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key

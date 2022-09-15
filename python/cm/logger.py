@@ -11,7 +11,6 @@
 # limitations under the License.
 
 import logging
-import os
 
 from cm import config
 
