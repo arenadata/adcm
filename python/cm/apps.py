@@ -55,7 +55,11 @@ class CmConfig(AppConfig):
 
     def ready(self):
         # pylint: disable-next=import-outside-toplevel,unused-import
-        from cm.signals import mark_deleted_audit_object_handler
+        from cm.signals import (
+            mark_deleted_audit_object_handler,
+            rename_audit_object,
+            rename_audit_object_host,
+        )
 
         post_save.connect(self.model_change, dispatch_uid='model_change')
         post_delete.connect(self.model_delete, dispatch_uid='model_delete')
