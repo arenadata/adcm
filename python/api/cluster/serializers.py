@@ -23,7 +23,7 @@ from rest_framework.validators import UniqueValidator
 
 from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
-from api.component.serializers import ComponentDetailSerializer
+from api.component.serializers import ComponentShortSerializer
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.host.serializers import HostSerializer
@@ -292,7 +292,7 @@ class HostComponentSaveSerializer(EmptySerializer):
         return add_hc(self.context.get("cluster"), hc)
 
 
-class HCComponentSerializer(ComponentDetailSerializer):
+class HCComponentSerializer(ComponentShortSerializer):
     service_id = IntegerField(read_only=True)
     service_name = SerializerMethodField()
     service_display_name = SerializerMethodField()

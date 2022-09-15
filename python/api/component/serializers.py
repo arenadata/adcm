@@ -59,6 +59,14 @@ class ComponentUISerializer(ComponentSerializer):
         return status_api.get_component_status(obj)
 
 
+class ComponentShortSerializer(ComponentSerializer):
+    constraint = serializers.JSONField(read_only=True)
+    requires = serializers.JSONField(read_only=True)
+    bound_to = serializers.JSONField(read_only=True)
+    bundle_id = serializers.IntegerField(read_only=True)
+    prototype = hlink('component-type-details', 'prototype_id', 'prototype_id')
+
+
 class ComponentDetailSerializer(ComponentSerializer):
     constraint = serializers.JSONField(read_only=True)
     requires = serializers.JSONField(read_only=True)
