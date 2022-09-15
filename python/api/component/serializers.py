@@ -36,6 +36,29 @@ class ComponentSerializer(serializers.Serializer):
     url = ObjectURL(read_only=True, view_name='component-details')
 
 
+class ComponentUISerializer(ComponentSerializer):
+    action = CommonAPIURL(read_only=True, view_name='object-action')
+    actions = serializers.SerializerMethodField()
+    version = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    concerns = ConcernItemUISerializer(many=True, read_only=True)
+    locked = serializers.BooleanField(read_only=True)
+
+    def get_actions(self, obj):
+        act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
+        self.context['component_id'] = obj.id
+        actions = filter_actions(obj, act_set)
+        acts = ActionShort(actions, many=True, context=self.context)
+        return acts.data
+
+    def get_version(self, obj):
+        return obj.prototype.version
+
+    def get_status(self, obj):
+        return status_api.get_component_status(obj)
+
+
 class ComponentDetailSerializer(ComponentSerializer):
     constraint = serializers.JSONField(read_only=True)
     requires = serializers.JSONField(read_only=True)
@@ -64,7 +87,7 @@ class StatusSerializer(serializers.Serializer):
         return status_api.get_component_status(obj)
 
 
-class ComponentUISerializer(ComponentDetailSerializer):
+class ComponentDetailUISerializer(ComponentDetailSerializer):
     actions = serializers.SerializerMethodField()
     version = serializers.SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)

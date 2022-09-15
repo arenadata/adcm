@@ -17,6 +17,7 @@ from rest_framework.response import Response
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.component.serializers import (
     ComponentDetailSerializer,
+    ComponentDetailUISerializer,
     ComponentSerializer,
     ComponentUISerializer,
     StatusSerializer,
@@ -58,7 +59,7 @@ class ComponentListView(PermissionListMixin, PaginatedView):
 class ComponentDetailView(PermissionListMixin, DetailView):
     queryset = ServiceComponent.objects.all()
     serializer_class = ComponentDetailSerializer
-    serializer_class_ui = ComponentUISerializer
+    serializer_class_ui = ComponentDetailUISerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ['cm.view_servicecomponent']
     lookup_url_kwarg = 'component_id'
