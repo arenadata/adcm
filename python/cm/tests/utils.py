@@ -40,7 +40,7 @@ from cm.models import (
 
 def gen_name(prefix: str):
     """Generate unique name"""
-    return str(prefix + uuid4().hex)
+    return f"{prefix + uuid4().hex}"
 
 
 def gen_bundle(name: str = "") -> Bundle:
@@ -74,7 +74,10 @@ def gen_adcm() -> ADCM:
 
 
 def gen_cluster(
-    name: str = "", bundle: Bundle = None, prototype: Prototype = None, config: ObjectConfig = None
+    name: str | None = None,
+    bundle: Bundle = None,
+    prototype: Prototype = None,
+    config: ObjectConfig = None,
 ) -> Cluster:
     """Generate cluster from specified prototype"""
     if not prototype:
@@ -122,7 +125,7 @@ def gen_component(
     )
 
 
-def gen_provider(name="", bundle=None, prototype=None) -> HostProvider:
+def gen_provider(name: str | None = None, bundle=None, prototype=None) -> HostProvider:
     """Generate host provider for specified prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
@@ -133,7 +136,7 @@ def gen_provider(name="", bundle=None, prototype=None) -> HostProvider:
     )
 
 
-def gen_host(provider, cluster=None, fqdn="", bundle=None, prototype=None) -> Host:
+def gen_host(provider, cluster=None, fqdn: str | None = None, bundle=None, prototype=None) -> Host:
     """Generate host for specified cluster, provider, and prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
@@ -163,7 +166,7 @@ def gen_host_component(component: ServiceComponent, host: Host) -> HostComponent
 
 
 def gen_concern_item(
-    concern_type, name=None, reason=None, blocking=True, owner=None
+    concern_type, name: str | None = None, reason=None, blocking=True, owner=None
 ) -> ConcernItem:
     """Generate ConcernItem object"""
     reason = reason or {"message": "Test", "placeholder": {}}
@@ -172,7 +175,7 @@ def gen_concern_item(
     )
 
 
-def gen_action(name="", bundle=None, prototype=None) -> Action:
+def gen_action(name: str | None = None, bundle=None, prototype=None) -> Action:
     """Generate action from specified prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
