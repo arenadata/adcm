@@ -148,7 +148,7 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
                 log_storages = LogStorage.objects.filter(job=job, type__in={"stdout", "stderr"})
                 for log_storage in log_storages:
                     tarinfo = tarfile.TarInfo(
-                        f"{job.pk}-{dir_name_suffix}/ansible-{log_storage.type}.txt"
+                        f"{job.pk}-{dir_name_suffix}/{log_storage.name}-{log_storage.type}.txt"
                     )
                     body = io.BytesIO(bytes(log_storage.body, "utf-8"))
                     tarinfo.size = body.getbuffer().nbytes
