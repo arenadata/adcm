@@ -34,12 +34,16 @@ operations:
         name: host-1
     result: denied
     username: {{ username }}
-  - delete: &bundle
+  - delete:
       what:
         type: bundle
+        name: cluster
     result: denied
     username: {{ username }}
-  - delete: *bundle
+  - delete:
+      what:
+        type: bundle
+        name: provider
     result: denied
     username: {{ username }}
   - delete: &user
