@@ -54,20 +54,11 @@ class ServiceSerializer(serializers.Serializer):
 
 class ServiceUISerializer(ServiceSerializer):
     action = CommonAPIURL(read_only=True, view_name='object-action')
-    actions = serializers.SerializerMethodField()
     name = serializers.CharField(read_only=True)
     version = serializers.SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     locked = serializers.BooleanField(read_only=True)
     status = serializers.SerializerMethodField()
-
-    def get_actions(self, obj):
-        act_set = Action.objects.filter(prototype=obj.prototype)
-        self.context['object'] = obj
-        self.context['service_id'] = obj.id
-        actions = filter_actions(obj, act_set)
-        acts = ActionShort(actions, many=True, context=self.context)
-        return acts.data
 
     def get_version(self, obj):
         return obj.prototype.version

@@ -156,7 +156,6 @@ class StatusSerializer(EmptySerializer):
 
 class HostUISerializer(HostSerializer):
     action = CommonAPIURL(view_name='object-action')
-    actions = SerializerMethodField()
     cluster_name = SerializerMethodField()
     prototype_version = SerializerMethodField()
     prototype_name = SerializerMethodField()
@@ -165,13 +164,6 @@ class HostUISerializer(HostSerializer):
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
     status = SerializerMethodField()
-
-    def get_actions(self, obj):
-        act_set = Action.objects.filter(prototype=obj.prototype)
-        self.context['object'] = obj
-        self.context['host_id'] = obj.id
-        actions = ActionShort(filter_actions(obj, act_set), many=True, context=self.context)
-        return actions.data
 
     def get_cluster_name(self, obj):
         if obj.cluster:

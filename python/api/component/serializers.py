@@ -38,19 +38,10 @@ class ComponentSerializer(serializers.Serializer):
 
 class ComponentUISerializer(ComponentSerializer):
     action = CommonAPIURL(read_only=True, view_name='object-action')
-    actions = serializers.SerializerMethodField()
     version = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     locked = serializers.BooleanField(read_only=True)
-
-    def get_actions(self, obj):
-        act_set = Action.objects.filter(prototype=obj.prototype)
-        self.context['object'] = obj
-        self.context['component_id'] = obj.id
-        actions = filter_actions(obj, act_set)
-        acts = ActionShort(actions, many=True, context=self.context)
-        return acts.data
 
     def get_version(self, obj):
         return obj.prototype.version

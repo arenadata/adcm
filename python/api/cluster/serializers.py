@@ -96,7 +96,6 @@ class ClusterSerializer(Serializer):
 
 class ClusterUISerializer(ClusterSerializer):
     action = CommonAPIURL(view_name='object-action')
-    actions = SerializerMethodField()
     edition = CharField(read_only=True)
     prototype_version = SerializerMethodField()
     prototype_name = SerializerMethodField()
@@ -107,13 +106,6 @@ class ClusterUISerializer(ClusterSerializer):
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
     status = SerializerMethodField()
-
-    def get_actions(self, obj):
-        act_set = Action.objects.filter(prototype=obj.prototype)
-        self.context['object'] = obj
-        self.context['cluster_id'] = obj.id
-        actions = ActionShort(filter_actions(obj, act_set), many=True, context=self.context)
-        return actions.data
 
     def get_prototype_version(self, obj):
         return obj.prototype.version
