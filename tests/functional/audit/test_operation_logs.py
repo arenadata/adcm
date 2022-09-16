@@ -17,8 +17,10 @@ from typing import Tuple
 import allure
 import pytest
 from adcm_client.base import NoSuchEndpointOrAccessIsDenied
-from adcm_client.objects import ADCMClient, Bundle, Host, User
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, User
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
+from adcm_pytest_plugin.utils import random_string
+from docker.models.containers import Container
 
 from tests.functional.audit.conftest import BUNDLES_DIR, ScenarioArg
 from tests.functional.rbac.conftest import BusinessRoles, create_policy
@@ -88,3 +90,63 @@ def test_simple_flow(sdk_client_fs, audit_log_checker, adb_bundle, dummy_host, n
         cluster.delete()
     audit_log_checker.set_user_map(sdk_client_fs)
     audit_log_checker.check(sdk_client_fs.audit_operation_list())
+
+
+def test_no_audit_objects_duplication(adcm_fs, sdk_client_fs, adb_bundle, generic_provider):
+    """Test that audit objects aren't duplicated and is correctly set as 'deleted'"""
+    container = adcm_fs.container
+    _prepare_objects(adb_bundle, generic_provider)
+    cluster: Cluster = sdk_client_fs.cluster()
+    cluster.update(name="New Name Of Cluster")
+    cluster.service_delete(cluster.service())
+    cluster.host_delete(cluster.host())
+    # 2 clusters, 4 services, 4 components, 2 hosts, 1 provider, 2 bundles, adcm
+    expected_objects = 16
+    with allure.step(f"Check that amount of audit objects is {expected_objects}"):
+        amount_of_objects = int(_exec_django_shell(container, "AuditObject.objects.count()"))
+        assert amount_of_objects == expected_objects, f"Incorrect amount of audit objects: {amount_of_objects}"
+    with allure.step("Check that correct amount of audit objects are considered deleted"):
+        template = "AuditObject.objects.filter({}).count()"
+        total_deleted = int(_exec_django_shell(container, template.format("is_deleted=True")))
+        assert total_deleted == 2, "Only 1 service and its component should be considered deleted"
+    cluster.delete()
+    with allure.step("Check that correct amount of audit objects are considered deleted"):
+        total_deleted = int(_exec_django_shell(container, template.format("is_deleted=True")))
+        # cluster, 2 services, 2 components
+        assert total_deleted == 5, "5 objects should be considered deleted"
+        for object_type, expected_amount in (("cluster", 1), ("service", 2), ("component", 2)):
+            actual_amount = int(
+                _exec_django_shell(container, template.format(f'is_deleted=True, object_type="{object_type}"'))
+            )
+            assert actual_amount == expected_amount, (
+                f"Unexpected amount of deleted audit objects of type {object_type}\n"
+                f"Expected: {expected_amount}\nActual: {actual_amount}"
+            )
+
+
+def _exec_django_shell(container: Container, statement: str) -> str:
+    script = f"from audit.models import AuditObject; print({statement})"
+    with allure.step(f"Execute in django shell: {script}"):
+        exit_code, output = container.exec_run(
+            [
+                "sh",
+                "-c",
+                "source /adcm/venv/default/bin/activate " f"&& python3 /adcm/python/manage.py shell -c '{script}'",
+            ]
+        )
+        out = output.decode("utf-8").strip()
+        assert exit_code == 0, f"docker exec failed: {out}"
+        return out
+
+
+@allure.step("Prepare objects")
+def _prepare_objects(bundle, provider) -> None:
+    for i in range(2):
+        cluster = bundle.cluster_create(f"Cluster {i}")
+        cluster.config_set_diff({"just_string": "clcl"})
+        adb_service = cluster.service_add(name="adb")
+        dummy_service = cluster.service_add(name="dummy")
+        for service in (adb_service, dummy_service):
+            service.config_set_diff({"just_string": "serverv"})
+            service.component().config_set_diff({"just_string": "compo"})
+        cluster.host_add(provider.host_create(random_string(6)))
