@@ -1,11 +1,11 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: '22.1.0'
+    rev: "22.1.0"
     hooks:
       - id: black
-        additional_dependencies: ['click==8.0.4']
+        additional_dependencies: [ "click==8.0.4" ]
         language_version: python3
-        files: '^python/'
+        files: "^python/"
 
   - repo: https://github.com/pycqa/isort
     rev: 5.10.1
@@ -22,4 +22,17 @@ repos:
           "--skip", "python/drf_docs.py",
         ]
         language_version: python3
-        files: '^python/'
+        files: "^python/"
+
+  - repo: local
+    hooks:
+      - id: pylint
+        name: pylint
+        entry: pylint
+        language: system
+        types: [ python ]
+        args: [
+          "-rn",
+          "-sn",
+          "--rcfile=pyproject.toml",
+        ]

@@ -12,7 +12,7 @@
 
 # pylint: disable=protected-access
 
-import os
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 from django.utils import timezone
@@ -304,7 +304,7 @@ class TestJob(BaseTestCase):
         prototype = Prototype.objects.create(bundle=bundle)
         action = Action.objects.create(prototype=prototype)
 
-        data = [("adcm", os.path.join(BASE_DIR, "conf")), ("", BUNDLE_DIR)]
+        data = [("adcm", str(Path(BASE_DIR, "conf"))), ("", BUNDLE_DIR)]
 
         for prototype_type, test_path in data:
             prototype.type = prototype_type
@@ -326,17 +326,17 @@ class TestJob(BaseTestCase):
             (
                 sub_action,
                 "main.yaml",
-                os.path.join(BUNDLE_DIR, action.prototype.bundle.hash, "ansible/sleep.yaml"),
+                str(Path(BUNDLE_DIR, action.prototype.bundle.hash, "ansible/sleep.yaml")),
             ),
             (
                 None,
                 "main.yaml",
-                os.path.join(BUNDLE_DIR, action.prototype.bundle.hash, "main.yaml"),
+                str(Path(BUNDLE_DIR, action.prototype.bundle.hash, "main.yaml")),
             ),
             (
                 None,
                 "./main.yaml",
-                os.path.join(BUNDLE_DIR, action.prototype.bundle.hash, "main.yaml"),
+                str(Path(BUNDLE_DIR, action.prototype.bundle.hash, "main.yaml")),
             ),
         ]
 
@@ -384,8 +384,8 @@ class TestJob(BaseTestCase):
         mock_get_adcm_config.return_value = {}
         mock_prepare_context.return_value = {"type": "cluster", "cluster_id": 1}
         mock_get_bundle_root.return_value = BUNDLE_DIR
-        mock_cook_script.return_value = os.path.join(
-            BUNDLE_DIR, cluster_action.prototype.bundle.hash, cluster_action.script
+        mock_cook_script.return_value = str(
+            Path(BUNDLE_DIR, cluster_action.prototype.bundle.hash, cluster_action.script)
         )
 
         job = JobLog.objects.create(
@@ -418,7 +418,7 @@ class TestJob(BaseTestCase):
                     "env": {
                         "run_dir": mock_dump.call_args[0][0]["env"]["run_dir"],
                         "log_dir": mock_dump.call_args[0][0]["env"]["log_dir"],
-                        "tmp_dir": os.path.join(RUN_DIR, f"{job.id}", "tmp"),
+                        "tmp_dir": str(Path(RUN_DIR, f"{job.id}", "tmp")),
                         "stack_dir": mock_dump.call_args[0][0]["env"]["stack_dir"],
                         "status_api_token": mock_dump.call_args[0][0]["env"]["status_api_token"],
                     },
@@ -462,7 +462,7 @@ class TestJob(BaseTestCase):
                     job_config["job"]["hostgroup"] = "127.0.0.1"
 
                 mock_open.assert_called_with(
-                    f"{RUN_DIR}/{job.id}/config.json", "w", encoding="utf_8"
+                    Path(f"{RUN_DIR}", f"{job.id}", "config.json"), "w", encoding="utf_8"
                 )
                 mock_dump.assert_called_with(job_config, fd, indent=3, sort_keys=True)
                 mock_get_adcm_config.assert_called()
