@@ -877,6 +877,7 @@ def check_config_type(
         label = "Value"
     tmpl1 = f'{label} of config key "{key}/{subkey}" {{}} ({ref})'
     tmpl2 = f'{label} ("{value}") of config key "{key}/{subkey}" {{}} ({ref})'
+    should_not_be_empty = "should be not empty"
 
     def check_str(idx, v):
         if not isinstance(v, str):
@@ -906,7 +907,7 @@ def check_config_type(
         if not isinstance(value, list):
             err("CONFIG_VALUE_ERROR", tmpl1.format("should be an array"))
         if "required" in spec and spec["required"] and value == []:
-            err("CONFIG_VALUE_ERROR", tmpl1.format("should be not empty"))
+            err("CONFIG_VALUE_ERROR", tmpl1.format(should_not_be_empty))
         for idx, v in enumerate(value):
             check_str(idx, v)
 
@@ -914,7 +915,7 @@ def check_config_type(
         if not isinstance(value, dict):
             err("CONFIG_VALUE_ERROR", tmpl1.format("should be a map"))
         if "required" in spec and spec["required"] and value == {}:
-            err("CONFIG_VALUE_ERROR", tmpl1.format("should be not empty"))
+            err("CONFIG_VALUE_ERROR", tmpl1.format(should_not_be_empty))
         for k, v in value.items():
             check_str(k, v)
 
@@ -922,13 +923,13 @@ def check_config_type(
         if not isinstance(value, str):
             err("CONFIG_VALUE_ERROR", tmpl2.format("should be string"))
         if "required" in spec and spec["required"] and value == "":
-            err("CONFIG_VALUE_ERROR", tmpl1.format("should be not empty"))
+            err("CONFIG_VALUE_ERROR", tmpl1.format(should_not_be_empty))
 
     if spec["type"] == "file":
         if not isinstance(value, str):
             err("CONFIG_VALUE_ERROR", tmpl2.format("should be string"))
         if value == "":
-            err("CONFIG_VALUE_ERROR", tmpl1.format("should be not empty"))
+            err("CONFIG_VALUE_ERROR", tmpl1.format(should_not_be_empty))
         if default:
             if len(value) > 2048:
                 err("CONFIG_VALUE_ERROR", tmpl1.format("is too long"))
@@ -958,14 +959,12 @@ def check_config_type(
 
     if spec["type"] == "integer" or spec["type"] == "float":
         limits = spec["limits"]
-        if "min" in limits:
-            if value < limits["min"]:
-                msg = f'should be more than {limits["min"]}'
-                err("CONFIG_VALUE_ERROR", tmpl2.format(msg))
-        if "max" in limits:
-            if value > limits["max"]:
-                msg = f'should be less than {limits["max"]}'
-                err("CONFIG_VALUE_ERROR", tmpl2.format(msg))
+        if "min" in limits and value < limits["min"]:
+            msg = f'should be more than {limits["min"]}'
+            err("CONFIG_VALUE_ERROR", tmpl2.format(msg))
+        if "max" in limits and value > limits["max"]:
+            msg = f'should be less than {limits["max"]}'
+            err("CONFIG_VALUE_ERROR", tmpl2.format(msg))
 
     if spec["type"] == "option":
         option = spec["limits"]["option"]
@@ -981,15 +980,13 @@ def check_config_type(
     if spec["type"] == "variant":
         source = spec["limits"]["source"]
         if source["strict"]:
-            if source["type"] == "inline":
-                if value not in source["value"]:
+            if source["type"] == "inline" and value not in source["value"]:
+                msg = f'not in variant list: "{source["value"]}"'
+                err("CONFIG_VALUE_ERROR", tmpl2.format(msg))
+            if not default:
+                if source["type"] in ("config", "builtin") and value not in source["value"]:
                     msg = f'not in variant list: "{source["value"]}"'
                     err("CONFIG_VALUE_ERROR", tmpl2.format(msg))
-            if not default:
-                if source["type"] in ("config", "builtin"):
-                    if value not in source["value"]:
-                        msg = f'not in variant list: "{source["value"]}"'
-                        err("CONFIG_VALUE_ERROR", tmpl2.format(msg))
 
 
 def replace_object_config(obj, key, subkey, value, proto_conf):
