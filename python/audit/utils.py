@@ -168,12 +168,12 @@ def _get_obj_changes_data(view: View | ModelViewSet) -> tuple[dict | None, Model
         elif view.__class__.__name__ == "PolicyViewSet":
             serializer_class = PolicyAuditSerializer
             model = Policy
-    else:
-        if view.__class__.__name__ == "ClusterDetail" and view.request.method in ["PATCH", "PUT"]:
+    elif view.request.method in {"PATCH", "PUT"}:
+        if view.__class__.__name__ == "ClusterDetail":
             serializer_class = cluster.serializers.ClusterAuditSerializer
             pk = view.kwargs["cluster_id"]
             model = Cluster
-        elif view.__class__.__name__ == "HostDetail" and view.request.method in ["PATCH", "PUT"]:
+        elif view.__class__.__name__ == "HostDetail":
             serializer_class = host.serializers.HostAuditSerializer
             pk = view.kwargs["host_id"]
             model = Host
