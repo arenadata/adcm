@@ -723,7 +723,9 @@ def check_group_keys_attr(attr, spec, group_config):
     check_agreement_group_attr(group_keys, custom_group_keys, spec)
 
 
-def check_attr(proto, obj, attr, spec, current_attr):  # pylint: disable=too-many-branches
+def check_attr(
+    proto: Prototype, obj, attr: dict, spec: dict, current_attr: dict | None = None
+):  # pylint: disable=too-many-branches
     is_group_config = False
     if isinstance(obj, GroupConfig):
         is_group_config = True
