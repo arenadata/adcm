@@ -50,7 +50,7 @@ class HostFQDNRegexValidator(RegexValidator):
         try:
             super().__call__(value)
         except DjangoValidationError as e:
-            raise AdcmEx("HOST_CONFLICT", "host FQDN doesn't meet requirements") from e
+            raise AdcmEx("WRONG_NAME", "host FQDN doesn't meet requirements") from e
 
 
 class HostSerializer(EmptySerializer):

@@ -12,6 +12,7 @@
 
 from uuid import uuid4
 
+from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 
 from cm.errors import AdcmEx
@@ -24,6 +25,7 @@ from cm.models import (
     ClusterObject,
     ConcernItem,
     ConfigLog,
+    GroupConfig,
     Host,
     HostComponent,
     HostProvider,
@@ -36,14 +38,14 @@ from cm.models import (
 )
 
 
-def _gen_name(prefix: str, name="name"):
+def gen_name(prefix: str):
     """Generate unique name"""
-    return {name: prefix + uuid4().hex}
+    return f"{prefix + uuid4().hex}"
 
 
 def gen_bundle(name: str = "") -> Bundle:
     """Generate some bundle"""
-    return Bundle.objects.create(**_gen_name(name or "bundle_"), version="1.0.0")
+    return Bundle.objects.create(name=name or gen_name("bundle_"), version="1.0.0")
 
 
 def gen_prototype(bundle: Bundle, proto_type: str, name: str = "") -> Prototype:
@@ -72,14 +74,17 @@ def gen_adcm() -> ADCM:
 
 
 def gen_cluster(
-    name: str = "", bundle: Bundle = None, prototype: Prototype = None, config: ObjectConfig = None
+    name: str | None = None,
+    bundle: Bundle = None,
+    prototype: Prototype = None,
+    config: ObjectConfig = None,
 ) -> Cluster:
     """Generate cluster from specified prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
         prototype = gen_prototype(bundle, "cluster")
     return Cluster.objects.create(
-        **_gen_name(name or "cluster_"),
+        name=name or gen_name("cluster_"),
         prototype=prototype,
         config=config,
     )
@@ -120,24 +125,24 @@ def gen_component(
     )
 
 
-def gen_provider(name="", bundle=None, prototype=None) -> HostProvider:
+def gen_provider(name: str | None = None, bundle=None, prototype=None) -> HostProvider:
     """Generate host provider for specified prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
         prototype = gen_prototype(bundle, "provider")
     return HostProvider.objects.create(
-        **_gen_name(name or "provider_"),
+        name=name or gen_name("provider_"),
         prototype=prototype,
     )
 
 
-def gen_host(provider, cluster=None, fqdn="", bundle=None, prototype=None) -> Host:
+def gen_host(provider, cluster=None, fqdn: str | None = None, bundle=None, prototype=None) -> Host:
     """Generate host for specified cluster, provider, and prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
         prototype = gen_prototype(bundle, "host")
     return Host.objects.create(
-        **_gen_name(fqdn or "host-", "fqdn"),
+        fqdn=fqdn or gen_name("host-"),
         cluster=cluster,
         provider=provider,
         prototype=prototype,
@@ -161,7 +166,7 @@ def gen_host_component(component: ServiceComponent, host: Host) -> HostComponent
 
 
 def gen_concern_item(
-    concern_type, name=None, reason=None, blocking=True, owner=None
+    concern_type, name: str | None = None, reason=None, blocking=True, owner=None
 ) -> ConcernItem:
     """Generate ConcernItem object"""
     reason = reason or {"message": "Test", "placeholder": {}}
@@ -170,13 +175,13 @@ def gen_concern_item(
     )
 
 
-def gen_action(name="", bundle=None, prototype=None) -> Action:
+def gen_action(name: str | None = None, bundle=None, prototype=None) -> Action:
     """Generate action from specified prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
         prototype = gen_prototype(bundle, "service")
     return Action.objects.create(
-        **_gen_name(name or "action_"),
+        name=name or gen_name("action_"),
         display_name=f"Test {prototype.type} action",
         prototype=prototype,
         type="task",
@@ -265,3 +270,9 @@ def gen_config(config: dict = None, attr: dict = None) -> ObjectConfig:
     oc.current = cl.id
     oc.save()
     return oc
+
+
+def gen_group(name, object_id, model_name):
+    return GroupConfig.objects.create(
+        object_id=object_id, object_type=ContentType.objects.get(model=model_name), name=name
+    )
