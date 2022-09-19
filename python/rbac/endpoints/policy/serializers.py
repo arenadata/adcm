@@ -126,7 +126,7 @@ class PolicySerializer(FlexFieldsSerializerMixin, ModelSerializer):
         )
         expandable_fields = {
             "user": ("rbac.endpoints.user.views.UserSerializer", {"many": True}),
-            "group": ("rbac.endpoints.group.views.GroupSerializer", {"many": True}),
+            "group": ("rbac.endpoints.group.serializers.GroupSerializerTrueName", {"many": True}),
             "role": "rbac.endpoints.role.views.RoleSerializer",
         }
 
