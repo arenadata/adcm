@@ -12,17 +12,18 @@
 
 from django.urls import include, path
 
-from api.job.views import Task, TaskCancel, TaskDetail, TaskReStart
+from api.job.views import Task, TaskCancel, TaskDetail, TaskDownload, TaskReStart
 
 urlpatterns = [
-    path('', Task.as_view(), name='task'),
+    path("", Task.as_view(), name="task"),
     path(
-        '<int:task_id>/',
+        "<int:task_id>/",
         include(
             [
-                path('', TaskDetail.as_view(), name='task-details'),
-                path('restart/', TaskReStart.as_view(), name='task-restart'),
-                path('cancel/', TaskCancel.as_view(), name='task-cancel'),
+                path("", TaskDetail.as_view(), name="task-details"),
+                path("restart/", TaskReStart.as_view(), name="task-restart"),
+                path("cancel/", TaskCancel.as_view(), name="task-cancel"),
+                path("download/", TaskDownload.as_view(), name="task-download"),
             ]
         ),
     ),
