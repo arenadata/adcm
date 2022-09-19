@@ -31,6 +31,7 @@ BASE_DIR = Path(__file__).absolute().parent.parent.parent
 CONF_DIR = BASE_DIR / "data" / "conf"
 SECRET_KEY_FILE = CONF_DIR / "secret_key.txt"
 CONFIG_FILE = BASE_DIR / "config.json"
+RUN_DIR = BASE_DIR / "data" / "run"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
