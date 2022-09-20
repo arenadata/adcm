@@ -1,3 +1,5 @@
+import string
+
 from django.urls import reverse
 from rest_framework import status
 
@@ -11,24 +13,28 @@ class TestCluster(BaseTestCase):
         super().setUp()
         init()
 
+        self.allowed_name_chars_start_end = string.ascii_letters + string.digits
+        self.allowed_name_chars_middle = self.allowed_name_chars_start_end + "-. _"
+
         self.valid_names = (
             "letters",
-            "all-12 to.ge--the r",
+            "all-12 to.ge--t_he r",
             "Just cluster namE",
             "Another.clus-ter",
             "endswithdigit4",
             "1startswithdigit",
+            "contains_underscore",
         )
         self.invalid_names = (
             "-starts with hyphen",
             ".starts with dot",
+            "_starts with underscore",
             "Ends with hyphen-",
             "Ends with dot.",
-            "Use-forbidden_chars",
-            "Use-forbidden[chars",
-            "Use-forbidden&chars",
-            "Use-forbidden?chars",
-            "Use-forbidden!chars",
+            "Ends with underscore_",
+        ) + tuple(
+            f"forbidden{c}char"
+            for c in set(string.punctuation) - set(self.allowed_name_chars_middle)
         )
 
         self.bundle = Bundle.objects.create()
