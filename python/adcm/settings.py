@@ -276,7 +276,7 @@ LOGGING = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
-REGEX_HOST_FQDN = r"^[a-zA-z0-9][a-zA-z0-9\.-]*"
+REGEX_HOST_FQDN = r"^[a-zA-Z0-9][a-zA-Z0-9\.-]*"
 
 CLUSTER_NAME_PATTERN = (
     r"^[a-zA-Z0-9]"  # starts with latin letter (upper/lower case) or digit

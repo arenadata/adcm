@@ -372,7 +372,7 @@ class TestCluster(BaseTestCase):
             data={
                 "prototype_id": host_prototype.pk,
                 "provider_id": provider_response.data["id"],
-                "fqdn": "test_fqdn_1",
+                "fqdn": "test-fqdn-1",
             },
         )
         self.client.post(
@@ -380,7 +380,7 @@ class TestCluster(BaseTestCase):
             data={
                 "prototype_id": host_prototype.pk,
                 "provider_id": provider_response.data["id"],
-                "fqdn": "test_fqdn_2",
+                "fqdn": "test-fqdn-2",
             },
         )
 

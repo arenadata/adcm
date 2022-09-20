@@ -40,6 +40,7 @@ class TestHostAPI(BaseTestCase):
             "-startwithhypen",
             "contain space",
             "have!exclamation",
+            "have_underscore",
         }
         self.correct_values = {
             "a" * 253,
@@ -57,7 +58,7 @@ class TestHostAPI(BaseTestCase):
             prototype=Prototype.objects.all()[1],
         )
         self.host = Host.objects.create(
-            fqdn="test_fqdn",
+            fqdn="test-fqdn",
             prototype=Prototype.objects.all()[0],
             provider=self.provider,
             maintenance_mode="on",
@@ -249,7 +250,7 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
     def test_host_update_fqdn_success(self):
-        new_test_fqdn = "new_test_fqdn"
+        new_test_fqdn = "new-test-fqdn"
 
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
@@ -279,7 +280,7 @@ class TestHostAPI(BaseTestCase):
 
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": "new_test_fqdn", "maintenance_mode": "on"},
+            data={"fqdn": "new-test-fqdn", "maintenance_mode": "on"},
             content_type=APPLICATION_JSON,
         )
 
@@ -300,7 +301,7 @@ class TestHostAPI(BaseTestCase):
 
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": "new_test_fqdn", "maintenance_mode": "on"},
+            data={"fqdn": "new-test-fqdn", "maintenance_mode": "on"},
             content_type=APPLICATION_JSON,
         )
 

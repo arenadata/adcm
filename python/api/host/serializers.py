@@ -9,10 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import re
 
 from django.conf import settings
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.core.validators import RegexValidator
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     BooleanField,
@@ -34,7 +33,6 @@ from cm.api import add_host
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
 from cm.models import Action, Host, HostProvider, MaintenanceModeType, Prototype
-from cm.stack import validate_name
 from cm.status_api import get_host_status
 
 
@@ -46,12 +44,13 @@ class HostUniqueValidator(UniqueValidator):
             raise AdcmEx("HOST_CONFLICT", "duplicate host") from e
 
 
-class HostFQDNRegexValidator(RegexValidator):
-    def __call__(self, value):
-        try:
-            super().__call__(value)
-        except DjangoValidationError as e:
-            raise AdcmEx("WRONG_NAME", "host FQDN doesn't meet requirements") from e
+class HostFQDNRegexValidator:
+    def __init__(self, regex: str):
+        self._regex = re.compile(regex)
+
+    def __call__(self, value: str):
+        if not re.fullmatch(pattern=self._regex, string=value):
+            raise AdcmEx("WRONG_NAME", "host FQDN doesn't meet requirements")
 
 
 class HostSerializer(EmptySerializer):
@@ -79,10 +78,6 @@ class HostSerializer(EmptySerializer):
     @staticmethod
     def validate_provider_id(provider_id):
         return check_obj(HostProvider, provider_id)
-
-    @staticmethod
-    def validate_fqdn(name):
-        return validate_name(name, "Host name")
 
     def create(self, validated_data):
         return add_host(
