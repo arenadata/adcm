@@ -26,20 +26,20 @@ def cluster_name_validator(value: str) -> None:
     min_length = 2
 
     error_code = "WRONG_NAME"
-    error_msg = "Incorrect symbol: `{symbol}`"
+    error_symbols = ""
 
     if len(value) < min_length:
         raise AdcmEx(code=error_code, msg="Name is too short")
 
     if not any(value.startswith(c) for c in allowed_start_end):
-        raise AdcmEx(code=error_code, msg=error_msg.format(symbol=value[0]))
-
-    if not any(value.endswith(c) for c in allowed_start_end):
-        raise AdcmEx(code=error_code, msg=error_msg.format(symbol=value[-1]))
+        error_symbols += value[0]
 
     if len(value) >= 3 and not all(c in allowed_middle for c in value[1:-1]):
         allowed_middle_for_regex = allowed_middle.replace("-", r"\-").replace(".", r"\.")
-        raise AdcmEx(
-            code=error_code,
-            msg=error_msg.format(symbol=re.sub(rf"[{allowed_middle_for_regex}]+", "", value[1:-1])),
-        )
+        error_symbols += re.sub(rf"[{allowed_middle_for_regex}]+", "", value[1:-1])
+
+    if not any(value.endswith(c) for c in allowed_start_end):
+        error_symbols += value[-1]
+
+    if error_symbols:
+        raise AdcmEx(code=error_code, msg=f"Incorrect symbol(s): `{error_symbols}`")
