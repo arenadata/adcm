@@ -1,0 +1,42 @@
+---
+- hosts: all
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Here comes hostvars!
+      debug:
+        msg: "{{ hostvars }}"
+      run_once: true
+    - fail:
+        msg: cluster param should be "changed" on host-1
+      name: check cluster is "changed"
+      when: "{{ hostvars['host-1']['cluster']['config']['param'] != 'changed' }}"
+    - fail:
+        msg: test_service param should be "changed" on host-1
+      name: check test_service is "changed"
+      when: "{{ hostvars['host-1']['services']['test_service']['config']['param'] != 'changed' }}"
+    - fail:
+        msg: test_service.first_component param should be "changed" on host-1
+      name: check test_service.first_component is "changed"
+      when: "{{ hostvars['host-1']['services']['test_service']['first_component']['config']['param'] != 'changed' }}"
+    - fail:
+        msg: test_service.second_component param should be "original" on host-1
+      name: check test_service.second_component is "original"
+      when: "{{ hostvars['host-1']['services']['test_service']['second_component']['config']['param'] != 'original' }}"
+    - fail:
+        msg: cluster param should be "original" on host-2
+      name: check cluster is "original"
+      when: "{{ hostvars['host-2']['cluster']['config']['param'] != 'original' }}"
+    - fail:
+        msg: test_service param should be "original" on host-2
+      name: check test_service is "original"
+      when: "{{ hostvars['host-2']['services']['test_service']['config']['param'] != 'original' }}"
+    - fail:
+        msg: test_service.first_component param should be "original" on host-2
+      name: check test_service.first_component is "original"
+      when: "{{ hostvars['host-2']['services']['test_service']['first_component']['config']['param'] != 'original' }}"
+    - fail:
+        msg: test_service.second_component param should be "original" on host-2
+      name: check test_service.second_component is "original"
+      when: "{{ hostvars['host-2']['services']['test_service']['second_component']['config']['param'] != 'original' }}"
