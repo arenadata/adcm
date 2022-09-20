@@ -44,6 +44,7 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
+    MaintenanceModeType,
     ObjectConfig,
     Prototype,
     PrototypeExport,
@@ -63,6 +64,7 @@ class TestCluster(BaseTestCase):
 
         self.bundle = Bundle.objects.create()
         self.test_cluster_name = "test-cluster"
+        self.description = "Such wow new description"
         self.cluster_prototype = Prototype.objects.create(bundle=self.bundle, type="cluster")
         config = ObjectConfig.objects.create(current=1, previous=1)
         ConfigLog.objects.create(obj_ref=config, config="{}")
@@ -93,6 +95,7 @@ class TestCluster(BaseTestCase):
         )
         self.cluster_conf_updated_str = "Cluster configuration updated"
         self.host_conf_updated_str = "Host configuration updated"
+        self.host_updated = "Host updated"
         self.component_conf_updated_str = "Component configuration updated"
         self.service_conf_updated_str = "Service configuration updated"
         self.cluster_deleted_str = "Cluster deleted"
@@ -119,7 +122,10 @@ class TestCluster(BaseTestCase):
         operation_type: AuditLogOperationType,
         operation_result: AuditLogOperationResult = AuditLogOperationResult.Success,
         user: Optional[User] = None,
+        object_changes: dict | None = None,
     ) -> None:
+        if object_changes is None:
+            object_changes = {}
         if user is None:
             user = self.test_user
 
@@ -132,7 +138,7 @@ class TestCluster(BaseTestCase):
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
-        self.assertEqual(log.object_changes, {})
+        self.assertDictEqual(log.object_changes, object_changes)
 
     def check_log_denied(
         self, log: AuditLog, operation_name: str, operation_type: AuditLogOperationType
@@ -476,9 +482,14 @@ class TestCluster(BaseTestCase):
         )
 
     def test_update(self):
+
         self.client.patch(
             path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
-            data={"display_name": "test_cluster_another_display_name"},
+            data={
+                "display_name": "test_cluster_another_display_name",
+                "name": self.test_cluster_name,
+                "description": self.description,
+            },
             content_type=APPLICATION_JSON,
         )
 
@@ -487,10 +498,20 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
-            obj_name=self.cluster.name,
+            obj_name=self.test_cluster_name,
             obj_type=AuditObjectType.Cluster,
             operation_name="Cluster updated",
             operation_type=AuditLogOperationType.Update,
+            object_changes={
+                "current": {
+                    "description": self.description,
+                    "name": self.test_cluster_name,
+                },
+                "previous": {
+                    "description": "",
+                    "name": "test_cluster_2",
+                },
+            },
         )
 
     def test_update_denied(self):
@@ -761,6 +782,71 @@ class TestCluster(BaseTestCase):
             obj_type=AuditObjectType.Host,
             operation_name=self.host_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
+        )
+
+    def test_update_host(self):
+        data = {"description": self.description, "maintenance_mode": "on"}
+        self.host.cluster = self.cluster
+        self.host.save(update_fields=["cluster"])
+        self.client.patch(
+            path=reverse(
+                "host-details",
+                kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
+            ),
+            data=data,
+            content_type=APPLICATION_JSON,
+        )
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+        self.check_log(
+            log=log,
+            obj=self.host,
+            obj_name=self.host.name,
+            obj_type=AuditObjectType.Host,
+            operation_name=self.host_updated,
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Fail,
+        )
+        self.client.patch(
+            path=reverse(
+                "host-details",
+                kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
+            ),
+            data={"fqdn": "new_test_fqdn"},
+            content_type=APPLICATION_JSON,
+        )
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+        self.check_log(
+            log=log,
+            obj=self.host,
+            obj_name=self.host.name,
+            obj_type=AuditObjectType.Host,
+            operation_name=self.host_updated,
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Fail,
+        )
+        self.host.maintenance_mode = MaintenanceModeType.Off
+        self.host.save(update_fields=["maintenance_mode"])
+
+        self.client.patch(
+            path=reverse(
+                "host-details",
+                kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
+            ),
+            data=data,
+            content_type=APPLICATION_JSON,
+        )
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+        self.check_log(
+            log=log,
+            obj=self.host,
+            obj_name=self.host.name,
+            obj_type=AuditObjectType.Host,
+            operation_name=self.host_updated,
+            operation_type=AuditLogOperationType.Update,
+            object_changes={
+                "current": data,
+                "previous": {"description": "", "maintenance_mode": "off"},
+            },
         )
 
     def test_update_host_config_denied(self):
