@@ -194,7 +194,7 @@ class TestProviderListPage:
             "message": '[ CONFLICT ] PROVIDER_CONFLICT -- '
             'There is host #1 "test_host" of host provider #1 "test_provider"'
         }
-        upload_and_create_test_provider.host_create("test_host")
+        upload_and_create_test_provider.host_create("test-host")
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
         row = provider_page.table.get_all_rows()[0]
         provider_page.delete_provider_in_row(row)

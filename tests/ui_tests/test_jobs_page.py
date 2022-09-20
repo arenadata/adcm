@@ -482,7 +482,7 @@ class TestTaskHeaderPopup:
 
         page_timeout = 30
         with allure.step("Create objects and run actions"):
-            _ = [provider.host_create(f"host_{i}").action(name=SUCCESS_ACTION_NAME).run() for i in range(5000)]
+            _ = [provider.host_create(f"host-{i}").action(name=SUCCESS_ACTION_NAME).run() for i in range(5000)]
         login = LoginPage(app_fs.driver, app_fs.adcm.url).open()
         login.login_user(**adcm_credentials)
         with catch_failed(TimeoutError, f"Page did not load for {page_timeout} seconds"):
