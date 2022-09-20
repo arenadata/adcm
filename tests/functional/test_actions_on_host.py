@@ -151,7 +151,7 @@ class TestServiceActionOnHost:
         """
         service = cluster_with_service.service_add(name=FIRST_SERVICE)
         second_service = cluster_with_service.service_add(name=SECOND_SERVICE)
-        host_with_two_components = provider. host_create("host-with-two-components")
+        host_with_two_components = provider.host_create("host-with-two-components")
         host_with_one_component = provider.host_create("host-with-one-component")
         host_without_component = provider.host_create("host-without-component")
         host_with_different_services = provider.host_create("host-with-different-services")
