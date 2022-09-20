@@ -51,11 +51,13 @@ def check_audit_cef_logs(client: ADCMClient, adcm_container: Container):
     logins = client.audit_login_list()
     logs: List[Union[AuditOperation, AuditLogin]] = list(operations) + list(logins)
     logs.sort(key=lambda l: l.operation_time if isinstance(l, AuditOperation) else l.login_time)
+    exit_code, out = adcm_container.exec_run(["cat", "/adcm/data/log/audit.log"])
+    logfile_content = out.decode("utf-8")
+    if exit_code != 0:
+        raise ValueError(f"Failed to get audit logfile content: {logfile_content}")
+    # filter out empty
     cef_records: Tuple[CEFRecord, ...] = tuple(
-        map(
-            lambda r: CEFRecord(*r.split("|")),
-            filter(lambda line: line.startswith("CEF"), adcm_container.logs().decode("utf-8").split("\n")),
-        )
+        map(lambda r: CEFRecord(*r.split("|")), filter(lambda l: 'CEF' in l, logfile_content.split("\n")))
     )
     with allure.step("Check all logs have correct CEF version, vendor, product name and version"):
         for param, expected in (
