@@ -1,25 +1,25 @@
-from django.conf import settings
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.core.validators import RegexValidator
+import re
+
+from rest_framework.exceptions import ValidationError
+from rest_framework.validators import UniqueValidator
 
 from cm.errors import AdcmEx
 
 
-class RegExValidator(RegexValidator):
-    def __init__(self, regex: str, *args, error_code: str, error_msg: str = "", **kwargs):
-        super().__init__(regex, *args, **kwargs)
-        self.error_code = error_code
-        self.error_msg = error_msg
-
-    def __call__(self, value):
+class HostUniqueValidator(UniqueValidator):
+    def __call__(self, value, serializer_field):
         try:
-            super().__call__(value)
-        except DjangoValidationError as e:
-            raise AdcmEx(code=self.error_code, msg=self.error_msg.format(value=value)) from e
+            super().__call__(value, serializer_field)
+        except ValidationError as e:
+            raise AdcmEx("HOST_CONFLICT", "duplicate host") from e
 
 
-ClusterNameRegExValidator = RegExValidator(
-    regex=settings.CLUSTER_NAME_PATTERN,
-    error_code="WRONG_NAME",
-    error_msg="Name `{value}` doesn't meets requirements",
-)
+class RegexValidator:
+    def __init__(self, regex: str, code: str, msg: str):
+        self._regex = re.compile(regex)
+        self._code = code
+        self._msg = msg
+
+    def __call__(self, value: str):
+        if not re.fullmatch(pattern=self._regex, string=value):
+            raise AdcmEx(self._code, self._msg)

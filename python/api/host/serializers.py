@@ -9,10 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import re
 
 from django.conf import settings
-from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     BooleanField,
     CharField,
@@ -21,36 +19,18 @@ from rest_framework.serializers import (
     ModelSerializer,
     SerializerMethodField,
 )
-from rest_framework.validators import UniqueValidator
 
 from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
 from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions, hlink
+from api.validators import HostUniqueValidator, RegexValidator
 from cm.adcm_config import get_main_info
 from cm.api import add_host
-from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
 from cm.models import Action, Host, HostProvider, MaintenanceModeType, Prototype
 from cm.status_api import get_host_status
-
-
-class HostUniqueValidator(UniqueValidator):
-    def __call__(self, value, serializer_field):
-        try:
-            super().__call__(value, serializer_field)
-        except ValidationError as e:
-            raise AdcmEx("HOST_CONFLICT", "duplicate host") from e
-
-
-class HostFQDNRegexValidator:
-    def __init__(self, regex: str):
-        self._regex = re.compile(regex)
-
-    def __call__(self, value: str):
-        if not re.fullmatch(pattern=self._regex, string=value):
-            raise AdcmEx("WRONG_NAME", "host FQDN doesn't meet requirements")
 
 
 class HostSerializer(EmptySerializer):
@@ -63,7 +43,11 @@ class HostSerializer(EmptySerializer):
         help_text="fully qualified domain name",
         validators=[
             HostUniqueValidator(queryset=Host.objects.all()),
-            HostFQDNRegexValidator(regex=settings.REGEX_HOST_FQDN),
+            RegexValidator(
+                regex=settings.REGEX_HOST_FQDN,
+                code="WRONG_NAME",
+                msg="host FQDN doesn't meet requirements",
+            ),
         ],
     )
     description = CharField(required=False, allow_blank=True)

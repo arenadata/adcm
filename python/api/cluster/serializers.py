@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.conf import settings
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     BooleanField,
@@ -38,7 +39,7 @@ from api.utils import (
     get_upgradable_func,
     hlink,
 )
-from api.validators import ClusterNameRegExValidator
+from api.validators import RegexValidator
 from cm.adcm_config import get_main_info
 from cm.api import add_cluster, add_hc, bind, multi_bind
 from cm.errors import AdcmEx
@@ -69,7 +70,11 @@ class ClusterSerializer(Serializer):
         help_text="Cluster name",
         validators=[
             ClusterUniqueValidator(queryset=Cluster.objects.all()),
-            ClusterNameRegExValidator,
+            RegexValidator(
+                regex=settings.REGEX_CLUSTER_NAME,
+                code="WRONG_NAME",
+                msg="Name `{value}` doesn't meets requirements",
+            ),
         ],
     )
     description = CharField(help_text="Cluster description", required=False)
@@ -127,7 +132,11 @@ class ClusterUpdateSerializer(EmptySerializer):
         max_length=80,
         validators=[
             ClusterUniqueValidator(queryset=Cluster.objects.all()),
-            ClusterNameRegExValidator,
+            RegexValidator(
+                regex=settings.REGEX_CLUSTER_NAME,
+                code="WRONG_NAME",
+                msg="Name `{value}` doesn't meets requirements",
+            ),
         ],
         required=False,
         help_text="Cluster name",
