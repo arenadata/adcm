@@ -133,7 +133,7 @@ class TestStateBeforeUpgrade:
         ), f'Before upgrade state should be "{expected_state}", but actual state is "{actual_state}"'
 
 
-class TestHostInTwoConfigGroups:
+class TestHostInMultipleConfigGroups:
     """Test inventory generation when one host belongs to more than on config group"""
 
     @pytest.fixture()
@@ -150,11 +150,21 @@ class TestHostInTwoConfigGroups:
         return cluster, service, service.component(name="first_component"), service.component(name="second_component")
 
     @pytest.fixture()
-    def _map_hosts_to_components(self, hosts, cluster_with_components) -> None:
+    def second_service_with_components(self, cluster_with_components) -> Tuple[Service, Component, Component]:
+        """Add second service to the cluster"""
+        cluster, *_ = cluster_with_components
+        service = cluster.service_add(name="second_service")
+        return service, service.component(name="first_component"), service.component(name="second_component")
+
+    @pytest.fixture()
+    def _map_hosts_to_components(self, hosts, cluster_with_components, second_service_with_components) -> None:
         cluster, *_, component_1, component_2 = cluster_with_components
+        _, component_3, component_4 = second_service_with_components
         for host in hosts:
             cluster.host_add(host)
-        cluster.hostcomponent_set(*[(host, component) for host in hosts for component in (component_1, component_2)])
+        cluster.hostcomponent_set(
+            *[(host, component) for host in hosts for component in (component_1, component_2, component_3, component_4)]
+        )
 
     @allure.issue(url="https://tracker.yandex.ru/ADCM-3153")
     @pytest.mark.usefixtures("_map_hosts_to_components")

@@ -46,3 +46,22 @@
       config_group_customization: true
       config: *config
       actions: *actions
+
+- type: service
+  name: second_service
+  version: 3
+  config_group_customization: true
+
+  config: *config
+  actions: *actions
+
+  components:
+    first_component:
+      config_group_customization: true
+      config: *config
+      actions: *actions
+
+    second_component:
+      config_group_customization: true
+      config: *config
+      actions: *actions
