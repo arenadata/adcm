@@ -11,6 +11,7 @@
 # limitations under the License.
 
 import json
+import sys
 from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
@@ -153,69 +154,69 @@ ADWP_EVENT_SERVER = {
     "API_URL": "http://localhost:8020/api/v1",
 }
 
-# LOGGING = {
-#     "version": 1,
-#     "disable_existing_loggers": False,
-#     "filters": {
-#         "require_debug_false": {
-#             "()": "django.utils.log.RequireDebugFalse",
-#         },
-#     },
-#     "formatters": {
-#         "adwp": {
-#             "format": "{asctime} {levelname} {module} {message}",
-#             "style": "{",
-#         },
-#     },
-#     "handlers": {
-#         "file": {
-#             "level": "DEBUG",
-#             "filters": ["require_debug_false"],
-#             "formatter": "adwp",
-#             "class": "logging.FileHandler",
-#             "filename": BASE_DIR / "data/log/adcm_debug.log",
-#         },
-#         "adwp_file": {
-#             "level": "DEBUG",
-#             "formatter": "adwp",
-#             "class": "logging.FileHandler",
-#             "filename": BASE_DIR / "data/log/adwp.log",
-#         },
-#         "stdout": {
-#             "level": "DEBUG",
-#             "class": "logging.StreamHandler",
-#             "stream": sys.stdout,
-#         },
-#     },
-#     "loggers": {
-#         "django": {
-#             "handlers": ["file"],
-#             "level": "DEBUG",
-#             "propagate": True,
-#         },
-#         "django.template": {
-#             "level": "ERROR",
-#         },
-#         "django.utils.autoreload": {
-#             "level": "INFO",
-#         },
-#         "adwp": {
-#             "handlers": ["adwp_file"],
-#             "level": "DEBUG",
-#             "propagate": True,
-#         },
-#         "django_auth_ldap": {
-#             "handlers": ["file"],
-#             "level": "DEBUG",
-#             "propagate": True,
-#         },
-#         "audit": {
-#             "handlers": ["stdout"],
-#             "level": "DEBUG",
-#             "propagate": True,
-#         },
-#     },
-# }
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
+        },
+    },
+    "formatters": {
+        "adwp": {
+            "format": "{asctime} {levelname} {module} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "file": {
+            "level": "DEBUG",
+            "filters": ["require_debug_false"],
+            "formatter": "adwp",
+            "class": "logging.FileHandler",
+            "filename": BASE_DIR / "data/log/adcm_debug.log",
+        },
+        "adwp_file": {
+            "level": "DEBUG",
+            "formatter": "adwp",
+            "class": "logging.FileHandler",
+            "filename": BASE_DIR / "data/log/adwp.log",
+        },
+        "stdout": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["file"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
+        "django.template": {
+            "level": "ERROR",
+        },
+        "django.utils.autoreload": {
+            "level": "INFO",
+        },
+        "adwp": {
+            "handlers": ["adwp_file"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
+        "django_auth_ldap": {
+            "handlers": ["file"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
+        "audit": {
+            "handlers": ["stdout"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
+    },
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 REGEX_HOST_FQDN = r"^[a-zA-Z0-9][a-zA-Z0-9\.-]*"
