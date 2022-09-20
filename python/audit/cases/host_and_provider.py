@@ -1,4 +1,5 @@
 from django.db.models import Model
+from django.views import View
 from rest_framework.response import Response
 
 from audit.cases.common import get_or_create_audit_obj, obj_pk_case, response_case
@@ -13,6 +14,7 @@ from cm.models import Host, HostProvider
 
 def host_and_provider_case(
     path: list[str, ...],
+    view: View,
     response: Response,
     deleted_obj: Model,
 ) -> tuple[AuditOperation, AuditObject | None]:
@@ -21,12 +23,15 @@ def host_and_provider_case(
 
     match path:
         case ["host", host_pk] | ["provider", _, "host", host_pk]:
-            deleted_obj: Host
-            audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Host.capitalize()} {AuditLogOperationType.Delete}d",
-                operation_type=AuditLogOperationType.Delete,
-            )
+            if view.request.method == "DELETE":
+                operation_type = AuditLogOperationType.Delete
+            else:
+                operation_type = AuditLogOperationType.Update
             object_name = None
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Host.capitalize()} {operation_type}d",
+                operation_type=operation_type,
+            )
             if isinstance(deleted_obj, Host):
                 object_name = deleted_obj.fqdn
             else:

@@ -12,11 +12,9 @@
 
 import copy
 
-from django.contrib.contenttypes.models import ContentType
-
 from adcm.tests.base import BaseTestCase
-from cm.models import ConfigLog, GroupConfig
-from cm.tests.utils import gen_cluster, gen_config, gen_prototype_config
+from cm.models import ConfigLog
+from cm.tests.utils import gen_cluster, gen_config, gen_group, gen_prototype_config
 
 
 class GroupConfigTest(BaseTestCase):
@@ -60,15 +58,9 @@ class GroupConfigTest(BaseTestCase):
         self.cluster.config = gen_config(config=self.cluster_config, attr=self.cluster_attr)
         self.cluster.save()
 
-    @staticmethod
-    def create_group(name, object_id, model_name):
-        return GroupConfig.objects.create(
-            object_id=object_id, object_type=ContentType.objects.get(model=model_name), name=name
-        )
-
     def test_create_group(self):
         """Test create groups for objects"""
-        group = self.create_group("group", self.cluster.id, "cluster")
+        group = gen_group("group", self.cluster.id, "cluster")
         parent_cl = ConfigLog.objects.get(id=self.cluster.config.current)
         cl = ConfigLog.objects.get(id=group.config.current)
 
@@ -91,7 +83,7 @@ class GroupConfigTest(BaseTestCase):
 
     def test_get_diff_config_attr(self):
         """Test get_diff_config_attr() method"""
-        group = self.create_group("group", self.cluster.id, "cluster")
+        group = gen_group("group", self.cluster.id, "cluster")
         diff_config, diff_attr = group.get_diff_config_attr()
 
         self.assertDictEqual(diff_config, {})
@@ -118,7 +110,7 @@ class GroupConfigTest(BaseTestCase):
 
     def test_get_config_spec(self):
         """Test get_config_spec() method"""
-        group = self.create_group("group", self.cluster.id, "cluster")
+        group = gen_group("group", self.cluster.id, "cluster")
         spec = {
             "group": {
                 "type": "group",
@@ -150,7 +142,7 @@ class GroupConfigTest(BaseTestCase):
 
     def test_create_group_keys(self):
         """Test create_group_keys() method"""
-        group = self.create_group("group", self.cluster.id, "cluster")
+        group = gen_group("group", self.cluster.id, "cluster")
         gen_prototype_config(
             prototype=self.cluster.prototype,
             name="level1_1",
@@ -215,7 +207,7 @@ class GroupConfigTest(BaseTestCase):
 
     def test_update_parent_config(self):
         """Test update parent config for group"""
-        group = self.create_group("group", self.cluster.id, "cluster")
+        group = gen_group("group", self.cluster.id, "cluster")
 
         cl = ConfigLog.objects.get(id=group.config.current)
         parent_cl = ConfigLog.objects.get(id=self.cluster.config.current)
@@ -306,7 +298,7 @@ class GroupConfigTest(BaseTestCase):
 
     def test_create_config_for_group(self):
         """Test create new config for GroupConfig"""
-        group = self.create_group("group", self.cluster.id, "cluster")
+        group = gen_group("group", self.cluster.id, "cluster")
         cl_current = ConfigLog.objects.get(id=group.config.current)
         attr = copy.deepcopy(cl_current.attr)
         attr.update(
@@ -326,7 +318,7 @@ class GroupConfigTest(BaseTestCase):
     def test_upgrade_cluster_config(self):
         """Test upgrade cluster with GroupConfig"""
 
-        group = self.create_group("group", self.cluster.id, "cluster")
+        group = gen_group("group", self.cluster.id, "cluster")
         cl = ConfigLog.objects.get(id=group.config.current)
 
         self.assertDictEqual(

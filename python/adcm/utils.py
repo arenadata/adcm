@@ -7,3 +7,7 @@ def get_obj_type(obj_type: str) -> str:
         return "provider"
 
     return obj_type
+
+
+def str_remove_non_alnum(value: str) -> str:
+    return "".join(ch for ch in value if ch.isalnum())
