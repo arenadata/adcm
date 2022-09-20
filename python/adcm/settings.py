@@ -152,7 +152,6 @@ STATIC_URL = "/static/"
 ADWP_EVENT_SERVER = {
     # path to json file with Event Server secret token
     "SECRETS_FILE": BASE_DIR / "data/var/secrets.json",
-
     # URL of Event Server REST API
     "API_URL": "http://localhost:8020/api/v1",
 }

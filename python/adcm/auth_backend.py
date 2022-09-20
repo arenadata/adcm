@@ -23,7 +23,7 @@ class YandexOAuth2(BaseOAuth2):
     REDIRECT_STATE = False
 
     def auth_html(self):
-        pass
+        pass  # not necessary
 
     def get_user_details(self, response: dict) -> dict:
         return {

@@ -13,23 +13,14 @@
 from django.conf.urls import include
 from django.urls import path
 
-import api.urls
-import api_ui.urls
-from cm.views import error, index, ws_test
-
 urlpatterns = [
-    path("cm/", index),
-    path("cm/ws_test/", ws_test),
-    path("cm/ws_test/<ws_type>/", ws_test),
-    path("cm/ws_test/<ws_type>/<dev>/", ws_test),
-    path("cm/error/<msg>/", error),
     path("social/", include("social_django.urls", namespace="social")),
     path(
         "api/",
         include(
             [
-                path("v1/", include(api.urls)),
-                path("ui/", include(api_ui.urls)),
+                path("v1/", include("api.urls")),
+                path("ui/", include("api_ui.urls")),
             ],
         ),
     ),
