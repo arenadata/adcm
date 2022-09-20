@@ -62,4 +62,4 @@ class ADCMInfo(APIView):
 
     @staticmethod
     def get(request):
-        return Response({"adcm_version": ADCM_VERSION, "google_oauth": cm.api.has_google_oauth()})
+        return Response({"adcm_version": ADCM_VERSION})

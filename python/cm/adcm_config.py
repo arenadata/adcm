@@ -21,8 +21,6 @@ from typing import Any, Optional, Tuple
 
 import yspec.checker
 from ansible.parsing.vault import VaultAES256, VaultSecret
-from django.conf import settings
-from django.db.utils import OperationalError
 
 from cm import config
 from cm.errors import raise_adcm_ex as err
@@ -179,35 +177,6 @@ def init_object_config(proto: Prototype, obj: Any) -> Optional[ObjectConfig]:
     save_obj_config(obj_conf, conf, attr, 'init')
     process_file_type(obj, spec, conf)
     return obj_conf
-
-
-def prepare_social_auth(conf):
-    if 'google_oauth' not in conf:
-        return
-    gconf = conf['google_oauth']
-    if 'client_id' not in gconf or not gconf['client_id']:
-        return
-    if 'secret' not in gconf or not gconf['secret']:
-        return
-    settings.SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = gconf['client_id']
-    settings.SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = ansible_decrypt(gconf['secret'])
-    if 'whitelisted_domains' in gconf:
-        settings.SOCIAL_AUTH_GOOGLE_OAUTH2_WHITELISTED_DOMAINS = gconf['whitelisted_domains']
-
-
-def load_social_auth():
-    try:
-        adcm = ADCM.objects.filter()
-        if not adcm:
-            return
-    except OperationalError:
-        return
-
-    try:
-        cl = ConfigLog.objects.get(obj_ref=adcm[0].config, id=adcm[0].config.current)
-        prepare_social_auth(cl.config)
-    except OperationalError as e:
-        logger.error('load_social_auth error: %s', e)
 
 
 def get_prototype_config(proto: Prototype, action: Action = None) -> Tuple[dict, dict, dict, dict]:

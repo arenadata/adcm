@@ -9,15 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# -*- coding: utf-8 -*-
+
 from __future__ import unicode_literals
 
-import social_django.views
 from django.contrib.auth import login
-from django.shortcuts import redirect, render
-from django.utils.http import urlencode
+from django.shortcuts import render
 from rest_framework.authtoken.models import Token
-from social_core.exceptions import AuthForbidden
 
 from cm import config
 from cm.logger import logger
@@ -25,21 +22,13 @@ from cm.models import UserProfile
 
 
 def index(request):
-    return render(request, 'index.html', {})
+    return render(request, "index.html", {})
 
 
-def ws_test(request, ws_type='event', dev='production'):
-    context = {'local': dev, 'type': ws_type, 'token': config.STATUS_SECRET_KEY}
-    return render(request, 'ws.html', context)
+def ws_test(request, ws_type="event", dev="production"):
+    context = {"local": dev, "type": ws_type, "token": config.STATUS_SECRET_KEY}
 
-
-def complete(request, *args, **kwargs):
-    try:
-        return social_django.views.complete(request, 'google-oauth2', *args, **kwargs)
-    except AuthForbidden as e:
-        logger.error("social AUTH_ERROR: %s", e)
-        params = urlencode({'error_code': 'AUTH_ERROR', 'error_msg': e})
-        return redirect(f"/login/?{params}")
+    return render(request, "ws.html", context)
 
 
 def get_token(strategy, user, response, *args, **kwargs):
@@ -54,11 +43,14 @@ def get_token(strategy, user, response, *args, **kwargs):
         up.save()
         user.is_superuser = True
         user.save()
+
     logger.info("authorize social user %s", user)
-    login(strategy.request, user, backend='django.contrib.auth.backends.ModelBackend')
-    return render(strategy.request, 'token.html', {'login': user.username, 'token': token.key})
+    login(strategy.request, user, backend="django.contrib.auth.backends.ModelBackend")
+
+    return render(strategy.request, "token.html", {"login": user.username, "token": token.key})
 
 
 def error(request, msg):
-    context = {'error_message': msg}
-    return render(request, 'error.html', context)
+    context = {"error_message": msg}
+
+    return render(request, "error.html", context)
