@@ -35,7 +35,7 @@ if CONFIG_FILE.is_file():
 else:
     ADCM_VERSION = "2019.02.07.00"
 
-DEBUG = True
+DEBUG = False
 ALLOWED_HOSTS = ["*"]
 INSTALLED_APPS = [
     "rbac",  # keep it above 'django.contrib.auth' in order to keep "createsuperuser" working
