@@ -52,6 +52,7 @@ from api.utils import (
 )
 from audit.utils import audit
 from cm.errors import AdcmEx
+from cm.issue import update_hierarchy_issues
 from cm.models import (
     Cluster,
     ClusterBind,
@@ -289,6 +290,7 @@ class ClusterUpgrade(GenericUIView):
             request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
         )
         check_custom_perm(request.user, 'view_upgrade_of', 'cluster', cluster)
+        update_hierarchy_issues(cluster)
         obj = get_upgrade(cluster, self.get_ordering())
         serializer = self.serializer_class(
             obj, many=True, context={'cluster_id': cluster.id, 'request': request}

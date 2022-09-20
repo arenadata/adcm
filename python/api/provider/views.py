@@ -33,6 +33,7 @@ from api.utils import (
 )
 from audit.utils import audit
 from cm.api import delete_host_provider
+from cm.issue import update_hierarchy_issues
 from cm.models import HostProvider, Upgrade
 from cm.upgrade import get_upgrade
 from rbac.viewsets import DjangoOnlyObjectPermissions
@@ -104,6 +105,7 @@ class ProviderUpgrade(GenericUIView):
             request.user, 'cm.view_hostprovider', HostProvider, id=kwargs['provider_id']
         )
         check_custom_perm(request.user, 'view_upgrade_of', 'hostprovider', provider)
+        update_hierarchy_issues(provider)
         obj = get_upgrade(provider, self.get_ordering())
         serializer = self.serializer_class(
             obj, many=True, context={'provider_id': provider.id, 'request': request}

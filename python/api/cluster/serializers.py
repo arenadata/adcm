@@ -9,11 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Optional
 
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     BooleanField,
     CharField,
+    HyperlinkedIdentityField,
     IntegerField,
     JSONField,
     Serializer,
@@ -35,7 +37,6 @@ from api.utils import (
     check_obj,
     filter_actions,
     get_upgradable_func,
-    hlink,
 )
 from api.validators import ClusterNameRegExValidator
 from cm.adcm_config import get_main_info
@@ -74,7 +75,9 @@ class ClusterSerializer(Serializer):
     description = CharField(help_text="Cluster description", required=False)
     state = CharField(read_only=True)
     before_upgrade = JSONField(read_only=True)
-    url = hlink("cluster-details", "id", "cluster_id")
+    url = HyperlinkedIdentityField(
+        view_name="cluster-details", lookup_field="id", lookup_url_kwarg="cluster_id"
+    )
 
     @staticmethod
     def validate_prototype_id(prototype_id):
@@ -100,23 +103,32 @@ class ClusterUISerializer(ClusterSerializer):
     prototype_version = SerializerMethodField()
     prototype_name = SerializerMethodField()
     prototype_display_name = SerializerMethodField()
-    upgrade = hlink('cluster-upgrade', 'id', 'cluster_id')
+    upgrade = HyperlinkedIdentityField(
+        view_name='cluster-upgrade', lookup_field='id', lookup_url_kwarg='cluster_id'
+    )
     upgradable = SerializerMethodField()
-    get_upgradable = get_upgradable_func
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
     status = SerializerMethodField()
 
-    def get_prototype_version(self, obj):
+    @staticmethod
+    def get_upgradable(obj: Cluster) -> bool:
+        return get_upgradable_func(obj)
+
+    @staticmethod
+    def get_prototype_version(obj: Cluster) -> str:
         return obj.prototype.version
 
-    def get_prototype_name(self, obj):
+    @staticmethod
+    def get_prototype_name(obj: Cluster) -> str:
         return obj.prototype.name
 
-    def get_prototype_display_name(self, obj):
+    @staticmethod
+    def get_prototype_display_name(obj: Cluster) -> Optional[str]:
         return obj.prototype.display_name
 
-    def get_status(self, obj):
+    @staticmethod
+    def get_status(obj: Cluster) -> int:
         return get_cluster_status(obj)
 
 
@@ -127,22 +139,38 @@ class ClusterDetailSerializer(ClusterSerializer):
     action = CommonAPIURL(view_name="object-action")
     service = ObjectURL(view_name="service")
     host = ObjectURL(view_name="host")
-    hostcomponent = hlink("host-component", "id", "cluster_id")
+    hostcomponent = HyperlinkedIdentityField(
+        view_name="host-component", lookup_field="id", lookup_url_kwarg="cluster_id"
+    )
     status = SerializerMethodField()
-    status_url = hlink("cluster-status", "id", "cluster_id")
+    status_url = HyperlinkedIdentityField(
+        view_name="cluster-status", lookup_field="id", lookup_url_kwarg="cluster_id"
+    )
     config = CommonAPIURL(view_name="object-config")
-    serviceprototype = hlink("cluster-service-prototype", "id", "cluster_id")
-    upgrade = hlink("cluster-upgrade", "id", "cluster_id")
-    imports = hlink("cluster-import", "id", "cluster_id")
-    bind = hlink("cluster-bind", "id", "cluster_id")
-    prototype = hlink("cluster-type-details", "prototype_id", "prototype_id")
+    serviceprototype = HyperlinkedIdentityField(
+        view_name="cluster-service-prototype", lookup_field="id", lookup_url_kwarg="cluster_id"
+    )
+    upgrade = HyperlinkedIdentityField(
+        view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id"
+    )
+    imports = HyperlinkedIdentityField(
+        view_name="cluster-import", lookup_field="id", lookup_url_kwarg="cluster_id"
+    )
+    bind = HyperlinkedIdentityField(
+        view_name="cluster-bind", lookup_field="id", lookup_url_kwarg="cluster_id"
+    )
+    prototype = HyperlinkedIdentityField(
+        view_name="cluster-type-details",
+        lookup_field="prototype_id",
+        lookup_url_kwarg="prototype_id",
+    )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
     group_config = GroupConfigsHyperlinkedIdentityField(view_name="group-config-list")
 
     @staticmethod
-    def get_status(obj):
+    def get_status(obj: Cluster) -> int:
         return get_cluster_status(obj)
 
 
@@ -172,7 +200,6 @@ class ClusterDetailUISerializer(ClusterDetailSerializer):
     prototype_name = SerializerMethodField()
     prototype_display_name = SerializerMethodField()
     upgradable = SerializerMethodField()
-    get_upgradable = get_upgradable_func
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     main_info = SerializerMethodField()
 
@@ -184,19 +211,23 @@ class ClusterDetailUISerializer(ClusterDetailSerializer):
         return actions.data
 
     @staticmethod
-    def get_prototype_version(obj):
+    def get_upgradable(obj: Cluster) -> bool:
+        return get_upgradable_func(obj)
+
+    @staticmethod
+    def get_prototype_version(obj: Cluster) -> str:
         return obj.prototype.version
 
     @staticmethod
-    def get_prototype_name(obj):
+    def get_prototype_name(obj: Cluster) -> str:
         return obj.prototype.name
 
     @staticmethod
-    def get_prototype_display_name(obj):
+    def get_prototype_display_name(obj: Cluster) -> Optional[str]:
         return obj.prototype.display_name
 
     @staticmethod
-    def get_main_info(obj):
+    def get_main_info(obj: Cluster) -> Optional[str]:
         return get_main_info(obj)
 
 
@@ -236,7 +267,9 @@ class HostComponentSerializer(EmptySerializer):
     component_id = IntegerField(read_only=True, help_text="component id")
     state = CharField(read_only=True, required=False)
     url = MyUrlField(read_only=True, view_name="host-comp-details")
-    host_url = hlink("host-details", "host_id", "host_id")
+    host_url = HyperlinkedIdentityField(
+        view_name="host-details", lookup_field="host_id", lookup_url_kwarg="host_id"
+    )
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

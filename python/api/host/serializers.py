@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Optional
 
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -18,6 +19,7 @@ from rest_framework.serializers import (
     BooleanField,
     CharField,
     ChoiceField,
+    HyperlinkedIdentityField,
     IntegerField,
     SerializerMethodField,
 )
@@ -27,7 +29,7 @@ from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
-from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions, hlink
+from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions
 from cm.adcm_config import get_main_info
 from cm.api import add_host
 from cm.errors import AdcmEx
@@ -97,7 +99,9 @@ class HostDetailSerializer(HostSerializer):
     status = SerializerMethodField()
     config = CommonAPIURL(view_name="object-config")
     action = CommonAPIURL(view_name="object-action")
-    prototype = hlink("host-type-details", "prototype_id", "prototype_id")
+    prototype = HyperlinkedIdentityField(
+        view_name="host-type-details", lookup_field="prototype_id", lookup_url_kwarg="prototype_id"
+    )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
@@ -165,26 +169,32 @@ class HostUISerializer(HostSerializer):
     locked = BooleanField(read_only=True)
     status = SerializerMethodField()
 
-    def get_cluster_name(self, obj):
+    @staticmethod
+    def get_cluster_name(obj: Host) -> Optional[str]:
         if obj.cluster:
             return obj.cluster.name
         return None
 
-    def get_prototype_version(self, obj):
+    @staticmethod
+    def get_prototype_version(obj: Host) -> str:
         return obj.prototype.version
 
-    def get_prototype_name(self, obj):
+    @staticmethod
+    def get_prototype_name(obj: Host) -> str:
         return obj.prototype.name
 
-    def get_prototype_display_name(self, obj):
+    @staticmethod
+    def get_prototype_display_name(obj: Host) -> Optional[str]:
         return obj.prototype.display_name
 
-    def get_provider_name(self, obj):
+    @staticmethod
+    def get_provider_name(obj: Host) -> Optional[str]:
         if obj.provider:
             return obj.provider.name
         return None
 
-    def get_status(self, obj):
+    @staticmethod
+    def get_status(obj: Host) -> int:
         return get_host_status(obj)
 
 
@@ -207,30 +217,30 @@ class HostDetailUISerializer(HostDetailSerializer):
         return actions.data
 
     @staticmethod
-    def get_cluster_name(obj):
+    def get_cluster_name(obj: Host) -> Optional[str]:
         if obj.cluster:
             return obj.cluster.name
 
         return None
 
     @staticmethod
-    def get_prototype_version(obj):
+    def get_prototype_version(obj: Host) -> str:
         return obj.prototype.version
 
     @staticmethod
-    def get_prototype_name(obj):
+    def get_prototype_name(obj: Host) -> str:
         return obj.prototype.name
 
     @staticmethod
-    def get_prototype_display_name(obj):
+    def get_prototype_display_name(obj: Host) -> Optional[str]:
         return obj.prototype.display_name
 
     @staticmethod
-    def get_provider_name(obj):
+    def get_provider_name(obj: Host) -> Optional[str]:
         if obj.provider:
             return obj.provider.name
         return None
 
     @staticmethod
-    def get_main_info(obj):
+    def get_main_info(obj: Host) -> Optional[str]:
         return get_main_info(obj)
