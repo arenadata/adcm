@@ -333,7 +333,7 @@ def test_target_group_in_inventory(cluster_with_target_group_action: Cluster, pr
     """
     Test that target group action has inventory_hostname info
     """
-    hostname = "host_in_cluster"
+    hostname = "host-in-cluster"
     host = provider.host_create(hostname)
     cluster_with_target_group_action.host_add(host)
     action_in_object_is_present(ACTION_ON_HOST, host)

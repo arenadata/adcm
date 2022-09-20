@@ -273,13 +273,13 @@ def provider_and_multi_states_checker(sdk_client_fs: ADCMClient, request) -> Tup
     """Create provider and multi state checker"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
     clean_name = bundle.name.replace("_", "-")
-    provider = bundle.provider_create(name=bundle.name)
+    provider = bundle.provider_create(name=clean_name)
     bundle.provider_create(name=f"{clean_name}-second")
     provider.host_create(fqdn=clean_name)
     provider.host_create(fqdn=f"{clean_name}-second")
     check_objects_state_changed = build_objects_checker(
         field_name='Multi state',
-        changed=[clean_name],
+        changed=[bundle.name],
         extractor=lambda obj: sorted(obj.multi_state),
     )
     return provider, check_objects_state_changed

@@ -521,9 +521,9 @@ def test_host_should_be_unlocked_after_cluster_action_with_ansible_plugin(
 @pytest.mark.parametrize(
     "run_on_host",
     [
-        "host_with_two_components",
-        "host_with_one_component",
-        "host_with_different_services",
+        "host-with-two-components",
+        "host-with-one-component",
+        "host-with-different-services",
     ],
 )
 def test_host_should_be_unlocked_after_host_action(
