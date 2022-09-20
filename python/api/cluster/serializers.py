@@ -38,7 +38,7 @@ from api.utils import (
     get_upgradable_func,
     hlink,
 )
-from api.validators import ClusterNameRegExValidator
+from api.validators import cluster_name_validator
 from cm.adcm_config import get_main_info
 from cm.api import add_cluster, add_hc, bind, multi_bind
 from cm.errors import AdcmEx
@@ -69,7 +69,7 @@ class ClusterSerializer(Serializer):
         help_text="Cluster name",
         validators=[
             ClusterUniqueValidator(queryset=Cluster.objects.all()),
-            ClusterNameRegExValidator,
+            cluster_name_validator,
         ],
     )
     description = CharField(help_text="Cluster description", required=False)
@@ -127,7 +127,7 @@ class ClusterUpdateSerializer(EmptySerializer):
         max_length=80,
         validators=[
             ClusterUniqueValidator(queryset=Cluster.objects.all()),
-            ClusterNameRegExValidator,
+            cluster_name_validator,
         ],
         required=False,
         help_text="Cluster name",
