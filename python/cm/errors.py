@@ -255,6 +255,7 @@ def raise_adcm_ex(code, msg="", args=""):
         err_msg = msg
 
     logger.error(err_msg)
+
     raise AdcmEx(code, msg=msg, args=args)
 
 

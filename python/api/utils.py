@@ -162,18 +162,11 @@ def get_api_url_kwargs(obj, request, no_obj_type=False):
     if not no_obj_type:
         kwargs["object_type"] = obj_type
 
-    if obj_type == "service":
-        if "cluster" in request.path:
-            kwargs["cluster_id"] = obj.cluster.id
-    elif obj_type == "host":
-        if "cluster" in request.path:
-            kwargs["cluster_id"] = obj.cluster.id
-    elif obj_type == "component":
-        if "cluster" in request.path:
-            kwargs["service_id"] = obj.service.id
-            kwargs["cluster_id"] = obj.cluster.id
-        elif "service" in request.path:
-            kwargs["service_id"] = obj.service.id
+    if obj_type in {"service", "host", "component"} and "cluster" in request.path:
+        kwargs["cluster_id"] = obj.cluster.id
+
+    if obj_type == "component" and "service" in request.path:
+        kwargs["service_id"] = obj.service.id
 
     return kwargs
 
