@@ -89,21 +89,26 @@ class TestHost(BaseTestCase):
         self,
         log: AuditLog,
         operation_result: AuditLogOperationResult = AuditLogOperationResult.Success,
+        operation_name: str = "Host configuration updated",
+        audit_object_name: str = None,
         user: Optional[User] = None,
+        object_changes: dict | None = None,
     ) -> None:
+        if object_changes is None:
+            object_changes = {}
         if user is None:
             user = self.test_user
 
         self.assertEqual(log.audit_object.object_id, self.host.pk)
-        self.assertEqual(log.audit_object.object_name, self.host.fqdn)
+        self.assertEqual(log.audit_object.object_name, audit_object_name or self.host.fqdn)
         self.assertEqual(log.audit_object.object_type, AuditObjectType.Host)
         self.assertFalse(log.audit_object.is_deleted)
-        self.assertEqual(log.operation_name, "Host configuration updated")
+        self.assertEqual(log.operation_name, operation_name)
         self.assertEqual(log.operation_type, AuditLogOperationType.Update)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
-        self.assertEqual(log.object_changes, {})
+        self.assertEqual(log.object_changes, object_changes)
 
     def check_host_deleted_log(
         self,
@@ -394,7 +399,7 @@ class TestHost(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_denied(log=log)
 
-    def test_update_and_restore(self):
+    def test_update_config_and_restore(self):
         self.client.post(
             path=reverse("config-history", kwargs={"host_id": self.host.pk}),
             data={"config": {}},
@@ -417,6 +422,41 @@ class TestHost(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.check_host_updated_log(log=log)
+
+    def test_update_host(self):
+        self.client.patch(
+            path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+            data={
+                "description": "Such wow new description",
+                "fqdn": "new_test_fqdn",
+            },
+            content_type=APPLICATION_JSON,
+        )
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host_updated_log(
+            log=log,
+            operation_name="Host updated",
+            audit_object_name="new_test_fqdn",
+            object_changes={
+                "current": {"description": "Such wow new description", "fqdn": "new_test_fqdn"},
+                "previous": {"description": "", "fqdn": "test_fqdn_2"},
+            },
+        )
+
+        self.client.patch(
+            path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+            data={"maintenance_mode": "on"},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+        self.check_host_updated_log(
+            log=log,
+            operation_name="Host updated",
+            audit_object_name="new_test_fqdn",
+            operation_result=AuditLogOperationResult.Fail,
+        )
 
     def test_update_and_restore_denied(self):
         with self.no_rights_user_logged_in:

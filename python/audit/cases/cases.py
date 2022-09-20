@@ -74,6 +74,7 @@ def get_audit_operation_and_object(
     elif "host" in path or "provider" in path:
         audit_operation, audit_object = host_and_provider_case(
             path=path,
+            view=view,
             response=response,
             deleted_obj=deleted_obj,
         )

@@ -16,6 +16,7 @@ from rest_framework.serializers import (
     CharField,
     IntegerField,
     JSONField,
+    ModelSerializer,
     Serializer,
     SerializerMethodField,
 )
@@ -411,3 +412,15 @@ class DoClusterUpgradeSerializer(DoUpgradeSerializer):
         attr = validated_data.get("attr", {})
         hc = validated_data.get("hc", [])
         return do_upgrade(validated_data.get("obj"), upgrade, config, attr, hc)
+
+
+class ClusterAuditSerializer(ModelSerializer):
+    name = CharField(max_length=80, required=False)
+    description = CharField(required=False)
+
+    class Meta:
+        model = Cluster
+        fields = (
+            "name",
+            "description",
+        )
