@@ -133,3 +133,29 @@ class TestCluster(BaseTestCase):
                     )
                     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
                     self.assertEqual(response.json()["code"], "WRONG_NAME")
+
+    def test_cluster_name_update_in_different_states(self):
+        state_created = "created"
+        state_another = "another state"
+        valid_name = self.valid_names[0]
+        url = reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
+
+        self.cluster.state = state_created
+        self.cluster.save()
+
+        with self.another_user_logged_in(username="admin", password="admin"):
+            for method in ("patch", "put"):
+                response = getattr(self.client, method)(
+                    path=url, data={"name": valid_name}, content_type=APPLICATION_JSON
+                )
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+                self.assertEqual(response.json()["name"], valid_name)
+
+            self.cluster.state = state_another
+            self.cluster.save()
+
+            for method in ("patch", "put"):
+                response = getattr(self.client, method)(
+                    path=url, data={"name": valid_name}, content_type=APPLICATION_JSON
+                )
+                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
