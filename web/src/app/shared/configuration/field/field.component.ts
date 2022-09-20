@@ -106,6 +106,7 @@ export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
       } else field.setValue(defaultValue);
 
       this.options.value = field.value;
+      this.form.markAsTouched();
       this.form.updateValueAndValidity();
     }
   }
