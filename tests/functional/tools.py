@@ -13,32 +13,30 @@
 Common functions and helpers for testing ADCM
 """
 import json
-from typing import List, Tuple, Callable, Union, Iterable, Dict, Collection
+from typing import Callable, Collection, Dict, Iterable, List, Tuple, Union
 
 import allure
 import pytest
-
 from _pytest.outcomes import Failed
-from adcm_pytest_plugin.utils import catch_failed
-from adcm_pytest_plugin.docker_utils import get_file_from_container, ADCM
-from coreapi.exceptions import ErrorMessage
 from adcm_client.base import ObjectNotFound, PagingEnds
 from adcm_client.objects import (
-    Host,
-    Task,
-    Job,
-    Cluster,
-    Service,
-    Component,
-    Provider,
-    GroupConfig,
     ADCMClient,
-    Policy,
-    Role,
+    Cluster,
+    Component,
     Group,
+    GroupConfig,
+    Host,
+    Job,
+    Policy,
+    Provider,
+    Role,
+    Service,
+    Task,
     User,
 )
-
+from adcm_pytest_plugin.docker_utils import ADCM, get_file_from_container
+from adcm_pytest_plugin.utils import catch_failed
+from coreapi.exceptions import ErrorMessage
 
 BEFORE_UPGRADE_DEFAULT_STATE = None
 
@@ -163,3 +161,25 @@ def build_hc_for_hc_acl_action(
             for component_proto_id, host in add_new_bundle_components
         ],
     ]
+
+
+# LDAP
+
+
+def check_user_is_active(user: User) -> None:
+    """Check that user's `is_active` flag is True"""
+    with allure.step(f"Check user {user.username} is active"):
+        user.reread()
+        assert user.is_active, "User should inactive"
+
+
+def check_user_is_deactivated(user: User) -> None:
+    """Check that user's `is_active` flag is False"""
+    with allure.step(f"Check user {user.username} is inactive"):
+        user.reread()
+        assert not user.is_active, "User should be inactive"
+
+
+def run_ldap_sync(client: ADCMClient) -> Task:
+    """Run LDAP sync action"""
+    return client.adcm().action(name="run_ldap_sync").run()

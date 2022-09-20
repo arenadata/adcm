@@ -101,8 +101,7 @@ def grant_view_config_permissions_on_adcm_objects(sdk_client_fs, adcm_objects, n
     )
 
 
-@pytest.mark.xfail(reason="will no work until user deactivation https://tracker.yandex.ru/ADCM-2582")
-@pytest.mark.parametrize("parse_with_context", ["delete_objects.yaml"], indirect=True)
+@pytest.mark.parametrize('parse_with_context', ['delete_objects.yaml'], indirect=True)
 @pytest.mark.usefixtures(
     "grant_view_config_permissions_on_adcm_objects"
 )  # pylint: disable-next=too-many-locals,too-many-arguments

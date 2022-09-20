@@ -1,0 +1,1 @@
+ansible stdout job_id 2

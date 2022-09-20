@@ -245,9 +245,11 @@ class HostDetail(PermissionListMixin, DetailView):
 
         return Response(status=HTTP_204_NO_CONTENT)
 
+    @audit
     def patch(self, request, *args, **kwargs):
         return self.__update_host_object(request, *args, **kwargs)
 
+    @audit
     def put(self, request, *args, **kwargs):
         return self.__update_host_object(request, partial=False, *args, **kwargs)
 
@@ -272,26 +274,28 @@ class HostDetail(PermissionListMixin, DetailView):
             partial=partial,
         )
 
-        if serializer.is_valid(raise_exception=True):
+        serializer.is_valid(raise_exception=True)
+        if "maintenance_mode" in serializer.validated_data:
             self.__check_maintenance_mode_constraint(
-                host.maintenance_mode, serializer.validated_data["maintenance_mode"]
+                host.maintenance_mode, serializer.validated_data.get("maintenance_mode")
             )
-            if (
-                "fqdn" in request.data
-                and request.data["fqdn"] != host.fqdn
-                and (host.cluster or host.state != "created")
-            ):
-                raise AdcmEx("HOST_UPDATE_ERROR")
 
-            serializer.save(**kwargs)
-            load_service_map()
+        if (
+            "fqdn" in request.data
+            and request.data["fqdn"] != host.fqdn
+            and (host.cluster or host.state != "created")
+        ):
+            raise AdcmEx("HOST_UPDATE_ERROR")
 
-            return Response(self.get_serializer(self.get_object()).data, status=HTTP_200_OK)
+        serializer.save(**kwargs)
+        load_service_map()
 
-        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+        return Response(self.get_serializer(self.get_object()).data, status=HTTP_200_OK)
 
     @staticmethod
     def __check_maintenance_mode_constraint(old_mode, new_mode):
+        if old_mode == new_mode:
+            return
         if old_mode == MaintenanceModeType.Disabled or new_mode not in (
             MaintenanceModeType.On,
             MaintenanceModeType.Off,

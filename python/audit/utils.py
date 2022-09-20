@@ -29,6 +29,7 @@ from rest_framework.status import (
 )
 from rest_framework.viewsets import ModelViewSet
 
+from api import cluster, host
 from audit.cases.cases import get_audit_operation_and_object
 from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
@@ -100,6 +101,8 @@ def _get_deleted_obj(view: View, request: Request, kwargs) -> Model | None:
             deleted_obj = Cluster.objects.filter(pk=kwargs["cluster_id"]).first()
         elif "service_id" in kwargs:
             deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
+        elif "provider_id" in kwargs:
+            deleted_obj = HostProvider.objects.filter(pk=kwargs["provider_id"]).first()
         else:
             deleted_obj = None
 
@@ -116,6 +119,10 @@ def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
         serializer_class = UserAuditSerializer
     elif isinstance(current_obj, Policy):
         serializer_class = PolicyAuditSerializer
+    elif isinstance(current_obj, Cluster):
+        serializer_class = cluster.serializers.ClusterAuditSerializer
+    elif isinstance(current_obj, Host):
+        serializer_class = host.serializers.HostAuditSerializer
 
     if not serializer_class:
         return {}
@@ -138,7 +145,7 @@ def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
     return object_changes
 
 
-def _get_obj_changes_data(view: ModelViewSet) -> tuple[dict | None, Model | None]:
+def _get_obj_changes_data(view: View | ModelViewSet) -> tuple[dict | None, Model | None]:
     prev_data = None
     current_obj = None
     serializer_class = None
@@ -148,6 +155,7 @@ def _get_obj_changes_data(view: ModelViewSet) -> tuple[dict | None, Model | None
         and view.action in {"update", "partial_update"}
         and view.kwargs.get("pk")
     ):
+        pk = view.kwargs["pk"]
         if view.__class__.__name__ == "GroupViewSet":
             serializer_class = GroupAuditSerializer
             model = Group
@@ -160,12 +168,20 @@ def _get_obj_changes_data(view: ModelViewSet) -> tuple[dict | None, Model | None
         elif view.__class__.__name__ == "PolicyViewSet":
             serializer_class = PolicyAuditSerializer
             model = Policy
-
-        if serializer_class:
-            current_obj = model.objects.filter(pk=view.kwargs["pk"]).first()
-            prev_data = serializer_class(model.objects.filter(pk=view.kwargs["pk"]).first()).data
-            if current_obj:
-                prev_data = serializer_class(current_obj).data
+    elif view.request.method in {"PATCH", "PUT"}:
+        if view.__class__.__name__ == "ClusterDetail":
+            serializer_class = cluster.serializers.ClusterAuditSerializer
+            pk = view.kwargs["cluster_id"]
+            model = Cluster
+        elif view.__class__.__name__ == "HostDetail":
+            serializer_class = host.serializers.HostAuditSerializer
+            pk = view.kwargs["host_id"]
+            model = Host
+    if serializer_class:
+        current_obj = model.objects.filter(pk=pk).first()
+        prev_data = serializer_class(model.objects.filter(pk=pk).first()).data
+        if current_obj:
+            prev_data = serializer_class(current_obj).data
 
     return prev_data, current_obj
 

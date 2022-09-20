@@ -150,6 +150,22 @@ def get_license_hash(proto, conf, bundle_hash):
     return sha1.hexdigest()
 
 
+def process_config_group_customization(actual_config: dict, obj: StagePrototype):
+    if not actual_config:
+        return
+    if "config_group_customization" not in actual_config:
+        sp = None
+        if obj.type == "service":
+            try:
+                sp = StagePrototype.objects.get(type="cluster")
+            except StagePrototype.DoesNotExist:
+                logger.debug("Can't find cluster for service %s", obj)
+        if obj.type == "component":
+            sp = obj.parent
+        if sp:
+            actual_config["config_group_customization"] = sp.config_group_customization
+
+
 def save_prototype(path, conf, def_type, bundle_hash):
     # validate_name(type_name, '{} type name "{}"'.format(def_type, conf['name']))
     proto = StagePrototype(name=conf["name"], type=def_type, path=path, version=conf["version"])
@@ -161,6 +177,7 @@ def save_prototype(path, conf, def_type, bundle_hash):
     dict_to_obj(conf, "adcm_min_version", proto)
     dict_to_obj(conf, "venv", proto)
     dict_to_obj(conf, "edition", proto)
+    process_config_group_customization(conf, proto)
     dict_to_obj(conf, "config_group_customization", proto)
     dict_to_obj(conf, "allow_maintenance_mode", proto)
     fix_display_name(conf, proto)
@@ -213,6 +230,7 @@ def save_components(proto, conf, bundle_hash):
         dict_to_obj(cc, "requires", component)
         dict_to_obj(cc, "venv", component)
         dict_to_obj(cc, "bound_to", component)
+        process_config_group_customization(cc, component)
         dict_to_obj(cc, "config_group_customization", component)
         component.save()
         save_actions(component, cc, bundle_hash)
