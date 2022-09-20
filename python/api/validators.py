@@ -22,7 +22,7 @@ class RegExValidator(RegexValidator):
 
 def cluster_name_validator(value: str) -> None:
     allowed_start_end = string.ascii_letters + string.digits
-    allowed_middle = string.ascii_letters + string.digits + "-. _"
+    allowed_middle_regex = string.ascii_letters + string.digits + r"\-\. _"
     min_length = 2
 
     error_code = "WRONG_NAME"
@@ -31,14 +31,13 @@ def cluster_name_validator(value: str) -> None:
     if len(value) < min_length:
         raise AdcmEx(code=error_code, msg="Name is too short")
 
-    if not any(value.startswith(c) for c in allowed_start_end):
+    if value[0] not in allowed_start_end:
         error_symbols += value[0]
 
-    if len(value) >= 3 and not all(c in allowed_middle for c in value[1:-1]):
-        allowed_middle_for_regex = allowed_middle.replace("-", r"\-").replace(".", r"\.")
-        error_symbols += re.sub(rf"[{allowed_middle_for_regex}]+", "", value[1:-1])
+    if len(value) >= 3:
+        error_symbols += re.sub(rf"[{allowed_middle_regex}]+", "", value[1:-1])
 
-    if not any(value.endswith(c) for c in allowed_start_end):
+    if value[-1] not in allowed_start_end:
         error_symbols += value[-1]
 
     if error_symbols:
