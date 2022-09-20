@@ -11,7 +11,8 @@
 # limitations under the License.
 
 from guardian.mixins import PermissionListMixin
-from rest_framework import permissions
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.base_view import GenericUIView
@@ -22,7 +23,7 @@ from api.config.serializers import (
     ObjectConfigSerializer,
     ObjectConfigUpdateSerializer,
 )
-from api.utils import check_obj, create, permission_denied, update
+from api.utils import check_obj, create, update
 from audit.utils import audit
 from cm.adcm_config import ui_config
 from cm.errors import AdcmEx
@@ -82,13 +83,13 @@ def has_config_perm(user, action_type, object_type, obj):
 
 def check_config_perm(user, action_type, object_type, obj):
     if not has_config_perm(user, action_type, object_type, obj):
-        permission_denied()
+        raise PermissionDenied()
 
 
 class ConfigView(GenericUIView):
     queryset = ConfigLog.objects.all()
     serializer_class = HistoryCurrentPreviousConfigSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         object_type, object_id, _ = get_object_type_id_version(**kwargs)

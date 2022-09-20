@@ -11,11 +11,14 @@
 # limitations under the License.
 
 from django.conf import settings
+from social_core.backends.google import GoogleOAuth2
 from social_core.backends.oauth import BaseOAuth2
+
+from adcm.utils import get_google_oauth, get_yandex_oauth
 
 
 class YandexOAuth2(BaseOAuth2):
-    name = "yandex"
+    name = "yandex-oauth2"
     AUTHORIZATION_URL = settings.YANDEX_OAUTH_AUTH_URL
     ACCESS_TOKEN_URL = settings.YANDEX_OAUTH_TOKEN_URL
     ACCESS_TOKEN_METHOD = "POST"
@@ -38,3 +41,14 @@ class YandexOAuth2(BaseOAuth2):
             url=settings.YANDEX_OAUTH_USER_DATA_URL,
             headers={"Authorization": f"OAuth {access_token}"},
         )
+
+    def get_key_and_secret(self) -> tuple[str, str]:
+        return get_yandex_oauth()
+
+
+class CustomGoogleOAuth2(GoogleOAuth2):
+    def auth_html(self):
+        pass  # not necessary
+
+    def get_key_and_secret(self) -> tuple[str, str]:
+        return get_google_oauth()
