@@ -449,11 +449,11 @@ class TestObjectUpdates:
         body = {
             "fqdn": host.fqdn,
             "description": host.description,
+            "maintenance_mode": "on",
             **(
                 {
                     "prototype_id": host.prototype_id,
                     "provider_id": host.provider_id,
-                    "maintenance_mode": "on",
                 }
                 if method == "put"
                 else {}
