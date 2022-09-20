@@ -20,6 +20,9 @@ import requests
 from adcm_client.objects import ADCMClient
 
 from tests.functional.audit.conftest import make_auth_header
+from tests.functional.conftest import only_clean_adcm
+
+pytestmark = [only_clean_adcm]
 
 
 def _token_login(client: ADCMClient, username: str, password: str) -> requests.Response:
