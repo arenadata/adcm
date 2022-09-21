@@ -246,9 +246,11 @@ class HostDetail(PermissionListMixin, DetailView):
 
         return Response(status=HTTP_204_NO_CONTENT)
 
+    @audit
     def patch(self, request, *args, **kwargs):
         return self.__update_host_object(request, *args, **kwargs)
 
+    @audit
     def put(self, request, *args, **kwargs):
         return self.__update_host_object(request, partial=False, *args, **kwargs)
 
@@ -276,7 +278,7 @@ class HostDetail(PermissionListMixin, DetailView):
         serializer.is_valid(raise_exception=True)
         if "maintenance_mode" in serializer.validated_data:
             self.__check_maintenance_mode_constraint(
-                host.maintenance_mode, serializer.validated_data["maintenance_mode"]
+                host.maintenance_mode, serializer.validated_data.get("maintenance_mode")
             )
 
         if (
