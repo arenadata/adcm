@@ -213,10 +213,3 @@ LOGGING = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
-REGEX_HOST_FQDN = r"^[a-zA-Z0-9][a-zA-Z0-9\.-]*"
-REGEX_CLUSTER_NAME = (
-    r"^[a-zA-Z0-9]"  # starts with latin letter (upper/lower case) or digit
-    # latin letters (upper/lower case), digits, hyphens, dots, whitespaces, underscores
-    r"[a-zA-Z0-9-\. _]*?"
-    r"[a-zA-Z0-9]$"  # ends with latin letter (upper/lower case) or digit
-)  # as a result of this pattern min_length = 2
