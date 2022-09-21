@@ -99,12 +99,7 @@ def cluster_case(
                 audit_object = None
 
         case ["cluster", cluster_pk, "host"]:
-            audit_operation = AuditOperation(
-                name="{host_fqdn} host added",
-                operation_type=AuditLogOperationType.Update,
-            )
-
-            host_fqdn = None
+            host_fqdn = ""
             if response and response.data:
                 host_fqdn = response.data["fqdn"]
 
@@ -113,9 +108,10 @@ def cluster_case(
                 if host:
                     host_fqdn = host.fqdn
 
-            if host_fqdn:
-                audit_operation.name = audit_operation.name.format(host_fqdn=host_fqdn)
-
+            audit_operation = AuditOperation(
+                name=f"{host_fqdn} host added".strip(),
+                operation_type=AuditLogOperationType.Update,
+            )
             obj = Cluster.objects.get(pk=cluster_pk)
             audit_object = get_or_create_audit_obj(
                 object_id=cluster_pk,
@@ -124,26 +120,37 @@ def cluster_case(
             )
 
         case ["cluster", cluster_pk, "host", host_pk]:
-            deleted_obj: Host
+            if view.request.method == "DELETE":
+                name = "host removed"
+                if not isinstance(deleted_obj, Host):
+                    deleted_obj = Host.objects.filter(pk=host_pk).first()
+
+                if deleted_obj:
+                    name = f"{deleted_obj.fqdn} host removed"
+
+                obj = Cluster.objects.filter(pk=cluster_pk).first()
+                if obj:
+                    audit_object = get_or_create_audit_obj(
+                        object_id=cluster_pk,
+                        object_name=obj.name,
+                        object_type=AuditObjectType.Cluster,
+                    )
+                else:
+                    audit_object = None
+            else:
+                obj = Host.objects.filter(pk=host_pk).first()
+                name = f"{AuditObjectType.Host.capitalize()} updated"
+                if obj:
+                    audit_object = get_or_create_audit_obj(
+                        object_id=host_pk,
+                        object_name=obj.name,
+                        object_type=AuditObjectType.Host,
+                    )
+
             audit_operation = AuditOperation(
-                name="host removed",
+                name=name,
                 operation_type=AuditLogOperationType.Update,
             )
-            if not isinstance(deleted_obj, Host):
-                deleted_obj = Host.objects.filter(pk=host_pk).first()
-
-            if deleted_obj:
-                audit_operation.name = f"{deleted_obj.fqdn} {audit_operation.name}"
-
-            obj = Cluster.objects.filter(pk=cluster_pk).first()
-            if obj:
-                audit_object = get_or_create_audit_obj(
-                    object_id=cluster_pk,
-                    object_name=obj.name,
-                    object_type=AuditObjectType.Cluster,
-                )
-            else:
-                audit_object = None
 
         case ["cluster", cluster_pk, "hostcomponent"]:
             audit_operation = AuditOperation(

@@ -19,6 +19,7 @@ from rest_framework.serializers import (
     CharField,
     ChoiceField,
     IntegerField,
+    ModelSerializer,
     SerializerMethodField,
 )
 from rest_framework.validators import UniqueValidator
@@ -114,6 +115,7 @@ class HostUpdateSerializer(HostDetailSerializer):
         instance.maintenance_mode = validated_data.get(
             "maintenance_mode", instance.maintenance_mode
         )
+        instance.description = validated_data.get("description", instance.description)
         instance.fqdn = validated_data.get("fqdn", instance.fqdn)
         instance.save()
 
@@ -122,6 +124,20 @@ class HostUpdateSerializer(HostDetailSerializer):
         update_issue_after_deleting()
 
         return instance
+
+
+class HostAuditSerializer(ModelSerializer):
+    fqdn = CharField(max_length=253)
+    description = CharField(required=False, allow_blank=True)
+    maintenance_mode = ChoiceField(choices=MaintenanceModeType.choices)
+
+    class Meta:
+        model = Host
+        fields = (
+            "fqdn",
+            "description",
+            "maintenance_mode",
+        )
 
 
 class ClusterHostSerializer(HostSerializer):
