@@ -240,10 +240,11 @@ class TestClusterRelatedObjects:
 def provider_and_states_checker(sdk_client_fs: ADCMClient, request) -> Tuple[Provider, Callable]:
     """Create provider and states checker"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
-    provider = bundle.provider_create(name=bundle.name.replace('_', '-'))
-    bundle.provider_create(name=f"{bundle.name}-second")
-    provider.host_create(fqdn=bundle.name)
-    provider.host_create(fqdn=f"{bundle.name}-second")
+    cleaned_name = bundle.name.replace("_", "-")
+    provider = bundle.provider_create(name=cleaned_name)
+    bundle.provider_create(name=f"{cleaned_name}-second")
+    provider.host_create(fqdn=cleaned_name)
+    provider.host_create(fqdn=f"{cleaned_name}-second")
     check_objects_state_changed = build_objects_checker(
         field_name='State',
         changed=bundle.name,
@@ -256,10 +257,11 @@ def provider_and_states_checker(sdk_client_fs: ADCMClient, request) -> Tuple[Pro
 def provider_and_multi_states_plus_states_checker(sdk_client_fs: ADCMClient, request) -> Tuple[Provider, Callable]:
     """Create provider and multi state plus state checker"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
-    provider = bundle.provider_create(name=bundle.name)
-    bundle.provider_create(name=f"{bundle.name}-second".replace("_", "-"))
-    provider.host_create(fqdn=bundle.name)
-    provider.host_create(fqdn=f"{bundle.name}-second".replace("_", "-"))
+    cleaned_name = bundle.name.replace("_", "-")
+    provider = bundle.provider_create(name=cleaned_name)
+    bundle.provider_create(name=f"{cleaned_name}-second".replace("_", "-"))
+    provider.host_create(fqdn=cleaned_name)
+    provider.host_create(fqdn=f"{cleaned_name}-second".replace("_", "-"))
     check_objects_state_changed = build_objects_checker(
         field_name='Multi states and states',
         changed=dict(state=bundle.name, multi_states=[bundle.name]),
