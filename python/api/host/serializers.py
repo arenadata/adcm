@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf import settings
+import string
+
 from rest_framework.serializers import (
     BooleanField,
     CharField,
@@ -25,7 +26,7 @@ from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
 from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions, hlink
-from api.validators import HostUniqueValidator, RegexValidator
+from api.validators import HostUniqueValidator, StartMidEndValidator
 from cm.adcm_config import get_main_info
 from cm.api import add_host
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
@@ -43,10 +44,12 @@ class HostSerializer(EmptySerializer):
         help_text="fully qualified domain name",
         validators=[
             HostUniqueValidator(queryset=Host.objects.all()),
-            RegexValidator(
-                regex=settings.REGEX_HOST_FQDN,
-                code="WRONG_NAME",
-                msg="host FQDN doesn't meet requirements",
+            StartMidEndValidator(
+                start=string.ascii_letters + string.digits,
+                mid=string.ascii_letters + string.digits + r"-.",
+                end=string.ascii_letters + string.digits + r"-.",
+                err_code="WRONG_NAME",
+                err_msg="Wrong FQDN. Errors: `{errors}`",
             ),
         ],
     )

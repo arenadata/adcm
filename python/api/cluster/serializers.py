@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf import settings
+import string
+
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     BooleanField,
@@ -39,7 +40,7 @@ from api.utils import (
     get_upgradable_func,
     hlink,
 )
-from api.validators import RegexValidator
+from api.validators import StartMidEndValidator
 from cm.adcm_config import get_main_info
 from cm.api import add_cluster, add_hc, bind, multi_bind
 from cm.errors import AdcmEx
@@ -70,10 +71,12 @@ class ClusterSerializer(Serializer):
         help_text="Cluster name",
         validators=[
             ClusterUniqueValidator(queryset=Cluster.objects.all()),
-            RegexValidator(
-                regex=settings.REGEX_CLUSTER_NAME,
-                code="WRONG_NAME",
-                msg="Name `{value}` doesn't meets requirements",
+            StartMidEndValidator(
+                start=string.ascii_letters + string.digits,
+                mid=string.ascii_letters + string.digits + r"-. _",
+                end=string.ascii_letters + string.digits,
+                err_code="WRONG_NAME",
+                err_msg="Wrong cluster name. Errors: `{errors}`",
             ),
         ],
     )
@@ -132,10 +135,12 @@ class ClusterUpdateSerializer(EmptySerializer):
         max_length=80,
         validators=[
             ClusterUniqueValidator(queryset=Cluster.objects.all()),
-            RegexValidator(
-                regex=settings.REGEX_CLUSTER_NAME,
-                code="WRONG_NAME",
-                msg="Name `{value}` doesn't meets requirements",
+            StartMidEndValidator(
+                start=string.ascii_letters + string.digits,
+                mid=string.ascii_letters + string.digits + r"-. _",
+                end=string.ascii_letters + string.digits,
+                err_code="WRONG_NAME",
+                err_msg="Wrong cluster name. Errors: `{errors}`",
             ),
         ],
         required=False,
