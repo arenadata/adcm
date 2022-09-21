@@ -224,7 +224,7 @@ class BusinessRoles(Enum):
     UpgradeClusterBundle = BusinessRole("Upgrade cluster bundle", lambda x: x.upgrade().do(), Deny.UpgradeCluster)
     UpgradeProviderBundle = BusinessRole("Upgrade provider bundle", lambda x: x.upgrade().do(), Deny.UpgradeProvider)
     CreateHost = BusinessRole(
-        "Create host", lambda x: x.host_create(fqdn=f"new_host_{random_string(5)}"), Deny.CreateHost
+        "Create host", lambda x: x.host_create(fqdn=f"new-host-{random_string(5)}"), Deny.CreateHost
     )
     RemoveHostProvider = BusinessRole("Remove provider", methodcaller("delete"), Deny.Delete(Provider))
     RemoveCluster = BusinessRole("Remove cluster", methodcaller("delete"), Deny.Delete(Cluster))
@@ -353,7 +353,7 @@ def second_objects(sdk_client_fs):
     component = service.component()
     provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(DATA_DIR, "second_provider"))
     provider = provider_bundle.provider_create("Second Provider")
-    host = provider.host_create("Second_Host")
+    host = provider.host_create("Second-Host")
     return cluster, service, component, provider, host
 
 

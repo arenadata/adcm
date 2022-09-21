@@ -728,7 +728,7 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
-    def test_add_host(self):
+    def test_add_host_success_and_fail(self):
         self.client.post(
             path=reverse("host", kwargs={"cluster_id": self.cluster.pk}),
             data={"host_id": self.host.pk},
@@ -744,6 +744,24 @@ class TestCluster(BaseTestCase):
             obj_type=AuditObjectType.Cluster,
             operation_name=f"{self.host.fqdn} host added",
             operation_type=AuditLogOperationType.Update,
+        )
+
+        self.client.post(
+            path=reverse("host", kwargs={"cluster_id": self.cluster.pk}),
+            data={"host_id": 10000},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            obj=self.cluster,
+            obj_name=self.cluster.name,
+            obj_type=AuditObjectType.Cluster,
+            operation_name="host added",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Fail,
         )
 
     def test_add_host_denied(self):
