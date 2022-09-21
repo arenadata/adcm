@@ -11,7 +11,6 @@
 # limitations under the License.
 
 import json
-import sys
 from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
@@ -161,6 +160,7 @@ LOGGING = {
             "format": "{asctime} {levelname} {module} {message}",
             "style": "{",
         },
+        "simple_formatter": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
     },
     "handlers": {
         "file": {
@@ -176,10 +176,20 @@ LOGGING = {
             "class": "logging.FileHandler",
             "filename": BASE_DIR / "data/log/adwp.log",
         },
-        "stdout": {
+        "background_task_file_handler": {
             "level": "DEBUG",
-            "class": "logging.StreamHandler",
-            "stream": sys.stdout,
+            "formatter": "simple_formatter",
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": BASE_DIR / "data/log/cron_task.log",
+            "when": "midnight",
+            "backupCount": 10,
+        },
+        "audit_file_handler": {
+            "level": "DEBUG",
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": BASE_DIR / "data/log/audit.log",
+            "when": "midnight",
+            "backupCount": 10,
         },
     },
     "loggers": {
@@ -204,8 +214,13 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": True,
         },
+        "background_tasks": {
+            "handlers": ["background_task_file_handler"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
         "audit": {
-            "handlers": ["stdout"],
+            "handlers": ["audit_file_handler"],
             "level": "DEBUG",
             "propagate": True,
         },
