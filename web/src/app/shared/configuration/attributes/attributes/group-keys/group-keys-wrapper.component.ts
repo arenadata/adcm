@@ -122,8 +122,6 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
       this.parameterControl().disable();
       this.field.disabled = true;
     }
-
-    this.field.form.markAsTouched();
   }
 
   private _restoreStatus() {
