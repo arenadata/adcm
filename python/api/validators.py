@@ -50,4 +50,4 @@ class StartMidEndValidator:
             errors += value[-1]
 
         if errors:
-            raise AdcmEx(code=self._err_code, msg=self._err_msg.format(errors=errors))
+            raise AdcmEx(code=self._err_code, msg=f"{self._err_msg} Errors: `{errors}`")

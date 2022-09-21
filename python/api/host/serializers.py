@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import string
-
+from django.conf import settings
 from rest_framework.serializers import (
     BooleanField,
     CharField,
@@ -45,11 +44,11 @@ class HostSerializer(EmptySerializer):
         validators=[
             HostUniqueValidator(queryset=Host.objects.all()),
             StartMidEndValidator(
-                start=string.ascii_letters + string.digits,
-                mid=string.ascii_letters + string.digits + r"-.",
-                end=string.ascii_letters + string.digits + r"-.",
+                start=settings.ALLOWED_HOST_FQDN_START_CHARS,
+                mid=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                end=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
                 err_code="WRONG_NAME",
-                err_msg="Wrong FQDN. Errors: `{errors}`",
+                err_msg="Wrong FQDN.",
             ),
         ],
     )

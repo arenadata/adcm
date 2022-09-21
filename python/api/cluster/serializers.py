@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import string
-
+from django.conf import settings
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     BooleanField,
@@ -72,11 +71,11 @@ class ClusterSerializer(Serializer):
         validators=[
             ClusterUniqueValidator(queryset=Cluster.objects.all()),
             StartMidEndValidator(
-                start=string.ascii_letters + string.digits,
-                mid=string.ascii_letters + string.digits + r"-. _",
-                end=string.ascii_letters + string.digits,
+                start=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                mid=settings.ALLOWED_CLUSTER_NAME_MID_CHARS,
+                end=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
                 err_code="WRONG_NAME",
-                err_msg="Wrong cluster name. Errors: `{errors}`",
+                err_msg="Wrong cluster name.",
             ),
         ],
     )
@@ -136,11 +135,11 @@ class ClusterUpdateSerializer(EmptySerializer):
         validators=[
             ClusterUniqueValidator(queryset=Cluster.objects.all()),
             StartMidEndValidator(
-                start=string.ascii_letters + string.digits,
-                mid=string.ascii_letters + string.digits + r"-. _",
-                end=string.ascii_letters + string.digits,
+                start=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                mid=settings.ALLOWED_CLUSTER_NAME_MID_CHARS,
+                end=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
                 err_code="WRONG_NAME",
-                err_msg="Wrong cluster name. Errors: `{errors}`",
+                err_msg="Wrong cluster name.",
             ),
         ],
         required=False,
@@ -154,7 +153,7 @@ class ClusterUpdateSerializer(EmptySerializer):
             and validated_data.get("name") != instance.name
             and instance.state != "created"
         ):
-            raise ValidationError("Name change is available only in the \"created\" state")
+            raise ValidationError("Name change is available only in the 'created' state")
 
         instance.name = validated_data.get("name", instance.name)
         instance.description = validated_data.get("description", instance.description)

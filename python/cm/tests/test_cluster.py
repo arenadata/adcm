@@ -13,8 +13,8 @@ class TestCluster(BaseTestCase):
         super().setUp()
         init()
 
-        self.allowed_name_chars_start_end = string.ascii_letters + string.digits
-        self.allowed_name_chars_middle = self.allowed_name_chars_start_end + "-. _"
+        self.allowed_name_chars_start_end = f"{string.ascii_letters}{string.digits}"
+        self.allowed_name_chars_middle = f"{self.allowed_name_chars_start_end}-. _"
 
         self.valid_names = (
             "letters",

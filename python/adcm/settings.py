@@ -11,6 +11,7 @@
 # limitations under the License.
 
 import json
+import string
 from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
@@ -228,3 +229,11 @@ LOGGING = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+
+LATIN_LETTERS_DIGITS = f"{string.ascii_letters}{string.digits}"
+
+ALLOWED_CLUSTER_NAME_START_END_CHARS = LATIN_LETTERS_DIGITS
+ALLOWED_CLUSTER_NAME_MID_CHARS = f"{ALLOWED_CLUSTER_NAME_START_END_CHARS}-. _"
+
+ALLOWED_HOST_FQDN_START_CHARS = LATIN_LETTERS_DIGITS
+ALLOWED_HOST_FQDN_MID_END_CHARS = f"{ALLOWED_HOST_FQDN_START_CHARS}-."
