@@ -144,6 +144,13 @@ class ClusterUpdateSerializer(EmptySerializer):
     description = CharField(required=False, help_text="Cluster description")
 
     def update(self, instance, validated_data):
+        if (
+            validated_data.get("name")
+            and validated_data.get("name") != instance.name
+            and instance.state != "created"
+        ):
+            raise ValidationError("Name change is available only in the \"created\" state")
+
         instance.name = validated_data.get("name", instance.name)
         instance.description = validated_data.get("description", instance.description)
         instance.save()
