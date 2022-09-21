@@ -31,6 +31,7 @@ from api.stack.serializers import ImportSerializer
 from api.utils import check_custom_perm, check_obj, create, get_object_for_user
 from audit.utils import audit
 from cm.api import delete_service, get_import, unbind
+from cm.errors import raise_adcm_ex as err
 from cm.models import Cluster, ClusterBind, ClusterObject, HostComponent, Prototype
 from cm.status_api import make_ui_service_status
 from rbac.viewsets import DjangoOnlyObjectPermissions
@@ -113,6 +114,8 @@ class ServiceDetailView(PermissionListMixin, DetailView):
         Remove service from cluster
         """
         instance = self.get_object()
+        if instance.state != "created":
+            err("SERVICE_DELETE_ERROR")
         delete_service(instance)
 
         return Response(status=HTTP_204_NO_CONTENT)
