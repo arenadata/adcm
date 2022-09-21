@@ -368,9 +368,9 @@ def cook_file_type_name(obj, key, sub_key):
 def save_file_type(obj, key, subkey, value):
     filename = cook_file_type_name(obj, key, subkey)
     if value is None:
-        file = Path(filename)
-        if file.is_file():
-            file.unlink()
+        _file = Path(filename)
+        if _file.is_file():
+            _file.unlink()
 
         return None
 
