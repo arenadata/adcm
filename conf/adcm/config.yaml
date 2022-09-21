@@ -31,8 +31,8 @@
         - name: "adcm_url"
           display_name: "ADCM's URL"
           description: |
-            We have to know ADCM's Url to send information from host. We try to gues that information from url you enter in browser.
-            But if your network has more complicated structure and we gues wrong, please fix that here.
+            We have to know ADCM's Url to send information from host. We try to guess that information from url you enter in browser.
+            But if your network has more complicated structure and we guess wrong, please fix that here.
           type: string
     - name: "google_oauth"
       display_name: "Google Auth"
@@ -49,6 +49,18 @@
         - name: "whitelisted_domains"
           type: list
           required: false
+    - name: "yandex_oauth"
+      display_name: "Yandex Auth"
+      type: "group"
+      subs:
+        - name: "client_id"
+          type: string
+          required: false
+        - name: "secret"
+          type: password
+          required: false
+          ui_options:
+            no_confirm: true
     - name: "job_log"
       display_name: "Job Log"
       type: "group"
