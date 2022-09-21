@@ -20,7 +20,7 @@ from django.conf import settings
 from audit.apps import AuditConfig
 from audit.models import AuditLog, AuditLogOperationResult, AuditSession
 
-audit_log = logging.getLogger(AuditConfig.name)
+audit_logger = logging.getLogger(AuditConfig.name)
 
 
 class CEFLogConstants:
@@ -74,4 +74,4 @@ def cef_logger(
         f"{signature_id}|{operation_name}|{severity}|{extension}"
     )
 
-    audit_log.info(msg)
+    audit_logger.info(msg)
