@@ -11,6 +11,7 @@
 # limitations under the License.
 
 import csv
+import logging
 import os
 from datetime import timedelta
 from pathlib import Path
@@ -24,7 +25,8 @@ from django.utils import timezone
 from audit.models import AuditLog, AuditLogOperationResult, AuditObject, AuditSession
 from audit.utils import make_audit_log
 from cm.adcm_config import get_adcm_config
-from cm.logger import log_cron_task as log
+
+logger = logging.getLogger("background_tasks")
 
 
 # pylint: disable=protected-access
@@ -187,9 +189,9 @@ class Command(BaseCommand):
     def __log(self, msg, method="info"):
         prefix = "Audit cleanup/archiving:"
         if method in ("exc", "exception"):
-            log.warning("%s Error in auditlog rotation", prefix)
-            log.exception(msg)
+            logger.warning("%s Error in auditlog rotation", prefix)
+            logger.exception(msg)
         else:
             msg = f"{prefix} {msg}"
             self.stdout.write(msg)
-            getattr(log, method)(msg)
+            getattr(logger, method)(msg)
