@@ -39,7 +39,7 @@ class StartMidEndValidator:
 
     def __call__(self, value: str):
         if len(value) < 2:
-            raise AdcmEx(code=self._err_code, msg=self._err_msg)
+            raise AdcmEx(code=self._err_code, msg="Min length is 2")
 
         errors = ""
         if value[0] not in self._start:
