@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import logging
 from datetime import timedelta
 
 from django.core.management.base import BaseCommand
@@ -19,8 +19,9 @@ from audit.models import AuditLogOperationResult
 from audit.utils import make_audit_log
 from cm.config import Job
 from cm.job import start_task
-from cm.logger import log_cron_task as log
 from cm.models import ADCM, Action, ConfigLog, TaskLog
+
+logger = logging.getLogger("background_tasks")
 
 
 def get_settings(adcm_object):
@@ -43,13 +44,13 @@ class Command(BaseCommand):
         if period <= 0:
             return
         if TaskLog.objects.filter(action__name="run_ldap_sync", status=Job.RUNNING).exists():
-            log.debug("Sync has already launched, we need to wait for the task end")
+            logger.debug("Sync has already launched, we need to wait for the task end")
             return
         last_sync = TaskLog.objects.filter(
             action__name="run_ldap_sync", status__in=[Job.SUCCESS, Job.FAILED]
         ).last()
         if last_sync is None:
-            log.debug("First ldap sync launched in %s", timezone.now())
+            logger.debug("First ldap sync launched in %s", timezone.now())
             make_audit_log("sync", AuditLogOperationResult.Success, "launched")
             task = start_task(action, adcm_object, {}, {}, [], [], False)
             if task:
@@ -59,7 +60,7 @@ class Command(BaseCommand):
             return
         new_rotate_time = last_sync.finish_date + timedelta(minutes=period - 1)
         if new_rotate_time <= timezone.now():
-            log.debug("Ldap sync launched in %s", timezone.now())
+            logger.debug("Ldap sync launched in %s", timezone.now())
             make_audit_log("sync", AuditLogOperationResult.Success, "launched")
             task = start_task(action, adcm_object, {}, {}, [], [], False)
             if task:
