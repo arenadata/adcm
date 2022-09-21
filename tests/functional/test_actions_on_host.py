@@ -92,8 +92,8 @@ class TestClusterActionsOnHost:
         """
         Test that cluster host action is available on cluster host and is absent on cluster
         """
-        host1 = provider.host_create("host_in_cluster")
-        host2 = provider.host_create("host_not_in_cluster")
+        host1 = provider.host_create("host-in-cluster")
+        host2 = provider.host_create("host-not-in-cluster")
         cluster.host_add(host1)
         action_in_object_is_present(action_name, host1)
         action_in_object_is_absent(action_name, host2)
@@ -104,7 +104,7 @@ class TestClusterActionsOnHost:
         """
         Test that cluster host action is available on specify cluster state
         """
-        host = provider.host_create("host_in_cluster")
+        host = provider.host_create("host-in-cluster")
         cluster.host_add(host)
         action_in_object_is_absent(ACTION_ON_HOST_STATE_REQUIRED, host)
         run_cluster_action_and_assert_result(cluster, SWITCH_CLUSTER_STATE)
@@ -115,7 +115,7 @@ class TestClusterActionsOnHost:
         """
         Test that cluster host action isn't available on specify host state
         """
-        host = provider.host_create("host_in_cluster")
+        host = provider.host_create("host-in-cluster")
         cluster.host_add(host)
         action_in_object_is_absent(ACTION_ON_HOST_STATE_REQUIRED, host)
         run_host_action_and_assert_result(host, SWITCH_HOST_STATE)
@@ -131,8 +131,8 @@ class TestClusterActionsOnHost:
         Test that cluster actions on host works fine on two clusters
         """
         second_cluster = cluster.bundle().cluster_prototype().cluster_create(name="Second cluster")
-        first_host = provider.host_create("host_in_first_cluster")
-        second_host = provider.host_create("host_in_second_cluster")
+        first_host = provider.host_create("host-in-first-cluster")
+        second_host = provider.host_create("host-in-second-cluster")
         cluster.host_add(first_host)
         second_cluster.host_add(second_host)
         action_in_object_is_present(action_name, first_host)
@@ -151,11 +151,11 @@ class TestServiceActionOnHost:
         """
         service = cluster_with_service.service_add(name=FIRST_SERVICE)
         second_service = cluster_with_service.service_add(name=SECOND_SERVICE)
-        host_with_two_components = provider.host_create("host_with_two_components")
-        host_with_one_component = provider.host_create("host_with_one_component")
-        host_without_component = provider.host_create("host_without_component")
-        host_with_different_services = provider.host_create("host_with_different_services")
-        host_outside_cluster = provider.host_create("host_outside_cluster")
+        host_with_two_components = provider.host_create("host-with-two-components")
+        host_with_one_component = provider.host_create("host-with-one-component")
+        host_without_component = provider.host_create("host-without-component")
+        host_with_different_services = provider.host_create("host-with-different-services")
+        host_outside_cluster = provider.host_create("host-outside-cluster")
         for host in [
             host_with_two_components,
             host_with_one_component,
@@ -187,7 +187,7 @@ class TestServiceActionOnHost:
         Test that service host action is available on specify service state
         """
         service = cluster_with_service.service_add(name=FIRST_SERVICE)
-        host = provider.host_create("host_in_cluster")
+        host = provider.host_create("host-in-cluster")
         cluster_with_service.host_add(host)
         cluster_with_service.hostcomponent_set((host, service.component(name=FIRST_COMPONENT)))
 
@@ -203,7 +203,7 @@ class TestServiceActionOnHost:
         Test that service host action isn't available on specify host state
         """
         service = cluster_with_service.service_add(name=FIRST_SERVICE)
-        host = provider.host_create("host_in_cluster")
+        host = provider.host_create("host-in-cluster")
         cluster_with_service.host_add(host)
         cluster_with_service.hostcomponent_set((host, service.component(name=FIRST_COMPONENT)))
 
@@ -223,8 +223,8 @@ class TestServiceActionOnHost:
         second_cluster = cluster_with_service.bundle().cluster_prototype().cluster_create(name="Second cluster")
         service_on_first_cluster = cluster_with_service.service_add(name=FIRST_SERVICE)
         service_on_second_cluster = second_cluster.service_add(name=FIRST_SERVICE)
-        first_host = provider.host_create("host_in_first_cluster")
-        second_host = provider.host_create("host_in_second_cluster")
+        first_host = provider.host_create("host-in-first-cluster")
+        second_host = provider.host_create("host-in-second-cluster")
         cluster_with_service.host_add(first_host)
         second_cluster.host_add(second_host)
         cluster_with_service.hostcomponent_set((first_host, service_on_first_cluster.component(name=FIRST_COMPONENT)))
@@ -251,11 +251,11 @@ class TestComponentActionOnHost:
         component_with_action = service.component(name=FIRST_COMPONENT)
         component_without_action = service.component(name=SECOND_COMPONENT)
 
-        host_single_component = provider.host_create("host_with_single_component")
-        host_two_components = provider.host_create("host_with_two_components")
-        host_component_without_action = provider.host_create("host_component_without_action")
-        host_without_components = provider.host_create("host_without_components")
-        host_outside_cluster = provider.host_create("host_outside_cluster")
+        host_single_component = provider.host_create("host-with-single-component")
+        host_two_components = provider.host_create("host-with-two-components")
+        host_component_without_action = provider.host_create("host-component-without-action")
+        host_without_components = provider.host_create("host-without-components")
+        host_outside_cluster = provider.host_create("host-outside-cluster")
         for host in [
             host_single_component,
             host_two_components,
@@ -288,7 +288,7 @@ class TestComponentActionOnHost:
         service = cluster_with_components.service_add(name=FIRST_SERVICE)
         component = service.component(name=FIRST_COMPONENT)
         adjacent_component = service.component(name=SECOND_COMPONENT)
-        host = provider.host_create("host_in_cluster")
+        host = provider.host_create("host-in-cluster")
         cluster_with_components.host_add(host)
         cluster_with_components.hostcomponent_set((host, component))
 
@@ -316,8 +316,8 @@ class TestComponentActionOnHost:
         component_on_first_cluster = service_on_first_cluster.component(name=FIRST_COMPONENT)
         service_on_second_cluster = second_cluster.service_add(name=FIRST_SERVICE)
         component_on_second_cluster = service_on_second_cluster.component(name=FIRST_COMPONENT)
-        first_host = provider.host_create("host_in_first_cluster")
-        second_host = provider.host_create("host_in_second_cluster")
+        first_host = provider.host_create("host-in-first-cluster")
+        second_host = provider.host_create("host-in-second-cluster")
         cluster_with_components.host_add(first_host)
         second_cluster.host_add(second_host)
         cluster_with_components.hostcomponent_set((first_host, component_on_first_cluster))
@@ -333,7 +333,7 @@ def test_target_group_in_inventory(cluster_with_target_group_action: Cluster, pr
     """
     Test that target group action has inventory_hostname info
     """
-    hostname = "host_in_cluster"
+    hostname = "host-in-cluster"
     host = provider.host_create(hostname)
     cluster_with_target_group_action.host_add(host)
     action_in_object_is_present(ACTION_ON_HOST, host)

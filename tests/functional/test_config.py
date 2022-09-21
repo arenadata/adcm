@@ -63,7 +63,7 @@ def processing_data(sdk_client_fs, request, variant):
     service = cluster.service_add(name=f'service_{config_type}_{variant}')
 
     provider = provider_bundle.provider_create(f'provider_{config_type}_{variant}')
-    host = provider.host_create(f'host_{config_type}_{variant}')
+    host = provider.host_create(f'host-{config_type}-{variant}'.replace('_', '-'))
     cluster.host_add(host)
     return path, config_type, [cluster, provider, service, host]
 
