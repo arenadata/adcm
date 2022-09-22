@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Optional
 
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
@@ -99,13 +98,13 @@ class ClusterSerializer(Serializer):
 
 
 class ClusterUISerializer(ClusterSerializer):
-    action = CommonAPIURL(view_name='object-action')
+    action = CommonAPIURL(view_name="object-action")
     edition = CharField(read_only=True)
     prototype_version = SerializerMethodField()
     prototype_name = SerializerMethodField()
     prototype_display_name = SerializerMethodField()
     upgrade = HyperlinkedIdentityField(
-        view_name='cluster-upgrade', lookup_field='id', lookup_url_kwarg='cluster_id'
+        view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id"
     )
     upgradable = SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
@@ -125,7 +124,7 @@ class ClusterUISerializer(ClusterSerializer):
         return obj.prototype.name
 
     @staticmethod
-    def get_prototype_display_name(obj: Cluster) -> Optional[str]:
+    def get_prototype_display_name(obj: Cluster) -> str | None:
         return obj.prototype.display_name
 
     @staticmethod
@@ -224,11 +223,11 @@ class ClusterDetailUISerializer(ClusterDetailSerializer):
         return obj.prototype.name
 
     @staticmethod
-    def get_prototype_display_name(obj: Cluster) -> Optional[str]:
+    def get_prototype_display_name(obj: Cluster) -> str | None:
         return obj.prototype.display_name
 
     @staticmethod
-    def get_main_info(obj: Cluster) -> Optional[str]:
+    def get_main_info(obj: Cluster) -> str | None:
         return get_main_info(obj)
 
 

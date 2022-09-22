@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Optional
 
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -175,7 +174,7 @@ class StatusSerializer(EmptySerializer):
 
 
 class HostUISerializer(HostSerializer):
-    action = CommonAPIURL(view_name='object-action')
+    action = CommonAPIURL(view_name="object-action")
     cluster_name = SerializerMethodField()
     prototype_version = SerializerMethodField()
     prototype_name = SerializerMethodField()
@@ -186,7 +185,7 @@ class HostUISerializer(HostSerializer):
     status = SerializerMethodField()
 
     @staticmethod
-    def get_cluster_name(obj: Host) -> Optional[str]:
+    def get_cluster_name(obj: Host) -> str | None:
         if obj.cluster:
             return obj.cluster.name
         return None
@@ -200,11 +199,11 @@ class HostUISerializer(HostSerializer):
         return obj.prototype.name
 
     @staticmethod
-    def get_prototype_display_name(obj: Host) -> Optional[str]:
+    def get_prototype_display_name(obj: Host) -> str | None:
         return obj.prototype.display_name
 
     @staticmethod
-    def get_provider_name(obj: Host) -> Optional[str]:
+    def get_provider_name(obj: Host) -> str | None:
         if obj.provider:
             return obj.provider.name
         return None
@@ -233,7 +232,7 @@ class HostDetailUISerializer(HostDetailSerializer):
         return actions.data
 
     @staticmethod
-    def get_cluster_name(obj: Host) -> Optional[str]:
+    def get_cluster_name(obj: Host) -> str | None:
         if obj.cluster:
             return obj.cluster.name
 
@@ -248,15 +247,15 @@ class HostDetailUISerializer(HostDetailSerializer):
         return obj.prototype.name
 
     @staticmethod
-    def get_prototype_display_name(obj: Host) -> Optional[str]:
+    def get_prototype_display_name(obj: Host) -> str | None:
         return obj.prototype.display_name
 
     @staticmethod
-    def get_provider_name(obj: Host) -> Optional[str]:
+    def get_provider_name(obj: Host) -> str | None:
         if obj.provider:
             return obj.provider.name
         return None
 
     @staticmethod
-    def get_main_info(obj: Host) -> Optional[str]:
+    def get_main_info(obj: Host) -> str | None:
         return get_main_info(obj)
