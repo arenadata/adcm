@@ -70,6 +70,7 @@ class HostCreatePopupObj(BasePageObject):
         option = HostCreationLocators.Cluster.cluster_option
         self.wait_and_click_on_cluster_option(cluster_name, option)
         self.wait_element_hide(option)
+        self.check_element_should_be_visible(HostCreationLocators.Cluster.chosen_cluster(cluster_name))
 
     def wait_and_click_on_cluster_option(self, cluster_name: str, option_locator: Locator):
         """Wait for cluster and click on it"""
