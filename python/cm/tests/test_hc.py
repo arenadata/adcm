@@ -10,11 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.tests.base import BaseTestCase
+from pathlib import Path
+
+from django.conf import settings
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.api import add_host_to_cluster, save_hc
 from cm.errors import AdcmEx
 from cm.job import check_hostcomponentmap
-from cm.models import Action, ClusterObject, Host, ServiceComponent
+from cm.models import Action, Bundle, ClusterObject, Host, Prototype, ServiceComponent
 from cm.tests.test_upgrade import (
     cook_cluster,
     cook_cluster_bundle,
@@ -127,3 +134,59 @@ class TestHC(BaseTestCase):
         hc_list, _ = check_hostcomponentmap(cluster, action, hc)
 
         self.assertNotEqual(hc_list, None)
+
+    def test_empty_hostcomponent(self):
+        test_bundle_filename = "min-3199.tar"
+        test_bundle_path = Path(
+            settings.BASE_DIR,
+            "python/cm/tests/files",
+            test_bundle_filename,
+        )
+        with open(test_bundle_path, encoding="utf-8") as f:
+            response: Response = self.client.post(
+                path=reverse("upload-bundle"),
+                data={"file": f},
+            )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": test_bundle_filename},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        bundle = Bundle.objects.get(pk=response.data["id"])
+        cluster_prototype = Prototype.objects.get(bundle=bundle, type="cluster")
+        service_prototype = Prototype.objects.get(bundle=bundle, type="service")
+
+        response: Response = self.client.post(
+            path=reverse("cluster"),
+            data={
+                "bundle_id": bundle.pk,
+                "display_name": "test_cluster_display_name",
+                "name": "test-cluster-name",
+                "prototype_id": cluster_prototype.pk,
+            },
+        )
+        cluster_pk = response.data["id"]
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response: Response = self.client.post(
+            path=reverse("service", kwargs={"cluster_id": cluster_pk}),
+            data={
+                "prototype_id": service_prototype.pk,
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response: Response = self.client.get(
+            path=f'{reverse("host-component", kwargs={"cluster_id": cluster_pk})}?view=interface',
+            extra={"view": "interface"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
