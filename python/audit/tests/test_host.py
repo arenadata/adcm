@@ -57,11 +57,11 @@ class TestHost(BaseTestCase):
             name="test_provider",
             prototype=provider_prototype,
         )
-        self.fqdn = "test_fqdn"
+        self.fqdn = "test-fqdn"
         config = ObjectConfig.objects.create(current=1, previous=1)
         ConfigLog.objects.create(obj_ref=config, config="{}")
         self.host = Host.objects.create(
-            fqdn="test_fqdn_2",
+            fqdn="test-fqdn-2",
             prototype=self.host_prototype,
             provider=self.provider,
             config=config,
@@ -428,7 +428,7 @@ class TestHost(BaseTestCase):
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
             data={
                 "description": "Such wow new description",
-                "fqdn": "new_test_fqdn",
+                "fqdn": "new-test-fqdn",
             },
             content_type=APPLICATION_JSON,
         )
@@ -437,10 +437,10 @@ class TestHost(BaseTestCase):
         self.check_host_updated_log(
             log=log,
             operation_name="Host updated",
-            audit_object_name="new_test_fqdn",
+            audit_object_name="new-test-fqdn",
             object_changes={
-                "current": {"description": "Such wow new description", "fqdn": "new_test_fqdn"},
-                "previous": {"description": "", "fqdn": "test_fqdn_2"},
+                "current": {"description": "Such wow new description", "fqdn": "new-test-fqdn"},
+                "previous": {"description": "", "fqdn": "test-fqdn-2"},
             },
         )
 
@@ -454,7 +454,7 @@ class TestHost(BaseTestCase):
         self.check_host_updated_log(
             log=log,
             operation_name="Host updated",
-            audit_object_name="new_test_fqdn",
+            audit_object_name="new-test-fqdn",
             operation_result=AuditLogOperationResult.Fail,
         )
 

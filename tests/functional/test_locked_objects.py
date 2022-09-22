@@ -80,7 +80,7 @@ def cluster_with_two_hosts(cluster: Cluster, host_provider: Provider) -> Tuple[C
     """
     hosts = []
     for i in range(2):
-        host = host_provider.host_create(f"host_{i}")
+        host = host_provider.host_create(f"host-{i}")
         hosts.append(host)
         cluster.host_add(host)
     return cluster, hosts
@@ -521,9 +521,9 @@ def test_host_should_be_unlocked_after_cluster_action_with_ansible_plugin(
 @pytest.mark.parametrize(
     "run_on_host",
     [
-        "host_with_two_components",
-        "host_with_one_component",
-        "host_with_different_services",
+        "host-with-two-components",
+        "host-with-one-component",
+        "host-with-different-services",
     ],
 )
 def test_host_should_be_unlocked_after_host_action(
@@ -538,9 +538,9 @@ def test_host_should_be_unlocked_after_host_action(
     first_service = cluster.service_add(name="first_service")
     second_service = cluster.service_add(name="second_service")
 
-    host_with_two_components = host_provider.host_create("host_with_two_components")
-    host_with_one_component = host_provider.host_create("host_with_one_component")
-    host_with_different_services = host_provider.host_create("host_with_different_services")
+    host_with_two_components = host_provider.host_create("host-with-two-components")
+    host_with_one_component = host_provider.host_create("host-with-one-component")
+    host_with_different_services = host_provider.host_create("host-with-different-services")
 
     cluster_hosts = [
         host_with_two_components,

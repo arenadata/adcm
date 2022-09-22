@@ -13,7 +13,7 @@
 from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import CharFilter, FilterSet
 from guardian.mixins import PermissionListMixin
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.mixins import (
     CreateModelMixin,
     DestroyModelMixin,
@@ -36,7 +36,6 @@ from api.group_config.serializers import (
     UIGroupConfigConfigLogSerializer,
     revert_model_name,
 )
-from api.utils import permission_denied
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import ConfigLog, GroupConfig, Host, ObjectConfig
@@ -52,7 +51,7 @@ def has_config_perm(user, action_type, obj):
 
 def check_config_perm(user, action_type, obj):
     if not has_config_perm(user, action_type, obj):
-        permission_denied()
+        raise PermissionDenied()
 
 
 class GroupConfigFilterSet(FilterSet):

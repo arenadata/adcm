@@ -11,9 +11,6 @@
 # limitations under the License.
 
 from django.conf import settings
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.core.validators import RegexValidator
-from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     BooleanField,
     CharField,
@@ -23,36 +20,18 @@ from rest_framework.serializers import (
     ModelSerializer,
     SerializerMethodField,
 )
-from rest_framework.validators import UniqueValidator
 
 from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
 from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions
+from api.validators import HostUniqueValidator, StartMidEndValidator
 from cm.adcm_config import get_main_info
 from cm.api import add_host
-from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
 from cm.models import Action, Host, HostProvider, MaintenanceModeType, Prototype
-from cm.stack import validate_name
 from cm.status_api import get_host_status
-
-
-class HostUniqueValidator(UniqueValidator):
-    def __call__(self, value, serializer_field):
-        try:
-            super().__call__(value, serializer_field)
-        except ValidationError as e:
-            raise AdcmEx("HOST_CONFLICT", "duplicate host") from e
-
-
-class HostFQDNRegexValidator(RegexValidator):
-    def __call__(self, value):
-        try:
-            super().__call__(value)
-        except DjangoValidationError as e:
-            raise AdcmEx("WRONG_NAME", "host FQDN doesn't meet requirements") from e
 
 
 class HostSerializer(EmptySerializer):
@@ -65,7 +44,13 @@ class HostSerializer(EmptySerializer):
         help_text="fully qualified domain name",
         validators=[
             HostUniqueValidator(queryset=Host.objects.all()),
-            HostFQDNRegexValidator(regex=settings.REGEX_HOST_FQDN),
+            StartMidEndValidator(
+                start=settings.ALLOWED_HOST_FQDN_START_CHARS,
+                mid=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                end=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                err_code="WRONG_NAME",
+                err_msg="Wrong FQDN.",
+            ),
         ],
     )
     description = CharField(required=False, allow_blank=True)
@@ -80,10 +65,6 @@ class HostSerializer(EmptySerializer):
     @staticmethod
     def validate_provider_id(provider_id):
         return check_obj(HostProvider, provider_id)
-
-    @staticmethod
-    def validate_fqdn(name):
-        return validate_name(name, "Host name")
 
     def create(self, validated_data):
         return add_host(
