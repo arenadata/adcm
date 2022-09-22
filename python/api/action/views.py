@@ -14,7 +14,8 @@ from itertools import compress
 
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
-from rest_framework import permissions
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.action.serializers import (
@@ -30,7 +31,6 @@ from api.utils import (
     create,
     filter_actions,
     get_object_for_user,
-    permission_denied,
     set_disabling_cause,
 )
 from audit.utils import audit
@@ -183,7 +183,7 @@ class ActionDetail(PermissionListMixin, GenericUIView):
 class RunTask(GenericUIView):
     queryset = TaskLog.objects.all()
     serializer_class = RunTaskSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
     def has_action_perm(self, action, obj):
         user = self.request.user
@@ -195,7 +195,7 @@ class RunTask(GenericUIView):
 
     def check_action_perm(self, action, obj):
         if not self.has_action_perm(action, obj):
-            permission_denied()
+            raise PermissionDenied()
 
     @staticmethod
     def check_disabling_cause(action, obj):

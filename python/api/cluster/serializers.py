@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.conf import settings
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     BooleanField,
@@ -38,7 +39,7 @@ from api.utils import (
     get_upgradable_func,
     hlink,
 )
-from api.validators import ClusterNameRegExValidator
+from api.validators import StartMidEndValidator
 from cm.adcm_config import get_main_info
 from cm.api import add_cluster, add_hc, bind, multi_bind
 from cm.errors import AdcmEx
@@ -69,7 +70,13 @@ class ClusterSerializer(Serializer):
         help_text="Cluster name",
         validators=[
             ClusterUniqueValidator(queryset=Cluster.objects.all()),
-            ClusterNameRegExValidator,
+            StartMidEndValidator(
+                start=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                mid=settings.ALLOWED_CLUSTER_NAME_MID_CHARS,
+                end=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                err_code="WRONG_NAME",
+                err_msg="Wrong cluster name.",
+            ),
         ],
     )
     description = CharField(help_text="Cluster description", required=False)
@@ -127,7 +134,13 @@ class ClusterUpdateSerializer(EmptySerializer):
         max_length=80,
         validators=[
             ClusterUniqueValidator(queryset=Cluster.objects.all()),
-            ClusterNameRegExValidator,
+            StartMidEndValidator(
+                start=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                mid=settings.ALLOWED_CLUSTER_NAME_MID_CHARS,
+                end=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                err_code="WRONG_NAME",
+                err_msg="Wrong cluster name.",
+            ),
         ],
         required=False,
         help_text="Cluster name",
@@ -135,6 +148,13 @@ class ClusterUpdateSerializer(EmptySerializer):
     description = CharField(required=False, help_text="Cluster description")
 
     def update(self, instance, validated_data):
+        if (
+            validated_data.get("name")
+            and validated_data.get("name") != instance.name
+            and instance.state != "created"
+        ):
+            raise ValidationError("Name change is available only in the 'created' state")
+
         instance.name = validated_data.get("name", instance.name)
         instance.description = validated_data.get("description", instance.description)
         instance.save()

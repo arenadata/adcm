@@ -48,7 +48,7 @@ def _prepare_provider(client: ADCMClient, name):
     """
     bundle = client.upload_from_fs(get_data_dir(__file__) + "/provider_" + name)
     provider = bundle.provider_prototype().provider_create(name)
-    provider.host_create(fqdn=name)
+    provider.host_create(fqdn=name.replace("_", "-"))
     return provider
 
 
@@ -110,11 +110,11 @@ def test_default_ansible(
     )
 
     run_provider_action_and_assert_result(provider_no_venv, "no_venv", config=DEFAULT_ANSIBLE_VER)
-    run_host_action_and_assert_result(provider_no_venv.host(fqdn="no_venv"), "no_venv", config=DEFAULT_ANSIBLE_VER)
+    run_host_action_and_assert_result(provider_no_venv.host(fqdn="no-venv"), "no_venv", config=DEFAULT_ANSIBLE_VER)
 
     run_provider_action_and_assert_result(provider_obj_venv_default, "obj_venv_default", config=DEFAULT_ANSIBLE_VER)
     run_host_action_and_assert_result(
-        provider_obj_venv_default.host(fqdn="obj_venv_default"), "obj_venv_default", config=DEFAULT_ANSIBLE_VER
+        provider_obj_venv_default.host(fqdn="obj-venv-default"), "obj_venv_default", config=DEFAULT_ANSIBLE_VER
     )
 
 
@@ -146,7 +146,7 @@ def test_ansible_set_on_prototype(cluster_obj_venv_9: Cluster, provider_obj_venv
     )
 
     run_provider_action_and_assert_result(provider_obj_venv_9, "obj_venv_9", config=ANSIBLE_9)
-    run_host_action_and_assert_result(provider_obj_venv_9.host(fqdn="obj_venv_9"), "obj_venv_9", config=ANSIBLE_9)
+    run_host_action_and_assert_result(provider_obj_venv_9.host(fqdn="obj-venv-9"), "obj_venv_9", config=ANSIBLE_9)
 
 
 @pytest.fixture()
@@ -218,14 +218,14 @@ def test_ansible_set_on_action(
 
     run_provider_action_and_assert_result(provider_no_venv_action_9, "no_venv_action_9", config=ANSIBLE_9)
     run_host_action_and_assert_result(
-        provider_no_venv_action_9.host(fqdn="no_venv_action_9"), "no_venv_action_9", config=ANSIBLE_9
+        provider_no_venv_action_9.host(fqdn="no-venv-action-9"), "no_venv_action_9", config=ANSIBLE_9
     )
 
     run_provider_action_and_assert_result(
         provider_obj_venv_default_action_9, "obj_venv_default_action_9", config=ANSIBLE_9
     )
     run_host_action_and_assert_result(
-        provider_obj_venv_default_action_9.host(fqdn="obj_venv_default_action_9"),
+        provider_obj_venv_default_action_9.host(fqdn="obj-venv-default-action-9"),
         "obj_venv_default_action_9",
         config=ANSIBLE_9,
     )
