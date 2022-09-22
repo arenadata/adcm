@@ -61,6 +61,8 @@ from cm.status_api import make_ui_cluster_status
 from cm.upgrade import get_upgrade
 from rbac.viewsets import DjangoOnlyObjectPermissions
 
+VIEW_CLUSTER_PERM = "cm.view_cluster"
+
 
 def get_obj_conf(cluster_id, service_id):
     cluster = check_obj(Cluster, cluster_id)
@@ -85,7 +87,7 @@ class ClusterList(PermissionListMixin, PaginatedView):
     serializer_class_post = ClusterDetailSerializer
     filterset_fields = ("name", "prototype_id")
     ordering_fields = ("name", "state", "prototype__display_name", "prototype__version_order")
-    permission_required = ["cm.view_cluster"]
+    permission_required = [VIEW_CLUSTER_PERM]
 
     @audit
     def post(self, request, *args, **kwargs):
@@ -97,7 +99,7 @@ class ClusterList(PermissionListMixin, PaginatedView):
 class ClusterDetail(PermissionListMixin, DetailView):
     queryset = Cluster.objects.all()
     permission_classes = (DjangoOnlyObjectPermissions,)
-    permission_required = ["cm.view_cluster"]
+    permission_required = [VIEW_CLUSTER_PERM]
     serializer_class = ClusterDetailSerializer
     serializer_class_put = ClusterUpdateSerializer
     serializer_class_patch = ClusterUpdateSerializer
@@ -135,7 +137,7 @@ class ClusterBundle(GenericUIView):
 
     def get(self, request, *args, **kwargs):
         cluster = get_object_for_user(
-            request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
+            request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"]
         )
         check_custom_perm(request.user, "add_service_to", "cluster", cluster)
         bundle = self.get_queryset().filter(bundle=cluster.prototype.bundle)
@@ -156,7 +158,7 @@ class ClusterImport(GenericUIView):
     @staticmethod
     def get(request, *args, **kwargs):
         cluster = get_object_for_user(
-            request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
+            request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"]
         )
         check_custom_perm(request.user, "view_import_of", "cluster", cluster, "view_clusterbind")
         res = get_import(cluster)
@@ -166,7 +168,7 @@ class ClusterImport(GenericUIView):
     @audit
     def post(self, request, *args, **kwargs):
         cluster = get_object_for_user(
-            request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
+            request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"]
         )
         check_custom_perm(request.user, "change_import_of", "cluster", cluster)
         serializer = self.get_serializer(
@@ -188,7 +190,7 @@ class ClusterBindList(GenericUIView):
 
     def get(self, request, *args, **kwargs):
         cluster = get_object_for_user(
-            request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
+            request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"]
         )
         check_custom_perm(request.user, "view_import_of", "cluster", cluster, "view_clusterbind")
         obj = self.get_queryset().filter(cluster=cluster, service=None)
@@ -199,7 +201,7 @@ class ClusterBindList(GenericUIView):
     @audit
     def post(self, request, *args, **kwargs):
         cluster = get_object_for_user(
-            request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
+            request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"]
         )
         check_custom_perm(request.user, "change_import_of", "cluster", cluster)
         serializer = self.get_serializer(data=request.data)
@@ -222,7 +224,7 @@ class ClusterBindDetail(GenericUIView):
 
     def get(self, request, *args, **kwargs):
         cluster = get_object_for_user(
-            request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
+            request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"]
         )
         bind = check_obj(ClusterBind, {"cluster": cluster, "id": kwargs["bind_id"]})
         check_custom_perm(request.user, "view_import_of", "cluster", cluster, "view_clusterbind")
@@ -233,7 +235,7 @@ class ClusterBindDetail(GenericUIView):
     @audit
     def delete(self, request, *args, **kwargs):
         cluster = get_object_for_user(
-            request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
+            request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"]
         )
         bind = check_obj(ClusterBind, {"cluster": cluster, "id": kwargs["bind_id"]})
         check_custom_perm(request.user, "change_import_of", "cluster", cluster)
@@ -253,7 +255,7 @@ class ClusterUpgrade(GenericUIView):
 
     def get(self, request, *args, **kwargs):
         cluster = get_object_for_user(
-            request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
+            request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"]
         )
         check_custom_perm(request.user, "view_upgrade_of", "cluster", cluster)
         obj = get_upgrade(cluster, self.get_ordering())
@@ -271,7 +273,7 @@ class ClusterUpgradeDetail(GenericUIView):
 
     def get(self, request, *args, **kwargs):
         cluster = get_object_for_user(
-            request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
+            request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"]
         )
         check_custom_perm(request.user, "view_upgrade_of", "cluster", cluster)
         obj = check_obj(
@@ -292,7 +294,7 @@ class DoClusterUpgrade(GenericUIView):
     @audit
     def post(self, request, *args, **kwargs):
         cluster = get_object_for_user(
-            request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
+            request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"]
         )
         check_custom_perm(request.user, "do_upgrade_of", "cluster", cluster)
         serializer = self.get_serializer(data=request.data)
@@ -307,7 +309,7 @@ class StatusList(GenericUIView):
 
     def get(self, request, *args, **kwargs):
         cluster = get_object_for_user(
-            request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
+            request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"]
         )
         host_components = self.get_queryset().filter(cluster=cluster)
         if self._is_for_ui():
@@ -327,7 +329,7 @@ class HostComponentList(GenericUIView):
 
     def get(self, request, *args, **kwargs):
         cluster = get_object_for_user(
-            request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
+            request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"]
         )
         check_custom_perm(
             request.user, "view_host_components_of", "cluster", cluster, "view_hostcomponent"
@@ -351,7 +353,7 @@ class HostComponentList(GenericUIView):
     @audit
     def post(self, request, *args, **kwargs):
         cluster = get_object_for_user(
-            request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
+            request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"]
         )
         check_custom_perm(request.user, "edit_host_components_of", "cluster", cluster)
         serializer = self.get_serializer(
@@ -378,7 +380,7 @@ class HostComponentDetail(GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_obj(self, cluster_id, hs_id):
-        cluster = get_object_for_user(self.request.user, "cm.view_cluster", Cluster, id=cluster_id)
+        cluster = get_object_for_user(self.request.user, VIEW_CLUSTER_PERM, Cluster, id=cluster_id)
         check_custom_perm(
             self.request.user, "view_host_components_of", "cluster", cluster, "view_hostcomponent"
         )
