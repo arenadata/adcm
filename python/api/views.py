@@ -14,11 +14,8 @@ from rest_framework import permissions, routers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-import cm.api
-import cm.job
-import cm.stack
-import cm.status_api
 from adcm.settings import ADCM_VERSION
+from cm.stack import NAME_REGEX
 
 
 class APIRoot(routers.APIRootView):
@@ -46,7 +43,7 @@ class APIRoot(routers.APIRootView):
 
 
 class NameConverter:
-    regex = cm.stack.NAME_REGEX
+    regex = NAME_REGEX
 
     @staticmethod
     def to_python(value):
@@ -62,4 +59,4 @@ class ADCMInfo(APIView):
 
     @staticmethod
     def get(request):
-        return Response({"adcm_version": ADCM_VERSION, "google_oauth": cm.api.has_google_oauth()})
+        return Response({"adcm_version": ADCM_VERSION})

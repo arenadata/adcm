@@ -24,7 +24,6 @@ from cm.adcm_config import (
     check_json_config,
     init_object_config,
     obj_ref,
-    prepare_social_auth,
     proto_ref,
     read_bundle_file,
     save_obj_config,
@@ -34,7 +33,6 @@ from cm.errors import AdcmEx
 from cm.errors import raise_adcm_ex as err
 from cm.logger import logger
 from cm.models import (
-    ADCM,
     ADCMEntity,
     Bundle,
     Cluster,
@@ -546,31 +544,12 @@ def update_obj_config(obj_conf, conf, attr, desc=""):
         cm.issue.update_hierarchy_issues(obj)
         re_apply_object_policy(obj)
 
-    if hasattr(obj_conf, "adcm"):
-        prepare_social_auth(new_conf)
-
     if group is not None:
         cm.status_api.post_event("change_config", "group-config", group.id, "version", str(cl.id))
     else:
         cm.status_api.post_event("change_config", proto.type, obj.id, "version", str(cl.id))
 
     return cl
-
-
-def has_google_oauth():
-    adcm = ADCM.objects.filter()
-    if not adcm:
-        return False
-
-    cl = ConfigLog.objects.get(obj_ref=adcm[0].config, id=adcm[0].config.current)
-    if "google_oauth" not in cl.config:
-        return False
-
-    gconf = cl.config["google_oauth"]
-    if "client_id" not in gconf or not gconf["client_id"]:
-        return False
-
-    return True
 
 
 def get_hc(cluster):

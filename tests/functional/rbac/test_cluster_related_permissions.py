@@ -90,7 +90,7 @@ def test_view_application_configurations(user_policy: Policy, user_sdk: ADCMClie
 def test_view_infrastructure_configurations(user_policy: Policy, user_sdk: ADCMClient, prepare_objects, second_objects):
     """Test that View infrastructure configuration role is ok"""
     cluster, service, component, provider, host = prepare_objects
-    second_host_on_first_provider = provider.host_create(fqdn="new_host")
+    second_host_on_first_provider = provider.host_create(fqdn="new-host")
 
     # second host on first provider will be allowed to view because of provider's permission
     allowed_to_view_objects = as_user_objects(user_sdk, provider, host, second_host_on_first_provider)
@@ -264,7 +264,7 @@ def test_map_hosts(user_policy: Policy, user_sdk: ADCMClient, is_denied_to_user,
     cluster, *_ = as_user_objects(user_sdk, admin_cluster)
     admin_cluster_second, *_, admin_provider, _ = second_objects
 
-    admin_provider.host_create(fqdn="new_host")
+    admin_provider.host_create(fqdn="new-host")
     is_allowed(cluster, BR.MapHosts, admin_host)
     admin_host.reread()
     is_denied_to_user(admin_host, BR.UnmapHosts)
@@ -294,7 +294,7 @@ def test_unmap_hosts(user_policy: Policy, user_sdk: ADCMClient, is_denied_to_use
 
     delete_policy(user_policy)
 
-    new_host = provider_via_admin.host_create(fqdn="new_host")
+    new_host = provider_via_admin.host_create(fqdn="new-host")
     cluster_via_admin.host_add(new_host)
     new_host.reread()
     is_denied_to_user(new_host, BR.UnmapHosts)
