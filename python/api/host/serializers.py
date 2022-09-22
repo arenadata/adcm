@@ -25,7 +25,7 @@ from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
 from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions, hlink
-from api.validators import HostUniqueValidator, RegexValidator
+from api.validators import HostUniqueValidator, StartMidEndValidator
 from cm.adcm_config import get_main_info
 from cm.api import add_host
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
@@ -43,10 +43,12 @@ class HostSerializer(EmptySerializer):
         help_text="fully qualified domain name",
         validators=[
             HostUniqueValidator(queryset=Host.objects.all()),
-            RegexValidator(
-                regex=settings.REGEX_HOST_FQDN,
-                code="WRONG_NAME",
-                msg="host FQDN doesn't meet requirements",
+            StartMidEndValidator(
+                start=settings.ALLOWED_HOST_FQDN_START_CHARS,
+                mid=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                end=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                err_code="WRONG_NAME",
+                err_msg="Wrong FQDN.",
             ),
         ],
     )

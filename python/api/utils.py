@@ -165,7 +165,7 @@ def get_api_url_kwargs(obj, request, no_obj_type=False):
     if obj_type in {"service", "host", "component"} and "cluster" in request.path:
         kwargs["cluster_id"] = obj.cluster.id
 
-    if obj_type == "component":
+    if obj_type == "component" and ("service" in request.path or "cluster" in request.path):
         kwargs["service_id"] = obj.service.id
 
     return kwargs
