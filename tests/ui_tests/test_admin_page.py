@@ -1001,8 +1001,8 @@ class TestAdminPolicyPage:
         with allure.step("Check forbidden page hint"):
             cluster_hc_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
             assert (
-                cluster_hc_page.get_info_popup_text()
-                == "[ FORBIDDEN ] You do not have permission to perform this action"
+                "[ FORBIDDEN ] You do not have permission to perform this action"
+                in cluster_hc_page.get_info_popup_text()
             ), "There are no permission hint"
 
     # pylint: enable=too-many-locals

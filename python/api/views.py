@@ -15,7 +15,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from adcm.settings import ADCM_VERSION
-from adcm.utils import has_google_oauth, has_yandex_oauth
 from cm.stack import NAME_REGEX
 
 
@@ -60,10 +59,4 @@ class ADCMInfo(APIView):
 
     @staticmethod
     def get(request):
-        return Response(
-            {
-                "adcm_version": ADCM_VERSION,
-                "google_oauth": has_google_oauth(),
-                "yandex_oauth": has_yandex_oauth(),
-            }
-        )
+        return Response({"adcm_version": ADCM_VERSION})
