@@ -19,6 +19,7 @@ import pytest
 import requests
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host
 
+from tests.functional.audit.checks import check_audit_cef_logs
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,
@@ -27,8 +28,6 @@ from tests.functional.audit.conftest import (
     make_auth_header,
     parametrize_audit_scenario_parsing,
 )
-from tests.functional.audit.checks import check_audit_cef_logs
-from tests.functional.audit.conftest import BUNDLES_DIR, NEW_USER, check_failed, check_succeed, make_auth_header
 from tests.functional.rbac.conftest import BusinessRoles, create_policy
 from tests.library.audit.checkers import AuditLogChecker
 
