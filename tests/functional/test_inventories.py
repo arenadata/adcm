@@ -13,19 +13,21 @@
 """Tests for actions inventory"""
 
 import json
+from typing import Optional, Tuple
 from uuid import uuid4
-from typing import Optional
 
 import allure
 import pytest
 from _pytest.fixtures import SubRequest
-from adcm_client.objects import Provider, ADCMClient, Cluster, ADCM
+from adcm_client.objects import ADCM, ADCMClient, Cluster, Component, Host, Provider, Service
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.docker_utils import get_file_from_container
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
+from adcm_pytest_plugin.utils import get_data_dir
+from docker.models.containers import Container
 
-from tests.functional.tools import create_config_group_and_add_host, BEFORE_UPGRADE_DEFAULT_STATE, get_inventory_file
 from tests.functional.conftest import only_clean_adcm
+from tests.functional.tools import BEFORE_UPGRADE_DEFAULT_STATE, create_config_group_and_add_host, get_inventory_file
 
 # pylint: disable=redefined-outer-name
 
@@ -129,6 +131,61 @@ class TestStateBeforeUpgrade:
         assert (
             actual_state == expected_state
         ), f'Before upgrade state should be "{expected_state}", but actual state is "{actual_state}"'
+
+
+class TestHostInMultipleConfigGroups:
+    """Test inventory generation when one host belongs to more than on config group"""
+
+    @pytest.fixture()
+    def hosts(self, provider) -> Tuple[Host, Host]:
+        """Create 2 hosts"""
+        return provider.host_create("host-1"), provider.host_create("host-2")
+
+    @pytest.fixture()
+    def cluster_with_components(self, sdk_client_fs: ADCMClient) -> Tuple[Cluster, Service, Component, Component]:
+        """Create cluster, add service and return itself, service and components"""
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_with_components"))
+        cluster = bundle.cluster_create("Test Cluster")
+        service = cluster.service_add(name="test_service")
+        return cluster, service, service.component(name="first_component"), service.component(name="second_component")
+
+    @pytest.fixture()
+    def second_service_with_components(self, cluster_with_components) -> Tuple[Service, Component, Component]:
+        """Add second service to the cluster"""
+        cluster, *_ = cluster_with_components
+        service = cluster.service_add(name="second_service")
+        return service, service.component(name="first_component"), service.component(name="second_component")
+
+    @pytest.fixture()
+    def _map_hosts_to_components(self, hosts, cluster_with_components, second_service_with_components) -> None:
+        cluster, *_, component_1, component_2 = cluster_with_components
+        _, component_3, component_4 = second_service_with_components
+        for host in hosts:
+            cluster.host_add(host)
+        cluster.hostcomponent_set(
+            *[(host, component) for host in hosts for component in (component_1, component_2, component_3, component_4)]
+        )
+
+    @allure.issue(url="https://tracker.yandex.ru/ADCM-3153")
+    @pytest.mark.usefixtures("_map_hosts_to_components")
+    def test_hostvars_when_one_host_in_multiple_config_groups(self, hosts, cluster_with_components):
+        """Test that hostvars are correct, when one host is in more than one config group"""
+        host_1, _ = hosts
+        cluster, service, component_1, _ = cluster_with_components
+        with allure.step("Create config groups"):
+            for obj in (cluster, service, component_1):
+                group = create_config_group_and_add_host(f"{obj.__class__.__name__} group", obj, host_1)
+                group.config_set({"config": {"param": "changed"}, "attr": {"group_keys": {"param": True}}})
+        with allure.step("Run action that checks hostvars"):
+            run_cluster_action_and_assert_result(cluster, "check")
+
+
+def _read_job_inventory(container: Container, job_id: int) -> dict:
+    exit_code, out = container.exec_run(["cat", f"/adcm/data/run/{job_id}/inventory.json"])
+    content = out.decode("utf-8")
+    if exit_code != 0:
+        raise ValueError(f"Docker command failed: {content}")
+    return json.loads(content)
 
 
 def _attach_inventory_file(request: SubRequest, inventory_content: str, name: str):
