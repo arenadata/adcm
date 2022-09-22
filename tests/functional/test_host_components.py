@@ -80,7 +80,7 @@ def _test_related_hc(client: ADCMClient, case_path: str):
         allure.dynamic.description(case_template["description"])
         hostcomponent_list = []
         for host in case_template["hc_map"].keys():
-            added_host = created_cluster.host_add(provider.host_create(fqdn=f"fqdn_{random_string()}"))
+            added_host = created_cluster.host_add(provider.host_create(fqdn=f"fqdn-{random_string()}"))
             for service_with_component in case_template["hc_map"][host]:
                 service_name, component_name = service_with_component.split(".")
                 service = _get_or_add_service(created_cluster, service_name)
