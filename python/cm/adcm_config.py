@@ -362,7 +362,7 @@ def cook_file_type_name(obj, key, sub_key):
     else:
         filename = ["task", str(obj.id), key, sub_key]
 
-    return Path(FILE_DIR, ".".join(filename))
+    return str(Path(FILE_DIR, ".".join(filename)))
 
 
 def save_file_type(obj, key, subkey, value):
