@@ -24,10 +24,11 @@ import pytest
 import requests
 from adcm_client.audit import AuditLogin, AuditLoginList, AuditOperation, AuditOperationList
 from adcm_client.base import ObjectNotFound
-from adcm_client.objects import ADCMClient
+from adcm_client.objects import ADCM, ADCMClient, Policy
 
 from tests.functional.conftest import only_clean_adcm
-from tests.functional.rbac.conftest import BusinessRoles
+from tests.functional.rbac.conftest import BusinessRoles, create_policy
+from tests.functional.tools import ClusterRelatedObject, ProviderRelatedObject
 from tests.library.audit.checkers import AuditLogChecker
 from tests.library.audit.readers import ParsedAuditLog, YAMLReader
 from tests.library.db import Query, QueryExecutioner
@@ -80,6 +81,15 @@ def parametrize_audit_scenario_parsing(scenario_name: str, context: Optional[dic
 def audit_log_checker(parsed_audit_log) -> AuditLogChecker:
     """Create audit log checker based on parsed audit log"""
     return AuditLogChecker(parsed_audit_log)
+
+
+@pytest.fixture()
+def build_policy(
+    sdk_client_fs, new_user_client
+) -> Callable[[BusinessRoles, Union[ClusterRelatedObject, ProviderRelatedObject, ADCM]], Policy]:
+    """Prepare "policy builder" that grants some permission to (already created) new user"""
+    user_id = new_user_client.me().id
+    return lambda role, obj: create_policy(sdk_client_fs, role, [obj], [sdk_client_fs.user(id=user_id)], [])
 
 
 # CREATE/DELETE utilities
