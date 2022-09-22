@@ -18,7 +18,7 @@ import allure
 import pytest
 import requests
 from adcm_client.audit import AuditOperation, ObjectType, OperationResult, OperationType
-from adcm_client.objects import ADCM, ADCMClient, Bundle, Cluster, Job, Policy, Provider, Task
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Job, Provider, Task
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.functional.audit.conftest import (
@@ -34,8 +34,7 @@ from tests.functional.audit.conftest import (
 )
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles as BR
-from tests.functional.rbac.conftest import create_policy
-from tests.functional.tools import AnyADCMObject, ClusterRelatedObject, ProviderRelatedObject
+from tests.functional.tools import AnyADCMObject
 from tests.library.audit.checkers import AuditLogChecker
 
 # pylint: disable=redefined-outer-name
@@ -61,15 +60,6 @@ def provider(sdk_client_fs) -> Provider:
     provider = bundle.provider_create("Actions Provider")
     provider.host_create("host-fqdn")
     return provider
-
-
-@pytest.fixture()
-def build_policy(
-    sdk_client_fs, new_user_client
-) -> Callable[[BR, Union[ClusterRelatedObject, ProviderRelatedObject, ADCM]], Policy]:
-    """Prepare "policy builder" that grants some permission to (already created) new user"""
-    user_id = new_user_client.me().id
-    return lambda role, obj: create_policy(sdk_client_fs, role, [obj], [sdk_client_fs.user(id=user_id)], [])
 
 
 @pytest.fixture()
@@ -223,7 +213,7 @@ class TestProviderObjectActions(RunActionTestMixin):
     def test_simple_run_host_action(self, provider, cluster, sdk_client_fs):
         """Test audit of successful launch of `host_action: true`"""
         host = cluster.host_add(provider.host())
-        action = host.action(name='host_action')
+        action = host.action(name="host_action")
         url = f"{sdk_client_fs.url}/api/v1/host/{host.id}/action/{action.id}/run/"
         check_succeed(requests.post(url, json={"config": {"param": 1}}, headers=make_auth_header(sdk_client_fs)))
         audit_log: AuditOperation = sdk_client_fs.audit_operation_list()[0]
