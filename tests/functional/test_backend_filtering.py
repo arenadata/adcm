@@ -146,7 +146,7 @@ def provider_bundle_id(one_provider: Provider):
 def hosts(provider_bundles: ADCMClient, one_provider):
     """Create hosts return provider bundles"""
     for i in range(51):
-        one_provider.host_create(fqdn=str(i))
+        one_provider.host_create(fqdn=f"host{i}")
     return provider_bundles
 
 
