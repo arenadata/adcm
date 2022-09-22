@@ -52,9 +52,9 @@ class ProviderList(PermissionListMixin, PaginatedView):
     serializer_class = ProviderSerializer
     serializer_class_ui = ProviderUISerializer
     serializer_class_post = ProviderDetailSerializer
-    filterset_fields = ('name', 'prototype_id')
-    ordering_fields = ('name', 'state', 'prototype__display_name', 'prototype__version_order')
-    permission_required = ['cm.view_hostprovider']
+    filterset_fields = ("name", "prototype_id")
+    ordering_fields = ("name", "state", "prototype__display_name", "prototype__version_order")
+    permission_required = ["cm.view_hostprovider"]
 
     @audit
     def post(self, request, *args, **kwargs):
@@ -72,10 +72,10 @@ class ProviderDetail(PermissionListMixin, DetailView):
     serializer_class = ProviderDetailSerializer
     serializer_class_ui = ProviderDetailUISerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
-    permission_required = ['cm.view_hostprovider']
-    lookup_field = 'id'
-    lookup_url_kwarg = 'provider_id'
-    error_code = 'PROVIDER_NOT_FOUND'
+    permission_required = ["cm.view_hostprovider"]
+    lookup_field = "id"
+    lookup_url_kwarg = "provider_id"
+    error_code = "PROVIDER_NOT_FOUND"
 
     @audit
     def delete(self, request, *args, **kwargs):
@@ -102,13 +102,13 @@ class ProviderUpgrade(GenericUIView):
         List all available upgrades for specified host provider
         """
         provider = get_object_for_user(
-            request.user, 'cm.view_hostprovider', HostProvider, id=kwargs['provider_id']
+            request.user, "cm.view_hostprovider", HostProvider, id=kwargs["provider_id"]
         )
-        check_custom_perm(request.user, 'view_upgrade_of', 'hostprovider', provider)
+        check_custom_perm(request.user, "view_upgrade_of", "hostprovider", provider)
         update_hierarchy_issues(provider)
         obj = get_upgrade(provider, self.get_ordering())
         serializer = self.serializer_class(
-            obj, many=True, context={'provider_id': provider.id, 'request': request}
+            obj, many=True, context={"provider_id": provider.id, "request": request}
         )
         return Response(serializer.data)
 
@@ -123,14 +123,14 @@ class ProviderUpgradeDetail(GenericUIView):
         List all available upgrades for specified host provider
         """
         provider = get_object_for_user(
-            request.user, 'cm.view_hostprovider', HostProvider, id=kwargs['provider_id']
+            request.user, "cm.view_hostprovider", HostProvider, id=kwargs["provider_id"]
         )
-        check_custom_perm(request.user, 'view_upgrade_of', 'hostprovider', provider)
+        check_custom_perm(request.user, "view_upgrade_of", "hostprovider", provider)
         obj = check_obj(
-            Upgrade, {'id': kwargs['upgrade_id'], 'bundle__name': provider.prototype.bundle.name}
+            Upgrade, {"id": kwargs["upgrade_id"], "bundle__name": provider.prototype.bundle.name}
         )
         serializer = self.serializer_class(
-            obj, context={'provider_id': provider.id, 'request': request}
+            obj, context={"provider_id": provider.id, "request": request}
         )
         return Response(serializer.data)
 
@@ -143,9 +143,9 @@ class DoProviderUpgrade(GenericUIView):
     @audit
     def post(self, request, *args, **kwargs):
         provider = get_object_for_user(
-            request.user, 'cm.view_hostprovider', HostProvider, id=kwargs['provider_id']
+            request.user, "cm.view_hostprovider", HostProvider, id=kwargs["provider_id"]
         )
-        check_custom_perm(request.user, 'do_upgrade_of', 'hostprovider', provider)
+        check_custom_perm(request.user, "do_upgrade_of", "hostprovider", provider)
         serializer = self.get_serializer(data=request.data)
 
-        return create(serializer, upgrade_id=int(kwargs['upgrade_id']), obj=provider)
+        return create(serializer, upgrade_id=int(kwargs["upgrade_id"]), obj=provider)

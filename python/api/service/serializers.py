@@ -11,7 +11,6 @@
 # limitations under the License.
 
 # pylint: disable=redefined-builtin
-from typing import Optional
 
 from django.db.utils import IntegrityError
 from rest_framework.reverse import reverse
@@ -45,24 +44,24 @@ class ServiceSerializer(Serializer):
     name = CharField(read_only=True)
     display_name = CharField(read_only=True)
     state = CharField(read_only=True)
-    prototype_id = IntegerField(required=True, help_text='id of service prototype')
-    url = ObjectURL(read_only=True, view_name='service-details')
+    prototype_id = IntegerField(required=True, help_text="id of service prototype")
+    url = ObjectURL(read_only=True, view_name="service-details")
 
     def validate_prototype_id(self, prototype_id):
-        check_obj(Prototype, {'id': prototype_id, 'type': 'service'}, 'PROTOTYPE_NOT_FOUND')
+        check_obj(Prototype, {"id": prototype_id, "type": "service"}, "PROTOTYPE_NOT_FOUND")
         return prototype_id
 
     def create(self, validated_data):
         try:
-            cluster = check_obj(Cluster, validated_data['cluster_id'])
-            prototype = check_obj(Prototype, validated_data['prototype_id'])
+            cluster = check_obj(Cluster, validated_data["cluster_id"])
+            prototype = check_obj(Prototype, validated_data["prototype_id"])
             return add_service_to_cluster(cluster, prototype)
         except IntegrityError:
-            raise AdcmEx('SERVICE_CONFLICT') from None
+            raise AdcmEx("SERVICE_CONFLICT") from None
 
 
 class ServiceUISerializer(ServiceSerializer):
-    action = CommonAPIURL(read_only=True, view_name='object-action')
+    action = CommonAPIURL(read_only=True, view_name="object-action")
     name = CharField(read_only=True)
     version = SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
@@ -83,11 +82,11 @@ class ClusterServiceSerializer(ServiceSerializer):
 
     def create(self, validated_data):
         try:
-            cluster = check_obj(Cluster, self.context.get('cluster_id'))
-            prototype = check_obj(Prototype, validated_data['prototype_id'])
+            cluster = check_obj(Cluster, self.context.get("cluster_id"))
+            prototype = check_obj(Prototype, validated_data["prototype_id"])
             return add_service_to_cluster(cluster, prototype)
         except IntegrityError:
-            raise AdcmEx('SERVICE_CONFLICT') from None
+            raise AdcmEx("SERVICE_CONFLICT") from None
 
 
 class ServiceDetailSerializer(ServiceSerializer):
@@ -96,21 +95,21 @@ class ServiceDetailSerializer(ServiceSerializer):
     bundle_id = IntegerField(read_only=True)
     status = SerializerMethodField()
     monitoring = CharField(read_only=True)
-    action = CommonAPIURL(read_only=True, view_name='object-action')
-    config = CommonAPIURL(read_only=True, view_name='object-config')
-    component = ObjectURL(read_only=True, view_name='component')
-    imports = ObjectURL(read_only=True, view_name='service-import')
-    bind = ObjectURL(read_only=True, view_name='service-bind')
+    action = CommonAPIURL(read_only=True, view_name="object-action")
+    config = CommonAPIURL(read_only=True, view_name="object-config")
+    component = ObjectURL(read_only=True, view_name="component")
+    imports = ObjectURL(read_only=True, view_name="service-import")
+    bind = ObjectURL(read_only=True, view_name="service-bind")
     prototype = HyperlinkedIdentityField(
-        view_name='service-type-details',
-        lookup_field='prototype_id',
-        lookup_url_kwarg='prototype_id',
+        view_name="service-type-details",
+        lookup_field="prototype_id",
+        lookup_url_kwarg="prototype_id",
     )
 
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
-    group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
+    group_config = GroupConfigsHyperlinkedIdentityField(view_name="group-config-list")
 
     @staticmethod
     def get_status(obj: ClusterObject) -> int:
@@ -127,8 +126,8 @@ class ServiceDetailUISerializer(ServiceDetailSerializer):
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
-        self.context['object'] = obj
-        self.context['service_id'] = obj.id
+        self.context["object"] = obj
+        self.context["service_id"] = obj.id
         actions = filter_actions(obj, act_set)
         acts = ActionShort(actions, many=True, context=self.context)
         return acts.data
@@ -142,7 +141,7 @@ class ServiceDetailUISerializer(ServiceDetailSerializer):
         return obj.prototype.version
 
     @staticmethod
-    def get_main_info(obj: ClusterObject) -> Optional[str]:
+    def get_main_info(obj: ClusterObject) -> str | None:
         return get_main_info(obj)
 
 
@@ -150,20 +149,20 @@ class ImportPostSerializer(Serializer):
     bind = JSONField()
 
     def create(self, validated_data):
-        binds = validated_data.get('bind')
-        service = self.context.get('service')
-        cluster = self.context.get('cluster')
+        binds = validated_data.get("bind")
+        service = self.context.get("service")
+        cluster = self.context.get("cluster")
         return multi_bind(cluster, service, binds)
 
 
 class ServiceBindUrlFiels(HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, format):
-        kwargs = {'service_id': obj.service.id, 'bind_id': obj.id}
+        kwargs = {"service_id": obj.service.id, "bind_id": obj.id}
         return reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
 class ServiceBindSerializer(BindSerializer):
-    url = ServiceBindUrlFiels(read_only=True, view_name='service-bind-details')
+    url = ServiceBindUrlFiels(read_only=True, view_name="service-bind-details")
 
 
 class ServiceBindPostSerializer(Serializer):
@@ -175,12 +174,12 @@ class ServiceBindPostSerializer(Serializer):
     export_cluster_prototype_name = CharField(read_only=True)
 
     def create(self, validated_data):
-        export_cluster = check_obj(Cluster, validated_data.get('export_cluster_id'))
+        export_cluster = check_obj(Cluster, validated_data.get("export_cluster_id"))
         return bind(
-            validated_data.get('cluster'),
-            validated_data.get('service'),
+            validated_data.get("cluster"),
+            validated_data.get("service"),
             export_cluster,
-            validated_data.get('export_service_id'),
+            validated_data.get("export_service_id"),
         )
 
 

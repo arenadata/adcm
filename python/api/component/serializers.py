@@ -11,7 +11,6 @@
 # limitations under the License.
 
 # pylint: disable=redefined-builtin
-from typing import Optional
 
 from rest_framework.serializers import (
     BooleanField,
@@ -28,9 +27,9 @@ from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializ
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.serializers import StringListSerializer
 from api.utils import CommonAPIURL, ObjectURL, filter_actions
-from cm import status_api
 from cm.adcm_config import get_main_info
 from cm.models import Action, ServiceComponent
+from cm.status_api import get_component_status
 
 
 class ComponentSerializer(Serializer):
@@ -41,12 +40,12 @@ class ComponentSerializer(Serializer):
     display_name = CharField(read_only=True)
     description = CharField(read_only=True)
     state = CharField(read_only=True)
-    prototype_id = IntegerField(required=True, help_text='id of component prototype')
-    url = ObjectURL(read_only=True, view_name='component-details')
+    prototype_id = IntegerField(required=True, help_text="id of component prototype")
+    url = ObjectURL(read_only=True, view_name="component-details")
 
 
 class ComponentUISerializer(ComponentSerializer):
-    action = CommonAPIURL(read_only=True, view_name='object-action')
+    action = CommonAPIURL(read_only=True, view_name="object-action")
     version = SerializerMethodField()
     status = SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
@@ -58,7 +57,7 @@ class ComponentUISerializer(ComponentSerializer):
 
     @staticmethod
     def get_status(obj: ServiceComponent) -> int:
-        return status_api.get_component_status(obj)
+        return get_component_status(obj)
 
 
 class ComponentShortSerializer(ComponentSerializer):
@@ -67,9 +66,9 @@ class ComponentShortSerializer(ComponentSerializer):
     bound_to = JSONField(read_only=True)
     bundle_id = IntegerField(read_only=True)
     prototype = HyperlinkedIdentityField(
-        view_name='component-type-details',
-        lookup_field='prototype_id',
-        lookup_url_kwarg='prototype_id',
+        view_name="component-type-details",
+        lookup_field="prototype_id",
+        lookup_url_kwarg="prototype_id",
     )
 
 
@@ -80,21 +79,21 @@ class ComponentDetailSerializer(ComponentSerializer):
     bundle_id = IntegerField(read_only=True)
     monitoring = CharField(read_only=True)
     status = SerializerMethodField()
-    action = CommonAPIURL(read_only=True, view_name='object-action')
-    config = CommonAPIURL(read_only=True, view_name='object-config')
+    action = CommonAPIURL(read_only=True, view_name="object-action")
+    config = CommonAPIURL(read_only=True, view_name="object-config")
     prototype = HyperlinkedIdentityField(
-        view_name='component-type-details',
-        lookup_field='prototype_id',
-        lookup_url_kwarg='prototype_id',
+        view_name="component-type-detail",
+        lookup_field="prototype_id",
+        lookup_url_kwarg="prototype_id",
     )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
-    group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
+    group_config = GroupConfigsHyperlinkedIdentityField(view_name="group-config-list")
 
     @staticmethod
     def get_status(obj: ServiceComponent) -> int:
-        return status_api.get_component_status(obj)
+        return get_component_status(obj)
 
 
 class StatusSerializer(Serializer):
@@ -104,7 +103,7 @@ class StatusSerializer(Serializer):
 
     @staticmethod
     def get_status(obj: ServiceComponent) -> int:
-        return status_api.get_component_status(obj)
+        return get_component_status(obj)
 
 
 class ComponentDetailUISerializer(ComponentDetailSerializer):
@@ -115,8 +114,8 @@ class ComponentDetailUISerializer(ComponentDetailSerializer):
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
-        self.context['object'] = obj
-        self.context['component_id'] = obj.id
+        self.context["object"] = obj
+        self.context["component_id"] = obj.id
         actions = filter_actions(obj, act_set)
         acts = ActionShort(actions, many=True, context=self.context)
         return acts.data
@@ -126,5 +125,5 @@ class ComponentDetailUISerializer(ComponentDetailSerializer):
         return obj.prototype.version
 
     @staticmethod
-    def get_main_info(obj: ServiceComponent) -> Optional[str]:
+    def get_main_info(obj: ServiceComponent) -> str | None:
         return get_main_info(obj)
