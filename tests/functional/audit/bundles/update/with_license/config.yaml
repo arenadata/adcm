@@ -15,6 +15,7 @@
   name: cluster_name
   display_name: Cluster Display Name
   license: ./text.txt
+  allow_maintenance_mode: true
 
 
 - type: service

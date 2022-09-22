@@ -94,11 +94,18 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
             '{type_} configuration updated',
             _OBJECTS_WITH_ACTIONS_AND_CONFIGS,
         ),
-        # RBAC
+        # RBAC and "renamable" objects
         NamedOperation(
             'change-properties',
             '{type_} updated',
-            (ObjectType.USER, ObjectType.GROUP, ObjectType.ROLE, ObjectType.POLICY),
+            (
+                ObjectType.USER,
+                ObjectType.GROUP,
+                ObjectType.ROLE,
+                ObjectType.POLICY,
+                ObjectType.CLUSTER,
+                ObjectType.HOST,
+            ),
         ),
         # Imports / Binds
         NamedOperation('change-imports', '{type_} import updated', (ObjectType.CLUSTER, ObjectType.SERVICE)),
