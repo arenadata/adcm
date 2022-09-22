@@ -17,7 +17,6 @@ from typing import Tuple
 import allure
 import pytest
 import requests
-from adcm_client.base import NoSuchEndpointOrAccessIsDenied
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, User
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.utils import random_string
