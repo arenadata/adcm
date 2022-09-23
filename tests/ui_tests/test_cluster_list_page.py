@@ -1159,6 +1159,7 @@ class TestClusterConfigPage:
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
     # pylint: disable=too-many-locals
+    @pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3216")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
