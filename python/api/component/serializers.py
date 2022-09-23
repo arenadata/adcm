@@ -82,7 +82,7 @@ class ComponentDetailSerializer(ComponentSerializer):
     action = CommonAPIURL(read_only=True, view_name="object-action")
     config = CommonAPIURL(read_only=True, view_name="object-config")
     prototype = HyperlinkedIdentityField(
-        view_name="component-type-detail",
+        view_name="component-type-details",
         lookup_field="prototype_id",
         lookup_url_kwarg="prototype_id",
     )
