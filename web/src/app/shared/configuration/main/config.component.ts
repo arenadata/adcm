@@ -81,9 +81,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     this.worker$ = service.worker$.pipe(this.takeUntil());
   }
 
-  ngAfterViewInit(): void {
-
-  }
+  ngAfterViewInit(): void {}
 
   ngOnChanges(changes: SimpleChanges): void {
     const url = changes['configUrl'];
