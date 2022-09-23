@@ -85,7 +85,7 @@ def _create_cluster(sdk_client_fs: ADCMClient, bundle_dir: str = "cluster_bundle
 def _create_host(sdk_client_fs: ADCMClient, bundle_dir: str = "hostprovider") -> Host:
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, bundle_dir))
     provider = bundle.provider_create(name=f"test_{random_string()}")
-    return provider.host_create(fqdn=f"test_host_{random_string()}")
+    return provider.host_create(fqdn=f"test-host-{random_string()}")
 
 
 @allure.step("Check actions availability")

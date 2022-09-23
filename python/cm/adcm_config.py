@@ -14,18 +14,22 @@
 
 import copy
 import json
-import os
 from collections import OrderedDict
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any, Optional, Tuple
 
 import yspec.checker
 from ansible.parsing.vault import VaultAES256, VaultSecret
-from django.conf import settings
-from django.db.utils import OperationalError
 
-from cm import config
-from cm.errors import raise_adcm_ex as err
+from cm.config import (
+    ANSIBLE_SECRET,
+    ANSIBLE_VAULT_HEADER,
+    BUNDLE_DIR,
+    ENCODING,
+    FILE_DIR,
+)
+from cm.errors import raise_adcm_ex
 from cm.logger import logger
 from cm.models import (
     ADCM,
@@ -53,6 +57,7 @@ def obj_ref(obj):
         name = obj.fqdn
     else:
         name = obj.prototype.name
+
     return f'{obj.prototype.type} #{obj.id} "{name}"'
 
 
@@ -61,12 +66,14 @@ def obj_to_dict(obj, keys):
     for key in keys:
         if hasattr(obj, key):
             dictionary[key] = getattr(obj, key)
+
     return dictionary
 
 
 def dict_to_obj(dictionary, obj, keys):
     for key in keys:
         setattr(obj, key, dictionary[key])
+
     return obj
 
 
@@ -82,6 +89,7 @@ def to_flat_dict(conf, spec):
                     flat[f"{c1}/{c2}"] = conf[c1][c2]
         else:
             flat[f'{c1}/{""}'] = conf[c1]
+
     return flat
 
 
@@ -98,12 +106,14 @@ def group_keys_to_flat(origin: dict, spec: dict):
                 result[key] = v
             else:
                 if "fields" not in v or "value" not in origin[k]:
-                    err("ATTRIBUTE_ERROR", "invalid format `group_keys` field")
+                    raise_adcm_ex("ATTRIBUTE_ERROR", "invalid format `group_keys` field")
                 result[key] = v["value"]
+
                 for _k, _v in origin[k]["fields"].items():
                     result[f"{k}/{_k}"] = _v
         else:
             result[f"{k}/"] = v
+
     return result
 
 
@@ -136,78 +146,62 @@ def get_default(c, proto=None):  # pylint: disable=too-many-branches
         if proto:
             if c.default:
                 value = read_file_type(proto, c.default, proto.bundle.hash, c.name, c.subname)
+
     return value
 
 
 def type_is_complex(conf_type):
     if conf_type in ("json", "structure", "list", "map"):
         return True
+
     return False
 
 
 def read_file_type(proto, default, bundle_hash, name, subname):
     msg = f'config key "{name}/{subname}" default file'
+
     return read_bundle_file(proto, default, bundle_hash, msg)
 
 
 def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None):
     if not ref:
         ref = proto_ref(proto)
+
     if fname[0:2] == "./":
-        path = os.path.join(config.BUNDLE_DIR, bundle_hash, proto.path, fname)
+        path = Path(BUNDLE_DIR, bundle_hash, proto.path, fname)
     else:
-        path = os.path.join(config.BUNDLE_DIR, bundle_hash, fname)
+        path = Path(BUNDLE_DIR, bundle_hash, fname)
+
+    fd = None
     try:
         fd = open(path, "r", encoding="utf_8")
     except FileNotFoundError:
         msg = '{} "{}" is not found ({})'
-        err("CONFIG_TYPE_ERROR", msg.format(pattern, path, ref))
+        raise_adcm_ex("CONFIG_TYPE_ERROR", msg.format(pattern, path, ref))
     except PermissionError:
         msg = '{} "{}" can not be open ({})'
-        err("CONFIG_TYPE_ERROR", msg.format(pattern, path, ref))
-    body = fd.read()
-    fd.close()
-    return body
+        raise_adcm_ex("CONFIG_TYPE_ERROR", msg.format(pattern, path, ref))
+
+    if fd:
+        body = fd.read()
+        fd.close()
+
+        return body
+
+    return None
 
 
 def init_object_config(proto: Prototype, obj: Any) -> Optional[ObjectConfig]:
     spec, _, conf, attr = get_prototype_config(proto)
     if not conf:
         return None
+
     obj_conf = ObjectConfig(current=0, previous=0)
     obj_conf.save()
     save_obj_config(obj_conf, conf, attr, "init")
     process_file_type(obj, spec, conf)
+
     return obj_conf
-
-
-def prepare_social_auth(conf):
-    if "google_oauth" not in conf:
-        return
-    gconf = conf["google_oauth"]
-    if "client_id" not in gconf or not gconf["client_id"]:
-        return
-    if "secret" not in gconf or not gconf["secret"]:
-        return
-    settings.SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = gconf["client_id"]
-    settings.SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = ansible_decrypt(gconf["secret"])
-    if "whitelisted_domains" in gconf:
-        settings.SOCIAL_AUTH_GOOGLE_OAUTH2_WHITELISTED_DOMAINS = gconf["whitelisted_domains"]
-
-
-def load_social_auth():
-    try:
-        adcm = ADCM.objects.filter()
-        if not adcm:
-            return
-    except OperationalError:
-        return
-
-    try:
-        cl = ConfigLog.objects.get(obj_ref=adcm[0].config, id=adcm[0].config.current)
-        prepare_social_auth(cl.config)
-    except OperationalError as e:
-        logger.error("load_social_auth error: %s", e)
 
 
 def get_prototype_config(proto: Prototype, action: Action = None) -> Tuple[dict, dict, dict, dict]:
@@ -233,6 +227,7 @@ def get_prototype_config(proto: Prototype, action: Action = None) -> Tuple[dict,
         else:
             spec[c.name][c.subname] = obj_to_dict(c, flist)
             conf[c.name][c.subname] = get_default(c, proto)
+
     return spec, flat_spec, conf, attr
 
 
@@ -259,16 +254,19 @@ def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many
     new_unflat_spec, new_spec, _, _ = get_prototype_config(new_proto)
     old_conf = to_flat_dict(cl.config, old_spec)
 
-    def is_new_default(key):
-        if not new_spec[key].default:
+    def is_new_default(_key):
+        if not new_spec[_key].default:
             return False
-        if old_spec[key].default:
-            if key in old_conf:
-                return bool(get_default(old_spec[key], old_proto) == old_conf[key])
+
+        if old_spec[_key].default:
+            if _key in old_conf:
+                return bool(get_default(old_spec[_key], old_proto) == old_conf[_key])
             else:
                 return True
-        if not old_spec[key].default and new_spec[key].default:
+
+        if not old_spec[_key].default and new_spec[_key].default:
             return True
+
         return False
 
     # set new default config values and gather information about activatable groups
@@ -290,7 +288,9 @@ def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many
                     active_groups[group_name] = True
                 else:
                     inactive_groups[group_name] = True
+
             continue
+
         if key in old_spec:
             if is_new_default(key):
                 new_conf[key] = get_default(new_spec[key], new_proto)
@@ -308,6 +308,7 @@ def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many
         else:
             if k1 not in unflat_conf:
                 unflat_conf[k1] = {}
+
             unflat_conf[k1][k2] = value
 
     # set activatable groups attributes for new config
@@ -327,9 +328,12 @@ def restore_cluster_config(obj_conf, version, desc=""):
     obj_conf.previous = obj_conf.current
     obj_conf.current = version
     obj_conf.save()
+
     if desc != "":
         cl.description = desc
+
     cl.save()
+
     return cl
 
 
@@ -339,6 +343,7 @@ def save_obj_config(obj_conf, conf, attr, desc=""):
     obj_conf.previous = obj_conf.current
     obj_conf.current = cl.id
     obj_conf.save()
+
     return cl
 
 
@@ -356,14 +361,17 @@ def cook_file_type_name(obj, key, sub_key):
         ]
     else:
         filename = ["task", str(obj.id), key, sub_key]
-    return os.path.join(config.FILE_DIR, ".".join(filename))
+
+    return str(Path(FILE_DIR, ".".join(filename)))
 
 
 def save_file_type(obj, key, subkey, value):
     filename = cook_file_type_name(obj, key, subkey)
     if value is None:
-        if os.path.exists(filename):
-            os.remove(filename)
+        _file = Path(filename)
+        if _file.is_file():
+            _file.unlink()
+
         return None
 
     # There is a trouble between openssh 7.9 and register function of Ansible.
@@ -376,10 +384,12 @@ def save_file_type(obj, key, subkey, value):
         if value != "":
             if value[-1] == "-":
                 value += "\n"
+
     fd = open(filename, "w", encoding="utf_8")
     fd.write(value)
     fd.close()
-    os.chmod(filename, 0o0600)
+    Path(filename).chmod(0o0600)
+
     return filename
 
 
@@ -396,29 +406,34 @@ def process_file_type(obj: Any, spec: dict, conf: dict):
 
 def ansible_encrypt(msg):
     vault = VaultAES256()
-    secret = VaultSecret(bytes(config.ANSIBLE_SECRET, config.ENCODING))
-    return vault.encrypt(bytes(msg, config.ENCODING), secret)
+    secret = VaultSecret(bytes(ANSIBLE_SECRET, ENCODING))
+
+    return vault.encrypt(bytes(msg, ENCODING), secret)
 
 
 def ansible_encrypt_and_format(msg):
     ciphertext = ansible_encrypt(msg)
-    return f"{config.ANSIBLE_VAULT_HEADER}\n{str(ciphertext, config.ENCODING)}"
+
+    return f"{ANSIBLE_VAULT_HEADER}\n{str(ciphertext, ENCODING)}"
 
 
 def ansible_decrypt(msg):
-    if config.ANSIBLE_VAULT_HEADER not in msg:
+    if ANSIBLE_VAULT_HEADER not in msg:
         return msg
+
     _, ciphertext = msg.split("\n")
     vault = VaultAES256()
-    secret = VaultSecret(bytes(config.ANSIBLE_SECRET, config.ENCODING))
-    return str(vault.decrypt(ciphertext, secret), config.ENCODING)
+    secret = VaultSecret(bytes(ANSIBLE_SECRET, ENCODING))
+
+    return str(vault.decrypt(ciphertext, secret), ENCODING)
 
 
 def is_ansible_encrypted(msg):
     if not isinstance(msg, str):
-        msg = str(msg, config.ENCODING)
-    if config.ANSIBLE_VAULT_HEADER in msg:
+        msg = str(msg, ENCODING)
+    if ANSIBLE_VAULT_HEADER in msg:
         return True
+
     return False
 
 
@@ -426,6 +441,7 @@ def process_password(spec, conf):
     def update_password(passwd):
         if "$ANSIBLE_VAULT;" in passwd:
             return passwd
+
         return ansible_encrypt_and_format(passwd)
 
     for key in conf:
@@ -436,12 +452,14 @@ def process_password(spec, conf):
             for subkey in conf[key]:
                 if spec[key][subkey]["type"] in SECURE_PARAM_TYPES and conf[key][subkey]:
                     conf[key][subkey] = update_password(conf[key][subkey])
+
     return conf
 
 
 def process_config(obj, spec, old_conf):  # pylint: disable=too-many-branches
     if not old_conf:
         return old_conf
+
     conf = copy.deepcopy(old_conf)
     for key in conf:  # pylint: disable=too-many-nested-blocks
         if "type" in spec[key]:
@@ -449,7 +467,7 @@ def process_config(obj, spec, old_conf):  # pylint: disable=too-many-branches
                 if spec[key]["type"] == "file":
                     conf[key] = cook_file_type_name(obj, key, "")
                 elif spec[key]["type"] in SECURE_PARAM_TYPES:
-                    if config.ANSIBLE_VAULT_HEADER in conf[key]:
+                    if ANSIBLE_VAULT_HEADER in conf[key]:
                         conf[key] = {"__ansible_vault": conf[key]}
         elif conf[key]:
             for subkey in conf[key]:
@@ -457,16 +475,19 @@ def process_config(obj, spec, old_conf):  # pylint: disable=too-many-branches
                     if spec[key][subkey]["type"] == "file":
                         conf[key][subkey] = cook_file_type_name(obj, key, subkey)
                     elif spec[key][subkey]["type"] in SECURE_PARAM_TYPES:
-                        if config.ANSIBLE_VAULT_HEADER in conf[key][subkey]:
+                        if ANSIBLE_VAULT_HEADER in conf[key][subkey]:
                             conf[key][subkey] = {"__ansible_vault": conf[key][subkey]}
+
     return conf
 
 
 def group_is_activatable(spec):
     if spec.type != "group":
         return False
+
     if "activatable" in spec.limits:
         return spec.limits["activatable"]
+
     return False
 
 
@@ -479,6 +500,7 @@ def ui_config(obj, cl):  # pylint: disable=too-many-locals
     group_keys = obj_attr.get("group_keys", {})
     custom_group_keys = obj_attr.get("custom_group_keys", {})
     slist = ("name", "subname", "type", "description", "display_name", "required")
+
     for key in spec:
         item = obj_to_dict(spec[key], slist)
         limits = spec[key].limits
@@ -487,15 +509,18 @@ def ui_config(obj, cl):  # pylint: disable=too-many-locals
             item["ui_options"] = spec[key].ui_options
         else:
             item["ui_options"] = None
+
         item["read_only"] = bool(config_is_ro(obj, key, spec[key].limits))
         item["activatable"] = bool(group_is_activatable(spec[key]))
         if item["type"] == "variant":
             item["limits"]["source"]["value"] = get_variant(obj, obj_conf, limits)
+
         item["default"] = get_default(spec[key], obj.prototype)
         if key in flat_conf:
             item["value"] = flat_conf[key]
         else:
             item["value"] = get_default(spec[key], obj.prototype)
+
         if group_keys:
             if spec[key].type == "group":
                 k = key.split("/")[0]
@@ -509,7 +534,9 @@ def ui_config(obj, cl):  # pylint: disable=too-many-locals
                 else:
                     item["group"] = group_keys[k1]
                     item["custom_group"] = custom_group_keys[k1]
+
         conf.append(item)
+
     return conf
 
 
@@ -520,33 +547,43 @@ def get_action_variant(obj, conf):
             for c in conf:
                 if c.type != "variant":
                     continue
+
                 c.limits["source"]["value"] = get_variant(obj, cl.config, c.limits)
 
 
 def config_is_ro(obj, key, limits):
     if not limits:
         return False
+
     if not hasattr(obj, "state"):
         return False
+
     ro = limits.get("read_only", [])
     wr = limits.get("writable", [])
+
     if ro and wr:
         msg = 'can not have "read_only" and "writable" simultaneously (config key "{}" of {})'
-        err("INVALID_CONFIG_DEFINITION", msg.format(key, proto_ref(obj.prototype)))
+        raise_adcm_ex("INVALID_CONFIG_DEFINITION", msg.format(key, proto_ref(obj.prototype)))
+
     if ro == "any":
         return True
+
     if obj.state in ro:
         return True
+
     if wr == "any":
         return False
+
     if wr and obj.state not in wr:
         return True
+
     return False
 
 
 def check_read_only(obj, spec, conf, old_conf):
     flat_conf = to_flat_dict(conf, spec)
     flat_old_conf = to_flat_dict(old_conf, spec)
+
     for s in spec:
         if config_is_ro(obj, s, spec[s].limits) and s in flat_conf:
 
@@ -556,13 +593,14 @@ def check_read_only(obj, spec, conf, old_conf):
             if spec[s].type == "list":
                 if isinstance(flat_conf[s], list) and not flat_conf[s]:
                     continue
+
             if spec[s].type == "map":
                 if isinstance(flat_conf[s], dict) and not flat_conf[s]:
                     continue
 
             if flat_conf[s] != flat_old_conf[s]:
                 msg = "config key {} of {} is read only"
-                err("CONFIG_VALUE_ERROR", msg.format(s, proto_ref(obj.prototype)))
+                raise_adcm_ex("CONFIG_VALUE_ERROR", msg.format(s, proto_ref(obj.prototype)))
 
 
 def restore_read_only(obj, spec, conf, old_conf):  # # pylint: disable=too-many-branches
@@ -594,6 +632,7 @@ def restore_read_only(obj, spec, conf, old_conf):  # # pylint: disable=too-many-
                                 conf[key][subkey] = old_conf[key][subkey]
                     elif key in old_conf and subkey in old_conf[key]:
                         conf[key] = {subkey: old_conf[key][subkey]}
+
     return conf
 
 
@@ -602,13 +641,16 @@ def check_json_config(
 ):
     spec, flat_spec, _, _ = get_prototype_config(proto)
     check_attr(proto, obj, new_attr, flat_spec, current_attr)
+
     if isinstance(obj, GroupConfig):
         config_spec = obj.get_config_spec()
         group_keys = new_attr.get("group_keys", {})
         check_value_unselected_field(
             current_config, new_config, current_attr, new_attr, group_keys, config_spec, obj.object
         )
+
     process_variant(obj, spec, new_config)
+
     return check_config_spec(proto, obj, spec, flat_spec, new_config, current_config, new_attr)
 
 
@@ -617,7 +659,8 @@ def check_structure_for_group_attr(group_keys, spec, key_name):
     flat_group_attr = group_keys_to_flat(group_keys, spec)
     for key, value in flat_group_attr.items():
         if key not in spec:
-            err("ATTRIBUTE_ERROR", f"invalid `{key}` field in `{key_name}`")
+            raise_adcm_ex("ATTRIBUTE_ERROR", f"invalid `{key}` field in `{key_name}`")
+
         if spec[key].type == "group":
             if not (
                 isinstance(value, bool)
@@ -625,14 +668,16 @@ def check_structure_for_group_attr(group_keys, spec, key_name):
                 or value is None
                 and "activatable" not in spec[key].limits
             ):
-                err("ATTRIBUTE_ERROR", f"invalid type `value` field in `{key}`")
+                raise_adcm_ex("ATTRIBUTE_ERROR", f"invalid type `value` field in `{key}`")
         else:
             if not isinstance(value, bool):
-                err("ATTRIBUTE_ERROR", f"invalid type `{key}` field in `{key_name}`")
+                raise_adcm_ex("ATTRIBUTE_ERROR", f"invalid type `{key}` field in `{key_name}`")
+
     for key, value in spec.items():
         if value.type != "group":
             if key not in flat_group_attr:
-                err("ATTRIBUTE_ERROR", f"there is no `{key}` field in `{key_name}`")
+                raise_adcm_ex("ATTRIBUTE_ERROR", f"there is no `{key}` field in `{key_name}`")
+
     return flat_group_attr
 
 
@@ -642,7 +687,7 @@ def check_agreement_group_attr(group_keys, custom_group_keys, spec):
     flat_custom_group_keys = group_keys_to_flat(custom_group_keys, spec)
     for key, value in flat_custom_group_keys.items():
         if not value and flat_group_keys[key]:
-            err("ATTRIBUTE_ERROR", f"the `{key}` field cannot be included in the group")
+            raise_adcm_ex("ATTRIBUTE_ERROR", f"the `{key}` field cannot be included in the group")
 
 
 def check_value_unselected_field(
@@ -650,7 +695,6 @@ def check_value_unselected_field(
 ):
     """
     Check value unselected field
-
     :param current_config: Current config
     :param new_config: New config
     :param current_attr: Current attr
@@ -668,6 +712,7 @@ def check_value_unselected_field(
             or (current[key] is None and bool(new[key]) is False)
         ):
             return True
+
         return False
 
     for k, v in group_keys.items():
@@ -682,7 +727,8 @@ def check_value_unselected_field(
                     f' Current: ({current_attr[k]["active"]}), New: ({new_attr[k]["active"]})'
                 )
                 logger.info(msg)
-                err("GROUP_CONFIG_CHANGE_UNSELECTED_FIELD", msg)
+                raise_adcm_ex("GROUP_CONFIG_CHANGE_UNSELECTED_FIELD", msg)
+
             check_value_unselected_field(
                 current_config[k],
                 new_config[k],
@@ -710,13 +756,14 @@ def check_value_unselected_field(
                     f" Current: ({current_config[k]}), New: ({new_config[k]})"
                 )
                 logger.info(msg)
-                err("GROUP_CONFIG_CHANGE_UNSELECTED_FIELD", msg)
+                raise_adcm_ex("GROUP_CONFIG_CHANGE_UNSELECTED_FIELD", msg)
 
 
 def check_group_keys_attr(attr, spec, group_config):
     """Check attr for group config"""
     if "group_keys" not in attr:
-        err("ATTRIBUTE_ERROR", '`attr` must contain "group_keys" key')
+        raise_adcm_ex("ATTRIBUTE_ERROR", '`attr` must contain "group_keys" key')
+
     group_keys = attr.get("group_keys")
     _, custom_group_keys = group_config.create_group_keys(group_config.get_config_spec())
     check_structure_for_group_attr(group_keys, spec, "group_keys")
@@ -733,39 +780,49 @@ def check_attr(
     ref = proto_ref(proto)
     allowed_key = ("active",)
     if not isinstance(attr, dict):
-        err("ATTRIBUTE_ERROR", "`attr` should be a map")
+        raise_adcm_ex("ATTRIBUTE_ERROR", "`attr` should be a map")
+
     for key, value in attr.items():
         if key in ["group_keys", "custom_group_keys"]:
             if not is_group_config:
-                err("ATTRIBUTE_ERROR", f"not allowed key `{key}` for object ({ref})")
+                raise_adcm_ex("ATTRIBUTE_ERROR", f"not allowed key `{key}` for object ({ref})")
             continue
+
         if key + "/" not in spec:
-            err("ATTRIBUTE_ERROR", f"there isn't `{key}` group in the config ({ref})")
+            raise_adcm_ex("ATTRIBUTE_ERROR", f"there isn't `{key}` group in the config ({ref})")
         if spec[key + "/"].type != "group":
-            err("ATTRIBUTE_ERROR", f"config key `{key}` is not a group ({ref})")
+            raise_adcm_ex("ATTRIBUTE_ERROR", f"config key `{key}` is not a group ({ref})")
+
     for value in spec.values():
         key = value.name
         if value.type == "group" and "activatable" in value.limits:
             if key not in attr:
-                err("ATTRIBUTE_ERROR", f"there isn't `{key}` group in the `attr`")
+                raise_adcm_ex("ATTRIBUTE_ERROR", f"there isn't `{key}` group in the `attr`")
+
             if not isinstance(attr[key], dict):
-                err("ATTRIBUTE_ERROR", f"value of attribute `{key}` should be a map ({ref})")
+                raise_adcm_ex(
+                    "ATTRIBUTE_ERROR",
+                    f"value of attribute `{key}` should be a map ({ref})",
+                )
+
             for attr_key in attr[key]:
                 if attr_key not in allowed_key:
-                    err(
+                    raise_adcm_ex(
                         "ATTRIBUTE_ERROR",
                         f"not allowed key `{attr_key}` of attribute `{key}` ({ref})",
                     )
+
                 if not isinstance(attr[key]["active"], bool):
-                    err(
+                    raise_adcm_ex(
                         "ATTRIBUTE_ERROR",
                         f"value of key `active` of attribute `{key}` should be boolean ({ref})",
                     )
+
                 if (current_attr[key]["active"] != attr[key]["active"]) and config_is_ro(
                     obj, key, value.limits
                 ):
                     msg = "config key {} of {} is read only"
-                    err("CONFIG_VALUE_ERROR", msg.format(key, ref))
+                    raise_adcm_ex("CONFIG_VALUE_ERROR", msg.format(key, ref))
 
     if is_group_config:
         check_group_keys_attr(attr, spec, obj)
@@ -778,68 +835,78 @@ def check_config_spec(
     if isinstance(obj, GroupConfig):
         group = obj
         obj = group.object
+
     ref = proto_ref(proto)
     if isinstance(conf, (float, int)):
-        err("JSON_ERROR", "config should not be just one int or float")
+        raise_adcm_ex("JSON_ERROR", "config should not be just one int or float")
 
     if isinstance(conf, str):
-        err("JSON_ERROR", "config should not be just one string")
+        raise_adcm_ex("JSON_ERROR", "config should not be just one string")
 
-    def key_is_required(key, subkey, spec):
-        if config_is_ro(obj, f"{key}/{subkey}", spec.get("limits", "")):
+    def key_is_required(_key, subkey, _spec):
+        if config_is_ro(obj, f"{_key}/{subkey}", spec.get("limits", "")):
             return False
-        if spec["required"]:
+
+        if _spec["required"]:
             return True
+
         return False
 
-    def is_inactive(key):
-        if attr and flat_spec[key + "/"].type == "group":
-            if key in attr and "active" in attr[key]:
-                return not bool(attr[key]["active"])
+    def is_inactive(_key):
+        if attr and flat_spec[f"{_key}/"].type == "group":
+            if _key in attr and "active" in attr[_key]:
+                return not bool(attr[_key]["active"])
+
         return False
 
-    def check_sub(key):
-        if not isinstance(conf[key], dict):
-            msg = 'There are not any subkeys for key "{}" ({})'
-            err("CONFIG_KEY_ERROR", msg.format(key, ref))
-        if not conf[key]:
-            msg = 'Key "{}" should contains some subkeys ({})'
-            err("CONFIG_KEY_ERROR", msg.format(key, ref), list(spec[key].keys()))
-        for subkey in conf[key]:
-            if subkey not in spec[key]:
-                msg = 'There is unknown subkey "{}" for key "{}" in input config ({})'
-                err("CONFIG_KEY_ERROR", msg.format(subkey, key, ref))
-        for subkey in spec[key]:
-            if subkey in conf[key]:
+    def check_sub(_key):
+        if not isinstance(conf[_key], dict):
+            _msg = 'There are not any subkeys for key "{}" ({})'
+            raise_adcm_ex("CONFIG_KEY_ERROR", _msg.format(_key, ref))
+
+        if not conf[_key]:
+            _msg = 'Key "{}" should contains some subkeys ({})'
+            raise_adcm_ex("CONFIG_KEY_ERROR", _msg.format(_key, ref), list(spec[_key].keys()))
+
+        for subkey in conf[_key]:
+            if subkey not in spec[_key]:
+                _msg = 'There is unknown subkey "{}" for key "{}" in input config ({})'
+                raise_adcm_ex("CONFIG_KEY_ERROR", _msg.format(subkey, _key, ref))
+
+        for subkey in spec[_key]:
+            if subkey in conf[_key]:
                 check_config_type(
                     proto,
-                    key,
+                    _key,
                     subkey,
-                    spec[key][subkey],
-                    conf[key][subkey],
+                    spec[_key][subkey],
+                    conf[_key][subkey],
                     False,
-                    is_inactive(key),
+                    is_inactive(_key),
                 )
-            elif key_is_required(key, subkey, spec[key][subkey]):
-                msg = 'There is no required subkey "{}" for key "{}" ({})'
-                err("CONFIG_KEY_ERROR", msg.format(subkey, key, ref))
+            elif key_is_required(_key, subkey, spec[_key][subkey]):
+                _msg = 'There is no required subkey "{}" for key "{}" ({})'
+                raise_adcm_ex("CONFIG_KEY_ERROR", _msg.format(subkey, _key, ref))
 
-    def sub_key_is_required(key):
-        if is_inactive(key):
+    def sub_key_is_required(_key):
+        if is_inactive(_key):
             return False
-        for subkey in spec[key]:
-            if key_is_required(key, subkey, spec[key][subkey]):
+
+        for subkey in spec[_key]:
+            if key_is_required(_key, subkey, spec[_key][subkey]):
                 return True
+
         return False
 
     for key in conf:
         if key not in spec:
             msg = 'There is unknown key "{}" in input config ({})'
-            err("CONFIG_KEY_ERROR", msg.format(key, ref))
+            raise_adcm_ex("CONFIG_KEY_ERROR", msg.format(key, ref))
+
         if "type" in spec[key] and spec[key]["type"] != "group":
             if isinstance(conf[key], dict) and not type_is_complex(spec[key]["type"]):
                 msg = 'Key "{}" in input config should not have any subkeys ({})'
-                err("CONFIG_KEY_ERROR", msg.format(key, ref))
+                raise_adcm_ex("CONFIG_KEY_ERROR", msg.format(key, ref))
 
     for key in spec:
         if "type" in spec[key] and spec[key]["type"] != "group":
@@ -847,12 +914,12 @@ def check_config_spec(
                 check_config_type(proto, key, "", spec[key], conf[key])
             elif key_is_required(key, "", spec[key]):
                 msg = 'There is no required key "{}" in input config ({})'
-                err("CONFIG_KEY_ERROR", msg.format(key, ref))
+                raise_adcm_ex("CONFIG_KEY_ERROR", msg.format(key, ref))
         else:
             if key not in conf:
                 if sub_key_is_required(key):
                     msg = 'There are no required key "{}" in input config'
-                    err("CONFIG_KEY_ERROR", msg.format(key))
+                    raise_adcm_ex("CONFIG_KEY_ERROR", msg.format(key))
             else:
                 check_sub(key)
 
@@ -864,6 +931,7 @@ def check_config_spec(
     # for process_file_type() function not need `if old_conf:`
     process_file_type(group or obj, spec, conf)
     process_password(spec, conf)
+
     return conf
 
 
@@ -875,17 +943,18 @@ def check_config_type(
         label = "Default value"
     else:
         label = "Value"
+
     tmpl1 = f'{label} of config key "{key}/{subkey}" {{}} ({ref})'
     tmpl2 = f'{label} ("{value}") of config key "{key}/{subkey}" {{}} ({ref})'
     should_not_be_empty = "should be not empty"
 
-    def check_str(idx, v):
-        if not isinstance(v, str):
-            msg = (
-                f'{label} ("{v}") of element "{idx}" of config key "{key}/{subkey}"'
+    def check_str(_idx, _v):
+        if not isinstance(_v, str):
+            _msg = (
+                f'{label} ("{_v}") of element "{_idx}" of config key "{key}/{subkey}"'
                 f" should be string ({ref})"
             )
-            err("CONFIG_VALUE_ERROR", msg)
+            raise_adcm_ex("CONFIG_VALUE_ERROR", _msg)
 
     if (
         value is None
@@ -894,45 +963,54 @@ def check_config_type(
     ):
         if inactive:
             return
+
         if "required" in spec and spec["required"]:
-            err("CONFIG_VALUE_ERROR", tmpl1.format("is required"))
+            raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl1.format("is required"))
         else:
             return
 
     if isinstance(value, (list, dict)) and not type_is_complex(spec["type"]):
         if spec["type"] != "group":
-            err("CONFIG_VALUE_ERROR", tmpl1.format("should be flat"))
+            raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl1.format("should be flat"))
 
     if spec["type"] == "list":
         if not isinstance(value, list):
-            err("CONFIG_VALUE_ERROR", tmpl1.format("should be an array"))
+            raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl1.format("should be an array"))
+
         if "required" in spec and spec["required"] and value == []:
-            err("CONFIG_VALUE_ERROR", tmpl1.format(should_not_be_empty))
+            raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl1.format(should_not_be_empty))
+
         for idx, v in enumerate(value):
             check_str(idx, v)
 
     if spec["type"] == "map":
         if not isinstance(value, dict):
-            err("CONFIG_VALUE_ERROR", tmpl1.format("should be a map"))
+            raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl1.format("should be a map"))
+
         if "required" in spec and spec["required"] and value == {}:
-            err("CONFIG_VALUE_ERROR", tmpl1.format(should_not_be_empty))
+            raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl1.format(should_not_be_empty))
+
         for k, v in value.items():
             check_str(k, v)
 
     if spec["type"] in ("string", "password", "text", "secrettext"):
         if not isinstance(value, str):
-            err("CONFIG_VALUE_ERROR", tmpl2.format("should be string"))
+            raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl2.format("should be string"))
+
         if "required" in spec and spec["required"] and value == "":
-            err("CONFIG_VALUE_ERROR", tmpl1.format(should_not_be_empty))
+            raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl1.format(should_not_be_empty))
 
     if spec["type"] == "file":
         if not isinstance(value, str):
-            err("CONFIG_VALUE_ERROR", tmpl2.format("should be string"))
+            raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl2.format("should be string"))
+
         if value == "":
-            err("CONFIG_VALUE_ERROR", tmpl1.format(should_not_be_empty))
+            raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl1.format(should_not_be_empty))
+
         if default:
             if len(value) > 2048:
-                err("CONFIG_VALUE_ERROR", tmpl1.format("is too long"))
+                raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl1.format("is too long"))
+
             read_file_type(proto, value, default, key, subkey)
 
     if spec["type"] == "structure":
@@ -941,30 +1019,28 @@ def check_config_type(
             yspec.checker.process_rule(value, schema, "root")
         except yspec.checker.FormatError as e:
             msg = tmpl1.format(f"yspec error: {str(e)} at block {e.data}")
-            err("CONFIG_VALUE_ERROR", msg)
+            raise_adcm_ex("CONFIG_VALUE_ERROR", msg)
         except yspec.checker.SchemaError as e:
-            err("CONFIG_VALUE_ERROR", f"yspec error: {str(e)}")
+            raise_adcm_ex("CONFIG_VALUE_ERROR", f"yspec error: {str(e)}")
 
-    if spec["type"] == "boolean":
-        if not isinstance(value, bool):
-            err("CONFIG_VALUE_ERROR", tmpl2.format("should be boolean"))
+    if spec["type"] == "boolean" and not isinstance(value, bool):
+        raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl2.format("should be boolean"))
 
-    if spec["type"] == "integer":
-        if not isinstance(value, int):
-            err("CONFIG_VALUE_ERROR", tmpl2.format("should be integer"))
+    if spec["type"] == "integer" and not isinstance(value, int):
+        raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl2.format("should be integer"))
 
-    if spec["type"] == "float":
-        if not isinstance(value, (int, float)):
-            err("CONFIG_VALUE_ERROR", tmpl2.format("should be float"))
+    if spec["type"] == "float" and not isinstance(value, (int, float)):
+        raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl2.format("should be float"))
 
     if spec["type"] == "integer" or spec["type"] == "float":
         limits = spec["limits"]
         if "min" in limits and value < limits["min"]:
             msg = f'should be more than {limits["min"]}'
-            err("CONFIG_VALUE_ERROR", tmpl2.format(msg))
+            raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl2.format(msg))
+
         if "max" in limits and value > limits["max"]:
             msg = f'should be less than {limits["max"]}'
-            err("CONFIG_VALUE_ERROR", tmpl2.format(msg))
+            raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl2.format(msg))
 
     if spec["type"] == "option":
         option = spec["limits"]["option"]
@@ -973,20 +1049,22 @@ def check_config_type(
             if v == value:
                 check = True
                 break
+
         if not check:
             msg = f'not in option list: "{option}"'
-            err("CONFIG_VALUE_ERROR", tmpl2.format(msg))
+            raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl2.format(msg))
 
     if spec["type"] == "variant":
         source = spec["limits"]["source"]
         if source["strict"]:
             if source["type"] == "inline" and value not in source["value"]:
                 msg = f'not in variant list: "{source["value"]}"'
-                err("CONFIG_VALUE_ERROR", tmpl2.format(msg))
+                raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl2.format(msg))
+
             if not default:
                 if source["type"] in ("config", "builtin") and value not in source["value"]:
                     msg = f'not in variant list: "{source["value"]}"'
-                    err("CONFIG_VALUE_ERROR", tmpl2.format(msg))
+                    raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl2.format(msg))
 
 
 def replace_object_config(obj, key, subkey, value, proto_conf):
@@ -1016,19 +1094,19 @@ def set_object_config(obj, keys, value):
     pconf = PrototypeConfig.obj.get(prototype=proto, action=None, name=key, subname=subkey)
     if pconf.type == "group":
         msg = 'You can not update config group "{}" for {}'
-        err("CONFIG_VALUE_ERROR", msg.format(key, obj_ref(obj)))
+        raise_adcm_ex("CONFIG_VALUE_ERROR", msg.format(key, obj_ref(obj)))
 
     check_config_type(proto, key, subkey, obj_to_dict(pconf, ("type", "limits", "option")), value)
-    # if config_is_ro(obj, keys, pconf.limits):
-    #    msg = "config key {} of {} is read only"
-    #    err("CONFIG_VALUE_ERROR", msg.format(key, ref))
     replace_object_config(obj, key, subkey, value, pconf)
     if pconf.type == "file":
         save_file_type(obj, key, subkey, value)
+
     log_value = value
     if pconf.type in SECURE_PARAM_TYPES:
         log_value = "****"
+
     logger.info('update %s config %s/%s to "%s"', obj_ref(obj), key, subkey, log_value)
+
     return value
 
 
@@ -1036,6 +1114,7 @@ def get_main_info(obj: Optional[ADCMEntity]) -> Optional[str]:
     """Return __main_info for object"""
     if obj.config is None:
         return None
+
     cl = ConfigLog.objects.filter(id=obj.config.current).first()
     if cl:
         _, spec, _, _ = get_prototype_config(obj.prototype)
@@ -1044,6 +1123,7 @@ def get_main_info(obj: Optional[ADCMEntity]) -> Optional[str]:
             return cl.config["__main_info"]
         elif "__main_info/" in spec:
             return get_default(spec["__main_info/"], obj.prototype)
+
     return None
 
 
@@ -1054,4 +1134,5 @@ def get_adcm_config(section=None):
     )
     if not section:
         return current_configlog.attr, current_configlog.config
+
     return current_configlog.attr.get(section, None), current_configlog.config.get(section, None)
