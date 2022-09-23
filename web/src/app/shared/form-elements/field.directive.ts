@@ -21,7 +21,7 @@ import { BaseDirective } from '../directives';
 export class FieldDirective extends BaseDirective implements OnInit {
   @Input() form: FormGroup;
   @Input() field: IFieldOptions;
-  @Input() disabled: boolean
+  @Input() disabled: boolean;
 
   ngOnInit() {
     this.control.markAllAsTouched();
