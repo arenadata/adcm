@@ -27,10 +27,12 @@ from cm.errors import AdcmEx
 from cm.models import (
     Action,
     ADCMEntity,
+    Cluster,
     ConcernType,
     ConfigLog,
     Host,
     HostComponent,
+    HostProvider,
     MaintenanceModeType,
     PrototypeConfig,
 )
@@ -148,7 +150,7 @@ def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
     return allowed
 
 
-def get_upgradable_func(self, obj):
+def get_upgradable_func(obj: [Cluster, HostProvider]):
     return bool(get_upgrade(obj))
 
 
