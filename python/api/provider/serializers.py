@@ -14,6 +14,7 @@ from django.db import IntegrityError
 from rest_framework.serializers import (
     BooleanField,
     CharField,
+    HyperlinkedIdentityField,
     IntegerField,
     JSONField,
     SerializerMethodField,
@@ -30,12 +31,11 @@ from api.utils import (
     check_obj,
     filter_actions,
     get_upgradable_func,
-    hlink,
 )
 from cm.adcm_config import get_main_info
 from cm.api import add_host_provider
 from cm.errors import AdcmEx
-from cm.models import Action, Prototype, Upgrade
+from cm.models import Action, HostProvider, Prototype, Upgrade
 from cm.upgrade import do_upgrade
 
 
@@ -46,21 +46,23 @@ class ProviderSerializer(EmptySerializer):
     description = CharField(required=False)
     state = CharField(read_only=True)
     before_upgrade = JSONField(read_only=True)
-    url = hlink('provider-details', 'id', 'provider_id')
+    url = HyperlinkedIdentityField(
+        view_name="provider-details", lookup_field="id", lookup_url_kwarg="provider_id"
+    )
 
     @staticmethod
     def validate_prototype_id(prototype_id):
         proto = check_obj(
-            Prototype, {'id': prototype_id, 'type': 'provider'}, "PROTOTYPE_NOT_FOUND"
+            Prototype, {"id": prototype_id, "type": "provider"}, "PROTOTYPE_NOT_FOUND"
         )
         return proto
 
     def create(self, validated_data):
         try:
             return add_host_provider(
-                validated_data.get('prototype_id'),
-                validated_data.get('name'),
-                validated_data.get('description', ''),
+                validated_data.get("prototype_id"),
+                validated_data.get("name"),
+                validated_data.get("description", ""),
             )
         except IntegrityError:
             raise AdcmEx("PROVIDER_CONFLICT") from None
@@ -70,54 +72,93 @@ class ProviderDetailSerializer(ProviderSerializer):
     edition = CharField(read_only=True)
     license = CharField(read_only=True)
     bundle_id = IntegerField(read_only=True)
-    prototype = hlink('provider-type-details', 'prototype_id', 'prototype_id')
-    config = CommonAPIURL(view_name='object-config')
-    action = CommonAPIURL(view_name='object-action')
-    upgrade = hlink('provider-upgrade', 'id', 'provider_id')
-    host = ObjectURL(read_only=True, view_name='host')
+    prototype = HyperlinkedIdentityField(
+        view_name="provider-type-details",
+        lookup_field="prototype_id",
+        lookup_url_kwarg="prototype_id",
+    )
+    config = CommonAPIURL(view_name="object-config")
+    action = CommonAPIURL(view_name="object-action")
+    upgrade = HyperlinkedIdentityField(
+        view_name="provider-upgrade", lookup_field="id", lookup_url_kwarg="provider_id"
+    )
+    host = ObjectURL(read_only=True, view_name="host")
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
-    group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
+    group_config = GroupConfigsHyperlinkedIdentityField(view_name="group-config-list")
 
 
-class ProviderUISerializer(ProviderDetailSerializer):
+class ProviderUISerializer(ProviderSerializer):
+    edition = CharField(read_only=True)
+    locked = BooleanField(read_only=True)
+    action = CommonAPIURL(view_name="object-action")
+    prototype_version = SerializerMethodField()
+    prototype_name = SerializerMethodField()
+    prototype_display_name = SerializerMethodField()
+    upgrade = HyperlinkedIdentityField(
+        view_name="provider-upgrade", lookup_field="id", lookup_url_kwarg="provider_id"
+    )
+    upgradable = SerializerMethodField()
+    concerns = ConcernItemUISerializer(many=True, read_only=True)
+
+    @staticmethod
+    def get_upgradable(obj: HostProvider) -> bool:
+        return get_upgradable_func(obj)
+
+    @staticmethod
+    def get_prototype_version(obj: HostProvider) -> str:
+        return obj.prototype.version
+
+    @staticmethod
+    def get_prototype_name(obj: HostProvider) -> str:
+        return obj.prototype.name
+
+    @staticmethod
+    def get_prototype_display_name(obj: HostProvider) -> str | None:
+        return obj.prototype.display_name
+
+
+class ProviderDetailUISerializer(ProviderDetailSerializer):
     actions = SerializerMethodField()
     prototype_version = SerializerMethodField()
     prototype_name = SerializerMethodField()
     prototype_display_name = SerializerMethodField()
     upgradable = SerializerMethodField()
-    get_upgradable = get_upgradable_func
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     main_info = SerializerMethodField()
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
-        self.context['object'] = obj
-        self.context['provider_id'] = obj.id
+        self.context["object"] = obj
+        self.context["provider_id"] = obj.id
         actions = ActionShort(filter_actions(obj, act_set), many=True, context=self.context)
         return actions.data
 
     @staticmethod
-    def get_prototype_version(obj):
+    def get_upgradable(obj: HostProvider) -> bool:
+        return get_upgradable_func(obj)
+
+    @staticmethod
+    def get_prototype_version(obj: HostProvider) -> str:
         return obj.prototype.version
 
     @staticmethod
-    def get_prototype_name(obj):
+    def get_prototype_name(obj: HostProvider) -> str:
         return obj.prototype.name
 
     @staticmethod
-    def get_prototype_display_name(obj):
+    def get_prototype_display_name(obj: HostProvider) -> str | None:
         return obj.prototype.display_name
 
     @staticmethod
-    def get_main_info(obj):
+    def get_main_info(obj: HostProvider) -> str | None:
         return get_main_info(obj)
 
 
 class DoProviderUpgradeSerializer(DoUpgradeSerializer):
     def create(self, validated_data):
-        upgrade = check_obj(Upgrade, validated_data.get('upgrade_id'), 'UPGRADE_NOT_FOUND')
-        config = validated_data.get('config', {})
-        attr = validated_data.get('attr', {})
-        return do_upgrade(validated_data.get('obj'), upgrade, config, attr, [])
+        upgrade = check_obj(Upgrade, validated_data.get("upgrade_id"), "UPGRADE_NOT_FOUND")
+        config = validated_data.get("config", {})
+        attr = validated_data.get("attr", {})
+        return do_upgrade(validated_data.get("obj"), upgrade, config, attr, [])
