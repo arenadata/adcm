@@ -25,9 +25,12 @@ from adcm_pytest_plugin.steps.commands import clearaudit, logrotate
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.functional.audit.conftest import BUNDLES_DIR, parametrize_audit_scenario_parsing, set_operations_date
+from tests.functional.conftest import only_clean_adcm
 from tests.library.db import set_configs_date, set_jobs_date, set_tasks_date
 
 # pylint: disable=redefined-outer-name
+
+pytestmark = [only_clean_adcm]
 
 RUN_SYNC_NAME = "run_ldap_sync"
 

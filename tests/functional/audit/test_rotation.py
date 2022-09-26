@@ -30,10 +30,13 @@ from adcm_pytest_plugin.steps.commands import clearaudit
 from adcm_pytest_plugin.utils import random_string
 
 from tests.functional.audit.conftest import BUNDLES_DIR, set_logins_date, set_operations_date
+from tests.functional.conftest import only_clean_adcm
 from tests.library.assertions import sets_are_equal
 from tests.library.db import QueryExecutioner
 
 # pylint: disable=redefined-outer-name
+
+pytestmark = [only_clean_adcm]
 
 DATA_DIR = "/adcm/data"
 AUDIT_DIR = f"{DATA_DIR}/audit/"
