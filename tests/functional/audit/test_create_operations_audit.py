@@ -30,10 +30,13 @@ from tests.functional.audit.conftest import (
     make_auth_header,
     parametrize_audit_scenario_parsing,
 )
+from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles, create_policy
 from tests.library.audit.checkers import AuditLogChecker
 
 # pylint: disable=redefined-outer-name
+
+pytestmark = [only_clean_adcm]
 
 
 class CreateOperation:

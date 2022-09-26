@@ -26,11 +26,14 @@ from tests.functional.audit.checks import check_audit_cef_logs
 from tests.functional.audit.conftest import BUNDLES_DIR, NEW_USER
 from tests.functional.audit.conftest import CreateDeleteOperation as Delete
 from tests.functional.audit.conftest import check_failed, check_succeed
+from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles as BR
 from tests.functional.rbac.conftest import create_policy
 from tests.library.audit.checkers import AuditLogChecker
 
 # pylint: disable=redefined-outer-name
+
+pytestmark = [only_clean_adcm]
 
 
 @pytest.fixture()

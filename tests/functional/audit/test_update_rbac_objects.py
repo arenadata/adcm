@@ -12,8 +12,6 @@
 
 """Tests on audit logs for UPDATE of RBAC objects"""
 
-# pylint: disable=redefined-outer-name
-
 from functools import partial
 from typing import Dict, Literal, Tuple, Union
 
@@ -25,8 +23,13 @@ from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.functional.audit.checks import check_audit_cef_logs
 from tests.functional.audit.conftest import check_failed, check_succeed, make_auth_header
+from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles as BR
 from tests.library.audit.checkers import AuditLogChecker
+
+# pylint: disable=redefined-outer-name
+
+pytestmark = [only_clean_adcm]
 
 RBACObject = Union[User, Group, Role, Policy]
 ChangeMethod = Literal["PUT", "PATCH"]
