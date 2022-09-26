@@ -818,8 +818,10 @@ def check_attr(
                         f"value of key `active` of attribute `{key}` should be boolean ({ref})",
                     )
 
-                if (current_attr[key]["active"] != attr[key]["active"]) and config_is_ro(
-                    obj, key, value.limits
+                if (
+                    current_attr is not None
+                    and (current_attr[key]["active"] != attr[key]["active"])
+                    and config_is_ro(obj, key, value.limits)
                 ):
                     msg = "config key {} of {} is read only"
                     raise_adcm_ex("CONFIG_VALUE_ERROR", msg.format(key, ref))
