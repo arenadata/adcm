@@ -24,7 +24,7 @@ import pytest
 import requests
 from adcm_client.audit import OperationResult
 from adcm_client.objects import ADCM, ADCMClient, Cluster, Component, GroupConfig, Host, Provider, Service
-from adcm_pytest_plugin.utils import random_string
+from adcm_pytest_plugin.utils import random_string, wait_until_step_succeeds
 
 from tests.functional.audit.checks import check_audit_cef_logs
 from tests.functional.audit.conftest import (
@@ -179,7 +179,9 @@ def test_update_config_of_group_config(group_configs, audit_log_checker, sdk_cli
             expect_403(update_group_config(group_config, incorrect_config, headers=unauthorized_creds))
     audit_log_checker.set_user_map(sdk_client_fs)
     audit_log_checker.check(sdk_client_fs.audit_operation_list())
-    check_audit_cef_logs(sdk_client_fs, adcm_fs.container)
+    wait_until_step_succeeds(
+        check_audit_cef_logs, timeout=10, period=0.5, client=sdk_client_fs, adcm_container=adcm_fs.container
+    )
 
 
 @parametrize_audit_scenario_parsing(
@@ -209,7 +211,9 @@ def test_add_remove_hosts_from_group_config(
             check_succeed(delete(group_hosts_path, host.id))
     audit_log_checker.set_user_map(sdk_client_fs)
     audit_log_checker.check(sdk_client_fs.audit_operation_list(paging={"limit": 100}))
-    check_audit_cef_logs(sdk_client_fs, adcm_fs.container)
+    wait_until_step_succeeds(
+        check_audit_cef_logs, timeout=10, period=0.5, client=sdk_client_fs, adcm_container=adcm_fs.container
+    )
 
 
 # !===== STEPS =====!
