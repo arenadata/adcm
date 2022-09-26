@@ -385,7 +385,7 @@ class TestTaskCancelRestart(RunActionTestMixin):
             job.reread()
             assert job.status == status, f"Job {job.display_name} should be in status {status}"
 
-        wait_until_step_succeeds(_wait, timeout=9, period=1, **kwargs)
+        wait_until_step_succeeds(_wait, timeout=20, period=1, **kwargs)
 
 
 @allure.step("Wait all tasks are finished")

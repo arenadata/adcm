@@ -26,6 +26,7 @@ from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.host.serializers import (
     ClusterHostSerializer,
     HostDetailSerializer,
+    HostDetailUISerializer,
     HostSerializer,
     HostUISerializer,
     HostUpdateSerializer,
@@ -212,7 +213,7 @@ def check_host(host, cluster):
 class HostDetail(PermissionListMixin, DetailView):
     queryset = Host.objects.all()
     serializer_class = HostDetailSerializer
-    serializer_class_ui = HostUISerializer
+    serializer_class_ui = HostDetailUISerializer
     serializer_class_put = HostUpdateSerializer
     serializer_class_patch = HostUpdateSerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
