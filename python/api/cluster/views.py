@@ -21,6 +21,7 @@ from api.cluster.serializers import (
     BindSerializer,
     ClusterBindSerializer,
     ClusterDetailSerializer,
+    ClusterDetailUISerializer,
     ClusterSerializer,
     ClusterUISerializer,
     ClusterUpdateSerializer,
@@ -49,6 +50,7 @@ from api.utils import (
 from audit.utils import audit
 from cm.api import delete_cluster, get_import, unbind
 from cm.errors import AdcmEx
+from cm.issue import update_hierarchy_issues
 from cm.models import (
     Cluster,
     ClusterBind,
@@ -77,6 +79,7 @@ def get_obj_conf(cluster_id, service_id):
     if not obj.config:
         raise AdcmEx("CONFIG_NOT_FOUND", "this object has no config")
 
+
     return obj
 
 
@@ -103,7 +106,7 @@ class ClusterDetail(PermissionListMixin, DetailView):
     serializer_class = ClusterDetailSerializer
     serializer_class_put = ClusterUpdateSerializer
     serializer_class_patch = ClusterUpdateSerializer
-    serializer_class_ui = ClusterUISerializer
+    serializer_class_ui = ClusterDetailUISerializer
     lookup_field = "id"
     lookup_url_kwarg = "cluster_id"
     error_code = "CLUSTER_NOT_FOUND"
@@ -258,6 +261,7 @@ class ClusterUpgrade(GenericUIView):
             request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"]
         )
         check_custom_perm(request.user, "view_upgrade_of", "cluster", cluster)
+        update_hierarchy_issues(cluster)
         obj = get_upgrade(cluster, self.get_ordering())
         serializer = self.serializer_class(
             obj, many=True, context={"cluster_id": cluster.id, "request": request}
