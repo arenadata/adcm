@@ -61,7 +61,7 @@ class TestHostAPI(BaseTestCase):
             fqdn="test-fqdn",
             prototype=Prototype.objects.all()[0],
             provider=self.provider,
-            maintenance_mode="on",
+            maintenance_mode=True,
         )
 
     def load_bundle(self, bundle_name):
@@ -254,7 +254,7 @@ class TestHostAPI(BaseTestCase):
 
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": new_test_fqdn, "maintenance_mode": "on"},
+            data={"fqdn": new_test_fqdn, "maintenance_mode": True},
             content_type=APPLICATION_JSON,
         )
         self.host.refresh_from_db()
@@ -268,7 +268,7 @@ class TestHostAPI(BaseTestCase):
 
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": self.host.fqdn, "maintenance_mode": "on"},
+            data={"fqdn": self.host.fqdn, "maintenance_mode": True},
             content_type=APPLICATION_JSON,
         )
 
@@ -280,7 +280,7 @@ class TestHostAPI(BaseTestCase):
 
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": "new-test-fqdn", "maintenance_mode": "on"},
+            data={"fqdn": "new-test-fqdn", "maintenance_mode": True},
             content_type=APPLICATION_JSON,
         )
 
@@ -301,7 +301,7 @@ class TestHostAPI(BaseTestCase):
 
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": "new-test-fqdn", "maintenance_mode": "on"},
+            data={"fqdn": "new-test-fqdn", "maintenance_mode": True},
             content_type=APPLICATION_JSON,
         )
 
@@ -352,7 +352,7 @@ class TestHostAPI(BaseTestCase):
             fqdn=fqdn,
             prototype=Prototype.objects.all()[0],
             provider=self.provider,
-            maintenance_mode="disabled",
+            maintenance_mode=False,
         )
 
         response = self.client.put(
@@ -420,7 +420,7 @@ class TestHostAPI(BaseTestCase):
                 self.assertEqual(response.json()["fqdn"], value)
 
     def test_host_update_fqdn_validation(self):
-        self.host.maintenance_mode = "disabled"
+        self.host.maintenance_mode = False
         self.host.save(update_fields=["maintenance_mode"])
         fqdn = self.host.fqdn
         default_values = {
