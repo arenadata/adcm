@@ -641,22 +641,12 @@ class HostProvider(ADCMEntity):
         return result if result["issue"] else {}
 
 
-class MaintenanceModeType(models.TextChoices):
-    Disabled = "disabled", "disabled"
-    On = "on", "on"
-    Off = "off", "off"
-
-
 class Host(ADCMEntity):
     fqdn = models.CharField(max_length=160, unique=True)
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
-    maintenance_mode = models.CharField(
-        max_length=16,
-        choices=MaintenanceModeType.choices,
-        default=MaintenanceModeType.Disabled.value,
-    )
+    maintenance_mode = models.BooleanField(default=False)
 
     __error_code__ = "HOST_NOT_FOUND"
 

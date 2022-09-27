@@ -49,7 +49,6 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
-    MaintenanceModeType,
     ServiceComponent,
 )
 from cm.status_api import make_ui_host_status
@@ -278,7 +277,7 @@ class HostDetail(PermissionListMixin, DetailView):
         serializer.is_valid(raise_exception=True)
         if "maintenance_mode" in serializer.validated_data:
             self.__check_maintenance_mode_constraint(
-                host.maintenance_mode, serializer.validated_data.get("maintenance_mode")
+                host, serializer.validated_data.get("maintenance_mode")
             )
 
         if (
@@ -294,12 +293,13 @@ class HostDetail(PermissionListMixin, DetailView):
         return Response(self.get_serializer(self.get_object()).data, status=HTTP_200_OK)
 
     @staticmethod
-    def __check_maintenance_mode_constraint(old_mode, new_mode):
-        if old_mode == new_mode:
+    def __check_maintenance_mode_constraint(host, new_mode):
+        if host.maintenance_mode == new_mode:
             return
-        if old_mode == MaintenanceModeType.Disabled or new_mode not in (
-            MaintenanceModeType.On,
-            MaintenanceModeType.Off,
+        if (
+            not host.cluster
+            or not host.cluster.prototype.allow_maintenance_mode
+            or not isinstance(new_mode, bool)
         ):
             raise AdcmEx("MAINTENANCE_MODE_NOT_AVAILABLE")
 

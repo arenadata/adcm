@@ -44,7 +44,6 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
-    MaintenanceModeType,
     ObjectConfig,
     Prototype,
     PrototypeExport,
@@ -842,7 +841,7 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Fail,
         )
-        self.host.maintenance_mode = MaintenanceModeType.Off
+        self.host.maintenance_mode = False
         self.host.save(update_fields=["maintenance_mode"])
 
         self.client.patch(

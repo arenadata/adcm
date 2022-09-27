@@ -12,14 +12,7 @@
 
 from typing import Optional, Set, Tuple
 
-from cm.models import (
-    ADCMEntity,
-    ClusterObject,
-    Host,
-    HostComponent,
-    MaintenanceModeType,
-    ServiceComponent,
-)
+from cm.models import ADCMEntity, ClusterObject, Host, HostComponent, ServiceComponent
 
 
 class HierarchyError(Exception):
@@ -164,7 +157,7 @@ class Tree:
             parent_values = [
                 hc.component
                 for hc in HostComponent.objects.filter(host=node.value)
-                .exclude(host__maintenance_mode=MaintenanceModeType.On)
+                .exclude(host__maintenance_mode=True)
                 .select_related('component')
                 .all()
             ]

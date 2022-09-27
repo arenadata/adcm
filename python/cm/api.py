@@ -45,7 +45,6 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
-    MaintenanceModeType,
     Prototype,
     PrototypeExport,
     PrototypeImport,
@@ -86,12 +85,6 @@ def check_proto_type(proto, check_type):
 
 def load_host_map():
     hosts = list(Host.objects.values("id", "maintenance_mode"))
-    for host in hosts:
-        if host["maintenance_mode"] == MaintenanceModeType.On:
-            host["maintenance_mode"] = True
-        else:
-            host["maintenance_mode"] = False
-
     return cm.status_api.api_request("post", "/object/host/", hosts)
 
 
@@ -244,8 +237,6 @@ def add_host_to_cluster(cluster, host):
 
     with transaction.atomic():
         DummyData.objects.filter(id=1).update(date=timezone.now())
-        if cluster.prototype.allow_maintenance_mode:
-            host.maintenance_mode = MaintenanceModeType.Off.value
 
         host.cluster = cluster
         host.save()
@@ -402,11 +393,11 @@ def delete_cluster(cluster, cancel_tasks=True):
     cluster_id = cluster.id
     hosts = cluster.host_set.all()
     host_ids = [str(host.id) for host in hosts]
-    hosts.update(maintenance_mode=MaintenanceModeType.Disabled)
+    hosts.update(maintenance_mode=False)
     logger.debug(
         "Deleting cluster #%s. Set `%s` maintenance mode value for `%s` hosts.",
         cluster_id,
-        MaintenanceModeType.Disabled,
+        False,
         ", ".join(host_ids),
     )
     cluster.delete()
@@ -422,7 +413,7 @@ def remove_host_from_cluster(host):
         return err("HOST_CONFLICT", f"Host #{host.id} has component(s)")
 
     with transaction.atomic():
-        host.maintenance_mode = MaintenanceModeType.Disabled.value
+        host.maintenance_mode = False
         host.cluster = None
         host.save()
         for group in cluster.group_config.all():
@@ -636,7 +627,7 @@ def check_maintenance_mode(cluster, host_comp_list):
         try:
             HostComponent.objects.get(cluster=cluster, service=service, host=host, component=comp)
         except HostComponent.DoesNotExist:
-            if host.maintenance_mode == MaintenanceModeType.On.value:
+            if host.maintenance_mode:
                 raise AdcmEx("INVALID_HC_HOST_IN_MM")  # pylint: disable=raise-missing-from
 
 
