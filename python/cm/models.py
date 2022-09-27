@@ -1464,7 +1464,7 @@ class StagePrototype(ADCMModel):
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     name = models.CharField(max_length=160)
     path = models.CharField(max_length=160, default="")
-    display_name = models.CharField(max_length=160, blank=True)
+    display_name = models.CharField(max_length=1000, blank=True)
     version = models.CharField(max_length=80)
     edition = models.CharField(max_length=80, default="community")
     license_path = models.CharField(max_length=160, default=None, null=True)

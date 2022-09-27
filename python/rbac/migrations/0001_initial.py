@@ -22,7 +22,7 @@ import rbac.models
 def upgrade_users(apps, schema_editor):
     query = '''
             INSERT INTO "rbac_user" ("user_ptr_id", "profile", "built_in")
-            SELECT au.id, coalesce(up.profile, "{}"), FALSE 
+            SELECT au.id, coalesce(up.profile, '{}'), FALSE 
                 FROM "auth_user" au
                 LEFT JOIN "rbac_user" ru ON ru.user_ptr_id = au.id
                 LEFT JOIN "cm_userprofile" up ON au.username = up.login

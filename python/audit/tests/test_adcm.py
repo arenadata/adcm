@@ -35,10 +35,13 @@ class TestADCM(BaseTestCase):
 
         bundle = Bundle.objects.create()
         self.prototype = Prototype.objects.create(bundle=bundle, type="adcm")
-        config = ObjectConfig.objects.create(current=1, previous=0)
-        ConfigLog.objects.create(
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        self.config_log = ConfigLog.objects.create(
             obj_ref=config, config="{}", attr={"ldap_integration": {"active": True}}
         )
+        config.current = self.config_log.pk
+        config.save(update_fields=["current"])
+
         self.adcm_name = "ADCM"
         self.adcm = ADCM.objects.create(
             prototype=self.prototype, name=self.adcm_name, config=config
@@ -98,7 +101,7 @@ class TestADCM(BaseTestCase):
         response: Response = self.client.patch(
             path=reverse(
                 "config-history-version-restore",
-                kwargs={"adcm_id": self.adcm.pk, "version": 1},
+                kwargs={"adcm_id": self.adcm.pk, "version": self.config_log.pk},
             ),
             content_type=APPLICATION_JSON,
         )
