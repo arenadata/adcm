@@ -15,7 +15,7 @@
 
 import datetime
 from dataclasses import dataclass
-from typing import Callable, Collection, Tuple, Optional, Union
+from typing import Callable, Collection, Optional, Tuple, Union
 
 from docker.models.containers import Container
 
@@ -135,3 +135,47 @@ class QueryExecutioner:
         raise ValueError(
             f'Command execution on ADCM container {self.adcm.name} failed:\n' f'Output: {output.decode("utf-8")}'
         )
+
+
+# !===== Helpful functions =====!
+
+CONFIG_LOG_TABLE = 'cm_configlog'
+JOB_LOG_TABLE = 'cm_joblog'
+TASK_LOG_TABLE = 'cm_tasklog'
+LOG_STORAGE_TABLE = 'cm_logstorage'
+
+
+def set_configs_date(adcm_db: QueryExecutioner, date: datetime.datetime, ids: Collection[int] = ()):
+    """Set given date to all config logs or given configs directly in ADCM database"""
+    query = Query(CONFIG_LOG_TABLE).update([('date', date)])
+    if ids:
+        query.where(id=ids)
+    adcm_db.exec(query)
+
+
+def set_jobs_date(adcm_db: QueryExecutioner, date: datetime.datetime, ids: Collection[int] = ()):
+    """Set given date to start_date and finish_date of all jobs or given jobs directly in ADCM database"""
+    query = Query(JOB_LOG_TABLE).update([('start_date', date), ('finish_date', date)])
+    if ids:
+        query.where(id=ids)
+    adcm_db.exec(query)
+
+
+def set_tasks_date(adcm_db: QueryExecutioner, date: datetime.datetime, ids: Collection[int] = ()):
+    """Set given date to start_date and finish_date of all tasks or given tasks directly in ADCM database"""
+    query = Query(TASK_LOG_TABLE).update([('start_date', date), ('finish_date', date)])
+    if ids:
+        query.where(id=ids)
+    adcm_db.exec(query)
+
+
+def set_job_directories_date(container: Container, date: datetime.datetime, ids: Collection[int]):
+    """Set given date as last modified date for each directory in /adcm/data/run that are presented in ids"""
+    strdate = date.strftime("%Y%m%d%H%M")
+    for id_ in ids:
+        exit_code, output = container.exec_run(['touch', '-t', strdate, f'/adcm/data/run/{id_}/'])
+        if exit_code != 0:
+            raise ValueError(
+                f"Failed to set modification date ('{strdate}') to job dir with id {id_}.\n'"
+                f"f'Output:\n{output.decode('utf-8')}"
+            )

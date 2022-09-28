@@ -15,6 +15,7 @@
 import sys
 
 from ansible.errors import AnsibleError
+
 from ansible.plugins.lookup import LookupBase
 
 try:
@@ -26,15 +27,14 @@ except ImportError:
 
 sys.path.append('/adcm/python')
 import adcm.init_django  # pylint: disable=unused-import
-from cm.logger import log
 from cm.ansible_plugin import (
+    set_cluster_config,
+    set_host_config,
+    set_provider_config,
     set_service_config,
     set_service_config_by_name,
-    set_cluster_config,
-    set_provider_config,
-    set_host_config,
 )
-
+from cm.logger import logger
 
 DOCUMENTATION = """
     lookup: file
@@ -71,7 +71,7 @@ RETURN = """
 
 class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):  # pylint: disable=too-many-branches
-        log.debug('run %s %s', terms, kwargs)
+        logger.debug('run %s %s', terms, kwargs)
         ret = []
 
         if len(terms) < 3:

@@ -14,24 +14,30 @@ from guardian.mixins import PermissionListMixin
 from rest_framework import permissions
 from rest_framework.response import Response
 
-from api.base_view import GenericUIView, PaginatedView, DetailView
+from api.base_view import DetailView, GenericUIView, PaginatedView
+from api.component.serializers import (
+    ComponentDetailSerializer,
+    ComponentDetailUISerializer,
+    ComponentSerializer,
+    ComponentUISerializer,
+    StatusSerializer,
+)
 from api.utils import get_object_for_user
-from cm.models import ServiceComponent, ClusterObject, Cluster, HostComponent
+from cm.models import Cluster, ClusterObject, HostComponent, ServiceComponent
 from cm.status_api import make_ui_component_status
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from . import serializers
 
 
 def get_component_queryset(queryset, user, kwargs):
-    if 'cluster_id' in kwargs:
-        cluster = get_object_for_user(user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id'])
+    if "cluster_id" in kwargs:
+        cluster = get_object_for_user(user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"])
         co = get_object_for_user(
-            user, 'cm.view_clusterobject', ClusterObject, cluster=cluster, id=kwargs['service_id']
+            user, "cm.view_clusterobject", ClusterObject, cluster=cluster, id=kwargs["service_id"]
         )
         queryset = queryset.filter(cluster=cluster, service=co)
-    elif 'service_id' in kwargs:
+    elif "service_id" in kwargs:
         co = get_object_for_user(
-            user, 'cm.view_clusterobject', ClusterObject, id=kwargs['service_id']
+            user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"]
         )
         queryset = queryset.filter(service=co)
     return queryset
@@ -39,11 +45,11 @@ def get_component_queryset(queryset, user, kwargs):
 
 class ComponentListView(PermissionListMixin, PaginatedView):
     queryset = ServiceComponent.objects.all()
-    serializer_class = serializers.ComponentSerializer
-    serializer_class_ui = serializers.ComponentUISerializer
-    filterset_fields = ('cluster_id', 'service_id')
-    ordering_fields = ('state', 'prototype__display_name', 'prototype__version_order')
-    permission_required = ['cm.view_servicecomponent']
+    serializer_class = ComponentSerializer
+    serializer_class_ui = ComponentUISerializer
+    filterset_fields = ("cluster_id", "service_id")
+    ordering_fields = ("state", "prototype__display_name", "prototype__version_order")
+    permission_required = ["cm.view_servicecomponent"]
 
     def get_queryset(self):  # pylint: disable=arguments-differ
         queryset = super().get_queryset()
@@ -52,11 +58,11 @@ class ComponentListView(PermissionListMixin, PaginatedView):
 
 class ComponentDetailView(PermissionListMixin, DetailView):
     queryset = ServiceComponent.objects.all()
-    serializer_class = serializers.ComponentDetailSerializer
-    serializer_class_ui = serializers.ComponentUISerializer
+    serializer_class = ComponentDetailSerializer
+    serializer_class_ui = ComponentDetailUISerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
-    permission_required = ['cm.view_servicecomponent']
-    lookup_url_kwarg = 'component_id'
+    permission_required = ["cm.view_servicecomponent"]
+    lookup_url_kwarg = "component_id"
     error_code = ServiceComponent.__error_code__
 
     def get_queryset(self):  # pylint: disable=arguments-differ
@@ -67,7 +73,7 @@ class ComponentDetailView(PermissionListMixin, DetailView):
 class StatusList(GenericUIView):
     queryset = HostComponent.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
-    serializer_class = serializers.StatusSerializer
+    serializer_class = StatusSerializer
 
     def get(self, request, *args, **kwargs):
         """
@@ -75,7 +81,7 @@ class StatusList(GenericUIView):
         """
         queryset = get_component_queryset(ServiceComponent.objects.all(), request.user, kwargs)
         component = get_object_for_user(
-            request.user, 'cm.view_servicecomponent', queryset, id=kwargs['component_id']
+            request.user, "cm.view_servicecomponent", queryset, id=kwargs["component_id"]
         )
         if self._is_for_ui():
             host_components = self.get_queryset().filter(component=component)

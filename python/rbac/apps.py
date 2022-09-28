@@ -20,3 +20,7 @@ class RBACConfig(AppConfig):
 
     name = 'rbac'
     verbose_name = 'Arenadata Web Platform role-based access control'
+
+    def ready(self):
+        # pylint: disable-next=import-outside-toplevel,unused-import
+        from cm.signals import mark_deleted_audit_object_handler

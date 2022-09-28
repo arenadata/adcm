@@ -15,8 +15,8 @@
 import json
 import os
 
-from django.db import migrations, models
 import django.db.models.deletion
+from django.db import migrations, models
 
 from cm import config
 

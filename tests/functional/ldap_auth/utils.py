@@ -22,7 +22,7 @@ from tests.library.assertions import sets_are_equal, expect_api_error, expect_no
 
 SYNC_ACTION_NAME = 'run_ldap_sync'
 TEST_CONNECTION_ACTION = 'test_ldap_connection'
-DEFAULT_LOCAL_USERS = ('admin', 'status')
+DEFAULT_LOCAL_USERS = ('admin', 'status', 'system')
 
 
 def get_ldap_user_from_adcm(client: ADCMClient, name: str) -> User:

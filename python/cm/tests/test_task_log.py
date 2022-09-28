@@ -1,0 +1,203 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+from django.conf import settings
+from django.test import override_settings
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
+
+from adcm.tests.base import BaseTestCase
+from cm.models import (
+    Action,
+    Bundle,
+    Cluster,
+    ConcernType,
+    JobLog,
+    LogStorage,
+    Prototype,
+    SubAction,
+    TaskLog,
+)
+from cm.tests.utils import (
+    gen_adcm,
+    gen_cluster,
+    gen_concern_item,
+    gen_job_log,
+    gen_task_log,
+)
+
+
+class TaskLogLockTest(BaseTestCase):
+    """Tests for `cm.models.TaskLog` lock-related methods"""
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        gen_adcm()
+
+    def test_lock_affected__lock_is_single(self):
+        cluster = gen_cluster()
+        task = gen_task_log(cluster)
+        gen_job_log(task)
+        task.lock = gen_concern_item(ConcernType.Lock)
+        task.save()
+        task.lock_affected([cluster])
+
+        self.assertFalse(cluster.locked)
+
+    def test_lock_affected(self):
+        cluster = gen_cluster()
+        task = gen_task_log(cluster)
+        gen_job_log(task)
+        task.lock_affected([cluster])
+
+        self.assertTrue(cluster.locked)
+
+        task.refresh_from_db()
+
+        self.assertIsNotNone(task.lock)
+
+    def test_unlock_affected(self):
+        cluster = gen_cluster()
+        task = gen_task_log(cluster)
+        gen_job_log(task)
+        task.lock_affected([cluster])
+        task.unlock_affected()
+
+        self.assertFalse(cluster.locked)
+        self.assertIsNone(task.lock)
+
+    @override_settings(
+        RUN_DIR=settings.BASE_DIR / "python" / "cm" / "tests" / "files" / "task_log_download"
+    )
+    def test_download(self):
+        bundle = Bundle.objects.create()
+        cluster = Cluster.objects.create(
+            prototype=Prototype.objects.create(
+                bundle=bundle,
+                type="cluster",
+                name="test_cluster_prototype",
+            ),
+            name="test_cluster",
+        )
+        action = Action.objects.create(
+            display_name="test_cluster_action",
+            prototype=cluster.prototype,
+            type="task",
+            state_available="any",
+        )
+        task = TaskLog.objects.create(
+            task_object=cluster,
+            action=action,
+            start_date=datetime.now(tz=ZoneInfo("UTC")),
+            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+        )
+        cluster_2 = Cluster.objects.create(
+            prototype=Prototype.objects.create(
+                bundle=bundle,
+                type="cluster",
+                name="test_cluster_prototype_2",
+            ),
+            name="test_cluster_2",
+        )
+        cluster_3 = Cluster.objects.create(
+            prototype=Prototype.objects.create(
+                bundle=bundle,
+                type="cluster",
+                name="test_cluster_prototype_3",
+            ),
+            name="test_cluster_3",
+        )
+        cluster_4 = Cluster.objects.create(
+            prototype=Prototype.objects.create(
+                bundle=bundle,
+                type="cluster",
+                name="test_cluster_prototype_4",
+            ),
+            name="test_cluster_4",
+        )
+        cluster_5 = Cluster.objects.create(
+            prototype=Prototype.objects.create(
+                bundle=bundle,
+                type="cluster",
+                name="test_cluster_prototype_5",
+            ),
+            name="test_cluster_5",
+        )
+        JobLog.objects.create(
+            task=task,
+            start_date=datetime.now(tz=ZoneInfo("UTC")),
+            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            sub_action=SubAction.objects.create(
+                action=Action.objects.create(
+                    display_name="test_subaction_job_1",
+                    prototype=cluster_2.prototype,
+                    type="job",
+                    state_available="any",
+                )
+            ),
+        )
+        JobLog.objects.create(
+            task=task,
+            start_date=datetime.now(tz=ZoneInfo("UTC")),
+            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            sub_action=SubAction.objects.create(
+                action=Action.objects.create(
+                    display_name="test_subaction_job_2",
+                    prototype=cluster_3.prototype,
+                    type="job",
+                    state_available="any",
+                )
+            ),
+        )
+        JobLog.objects.create(
+            task=task,
+            start_date=datetime.now(tz=ZoneInfo("UTC")),
+            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            sub_action=SubAction.objects.create(
+                action=Action.objects.create(
+                    display_name="test_subaction_job_3",
+                    prototype=cluster_4.prototype,
+                    type="job",
+                    state_available="any",
+                )
+            ),
+        )
+        job_no_files = JobLog.objects.create(
+            task=task,
+            start_date=datetime.now(tz=ZoneInfo("UTC")),
+            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            sub_action=SubAction.objects.create(
+                action=Action.objects.create(
+                    display_name="test_subaction_job_4",
+                    prototype=cluster_5.prototype,
+                    type="job",
+                    state_available="any",
+                )
+            ),
+        )
+        LogStorage.objects.create(job=job_no_files, body="stdout db", type="stdout", format="txt")
+        LogStorage.objects.create(job=job_no_files, body="stderr db", type="stderr", format="txt")
+
+        response: Response = self.client.get(
+            path=reverse("task-download", kwargs={"task_id": task.pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(
+            response.headers["Content-Disposition"],
+            'attachment; filename="testcluster_testclusterprototype_testclusteraction_1.tar.gz"',
+        )

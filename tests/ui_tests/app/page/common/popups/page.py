@@ -81,11 +81,7 @@ class HostCreatePopupObj(BasePageObject):
         ).click()
 
     @allure.step("Create new host")
-    def create_host(
-        self,
-        fqdn: str,
-        cluster: Optional[str] = None,
-    ):
+    def create_host(self, fqdn: str, cluster: Optional[str] = None):
         """Create host in popup"""
         self.insert_new_host_info(fqdn, cluster)
         self.click_create_host_in_popup()

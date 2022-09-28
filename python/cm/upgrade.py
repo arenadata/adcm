@@ -11,7 +11,7 @@
 # limitations under the License.
 
 import functools
-from typing import Union, Tuple, List
+from typing import List, Tuple, Union
 
 from django.db import transaction
 from version_utils import rpm
@@ -19,10 +19,15 @@ from version_utils import rpm
 import cm.issue
 import cm.job
 import cm.status_api
-from cm.adcm_config import proto_ref, obj_ref, switch_config, make_object_config
-from cm.api import check_license, version_in, add_components_to_service, add_service_to_cluster
-from cm.errors import raise_AdcmEx as err
-from cm.logger import log
+from cm.adcm_config import make_object_config, obj_ref, proto_ref, switch_config
+from cm.api import (
+    add_components_to_service,
+    add_service_to_cluster,
+    check_license,
+    version_in,
+)
+from cm.errors import raise_adcm_ex as err
+from cm.logger import logger
 from cm.models import (
     Cluster,
     ClusterBind,
@@ -30,17 +35,17 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
+    MaintenanceModeType,
     Prototype,
     PrototypeImport,
     ServiceComponent,
     Upgrade,
-    MaintenanceModeType,
 )
 
 
 def switch_object(obj: Union[Host, ClusterObject], new_prototype: Prototype) -> None:
     """Upgrade object"""
-    log.info('upgrade switch from %s to %s', proto_ref(obj.prototype), proto_ref(new_prototype))
+    logger.info('upgrade switch from %s to %s', proto_ref(obj.prototype), proto_ref(new_prototype))
     old_prototype = obj.prototype
     obj.prototype = new_prototype
     obj.save()
@@ -265,7 +270,6 @@ def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
         if upg.upgradable:
             res.append(upg)
 
-    cm.issue.update_hierarchy_issues(obj)
     if order:
         if 'name' in order:
             return sorted(res, key=functools.cmp_to_key(rpm_cmp))
@@ -279,7 +283,7 @@ def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
 
 def update_components_after_bundle_switch(cluster, upgrade):
     if upgrade.action and upgrade.action.hostcomponentmap:
-        log.info('update component from %s after upgrade with hc_acl', cluster)
+        logger.info('update component from %s after upgrade with hc_acl', cluster)
         for hc_acl in upgrade.action.hostcomponentmap:
             proto_service = Prototype.objects.filter(
                 type='service', bundle=upgrade.bundle, name=hc_acl['service']
@@ -307,7 +311,7 @@ def do_upgrade(
     ok, msg = check_upgrade(obj, upgrade)
     if not ok:
         return err('UPGRADE_ERROR', msg)
-    log.info('upgrade %s version %s (upgrade #%s)', obj_ref(obj), old_proto.version, upgrade.id)
+    logger.info('upgrade %s version %s (upgrade #%s)', obj_ref(obj), old_proto.version, upgrade.id)
 
     task_id = None
     if not upgrade.action:
@@ -352,7 +356,7 @@ def bundle_switch(obj: Union[Cluster, HostProvider], upgrade: Upgrade):
         cm.issue.update_hierarchy_issues(obj)
         if isinstance(obj, Cluster):
             update_components_after_bundle_switch(obj, upgrade)
-    log.info('upgrade %s OK to version %s', obj_ref(obj), obj.prototype.version)
+    logger.info('upgrade %s OK to version %s', obj_ref(obj), obj.prototype.version)
     cm.status_api.post_event(
         'upgrade', obj.prototype.type, obj.id, 'version', str(obj.prototype.version)
     )

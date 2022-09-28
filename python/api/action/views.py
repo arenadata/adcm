@@ -14,9 +14,15 @@ from itertools import compress
 
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
-from rest_framework import permissions
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from api.action.serializers import (
+    ActionDetailSerializer,
+    ActionSerializer,
+    ActionUISerializer,
+)
 from api.base_view import GenericUIView
 from api.job.serializers import RunTaskSerializer
 from api.utils import (
@@ -24,27 +30,27 @@ from api.utils import (
     AdcmFilterBackend,
     create,
     filter_actions,
-    permission_denied,
     get_object_for_user,
     set_disabling_cause,
 )
+from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import (
-    Host,
     Action,
-    TaskLog,
+    Host,
     HostComponent,
-    get_model_by_type,
     MaintenanceModeType,
+    TaskLog,
+    get_model_by_type,
 )
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from . import serializers
 
 
 def get_object_type_id(**kwargs):
     object_type = kwargs.get('object_type')
     object_id = kwargs.get(f'{object_type}_id')
     action_id = kwargs.get('action_id', None)
+
     return object_type, object_id, action_id
 
 
@@ -52,13 +58,14 @@ def get_obj(**kwargs):
     object_type, object_id, action_id = get_object_type_id(**kwargs)
     model = get_model_by_type(object_type)
     obj = model.obj.get(id=object_id)
+
     return obj, action_id
 
 
 class ActionList(PermissionListMixin, GenericUIView):
     queryset = Action.objects.filter(upgrade__isnull=True)
-    serializer_class = serializers.ActionSerializer
-    serializer_class_ui = serializers.ActionUISerializer
+    serializer_class = ActionSerializer
+    serializer_class_ui = ActionUISerializer
     filterset_class = ActionFilter
     filterset_fields = ('name', 'button', 'button_is_null')
     filter_backends = (AdcmFilterBackend,)
@@ -99,6 +106,7 @@ class ActionList(PermissionListMixin, GenericUIView):
                         ),
                     )
                 )
+
         return actions
 
     def get(self, request, *args, **kwargs):  # pylint: disable=too-many-locals
@@ -111,6 +119,7 @@ class ActionList(PermissionListMixin, GenericUIView):
                 actions = set()
             else:
                 actions = self._get_host_actions(host)
+
             obj = host
             objects = {'host': host}
         else:
@@ -122,6 +131,7 @@ class ActionList(PermissionListMixin, GenericUIView):
                 ),
             )
             objects = {obj.prototype.type: obj}
+
         # added filter actions by custom perm for run actions
         perms = [f'cm.run_action_{a.display_name}' for a in actions]
         mask = [request.user.has_perm(perm, obj) for perm in perms]
@@ -130,13 +140,14 @@ class ActionList(PermissionListMixin, GenericUIView):
         serializer = self.get_serializer(
             actions, many=True, context={'request': request, 'objects': objects, 'obj': obj}
         )
+
         return Response(serializer.data)
 
 
 class ActionDetail(PermissionListMixin, GenericUIView):
     queryset = Action.objects.filter(upgrade__isnull=True)
-    serializer_class = serializers.ActionDetailSerializer
-    serializer_class_ui = serializers.ActionUISerializer
+    serializer_class = ActionDetailSerializer
+    serializer_class_ui = ActionUISerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ['cm.view_action']
 
@@ -165,13 +176,14 @@ class ActionDetail(PermissionListMixin, GenericUIView):
         serializer = self.get_serializer(
             action, context={'request': request, 'objects': objects, 'obj': obj}
         )
+
         return Response(serializer.data)
 
 
 class RunTask(GenericUIView):
     queryset = TaskLog.objects.all()
     serializer_class = RunTaskSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
     def has_action_perm(self, action, obj):
         user = self.request.user
@@ -183,7 +195,7 @@ class RunTask(GenericUIView):
 
     def check_action_perm(self, action, obj):
         if not self.has_action_perm(action, obj):
-            permission_denied()
+            raise PermissionDenied()
 
     @staticmethod
     def check_disabling_cause(action, obj):
@@ -192,18 +204,21 @@ class RunTask(GenericUIView):
                 'ACTION_ERROR',
                 msg='you cannot start an action on a host that is in maintenance mode',
             )
+
         set_disabling_cause(obj, action)
         if action.disabling_cause == 'maintenance_mode':
             raise AdcmEx(
                 'ACTION_ERROR',
                 msg='you cannot start the action because at least one host is in maintenance mode',
             )
+
         if action.disabling_cause == 'no_ldap_settings':
             raise AdcmEx(
                 'ACTION_ERROR',
                 msg='you cannot start the action because ldap settings not configured completely',
             )
 
+    @audit
     def post(self, request, *args, **kwargs):
         """
         Ran specified action
@@ -218,4 +233,5 @@ class RunTask(GenericUIView):
         self.check_action_perm(action, obj)
         self.check_disabling_cause(action, obj)
         serializer = self.get_serializer(data=request.data)
+
         return create(serializer, action=action, task_object=obj)

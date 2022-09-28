@@ -802,7 +802,7 @@ class TestClusterHostPage:
         host_count = 11
         with allure.step(f'Create {host_count} hosts'):
             for i in range(host_count):
-                host = provider.host_create(f"{HOST_NAME}_{i}")
+                host = provider.host_create(f"{HOST_NAME}-{i}")
                 cluster.host_add(host)
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
         cluster_host_page.table.check_pagination(1)
@@ -1160,6 +1160,7 @@ class TestClusterConfigPage:
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
     # pylint: disable=too-many-locals
+    @pytest.mark.skip(reason="https://tracker.yandex.ru/ADCM-3216")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
