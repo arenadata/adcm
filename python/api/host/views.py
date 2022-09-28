@@ -276,7 +276,7 @@ class HostDetail(PermissionListMixin, DetailView):
 
         serializer.is_valid(raise_exception=True)
         if "maintenance_mode" in serializer.validated_data:
-            self.__check_maintenance_mode_constraint(
+            self._check_maintenance_mode_constraint(
                 host, serializer.validated_data.get("maintenance_mode")
             )
 
