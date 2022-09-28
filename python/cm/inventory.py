@@ -265,21 +265,25 @@ def get_provider_config(provider_id):
     return {"provider": get_provider_variables(provider)}
 
 
-def get_host_groups(cluster, delta, action_host=None):
+def get_host_groups(cluster: Cluster, delta: dict, action_host: Host | None = None):
     groups = {}
     all_hosts = HostComponent.objects.filter(cluster=cluster)
     for hc in all_hosts:
         if action_host and hc.host.id not in action_host:
             continue
+
         keys = (
             f"{hc.service.prototype.name}.{hc.component.prototype.name}",
             f"{hc.service.prototype.name}",
         )
+
         for key in keys:
             if hc.host.maintenance_mode:
                 key = f"{key}.{MAINTENANCE_MODE}"
+
             if key not in groups:
                 groups[key] = {"hosts": {}}
+
             groups[key]["hosts"][hc.host.fqdn] = get_obj_config(hc.host)
             groups[key]["hosts"][hc.host.fqdn].update(get_host_vars(hc.host, hc.component))
 

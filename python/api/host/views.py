@@ -293,7 +293,7 @@ class HostDetail(PermissionListMixin, DetailView):
         return Response(self.get_serializer(self.get_object()).data, status=HTTP_200_OK)
 
     @staticmethod
-    def __check_maintenance_mode_constraint(host, new_mode):
+    def _check_maintenance_mode_constraint(host: Host, new_mode: bool):
         if host.maintenance_mode == new_mode:
             return
         if (
