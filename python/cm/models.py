@@ -648,7 +648,7 @@ class MaintenanceModeType(models.TextChoices):
 
 
 class Host(ADCMEntity):
-    fqdn = models.CharField(max_length=160, unique=True)
+    fqdn = models.CharField(max_length=253, unique=True)
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
@@ -1064,7 +1064,7 @@ class AbstractAction(ADCMModel):
 
     prototype = None
 
-    name = models.CharField(max_length=160)
+    name = models.CharField(max_length=1000)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
     ui_options = models.JSONField(default=dict)
