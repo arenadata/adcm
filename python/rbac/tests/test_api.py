@@ -39,6 +39,11 @@ class ApiTests(BaseTestCase):
         init()
         init_roles()
 
+        invalid_data_dict_exp_int_got_str = "Invalid data. Expected a dictionary, but got int."
+        invalid_data_dict_exp_str_got_str = "Invalid data. Expected a dictionary, but got str."
+        int_1000 = 1000
+        invalid_pk_1000 = 'Invalid pk "1000" - object does not exist.'
+
         cluster_adm_role_pk = Role.objects.get(name="Cluster Administrator").pk
         self.policy_data = [
             (
@@ -83,18 +88,14 @@ class ApiTests(BaseTestCase):
             (
                 {"name": "test", "role": 1},
                 {
-                    "role": {
-                        "non_field_errors": ["Invalid data. Expected a dictionary, but got int."]
-                    },
+                    "role": {"non_field_errors": [invalid_data_dict_exp_int_got_str]},
                     "object": ["This field is required."],
                 },
             ),
             (
                 {"name": "test", "role": "string"},
                 {
-                    "role": {
-                        "non_field_errors": ["Invalid data. Expected a dictionary, but got str."]
-                    },
+                    "role": {"non_field_errors": [invalid_data_dict_exp_str_got_str]},
                     "object": ["This field is required."],
                 },
             ),
@@ -122,9 +123,9 @@ class ApiTests(BaseTestCase):
                 },
             ),
             (
-                {"name": "test", "role": {"id": 1000}},
+                {"name": "test", "role": {"id": int_1000}},
                 {
-                    "role": {"id": ['Invalid pk "1000" - object does not exist.']},
+                    "role": {"id": [invalid_pk_1000]},
                     "object": ["This field is required."],
                 },
             ),
@@ -180,18 +181,14 @@ class ApiTests(BaseTestCase):
             (
                 {"name": "test", "role": {"id": cluster_adm_role_pk}, "user": [1]},
                 {
-                    "user": [
-                        {"non_field_errors": ["Invalid data. Expected a dictionary, but got int."]}
-                    ],
+                    "user": [{"non_field_errors": [invalid_data_dict_exp_int_got_str]}],
                     "object": ["This field is required."],
                 },
             ),
             (
                 {"name": "test", "role": {"id": cluster_adm_role_pk}, "user": ["string"]},
                 {
-                    "user": [
-                        {"non_field_errors": ["Invalid data. Expected a dictionary, but got str."]}
-                    ],
+                    "user": [{"non_field_errors": [invalid_data_dict_exp_str_got_str]}],
                     "object": ["This field is required."],
                 },
             ),
@@ -217,9 +214,9 @@ class ApiTests(BaseTestCase):
                 },
             ),
             (
-                {"name": "test", "role": {"id": cluster_adm_role_pk}, "user": [{"id": 1000}]},
+                {"name": "test", "role": {"id": cluster_adm_role_pk}, "user": [{"id": int_1000}]},
                 {
-                    "user": [{"id": ['Invalid pk "1000" - object does not exist.']}],
+                    "user": [{"id": [invalid_pk_1000]}],
                     "object": ["This field is required."],
                 },
             ),
@@ -338,19 +335,11 @@ class ApiTests(BaseTestCase):
             ),
             (
                 {"display_name": "test", "child": [add_host_role_pk]},
-                {
-                    "child": [
-                        {"non_field_errors": ["Invalid data. Expected a dictionary, but got int."]}
-                    ]
-                },
+                {"child": [{"non_field_errors": [invalid_data_dict_exp_int_got_str]}]},
             ),
             (
                 {"display_name": "test", "child": ["string"]},
-                {
-                    "child": [
-                        {"non_field_errors": ["Invalid data. Expected a dictionary, but got str."]}
-                    ]
-                },
+                {"child": [{"non_field_errors": [invalid_data_dict_exp_str_got_str]}]},
             ),
             (
                 {"display_name": "test", "child": [{}]},
@@ -361,8 +350,8 @@ class ApiTests(BaseTestCase):
                 {"child": [{"id": ["Incorrect type. Expected pk value, received str."]}]},
             ),
             (
-                {"display_name": "test", "child": [{"id": 1000}]},
-                {"child": [{"id": ['Invalid pk "1000" - object does not exist.']}]},
+                {"display_name": "test", "child": [{"id": int_1000}]},
+                {"child": [{"id": [invalid_pk_1000]}]},
             ),
         ]
 

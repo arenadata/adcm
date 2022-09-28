@@ -211,12 +211,6 @@ class TestCluster(BaseTestCase):
             service=self.service,
             prototype=service_component_prototype,
         )
-        # return HostComponent.objects.create(
-        #     cluster=self.cluster,
-        #     host=self.host,
-        #     service=self.service,
-        #     component=service_component,
-        # )
 
     def get_cluster_service_for_bind(self):
         bundle = Bundle.objects.create(name="test_bundle_2")
