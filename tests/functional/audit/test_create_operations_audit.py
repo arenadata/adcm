@@ -19,6 +19,7 @@ from pathlib import Path
 import allure
 import pytest
 from adcm_client.objects import ADCMClient
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.functional.audit.checks import check_audit_cef_logs
 from tests.functional.audit.conftest import (
@@ -29,10 +30,13 @@ from tests.functional.audit.conftest import (
     make_auth_header,
     parametrize_audit_scenario_parsing,
 )
+from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles, create_policy
 from tests.library.audit.checkers import AuditLogChecker
 
 # pylint: disable=redefined-outer-name
+
+pytestmark = [only_clean_adcm]
 
 
 class CreateOperation:
@@ -190,4 +194,6 @@ def test_create_adcm_objects(audit_log_checker, post, new_user_client, sdk_clien
             check_failed(post(CreateOperation.GROUP_CONFIG, data, headers=new_user_creds), 403)
     audit_log_checker.set_user_map(sdk_client_fs)
     audit_log_checker.check(sdk_client_fs.audit_operation_list())
-    check_audit_cef_logs(sdk_client_fs, adcm_fs.container)
+    wait_until_step_succeeds(
+        check_audit_cef_logs, timeout=10, period=0.5, client=sdk_client_fs, adcm_container=adcm_fs.container
+    )

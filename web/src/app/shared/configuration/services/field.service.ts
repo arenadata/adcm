@@ -313,11 +313,13 @@ export class FieldService {
 
     const runYspecParse = (v: any, f: Partial<IFieldOptions>) => ((!v || !Object.keys(v).length) && !f.value ? f.value : this.runYspec(v, f.limits.rules));
 
+    const replaceEmptyObjectWithNull = (v: any): string => ((Array.isArray(v) && v?.length === 0) || JSON.stringify(v) === '{}') ? null : v
+
     const runParse = (v: IOutput, parentName?: string): IOutput => {
       const runByValue = (p: IOutput, c: string) => {
         const checkType = (data: resultTypes | IOutput, field: Partial<IFieldStack>): resultTypes => {
           const { type } = field;
-          if (type === 'structure') return runYspecParse(data, field);
+          if (type === 'structure') return replaceEmptyObjectWithNull(runYspecParse(data, field));
           else if (type === 'group') return this.checkValue(runParse(data as IOutput, field.name), type);
           else return this.checkValue(data, type);
         };

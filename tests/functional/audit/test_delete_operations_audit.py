@@ -20,16 +20,20 @@ import allure
 import pytest
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import Bundle, Cluster, Group, Host, Policy, Provider, Role, User
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.functional.audit.checks import check_audit_cef_logs
 from tests.functional.audit.conftest import BUNDLES_DIR, NEW_USER
 from tests.functional.audit.conftest import CreateDeleteOperation as Delete
 from tests.functional.audit.conftest import check_failed, check_succeed
+from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles as BR
 from tests.functional.rbac.conftest import create_policy
 from tests.library.audit.checkers import AuditLogChecker
 
 # pylint: disable=redefined-outer-name
+
+pytestmark = [only_clean_adcm]
 
 
 @pytest.fixture()
@@ -151,7 +155,9 @@ def test_delete(
             endpoint = _get_endpoint_by_object(obj)
             check_succeed(delete(endpoint, obj.id))
     audit_checker.check(sdk_client_fs.audit_operation_list(paging={"limit": 300}))
-    check_audit_cef_logs(sdk_client_fs, adcm_fs.container)
+    wait_until_step_succeeds(
+        check_audit_cef_logs, timeout=10, period=0.5, client=sdk_client_fs, adcm_container=adcm_fs.container
+    )
 
 
 def _get_endpoint_by_object(obj) -> str:
