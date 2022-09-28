@@ -1,0 +1,29 @@
+- type: cluster
+  name: cluster
+  version: 1.1
+
+  actions:
+    enable_something:
+      display_name: Enable Something
+      type: task
+      states:
+        available: any
+      config:
+        - name: param_1
+          type: group
+          activatable: true
+          active: false
+          subs:
+            - name: somethingtwo
+              type: string
+        - name: param_2
+          type: group
+          activatable: true
+          active: false
+          subs:
+            - name: somethingone
+              type: list
+      scripts:
+        - name: step1
+          script_type: ansible
+          script: ./actions.yaml
