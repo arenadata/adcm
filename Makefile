@@ -18,13 +18,12 @@ buildss:
 buildjs:
 	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:16-alpine ./build.sh
 
-pull:
+build_base:
 	@docker pull $(APP_IMAGE):$(APP_TAG)
 
-build: describe buildss buildjs
-	@docker build -t $(APP_IMAGE):$(APP_TAG) .
+build: describe buildss buildjs build_base
 
-unittests: pull
+unittests: build_base
 	docker run -e DJANGO_SETTINGS_MODULE=adcm.settings -i --rm -v $(CURDIR)/data:/adcm/data $(APP_IMAGE):$(APP_TAG) \
 	bash -c "pip install --no-cache -r /adcm/requirements-test.txt && /adcm/python/manage.py test /adcm/python -v 2"
 
@@ -52,7 +51,7 @@ ng_tests:
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64 ./ng_test.sh
 
-linters: pull
+linters: build_base
 	docker run -i --rm $(APP_IMAGE):$(APP_TAG) bash -e -c \
 		"pip install -r /adcm/requirements-test.txt && \
 		black /adcm/python && \
