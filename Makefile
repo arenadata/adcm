@@ -19,7 +19,7 @@ buildjs:
 	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:16-alpine ./build.sh
 
 build_base:
-	@docker pull $(APP_IMAGE):$(APP_TAG)
+	@docker build . -t $(APP_IMAGE):$(APP_TAG)
 
 build: describe buildss buildjs build_base
 
