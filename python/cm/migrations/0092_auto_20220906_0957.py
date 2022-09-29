@@ -84,20 +84,20 @@ def _get_host_action_context(apps, obj, task):
 
 def _fix_selector(selector, _models):
     fixed_selector = {}
-    for object_type, object_dict in selector.items():
+    for object_type, object_id in selector.items():
         model, name_attr = _models.get(object_type, (None, None))
 
         if not model:
             continue
 
-        obj = model.objects.filter(pk=object_dict["id"]).first()
+        obj = model.objects.filter(pk=object_id).first()
         if not obj:
             continue
 
         if object_type in {"service", "component"}:
             obj = obj.prototype
 
-        fixed_selector[object_type] = {"id": object_dict["id"], "name": getattr(obj, name_attr)}
+        fixed_selector[object_type] = {"id": object_id, "name": getattr(obj, name_attr)}
 
     return fixed_selector
 
