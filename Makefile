@@ -29,7 +29,7 @@ describe: ## Create .version file with output of describe
 	./gues_version.sh
 
 buildss: ## Build status server
-	@docker run -i --rm -v $(CURDIR)/go:/code -w /code  golang:1.15-alpine3.13 sh -c "apk --update add make git && make && rm -f /code/adcm/go.sum"
+	@docker run -i --rm -v $(CURDIR)/go:/code -w /code golang sh -c "make"
 
 buildjs: ## Build client side js/html/css in directory wwwroot
 	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:16-alpine ./build.sh
@@ -37,7 +37,6 @@ buildjs: ## Build client side js/html/css in directory wwwroot
 build: describe buildss buildjs ## Build final docker image and all depended targets except baseimage.
 	@docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
 	@docker build --no-cache=true \
-	-f assemble/app/Dockerfile \
 	-t $(APP_IMAGE):$(APP_TAG) \
 	--build-arg  ADCMBASE_IMAGE=$(ADCMBASE_IMAGE) --build-arg  ADCMBASE_TAG=$(ADCMBASE_TAG) \
 	.
