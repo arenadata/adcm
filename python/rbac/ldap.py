@@ -79,7 +79,7 @@ def is_tls(ldap_uri: str) -> bool:
 
 
 def get_ldap_config() -> Optional[dict]:
-    adcm_object = ADCM.objects.get(id=1)
+    adcm_object = ADCM.objects.first()
     current_configlog = ConfigLog.objects.get(
         obj_ref=adcm_object.config, id=adcm_object.config.current
     )
