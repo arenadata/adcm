@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.models import ADCM, ConfigLog
+
 
 def get_obj_type(obj_type: str) -> str:
     if obj_type == "cluster object":
@@ -24,3 +26,43 @@ def get_obj_type(obj_type: str) -> str:
 
 def str_remove_non_alnum(value: str) -> str:
     return "".join(ch for ch in value if ch.isalnum())
+
+
+def get_oauth(oauth_key: str) -> tuple[str, str]:
+    adcm = ADCM.objects.filter().first()
+    if not adcm:
+        return None, None
+
+    config_log = ConfigLog.objects.get(obj_ref=adcm.config, id=adcm.config.current)
+    if not config_log:
+        return None, None
+
+    if not config_log.config.get(oauth_key):
+        return None, None
+
+    if (
+        "client_id" not in config_log.config[oauth_key]
+        or "secret" not in config_log.config[oauth_key]
+    ):
+        return None, None
+
+    return (
+        config_log.config[oauth_key]["client_id"],
+        config_log.config[oauth_key]["secret"],
+    )
+
+
+def get_yandex_oauth() -> tuple[str, str]:
+    return get_oauth(oauth_key="yandex_oauth")
+
+
+def get_google_oauth() -> tuple[str, str]:
+    return get_oauth(oauth_key="google_oauth")
+
+
+def has_yandex_oauth() -> bool:
+    return all(get_yandex_oauth())
+
+
+def has_google_oauth() -> bool:
+    return all(get_google_oauth())

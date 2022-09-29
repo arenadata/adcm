@@ -513,7 +513,7 @@ config_list_variant:
 
 variant_common:
   match: dict
-  items: &varinat_items
+  items: &variant_items
     type: string
     strict: boolean
 
@@ -528,7 +528,7 @@ variant_source:
 variant_inline:
   match: dict
   items:
-    <<: *varinat_items
+    <<: *variant_items
     value: list_of_string
   required_items:
     - value
@@ -536,7 +536,7 @@ variant_inline:
 variant_config:
   match: dict
   items:
-    <<: *varinat_items
+    <<: *variant_items
     name: string
   required_items:
     - name
@@ -554,13 +554,13 @@ variant_builtin:
 var_builtin_func:
   match: dict
   items:
-    <<: *varinat_items
+    <<: *variant_items
     name: string
 
 var_func_host_in_cluster:
   match: dict
   items:
-    <<: *varinat_items
+    <<: *variant_items
     name: string
     args: var_func_host_in_cluster_args
 
@@ -576,7 +576,7 @@ var_func_host_in_cluster_args:
 var_func_host:
   match: dict
   items:
-    <<: *varinat_items
+    <<: *variant_items
     name: string
     args: vfh_predicate_item
   required_items:

@@ -57,8 +57,11 @@ class TestComponent(BaseTestCase):
             type="component",
             display_name="test_component",
         )
-        config = ObjectConfig.objects.create(current=1, previous=1)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        self.config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config.current = self.config_log.pk
+        config.save(update_fields=["current"])
+
         self.component = ServiceComponent.objects.create(
             prototype=self.component_prototype,
             cluster=self.cluster,
@@ -120,7 +123,7 @@ class TestComponent(BaseTestCase):
         self.client.patch(
             path=reverse(
                 "config-history-version-restore",
-                kwargs={"component_id": self.component.pk, "version": 1},
+                kwargs={"component_id": self.component.pk, "version": self.config_log.pk},
             ),
             content_type=APPLICATION_JSON,
         )
@@ -134,7 +137,7 @@ class TestComponent(BaseTestCase):
             response: Response = self.client.patch(
                 path=reverse(
                     "config-history-version-restore",
-                    kwargs={"component_id": self.component.pk, "version": 1},
+                    kwargs={"component_id": self.component.pk, "version": self.config_log.pk},
                 ),
                 content_type=APPLICATION_JSON,
             )
@@ -189,7 +192,7 @@ class TestComponent(BaseTestCase):
                 kwargs={
                     "service_id": self.service.pk,
                     "component_id": self.component.pk,
-                    "version": 1,
+                    "version": self.config_log.pk,
                 },
             ),
             content_type=APPLICATION_JSON,
@@ -207,7 +210,7 @@ class TestComponent(BaseTestCase):
                     kwargs={
                         "service_id": self.service.pk,
                         "component_id": self.component.pk,
-                        "version": 1,
+                        "version": self.config_log.pk,
                     },
                 ),
                 content_type=APPLICATION_JSON,
