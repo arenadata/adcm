@@ -157,7 +157,7 @@ def config_case(
             object_type = get_obj_type(config_group.object_type.name)
             object_name = get_obj_name(obj=config_group.object, obj_type=object_type)
             audit_object = get_or_create_audit_obj(
-                object_id=config_group.pk,
+                object_id=config_group.object.pk,
                 object_name=object_name,
                 object_type=object_type,
             )
@@ -183,7 +183,7 @@ def config_case(
             object_type = get_obj_type(config_group.object_type.name)
             object_name = get_obj_name(obj=config_group.object, obj_type=object_type)
             audit_object = get_or_create_audit_obj(
-                object_id=config_group.pk,
+                object_id=config_group.object.pk,
                 object_name=object_name,
                 object_type=object_type,
             )

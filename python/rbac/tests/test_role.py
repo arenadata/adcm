@@ -59,7 +59,7 @@ class RoleModelTest(BaseTestCase):
         role = Role.objects.create(name="name", class_name="class", module_name="module")
         name_max_length = role._meta.get_field("name").max_length
 
-        self.assertEqual(name_max_length, 160)
+        self.assertEqual(name_max_length, 1000)
 
         class_name_max_length = role._meta.get_field("class_name").max_length
 
