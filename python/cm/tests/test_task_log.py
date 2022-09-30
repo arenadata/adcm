@@ -255,8 +255,8 @@ class TaskLogLockTest(BaseTestCase):
                 "2-testsubaction2/inventory.json",
                 "2-testsubaction2/ansible-stderr.txt",
                 "2-testsubaction2/config.json",
-            ],
-            tar.getnames(),
+            ].sort(),
+            tar.getnames().sort(),
         )
         self.assertEqual(
             "test-cluster_test-cluster-prototype_test-cluster-action_1.tar.gz",
@@ -278,7 +278,7 @@ class TaskLogLockTest(BaseTestCase):
                 "2/inventory.json",
                 "2/ansible-stderr.txt",
                 "2/config.json",
-            ],
-            tar.getnames(),
+            ].sort(),
+            tar.getnames().sort(),
         )
         self.assertEqual("1.tar.gz", get_task_download_archive_name(task))

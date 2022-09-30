@@ -144,9 +144,10 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
 
             directory = Path(settings.RUN_DIR, str(job.pk))
             if directory.is_dir():
-                for log_file in [
+                files = [
                     item for item in Path(settings.RUN_DIR, str(job.pk)).iterdir() if item.is_file()
-                ]:
+                ]
+                for log_file in files:
                     tarinfo = tarfile.TarInfo(
                         f"{job.pk}-{dir_name_suffix}".strip("-") + f"/{log_file.name}"
                     )
