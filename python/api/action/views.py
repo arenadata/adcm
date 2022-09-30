@@ -35,21 +35,14 @@ from api.utils import (
 )
 from audit.utils import audit
 from cm.errors import AdcmEx
-from cm.models import (
-    Action,
-    Host,
-    HostComponent,
-    MaintenanceModeType,
-    TaskLog,
-    get_model_by_type,
-)
+from cm.models import Action, Host, HostComponent, TaskLog, get_model_by_type
 from rbac.viewsets import DjangoOnlyObjectPermissions
 
 
 def get_object_type_id(**kwargs):
-    object_type = kwargs.get('object_type')
-    object_id = kwargs.get(f'{object_type}_id')
-    action_id = kwargs.get('action_id', None)
+    object_type = kwargs.get("object_type")
+    object_id = kwargs.get(f"{object_type}_id")
+    action_id = kwargs.get("action_id", None)
 
     return object_type, object_id, action_id
 
@@ -67,9 +60,9 @@ class ActionList(PermissionListMixin, GenericUIView):
     serializer_class = ActionSerializer
     serializer_class_ui = ActionUISerializer
     filterset_class = ActionFilter
-    filterset_fields = ('name', 'button', 'button_is_null')
+    filterset_fields = ("name", "button", "button_is_null")
     filter_backends = (AdcmFilterBackend,)
-    permission_required = ['cm.view_action']
+    permission_required = ["cm.view_action"]
 
     def _get_host_actions(self, host: Host) -> set:
         actions = set(
@@ -80,9 +73,9 @@ class ActionList(PermissionListMixin, GenericUIView):
         hcs = HostComponent.objects.filter(host_id=host.id)
         if hcs:
             for hc in hcs:
-                cluster, _ = get_obj(object_type='cluster', cluster_id=hc.cluster_id)
-                service, _ = get_obj(object_type='service', service_id=hc.service_id)
-                component, _ = get_obj(object_type='component', component_id=hc.component_id)
+                cluster, _ = get_obj(object_type="cluster", cluster_id=hc.cluster_id)
+                service, _ = get_obj(object_type="service", service_id=hc.service_id)
+                component, _ = get_obj(object_type="component", component_id=hc.component_id)
                 for connect_obj in [cluster, service, component]:
                     actions.update(
                         filter_actions(
@@ -113,15 +106,15 @@ class ActionList(PermissionListMixin, GenericUIView):
         """
         List all actions of a specified object
         """
-        if kwargs['object_type'] == 'host':
-            host, _ = get_obj(object_type='host', host_id=kwargs['host_id'])
-            if host.maintenance_mode == MaintenanceModeType.On:
+        if kwargs["object_type"] == "host":
+            host, _ = get_obj(object_type="host", host_id=kwargs["host_id"])
+            if host.maintenance_mode:
                 actions = set()
             else:
                 actions = self._get_host_actions(host)
 
             obj = host
-            objects = {'host': host}
+            objects = {"host": host}
         else:
             obj, _ = get_obj(**kwargs)
             actions = filter_actions(
@@ -133,12 +126,12 @@ class ActionList(PermissionListMixin, GenericUIView):
             objects = {obj.prototype.type: obj}
 
         # added filter actions by custom perm for run actions
-        perms = [f'cm.run_action_{a.display_name}' for a in actions]
+        perms = [f"cm.run_action_{a.display_name}" for a in actions]
         mask = [request.user.has_perm(perm, obj) for perm in perms]
         actions = list(compress(actions, mask))
 
         serializer = self.get_serializer(
-            actions, many=True, context={'request': request, 'objects': objects, 'obj': obj}
+            actions, many=True, context={"request": request, "objects": objects, "obj": obj}
         )
 
         return Response(serializer.data)
@@ -149,7 +142,7 @@ class ActionDetail(PermissionListMixin, GenericUIView):
     serializer_class = ActionDetailSerializer
     serializer_class_ui = ActionUISerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
-    permission_required = ['cm.view_action']
+    permission_required = ["cm.view_action"]
 
     def get(self, request, *args, **kwargs):
         """
@@ -159,22 +152,22 @@ class ActionDetail(PermissionListMixin, GenericUIView):
         model = get_model_by_type(object_type)
         ct = ContentType.objects.get_for_model(model)
         obj = get_object_for_user(
-            request.user, f'{ct.app_label}.view_{ct.model}', model, id=object_id
+            request.user, f"{ct.app_label}.view_{ct.model}", model, id=object_id
         )
         # TODO: we can access not only the actions of this object
         action = get_object_for_user(
             request.user,
-            'cm.view_action',
+            "cm.view_action",
             self.get_queryset(),
             id=action_id,
         )
         set_disabling_cause(obj, action)
         if isinstance(obj, Host) and action.host_action:
-            objects = {'host': obj}
+            objects = {"host": obj}
         else:
             objects = {action.prototype.type: obj}
         serializer = self.get_serializer(
-            action, context={'request': request, 'objects': objects, 'obj': obj}
+            action, context={"request": request, "objects": objects, "obj": obj}
         )
 
         return Response(serializer.data)
@@ -188,10 +181,10 @@ class RunTask(GenericUIView):
     def has_action_perm(self, action, obj):
         user = self.request.user
 
-        if user.has_perm('cm.add_task'):
+        if user.has_perm("cm.add_task"):
             return True
 
-        return user.has_perm(f'cm.run_action_{action.display_name}', obj)
+        return user.has_perm(f"cm.run_action_{action.display_name}", obj)
 
     def check_action_perm(self, action, obj):
         if not self.has_action_perm(action, obj):
@@ -199,23 +192,23 @@ class RunTask(GenericUIView):
 
     @staticmethod
     def check_disabling_cause(action, obj):
-        if isinstance(obj, Host) and obj.maintenance_mode == MaintenanceModeType.On:
+        if isinstance(obj, Host) and obj.maintenance_mode:
             raise AdcmEx(
-                'ACTION_ERROR',
-                msg='you cannot start an action on a host that is in maintenance mode',
+                "ACTION_ERROR",
+                msg="you cannot start an action on a host that is in maintenance mode",
             )
 
         set_disabling_cause(obj, action)
-        if action.disabling_cause == 'maintenance_mode':
+        if action.disabling_cause == "maintenance_mode":
             raise AdcmEx(
-                'ACTION_ERROR',
-                msg='you cannot start the action because at least one host is in maintenance mode',
+                "ACTION_ERROR",
+                msg="you cannot start the action because at least one host is in maintenance mode",
             )
 
-        if action.disabling_cause == 'no_ldap_settings':
+        if action.disabling_cause == "no_ldap_settings":
             raise AdcmEx(
-                'ACTION_ERROR',
-                msg='you cannot start the action because ldap settings not configured completely',
+                "ACTION_ERROR",
+                msg="you cannot start the action because ldap settings not configured completely",
             )
 
     @audit
@@ -227,9 +220,9 @@ class RunTask(GenericUIView):
         model = get_model_by_type(object_type)
         ct = ContentType.objects.get_for_model(model)
         obj = get_object_for_user(
-            request.user, f'{ct.app_label}.view_{ct.model}', model, id=object_id
+            request.user, f"{ct.app_label}.view_{ct.model}", model, id=object_id
         )
-        action = get_object_for_user(request.user, 'cm.view_action', Action, id=action_id)
+        action = get_object_for_user(request.user, "cm.view_action", Action, id=action_id)
         self.check_action_perm(action, obj)
         self.check_disabling_cause(action, obj)
         serializer = self.get_serializer(data=request.data)

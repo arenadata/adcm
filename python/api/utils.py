@@ -33,7 +33,6 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
-    MaintenanceModeType,
     PrototypeConfig,
 )
 from cm.upgrade import get_upgrade
@@ -106,12 +105,12 @@ def set_disabling_cause(obj: ADCMEntity, action: Action) -> None:
             action.disabling_cause = "no_ldap_settings"
 
     if obj.prototype.type == "cluster":
-        mm = Host.objects.filter(cluster=obj, maintenance_mode=MaintenanceModeType.On).exists()
+        mm = Host.objects.filter(cluster=obj, maintenance_mode=True).exists()
         if not action.allow_in_maintenance_mode and mm:
             action.disabling_cause = "maintenance_mode"
     elif obj.prototype.type == "service":
         mm = HostComponent.objects.filter(
-            service=obj, cluster=obj.cluster, host__maintenance_mode=MaintenanceModeType.On
+            service=obj, cluster=obj.cluster, host__maintenance_mode=True
         ).exists()
         if not action.allow_in_maintenance_mode and mm:
             action.disabling_cause = "maintenance_mode"
@@ -120,14 +119,14 @@ def set_disabling_cause(obj: ADCMEntity, action: Action) -> None:
             component=obj,
             cluster=obj.cluster,
             service=obj.service,
-            host__maintenance_mode=MaintenanceModeType.On,
+            host__maintenance_mode=True,
         ).exists()
         if not action.allow_in_maintenance_mode and mm:
             action.disabling_cause = "maintenance_mode"
     elif obj.prototype.type == "host":
         mm = HostComponent.objects.filter(
             component_id__in=HostComponent.objects.filter(host=obj).values_list("component_id"),
-            host__maintenance_mode=MaintenanceModeType.On,
+            host__maintenance_mode=True,
         ).exists()
         if action.host_action and not action.allow_in_maintenance_mode and mm:
             action.disabling_cause = "maintenance_mode"
