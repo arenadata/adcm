@@ -187,12 +187,8 @@ def check_action_config(
         return {}, {}
     if not conf:
         err("TASK_ERROR", "action config is required")
-    obj_conf = None
-    if obj.config:
-        config_log = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-        obj_conf = config_log.config
     adcm_config.check_attr(proto, action, attr, flat_spec)
-    variant.process_variant(obj, spec, obj_conf)
+    variant.process_variant(obj, spec, conf)
     new_conf = adcm_config.check_config_spec(proto, action, spec, flat_spec, conf, None, attr)
     return new_conf, spec
 
