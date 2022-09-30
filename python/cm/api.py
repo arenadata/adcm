@@ -744,28 +744,28 @@ def get_import(cluster, service=None):
 
             if pe.prototype.type == "cluster":
                 for cls in Cluster.objects.filter(prototype=pe.prototype):
-                    bound = get_bind(_cluster, _service, cls, None)
+                    binded = get_bind(_cluster, _service, cls, None)
                     exports.append(
                         {
                             "obj_name": cls.name,
                             "bundle_name": cls.prototype.display_name,
                             "bundle_version": cls.prototype.version,
                             "id": {"cluster_id": cls.id},
-                            "bound": bool(bound),
-                            "bind_id": getattr(bound, "id", None),
+                            "binded": bool(binded),
+                            "bind_id": getattr(binded, "id", None),
                         }
                     )
             elif pe.prototype.type == "service":
                 for co in ClusterObject.objects.filter(prototype=pe.prototype):
-                    bound = get_bind(_cluster, _service, co.cluster, co)
+                    binded = get_bind(_cluster, _service, co.cluster, co)
                     exports.append(
                         {
                             "obj_name": co.cluster.name + "/" + co.prototype.display_name,
                             "bundle_name": co.prototype.display_name,
                             "bundle_version": co.prototype.version,
                             "id": {"cluster_id": co.cluster.id, "service_id": co.id},
-                            "bound": bool(bound),
-                            "bind_id": getattr(bound, "id", None),
+                            "binded": bool(binded),
+                            "bind_id": getattr(binded, "id", None),
                         }
                     )
             else:
@@ -969,7 +969,7 @@ def bind(cluster, service, export_cluster, export_service_id):  # pylint: disabl
     bind_list = []
     for imp in get_import(cluster, service):
         for exp in imp["exports"]:
-            if exp["bound"]:
+            if exp["binded"]:
                 bind_list.append({"import_id": imp["id"], "export_id": exp["id"]})
 
     item = {"import_id": pi.id, "export_id": {"cluster_id": export_cluster.id}}

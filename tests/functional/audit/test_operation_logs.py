@@ -19,10 +19,9 @@ import pytest
 import requests
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, User
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
-from adcm_pytest_plugin.utils import random_string, wait_until_step_succeeds
+from adcm_pytest_plugin.utils import random_string
 from docker.models.containers import Container
 
-from tests.functional.audit.checks import check_audit_cef_logs
 from tests.functional.audit.conftest import BUNDLES_DIR, ScenarioArg
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles, create_policy
@@ -67,7 +66,7 @@ def new_user_and_client(sdk_client_fs) -> Tuple[User, ADCMClient]:
 @pytest.mark.parametrize(
     "parsed_audit_log", [ScenarioArg("simple.yaml", CONTEXT)], indirect=True
 )  # pylint: disable-next=too-many-arguments
-def test_simple_flow(sdk_client_fs, audit_log_checker, adcm_fs, adb_bundle, dummy_host, new_user_and_client):
+def test_simple_flow(sdk_client_fs, audit_log_checker, adb_bundle, dummy_host, new_user_and_client):
     """Test simple from with cluster objects manipulations"""
     config = {"just_string": "hoho"}
     with allure.step("Create cluster and add service"):
@@ -92,9 +91,8 @@ def test_simple_flow(sdk_client_fs, audit_log_checker, adcm_fs, adb_bundle, dumm
         )
     with allure.step("Delete cluster"):
         cluster.delete()
-    wait_until_step_succeeds(
-        check_audit_cef_logs, timeout=10, period=0.5, client=sdk_client_fs, adcm_container=adcm_fs.container
-    )
+    # return after https://tracker.yandex.ru/ADCM-3244
+    # check_audit_cef_logs(client=sdk_client_fs, adcm_container=adcm_fs.container)
     audit_log_checker.set_user_map(sdk_client_fs)
     audit_log_checker.check(sdk_client_fs.audit_operation_list())
 
