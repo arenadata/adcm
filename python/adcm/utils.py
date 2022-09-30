@@ -25,10 +25,11 @@ def get_obj_type(obj_type: str) -> str:
 
 
 def str_remove_non_alnum(value: str) -> str:
-    result = "".join(ch.lower() for ch in value if (ch.isalnum() or ch == " ")).replace(" ", "-")
+    result = "".join(ch.lower().replace(" ", "-") for ch in value if (ch.isalnum() or ch == " "))
     while result.find("--") != -1:
         result = result.replace("--", "-")
     return result
+
 
 def get_oauth(oauth_key: str) -> tuple[str, str]:
     adcm = ADCM.objects.filter().first()

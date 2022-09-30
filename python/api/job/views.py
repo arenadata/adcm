@@ -137,8 +137,8 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
                 dir_name_suffix = ""
                 if job.sub_action:
                     dir_name_suffix = str_remove_non_alnum(
-                        value=f"-{job.sub_action.display_name}"
-                    ) or str_remove_non_alnum(value=f"-{job.sub_action.name}")
+                        value=job.sub_action.display_name
+                    ) or str_remove_non_alnum(value=job.sub_action.name)
             else:
                 dir_name_suffix = task_dir_name_suffix
 
@@ -147,14 +147,17 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
                 for log_file in [
                     item for item in Path(settings.RUN_DIR, str(job.pk)).iterdir() if item.is_file()
                 ]:
-                    tarinfo = tarfile.TarInfo(f"{job.pk}{dir_name_suffix}/{log_file.name}")
+                    tarinfo = tarfile.TarInfo(
+                        f"{job.pk}-{dir_name_suffix}".strip("-") + f"/{log_file.name}"
+                    )
                     tarinfo.size = log_file.stat().st_size
                     tar_file.addfile(tarinfo=tarinfo, fileobj=io.BytesIO(log_file.read_bytes()))
             else:
                 log_storages = LogStorage.objects.filter(job=job, type__in={"stdout", "stderr"})
                 for log_storage in log_storages:
                     tarinfo = tarfile.TarInfo(
-                        f"{job.pk}{dir_name_suffix}/{log_storage.name}-{log_storage.type}.txt"
+                        f"{job.pk}-{dir_name_suffix}".strip("-")
+                        + f"/{log_storage.name}-{log_storage.type}.txt"
                     )
                     body = io.BytesIO(bytes(log_storage.body, "utf-8"))
                     tarinfo.size = body.getbuffer().nbytes
