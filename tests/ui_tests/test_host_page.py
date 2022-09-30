@@ -195,6 +195,7 @@ class TestHostListPage:
             page.get_host_info_from_row,
         )
 
+    @pytest.mark.skip(reason="https://tracker.yandex.ru/ADCM-3212")
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
     @pytest.mark.usefixtures("upload_and_create_provider", "upload_and_create_cluster")
