@@ -19,9 +19,7 @@ from pathlib import Path
 import allure
 import pytest
 from adcm_client.objects import ADCMClient
-from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
-from tests.functional.audit.checks import check_audit_cef_logs
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,
@@ -137,7 +135,7 @@ def test_rbac_create_operations(parse_with_context, rbac_create_data, post, sdk_
 
 
 @parametrize_audit_scenario_parsing("create_adcm_entities.yaml", NEW_USER)  # pylint: disable-next=too-many-locals
-def test_create_adcm_objects(audit_log_checker, post, new_user_client, sdk_client_fs, adcm_fs):
+def test_create_adcm_objects(audit_log_checker, post, new_user_client, sdk_client_fs):
     """
     Test audit logs for CREATE of ADCM objects:
     - cluster
@@ -194,6 +192,5 @@ def test_create_adcm_objects(audit_log_checker, post, new_user_client, sdk_clien
             check_failed(post(CreateOperation.GROUP_CONFIG, data, headers=new_user_creds), 403)
     audit_log_checker.set_user_map(sdk_client_fs)
     audit_log_checker.check(sdk_client_fs.audit_operation_list())
-    wait_until_step_succeeds(
-        check_audit_cef_logs, timeout=10, period=0.5, client=sdk_client_fs, adcm_container=adcm_fs.container
-    )
+    # return after https://tracker.yandex.ru/ADCM-3244
+    # check_audit_cef_logs(client=sdk_client_fs, adcm_container=adcm_fs.container)
