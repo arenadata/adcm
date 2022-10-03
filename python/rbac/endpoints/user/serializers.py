@@ -51,7 +51,7 @@ class GroupUserSerializer(EmptySerializer):
 class ExpandedGroupSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     user = GroupUserSerializer(many=True, source="user_set")
     url = HyperlinkedIdentityField(view_name="rbac:group-detail")
-    name = CharField(max_length=150, source="group.display_name")
+    name = CharField(max_length=150, source="group.name")
 
     class Meta:
         model = Group
@@ -62,10 +62,6 @@ class ExpandedGroupSerializer(FlexFieldsSerializerMixin, ModelSerializer):
                 {"many": True, "source": "user_set"},
             )
         }
-
-
-class ExpandedGroupSerializerTrueName(ExpandedGroupSerializer):
-    name = CharField(max_length=150, source="group.name")
 
 
 class UserSerializer(FlexFieldsSerializerMixin, Serializer):
@@ -98,9 +94,7 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
     is_active = BooleanField(required=False, default=True)
 
     class Meta:
-        expandable_fields = {
-            "group": (ExpandedGroupSerializerTrueName, {"many": True, "source": "groups"})
-        }
+        expandable_fields = {"group": (ExpandedGroupSerializer, {"many": True, "source": "groups"})}
 
     def update(self, instance, validated_data):
         context_user = self.context["request"].user
