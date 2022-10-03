@@ -52,7 +52,7 @@ class ExpandedGroupSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     user = GroupUserSerializer(many=True, source="user_set")
     url = HyperlinkedIdentityField(view_name="rbac:group-detail")
     name = CharField(max_length=150, source="group.display_name")
-    type = CharField(read_only=True, source="group.group.type")
+    type = CharField(read_only=True, source="group.type")
 
     class Meta:
         model = Group
