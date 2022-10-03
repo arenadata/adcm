@@ -24,7 +24,6 @@ from cm.adcm_config import (
     check_json_config,
     init_object_config,
     obj_ref,
-    prepare_social_auth,
     proto_ref,
     read_bundle_file,
     save_obj_config,
@@ -34,7 +33,6 @@ from cm.errors import AdcmEx
 from cm.errors import raise_adcm_ex as err
 from cm.logger import logger
 from cm.models import (
-    ADCM,
     ADCMEntity,
     Bundle,
     Cluster,
@@ -546,31 +544,12 @@ def update_obj_config(obj_conf, conf, attr, desc=""):
         cm.issue.update_hierarchy_issues(obj)
         re_apply_object_policy(obj)
 
-    if hasattr(obj_conf, "adcm"):
-        prepare_social_auth(new_conf)
-
     if group is not None:
         cm.status_api.post_event("change_config", "group-config", group.id, "version", str(cl.id))
     else:
         cm.status_api.post_event("change_config", proto.type, obj.id, "version", str(cl.id))
 
     return cl
-
-
-def has_google_oauth():
-    adcm = ADCM.objects.filter()
-    if not adcm:
-        return False
-
-    cl = ConfigLog.objects.get(obj_ref=adcm[0].config, id=adcm[0].config.current)
-    if "google_oauth" not in cl.config:
-        return False
-
-    gconf = cl.config["google_oauth"]
-    if "client_id" not in gconf or not gconf["client_id"]:
-        return False
-
-    return True
 
 
 def get_hc(cluster):
@@ -765,28 +744,28 @@ def get_import(cluster, service=None):
 
             if pe.prototype.type == "cluster":
                 for cls in Cluster.objects.filter(prototype=pe.prototype):
-                    bound = get_bind(_cluster, _service, cls, None)
+                    binded = get_bind(_cluster, _service, cls, None)
                     exports.append(
                         {
                             "obj_name": cls.name,
                             "bundle_name": cls.prototype.display_name,
                             "bundle_version": cls.prototype.version,
                             "id": {"cluster_id": cls.id},
-                            "bound": bool(bound),
-                            "bind_id": getattr(bound, "id", None),
+                            "binded": bool(binded),
+                            "bind_id": getattr(binded, "id", None),
                         }
                     )
             elif pe.prototype.type == "service":
                 for co in ClusterObject.objects.filter(prototype=pe.prototype):
-                    bound = get_bind(_cluster, _service, co.cluster, co)
+                    binded = get_bind(_cluster, _service, co.cluster, co)
                     exports.append(
                         {
                             "obj_name": co.cluster.name + "/" + co.prototype.display_name,
                             "bundle_name": co.prototype.display_name,
                             "bundle_version": co.prototype.version,
                             "id": {"cluster_id": co.cluster.id, "service_id": co.id},
-                            "bound": bool(bound),
-                            "bind_id": getattr(bound, "id", None),
+                            "binded": bool(binded),
+                            "bind_id": getattr(binded, "id", None),
                         }
                     )
             else:
@@ -990,7 +969,7 @@ def bind(cluster, service, export_cluster, export_service_id):  # pylint: disabl
     bind_list = []
     for imp in get_import(cluster, service):
         for exp in imp["exports"]:
-            if exp["bound"]:
+            if exp["binded"]:
                 bind_list.append({"import_id": imp["id"], "export_id": exp["id"]})
 
     item = {"import_id": pi.id, "export_id": {"cluster_id": export_cluster.id}}

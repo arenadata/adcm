@@ -270,7 +270,6 @@ def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
         if upg.upgradable:
             res.append(upg)
 
-    cm.issue.update_hierarchy_issues(obj)
     if order:
         if 'name' in order:
             return sorted(res, key=functools.cmp_to_key(rpm_cmp))

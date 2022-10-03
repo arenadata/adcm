@@ -202,6 +202,11 @@ ERRORS = {
         HTTP_409_CONFLICT,
         ERR,
     ),
+    "SERVICE_DELETE_ERROR": (
+        "Service can't be deleted if it has not CREATED state",
+        HTTP_409_CONFLICT,
+        ERR,
+    ),
 }
 
 
@@ -255,6 +260,7 @@ def raise_adcm_ex(code, msg="", args=""):
         err_msg = msg
 
     logger.error(err_msg)
+
     raise AdcmEx(code, msg=msg, args=args)
 
 

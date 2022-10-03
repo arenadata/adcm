@@ -197,7 +197,3 @@ class TaskLogLockTest(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(
-            response.headers["Content-Disposition"],
-            'attachment; filename="testcluster_testclusterprototype_testclusteraction_1.tar.gz"',
-        )

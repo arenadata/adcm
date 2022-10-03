@@ -12,8 +12,6 @@
 
 """Tests on audit logs for UPDATE of RBAC objects"""
 
-# pylint: disable=redefined-outer-name
-
 from functools import partial
 from typing import Dict, Literal, Tuple, Union
 
@@ -23,8 +21,13 @@ import requests
 from adcm_client.objects import ADCMClient, Group, Policy, Role, User
 
 from tests.functional.audit.conftest import check_failed, check_succeed, make_auth_header
+from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles as BR
 from tests.library.audit.checkers import AuditLogChecker
+
+# pylint: disable=redefined-outer-name
+
+pytestmark = [only_clean_adcm]
 
 RBACObject = Union[User, Group, Role, Policy]
 ChangeMethod = Literal["PUT", "PATCH"]
@@ -142,6 +145,8 @@ def test_update_rbac_objects(
     checker = AuditLogChecker(parse_with_context({**rbac_create_data, "changes": {**prepared_changes}}))
     checker.set_user_map(sdk_client_fs)
     checker.check(sdk_client_fs.audit_operation_list())
+    # return after https://tracker.yandex.ru/ADCM-3244
+    # check_audit_cef_logs(client=sdk_client_fs, adcm_container=adcm_fs.container)
 
 
 @pytest.mark.parametrize("parse_with_context", ["full_update_rbac.yaml"], indirect=True)
@@ -188,11 +193,11 @@ def test_full_rbac_objects_update(http_method: str, parse_with_context, generic_
             "group": [{"id": group.id}],
         },
     }
-    check_succeed(change_rbac_object(sdk_client_fs, user, http_method, new_values['user'], headers=admin_creds))
-    check_succeed(change_rbac_object(sdk_client_fs, group, http_method, new_values['group'], headers=admin_creds))
-    check_succeed(change_rbac_object(sdk_client_fs, role, http_method, new_values['role'], headers=admin_creds))
-    check_succeed(change_rbac_object(sdk_client_fs, policy, http_method, new_values['policy'], headers=admin_creds))
-    AuditLogChecker(parse_with_context({'provider': {'id': generic_provider.id, 'name': generic_provider.name}})).check(
+    check_succeed(change_rbac_object(sdk_client_fs, user, http_method, new_values["user"], headers=admin_creds))
+    check_succeed(change_rbac_object(sdk_client_fs, group, http_method, new_values["group"], headers=admin_creds))
+    check_succeed(change_rbac_object(sdk_client_fs, role, http_method, new_values["role"], headers=admin_creds))
+    check_succeed(change_rbac_object(sdk_client_fs, policy, http_method, new_values["policy"], headers=admin_creds))
+    AuditLogChecker(parse_with_context({"provider": {"id": generic_provider.id, "name": generic_provider.name}})).check(
         sdk_client_fs.audit_operation_list()
     )
 

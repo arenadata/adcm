@@ -915,7 +915,7 @@ class TestApi2(BaseTestCase):
                 "description": "",
             }
         )
-        self.object_config = ObjectConfig.objects.create(**{"current": 1, "previous": 1})
+        self.object_config = ObjectConfig.objects.create(**{"current": 0, "previous": 0})
 
         self.cluster = Cluster.objects.create(
             **{
@@ -949,7 +949,7 @@ class TestApi2(BaseTestCase):
         host_comp_list = [(cluster_object, host, service_component)]
         hc_list = save_hc(self.cluster, host_comp_list)
 
-        self.assertListEqual(hc_list, [HostComponent.objects.get(id=2)])
+        self.assertListEqual(hc_list, [HostComponent.objects.first()])
 
         mock_post_event.assert_called_once_with(
             "change_hostcomponentmap", "cluster", self.cluster.id

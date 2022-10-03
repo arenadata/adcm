@@ -44,6 +44,7 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
+    MaintenanceModeType,
     ObjectConfig,
     Prototype,
     PrototypeExport,
@@ -63,9 +64,14 @@ class TestCluster(BaseTestCase):
 
         self.bundle = Bundle.objects.create()
         self.test_cluster_name = "test-cluster"
+        self.description = "Such wow new description"
         self.cluster_prototype = Prototype.objects.create(bundle=self.bundle, type="cluster")
-        config = ObjectConfig.objects.create(current=1, previous=1)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        self.config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config.current = self.config_log.pk
+        config.save(update_fields=["current"])
+
         self.cluster = Cluster.objects.create(
             prototype=self.cluster_prototype, name="test_cluster_2", config=config
         )
@@ -93,6 +99,7 @@ class TestCluster(BaseTestCase):
         )
         self.cluster_conf_updated_str = "Cluster configuration updated"
         self.host_conf_updated_str = "Host configuration updated"
+        self.host_updated = "Host updated"
         self.component_conf_updated_str = "Component configuration updated"
         self.service_conf_updated_str = "Service configuration updated"
         self.cluster_deleted_str = "Cluster deleted"
@@ -119,7 +126,10 @@ class TestCluster(BaseTestCase):
         operation_type: AuditLogOperationType,
         operation_result: AuditLogOperationResult = AuditLogOperationResult.Success,
         user: Optional[User] = None,
+        object_changes: dict | None = None,
     ) -> None:
+        if object_changes is None:
+            object_changes = {}
         if user is None:
             user = self.test_user
 
@@ -132,7 +142,7 @@ class TestCluster(BaseTestCase):
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
-        self.assertEqual(log.object_changes, {})
+        self.assertDictEqual(log.object_changes, object_changes)
 
     def check_log_denied(
         self, log: AuditLog, operation_name: str, operation_type: AuditLogOperationType
@@ -194,18 +204,12 @@ class TestCluster(BaseTestCase):
             },
         )
 
-    def get_hc(self) -> HostComponent:
+    def get_sc(self) -> HostComponent:
         service_component_prototype = Prototype.objects.create(bundle=self.bundle, type="component")
-        service_component = ServiceComponent.objects.create(
+        return ServiceComponent.objects.create(
             cluster=self.cluster,
             service=self.service,
             prototype=service_component_prototype,
-        )
-        return HostComponent.objects.create(
-            cluster=self.cluster,
-            host=self.host,
-            service=self.service,
-            component=service_component,
         )
 
     def get_cluster_service_for_bind(self):
@@ -232,16 +236,22 @@ class TestCluster(BaseTestCase):
 
         return cluster, service
 
-    def get_component(self) -> ServiceComponent:
-        config = ObjectConfig.objects.create(current=2, previous=2)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+    def get_component(self) -> tuple[ServiceComponent, ConfigLog]:
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config.current = config_log.pk
+        config.save(update_fields=["current"])
+
         prototype = Prototype.objects.create(bundle=self.bundle, type="component")
 
-        return ServiceComponent.objects.create(
-            cluster=self.cluster,
-            service=self.service,
-            prototype=prototype,
-            config=config,
+        return (
+            ServiceComponent.objects.create(
+                cluster=self.cluster,
+                service=self.service,
+                prototype=prototype,
+                config=config,
+            ),
+            config_log,
         )
 
     def add_no_rights_user_cluster_view_rights(self) -> None:
@@ -366,7 +376,7 @@ class TestCluster(BaseTestCase):
             data={
                 "prototype_id": host_prototype.pk,
                 "provider_id": provider_response.data["id"],
-                "fqdn": "test_fqdn_1",
+                "fqdn": "test-fqdn-1",
             },
         )
         self.client.post(
@@ -374,7 +384,7 @@ class TestCluster(BaseTestCase):
             data={
                 "prototype_id": host_prototype.pk,
                 "provider_id": provider_response.data["id"],
-                "fqdn": "test_fqdn_2",
+                "fqdn": "test-fqdn-2",
             },
         )
 
@@ -476,9 +486,14 @@ class TestCluster(BaseTestCase):
         )
 
     def test_update(self):
+
         self.client.patch(
             path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
-            data={"display_name": "test_cluster_another_display_name"},
+            data={
+                "display_name": "test_cluster_another_display_name",
+                "name": self.test_cluster_name,
+                "description": self.description,
+            },
             content_type=APPLICATION_JSON,
         )
 
@@ -487,10 +502,20 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
-            obj_name=self.cluster.name,
+            obj_name=self.test_cluster_name,
             obj_type=AuditObjectType.Cluster,
             operation_name="Cluster updated",
             operation_type=AuditLogOperationType.Update,
+            object_changes={
+                "current": {
+                    "description": self.description,
+                    "name": self.test_cluster_name,
+                },
+                "previous": {
+                    "description": "",
+                    "name": "test_cluster_2",
+                },
+            },
         )
 
     def test_update_denied(self):
@@ -707,7 +732,7 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
-    def test_add_host(self):
+    def test_add_host_success_and_fail(self):
         self.client.post(
             path=reverse("host", kwargs={"cluster_id": self.cluster.pk}),
             data={"host_id": self.host.pk},
@@ -723,6 +748,24 @@ class TestCluster(BaseTestCase):
             obj_type=AuditObjectType.Cluster,
             operation_name=f"{self.host.fqdn} host added",
             operation_type=AuditLogOperationType.Update,
+        )
+
+        self.client.post(
+            path=reverse("host", kwargs={"cluster_id": self.cluster.pk}),
+            data={"host_id": 10000},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            obj=self.cluster,
+            obj_name=self.cluster.name,
+            obj_type=AuditObjectType.Cluster,
+            operation_name="host added",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Fail,
         )
 
     def test_add_host_denied(self):
@@ -763,6 +806,71 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
+    def test_update_host(self):
+        data = {"description": self.description, "maintenance_mode": "on"}
+        self.host.cluster = self.cluster
+        self.host.save(update_fields=["cluster"])
+        self.client.patch(
+            path=reverse(
+                "host-details",
+                kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
+            ),
+            data=data,
+            content_type=APPLICATION_JSON,
+        )
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+        self.check_log(
+            log=log,
+            obj=self.host,
+            obj_name=self.host.name,
+            obj_type=AuditObjectType.Host,
+            operation_name=self.host_updated,
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Fail,
+        )
+        self.client.patch(
+            path=reverse(
+                "host-details",
+                kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
+            ),
+            data={"fqdn": "new_test_fqdn"},
+            content_type=APPLICATION_JSON,
+        )
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+        self.check_log(
+            log=log,
+            obj=self.host,
+            obj_name=self.host.name,
+            obj_type=AuditObjectType.Host,
+            operation_name=self.host_updated,
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Fail,
+        )
+        self.host.maintenance_mode = MaintenanceModeType.Off
+        self.host.save(update_fields=["maintenance_mode"])
+
+        self.client.patch(
+            path=reverse(
+                "host-details",
+                kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
+            ),
+            data=data,
+            content_type=APPLICATION_JSON,
+        )
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+        self.check_log(
+            log=log,
+            obj=self.host,
+            obj_name=self.host.name,
+            obj_type=AuditObjectType.Host,
+            operation_name=self.host_updated,
+            operation_type=AuditLogOperationType.Update,
+            object_changes={
+                "current": data,
+                "previous": {"description": "", "maintenance_mode": "off"},
+            },
+        )
+
     def test_update_host_config_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
@@ -797,7 +905,7 @@ class TestCluster(BaseTestCase):
             data={
                 "hc": [
                     {
-                        "component_id": self.get_hc().pk,
+                        "component_id": self.get_sc().pk,
                         "host_id": self.host.pk,
                         "service_id": self.service.pk,
                     }
@@ -827,7 +935,7 @@ class TestCluster(BaseTestCase):
                 data={
                     "hc": [
                         {
-                            "component_id": self.get_hc().pk,
+                            "component_id": self.get_sc().pk,
                             "host_id": self.host.pk,
                             "service_id": self.service.pk,
                         }
@@ -1230,7 +1338,7 @@ class TestCluster(BaseTestCase):
         )
 
     def test_update_component_config(self):
-        component = self.get_component()
+        component, _ = self.get_component()
         self.client.post(
             path=reverse(
                 "config-history",
@@ -1256,7 +1364,7 @@ class TestCluster(BaseTestCase):
         )
 
     def test_update_component_config_denied(self):
-        component = self.get_component()
+        component, _ = self.get_component()
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
                 path=reverse(
@@ -1286,8 +1394,11 @@ class TestCluster(BaseTestCase):
         )
 
     def test_update_service_config(self):
-        config = ObjectConfig.objects.create(current=2, previous=2)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config.current = config_log.pk
+        config.save(update_fields=["current"])
+
         self.service.config = config
         self.service.save(update_fields=["config"])
         self.client.post(
@@ -1314,8 +1425,11 @@ class TestCluster(BaseTestCase):
         )
 
     def test_update_service_config_denied(self):
-        config = ObjectConfig.objects.create(current=2, previous=2)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config.current = config_log.pk
+        config.save(update_fields=["current"])
+
         self.service.config = config
         self.service.save(update_fields=["config"])
         with self.no_rights_user_logged_in:
@@ -1395,7 +1509,7 @@ class TestCluster(BaseTestCase):
         self.client.patch(
             path=reverse(
                 "config-history-version-restore",
-                kwargs={"cluster_id": self.cluster.pk, "version": 1},
+                kwargs={"cluster_id": self.cluster.pk, "version": self.config_log.pk},
             ),
             content_type=APPLICATION_JSON,
         )
@@ -1409,7 +1523,7 @@ class TestCluster(BaseTestCase):
             response: Response = self.client.patch(
                 path=reverse(
                     "config-history-version-restore",
-                    kwargs={"cluster_id": self.cluster.pk, "version": 1},
+                    kwargs={"cluster_id": self.cluster.pk, "version": self.config_log.pk},
                 ),
                 content_type=APPLICATION_JSON,
             )
@@ -1432,7 +1546,11 @@ class TestCluster(BaseTestCase):
         self.client.patch(
             path=reverse(
                 "config-history-version-restore",
-                kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk, "version": 1},
+                kwargs={
+                    "cluster_id": self.cluster.pk,
+                    "host_id": self.host.pk,
+                    "version": self.config_log.pk,
+                },
             ),
             content_type=APPLICATION_JSON,
         )
@@ -1453,7 +1571,11 @@ class TestCluster(BaseTestCase):
             response: Response = self.client.patch(
                 path=reverse(
                     "config-history-version-restore",
-                    kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk, "version": 1},
+                    kwargs={
+                        "cluster_id": self.cluster.pk,
+                        "host_id": self.host.pk,
+                        "version": self.config_log.pk,
+                    },
                 ),
                 content_type=APPLICATION_JSON,
             )
@@ -1473,7 +1595,7 @@ class TestCluster(BaseTestCase):
         )
 
     def test_component_config_restore(self):
-        component = self.get_component()
+        component, config_log = self.get_component()
         self.client.patch(
             path=reverse(
                 "config-history-version-restore",
@@ -1481,7 +1603,7 @@ class TestCluster(BaseTestCase):
                     "cluster_id": self.cluster.pk,
                     "service_id": self.service.pk,
                     "component_id": component.pk,
-                    "version": 2,
+                    "version": config_log.pk,
                 },
             ),
             content_type=APPLICATION_JSON,
@@ -1499,7 +1621,7 @@ class TestCluster(BaseTestCase):
         )
 
     def test_component_config_restore_denied(self):
-        component = self.get_component()
+        component, config_log = self.get_component()
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
                 path=reverse(
@@ -1508,7 +1630,7 @@ class TestCluster(BaseTestCase):
                         "cluster_id": self.cluster.pk,
                         "service_id": self.service.pk,
                         "component_id": component.pk,
-                        "version": 2,
+                        "version": config_log.pk,
                     },
                 ),
                 content_type=APPLICATION_JSON,
@@ -1529,8 +1651,11 @@ class TestCluster(BaseTestCase):
         )
 
     def test_service_config_restore(self):
-        config = ObjectConfig.objects.create(current=2, previous=2)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config.current = config_log.pk
+        config.save(update_fields=["current"])
+
         self.service.config = config
         self.service.save(update_fields=["config"])
         self.client.patch(
@@ -1539,7 +1664,7 @@ class TestCluster(BaseTestCase):
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "service_id": self.service.pk,
-                    "version": 2,
+                    "version": config_log.pk,
                 },
             ),
             content_type=APPLICATION_JSON,
@@ -1557,8 +1682,11 @@ class TestCluster(BaseTestCase):
         )
 
     def test_service_config_restore_denied(self):
-        config = ObjectConfig.objects.create(current=2, previous=2)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config.current = config_log.pk
+        config.save(update_fields=["current"])
+
         self.service.config = config
         self.service.save(update_fields=["config"])
         with self.no_rights_user_logged_in:
@@ -1568,7 +1696,7 @@ class TestCluster(BaseTestCase):
                     kwargs={
                         "cluster_id": self.cluster.pk,
                         "service_id": self.service.pk,
-                        "version": 2,
+                        "version": config_log.pk,
                     },
                 ),
                 content_type=APPLICATION_JSON,

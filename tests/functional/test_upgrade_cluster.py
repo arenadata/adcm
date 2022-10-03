@@ -153,7 +153,7 @@ def test_upgrade_cluster_with_config_groups(sdk_client_fs):
                 "config": {
                     **cluster.config(),
                     "activatable_group_with_ro": {"readonly-key": "value"},
-                    "activatable_group": {"required": 10, "writable-key": "value"},
+                    "activatable_group": {"required": 10, "writable-key": "value", "readonly-key": "value"},
                 },
             }
         )
@@ -163,7 +163,7 @@ def test_upgrade_cluster_with_config_groups(sdk_client_fs):
                 "config": {
                     **service.config(),
                     "activatable_group_with_ro": {"readonly-key": "value"},
-                    "activatable_group": {"required": 10, "writable-key": "value"},
+                    "activatable_group": {"required": 10, "writable-key": "value", "readonly-key": "value"},
                 },
             }
         )

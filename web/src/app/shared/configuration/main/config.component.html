@@ -1,7 +1,7 @@
 <app-tools #tools (applyFilter)="filter($event)"
            (save)="save(configUrl)"
            (showHistory)="historyShow=$event"
-           [disabledSave]="isLock || fls?.form?.untouched || fls?.form?.invalid">
+           [disabledSave]="isLock || fls?.form?.invalid">
 
 </app-tools>
 

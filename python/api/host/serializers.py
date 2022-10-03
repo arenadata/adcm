@@ -11,46 +11,27 @@
 # limitations under the License.
 
 from django.conf import settings
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.core.validators import RegexValidator
-from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     BooleanField,
     CharField,
     ChoiceField,
+    HyperlinkedIdentityField,
     IntegerField,
+    ModelSerializer,
     SerializerMethodField,
 )
-from rest_framework.validators import UniqueValidator
 
 from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
-from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions, hlink
+from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions
+from api.validators import HostUniqueValidator, StartMidEndValidator
 from cm.adcm_config import get_main_info
 from cm.api import add_host
-from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
 from cm.models import Action, Host, HostProvider, MaintenanceModeType, Prototype
-from cm.stack import validate_name
 from cm.status_api import get_host_status
-
-
-class HostUniqueValidator(UniqueValidator):
-    def __call__(self, value, serializer_field):
-        try:
-            super().__call__(value, serializer_field)
-        except ValidationError as e:
-            raise AdcmEx("HOST_CONFLICT", "duplicate host") from e
-
-
-class HostFQDNRegexValidator(RegexValidator):
-    def __call__(self, value):
-        try:
-            super().__call__(value)
-        except DjangoValidationError as e:
-            raise AdcmEx("WRONG_NAME", "host FQDN doesn't meet requirements") from e
 
 
 class HostSerializer(EmptySerializer):
@@ -63,7 +44,13 @@ class HostSerializer(EmptySerializer):
         help_text="fully qualified domain name",
         validators=[
             HostUniqueValidator(queryset=Host.objects.all()),
-            HostFQDNRegexValidator(regex=settings.REGEX_HOST_FQDN),
+            StartMidEndValidator(
+                start=settings.ALLOWED_HOST_FQDN_START_CHARS,
+                mid=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                end=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                err_code="WRONG_NAME",
+                err_msg="Wrong FQDN.",
+            ),
         ],
     )
     description = CharField(required=False, allow_blank=True)
@@ -79,10 +66,6 @@ class HostSerializer(EmptySerializer):
     def validate_provider_id(provider_id):
         return check_obj(HostProvider, provider_id)
 
-    @staticmethod
-    def validate_fqdn(name):
-        return validate_name(name, "Host name")
-
     def create(self, validated_data):
         return add_host(
             validated_data.get("prototype_id"),
@@ -97,7 +80,9 @@ class HostDetailSerializer(HostSerializer):
     status = SerializerMethodField()
     config = CommonAPIURL(view_name="object-config")
     action = CommonAPIURL(view_name="object-action")
-    prototype = hlink("host-type-details", "prototype_id", "prototype_id")
+    prototype = HyperlinkedIdentityField(
+        view_name="host-type-details", lookup_field="prototype_id", lookup_url_kwarg="prototype_id"
+    )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
@@ -114,6 +99,7 @@ class HostUpdateSerializer(HostDetailSerializer):
         instance.maintenance_mode = validated_data.get(
             "maintenance_mode", instance.maintenance_mode
         )
+        instance.description = validated_data.get("description", instance.description)
         instance.fqdn = validated_data.get("fqdn", instance.fqdn)
         instance.save()
 
@@ -122,6 +108,20 @@ class HostUpdateSerializer(HostDetailSerializer):
         update_issue_after_deleting()
 
         return instance
+
+
+class HostAuditSerializer(ModelSerializer):
+    fqdn = CharField(max_length=253)
+    description = CharField(required=False, allow_blank=True)
+    maintenance_mode = ChoiceField(choices=MaintenanceModeType.choices)
+
+    class Meta:
+        model = Host
+        fields = (
+            "fqdn",
+            "description",
+            "maintenance_mode",
+        )
 
 
 class ClusterHostSerializer(HostSerializer):
@@ -154,7 +154,47 @@ class StatusSerializer(EmptySerializer):
         return get_host_status(obj)
 
 
-class HostUISerializer(HostDetailSerializer):
+class HostUISerializer(HostSerializer):
+    action = CommonAPIURL(view_name="object-action")
+    cluster_name = SerializerMethodField()
+    prototype_version = SerializerMethodField()
+    prototype_name = SerializerMethodField()
+    prototype_display_name = SerializerMethodField()
+    provider_name = SerializerMethodField()
+    concerns = ConcernItemUISerializer(many=True, read_only=True)
+    locked = BooleanField(read_only=True)
+    status = SerializerMethodField()
+
+    @staticmethod
+    def get_cluster_name(obj: Host) -> str | None:
+        if obj.cluster:
+            return obj.cluster.name
+        return None
+
+    @staticmethod
+    def get_prototype_version(obj: Host) -> str:
+        return obj.prototype.version
+
+    @staticmethod
+    def get_prototype_name(obj: Host) -> str:
+        return obj.prototype.name
+
+    @staticmethod
+    def get_prototype_display_name(obj: Host) -> str | None:
+        return obj.prototype.display_name
+
+    @staticmethod
+    def get_provider_name(obj: Host) -> str | None:
+        if obj.provider:
+            return obj.provider.name
+        return None
+
+    @staticmethod
+    def get_status(obj: Host) -> int:
+        return get_host_status(obj)
+
+
+class HostDetailUISerializer(HostDetailSerializer):
     actions = SerializerMethodField()
     cluster_name = SerializerMethodField()
     prototype_version = SerializerMethodField()
@@ -173,30 +213,30 @@ class HostUISerializer(HostDetailSerializer):
         return actions.data
 
     @staticmethod
-    def get_cluster_name(obj):
+    def get_cluster_name(obj: Host) -> str | None:
         if obj.cluster:
             return obj.cluster.name
 
         return None
 
     @staticmethod
-    def get_prototype_version(obj):
+    def get_prototype_version(obj: Host) -> str:
         return obj.prototype.version
 
     @staticmethod
-    def get_prototype_name(obj):
+    def get_prototype_name(obj: Host) -> str:
         return obj.prototype.name
 
     @staticmethod
-    def get_prototype_display_name(obj):
+    def get_prototype_display_name(obj: Host) -> str | None:
         return obj.prototype.display_name
 
     @staticmethod
-    def get_provider_name(obj):
+    def get_provider_name(obj: Host) -> str | None:
         if obj.provider:
             return obj.provider.name
         return None
 
     @staticmethod
-    def get_main_info(obj):
+    def get_main_info(obj: Host) -> str | None:
         return get_main_info(obj)

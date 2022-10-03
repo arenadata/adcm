@@ -10,12 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.conf import settings
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     BooleanField,
     CharField,
+    HyperlinkedIdentityField,
     IntegerField,
     JSONField,
+    ModelSerializer,
     Serializer,
     SerializerMethodField,
 )
@@ -23,7 +26,7 @@ from rest_framework.validators import UniqueValidator
 
 from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
-from api.component.serializers import ComponentDetailSerializer
+from api.component.serializers import ComponentShortSerializer
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.host.serializers import HostSerializer
@@ -35,9 +38,8 @@ from api.utils import (
     check_obj,
     filter_actions,
     get_upgradable_func,
-    hlink,
 )
-from api.validators import ClusterNameRegExValidator
+from api.validators import StartMidEndValidator
 from cm.adcm_config import get_main_info
 from cm.api import add_cluster, add_hc, bind, multi_bind
 from cm.errors import AdcmEx
@@ -68,13 +70,21 @@ class ClusterSerializer(Serializer):
         help_text="Cluster name",
         validators=[
             ClusterUniqueValidator(queryset=Cluster.objects.all()),
-            ClusterNameRegExValidator,
+            StartMidEndValidator(
+                start=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                mid=settings.ALLOWED_CLUSTER_NAME_MID_CHARS,
+                end=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                err_code="WRONG_NAME",
+                err_msg="Wrong cluster name.",
+            ),
         ],
     )
     description = CharField(help_text="Cluster description", required=False)
     state = CharField(read_only=True)
     before_upgrade = JSONField(read_only=True)
-    url = hlink("cluster-details", "id", "cluster_id")
+    url = HyperlinkedIdentityField(
+        view_name="cluster-details", lookup_field="id", lookup_url_kwarg="cluster_id"
+    )
 
     @staticmethod
     def validate_prototype_id(prototype_id):
@@ -94,6 +104,41 @@ class ClusterSerializer(Serializer):
         return instance
 
 
+class ClusterUISerializer(ClusterSerializer):
+    action = CommonAPIURL(view_name="object-action")
+    edition = CharField(read_only=True)
+    prototype_version = SerializerMethodField()
+    prototype_name = SerializerMethodField()
+    prototype_display_name = SerializerMethodField()
+    upgrade = HyperlinkedIdentityField(
+        view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id"
+    )
+    upgradable = SerializerMethodField()
+    concerns = ConcernItemUISerializer(many=True, read_only=True)
+    locked = BooleanField(read_only=True)
+    status = SerializerMethodField()
+
+    @staticmethod
+    def get_upgradable(obj: Cluster) -> bool:
+        return get_upgradable_func(obj)
+
+    @staticmethod
+    def get_prototype_version(obj: Cluster) -> str:
+        return obj.prototype.version
+
+    @staticmethod
+    def get_prototype_name(obj: Cluster) -> str:
+        return obj.prototype.name
+
+    @staticmethod
+    def get_prototype_display_name(obj: Cluster) -> str | None:
+        return obj.prototype.display_name
+
+    @staticmethod
+    def get_status(obj: Cluster) -> int:
+        return get_cluster_status(obj)
+
+
 class ClusterDetailSerializer(ClusterSerializer):
     bundle_id = IntegerField(read_only=True)
     edition = CharField(read_only=True)
@@ -101,22 +146,38 @@ class ClusterDetailSerializer(ClusterSerializer):
     action = CommonAPIURL(view_name="object-action")
     service = ObjectURL(view_name="service")
     host = ObjectURL(view_name="host")
-    hostcomponent = hlink("host-component", "id", "cluster_id")
+    hostcomponent = HyperlinkedIdentityField(
+        view_name="host-component", lookup_field="id", lookup_url_kwarg="cluster_id"
+    )
     status = SerializerMethodField()
-    status_url = hlink("cluster-status", "id", "cluster_id")
+    status_url = HyperlinkedIdentityField(
+        view_name="cluster-status", lookup_field="id", lookup_url_kwarg="cluster_id"
+    )
     config = CommonAPIURL(view_name="object-config")
-    serviceprototype = hlink("cluster-service-prototype", "id", "cluster_id")
-    upgrade = hlink("cluster-upgrade", "id", "cluster_id")
-    imports = hlink("cluster-import", "id", "cluster_id")
-    bind = hlink("cluster-bind", "id", "cluster_id")
-    prototype = hlink("cluster-type-details", "prototype_id", "prototype_id")
+    serviceprototype = HyperlinkedIdentityField(
+        view_name="cluster-service-prototype", lookup_field="id", lookup_url_kwarg="cluster_id"
+    )
+    upgrade = HyperlinkedIdentityField(
+        view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id"
+    )
+    imports = HyperlinkedIdentityField(
+        view_name="cluster-import", lookup_field="id", lookup_url_kwarg="cluster_id"
+    )
+    bind = HyperlinkedIdentityField(
+        view_name="cluster-bind", lookup_field="id", lookup_url_kwarg="cluster_id"
+    )
+    prototype = HyperlinkedIdentityField(
+        view_name="cluster-type-details",
+        lookup_field="prototype_id",
+        lookup_url_kwarg="prototype_id",
+    )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
     group_config = GroupConfigsHyperlinkedIdentityField(view_name="group-config-list")
 
     @staticmethod
-    def get_status(obj):
+    def get_status(obj: Cluster) -> int:
         return get_cluster_status(obj)
 
 
@@ -126,7 +187,13 @@ class ClusterUpdateSerializer(EmptySerializer):
         max_length=80,
         validators=[
             ClusterUniqueValidator(queryset=Cluster.objects.all()),
-            ClusterNameRegExValidator,
+            StartMidEndValidator(
+                start=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                mid=settings.ALLOWED_CLUSTER_NAME_MID_CHARS,
+                end=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                err_code="WRONG_NAME",
+                err_msg="Wrong cluster name.",
+            ),
         ],
         required=False,
         help_text="Cluster name",
@@ -134,19 +201,25 @@ class ClusterUpdateSerializer(EmptySerializer):
     description = CharField(required=False, help_text="Cluster description")
 
     def update(self, instance, validated_data):
+        if (
+            validated_data.get("name")
+            and validated_data.get("name") != instance.name
+            and instance.state != "created"
+        ):
+            raise ValidationError("Name change is available only in the 'created' state")
+
         instance.name = validated_data.get("name", instance.name)
         instance.description = validated_data.get("description", instance.description)
         instance.save()
         return instance
 
 
-class ClusterUISerializer(ClusterDetailSerializer):
+class ClusterDetailUISerializer(ClusterDetailSerializer):
     actions = SerializerMethodField()
     prototype_version = SerializerMethodField()
     prototype_name = SerializerMethodField()
     prototype_display_name = SerializerMethodField()
     upgradable = SerializerMethodField()
-    get_upgradable = get_upgradable_func
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     main_info = SerializerMethodField()
 
@@ -158,19 +231,23 @@ class ClusterUISerializer(ClusterDetailSerializer):
         return actions.data
 
     @staticmethod
-    def get_prototype_version(obj):
+    def get_upgradable(obj: Cluster) -> bool:
+        return get_upgradable_func(obj)
+
+    @staticmethod
+    def get_prototype_version(obj: Cluster) -> str:
         return obj.prototype.version
 
     @staticmethod
-    def get_prototype_name(obj):
+    def get_prototype_name(obj: Cluster) -> str:
         return obj.prototype.name
 
     @staticmethod
-    def get_prototype_display_name(obj):
+    def get_prototype_display_name(obj: Cluster) -> str | None:
         return obj.prototype.display_name
 
     @staticmethod
-    def get_main_info(obj):
+    def get_main_info(obj: Cluster) -> str | None:
         return get_main_info(obj)
 
 
@@ -210,7 +287,9 @@ class HostComponentSerializer(EmptySerializer):
     component_id = IntegerField(read_only=True, help_text="component id")
     state = CharField(read_only=True, required=False)
     url = MyUrlField(read_only=True, view_name="host-comp-details")
-    host_url = hlink("host-details", "host_id", "host_id")
+    host_url = HyperlinkedIdentityField(
+        view_name="host-details", lookup_field="host_id", lookup_url_kwarg="host_id"
+    )
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -258,7 +337,7 @@ class HostComponentSaveSerializer(EmptySerializer):
         return add_hc(self.context.get("cluster"), hc)
 
 
-class HCComponentSerializer(ComponentDetailSerializer):
+class HCComponentSerializer(ComponentShortSerializer):
     service_id = IntegerField(read_only=True)
     service_name = SerializerMethodField()
     service_display_name = SerializerMethodField()
@@ -411,3 +490,15 @@ class DoClusterUpgradeSerializer(DoUpgradeSerializer):
         attr = validated_data.get("attr", {})
         hc = validated_data.get("hc", [])
         return do_upgrade(validated_data.get("obj"), upgrade, config, attr, hc)
+
+
+class ClusterAuditSerializer(ModelSerializer):
+    name = CharField(max_length=80, required=False)
+    description = CharField(required=False)
+
+    class Meta:
+        model = Cluster
+        fields = (
+            "name",
+            "description",
+        )
