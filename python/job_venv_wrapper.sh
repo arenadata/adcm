@@ -4,7 +4,7 @@
 if [[ "${1}" != "none" ]]; then
     venv="/adcm/venv/${1}/bin/activate"
     # shellcheck disable=SC1090
-    source "${venv}"
+    . "${venv}"
 fi
 
 shift
