@@ -23,10 +23,11 @@ RUN pip install --upgrade pip &&  \
     pip install --no-cache-dir -r /adcm/requirements-venv-default.txt && \
     deactivate
 COPY . /adcm
-RUN cp -r /adcm/os/* / && \
+RUN mkdir -p /adcm/data/log && \
+    mkdir -p /usr/share/ansible/plugins/modules && \
+    cp -r /adcm/os/* / && \
     cp /adcm/os/etc/crontabs/root /var/spool/cron/crontabs/root && \
     cp -r /adcm/python/ansible/plugins/* /usr/share/ansible/plugins/modules && \
-    mkdir -p /adcm/data/log && \
     python /adcm/python/manage.py collectstatic --noinput && \
     cp -r /adcm/wwwroot/static/rest_framework/css/* /adcm/wwwroot/static/rest_framework/docs/css/
 EXPOSE 8000
