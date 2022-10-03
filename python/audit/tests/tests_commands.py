@@ -25,8 +25,8 @@ class TestLogrotate(TestCase):
         bundle = Bundle.objects.create()
         date = timezone.now() - timedelta(days=3)
         prototype = Prototype.objects.create(bundle=bundle, type="adcm")
-        config = ObjectConfig.objects.create(current=1, previous=0)
-        ConfigLog.objects.create(
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        config_log = ConfigLog.objects.create(
             obj_ref=config,
             config={
                 "job_log": {"log_rotation_on_fs": 1, "log_rotation_in_db": 1},
@@ -35,6 +35,9 @@ class TestLogrotate(TestCase):
             },
             attr={"logrotate": {"active": False}},
         )
+        config.current = config_log.pk
+        config.save(update_fields=["current"])
+
         ADCM.objects.create(prototype=prototype, name="ADCM", config=config)
         self.user = User.objects.create_superuser("system", "", None, built_in=True)
         prototype = Prototype.objects.create(bundle=bundle, type="cluster")

@@ -37,10 +37,10 @@ def _task_case(task_pk: str, action: str) -> tuple[AuditOperation, AuditObject |
     if action == "cancel":
         action = f"{action}l"
 
-    obj = TaskLog.objects.filter(pk=task_pk).first()
+    task = TaskLog.objects.filter(pk=task_pk).first()
 
-    if obj and obj.action:
-        action_name = obj.action.display_name
+    if task and task.action:
+        action_name = task.action.display_name
     else:
         action_name = "Task"
 
@@ -49,11 +49,11 @@ def _task_case(task_pk: str, action: str) -> tuple[AuditOperation, AuditObject |
         operation_type=AuditLogOperationType.Update,
     )
 
-    if obj:
+    if task:
         audit_object = get_or_create_audit_obj(
-            object_id=task_pk,
-            object_name=obj.task_object.name,
-            object_type=obj.object_type.name,
+            object_id=task.task_object.pk,
+            object_name=task.task_object.name,
+            object_type=task.object_type.name,
         )
     else:
         audit_object = None

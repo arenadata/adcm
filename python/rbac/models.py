@@ -128,9 +128,9 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
     Also Role can have children and so produce acyclic graph of linked roles
     """
 
-    name = models.CharField(max_length=160)
+    name = models.CharField(max_length=1000)
     description = models.TextField(blank=True)
-    display_name = models.CharField(max_length=160, null=False, default="")
+    display_name = models.CharField(max_length=1000, null=False, default="")
     child = models.ManyToManyField("self", symmetrical=False, blank=True)
     permissions = models.ManyToManyField(Permission, blank=True)
     module_name = models.CharField(max_length=32)

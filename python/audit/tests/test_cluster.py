@@ -65,8 +65,12 @@ class TestCluster(BaseTestCase):
         self.test_cluster_name = "test-cluster"
         self.description = "Such wow new description"
         self.cluster_prototype = Prototype.objects.create(bundle=self.bundle, type="cluster")
-        config = ObjectConfig.objects.create(current=1, previous=1)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        self.config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config.current = self.config_log.pk
+        config.save(update_fields=["current"])
+
         self.cluster = Cluster.objects.create(
             prototype=self.cluster_prototype, name="test_cluster_2", config=config
         )
@@ -199,18 +203,12 @@ class TestCluster(BaseTestCase):
             },
         )
 
-    def get_hc(self) -> HostComponent:
+    def get_sc(self) -> HostComponent:
         service_component_prototype = Prototype.objects.create(bundle=self.bundle, type="component")
-        service_component = ServiceComponent.objects.create(
+        return ServiceComponent.objects.create(
             cluster=self.cluster,
             service=self.service,
             prototype=service_component_prototype,
-        )
-        return HostComponent.objects.create(
-            cluster=self.cluster,
-            host=self.host,
-            service=self.service,
-            component=service_component,
         )
 
     def get_cluster_service_for_bind(self):
@@ -237,16 +235,22 @@ class TestCluster(BaseTestCase):
 
         return cluster, service
 
-    def get_component(self) -> ServiceComponent:
-        config = ObjectConfig.objects.create(current=2, previous=2)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+    def get_component(self) -> tuple[ServiceComponent, ConfigLog]:
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config.current = config_log.pk
+        config.save(update_fields=["current"])
+
         prototype = Prototype.objects.create(bundle=self.bundle, type="component")
 
-        return ServiceComponent.objects.create(
-            cluster=self.cluster,
-            service=self.service,
-            prototype=prototype,
-            config=config,
+        return (
+            ServiceComponent.objects.create(
+                cluster=self.cluster,
+                service=self.service,
+                prototype=prototype,
+                config=config,
+            ),
+            config_log,
         )
 
     def add_no_rights_user_cluster_view_rights(self) -> None:
@@ -881,7 +885,7 @@ class TestCluster(BaseTestCase):
             data={
                 "hc": [
                     {
-                        "component_id": self.get_hc().pk,
+                        "component_id": self.get_sc().pk,
                         "host_id": self.host.pk,
                         "service_id": self.service.pk,
                     }
@@ -911,7 +915,7 @@ class TestCluster(BaseTestCase):
                 data={
                     "hc": [
                         {
-                            "component_id": self.get_hc().pk,
+                            "component_id": self.get_sc().pk,
                             "host_id": self.host.pk,
                             "service_id": self.service.pk,
                         }
@@ -1314,7 +1318,7 @@ class TestCluster(BaseTestCase):
         )
 
     def test_update_component_config(self):
-        component = self.get_component()
+        component, _ = self.get_component()
         self.client.post(
             path=reverse(
                 "config-history",
@@ -1340,7 +1344,7 @@ class TestCluster(BaseTestCase):
         )
 
     def test_update_component_config_denied(self):
-        component = self.get_component()
+        component, _ = self.get_component()
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
                 path=reverse(
@@ -1370,8 +1374,11 @@ class TestCluster(BaseTestCase):
         )
 
     def test_update_service_config(self):
-        config = ObjectConfig.objects.create(current=2, previous=2)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config.current = config_log.pk
+        config.save(update_fields=["current"])
+
         self.service.config = config
         self.service.save(update_fields=["config"])
         self.client.post(
@@ -1398,8 +1405,11 @@ class TestCluster(BaseTestCase):
         )
 
     def test_update_service_config_denied(self):
-        config = ObjectConfig.objects.create(current=2, previous=2)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config.current = config_log.pk
+        config.save(update_fields=["current"])
+
         self.service.config = config
         self.service.save(update_fields=["config"])
         with self.no_rights_user_logged_in:
@@ -1479,7 +1489,7 @@ class TestCluster(BaseTestCase):
         self.client.patch(
             path=reverse(
                 "config-history-version-restore",
-                kwargs={"cluster_id": self.cluster.pk, "version": 1},
+                kwargs={"cluster_id": self.cluster.pk, "version": self.config_log.pk},
             ),
             content_type=APPLICATION_JSON,
         )
@@ -1493,7 +1503,7 @@ class TestCluster(BaseTestCase):
             response: Response = self.client.patch(
                 path=reverse(
                     "config-history-version-restore",
-                    kwargs={"cluster_id": self.cluster.pk, "version": 1},
+                    kwargs={"cluster_id": self.cluster.pk, "version": self.config_log.pk},
                 ),
                 content_type=APPLICATION_JSON,
             )
@@ -1516,7 +1526,11 @@ class TestCluster(BaseTestCase):
         self.client.patch(
             path=reverse(
                 "config-history-version-restore",
-                kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk, "version": 1},
+                kwargs={
+                    "cluster_id": self.cluster.pk,
+                    "host_id": self.host.pk,
+                    "version": self.config_log.pk,
+                },
             ),
             content_type=APPLICATION_JSON,
         )
@@ -1537,7 +1551,11 @@ class TestCluster(BaseTestCase):
             response: Response = self.client.patch(
                 path=reverse(
                     "config-history-version-restore",
-                    kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk, "version": 1},
+                    kwargs={
+                        "cluster_id": self.cluster.pk,
+                        "host_id": self.host.pk,
+                        "version": self.config_log.pk,
+                    },
                 ),
                 content_type=APPLICATION_JSON,
             )
@@ -1557,7 +1575,7 @@ class TestCluster(BaseTestCase):
         )
 
     def test_component_config_restore(self):
-        component = self.get_component()
+        component, config_log = self.get_component()
         self.client.patch(
             path=reverse(
                 "config-history-version-restore",
@@ -1565,7 +1583,7 @@ class TestCluster(BaseTestCase):
                     "cluster_id": self.cluster.pk,
                     "service_id": self.service.pk,
                     "component_id": component.pk,
-                    "version": 2,
+                    "version": config_log.pk,
                 },
             ),
             content_type=APPLICATION_JSON,
@@ -1583,7 +1601,7 @@ class TestCluster(BaseTestCase):
         )
 
     def test_component_config_restore_denied(self):
-        component = self.get_component()
+        component, config_log = self.get_component()
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
                 path=reverse(
@@ -1592,7 +1610,7 @@ class TestCluster(BaseTestCase):
                         "cluster_id": self.cluster.pk,
                         "service_id": self.service.pk,
                         "component_id": component.pk,
-                        "version": 2,
+                        "version": config_log.pk,
                     },
                 ),
                 content_type=APPLICATION_JSON,
@@ -1613,8 +1631,11 @@ class TestCluster(BaseTestCase):
         )
 
     def test_service_config_restore(self):
-        config = ObjectConfig.objects.create(current=2, previous=2)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config.current = config_log.pk
+        config.save(update_fields=["current"])
+
         self.service.config = config
         self.service.save(update_fields=["config"])
         self.client.patch(
@@ -1623,7 +1644,7 @@ class TestCluster(BaseTestCase):
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "service_id": self.service.pk,
-                    "version": 2,
+                    "version": config_log.pk,
                 },
             ),
             content_type=APPLICATION_JSON,
@@ -1641,8 +1662,11 @@ class TestCluster(BaseTestCase):
         )
 
     def test_service_config_restore_denied(self):
-        config = ObjectConfig.objects.create(current=2, previous=2)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config.current = config_log.pk
+        config.save(update_fields=["current"])
+
         self.service.config = config
         self.service.save(update_fields=["config"])
         with self.no_rights_user_logged_in:
@@ -1652,7 +1676,7 @@ class TestCluster(BaseTestCase):
                     kwargs={
                         "cluster_id": self.cluster.pk,
                         "service_id": self.service.pk,
-                        "version": 2,
+                        "version": config_log.pk,
                     },
                 ),
                 content_type=APPLICATION_JSON,
