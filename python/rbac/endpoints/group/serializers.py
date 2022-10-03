@@ -66,7 +66,7 @@ class GroupSerializer(FlexFieldsSerializerMixin, Serializer):
     """
 
     id = IntegerField(read_only=True)
-    name = RegexField(r"^[^\n]+$", max_length=150)
+    name = RegexField(r"^[^\n]+$", max_length=150, source="name_to_display")
     description = CharField(max_length=255, allow_blank=True, required=False, default="")
     user = UserSerializer(many=True, required=False, source="user_set")
     url = HyperlinkedIdentityField(view_name="rbac:group-detail")
