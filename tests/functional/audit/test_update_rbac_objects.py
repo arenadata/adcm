@@ -19,9 +19,7 @@ import allure
 import pytest
 import requests
 from adcm_client.objects import ADCMClient, Group, Policy, Role, User
-from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
-from tests.functional.audit.checks import check_audit_cef_logs
 from tests.functional.audit.conftest import check_failed, check_succeed, make_auth_header
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles as BR
@@ -132,7 +130,6 @@ def test_update_rbac_objects(
     parse_with_context,
     rbac_create_data,
     sdk_client_fs,
-    adcm_fs,
     unauthorized_creds,
 ):
     """Test update (success, fail, denied) of RBAC objects: user, group, role, policy"""
@@ -148,9 +145,8 @@ def test_update_rbac_objects(
     checker = AuditLogChecker(parse_with_context({**rbac_create_data, "changes": {**prepared_changes}}))
     checker.set_user_map(sdk_client_fs)
     checker.check(sdk_client_fs.audit_operation_list())
-    wait_until_step_succeeds(
-        check_audit_cef_logs, timeout=10, period=0.5, client=sdk_client_fs, adcm_container=adcm_fs.container
-    )
+    # return after https://tracker.yandex.ru/ADCM-3244
+    # check_audit_cef_logs(client=sdk_client_fs, adcm_container=adcm_fs.container)
 
 
 @pytest.mark.parametrize("parse_with_context", ["full_update_rbac.yaml"], indirect=True)
