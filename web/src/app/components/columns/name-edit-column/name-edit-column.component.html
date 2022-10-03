@@ -1,0 +1,4 @@
+<div>{{ row?.fqdn }}</div>
+<button mat-icon-button class="rename-button" [class.editable]="isEditable()" (click)="rename($event)">
+  <mat-icon>edit</mat-icon>
+</button>

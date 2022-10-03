@@ -1,0 +1,11 @@
+:host {
+  display: flex;
+  align-items: center;
+}
+
+.rename-button {
+  display: none;
+  margin-left: 10px;
+  width: 24px !important;
+  min-width: unset !important;
+}
