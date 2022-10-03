@@ -92,7 +92,13 @@ def get_task_download_archive_name(task: TaskLog) -> str:
     if action_display_name:
         archive_name = f"{action_display_name}_{archive_name}"
 
-    if task.object_type.name in {"adcm", "cluster", "service", "component", "provider"}:
+    if task.object_type.name in {
+        "adcm",
+        "cluster",
+        "cluster object",
+        "service component",
+        "host provider",
+    }:
         action_prototype_display_name = str_remove_non_alnum(
             value=task.action.prototype.display_name
         ) or str_remove_non_alnum(value=task.action.prototype.name)
@@ -105,11 +111,11 @@ def get_task_download_archive_name(task: TaskLog) -> str:
     obj_name = None
     if task.object_type.name == "cluster":
         obj_name = task.task_object.name
-    elif task.object_type.name == "service":
+    elif task.object_type.name == "cluster object":
         obj_name = task.task_object.cluster.name
-    elif task.object_type.name == "component":
+    elif task.object_type.name == "service component":
         obj_name = task.task_object.cluster.name
-    elif task.object_type.name == "provider":
+    elif task.object_type.name == "host provider":
         obj_name = task.task_object.name
     elif task.object_type.name == "host":
         obj_name = task.task_object.fqdn
@@ -149,7 +155,7 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
                 ]
                 for log_file in files:
                     tarinfo = tarfile.TarInfo(
-                        f"{job.pk}-{dir_name_suffix}".strip("-") + f"/{log_file.name}"
+                        f'{f"{job.pk}-{dir_name_suffix}".strip("-")}/{log_file.name}'
                     )
                     tarinfo.size = log_file.stat().st_size
                     tar_file.addfile(tarinfo=tarinfo, fileobj=io.BytesIO(log_file.read_bytes()))
@@ -157,8 +163,8 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
                 log_storages = LogStorage.objects.filter(job=job, type__in={"stdout", "stderr"})
                 for log_storage in log_storages:
                     tarinfo = tarfile.TarInfo(
-                        f"{job.pk}-{dir_name_suffix}".strip("-")
-                        + f"/{log_storage.name}-{log_storage.type}.txt"
+                        f'{f"{job.pk}-{dir_name_suffix}".strip("-")}'
+                        f'/{log_storage.name}-{log_storage.type}.txt"'
                     )
                     body = io.BytesIO(bytes(log_storage.body, "utf-8"))
                     tarinfo.size = body.getbuffer().nbytes
