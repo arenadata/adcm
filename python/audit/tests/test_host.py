@@ -58,8 +58,11 @@ class TestHost(BaseTestCase):
             prototype=provider_prototype,
         )
         self.fqdn = "test-fqdn"
-        config = ObjectConfig.objects.create(current=1, previous=1)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        self.config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config.current = self.config_log.pk
+        config.save(update_fields=["current"])
+
         self.host = Host.objects.create(
             fqdn="test-fqdn-2",
             prototype=self.host_prototype,
@@ -413,7 +416,7 @@ class TestHost(BaseTestCase):
         response: Response = self.client.patch(
             path=reverse(
                 "config-history-version-restore",
-                kwargs={"host_id": self.host.pk, "version": 1},
+                kwargs={"host_id": self.host.pk, "version": self.config_log.pk},
             ),
             content_type=APPLICATION_JSON,
         )
@@ -506,7 +509,11 @@ class TestHost(BaseTestCase):
         response: Response = self.client.patch(
             path=reverse(
                 "config-history-version-restore",
-                kwargs={"provider_id": self.provider.pk, "host_id": self.host.pk, "version": 1},
+                kwargs={
+                    "provider_id": self.provider.pk,
+                    "host_id": self.host.pk,
+                    "version": self.config_log.pk,
+                },
             ),
             content_type=APPLICATION_JSON,
         )

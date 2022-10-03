@@ -11,6 +11,7 @@
 # limitations under the License.
 
 """Complex checks for audit tests stored here"""
+
 from datetime import datetime
 from pprint import pformat
 from typing import Collection, List, NamedTuple, Tuple, Union
@@ -72,9 +73,9 @@ def check_audit_cef_logs(client: ADCMClient, adcm_container: Container):
                     f"Incorrect {param} in one of records.\nExpected: {expected}\nCheck attachments for more details"
                 )
     with allure.step("Check that of audit logs (operations + logins) should be same as CEF logs"):
-        assert (audit_amount := len(logs)) == (
-            cef_amount := len(cef_records)
-        ), f"Lengths are not the same.\nAudit logs: {audit_amount}.\nCEF logs: {cef_amount}"
+        if (audit_amount := len(logs)) != (cef_amount := len(cef_records)):
+            _attach_api_logs(logs)
+            raise AssertionError(f"Lengths are not the same.\nAudit logs: {audit_amount}.\nCEF logs: {cef_amount}")
     with allure.step(
         "Check that all audit logs (operations and logins) have corresponding CEF record in container logs"
     ):
@@ -133,10 +134,22 @@ def _attach_cef_logs(cef_logs: Collection[CEFRecord]) -> None:
 
 
 def _attach_api_log(api_log: Union[AuditOperation, AuditLogin]) -> None:
-    fields = [f for f in dir(api_log) if not (not f.islower() or f.startswith("_") or callable(getattr(api_log, f)))]
-    fields.pop(fields.index("adcm_version"))
     allure.attach(
-        pformat({k: getattr(api_log, k) for k in fields}),
+        _prepare_log_for_attachment(api_log),
         name="Audit record",
         attachment_type=allure.attachment_type.TEXT,
     )
+
+
+def _attach_api_logs(api_logs: Collection[Union[AuditOperation, AuditLogin]]) -> None:
+    allure.attach(
+        pformat([_prepare_log_for_attachment(log) for log in api_logs]),
+        name="Audit records",
+        attachment_type=allure.attachment_type.TEXT,
+    )
+
+
+def _prepare_log_for_attachment(api_log: Union[AuditOperation, AuditLogin]) -> str:
+    fields = [f for f in dir(api_log) if not (not f.islower() or f.startswith("_") or callable(getattr(api_log, f)))]
+    fields.pop(fields.index("adcm_version"))
+    return pformat({k: getattr(api_log, k) for k in fields})

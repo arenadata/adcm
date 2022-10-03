@@ -115,7 +115,7 @@ class Command(BaseCommand):
             self.__log(msg, "exception")
 
     def __get_logrotate_config(self):
-        adcm_object = ADCM.objects.get(id=1)
+        adcm_object = ADCM.objects.first()
         current_configlog = ConfigLog.objects.get(
             obj_ref=adcm_object.config, id=adcm_object.config.current
         )
