@@ -246,17 +246,19 @@ class TaskLogLockTest(BaseTestCase):
         fn.seek(0)
         tar = tarfile.open(fileobj=fn, mode='r:gz')
         self.assertEqual(
-            [
-                "1-test-display-name/ansible-stdout.txt",
-                "1-test-display-name/inventory.json",
-                "1-test-display-name/ansible-stderr.txt",
-                "1-test-display-name/config.json",
-                "2-testsubaction2/ansible-stdout.txt",
-                "2-testsubaction2/inventory.json",
-                "2-testsubaction2/ansible-stderr.txt",
-                "2-testsubaction2/config.json",
-            ].sort(),
-            tar.getnames().sort(),
+            sorted(
+                [
+                    "1-test-display-name/ansible-stdout.txt",
+                    "1-test-display-name/inventory.json",
+                    "1-test-display-name/ansible-stderr.txt",
+                    "1-test-display-name/config.json",
+                    "2-testsubaction2/ansible-stdout.txt",
+                    "2-testsubaction2/inventory.json",
+                    "2-testsubaction2/ansible-stderr.txt",
+                    "2-testsubaction2/config.json",
+                ]
+            ),
+            sorted(tar.getnames()),
         )
         self.assertEqual(
             "test-cluster_test-cluster-prototype_test-cluster-action_1.tar.gz",
@@ -269,16 +271,18 @@ class TaskLogLockTest(BaseTestCase):
         fn.seek(0)
         tar = tarfile.open(fileobj=fn, mode='r:gz')
         self.assertEqual(
-            [
-                "1/ansible-stdout.txt",
-                "1/inventory.json",
-                "1/ansible-stderr.txt",
-                "1/config.json",
-                "2/ansible-stdout.txt",
-                "2/inventory.json",
-                "2/ansible-stderr.txt",
-                "2/config.json",
-            ].sort(),
-            tar.getnames().sort(),
+            sorted(
+                [
+                    "1/ansible-stdout.txt",
+                    "1/inventory.json",
+                    "1/ansible-stderr.txt",
+                    "1/config.json",
+                    "2/ansible-stdout.txt",
+                    "2/inventory.json",
+                    "2/ansible-stderr.txt",
+                    "2/config.json",
+                ]
+            ),
+            sorted(tar.getnames()),
         )
         self.assertEqual("1.tar.gz", get_task_download_archive_name(task))
