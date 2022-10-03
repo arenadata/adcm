@@ -25,8 +25,7 @@ RUN pip install --upgrade pip &&  \
 COPY . /adcm
 RUN cp -r /adcm/os/* / && \
     cp /adcm/os/etc/crontabs/root /var/spool/cron/crontabs/root && \
-    cp -r /adcm/python/ansible/* /adcm/venv/default/lib/python3.10/site-packages/ansible/ && \
-    cp -r /adcm/python/ansible/* /adcm/venv/2.9/lib/python3.10/site-packages/ansible/ && \
+    cp -r /adcm/python/ansible/plugins/* /usr/share/ansible/plugins/modules && \
     mkdir -p /adcm/data/log && \
     python /adcm/python/manage.py collectstatic --noinput && \
     cp -r /adcm/wwwroot/static/rest_framework/css/* /adcm/wwwroot/static/rest_framework/docs/css/
