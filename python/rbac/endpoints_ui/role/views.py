@@ -14,33 +14,38 @@
 
 from collections import defaultdict
 
-from rest_framework import serializers, mixins
 from rest_framework.decorators import action
+from rest_framework.mixins import ListModelMixin
 from rest_framework.response import Response
+from rest_framework.serializers import (
+    CharField,
+    HyperlinkedIdentityField,
+    IntegerField,
+    JSONField,
+    Serializer,
+)
 
 from api.base_view import GenericUIViewSet
 from cm import models as cm_models
 from rbac import models
 
 
-class RoleSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-    parametrized_by_type = serializers.JSONField()
-    object_candidate_url = serializers.HyperlinkedIdentityField(
-        view_name='rbac-ui:role-object-candidate'
-    )
+class RoleSerializer(Serializer):
+    id = IntegerField()
+    name = CharField()
+    parametrized_by_type = JSONField()
+    object_candidate_url = HyperlinkedIdentityField(view_name="rbac-ui:role-object-candidate")
 
 
-class RoleViewSet(mixins.ListModelMixin, GenericUIViewSet):
+class RoleViewSet(ListModelMixin, GenericUIViewSet):
     queryset = models.Role.objects.all()
     serializer_class = RoleSerializer
 
-    @action(methods=['get'], detail=True)
+    @action(methods=["get"], detail=True)
     def object_candidate(self, request, **kwargs):
         role = self.get_object()
-        if role.type != models.RoleTypes.role.value:
-            return {'cluster': [], 'provider': [], 'service': [], 'host': []}
+        if role.type != models.RoleTypes.role:
+            return Response({"cluster": [], "provider": [], "service": [], "host": []})
 
         clusters = []
         providers = []
@@ -51,9 +56,9 @@ class RoleViewSet(mixins.ListModelMixin, GenericUIViewSet):
             for cluster in cm_models.Cluster.objects.all():
                 clusters.append(
                     {
-                        'name': cluster.display_name,
-                        'type': cm_models.PrototypeEnum.Cluster.value,
-                        'id': cluster.id,
+                        "name": cluster.display_name,
+                        "type": cm_models.ObjectType.Cluster,
+                        "id": cluster.id,
                     }
                 )
 
@@ -61,9 +66,9 @@ class RoleViewSet(mixins.ListModelMixin, GenericUIViewSet):
             for provider in cm_models.HostProvider.objects.all():
                 providers.append(
                     {
-                        'name': provider.display_name,
-                        'type': cm_models.PrototypeEnum.Provider.value,
-                        'id': provider.id,
+                        "name": provider.display_name,
+                        "type": cm_models.ObjectType.Provider,
+                        "id": provider.id,
                     }
                 )
 
@@ -71,9 +76,9 @@ class RoleViewSet(mixins.ListModelMixin, GenericUIViewSet):
             for host in cm_models.Host.objects.all():
                 hosts.append(
                     {
-                        'name': host.display_name,
-                        'type': cm_models.PrototypeEnum.Host.value,
-                        'id': host.id,
+                        "name": host.display_name,
+                        "type": cm_models.ObjectType.Host,
+                        "id": host.id,
                     }
                 )
 
@@ -85,24 +90,24 @@ class RoleViewSet(mixins.ListModelMixin, GenericUIViewSet):
             for service in cm_models.ClusterObject.objects.all():
                 _services[service.display_name].append(
                     {
-                        'name': service.cluster.display_name,
-                        'type': 'service',
-                        'id': service.id,
+                        "name": service.cluster.display_name,
+                        "type": "service",
+                        "id": service.id,
                     }
                 )
             for service_name, clusters_info in _services.items():
                 services.append(
                     {
-                        'name': service_name,
-                        'clusters': sorted(clusters_info, key=lambda x: x['name']),
+                        "name": service_name,
+                        "clusters": sorted(clusters_info, key=lambda x: x["name"]),
                     }
                 )
 
         return Response(
             {
-                'cluster': sorted(clusters, key=lambda x: x['name']),
-                'provider': sorted(providers, key=lambda x: x['name']),
-                'service': sorted(services, key=lambda x: x['name']),
-                'host': sorted(hosts, key=lambda x: x['name']),
+                "cluster": sorted(clusters, key=lambda x: x["name"]),
+                "provider": sorted(providers, key=lambda x: x["name"]),
+                "service": sorted(services, key=lambda x: x["name"]),
+                "host": sorted(hosts, key=lambda x: x["name"]),
             }
         )

@@ -36,6 +36,8 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
 
   parameterControl: () => FormControl;
 
+  @Input() uniqId: string;
+
   @Input() fieldTemplate: TemplateRef<any>;
 
   @Input() wrapperOptions: ConfigAttributeOptions;
@@ -75,8 +77,8 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
   private _resolveAndSetupControls(attributeForm: FormGroup, parametersForm: FormGroup, fieldOptions: IFieldOptions): void {
     let attributeControl: FormGroup = attributeForm;
     let parameterControl: FormGroup = parametersForm;
-    let enabled = this._attributeSrv.attributes.get(ConfigAttributeNames.CUSTOM_GROUP_KEYS).value;
-    let text = this._attributeSrv.attributes.get(ConfigAttributeNames.CUSTOM_GROUP_KEYS).options.tooltipText;
+    let enabled = this._attributeSrv.attributes[this.uniqId].get(ConfigAttributeNames.CUSTOM_GROUP_KEYS).value;
+    let text = this._attributeSrv.attributes[this.uniqId].get(ConfigAttributeNames.CUSTOM_GROUP_KEYS).options.tooltipText;
 
     const path = fieldOptions.key?.split('/').reverse();
 

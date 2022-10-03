@@ -44,7 +44,7 @@ TEST_IDS = [
 def cluster(sdk_client_fs):
     """Create cluster"""
     bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__))
-    cluster = bundle.cluster_create("test_cluster")
+    cluster = bundle.cluster_create("test cluster")
     return cluster
 
 

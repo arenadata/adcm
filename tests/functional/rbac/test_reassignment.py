@@ -322,11 +322,11 @@ class TestMultiplePolicyReapply:
     @pytest.fixture()
     def objects(self, cluster_bundle, provider_bundle) -> Tuple[Cluster, Cluster, Service, Service, Provider]:
         """Prepare various objects for multiple policies test"""
-        first_cluster = cluster_bundle.cluster_create(name='Test Cluster #1')
-        second_cluster = cluster_bundle.cluster_create(name='Test Cluster #2')
+        first_cluster = cluster_bundle.cluster_create(name='Test Cluster 1')
+        second_cluster = cluster_bundle.cluster_create(name='Test Cluster 2')
         test_service = second_cluster.service_add(name='test_service')
         new_service = second_cluster.service_add(name='new_service')
-        provider = provider_bundle.provider_create(name='Test Provider #1')
+        provider = provider_bundle.provider_create(name='Test Provider 1')
         return first_cluster, second_cluster, test_service, new_service, provider
 
     @pytest.fixture()

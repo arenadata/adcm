@@ -9,22 +9,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
+import logging
 import os
 import shutil
-
+from datetime import datetime, timedelta
 from enum import Enum
-
-from datetime import timedelta, datetime
-from subprocess import check_output, CalledProcessError, STDOUT
+from subprocess import STDOUT, CalledProcessError, check_output
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
+from audit.models import AuditLogOperationResult
+from audit.utils import make_audit_log
 from cm import config
-from cm.logger import log_cron_task as log
 from cm.models import (
     ADCM,
     Cluster,
@@ -39,6 +37,8 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+
+logger = logging.getLogger("background_tasks")
 
 
 LOGROTATE_CONF_FILE_TEMPLATE = """
@@ -59,28 +59,28 @@ LOGROTATE_CONF_FILE_TEMPLATE = """
 
 
 class TargetType(Enum):
-    ALL = 'all'
-    JOB = 'job'
-    CONFIG = 'config'
-    NGINX = 'nginx'
+    ALL = "all"
+    JOB = "job"
+    CONFIG = "config"
+    NGINX = "nginx"
 
 
 class Command(BaseCommand):
-    help = 'Delete / rotate log files, db records, `run` directories'
+    help = "Delete / rotate log files, db records, `run` directories"
 
-    __encoding = 'utf-8'
-    __nginx_logrotate_conf = '/etc/logrotate.d/nginx'
-    __logrotate_cmd = f'logrotate {__nginx_logrotate_conf}'
-    __logrotate_cmd_debug = f'{__logrotate_cmd} -d'
+    __encoding = "utf-8"
+    __nginx_logrotate_conf = "/etc/logrotate.d/nginx"
+    __logrotate_cmd = f"logrotate {__nginx_logrotate_conf}"
+    __logrotate_cmd_debug = f"{__logrotate_cmd} -d"
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--target',
+            "--target",
             choices=[i.value for i in TargetType],
             default=TargetType.ALL.value,
-            help=f'Rotation target. Must be one of: {[i.value for i in TargetType]}',
+            help=f"Rotation target. Must be one of: {[i.value for i in TargetType]}",
         )
-        parser.add_argument('--disable_logs', action='store_true', help='Disable logging')
+        parser.add_argument("--disable_logs", action="store_true", help="Disable logging")
 
     def handle(self, *args, **options):
         __target_method_map = {
@@ -95,60 +95,60 @@ class Command(BaseCommand):
         }
 
         # pylint: disable=attribute-defined-outside-init
-        self.verbose = not options['disable_logs']
-        target = options['target']
+        self.verbose = not options["disable_logs"]
+        target = options["target"]
         self.config = self.__get_logrotate_config()
-        self.__log(f'Running logrotation for `{target}` target', 'info')
+        self.__log(f"Running logrotation for `{target}` target", "info")
         for func in __target_method_map[target]:
             func()
 
     def __execute_cmd(self, cmd):
-        self.__log(f'executing cmd: `{cmd}`', 'info')
+        self.__log(f"executing cmd: `{cmd}`", "info")
         try:
             out = check_output(cmd, shell=True, stderr=STDOUT)
-            out = out.decode(self.__encoding).strip('\n')
+            out = out.decode(self.__encoding).strip("\n")
             if out:
-                self.__log(out, 'debug')
+                self.__log(out, "debug")
         except CalledProcessError as e:
-            err_msg = e.stdout.decode(self.__encoding).strip('\n')
-            msg = f'Error! cmd: `{cmd}` return code: `{e.returncode}` msg: `{err_msg}`'
-            self.__log(msg, 'exception')
+            err_msg = e.stdout.decode(self.__encoding).strip("\n")
+            msg = f"Error! cmd: `{cmd}` return code: `{e.returncode}` msg: `{err_msg}`"
+            self.__log(msg, "exception")
 
     def __get_logrotate_config(self):
-        adcm_object = ADCM.objects.get(id=1)
+        adcm_object = ADCM.objects.first()
         current_configlog = ConfigLog.objects.get(
             obj_ref=adcm_object.config, id=adcm_object.config.current
         )
         adcm_conf = current_configlog.config
         logrotate_config = {
-            'logrotate': {
-                'active': current_configlog.attr['logrotate']['active'],
-                'nginx': adcm_conf['logrotate'],
+            "logrotate": {
+                "active": current_configlog.attr["logrotate"]["active"],
+                "nginx": adcm_conf["logrotate"],
             },
-            'job': adcm_conf['job_log'],
-            'config': adcm_conf['config_rotation'],
+            "job": adcm_conf["job_log"],
+            "config": adcm_conf["config_rotation"],
         }
-        self.__log(f'Got rotation config: {logrotate_config}')
+        self.__log(f"Got rotation config: {logrotate_config}")
         return logrotate_config
 
     def __generate_logrotate_conf_file(self):
         conf_file_args = {
-            'size': f'{self.config["logrotate"]["nginx"]["size"]}',
-            'no_compress': '' if self.config["logrotate"]["nginx"]["compress"] else '#',
-            'num_rotations': self.config["logrotate"]["nginx"]["max_history"],
+            "size": f"{self.config['logrotate']['nginx']['size']}",
+            "no_compress": "" if self.config["logrotate"]["nginx"]["compress"] else "#",
+            "num_rotations": self.config["logrotate"]["nginx"]["max_history"],
         }
-        with open(self.__nginx_logrotate_conf, 'wt', encoding=self.__encoding) as conf_file:
+        with open(self.__nginx_logrotate_conf, "wt", encoding=self.__encoding) as conf_file:
             conf_file.write(LOGROTATE_CONF_FILE_TEMPLATE.format(**conf_file_args))
-        self.__log(f'conf file `{self.__nginx_logrotate_conf}` generated', 'debug')
+        self.__log(f"conf file `{self.__nginx_logrotate_conf}` generated", "debug")
 
     def __run_nginx_log_rotation(self):
-        if self.config['logrotate']['active']:
-            self.__log('Nginx log rotation started', 'info')
+        if self.config["logrotate"]["active"]:
+            self.__log("Nginx log rotation started", "info")
             self.__generate_logrotate_conf_file()
             self.__log(
-                f'Using config file `{self.__nginx_logrotate_conf}`:\n'
-                f'{open(self.__nginx_logrotate_conf, "rt", encoding=self.__encoding).read()}',
-                'debug',
+                f"Using config file `{self.__nginx_logrotate_conf}`:\n"
+                f"{open(self.__nginx_logrotate_conf, 'rt', encoding=self.__encoding).read()}",
+                "debug",
             )
             if self.verbose:
                 self.__execute_cmd(self.__logrotate_cmd_debug)
@@ -156,12 +156,12 @@ class Command(BaseCommand):
 
     def __run_configlog_rotation(self):
         try:
-            configlog_days_delta = self.config['config']['config_rotation_in_db']
+            configlog_days_delta = self.config["config"]["config_rotation_in_db"]
             if configlog_days_delta <= 0:
                 return
 
             threshold_date = timezone.now() - timedelta(days=configlog_days_delta)
-            self.__log(f'ConfigLog rotation started. Threshold date: {threshold_date}', 'info')
+            self.__log(f"ConfigLog rotation started. Threshold date: {threshold_date}", "info")
 
             exclude_pks = set()
             target_configlogs = ConfigLog.objects.filter(date__lte=threshold_date)
@@ -173,28 +173,32 @@ class Command(BaseCommand):
                     exclude_pks.add(gc.config.previous)
                     exclude_pks.add(gc.config.current)
             target_configlogs = target_configlogs.exclude(pk__in=exclude_pks)
-
-            target_configlog_ids = set(i[0] for i in target_configlogs.values_list('id'))
+            target_configlog_ids = set(i[0] for i in target_configlogs.values_list("id"))
             target_objectconfig_ids = set(
                 cl.obj_ref.id
                 for cl in target_configlogs
                 if not self.__has_related_records(cl.obj_ref)
             )
+            if target_configlog_ids or target_objectconfig_ids:
+                make_audit_log("config", AuditLogOperationResult.Success, "launched")
 
             with transaction.atomic():
                 DummyData.objects.filter(id=1).update(date=timezone.now())
                 ConfigLog.objects.filter(id__in=target_configlog_ids).delete()
                 ObjectConfig.objects.filter(id__in=target_objectconfig_ids).delete()
+                if target_configlog_ids or target_objectconfig_ids:
+                    make_audit_log("config", AuditLogOperationResult.Success, "completed")
 
             self.__log(
-                f'Deleted {len(target_configlog_ids)} ConfigLogs and '
-                f'{len(target_objectconfig_ids)} ObjectConfigs',
-                'info',
+                f"Deleted {len(target_configlog_ids)} ConfigLogs and "
+                f"{len(target_objectconfig_ids)} ObjectConfigs",
+                "info",
             )
 
         except Exception as e:  # pylint: disable=broad-except
-            self.__log('Error in ConfigLog rotation', 'warning')
-            self.__log(e, 'exception')
+            make_audit_log("config", AuditLogOperationResult.Fail, "completed")
+            self.__log("Error in ConfigLog rotation", "warning")
+            self.__log(e, "exception")
 
     @staticmethod
     def __has_related_records(obj_conf: ObjectConfig) -> bool:
@@ -217,51 +221,56 @@ class Command(BaseCommand):
 
     def __run_joblog_rotation(self):
         try:  # pylint: disable=too-many-nested-blocks
-            days_delta_db = self.config['job']['log_rotation_in_db']
-            days_delta_fs = self.config['job']['log_rotation_on_fs']
+            days_delta_db = self.config["job"]["log_rotation_in_db"]
+            days_delta_fs = self.config["job"]["log_rotation_on_fs"]
             if days_delta_db <= 0 and days_delta_fs <= 0:
                 return
 
             threshold_date_db = timezone.now() - timedelta(days=days_delta_db)
             threshold_date_fs = timezone.now() - timedelta(days=days_delta_fs)
             self.__log(
-                f'JobLog rotation started. Threshold dates: '
-                f'db - {threshold_date_db}, fs - {threshold_date_fs}',
-                'info',
+                f"JobLog rotation started. Threshold dates: "
+                f"db - {threshold_date_db}, fs - {threshold_date_fs}",
+                "info",
             )
+            is_deleted = False
             if days_delta_db > 0:
                 target_tasklogs = TaskLog.objects.filter(
-                    finish_date__lte=threshold_date_db, status__in=['success', 'failed']
+                    finish_date__lte=threshold_date_db, status__in=["success", "failed"]
                 )
                 if target_tasklogs:
+                    is_deleted = True
                     with transaction.atomic():
                         DummyData.objects.filter(id=1).update(date=timezone.now())
                         target_tasklogs.delete()
                         # valid as long as `on_delete=models.SET_NULL` in JobLog.task field
                         JobLog.objects.filter(task__isnull=True).delete()
 
-                self.__log('db JobLog rotated', 'info')
-
+                self.__log("db JobLog rotated", "info")
             if days_delta_fs > 0:  # pylint: disable=too-many-nested-blocks
                 for name in os.listdir(config.RUN_DIR):
-                    if not name.startswith('.'):  # a line of code is used for development
+                    if not name.startswith("."):  # a line of code is used for development
                         path = os.path.join(config.RUN_DIR, name)
                         try:
                             m_time = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.utc)
                             if timezone.now() - m_time > timedelta(days=days_delta_fs):
+                                is_deleted = True
                                 if os.path.isdir(path):
                                     shutil.rmtree(path)
                                 else:
                                     os.remove(path)
                         except FileNotFoundError:
                             pass
-
-                self.__log('fs JobLog rotated', 'info')
+                if is_deleted:
+                    make_audit_log("task", AuditLogOperationResult.Success, "launched")
+                    make_audit_log("task", AuditLogOperationResult.Success, "completed")
+                self.__log("fs JobLog rotated", "info")
         except Exception as e:  # pylint: disable=broad-except
-            self.__log('Error in JobLog rotation', 'warning')
-            self.__log(e, 'exception')
+            make_audit_log("task", AuditLogOperationResult.Fail, "completed")
+            self.__log("Error in JobLog rotation", "warning")
+            self.__log(e, "exception")
 
-    def __log(self, msg, method='debug'):
+    def __log(self, msg, method="debug"):
         self.stdout.write(msg)
         if self.verbose:
-            getattr(log, method)(msg)
+            getattr(logger, method)(msg)

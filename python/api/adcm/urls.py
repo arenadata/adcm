@@ -10,20 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.urls import include, path
 
-from django.urls import path, include
-from . import views
-
+from api.adcm.views import AdcmDetail, AdcmList
 
 urlpatterns = [
-    path('', views.AdcmList.as_view(), name='adcm'),
+    path("", AdcmList.as_view(), name="adcm"),
     path(
-        '<int:adcm_id>/',
+        "<int:adcm_id>/",
         include(
             [
-                path('', views.AdcmDetail.as_view(), name='adcm-details'),
-                path('config/', include('api.config.urls'), {'object_type': 'adcm'}),
-                path('action/', include('api.action.urls'), {'object_type': 'adcm'}),
+                path("", AdcmDetail.as_view(), name="adcm-details"),
+                path("config/", include("api.config.urls"), {"object_type": "adcm"}),
+                path("action/", include("api.action.urls"), {"object_type": "adcm"}),
             ]
         ),
     ),

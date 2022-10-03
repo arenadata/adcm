@@ -49,6 +49,10 @@ class AdminUsersLocators:
 
     create_user_button = Locator(By.XPATH, "//button[@adcm_test='create-btn']", "Add user button")
     user_row = Locator(By.CSS_SELECTOR, "mat-row", "Table row")
+    filter_btn = Locator(By.CSS_SELECTOR, "app-filter .filter-toggle-button", "Fulter button")
+    filter_dropdown_select = Locator(By.CSS_SELECTOR, "app-filter mat-select", "Filter dropdown select")
+    filter_dropdown_option = Locator(By.CSS_SELECTOR, "div[role='listbox'] mat-option", "Filter dropdown option")
+    filter_dropdown_remove = Locator(By.CSS_SELECTOR, "app-filter button[aria-label='Remove']", "Filter remove button")
 
     class Row:
         """Existing user row"""
@@ -82,6 +86,13 @@ class AdminUsersLocators:
         last_name = Locator(By.NAME, "last_name", "New user last name")
         email = Locator(By.NAME, "email", "New user email")
         select_groups = Locator(By.CSS_SELECTOR, "adwp-input-select[controlname='group']", "Select groups")
+        group_item = Locator(By.CSS_SELECTOR, "mat-list-option[role='option']", "Group item")
+
+    class FilterPopup:
+        """Popup for filter info"""
+
+        block = Locator(By.CSS_SELECTOR, "div[role='menu']", "Filter popup block")
+        filter_item = Locator(By.CSS_SELECTOR, "button[role='menuitem']", "Filter item")
 
 
 class AdminGroupsLocators(CommonAdminPagesLocators):

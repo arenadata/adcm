@@ -51,6 +51,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   historyShow = false;
   isLock = false;
   isLoading = false;
+  attributeUniqId: string = null;
 
   worker$: Observable<WorkerInstance>;
 
@@ -80,9 +81,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     this.worker$ = service.worker$.pipe(this.takeUntil());
   }
 
-  ngAfterViewInit(): void {
-
-  }
+  ngAfterViewInit(): void {}
 
   ngOnChanges(changes: SimpleChanges): void {
     const url = changes['configUrl'];
@@ -201,7 +200,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
 
   mergeAttrsWithField(): IConfigAttr {
     const attr = this.rawConfig.getValue().attr;
-    const attrSrv = this.attributesSrv.rawAttributes();
+    const attrSrv = this.attributesSrv.rawAttributes(this.attributeUniqId);
 
     Object.keys(attr).forEach(a => {
       Object.keys(attr[a]).forEach((key) => {
@@ -223,7 +222,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   private _getConfig(url: string): Observable<IConfig> {
     this.isLoading = true;
     return this.service.getConfig(url).pipe(
-      tap((config) => this.attributesSrv.init(config.attr)),
+      tap((config) => this.attributeUniqId = this.attributesSrv.init(config.attr)),
       tap((c) => this.rawConfig.next(c)),
       finalize(() => this.isLoading = false),
       catchError(() => {

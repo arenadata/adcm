@@ -23,7 +23,7 @@ import { CONFIG_FIELD, FieldComponent } from '@app/shared/configuration/field/fi
 @Component({
   selector: 'app-config-field-attribute-provider',
   template: `
-    <ng-container *ngIf="!attributesSrv?.attributes">
+    <ng-container *ngIf="!attributesSrv?.attributes[uniqId]">
       <ng-container *ngTemplateOutlet="template"></ng-container>
     </ng-container>
 
@@ -43,6 +43,9 @@ export class ConfigFieldAttributeProviderComponent implements OnChanges, AfterVi
   @Input()
   options: IFieldOptions;
 
+  @Input()
+  uniqId: string;
+
   @HostBinding('class.read-only') get readOnly() {
     return this.options.read_only;
   }
@@ -58,7 +61,7 @@ export class ConfigFieldAttributeProviderComponent implements OnChanges, AfterVi
 
   constructor(private componentFactoryResolver: ComponentFactoryResolver,
               public attributesSrv: AttributeService,
-              private _cdr: ChangeDetectorRef) {}F
+              private _cdr: ChangeDetectorRef) {}
 
   ngOnChanges(changes: SimpleChanges) {
     this.containerRef?.instance['repairControlsAfterSave'](changes['parametersForm']['currentValue']);
@@ -66,17 +69,18 @@ export class ConfigFieldAttributeProviderComponent implements OnChanges, AfterVi
 
   ngAfterViewInit(): void {
     this.container.clear();
-    if (this.attributesSrv.attributes) {
-      this.attributesSrv.attributes.forEach((attribute) => {
+    if (this.attributesSrv.attributes[this.uniqId]) {
+      this.attributesSrv.attributes[this.uniqId].forEach((attribute) => {
         if (attribute.wrapper) {
           const factory: ComponentFactory<AttributeWrapper> = this.componentFactoryResolver.resolveComponentFactory(attribute.wrapper);
           this.containerRef = this.container.createComponent(factory);
+          this.containerRef.instance.uniqId = this.uniqId;
           this.containerRef.instance.fieldTemplate = this.field.template;
           this.containerRef.instance.wrapperOptions = attribute.options;
           this.containerRef.instance.fieldOptions = this.options;
           this.containerRef.instance.attributeForm = attribute.form;
           this.containerRef.instance.parametersForm = this.parametersForm;
-          Promise.resolve().then(() => this.containerRef.instance.field = this.fieldComponent.first);
+          setTimeout(() => this.containerRef.instance.field = this.fieldComponent.first, 0);
         }
       });
     } else {

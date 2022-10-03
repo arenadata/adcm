@@ -19,19 +19,17 @@ __metaclass__ = type
 import sys
 
 sys.path.append('/adcm/python')
-
 import adcm.init_django  # pylint: disable=unused-import
 from cm.ansible_plugin import (
     ContextActionModule,
     set_cluster_config,
-    set_service_config,
-    set_service_config_by_name,
-    set_host_config,
-    set_provider_config,
     set_component_config,
     set_component_config_by_name,
+    set_host_config,
+    set_provider_config,
+    set_service_config,
+    set_service_config_by_name,
 )
-
 
 ANSIBLE_METADATA = {'metadata_version': '1.1', 'supported_by': 'Arenadata'}
 DOCUMENTATION = r'''

@@ -11,12 +11,11 @@
 # limitations under the License.
 
 import logging
-import os
 
 from cm import config
 
-log = logging.getLogger('adcm')
-log.setLevel(logging.DEBUG)
+logger = logging.getLogger('adcm')
+logger.setLevel(logging.DEBUG)
 
 
 def get_log_handler(fname):
@@ -28,13 +27,4 @@ def get_log_handler(fname):
     return handler
 
 
-log.addHandler(get_log_handler(config.LOG_FILE))
-
-
-log_cron_task = logging.getLogger('cron_task')
-log_cron_task.setLevel(logging.INFO)
-handler_cron_task = logging.FileHandler(os.path.join(config.LOG_DIR, 'cron_task.log'), 'a', 'utf-8')
-handler_cron_task.setLevel(logging.INFO)
-fmt_cron = logging.Formatter("%(asctime)s - %(message)s")
-handler_cron_task.setFormatter(fmt_cron)
-log_cron_task.addHandler(handler_cron_task)
+logger.addHandler(get_log_handler(config.LOG_FILE))

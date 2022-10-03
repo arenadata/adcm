@@ -11,7 +11,9 @@
 # limitations under the License.
 
 import json
+
 from django.db import migrations
+
 from cm.adcm_config import ansible_encrypt_and_format, obj_to_dict
 
 

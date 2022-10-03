@@ -14,8 +14,8 @@ from guardian.mixins import PermissionListMixin
 from rest_framework.permissions import DjangoObjectPermissions
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
+from api.object_config.serializers import ObjectConfigSerializer
 from cm.models import ObjectConfig
-from .serializers import ObjectConfigSerializer
 
 
 class ObjectConfigViewSet(

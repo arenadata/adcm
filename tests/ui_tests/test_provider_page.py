@@ -58,7 +58,7 @@ def bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
 def cluster(request: SubRequest, sdk_client_fs: ADCMClient):
     """Create community edition cluster"""
     bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
-    return bundle.cluster_create(name="test_cluster")
+    return bundle.cluster_create(name="test cluster")
 
 
 @pytest.fixture()
@@ -190,16 +190,15 @@ class TestProviderListPage:
     @pytest.mark.include_firefox()
     def test_get_error_from_delete_provider_from_provider_list_page(self, app_fs, upload_and_create_test_provider):
         """Tests delete provider error from provider list page"""
-        params = {
-            "message": '[ CONFLICT ] PROVIDER_CONFLICT -- '
-            'There is host #1 "test_host" of host provider #1 "test_provider"'
-        }
-        upload_and_create_test_provider.host_create("test_host")
+        host = upload_and_create_test_provider.host_create("test-host")
+        message = (
+            f'[ CONFLICT ] PROVIDER_CONFLICT -- There is host #1 "{host.fqdn}" of host provider #1 "test_provider"'
+        )
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
         row = provider_page.table.get_all_rows()[0]
         provider_page.delete_provider_in_row(row)
         with allure.step("Check error message"):
-            assert provider_page.get_info_popup_text() == params["message"], "No error message"
+            assert message in provider_page.get_info_popup_text(), "No error message"
 
     @pytest.mark.usefixtures("upload_and_create_test_provider")
     def test_open_admin_page_by_toolbar_from_provider_list_page(self, app_fs):

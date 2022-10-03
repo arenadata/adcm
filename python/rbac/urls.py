@@ -12,17 +12,19 @@
 
 """RBAC root URLs"""
 
-from django.urls import path, include
+from django.urls import include, path
 
-from .endpoints import logout, root, token
+from rbac.endpoints.logout import LogOut
+from rbac.endpoints.root import RBACRoot
+from rbac.endpoints.token import GetAuthToken
 
 urlpatterns = [
-    path('', root.RBACRoot.as_view(), name='root'),
+    path('', RBACRoot.as_view(), name='root'),
     path('me/', include('rbac.endpoints.me.urls')),
     path('user/', include('rbac.endpoints.user.urls')),
     path('group/', include('rbac.endpoints.group.urls')),
     path('role/', include('rbac.endpoints.role.urls')),
     path(r'policy/', include('rbac.endpoints.policy.urls')),
-    path('logout/', logout.LogOut.as_view(), name='logout'),
-    path('token/', token.GetAuthToken.as_view(), name='token'),
+    path('logout/', LogOut.as_view(), name='logout'),
+    path('token/', GetAuthToken.as_view(), name='token'),
 ]

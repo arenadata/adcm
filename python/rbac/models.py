@@ -16,7 +16,9 @@ import importlib
 import re
 
 from adwp_base.errors import raise_AdwpEx as err
-from django.contrib.auth.models import User as AuthUser, Group as AuthGroup, Permission
+from django.contrib.auth.models import Group as AuthGroup
+from django.contrib.auth.models import Permission
+from django.contrib.auth.models import User as AuthUser
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -24,10 +26,10 @@ from django.db.models.signals import pre_save
 from django.db.transaction import atomic
 from django.dispatch import receiver
 from django.utils import timezone
-from guardian.models import UserObjectPermission, GroupObjectPermission
+from guardian.models import GroupObjectPermission, UserObjectPermission
 from rest_framework.exceptions import ValidationError
 
-from cm.models import Bundle, ProductCategory, HostComponent, DummyData
+from cm.models import Bundle, DummyData, HostComponent, ProductCategory
 
 
 class ObjectType(models.TextChoices):
@@ -58,9 +60,18 @@ class User(AuthUser):
 
     profile = models.JSONField(default=str)
     built_in = models.BooleanField(default=False, null=False)
+
+    def delete(self, using=None, keep_parents=False):
+        self.is_active = False
+        self.save()
+
     type = models.CharField(
         max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local
     )
+
+    @property
+    def name(self):
+        return self.username
 
 
 class Group(AuthGroup):
@@ -117,9 +128,9 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
     Also Role can have children and so produce acyclic graph of linked roles
     """
 
-    name = models.CharField(max_length=160)
+    name = models.CharField(max_length=1000)
     description = models.TextField(blank=True)
-    display_name = models.CharField(max_length=160, null=False, default="")
+    display_name = models.CharField(max_length=1000, null=False, default="")
     child = models.ManyToManyField("self", symmetrical=False, blank=True)
     permissions = models.ManyToManyField(Permission, blank=True)
     module_name = models.CharField(max_length=32)
@@ -163,7 +174,7 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
         return role_class(**self.init_params)  # pylint: disable=E1134
 
     def filter(self):
-        """filter out objects sutable for role"""
+        """filter out objects suitable for role"""
         if self.__obj__ is None:
             self.__obj__ = self.get_role_obj()
         return self.__obj__.filter()
@@ -175,7 +186,7 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
         return self.__obj__.apply(policy, self, user, group, obj)
 
     def get_permissions(self, role: 'Role' = None):
-        """Recursively get permissions of role and all her childs"""
+        """Recursively get permissions of role and all her children"""
         if role is None:
             role = self
 

@@ -45,7 +45,7 @@ class CommonConfigMenu:
         "//app-field[.//div[@adcm_test='{}']]//mat-list-item//span[contains(text(), '{}')]",
         'Config diff of option "{}" with "{}" in text',
     )
-    config_row = Locator(By.CSS_SELECTOR, "app-field, app-group-fields", "Configuration row")
+    config_row = Locator(By.CSS_SELECTOR, "app-config-fields>*", "Configuration row")
     text_row = Locator(By.TAG_NAME, "app-fields-textbox", "Configuration textbox row")
     field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
     info_tooltip_icon = TemplateLocator(
@@ -57,8 +57,8 @@ class CommonConfigMenu:
     class ConfigRow:
         """Configuration menu configuration row locators"""
 
-        name = Locator(By.CSS_SELECTOR, "label", "Row name")
-        value = Locator(By.CSS_SELECTOR, "input,textarea", "Row value")
+        name = Locator(By.CSS_SELECTOR, "label:not(.mat-checkbox-layout)", "Row name")
+        value = Locator(By.CSS_SELECTOR, "input:not([type='checkbox']),textarea", "Row value")
 
         input = Locator(By.CSS_SELECTOR, '*:not([style="display: none;"])>mat-form-field input,textarea', "Row input")
         password = Locator(

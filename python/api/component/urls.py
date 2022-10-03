@@ -11,20 +11,20 @@
 # limitations under the License.
 
 
-from django.urls import path, include
-from . import views
+from django.urls import include, path
 
+from api.component.views import ComponentDetailView, ComponentListView, StatusList
 
 urlpatterns = [
-    path('', views.ComponentListView.as_view(), name='component'),
+    path('', ComponentListView.as_view(), name='component'),
     path(
         '<int:component_id>/',
         include(
             [
-                path('', views.ComponentDetailView.as_view(), name='component-details'),
+                path('', ComponentDetailView.as_view(), name='component-details'),
                 path('config/', include('api.config.urls'), {'object_type': 'component'}),
                 path('action/', include('api.action.urls'), {'object_type': 'component'}),
-                path('status/', views.StatusList.as_view(), name='component-status'),
+                path('status/', StatusList.as_view(), name='component-status'),
             ]
         ),
     ),

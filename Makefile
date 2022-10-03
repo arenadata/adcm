@@ -3,7 +3,7 @@ BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 
 ADCMBASE_IMAGE ?= hub.arenadata.io/adcm/base
 ADCMTEST_IMAGE ?= hub.arenadata.io/adcm/test
-ADCMBASE_TAG ?= 20220630133845
+ADCMBASE_TAG ?= 20220929145118
 APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
 
@@ -51,11 +51,8 @@ testpyreqs: ## Install test prereqs into user's pip target dir
 test_image:
 	docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
 
-basetests: test_image ## Run tests/base
-	docker run -i --rm -v $(CURDIR)/:/source -w /source/tests/base $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /venv.sh run default ./run_test.sh
-
-unittests: basetests test_image ## Run unittests
-	docker run -i --rm -v $(CURDIR)/:/source -w /source/ $(ADCMTEST_IMAGE):$(ADCMBASE_TAG) /venv.sh reqs_and_run default /source/requirements.txt /source/python/run_unit.sh
+unittests: test_image ## Run unittests
+		docker run -e DJANGO_SETTINGS_MODULE=adcm.settings -i --rm -v $(CURDIR)/python:/adcm/python -v $(CURDIR)/data:/adcm/data -v $(CURDIR)/requirements.txt:/adcm/requirements.txt -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /venv.sh reqs_and_run default /adcm/requirements.txt python python/manage.py test python -v 2
 
 pytest: ## Run functional tests
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster-x64
@@ -94,12 +91,9 @@ linters: test_image ## Run linters
 npm_check: ## Run npm-check
 	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:16-alpine ./npm_check.sh
 
-django_tests: test_image ## Run django tests.
-	docker run -e DJANGO_SETTINGS_MODULE=adcm.test -i --rm -v $(CURDIR)/python:/adcm/python -v $(CURDIR)/data:/adcm/data -v $(CURDIR)/requirements.txt:/adcm/requirements.txt -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /venv.sh reqs_and_run default /adcm/requirements.txt python python/manage.py test cm
-
 ##################################################
 #                 U T I L S
 ##################################################
 
 base_shell: ## Just mount a dir to base image and run bash on it over docker run
-	docker run -e DJANGO_SETTINGS_MODULE=adcm.test -it --rm -v $(CURDIR)/python:/adcm/python -v $(CURDIR)/data:/adcm/data -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /bin/bash -l
+	docker run -e DJANGO_SETTINGS_MODULE=adcm.settings -it --rm -v $(CURDIR)/python:/adcm/python -v $(CURDIR)/data:/adcm/data -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /bin/bash -l

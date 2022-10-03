@@ -14,7 +14,6 @@ from django.urls import path
 
 from . import views
 
-
 urlpatterns = [
     path('', views.ActionList.as_view(), name='object-action'),
     path('<int:action_id>/', views.ActionDetail.as_view(), name='object-action-details'),

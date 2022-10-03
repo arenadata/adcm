@@ -27,7 +27,7 @@ def cluster_host_service(sdk_client_fs: ADCMClient):
     """Create cluster, host and service"""
     hostprovider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
     provider = hostprovider_bundle.provider_create("test")
-    host = provider.host_create("test_host")
+    host = provider.host_create("test-host")
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_bundle'))
     cluster = bundle.cluster_create("test")
     service = cluster.service_add(name="zookeeper")

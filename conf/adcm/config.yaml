@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 1.9
+  version: 2.1
 
   actions:
     run_ldap_sync:
@@ -31,8 +31,8 @@
         - name: "adcm_url"
           display_name: "ADCM's URL"
           description: |
-            We have to know ADCM's Url to send information from host. We try to gues that information from url you enter in browser.
-            But if your network has more complicated structure and we gues wrong, please fix that here.
+            We have to know ADCM's Url to send information from host. We try to guess that information from url you enter in browser.
+            But if your network has more complicated structure and we guess wrong, please fix that here.
           type: string
     - name: "google_oauth"
       display_name: "Google Auth"
@@ -49,6 +49,20 @@
         - name: "whitelisted_domains"
           type: list
           required: false
+    - name: "yandex_oauth"
+      display_name: "Yandex Auth"
+      type: "group"
+      ui_options:
+        invisible: true
+      subs:
+        - name: "client_id"
+          type: string
+          required: false
+        - name: "secret"
+          type: password
+          required: false
+          ui_options:
+            no_confirm: true
     - name: "job_log"
       display_name: "Job Log"
       type: "group"
@@ -127,6 +141,24 @@
           min: 0
           description: |
             You can set the time (number of days) after which the Objects configuration will be deleted from the database. 0 is infinite storing.
+
+    - name: "audit_data_retention"
+      display_name: "Audit data retention"
+      type: "group"
+      subs:
+        - name: "retention_period"
+          display_name: "Retention period"
+          description: |
+            Data storage period (in days) for operations and authorizations in ADCM.
+          type: integer
+          default: 1825
+        - name: "data_archiving"
+          display_name: "Enable archiving"
+          description: |
+            Enable/disable archiving of data on operations and authorizations after the period specified in "retention_period".
+          type: boolean
+          default: false
+          required: no
     - name: "ldap_integration"
       display_name: "LDAP integration"
       type: "group"
@@ -176,6 +208,7 @@
           description: |
             The distinguished name (DN) of the directory object from which to search for entries. For example: "ou=Groups,dc=ad,dc=ranger-test".
           type: string
+          required: false
         - name: "group_search_filter"
           display_name: "Group search filter"
           description: |
