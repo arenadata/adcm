@@ -1182,7 +1182,7 @@ class Action(AbstractAction):
 class AbstractSubAction(ADCMModel):
     action = None
 
-    name = models.CharField(max_length=160)
+    name = models.CharField(max_length=1000)
     display_name = models.CharField(max_length=160, blank=True)
     script = models.CharField(max_length=160)
     script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)

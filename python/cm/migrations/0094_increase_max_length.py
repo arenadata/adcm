@@ -66,4 +66,14 @@ class Migration(migrations.Migration):
             name="subname",
             field=models.CharField(blank=True, max_length=256),
         ),
+        migrations.AlterField(
+            model_name='stagesubaction',
+            name='name',
+            field=models.CharField(max_length=1000),
+        ),
+        migrations.AlterField(
+            model_name='subaction',
+            name='name',
+            field=models.CharField(max_length=1000),
+        ),
     ]
