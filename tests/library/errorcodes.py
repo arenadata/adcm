@@ -250,11 +250,6 @@ PROVIDER_CONFLICT = ADCMError(
     'PROVIDER_CONFLICT',
 )
 
-LONG_NAME = ADCMError(
-    '400 Bad Request',
-    'LONG_NAME',
-)
-
 WRONG_NAME = ADCMError(
     '400 Bad Request',
     'WRONG_NAME',

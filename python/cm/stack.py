@@ -662,16 +662,16 @@ def save_prototype_config(
                     cook_conf(proto, subconf, name, subname)
 
 
-def validate_name(value, name):
+def validate_name(value, err_msg):
     if not isinstance(value, str):
-        err("WRONG_NAME", f"{name} should be string")
+        err("WRONG_NAME", f"{err_msg} should be string")
     p = re.compile(NAME_REGEX)
     msg1 = (
         "{} is incorrect. Only latin characters, digits,"
         " dots (.), dashes (-), and underscores (_) are allowed."
     )
     if p.fullmatch(value) is None:
-        err("WRONG_NAME", msg1.format(name))
+        err("WRONG_NAME", msg1.format(err_msg))
     return value
 
 
