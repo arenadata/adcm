@@ -103,7 +103,7 @@ func initLog(logFile string, level string) {
 	if logFile == "" {
 		out = newStdoutWriter()
 	} else {
-		out = newRotateWriter(logFile)
+		out = newFileWriter(logFile)
 	}
 	logg.level = &logLevel
 	logg.D = newLog(out, &logLevel, DEBUG, "[DEBUG] ")
@@ -149,13 +149,13 @@ type fileWriter struct {
 	fp       *os.File
 }
 
-func newRotateWriter(filename string) *fileWriter {
+func newFileWriter(filename string) *fileWriter {
 	w := fileWriter{filename: filename}
 	w.ReopenLogFile()
 	return &w
 }
 
-func (w *rotateWriter) Write(output []byte) (int, error) {
+func (w *fileWriter) Write(output []byte) (int, error) {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 	return w.fp.Write(output)
