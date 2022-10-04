@@ -17,33 +17,53 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cm', '0093_auto_20220928_0556'),
+        ("cm", "0093_auto_20220928_0556"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='prototype',
-            name='display_name',
+            model_name="prototype",
+            name="display_name",
             field=models.CharField(blank=True, max_length=256),
         ),
         migrations.AlterField(
-            model_name='prototype',
-            name='name',
+            model_name="prototype",
+            name="name",
             field=models.CharField(max_length=256),
         ),
         migrations.AlterField(
-            model_name='prototypeconfig',
-            name='name',
+            model_name="prototypeconfig",
+            name="name",
             field=models.CharField(max_length=256),
         ),
         migrations.AlterField(
-            model_name='prototypeconfig',
-            name='subname',
+            model_name="prototypeconfig",
+            name="subname",
             field=models.CharField(blank=True, max_length=256),
         ),
         migrations.AlterField(
-            model_name='prototypeconfig',
-            name='display_name',
+            model_name="prototypeconfig",
+            name="display_name",
+            field=models.CharField(blank=True, max_length=256),
+        ),
+        migrations.AlterField(
+            model_name="stageprototype",
+            name="name",
+            field=models.CharField(max_length=256),
+        ),
+        migrations.AlterField(
+            model_name="stageprototypeconfig",
+            name="display_name",
+            field=models.CharField(blank=True, max_length=256),
+        ),
+        migrations.AlterField(
+            model_name="stageprototypeconfig",
+            name="name",
+            field=models.CharField(max_length=256),
+        ),
+        migrations.AlterField(
+            model_name="stageprototypeconfig",
+            name="subname",
             field=models.CharField(blank=True, max_length=256),
         ),
     ]

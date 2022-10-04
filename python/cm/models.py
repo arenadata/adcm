@@ -1462,7 +1462,7 @@ class LogStorage(ADCMModel):
 class StagePrototype(ADCMModel):
     type = models.CharField(max_length=16, choices=ObjectType.choices)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
-    name = models.CharField(max_length=160)
+    name = models.CharField(max_length=256)
     path = models.CharField(max_length=160, default="")
     display_name = models.CharField(max_length=1000, blank=True)
     version = models.CharField(max_length=80)
@@ -1514,11 +1514,11 @@ class StageSubAction(AbstractSubAction):
 class StagePrototypeConfig(ADCMModel):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
     action = models.ForeignKey(StageAction, on_delete=models.CASCADE, null=True, default=None)
-    name = models.CharField(max_length=160)
-    subname = models.CharField(max_length=160, blank=True)
+    name = models.CharField(max_length=256)
+    subname = models.CharField(max_length=256, blank=True)
     default = models.TextField(blank=True)
     type = models.CharField(max_length=16, choices=CONFIG_FIELD_TYPE)
-    display_name = models.CharField(max_length=160, blank=True)
+    display_name = models.CharField(max_length=256, blank=True)
     description = models.TextField(blank=True)
     limits = models.JSONField(default=dict)
     ui_options = models.JSONField(blank=True, default=dict)
