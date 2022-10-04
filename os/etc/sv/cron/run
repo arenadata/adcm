@@ -16,4 +16,4 @@
 waitforwsgi
 
 echo "Run cron ..."
-service cron start 2>&1 > "${adcmlog}/cron_task.log"
+cron -f
