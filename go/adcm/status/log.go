@@ -17,7 +17,7 @@ import (
 	"log"
 	"os"
 	"sync"
-	"time"
+// 	"time"
 )
 
 type logger struct {
@@ -175,19 +175,27 @@ func (w *rotateWriter) Rotate() {
 			log.Fatalf("error closing log file %s: %v", w.filename, err)
 		}
 	}
-	// Rename destination file if it already exists
 	_, err = os.Stat(w.filename)
-	if err == nil {
-		newLog := w.filename + "." + time.Now().Format(time.RFC3339)
-		err = os.Rename(w.filename, newLog)
-		if err != nil {
-			log.Fatalf("error renaming log file %s to %s: %v", w.filename, newLog, err)
-		}
+	if err != nil {  //no file
+        // Create a file.
+        w.fp, err = os.Create(w.filename)
+        if err != nil {
+            log.Fatalf("error opening log file %s: %v", w.filename, err)
+        }
 	}
-
-	// Create a file.
-	w.fp, err = os.Create(w.filename)
-	if err != nil {
-		log.Fatalf("error opening log file %s: %v", w.filename, err)
-	}
+	// ADCM-3242
+	// Rename destination file if it already exists
+// 	if err == nil {
+// 		newLog := w.filename + "." + time.Now().Format(time.RFC3339)
+// 		err = os.Rename(w.filename, newLog)
+// 		if err != nil {
+// 			log.Fatalf("error renaming log file %s to %s: %v", w.filename, newLog, err)
+// 		}
+// 	}
+//
+// 	// Create a file.
+// 	w.fp, err = os.Create(w.filename)
+// 	if err != nil {
+// 		log.Fatalf("error opening log file %s: %v", w.filename, err)
+// 	}
 }
