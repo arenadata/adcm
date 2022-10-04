@@ -9,7 +9,8 @@ RUN apt update && \
         runit \
         cron \
         nginx \
-        openssh-client
+        openssh-client \
+        logrotate
 COPY requirements*.txt /adcm/
 RUN pip install --upgrade pip &&  \
     pip install --no-cache-dir -r /adcm/requirements.txt && \
