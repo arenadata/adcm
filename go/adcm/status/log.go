@@ -167,35 +167,9 @@ func (w *rotateWriter) Rotate() {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 
-	// Close existing file if open
-	if w.fp != nil {
-		err = w.fp.Close()
-		w.fp = nil
-		if err != nil {
-			log.Fatalf("error closing log file %s: %v", w.filename, err)
-		}
+    // ADCM-3242
+	w.fp, err = os.OpenFile(w.filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+	    log.Fatalf("error opening log file %s: %v", w.filename, err)
 	}
-	_, err = os.Stat(w.filename)
-	if err != nil {  //no file
-        // Create a file.
-        w.fp, err = os.Create(w.filename)
-        if err != nil {
-            log.Fatalf("error opening log file %s: %v", w.filename, err)
-        }
-	}
-	// ADCM-3242
-	// Rename destination file if it already exists
-// 	if err == nil {
-// 		newLog := w.filename + "." + time.Now().Format(time.RFC3339)
-// 		err = os.Rename(w.filename, newLog)
-// 		if err != nil {
-// 			log.Fatalf("error renaming log file %s to %s: %v", w.filename, newLog, err)
-// 		}
-// 	}
-//
-// 	// Create a file.
-// 	w.fp, err = os.Create(w.filename)
-// 	if err != nil {
-// 		log.Fatalf("error opening log file %s: %v", w.filename, err)
-// 	}
 }
