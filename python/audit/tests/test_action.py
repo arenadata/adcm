@@ -50,10 +50,13 @@ class TestAction(BaseTestCase):
 
         self.bundle = Bundle.objects.create()
         adcm_prototype = Prototype.objects.create(bundle=self.bundle, type="adcm")
-        self.config = ObjectConfig.objects.create(current=1, previous=0)
-        ConfigLog.objects.create(
+        self.config = ObjectConfig.objects.create(current=0, previous=0)
+        config_log = ConfigLog.objects.create(
             obj_ref=self.config, config="{}", attr={"ldap_integration": {"active": True}}
         )
+        self.config.current = config_log.pk
+        self.config.save(update_fields=["current"])
+
         self.adcm_name = "ADCM"
         self.adcm = ADCM.objects.create(
             prototype=adcm_prototype, name=self.adcm_name, config=self.config

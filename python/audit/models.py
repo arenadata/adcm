@@ -62,7 +62,7 @@ class AuditSessionLoginResult(models.TextChoices):
 
 class AuditObject(models.Model):
     object_id = models.PositiveIntegerField()
-    object_name = models.CharField(max_length=160)
+    object_name = models.CharField(max_length=253)
     object_type = models.CharField(max_length=16, choices=AuditObjectType.choices)
     is_deleted = models.BooleanField(default=False)
 

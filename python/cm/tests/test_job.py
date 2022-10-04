@@ -410,7 +410,7 @@ class TestJob(BaseTestCase):
 
         for prototype_type, obj, action in data:
             with self.subTest(provider_type=prototype_type, obj=obj):
-                prepare_job_config(action, None, job.id, obj, conf, False)
+                prepare_job_config(action, None, job.pk, obj, conf, False)
 
                 job_config = {
                     "adcm": {"config": {}},
@@ -423,7 +423,7 @@ class TestJob(BaseTestCase):
                         "status_api_token": mock_dump.call_args[0][0]["env"]["status_api_token"],
                     },
                     "job": {
-                        "id": 1,
+                        "id": job.pk,
                         "action": action.name,
                         "job_name": "",
                         "command": "",

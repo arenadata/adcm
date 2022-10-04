@@ -29,6 +29,7 @@ class Migration(migrations.Migration):
         migrations.RenameField(
             model_name='clusterbind', old_name='service', new_name='source_service'
         ),
+        migrations.RunSQL("DROP INDEX IF EXISTS cm_clusterbind_service_id_2f524997;"),
         migrations.AddField(
             model_name='clusterbind',
             name='service',

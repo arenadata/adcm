@@ -94,7 +94,7 @@ class TestInventory(BaseTestCase):
                 "config": {},
                 "edition": "community",
                 "name": self.cluster.name,
-                "id": 1,
+                "id": self.cluster.pk,
                 "version": "1.0.0",
                 "state": "created",
                 "multi_state": [],
@@ -116,8 +116,8 @@ class TestInventory(BaseTestCase):
             "provider": {
                 "config": {},
                 "name": self.provider.name,
-                "id": 1,
-                "host_prototype_id": 3,
+                "id": self.provider.pk,
+                "host_prototype_id": self.host_pt.pk,
                 "state": "created",
                 "multi_state": [],
                 "before_upgrade": {"state": None},
@@ -176,8 +176,8 @@ class TestInventory(BaseTestCase):
                     "provider": {
                         "config": {},
                         "name": self.provider.name,
-                        "id": 1,
-                        "host_prototype_id": 3,
+                        "id": self.provider.pk,
+                        "host_prototype_id": self.host_pt.pk,
                         "state": "created",
                         "multi_state": [],
                         "before_upgrade": {"state": None},
@@ -208,13 +208,17 @@ class TestInventory(BaseTestCase):
                 "children": {
                     "CLUSTER": {
                         "hosts": {
-                            host2.fqdn: {"adcm_hostid": 2, "state": "created", "multi_state": []}
+                            host2.fqdn: {
+                                "adcm_hostid": host2.pk,
+                                "state": "created",
+                                "multi_state": [],
+                            }
                         },
                         "vars": {
                             "cluster": {
                                 "config": {},
                                 "name": "cluster",
-                                "id": 1,
+                                "id": self.cluster.pk,
                                 "version": "1.0.0",
                                 "edition": "community",
                                 "state": "created",
@@ -233,7 +237,7 @@ class TestInventory(BaseTestCase):
                     "HOST": {
                         "hosts": {
                             self.host.fqdn: {
-                                "adcm_hostid": 1,
+                                "adcm_hostid": self.host.pk,
                                 "state": "created",
                                 "multi_state": [],
                             }
@@ -242,8 +246,8 @@ class TestInventory(BaseTestCase):
                             "provider": {
                                 "config": {},
                                 "name": self.provider.name,
-                                "id": 1,
-                                "host_prototype_id": self.host_pt.id,
+                                "id": self.provider.pk,
+                                "host_prototype_id": self.host_pt.pk,
                                 "state": "created",
                                 "multi_state": [],
                                 "before_upgrade": {"state": None},
@@ -259,11 +263,11 @@ class TestInventory(BaseTestCase):
                     "PROVIDER": {
                         "hosts": {
                             self.host.fqdn: {
-                                "adcm_hostid": 1,
+                                "adcm_hostid": self.host.pk,
                                 "state": "created",
                                 "multi_state": [],
                             },
-                            "h2": {"adcm_hostid": 2, "state": "created", "multi_state": []},
+                            "h2": {"adcm_hostid": host2.pk, "state": "created", "multi_state": []},
                         }
                     }
                 },
@@ -271,8 +275,8 @@ class TestInventory(BaseTestCase):
                     "provider": {
                         "config": {},
                         "name": self.provider.name,
-                        "id": 1,
-                        "host_prototype_id": self.host_pt.id,
+                        "id": self.provider.pk,
+                        "host_prototype_id": self.host_pt.pk,
                         "state": "created",
                         "multi_state": [],
                         "before_upgrade": {"state": None},

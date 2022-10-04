@@ -25,10 +25,13 @@ class TestAuthentication(TestCase):
             version="1.0",
         )
         prototype: Prototype = Prototype.objects.create(bundle=bundle, type="adcm")
-        object_config: ObjectConfig = ObjectConfig.objects.create(current=1, previous=0)
-        ConfigLog.objects.create(
+        object_config: ObjectConfig = ObjectConfig.objects.create(current=0, previous=0)
+        config_log = ConfigLog.objects.create(
             obj_ref=object_config, config={}, attr={"ldap_integration": {"active": False}}
         )
+        object_config.current = config_log.pk
+        object_config.save(update_fields=["current"])
+
         ADCM.objects.create(prototype=prototype, config=object_config)
         self.admin: User = User.objects.create_superuser(
             username="admin", email="admin@arenadata.io", password="admin"

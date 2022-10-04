@@ -47,6 +47,8 @@ from rbac.upgrade.role import init_roles
 
 
 class TestService(BaseTestCase):
+    # pylint: disable=too-many-instance-attributes
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -58,8 +60,11 @@ class TestService(BaseTestCase):
             type="service",
             display_name="test_service",
         )
-        config = ObjectConfig.objects.create(current=1, previous=1)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        self.config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config.current = self.config_log.pk
+        config.save(update_fields=["current"])
+
         self.service = ClusterObject.objects.create(
             prototype=self.service_prototype, cluster=self.cluster, config=config
         )
@@ -220,7 +225,7 @@ class TestService(BaseTestCase):
         self.client.patch(
             path=reverse(
                 "config-history-version-restore",
-                kwargs={"service_id": self.service.pk, "version": 1},
+                kwargs={"service_id": self.service.pk, "version": self.config_log.pk},
             ),
             content_type=APPLICATION_JSON,
         )

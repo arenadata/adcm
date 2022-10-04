@@ -32,11 +32,14 @@ class TestConfigLog(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.config = ObjectConfig.objects.create(current=1, previous=1)
+        self.config = ObjectConfig.objects.create(current=0, previous=0)
         self.bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=self.bundle)
         self.cluster = Cluster.objects.create(prototype=prototype, config=self.config)
-        ConfigLog.objects.create(obj_ref=self.config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=self.config, config="{}")
+        self.config.current = config_log.pk
+        self.config.save(update_fields=["current"])
+
         self.group_config = GroupConfig.objects.create(
             name="test_group_config",
             object_id=self.cluster.pk,
