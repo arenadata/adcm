@@ -17,7 +17,6 @@ import (
 	"log"
 	"os"
 	"sync"
-// 	"time"
 )
 
 type logger struct {
@@ -65,7 +64,7 @@ func (log *logger) getLogLevel() string {
 }
 
 func (log *logger) rotate() {
-	log.E.out.Rotate()
+	log.E.out.ReopenLogFile()
 }
 
 func (log *logger) set(level int) {
@@ -124,7 +123,7 @@ func newLog(out logWriter, current *int, level int, tag string) logWrapper {
 
 type logWriter interface {
 	Write(output []byte) (int, error)
-	Rotate()
+	ReopenLogFile()
 }
 
 type stdoutWriter struct {
@@ -139,20 +138,20 @@ func (w *stdoutWriter) Write(output []byte) (int, error) {
 	return w.fp.Write(output)
 }
 
-func (w *stdoutWriter) Rotate() {
+func (w *stdoutWriter) ReopenLogFile() {
 }
 
-// Rotatable Writer
+// File Writer
 
-type rotateWriter struct {
+type fileWriter struct {
 	lock     sync.Mutex
 	filename string
 	fp       *os.File
 }
 
-func newRotateWriter(filename string) *rotateWriter {
-	w := rotateWriter{filename: filename}
-	w.Rotate()
+func newRotateWriter(filename string) *fileWriter {
+	w := fileWriter{filename: filename}
+	w.ReopenLogFile()
 	return &w
 }
 
@@ -162,12 +161,11 @@ func (w *rotateWriter) Write(output []byte) (int, error) {
 	return w.fp.Write(output)
 }
 
-func (w *rotateWriter) Rotate() {
+func (w *fileWriter) ReopenLogFile() {
 	var err error
 	w.lock.Lock()
 	defer w.lock.Unlock()
 
-    // ADCM-3242
 	w.fp, err = os.OpenFile(w.filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 	    log.Fatalf("error opening log file %s: %v", w.filename, err)
