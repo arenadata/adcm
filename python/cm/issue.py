@@ -297,17 +297,24 @@ def _gen_issue_name(obj: ADCMEntity, cause: ConcernCause) -> str:
     return f"{obj} has issue with {cause.value}"
 
 
+def _create_concern_item(obj: ADCMEntity, issue_cause: ConcernCause):
+    msg_name = _issue_template_map[issue_cause]
+    reason = MessageTemplate.get_message_from_template(msg_name.value, source=obj)
+    issue_name = _gen_issue_name(obj, issue_cause)
+    issue = ConcernItem.objects.create(
+        type=ConcernType.Issue, name=issue_name, reason=reason, owner=obj, cause=issue_cause
+    )
+    return issue
+
+
 def create_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
     """Create newly discovered issue and add it to linked objects concerns"""
     issue = obj.get_own_issue(issue_cause)
     if issue is None:
-        msg_name = _issue_template_map[issue_cause]
-        reason = MessageTemplate.get_message_from_template(msg_name.value, source=obj)
-        issue_name = _gen_issue_name(obj, issue_cause)
-        issue = ConcernItem.objects.create(
-            type=ConcernType.Issue, name=issue_name, reason=reason, owner=obj, cause=issue_cause
-        )
-
+        issue = _create_concern_item(obj, issue_cause)
+    if issue.name != _gen_issue_name(obj, issue_cause):
+        issue.delete()
+        issue = _create_concern_item(obj, issue_cause)
     tree = Tree(obj)
     affected_nodes = tree.get_directly_affected(tree.built_from)
     for node in affected_nodes:
