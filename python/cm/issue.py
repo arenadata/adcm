@@ -297,7 +297,7 @@ def _gen_issue_name(obj: ADCMEntity, cause: ConcernCause) -> str:
     return f"{obj} has issue with {cause.value}"
 
 
-def _create_concern_item(obj: ADCMEntity, issue_cause: ConcernCause):
+def _create_concern_item(obj: ADCMEntity, issue_cause: ConcernCause) -> ConcernItem:
     msg_name = _issue_template_map[issue_cause]
     reason = MessageTemplate.get_message_from_template(msg_name.value, source=obj)
     issue_name = _gen_issue_name(obj, issue_cause)
