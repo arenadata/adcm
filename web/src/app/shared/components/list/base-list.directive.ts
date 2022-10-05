@@ -142,6 +142,7 @@ export class BaseListDirective {
     if (!p.keys.length && listParamStr) {
       const json = JSON.parse(listParamStr);
       if (json[this.typeName]) {
+        delete json[this.typeName].page;
         this.parent.router.navigate(['./', json[this.typeName]], {
           relativeTo: this.parent.route,
           replaceUrl: true,
