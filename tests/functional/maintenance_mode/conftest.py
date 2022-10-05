@@ -18,22 +18,21 @@ conftest.py for maintenance mode related tests
 
 import os
 from pathlib import Path
-from typing import Tuple, Literal, Iterable, Set
+from typing import Iterable, Set, Tuple
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient, Cluster, Provider, Host
+from adcm_client.objects import ADCMClient, Cluster, Host, Provider
 
 from tests.functional.tools import AnyADCMObject
 from tests.library.utils import get_hosts_fqdn_representation
 
 BUNDLES_DIR = Path(os.path.dirname(__file__)) / 'bundles'
 
-MM_IS_ON = 'on'
-MM_IS_OFF = 'off'
-MM_IS_DISABLED = 'disabled'
-
-MaintenanceModeOnHostValue = Literal['on', 'off', 'disabled']
+MM_IS_ON = True
+MM_IS_OFF = False
+MM_ALLOWED = True
+MM_NOT_ALLOWED = False
 
 DISABLING_CAUSE = 'maintenance_mode'
 
@@ -115,7 +114,7 @@ def remove_hosts_from_cluster(cluster: Cluster, hosts: Iterable[Host]):
             cluster.host_delete(host)
 
 
-def check_hosts_mm_is(maintenance_mode: MaintenanceModeOnHostValue, *hosts: Host):
+def check_hosts_mm_is(maintenance_mode: bool, *hosts: Host):
     """Check that MM of hosts is equal to the expected one"""
     with allure.step(
         f'Check that "maintenance_mode" is equal to "{maintenance_mode}" '
@@ -123,11 +122,28 @@ def check_hosts_mm_is(maintenance_mode: MaintenanceModeOnHostValue, *hosts: Host
     ):
         for host in hosts:
             host.reread()
-        hosts_in_wrong_mode = tuple(host for host in hosts if host.maintenance_mode != maintenance_mode)
+        hosts_in_wrong_mode = tuple(host for host in hosts if host.maintenance_mode is maintenance_mode)
         if len(hosts_in_wrong_mode) == 0:
             return
         raise AssertionError(
             'Some hosts have incorrect value of "maintenance_mode" flag.\n'
+            f'Hosts: {get_hosts_fqdn_representation(hosts_in_wrong_mode)}'
+        )
+
+
+def check_mm_availability(is_mm_available: bool, *hosts: Host):
+    """Check that MM change is allowed/disallowed for the given hosts"""
+    with allure.step(
+        f'Check that "is_maintenance_mode_available" is {is_mm_available} '
+        f'on hosts: {get_hosts_fqdn_representation(hosts)}'
+    ):
+        for host in hosts:
+            host.reread()
+        hosts_in_wrong_mode = tuple(host for host in hosts if host.is_maintenance_mode_available is is_mm_available)
+        if len(hosts_in_wrong_mode) == 0:
+            return
+        raise AssertionError(
+            'Some hosts have incorrect value of "is_maintenance_mode_available" flag.\n'
             f'Hosts: {get_hosts_fqdn_representation(hosts_in_wrong_mode)}'
         )
 
