@@ -30,7 +30,6 @@ class TestHC(BaseTestCase):
             delete_bundle(bundle)
         except AdcmEx as e:
             self.assertEqual(e.code, "BUNDLE_CONFLICT")
-            self.assertEqual(e.msg, 'There is cluster #1 "TestCluster" of bundle #1 "ADH" 1.0')
 
     def test_provider_bundle_deletion(self):
         bundle = cook_provider_bundle("1.0")
@@ -39,12 +38,8 @@ class TestHC(BaseTestCase):
             delete_bundle(bundle)
         except AdcmEx as e:
             self.assertEqual(e.code, "BUNDLE_CONFLICT")
-            self.assertEqual(e.msg, 'There is provider #1 "TestProvider" of bundle #1 "DF" 1.0')
 
         try:
             delete_host_provider(provider)
         except AdcmEx as e:
             self.assertEqual(e.code, "PROVIDER_CONFLICT")
-            self.assertEqual(
-                e.msg, 'There is host #1 "server02.inter.net" of host provider #1 "TestProvider"'
-            )

@@ -232,8 +232,8 @@ class Prototype(ADCMModel):
     type = models.CharField(max_length=16, choices=ObjectType.choices)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     path = models.CharField(max_length=160, default="")
-    name = models.CharField(max_length=160)
-    display_name = models.CharField(max_length=160, blank=True)
+    name = models.CharField(max_length=256)
+    display_name = models.CharField(max_length=256, blank=True)
     version = models.CharField(max_length=80)
     version_order = models.PositiveIntegerField(default=0)
     required = models.BooleanField(default=False)
@@ -648,7 +648,7 @@ class MaintenanceModeType(models.TextChoices):
 
 
 class Host(ADCMEntity):
-    fqdn = models.CharField(max_length=160, unique=True)
+    fqdn = models.CharField(max_length=253, unique=True)
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
@@ -1064,7 +1064,7 @@ class AbstractAction(ADCMModel):
 
     prototype = None
 
-    name = models.CharField(max_length=160)
+    name = models.CharField(max_length=1000)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
     ui_options = models.JSONField(default=dict)
@@ -1182,7 +1182,7 @@ class Action(AbstractAction):
 class AbstractSubAction(ADCMModel):
     action = None
 
-    name = models.CharField(max_length=160)
+    name = models.CharField(max_length=1000)
     display_name = models.CharField(max_length=160, blank=True)
     script = models.CharField(max_length=160)
     script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
@@ -1232,11 +1232,11 @@ CONFIG_FIELD_TYPE = (
 class PrototypeConfig(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     action = models.ForeignKey(Action, on_delete=models.CASCADE, null=True, default=None)
-    name = models.CharField(max_length=160)
-    subname = models.CharField(max_length=160, blank=True)
+    name = models.CharField(max_length=256)
+    subname = models.CharField(max_length=256, blank=True)
     default = models.TextField(blank=True)
     type = models.CharField(max_length=16, choices=CONFIG_FIELD_TYPE)
-    display_name = models.CharField(max_length=160, blank=True)
+    display_name = models.CharField(max_length=256, blank=True)
     description = models.TextField(blank=True)
     limits = models.JSONField(default=dict)
     ui_options = models.JSONField(blank=True, default=dict)
@@ -1462,9 +1462,9 @@ class LogStorage(ADCMModel):
 class StagePrototype(ADCMModel):
     type = models.CharField(max_length=16, choices=ObjectType.choices)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
-    name = models.CharField(max_length=160)
+    name = models.CharField(max_length=256)
     path = models.CharField(max_length=160, default="")
-    display_name = models.CharField(max_length=160, blank=True)
+    display_name = models.CharField(max_length=1000, blank=True)
     version = models.CharField(max_length=80)
     edition = models.CharField(max_length=80, default="community")
     license_path = models.CharField(max_length=160, default=None, null=True)
@@ -1514,11 +1514,11 @@ class StageSubAction(AbstractSubAction):
 class StagePrototypeConfig(ADCMModel):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
     action = models.ForeignKey(StageAction, on_delete=models.CASCADE, null=True, default=None)
-    name = models.CharField(max_length=160)
-    subname = models.CharField(max_length=160, blank=True)
+    name = models.CharField(max_length=256)
+    subname = models.CharField(max_length=256, blank=True)
     default = models.TextField(blank=True)
     type = models.CharField(max_length=16, choices=CONFIG_FIELD_TYPE)
-    display_name = models.CharField(max_length=160, blank=True)
+    display_name = models.CharField(max_length=256, blank=True)
     description = models.TextField(blank=True)
     limits = models.JSONField(default=dict)
     ui_options = models.JSONField(blank=True, default=dict)

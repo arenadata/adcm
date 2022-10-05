@@ -29,8 +29,11 @@ class TestAuditObjectRename(BaseTestCase):
             name="test_provider",
             prototype=provider_prototype,
         )
-        config = ObjectConfig.objects.create(current=1, previous=1)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+        config = ObjectConfig.objects.create(current=0, previous=0)
+        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config.current = config_log.pk
+        config.save(update_fields=["current"])
+
         self.host = Host.objects.create(
             fqdn="test_fqdn",
             prototype=host_prototype,
@@ -167,7 +170,7 @@ class TestAuditObjectRename(BaseTestCase):
     def test_policy_rename(self):
         new_test_policy_name = "new_test_policy_name"
         self.client.patch(
-            path=reverse("rbac:policy-detail", kwargs={"pk": self.group.pk}),
+            path=reverse("rbac:policy-detail", kwargs={"pk": self.policy.pk}),
             data={
                 "object": [
                     {
@@ -200,7 +203,7 @@ class TestAuditObjectRename(BaseTestCase):
         self.assertEqual(audit_object_cluster.object_name, self.cluster.name)
 
         self.client.patch(
-            path=reverse("rbac:policy-detail", kwargs={"pk": self.group.pk}),
+            path=reverse("rbac:policy-detail", kwargs={"pk": self.policy.pk}),
             data={
                 "object": [
                     {

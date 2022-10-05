@@ -249,12 +249,15 @@ class TestProvider(BaseTestCase):
         )
 
     def test_update_and_restore(self):
-        config = ObjectConfig.objects.create(current=1, previous=1)
+        config = ObjectConfig.objects.create(current=0, previous=0)
         provider = HostProvider.objects.create(
             prototype=self.prototype, name="test_provider", config=config
         )
 
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config.current = config_log.pk
+        config.save(update_fields=["current"])
+
         self.client.post(
             path=reverse("config-history", kwargs={"provider_id": provider.pk}),
             data={"config": {}},
@@ -273,7 +276,7 @@ class TestProvider(BaseTestCase):
         response: Response = self.client.patch(
             path=reverse(
                 "config-history-version-restore",
-                kwargs={"provider_id": provider.pk, "version": 1},
+                kwargs={"provider_id": provider.pk, "version": config_log.pk},
             ),
             content_type=APPLICATION_JSON,
         )

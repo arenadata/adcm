@@ -51,8 +51,11 @@ class TestGroupConfig(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.config = ObjectConfig.objects.create(current=1, previous=0)
-        ConfigLog.objects.create(obj_ref=self.config, config="{}")
+        self.config = ObjectConfig.objects.create(current=0, previous=0)
+        config_log = ConfigLog.objects.create(obj_ref=self.config, config="{}")
+        self.config.current = config_log.pk
+        self.config.save(update_fields=["current"])
+
         self.bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=self.bundle)
         self.cluster = Cluster.objects.create(
@@ -591,7 +594,7 @@ class TestGroupConfigOperationName(BaseTestCase):
             data={"bundle_file": test_bundle_filename},
         )
         bundle_id = response.data["id"]
-        prototype_id = Prototype.objects.get(bundle_id=1, type="cluster").pk
+        prototype_id = Prototype.objects.get(bundle_id=bundle_id, type="cluster").pk
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 

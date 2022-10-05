@@ -18,9 +18,7 @@ import allure
 import pytest
 import requests
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host
-from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
-from tests.functional.audit.checks import check_audit_cef_logs
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,
@@ -134,7 +132,6 @@ class TestClusterUpdates:
         parse_with_context,
         generic_provider,
         new_user_client,
-        adcm_fs,
     ):
         """
         Test update operations with cluster, service and bundle:
@@ -178,9 +175,8 @@ class TestClusterUpdates:
         )
         checker.set_user_map(self.client)
         checker.check(self.client.audit_operation_list())
-        wait_until_step_succeeds(
-            check_audit_cef_logs, timeout=10, period=0.5, client=self.client, adcm_container=adcm_fs.container
-        )
+        # return after https://tracker.yandex.ru/ADCM-3244
+        # check_audit_cef_logs(client=self.client, adcm_container=adcm_fs.container)
 
     def _accept_license(self, bundle: Bundle, bundle_wo_license: Bundle):
         url = f"{self.client.url}/api/v1/stack/bundle/{bundle.id}/license/accept/"

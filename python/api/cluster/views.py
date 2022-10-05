@@ -79,7 +79,6 @@ def get_obj_conf(cluster_id, service_id):
     if not obj.config:
         raise AdcmEx("CONFIG_NOT_FOUND", "this object has no config")
 
-
     return obj
 
 
