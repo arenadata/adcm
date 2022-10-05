@@ -16,4 +16,6 @@
 waitforwsgi
 
 echo "Run cron ..."
+chmod 600 /var/spool/cron/crontabs/root
+chown root:crontab /var/spool/cron/crontabs/root
 cron -f
