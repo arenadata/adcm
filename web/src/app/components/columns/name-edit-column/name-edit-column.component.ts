@@ -25,7 +25,7 @@ export class NameEditColumnComponent implements AdwpCellComponent<any>, OnInit {
       [
         Validators.required,
         Validators.maxLength(253),
-        Validators.pattern(new RegExp(/^[^\.\‐\s]\S*$/))
+        Validators.pattern(new RegExp(/^[^_\.\-\s][A-Za-z0-9]\S*$/))
       ]);
   }
 

@@ -19,8 +19,8 @@ import { debounceTime } from "rxjs/operators";
   template: `
     <ng-container>
       <form class="form">
-        <mat-form-field class="full-width" appearance="fill">
-          <mat-label>New host name</mat-label>
+        <mat-form-field class="full-width">
+          <mat-label>Fully qualified domain name</mat-label>
           <input type="string" matInput [formControl]="form">
           <mat-error *ngIf="checkValidity()">Please enter a valid host name</mat-error>
         </mat-form-field>
