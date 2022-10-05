@@ -100,6 +100,7 @@ class TaskSerializer(TaskListSerializer):
     restart = hlink("task-restart", "id", "task_id")
     terminatable = serializers.SerializerMethodField()
     cancel = hlink("task-cancel", "id", "task_id")
+    download = hlink("task-download", "id", "task_id")
     object_type = serializers.SerializerMethodField()
     lock = ConcernItemSerializer(read_only=True)
 
