@@ -14,32 +14,33 @@
 Test hosts maintenance mode behaviour
 """
 
-from typing import Iterable, Tuple, Set
+from typing import Iterable, Set, Tuple
 
 import allure
 import pytest
-from adcm_client.objects import Host, Cluster, Component
+from adcm_client.objects import Cluster, Component, Host
 
-from tests.library.assertions import sets_are_equal, is_empty, expect_api_error, expect_no_api_error
-from tests.library.errorcodes import MAINTENANCE_MODE_NOT_AVAILABLE, ACTION_ERROR, ADCMError, INVALID_HC_HOST_IN_MM
-from tests.functional.tools import AnyADCMObject, get_object_represent, build_hc_for_hc_acl_action
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
-    MM_IS_ON,
-    MM_IS_OFF,
-    MM_IS_DISABLED,
-    BUNDLES_DIR,
-    DISABLING_CAUSE,
-    DEFAULT_SERVICE_NAME,
     ANOTHER_SERVICE_NAME,
-    turn_mm_on,
-    turn_mm_off,
+    BUNDLES_DIR,
+    DEFAULT_SERVICE_NAME,
+    DISABLING_CAUSE,
+    MM_IS_OFF,
+    MM_IS_ON,
+    MM_NOT_ALLOWED,
     add_hosts_to_cluster,
-    remove_hosts_from_cluster,
     check_hosts_mm_is,
+    check_mm_availability,
     get_disabled_actions_names,
     get_enabled_actions_names,
+    remove_hosts_from_cluster,
+    turn_mm_off,
+    turn_mm_on,
 )
+from tests.functional.tools import AnyADCMObject, build_hc_for_hc_acl_action, get_object_represent
+from tests.library.assertions import expect_api_error, expect_no_api_error, is_empty, sets_are_equal
+from tests.library.errorcodes import ACTION_ERROR, INVALID_HC_HOST_IN_MM, MAINTENANCE_MODE_NOT_AVAILABLE, ADCMError
 
 # pylint: disable=redefined-outer-name
 
@@ -73,32 +74,30 @@ def test_adding_host_to_cluster(cluster_with_mm, cluster_without_mm, hosts):
     hosts_to_cluster_without_mm = third_host, _ = hosts[2:4]
     free_hosts = hosts[-2:]
 
-    check_hosts_mm_is(MM_IS_DISABLED, *hosts)
+    check_mm_availability(MM_NOT_ALLOWED, *hosts)
 
     add_hosts_to_cluster(cluster_without_mm, hosts_to_cluster_without_mm)
-    check_hosts_mm_is(MM_IS_DISABLED, *hosts)
+    check_mm_availability(MM_NOT_ALLOWED, *hosts)
 
     add_hosts_to_cluster(cluster_with_mm, hosts_to_cluster_with_mm)
     check_hosts_mm_is(MM_IS_OFF, *hosts_to_cluster_with_mm)
-    check_hosts_mm_is(MM_IS_DISABLED, *hosts_to_cluster_without_mm, *free_hosts)
+    check_mm_availability(MM_NOT_ALLOWED, *hosts_to_cluster_without_mm, *free_hosts)
 
     turn_mm_on(first_host)
     check_hosts_mm_is(MM_IS_ON, first_host)
     check_hosts_mm_is(MM_IS_OFF, second_host)
-    check_hosts_mm_is(MM_IS_DISABLED, *hosts_to_cluster_without_mm, *free_hosts)
+    check_mm_availability(MM_NOT_ALLOWED, *hosts_to_cluster_without_mm, *free_hosts)
 
     expect_api_error(
         f'turn MM "on" host {third_host.fqdn}', turn_mm_on, third_host, err_=MAINTENANCE_MODE_NOT_AVAILABLE
     )
-    check_hosts_mm_is(MM_IS_DISABLED, *hosts_to_cluster_without_mm)
-    expect_api_error(
-        f'turn MM "off" host {third_host.fqdn}', turn_mm_off, third_host, err_=MAINTENANCE_MODE_NOT_AVAILABLE
-    )
-    check_hosts_mm_is(MM_IS_DISABLED, *hosts_to_cluster_without_mm)
+    check_mm_availability(MM_NOT_ALLOWED, *hosts_to_cluster_without_mm)
+    expect_no_api_error(f'turn MM "off" host {third_host.fqdn} (will not be changed)', turn_mm_off, third_host)
+    check_mm_availability(MM_NOT_ALLOWED, *hosts_to_cluster_without_mm)
 
     remove_hosts_from_cluster(cluster_with_mm, hosts_to_cluster_with_mm)
     remove_hosts_from_cluster(cluster_without_mm, hosts_to_cluster_without_mm)
-    check_hosts_mm_is(MM_IS_DISABLED, *hosts)
+    check_mm_availability(MM_NOT_ALLOWED, *hosts)
 
 
 def test_mm_hosts_not_allowed_in_hc_map(cluster_with_mm, hosts):
@@ -406,7 +405,7 @@ def test_mm_after_cluster_deletion(cluster_with_mm, hosts):
     check_hosts_mm_is(MM_IS_ON, host_2)
     with allure.step('Delete cluster'):
         cluster_with_mm.delete()
-    check_hosts_mm_is(MM_IS_DISABLED, host_1, host_2)
+    check_mm_availability(MM_NOT_ALLOWED, host_1, host_2)
 
 
 def check_actions_are_disabled_on(*objects) -> None:

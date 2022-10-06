@@ -296,11 +296,7 @@ class HostDetail(PermissionListMixin, DetailView):
     def _check_maintenance_mode_constraint(host: Host, new_mode: bool):
         if host.maintenance_mode == new_mode:
             return
-        if (
-            not host.cluster
-            or not host.cluster.prototype.allow_maintenance_mode
-            or not isinstance(new_mode, bool)
-        ):
+        if not host.is_maintenance_mode_available:
             raise AdcmEx("MAINTENANCE_MODE_NOT_AVAILABLE")
 
 

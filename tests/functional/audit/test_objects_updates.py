@@ -384,7 +384,7 @@ class TestObjectUpdates:
         self.admin_creds = make_auth_header(sdk_client_fs)
         self.new_user_creds = unauthorized_creds
 
-    @parametrize_audit_scenario_parsing('objects_update.yaml', NEW_USER)
+    @parametrize_audit_scenario_parsing("objects_update.yaml", NEW_USER)
     @pytest.mark.parametrize("method", ["put", "patch"])  # pylint: disable-next=too-many-arguments
     def test_update_objects(
         self, method: str, bundle_with_license, build_policy, audit_log_checker, generic_provider, sdk_client_fs

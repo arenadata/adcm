@@ -272,12 +272,12 @@ def get_host_groups(cluster: Cluster, delta: dict, action_host: Host | None = No
         if action_host and hc.host.id not in action_host:
             continue
 
-        keys = (
-            f"{hc.service.prototype.name}.{hc.component.prototype.name}",
-            f"{hc.service.prototype.name}",
+        key_object_pairs: tuple[tuple[str, ClusterObject | ServiceComponent]] = (
+            (f"{hc.service.prototype.name}.{hc.component.prototype.name}", hc.component),
+            (f"{hc.service.prototype.name}", hc.service),
         )
 
-        for key in keys:
+        for key, adcm_object in key_object_pairs:
             if hc.host.maintenance_mode:
                 key = f"{key}.{MAINTENANCE_MODE}"
 
@@ -285,7 +285,7 @@ def get_host_groups(cluster: Cluster, delta: dict, action_host: Host | None = No
                 groups[key] = {"hosts": {}}
 
             groups[key]["hosts"][hc.host.fqdn] = get_obj_config(hc.host)
-            groups[key]["hosts"][hc.host.fqdn].update(get_host_vars(hc.host, hc.component))
+            groups[key]["hosts"][hc.host.fqdn].update(get_host_vars(hc.host, adcm_object))
 
     for htype in delta:
         for key in delta[htype]:
