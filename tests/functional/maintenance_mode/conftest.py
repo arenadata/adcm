@@ -122,7 +122,7 @@ def check_hosts_mm_is(maintenance_mode: bool, *hosts: Host):
     ):
         for host in hosts:
             host.reread()
-        hosts_in_wrong_mode = tuple(host for host in hosts if host.maintenance_mode is maintenance_mode)
+        hosts_in_wrong_mode = tuple(host for host in hosts if host.maintenance_mode is not maintenance_mode)
         if len(hosts_in_wrong_mode) == 0:
             return
         raise AssertionError(
@@ -139,7 +139,7 @@ def check_mm_availability(is_mm_available: bool, *hosts: Host):
     ):
         for host in hosts:
             host.reread()
-        hosts_in_wrong_mode = tuple(host for host in hosts if host.is_maintenance_mode_available is is_mm_available)
+        hosts_in_wrong_mode = tuple(host for host in hosts if host.is_maintenance_mode_available is not is_mm_available)
         if len(hosts_in_wrong_mode) == 0:
             return
         raise AssertionError(
