@@ -55,6 +55,7 @@ class HostSerializer(EmptySerializer):
     description = CharField(required=False, allow_blank=True)
     state = CharField(read_only=True)
     maintenance_mode = BooleanField(read_only=True)
+    is_maintenance_mode_available = BooleanField(read_only=True)
     url = ObjectURL(read_only=True, view_name="host-details")
 
     @staticmethod
