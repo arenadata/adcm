@@ -11,11 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source /etc/adcmenv
+. /etc/adcmenv
 
-waitforwsgi
+waitforinit
 
-echo "Run crond ..."
-
-source "${adcmroot}/venv/default/bin/activate"
-crond -f -l 2  # TODO: do something with cron logs / syslogs
+echo "Run status server ... "
+exec "${adcmroot}/go/bin/runstatus" -logfile "${adcmlog}/status.log" -loglevel warning > "${adcmlog}/status.out" 2>&1 

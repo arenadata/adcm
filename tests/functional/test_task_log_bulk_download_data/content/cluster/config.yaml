@@ -1,4 +1,3 @@
-#!/bin/sh
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,13 +10,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source /etc/adcmenv
+- type: cluster
+  name: cluster_proto_name
+  version: 3
 
-waitforinit
+- type: service
+  name: service_proto_name
+  version: 3.4
 
-echo "Run main wsgi application ..."
-exec 1>>"${adcmlog}/service_wsgi.out"
-exec 2>>"${adcmlog}/service_wsgi.err"
 
-cd "${adcmroot}/python"
-uwsgi --venv "${adcmroot}/venv/default" --socket "${wsgisocketfile}" --pidfile "/run/uwsgi.pid" --module adcm.wsgi --chmod-socket=777 --logger file:logfile="${adcmlog}/wsgi.log",maxsize=2000000
+  components:
+    component_proto_name:
+      actions: &actions
+        action_with_check:
+          type: job
+          script_type: ansible
+          script: ./actions.yaml
+          states:
+            available: any
