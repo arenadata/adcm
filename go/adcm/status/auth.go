@@ -55,29 +55,31 @@ func djangoAuth(r *http.Request, hub Hub) bool {
 	return hub.AdcmApi.checkSessionAuth(sessionId.Value)
 }
 
-func tokenAuth(w http.ResponseWriter, r *http.Request, hub Hub) bool {
-	if djangoAuth(r, hub) {
-		return true
-	}
-	h, ok := r.Header["Authorization"]
-	if !ok {
-		ErrOut4(w, r, "AUTH_ERROR", "no \"Authorization\" header")
-		return false
-	}
-	a := strings.Split(h[0], " ")
-	if len(a) < 2 {
-		ErrOut4(w, r, "AUTH_ERROR", "no token")
-		return false
-	}
-	if strings.Title(a[0]) != "Token" {
-		ErrOut4(w, r, "AUTH_ERROR", "no token")
-		return false
-	}
-	if !checkToken(hub, a[1]) {
-		ErrOut4(w, r, "AUTH_ERROR", "invalid token")
-		return false
-	}
-	return true
+func tokenAuth(w http.ResponseWriter, r *http.Request, hub Hub, allow_adcm_session bool) bool {
+    if allow_adcm_session {
+        if djangoAuth(r, hub) {
+            return true
+        }
+    }
+    h, ok := r.Header["Authorization"]
+    if !ok {
+        ErrOut4(w, r, "AUTH_ERROR", "no \"Authorization\" header")
+        return false
+    }
+    a := strings.Split(h[0], " ")
+    if len(a) < 2 {
+        ErrOut4(w, r, "AUTH_ERROR", "no token")
+        return false
+    }
+    if strings.Title(a[0]) != "Token" {
+        ErrOut4(w, r, "AUTH_ERROR", "no token")
+        return false
+    }
+    if !checkToken(hub, a[1]) {
+        ErrOut4(w, r, "AUTH_ERROR", "invalid token")
+        return false
+    }
+    return true
 }
 
 func wsTokenAuth(w http.ResponseWriter, r *http.Request, hub Hub) bool {

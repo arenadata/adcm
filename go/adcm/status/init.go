@@ -85,9 +85,10 @@ func startHTTP(httpPort string, hub Hub) {
 		initWS(hub.EventWS, w, r)
 	})
 
-	router.GET("/api/v1/log/", authWrap(hub, showLogLevel))
-	router.POST("/api/v1/log/", authWrap(hub, postLogLevel))
+	router.GET("/api/v1/log/", authWrap(hub, showLogLevel, false))
+	router.POST("/api/v1/log/", authWrap(hub, postLogLevel))  // HERE
 
+    //посмотреть под кем отправляется из адцма
 	router.POST("/api/v1/event/", authWrap(hub, postEvent))
 
 	router.GET("/api/v1/all/", authWrap(hub, showAll))
@@ -102,7 +103,7 @@ func startHTTP(httpPort string, hub Hub) {
 	router.PUT("/api/v1/object/host/:hostid/", authWrap(hub, updateHost))
 
 	router.GET("/api/v1/host/:hostid/component/:compid/", authWrap(hub, showHostComp))
-	router.POST("/api/v1/host/:hostid/component/:compid/", authWrap(hub, setHostComp))
+	router.POST("/api/v1/host/:hostid/component/:compid/", authWrap(hub, setHostComp))  // HERE
 
 	router.GET("/api/v1/component/:compid/", authWrap(hub, showComp))
 
@@ -121,9 +122,14 @@ func startHTTP(httpPort string, hub Hub) {
 	log.Fatal(http.ListenAndServe(httpPort, router))
 }
 
-func authWrap(hub Hub, f func(h Hub, w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
+func authWrap(hub Hub, f func(h Hub, w http.ResponseWriter, r *http.Request), allow_adcm_session_optional ...bool) http.HandlerFunc {
+    allow_adcm_session := true
+    if len(allow_adcm_session_optional) > 0 {
+        allow_adcm_session = allow_adcm_session_optional[0]
+    }
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !tokenAuth(w, r, hub) {
+	    logg.W.f("authWrap. allow_adcm_session: %v", allow_adcm_session)  // TODO: remove
+		if !tokenAuth(w, r, hub, allow_adcm_session) {
 			return
 		}
 		f(hub, w, r)
