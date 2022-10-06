@@ -37,6 +37,13 @@ from cm.models import (
 )
 from cm.upgrade import get_upgrade
 
+REASON_MSG_DICT = {
+    "no_ldap_settings": "The Action is not available. "
+    "You need to fill in the LDAP integration settings.",
+    "host_in_mm": "The Action is not available. Host in “Maintenance mode”",
+    "many_hosts_in_mm": "The Action is not available. One or more hosts in “Maintenance mode”",
+}
+
 
 def get_object_for_user(user, perms, klass, **kwargs):
     try:
@@ -97,23 +104,23 @@ def update(serializer, **kwargs):
     return save(serializer, HTTP_200_OK, **kwargs)
 
 
-def set_disabling_cause(obj: ADCMEntity, action: Action) -> None:
-    action.disabling_cause = None
+def set_start_impossible_reason(obj: ADCMEntity, action: Action) -> None:
+    action.start_impossible_reason = None
     if obj.prototype.type == "adcm":
         current_configlog = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
         if not current_configlog.attr["ldap_integration"]["active"]:
-            action.disabling_cause = "no_ldap_settings"
+            action.start_impossible_reason = REASON_MSG_DICT["no_ldap_settings"]
 
     if obj.prototype.type == "cluster":
         mm = Host.objects.filter(cluster=obj, maintenance_mode=True).exists()
         if not action.allow_in_maintenance_mode and mm:
-            action.disabling_cause = "maintenance_mode"
+            action.start_impossible_reason = REASON_MSG_DICT["many_hosts_in_mm"]
     elif obj.prototype.type == "service":
         mm = HostComponent.objects.filter(
             service=obj, cluster=obj.cluster, host__maintenance_mode=True
         ).exists()
         if not action.allow_in_maintenance_mode and mm:
-            action.disabling_cause = "maintenance_mode"
+            action.start_impossible_reason = REASON_MSG_DICT["many_hosts_in_mm"]
     elif obj.prototype.type == "component":
         mm = HostComponent.objects.filter(
             component=obj,
@@ -122,14 +129,17 @@ def set_disabling_cause(obj: ADCMEntity, action: Action) -> None:
             host__maintenance_mode=True,
         ).exists()
         if not action.allow_in_maintenance_mode and mm:
-            action.disabling_cause = "maintenance_mode"
+            action.start_impossible_reason = REASON_MSG_DICT["many_hosts_in_mm"]
     elif obj.prototype.type == "host":
-        mm = HostComponent.objects.filter(
-            component_id__in=HostComponent.objects.filter(host=obj).values_list("component_id"),
-            host__maintenance_mode=True,
-        ).exists()
-        if action.host_action and not action.allow_in_maintenance_mode and mm:
-            action.disabling_cause = "maintenance_mode"
+        if obj.maintenance_mode:
+            action.start_impossible_reason = REASON_MSG_DICT["host_in_mm"]
+        else:
+            mm = HostComponent.objects.filter(
+                component_id__in=HostComponent.objects.filter(host=obj).values_list("component_id"),
+                host__maintenance_mode=True,
+            ).exists()
+            if action.host_action and not action.allow_in_maintenance_mode and mm:
+                action.start_impossible_reason = REASON_MSG_DICT["many_hosts_in_mm"]
 
 
 def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
@@ -144,7 +154,7 @@ def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
             action.config = PrototypeConfig.objects.filter(
                 prototype=action.prototype, action=action
             ).order_by("id")
-            set_disabling_cause(obj, action)
+            set_start_impossible_reason(obj, action)
 
     return allowed
 

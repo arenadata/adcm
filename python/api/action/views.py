@@ -31,7 +31,7 @@ from api.utils import (
     create,
     filter_actions,
     get_object_for_user,
-    set_disabling_cause,
+    set_start_impossible_reason,
 )
 from audit.utils import audit
 from cm.errors import AdcmEx
@@ -64,7 +64,7 @@ class ActionList(PermissionListMixin, GenericUIView):
     filter_backends = (AdcmFilterBackend,)
     permission_required = ["cm.view_action"]
 
-    def _get_host_actions(self, host: Host) -> set:
+    def _get_actions_for_host(self, host: Host) -> set:
         actions = set(
             filter_actions(
                 host, self.filter_queryset(self.get_queryset().filter(prototype=host.prototype))
@@ -108,10 +108,7 @@ class ActionList(PermissionListMixin, GenericUIView):
         """
         if kwargs["object_type"] == "host":
             host, _ = get_obj(object_type="host", host_id=kwargs["host_id"])
-            if host.maintenance_mode:
-                actions = set()
-            else:
-                actions = self._get_host_actions(host)
+            actions = self._get_actions_for_host(host)
 
             obj = host
             objects = {"host": host}
@@ -161,7 +158,7 @@ class ActionDetail(PermissionListMixin, GenericUIView):
             self.get_queryset(),
             id=action_id,
         )
-        set_disabling_cause(obj, action)
+        set_start_impossible_reason(obj, action)
         if isinstance(obj, Host) and action.host_action:
             objects = {"host": obj}
         else:
@@ -191,24 +188,12 @@ class RunTask(GenericUIView):
             raise PermissionDenied()
 
     @staticmethod
-    def check_disabling_cause(action, obj):
-        if isinstance(obj, Host) and obj.maintenance_mode:
+    def check_start_impossible_reason(action, obj):
+        set_start_impossible_reason(obj, action)
+        if action.start_impossible_reason:
             raise AdcmEx(
                 "ACTION_ERROR",
-                msg="you cannot start an action on a host that is in maintenance mode",
-            )
-
-        set_disabling_cause(obj, action)
-        if action.disabling_cause == "maintenance_mode":
-            raise AdcmEx(
-                "ACTION_ERROR",
-                msg="you cannot start the action because at least one host is in maintenance mode",
-            )
-
-        if action.disabling_cause == "no_ldap_settings":
-            raise AdcmEx(
-                "ACTION_ERROR",
-                msg="you cannot start the action because ldap settings not configured completely",
+                msg=action.start_impossible_reason,
             )
 
     @audit
@@ -224,7 +209,7 @@ class RunTask(GenericUIView):
         )
         action = get_object_for_user(request.user, "cm.view_action", Action, id=action_id)
         self.check_action_perm(action, obj)
-        self.check_disabling_cause(action, obj)
+        self.check_start_impossible_reason(action, obj)
         serializer = self.get_serializer(data=request.data)
 
         return create(serializer, action=action, task_object=obj)

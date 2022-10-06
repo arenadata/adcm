@@ -57,7 +57,7 @@ class StackActionSerializer(serializers.Serializer):
     allow_to_terminate = serializers.BooleanField(read_only=True)
     partial_execution = serializers.BooleanField(read_only=True)
     host_action = serializers.BooleanField(read_only=True)
-    disabling_cause = serializers.CharField(read_only=True)
+    start_impossible_reason = serializers.CharField(read_only=True)
 
 
 class ActionSerializer(StackActionSerializer):
@@ -99,7 +99,7 @@ class StackActionDetailSerializer(StackActionSerializer):
     log_files = serializers.JSONField(required=False)
     config = serializers.SerializerMethodField()
     subs = serializers.SerializerMethodField()
-    disabling_cause = serializers.CharField(read_only=True)
+    start_impossible_reason = serializers.CharField(read_only=True)
 
     def get_config(self, obj):
         aconf = PrototypeConfig.objects.filter(prototype=obj.prototype, action=obj).order_by('id')
