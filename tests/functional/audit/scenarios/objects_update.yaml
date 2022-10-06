@@ -64,8 +64,8 @@ operations:
       how: change-properties
       changes:
         previous:
-          maintenance_mode: "off"
+          maintenance_mode: False
         current:
-          maintenance_mode: "on"
+          maintenance_mode: True
   - update: *change-host
     result: fail

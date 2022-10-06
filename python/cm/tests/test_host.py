@@ -30,7 +30,7 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.models import Bundle, Cluster, Host, HostProvider, Prototype
 
 
-class TestHostAPI(BaseTestCase):
+class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
     def setUp(self) -> None:
         super().setUp()
 

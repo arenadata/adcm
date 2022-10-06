@@ -92,9 +92,7 @@ def test_adding_host_to_cluster(cluster_with_mm, cluster_without_mm, hosts):
         f'turn MM "on" host {third_host.fqdn}', turn_mm_on, third_host, err_=MAINTENANCE_MODE_NOT_AVAILABLE
     )
     check_mm_availability(MM_NOT_ALLOWED, *hosts_to_cluster_without_mm)
-    expect_api_error(
-        f'turn MM "off" host {third_host.fqdn}', turn_mm_off, third_host, err_=MAINTENANCE_MODE_NOT_AVAILABLE
-    )
+    expect_no_api_error(f'turn MM "off" host {third_host.fqdn} (will not be changed)', turn_mm_off, third_host)
     check_mm_availability(MM_NOT_ALLOWED, *hosts_to_cluster_without_mm)
 
     remove_hosts_from_cluster(cluster_with_mm, hosts_to_cluster_with_mm)
