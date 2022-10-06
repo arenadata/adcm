@@ -39,8 +39,11 @@ func checkADCMToken(hub Hub, token string) bool {
 	}
 }
 
-func checkToken(hub Hub, token string) bool {
-	if token != hub.Secrets.Token && !checkADCMToken(hub, token) {
+func checkToken(hub Hub, token string, allow_adcm_session bool) bool {
+	if token != hub.Secrets.Token {
+	    if allow_adcm_session && checkADCMToken(hub, token) {
+	        return true
+	    }
 		return false
 	}
 	return true
@@ -75,7 +78,7 @@ func tokenAuth(w http.ResponseWriter, r *http.Request, hub Hub, allow_adcm_sessi
         ErrOut4(w, r, "AUTH_ERROR", "no token")
         return false
     }
-    if !checkToken(hub, a[1]) {
+    if !checkToken(hub, a[1], allow_adcm_session) {
         ErrOut4(w, r, "AUTH_ERROR", "invalid token")
         return false
     }
@@ -97,7 +100,7 @@ func wsTokenAuth(w http.ResponseWriter, r *http.Request, hub Hub) bool {
 	for _, i := range strings.Split(h[0], ",") {
 		token = strings.Trim(i, " ")
 	}
-	if !checkToken(hub, token) {
+	if !checkToken(hub, token, true) {
 		ErrOut4(w, r, "AUTH_ERROR", "invalid token")
 		return false
 	}
