@@ -43,7 +43,7 @@ export class NameEditColumnComponent implements AdwpCellComponent<any>, OnInit {
     let dialogModel: MatDialogConfig
     const maxWidth = '1400px';
     const width = '500px';
-    const title = 'Edit host name';
+    const title = 'Edit host';
 
     dialogModel =  {
       width,
