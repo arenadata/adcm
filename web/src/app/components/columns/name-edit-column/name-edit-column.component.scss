@@ -1,6 +1,15 @@
 :host {
   display: flex;
+  flex-grow: 1;
   align-items: center;
+  justify-content: space-between;
+  width: 50%
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rename-button {
