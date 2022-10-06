@@ -11,10 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-current_date=$(date '+%Y.%m.%d.%H')
-current_hash=$(git log --pretty=format:'%h' -n 1)
+. /etc/adcmenv
 
-printf '{\n\t"version": "%s",\n\t"commit_id": "%s"\n}\n' "${current_date}" "${current_hash}" > config.json
+waitforwsgi
 
-# Copy information for Angular to work on
-cp config.json web/src/assets/config.json
+echo "Run cron ..."
+chmod 600 /var/spool/cron/crontabs/root
+chown root:crontab /var/spool/cron/crontabs/root
+cron -f

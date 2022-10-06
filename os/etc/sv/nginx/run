@@ -11,9 +11,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source /etc/adcmenv
+. /etc/adcmenv
 
-waitforinit
+waitforwsgi
 
-echo "Run status server ... "
-exec "${adcmroot}/go/bin/runstatus" -logfile "${adcmlog}/status.log" -loglevel warning > "${adcmlog}/status.out" 2>&1 
+echo "Run Nginx ..."
+
+exec 1>"${adcmlog}/nginx/service_nginx.out"
+exec 2>"${adcmlog}/nginx/service_nginx.err"
+
+mkdir -p /run/nginx
+
+# Cleanup tmp dir during restart of nginx. That dir is for
+# uploading bundles cache.
+rm -rf /adcm/data/tmp/nginx_client_temp || true
+exec /usr/sbin/nginx -c /etc/nginx/nginx.conf  -g "daemon off;"
