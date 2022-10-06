@@ -52,10 +52,11 @@ class ExpandedGroupSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     user = GroupUserSerializer(many=True, source="user_set")
     url = HyperlinkedIdentityField(view_name="rbac:group-detail")
     name = CharField(max_length=150, source="group.display_name")
+    type = CharField(read_only=True, source="group.type")
 
     class Meta:
         model = Group
-        fields = ("id", "name", "user", "url")
+        fields = ("id", "name", "type", "user", "url")
         expandable_fields = {
             "user": (
                 "rbac.endpoints.user.views.UserSerializer",
