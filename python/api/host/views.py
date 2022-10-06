@@ -42,7 +42,6 @@ from cm.api import (
     remove_host_from_cluster,
 )
 from cm.errors import AdcmEx
-from cm.maintenance_mode import is_mm_available
 from cm.models import (
     Cluster,
     ClusterObject,
@@ -297,10 +296,7 @@ class HostDetail(PermissionListMixin, DetailView):
     def _check_maintenance_mode_constraint(host: Host, new_mode: bool):
         if host.maintenance_mode == new_mode:
             return
-        if (
-            not is_mm_available(host)
-            or not isinstance(new_mode, bool)
-        ):
+        if not host.is_maintenance_mode_available or not isinstance(new_mode, bool):
             raise AdcmEx("MAINTENANCE_MODE_NOT_AVAILABLE")
 
 

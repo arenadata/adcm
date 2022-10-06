@@ -674,6 +674,13 @@ class Host(ADCMEntity):
             result["issue"]["provider"] = provider_issue
         return result if result["issue"] else {}
 
+    @property
+    def is_maintenance_mode_available(self) -> bool:
+        cluster: Cluster | None = self.cluster
+        if not cluster:
+            return False
+        return cluster.prototype.allow_maintenance_mode
+
 
 class ClusterObject(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
