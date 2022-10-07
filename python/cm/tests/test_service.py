@@ -20,7 +20,15 @@ from rest_framework.status import (
 )
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.models import Bundle, Cluster, ClusterObject, Prototype
+from cm.models import (
+    Bundle,
+    Cluster,
+    ClusterObject,
+    Host,
+    HostComponent,
+    Prototype,
+    ServiceComponent,
+)
 
 
 class TestService(BaseTestCase):
@@ -89,4 +97,93 @@ class TestService(BaseTestCase):
         self.service.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertFalse(self.service.maintenance_mode)
+
+    def test_maintenance_mode_by_hosts(self):
+        host_1 = Host.objects.create(
+            fqdn="test_host_1",
+            prototype=Prototype.objects.create(bundle=self.bundle, type="host"),
+            maintenance_mode=True,
+        )
+        host_2 = Host.objects.create(
+            fqdn="test_host_2",
+            prototype=Prototype.objects.create(bundle=self.bundle, type="host"),
+            maintenance_mode=True,
+        )
+        component = ServiceComponent.objects.create(
+            prototype=Prototype.objects.create(
+                bundle=self.bundle,
+                type="component",
+                display_name="test_component",
+            ),
+            cluster=self.cluster,
+            service=self.service,
+        )
+        HostComponent.objects.create(
+            cluster=self.cluster,
+            host=host_1,
+            service=self.service,
+            component=component,
+        )
+        HostComponent.objects.create(
+            cluster=self.cluster,
+            host=host_2,
+            service=self.service,
+            component=component,
+        )
+
+        self.assertTrue(self.service.maintenance_mode)
+
+        host_2.maintenance_mode = False
+        host_2.save(update_fields=["maintenance_mode"])
+
+        self.assertFalse(self.service.maintenance_mode)
+
+    def test_maintenance_mode_by_components(self):
+        component_1 = ServiceComponent.objects.create(
+            prototype=Prototype.objects.create(
+                bundle=self.bundle,
+                type="component",
+                display_name="test_component_1",
+            ),
+            cluster=self.cluster,
+            service=self.service,
+            _maintenance_mode=True,
+        )
+        component_2 = ServiceComponent.objects.create(
+            prototype=Prototype.objects.create(
+                bundle=self.bundle,
+                type="component",
+                display_name="test_component_2",
+            ),
+            cluster=self.cluster,
+            service=self.service,
+            _maintenance_mode=True,
+        )
+        host = Host.objects.create(
+            fqdn="test_host",
+            prototype=Prototype.objects.create(bundle=self.bundle, type="host"),
+            maintenance_mode=False,
+        )
+        HostComponent.objects.create(
+            cluster=self.cluster,
+            host=host,
+            service=self.service,
+            component=component_1,
+        )
+        HostComponent.objects.create(
+            cluster=self.cluster,
+            host=host,
+            service=self.service,
+            component=component_2,
+        )
+
+        self.assertTrue(self.service.maintenance_mode)
+
+        self.client.patch(
+            path=reverse("component-details", kwargs={"component_id": component_2.pk}),
+            data={"maintenance_mode": False},
+            content_type=APPLICATION_JSON,
+        )
+
         self.assertFalse(self.service.maintenance_mode)
