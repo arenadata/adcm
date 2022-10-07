@@ -40,8 +40,8 @@ from cm.upgrade import get_upgrade
 REASON_MSG_DICT = {
     "no_ldap_settings": "The Action is not available. "
     "You need to fill in the LDAP integration settings.",
-    "host_in_mm": "The Action is not available. Host in “Maintenance mode”",
-    "many_hosts_in_mm": "The Action is not available. One or more hosts in “Maintenance mode”",
+    "host_in_mm": "The Action is not available. Host in `Maintenance mode`",
+    "many_hosts_in_mm": "The Action is not available. One or more hosts in `Maintenance mode`",
 }
 
 
@@ -131,7 +131,7 @@ def set_start_impossible_reason(obj: ADCMEntity, action: Action) -> None:
         if not action.allow_in_maintenance_mode and mm:
             action.start_impossible_reason = REASON_MSG_DICT["many_hosts_in_mm"]
     elif obj.prototype.type == "host":
-        if obj.maintenance_mode:
+        if not action.allow_in_maintenance_mode and obj.maintenance_mode:
             action.start_impossible_reason = REASON_MSG_DICT["host_in_mm"]
         else:
             mm = HostComponent.objects.filter(
