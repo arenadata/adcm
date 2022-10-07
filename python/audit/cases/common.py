@@ -82,9 +82,9 @@ def get_obj_name(obj: Model, obj_type: str) -> str:
 
 
 def get_or_create_audit_obj(
-        object_id: str,
-        object_name: str,
-        object_type: str,
+    object_id: str,
+    object_name: str,
+    object_type: str,
 ) -> AuditObject:
     audit_object = AuditObject.objects.filter(
         object_id=object_id,

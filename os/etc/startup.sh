@@ -11,9 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# shellcheck disable=SC1091
-source /etc/adcmenv
-
+. /etc/adcmenv
 cleanupwaitstatus
 
 sv_stop() {
@@ -22,10 +20,7 @@ sv_stop() {
     done
 }
 
-trap "sv_stop; exit" SIGTERM
-
-trap '' SIGCHLD
-
-runsvdir -P /etc/service &
-
+trap "sv_stop; exit" TERM
+trap "" CHLD
+runsvdir -P /etc/sv &
 while (true); do wait; done;
