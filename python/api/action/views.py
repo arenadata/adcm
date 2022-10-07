@@ -38,6 +38,8 @@ from cm.errors import AdcmEx
 from cm.models import Action, Host, HostComponent, TaskLog, get_model_by_type
 from rbac.viewsets import DjangoOnlyObjectPermissions
 
+VIEW_ACTION_PERM = "cm.view_action"
+
 
 def get_object_type_id(**kwargs):
     object_type = kwargs.get("object_type")
@@ -62,7 +64,7 @@ class ActionList(PermissionListMixin, GenericUIView):
     filterset_class = ActionFilter
     filterset_fields = ("name", "button", "button_is_null")
     filter_backends = (AdcmFilterBackend,)
-    permission_required = ["cm.view_action"]
+    permission_required = [VIEW_ACTION_PERM]
 
     def _get_host_actions(self, host: Host) -> set:
         actions = set(
@@ -142,7 +144,7 @@ class ActionDetail(PermissionListMixin, GenericUIView):
     serializer_class = ActionDetailSerializer
     serializer_class_ui = ActionUISerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
-    permission_required = ["cm.view_action"]
+    permission_required = [VIEW_ACTION_PERM]
 
     def get(self, request, *args, **kwargs):
         """
@@ -157,7 +159,7 @@ class ActionDetail(PermissionListMixin, GenericUIView):
         # TODO: we can access not only the actions of this object
         action = get_object_for_user(
             request.user,
-            "cm.view_action",
+            VIEW_ACTION_PERM,
             self.get_queryset(),
             id=action_id,
         )
@@ -222,7 +224,7 @@ class RunTask(GenericUIView):
         obj = get_object_for_user(
             request.user, f"{ct.app_label}.view_{ct.model}", model, id=object_id
         )
-        action = get_object_for_user(request.user, "cm.view_action", Action, id=action_id)
+        action = get_object_for_user(request.user, VIEW_ACTION_PERM, Action, id=action_id)
         self.check_action_perm(action, obj)
         self.check_disabling_cause(action, obj)
         serializer = self.get_serializer(data=request.data)
