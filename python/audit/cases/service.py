@@ -78,7 +78,7 @@ def service_case(  # pylint: disable=too-many-branches
                         object_type=AuditObjectType.Service,
                     )
                 else:
-                    audit_object =None
+                    audit_object = None
 
         case ["service", service_pk, "bind"]:
             obj = ClusterObject.objects.get(pk=service_pk)

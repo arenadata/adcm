@@ -18,6 +18,7 @@ from rest_framework.serializers import (
     HyperlinkedIdentityField,
     IntegerField,
     JSONField,
+    ModelSerializer,
     SerializerMethodField,
 )
 
@@ -128,3 +129,11 @@ class ComponentDetailUISerializer(ComponentDetailSerializer):
     @staticmethod
     def get_main_info(obj: ServiceComponent) -> str | None:
         return get_main_info(obj)
+
+
+class ComponentPatchSerializer(ModelSerializer):
+    maintenance_mode = BooleanField(source="_maintenance_mode")
+
+    class Meta:
+        model = ServiceComponent
+        fields = ("maintenance_mode",)

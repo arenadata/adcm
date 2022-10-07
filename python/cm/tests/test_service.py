@@ -23,7 +23,7 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.models import Bundle, Cluster, ClusterObject, Prototype
 
 
-class TestCluster(BaseTestCase):
+class TestService(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
