@@ -136,7 +136,7 @@ def _exec_django_shell(container: Container, statement: str) -> str:
             [
                 "sh",
                 "-c",
-                "source /adcm/venv/default/bin/activate " f"&& python3 /adcm/python/manage.py shell -c '{script}'",
+                ". /adcm/venv/default/bin/activate " f"&& python /adcm/python/manage.py shell -c '{script}'",
             ]
         )
         out = output.decode("utf-8").strip()
