@@ -691,6 +691,7 @@ class ClusterObject(ADCMEntity):
         content_type_field="object_type",
         on_delete=models.CASCADE,
     )
+    _maintenance_mode = models.BooleanField(default=False)
 
     __error_code__ = "CLUSTER_SERVICE_NOT_FOUND"
 
@@ -727,6 +728,14 @@ class ClusterObject(ADCMEntity):
         }
         return result if result["issue"] else {}
 
+    @property
+    def maintenance_mode(self) -> bool:
+        return self._maintenance_mode
+
+    @maintenance_mode.setter
+    def maintenance_mode(self, value: bool) -> None:
+        self._maintenance_mode = value
+
     class Meta:
         unique_together = (("cluster", "prototype"),)
 
@@ -741,6 +750,7 @@ class ServiceComponent(ADCMEntity):
         content_type_field="object_type",
         on_delete=models.CASCADE,
     )
+    _maintenance_mode = models.BooleanField(default=False)
 
     __error_code__ = "COMPONENT_NOT_FOUND"
 
@@ -780,6 +790,14 @@ class ServiceComponent(ADCMEntity):
             "issue": self.issue,
         }
         return result if result["issue"] else {}
+
+    @property
+    def maintenance_mode(self) -> bool:
+        return self._maintenance_mode
+
+    @maintenance_mode.setter
+    def maintenance_mode(self, value: bool) -> None:
+        self._maintenance_mode = value
 
     class Meta:
         unique_together = (("cluster", "service", "prototype"),)
