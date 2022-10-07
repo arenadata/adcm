@@ -40,8 +40,8 @@ from cm.upgrade import get_upgrade
 REASON_MSG_DICT = {
     "no_ldap_settings": "The Action is not available. "
     "You need to fill in the LDAP integration settings.",
-    "host_in_mm": "The Action is not available. Host in `Maintenance mode`",
-    "many_hosts_in_mm": "The Action is not available. One or more hosts in `Maintenance mode`",
+    "host_in_mm": "The Action is not available. Host in 'Maintenance mode'",
+    "many_hosts_in_mm": "The Action is not available. One or more hosts in 'Maintenance mode'",
 }
 
 
