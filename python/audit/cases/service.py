@@ -13,7 +13,7 @@ from audit.models import (
 from cm.models import Cluster, ClusterBind, ClusterObject
 
 
-def service_case(
+def service_case(  # pylint: disable=too-many-branches
     path: list[str, ...],
     view: View,
     response: Response,
@@ -49,12 +49,19 @@ def service_case(
             else:
                 audit_object = None
 
-        case ["service", _]:
+        case ["service", service_pk]:
             deleted_obj: ClusterObject
-            audit_operation = AuditOperation(
-                name="service removed",
-                operation_type=AuditLogOperationType.Update,
-            )
+            if view.request.method == "DELETE":
+                audit_operation = AuditOperation(
+                    name="service removed",
+                    operation_type=AuditLogOperationType.Update,
+                )
+            else:
+                audit_operation = AuditOperation(
+                    name=f"{AuditObjectType.Service.capitalize()} {AuditLogOperationType.Update}d",
+                    operation_type=AuditLogOperationType.Update,
+                )
+
             if deleted_obj:
                 audit_operation.name = f"{deleted_obj.display_name} {audit_operation.name}"
                 audit_object = get_or_create_audit_obj(
@@ -63,7 +70,15 @@ def service_case(
                     object_type=AuditObjectType.Cluster,
                 )
             else:
-                audit_object = None
+                obj = ClusterObject.objects.filter(pk=service_pk).first()
+                if obj:
+                    audit_object = get_or_create_audit_obj(
+                        object_id=service_pk,
+                        object_name=get_obj_name(obj=obj, obj_type=AuditObjectType.Service),
+                        object_type=AuditObjectType.Service,
+                    )
+                else:
+                    audit_object =None
 
         case ["service", service_pk, "bind"]:
             obj = ClusterObject.objects.get(pk=service_pk)
