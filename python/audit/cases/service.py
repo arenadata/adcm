@@ -24,7 +24,6 @@ def service_case(
 
     match path:
         case ["service"]:
-            cluster = None
             audit_operation = AuditOperation(
                 name="service added",
                 operation_type=AuditLogOperationType.Update,

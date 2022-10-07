@@ -1733,7 +1733,7 @@ class TestCluster(BaseTestCase):
             max_version="99",
         )
 
-        with patch("api.cluster.views.create", return_value=Response(status=HTTP_201_CREATED)):
+        with patch("api.cluster.views.do_upgrade"), patch("api.cluster.views.check_obj"):
             self.client.post(
                 path=reverse(
                     "do-cluster-upgrade",
@@ -1757,7 +1757,7 @@ class TestCluster(BaseTestCase):
             max_version="99",
         )
 
-        with patch("api.cluster.views.create", return_value=Response(status=HTTP_201_CREATED)):
+        with patch("api.cluster.views.do_upgrade"), patch("api.cluster.views.check_obj"):
             self.client.post(
                 path=reverse(
                     "do-cluster-upgrade",

@@ -193,7 +193,7 @@ class TestJob(BaseTestCase):
             self.assertIn(to_set, obj.multi_state)
             self.assertNotIn(to_unset, obj.multi_state)
 
-    @patch("cm.job.api.save_hc")
+    @patch("cm.job.save_hc")
     def test_restore_hc(self, mock_save_hc):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
@@ -224,7 +224,7 @@ class TestJob(BaseTestCase):
         restore_hc(task, action, Job.FAILED)
         mock_save_hc.assert_called_once_with(cluster, [(cluster_object, host, service_component)])
 
-    @patch("cm.job.err")
+    @patch("cm.job.raise_adcm_ex")
     def test_check_service_task(self, mock_err):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
@@ -237,7 +237,7 @@ class TestJob(BaseTestCase):
         self.assertEqual(cluster_object, service)
         self.assertEqual(mock_err.call_count, 0)
 
-    @patch("cm.job.err")
+    @patch("cm.job.raise_adcm_ex")
     def test_check_cluster(self, mock_err):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
@@ -250,7 +250,7 @@ class TestJob(BaseTestCase):
 
     @patch("cm.job.prepare_ansible_config")
     @patch("cm.job.prepare_job_config")
-    @patch("cm.job.inventory.prepare_job_inventory")
+    @patch("cm.job.prepare_job_inventory")
     def test_prepare_job(
         self, mock_prepare_job_inventory, mock_prepare_job_config, mock_prepare_ansible_config
     ):
