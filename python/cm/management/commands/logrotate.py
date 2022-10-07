@@ -71,7 +71,7 @@ class Command(BaseCommand):
     __encoding = "utf-8"
     __nginx_logrotate_conf = "/etc/logrotate.d/nginx"
     __logrotate_cmd = f"logrotate {__nginx_logrotate_conf}"
-    __logrotate_cmd_debug = f"{__logrotate_cmd} -d"
+    __logrotate_cmd_debug = f"{__logrotate_cmd} -v"
 
     def add_arguments(self, parser):
         parser.add_argument(

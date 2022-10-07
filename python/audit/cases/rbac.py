@@ -22,9 +22,9 @@ class RbacCaseData:
 
 
 def _rbac_case(
-        obj_type: AuditObjectType,
-        response: Response | None,
-        data: RbacCaseData | None = None,
+    obj_type: AuditObjectType,
+    response: Response | None,
+    data: RbacCaseData | None = None,
 ) -> tuple[AuditOperation, AuditObject | None]:
     if data:
         if data.view.action == "destroy":
@@ -55,65 +55,69 @@ def _rbac_case(
 
 
 def rbac_case(
-        path: list[str, ...],
-        view: View,
-        response: Response,
-        deleted_obj: Model,
+    path: list[str, ...],
+    view: View,
+    response: Response,
+    deleted_obj: Model,
 ) -> tuple[AuditOperation, AuditObject | None]:
     audit_operation = None
     audit_object = None
 
     match path:
-        case["rbac", "group"]:
+        case ["rbac", "group"]:
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.Group,
                 response=response,
             )
 
-        case["rbac", "group", group_pk]:
+        case ["rbac", "group", group_pk]:
             data = RbacCaseData(view=view, deleted_obj=deleted_obj, obj_pk=group_pk)
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.Group,
-                response=response, data=data,
+                response=response,
+                data=data,
             )
 
-        case["rbac", "policy"]:
+        case ["rbac", "policy"]:
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.Policy,
                 response=response,
             )
 
-        case["rbac", "policy", policy_pk]:
+        case ["rbac", "policy", policy_pk]:
             data = RbacCaseData(view=view, deleted_obj=deleted_obj, obj_pk=policy_pk)
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.Policy,
-                response=response, data=data,
+                response=response,
+                data=data,
             )
 
-        case["rbac", "role"]:
+        case ["rbac", "role"]:
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.Role,
                 response=response,
             )
 
-        case["rbac", "role", role_pk]:
+        case ["rbac", "role", role_pk]:
             data = RbacCaseData(view=view, deleted_obj=deleted_obj, obj_pk=role_pk)
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.Role,
-                response=response, data=data,
+                response=response,
+                data=data,
             )
 
-        case["rbac", "user"]:
+        case ["rbac", "user"]:
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.User,
                 response=response,
             )
 
-        case["rbac", "user", user_pk]:
+        case ["rbac", "user", user_pk]:
             data = RbacCaseData(view=view, deleted_obj=deleted_obj, obj_pk=user_pk)
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.User,
-                response=response, data=data,
+                response=response,
+                data=data,
             )
 
     return audit_operation, audit_object

@@ -43,6 +43,7 @@ from api.validators import StartMidEndValidator
 from cm.adcm_config import get_main_info
 from cm.api import add_cluster, add_hc, bind, multi_bind
 from cm.errors import AdcmEx
+from cm.issue import update_hierarchy_issues
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent, Upgrade
 from cm.status_api import get_cluster_status, get_hc_status
 from cm.upgrade import do_upgrade
@@ -211,6 +212,7 @@ class ClusterUpdateSerializer(EmptySerializer):
         instance.name = validated_data.get("name", instance.name)
         instance.description = validated_data.get("description", instance.description)
         instance.save()
+        update_hierarchy_issues(instance)
         return instance
 
 

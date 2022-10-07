@@ -13,4 +13,4 @@ lint:
 	cd $(ADCM); golangci-lint run
 
 build:
-	cd $(ADCM); go build -o ../bin/runstatus runstatus.go
+	cd $(ADCM); go mod tidy && go build -o ../bin/runstatus runstatus.go

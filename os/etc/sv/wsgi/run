@@ -11,18 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source /etc/adcmenv
+. /etc/adcmenv
 
-waitforwsgi
+waitforinit
 
-echo "Run Nginx ..."
+echo "Run main wsgi application ..."
+exec 1>>"${adcmlog}/service_wsgi.out"
+exec 2>>"${adcmlog}/service_wsgi.err"
 
-exec 1>"${adcmlog}/nginx/service_nginx.out"
-exec 2>"${adcmlog}/nginx/service_nginx.err"
-
-mkdir -p /run/nginx
-
-# Cleanup tmp dir during restart of nginx. That dir is for
-# uploading bundles cache.
-rm -rf /adcm/data/tmp/nginx_client_temp || true
-exec /usr/sbin/nginx -c /etc/nginx/nginx.conf  -g "daemon off;"
+cd "${adcmroot}/python"
+touch /run/uwsgi.pid
+uwsgi --socket "${wsgisocketfile}" --pidfile "/run/uwsgi.pid" --module adcm.wsgi --chmod-socket=777 --logger file:logfile="${adcmlog}/wsgi.log",maxsize=2000000
