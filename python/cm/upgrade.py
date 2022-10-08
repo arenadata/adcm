@@ -369,7 +369,3 @@ def bundle_switch(obj: Union[Cluster, HostProvider], upgrade: Upgrade):
 
     logger.info("upgrade %s OK to version %s", obj_ref(obj), obj.prototype.version)
     post_event("upgrade", obj.prototype.type, obj.id, "version", str(obj.prototype.version))
-
-
-def get_upgradable_func(obj: [Cluster, HostProvider]):
-    return bool(get_upgrade(obj))

@@ -30,7 +30,7 @@ from cm.adcm_config import get_main_info
 from cm.api import add_host_provider
 from cm.errors import AdcmEx
 from cm.models import Action, HostProvider, Prototype, Upgrade
-from cm.upgrade import do_upgrade, get_upgradable_func
+from cm.upgrade import do_upgrade, get_upgrade
 
 
 class ProviderSerializer(EmptySerializer):
@@ -98,7 +98,7 @@ class ProviderUISerializer(ProviderSerializer):
 
     @staticmethod
     def get_upgradable(obj: HostProvider) -> bool:
-        return get_upgradable_func(obj)
+        return bool(get_upgrade(obj))
 
     @staticmethod
     def get_prototype_version(obj: HostProvider) -> str:
@@ -131,7 +131,7 @@ class ProviderDetailUISerializer(ProviderDetailSerializer):
 
     @staticmethod
     def get_upgradable(obj: HostProvider) -> bool:
-        return get_upgradable_func(obj)
+        return bool(get_upgrade(obj))
 
     @staticmethod
     def get_prototype_version(obj: HostProvider) -> str:
