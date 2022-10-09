@@ -9,7 +9,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 import { MatDialog } from '@angular/material/dialog';
 import { ParamMap } from '@angular/router';
 import { select, Store } from '@ngrx/store';
@@ -17,7 +16,6 @@ import { filter, mergeMap, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { IListResult } from '@adwp-ui/widgets';
 import { Sort } from '@angular/material/sort';
 import { Observable, Subject } from 'rxjs';
-
 import { clearMessages, EventMessage, getMessage, SocketState } from '@app/core/store';
 import { Bundle, EmmitRow, Entities, Host as AdcmHost, TypeName } from '@app/core/types';
 import { DialogComponent } from '@app/shared/components';
@@ -25,7 +23,6 @@ import { ListResult } from '@app/models/list-result';
 import { ListService } from './list.service';
 import { ListDirective } from '@app/abstract-directives/list.directive';
 import { ICluster } from '@app/models/cluster';
-
 
 const TemporaryEntityNameConverter = (currentName: Partial<TypeName>): string => {
 
@@ -94,7 +91,6 @@ export class BaseListDirective {
   }
 
   routeListener(limit: number, page: number, ordering: string, params: ParamMap) {
-
     this.parent.paginator.pageSize = limit;
     if (page === 0) {
       this.parent.paginator.firstPage();
@@ -139,10 +135,12 @@ export class BaseListDirective {
 
   checkParam(p: ParamMap): boolean {
     const listParamStr = localStorage.getItem('list:param');
+
     if (!p.keys.length && listParamStr) {
       const json = JSON.parse(listParamStr);
+
       if (json[this.typeName]) {
-        delete json[this.typeName].page;
+        delete json[this.typeName]?.page;
         this.parent.router.navigate(['./', json[this.typeName]], {
           relativeTo: this.parent.route,
           replaceUrl: true,
