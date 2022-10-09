@@ -25,7 +25,7 @@ export class NameEditColumnComponent implements AdwpCellComponent<any>, OnInit {
       [
         Validators.required,
         Validators.maxLength(253),
-        Validators.pattern(new RegExp(/^[^_\.\-\s][A-Za-z0-9]\S*$/))
+        Validators.pattern(new RegExp(/^[A-Za-z0-9]{1}[A-Za-z0-9.-]*$/))
       ]);
   }
 
@@ -44,6 +44,8 @@ export class NameEditColumnComponent implements AdwpCellComponent<any>, OnInit {
     const maxWidth = '1400px';
     const width = '500px';
     const title = 'Edit host';
+
+    this.form.setValue(this.row[this.column.sort]);
 
     dialogModel =  {
       width,

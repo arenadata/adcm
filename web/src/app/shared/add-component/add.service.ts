@@ -45,7 +45,7 @@ const MODELS: { [key: string]: FormModel } = {
       fqdn: new FormControl('', [
         Validators.required,
         Validators.maxLength(253),
-        Validators.pattern(new RegExp(/^[^_\.\-\s][A-Za-z0-9]\S*$/))
+        Validators.pattern(new RegExp(/^[A-Za-z0-9]{1}[A-Za-z0-9.-]*$/))
       ]),
       cluster_id: new FormControl(),
       provider_id: new FormControl('', Validators.required),
