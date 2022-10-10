@@ -19,7 +19,7 @@ import cm.adcm_config
 import cm.job
 from api.config.serializers import ConfigSerializerUI
 from api.utils import get_api_url_kwargs
-from cm.models import PrototypeConfig, SubAction
+from cm.models import Action, PrototypeConfig, SubAction
 
 
 class ActionDetailURL(serializers.HyperlinkedIdentityField):
@@ -59,7 +59,7 @@ class StackActionSerializer(serializers.Serializer):
     host_action = serializers.BooleanField(read_only=True)
     start_impossible_reason = serializers.SerializerMethodField()
 
-    def get_start_impossible_reason(self, action):
+    def get_start_impossible_reason(self, action: Action):
         if self.context.get("obj"):
             return action.get_start_impossible_reason(self.context["obj"])
         return None
