@@ -312,13 +312,13 @@ class DoClusterUpgrade(GenericUIView):
 
         upgrade = check_obj(
             Upgrade,
-            serializer.validated_data.get("upgrade_id"),
+            kwargs.get("upgrade_id"),
             "UPGRADE_NOT_FOUND",
         )
         config = serializer.validated_data.get("config", {})
         attr = serializer.validated_data.get("attr", {})
         hc = serializer.validated_data.get("hc", [])
-        do_upgrade(serializer.validated_data.get("obj"), upgrade, config, attr, hc)
+        do_upgrade(cluster, upgrade, config, attr, hc)
 
         return Response(serializer.data, status=HTTP_201_CREATED)
 
