@@ -31,7 +31,6 @@ from api.utils import (
     create,
     filter_actions,
     get_object_for_user,
-    set_start_impossible_reason,
 )
 from audit.utils import audit
 from cm.errors import AdcmEx
@@ -160,7 +159,6 @@ class ActionDetail(PermissionListMixin, GenericUIView):
             self.get_queryset(),
             id=action_id,
         )
-        set_start_impossible_reason(obj, action)
         if isinstance(obj, Host) and action.host_action:
             objects = {"host": obj}
         else:
@@ -190,13 +188,9 @@ class RunTask(GenericUIView):
             raise PermissionDenied()
 
     @staticmethod
-    def check_start_impossible_reason(action, obj):
-        set_start_impossible_reason(obj, action)
-        if action.start_impossible_reason:
-            raise AdcmEx(
-                "ACTION_ERROR",
-                msg=action.start_impossible_reason,
-            )
+    def check_start_impossible_reason(reason):
+        if reason:
+            raise AdcmEx("ACTION_ERROR", msg=reason)
 
     @audit
     def post(self, request, *args, **kwargs):
@@ -210,8 +204,9 @@ class RunTask(GenericUIView):
             request.user, f"{ct.app_label}.view_{ct.model}", model, id=object_id
         )
         action = get_object_for_user(request.user, VIEW_ACTION_PERM, Action, id=action_id)
+        reason = action.get_start_impossible_reason(obj)
         self.check_action_perm(action, obj)
-        self.check_start_impossible_reason(action, obj)
+        self.check_start_impossible_reason(reason)
         serializer = self.get_serializer(data=request.data)
 
         return create(serializer, action=action, task_object=obj)
