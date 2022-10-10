@@ -208,7 +208,7 @@ class GroupConfigConfigLogViewSet(
             obj_ref = ObjectConfig.obj.get(id=obj_ref_id)
             context.update({'obj_ref': obj_ref})
 
-        context['ui'] = self.is_for_ui()
+        context["ui"] = self.is_for_ui()
 
         return context
 

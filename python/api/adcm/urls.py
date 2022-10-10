@@ -12,10 +12,10 @@
 
 from django.urls import include, path
 
-from .views import ADCMViewSet
+from api.adcm.views import ADCMViewSet
 
 urlpatterns = [
-    path(r"", ADCMViewSet.as_view({"get": "list"}), name="adcm-list"),
+    path("", ADCMViewSet.as_view({"get": "list"}), name="adcm-list"),
     path(r"<int:adcm_pk>/", ADCMViewSet.as_view({"get": "retrieve"}), name="adcm-detail"),
     path(r"<int:adcm_pk>/config/", include("api.config.urls"), {"object_type": "adcm"}),
     path(r"<int:adcm_pk>/action/", include("api.action.urls"), {"object_type": "adcm"}),

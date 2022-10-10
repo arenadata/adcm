@@ -25,7 +25,6 @@ from cm.models import ADCM
 # pylint:disable-next=too-many-ancestors
 class ADCMViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
 
-    # queryset = ADCM.objects.all()
     queryset = ADCM.objects.select_related("prototype").all()
     serializer_class = ADCMSerializer
     permission_classes = (IsAuthenticated,)

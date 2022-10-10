@@ -25,9 +25,6 @@ class TestADCM(BaseTestCase):
         init_adcm()
 
     def test_list(self):
-        response: Response = self.client.get(reverse("adcm-list"))
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
         adcm = ADCM.objects.select_related("prototype").last()
         test_data = {
             "id": adcm.id,
@@ -37,12 +34,13 @@ class TestADCM(BaseTestCase):
             "url": f"http://testserver/api/v1/adcm/{adcm.id}/",
         }
 
+        response: Response = self.client.get(reverse("adcm-list"))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
         self.assertDictEqual(response.json()["results"][0], test_data)
 
     def test_list_interface(self):
-        response: Response = self.client.get(f"{reverse('adcm-list')}?view=interface")
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
         adcm = ADCM.objects.select_related("prototype").last()
         test_data = {
             "id": adcm.id,
@@ -60,12 +58,14 @@ class TestADCM(BaseTestCase):
             "main_info": None,
         }
 
+        response: Response = self.client.get(f"{reverse('adcm-list')}?view=interface")
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
         self.assertDictEqual(response.json()["results"][0], test_data)
 
     def test_retrieve(self):
         adcm = ADCM.objects.select_related("prototype").last()
-        response: Response = self.client.get(reverse("adcm-detail", kwargs={"adcm_pk": adcm.id}))
-        self.assertEqual(response.status_code, HTTP_200_OK)
         test_data = {
             "id": adcm.id,
             "name": adcm.name,
@@ -80,14 +80,14 @@ class TestADCM(BaseTestCase):
             "concerns": [],
             "locked": adcm.locked,
         }
+
+        response: Response = self.client.get(reverse("adcm-detail", kwargs={"adcm_pk": adcm.id}))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertDictEqual(response.json(), test_data)
 
     def test_retrieve_interface(self):
         adcm = ADCM.objects.select_related("prototype").last()
-        response: Response = self.client.get(
-            f"{reverse('adcm-detail', kwargs={'adcm_pk': adcm.id})}?view=interface"
-        )
-        self.assertEqual(response.status_code, HTTP_200_OK)
         test_data = {
             "id": adcm.id,
             "name": adcm.name,
@@ -103,4 +103,10 @@ class TestADCM(BaseTestCase):
             "locked": adcm.locked,
             "main_info": None,
         }
+
+        response: Response = self.client.get(
+            f"{reverse('adcm-detail', kwargs={'adcm_pk': adcm.id})}?view=interface"
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertDictEqual(response.json(), test_data)
