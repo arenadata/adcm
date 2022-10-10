@@ -24,7 +24,7 @@ from adcm.serializers import EmptySerializer
 from api.config.serializers import ConfigSerializerUI
 from api.utils import get_api_url_kwargs
 from cm.adcm_config import get_action_variant, get_prototype_config
-from cm.models import PrototypeConfig, SubAction
+from cm.models import Action, PrototypeConfig, SubAction
 
 
 class ActionDetailURL(HyperlinkedIdentityField):
@@ -67,6 +67,12 @@ class StackActionSerializer(EmptySerializer):
     host_action = BooleanField(read_only=True)
     disabling_cause = CharField(read_only=True)
 
+    def get_start_impossible_reason(self, action: Action):
+        if self.context.get("obj"):
+            return action.get_start_impossible_reason(self.context["obj"])
+
+        return None
+
 
 class ActionSerializer(StackActionSerializer):
     url = HostActionDetailURL(read_only=True, view_name="object-action-details")
@@ -108,7 +114,6 @@ class StackActionDetailSerializer(StackActionSerializer):
     log_files = JSONField(required=False)
     config = SerializerMethodField()
     subs = SerializerMethodField()
-    disabling_cause = CharField(read_only=True)
 
     def get_config(self, obj):
         aconf = PrototypeConfig.objects.filter(prototype=obj.prototype, action=obj).order_by("id")

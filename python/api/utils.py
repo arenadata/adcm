@@ -28,9 +28,6 @@ from cm.models import (
     Action,
     ADCMEntity,
     ConcernType,
-    ConfigLog,
-    Host,
-    HostComponent,
     PrototypeConfig,
 )
 
@@ -94,41 +91,6 @@ def update(serializer, **kwargs):
     return save(serializer, HTTP_200_OK, **kwargs)
 
 
-def set_disabling_cause(obj: ADCMEntity, action: Action) -> None:
-    action.disabling_cause = None
-    if obj.prototype.type == "adcm":
-        current_configlog = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-        if not current_configlog.attr["ldap_integration"]["active"]:
-            action.disabling_cause = "no_ldap_settings"
-
-    if obj.prototype.type == "cluster":
-        mm = Host.objects.filter(cluster=obj, maintenance_mode=True).exists()
-        if not action.allow_in_maintenance_mode and mm:
-            action.disabling_cause = "maintenance_mode"
-    elif obj.prototype.type == "service":
-        mm = HostComponent.objects.filter(
-            service=obj, cluster=obj.cluster, host__maintenance_mode=True
-        ).exists()
-        if not action.allow_in_maintenance_mode and mm:
-            action.disabling_cause = "maintenance_mode"
-    elif obj.prototype.type == "component":
-        mm = HostComponent.objects.filter(
-            component=obj,
-            cluster=obj.cluster,
-            service=obj.service,
-            host__maintenance_mode=True,
-        ).exists()
-        if not action.allow_in_maintenance_mode and mm:
-            action.disabling_cause = "maintenance_mode"
-    elif obj.prototype.type == "host":
-        mm = HostComponent.objects.filter(
-            component_id__in=HostComponent.objects.filter(host=obj).values_list("component_id"),
-            host__maintenance_mode=True,
-        ).exists()
-        if action.host_action and not action.allow_in_maintenance_mode and mm:
-            action.disabling_cause = "maintenance_mode"
-
-
 def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
     """Filter out actions that are not allowed to run on object at that moment"""
     if obj.concerns.filter(type=ConcernType.Lock).exists():
@@ -141,7 +103,6 @@ def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
             action.config = PrototypeConfig.objects.filter(
                 prototype=action.prototype, action=action
             ).order_by("id")
-            set_disabling_cause(obj, action)
 
     return allowed
 
