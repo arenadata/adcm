@@ -134,7 +134,7 @@ class TestAction(BaseTestCase):
         with patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
-                    "run-task", kwargs={"adcm_id": self.adcm.pk, "action_id": self.action.pk}
+                    "run-task", kwargs={"adcm_pk": self.adcm.pk, "action_id": self.action.pk}
                 )
             )
 
@@ -152,7 +152,7 @@ class TestAction(BaseTestCase):
 
         with patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
-                path=reverse("run-task", kwargs={"adcm_id": 999, "action_id": self.action.pk})
+                path=reverse("run-task", kwargs={"adcm_pk": 999, "action_id": self.action.pk})
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -266,7 +266,7 @@ class TestAction(BaseTestCase):
         component_policy.apply()
 
         paths = [
-            reverse("run-task", kwargs={"adcm_id": self.adcm.pk, "action_id": self.action.pk}),
+            reverse("run-task", kwargs={"adcm_pk": self.adcm.pk, "action_id": self.action.pk}),
             reverse("run-task", kwargs={"cluster_id": cluster.pk, "action_id": self.action.pk}),
             reverse("run-task", kwargs={"host_id": host.pk, "action_id": self.action.pk}),
             reverse("run-task", kwargs={"component_id": component.pk, "action_id": self.action.pk}),

@@ -10,45 +10,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework import permissions
-from rest_framework.response import Response
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import IsAuthenticated
 
 from api.adcm.serializers import (
-    AdcmDetailSerializer,
-    AdcmDetailUISerializer,
-    AdcmSerializer,
+    ADCMRetrieveSerializer,
+    ADCMSerializer,
+    ADCMUISerializer,
 )
-from api.base_view import DetailView, GenericUIView
+from api.base_view import GenericUIViewSet
 from cm.models import ADCM
 
 
-class AdcmList(GenericUIView):
-    """
-    get:
-    List adcm object
-    """
+# pylint:disable-next=too-many-ancestors
+class ADCMViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
 
-    queryset = ADCM.objects.all()
-    serializer_class = AdcmSerializer
-    serializer_class_ui = AdcmDetailUISerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    # queryset = ADCM.objects.all()
+    queryset = ADCM.objects.select_related("prototype").all()
+    serializer_class = ADCMSerializer
+    permission_classes = (IsAuthenticated,)
+    lookup_url_kwarg = "adcm_pk"
 
-    def get(self, request, *args, **kwargs):
-        obj = self.get_queryset()
-        serializer = self.get_serializer(obj, many=True)
-        return Response(serializer.data)
+    def get_serializer_class(self):
 
+        if self.is_for_ui():
+            return ADCMUISerializer
 
-class AdcmDetail(DetailView):
-    """
-    get:
-    Show adcm object
-    """
+        if self.action == "retrieve":
+            return ADCMRetrieveSerializer
 
-    queryset = ADCM.objects.all()
-    serializer_class = AdcmDetailSerializer
-    serializer_class_ui = AdcmDetailUISerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    lookup_field = 'id'
-    lookup_url_kwarg = 'adcm_id'
-    error_code = 'ADCM_NOT_FOUND'
+        return super().get_serializer_class()

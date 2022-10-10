@@ -9,14 +9,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from django.urls import include, path
-
-from .views import ADCMViewSet
-
-urlpatterns = [
-    path(r"", ADCMViewSet.as_view({"get": "list"}), name="adcm-list"),
-    path(r"<int:adcm_pk>/", ADCMViewSet.as_view({"get": "retrieve"}), name="adcm-detail"),
-    path(r"<int:adcm_pk>/config/", include("api.config.urls"), {"object_type": "adcm"}),
-    path(r"<int:adcm_pk>/action/", include("api.action.urls"), {"object_type": "adcm"}),
-]

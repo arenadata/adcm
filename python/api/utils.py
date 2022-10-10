@@ -156,9 +156,11 @@ def get_upgradable_func(obj: [Cluster, HostProvider]):
 
 def get_api_url_kwargs(obj, request, no_obj_type=False):
     obj_type = obj.prototype.type
-    kwargs = {
-        f"{obj_type}_id": obj.id,
-    }
+
+    if obj_type == "adcm":  # TODO: this is a temporary patch for `config` endpoint
+        kwargs = {"adcm_pk": obj.pk}
+    else:
+        kwargs = {f"{obj_type}_id": obj.id}
 
     # Do not include object_type in kwargs if no_obj_type == True
     if not no_obj_type:
