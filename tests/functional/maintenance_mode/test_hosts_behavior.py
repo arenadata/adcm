@@ -25,7 +25,6 @@ from tests.functional.maintenance_mode.conftest import (
     ANOTHER_SERVICE_NAME,
     BUNDLES_DIR,
     DEFAULT_SERVICE_NAME,
-    DISABLING_CAUSE,
     MM_IS_OFF,
     MM_IS_ON,
     MM_NOT_ALLOWED,
@@ -247,14 +246,11 @@ def test_running_disabled_actions_is_forbidden(cluster_with_mm, hosts):
         service.action(name=ACTION_NOT_ALLOWED_IN_MM).run,
         err_=ACTION_ERROR,
     )
-    expect_no_api_error('run allowed in MM action on service', service.action(name=ACTION_ALLOWED_IN_MM).run)
+    task = expect_no_api_error('run allowed in MM action on service', service.action(name=ACTION_ALLOWED_IN_MM).run)
 
     expect_api_error('run action on host in MM', host_action_from_itself.run, err_=ACTION_ERROR)
-    expect_api_error(
-        'run action `host_action: true` on host in MM',
-        host_action_from_component.run,
-        err_=ACTION_ERROR,
-    )
+    task.wait()
+    expect_no_api_error('run action `host_action: true` on host in MM', host_action_from_component.run)
 
 
 @only_clean_adcm
@@ -472,13 +468,3 @@ def _expect_hc_set_to_fail(
 def _check_hostcomponents_are_equal(actual_hc, expected_hc) -> None:
     """Compare hostcomponent maps directly"""
     assert actual_hc == expected_hc, f'Hostcomponent map has changed.\nExpected:\n{expected_hc}\nActual:\n{actual_hc}'
-
-
-def _get_enabled_actions_names(adcm_object: AnyADCMObject) -> Set[str]:
-    """Get actions that aren't disabled by maintenance mode"""
-    return {action.name for action in adcm_object.action_list() if action.disabling_cause != DISABLING_CAUSE}
-
-
-def _get_disabled_actions_names(adcm_object: AnyADCMObject) -> Set[str]:
-    """Get actions disabled because of maintenance mode"""
-    return {action.name for action in adcm_object.action_list() if action.disabling_cause == DISABLING_CAUSE}
