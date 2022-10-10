@@ -24,12 +24,7 @@ from rest_framework.serializers import HyperlinkedIdentityField
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 
 from cm.errors import AdcmEx
-from cm.models import (
-    Action,
-    ADCMEntity,
-    ConcernType,
-    PrototypeConfig,
-)
+from cm.models import Action, ADCMEntity, ConcernType, PrototypeConfig
 
 
 def get_object_for_user(user, perms, klass, **kwargs):
