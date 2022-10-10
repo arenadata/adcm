@@ -1101,38 +1101,8 @@ class TestClusterConfigPage:
             cluster_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
     @pytest.mark.full()
-    @pytest.mark.parametrize("field_type", TYPES)
-    @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
-    @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
-    @pytest.mark.parametrize("is_required", [True, False], ids=("required", "not_required"))
-    @pytest.mark.parametrize("is_read_only", [True, False], ids=("read_only", "not_read_only"))
-    @pytest.mark.parametrize(
-        "config_group_customization",
-        [
-            pytest.param(True, id="config_group_customization_true", marks=pytest.mark.regression),
-            pytest.param(False, id="config_group_customization_false", marks=pytest.mark.regression),
-        ],
-    )
-    @pytest.mark.parametrize(
-        "group_customization",
-        [
-            pytest.param(True, id="group_customization_true", marks=pytest.mark.regression),
-            pytest.param(False, id="group_customization_false", marks=pytest.mark.regression),
-        ],
-    )
     @pytest.mark.usefixtures("login_to_adcm_over_api")
-    def test_configs_fields_invisible_true(
-        self,
-        sdk_client_fs: ADCMClient,
-        app_fs,
-        field_type,
-        is_advanced,
-        is_default,
-        is_required,
-        is_read_only,
-        config_group_customization,
-        group_customization,
-    ):
+    def test_configs_fields_invisible_true(self, sdk_client_fs: ADCMClient, app_fs):
         """Check RO field with invisible true
         Scenario:
         1. Check that field invisible
@@ -1140,8 +1110,7 @@ class TestClusterConfigPage:
         3. Click advanced
         4. Check that field invisible
         """
-
-        _, _, path = prepare_config(
+        res = [
             generate_configs(
                 field_type=field_type,
                 advanced=is_advanced,
@@ -1150,8 +1119,21 @@ class TestClusterConfigPage:
                 read_only=is_read_only,
                 config_group_customization=config_group_customization,
                 group_customization=group_customization,
-            )
-        )
+            )[0]
+            for field_type in TYPES
+            for is_advanced in (True, False)
+            for is_default in (True, False)
+            for is_required in (True, False)
+            for is_read_only in (True, False)
+            for config_group_customization in (True, False)
+            for group_customization in (True, False)
+        ]
+        full_config = [
+            {**combination[0]["config"][0], "name": f"{combination[0]['config'][0]['name']}_{i}"}
+            for i, combination in enumerate(res)
+        ]
+        _, _, path = prepare_config(([{**res[0][0], "config": full_config}], None), enforce_file=True)
+
         _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.check_no_rows_or_groups_on_page()
         cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
