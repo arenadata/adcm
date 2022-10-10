@@ -1141,7 +1141,6 @@ class TestClusterConfigPage:
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
     # pylint: disable=too-many-locals
-    @pytest.mark.skip(reason="https://tracker.yandex.ru/ADCM-3216")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
@@ -1203,8 +1202,12 @@ class TestClusterConfigPage:
             if expected['alerts'] and not is_read_only:
                 cluster_config_page.config.check_invalid_value_message(field_type)
 
-        with allure.step('Check that save button is disabled'):
-            assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
+        if is_read_only or (is_required and not is_default):
+            with allure.step('Check that save button is disabled'):
+                assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
+        else:
+            with allure.step('Check that save button is enabled'):
+                assert not cluster_config_page.config.is_save_btn_disabled(), 'Save button should be enabled'
         if is_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
         else:
