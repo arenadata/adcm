@@ -34,7 +34,10 @@ MM_IS_OFF = False
 MM_ALLOWED = True
 MM_NOT_ALLOWED = False
 
-DISABLING_CAUSE = 'maintenance_mode'
+START_IMPOSSIBLE_REASONS = {
+    "The Action is not available. One or more hosts in 'Maintenance mode'",
+    "The Action is not available. Host in 'Maintenance mode'",
+}
 
 PROVIDER_NAME = 'Test Default Provider'
 CLUSTER_WITH_MM_NAME = 'Test Cluster WITH Maintenance Mode'
@@ -150,9 +153,17 @@ def check_mm_availability(is_mm_available: bool, *hosts: Host):
 
 def get_enabled_actions_names(adcm_object: AnyADCMObject) -> Set[str]:
     """Get actions that aren't disabled by maintenance mode"""
-    return {action.name for action in adcm_object.action_list() if action.disabling_cause != DISABLING_CAUSE}
+    return {
+        action.name
+        for action in adcm_object.action_list()
+        if action.start_impossible_reason not in START_IMPOSSIBLE_REASONS
+    }
 
 
 def get_disabled_actions_names(adcm_object: AnyADCMObject) -> Set[str]:
     """Get actions disabled because of maintenance mode"""
-    return {action.name for action in adcm_object.action_list() if action.disabling_cause == DISABLING_CAUSE}
+    return {
+        action.name
+        for action in adcm_object.action_list()
+        if action.start_impossible_reason in START_IMPOSSIBLE_REASONS
+    }
