@@ -318,7 +318,11 @@ class DoClusterUpgrade(GenericUIView):
         config = serializer.validated_data.get("config", {})
         attr = serializer.validated_data.get("attr", {})
         hc = serializer.validated_data.get("hc", [])
-        return do_upgrade(cluster, upgrade, config, attr, hc)
+
+        return Response(
+            data=do_upgrade(cluster, upgrade, config, attr, hc),
+            status=HTTP_201_CREATED,
+        )
 
 
 class StatusList(GenericUIView):
