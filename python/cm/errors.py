@@ -111,7 +111,6 @@ ERRORS = {
     "WRONG_CLUSTER_ID_TYPE": ("cluster id must be integer", HTTP_400_BAD_REQUEST, ERR),
     "OVERFLOW": ("integer or floats in a request cause an overflow", HTTP_400_BAD_REQUEST, ERR),
     "WRONG_NAME": ("wrong name", HTTP_400_BAD_REQUEST, ERR),
-    "LONG_NAME": ("name is too long", HTTP_400_BAD_REQUEST, ERR),
     "INVALID_INPUT": ("invalid input", HTTP_400_BAD_REQUEST, ERR),
     "JSON_ERROR": ("json decoding error", HTTP_400_BAD_REQUEST, ERR),
     "CONFIG_KEY_ERROR": ("error in json config", HTTP_400_BAD_REQUEST, ERR),

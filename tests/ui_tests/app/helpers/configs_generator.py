@@ -137,7 +137,7 @@ def generate_configs(
     return (config, expected_result)
 
 
-def prepare_config(config):
+def prepare_config(config, *, enforce_file: bool = False):
     """Create config file and return config, expected result and path to config file"""
 
     config_info = config[0][0]['config'][0]
@@ -154,7 +154,7 @@ def prepare_config(config):
 
     os.makedirs(d_name)
     config[0][0]["name"] = random_string()
-    if config_info['name'] == 'file':
+    if enforce_file or config_info['name'] == 'file':
         with open(f"{d_name}/file.txt", 'w', encoding='utf_8') as file:
             file.write("test")
     with open(f"{d_name}/{CONFIG_FILE}", 'w', encoding='utf_8') as yaml_file:

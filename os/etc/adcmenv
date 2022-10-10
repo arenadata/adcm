@@ -22,21 +22,21 @@ adcmsecretfile="${adcmuserconf}/secret_key.txt"
 initreadyfile="/run/init.done"
 wsgisocketfile="/run/adcm.sock"
 
-function waitforinit() {
+waitforinit() {
   while [ ! -f "${initreadyfile}" ]; do
         echo "Waiting for init"
         sleep 1
   done;
 }
 
-function waitforwsgi() {
+waitforwsgi() {
   while [ ! -S "${wsgisocketfile}" ]; do
         echo "Waiting for wsgi"
         sleep 1
   done;
 }
 
-function cleanupwaitstatus() {
+cleanupwaitstatus() {
   rm -f "${initreadyfile}"
   rm -f "${wsgisocketfile}"
 }

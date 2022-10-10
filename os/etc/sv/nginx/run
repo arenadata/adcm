@@ -1,3 +1,4 @@
+#!/bin/sh
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,12 +11,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.permissions import AllowAny
-from rest_framework.routers import APIRootView
+. /etc/adcmenv
 
+waitforwsgi
 
-class APIRoot(APIRootView):
-    permission_classes = (AllowAny,)
-    api_root_dict = {
-        "rbac": "rbac-ui:root",
-    }
+echo "Run Nginx ..."
+
+exec 1>"${adcmlog}/nginx/service_nginx.out"
+exec 2>"${adcmlog}/nginx/service_nginx.err"
+
+mkdir -p /run/nginx
+
+# Cleanup tmp dir during restart of nginx. That dir is for
+# uploading bundles cache.
+rm -rf /adcm/data/tmp/nginx_client_temp || true
+exec /usr/sbin/nginx -c /etc/nginx/nginx.conf  -g "daemon off;"

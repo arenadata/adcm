@@ -13,7 +13,7 @@
 
 set +x
 
-source /etc/adcmenv
+. /etc/adcmenv
 
 echo "Application initialisation ..."
 
@@ -31,12 +31,13 @@ chmod 777 "${adcmtmp}"
 chmod a+t "${adcmtmp}"
 mkdir -p "${adcmuserconf}"
 mkdir -p "${adcmlog}/nginx"
+rm -r /var/log/nginx
 [ ! -L  "/var/log/nginx" ] && ln -s "${adcmlog}/nginx" /var/log/
 
 ## We got an issue on existing installation with folded log/nginx/nginx/nginx....
 [ -L "${adcmlog}/nginx/nginx" ] && rm -f "${adcmlog}/nginx/nginx"
 
-source "${adcmroot}/venv/default/bin/activate"
+#source "${adcmroot}/venv/default/bin/activate"
 
 echo "Root keys generation"
 key=/root/.ssh/id_rsa

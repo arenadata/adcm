@@ -16,7 +16,8 @@ import allure
 import pytest
 from adcm_client.objects import Cluster, Provider, Bundle
 from adcm_pytest_plugin.steps.actions import run_service_action_and_assert_result
-from adcm_pytest_plugin.utils import get_data_dir
+from adcm_pytest_plugin.utils import get_data_dir, catch_failed
+from coreapi.exceptions import ErrorMessage
 
 from tests.functional.conftest import only_clean_adcm
 
@@ -87,3 +88,17 @@ def test_missing_service_outside_config_group(cluster_with_services, provider):
     with allure.step('Run actions on services and check config dicts are available'):
         run_service_action_and_assert_result(first_service, action_name)
         run_service_action_and_assert_result(second_service, action_name)
+
+
+def test_launch_action_with_activatable_config_group(sdk_client_fs):
+    """Known bug caught when running action with at least one activatable group in action's config"""
+    cluster = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "activatable_group_in_action_config")).cluster_create(
+        "Test Cluster"
+    )
+    for param_1, param_2 in ((False, False), (True, False), (False, True)):
+        with allure.step(f"Try to set active status of {param_1=} and {param_2=}"):
+            with catch_failed(ErrorMessage, "Running cluster action should not raise exception"):
+                cluster.action(name="enable_something").run(
+                    config={"param_1": {"somethingtwo": "jjj"}, "param_2": {"somethingone": ["ololo"]}},
+                    attr={"param_1": {"active": param_1}, "param_2": {"active": param_2}},
+                ).wait()
