@@ -60,7 +60,9 @@ class StackActionSerializer(serializers.Serializer):
     start_impossible_reason = serializers.SerializerMethodField()
 
     def get_start_impossible_reason(self, action):
-        return action.get_start_impossible_reason(self.context["obj"])
+        if self.context.get("obj"):
+            return action.get_start_impossible_reason(self.context["obj"])
+        return None
 
 
 class ActionSerializer(StackActionSerializer):
