@@ -104,7 +104,7 @@ def test_filter(sdk_client_fs, ldap_ad, ldap_basic_ous):
 
     with allure.step("Create user and deactivate it"):
         filter_str = f"(&(objectcategory=person)(objectclass=person)(name={ldap_user_1}))"
-        res = ldap_ad.set_filter(base=ldap_user_1['dn'])
+        res = ldap_ad.set_filter(base=ldap_user_1['dn'], filterstr=filter_str)
 
         # check_existing_users(sdk_client_fs, {user_info_1['name'], user_info_2['name']}, adcm_user_names)
         # ldap_group_1 = get_ldap_group_from_adcm(sdk_client_fs, group_info_1['name'])
