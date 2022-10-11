@@ -1464,8 +1464,6 @@ roles:
         - Upload bundle
         - Remove bundle
         - Manage Maintenance mode
-        - Manage service Maintenance mode
-        - Manage component Maintenance mode
 
     - name: Provider Administrator
       type: role
@@ -1491,10 +1489,18 @@ roles:
       display_name: Manage host Maintenance mode
       description: the ability to enable / disable the "MM" on the host
       type: business
-      parametrized_by:
-        - host
       module_name: rbac.roles
-      class_name: ObjectRole
+      class_name: ParentRole
+      child:
+        - Manage host Maintenance mode
+        - Manage service Maintenance mode
+        - Manage component Maintenance mode
+
+    - name: Manage host Maintenance mode
+      description: the ability to enable / disable the "MM" on the host
+      type: hidden
+      module_name: rbac.roles
+      class_name: ParentRole
       apps:
         - label: cm
           models:
@@ -1505,7 +1511,7 @@ roles:
 
     - name: Manage service Maintenance mode
       description: the ability to enable / disable the "MM" on the service
-      type: business
+      type: hidden
       parametrized_by:
         - service
       module_name: rbac.roles
@@ -1520,7 +1526,7 @@ roles:
 
     - name: Manage component Maintenance mode
       description: the ability to enable / disable the "MM" on the component
-      type: business
+      type: hidden
       parametrized_by:
         - component
       module_name: rbac.roles
