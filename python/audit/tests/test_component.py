@@ -76,6 +76,7 @@ class TestComponent(BaseTestCase):
         log: AuditLog,
         operation_result: AuditLogOperationResult = AuditLogOperationResult.Success,
         user: User | None = None,
+        operation_name: str = "Component configuration updated",
     ):
         if user is None:
             user = self.test_user
@@ -87,7 +88,7 @@ class TestComponent(BaseTestCase):
         )
         self.assertEqual(log.audit_object.object_type, AuditObjectType.Component)
         self.assertFalse(log.audit_object.is_deleted)
-        self.assertEqual(log.operation_name, "Component configuration updated")
+        self.assertEqual(log.operation_name, operation_name)
         self.assertEqual(log.operation_type, AuditLogOperationType.Update)
         self.assertEqual(log.operation_result, operation_result)
         self.assertEqual(log.user.pk, user.pk)
@@ -109,6 +110,17 @@ class TestComponent(BaseTestCase):
         self.assertEqual(log.object_changes, {})
 
     def test_update(self):
+        self.client.patch(
+            path=reverse("component-details", kwargs={"component_id": self.component.pk}),
+            data={"maintenance_mode": True},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(log=log, operation_name="Component updated")
+
+    def test_update_config(self):
         self.client.post(
             path=reverse("config-history", kwargs={"component_id": self.component.pk}),
             data={"config": {}},
@@ -119,7 +131,7 @@ class TestComponent(BaseTestCase):
 
         self.check_log(log=log)
 
-    def test_restore(self):
+    def test_restore_config(self):
         self.client.patch(
             path=reverse(
                 "config-history-version-restore",
@@ -132,7 +144,7 @@ class TestComponent(BaseTestCase):
 
         self.check_log(log)
 
-    def test_restore_denied(self):
+    def test_restore_config_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
                 path=reverse(
@@ -151,7 +163,7 @@ class TestComponent(BaseTestCase):
             user=self.no_rights_user,
         )
 
-    def test_update_via_service(self):
+    def test_update_config_via_service(self):
         self.client.post(
             path=reverse(
                 "config-history",
@@ -165,7 +177,7 @@ class TestComponent(BaseTestCase):
 
         self.check_log(log)
 
-    def test_update_via_service_denied(self):
+    def test_update_config_via_service_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
                 path=reverse(
@@ -185,7 +197,7 @@ class TestComponent(BaseTestCase):
             user=self.no_rights_user,
         )
 
-    def test_restore_via_service(self):
+    def test_restore_config_via_service(self):
         self.client.patch(
             path=reverse(
                 "config-history-version-restore",
@@ -202,7 +214,7 @@ class TestComponent(BaseTestCase):
 
         self.check_log(log)
 
-    def test_restore_via_service_denied(self):
+    def test_restore_config_via_service_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
                 path=reverse(

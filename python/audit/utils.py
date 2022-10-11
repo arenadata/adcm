@@ -29,12 +29,11 @@ from rest_framework.status import (
 )
 from rest_framework.viewsets import ModelViewSet
 
-from api import cluster, host
+from api.cluster.serializers import ClusterAuditSerializer
+from api.host.serializers import HostAuditSerializer
 from audit.cases.cases import get_audit_operation_and_object
-from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
 from audit.models import (
-    MODEL_TO_AUDIT_OBJECT_TYPE_MAP,
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
@@ -120,9 +119,9 @@ def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
     elif isinstance(current_obj, Policy):
         serializer_class = PolicyAuditSerializer
     elif isinstance(current_obj, Cluster):
-        serializer_class = cluster.serializers.ClusterAuditSerializer
+        serializer_class = ClusterAuditSerializer
     elif isinstance(current_obj, Host):
-        serializer_class = host.serializers.HostAuditSerializer
+        serializer_class = HostAuditSerializer
 
     if not serializer_class:
         return {}
@@ -170,11 +169,11 @@ def _get_obj_changes_data(view: View | ModelViewSet) -> tuple[dict | None, Model
             model = Policy
     elif view.request.method in {"PATCH", "PUT"}:
         if view.__class__.__name__ == "ClusterDetail":
-            serializer_class = cluster.serializers.ClusterAuditSerializer
+            serializer_class = ClusterAuditSerializer
             pk = view.kwargs["cluster_id"]
             model = Cluster
         elif view.__class__.__name__ == "HostDetail":
-            serializer_class = host.serializers.HostAuditSerializer
+            serializer_class = HostAuditSerializer
             pk = view.kwargs["host_id"]
             model = Host
     if serializer_class:
@@ -360,29 +359,3 @@ def make_audit_log(operation_type, result, operation_status):
         user=system_user,
     )
     cef_logger(audit_instance=audit_log, signature_id="Background operation", empty_resource=True)
-
-
-def audit_finish_task(obj, operation_name: str, status: str) -> None:
-    obj_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP.get(obj.__class__)
-    if not obj_type:
-        return
-
-    audit_object = get_or_create_audit_obj(
-        object_id=obj.pk,
-        object_name=obj.name,
-        object_type=obj_type,
-    )
-    if status == "success":
-        operation_result = AuditLogOperationResult.Success
-    else:
-        operation_result = AuditLogOperationResult.Fail
-
-    audit_log = AuditLog.objects.create(
-        audit_object=audit_object,
-        operation_name=operation_name,
-        operation_type=AuditLogOperationType.Update,
-        operation_result=operation_result,
-        object_changes={},
-    )
-
-    cef_logger(audit_instance=audit_log, signature_id="Action completion")

@@ -27,6 +27,7 @@ def host_and_provider_case(
                 operation_type = AuditLogOperationType.Delete
             else:
                 operation_type = AuditLogOperationType.Update
+
             object_name = None
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Host.capitalize()} {operation_type}d",

@@ -223,7 +223,7 @@ def cluster_case(
                 object_type=AuditObjectType.Cluster,
             )
 
-        case ["cluster", cluster_pk, "service", service_pk, "bind"]:
+        case ["cluster", _, "service", service_pk, "bind"]:
             service = ClusterObject.objects.get(pk=service_pk)
             cluster_name, service_name = get_export_cluster_and_service_names(response, view)
             audit_operation = AuditOperation(
@@ -363,6 +363,13 @@ def cluster_case(
                 operation_type=AuditLogOperationType.Update,
                 obj_pk=host_pk,
                 operation_aux_str=CONFIGURATION_STR,
+            )
+
+        case ["component", component_pk]:
+            audit_operation, audit_object = obj_pk_case(
+                obj_type=AuditObjectType.Component,
+                operation_type=AuditLogOperationType.Update,
+                obj_pk=component_pk,
             )
 
     return audit_operation, audit_object

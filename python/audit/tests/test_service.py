@@ -180,6 +180,26 @@ class TestService(BaseTestCase):
         return service, cluster
 
     def test_update(self):
+        self.client.patch(
+            path=reverse("service-details", kwargs={"service_id": self.service.pk}),
+            data={"maintenance_mode": True},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
+            object_type=AuditObjectType.Service,
+            operation_name="Service updated",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
+        )
+
+    def test_update_config(self):
         self.client.post(
             path=reverse("config-history", kwargs={"service_id": self.service.pk}),
             data={"config": {}},
@@ -199,7 +219,7 @@ class TestService(BaseTestCase):
             user=self.test_user,
         )
 
-    def test_update_denied(self):
+    def test_update_config_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
                 path=reverse("config-history", kwargs={"service_id": self.service.pk}),
@@ -221,7 +241,7 @@ class TestService(BaseTestCase):
             user=self.no_rights_user,
         )
 
-    def test_restore(self):
+    def test_restore_config(self):
         self.client.patch(
             path=reverse(
                 "config-history-version-restore",
@@ -243,7 +263,7 @@ class TestService(BaseTestCase):
             user=self.test_user,
         )
 
-    def test_restore_denied(self):
+    def test_restore_config_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
                 path=reverse(

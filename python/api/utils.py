@@ -24,15 +24,7 @@ from rest_framework.serializers import HyperlinkedIdentityField
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 
 from cm.errors import AdcmEx
-from cm.models import (
-    Action,
-    ADCMEntity,
-    Cluster,
-    ConcernType,
-    HostProvider,
-    PrototypeConfig,
-)
-from cm.upgrade import get_upgrade
+from cm.models import Action, ADCMEntity, ConcernType, PrototypeConfig
 
 
 def get_object_for_user(user, perms, klass, **kwargs):
@@ -108,10 +100,6 @@ def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
             ).order_by("id")
 
     return allowed
-
-
-def get_upgradable_func(obj: [Cluster, HostProvider]):
-    return bool(get_upgrade(obj))
 
 
 def get_api_url_kwargs(obj, request, no_obj_type=False):

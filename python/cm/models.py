@@ -97,14 +97,14 @@ class ADCMManager(models.Manager):
     """
     Custom model manager catch ObjectDoesNotExist error and re-raise it as custom
     AdcmEx exception. AdcmEx is derived from DRF APIException, so it handled gracefully
-    by DRF and is reported out as nicely formated error instead of ugly exception.
+    by DRF and is reported out as nicely formatted error instead of ugly exception.
 
-    Using ADCMManager can shorten you code significaly. Insted of
+    Using ADCMManager can shorten you code significantly. Instead of
 
     try:
         cluster = Cluster.objects.get(id=id)
     except Cluster.DoesNotExist:
-        raise AdcmEx(f'Cluster {id} is not found')
+        raise AdcmEx(Cluster {id} is not found)
 
     You can just write
 
@@ -112,8 +112,8 @@ class ADCMManager(models.Manager):
 
     and DRF magic do the rest.
 
-    Please pay attention, to use ADCMManager you need reffer to "obj" model attribute,
-    not "objects". "objects" attribute is reffered to standard Django model manager,
+    Please pay attention, to use ADCMManager you need refer to "obj" model attribute,
+    not "objects". "objects" attribute is referred to standard Django model manager,
     so if you need familiar behavior you can use it as usual.
     """
 
@@ -190,7 +190,7 @@ class Bundle(ADCMModel):
 
 class ProductCategory(ADCMModel):
     """
-    Categories are used for some models categorization.
+    Categories are used for some model's categorization.
     It's same as Bundle.name but unlinked from it due to simplicity reasons.
     """
 
@@ -695,6 +695,7 @@ class ClusterObject(ADCMEntity):
         content_type_field="object_type",
         on_delete=models.CASCADE,
     )
+    _maintenance_mode = models.BooleanField(default=False)
 
     __error_code__ = "CLUSTER_SERVICE_NOT_FOUND"
 
@@ -731,6 +732,36 @@ class ClusterObject(ADCMEntity):
         }
         return result if result["issue"] else {}
 
+    @property
+    def maintenance_mode_attr(self) -> bool:
+        return self._maintenance_mode
+
+    @property
+    def maintenance_mode(self) -> bool:
+        if self._maintenance_mode:
+            return self._maintenance_mode
+
+        service_components = ServiceComponent.objects.filter(service=self)
+        if service_components:
+            if all(
+                service_component.maintenance_mode_attr for service_component in service_components
+            ):
+                return True
+
+            hosts_maintenance_modes = []
+            for service_component in service_components:
+                host_ids = HostComponent.objects.filter(
+                    component=service_component,
+                ).values_list("host_id", flat=True)
+                hosts_maintenance_modes.extend(
+                    Host.objects.get(pk=host_id).maintenance_mode for host_id in host_ids
+                )
+
+            if hosts_maintenance_modes:
+                return all(hosts_maintenance_modes)
+
+        return self._maintenance_mode
+
     class Meta:
         unique_together = (("cluster", "prototype"),)
 
@@ -745,6 +776,7 @@ class ServiceComponent(ADCMEntity):
         content_type_field="object_type",
         on_delete=models.CASCADE,
     )
+    _maintenance_mode = models.BooleanField(default=False)
 
     __error_code__ = "COMPONENT_NOT_FOUND"
 
@@ -784,6 +816,24 @@ class ServiceComponent(ADCMEntity):
             "issue": self.issue,
         }
         return result if result["issue"] else {}
+
+    @property
+    def maintenance_mode_attr(self) -> bool:
+        return self._maintenance_mode
+
+    @property
+    def maintenance_mode(self) -> bool:
+        if self._maintenance_mode:
+            return self._maintenance_mode
+
+        if self.service.maintenance_mode_attr:
+            return self.service.maintenance_mode_attr
+
+        host_ids = HostComponent.objects.filter(component=self).values_list("host_id", flat=True)
+        if host_ids:
+            return all(Host.objects.get(pk=host_id).maintenance_mode for host_id in host_ids)
+
+        return self._maintenance_mode
 
     class Meta:
         unique_together = (("cluster", "service", "prototype"),)
@@ -1746,7 +1796,7 @@ class ConcernItem(ADCMModel):
     `blocking` blocks actions from running
     `owner` is object-origin of concern
     `cause` is owner's parameter causing concern
-    `related_objects` are back-refs from affected ADCMEntities.concerns
+    `related_objects` are back-refs from affected `ADCMEntities.concerns`
     """
 
     type = models.CharField(max_length=8, choices=ConcernType.choices, default=ConcernType.Lock)
