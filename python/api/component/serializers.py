@@ -18,10 +18,11 @@ from rest_framework.serializers import (
     HyperlinkedIdentityField,
     IntegerField,
     JSONField,
-    Serializer,
+    ModelSerializer,
     SerializerMethodField,
 )
 
+from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
@@ -32,7 +33,7 @@ from cm.models import Action, ServiceComponent
 from cm.status_api import get_component_status
 
 
-class ComponentSerializer(Serializer):
+class ComponentSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     cluster_id = IntegerField(read_only=True)
     service_id = IntegerField(read_only=True)
@@ -96,7 +97,7 @@ class ComponentDetailSerializer(ComponentSerializer):
         return get_component_status(obj)
 
 
-class StatusSerializer(Serializer):
+class StatusSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     name = CharField(read_only=True)
     status = SerializerMethodField()
@@ -118,6 +119,7 @@ class ComponentDetailUISerializer(ComponentDetailSerializer):
         self.context["component_id"] = obj.id
         actions = filter_actions(obj, act_set)
         acts = ActionShort(actions, many=True, context=self.context)
+
         return acts.data
 
     @staticmethod
@@ -127,3 +129,11 @@ class ComponentDetailUISerializer(ComponentDetailSerializer):
     @staticmethod
     def get_main_info(obj: ServiceComponent) -> str | None:
         return get_main_info(obj)
+
+
+class ComponentPatchSerializer(ModelSerializer):
+    maintenance_mode = BooleanField(source="_maintenance_mode")
+
+    class Meta:
+        model = ServiceComponent
+        fields = ("maintenance_mode",)

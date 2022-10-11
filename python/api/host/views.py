@@ -221,39 +221,15 @@ class HostDetail(PermissionListMixin, DetailView):
     lookup_url_kwarg = "host_id"
     error_code = "HOST_NOT_FOUND"
 
-    def get_queryset(self, *args, **kwargs):
-        queryset = super().get_queryset(*args, **kwargs)
-        queryset = get_host_queryset(queryset, self.request.user, self.kwargs)
+    @staticmethod
+    def _check_maintenance_mode_constraint(host: Host, new_mode: bool):
+        if host.maintenance_mode == new_mode:
+            return
 
-        return get_objects_for_user(**self.get_get_objects_for_user_kwargs(queryset))
+        if not host.is_maintenance_mode_available:
+            raise AdcmEx("MAINTENANCE_MODE_NOT_AVAILABLE")
 
-    @audit
-    def delete(self, request, *args, **kwargs):
-        host = self.get_object()
-        if "cluster_id" in kwargs:
-            # Remove host from cluster
-            cluster = get_object_for_user(
-                request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"]
-            )
-            check_host(host, cluster)
-            check_custom_perm(request.user, "unmap_host_from", "cluster", cluster)
-            remove_host_from_cluster(host)
-        else:
-            # Delete host (and all corresponding host services:components)
-            check_custom_perm(request.user, "remove", "host", host)
-            delete_host(host)
-
-        return Response(status=HTTP_204_NO_CONTENT)
-
-    @audit
-    def patch(self, request, *args, **kwargs):
-        return self.__update_host_object(request, *args, **kwargs)
-
-    @audit
-    def put(self, request, *args, **kwargs):
-        return self.__update_host_object(request, partial=False, *args, **kwargs)
-
-    def __update_host_object(
+    def _update_host_object(
         self,
         request,
         *args,
@@ -292,12 +268,35 @@ class HostDetail(PermissionListMixin, DetailView):
 
         return Response(self.get_serializer(self.get_object()).data, status=HTTP_200_OK)
 
-    @staticmethod
-    def _check_maintenance_mode_constraint(host: Host, new_mode: bool):
-        if host.maintenance_mode == new_mode:
-            return
-        if not host.is_maintenance_mode_available:
-            raise AdcmEx("MAINTENANCE_MODE_NOT_AVAILABLE")
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+        queryset = get_host_queryset(queryset, self.request.user, self.kwargs)
+
+        return get_objects_for_user(**self.get_get_objects_for_user_kwargs(queryset))
+
+    @audit
+    def delete(self, request, *args, **kwargs):
+        host = self.get_object()
+        if "cluster_id" in kwargs:
+            cluster = get_object_for_user(
+                request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"]
+            )
+            check_host(host, cluster)
+            check_custom_perm(request.user, "unmap_host_from", "cluster", cluster)
+            remove_host_from_cluster(host)
+        else:
+            check_custom_perm(request.user, "remove", "host", host)
+            delete_host(host)
+
+        return Response(status=HTTP_204_NO_CONTENT)
+
+    @audit
+    def patch(self, request, *args, **kwargs):
+        return self._update_host_object(request, *args, **kwargs)
+
+    @audit
+    def put(self, request, *args, **kwargs):
+        return self._update_host_object(request, partial=False, *args, **kwargs)
 
 
 class StatusList(GenericUIView):
@@ -312,6 +311,7 @@ class StatusList(GenericUIView):
             cluster = get_object_for_user(
                 request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"]
             )
+
         if "provider_id" in kwargs:
             provider = get_object_for_user(
                 request.user, PROVIDER_VIEW, HostProvider, id=kwargs["provider_id"]

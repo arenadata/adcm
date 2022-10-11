@@ -20,10 +20,11 @@ from rest_framework.serializers import (
     HyperlinkedIdentityField,
     IntegerField,
     JSONField,
-    Serializer,
+    ModelSerializer,
     SerializerMethodField,
 )
 
+from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
 from api.cluster.serializers import BindSerializer
 from api.component.serializers import ComponentUISerializer
@@ -38,7 +39,7 @@ from cm.models import Action, Cluster, ClusterObject, Prototype, ServiceComponen
 from cm.status_api import get_service_status
 
 
-class ServiceSerializer(Serializer):
+class ServiceSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     cluster_id = IntegerField(required=True)
     name = CharField(read_only=True)
@@ -47,8 +48,10 @@ class ServiceSerializer(Serializer):
     prototype_id = IntegerField(required=True, help_text="id of service prototype")
     url = ObjectURL(read_only=True, view_name="service-details")
 
-    def validate_prototype_id(self, prototype_id):
+    @staticmethod
+    def validate_prototype_id(prototype_id):
         check_obj(Prototype, {"id": prototype_id, "type": "service"}, "PROTOTYPE_NOT_FOUND")
+
         return prototype_id
 
     def create(self, validated_data):
@@ -105,7 +108,6 @@ class ServiceDetailSerializer(ServiceSerializer):
         lookup_field="prototype_id",
         lookup_url_kwarg="prototype_id",
     )
-
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
@@ -130,10 +132,12 @@ class ServiceDetailUISerializer(ServiceDetailSerializer):
         self.context["service_id"] = obj.id
         actions = filter_actions(obj, act_set)
         acts = ActionShort(actions, many=True, context=self.context)
+
         return acts.data
 
     def get_components(self, obj):
         comps = ServiceComponent.objects.filter(service=obj, cluster=obj.cluster)
+
         return ComponentUISerializer(comps, many=True, context=self.context).data
 
     @staticmethod
@@ -145,27 +149,29 @@ class ServiceDetailUISerializer(ServiceDetailSerializer):
         return get_main_info(obj)
 
 
-class ImportPostSerializer(Serializer):
+class ImportPostSerializer(EmptySerializer):
     bind = JSONField()
 
     def create(self, validated_data):
         binds = validated_data.get("bind")
         service = self.context.get("service")
         cluster = self.context.get("cluster")
+
         return multi_bind(cluster, service, binds)
 
 
-class ServiceBindUrlFiels(HyperlinkedIdentityField):
-    def get_url(self, obj, view_name, request, format):
+class ServiceBindUrlFields(HyperlinkedIdentityField):
+    def get_url(self, obj, view_name, request, _format):
         kwargs = {"service_id": obj.service.id, "bind_id": obj.id}
-        return reverse(view_name, kwargs=kwargs, request=request, format=format)
+
+        return reverse(view_name, kwargs=kwargs, request=request, format=_format)
 
 
 class ServiceBindSerializer(BindSerializer):
-    url = ServiceBindUrlFiels(read_only=True, view_name="service-bind-details")
+    url = ServiceBindUrlFields(read_only=True, view_name="service-bind-details")
 
 
-class ServiceBindPostSerializer(Serializer):
+class ServiceBindPostSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     export_cluster_id = IntegerField()
     export_service_id = IntegerField(required=False)
@@ -175,6 +181,7 @@ class ServiceBindPostSerializer(Serializer):
 
     def create(self, validated_data):
         export_cluster = check_obj(Cluster, validated_data.get("export_cluster_id"))
+
         return bind(
             validated_data.get("cluster"),
             validated_data.get("service"),
@@ -183,10 +190,19 @@ class ServiceBindPostSerializer(Serializer):
         )
 
 
-class StatusSerializer(Serializer):
+class StatusSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     name = CharField(read_only=True)
     status = SerializerMethodField()
 
-    def get_status(self, obj):
+    @staticmethod
+    def get_status(obj):
         return get_service_status(obj)
+
+
+class ServicePatchSerializer(ModelSerializer):
+    maintenance_mode = BooleanField(source="_maintenance_mode")
+
+    class Meta:
+        model = ClusterObject
+        fields = ("maintenance_mode",)

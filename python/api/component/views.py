@@ -18,11 +18,13 @@ from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.component.serializers import (
     ComponentDetailSerializer,
     ComponentDetailUISerializer,
+    ComponentPatchSerializer,
     ComponentSerializer,
     ComponentUISerializer,
     StatusSerializer,
 )
 from api.utils import get_object_for_user
+from audit.utils import audit
 from cm.models import Cluster, ClusterObject, HostComponent, ServiceComponent
 from cm.status_api import make_ui_component_status
 from rbac.viewsets import DjangoOnlyObjectPermissions
@@ -40,6 +42,7 @@ def get_component_queryset(queryset, user, kwargs):
             user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"]
         )
         queryset = queryset.filter(service=co)
+
     return queryset
 
 
@@ -51,8 +54,9 @@ class ComponentListView(PermissionListMixin, PaginatedView):
     ordering_fields = ("state", "prototype__display_name", "prototype__version_order")
     permission_required = ["cm.view_servicecomponent"]
 
-    def get_queryset(self):  # pylint: disable=arguments-differ
-        queryset = super().get_queryset()
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+
         return get_component_queryset(queryset, self.request.user, self.kwargs)
 
 
@@ -65,9 +69,22 @@ class ComponentDetailView(PermissionListMixin, DetailView):
     lookup_url_kwarg = "component_id"
     error_code = ServiceComponent.__error_code__
 
-    def get_queryset(self):  # pylint: disable=arguments-differ
-        queryset = super().get_queryset()
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+
         return get_component_queryset(queryset, self.request.user, self.kwargs)
+
+    @audit
+    def patch(self, request, *args, **kwargs):
+        serializer = ComponentPatchSerializer(
+            instance=self.get_object(),
+            data=request.data,
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
 
 
 class StatusList(GenericUIView):
@@ -76,16 +93,13 @@ class StatusList(GenericUIView):
     serializer_class = StatusSerializer
 
     def get(self, request, *args, **kwargs):
-        """
-        Show all components in a specified host
-        """
         queryset = get_component_queryset(ServiceComponent.objects.all(), request.user, kwargs)
         component = get_object_for_user(
             request.user, "cm.view_servicecomponent", queryset, id=kwargs["component_id"]
         )
         if self._is_for_ui():
             host_components = self.get_queryset().filter(component=component)
+
             return Response(make_ui_component_status(component, host_components))
-        else:
-            serializer = self.get_serializer(component)
-            return Response(serializer.data)
+
+        return Response(self.get_serializer(component).data)
