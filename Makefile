@@ -10,7 +10,7 @@ help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 describe:
-	@echo '{\n\t"version": "$(shell date '+%Y.%m.%d.%H')",\n\t"commit_id": "$(shell git log --pretty=format:'%h' -n 1)"\n}\n' > config.json
+	@echo '{"version": "$(shell date '+%Y.%m.%d.%H')","commit_id": "$(shell git log --pretty=format:'%h' -n 1)"}' > config.json
 	cp config.json web/src/assets/config.json
 
 buildss:
