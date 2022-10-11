@@ -11,13 +11,14 @@
 // limitations under the License.
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
-
 import { SharedModule } from '@app/shared/shared.module';
 import { HostproviderComponent } from '@app/components/hostprovider/hostprovider.component';
 import { HostListComponent } from '@app/components/host/host-list/host-list.component';
+import { NameEditColumnComponent } from "@app/components/columns/name-edit-column/name-edit-column.component";
+import { NameEditColumnFieldComponent } from "@app/components/columns/name-edit-column/name-edit-column-field.component";
 
 @NgModule({
   imports: [CommonModule, SharedModule],
-  declarations: [HostproviderComponent, HostListComponent],
+  declarations: [HostproviderComponent, HostListComponent, NameEditColumnComponent, NameEditColumnFieldComponent],
 })
 export class EntryModule {}

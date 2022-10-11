@@ -11,6 +11,7 @@ import { ConcernListDirective } from '@app/abstract-directives/concern-list.dire
 import {
   MaintenanceModeButtonComponent
 } from "@app/components/maintenance-mode-button/maintenance-mode-button.component";
+import { NameEditColumnComponent } from "@app/components/columns/name-edit-column/name-edit-column.component";
 
 export class ListFactory {
 
@@ -22,13 +23,14 @@ export class ListFactory {
     };
   }
 
-  static fqdnColumn(): IValueColumn<any> {
+  static fqdnColumn(): IComponentColumn<any> {
     return {
       label: 'FQDN',
+      type: 'component',
       sort: 'fqdn',
       className: 'width30pr',
       headerClassName: 'width30pr',
-      value: row => row.fqdn,
+      component: NameEditColumnComponent,
     };
   }
 
