@@ -65,7 +65,7 @@ class StackActionSerializer(EmptySerializer):
     allow_to_terminate = BooleanField(read_only=True)
     partial_execution = BooleanField(read_only=True)
     host_action = BooleanField(read_only=True)
-    start_impossible_reason = CharField(read_only=True)
+    start_impossible_reason = SerializerMethodField()
 
     def get_start_impossible_reason(self, action: Action):
         if self.context.get("obj"):
