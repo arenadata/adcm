@@ -8,7 +8,6 @@ import { ApiFlat, Host } from '@app/core/types';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { environment } from '@env/environment';
 
-
 @Injectable({
   providedIn: 'root'
 })
@@ -22,13 +21,14 @@ export class ConfigGroupHostListService implements IListService<Host> {
   ) {
   }
 
-
   getList(p: ParamMap): Observable<ListResult<Host>> {
     const current = this.cluster.Current as unknown as ApiFlat;
-
     const listParamStr = localStorage.getItem('list:param');
+
     if (p?.keys.length) {
       const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});
+      delete param['page'];
+
       if (listParamStr) {
         const json = JSON.parse(listParamStr);
         json[`group_config_host_${current.object_type}`] = param;
