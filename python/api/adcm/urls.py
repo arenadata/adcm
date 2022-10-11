@@ -11,12 +11,15 @@
 # limitations under the License.
 
 from django.urls import include, path
+from rest_framework.routers import DefaultRouter
 
 from api.adcm.views import ADCMViewSet
 
+router = DefaultRouter()
+router.register("", ADCMViewSet, basename="adcm")
+
 urlpatterns = [
-    path("", ADCMViewSet.as_view({"get": "list"}), name="adcm-list"),
-    path(r"<int:adcm_pk>/", ADCMViewSet.as_view({"get": "retrieve"}), name="adcm-detail"),
+    *router.urls,
     path(r"<int:adcm_pk>/config/", include("api.config.urls"), {"object_type": "adcm"}),
     path(r"<int:adcm_pk>/action/", include("api.action.urls"), {"object_type": "adcm"}),
 ]
