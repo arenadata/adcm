@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
-from rest_framework.permissions import IsAuthenticated
 
 from api.adcm.serializers import (
     ADCMRetrieveSerializer,
@@ -24,10 +23,8 @@ from cm.models import ADCM
 
 # pylint:disable-next=too-many-ancestors
 class ADCMViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
-
     queryset = ADCM.objects.select_related("prototype").all()
     serializer_class = ADCMSerializer
-    permission_classes = (IsAuthenticated,)
     lookup_url_kwarg = "adcm_pk"
 
     def get_serializer_class(self):

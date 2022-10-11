@@ -80,9 +80,6 @@ class GenericUIView(GenericAPIView):
 
 
 class GenericUIViewSet(ViewSetMixin, GenericAPIView):
-
-    permission_classes = (DjangoObjectPermissionsAudit,)
-
     def is_for_ui(self) -> bool:
         if not self.request:
             return False

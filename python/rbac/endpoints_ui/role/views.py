@@ -25,6 +25,7 @@ from rest_framework.serializers import (
     Serializer,
 )
 
+from adcm.permissions import DjangoObjectPermissionsAudit
 from api.base_view import GenericUIViewSet
 from cm import models as cm_models
 from rbac import models
@@ -40,6 +41,7 @@ class RoleSerializer(Serializer):
 class RoleViewSet(ListModelMixin, GenericUIViewSet):
     queryset = models.Role.objects.all()
     serializer_class = RoleSerializer
+    permission_classes = (DjangoObjectPermissionsAudit,)
 
     @action(methods=["get"], detail=True)
     def object_candidate(self, request, **kwargs):

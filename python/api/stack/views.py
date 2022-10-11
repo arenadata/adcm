@@ -18,6 +18,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
+from adcm.permissions import DjangoObjectPermissionsAudit
 from api.action.serializers import StackActionSerializer
 from api.base_view import (
     DetailView,
@@ -65,6 +66,7 @@ class UploadBundle(GenericUIView):
 class LoadBundle(CreateModelMixin, GenericUIViewSet):
     queryset = Prototype.objects.all()
     serializer_class = serializers.LoadBundle
+    permission_classes = (DjangoObjectPermissionsAudit,)
 
     @decorators.action(methods=['put'], detail=False)
     def servicemap(self, request):
