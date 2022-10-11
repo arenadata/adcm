@@ -126,4 +126,8 @@ export class ListService implements IListService<Entities> {
   renameHost(column: string, value: any, id: number) {
     return this.api.patch(`/api/v1/host/${id}/`, { [column]: value });
   }
+
+  renameCluster(column: string, value: any, id: number) {
+    return this.api.patch(`/api/v1/cluster/${id}/`, { [column]: value });
+  }
 }
