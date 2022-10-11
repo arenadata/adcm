@@ -188,7 +188,7 @@ def test_provider_and_host_actions_affected_by_mm(cluster_with_mm, provider, hos
     _available_actions_are(actions_on_host, actions_on_host, actions_on_provider)
 
     turn_mm_on(first_host)
-    _available_actions_are(set(), actions_on_host, actions_on_provider)
+    _available_actions_are(actions_on_host, actions_on_host, actions_on_provider)
 
     turn_mm_off(first_host)
     _available_actions_are(actions_on_host, actions_on_host, actions_on_provider)
@@ -261,6 +261,8 @@ def test_host_actions_with_mm(cluster_with_mm, hosts):
     """
     allowed_action = 'allowed_in_mm'
     not_allowed_action = 'not_allowed_in_mm'
+    default_action_of_host = 'default_action'
+    all_actions = {allowed_action, not_allowed_action, default_action_of_host}
     cluster = cluster_with_mm
     component = cluster.service_add(name='host_actions').component()
     host_in_mm, regular_host, *_ = hosts
@@ -269,11 +271,17 @@ def test_host_actions_with_mm(cluster_with_mm, hosts):
     cluster.hostcomponent_set((host_in_mm, component), (regular_host, component))
     turn_mm_on(host_in_mm)
 
-    check_visible_actions(host_in_mm, set())
-    check_visible_actions(regular_host, {allowed_action, not_allowed_action, 'default_action'})
+    check_visible_actions(host_in_mm, all_actions)
+    check_visible_actions(regular_host, all_actions)
 
+    task = expect_no_api_error('run allowed in MM action', host_in_mm.action(name=allowed_action).run)
     expect_api_error(
         'run not allowed in MM action', regular_host.action(name=not_allowed_action).run, err_=ACTION_ERROR
+    )
+    task.wait()
+    expect_api_error('run not allowed in MM action', host_in_mm.action(name=not_allowed_action).run, err_=ACTION_ERROR)
+    expect_api_error(
+        'run not allowed in MM action of host', host_in_mm.action(name=default_action_of_host).run, err_=ACTION_ERROR
     )
     expect_no_api_error('run allowed in MM action', regular_host.action(name=allowed_action).run)
 
