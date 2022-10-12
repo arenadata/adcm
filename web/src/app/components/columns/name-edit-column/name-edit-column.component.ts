@@ -23,6 +23,7 @@ export class NameEditColumnComponent implements AdwpCellComponent<any>, OnInit {
   row: any;
   column: any;
   form: FormControl;
+  entity: string;
 
   constructor(private dialog: MatDialog, protected service: ListService) {}
 
@@ -33,13 +34,15 @@ export class NameEditColumnComponent implements AdwpCellComponent<any>, OnInit {
         Validators.maxLength(253),
         Validators.pattern(new RegExp(this.column?.column_rules?.regex))
       ]);
+    this.entity = this.column?.column_rules?.entity_type;
   }
 
   isEditable() {
-    if (this.column?.column_rules?.entity_type === 'cluster') {
-      return this.row.state === 'created';
-    } else if (this.column?.column_rules?.entity_type === 'host') {
-      return this.row.cluster_id === null && this.row.state === 'created';
+    switch (this.entity) {
+      case 'cluster':
+        return this.row.state === 'created';
+      case 'host':
+        return this.row.cluster_id === null && this.row.state === 'created';
     }
   }
 
@@ -51,10 +54,9 @@ export class NameEditColumnComponent implements AdwpCellComponent<any>, OnInit {
 
   prepare(): void {
     let dialogModel: MatDialogConfig
-    const entity = this.column?.column_rules?.entity_type;
     const maxWidth = '1400px';
     const width = '500px';
-    const title = `Edit ${ entity }`;
+    const title = `Edit ${ this.entity }`;
 
     this.form.setValue(this.row[this.column.sort]);
 
@@ -80,7 +82,7 @@ export class NameEditColumnComponent implements AdwpCellComponent<any>, OnInit {
       .beforeClosed()
       .pipe(filter((save) => save))
       .subscribe(() => {
-        this.service[`rename${this.titleCase(entity)}`](this.column.sort, this.form.value, this.row.id)
+        this.service[`rename${this.titleCase(this.entity)}`](this.column.sort, this.form.value, this.row.id)
           .subscribe((value) => {
             if (value) {
               const colName = this.column.sort;
