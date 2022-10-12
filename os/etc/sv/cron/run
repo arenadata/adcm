@@ -11,9 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source /etc/adcmenv
+. /etc/adcmenv
 
-waitforinit
+waitforwsgi
 
-echo "Run status server ... "
-exec "${adcmroot}/go/bin/runstatus" -logfile "${adcmlog}/status.log" -loglevel warning > "${adcmlog}/status.out" 2>&1 
+echo "Run cron ..."
+chmod 600 /var/spool/cron/crontabs/root
+chown root:crontab /var/spool/cron/crontabs/root
+cron -f

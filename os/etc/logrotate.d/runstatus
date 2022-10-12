@@ -1,11 +1,13 @@
 /adcm/data/log/status.log {
-	size 50M
-  missingok
-  sharedscripts
-	compress
-	delaycompress
-	rotate 10
-  postrotate
-		killall -USR1 runstatus
-  endscript
+    su root root
+    size 50M
+    create 0644
+    missingok
+    sharedscripts
+    compress
+    delaycompress
+    rotate 10
+    postrotate
+        killall -USR1 runstatus
+    endscript
 }

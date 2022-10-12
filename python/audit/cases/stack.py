@@ -12,9 +12,9 @@ from cm.models import Bundle
 
 
 def stack_case(
-        path: list[str, ...],
-        response: Response,
-        deleted_obj: Model,
+    path: list[str, ...],
+    response: Response,
+    deleted_obj: Model,
 ) -> tuple[AuditOperation | None, AuditObject | None]:
     audit_operation = None
     audit_object = None

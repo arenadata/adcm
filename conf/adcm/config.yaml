@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 2.1
+  version: 2.2
 
   actions:
     run_ldap_sync:
