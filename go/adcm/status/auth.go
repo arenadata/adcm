@@ -55,7 +55,6 @@ func djangoAuth(r *http.Request, hub Hub) bool {
 	return hub.AdcmApi.checkSessionAuth(sessionId.Value)
 }
 
-// this
 func tokenAuth(w http.ResponseWriter, r *http.Request, hub Hub) bool {
     if djangoAuth(r, hub) {
         return true
