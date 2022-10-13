@@ -37,7 +37,7 @@ export class ListFactory {
       column_rules: {
         modal_placeholder: 'Cluster name',
         entity_type: 'cluster',
-        regex: /^[A-Za-z0-9]{1}[A-Za-z0-9._\-\s][^._\-$]*$/
+        regex: /^[a-z|A-Z]+(\w|\.|\-|\_|\s)*[a-z|A-Z|0-9]{1}$/
       }
     };
   }
