@@ -20,10 +20,10 @@ import { UsersComponent } from './users/users.component';
 import { RbacGroupFormModule } from '../components/rbac/group-form/rbac-group-form.module';
 import { RbacUserFormModule } from '../components/rbac/user-form/rbac-user-form.module';
 import { RbacRoleFormModule } from '../components/rbac/role-form/rbac-role-form.module';
-
 import { GroupsComponent } from './groups/groups.component';
 import { RolesComponent } from './roles/roles.component';
 import { PoliciesComponent } from './policies/policies.component';
+import { AuditOperationsComponent } from './audit-operations/audit-operations.component';
 import { AdwpListModule } from '@adwp-ui/widgets';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -103,6 +103,7 @@ const routes: Routes = [
     GroupsComponent,
     RolesComponent,
     PoliciesComponent,
+    AuditOperationsComponent,
   ],
 })
 export class AdminModule {
