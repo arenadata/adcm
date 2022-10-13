@@ -39,13 +39,10 @@ func checkADCMToken(hub Hub, token string) bool {
 	}
 }
 
-func checkToken(hub Hub, token string, allow_adcm_session bool) bool {
-	if token != hub.Secrets.Token {
-	    if allow_adcm_session && checkADCMToken(hub, token) {
-	        return true
-	    }
-		return false
-	}
+func checkToken(hub Hub, token string) bool {
+	if token != hub.Secrets.Token && !checkADCMToken(hub, token) {
+        return false
+    }
 	return true
 }
 
@@ -58,11 +55,10 @@ func djangoAuth(r *http.Request, hub Hub) bool {
 	return hub.AdcmApi.checkSessionAuth(sessionId.Value)
 }
 
-func tokenAuth(w http.ResponseWriter, r *http.Request, hub Hub, allow_adcm_session bool) bool {
-    if allow_adcm_session {
-        if djangoAuth(r, hub) {
-            return true
-        }
+// this
+func tokenAuth(w http.ResponseWriter, r *http.Request, hub Hub) bool {
+    if djangoAuth(r, hub) {
+        return true
     }
     h, ok := r.Header["Authorization"]
     if !ok {
@@ -78,7 +74,7 @@ func tokenAuth(w http.ResponseWriter, r *http.Request, hub Hub, allow_adcm_sessi
         ErrOut4(w, r, "AUTH_ERROR", "no token")
         return false
     }
-    if !checkToken(hub, a[1], allow_adcm_session) {
+    if !checkToken(hub, a[1]) {
         ErrOut4(w, r, "AUTH_ERROR", "invalid token")
         return false
     }
@@ -100,9 +96,61 @@ func wsTokenAuth(w http.ResponseWriter, r *http.Request, hub Hub) bool {
 	for _, i := range strings.Split(h[0], ",") {
 		token = strings.Trim(i, " ")
 	}
-	if !checkToken(hub, token, true) {
+	if !checkToken(hub, token) {
 		ErrOut4(w, r, "AUTH_ERROR", "invalid token")
 		return false
 	}
 	return true
+}
+
+func getAuthorizationToken(r *http.Request) string {
+    h, ok := r.Header["Authorization"]
+    if !ok {
+        return ""
+    }
+    a := strings.Split(h[0], " ")
+    if len(a) < 2 {
+        return ""
+    }
+    if strings.Title(a[0]) != "Token" {
+        return ""
+    }
+    return a[1]
+}
+
+// access control
+
+type authCheckOperatorType int
+
+const (
+    AUTHCHECKANY authCheckOperatorType = iota
+    AUTHCHECKALL
+)
+
+type authCheckerType func(r *http.Request, hub Hub) bool
+
+func isStatusChecker(r *http.Request, hub Hub) bool {
+    if getAuthorizationToken(r) == hub.Secrets.Token {
+        return true
+    }
+    return false
+}
+
+func isStatusUser(r *http.Request, hub Hub) bool {
+    statusUserToken, _ :=  hub.AdcmApi.getToken()
+    if getAuthorizationToken(r) == statusUserToken {
+        return true
+    }
+    return false
+}
+
+func isADCMUser(r *http.Request, hub Hub) bool {
+    if djangoAuth(r, hub) || checkADCMToken(hub, getAuthorizationToken(r)){
+        return true
+    }
+    return false
+}
+
+func isAny(r *http.Request, hub Hub) bool {
+    return true
 }
