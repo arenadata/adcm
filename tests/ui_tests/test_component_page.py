@@ -61,7 +61,7 @@ HOST_NAME = 'test-host'
 FIRST_COMPONENT_NAME = "first"
 SECOND_COMPONENT_NAME = "second"
 
-pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
+pytestmark = pytest.mark.usefixtures("_login_to_adcm_over_api")
 
 
 # !===== Fixtures =====!

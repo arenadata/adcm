@@ -58,7 +58,11 @@ linters: build_base
 		black /adcm/python && \
 		autoflake -r -i --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py /adcm/python && \
 		isort /adcm/python && \
-		pylint --rcfile /adcm/pyproject.toml --recursive y /adcm/python"
+		pylint --rcfile /adcm/pyproject.toml --recursive y /adcm/python && \
+		pylint --rcfile /adcm/tests/pyproject.toml --recursive y /adcm/tests && \
+		black --check --diff --exclude '\.git|__pycache__|docs/source/conf\.py|old|build|dist' /adcm/tests && \
+		flake8 /adcm/tests/functional --max-line-length=120 && \
+		flake8 /adcm/tests/ui_tests --max-line-length=120"
 
 npm_check:
 	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:16-alpine ./npm_check.sh

@@ -130,7 +130,7 @@ CUSTOM_POLICY = AdminPolicyInfo(
 )
 
 
-@pytest.mark.usefixtures("login_to_adcm_over_api")
+@pytest.mark.usefixtures("_login_to_adcm_over_api")
 class TestAdminIntroPage:
     """Tests for the /admin/intro"""
 
@@ -143,7 +143,7 @@ class TestAdminIntroPage:
         intro_page.check_admin_toolbar()
 
 
-@pytest.mark.usefixtures("login_to_adcm_over_api")
+@pytest.mark.usefixtures("_login_to_adcm_over_api")
 class TestAdminSettingsPage:
     """Tests for the /admin/roles"""
 
@@ -281,7 +281,7 @@ class TestAdminSettingsPage:
             settings_page.header.wait_in_progress_job_amount_from_header(expected_job_amount=1)
 
 
-@pytest.mark.usefixtures("login_to_adcm_over_api")
+@pytest.mark.usefixtures("_login_to_adcm_over_api")
 class TestAdminUsersPage:
     """Tests for the /admin/users"""
 
@@ -447,7 +447,7 @@ class TestAdminUsersPage:
             ], "Not all active ldap users are visible"
 
 
-@pytest.mark.usefixtures("login_to_adcm_over_api")
+@pytest.mark.usefixtures("_login_to_adcm_over_api")
 class TestAdminRolesPage:
     """Tests for the /admin/roles"""
 
@@ -540,7 +540,7 @@ class TestAdminRolesPage:
             assert len(page.table.get_all_rows()) == 4, "There should be 4 default roles"
 
 
-@pytest.mark.usefixtures("login_to_adcm_over_api")
+@pytest.mark.usefixtures("_login_to_adcm_over_api")
 class TestAdminGroupsPage:
     """Tests for the /admin/groups"""
 
@@ -650,7 +650,7 @@ class TestAdminPolicyPage:
         assert len(current_policies) == 1, "There should be 1 policy on the page"
         assert current_policies == [policy], "Created policy should be on the page"
 
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
     def test_open_by_tab_admin_policies_page(self, app_fs):
@@ -661,7 +661,7 @@ class TestAdminPolicyPage:
         policies_page.check_all_elements()
         policies_page.check_admin_toolbar()
 
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
     def test_create_policy_on_admin_groups_page(self, app_fs):
         """Test create a group on /admin/policies"""
 
@@ -674,7 +674,7 @@ class TestAdminPolicyPage:
         )
         self.check_custom_policy(policies_page)
 
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
     @pytest.mark.full()
     def test_check_pagination_policy_list_page(self, app_fs):
         """Test pagination on /admin/policies page"""
@@ -690,7 +690,7 @@ class TestAdminPolicyPage:
                 )
         policies_page.table.check_pagination(second_page_item_amount=1)
 
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
     def test_delete_policy_from_policies_page(self, app_fs):
         """Test delete custom group on /admin/policies page"""
 
@@ -704,7 +704,7 @@ class TestAdminPolicyPage:
         policies_page.delete_all_policies()
 
     # pylint: disable=too-many-arguments
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
     @pytest.mark.parametrize(
         ("clusters", "services", "providers", "hosts", "parents", "role_name"),
         [
@@ -1006,7 +1006,7 @@ class TestAdminPolicyPage:
             ), "There are no permission hint"
 
     # pylint: enable=too-many-locals
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
     def test_policy_with_maintenance_mode(self, sdk_client_fs, app_fs, another_user, create_cluster_with_component):
         """Test create a group on /admin/policies"""
 

@@ -57,7 +57,7 @@ def downloads_directory(tmpdir_factory: pytest.TempdirFactory):
 
 
 @pytest.fixture()
-def clean_downloads_fs(request: SubRequest, downloads_directory):
+def _clean_downloads_fs(request: SubRequest, downloads_directory):
     """Clean downloads directory before use"""
     if downloads_directory == SELENOID_DOWNLOADS_PATH:
         yield
@@ -90,13 +90,6 @@ def web_driver(browser, downloads_directory):
     # session will be closed automatically on driver side after timeout
     except WebDriverException:
         pass
-
-
-@pytest.fixture()
-def skip_firefox(browser: str):
-    """Skip one test on firefox"""
-    if browser == 'Firefox':
-        pytest.skip("This test shouldn't be launched on Firefox")
 
 
 @pytest.fixture()
@@ -199,14 +192,14 @@ def login_over_api(app_fs, credentials):
 
 @allure.title("Login in ADCM over API")
 @pytest.fixture()
-def login_to_adcm_over_api(app_fs, adcm_credentials):
+def _login_to_adcm_over_api(app_fs, adcm_credentials):
     """Perform login via API call"""
     login_over_api(app_fs, adcm_credentials).wait_config_loaded()
 
 
 @allure.title("Login in ADCM over UI")
 @pytest.fixture()
-def login_to_adcm_over_ui(app_fs, adcm_credentials):
+def _login_to_adcm_over_ui(app_fs, adcm_credentials):
     """Perform login on Login page ADCM"""
 
     login = LoginPage(app_fs.driver, app_fs.adcm.url).open()

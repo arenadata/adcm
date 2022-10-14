@@ -61,7 +61,7 @@ def second_adcm_sdk(extra_adcm_fs: ADCM, adcm_api_credentials) -> ADCMClient:
 
 
 @pytest.fixture()
-def upload_bundle_to_both_adcm(bundle_archives, sdk_client_fs, second_adcm_sdk) -> None:
+def _upload_bundle_to_both_adcm(bundle_archives, sdk_client_fs, second_adcm_sdk) -> None:
     """
     * Upload cluster and provider bundles to two ADCMs
     * Create cluster and provider on both
@@ -87,7 +87,7 @@ def upload_bundle_to_both_adcm(bundle_archives, sdk_client_fs, second_adcm_sdk) 
 @pytest.mark.parametrize(
     'bundle_archives', [(get_data_dir(__file__, 'cluster'), get_data_dir(__file__, 'provider'))], indirect=True
 )
-@pytest.mark.usefixtures('upload_bundle_to_both_adcm')
+@pytest.mark.usefixtures('_upload_bundle_to_both_adcm')
 def test_export_cluster_from_another_adcm(adcm_fs, extra_adcm_fs, sdk_client_fs, second_adcm_sdk):
     """
     Test basic scenario export of a cluster from one ADCM to another

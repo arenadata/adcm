@@ -40,7 +40,7 @@ from tests.ui_tests.app.page.provider_list.page import ProviderListPage
 # pylint: disable=redefined-outer-name,unused-argument
 
 
-pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
+pytestmark = pytest.mark.usefixtures("_login_to_adcm_over_api")
 PROVIDER_NAME = 'test_provider'
 
 

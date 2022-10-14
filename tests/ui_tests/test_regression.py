@@ -59,13 +59,13 @@ class TestMainInfo:
         return provider
 
     @pytest.fixture()
-    def login_as_custom_user(self, app_fs, user_sdk):  # pylint: disable=unused-argument
+    def _login_as_custom_user(self, app_fs, user_sdk):  # pylint: disable=unused-argument
         """Login as test user"""
         username, password = TEST_USER_CREDENTIALS
         login_over_api(app_fs, {'username': username, 'password': password})
 
     @pytest.fixture()
-    def view_import_on_cluster(self, sdk_client_fs, cluster, user):
+    def _view_import_on_cluster(self, sdk_client_fs, cluster, user):
         """Grant permission to view import on cluster to new user"""
         role = sdk_client_fs.role_create(
             name='Wrapper role', display_name='Wrapper', child=[{'id': sdk_client_fs.role(name='View imports').id}]
@@ -73,7 +73,7 @@ class TestMainInfo:
         sdk_client_fs.policy_create(name='Policy for cluster', role=role, objects=[cluster], user=[user])
 
     @allure.issue(url='https://arenadata.atlassian.net/browse/ADCM-2563')
-    @pytest.mark.usefixtures('login_as_custom_user', 'view_import_on_cluster')
+    @pytest.mark.usefixtures('_login_as_custom_user', '_view_import_on_cluster')
     def test_access_to_detailed_page(self, app_fs, cluster):
         """
         Test that user has access to detailed object page when there's __main_info in config,
@@ -89,7 +89,7 @@ class TestMainInfo:
         )
 
     @allure.issue(url='https://arenadata.atlassian.net/browse/ADCM-2676')
-    @pytest.mark.usefixtures('login_to_adcm_over_api')
+    @pytest.mark.usefixtures('_login_to_adcm_over_api')
     def test_main_info_update(self, app_fs, cluster, provider):
         """Test that update of __main_info config field is displayed correctly on object detailed page"""
         change_main_info_action = 'change_main_info'
@@ -173,7 +173,7 @@ class TestAllowToTerminate:
 
     pytestmark = [
         pytest.mark.parametrize('generic_bundle', ['action_termination_allowed'], indirect=True),
-        pytest.mark.usefixtures('login_to_adcm_over_api', '_bind_client', 'cluster'),
+        pytest.mark.usefixtures('_login_to_adcm_over_api', '_bind_client', 'cluster'),
     ]
 
     @pytest.fixture()
