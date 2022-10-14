@@ -16,7 +16,7 @@ from rest_framework.routers import DefaultRouter
 from api.adcm.views import ADCMViewSet
 
 router = DefaultRouter()
-router.register("", ADCMViewSet, basename="adcm")
+router.register("", ADCMViewSet)
 
 urlpatterns = [
     *router.urls,
