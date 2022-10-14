@@ -143,9 +143,10 @@ func authWrap(hub Hub, f func(h Hub, w http.ResponseWriter, r *http.Request), au
 	        }
         }
 	    if !allowed {
-	        return
-	    }
-		f(hub, w, r)
+	        ErrOut4(w, r, "AUTH_ERROR", "forbidden")
+	    } else {
+		    f(hub, w, r)
+		}
     }
 }
 
