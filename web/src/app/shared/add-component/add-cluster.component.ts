@@ -16,6 +16,7 @@ import { take } from 'rxjs/operators';
 import { clearEmptyField, StackBase } from '@app/core/types';
 import { BaseFormDirective } from './base-form.directive';
 import { ICluster } from '@app/models/cluster';
+import {Validators} from "@angular/forms";
 
 @Component({
   selector: 'app-add-cluster',
@@ -35,6 +36,7 @@ export class AddClusterComponent extends BaseFormDirective implements OnInit, On
 
   ngOnInit() {
     this.form = this.service.model('cluster').form;
+    this.form.controls['name'].setValidators([Validators.pattern(new RegExp(/^[a-z|A-Z]+(\w|\.|\-|\_|\s)*[a-z|A-Z|0-9]{1}$/))]);
     this.sgn = this.service.genName(this.form);
   }
 
