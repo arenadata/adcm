@@ -28,7 +28,7 @@ from cm.models import (
 )
 
 API_URL = "http://localhost:8020/api/v1"
-TIMEOUT = 5.0
+TIMEOUT = 0.5
 
 
 class Event:
