@@ -7,6 +7,8 @@ allure-pytest==2.9.45
 autoflake
 black
 docker==5.0.3
+flake8==4.0.1
+flake8-pytest-style==1.6.0
 genson==1.2.2
 jsonschema==4.6.1
 Jinja2==3.1.2

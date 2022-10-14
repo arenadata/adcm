@@ -50,7 +50,7 @@ def cluster_with_history(sdk_client_fs) -> Tuple[Cluster, Tuple[dict, ...], Tupl
 
 
 @pytest.fixture()
-def make_objects_old(adcm_db, sdk_client_fs, cluster_with_history) -> None:
+def _make_objects_old(adcm_db, sdk_client_fs, cluster_with_history) -> None:
     """Change object's dates (configs, tasks and audit records)"""
     old_date = datetime.utcnow() - timedelta(days=300)
     _, configs, tasks = cluster_with_history
@@ -63,7 +63,7 @@ def make_objects_old(adcm_db, sdk_client_fs, cluster_with_history) -> None:
 
 
 @parametrize_audit_scenario_parsing("background_tasks.yaml")
-@pytest.mark.usefixtures("make_objects_old", "prepare_settings")
+@pytest.mark.usefixtures("_make_objects_old", "_prepare_settings")
 def test_background_operations_audit(audit_log_checker, adcm_fs, sdk_client_fs):
     """Test audit of background operations"""
 
