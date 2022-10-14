@@ -90,10 +90,10 @@ func startHTTP(httpPort string, hub Hub) {
 
 	router.POST("/api/v1/event/", authWrap(hub, postEvent, AUTHCHECKANY, isStatusChecker, isStatusUser))
 
-	router.GET("/api/v1/all/", authWrap(hub, showAll, AUTHCHECKANY, isStatusChecker, isStatusUser, isADCMUser))
+	router.GET("/api/v1/all/", authWrap(hub, showAll, AUTHCHECKANY, isStatusUser, isADCMUser))
 
-	router.GET("/api/v1/host/", authWrap(hub, hostList, AUTHCHECKANY, isStatusChecker, isStatusUser, isADCMUser))
-	router.GET("/api/v1/host/:hostid/", authWrap(hub, showHost, AUTHCHECKANY, isStatusChecker, isStatusUser, isADCMUser))
+	router.GET("/api/v1/host/", authWrap(hub, hostList, AUTHCHECKANY, isStatusUser, isADCMUser))
+	router.GET("/api/v1/host/:hostid/", authWrap(hub, showHost, AUTHCHECKANY, isStatusUser, isADCMUser))
 	router.POST("/api/v1/host/:hostid/", authWrap(hub, setHost, AUTHCHECKANY, isStatusChecker))
 
 	router.GET("/api/v1/object/host/", authWrap(hub, listHost, AUTHCHECKANY, isStatusChecker, isStatusUser))
@@ -101,7 +101,7 @@ func startHTTP(httpPort string, hub Hub) {
 	router.GET("/api/v1/object/host/:hostid/", authWrap(hub, retrieveHost, AUTHCHECKANY, isStatusChecker, isStatusUser))
 	router.PUT("/api/v1/object/host/:hostid/", authWrap(hub, updateHost, AUTHCHECKANY, isStatusChecker, isStatusUser))
 
-	router.GET("/api/v1/host/:hostid/component/:compid/", authWrap(hub, showHostComp, AUTHCHECKANY, isStatusChecker, isStatusUser, isADCMUser))
+	router.GET("/api/v1/host/:hostid/component/:compid/", authWrap(hub, showHostComp, AUTHCHECKANY, isStatusUser, isADCMUser))
 	router.POST("/api/v1/host/:hostid/component/:compid/", authWrap(hub, setHostComp, AUTHCHECKANY, isStatusChecker))
 
 	router.GET("/api/v1/component/:compid/", authWrap(hub, showComp, AUTHCHECKANY, isStatusChecker, isADCMUser))
