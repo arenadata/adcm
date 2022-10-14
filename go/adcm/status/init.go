@@ -85,38 +85,38 @@ func startHTTP(httpPort string, hub Hub) {
 		initWS(hub.EventWS, w, r)
 	})
 
-	router.GET("/api/v1/log/", authWrap(hub, showLogLevel, AUTHCHECKANY, isStatusUser))
-	router.POST("/api/v1/log/", authWrap(hub, postLogLevel, AUTHCHECKANY, isStatusUser))
+	router.GET("/api/v1/log/", authWrap(hub, showLogLevel, AUTHCHECKANY, isStatusUser, isStatusChecker))
+	router.POST("/api/v1/log/", authWrap(hub, postLogLevel, AUTHCHECKANY, isStatusUser, isStatusChecker))
 
-	router.POST("/api/v1/event/", authWrap(hub, postEvent, AUTHCHECKANY, isStatusUser))
+	router.POST("/api/v1/event/", authWrap(hub, postEvent, AUTHCHECKANY, isStatusUser, isStatusChecker))
 
-	router.GET("/api/v1/all/", authWrap(hub, showAll, AUTHCHECKANY, isStatusUser, isADCMUser))
+	router.GET("/api/v1/all/", authWrap(hub, showAll, AUTHCHECKANY, isStatusUser, isADCMUser, isStatusChecker))
 
-	router.GET("/api/v1/host/", authWrap(hub, hostList, AUTHCHECKANY, isStatusUser, isADCMUser))
-	router.GET("/api/v1/host/:hostid/", authWrap(hub, showHost, AUTHCHECKANY, isStatusUser, isADCMUser))
+	router.GET("/api/v1/host/", authWrap(hub, hostList, AUTHCHECKANY, isStatusUser, isADCMUser, isStatusChecker))
+	router.GET("/api/v1/host/:hostid/", authWrap(hub, showHost, AUTHCHECKANY, isStatusUser, isADCMUser, isStatusChecker))
 	router.POST("/api/v1/host/:hostid/", authWrap(hub, setHost, AUTHCHECKANY, isStatusChecker))
 
-	router.GET("/api/v1/object/host/", authWrap(hub, listHost, AUTHCHECKANY, isStatusUser))
-	router.POST("/api/v1/object/host/", authWrap(hub, createHost, AUTHCHECKANY, isStatusUser))
-	router.GET("/api/v1/object/host/:hostid/", authWrap(hub, retrieveHost, AUTHCHECKANY, isStatusUser))
-	router.PUT("/api/v1/object/host/:hostid/", authWrap(hub, updateHost, AUTHCHECKANY, isStatusUser))
+	router.GET("/api/v1/object/host/", authWrap(hub, listHost, AUTHCHECKANY, isStatusUser, isStatusChecker))
+	router.POST("/api/v1/object/host/", authWrap(hub, createHost, AUTHCHECKANY, isStatusUser, isStatusChecker))
+	router.GET("/api/v1/object/host/:hostid/", authWrap(hub, retrieveHost, AUTHCHECKANY, isStatusUser, isStatusChecker))
+	router.PUT("/api/v1/object/host/:hostid/", authWrap(hub, updateHost, AUTHCHECKANY, isStatusUser, isStatusChecker))
 
-	router.GET("/api/v1/host/:hostid/component/:compid/", authWrap(hub, showHostComp, AUTHCHECKANY, isStatusUser, isADCMUser))
+	router.GET("/api/v1/host/:hostid/component/:compid/", authWrap(hub, showHostComp, AUTHCHECKANY, isStatusUser, isADCMUser, isStatusChecker))
 	router.POST("/api/v1/host/:hostid/component/:compid/", authWrap(hub, setHostComp, AUTHCHECKANY, isStatusChecker))
 
-	router.GET("/api/v1/component/:compid/", authWrap(hub, showComp, AUTHCHECKANY, isADCMUser))
+	router.GET("/api/v1/component/:compid/", authWrap(hub, showComp, AUTHCHECKANY, isADCMUser, isStatusChecker))
 
-	router.GET("/api/v1/cluster/", authWrap(hub, clusterList, AUTHCHECKANY, isADCMUser))
-	router.GET("/api/v1/cluster/:clusterid/", authWrap(hub, showCluster, AUTHCHECKANY, isADCMUser))
-	router.GET("/api/v1/cluster/:clusterid/service/:serviceid/", authWrap(hub, showService, AUTHCHECKANY, isADCMUser))
+	router.GET("/api/v1/cluster/", authWrap(hub, clusterList, AUTHCHECKANY, isADCMUser, isStatusChecker))
+	router.GET("/api/v1/cluster/:clusterid/", authWrap(hub, showCluster, AUTHCHECKANY, isADCMUser, isStatusChecker))
+	router.GET("/api/v1/cluster/:clusterid/service/:serviceid/", authWrap(hub, showService, AUTHCHECKANY, isADCMUser, isStatusChecker))
 	router.GET(
 		"/api/v1/cluster/:clusterid/service/:serviceid/component/:compid/",
-		authWrap(hub, showComp, AUTHCHECKANY, isADCMUser),
+		authWrap(hub, showComp, AUTHCHECKANY, isADCMUser, isStatusChecker),
 	)
 
-	router.GET("/api/v1/servicemap/", authWrap(hub, showServiceMap, AUTHCHECKANY, isStatusUser))
-	router.POST("/api/v1/servicemap/", authWrap(hub, postServiceMap, AUTHCHECKANY, isStatusUser))
-	router.POST("/api/v1/servicemap/reload/", authWrap(hub, readConfig, AUTHCHECKANY, isStatusUser))
+	router.GET("/api/v1/servicemap/", authWrap(hub, showServiceMap, AUTHCHECKANY, isStatusUser, isStatusChecker))
+	router.POST("/api/v1/servicemap/", authWrap(hub, postServiceMap, AUTHCHECKANY, isStatusUser, isStatusChecker))
+	router.POST("/api/v1/servicemap/reload/", authWrap(hub, readConfig, AUTHCHECKANY, isStatusUser, isStatusChecker))
 
 	log.Fatal(http.ListenAndServe(httpPort, router))
 }
