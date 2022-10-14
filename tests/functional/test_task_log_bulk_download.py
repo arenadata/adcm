@@ -26,6 +26,7 @@ from adcm_pytest_plugin.docker_utils import ADCM as ADCMTest
 from adcm_pytest_plugin.utils import get_data_dir
 from docker.models.containers import Container
 
+from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import TEST_CONNECTION_ACTION
 from tests.functional.tools import AnyADCMObject, ClusterRelatedObject, ProviderRelatedObject
 from tests.library.assertions import sets_are_equal
@@ -231,6 +232,7 @@ def _prepare_cluster_and_provider(cluster, provider) -> None:
 class TestArchiveNaming:
     """Test task logs archive naming"""
 
+    @only_clean_adcm
     @pytest.mark.usefixtures("_prepare_cluster_and_provider")  # pylint: disable-next=too-many-arguments
     def test_naming(self, cluster, provider, adcm_fs, sdk_client_fs, tmpdir):
         """Test naming of task's archive and its contents"""
