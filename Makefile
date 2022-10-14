@@ -33,9 +33,9 @@ pytest:
 	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host \
 	-v $(CURDIR)/:/adcm -w /adcm/ \
 	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
-	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
+	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" -e ALLURE_TESTPLAN_PATH="${ALLURE_TESTPLAN_PATH}" \
 	hub.adsw.io/library/functest:3.8.6.slim.buster-x64 /bin/sh -e \
-	./pytest.sh -m "not full and not extra_rbac and not ldap" \
+	./pytest.sh ${PYTEST_MARK_KEY} ${PYTEST_MARK_VALUE} ${PYTEST_EXPRESSION_KEY} ${PYTEST_EXPRESSION_VALUE} \
 	--adcm-image="hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))"
 
 pytest_release:
@@ -43,7 +43,7 @@ pytest_release:
 	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host \
 	-v $(CURDIR)/:/adcm -v ${LDAP_CONF_FILE}:${LDAP_CONF_FILE} -w /adcm/ \
 	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
-	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
+	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" -e ALLURE_TESTPLAN_PATH="${ALLURE_TESTPLAN_PATH}" \
 	hub.adsw.io/library/functest:3.8.6.slim.buster.firefox-x64 /bin/sh -e \
 	./pytest.sh --adcm-image="hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))" \
 	--ldap-conf ${LDAP_CONF_FILE}
@@ -58,7 +58,11 @@ linters: build_base
 		black /adcm/python && \
 		autoflake -r -i --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py /adcm/python && \
 		isort /adcm/python && \
-		pylint --rcfile /adcm/pyproject.toml --recursive y /adcm/python"
+		pylint --rcfile /adcm/pyproject.toml --recursive y /adcm/python && \
+		pylint --rcfile /adcm/tests/pyproject.toml --recursive y /adcm/tests && \
+		black --check --diff --exclude '\.git|__pycache__|docs/source/conf\.py|old|build|dist' /adcm/tests && \
+		flake8 /adcm/tests/functional --max-line-length=120 && \
+		flake8 /adcm/tests/ui_tests --max-line-length=120"
 
 npm_check:
 	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:16-alpine ./npm_check.sh

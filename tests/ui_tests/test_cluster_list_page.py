@@ -109,9 +109,10 @@ DISCLAIMER_TEXT = "Are you really want to click me?"
 
 
 # pylint: disable=redefined-outer-name,unused-argument,too-many-lines,too-many-public-methods
-# pylint: disable=too-many-arguments,too-many-boolean-expressions,too-many-branches,too-many-nested-blocks,too-many-locals
+# pylint: disable=too-many-arguments,too-many-boolean-expressions
+# pylint: disable=too-many-branches,too-many-nested-blocks,too-many-locals
 
-pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
+pytestmark = pytest.mark.usefixtures("_login_to_adcm_over_api")
 
 
 # !===== Fixtures =====!
@@ -1101,7 +1102,7 @@ class TestClusterConfigPage:
             cluster_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
     @pytest.mark.full()
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
     def test_configs_fields_invisible_true(self, sdk_client_fs: ADCMClient, app_fs):
         """Check RO field with invisible true
         Scenario:
@@ -1161,7 +1162,7 @@ class TestClusterConfigPage:
             pytest.param(False, id="group_customization_false", marks=pytest.mark.regression),
         ],
     )
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
     def test_configs_fields_invisible_false(
         self,
         sdk_client_fs: ADCMClient,
@@ -1354,7 +1355,7 @@ class TestClusterConfigPage:
             pytest.param(False, id="field_non_advanced"),
         ],
     )
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
     def test_group_configs_fields_invisible_true(
         self,
         sdk_client_fs: ADCMClient,
@@ -1421,7 +1422,7 @@ class TestClusterConfigPage:
             pytest.param(False, id="field_non_advanced"),
         ],
     )
-    @pytest.mark.usefixtures("login_to_adcm_over_api")  # pylint: disable-next=too-many-locals
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")  # pylint: disable-next=too-many-locals
     def test_group_configs_fields_invisible_false(
         self,
         sdk_client_fs: ADCMClient,
@@ -1581,7 +1582,7 @@ class TestClusterGroupConfigPage:
         [True, False, None],
         ids=("group_customization_true", "group_customization_false", "no_group_customization"),
     )
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
     def test_group_config_fields_invisible_false(
         self,
         sdk_client_fs: ADCMClient,
@@ -1681,7 +1682,7 @@ class TestClusterGroupConfigPage:
         [True, False, None],
         ids=("field_customization_true", "field_customization_false", "no_field_customization"),
     )
-    @pytest.mark.usefixtures("login_to_adcm_over_api")  # pylint: disable-next=too-many-locals
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")  # pylint: disable-next=too-many-locals
     def test_group_configs_fields_in_group_invisible_false(
         self,
         sdk_client_fs: ADCMClient,

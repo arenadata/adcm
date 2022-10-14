@@ -71,7 +71,7 @@ BUNDLE_WITH_DESCRIPTION_FIELDS = "service_with_all_config_params"
 
 
 # pylint: disable=redefined-outer-name,unused-argument,too-many-locals
-pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
+pytestmark = pytest.mark.usefixtures("_login_to_adcm_over_api")
 
 
 # !===== Fixtures =====!

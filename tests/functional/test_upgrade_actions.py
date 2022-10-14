@@ -722,7 +722,7 @@ class TestConstraintsChangeAfterUpgrade:
 
     @allure.title('Create hosts and set hostcomponent')
     @pytest.fixture()
-    def set_hc(self, request, cluster_with_component, generic_provider) -> None:
+    def _set_hc(self, request, cluster_with_component, generic_provider) -> None:
         """Set hostcomponent based on given component on host / hosts in cluster amount"""
         # total amount of hosts shouldn't be 0, it'll conflict with dummy component
         if isinstance(request.param, int):
@@ -743,7 +743,7 @@ class TestConstraintsChangeAfterUpgrade:
     # wrap it in something readable
     @pytest.mark.parametrize('with_hc_in_upgrade', [True, False], indirect=True, ids=lambda i: f'with_hc_acl_{i}')
     @pytest.mark.parametrize(
-        ('upload_bundles', 'set_hc'),
+        ('upload_bundles', '_set_hc'),
         [
             # from many hosts to 1
             ((['+'], [1]), 2),
@@ -768,7 +768,7 @@ class TestConstraintsChangeAfterUpgrade:
         indirect=True,
         ids=_set_ids_for_upload_bundles_set_hc,
     )
-    @pytest.mark.usefixtures('set_hc', 'upload_bundles')
+    @pytest.mark.usefixtures('_set_hc', 'upload_bundles')
     def test_incorrect_hc_in_upgrade_with_actions(self, sdk_client_fs, cluster_with_component, with_hc_in_upgrade):
         """
         Test that when incorrect for new constraints HC is set,
@@ -805,12 +805,12 @@ class TestConstraintsChangeAfterUpgrade:
         ],
     )
     @pytest.mark.parametrize(
-        ('upload_bundles', 'set_hc'),
+        ('upload_bundles', '_set_hc'),
         [(([1], []), 1)],
         indirect=True,
         ids=_set_ids_for_upload_bundles_set_hc,
     )
-    @pytest.mark.usefixtures('set_hc', 'upload_bundles', 'with_hc_in_upgrade')
+    @pytest.mark.usefixtures('_set_hc', 'upload_bundles', 'with_hc_in_upgrade')
     def test_constraint_removed(self, cluster_with_component):
         """Test constraint is removed in new bundle version"""
         cluster, component = cluster_with_component
