@@ -26,7 +26,7 @@ build: describe buildss buildjs build_base
 
 unittests: build_base
 	docker run -e DJANGO_SETTINGS_MODULE=adcm.settings -i --rm -v $(CURDIR)/data:/adcm/data $(APP_IMAGE):$(APP_TAG) \
-	bash -c "pip install --no-cache -r /adcm/requirements-test.txt && /adcm/python/manage.py test /adcm/python -v 2"
+	sh -c "pip install --no-cache -r /adcm/requirements-test.txt && /adcm/python/manage.py test /adcm/python -v 2"
 
 pytest:
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster-x64
@@ -53,7 +53,7 @@ ng_tests:
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64 ./ng_test.sh
 
 linters: build_base
-	docker run -i --rm $(APP_IMAGE):$(APP_TAG) bash -e -c \
+	docker run -i --rm $(APP_IMAGE):$(APP_TAG) sh -e -c \
 		"pip install -r /adcm/requirements-test.txt && \
 		black /adcm/python && \
 		autoflake -r -i --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py /adcm/python && \
