@@ -128,6 +128,13 @@ const (
 
 type authCheckerType func(r *http.Request, hub Hub) bool
 
+func isADCMInternal(r *http.Request, hub Hub) bool {
+    if getAuthorizationToken(r) == hub.Secrets.ADCMInternalToken {
+        return true
+    }
+    return false
+}
+
 func isStatusChecker(r *http.Request, hub Hub) bool {
     if getAuthorizationToken(r) == hub.Secrets.Token {
         return true

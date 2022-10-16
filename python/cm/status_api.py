@@ -16,7 +16,7 @@ from typing import Iterable
 
 import requests
 
-from cm.config import STATUS_SECRET_KEY
+from cm.config import ADCM_INTERNAL_TOKEN
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
@@ -64,7 +64,7 @@ def api_request(method, url, data=None):
     kwargs = {
         'headers': {
             'Content-Type': 'application/json',
-            'Authorization': 'Token ' + STATUS_SECRET_KEY,
+            'Authorization': 'Token ' + ADCM_INTERNAL_TOKEN,
         },
         'timeout': TIMEOUT,
     }

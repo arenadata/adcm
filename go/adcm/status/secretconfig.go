@@ -20,12 +20,13 @@ import (
 
 type SecretConfig struct {
 	ADCMUser struct {
-		User     string `json:"user"`
-		Password string `json:"password"`
+		User          string `json:"user"`
+		Password      string `json:"password"`
 	} `json:"adcmuser"`
-	Token        string `json:"token"`
-	adcmTokens   map[string]time.Time
-	tokenTimeOut time.Duration
+	Token             string `json:"token"`
+	ADCMInternalToken string `json:"adcm_internal_token"`
+	adcmTokens        map[string]time.Time
+	tokenTimeOut      time.Duration
 }
 
 func ReadSecret(filename *string) *SecretConfig {

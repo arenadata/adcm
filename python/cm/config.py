@@ -15,55 +15,56 @@ import os
 import sys
 from os.path import dirname
 
-ENCODING = 'utf-8'
+ENCODING = "utf-8"
 
 PYTHON_DIR = sys.exec_prefix
 PYTHON_EXECUTABLE = sys.executable
-PYTHON_VERSION = f'{sys.version_info.major}.{sys.version_info.minor}'
-PYTHON_SITE_PACKAGES = os.path.join(PYTHON_DIR, f'lib/python{PYTHON_VERSION}/site-packages')
+PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}"
+PYTHON_SITE_PACKAGES = os.path.join(PYTHON_DIR, f"lib/python{PYTHON_VERSION}/site-packages")
 
 BASE_DIR = dirname(dirname(dirname(os.path.abspath(__file__))))
-BASE_DIR = os.environ.get('ADCM_BASE_DIR', BASE_DIR)
+BASE_DIR = os.environ.get("ADCM_BASE_DIR", BASE_DIR)
 
 STACK_DIR = BASE_DIR
-STACK_DIR = os.environ.get('ADCM_STACK_DIR', STACK_DIR)
+STACK_DIR = os.environ.get("ADCM_STACK_DIR", STACK_DIR)
 
-CODE_DIR = os.path.join(BASE_DIR, 'python')
+CODE_DIR = os.path.join(BASE_DIR, "python")
 
-LOG_DIR = os.path.join(BASE_DIR, 'data', 'log')
-RUN_DIR = os.path.join(BASE_DIR, 'data', 'run')
+LOG_DIR = os.path.join(BASE_DIR, "data", "log")
+RUN_DIR = os.path.join(BASE_DIR, "data", "run")
 
-BUNDLE_DIR = os.path.join(STACK_DIR, 'data', 'bundle')
-DOWNLOAD_DIR = os.path.join(STACK_DIR, 'data', 'download')
+BUNDLE_DIR = os.path.join(STACK_DIR, "data", "bundle")
+DOWNLOAD_DIR = os.path.join(STACK_DIR, "data", "download")
 
-FILE_DIR = os.path.join(STACK_DIR, 'data', 'file')
+FILE_DIR = os.path.join(STACK_DIR, "data", "file")
 
-LOG_FILE = os.path.join(LOG_DIR, 'adcm.log')
+LOG_FILE = os.path.join(LOG_DIR, "adcm.log")
 
-SECRETS_FILE = os.path.join(BASE_DIR, 'data', 'var', 'secrets.json')
+SECRETS_FILE = os.path.join(BASE_DIR, "data", "var", "secrets.json")
 
-ROLE_SPEC = os.path.join(CODE_DIR, 'cm', 'role_spec.yaml')
-ROLE_SCHEMA = os.path.join(CODE_DIR, 'cm', 'role_schema.yaml')
+ROLE_SPEC = os.path.join(CODE_DIR, "cm", "role_spec.yaml")
+ROLE_SCHEMA = os.path.join(CODE_DIR, "cm", "role_schema.yaml")
 
-STATUS_SECRET_KEY = ''
+STATUS_SECRET_KEY = ""
+ADCM_INTERNAL_TOKEN = ""
+ANSIBLE_SECRET = ""
 
-ANSIBLE_SECRET = ''
-
-ANSIBLE_VAULT_HEADER = '$ANSIBLE_VAULT;1.1;AES256'
+ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
 
 DEFAULT_SALT = b'"j\xebi\xc0\xea\x82\xe0\xa8\xba\x9e\x12E>\x11D'
 
 if os.path.exists(SECRETS_FILE):
-    with open(SECRETS_FILE, encoding='utf_8') as f:
+    with open(SECRETS_FILE, encoding="utf_8") as f:
         data = json.load(f)
-        STATUS_SECRET_KEY = data['token']
-        ANSIBLE_SECRET = data['adcmuser']['password']
+        STATUS_SECRET_KEY = data["token"]
+        ADCM_INTERNAL_TOKEN = data["adcm_internal_token"]
+        ANSIBLE_SECRET = data["adcmuser"]["password"]
 
 
 class Job:
-    CREATED = 'created'
-    SUCCESS = 'success'
-    FAILED = 'failed'
-    RUNNING = 'running'
-    LOCKED = 'locked'
-    ABORTED = 'aborted'
+    CREATED = "created"
+    SUCCESS = "success"
+    FAILED = "failed"
+    RUNNING = "running"
+    LOCKED = "locked"
+    ABORTED = "aborted"
