@@ -1,14 +1,17 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #      http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Dummy config generator"""
+
 import os
 
 DATA = [
@@ -305,7 +308,10 @@ TEMPLATES = {
 
 for t in TYPES:
     for config in DATA:
-        d_name = f"group_advanced_{config[0]}_invisible_{config[1]}_field_advanced_{config[2]}_invisible_{config[3]}_activated_{config[4]}/{t}"
+        d_name = (
+            f"group_advanced_{config[0]}_invisible_{config[1]}_"
+            f"field_advanced_{config[2]}_invisible_{config[3]}_activated_{config[4]}/{t}"
+        )
         os.makedirs(d_name)
         tmpl = ''
         with open(f"{d_name}/config.yaml", "w+", encoding='utf_8') as f:

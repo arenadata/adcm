@@ -22,7 +22,7 @@ from typing import Callable, Collection, Dict, List, NamedTuple, Set, Union
 import allure
 import pytest
 from adcm_client.objects import ADCM, ADCMClient, Cluster, Component, Host, Provider, Service, Task
-from adcm_pytest_plugin.docker_utils import ADCM as TestADCM
+from adcm_pytest_plugin.docker_utils import ADCM as ADCMTest
 from adcm_pytest_plugin.utils import get_data_dir
 from docker.models.containers import Container
 
@@ -311,7 +311,7 @@ class TestArchiveContent:
     """Test content of an archive"""
 
     tmpdir: PathLike
-    adcm_fs: TestADCM
+    adcm_fs: ADCMTest
 
     @pytest.fixture()
     def _init(self, tmpdir, adcm_fs):

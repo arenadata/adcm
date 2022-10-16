@@ -34,7 +34,6 @@ class CommonGroupConfigMenu(BasePageObject):
 
     def is_customization_chbx_disabled(self, row: WebElement) -> bool:
         """Check if customization checkbox is disabled"""
-
         return 'mat-checkbox-disabled' in str(
             self.find_child(row, self.locators.customization_chbx).get_attribute("class")
         )

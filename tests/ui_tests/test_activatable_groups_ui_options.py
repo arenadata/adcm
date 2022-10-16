@@ -24,7 +24,7 @@ from adcm_pytest_plugin.utils import random_string
 
 from tests.ui_tests.app.page.cluster.page import ClusterConfigPage
 
-pytestmark = [pytest.mark.usefixtures("login_to_adcm_over_api")]
+pytestmark = [pytest.mark.usefixtures("_login_to_adcm_over_api")]
 
 
 # !===== Fixtures =====!

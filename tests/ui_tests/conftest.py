@@ -57,7 +57,7 @@ def downloads_directory(tmpdir_factory: pytest.TempdirFactory):
 
 
 @pytest.fixture()
-def clean_downloads_fs(request: SubRequest, downloads_directory):
+def _clean_downloads_fs(request: SubRequest, downloads_directory):
     """Clean downloads directory before use"""
     if downloads_directory == SELENOID_DOWNLOADS_PATH:
         yield
@@ -93,26 +93,17 @@ def web_driver(browser, downloads_directory):
 
 
 @pytest.fixture()
-def skip_firefox(browser: str):
+def _skip_firefox(browser: str):
     """Skip one test on firefox"""
     if browser == 'Firefox':
         pytest.skip("This test shouldn't be launched on Firefox")
 
 
+@allure.title("Data for failure investigation")
 @pytest.fixture()
-def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
-    """
-    Attach ADCM API to ADCMTest object and open new tab in browser for test
-    Collect logs on failure and close browser tab after test is done
-    """
-    web_driver.attache_adcm(adcm_fs)
-    try:
-        web_driver.new_tab()
-    except WebDriverException:
-        # this exception could be raised in case
-        # when driver was crashed for some reason
-        web_driver.create_driver()
-    yield web_driver
+def _attach_debug_info_on_ui_test_fail(request, web_driver):
+    """Attach screenshot, etc. to allure + cleanup for firefox"""
+    yield
     try:
         if request.node.rep_setup.failed or request.node.rep_call.failed:
             allure.attach(
@@ -161,6 +152,23 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
         pass
 
 
+@pytest.fixture()
+def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, _attach_debug_info_on_ui_test_fail):
+    """
+    Attach ADCM API to ADCMTest object and open new tab in browser for test
+    Collect logs on failure and close browser tab after test is done
+    """
+    _ = _attach_debug_info_on_ui_test_fail
+    web_driver.attache_adcm(adcm_fs)
+    try:
+        web_driver.new_tab()
+    except WebDriverException:
+        # this exception could be raised in case
+        # when driver was crashed for some reason
+        web_driver.create_driver()
+    return web_driver
+
+
 @pytest.fixture(scope='session')
 def adcm_credentials():
     """
@@ -199,14 +207,14 @@ def login_over_api(app_fs, credentials):
 
 @allure.title("Login in ADCM over API")
 @pytest.fixture()
-def login_to_adcm_over_api(app_fs, adcm_credentials):
+def _login_to_adcm_over_api(app_fs, adcm_credentials):
     """Perform login via API call"""
     login_over_api(app_fs, adcm_credentials).wait_config_loaded()
 
 
 @allure.title("Login in ADCM over UI")
 @pytest.fixture()
-def login_to_adcm_over_ui(app_fs, adcm_credentials):
+def _login_to_adcm_over_ui(app_fs, adcm_credentials):
     """Perform login on Login page ADCM"""
 
     login = LoginPage(app_fs.driver, app_fs.adcm.url).open()

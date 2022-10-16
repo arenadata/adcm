@@ -16,13 +16,13 @@
 import os
 from collections import UserDict
 from contextlib import contextmanager
-from typing import Callable, TypeVar, Any, Union, Optional, Dict, Tuple, Sized
+from typing import Any, Callable, Dict, Optional, Sized, Tuple, TypeVar, Union
 
 import allure
 import requests
 from adcm_client.objects import ADCMClient, Cluster
 from adcm_pytest_plugin.utils import random_string, wait_until_step_succeeds
-from selenium.common.exceptions import StaleElementReferenceException, NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
@@ -325,3 +325,18 @@ def expect_rows_amount_change(get_all_rows: Callable[[], Sized]):
         assert len(get_all_rows()) != current_amount, "Amount of rows on the page hasn't changed"
 
     wait_until_step_succeeds(_check_rows_amount_is_changed, period=1, timeout=10)
+
+
+# common steps
+
+
+@allure.step("Prepare cluster and open config page")
+def prepare_cluster_and_open_config_page(sdk_client: ADCMClient, path: os.PathLike, app):
+    """Upload bundle, create cluster and open config page"""
+    from tests.ui_tests.app.page.cluster.page import ClusterConfigPage  # pylint: disable=import-outside-toplevel
+
+    bundle = sdk_client.upload_from_fs(path)
+    cluster = bundle.cluster_create(name=f"Test cluster {random_string()}")
+    config = ClusterConfigPage(app.driver, app.adcm.url, cluster.cluster_id).open()
+    config.wait_page_is_opened()
+    return cluster, config
