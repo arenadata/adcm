@@ -88,7 +88,7 @@ func startHTTP(httpPort string, hub Hub) {
 	router.GET("/api/v1/log/", authWrap(hub, showLogLevel, AUTHCHECKANY, isADCMInternal, isStatusUser))
 	router.POST("/api/v1/log/", authWrap(hub, postLogLevel, AUTHCHECKANY, isADCMInternal, isStatusUser))
 
-	router.POST("/api/v1/event/", authWrap(hub, postEvent, AUTHCHECKANY, isADCMInternal, isStatusUser))
+	router.POST("/api/v1/event/", authWrap(hub, postEvent, AUTHCHECKANY, isADCMInternal, isStatusChecker, isStatusUser))
 
 	router.GET("/api/v1/all/", authWrap(hub, showAll, AUTHCHECKANY, isADCMInternal, isStatusUser, isADCMUser))
 
