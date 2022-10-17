@@ -33,7 +33,7 @@ GROUP_CONFIG_EP = 'group-config'
 
 
 @pytest.fixture()
-def prepare_configs(prepare_objects, second_objects) -> None:
+def _prepare_configs(prepare_objects, second_objects) -> None:
     """Change configs, crete group configs and change them"""
     changed_config = {'boolean': False}
     for first_object, second_object in zip(prepare_objects, second_objects):
@@ -44,7 +44,7 @@ def prepare_configs(prepare_objects, second_objects) -> None:
             _prepare_group_config(second_object)
 
 
-@pytest.mark.usefixtures('prepare_configs')
+@pytest.mark.usefixtures('_prepare_configs')
 def test_flat_endpoints(user, clients, prepare_objects, second_objects):
     """
     Test "flat" endpoints:

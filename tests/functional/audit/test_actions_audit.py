@@ -63,25 +63,25 @@ def provider(sdk_client_fs) -> Provider:
 
 
 @pytest.fixture()
-def grant_view_on_cluster(cluster, build_policy):
+def _grant_view_on_cluster(cluster, build_policy):
     """Grant new user a permission to "view cluster" with permission to view config"""
     build_policy(BR.ViewClusterConfigurations, cluster)
 
 
 @pytest.fixture()
-def grant_view_on_component(cluster, build_policy):
+def _grant_view_on_component(cluster, build_policy):
     """Grant new user a permission to "view component" with permission to view config"""
     build_policy(BR.ViewComponentConfigurations, cluster.service().component())
 
 
 @pytest.fixture()
-def grant_view_on_provider(provider, build_policy):
+def _grant_view_on_provider(provider, build_policy):
     """Grant new user a permission to "view provider" with permission to view config"""
     build_policy(BR.ViewProviderConfigurations, provider)
 
 
 @pytest.fixture()
-def grant_view_on_host(provider, build_policy):
+def _grant_view_on_host(provider, build_policy):
     """Grant new user a permission to "view host" with permission to view config"""
     build_policy(BR.ViewHostConfigurations, provider.host())
 
@@ -125,10 +125,10 @@ def _action_run_test_init(instance: RunActionTestMixin, admin_client: ADCMClient
 class TestClusterObjectsActions(RunActionTestMixin):
     """Test on audit of cluster objects' actions"""
 
-    pytestmark = [pytest.mark.usefixtures("init", "grant_view_on_component")]
+    pytestmark = [pytest.mark.usefixtures("_init", "_grant_view_on_component")]
 
     @pytest.fixture()
-    def init(self, sdk_client_fs, new_user_client):
+    def _init(self, sdk_client_fs, new_user_client):
         """Fill all required fields"""
         _action_run_test_init(self, sdk_client_fs, new_user_client)
 
@@ -184,10 +184,10 @@ class TestClusterObjectsActions(RunActionTestMixin):
 class TestProviderObjectActions(RunActionTestMixin):
     """Tests on audit of provider objects' actions"""
 
-    pytestmark = [pytest.mark.usefixtures("init", "grant_view_on_provider", "grant_view_on_host")]
+    pytestmark = [pytest.mark.usefixtures("_init", "_grant_view_on_provider", "_grant_view_on_host")]
 
     @pytest.fixture()
-    def init(self, sdk_client_fs, new_user_client):
+    def _init(self, sdk_client_fs, new_user_client):
         """Fill all required fields"""
         _action_run_test_init(self, sdk_client_fs, new_user_client)
 
@@ -196,7 +196,7 @@ class TestProviderObjectActions(RunActionTestMixin):
         cluster.host_add(provider.host())
 
     @parametrize_audit_scenario_parsing("provider_actions.yaml", NEW_USER)
-    @pytest.mark.usefixtures("grant_view_on_cluster", "_add_host_to_cluster")
+    @pytest.mark.usefixtures("_grant_view_on_cluster", "_add_host_to_cluster")
     def test_run_provider_actions(self, provider, audit_log_checker, post):
         """
         Test audit of provider objects' actions from host/provider/cluster's perspective:
@@ -248,7 +248,7 @@ class TestUpgrade(RunActionTestMixin):
     FAIL = "Fail Upgrade"
 
     @pytest.fixture()
-    def init(self, sdk_client_fs, new_user_client):
+    def _init(self, sdk_client_fs, new_user_client):
         """Fill all required utilities for audit of actions tests"""
         _action_run_test_init(self, sdk_client_fs, new_user_client)
 
@@ -266,7 +266,7 @@ class TestUpgrade(RunActionTestMixin):
         [Cluster, pytest.param(Provider, marks=pytest.mark.skip(reason="https://tracker.yandex.ru/ADCM-3179"))],
     )
     @pytest.mark.usefixtures(
-        "grant_view_on_cluster", "grant_view_on_provider", "upload_new_bundles", "init"
+        "_grant_view_on_cluster", "_grant_view_on_provider", "upload_new_bundles", "_init"
     )  # pylint: disable-next=too-many-locals
     def test_upgrade(self, type_to_pick: Type, cluster, provider, parse_with_context):
         """Test audit of cluster/provider simple upgrade/upgrade with action"""
@@ -310,7 +310,7 @@ class TestADCMActions:
     """Test audit of ADCM actions"""
 
     @parametrize_audit_scenario_parsing("adcm_actions.yaml", NEW_USER)
-    @pytest.mark.usefixtures("prepare_settings")
+    @pytest.mark.usefixtures("_prepare_settings")
     def test_adcm_actions(self, sdk_client_fs, audit_log_checker, new_user_client, build_policy):
         """Test audit of ADCM actions"""
         adcm = sdk_client_fs.adcm()
@@ -333,10 +333,10 @@ class TestADCMActions:
 class TestTaskCancelRestart(RunActionTestMixin):
     """Test audit of cancelling/restarting tasks with one/multi jobs"""
 
-    pytestmark = [pytest.mark.usefixtures("init", "grant_view_on_cluster")]
+    pytestmark = [pytest.mark.usefixtures("_init", "_grant_view_on_cluster")]
 
     @pytest.fixture()
-    def init(self, sdk_client_fs, new_user_client):
+    def _init(self, sdk_client_fs, new_user_client):
         """Fill all utility fields for audit of actions testing"""
         _action_run_test_init(self, sdk_client_fs, new_user_client)
 

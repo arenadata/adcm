@@ -64,7 +64,7 @@ def basic_objects(sdk_client_fs) -> Tuple[Cluster, Service, Component, Provider,
 
 
 @pytest.fixture()
-def grant_view_config_permissions_on_adcm_objects(sdk_client_fs, basic_objects, new_user_client):
+def _grant_view_config_permissions_on_adcm_objects(sdk_client_fs, basic_objects, new_user_client):
     """Create policies that allow new user to get ADCM objects (via View Configuration) and ADCM itself"""
     cluster, service, component, provider, host = basic_objects
     user = sdk_client_fs.user(id=new_user_client.me().id)
@@ -99,7 +99,7 @@ def group_configs(basic_objects) -> Tuple[GroupConfig, GroupConfig, GroupConfig]
 
 
 @parametrize_audit_scenario_parsing("update_restore_config.yaml", NEW_USER)
-@pytest.mark.usefixtures("grant_view_config_permissions_on_adcm_objects")
+@pytest.mark.usefixtures("_grant_view_config_permissions_on_adcm_objects")
 def test_update_config(basic_objects, audit_log_checker, sdk_client_fs, unauthorized_creds):
     """
     Test audit of config updates on (for results: SUCCESS, FAIL, DENIED):
@@ -140,7 +140,7 @@ def test_update_config(basic_objects, audit_log_checker, sdk_client_fs, unauthor
 
 @parametrize_audit_scenario_parsing("update_config_of_group_config.yaml", NEW_USER)
 @pytest.mark.usefixtures(
-    "grant_view_config_permissions_on_adcm_objects", "basic_objects"
+    "_grant_view_config_permissions_on_adcm_objects", "basic_objects"
 )  # pylint: disable-next=too-many-locals
 def test_update_config_of_group_config(group_configs, audit_log_checker, sdk_client_fs, unauthorized_creds):
     """
@@ -188,7 +188,7 @@ def test_update_config_of_group_config(group_configs, audit_log_checker, sdk_cli
 @parametrize_audit_scenario_parsing(
     "add_delete_host_group_config.yaml", {"username": NEW_USER["username"], "host": FQDN}
 )
-@pytest.mark.usefixtures("grant_view_config_permissions_on_adcm_objects")  # pylint: disable-next=too-many-arguments
+@pytest.mark.usefixtures("_grant_view_config_permissions_on_adcm_objects")  # pylint: disable-next=too-many-arguments
 def test_add_remove_hosts_from_group_config(
     group_configs, basic_objects, audit_log_checker, sdk_client_fs, post, delete, unauthorized_creds
 ):

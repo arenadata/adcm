@@ -35,7 +35,7 @@ from tests.ui_tests.utils import (
 )
 
 
-pytestmark = [pytest.mark.usefixtures("login_to_adcm_over_api")]
+pytestmark = [pytest.mark.usefixtures("_login_to_adcm_over_api")]
 
 
 class TestHeader:

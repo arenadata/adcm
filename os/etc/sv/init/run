@@ -37,8 +37,6 @@ rm -r /var/log/nginx
 ## We got an issue on existing installation with folded log/nginx/nginx/nginx....
 [ -L "${adcmlog}/nginx/nginx" ] && rm -f "${adcmlog}/nginx/nginx"
 
-#source "${adcmroot}/venv/default/bin/activate"
-
 echo "Root keys generation"
 key=/root/.ssh/id_rsa
 [ ! -f ${key} ] && ssh-keygen -f ${key} -t rsa -N ""

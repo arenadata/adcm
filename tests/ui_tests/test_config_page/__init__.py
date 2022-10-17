@@ -9,30 +9,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-upstream django {
-    server unix:///run/adcm.sock; 
-}
-
-
-# That variable sets to True if we have non HTTP 200 response.
-# That is usefull to disable noise from recurent operations.
-map $status $abnormal {
-    ~^200  0;
-    default 1;
-}
-
-
-server {
-    listen      8000;
-
-    include "conf.d/proxy.inc";
-}
-
-server {
-    listen      8443 ssl;
-
-    ssl_certificate         /adcm/data/conf/ssl/cert.pem;
-    ssl_certificate_key     /adcm/data/conf/ssl/key.pem;
-
-    include "conf.d/proxy.inc";
-}

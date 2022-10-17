@@ -61,7 +61,7 @@ def import_export_clusters(sdk_client_fs, import_bundle) -> Tuple[Cluster, Clust
 
 
 @pytest.fixture()
-def grant_cluster_view_permissions(sdk_client_fs, import_export_clusters, new_user_client) -> None:
+def _grant_cluster_view_permissions(sdk_client_fs, import_export_clusters, new_user_client) -> None:
     """Grant view config permissions on import cluster and service"""
     import_cluster, *_ = import_export_clusters
     create_policy(
@@ -81,10 +81,10 @@ class TestClusterUpdates:
     new_user_creds: dict
     admin_creds: dict
 
-    pytestmark = [pytest.mark.usefixtures("init")]
+    pytestmark = [pytest.mark.usefixtures("_init")]
 
     @pytest.fixture()
-    def init(self, sdk_client_fs, unauthorized_creds) -> None:
+    def _init(self, sdk_client_fs, unauthorized_creds) -> None:
         """Bind all required "context" to an instance"""
         self.client = sdk_client_fs
         self.admin_creds = make_auth_header(sdk_client_fs)
@@ -251,14 +251,14 @@ class TestImportAudit:
     admin_creds: dict
 
     @pytest.fixture()
-    def init(self, sdk_client_fs, unauthorized_creds):
+    def _init(self, sdk_client_fs, unauthorized_creds):
         """Bind common stuff to this instance"""
         self.client = sdk_client_fs
         self.new_user_creds = unauthorized_creds
         self.admin_creds = make_auth_header(self.client)
 
     @pytest.mark.parametrize("parse_with_context", ["import_updates.yaml"], indirect=True)
-    @pytest.mark.usefixtures("grant_cluster_view_permissions", "init")
+    @pytest.mark.usefixtures("_grant_cluster_view_permissions", "_init")
     def test_import_updates(self, import_export_clusters, parse_with_context):
         """
         Test update operations related to import/exports:
@@ -375,10 +375,10 @@ class TestObjectUpdates:
     new_user_creds: dict
     admin_creds: dict
 
-    pytestmark = [pytest.mark.usefixtures('init')]
+    pytestmark = [pytest.mark.usefixtures('_init')]
 
     @pytest.fixture()
-    def init(self, sdk_client_fs, unauthorized_creds) -> None:
+    def _init(self, sdk_client_fs, unauthorized_creds) -> None:
         """Bind all required "context" to an instance"""
         self.client = sdk_client_fs
         self.admin_creds = make_auth_header(sdk_client_fs)

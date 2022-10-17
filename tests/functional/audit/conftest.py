@@ -153,7 +153,7 @@ def rbac_create_data(sdk_client_fs) -> OrderedDictType[str, dict]:
 
 
 @pytest.fixture()
-def prepare_settings(sdk_client_fs):
+def _prepare_settings(sdk_client_fs):
     """Prepare settings for correct log rotation / cleanup AND LDAP"""
     sdk_client_fs.adcm().config_set_diff(
         {
