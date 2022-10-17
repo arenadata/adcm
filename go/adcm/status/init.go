@@ -123,22 +123,22 @@ func startHTTP(httpPort string, hub Hub) {
 
 func authWrap(hub Hub, f func(h Hub, w http.ResponseWriter, r *http.Request), authCheckers ...authCheckerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-	    allowed := false
+		allowed := false
 
-	    for _, checkFunc := range authCheckers {
-	        checkResult := checkFunc(r, hub)
-            if checkResult {
-                allowed = true
-                break
-            }
-	    }
-
-	    if !allowed {
-            ErrOut4(w, r, "AUTH_ERROR", "forbidden")
-	    } else {
-		    f(hub, w, r)
+		for _, checkFunc := range authCheckers {
+			checkResult := checkFunc(r, hub)
+			if checkResult {
+				allowed = true
+				break
+			}
 		}
-    }
+
+		if !allowed {
+			ErrOut4(w, r, "AUTH_ERROR", "forbidden")
+		} else {
+			f(hub, w, r)
+		}
+	}
 }
 
 func initSignal() {

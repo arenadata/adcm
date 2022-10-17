@@ -20,8 +20,8 @@ import (
 
 type SecretConfig struct {
 	ADCMUser struct {
-		User          string `json:"user"`
-		Password      string `json:"password"`
+		User     string `json:"user"`
+		Password string `json:"password"`
 	} `json:"adcmuser"`
 	Token             string `json:"token"`
 	ADCMInternalToken string `json:"adcm_internal_token"`

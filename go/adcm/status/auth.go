@@ -71,18 +71,18 @@ func wsTokenAuth(w http.ResponseWriter, r *http.Request, hub Hub) bool {
 }
 
 func getAuthorizationToken(r *http.Request) string {
-    h, ok := r.Header["Authorization"]
-    if !ok {
-        return ""
-    }
-    a := strings.Split(h[0], " ")
-    if len(a) < 2 {
-        return ""
-    }
-    if strings.Title(a[0]) != "Token" {
-        return ""
-    }
-    return a[1]
+	h, ok := r.Header["Authorization"]
+	if !ok {
+		return ""
+	}
+	a := strings.Split(h[0], " ")
+	if len(a) < 2 {
+		return ""
+	}
+	if strings.Title(a[0]) != "Token" {
+		return ""
+	}
+	return a[1]
 }
 
 // access control
@@ -90,13 +90,13 @@ func getAuthorizationToken(r *http.Request) string {
 type authCheckerFunc func(*http.Request, Hub) bool
 
 func isADCM(r *http.Request, hub Hub) bool {
-    return getAuthorizationToken(r) == hub.Secrets.ADCMInternalToken
+	return getAuthorizationToken(r) == hub.Secrets.ADCMInternalToken
 }
 
 func isStatusChecker(r *http.Request, hub Hub) bool {
-    return getAuthorizationToken(r) == hub.Secrets.Token
+	return getAuthorizationToken(r) == hub.Secrets.Token
 }
 
 func isADCMUser(r *http.Request, hub Hub) bool {
-    return djangoAuth(r, hub) || checkADCMUserToken(hub, getAuthorizationToken(r))
+	return djangoAuth(r, hub) || checkADCMUserToken(hub, getAuthorizationToken(r))
 }
