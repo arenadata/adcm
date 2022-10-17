@@ -71,6 +71,10 @@ const routes: Routes = [
       {
         path: 'policies',
         component: PoliciesComponent,
+      },
+      {
+        path: 'audit/operations',
+        component: AuditOperationsComponent,
       }
     ],
   },

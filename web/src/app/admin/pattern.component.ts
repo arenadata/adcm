@@ -58,7 +58,7 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
     { url: 'groups', title: 'Groups' },
     { url: 'roles', title: 'Roles' },
     { url: 'policies', title: 'Policies' },
-    { url: 'audit_operations', title: 'Audit operations' }
+    { url: 'audit/operations', title: 'Audit operations' }
   ];
   data = {
     '/admin': { title: 'Hi there!', crumbs: [{ path: '/admin/', name: 'intro' }] },
@@ -68,7 +68,7 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
     '/admin/groups': { title: 'Group list', crumbs: [{ path: '/admin/groups', name: 'groups' }] },
     '/admin/roles': { title: 'Role list', crumbs: [{ path: '/admin/roles', name: 'roles' }] },
     '/admin/policies': { title: 'Policy list', crumbs: [{ path: '/admin/policies', name: 'policies' }] },
-    '/admin/audit_operations': { title: 'Audit operations', crumbs: [{ path: '/admin/audit_operations', name: 'audit_operations' }] }
+    '/admin/audit/operations': { title: 'Audit operations', crumbs: [{ path: '/admin/audit/operations', name: 'audit operations' }] }
   };
 
   constructor(private store: Store<State>, private api: ApiService, private router: Router) {

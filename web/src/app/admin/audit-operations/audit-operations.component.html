@@ -1,1 +1,14 @@
-<p>audit-operations works!</p>
+<app-filter [filterList]="auditOperationsFilters" [externalData]="data$" [innerData]="filteredData$"></app-filter>
+
+<adwp-list
+  [columns]="listColumns"
+  [dataSource]="filteredData$ | async"
+  [paging]="paging | async"
+  [sort]="sorting | async"
+  [defaultSort]="defaultSort"
+  (clickRow)="clickRow($event)"
+  (auxclickRow)="auxclickRow($event)"
+  (changePaging)="onChangePaging($event)"
+  (changeSort)="onChangeSort($event)"
+  (chooseAll)="chooseAll($event)"
+></adwp-list>

@@ -62,7 +62,8 @@ import { RbacRoleService } from '@app/services/rbac-role.service';
 import { RbacPolicyService } from '@app/services/rbac-policy.service';
 import { DynamicModule } from '@app/shared/directives/dynamic/dynamic.module';
 import { RbacObjectCandidateService } from '@app/services/rbac-object-candidate.service';
-import {UpgradeMasterConfigComponent} from "@app/shared/components/upgrades/master/upgrade-master-config.component";
+import { UpgradeMasterConfigComponent } from "@app/shared/components/upgrades/master/upgrade-master-config.component";
+import { RbacAuditOperationsService } from "@app/services/rbac-audit-operations.service";
 
 @NgModule({
   imports: [
@@ -156,6 +157,7 @@ import {UpgradeMasterConfigComponent} from "@app/shared/components/upgrades/mast
     RbacGroupService,
     RbacRoleService,
     RbacPolicyService,
+    RbacAuditOperationsService,
     RbacObjectCandidateService
   ],
 })

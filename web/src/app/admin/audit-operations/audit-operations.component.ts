@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, Type, ViewChild } from '@angular/core';
 import { ADD_SERVICE_PROVIDER } from "../../shared/add-component/add-service-model";
 import { IColumns } from "@adwp-ui/widgets";
 import { TypeName } from "../../core/types";
@@ -11,6 +11,13 @@ import { RbacEntityListDirective } from "../../abstract-directives/rbac-entity-l
 import { RbacAuditOperationsModel } from "../../models/rbac/rbac-audit-operations.model";
 import { AddButtonComponent } from "../../shared/add-component";
 import { RbacAuditOperationsService } from "../../services/rbac-audit-operations.service";
+import {
+  RbacAuditOperationsFormComponent
+} from "../../components/rbac/audit-operations-form/rbac-audit-operations-form.component";
+import {BehaviorSubject} from "rxjs";
+import {IFilter} from "../../shared/configuration/tools/filter/filter.component";
+import {HistoryColumnComponent} from "../../components/columns/history-column/history-column.component";
+import {DateHelper} from "../../helpers/date-helper";
 
 @Component({
   selector: 'app-audit-operations',
@@ -26,6 +33,8 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
   listColumns = [
     {
       label: 'Object type',
+      headerClassName: 'width100',
+      className: 'width100',
       value: (row) => row.object_type,
     },
     {
@@ -38,27 +47,53 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
     },
     {
       label: 'Operation type',
+      headerClassName: 'width100',
+      className: 'width100',
       value: (row) => row.operation_type,
     },
     {
       label: 'Operation result',
+      headerClassName: 'width100',
+      className: 'width100',
       value: (row) => row.operation_result,
     },
     {
       label: 'Operation time',
       sort: 'operation_time',
-      value: (row) => row.operation_time,
+      className: 'action_date',
+      headerClassName: 'action_date',
+      value: (row) => DateHelper.short(row.operation_time),
     },
     {
       label: 'Username',
+      headerClassName: 'width100',
+      className: 'width100',
       value: (row) => row.username,
     },
+    {
+      label: '',
+      type: 'component',
+      headerClassName: 'width100',
+      className: 'width100',
+      component: HistoryColumnComponent,
+    }
 
   ] as IColumns<RbacAuditOperationsModel>;
 
   type: TypeName = 'audit_operations';
+  filteredData$: BehaviorSubject<any> = new BehaviorSubject<any>(null);
 
-  // component: Type<RbacPolicyFormComponent> = RbacPolicyFormComponent;
+  auditOperationsFilters: IFilter[] = [
+    {
+      id: 1, name: 'status', display_name: 'Status', filter_field: 'is_active',
+      options: [
+        {id: 1, name: 'active', display_name: 'Active', value: true},
+        {id: 2, name: 'inactive', display_name: 'Inactive', value: false},
+      ]
+    },
+  ];
+
+  component: Type<RbacAuditOperationsFormComponent> = RbacAuditOperationsFormComponent;
 
   constructor(
     protected service: ListService,

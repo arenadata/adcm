@@ -1,0 +1,26 @@
+:host {
+  flex: 1;
+  width: 100%;
+}
+
+.controls {
+  position: absolute;
+  right: 40px;
+  top: 16px;
+}
+
+::ng-deep mat-row {
+
+  &:hover {
+
+    mat-cell {
+
+      button {
+
+        &.history-button.has-history {
+          display: flex !important;
+        }
+      }
+    }
+  }
+}
