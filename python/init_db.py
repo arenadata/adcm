@@ -12,9 +12,10 @@
 # limitations under the License.
 
 import json
-import random
-import string
 from itertools import chain
+from pathlib import Path
+from secrets import token_hex
+from typing import Tuple, Optional
 
 import adcm.init_django  # pylint: disable=unused-import
 from cm.bundle import load_adcm
@@ -35,27 +36,41 @@ from cm.status_api import Event
 from rbac.models import User
 
 
-def random_string(strlen=10):
-    return "".join([random.choice(string.ascii_letters) for _ in range(strlen)])
+TOKEN_LENGTH = 20
 
 
-def create_status_user():
+def prepare_secrets_json(st_username: str, st_password: Optional[str]) -> None:
+    secrets_exists = Path(SECRETS_FILE).is_file()
+    if not secrets_exists and st_password is not None:
+        with open(SECRETS_FILE, "w", encoding="utf_8") as f:
+            json.dump(
+                {
+                    "adcmuser": {"user": st_username, "password": st_password},
+                    "token": token_hex(TOKEN_LENGTH),
+                    "adcm_internal_token": token_hex(TOKEN_LENGTH)
+                },
+                f
+            )
+    elif secrets_exists:
+        with open(SECRETS_FILE, encoding="utf_8") as f:
+            data = json.load(f)
+        # write missing token
+        if "adcm_internal_token" not in data:
+            data["adcm_internal_token"] = token_hex(TOKEN_LENGTH)
+            with open(SECRETS_FILE, "w", encoding="utf_8") as f:
+                json.dump(data, f)
+
+    logger.info("Update secret file %s OK", SECRETS_FILE)
+
+
+def create_status_user() -> Tuple[str, Optional[str]]:
     username = "status"
     if User.objects.filter(username=username).exists():
-        return
+        return username, None
 
-    password = random_string(40)
+    password = token_hex(TOKEN_LENGTH)
     User.objects.create_superuser(username, "", password, built_in=True)
-    with open(SECRETS_FILE, "w", encoding="utf_8") as f:
-        json.dump(
-            {
-                "adcmuser": {"user": username, "password": password},
-                "token": random_string(40),
-                "adcm_internal_token": random_string(40)
-            },
-            f
-        )
-    logger.info("Update secret file %s OK", SECRETS_FILE)
+    return username, password
 
 
 def create_dummy_data():
@@ -87,7 +102,8 @@ def init():
     logger.info("Start initializing ADCM DB...")
     if not User.objects.filter(username="admin").exists():
         User.objects.create_superuser("admin", "admin@example.com", "admin", built_in=True)
-    create_status_user()
+    st_username, st_password = create_status_user()
+    prepare_secrets_json(st_username, st_password)
     if not User.objects.filter(username="system").exists():
         User.objects.create_superuser("system", "", None, built_in=True)
         logger.info("Create system user")
