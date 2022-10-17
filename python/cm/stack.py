@@ -465,7 +465,6 @@ def save_action(proto, ac, bundle_hash, action_name):
     if ac["type"] == "job":
         action.script = ac["script"]
         action.script_type = ac["script_type"]
-    dict_to_obj(ac, "button", action)
     dict_to_obj(ac, "display_name", action)
     dict_to_obj(ac, "description", action)
     dict_to_obj(ac, "allow_to_terminate", action)

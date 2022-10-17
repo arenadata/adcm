@@ -1121,8 +1121,6 @@ class AbstractAction(ADCMModel):
     ui_options = models.JSONField(default=dict)
 
     type = models.CharField(max_length=16, choices=ActionType.choices)
-    button = models.CharField(max_length=64, default=None, null=True)
-
     script = models.CharField(max_length=160)
     script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
 

@@ -174,14 +174,6 @@ def fix_ordering(field, view):
     return fix
 
 
-class ActionFilter(drf_filters.FilterSet):
-    button_is_null = drf_filters.BooleanFilter(field_name="button", lookup_expr="isnull")
-
-    class Meta:
-        model = Action
-        fields = ("name", "button")
-
-
 class AdcmOrderingFilter(OrderingFilter):
     def get_ordering(self, request, queryset, view):
         ordering = None
