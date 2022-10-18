@@ -14,6 +14,9 @@ import json
 import os
 import sys
 from os.path import dirname
+from secrets import token_hex
+
+from .utils import dict_json_get_or_create
 
 ENCODING = "utf-8"
 
@@ -57,8 +60,11 @@ if os.path.exists(SECRETS_FILE):
     with open(SECRETS_FILE, encoding="utf_8") as f:
         data = json.load(f)
         STATUS_SECRET_KEY = data["token"]
-        ADCM_INTERNAL_TOKEN = data["adcm_internal_token"]
+        ADCM_INTERNAL_TOKEN = data.get("adcm_internal_token")
         ANSIBLE_SECRET = data["adcmuser"]["password"]
+
+if ADCM_INTERNAL_TOKEN is None:
+    ADCM_INTERNAL_TOKEN = dict_json_get_or_create(SECRETS_FILE, "adcm_internal_token", token_hex(20))
 
 
 class Job:

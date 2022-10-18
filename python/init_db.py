@@ -40,8 +40,7 @@ TOKEN_LENGTH = 20
 
 
 def prepare_secrets_json(st_username: str, st_password: Optional[str]) -> None:
-    secrets_exists = Path(SECRETS_FILE).is_file()
-    if not secrets_exists and st_password is not None:
+    if not Path(SECRETS_FILE).is_file() and st_password is not None:
         with open(SECRETS_FILE, "w", encoding="utf_8") as f:
             json.dump(
                 {
@@ -51,15 +50,6 @@ def prepare_secrets_json(st_username: str, st_password: Optional[str]) -> None:
                 },
                 f
             )
-    elif secrets_exists:
-        with open(SECRETS_FILE, encoding="utf_8") as f:
-            data = json.load(f)
-        # write missing token
-        if "adcm_internal_token" not in data:
-            data["adcm_internal_token"] = token_hex(TOKEN_LENGTH)
-            with open(SECRETS_FILE, "w", encoding="utf_8") as f:
-                json.dump(data, f)
-
     logger.info("Update secret file %s OK", SECRETS_FILE)
 
 
