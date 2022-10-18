@@ -1,9 +1,10 @@
 import { Component, forwardRef, OnInit } from '@angular/core';
 import { ADD_SERVICE_PROVIDER } from "@app/shared/add-component/add-service-model";
 import { RbacAuditOperationsService } from "@app/services/rbac-audit-operations.service";
-import {FormControl, FormGroup} from "@angular/forms";
-import {RbacUserModel} from "@app/models/rbac/rbac-user.model";
-import {RbacAuditOperationsModel} from "@app/models/rbac/rbac-audit-operations.model";
+import { FormControl, FormGroup } from "@angular/forms";
+import { RbacUserModel } from "@app/models/rbac/rbac-user.model";
+import { RbacAuditOperationsModel } from "@app/models/rbac/rbac-audit-operations.model";
+import { IColumns } from "@adwp-ui/widgets";
 
 @Component({
   selector: 'app-rbac-audit-operations-form',
@@ -14,6 +15,23 @@ import {RbacAuditOperationsModel} from "@app/models/rbac/rbac-audit-operations.m
   ]
 })
 export class RbacAuditOperationsFormComponent implements OnInit {
+
+  listColumns = [
+    {
+      label: 'Attribute',
+      headerClassName: 'width100',
+      className: 'width100',
+      value: (row) => row.object_changes,
+    },
+    {
+      label: 'Old value',
+      value: (row) => row.object_name,
+    },
+    {
+      label: 'New Value',
+      value: (row) => row.operation_name,
+    }
+  ] as IColumns<RbacAuditOperationsModel>;
 
   get auditOperationsForm(): FormGroup {
     return this.form.get('audit_operations') as FormGroup;

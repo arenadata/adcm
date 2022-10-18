@@ -14,10 +14,11 @@ import { RbacAuditOperationsService } from "../../services/rbac-audit-operations
 import {
   RbacAuditOperationsFormComponent
 } from "../../components/rbac/audit-operations-form/rbac-audit-operations-form.component";
-import {BehaviorSubject} from "rxjs";
-import {IFilter} from "../../shared/configuration/tools/filter/filter.component";
-import {HistoryColumnComponent} from "../../components/columns/history-column/history-column.component";
-import {DateHelper} from "../../helpers/date-helper";
+import { BehaviorSubject } from "rxjs";
+import { IFilter } from "../../shared/configuration/tools/filter/filter.component";
+import { HistoryColumnComponent } from "../../components/columns/history-column/history-column.component";
+import { DateHelper } from "../../helpers/date-helper";
+import { ColorTextColumnComponent } from "../../components/columns/color-text-column/color-text-column.component";
 
 @Component({
   selector: 'app-audit-operations',
@@ -47,14 +48,18 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
     },
     {
       label: 'Operation type',
+      type: 'component',
       headerClassName: 'width100',
       className: 'width100',
+      component: ColorTextColumnComponent,
       value: (row) => row.operation_type,
     },
     {
       label: 'Operation result',
+      type: 'component',
       headerClassName: 'width100',
       className: 'width100',
+      component: ColorTextColumnComponent,
       value: (row) => row.operation_result,
     },
     {
@@ -85,10 +90,27 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
 
   auditOperationsFilters: IFilter[] = [
     {
-      id: 1, name: 'status', display_name: 'Status', filter_field: 'is_active',
+      id: 1, name: 'object_type', display_name: 'Object type', filter_field: 'object_type',
       options: [
-        {id: 1, name: 'active', display_name: 'Active', value: true},
-        {id: 2, name: 'inactive', display_name: 'Inactive', value: false},
+        {id: 1, name: 'host', display_name: 'Host', value: 'host'},
+        {id: 2, name: 'provider', display_name: 'Provider', value: 'provider'},
+        {id: 3, name: 'cluster', display_name: 'Cluster', value: 'cluster'},
+        {id: 4, name: 'bundle', display_name: 'Bundle', value: 'bundle'},
+      ]
+    },
+    {
+      id: 2, name: 'operation_type', display_name: 'Operation type', filter_field: 'operation_type',
+      options: [
+        {id: 1, name: 'create', display_name: 'Create', value: 'create'},
+        {id: 2, name: 'update', display_name: 'Update', value: 'update'},
+        {id: 3, name: 'delete', display_name: 'Delete', value: 'delete'},
+      ]
+    },
+    {
+      id: 3, name: 'operation_result', display_name: 'Operation result', filter_field: 'operation_result',
+      options: [
+        {id: 1, name: 'success', display_name: 'Success', value: 'success'},
+        {id: 2, name: 'failed', display_name: 'Failed', value: 'failed'},
       ]
     },
   ];
