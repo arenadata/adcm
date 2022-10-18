@@ -56,7 +56,6 @@ class StackActionSerializer(EmptySerializer):
     display_name = CharField(required=False)
     description = CharField(required=False)
     ui_options = JSONField(required=False)
-    button = CharField(required=False)
     script = CharField()
     script_type = CharField()
     state_on_success = CharField()
@@ -81,7 +80,6 @@ class ActionSerializer(StackActionSerializer):
 class ActionShort(EmptySerializer):
     name = CharField()
     display_name = CharField(required=False)
-    button = CharField(required=False)
     config = SerializerMethodField()
     hostcomponentmap = JSONField(read_only=False)
     run = ActionDetailURL(read_only=True, view_name="run-task")

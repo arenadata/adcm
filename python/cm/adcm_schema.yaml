@@ -705,7 +705,6 @@ common_action: &common_action
     description: string
     params: json
     ui_options: json
-    button: string
     allow_to_terminate: boolean
     partial_execution: boolean
     host_action: boolean

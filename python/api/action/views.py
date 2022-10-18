@@ -26,13 +26,7 @@ from api.action.serializers import (
 )
 from api.base_view import GenericUIView
 from api.job.serializers import RunTaskSerializer
-from api.utils import (
-    ActionFilter,
-    AdcmFilterBackend,
-    create,
-    filter_actions,
-    get_object_for_user,
-)
+from api.utils import AdcmFilterBackend, create, filter_actions, get_object_for_user
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import Action, Host, HostComponent, TaskLog, get_model_by_type
@@ -61,8 +55,7 @@ class ActionList(PermissionListMixin, GenericUIView):
     queryset = Action.objects.filter(upgrade__isnull=True)
     serializer_class = ActionSerializer
     serializer_class_ui = ActionUISerializer
-    filterset_class = ActionFilter
-    filterset_fields = ("name", "button", "button_is_null")
+    filterset_fields = ("name",)
     filter_backends = (AdcmFilterBackend,)
     permission_required = [VIEW_ACTION_PERM]
 
