@@ -76,14 +76,14 @@ export class UsersComponent extends RbacEntityListDirective<RbacUserModel> imple
 
   userFilters: IFilter[] = [
     {
-      id: 1, name: 'status', display_name: 'Status', filter_field: 'is_active',
+      id: 1, name: 'status', display_name: 'Status', filter_field: 'is_active', filter_type: 'list',
       options: [
         {id: 1, name: 'active', display_name: 'Active', value: true},
         {id: 2, name: 'inactive', display_name: 'Inactive', value: false},
       ]
     },
     {
-      id: 2, name: 'type', display_name: 'Type', filter_field: 'type',
+      id: 2, name: 'type', display_name: 'Type', filter_field: 'type', filter_type: 'list',
       options: [
         {id: 1, name: 'local', display_name: 'Local', value: 'local'},
         {id: 2, name: 'ldap', display_name: 'Ldap', value: 'ldap'},

@@ -13,7 +13,7 @@ import { AddButtonComponent } from "../../shared/add-component";
 import { RbacAuditOperationsService } from "../../services/rbac-audit-operations.service";
 import {
   RbacAuditOperationsHistoryFormComponent
-} from "../../components/rbac/audit-operations-form/rbac-audit-operations-history-form.component";
+} from "../../components/rbac/audit-operations-history-form/rbac-audit-operations-history-form.component";
 import { BehaviorSubject } from "rxjs";
 import { IFilter } from "../../shared/configuration/tools/filter/filter.component";
 import { HistoryColumnComponent } from "../../components/columns/history-column/history-column.component";
@@ -90,7 +90,13 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
 
   auditOperationsFilters: IFilter[] = [
     {
-      id: 1, name: 'object_type', display_name: 'Object type', filter_field: 'object_type',
+      id: 1, name: 'username', display_name: 'Username', filter_field: 'username', filter_type: 'input',
+    },
+    {
+      id: 2, name: 'object_name', display_name: 'Object name', filter_field: 'object_name', filter_type: 'input',
+    },
+    {
+      id: 3, name: 'object_type', display_name: 'Object type', filter_field: 'object_type', filter_type: 'list',
       options: [
         {id: 1, name: 'host', display_name: 'Host', value: 'host'},
         {id: 2, name: 'provider', display_name: 'Provider', value: 'provider'},
@@ -99,7 +105,7 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
       ]
     },
     {
-      id: 2, name: 'operation_type', display_name: 'Operation type', filter_field: 'operation_type',
+      id: 4, name: 'operation_type', display_name: 'Operation type', filter_field: 'operation_type', filter_type: 'list',
       options: [
         {id: 1, name: 'create', display_name: 'Create', value: 'create'},
         {id: 2, name: 'update', display_name: 'Update', value: 'update'},
@@ -107,7 +113,7 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
       ]
     },
     {
-      id: 3, name: 'operation_result', display_name: 'Operation result', filter_field: 'operation_result',
+      id: 5, name: 'operation_result', display_name: 'Operation result', filter_field: 'operation_result', filter_type: 'list',
       options: [
         {id: 1, name: 'success', display_name: 'Success', value: 'success'},
         {id: 2, name: 'failed', display_name: 'Failed', value: 'failed'},

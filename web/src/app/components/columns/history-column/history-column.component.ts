@@ -1,10 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { DialogComponent } from "@app/shared/components";
-import { filter } from "rxjs/operators";
 import {
   RbacAuditOperationsHistoryFormComponent
-} from "@app/components/rbac/audit-operations-form/rbac-audit-operations-history-form.component";
+} from "@app/components/rbac/audit-operations-history-form/rbac-audit-operations-history-form.component";
 
 @Component({
   selector: 'app-history-column',

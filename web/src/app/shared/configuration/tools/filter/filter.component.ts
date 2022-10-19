@@ -25,7 +25,8 @@ export interface IFilter {
   name: string,
   display_name: string,
   filter_field: string,
-  options: IFilterOption[],
+  filter_type: FilterType,
+  options?: IFilterOption[],
   active?: boolean,
 }
 
@@ -35,6 +36,8 @@ export interface IFilterOption {
   display_name: string,
   value: any,
 }
+
+type FilterType = 'list' | 'input' | 'datetimepicker';
 
 @Component({
   selector: 'app-filter',
@@ -49,10 +52,14 @@ export interface IFilterOption {
         <ng-container *ngIf="filterList.length > 0">
           <ng-container *ngFor="let filter of filters">
             <mat-form-field class="filter-field">
-              <mat-select placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}"
-                          (selectionChange)="applyFilters()">
-                <mat-option *ngFor="let p of filter.options" [value]="p.value">{{ p.display_name }}</mat-option>
-              </mat-select>
+              <ng-container [ngSwitch]="filter.filter_type">
+                <mat-select *ngSwitchCase="'list'" placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}"
+                            (selectionChange)="applyFilters()">
+                  <mat-option *ngFor="let p of filter.options" [value]="p.value">{{ p.display_name }}</mat-option>
+                </mat-select>
+                <input *ngSwitchCase="'input'" matInput placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}"
+                            (change)="applyFilters()">
+              </ng-container>
               <button mat-button matSuffix mat-icon-button aria-label="Clear"
                       *ngIf="clearButtonVisible(filter.filter_field)"
                       (click)="clear(filter.filter_field, $event)">
@@ -74,6 +81,7 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
   filterForm = new FormGroup({});
   availableFilters: any[];
   activeFilters: number[] = [];
+  filtersByType = {};
   backupData: any;
   freezeBackupData: boolean = false;
   externalChanges: boolean = false;
@@ -95,7 +103,12 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
       name: filter.name,
       display_name: filter.display_name,
       filter_field: filter.filter_field,
+      filter_type: filter.filter_type
     }));
+
+    this.availableFilters.forEach((i: IFilter) => {
+      this.filtersByType[i.filter_field] = i.filter_type;
+    })
 
     this.externalData.subscribe((values: any) => {
       this.externalChanges = true;
@@ -134,20 +147,36 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
 
   applyFilters() {
     const filters = this.filterForm.value;
+
     Object.keys(filters).forEach((f) => {
       if (filters[f] === '' || filters[f] === undefined) {
         delete filters[f];
       }
     });
-    const data = this.backupData?.results?.filter((item) => {
+
+    let data = this.backupData?.results?.filter((item) => {
       for (let key in filters) {
-        if (item[key] === undefined || item[key] !== filters[key]) {
-          return false;
+        if (this.filtersByType[key] === 'list') {
+          if (item[key] === undefined || item[key] !== filters[key]) {
+            return false;
+          }
         }
       }
 
       return true;
     });
+
+    if (this.filters.some((f) => f.filter_type === 'input')) {
+      data = data.filter((item) => {
+        for (let key in filters) {
+          if (this.filtersByType[key] === 'input') {
+            if (item[key] !== undefined && item[key] !== null && item[key].toLowerCase().includes(filters[key].toLowerCase())) {
+              return true;
+            }
+          }
+        }
+      })
+    }
 
     this.freezeBackupData = true;
     this.innerData.next({...this.backupData, count: data.length, results: data});
