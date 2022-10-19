@@ -39,18 +39,21 @@ from rbac.models import User
 TOKEN_LENGTH = 20
 
 
-def prepare_secrets_json(st_username: str, st_password: Optional[str]) -> None:
-    if not Path(SECRETS_FILE).is_file() and st_password is not None:
+def prepare_secrets_json(status_user_username: str, status_user_password: Optional[str]) -> None:
+    # we need to know status user's password to write it to secrets.json [old implementation]
+    if not Path(SECRETS_FILE).is_file() and status_user_username is not None:
         with open(SECRETS_FILE, "w", encoding="utf_8") as f:
             json.dump(
                 {
-                    "adcmuser": {"user": st_username, "password": st_password},
+                    "adcmuser": {"user": status_user_username, "password": status_user_password},
                     "token": token_hex(TOKEN_LENGTH),
                     "adcm_internal_token": token_hex(TOKEN_LENGTH)
                 },
                 f
             )
-    logger.info("Update secret file %s OK", SECRETS_FILE)
+        logger.info("Update secret file %s OK", SECRETS_FILE)
+    else:
+        logger.info("Secret file %s is not updated", SECRETS_FILE)
 
 
 def create_status_user() -> Tuple[str, Optional[str]]:
@@ -92,8 +95,8 @@ def init():
     logger.info("Start initializing ADCM DB...")
     if not User.objects.filter(username="admin").exists():
         User.objects.create_superuser("admin", "admin@example.com", "admin", built_in=True)
-    st_username, st_password = create_status_user()
-    prepare_secrets_json(st_username, st_password)
+    status_user_username, status_user_password = create_status_user()
+    prepare_secrets_json(status_user_username, status_user_password)
     if not User.objects.filter(username="system").exists():
         User.objects.create_superuser("system", "", None, built_in=True)
         logger.info("Create system user")
