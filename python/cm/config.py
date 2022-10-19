@@ -16,7 +16,7 @@ import sys
 from os.path import dirname
 from secrets import token_hex
 
-from .utils import dict_json_get_or_create
+from cm.utils import dict_json_get_or_create
 
 ENCODING = "utf-8"
 
