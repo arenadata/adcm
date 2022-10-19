@@ -88,13 +88,13 @@ func startHTTP(httpPort string, hub Hub) {
 	router.GET("/api/v1/log/", authWrap(hub, showLogLevel, isADCM))
 	router.POST("/api/v1/log/", authWrap(hub, postLogLevel, isADCM))
 
-	router.POST("/api/v1/event/", authWrap(hub, postEvent, isStatusChecker, isADCM))
+	router.POST("/api/v1/event/", authWrap(hub, postEvent, isADCM))
 
 	router.GET("/api/v1/all/", authWrap(hub, showAll, isADCM, isADCMUser))
 
 	router.GET("/api/v1/host/", authWrap(hub, hostList, isADCM, isADCMUser))
 	router.GET("/api/v1/host/:hostid/", authWrap(hub, showHost, isADCM, isADCMUser))
-	router.POST("/api/v1/host/:hostid/", authWrap(hub, setHost, isStatusChecker, isADCM))
+	router.POST("/api/v1/host/:hostid/", authWrap(hub, setHost, isStatusChecker))
 
 	router.GET("/api/v1/object/host/", authWrap(hub, listHost, isADCM))
 	router.POST("/api/v1/object/host/", authWrap(hub, createHost, isADCM))
@@ -102,7 +102,7 @@ func startHTTP(httpPort string, hub Hub) {
 	router.PUT("/api/v1/object/host/:hostid/", authWrap(hub, updateHost, isADCM))
 
 	router.GET("/api/v1/host/:hostid/component/:compid/", authWrap(hub, showHostComp, isADCM, isADCMUser))
-	router.POST("/api/v1/host/:hostid/component/:compid/", authWrap(hub, setHostComp, isStatusChecker, isADCM))
+	router.POST("/api/v1/host/:hostid/component/:compid/", authWrap(hub, setHostComp, isStatusChecker))
 
 	router.GET("/api/v1/component/:compid/", authWrap(hub, showComp, isADCM, isADCMUser))
 
