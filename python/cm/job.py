@@ -28,6 +28,7 @@ from cm.errors import AdcmEx
 from cm.errors import raise_adcm_ex as err
 from cm.hierarchy import Tree
 from cm.inventory import get_obj_config, process_config_and_attr
+from cm.issue import update_hierarchy_issues
 from cm.logger import logger
 from cm.models import (
     ADCM,
@@ -779,6 +780,7 @@ def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
         restore_hc(task, action, status)
         task.unlock_affected()
         set_task_status(task, status, ctx.event)
+        update_hierarchy_issues(obj)
 
     upgrade = Upgrade.objects.filter(action=action).first()
     if upgrade:
