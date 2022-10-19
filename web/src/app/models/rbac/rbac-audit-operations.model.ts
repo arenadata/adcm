@@ -16,3 +16,9 @@ interface AuditOperationsObjectChanges {
   current: { [key: string]: any };
   previous: { [key: string]: any };
 }
+
+export interface AuditOperationsChangesHistory {
+  attribute: string;
+  old_value: any;
+  new_value: any;
+}

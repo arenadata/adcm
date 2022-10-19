@@ -1,20 +1,20 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { RbacAuditOperationsFormComponent } from './rbac-audit-operations-form.component';
+import { RbacAuditOperationsHistoryFormComponent } from './rbac-audit-operations-history-form.component';
 
 describe('AuditOperationsFormComponent', () => {
-  let component: RbacAuditOperationsFormComponent;
-  let fixture: ComponentFixture<RbacAuditOperationsFormComponent>;
+  let component: RbacAuditOperationsHistoryFormComponent;
+  let fixture: ComponentFixture<RbacAuditOperationsHistoryFormComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ RbacAuditOperationsFormComponent ]
+      declarations: [ RbacAuditOperationsHistoryFormComponent ]
     })
     .compileComponents();
   });
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(RbacAuditOperationsFormComponent);
+    fixture = TestBed.createComponent(RbacAuditOperationsHistoryFormComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

@@ -3,8 +3,8 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { DialogComponent } from "@app/shared/components";
 import { filter } from "rxjs/operators";
 import {
-  RbacAuditOperationsFormComponent
-} from "@app/components/rbac/audit-operations-form/rbac-audit-operations-form.component";
+  RbacAuditOperationsHistoryFormComponent
+} from "@app/components/rbac/audit-operations-form/rbac-audit-operations-history-form.component";
 
 @Component({
   selector: 'app-history-column',
@@ -43,27 +43,12 @@ export class HistoryColumnComponent implements OnInit {
         title,
         model: {
           row: this.row,
-          // column: this.column.sort,
-          // form: this.form
         },
-        component: RbacAuditOperationsFormComponent,
+        component: RbacAuditOperationsHistoryFormComponent,
         controls: ['Cancel'],
       },
     };
 
-    this.dialog
-      .open(DialogComponent, dialogModel)
-      .beforeClosed()
-      .pipe(filter((save) => save))
-      .subscribe(() => {
-        // this.service.renameHost(this.column.sort, this.form.value, this.row.id)
-        //   .subscribe((value) => {
-        //     if (value) {
-        //       const colName = this.column.sort;
-        //       this.row[colName] = value[colName];
-        //     }
-        //   });
-      });
+    this.dialog.open(DialogComponent, dialogModel)
   }
-
 }

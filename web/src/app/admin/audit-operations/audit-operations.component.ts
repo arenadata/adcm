@@ -12,8 +12,8 @@ import { RbacAuditOperationsModel } from "../../models/rbac/rbac-audit-operation
 import { AddButtonComponent } from "../../shared/add-component";
 import { RbacAuditOperationsService } from "../../services/rbac-audit-operations.service";
 import {
-  RbacAuditOperationsFormComponent
-} from "../../components/rbac/audit-operations-form/rbac-audit-operations-form.component";
+  RbacAuditOperationsHistoryFormComponent
+} from "../../components/rbac/audit-operations-form/rbac-audit-operations-history-form.component";
 import { BehaviorSubject } from "rxjs";
 import { IFilter } from "../../shared/configuration/tools/filter/filter.component";
 import { HistoryColumnComponent } from "../../components/columns/history-column/history-column.component";
@@ -115,7 +115,7 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
     },
   ];
 
-  component: Type<RbacAuditOperationsFormComponent> = RbacAuditOperationsFormComponent;
+  component: Type<RbacAuditOperationsHistoryFormComponent> = RbacAuditOperationsHistoryFormComponent;
 
   constructor(
     protected service: ListService,

@@ -1,3 +1,10 @@
+:host {
+
+  ::ng-deep adwp-paginator {
+    display: none;
+  }
+}
+
 .legend {
   display: flex;
   flex-direction: column;
