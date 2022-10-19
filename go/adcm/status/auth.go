@@ -32,7 +32,6 @@ func checkADCMUserToken(hub Hub, token string) bool {
 		return checkADCMAuth(token)
 	}
 	if time.Now().Before(val) {
-		//logg.D.f("checkADCMUserToken: get token from cache")
 		return true
 	} else {
 		return checkADCMAuth(token)
@@ -50,7 +49,6 @@ func djangoAuth(r *http.Request, hub Hub) bool {
 
 func wsTokenAuth(w http.ResponseWriter, r *http.Request, hub Hub) bool {
 	h, ok := r.Header["Sec-Websocket-Protocol"]
-	//logg.D.f("wsTokenAuth: headers: %+v", r.Header)
 	if !ok {
 		ErrOut4(w, r, "AUTH_ERROR", "no \"Sec-WebSocket-Protocol\" header")
 		return false
