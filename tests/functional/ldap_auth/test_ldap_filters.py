@@ -32,7 +32,7 @@ from tests.functional.ldap_auth.utils import (
     turn_off_periodic_ldap_sync,
 )
 from tests.library.assertions import sets_are_equal
-from tests.library.ldap_interactions import change_adcm_ldap_config, run_sync
+from tests.library.ldap_interactions import change_adcm_ldap_config, sync_adcm_with_ldap
 
 # pylint: disable=redefined-outer-name
 
@@ -78,7 +78,7 @@ def check_sync_with_filters(
     change_adcm_ldap_config(
         client, attach_to_allure=False, user_search_filter=user_filter, group_search_filter=group_filter
     )
-    run_sync(client)
+    sync_adcm_with_ldap(client)
 
     active_users_records = {u.username for u in client.user_list() if u.type == "ldap" and u.is_active}
     groups_records = {g.name for g in client.group_list() if g.type == "ldap"}
