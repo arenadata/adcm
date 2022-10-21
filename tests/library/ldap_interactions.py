@@ -252,11 +252,11 @@ def configure_adcm_for_ldap(
     )
 
 
-@allure.step('Run ldap sync')
-def run_sync(client: ADCMClient) -> None:
+@allure.step("Run ldap sync")
+def sync_adcm_with_ldap(client: ADCMClient) -> None:
     """method to run ldap sync"""
     action = client.adcm().action(name="run_ldap_sync")
-    wait_for_task_and_assert_result(action.run(), 'success')
+    wait_for_task_and_assert_result(action.run(), "success")
 
 
 def change_adcm_ldap_config(client: ADCMClient, attach_to_allure: bool = False, **params) -> None:
