@@ -285,8 +285,19 @@ def test_search_filters_groups_with_symbols(sdk_client_fs, two_adcm_groups_with_
             sdk_client_fs,
             user_filter="",
             group_filter=search_filter,
-            expected_users={ldap_user_1.username},
+            expected_users=set(),
             expected_groups=set(),
+        )
+
+    with allure.step('Check filter with filter symbols <='):
+        turn_off_periodic_ldap_sync(client=sdk_client_fs)
+        search_filter = "(&(name<=t))"
+        check_sync_with_filters(
+            sdk_client_fs,
+            user_filter="",
+            group_filter=search_filter,
+            expected_users={ldap_user_1.username, ldap_user_2.username},
+            expected_groups={group_info_1["name"], group_info_2["name"]},
         )
 
     with allure.step('Check existing LDAP and ADCM users and groups'):
@@ -370,7 +381,17 @@ def test_search_filters_login_users(sdk_client_fs, two_adcm_groups_with_users, t
         change_adcm_ldap_config(
             sdk_client_fs, attach_to_allure=False, user_search_filter="", group_search_filter=search_filter
         )
+
+    with allure.step('Check that users are in groups'):
+        get_ldap_group_from_adcm(sdk_client_fs, group_info_1['name'])
+        get_ldap_group_from_adcm(sdk_client_fs, group_info_2['name'])
+        get_ldap_user_from_adcm(sdk_client_fs, user_info_1['name'])
+        get_ldap_user_from_adcm(sdk_client_fs, user_info_2['name'])
+
+        check_users_in_group(ldap_group_1, ldap_user_1)
         check_users_in_group(ldap_group_2, ldap_user_2)
+        check_users_in_group(adcm_group_1, adcm_user_1, ldap_user_1)
+        check_users_in_group(adcm_group_2, adcm_user_2, ldap_user_2)
 
     with allure.step('Check LDAP user from filtered group can login and LDAP user_1 login fail'):
         login_should_succeed(
