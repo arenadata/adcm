@@ -136,7 +136,7 @@ func authWrap(hub Hub, f func(h Hub, w http.ResponseWriter, r *http.Request), au
 		}
 
 		if !allowed {
-			ErrOut4(w, r, "AUTH_ERROR", "forbidden for "+r.Method+" "+r.URL.Path+" Host: "+r.Host+" RemoteAddr: "+r.RemoteAddr+" authToken: "+getAuthorizationToken(r)+" Secrets: "+hub.Secrets.DebugString())
+			ErrOut4(w, r, "AUTH_ERROR", "forbidden")
 		} else {
 			f(hub, w, r)
 		}

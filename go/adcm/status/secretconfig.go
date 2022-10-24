@@ -29,10 +29,6 @@ type SecretConfig struct {
 	tokenTimeOut      time.Duration
 }
 
-func (s *SecretConfig) DebugString() string {
-	return "TOKEN: " + s.Token + " INTERNAL_TOKEN: " + s.ADCMInternalToken
-}
-
 func ReadSecret(filename *string) *SecretConfig {
 	var config SecretConfig
 
