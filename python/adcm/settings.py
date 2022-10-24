@@ -52,7 +52,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "social_django",
     "guardian",
-    "adwp_events",
+    "adwp_events",  # check `router.POST("/api/v1/event/"...)` in go/adcm/status/init.go
     "cm.apps.CmConfig",
     "audit",
 ]
