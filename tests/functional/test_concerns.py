@@ -26,7 +26,6 @@ from coreapi.exceptions import ErrorMessage
 
 from tests.functional.conftest import only_clean_adcm
 from tests.library.adcm_websockets import ADCMWebsocket, EventMessage
-from tests.library.errorcodes import UPGRADE_ERROR
 
 
 # pylint: disable=redefined-outer-name
@@ -77,8 +76,7 @@ def test_action_should_not_be_run_while_hostprovider_has_an_issue(
             provider.action(name="install").run()
 
 
-@pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3033")
-def test_when_cluster_has_issue_than_upgrade_locked(sdk_client_fs: ADCMClient):
+def test_when_cluster_has_issue_then_upgrade_locked(sdk_client_fs: ADCMClient):
     """Test upgrade should not be run while cluster has an issue"""
     with allure.step("Create cluster and upload new one bundle"):
         old_bundle_path = utils.get_data_dir(__file__, "cluster")
@@ -86,15 +84,16 @@ def test_when_cluster_has_issue_than_upgrade_locked(sdk_client_fs: ADCMClient):
         old_bundle = sdk_client_fs.upload_from_fs(old_bundle_path)
         cluster = old_bundle.cluster_create(name=utils.random_string())
         sdk_client_fs.upload_from_fs(new_bundle_path)
+    with allure.step("Check upgrade isn't listed when concern is presented"):
+        assert len(cluster.upgrade_list()) == 0, "No upgrade should be available with concern"
     with allure.step("Upgrade cluster"):
-        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+        cluster.config_set_diff({"required_param": 11})
+        assert len(cluster.upgrade_list()) == 1, "Upgrade should be available after concern is removed"
+        with catch_failed(coreapi.exceptions.ErrorMessage, "Upgrade should've launched successfuly"):
             cluster.upgrade().do()
-    with allure.step("Check if cluster has issues"):
-        UPGRADE_ERROR.equal(e, "cluster ", " has blocking concerns ")
 
 
-@pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3033")
-def test_when_hostprovider_has_issue_than_upgrade_locked(sdk_client_fs: ADCMClient):
+def test_when_hostprovider_has_issue_then_upgrade_locked(sdk_client_fs: ADCMClient):
     """Test upgrade should not be run while hostprovider has an issue"""
     with allure.step("Create hostprovider"):
         old_bundle_path = utils.get_data_dir(__file__, "provider")
@@ -102,11 +101,13 @@ def test_when_hostprovider_has_issue_than_upgrade_locked(sdk_client_fs: ADCMClie
         old_bundle = sdk_client_fs.upload_from_fs(old_bundle_path)
         provider = old_bundle.provider_create(name=utils.random_string())
         sdk_client_fs.upload_from_fs(new_bundle_path)
+    with allure.step("Check upgrade isn't listed when concern is presented"):
+        assert len(provider.upgrade_list()) == 0, "No upgrade should be available with concern"
     with allure.step("Upgrade provider"):
-        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+        provider.config_set_diff({"required_param": 11})
+        assert len(provider.upgrade_list()) == 1, "Upgrade should be available after concern is removed"
+        with catch_failed(coreapi.exceptions.ErrorMessage, "Upgrade should've launched successfully"):
             provider.upgrade().do()
-    with allure.step("Check if upgrade locked"):
-        UPGRADE_ERROR.equal(e)
 
 
 @allure.link("https://jira.arenadata.io/browse/ADCM-487")
