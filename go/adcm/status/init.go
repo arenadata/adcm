@@ -88,7 +88,7 @@ func startHTTP(httpPort string, hub Hub) {
 	router.GET("/api/v1/log/", authWrap(hub, showLogLevel, isADCM))
 	router.POST("/api/v1/log/", authWrap(hub, postLogLevel, isADCM))
 
-	router.POST("/api/v1/event/", authWrap(hub, postEvent, isStatusChecker, isADCM))
+	router.POST("/api/v1/event/", authWrap(hub, postEvent, isADCM))
 
 	router.GET("/api/v1/all/", authWrap(hub, showAll, isADCM, isADCMUser))
 
@@ -101,7 +101,7 @@ func startHTTP(httpPort string, hub Hub) {
 	router.GET("/api/v1/object/host/:hostid/", authWrap(hub, retrieveHost, isADCM))
 	router.PUT("/api/v1/object/host/:hostid/", authWrap(hub, updateHost, isADCM))
 
-	router.GET("/api/v1/host/:hostid/component/:compid/", authWrap(hub, showHostComp, isADCM, isADCMUser))
+	router.GET("/api/v1/host/:hostid/component/:compid/", authWrap(hub, showHostComp, isStatusChecker, isADCM, isADCMUser))
 	router.POST("/api/v1/host/:hostid/component/:compid/", authWrap(hub, setHostComp, isStatusChecker, isADCM))
 
 	router.GET("/api/v1/component/:compid/", authWrap(hub, showComp, isADCM, isADCMUser))
