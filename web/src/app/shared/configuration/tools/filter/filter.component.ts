@@ -37,7 +37,7 @@ export interface IFilterOption {
   value: any,
 }
 
-type FilterType = 'list' | 'input' | 'datetimepicker';
+type FilterType = 'list' | 'input' | 'datepicker';
 
 @Component({
   selector: 'app-filter',
@@ -51,21 +51,37 @@ type FilterType = 'list' | 'input' | 'datetimepicker';
       <form [formGroup]="filterForm">
         <ng-container *ngIf="filterList.length > 0">
           <ng-container *ngFor="let filter of filters">
-            <mat-form-field class="filter-field">
+            <mat-form-field class="filter-field" [ngClass]="{ 'datepicker': filter.filter_type === 'datepicker' }">
               <ng-container [ngSwitch]="filter.filter_type">
-                <mat-select *ngSwitchCase="'list'" placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}"
-                            (selectionChange)="applyFilters()">
-                  <mat-option *ngFor="let p of filter.options" [value]="p.value">{{ p.display_name }}</mat-option>
-                </mat-select>
-                <input *ngSwitchCase="'input'" matInput placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}"
-                            (change)="applyFilters()">
+                <ng-container *ngSwitchCase="'list'">
+                  <mat-select  placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}"
+                               (selectionChange)="applyFilters()">
+                    <mat-option *ngFor="let p of filter.options" [value]="p.value">{{ p.display_name }}</mat-option>
+                  </mat-select>
+                </ng-container>
+                <ng-container *ngSwitchCase="'input'">
+                  <input  matInput placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}" (change)="applyFilters()">
+                </ng-container>
+                <ng-container *ngSwitchCase="'datepicker'">
+                  <mat-form-field class="datepicker-form">
+                    <mat-label>{{ filter.display_name }}</mat-label>
+                    <mat-date-range-input [formGroup]="datepickerGroup(filter.filter_field)" [rangePicker]="picker">
+                      <input type="datetime-local" matStartDate formControlName="start">
+                      <input type="datetime-local" matEndDate formControlName="end" (dateChange)="applyFilters()">
+                    </mat-date-range-input>
+                    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                    <mat-date-range-picker #picker></mat-date-range-picker>
+                    <mat-error *ngIf="datepickerGroup(filter.filter_field).controls.start.hasError('matStartDateInvalid')">Invalid start date</mat-error>
+                    <mat-error *ngIf="datepickerGroup(filter.filter_field).controls.end.hasError('matEndDateInvalid')">Invalid end date</mat-error>
+                  </mat-form-field>
+                </ng-container>
               </ng-container>
-              <button mat-button matSuffix mat-icon-button aria-label="Clear"
+              <button class="clear-button" mat-button matSuffix mat-icon-button aria-label="Clear"
                       *ngIf="clearButtonVisible(filter.filter_field)"
                       (click)="clear(filter.filter_field, $event)">
                 <mat-icon>refresh</mat-icon>
               </button>
-              <button mat-button matSuffix mat-icon-button aria-label="Remove"
+              <button class="remove-button" mat-button matSuffix mat-icon-button aria-label="Remove"
                       (click)="removeFilter(filter, $event)">
                 <mat-icon>close</mat-icon>
               </button>
@@ -133,7 +149,9 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
   }
 
   clear(filter, event: any) {
-    this.filterForm.get(filter).setValue(undefined);
+    if (this.filtersByType[filter] === 'datepicker') {
+      this.filterForm.get(filter).setValue({start: undefined, end: undefined});
+    } else this.filterForm.get(filter).setValue(undefined);
     this.innerData.next(this.backupData);
     event.preventDefault();
     event.stopPropagation();
@@ -178,13 +196,25 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
       })
     }
 
+    if (this.filters.some((f) => f.filter_type === 'datepicker' && filters[f.filter_field].end)) {
+      data = data.filter((item) => {
+        for (let key in filters) {
+          if (this.filtersByType[key] === 'datepicker') {
+            if (item[key] !== undefined && item[key] !== null && (filters[key].start < new Date(item[key]) && new Date(item[key]) < filters[key].end)) {
+              return true;
+            }
+          }
+        }
+      })
+    }
+
     this.freezeBackupData = true;
     this.innerData.next({...this.backupData, count: data.length, results: data});
   }
 
   clearButtonVisible(field) {
     const value = this.filterForm?.getRawValue()[field];
-    return value || (typeof value === 'boolean' && !value);
+    return this.filtersByType[field] !== 'datepicker' && (value || (typeof value === 'boolean' && !value));
   }
 
   toggleFilters(filter) {
@@ -193,7 +223,16 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
       this.filterForm.removeControl(filter.filter_field);
     } else {
       this.activeFilters.push(filter.id);
-      this.filterForm.addControl(filter.filter_field, new FormControl(''))
+      if (filter.filter_type === 'datepicker') {
+        this.filterForm.addControl(filter.filter_field, new FormGroup({
+          start: new FormControl(new Date()),
+          end: new FormControl(new Date()),
+        }));
+      } else this.filterForm.addControl(filter.filter_field, new FormControl(''))
     }
+  }
+
+  datepickerGroup(controlName): FormGroup {
+    return this.filterForm.get(controlName) as FormGroup;
   }
 }

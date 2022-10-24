@@ -15,7 +15,6 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { MatTreeModule } from '@angular/material/tree';
-
 import { AddingModule } from './add-component/adding.module';
 import { UpgradeMasterComponent } from "@app/shared/components/upgrades/master/master.component";
 import {
@@ -112,7 +111,7 @@ import { RbacAuditOperationsService } from "@app/services/rbac-audit-operations.
     TranslateKeysPipe,
     StatusTreeComponent,
     EntityStatusToStatusTreePipe,
-    StatusTreeLinkPipe,
+    StatusTreeLinkPipe
   ],
   exports: [
     FormsModule,
@@ -148,7 +147,7 @@ import { RbacAuditOperationsService } from "@app/services/rbac-audit-operations.
     TooltipModule,
     StatusTreeComponent,
     EntityStatusToStatusTreePipe,
-    StatusTreeLinkPipe,
+    StatusTreeLinkPipe
   ],
   providers: [
     JobService,

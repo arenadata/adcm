@@ -119,6 +119,9 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
         {id: 2, name: 'failed', display_name: 'Failed', value: 'failed'},
       ]
     },
+    {
+      id: 6, name: 'operation_time', display_name: 'Operation time', filter_field: 'operation_time', filter_type: 'datepicker',
+    },
   ];
 
   component: Type<RbacAuditOperationsHistoryFormComponent> = RbacAuditOperationsHistoryFormComponent;
