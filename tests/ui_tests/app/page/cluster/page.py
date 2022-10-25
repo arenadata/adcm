@@ -14,34 +14,34 @@
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.ui_tests.app.page.cluster.locators import (
-    ClusterServicesLocators,
-    ClusterHostLocators,
     ClusterComponentsLocators,
+    ClusterHostLocators,
+    ClusterServicesLocators,
 )
-from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter, BaseDetailedPage
+from tests.ui_tests.app.page.common.base_page import BaseDetailedPage, BasePageObject, PageFooter, PageHeader
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators, ObjectPageMenuLocators
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
-from tests.ui_tests.app.page.common.dialogs_locators import ActionDialog, DeleteDialog
+from tests.ui_tests.app.page.common.dialogs.locators import ActionDialog, DeleteDialog
 from tests.ui_tests.app.page.common.group_config.page import CommonGroupConfigMenu
 from tests.ui_tests.app.page.common.group_config_list.locators import GroupConfigListLocators
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigList
 from tests.ui_tests.app.page.common.host_components.page import HostComponentsPage
 from tests.ui_tests.app.page.common.import_page.locators import ImportLocators
 from tests.ui_tests.app.page.common.import_page.page import ImportPage
-from tests.ui_tests.app.page.common.popups.locator import HostAddPopupLocators
-from tests.ui_tests.app.page.common.popups.locator import HostCreationLocators
-from tests.ui_tests.app.page.common.popups.locator import PageConcernPopupLocators, ListConcernPopupLocators
+from tests.ui_tests.app.page.common.popups.locator import (
+    HostAddPopupLocators,
+    HostCreationLocators,
+    ListConcernPopupLocators,
+    PageConcernPopupLocators,
+)
 from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.status.page import StatusPage
 from tests.ui_tests.app.page.common.table.locator import CommonTable
@@ -58,7 +58,7 @@ class StatusGroupInfo:
     hosts: list
 
 
-class ClusterPageMixin(BasePageObject):
+class ClusterPageMixin(BasePageObject):  # pylint: disable=too-many-instance-attributes
     """Helpers for working with cluster page"""
 
     # /action /main etc.
@@ -513,7 +513,7 @@ class ClusterStatusPage(ClusterPageMixin, StatusPage):
     ]
 
 
-class ClusterGroupConfigPageMixin(BasePageObject):
+class ClusterGroupConfigPageMixin(BasePageObject):  # pylint: disable-next=too-many-instance-attributes
     """Helpers for working with cluster group config page"""
 
     MENU_SUFFIX: str

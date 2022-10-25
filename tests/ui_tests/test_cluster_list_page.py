@@ -1353,3 +1353,70 @@ class TestClusterImportPage:
         import_page.toolbar.check_warn_button(
             tab_name=CLUSTER_NAME, expected_warn_text=['Test cluster has an issue with required import']
         )
+
+
+class TestClusterRenaming:
+
+    SPECIAL_CHARS = (".", "-", "_")
+    DISALLOWED_AT_START_END = (*SPECIAL_CHARS, " ")
+    EXPECTED_ERROR = "Please enter a valid name"
+
+    def test_rename_cluster(self, sdk_client_fs, app_fs, create_community_cluster):
+        cluster = create_community_cluster
+        cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+        self._test_correct_name_can_be_set(cluster, cluster_page)
+        self._test_an_error_is_shown_on_incorrect_char_in_name(cluster, cluster_page)
+        self._test_an_error_is_not_shown_on_correct_char_in_name(cluster, cluster_page)
+
+    @allure.step("Check settings new correct cluster name")
+    def _test_correct_name_can_be_set(self, cluster: Cluster, page: ClusterListPage) -> None:
+        new_name = "Hahahah"
+
+        dialog = page.open_rename_cluster_dialog(page.get_row_by_cluster_name(cluster.name))
+        dialog.set_new_name_in_rename_dialog(new_name)
+        dialog.click_save_on_rename_dialog()
+        with allure.step("Check name of cluster in table"):
+            name_in_row = page.get_cluster_info_from_row(0)["name"]
+            assert name_in_row == new_name, f"Incorrect cluster name, expected: {new_name}"
+            cluster.reread()
+            assert cluster.name == new_name, f"Cluster name on backend is incorrect, expected: {new_name}"
+
+    def _test_an_error_is_shown_on_incorrect_char_in_name(self, cluster: Cluster, page: ClusterListPage) -> None:
+        dummy_name = "clUster"
+        incorrect_names = (
+            *[f"{char}{dummy_name}" for char in self.DISALLOWED_AT_START_END],
+            *[f"{dummy_name}{char}" for char in self.DISALLOWED_AT_START_END],
+            *[f"{dummy_name[0]}{char}{dummy_name[1:]}" for char in ("и", "!")],
+        )
+
+        dialog = page.open_rename_cluster_dialog(page.get_row_by_cluster_name(cluster.name))
+
+        for cluster_name in incorrect_names:
+            with allure.step(f"Check if printing cluster name '{cluster_name}' triggers a warning message"):
+                dialog.set_new_name_in_rename_dialog(dummy_name)
+                dialog.set_new_name_in_rename_dialog(cluster_name)
+                assert dialog.is_dialog_error_message_visible(), "Error about incorrect name should be visible"
+                assert (
+                    dialog.get_dialog_error_message() == self.EXPECTED_ERROR
+                ), f"Incorrect error message, expected: {self.EXPECTED_ERROR}"
+
+        dialog.click_cancel_on_rename_dialog()
+
+    def _test_an_error_is_not_shown_on_correct_char_in_name(self, cluster: Cluster, page: ClusterListPage) -> None:
+        dummy_name = "clUster"
+        correct_names = (
+            *[f"{dummy_name[0]}{char}{dummy_name[1:]}" for char in (*self.DISALLOWED_AT_START_END, "9")],
+            f"9{dummy_name}",
+        )
+
+        dialog = page.open_rename_cluster_dialog(page.get_row_by_cluster_name(cluster.name))
+
+        for cluster_name in correct_names:
+            with allure.step(f"Check if printing cluster name '{cluster_name}' shows no error"):
+                dialog.set_new_name_in_rename_dialog(dummy_name)
+                dialog.set_new_name_in_rename_dialog(cluster_name)
+                assert not dialog.is_dialog_error_message_visible(), "Error about correct name should not be shown"
+                dialog.click_save_on_rename_dialog()
+                name_in_row = page.get_cluster_info_from_row(0)["name"]
+                assert name_in_row == cluster_name, f"Incorrect cluster name, expected: {cluster_name}"
+                dialog = page.open_rename_cluster_dialog(page.get_row_by_cluster_name(cluster_name))

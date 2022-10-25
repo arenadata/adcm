@@ -20,7 +20,7 @@ from typing import Tuple
 import allure
 import pytest
 from _pytest.fixtures import SubRequest
-from adcm_client.objects import ADCMClient, Bundle, Cluster, Provider
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider
 from adcm_pytest_plugin import utils
 from selenium.common import StaleElementReferenceException
 
@@ -594,3 +594,71 @@ class TestHostStatusPage:
             with host_status_page.wait_rows_collapsed():
                 host_status_page.click_collapse_all_btn()
             assert len(host_status_page.get_all_rows()) == 1, "Status rows should have been collapsed"
+
+
+class TestHostRenaming:
+
+    SPECIAL_CHARS = (".", "-", "_")
+    DISALLOWED_AT_START = (".", "-")
+    EXPECTED_ERROR = "Please enter a valid name"
+
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
+    def test_rename_host(self, sdk_client_fs, app_fs, create_host):
+        host = create_host
+        page = HostListPage(app_fs.driver, app_fs.adcm.url).open()
+        self._test_correct_name_can_be_set(host, page)
+        self._test_an_error_is_shown_on_incorrect_char_in_name(page)
+        self._test_an_error_is_not_shown_on_correct_char_in_name(page)
+
+    @allure.step("Check settings new correct host FQDN")
+    def _test_correct_name_can_be_set(self, host: Host, page: HostListPage) -> None:
+        new_name = "best-host.fqdn"
+
+        dialog = page.open_rename_dialog(page.get_host_row())
+        dialog.set_new_name_in_rename_dialog(new_name)
+        dialog.click_save_on_rename_dialog()
+        with allure.step("Check fqdn of host in table"):
+            name_in_row = page.get_host_info_from_row(0).fqdn
+            assert name_in_row == new_name, f"Incorrect cluster name, expected: {new_name}"
+            host.reread()
+            assert host.fqdn == new_name, f"Host FQDN on backend is incorrect, expected: {new_name}"
+
+    def _test_an_error_is_shown_on_incorrect_char_in_name(self, page: HostListPage) -> None:
+        dummy_name = "hOst"
+        incorrect_names = (
+            *[f"{char}{dummy_name}" for char in self.DISALLOWED_AT_START],
+            *[f"{dummy_name[0]}{char}{dummy_name[1:]}" for char in ("и", "!", " ")],
+        )
+
+        dialog = page.open_rename_dialog(page.get_host_row())
+
+        for fqdn in incorrect_names:
+            with allure.step(f"Check if printing host FQDN '{fqdn}' triggers a warning message"):
+                dialog.set_new_name_in_rename_dialog(dummy_name)
+                dialog.set_new_name_in_rename_dialog(fqdn)
+                assert dialog.is_dialog_error_message_visible(), "Error about incorrect name should be visible"
+                assert (
+                    dialog.get_dialog_error_message() == self.EXPECTED_ERROR
+                ), f"Incorrect error message, expected: {self.EXPECTED_ERROR}"
+
+        dialog.click_cancel_on_rename_dialog()
+
+    def _test_an_error_is_not_shown_on_correct_char_in_name(self, page: HostListPage) -> None:
+        dummy_name = "clUster"
+        correct_names = (
+            *[f"{dummy_name[0]}{char}{dummy_name[1:]}" for char in (".", "-", "9")],
+            f"9{dummy_name}",
+            f"{dummy_name}-",
+        )
+
+        dialog = page.open_rename_dialog(page.get_host_row())
+
+        for fqdn in correct_names:
+            with allure.step(f"Check if printing host FQDN '{fqdn}' shows no error"):
+                dialog.set_new_name_in_rename_dialog(dummy_name)
+                dialog.set_new_name_in_rename_dialog(fqdn)
+                assert not dialog.is_dialog_error_message_visible(), "Error about correct name should not be shown"
+                dialog.click_save_on_rename_dialog()
+                name_in_row = page.get_host_info_from_row().fqdn
+                assert name_in_row == fqdn, f"Incorrect host FQDN, expected: {fqdn}"
+                dialog = page.open_rename_dialog(page.get_host_row())

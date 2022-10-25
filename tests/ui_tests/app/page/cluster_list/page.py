@@ -19,31 +19,20 @@ from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webdriver import WebElement
 
-from tests.ui_tests.app.page.cluster.locators import (
-    ClusterComponentsLocators,
-)
+from tests.ui_tests.app.page.cluster.locators import ClusterComponentsLocators
 from tests.ui_tests.app.page.cluster_list.locators import ClusterListLocators
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageHeader,
-    PageFooter,
-)
+from tests.ui_tests.app.page.common.base_page import BasePageObject, PageFooter, PageHeader
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
-from tests.ui_tests.app.page.common.dialogs_locators import (
-    ActionDialog,
-    DeleteDialog,
-)
+from tests.ui_tests.app.page.common.dialogs.locators import ActionDialog, DeleteDialog
+from tests.ui_tests.app.page.common.dialogs.rename import RenameDialog
 from tests.ui_tests.app.page.common.host_components.page import HostComponentsPage
-from tests.ui_tests.app.page.common.popups.locator import (
-    HostCreationLocators,
-)
-from tests.ui_tests.app.page.common.popups.locator import ListConcernPopupLocators
+from tests.ui_tests.app.page.common.popups.locator import HostCreationLocators, ListConcernPopupLocators
 from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 
 
-class ClusterListPage(BasePageObject):
+class ClusterListPage(BasePageObject):  # pylint: disable=too-many-public-methods
     """Cluster List Page class"""
 
     def __init__(self, driver, base_url):
@@ -78,10 +67,10 @@ class ClusterListPage(BasePageObject):
         self.find_and_click(popup.cancel_btn)
         self.wait_element_hide(popup.block)
 
-    def get_cluster_info_from_row(self, row: int) -> dict:
+    def get_cluster_info_from_row(self, row_pos: int) -> dict:
         """Get Cluster info from Cluster List row"""
         row_elements = ClusterListLocators.ClusterTable.ClusterRow
-        cluster_row = self.table.get_all_rows()[row]
+        cluster_row = self.table.get_all_rows()[row_pos]
         return {
             "name": self.find_child(cluster_row, row_elements.name).text,
             "bundle": self.find_child(cluster_row, row_elements.bundle).text,
@@ -171,7 +160,15 @@ class ClusterListPage(BasePageObject):
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)
 
-    @allure.step("Run upgrade {upgrade_name} for cluster from row")
+    @allure.step("Open cluster rename dialog by clicking on cluster rename button")
+    def open_rename_cluster_dialog(self, row: WebElement) -> RenameDialog:
+        self.hover_element(row)
+        self.find_child(row, self.table.locators.ClusterRow.rename_btn).click()
+        dialog = RenameDialog(driver=self.driver, base_url=self.base_url)
+        dialog.wait_opened()
+        return dialog
+
+    @allure.step("Run upgrade {upgrade_name} for cluster from row")  # pylint: disable-next=too-many-arguments
     def run_upgrade_in_cluster_row(
         self,
         row: WebElement,
