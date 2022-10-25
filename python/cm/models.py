@@ -539,7 +539,9 @@ class Upgrade(ADCMModel):
             else:
                 return False
         else:
-            return self.action.allowed(obj)
+            if hasattr(self, "action"):
+                return self.action.allowed(obj)
+            return False
 
 
 class ADCM(ADCMEntity):
