@@ -88,9 +88,7 @@ func startHTTP(httpPort string, hub Hub) {
 	router.GET("/api/v1/log/", authWrap(hub, showLogLevel, isADCM))
 	router.POST("/api/v1/log/", authWrap(hub, postLogLevel, isADCM))
 
-    // TODO: rm `isStatusChecker` together with `adwp_events`.
-    //       Only `isADCM` should be allowed to POST here
-	router.POST("/api/v1/event/", authWrap(hub, postEvent, isStatusChecker, isADCM))
+	router.POST("/api/v1/event/", authWrap(hub, postEvent, isADCM))
 
 	router.GET("/api/v1/all/", authWrap(hub, showAll, isADCM, isADCMUser))
 

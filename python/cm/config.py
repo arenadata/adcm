@@ -14,7 +14,8 @@ import json
 import os
 import sys
 from os.path import dirname
-from secrets import token_hex
+
+from django.conf import settings
 
 from cm.utils import dict_json_get_or_create
 
@@ -64,7 +65,11 @@ if os.path.exists(SECRETS_FILE):
         ANSIBLE_SECRET = data["adcmuser"]["password"]
 
 if ADCM_INTERNAL_TOKEN is None:
-    ADCM_INTERNAL_TOKEN = dict_json_get_or_create(SECRETS_FILE, "adcm_internal_token", token_hex(20))
+    ADCM_INTERNAL_TOKEN = dict_json_get_or_create(
+        path=SECRETS_FILE,
+        field="adcm_internal_token",
+        value=settings.ADWP_EVENT_SERVER["SECRET_KEY"]
+    )
 
 
 class Job:

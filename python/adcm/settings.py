@@ -13,6 +13,7 @@
 import json
 import string
 from pathlib import Path
+from secrets import token_hex
 
 from django.core.management.utils import get_random_secret_key
 
@@ -21,6 +22,7 @@ CONF_DIR = BASE_DIR / "data" / "conf"
 SECRET_KEY_FILE = CONF_DIR / "secret_key.txt"
 CONFIG_FILE = BASE_DIR / "config.json"
 RUN_DIR = BASE_DIR / "data" / "run"
+SECRETS_FILE = BASE_DIR / "data/var/secrets.json"
 
 if SECRET_KEY_FILE.is_file():
     with open(SECRET_KEY_FILE, encoding="utf_8") as f:
@@ -52,7 +54,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "social_django",
     "guardian",
-    "adwp_events",  # check `router.POST("/api/v1/event/"...)` in go/adcm/status/init.go
+    "adwp_events",
     "cm.apps.CmConfig",
     "audit",
 ]
@@ -149,9 +151,10 @@ STATIC_URL = "/static/"
 
 ADWP_EVENT_SERVER = {
     # path to json file with Event Server secret token
-    "SECRETS_FILE": BASE_DIR / "data/var/secrets.json",
+    "SECRETS_FILE": SECRETS_FILE,
     # URL of Event Server REST API
     "API_URL": "http://localhost:8020/api/v1",
+    "SECRET_KEY": token_hex(20)
 }
 
 LOGGING = {
