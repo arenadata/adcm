@@ -94,7 +94,7 @@ export abstract class BaseDetailAbstractDirective extends SocketListenerDirectiv
     } = w.current;
     const { upgradable, upgrade, hostcomponent } = w.current as ICluster;
     const { log_files, objects } = w.current as Job;
-    const { provider_id } = w.current as Host;
+    const { provider_id, provider_name } = w.current as Host;
 
     this.currentName = name;
     this.actions = actions;
@@ -122,6 +122,7 @@ export abstract class BaseDetailAbstractDirective extends SocketListenerDirectiv
       prototype_display_name,
       prototype_version,
       provider_id,
+      provider_name,
       bundle_id,
       hostcomponent,
     };
