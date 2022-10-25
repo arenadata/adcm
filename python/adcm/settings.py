@@ -24,7 +24,7 @@ SECRET_KEY_FILE = CONF_DIR / "secret_key.txt"
 CONFIG_FILE = BASE_DIR / "config.json"
 RUN_DIR = BASE_DIR / "data" / "run"
 SECRETS_FILE = BASE_DIR / "data/var/secrets.json"
-ADCM_TOKEN_FILE = BASE_DIR / "data/var/adcm_token.json"
+ADCM_TOKEN_FILE = BASE_DIR / "data/var/adcm_token"
 ADCM_TOKEN = get_adcm_token()
 
 if SECRET_KEY_FILE.is_file():

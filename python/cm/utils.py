@@ -32,6 +32,7 @@ def dict_json_get_or_create(path: str | Path, field: str, value: Any = None) -> 
 
 def get_adcm_token():
     if not settings.ADCM_TOKEN_FILE.is_file():
+        settings.ADCM_TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
         with open(settings.ADCM_TOKEN_FILE, mode="w", encoding="utf-8") as f:
             f.write(token_hex(20))
 
