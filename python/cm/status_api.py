@@ -12,11 +12,11 @@
 
 import json
 from collections import defaultdict
+from django.conf import settings
 from typing import Iterable
 
 import requests
 
-from cm.config import ADCM_INTERNAL_TOKEN
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
@@ -64,7 +64,7 @@ def api_request(method, url, data=None):
     kwargs = {
         "headers": {
             "Content-Type": "application/json",
-            "Authorization": f"Token {ADCM_INTERNAL_TOKEN}",
+            "Authorization": f"Token {settings.ADCM_TOKEN}",
         },
         "timeout": TIMEOUT,
     }

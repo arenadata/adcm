@@ -50,7 +50,6 @@ ROLE_SPEC = os.path.join(CODE_DIR, "cm", "role_spec.yaml")
 ROLE_SCHEMA = os.path.join(CODE_DIR, "cm", "role_schema.yaml")
 
 STATUS_SECRET_KEY = ""
-ADCM_INTERNAL_TOKEN = ""
 ANSIBLE_SECRET = ""
 
 ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
@@ -61,15 +60,14 @@ if os.path.exists(SECRETS_FILE):
     with open(SECRETS_FILE, encoding="utf_8") as f:
         data = json.load(f)
         STATUS_SECRET_KEY = data["token"]
-        ADCM_INTERNAL_TOKEN = data.get("adcm_internal_token")
         ANSIBLE_SECRET = data["adcmuser"]["password"]
-
-if ADCM_INTERNAL_TOKEN is None:
-    ADCM_INTERNAL_TOKEN = dict_json_get_or_create(
-        path=SECRETS_FILE,
-        field="adcm_internal_token",
-        value=settings.ADWP_EVENT_SERVER["SECRET_KEY"]
-    )
+        # workaround to insert `adcm_internal_token` into `secrets.json` after startup
+        if data.get("adcm_internal_token") is None:
+            dict_json_get_or_create(
+                path=SECRETS_FILE,
+                field="adcm_internal_token",
+                value=settings.ADCM_TOKEN
+            )
 
 
 class Job:

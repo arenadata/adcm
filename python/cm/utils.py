@@ -11,10 +11,14 @@
 # limitations under the License.
 
 import json
+from pathlib import Path
+from secrets import token_hex
 from typing import Any
 
+from django.conf import settings
 
-def dict_json_get_or_create(path: str, field: str, value: Any = None) -> Any:
+
+def dict_json_get_or_create(path: str | Path, field: str, value: Any = None) -> Any:
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
 
@@ -24,3 +28,14 @@ def dict_json_get_or_create(path: str, field: str, value: Any = None) -> Any:
             json.dump(data, f)
 
     return data[field]
+
+
+def get_adcm_token():
+    if not settings.ADCM_TOKEN_FILE.is_file():
+        with open(settings.ADCM_TOKEN_FILE, mode="w", encoding="utf-8") as f:
+            f.write(token_hex(20))
+
+    with open(settings.ADCM_TOKEN_FILE, encoding="utf-8") as f:
+        adcm_token = f.read().strip()
+
+    return adcm_token

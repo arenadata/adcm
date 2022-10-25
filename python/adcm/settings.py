@@ -13,9 +13,10 @@
 import json
 import string
 from pathlib import Path
-from secrets import token_hex
 
 from django.core.management.utils import get_random_secret_key
+
+from cm.utils import get_adcm_token
 
 BASE_DIR = Path(__file__).absolute().parent.parent.parent
 CONF_DIR = BASE_DIR / "data" / "conf"
@@ -23,6 +24,8 @@ SECRET_KEY_FILE = CONF_DIR / "secret_key.txt"
 CONFIG_FILE = BASE_DIR / "config.json"
 RUN_DIR = BASE_DIR / "data" / "run"
 SECRETS_FILE = BASE_DIR / "data/var/secrets.json"
+ADCM_TOKEN_FILE = BASE_DIR / "data/var/adcm_token.json"
+ADCM_TOKEN = get_adcm_token()
 
 if SECRET_KEY_FILE.is_file():
     with open(SECRET_KEY_FILE, encoding="utf_8") as f:
@@ -154,7 +157,7 @@ ADWP_EVENT_SERVER = {
     "SECRETS_FILE": SECRETS_FILE,
     # URL of Event Server REST API
     "API_URL": "http://localhost:8020/api/v1",
-    "SECRET_KEY": token_hex(20)
+    "SECRET_KEY": ADCM_TOKEN
 }
 
 LOGGING = {
