@@ -12,20 +12,19 @@
 
 """Stack endpoint root view"""
 
-from rest_framework import permissions, routers
+from rest_framework.permissions import AllowAny
+from rest_framework.routers import APIRootView
 
 
-class StackRoot(routers.APIRootView):
-    """Stack Root"""
-
-    permission_classes = (permissions.AllowAny,)
+class StackRoot(APIRootView):
+    permission_classes = (AllowAny,)
     api_root_dict = {
-        'load': 'load-bundle',
-        'upload': 'upload-bundle',
-        'bundle': 'bundle',
-        'prototype': 'prototype',
-        'service': 'service-type',
-        'host': 'host-type',
-        'provider': 'provider-type',
-        'cluster': 'cluster-type',
+        "load": "load-bundle",
+        "upload": "upload-bundle",
+        "bundle": "bundle-list",
+        "prototype": "prototype-list",
+        "service": "service-prototype-list",
+        "host": "host-prototype-list",
+        "provider": "provider-prototype-list",
+        "cluster": "cluster-prototype-list",
     }

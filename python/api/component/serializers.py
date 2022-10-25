@@ -66,9 +66,9 @@ class ComponentShortSerializer(ComponentSerializer):
     bound_to = JSONField(read_only=True)
     bundle_id = IntegerField(read_only=True)
     prototype = HyperlinkedIdentityField(
-        view_name="component-type-details",
-        lookup_field="prototype_id",
-        lookup_url_kwarg="prototype_id",
+        view_name="component-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
 
 
@@ -82,9 +82,9 @@ class ComponentDetailSerializer(ComponentSerializer):
     action = CommonAPIURL(read_only=True, view_name="object-action")
     config = CommonAPIURL(read_only=True, view_name="object-config")
     prototype = HyperlinkedIdentityField(
-        view_name="component-type-details",
-        lookup_field="prototype_id",
-        lookup_url_kwarg="prototype_id",
+        view_name="component-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)

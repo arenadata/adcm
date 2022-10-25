@@ -16,8 +16,8 @@ import { map, switchMap } from 'rxjs/operators';
 
 import { ApiService } from '@app/core/api';
 import { settingsSave, State } from '@app/core/store';
-import { BaseEntity } from '@app/core/types/api';
 import { DynamicEvent } from '@app/shared/directives';
+import { ISettingsListResponse } from '@app/shared/configuration/types';
 
 @Component({
   selector: 'app-settings',
@@ -31,8 +31,8 @@ export class SettingsComponent implements OnInit {
 
   ngOnInit() {
     this.set$ = this.api.root.pipe(
-      switchMap((root) => this.api.get<BaseEntity>(root.adcm)),
-      map((adcm) => adcm[0]),
+      switchMap((root) => this.api.get<ISettingsListResponse>(root.adcm)),
+      map((adcm) => adcm.results[0]),
     );
   }
 

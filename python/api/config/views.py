@@ -64,7 +64,8 @@ def get_obj(object_type, object_id):
 
 def get_object_type_id_version(**kwargs):
     object_type = kwargs.get('object_type')
-    object_id = kwargs.get(f'{object_type}_id')
+    # TODO: this is a temporary patch for `config` endpoint
+    object_id = kwargs.get(f'{object_type}_id') or kwargs.get(f"{object_type}_pk")
     version = kwargs.get('version')
     return object_type, object_id, version
 

@@ -26,15 +26,21 @@ import { BaseEntity, Job } from '@app/core/types';
 export class LogMenuItemComponent extends MenuItemAbstractDirective<BaseEntity> {
 
   download() {
-    if (this.data?.logId) {
-      const file = (this.entity as Job).log_files.find(job => job.id === this.data.logId);
-      if (file) {
-        location.href = file.download_url;
+    const isLoggedIn = localStorage.getItem('auth');
+
+    if (isLoggedIn) {
+      if (this.data?.logId) {
+        const file = (this.entity as Job).log_files.find(job => job.id === this.data.logId);
+        if (file) {
+          location.href = file.download_url;
+        } else {
+          throw new Error('Log file not found!');
+        }
       } else {
-        throw new Error('Log file not found!');
+        throw new Error('Log id isn\'t provided!');
       }
     } else {
-      throw new Error('Log id isn\'t provided!');
+      window.location.href = "/login";
     }
   }
 

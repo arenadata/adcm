@@ -13,8 +13,9 @@
 from rest_framework.serializers import (
     BooleanField,
     CharField,
-    DateTimeField,
     FileField,
+    HyperlinkedIdentityField,
+    HyperlinkedModelSerializer,
     IntegerField,
     JSONField,
     ModelSerializer,
@@ -25,124 +26,162 @@ from adcm.serializers import EmptySerializer
 from api.action.serializers import StackActionDetailSerializer
 from api.config.serializers import ConfigSerializer
 from api.serializers import UpgradeSerializer
-from api.utils import hlink
-from cm import config
 from cm.models import Bundle, ClusterObject, Prototype
 
 
-class LoadBundle(EmptySerializer):
+class UploadBundleSerializer(EmptySerializer):
+    file = FileField(help_text="bundle file for upload")
+
+
+class LoadBundleSerializer(EmptySerializer):
     bundle_file = CharField()
 
 
-class UploadBundle(EmptySerializer):
-    file = FileField(help_text='bundle file for upload')
+class BundleSerializer(HyperlinkedModelSerializer):
+    license_url = HyperlinkedIdentityField(
+        view_name="bundle-license", lookup_field="pk", lookup_url_kwarg="bundle_pk"
+    )
+    update = HyperlinkedIdentityField(
+        view_name="bundle-update", lookup_field="pk", lookup_url_kwarg="bundle_pk"
+    )
 
-    def create(self, validated_data):
-        fd = self.context['request'].data['file']
-        fname = f'{config.DOWNLOAD_DIR}/{fd}'
-        with open(fname, 'wb+') as dest:
-            for chunk in fd.chunks():
-                dest.write(chunk)
-        return Bundle()
-
-
-class BundleSerializer(EmptySerializer):
-    id = IntegerField(read_only=True)
-    name = CharField(read_only=True)
-    version = CharField(read_only=True)
-    edition = CharField(read_only=True)
-    hash = CharField(read_only=True)
-    license = CharField(read_only=True)
-    license_path = CharField(read_only=True)
-    license_hash = CharField(read_only=True)
-    description = CharField(required=False)
-    date = DateTimeField(read_only=True)
-    url = hlink('bundle-details', 'id', 'bundle_id')
-    license_url = hlink('bundle-license', 'id', 'bundle_id')
-    update = hlink('bundle-update', 'id', 'bundle_id')
+    class Meta:
+        model = Bundle
+        fields = (
+            "id",
+            "name",
+            "version",
+            "edition",
+            "license",
+            "license_path",
+            "license_hash",
+            "hash",
+            "description",
+            "date",
+            "license_url",
+            "update",
+            "url",
+        )
+        read_only_fields = fields
+        extra_kwargs = {"url": {"lookup_url_kwarg": "bundle_pk"}}
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
         proto = Prototype.objects.filter(bundle=instance, name=instance.name)
-        data['adcm_min_version'] = proto[0].adcm_min_version
-        data['display_name'] = proto[0].display_name
+        data["adcm_min_version"] = proto[0].adcm_min_version
+        data["display_name"] = proto[0].display_name
+
         return data
 
 
-class LicenseSerializer(EmptySerializer):
-    license = CharField(read_only=True)
-    text = CharField(read_only=True)
-    accept = hlink('accept-license', 'id', 'bundle_id')
+class PrototypeSerializer(HyperlinkedModelSerializer):
+    bundle_edition = CharField(source="bundle.edition")
+
+    class Meta:
+        model = Prototype
+        fields = (
+            "id",
+            "bundle_id",
+            "type",
+            "path",
+            "name",
+            "display_name",
+            "version",
+            "required",
+            "description",
+            "bundle_edition",
+            "url",
+        )
+        read_only_fields = fields
+        extra_kwargs = {"url": {"lookup_url_kwarg": "prototype_pk"}}
 
 
-class PrototypeSerializer(EmptySerializer):
-    bundle_id = IntegerField(read_only=True)
-    id = IntegerField(read_only=True)
-    path = CharField(read_only=True)
-    name = CharField(read_only=True)
-    display_name = CharField(required=False)
-    version = CharField(read_only=True)
-    bundle_edition = SerializerMethodField()
-    description = CharField(required=False)
-    type = CharField(read_only=True)
-    required = BooleanField(read_only=True)
-    url = hlink('prototype-details', 'id', 'prototype_id')
+class PrototypeSerializerMixin:
+    @staticmethod
+    def get_constraint(obj: Prototype) -> list[dict]:
+        if obj.type == "component":
+            return obj.constraint
+
+        return []
 
     @staticmethod
-    def get_bundle_edition(obj):
-        return obj.bundle.edition
+    def get_service_name(obj):
+        if obj.type == "component":
+            return obj.parent.name
+
+        return ""
+
+    @staticmethod
+    def get_service_display_name(obj):
+        if obj.type == "component":
+            return obj.parent.display_name
+
+        return ""
+
+    @staticmethod
+    def get_service_id(obj):
+        if obj.type == "component":
+            return obj.parent.id
+
+        return None
 
 
-def get_constraint(self, obj):
-    if obj.type == 'component':
-        return obj.constraint
-    return []
-
-
-def get_service_name(self, obj):
-    if obj.type == 'component':
-        return obj.parent.name
-    return ''
-
-
-def get_service_display_name(self, obj):
-    if obj.type == 'component':
-        return obj.parent.display_name
-    return ''
-
-
-def get_service_id(self, obj):
-    if obj.type == 'component':
-        return obj.parent.id
-    return None
-
-
-class PrototypeUISerializer(PrototypeSerializer):
-    parent_id = IntegerField(read_only=True)
-    version_order = IntegerField(read_only=True)
-    shared = BooleanField(read_only=True)
+class PrototypeUISerializer(PrototypeSerializer, PrototypeSerializerMixin):
     constraint = SerializerMethodField(read_only=True)
-    requires = JSONField(read_only=True)
-    bound_to = JSONField(read_only=True)
-    adcm_min_version = CharField(read_only=True)
-    monitoring = CharField(read_only=True)
-    config_group_customization = BooleanField(read_only=True)
-    venv = CharField(read_only=True)
-    allow_maintenance_mode = BooleanField(read_only=True)
     service_name = SerializerMethodField(read_only=True)
     service_display_name = SerializerMethodField(read_only=True)
     service_id = SerializerMethodField(read_only=True)
 
-    get_constraint = get_constraint
-    get_service_name = get_service_name
-    get_service_display_name = get_service_display_name
-    get_service_id = get_service_id
+    class Meta:
+        model = Prototype
+        fields = (
+            *PrototypeSerializer.Meta.fields,
+            "parent_id",
+            "version_order",
+            "shared",
+            "constraint",
+            "requires",
+            "bound_to",
+            "adcm_min_version",
+            "monitoring",
+            "config_group_customization",
+            "venv",
+            "allow_maintenance_mode",
+            "service_name",
+            "service_display_name",
+            "service_id",
+        )
+        read_only_fields = fields
+        extra_kwargs = {"url": {"lookup_url_kwarg": "prototype_pk"}}
+
+
+class PrototypeDetailSerializer(PrototypeSerializer, PrototypeSerializerMixin):
+    constraint = SerializerMethodField()
+    actions = StackActionDetailSerializer(many=True, read_only=True)
+    config = ConfigSerializer(many=True, read_only=True)
+    service_name = SerializerMethodField(read_only=True)
+    service_display_name = SerializerMethodField(read_only=True)
+    service_id = SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Prototype
+        fields = (
+            *PrototypeSerializer.Meta.fields,
+            "constraint",
+            "actions",
+            "config",
+            "service_name",
+            "service_display_name",
+            "service_id",
+        )
+        read_only_fields = fields
+        extra_kwargs = {"url": {"lookup_url_kwarg": "prototype_pk"}}
 
 
 class PrototypeShort(ModelSerializer):
     class Meta:
         model = Prototype
-        fields = ('name',)
+        fields = ("name",)
 
 
 class ExportSerializer(EmptySerializer):
@@ -161,105 +200,216 @@ class ImportSerializer(EmptySerializer):
     multibind = BooleanField(read_only=True)
 
 
-class ComponentTypeSerializer(PrototypeSerializer):
-    constraint = JSONField(required=False)
-    requires = JSONField(required=False)
-    bound_to = JSONField(required=False)
-    monitoring = CharField(read_only=True)
-    url = hlink('component-type-details', 'id', 'prototype_id')
+class ComponentPrototypeSerializer(PrototypeSerializer):
+    url = HyperlinkedIdentityField(
+        view_name="component-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+    )
+
+    class Meta:
+        model = Prototype
+        fields = (
+            *PrototypeSerializer.Meta.fields,
+            "constraint",
+            "requires",
+            "bound_to",
+            "monitoring",
+            "url",
+        )
+        read_only_fields = fields
 
 
-class ServiceSerializer(PrototypeSerializer):
-    shared = BooleanField(read_only=True)
-    monitoring = CharField(read_only=True)
-    url = hlink('service-type-details', 'id', 'prototype_id')
+class ServicePrototypeSerializer(PrototypeSerializer):
+    url = HyperlinkedIdentityField(
+        view_name="service-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+    )
+
+    class Meta:
+        model = Prototype
+        fields = (
+            *PrototypeSerializer.Meta.fields,
+            "shared",
+            "monitoring",
+            "url",
+        )
+        read_only_fields = fields
 
 
-class ServiceDetailSerializer(ServiceSerializer):
+class ServiceDetailPrototypeSerializer(ServicePrototypeSerializer):
     actions = StackActionDetailSerializer(many=True, read_only=True)
-    components = ComponentTypeSerializer(many=True, read_only=True)
+    components = ComponentPrototypeSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
     exports = ExportSerializer(many=True, read_only=True)
     imports = ImportSerializer(many=True, read_only=True)
 
+    class Meta:
+        model = Prototype
+        fields = (
+            *ServicePrototypeSerializer.Meta.fields,
+            "actions",
+            "components",
+            "config",
+            "exports",
+            "imports",
+        )
+        read_only_fields = fields
 
-class BundleServiceUISerializer(ServiceSerializer):
+
+class BundleServiceUIPrototypeSerializer(ServicePrototypeSerializer):
     selected = SerializerMethodField()
 
+    class Meta:
+        model = Prototype
+        fields = (
+            *ServicePrototypeSerializer.Meta.fields,
+            "selected",
+        )
+        read_only_fields = fields
+
     def get_selected(self, obj):
-        cluster = self.context.get('cluster')
+        cluster = self.context.get("cluster")
         try:
             ClusterObject.objects.get(cluster=cluster, prototype=obj)
+
             return True
         except ClusterObject.DoesNotExist:
             return False
 
 
-class AdcmTypeSerializer(PrototypeSerializer):
-    url = hlink('adcm-type-details', 'id', 'prototype_id')
+class ADCMPrototypeSerializer(PrototypeSerializer):
+    url = HyperlinkedIdentityField(
+        view_name="adcm-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+    )
+
+    class Meta:
+        model = Prototype
+        fields = (
+            *PrototypeSerializer.Meta.fields,
+            "url",
+        )
+        read_only_fields = fields
 
 
-class ClusterTypeSerializer(PrototypeSerializer):
-    license = SerializerMethodField()
-    url = hlink('cluster-type-details', 'id', 'prototype_id')
+class ClusterPrototypeSerializer(PrototypeSerializer):
+    license = CharField(source="bundle.license")
+    url = HyperlinkedIdentityField(
+        view_name="cluster-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+    )
 
-    @staticmethod
-    def get_license(obj):
-        return obj.bundle.license
+    class Meta:
+        model = Prototype
+        fields = (
+            *PrototypeSerializer.Meta.fields,
+            "license",
+            "url",
+        )
+        read_only_fields = fields
 
 
-class HostTypeSerializer(PrototypeSerializer):
+class HostPrototypeSerializer(PrototypeSerializer):
     monitoring = CharField(read_only=True)
-    url = hlink('host-type-details', 'id', 'prototype_id')
+    url = HyperlinkedIdentityField(
+        view_name="host-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+    )
+
+    class Meta:
+        model = Prototype
+        fields = (
+            *PrototypeSerializer.Meta.fields,
+            "monitoring",
+            "url",
+        )
+        read_only_fields = fields
 
 
-class ProviderTypeSerializer(PrototypeSerializer):
-    license = SerializerMethodField()
-    url = hlink('provider-type-details', 'id', 'prototype_id')
+class ProviderPrototypeSerializer(PrototypeSerializer):
+    license = CharField(source="bundle.license")
+    url = HyperlinkedIdentityField(
+        view_name="provider-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+    )
 
-    @staticmethod
-    def get_license(obj):
-        return obj.bundle.license
-
-
-class PrototypeDetailSerializer(PrototypeSerializer):
-    constraint = SerializerMethodField()
-    actions = StackActionDetailSerializer(many=True, read_only=True)
-    config = ConfigSerializer(many=True, read_only=True)
-    service_name = SerializerMethodField(read_only=True)
-    service_display_name = SerializerMethodField(read_only=True)
-    service_id = SerializerMethodField(read_only=True)
-
-    get_constraint = get_constraint
-    get_service_name = get_service_name
-    get_service_display_name = get_service_display_name
-    get_service_id = get_service_id
+    class Meta:
+        model = Prototype
+        fields = (
+            *PrototypeSerializer.Meta.fields,
+            "license",
+            "url",
+        )
+        read_only_fields = fields
 
 
-class ProviderTypeDetailSerializer(ProviderTypeSerializer):
+class ProviderPrototypeDetailSerializer(ProviderPrototypeSerializer):
     actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
     upgrade = UpgradeSerializer(many=True, read_only=True)
 
+    class Meta:
+        model = Prototype
+        fields = (
+            *ProviderPrototypeSerializer.Meta.fields,
+            "actions",
+            "config",
+            "upgrade",
+        )
+        read_only_fields = fields
 
-class HostTypeDetailSerializer(HostTypeSerializer):
+
+class HostPrototypeDetailSerializer(HostPrototypeSerializer):
     actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
 
+    class Meta:
+        model = Prototype
+        fields = (
+            *HostPrototypeSerializer.Meta.fields,
+            "actions",
+            "config",
+        )
+        read_only_fields = fields
 
-class ComponentTypeDetailSerializer(ComponentTypeSerializer):
+
+class ComponentPrototypeDetailSerializer(ComponentPrototypeSerializer):
     actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
 
+    class Meta:
+        model = Prototype
+        fields = (
+            *ComponentPrototypeSerializer.Meta.fields,
+            "actions",
+            "config",
+        )
+        read_only_fields = fields
 
-class AdcmTypeDetailSerializer(AdcmTypeSerializer):
+
+class ADCMPrototypeDetailSerializer(ADCMPrototypeSerializer):
     actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
 
+    class Meta:
+        model = Prototype
+        fields = (
+            *ADCMPrototypeSerializer.Meta.fields,
+            "actions",
+            "config",
+        )
+        read_only_fields = fields
 
-class ClusterTypeDetailSerializer(ClusterTypeSerializer):
+
+class ClusterPrototypeDetailSerializer(ClusterPrototypeSerializer):
     actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
     upgrade = UpgradeSerializer(many=True, read_only=True)
     exports = ExportSerializer(many=True, read_only=True)
     imports = ImportSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Prototype
+        fields = (
+            *ADCMPrototypeSerializer.Meta.fields,
+            "actions",
+            "config",
+            "upgrade",
+            "exports",
+            "imports",
+        )
+        read_only_fields = fields

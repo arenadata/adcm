@@ -35,9 +35,9 @@ from api.cluster.serializers import (
 )
 from api.serializers import ClusterUpgradeSerializer
 from api.stack.serializers import (
-    BundleServiceUISerializer,
+    BundleServiceUIPrototypeSerializer,
     ImportSerializer,
-    ServiceSerializer,
+    ServicePrototypeSerializer,
 )
 from api.utils import (
     AdcmOrderingFilter,
@@ -134,8 +134,8 @@ class ClusterDetail(PermissionListMixin, DetailView):
 
 class ClusterBundle(GenericUIView):
     queryset = Prototype.objects.filter(type="service")
-    serializer_class = ServiceSerializer
-    serializer_class_ui = BundleServiceUISerializer
+    serializer_class = ServicePrototypeSerializer
+    serializer_class_ui = BundleServiceUIPrototypeSerializer
 
     def get(self, request, *args, **kwargs):
         cluster = get_object_for_user(

@@ -366,9 +366,7 @@ class TestClusterListPage:
         disclaimer_text,
     ):
         """Test run upgrade new version from the /cluster page"""
-        params = {
-            "state": "upgraded",
-        }
+        params = {"state": "upgraded"}
         with allure.step("Upload main cluster bundle"):
             bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
             cluster = bundle.cluster_create(name=CLUSTER_NAME)

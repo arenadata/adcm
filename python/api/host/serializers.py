@@ -81,7 +81,7 @@ class HostDetailSerializer(HostSerializer):
     config = CommonAPIURL(view_name="object-config")
     action = CommonAPIURL(view_name="object-action")
     prototype = HyperlinkedIdentityField(
-        view_name="host-type-details", lookup_field="prototype_id", lookup_url_kwarg="prototype_id"
+        view_name="host-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
     )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)

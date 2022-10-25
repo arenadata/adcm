@@ -11,15 +11,23 @@
 # limitations under the License.
 
 import json
+import os
 import string
 from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
 
-BASE_DIR = Path(__file__).absolute().parent.parent.parent
+BASE_DIR = os.getenv("ADCM_BASE_DIR")
+if BASE_DIR:
+    BASE_DIR = Path(BASE_DIR)
+else:
+    BASE_DIR = Path(__file__).absolute().parent.parent.parent
+
 CONF_DIR = BASE_DIR / "data" / "conf"
-SECRET_KEY_FILE = CONF_DIR / "secret_key.txt"
 CONFIG_FILE = BASE_DIR / "config.json"
+SECRET_KEY_FILE = CONF_DIR / "secret_key.txt"
+STACK_DIR = os.getenv("ADCM_STACK_DIR", BASE_DIR)
+DOWNLOAD_DIR = Path(STACK_DIR, 'data', 'download')
 RUN_DIR = BASE_DIR / "data" / "run"
 
 if SECRET_KEY_FILE.is_file():

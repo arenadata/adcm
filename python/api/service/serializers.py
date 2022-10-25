@@ -101,9 +101,9 @@ class ServiceDetailSerializer(ServiceSerializer):
     imports = ObjectURL(read_only=True, view_name="service-import")
     bind = ObjectURL(read_only=True, view_name="service-bind")
     prototype = HyperlinkedIdentityField(
-        view_name="service-type-details",
-        lookup_field="prototype_id",
-        lookup_url_kwarg="prototype_id",
+        view_name="service-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
 
     multi_state = StringListSerializer(read_only=True)

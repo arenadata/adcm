@@ -801,16 +801,6 @@ def cook_log_name(tag, level, ext="txt"):
     return f"{tag}-{level}.{ext}"
 
 
-def get_log(job: JobLog) -> List[dict]:
-    log_storage = LogStorage.objects.filter(job=job)
-    logs = []
-
-    for ls in log_storage:
-        logs.append({"name": ls.name, "type": ls.type, "format": ls.format, "id": ls.pk})
-
-    return logs
-
-
 def log_custom(job_id, name, log_format, body):
     job = JobLog.obj.get(id=job_id)
     l1 = LogStorage.objects.create(job=job, name=name, type="custom", format=log_format, body=body)
