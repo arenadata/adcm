@@ -13,33 +13,23 @@
 """Admin pages PageObjects classes"""
 
 from dataclasses import dataclass
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
-from selenium.common.exceptions import (
-    StaleElementReferenceException,
-)
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
 
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.admin.locators import (
-    AdminUsersLocators,
-    AdminIntroLocators,
-    AdminSettingsLocators,
     AdminGroupsLocators,
-    AdminRolesLocators,
+    AdminIntroLocators,
     AdminPoliciesLocators,
+    AdminRolesLocators,
+    AdminSettingsLocators,
+    AdminUsersLocators,
 )
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageHeader,
-    PageFooter,
-)
+from tests.ui_tests.app.page.common.base_page import BasePageObject, PageFooter, PageHeader
 from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs_locators import DeleteDialog
@@ -236,6 +226,11 @@ class AdminUsersPage(GeneralAdminPage):
                 return True
         return False
 
+    def is_user_deactivated(self, username: str) -> bool:
+        """Get user's deactivation status on UI"""
+        row = self.get_user_row_by_username(username)
+        return "inactive" in row.get_attribute("class")
+
     @allure.step('Create new user "{username}" with password "{password}"')
     def create_user(
         self, username: str, password: str, first_name: str, last_name: str, email: str
@@ -249,7 +244,7 @@ class AdminUsersPage(GeneralAdminPage):
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.first_name, first_name)
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.last_name, last_name)
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.email, email)
-        self.find_and_click(AdminUsersLocators.AddUserPopup.save_btn)
+        self.find_and_click(AdminUsersLocators.AddUserPopup.save_update_btn)
         self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
 
     @allure.step('Update user {username} info')
@@ -292,8 +287,22 @@ class AdminUsersPage(GeneralAdminPage):
                 else:
                     raise AssertionError(f"There are no group {group} in select group popup")
 
-        self.scroll_to(AdminUsersLocators.AddUserPopup.save_btn).click()
+        self.scroll_to(AdminUsersLocators.AddUserPopup.save_update_btn).click()
         self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
+
+    @allure.step("Check user update is not allowed")
+    def check_user_update_is_not_allowed(self, username: str):
+        """Check that user can't be edited via UI"""
+        self.get_user_row_by_username(username).click()
+        self.wait_element_visible(AdminUsersLocators.AddUserPopup.block)
+        locators = AdminUsersLocators.AddUserPopup
+        assert not self.is_element_displayed(locators.save_update_btn, timeout=1), "Update button should not be visible"
+        # we don't check is_superuser and groups here because of their complex structure
+        # and minor effect of such check
+        for field in (locators.username, locators.first_name, locators.last_name, locators.email):
+            assert not self.find_element(field).is_enabled(), f"Field '{field.name}' should not be editable"
+        self.find_and_click(locators.cancel_btn)
+        self.wait_element_hide(locators.block)
 
     @allure.step('Change password of user {username} to {password}')
     def change_user_password(self, username: str, password: str):
@@ -303,7 +312,7 @@ class AdminUsersPage(GeneralAdminPage):
         self.wait_element_visible(AdminUsersLocators.AddUserPopup.block)
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.password, password)
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.password_confirm, password)
-        self.find_and_click(AdminUsersLocators.AddUserPopup.save_btn)
+        self.find_and_click(AdminUsersLocators.AddUserPopup.save_update_btn)
         self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
 
     @allure.step('Check that changing user group is prohibited')
@@ -343,7 +352,7 @@ class AdminUsersPage(GeneralAdminPage):
                 AdminUsersLocators.AddUserPopup.first_name,
                 AdminUsersLocators.AddUserPopup.last_name,
                 AdminUsersLocators.AddUserPopup.email,
-                AdminUsersLocators.AddUserPopup.save_btn,
+                AdminUsersLocators.AddUserPopup.save_update_btn,
             ]
         )
         assert (
@@ -360,11 +369,10 @@ class AdminUsersPage(GeneralAdminPage):
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)
 
-    @allure.step('Check delete button is not presented for user {username}')
-    def check_delete_button_not_presented(self, username: str):
+    def is_delete_button_presented(self, username: str):
         """Check that delete button is not presented in user row"""
-        user_row = self.get_user_row_by_username(username)
-        assert not self.is_child_displayed(user_row, AdminUsersLocators.Row.delete_btn, timeout=3)
+        row = self.get_user_row_by_username(username)
+        return self.is_child_displayed(row, AdminUsersLocators.Row.delete_btn, timeout=1)
 
     @allure.step('Filter users by {filter_name}')
     def filter_users_by(self, filter_name: str, filter_option_name: str):
@@ -432,7 +440,7 @@ class AdminGroupsPage(GeneralAdminPage):
                         self.hover_element(user_chbx)
                         user_chbx.click()
             self.find_and_click(AdminGroupsLocators.AddGroupPopup.users_select)
-        self.find_and_click(AdminGroupsLocators.save_btn)
+        self.find_and_click(AdminGroupsLocators.save_update_btn)
         self.wait_element_hide(AdminGroupsLocators.AddGroupPopup.block)
 
     @allure.step('Update group {name}')
@@ -456,7 +464,7 @@ class AdminGroupsPage(GeneralAdminPage):
                         self.hover_element(user_chbx)
                         user_chbx.click()
             self.find_and_click(AdminGroupsLocators.AddGroupPopup.users_select)
-        self.find_and_click(AdminGroupsLocators.save_btn)
+        self.find_and_click(AdminGroupsLocators.save_update_btn)
         self.wait_element_hide(AdminGroupsLocators.AddGroupPopup.block)
 
     def get_all_groups(self) -> [AdminGroupInfo]:
@@ -507,7 +515,7 @@ class AdminGroupsPage(GeneralAdminPage):
             [
                 AdminGroupsLocators.AddGroupPopup.name_input,
                 AdminGroupsLocators.AddGroupPopup.description_input,
-                AdminGroupsLocators.save_btn,
+                AdminGroupsLocators.save_update_btn,
             ]
         )
         assert "disabled" in self.find_element(AdminGroupsLocators.AddGroupPopup.users_select).get_attribute(
@@ -648,12 +656,12 @@ class AdminRolesPage(GeneralAdminPage):
                         break
 
     def click_save_btn_in_role_popup(self):
-        self.find_and_click(AdminRolesLocators.save_btn)
+        self.find_and_click(AdminRolesLocators.save_update_btn)
 
     @allure.step('Check that save button is disabled')
     def check_save_button_disabled(self):
         assert (
-            self.find_element(AdminRolesLocators.save_btn).get_attribute("disabled") == 'true'
+            self.find_element(AdminRolesLocators.save_update_btn).get_attribute("disabled") == 'true'
         ), "Save role button should be disabled"
 
     @allure.step("Check {error_message} error is presented")
@@ -786,8 +794,8 @@ class AdminPoliciesPage(GeneralAdminPage):
 
     @allure.step('Fill third step in new policy')
     def fill_third_step_in_policy_popup(self):
-        self.wait_element_visible(AdminPoliciesLocators.save_btn)
-        self.find_and_click(AdminPoliciesLocators.save_btn)
+        self.wait_element_visible(AdminPoliciesLocators.save_update_btn)
+        self.find_and_click(AdminPoliciesLocators.save_update_btn)
         self.wait_element_hide(AdminPoliciesLocators.AddPolicyPopup.block)
 
     @allure.step('Create new policy')
