@@ -66,8 +66,8 @@ type FilterType = 'list' | 'input' | 'datepicker';
                   <mat-form-field class="datepicker-form">
                     <mat-label>{{ filter.display_name }}</mat-label>
                     <mat-date-range-input [formGroup]="datepickerGroup(filter.filter_field)" [rangePicker]="picker">
-                      <input type="datetime-local" matStartDate formControlName="start">
-                      <input type="datetime-local" matEndDate formControlName="end" (dateChange)="applyFilters()">
+                      <input matStartDate formControlName="start">
+                      <input matEndDate formControlName="end" (dateChange)="setDate($event)">
                     </mat-date-range-input>
                     <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
                     <mat-date-range-picker #picker></mat-date-range-picker>
@@ -161,6 +161,13 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
     this.toggleFilters(filter);
     this.applyFilters();
     event.preventDefault();
+  }
+
+  setDate(event) {
+    if (event.value) {
+      event.value.setHours(23, 59, 59, 999);
+      this.applyFilters();
+    }
   }
 
   applyFilters() {
