@@ -86,11 +86,10 @@ def check_jobs_and_tasks(client: ADCMClient, objects):
     task_flat_endpoint = "task"
 
     with allure.step(f'Check jobs at "{job_flat_endpoint}/" endpoint based on task_id'):
-        expected_jobs: set = {
-            job.task_id
-            for job in itertools.chain.from_iterable([obj.action(name=ACTION_NAME).task_list() for obj in objects])
-        }
-        actual_jobs: set = {job['task_id'] for job in _query_flat_endpoint(client, job_flat_endpoint)}
+        expected_jobs = set()
+        for task in itertools.chain.from_iterable([obj.action(name=ACTION_NAME).task_list() for obj in objects]):
+            expected_jobs |= {job.id for job in task.job_list()}
+        actual_jobs: set = {job['id'] for job in _query_flat_endpoint(client, job_flat_endpoint)}
         sets_are_equal(
             actual_jobs,
             expected_jobs,

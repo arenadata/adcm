@@ -17,7 +17,9 @@ from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
 from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
+from cm.models import Bundle
 from rbac.models import Role, User
 
 APPLICATION_JSON = "application/json"
@@ -102,3 +104,21 @@ class BaseTestCase(TestCase):
         yield
 
         self.login()
+
+    def upload_and_load_bundle(self, path: Path) -> Bundle:
+        with open(path, encoding="utf-8") as f:
+            response: Response = self.client.post(
+                path=reverse("upload-bundle"),
+                data={"file": f},
+            )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": path.name},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        return Bundle.objects.get(pk=response.data["id"])

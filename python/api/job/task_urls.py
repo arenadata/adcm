@@ -10,21 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import include, path
+from rest_framework.routers import DefaultRouter
 
-from api.job.views import Task, TaskCancel, TaskDetail, TaskDownload, TaskReStart
+from api.job.views import TaskViewSet
 
-urlpatterns = [
-    path("", Task.as_view(), name="task"),
-    path(
-        "<int:task_id>/",
-        include(
-            [
-                path("", TaskDetail.as_view(), name="task-details"),
-                path("restart/", TaskReStart.as_view(), name="task-restart"),
-                path("cancel/", TaskCancel.as_view(), name="task-cancel"),
-                path("download/", TaskDownload.as_view(), name="task-download"),
-            ]
-        ),
-    ),
-]
+router = DefaultRouter()
+router.register("", TaskViewSet)
+urlpatterns = router.urls

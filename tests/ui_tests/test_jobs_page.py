@@ -258,8 +258,8 @@ class TestTaskPage:
             )
             job_page.check_jobs_toolbar(SUCCESS_ACTION_DISPLAY_NAME.upper())
 
-    @pytest.mark.usefixtures("_login_to_adcm_over_api", "_clean_downloads_fs")
-    def test_download_log(self, cluster: Cluster, app_fs: ADCMTest, downloads_directory):
+    @pytest.mark.usefixtures("_login_to_adcm_over_ui", "_clean_downloads_fs")
+    def test_download_log(self, cluster: Cluster, app_fs: ADCMTest, downloads_directory):  # ...
         """Download log file from detailed page menu"""
         downloaded_file_template = '{job_id}-ansible-{log_type}.txt'
         action = cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME)

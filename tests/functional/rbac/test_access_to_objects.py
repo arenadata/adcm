@@ -528,7 +528,7 @@ class TestAccessForJobsAndLogs:
                 for job in task.job_list():
                     with catch_failed(ObjectNotFound, 'Job and log objects should be available directly via client'):
                         get_as_client_object(api, job)
-                        get_as_client_object(api, job.log(), path_args={'job_id': job.id})
+                        get_as_client_object(api, job.log(), path_args={'job_pk': job.id})
 
     def check_no_access_granted_for_tasks(self, user_client: ADCMClient, tasks: Iterable[Task]):
         """Check there's no access to tasks, their jobs and logs"""
@@ -541,7 +541,7 @@ class TestAccessForJobsAndLogs:
                     _expect_not_found(api, job, 'Job object should be available directly via client')
                     log = job.log()
                     _expect_not_found(
-                        api, log, 'Log object should be available directly via client', path_args={'job_id': job.id}
+                        api, log, 'Log object should be available directly via client', path_args={'job_pk': job.id}
                     )
 
 

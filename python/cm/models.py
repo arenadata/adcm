@@ -1323,6 +1323,8 @@ class TaskLog(ADCMModel):
     finish_date = models.DateTimeField()
     lock = models.ForeignKey("ConcernItem", null=True, on_delete=models.SET_NULL, default=None)
 
+    __error_code__ = "TASK_NOT_FOUND"
+
     def lock_affected(self, objects: Iterable[ADCMEntity]) -> None:
         if self.lock:
             return

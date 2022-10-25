@@ -10,34 +10,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import include, path
+from django.urls import path
+from rest_framework.routers import DefaultRouter
 
-from api.job.views import (
-    JobDetail,
-    JobList,
-    LogFile,
-    LogStorageListView,
-    LogStorageView,
-    download_log_file,
-)
+from api.job.views import JobViewSet, LogStorageViewSet
 
-# fmt: off
+router = DefaultRouter()
+router.register("", JobViewSet)
+
 urlpatterns = [
-    path('', JobList.as_view(), name='job'),
-    path('<int:job_id>/', include([
-        path('', JobDetail.as_view(), name='job-details'),
-        path('log/', include([
-            path('', LogStorageListView.as_view(), name='log-list'),
-            path('<int:log_id>/', include([
-                path('', LogStorageView.as_view(), name='log-storage'),
-                path('download/', download_log_file, name='download-log'),
-            ])),
-            path(
-                '<name:tag>/<name:level>/<name:log_type>/',
-                LogFile.as_view(),
-                name='log-file'
-            ),
-        ])),
-    ])),
+    *router.urls,
+    path("<int:job_pk>/log/", LogStorageViewSet.as_view({"get": "list"}), name="joblog-list"),
+    path(
+        "<int:job_pk>/log/<int:log_pk>/",
+        LogStorageViewSet.as_view({"get": "retrieve"}),
+        name="joblog-detail",
+    ),
+    path(
+        "<int:job_pk>/log/<int:log_pk>/download/",
+        LogStorageViewSet.as_view({"get": "download"}),
+        name="joblog-download",
+    ),
+    path(
+        "<int:job_pk>/log/<int:log_pk>/download/<name:tag>/<name:level>/<name:log_format>/",
+        LogStorageViewSet.as_view({"get": "logfile"}),
+        name="joblog-file",
+    ),
 ]
-# fmt: on
