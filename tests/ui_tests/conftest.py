@@ -105,45 +105,58 @@ def _attach_debug_info_on_ui_test_fail(request, web_driver):
     """Attach screenshot, etc. to allure + cleanup for firefox"""
     yield
     try:
-        if request.node.rep_setup.failed or request.node.rep_call.failed:
+        if not (request.node.rep_setup.failed or request.node.rep_call.failed):
+            return
+        allure.attach(
+            web_driver.driver.page_source,
+            name="page_source",
+            attachment_type=allure.attachment_type.HTML,
+        )
+        web_driver.driver.execute_script("document.body.bgColor = 'white';")
+        allure.attach(
+            web_driver.driver.get_screenshot_as_png(),
+            name="screenshot",
+            attachment_type=allure.attachment_type.PNG,
+        )
+        allure.attach(
+            json.dumps(web_driver.driver.execute_script("return localStorage"), indent=2),
+            name="localStorage",
+            attachment_type=allure.attachment_type.JSON,
+        )
+        # this way of getting logs does not work for Firefox, see ADCM-1497
+        if web_driver.capabilities['browserName'] != 'firefox':
+            console_logs = web_driver.driver.get_log('browser')
+            perf_log = web_driver.driver.get_log("performance")
+            events = [_process_browser_log_entry(entry) for entry in perf_log]
+            network_logs = [event for event in events if 'Network.response' in event['method']]
+            events_json = _write_json_file("all_logs", events)
+            network_console_logs = _write_json_file("network_log", network_logs)
+            console_logs = _write_json_file("console_logs", console_logs)
             allure.attach(
-                web_driver.driver.page_source,
-                name="page_source",
-                attachment_type=allure.attachment_type.HTML,
+                web_driver.driver.current_url,
+                name='Current URL',
+                attachment_type=allure.attachment_type.TEXT,
             )
-            web_driver.driver.execute_script("document.body.bgColor = 'white';")
-            allure.attach(
-                web_driver.driver.get_screenshot_as_png(),
-                name="screenshot",
-                attachment_type=allure.attachment_type.PNG,
+            allure.attach.file(console_logs, name="console_log", attachment_type=allure.attachment_type.TEXT)
+            allure.attach.file(
+                network_console_logs,
+                name="network_log",
+                attachment_type=allure.attachment_type.TEXT,
             )
-            allure.attach(
-                json.dumps(web_driver.driver.execute_script("return localStorage"), indent=2),
-                name="localStorage",
-                attachment_type=allure.attachment_type.JSON,
-            )
-            # this way of getting logs does not work for Firefox, see ADCM-1497
-            if web_driver.capabilities['browserName'] != 'firefox':
-                console_logs = web_driver.driver.get_log('browser')
-                perf_log = web_driver.driver.get_log("performance")
-                events = [_process_browser_log_entry(entry) for entry in perf_log]
-                network_logs = [event for event in events if 'Network.response' in event['method']]
-                events_json = _write_json_file("all_logs", events)
-                network_console_logs = _write_json_file("network_log", network_logs)
-                console_logs = _write_json_file("console_logs", console_logs)
-                allure.attach(
-                    web_driver.driver.current_url,
-                    name='Current URL',
-                    attachment_type=allure.attachment_type.TEXT,
-                )
-                allure.attach.file(console_logs, name="console_log", attachment_type=allure.attachment_type.TEXT)
-                allure.attach.file(
-                    network_console_logs,
-                    name="network_log",
-                    attachment_type=allure.attachment_type.TEXT,
-                )
-                allure.attach.file(events_json, name="all_events_log", attachment_type=allure.attachment_type.TEXT)
-        elif web_driver.capabilities['browserName'] != 'firefox':
+            allure.attach.file(events_json, name="all_events_log", attachment_type=allure.attachment_type.TEXT)
+    except AttributeError:
+        # rep_setup and rep_call attributes are generated in runtime and can be absent
+        pass
+
+
+@pytest.fixture()
+def _cleanup_browser_logs(request, web_driver):
+    """Cleanup browser logs"""
+    try:
+        if (
+            not (request.node.rep_setup.failed or request.node.rep_call.failed)
+            and web_driver.capabilities['browserName'] != 'firefox'
+        ):
             with allure.step("Flush browser logs so as not to affect next tests"):
                 web_driver.driver.get_log('browser')
                 web_driver.driver.get_log("performance")
@@ -153,7 +166,7 @@ def _attach_debug_info_on_ui_test_fail(request, web_driver):
 
 
 @pytest.fixture()
-def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, _attach_debug_info_on_ui_test_fail):
+def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, _attach_debug_info_on_ui_test_fail, _cleanup_browser_logs):
     """
     Attach ADCM API to ADCMTest object and open new tab in browser for test
     Collect logs on failure and close browser tab after test is done

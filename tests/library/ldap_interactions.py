@@ -22,6 +22,7 @@ import allure
 import ldap
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.custom_types import SecureString
+from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from ldap.ldapobject import SimpleLDAPObject
 
 from tests.library.utils import ConfigError
@@ -249,3 +250,15 @@ def configure_adcm_for_ldap(
         },
         attach_to_allure=False,
     )
+
+
+@allure.step("Run ldap sync")
+def sync_adcm_with_ldap(client: ADCMClient) -> None:
+    """method to run ldap sync"""
+    action = client.adcm().action(name="run_ldap_sync")
+    wait_for_task_and_assert_result(action.run(), "success")
+
+
+def change_adcm_ldap_config(client: ADCMClient, attach_to_allure: bool = False, **params) -> None:
+    """method to change adcm ldap config"""
+    client.adcm().config_set_diff({"ldap_integration": params}, attach_to_allure=attach_to_allure)

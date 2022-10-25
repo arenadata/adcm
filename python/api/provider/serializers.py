@@ -67,9 +67,9 @@ class ProviderDetailSerializer(ProviderSerializer):
     license = CharField(read_only=True)
     bundle_id = IntegerField(read_only=True)
     prototype = HyperlinkedIdentityField(
-        view_name="provider-type-details",
-        lookup_field="prototype_id",
-        lookup_url_kwarg="prototype_id",
+        view_name="provider-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
     config = CommonAPIURL(view_name="object-config")
     action = CommonAPIURL(view_name="object-action")

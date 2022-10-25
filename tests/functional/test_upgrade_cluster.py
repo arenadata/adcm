@@ -15,14 +15,12 @@
 """Tests for cluster upgrade"""
 
 import allure
-import coreapi
 import pytest
-from coreapi.exceptions import ErrorMessage
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Service
-from adcm_pytest_plugin.utils import get_data_dir, catch_failed
 from adcm_pytest_plugin.docker_utils import ADCM
+from adcm_pytest_plugin.utils import catch_failed, get_data_dir
+from coreapi.exceptions import ErrorMessage
 
-from tests.library.errorcodes import UPGRADE_ERROR
 from tests.functional.tools import BEFORE_UPGRADE_DEFAULT_STATE, get_object_represent
 
 
@@ -169,7 +167,6 @@ def test_upgrade_cluster_with_config_groups(sdk_client_fs):
         )
 
 
-@pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3033")
 def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient, old_bundle):
     """Test upgrade should not be available ant stater"""
     with allure.step('Create upgradable cluster with unsupported state'):
@@ -179,11 +176,7 @@ def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient, old_bundle):
         upgr = cluster.upgrade(name='upgrade to 1.6')
         upgr.do()
         cluster.reread()
-        upgr = cluster.upgrade(name='upgrade 2')
-        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            upgr.do()
-    with allure.step('Check error: cluster state is not in available states list'):
-        UPGRADE_ERROR.equal(e, 'cluster state', 'is not in available states list')
+        assert len(cluster.upgrade_list()) == 0, "No upgrade should be available"
 
 
 @pytest.mark.usefixtures("upgradable_bundle")

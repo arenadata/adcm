@@ -39,12 +39,7 @@ import { ConcernEventType } from '../../models/concern/concern-reason';
       (changeSort)="onChangeSort($event)"
     ></adwp-list>
   `,
-  styles: [`
-    :host {
-      flex: 1;
-      max-width: 100%;
-    }
-  `],
+  styleUrls: ['cluster.component.scss'],
 })
 export class ClusterListComponent extends ConcernListDirective<ICluster> {
 
@@ -52,7 +47,7 @@ export class ClusterListComponent extends ConcernListDirective<ICluster> {
   eventTypes = [ConcernEventType.Cluster];
 
   listColumns = [
-    ListFactory.nameColumn(),
+    ListFactory.nameColumnCLuster(),
     ListFactory.bundleColumn(),
     ListFactory.descriptionColumn(),
     ListFactory.stateColumn(),

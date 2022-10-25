@@ -87,6 +87,7 @@ export interface Provider extends BaseEntity {
 export interface Host extends BaseEntity {
   fqdn: string;
   provider_id: number;
+  provider_name: string;
   cluster: string;
   cluster_id?: number;
   cluster_name?: string;

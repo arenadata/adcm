@@ -24,12 +24,8 @@ from django.utils import timezone
 
 from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
-from audit.models import (
-    MODEL_TO_AUDIT_OBJECT_TYPE_MAP,
-    AuditLog,
-    AuditLogOperationResult,
-    AuditLogOperationType,
-)
+from audit.models import (AuditLog, AuditLogOperationResult, AuditLogOperationType,
+                          MODEL_TO_AUDIT_OBJECT_TYPE_MAP)
 from cm.adcm_config import (
     check_attr,
     check_config_spec,
@@ -45,16 +41,8 @@ from cm.api import (
     save_hc,
 )
 from cm.api_context import ctx
-from cm.config import (
-    BASE_DIR,
-    BUNDLE_DIR,
-    CODE_DIR,
-    LOG_DIR,
-    PYTHON_SITE_PACKAGES,
-    RUN_DIR,
-    STATUS_SECRET_KEY,
-    Job,
-)
+from cm.config import (BASE_DIR, BUNDLE_DIR, CODE_DIR, Job, LOG_DIR, PYTHON_SITE_PACKAGES, RUN_DIR,
+                       STATUS_SECRET_KEY)
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.hierarchy import Tree
 from cm.inventory import get_obj_config, prepare_job_inventory, process_config_and_attr
@@ -63,30 +51,13 @@ from cm.issue import (
     check_component_constraint,
     check_component_requires,
     check_object_concern,
+    update_hierarchy_issues,
 )
 from cm.logger import logger
-from cm.models import (
-    ADCM,
-    Action,
-    ActionType,
-    ADCMEntity,
-    Cluster,
-    ClusterObject,
-    ConfigLog,
-    DummyData,
-    Host,
-    HostComponent,
-    HostProvider,
-    JobLog,
-    LogStorage,
-    ObjectType,
-    Prototype,
-    ServiceComponent,
-    SubAction,
-    TaskLog,
-    Upgrade,
-    get_object_cluster,
-)
+from cm.models import (Action, ActionType, ADCM, ADCMEntity, Cluster, ClusterObject, ConfigLog,
+                       DummyData, get_object_cluster, Host, HostComponent, HostProvider, JobLog,
+                       LogStorage, ObjectType, Prototype, ServiceComponent, SubAction, TaskLog,
+                       Upgrade)
 from cm.status_api import post_event
 from cm.variant import process_variant
 from rbac.roles import re_apply_policy_for_jobs
@@ -812,8 +783,9 @@ def set_action_state(
 
 
 def restore_hc(task: TaskLog, action: Action, status: str):
-    if status not in [Job.FAILED, Job.ABORTED]:
+    if status not in {Job.FAILED, Job.ABORTED}:
         return
+
     if not action.hostcomponentmap:
         return
 
@@ -854,6 +826,7 @@ def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
         restore_hc(task, action, status)
         task.unlock_affected()
         set_task_status(task, status, ctx.event)
+        update_hierarchy_issues(obj)
 
     upgrade = Upgrade.objects.filter(action=action).first()
     if upgrade:
@@ -890,16 +863,6 @@ def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
 
 def cook_log_name(tag, level, ext="txt"):
     return f"{tag}-{level}.{ext}"
-
-
-def get_log(job: JobLog) -> List[dict]:
-    log_storage = LogStorage.objects.filter(job=job)
-    logs = []
-
-    for ls in log_storage:
-        logs.append({"name": ls.name, "type": ls.type, "format": ls.format, "id": ls.pk})
-
-    return logs
 
 
 def log_custom(job_id, name, log_format, body):

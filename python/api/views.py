@@ -22,7 +22,7 @@ from cm.stack import NAME_REGEX
 class APIRoot(routers.APIRootView):
     permission_classes = (permissions.AllowAny,)
     api_root_dict = {
-        "adcm": "adcm",
+        "adcm": "adcm-list",
         "audit": "audit:root",
         "cluster": "cluster",
         "provider": "provider",
@@ -32,10 +32,10 @@ class APIRoot(routers.APIRootView):
         "group-config": "group-config-list",
         "config": "config-list",
         "config-log": "config-log-list",
-        "job": "job",
+        "job": "joblog-list",
         "stack": "stack",
         "stats": "stats",
-        "task": "task",
+        "task": "tasklog-list",
         "info": "adcm-info",
         "concern": "concern",
         "rbac": "rbac:root",

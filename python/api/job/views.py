@@ -11,73 +11,38 @@
 # limitations under the License.
 
 import io
-import os
 import re
 import tarfile
 from pathlib import Path
 
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse
 from guardian.mixins import PermissionListMixin
-from rest_framework.permissions import DjangoModelPermissions, IsAuthenticated
+from rest_framework.decorators import action
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.reverse import reverse
-from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
-from rest_framework.views import APIView
+from rest_framework.status import HTTP_200_OK
 
 from adcm.utils import str_remove_non_alnum
-from api.base_view import DetailView, GenericUIView, PaginatedView
+from api.base_view import GenericUIViewSet
 from api.job.serializers import (
-    JobListSerializer,
+    JobRetrieveSerializer,
     JobSerializer,
-    LogSerializer,
-    LogStorageListSerializer,
+    LogStorageRetrieveSerializer,
     LogStorageSerializer,
-    TaskListSerializer,
+    TaskRetrieveSerializer,
     TaskSerializer,
 )
 from api.utils import check_custom_perm, get_object_for_user
 from audit.utils import audit
-from cm.config import RUN_DIR
-from cm.errors import AdcmEx
-from cm.job import cancel_task, get_log, restart_task
+from cm.job import cancel_task, restart_task
 from cm.models import ActionType, JobLog, LogStorage, TaskLog
 from rbac.viewsets import DjangoOnlyObjectPermissions
 
-VIEW_JOBLOG_PERMISSION = "cm.view_joblog"
 VIEW_TASKLOG_PERMISSION = "cm.view_tasklog"
-
-
-def download_log_file(request, job_id, log_id):
-    job = JobLog.obj.get(id=job_id)
-    log_storage = LogStorage.obj.get(id=log_id, job=job)
-
-    if log_storage.type in ["stdout", "stderr"]:
-        filename = f"{job.id}-{log_storage.name}-{log_storage.type}.{log_storage.format}"
-    else:
-        filename = f"{job.id}-{log_storage.name}.{log_storage.format}"
-
-    filename = re.sub(r"\s+", "_", filename)
-    if log_storage.format == "txt":
-        mime_type = "text/plain"
-    else:
-        mime_type = "application/json"
-
-    if log_storage.body is None:
-        body = ""
-        length = 0
-    else:
-        body = log_storage.body
-        length = len(body)
-
-    response = HttpResponse(body)
-    response["Content-Type"] = mime_type
-    response["Content-Length"] = length
-    response["Content-Encoding"] = "UTF-8"
-    response["Content-Disposition"] = f"attachment; filename={filename}"
-
-    return response
 
 
 def get_task_download_archive_name(task: TaskLog) -> str:
@@ -173,176 +138,77 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
     return fh
 
 
-class JobList(PermissionListMixin, PaginatedView):
-    queryset = JobLog.objects.order_by("-id")
-    serializer_class = JobListSerializer
-    serializer_class_ui = JobSerializer
+#  pylint:disable-next=too-many-ancestors
+class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
+    queryset = JobLog.objects.select_related("task", "action").order_by("-id").all()
+    serializer_class = JobSerializer
     filterset_fields = ("action_id", "task_id", "pid", "status", "start_date", "finish_date")
     ordering_fields = ("status", "start_date", "finish_date")
-    permission_classes = (DjangoModelPermissions,)
-    permission_required = [VIEW_JOBLOG_PERMISSION]
+    permission_required = ["cm.view_joblog"]
+    lookup_url_kwarg = "job_pk"
 
-    def get_queryset(self, *args, **kwargs):
-        if self.request.user.is_superuser:
-            exclude_pks = []
+    def get_permissions(self):
+        if self.action == "list":
+            permission_classes = (DjangoModelPermissions,)
         else:
-            exclude_pks = JobLog.get_adcm_jobs_qs().values_list("pk", flat=True)
+            permission_classes = (DjangoOnlyObjectPermissions,)
 
-        return super().get_queryset(*args, **kwargs).exclude(pk__in=exclude_pks)
+        return [permission() for permission in permission_classes]
 
+    def get_serializer_class(self):
+        if self.is_for_ui() or self.action == "retrieve":
+            return JobRetrieveSerializer
 
-class JobDetail(PermissionListMixin, GenericUIView):
-    queryset = JobLog.objects.all()
-    permission_classes = (DjangoOnlyObjectPermissions,)
-    permission_required = [VIEW_JOBLOG_PERMISSION]
-    serializer_class = JobSerializer
-
-    def get(self, request, *args, **kwargs):
-        """
-        Show job
-        """
-        job = get_object_for_user(request.user, VIEW_JOBLOG_PERMISSION, JobLog, id=kwargs["job_id"])
-        job.log_dir = os.path.join(RUN_DIR, f"{job.id}")
-        logs = get_log(job)
-        for lg in logs:
-            log_id = lg["id"]
-            lg["url"] = reverse(
-                "log-storage", kwargs={"job_id": job.id, "log_id": log_id}, request=request
-            )
-            lg["download_url"] = reverse(
-                "download-log", kwargs={"job_id": job.id, "log_id": log_id}, request=request
-            )
-
-        job.log_files = logs
-        serializer = self.get_serializer(job, data=request.data)
-        serializer.is_valid()
-
-        return Response(serializer.data)
+        return super().get_serializer_class()
 
 
-class LogStorageListView(PermissionListMixin, PaginatedView):
-    queryset = LogStorage.objects.all()
-    permission_required = ["cm.view_logstorage"]
-    serializer_class = LogStorageListSerializer
-    filterset_fields = ("name", "type", "format")
-    ordering_fields = ("id", "name")
+#  pylint:disable-next=too-many-ancestors
+class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
+    queryset = TaskLog.objects.select_related("action").all()
+    serializer_class = TaskSerializer
+    filterset_fields = ("action_id", "pid", "status", "start_date", "finish_date")
+    ordering_fields = ("status", "start_date", "finish_date")
+    permission_required = [VIEW_TASKLOG_PERMISSION]
+    lookup_url_kwarg = "task_pk"
 
     def get_queryset(self, *args, **kwargs):
         queryset = super().get_queryset(*args, **kwargs)
-        if "job_id" not in self.kwargs:
-            return queryset
+        if not self.request.user.is_superuser:
+            # NOT superuser shouldn't have access to ADCM tasks
+            queryset = queryset.exclude(
+                object_type=ContentType.objects.get(app_label="cm", model="adcm")
+            )
 
-        return queryset.filter(job_id=self.kwargs["job_id"])
+        return queryset
 
+    def get_serializer_class(self):
+        if self.is_for_ui() or self.action in {"retrieve", "restart", "cancel", "download"}:
+            return TaskRetrieveSerializer
 
-class LogStorageView(PermissionListMixin, GenericUIView):
-    queryset = LogStorage.objects.all()
-    permission_classes = (IsAuthenticated,)
-    permission_required = ["cm.view_logstorage"]
-    serializer_class = LogStorageSerializer
-
-    def get(self, request, *args, **kwargs):
-        job = get_object_for_user(request.user, VIEW_JOBLOG_PERMISSION, JobLog, id=kwargs["job_id"])
-        try:
-            log_storage = self.get_queryset().get(id=kwargs["log_id"], job=job)
-        except LogStorage.DoesNotExist as e:
-            raise AdcmEx(
-                "LOG_NOT_FOUND", f"log {kwargs['log_id']} not found for job {kwargs['job_id']}"
-            ) from e
-
-        serializer = self.get_serializer(log_storage)
-
-        return Response(serializer.data)
-
-
-class LogFile(GenericUIView):
-    permission_classes = (IsAuthenticated,)
-    queryset = LogStorage.objects.all()
-    serializer_class = LogSerializer
-
-    def get(self, request, job_id, tag, level, log_type):
-        """
-        Show log file
-        """
-        if tag == "ansible":
-            _type = f"std{level}"
-        else:
-            _type = "check"
-            tag = "ansible"
-
-        ls = LogStorage.obj.get(job_id=job_id, name=tag, type=_type, format=log_type)
-        serializer = self.get_serializer(ls)
-
-        return Response(serializer.data)
-
-
-class Task(PermissionListMixin, PaginatedView):
-    queryset = TaskLog.objects.order_by("-id")
-    permission_required = [VIEW_TASKLOG_PERMISSION]
-    serializer_class = TaskListSerializer
-    serializer_class_ui = TaskSerializer
-    filterset_fields = ("action_id", "pid", "status", "start_date", "finish_date")
-    ordering_fields = ("status", "start_date", "finish_date")
-
-    def get_queryset(self, *args, **kwargs):
-        if self.request.user.is_superuser:
-            exclude_pks = []
-        else:
-            exclude_pks = TaskLog.get_adcm_tasks_qs().values_list("pk", flat=True)
-
-        return super().get_queryset(*args, **kwargs).exclude(pk__in=exclude_pks)
-
-
-class TaskDetail(PermissionListMixin, DetailView):
-    queryset = TaskLog.objects.all()
-    permission_required = [VIEW_TASKLOG_PERMISSION]
-    serializer_class = TaskSerializer
-    lookup_field = "id"
-    lookup_url_kwarg = "task_id"
-    error_code = "TASK_NOT_FOUND"
-
-
-class TaskReStart(GenericUIView):
-    queryset = TaskLog.objects.all()
-    permission_classes = (IsAuthenticated,)
-    serializer_class = TaskSerializer
+        return super().get_serializer_class()
 
     @audit
-    def put(self, request, *args, **kwargs):
-        task = get_object_for_user(
-            request.user, VIEW_TASKLOG_PERMISSION, TaskLog, id=kwargs["task_id"]
-        )
+    @action(methods=["put"], detail=True)
+    def restart(self, request: Request, task_pk: int) -> Response:
+        task = get_object_for_user(request.user, VIEW_TASKLOG_PERMISSION, TaskLog, id=task_pk)
         check_custom_perm(request.user, "change", TaskLog, task)
         restart_task(task)
 
         return Response(status=HTTP_200_OK)
 
-
-class TaskCancel(GenericUIView):
-    queryset = TaskLog.objects.all()
-    permission_classes = (IsAuthenticated,)
-    serializer_class = TaskSerializer
-
     @audit
-    def put(self, request, *args, **kwargs):
-        task = get_object_for_user(
-            request.user, VIEW_TASKLOG_PERMISSION, TaskLog, id=kwargs["task_id"]
-        )
+    @action(methods=["put"], detail=True)
+    def cancel(self, request: Request, task_pk: int) -> Response:
+        task = get_object_for_user(request.user, VIEW_TASKLOG_PERMISSION, TaskLog, id=task_pk)
         check_custom_perm(request.user, "change", TaskLog, task)
         cancel_task(task)
 
         return Response(status=HTTP_200_OK)
 
-
-class TaskDownload(PermissionListMixin, APIView):
-    permission_required = [VIEW_TASKLOG_PERMISSION]
-
-    @staticmethod
-    def get(request: Request, task_id: int):  # pylint: disable=too-many-locals
-        task = TaskLog.objects.filter(pk=task_id).first()
-        if not task:
-            return Response(status=HTTP_404_NOT_FOUND)
-
+    @audit
+    @action(methods=["get"], detail=True)
+    def download(self, request: Request, task_pk: int) -> Response:
+        task = get_object_for_user(request.user, VIEW_TASKLOG_PERMISSION, TaskLog, id=task_pk)
         response = HttpResponse(
             content=get_task_download_archive_file_handler(task=task).getvalue(),
             content_type="application/tar+gzip",
@@ -350,5 +216,72 @@ class TaskDownload(PermissionListMixin, APIView):
         response[
             "Content-Disposition"
         ] = f'attachment; filename="{get_task_download_archive_name(task=task)}"'
+
+        return response
+
+
+#  pylint:disable-next=too-many-ancestors
+class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
+    queryset = LogStorage.objects.all()
+    serializer_class = LogStorageSerializer
+    filterset_fields = ("name", "type", "format")
+    ordering_fields = ("id", "name")
+    permission_required = ["cm.view_logstorage"]
+    lookup_url_kwarg = "log_pk"
+
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+        if "job_pk" in self.kwargs:
+            queryset = queryset.filter(job_id=self.kwargs["job_pk"])
+
+        return queryset
+
+    def get_serializer_class(self):
+        if self.is_for_ui() or self.action == "retrieve":
+            return LogStorageRetrieveSerializer
+
+        return super().get_serializer_class()
+
+    @audit
+    @action(methods=["get"], detail=True)
+    def download(self, request: Request, job_pk: int, log_pk: int):
+        # self is necessary for audit
+
+        job = JobLog.obj.get(id=job_pk)
+        log_storage = LogStorage.obj.get(pk=log_pk, job=job)
+
+        if log_storage.type in {"stdout", "stderr"}:
+            filename = f"{job.id}-{log_storage.name}-{log_storage.type}.{log_storage.format}"
+        else:
+            filename = f"{job.id}-{log_storage.name}.{log_storage.format}"
+
+        filename = re.sub(r"\s+", "_", filename)
+        if log_storage.format == "txt":
+            mime_type = "text/plain"
+        else:
+            mime_type = "application/json"
+
+        if log_storage.body is None:
+            file_path = Path(
+                settings.RUN_DIR,
+                f"{job_pk}",
+                f"{log_storage.name}-{log_storage.type}.{log_storage.format}",
+            )
+            if Path.is_file(file_path):
+                with open(file_path, "r", encoding="utf_8") as f:
+                    body = f.read()
+                    length = len(body)
+            else:
+                body = ""
+                length = 0
+        else:
+            body = log_storage.body
+            length = len(body)
+
+        response = HttpResponse(body)
+        response["Content-Type"] = mime_type
+        response["Content-Length"] = length
+        response["Content-Encoding"] = "UTF-8"
+        response["Content-Disposition"] = f"attachment; filename={filename}"
 
         return response

@@ -15,6 +15,7 @@ from rest_framework.serializers import (
     BooleanField,
     CharField,
     HyperlinkedIdentityField,
+    HyperlinkedModelSerializer,
     IntegerField,
     JSONField,
     SerializerMethodField,
@@ -25,6 +26,19 @@ from api.config.serializers import ConfigSerializerUI
 from api.utils import get_api_url_kwargs
 from cm.adcm_config import get_action_variant, get_prototype_config
 from cm.models import Action, PrototypeConfig, SubAction
+
+
+class ActionJobSerializer(HyperlinkedModelSerializer):
+    class Meta:
+        model = Action
+        fields = (
+            "name",
+            "display_name",
+            "prototype_id",
+            "prototype_name",
+            "prototype_type",
+            "prototype_version",
+        )
 
 
 class ActionDetailURL(HyperlinkedIdentityField):
@@ -112,6 +126,7 @@ class StackActionDetailSerializer(StackActionSerializer):
     log_files = JSONField(required=False)
     config = SerializerMethodField()
     subs = SerializerMethodField()
+    disabling_cause = CharField(read_only=True)
 
     def get_config(self, obj):
         aconf = PrototypeConfig.objects.filter(prototype=obj.prototype, action=obj).order_by("id")
@@ -124,6 +139,7 @@ class StackActionDetailSerializer(StackActionSerializer):
     def get_subs(self, obj):
         sub_actions = SubAction.objects.filter(action=obj).order_by("id")
         subs = SubActionSerializer(sub_actions, many=True, context=self.context, read_only=True)
+
         return subs.data
 
 

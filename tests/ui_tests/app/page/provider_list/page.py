@@ -20,15 +20,8 @@ import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webelement import WebElement
 
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageHeader,
-    PageFooter,
-)
-from tests.ui_tests.app.page.common.dialogs_locators import (
-    ActionDialog,
-    DeleteDialog,
-)
+from tests.ui_tests.app.page.common.base_page import BasePageObject, PageFooter, PageHeader
+from tests.ui_tests.app.page.common.dialogs.locators import ActionDialog, DeleteDialog
 from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar

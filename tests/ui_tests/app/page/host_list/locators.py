@@ -14,10 +14,7 @@
 
 from selenium.webdriver.common.by import By
 
-from tests.ui_tests.app.helpers.locator import (
-    Locator,
-    TemplateLocator,
-)
+from tests.ui_tests.app.helpers.locator import Locator, TemplateLocator
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 
 
@@ -55,3 +52,4 @@ class HostListLocators:
             dropdown_menu = Locator(By.CSS_SELECTOR, "div[role='menu']", "Dropdown menu")
             action_option = TemplateLocator(By.XPATH, "//button/span[text()='{}']", "Action dropdown option")
             action_option_all = Locator(By.CSS_SELECTOR, "button[adcm_test='action_btn']", "Action dropdown options")
+            rename_btn = Locator(By.CLASS_NAME, "rename-button", "Cluster rename button in row")

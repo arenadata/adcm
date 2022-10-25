@@ -162,9 +162,9 @@ class ClusterDetailSerializer(ClusterSerializer):
         view_name="cluster-bind", lookup_field="id", lookup_url_kwarg="cluster_id"
     )
     prototype = HyperlinkedIdentityField(
-        view_name="cluster-type-details",
-        lookup_field="prototype_id",
-        lookup_url_kwarg="prototype_id",
+        view_name="cluster-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)

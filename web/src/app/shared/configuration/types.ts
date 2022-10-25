@@ -11,6 +11,7 @@
 // limitations under the License.
 import { IYspec } from './yspec/yspec.service';
 import { TFormOptions } from './services/field.service';
+import { BaseEntity } from '@app/core/types';
 
 export type stateType = 'created' | 'locked';
 
@@ -178,6 +179,13 @@ export interface IFieldOptions extends IFormOptions, ICanGroup {
   controlType: controlType;
   validator: IValidator;
   compare: ICompare[];
+}
+
+export interface ISettingsListResponse {
+  count: 1;
+  next: null;
+  previous: null;
+  results: BaseEntity[];
 }
 
 //#endregion

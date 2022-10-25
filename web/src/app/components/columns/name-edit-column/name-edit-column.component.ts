@@ -7,6 +7,12 @@ import { filter } from "rxjs/operators";
 import { FormControl, Validators } from "@angular/forms";
 import { ListService } from "@app/shared/components/list/list.service";
 
+export interface editColumnValues {
+  modal_placeholder: string;
+  entity_type: string;
+  regex: any;
+}
+
 @Component({
   selector: 'app-name-edit-column',
   templateUrl: './name-edit-column.component.html',
@@ -17,6 +23,7 @@ export class NameEditColumnComponent implements AdwpCellComponent<any>, OnInit {
   row: any;
   column: any;
   form: FormControl;
+  entity: string;
 
   constructor(private dialog: MatDialog, protected service: ListService) {}
 
@@ -25,12 +32,18 @@ export class NameEditColumnComponent implements AdwpCellComponent<any>, OnInit {
       [
         Validators.required,
         Validators.maxLength(253),
-        Validators.pattern(new RegExp(/^[A-Za-z0-9]{1}[A-Za-z0-9.-]*$/))
+        Validators.pattern(new RegExp(this.column?.column_rules?.regex))
       ]);
+    this.entity = this.column?.column_rules?.entity_type;
   }
 
   isEditable() {
-    return this.row.cluster_id === null && this.row.state === 'created';
+    switch (this.entity) {
+      case 'cluster':
+        return this.row.state === 'created';
+      case 'host':
+        return this.row.cluster_id === null && this.row.state === 'created';
+    }
   }
 
   rename(event) {
@@ -43,7 +56,7 @@ export class NameEditColumnComponent implements AdwpCellComponent<any>, OnInit {
     let dialogModel: MatDialogConfig
     const maxWidth = '1400px';
     const width = '500px';
-    const title = 'Edit host';
+    const title = `Edit ${ this.entity }`;
 
     this.form.setValue(this.row[this.column.sort]);
 
@@ -55,7 +68,8 @@ export class NameEditColumnComponent implements AdwpCellComponent<any>, OnInit {
         model: {
           row: this.row,
           column: this.column.sort,
-          form: this.form
+          form: this.form,
+          column_rules: this.column?.column_rules
         },
         component: NameEditColumnFieldComponent,
         controls: ['Save', 'Cancel'],
@@ -68,7 +82,7 @@ export class NameEditColumnComponent implements AdwpCellComponent<any>, OnInit {
       .beforeClosed()
       .pipe(filter((save) => save))
       .subscribe(() => {
-        this.service.renameHost(this.column.sort, this.form.value, this.row.id)
+        this.service[`rename${this.titleCase(this.entity)}`](this.column.sort, this.form.value, this.row.id)
           .subscribe((value) => {
             if (value) {
               const colName = this.column.sort;
@@ -80,5 +94,9 @@ export class NameEditColumnComponent implements AdwpCellComponent<any>, OnInit {
 
   getFormStatus = (value) => {
     return value.form.invalid;
+  }
+
+  titleCase(string){
+    return string[0].toUpperCase() + string.slice(1).toLowerCase();
   }
 }
