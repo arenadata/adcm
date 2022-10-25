@@ -151,7 +151,7 @@ def _check_job_name(sdk: ADCMClient, action_display_name: str):
 
 def _check_menu(
     menu_name: str,
-    provider_bundle: Bundle,
+    provider: Provider,
     list_page: HostListPage,
 ):
     list_page.click_on_row_child(0, HostListLocators.HostTable.HostRow.fqdn)
@@ -160,8 +160,7 @@ def _check_menu(
     host_page.check_fqdn_equal_to(HOST_FQDN)
     bundle_label = host_page.get_bundle_label()
     # Test Host is name of host in config.yaml
-    assert 'Test Host' in bundle_label
-    assert provider_bundle.version in bundle_label
+    assert provider.name == bundle_label
 
 
 # !===== TESTS =====!
@@ -305,7 +304,8 @@ class TestHostListPage:
     def test_open_menu(self, upload_and_create_provider: Tuple[Bundle, Provider], page: HostListPage, menu: str):
         """Open detailed host page and open menu from side navigation"""
 
-        _check_menu(menu, upload_and_create_provider[0], page)
+        _, provider = upload_and_create_provider
+        _check_menu(menu, provider, page)
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
