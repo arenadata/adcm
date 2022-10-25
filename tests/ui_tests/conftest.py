@@ -105,7 +105,7 @@ def _attach_debug_info_on_ui_test_fail(request, web_driver):
     """Attach screenshot, etc. to allure + cleanup for firefox"""
     yield
     try:
-        if not request.node.rep_setup.failed or request.node.rep_call.failed:
+        if not (request.node.rep_setup.failed or request.node.rep_call.failed):
             return
         allure.attach(
             web_driver.driver.page_source,
