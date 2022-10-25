@@ -13,24 +13,19 @@
 """Host List page PageObjects classes"""
 
 from dataclasses import dataclass
-from typing import Optional, ClassVar
+from typing import ClassVar, Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
-from selenium.common.exceptions import (
-    TimeoutException,
-)
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 
 from tests.ui_tests.app.helpers.locator import Locator
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageHeader,
-    PageFooter,
-)
-from tests.ui_tests.app.page.common.dialogs_locators import DeleteDialog, ActionDialog
+from tests.ui_tests.app.page.common.base_page import BasePageObject, PageFooter, PageHeader
+from tests.ui_tests.app.page.common.dialogs.locators import ActionDialog, DeleteDialog
+from tests.ui_tests.app.page.common.dialogs.rename import RenameDialog
 from tests.ui_tests.app.page.common.popups.locator import HostCreationLocators
 from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
@@ -50,7 +45,7 @@ class HostRowInfo:
     state: str
 
 
-class HostListPage(BasePageObject):
+class HostListPage(BasePageObject):  # pylint: disable=too-many-public-methods
     """Host List Page class"""
 
     def __init__(self, driver, base_url):
@@ -252,6 +247,14 @@ class HostListPage(BasePageObject):
     def click_create_host_in_popup(self):
         """Click create host button in popup"""
         self.find_and_click(HostCreationLocators.create_btn)
+
+    @allure.step("Open host rename dialog by clicking on host rename button")
+    def open_rename_dialog(self, row: WebElement) -> RenameDialog:
+        self.hover_element(row)
+        self.find_child(row, self.table.locators.HostRow.rename_btn).click()
+        dialog = RenameDialog(driver=self.driver, base_url=self.base_url)
+        dialog.wait_opened()
+        return dialog
 
     def _insert_new_host_info(self, fqdn: str, cluster: Optional[str] = None):
         """Insert new host info in fields of opened popup"""

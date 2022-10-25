@@ -32,7 +32,7 @@ from tests.ui_tests.app.page.admin.locators import (
 from tests.ui_tests.app.page.common.base_page import BasePageObject, PageFooter, PageHeader
 from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
-from tests.ui_tests.app.page.common.dialogs_locators import DeleteDialog
+from tests.ui_tests.app.page.common.dialogs.locators import DeleteDialog
 from tests.ui_tests.app.page.common.popups.locator import CommonPopupLocators
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
@@ -697,7 +697,7 @@ class AdminPoliciesPage(GeneralAdminPage):
         self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.block)
 
     @allure.step('Fill first step in new policy')
-    def fill_first_step_in_policy_popup(
+    def fill_first_step_in_policy_popup(  # pylint: disable=too-many-arguments
         self, policy_name: str, description: Optional[str], role: str, users: Optional[str], groups: Optional[str]
     ):
         if not (users or groups):
@@ -747,7 +747,7 @@ class AdminPoliciesPage(GeneralAdminPage):
                 raise AssertionError(f"There are no item {item} in select popup")
 
     @allure.step('Fill second step in new policy')
-    def fill_second_step_in_policy_popup(
+    def fill_second_step_in_policy_popup(  # pylint: disable=too-many-arguments
         self,
         clusters: Optional[str] = None,
         services: Optional[str] = None,
@@ -799,7 +799,7 @@ class AdminPoliciesPage(GeneralAdminPage):
         self.wait_element_hide(AdminPoliciesLocators.AddPolicyPopup.block)
 
     @allure.step('Create new policy')
-    def create_policy(
+    def create_policy(  # pylint: disable=too-many-arguments
         self,
         policy_name: str,
         description: Optional[str],
