@@ -63,6 +63,7 @@ class HostCreationLocators:
 
         cluster_select = Locator(By.CSS_SELECTOR, "mat-select[formcontrolname='cluster_id']", "Cluster choice select")
         cluster_option = TemplateLocator(By.XPATH, "//mat-option//span[text()='{}']", "Cluster select option")
+        chosen_cluster = TemplateLocator(By.XPATH, "//span[text()='{}']", "Chosen parent cluster")
 
 
 class HostAddPopupLocators:

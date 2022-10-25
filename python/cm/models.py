@@ -539,7 +539,9 @@ class Upgrade(ADCMModel):
             else:
                 return False
         else:
-            return self.action.allowed(obj)
+            if hasattr(self, "action"):
+                return self.action.allowed(obj)
+            return False
 
 
 class ADCM(ADCMEntity):
@@ -1320,6 +1322,8 @@ class TaskLog(ADCMModel):
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField()
     lock = models.ForeignKey("ConcernItem", null=True, on_delete=models.SET_NULL, default=None)
+
+    __error_code__ = "TASK_NOT_FOUND"
 
     def lock_affected(self, objects: Iterable[ADCMEntity]) -> None:
         if self.lock:

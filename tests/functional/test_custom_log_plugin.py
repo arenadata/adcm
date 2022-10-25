@@ -49,9 +49,9 @@ def test_different_storage_types_with_format(sdk_client_fs: ADCMClient, bundle):
     with allure.step('Check if logs are equal 3, job state and logs'):
         job = task.job()
         logs = job.log_list()
-        log = job.log(job_id=job.id, log_id=logs[2].id)
         assert len(logs) == 3, f"Logs count {len(logs)}. Expected 3"
         assert job.status == 'success', f"Current job status {job.status}. Expected: success"
+        log = logs[2]
         err_msg = f"Expected log format {log_format}. Actual log format {log.format}"
         assert log.format == log_format, err_msg
         assert log.type == 'custom'
@@ -67,7 +67,7 @@ def test_path_and_content(sdk_client_fs: ADCMClient):
     with allure.step('Check logs content and format'):
         job = task.job()
         logs = job.log_list()
-        log = job.log(job_id=job.id, log_id=logs[2].id)
+        log = logs[2]
         assert log.content == '{\n    "key": "value"\n}'
         assert log.format == 'json'
 
@@ -81,8 +81,7 @@ def test_multiple_tasks(sdk_client_fs: ADCMClient, bundle):
     task = cluster.action(name='custom_log').run()
     task.wait()
     with allure.step('Check 4 logs entries'):
-        job = task.job()
-        logs = job.log_list()
+        logs = task.job().log_list()
         assert len(logs) == 4, "Expected 4 logs entries, because 2 tasks in playbook"
 
 
@@ -95,8 +94,7 @@ def test_check_text_file_content(sdk_client_fs: ADCMClient):
     task.wait()
     with allure.step('Check logs content and format'):
         job = task.job()
-        logs = job.log_list()
-        log = job.log(job_id=job.id, log_id=logs[2].id)
+        log = job.log_list()[2]
         assert log.content == 'Hello world!\n'
         assert log.format == 'txt'
 
@@ -110,8 +108,7 @@ def test_check_text_content(sdk_client_fs: ADCMClient):
     task.wait()
     with allure.step('Check logs content'):
         job = task.job()
-        logs = job.log_list()
-        log = job.log(job_id=job.id, log_id=logs[2].id)
+        log = job.log_list()[2]
         assert log.content == 'shalala'
 
 
@@ -124,8 +121,7 @@ def test_check_json_content(sdk_client_fs: ADCMClient):
     task.wait()
     with allure.step('Check logs content'):
         job = task.job()
-        logs = job.log_list()
-        log = job.log(job_id=job.id, log_id=logs[2].id)
+        log = job.log_list()[2]
         assert log.content == '{\n    "hello": "world"\n}'
 
 
@@ -138,6 +134,5 @@ def test_incorrect_syntax_for_fields(sdk_client_fs: ADCMClient):
     task.wait()
     with allure.step('Check logs content'):
         job = task.job()
-        logs = job.log_list()
-        log = job.log(job_id=job.id, log_id=logs[2].id)
+        log = job.log_list()[2]
         assert log.content == '{1: "world"}'

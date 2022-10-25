@@ -42,7 +42,7 @@ class UpgradeSerializer(EmptySerializer):
     max_strict = BooleanField(required=False)
     upgradable = BooleanField(required=False)
     license = CharField(required=False)
-    license_url = hlink('bundle-license', 'bundle_id', 'bundle_id')
+    license_url = hlink('bundle-license', 'bundle_id', 'bundle_pk')
     from_edition = JSONField(required=False)
     state_available = JSONField(required=False)
     state_on_success = CharField(required=False)

@@ -10,37 +10,85 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework import serializers
+from rest_framework.serializers import (
+    CharField,
+    HyperlinkedIdentityField,
+    HyperlinkedModelSerializer,
+    SerializerMethodField,
+)
 
 from api.concern.serializers import ConcernItemSerializer
 from api.serializers import StringListSerializer
-from api.utils import CommonAPIURL, hlink
 from cm.adcm_config import get_main_info
+from cm.models import ADCM
 
 
-class AdcmSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField()
-    prototype_id = serializers.IntegerField()
-    state = serializers.CharField(read_only=True)
-    url = hlink('adcm-details', 'id', 'adcm_id')
+class ADCMSerializer(HyperlinkedModelSerializer):
+    class Meta:
+        model = ADCM
+        fields = ("id", "name", "state", "prototype_id", "url")
+        extra_kwargs = {"url": {"lookup_url_kwarg": "adcm_pk"}}
 
 
-class AdcmDetailSerializer(AdcmSerializer):
-    prototype_version = serializers.SerializerMethodField()
-    bundle_id = serializers.IntegerField(read_only=True)
-    config = CommonAPIURL(view_name='object-config')
-    action = CommonAPIURL(view_name='object-action')
+class ADCMRetrieveSerializer(HyperlinkedModelSerializer):
+    prototype_version = CharField(
+        read_only=True,
+        source="prototype.version",
+    )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
-    locked = serializers.BooleanField(read_only=True)
+    action = HyperlinkedIdentityField(view_name="object-action", lookup_url_kwarg="adcm_pk")
+    config = HyperlinkedIdentityField(view_name="object-config", lookup_url_kwarg="adcm_pk")
 
-    def get_prototype_version(self, obj):
-        return obj.prototype.version
+    class Meta:
+        model = ADCM
+        fields = (
+            "id",
+            "name",
+            "prototype_id",
+            "bundle_id",
+            "state",
+            "locked",
+            "prototype_version",
+            "multi_state",
+            "concerns",
+            "action",
+            "config",
+            "url",
+        )
+        extra_kwargs = {"url": {"lookup_url_kwarg": "adcm_pk"}}
 
 
-class AdcmDetailUISerializer(AdcmDetailSerializer):
-    main_info = serializers.SerializerMethodField()
+class ADCMUISerializer(HyperlinkedModelSerializer):
+    prototype_version = CharField(
+        read_only=True,
+        source="prototype.version",
+    )
+    multi_state = StringListSerializer(read_only=True)
+    concerns = ConcernItemSerializer(many=True, read_only=True)
+    action = HyperlinkedIdentityField(view_name="object-action", lookup_url_kwarg="adcm_pk")
+    config = HyperlinkedIdentityField(view_name="object-config", lookup_url_kwarg="adcm_pk")
+    main_info = SerializerMethodField()
 
-    def get_main_info(self, obj):
+    class Meta:
+        model = ADCM
+        fields = (
+            "id",
+            "name",
+            "prototype_id",
+            "bundle_id",
+            "state",
+            "locked",
+            "prototype_version",
+            "multi_state",
+            "concerns",
+            "action",
+            "config",
+            "main_info",
+            "url",
+        )
+        extra_kwargs = {"url": {"lookup_url_kwarg": "adcm_pk"}}
+
+    @staticmethod
+    def get_main_info(obj):
         return get_main_info(obj)

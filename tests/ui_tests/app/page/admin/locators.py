@@ -14,10 +14,7 @@
 
 from selenium.webdriver.common.by import By
 
-from tests.ui_tests.app.helpers.locator import (
-    Locator,
-    TemplateLocator,
-)
+from tests.ui_tests.app.helpers.locator import Locator, TemplateLocator
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 
 
@@ -28,9 +25,10 @@ class CommonAdminPagesLocators:
     delete_btn = Locator(By.CSS_SELECTOR, ".controls>button", "Delete Group button")
     field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
     item = Locator(By.CSS_SELECTOR, "adwp-selection-list mat-list-option", "select items")
-    save_btn = Locator(
-        By.XPATH, "//button[./span[contains(text(), 'Add') or contains(text(), 'Update')]]", "Save button"
+    save_update_btn = Locator(
+        By.XPATH, "//button[./span[contains(text(), 'Add') or contains(text(), 'Update')]]", "Save/Update button"
     )
+    cancel_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Cancel')]]", "Cancel button")
 
 
 class AdminIntroLocators:

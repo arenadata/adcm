@@ -59,6 +59,7 @@ class ClusterListLocators:
             upgrade = Locator(By.CSS_SELECTOR, "app-upgrade button", "Cluster upgrade in row")
             config = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(9) button", "Cluster config in row")
             delete_btn = Locator(By.CSS_SELECTOR, "mat-cell:last-of-type button", "Cluster delete button in row")
+            rename_btn = Locator(By.CLASS_NAME, "rename-button", "Cluster rename button in row")
 
     class LicensePopup:
         """Cluster List page licence popup elements locators"""

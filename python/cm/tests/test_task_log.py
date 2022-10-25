@@ -197,7 +197,7 @@ class TaskLogLockTest(BaseTestCase):
         LogStorage.objects.create(job=job_no_files, body="stderr db", type="stderr", format="txt")
 
         response: Response = self.client.get(
-            path=reverse("task-download", kwargs={"task_id": task.pk}),
+            path=reverse("tasklog-download", kwargs={"task_pk": task.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
