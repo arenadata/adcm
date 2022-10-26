@@ -11,50 +11,46 @@
 # limitations under the License.
 
 settings:
-  # exact | sequence | presence
-  # exact    => expects all described operations to be presented,
-  #             have correct order and no operations in between
-  # sequence => expects operations to be presented
-  #             and have correct order
-  # presence => only expects operations to be presented
   process-type: sequence
-  # record | matched
   start-from-first: matched
 
 operations:
   - update:
-      what:
+      what: &service
         type: service
         name: "another_service"
       how: change-properties
       changes:
         previous:
-          description: ""
           maintenance_mode: False
         current:
-          description: "Service changed to mm"
           maintenance_mode: True
   - update:
-      what:
+      what: *service
+      how: change-properties
+  - update:
+      what: &component
         type: component
         name: "another_service"
       how: change-properties
       changes:
         previous:
-          description: ""
           maintenance_mode: False
         current:
-          description: "Service changed to mm"
           maintenance_mode: True
   - update:
-      what:
+      what: *component
+      how: change-properties
+  - update:
+      what: &host
         type: host
         name: "test-host-0"
       how: change-properties
       changes:
         previous:
-          description: ""
           maintenance_mode: False
         current:
-          description: "Host changed to mm"
           maintenance_mode: True
+  - update:
+      what: *host
+      how: change-properties
