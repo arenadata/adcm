@@ -21,29 +21,6 @@ settings:
   # record | matched
   start-from-first: matched
 
-#{
-  #            "id": 20,
-  #            "object_id": 1,
-  #            "object_type": "cluster",
-  #            "object_name": "Test Cluster WITH Maintenance Mode",
-  #            "operation_type": "update",
-  #            "operation_name": "Cluster updated",
-  #            "operation_result": "success",
-  #            "operation_time": "2022-10-26T12:41:28.759894Z",
-  #            "user_id": 2,
-  #            "object_changes": {
-  #                "current": {
-  #                    "description": "Cluster changed to mm"
-  #                },
-  #                "previous": {
-  #                    "description": ""
-  #                }
-  #            },
-  #            "url": "http://127.0.0.1:8000/api/v1/audit/operation/20/"
-  #        },
-
-
-
 operations:
   - update:
       what:
@@ -97,19 +74,3 @@ operations:
           description: "Host changed to mm"
           maintenance_mode: True
     result: success
-#    username: {{ username }}
-#  - update: *change-host
-#    result: success
-#    username: {{ username }}
-#  - update:
-#      what: *host
-#      how: change-properties
-#      changes:
-#        previous:
-#          description: ""
-#          maintenance_mode: False
-#        current:
-#          description: "Host changed to mm"
-#          maintenance_mode: True
-#  - update: *change-host
-#    result: success
