@@ -183,19 +183,33 @@ class LDAPEntityManager:
         """Remove every object in test OU"""
         if self.test_dn is None:
             return
+        with allure.step("Clean users"):
+            for user_dn in self._get_users():
+                self.conn.delete_s(user_dn)
         # not everything is deleted on first round
-        for _ in range(10):
+        for i in range(10):
             entities = self._get_entities_from_test_ou()
             if len(entities) == 0:
                 break
-            for dn in entities:  # pylint: disable=invalid-name
-                self.conn.delete(dn)
+            with allure.step(f"Clean other entities, round #{i}"):
+                for dn in entities:  # pylint: disable=invalid-name
+                    self.conn.delete_s(dn)
         else:
             # error was leading to tests re-run that can make more "dead" objects
             warnings.warn(f"Not all entities in test OU were deleted: {entities}")
             return
         self._created_records = []
         self.test_dn = None
+
+    def _get_users(self):
+        try:
+            return [
+                dn
+                for dn, entry in self.conn.search_s(self.test_dn, ldap.SCOPE_SUBTREE)
+                if b"person" in entry["objectClass"]
+            ]
+        except ldap.NO_SUCH_OBJECT:
+            return []
 
     def _get_entities_from_test_ou(self):
         try:
