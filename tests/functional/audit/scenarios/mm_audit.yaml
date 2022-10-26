@@ -24,19 +24,6 @@ settings:
 operations:
   - update:
       what:
-        type: cluster
-        name: "Test Cluster WITH Maintenance Mode"
-      how: change-properties
-      changes:
-        previous:
-          description: ""
-          maintenance_mode: False
-        current:
-          description: "Cluster changed to mm"
-          maintenance_mode: True
-    result: success
-  - update:
-      what:
         type: service
         name: "another_service"
       how: change-properties
@@ -47,7 +34,6 @@ operations:
         current:
           description: "Service changed to mm"
           maintenance_mode: True
-      result: success
   - update:
       what:
         type: component
@@ -60,7 +46,6 @@ operations:
         current:
           description: "Service changed to mm"
           maintenance_mode: True
-      result: success
   - update:
       what:
         type: host
@@ -73,4 +58,3 @@ operations:
         current:
           description: "Host changed to mm"
           maintenance_mode: True
-    result: success
