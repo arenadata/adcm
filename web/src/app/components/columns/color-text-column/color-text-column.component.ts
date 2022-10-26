@@ -8,7 +8,7 @@ import { Component, OnInit } from '@angular/core';
 export class ColorTextColumnComponent implements OnInit {
 
   row: any;
-  column: string;
+  column: any;
 
   red = ['delete', 'failed'];
   orange = ['update'];
@@ -17,7 +17,7 @@ export class ColorTextColumnComponent implements OnInit {
   constructor() {}
 
   get columnName(): string {
-    return this.column['label'].toLowerCase().replace(' ', '_');
+    return this.column?.label?.toLowerCase()?.replace(' ', '_');
   }
 
   ngOnInit(): void {}
