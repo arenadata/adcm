@@ -29,8 +29,8 @@ from tests.library.utils import get_hosts_fqdn_representation
 
 BUNDLES_DIR = Path(os.path.dirname(__file__)) / 'bundles'
 
-MM_IS_ON = True
-MM_IS_OFF = False
+MM_IS_ON = "ON"
+MM_IS_OFF = "OFF"
 MM_ALLOWED = True
 MM_NOT_ALLOWED = False
 

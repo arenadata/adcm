@@ -15,42 +15,37 @@ settings:
   start-from-first: matched
 
 operations:
-  - update:
-      what: &service
+  - update: &change-service
+      what:
         type: service
-        name: "another_service"
+        name: "Test Cluster WITH Maintenance Mode/another_service"
+        operation_name: "Service updated"
+        operation_type: "update"
       how: change-properties
-      changes:
-        previous:
-          maintenance_mode: False
-        current:
-          maintenance_mode: True
-  - update:
-      what: *service
-      how: change-properties
-  - update:
-      what: &component
+  - update: *change-service
+    result: denied
+    username: {{ username }}
+  - update: &change-component
+      what:
         type: component
-        name: "another_service"
+        name: "Test Cluster WITH Maintenance Mode/test_service/first_component"
+        operation_name: "Component updated"
+        operation_type: "update"
       how: change-properties
-      changes:
-        previous:
-          maintenance_mode: False
-        current:
-          maintenance_mode: True
-  - update:
-      what: *component
-      how: change-properties
-  - update:
-      what: &host
+    result: denied
+  - update: *change-component
+  - update: *change-component
+    result: denied
+    username: {{ username }}
+  - update: &change-host
+      what:
         type: host
         name: "test-host-0"
+        operation_name: "Host updated"
+        operation_type: "update"
       how: change-properties
-      changes:
-        previous:
-          maintenance_mode: False
-        current:
-          maintenance_mode: True
-  - update:
-      what: *host
-      how: change-properties
+    result: denied
+  - update: *change-host
+  - update: *change-host
+    result: denied
+    username: {{ username }}
