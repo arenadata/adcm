@@ -182,7 +182,7 @@ def one_host_provider_id_attr(one_host: Host):
         pytest.param(Prototype, id="Prototype"),
         pytest.param(ClusterPrototype, id="ClusterPrototype", marks=[pytest.mark.skip(reason="ADCM-3297")]),
         pytest.param(ProviderPrototype, id="ProviderPrototype", marks=[pytest.mark.skip(reason="ADCM-3297")]),
-        pytest.param(HostPrototype, id="HostPrototype"),
+        pytest.param(HostPrototype, id="HostPrototype", marks=[pytest.mark.skip(reason="ADCM-3297")]),
         pytest.param(Cluster, id="Cluster"),
         pytest.param(Provider, id="Provider"),
         pytest.param(Host, id="Host"),
