@@ -12,24 +12,48 @@
 
 """Test designed to check audit on mm"""
 
+import pytest
 import allure
 import requests
-from adcm_client.objects import ADCMClient, Cluster, Component, Host, Service
+from adcm_client.objects import ADCMClient, Cluster, Component, Host, Service, Provider
 
 from tests.functional.audit.conftest import check_succeed, make_auth_header, parametrize_audit_scenario_parsing
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
     ANOTHER_SERVICE_NAME,
     DEFAULT_SERVICE_NAME,
-    add_hosts_to_cluster,
-    cluster_with_mm,
-    hosts,
+    add_hosts_to_cluster, BUNDLES_DIR, PROVIDER_NAME, CLUSTER_WITH_MM_NAME,
 )
 
 # pylint: disable=redefined-outer-name
 
 pytestmark = [only_clean_adcm]
 API_METHOD = "patch"
+
+
+@pytest.fixture()
+def hosts(provider) -> tuple[Host, ...]:
+    """Create 6 hosts from the default bundle"""
+    return tuple(provider.host_create(f'test-host-{i}') for i in range(6))
+
+
+@pytest.fixture()
+def provider(sdk_client_fs: ADCMClient) -> Provider:
+    """Upload bundle and create default provider"""
+    bundle = sdk_client_fs.upload_from_fs(BUNDLES_DIR / 'default_provider')
+    return bundle.provider_create(PROVIDER_NAME)
+
+
+@pytest.fixture()
+def cluster_with_mm(sdk_client_fs: ADCMClient) -> Cluster:
+    """
+    Upload cluster bundle with allowed MM,
+    create and return cluster with default service
+    """
+    bundle = sdk_client_fs.upload_from_fs(BUNDLES_DIR / 'cluster_mm_allowed')
+    cluster = bundle.cluster_create(CLUSTER_WITH_MM_NAME)
+    cluster.service_add(name=DEFAULT_SERVICE_NAME)
+    return cluster
 
 
 def change_service_mm(client: ADCMClient, cluster: Cluster, service: Service) -> None:
@@ -72,7 +96,7 @@ def change_host_mm(client: ADCMClient, host: Host) -> None:
 
 
 @parametrize_audit_scenario_parsing("mm_audit.yaml")
-def test_mm_audit(sdk_client_fs, audit_log_checker, hosts, cluster_with_mm, post, new_user_client):
+def test_mm_audit(sdk_client_fs, audit_log_checker, cluster_with_mm, hosts, provider):
     """Test to check audit logs for service and components in maintenance mode"""
     first_host, *_ = hosts
     first_service = cluster_with_mm.service(name=DEFAULT_SERVICE_NAME)
