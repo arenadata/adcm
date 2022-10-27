@@ -78,7 +78,7 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
   ngOnInit() {
     this.actionsUrl$ = this.api.root.pipe(
       switchMap((root) => this.api.get<BaseEntity>(root.adcm)),
-      map((adcm) => `/api/v1/adcm/${adcm[0].id}/action/`));
+      map((adcm) => `/api/v1/adcm/${adcm[0]?.id}/action/`));
 
     this.getContext(this.router.routerState.snapshot.url);
 

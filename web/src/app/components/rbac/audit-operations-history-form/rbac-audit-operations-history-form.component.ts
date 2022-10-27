@@ -38,17 +38,18 @@ export class RbacAuditOperationsHistoryFormComponent implements OnInit {
   constructor(protected service: ListService,) {}
 
   ngOnInit(): void {
+    const history = Object.keys(this.model.row.object_changes.current).map(v => {
+      return {
+        attribute: v,
+        new_value: this.model.row.object_changes.current[v],
+        old_value: this.model.row.object_changes.previous[v]
+      }
+    });
     this.data$.next({
       "count": 1,
       "next": null,
       "previous": null,
-      "results": [
-        {
-          "attribute": Object.keys(this.model.row.object_changes.current)[0],
-          "new_value": Object.values(this.model.row.object_changes.current)[0],
-          "old_value": Object.values(this.model.row.object_changes.previous)[0]
-        }
-      ]
+      "results": history
     });
   }
 

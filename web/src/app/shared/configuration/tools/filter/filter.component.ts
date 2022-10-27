@@ -215,8 +215,9 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
       })
     }
 
+    let count = this.activeFilters.length === 0 ? this.backupData.count : data.count;
     this.freezeBackupData = true;
-    this.innerData.next({...this.backupData, count: data.length, results: data});
+    this.innerData.next({...this.backupData, count, results: data});
   }
 
   clearButtonVisible(field) {
