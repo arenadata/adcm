@@ -129,8 +129,7 @@ def change_host_mm(client: ADCMClient, cluster: Cluster, provider: Provider, hos
             check_failed(requests.post(url, json=body, headers=make_auth_header(user)), exact_code=404)
 
 
-@parametrize_audit_scenario_parsing("mm_audit.yaml", NEW_USER)
-# pylint: disable-next=too-many-arguments
+@parametrize_audit_scenario_parsing("mm_audit.yaml", NEW_USER)  # pylint: disable-next=too-many-arguments
 def test_mm_audit(sdk_client_fs, audit_log_checker, cluster_with_mm, hosts, provider, new_user_client):
     """Test to check audit logs for service and components in maintenance mode"""
     first_host, *_ = hosts
