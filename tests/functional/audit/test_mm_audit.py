@@ -30,9 +30,10 @@ from tests.functional.maintenance_mode.conftest import (
     BUNDLES_DIR,
     CLUSTER_WITH_MM_NAME,
     DEFAULT_SERVICE_NAME,
+    MM_IS_OFF,
     MM_IS_ON,
     PROVIDER_NAME,
-    add_hosts_to_cluster, MM_IS_OFF,
+    add_hosts_to_cluster,
 )
 
 # pylint: disable=redefined-outer-name
@@ -92,8 +93,10 @@ def change_service_mm(admin_client: ADCMClient, service: Service, user_client: A
 def change_component_mm(admin_client: ADCMClient, component: Component, user_client: ADCMClient) -> None:
     """Method to change component to maintenance mode"""
     url_list = [
-        (f'{admin_client.url}/api/v1/cluster/{component.cluster_id}/'
-         f'service/{component.service_id}/component/{component.id}/maintenance-mode/'),
+        (
+            f'{admin_client.url}/api/v1/cluster/{component.cluster_id}/'
+            f'service/{component.service_id}/component/{component.id}/maintenance-mode/'
+        ),
         f'{admin_client.url}/api/v1/service/{component.service_id}/component/{component.id}/maintenance-mode/',
         f'{admin_client.url}/api/v1/component/{component.id}/maintenance-mode/',
     ]
@@ -117,7 +120,6 @@ def change_component_mm(admin_client: ADCMClient, component: Component, user_cli
 
 def change_host_mm(admin_client: ADCMClient, cluster: Cluster, host: Host, user_client: ADCMClient) -> None:
     """Method to change host to maintenance mode"""
-    hclid = host.cluster_id  # TODO Bug url does not has info about cluster (None) host in cluster
     url_list = [
         f'{admin_client.url}/api/v1/cluster/{cluster.id}/host/{host.id}/maintenance-mode/',
         f'{admin_client.url}/api/v1/host/{host.id}/maintenance-mode/',
@@ -125,6 +127,7 @@ def change_host_mm(admin_client: ADCMClient, cluster: Cluster, host: Host, user_
     ]
 
     for url in url_list:
+
         body = {"maintenance_mode": True}
         with allure.step(f'Deny update host via POST {url} with body: {body}'):
             check_failed(requests.post(url, headers=make_auth_header(admin_client)), 400)
@@ -142,7 +145,7 @@ def change_host_mm(admin_client: ADCMClient, cluster: Cluster, host: Host, user_
 
 
 @parametrize_audit_scenario_parsing("mm_audit.yaml", NEW_USER)  # pylint: disable-next=too-many-arguments
-def test_mm_audit(sdk_client_fs, audit_log_checker, cluster_with_mm, hosts, provider, new_user_client):
+def test_mm_audit(sdk_client_fs, audit_log_checker, cluster_with_mm, hosts, new_user_client):
     """Test to check audit logs for service and components in maintenance mode"""
     first_host, *_ = hosts
     first_service = cluster_with_mm.service(name=DEFAULT_SERVICE_NAME)
