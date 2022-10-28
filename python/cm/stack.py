@@ -239,10 +239,10 @@ def save_components(proto, conf, bundle_hash):
 def check_upgrade(proto, conf):
     label = f"upgrade \"{conf['name']}\""
     check_versions(proto, conf, label)
-    check_scripts(proto, conf, label)
+    check_upgrade_scripts(proto, conf, label)
 
 
-def check_scripts(proto, conf, label):
+def check_upgrade_scripts(proto, conf, label):
     ref = proto_ref(proto)
     count = 0
     if "scripts" in conf:
@@ -257,6 +257,10 @@ def check_scripts(proto, conf, label):
                     err("INVALID_UPGRADE_DEFINITION", msg.format(label, ref))
         if count == 0:
             msg = "Scripts block in {} of {} must contain exact one block with script \"bundle_switch\""
+            err("INVALID_UPGRADE_DEFINITION", msg.format(label, ref))
+    else:
+        if "masking" in conf or "on_success" in conf or "on_fail" in conf:
+            msg = "{} of {} couldn't contain `masking`, `on_success` or `on_fail` without `scripts` block"
             err("INVALID_UPGRADE_DEFINITION", msg.format(label, ref))
 
 

@@ -1,10 +1,10 @@
 --extra-index-url https://ci.arenadata.io/artifactory/api/pypi/python-packages/simple
 
-adcm-client
 adwp-events==0.1.8
 coreapi==2.3.3
 Django==3.2.15
 django-cors-headers==3.13.0
+git+https://github.com/arenadata/django-generate-secret-key.git
 django-filter==22.1
 django-guardian==2.4.0
 django-rest-swagger==2.2.0
@@ -12,10 +12,6 @@ djangorestframework==3.13.1
 drf-flex-fields==0.9.1
 drf-extensions==0.7.1
 django-auth-ldap==4.1.0
-social-auth-app-django==5.0.0
-git+https://github.com/arenadata/django-generate-secret-key.git
-virtualenv==20.15.1
-# TODO jinja2 and markupsafe should be unpinned after https://arenadata.atlassian.net/browse/ADCM-2089 fixup
 Jinja2==2.11.3
 jsonschema==4.6.1
 MarkupSafe==1.1.1
@@ -23,7 +19,9 @@ Markdown==3.3.7
 mitogen==0.3.3
 PyYAML==6.0
 ruyaml==0.91.0
+social-auth-app-django==5.0.0
 toml==0.10.2
 uWSGI==2.0.20
 version-utils==0.3.2
+virtualenv==20.15.1
 yspec==0.1.0

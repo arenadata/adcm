@@ -13,6 +13,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { BaseDirective } from '@adwp-ui/widgets';
 import { FormControl } from "@angular/forms";
 import { debounceTime } from "rxjs/operators";
+import { editColumnValues } from "@app/components/columns/name-edit-column/name-edit-column.component";
 
 @Component({
   selector: 'name-edit-column-field',
@@ -20,9 +21,9 @@ import { debounceTime } from "rxjs/operators";
     <ng-container>
       <form class="form">
         <mat-form-field class="full-width">
-          <mat-label>Fully qualified domain name</mat-label>
+          <mat-label>{{ column_rules?.modal_placeholder }}</mat-label>
           <input type="string" matInput [formControl]="form">
-          <mat-error *ngIf="checkValidity()">Please enter a valid host name</mat-error>
+          <mat-error *ngIf="checkValidity()">Please enter a valid {{ column_rules?.entity_type }} name</mat-error>
         </mat-form-field>
       </form>
     </ng-container>
@@ -44,6 +45,7 @@ export class NameEditColumnFieldComponent extends BaseDirective implements OnIni
 
   row: any;
   form: FormControl;
+  column_rules: editColumnValues;
 
   ngOnInit() {
     this.row = this.model.row;

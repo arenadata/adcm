@@ -16,7 +16,7 @@ import { exhaustMap, filter, map, switchMap } from 'rxjs/operators';
 import { BaseDirective } from '@adwp-ui/widgets';
 import { ApiService } from '@app/core/api';
 import { getProfileSelector, settingsSave, State } from '@app/core/store';
-import { IConfig } from '@app/shared/configuration/types';
+import { IConfig,ISettingsListResponse } from '@app/shared/configuration/types';
 import { BaseEntity } from "../core/types";
 import { Observable } from "rxjs";
 
@@ -77,8 +77,8 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
 
   ngOnInit() {
     this.actionsUrl$ = this.api.root.pipe(
-      switchMap((root) => this.api.get<BaseEntity>(root.adcm)),
-      map((adcm) => `/api/v1/adcm/${adcm[0]?.id}/action/`));
+      switchMap((root) => this.api.get<ISettingsListResponse>(root.adcm)),
+      map((adcm) => `/api/v1/adcm/${adcm.results[0]?.id}/action/`));
 
     this.getContext(this.router.routerState.snapshot.url);
 

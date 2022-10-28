@@ -15,9 +15,7 @@
 import allure
 
 from tests.ui_tests.app.page.common.base_page import BasePageObject
-from tests.ui_tests.app.page.common.dialogs_locators import (
-    ActionDialog,
-)
+from tests.ui_tests.app.page.common.dialogs.locators import ActionDialog
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 
 

@@ -21,6 +21,7 @@ export interface IDetails {
   prototype_display_name: string;
   prototype_version: string;
   provider_id: number;
+  provider_name: string;
   bundle_id: number;
   hostcomponent: string;
   state: string;

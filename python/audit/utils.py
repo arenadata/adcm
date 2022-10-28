@@ -150,6 +150,8 @@ def _get_obj_changes_data(view: View | ModelViewSet) -> tuple[dict | None, Model
     current_obj = None
     serializer_class = None
     model = None
+    pk = None
+
     if (
         isinstance(view, ModelViewSet)
         and view.action in {"update", "partial_update"}
@@ -177,9 +179,11 @@ def _get_obj_changes_data(view: View | ModelViewSet) -> tuple[dict | None, Model
             serializer_class = host.serializers.HostAuditSerializer
             pk = view.kwargs["host_id"]
             model = Host
+
     if serializer_class:
         current_obj = model.objects.filter(pk=pk).first()
         prev_data = serializer_class(model.objects.filter(pk=pk).first()).data
+
         if current_obj:
             prev_data = serializer_class(current_obj).data
 
@@ -257,12 +261,17 @@ def audit(func):
 
             if not deleted_obj:
                 status_code = exc.status_code
-                if (
-                    status_code == HTTP_404_NOT_FOUND
-                    and kwargs.get("action_id")
-                    and Action.objects.filter(pk=kwargs["action_id"]).exists()
-                ):
-                    status_code = HTTP_403_FORBIDDEN
+                if status_code == HTTP_404_NOT_FOUND:
+                    action_perm_denied = (
+                        kwargs.get("action_id")
+                        and Action.objects.filter(pk=kwargs["action_id"]).exists()
+                    )
+                    task_perm_denied = (
+                        kwargs.get("task_pk")
+                        and TaskLog.objects.filter(pk=kwargs["task_pk"]).exists()
+                    )
+                    if action_perm_denied or task_perm_denied:
+                        status_code = HTTP_403_FORBIDDEN
 
             else:  # when denied returns 404 from PermissionListMixin
                 if getattr(exc, "msg", None) and (  # pylint: disable=too-many-boolean-expressions

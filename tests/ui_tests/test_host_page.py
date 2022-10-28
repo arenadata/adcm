@@ -20,33 +20,22 @@ from typing import Tuple
 import allure
 import pytest
 from _pytest.fixtures import SubRequest
-from adcm_client.objects import (
-    ADCMClient,
-    Bundle,
-    Provider,
-    Cluster,
-)
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider
 from adcm_pytest_plugin import utils
+from selenium.common import StaleElementReferenceException
 
+from tests.library.retry import RetryFromCheckpoint, Step
 from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
-from tests.ui_tests.app.page.common.status.page import (
-    SUCCESS_COLOR,
-    NEGATIVE_COLOR,
-)
-from tests.ui_tests.app.page.common.status.page import StatusRowInfo
+from tests.ui_tests.app.page.common.status.page import NEGATIVE_COLOR, SUCCESS_COLOR, StatusRowInfo
 from tests.ui_tests.app.page.host.locators import HostLocators
-from tests.ui_tests.app.page.host.page import (
-    HostMainPage,
-    HostConfigPage,
-    HostStatusPage,
-)
+from tests.ui_tests.app.page.host.page import HostConfigPage, HostMainPage, HostStatusPage
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 from tests.ui_tests.app.page.host_list.page import HostListPage
-from tests.ui_tests.utils import wait_and_assert_ui_info, expect_rows_amount_change
+from tests.ui_tests.utils import expect_rows_amount_change, wait_and_assert_ui_info
 
 # defaults
 HOST_FQDN = 'best-host'
@@ -129,7 +118,7 @@ def upload_and_create_cluster(cluster_bundle: Bundle) -> Tuple[Bundle, Cluster]:
 @pytest.fixture()
 @allure.title("Open /host page")
 # pylint: disable-next=unused-argument
-def page(app_fs: ADCMTest, login_to_adcm_over_api) -> HostListPage:
+def page(app_fs: ADCMTest, _login_to_adcm_over_api) -> HostListPage:
     """Open host page"""
     return HostListPage(app_fs.driver, app_fs.adcm.url).open()
 
@@ -151,7 +140,7 @@ def _check_job_name(sdk: ADCMClient, action_display_name: str):
 
 def _check_menu(
     menu_name: str,
-    provider_bundle: Bundle,
+    provider: Provider,
     list_page: HostListPage,
 ):
     list_page.click_on_row_child(0, HostListLocators.HostTable.HostRow.fqdn)
@@ -160,8 +149,7 @@ def _check_menu(
     host_page.check_fqdn_equal_to(HOST_FQDN)
     bundle_label = host_page.get_bundle_label()
     # Test Host is name of host in config.yaml
-    assert 'Test Host' in bundle_label
-    assert provider_bundle.version in bundle_label
+    assert provider.name == bundle_label
 
 
 # !===== TESTS =====!
@@ -195,7 +183,6 @@ class TestHostListPage:
             page.get_host_info_from_row,
         )
 
-    @pytest.mark.skip(reason="https://tracker.yandex.ru/ADCM-3212")
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
     @pytest.mark.usefixtures("upload_and_create_provider", "upload_and_create_cluster")
@@ -209,13 +196,27 @@ class TestHostListPage:
             'cluster': CLUSTER_NAME,
             'state': 'created',
         }
-        page.open_host_creation_popup()
-        page.host_popup.create_host(host_fqdn, cluster=CLUSTER_NAME)
+        self._create_host_bonded_to_cluster(page, host_fqdn)
         wait_and_assert_ui_info(
             expected_values,
             page.get_host_info_from_row,
             timeout=10,
         )
+
+    @staticmethod
+    def _create_host_bonded_to_cluster(page: HostListPage, fqdn: str) -> None:
+        host_bonding_retry = RetryFromCheckpoint(
+            execution_steps=[
+                Step(page.open_host_creation_popup),
+                Step(page.host_popup.create_host, [fqdn], {"cluster": CLUSTER_NAME}),
+            ],
+            restoration_steps=[
+                Step(page.driver.refresh),
+                Step(page.open_host_creation_popup),
+            ],
+        )
+        with allure.step("Try to bound host to cluster during new host creation"):
+            host_bonding_retry(restore_from=(AssertionError, TimeoutError, StaleElementReferenceException))
 
     @pytest.mark.parametrize("_create_many_hosts", [12], indirect=True)
     @pytest.mark.usefixtures("_create_many_hosts")
@@ -305,7 +306,8 @@ class TestHostListPage:
     def test_open_menu(self, upload_and_create_provider: Tuple[Bundle, Provider], page: HostListPage, menu: str):
         """Open detailed host page and open menu from side navigation"""
 
-        _check_menu(menu, upload_and_create_provider[0], page)
+        _, provider = upload_and_create_provider
+        _check_menu(menu, provider, page)
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -354,7 +356,7 @@ class TestHostListPage:
             ], f"Action list with MM ON should be with action {INIT_ACTION}"
 
 
-@pytest.mark.usefixtures('login_to_adcm_over_api')
+@pytest.mark.usefixtures('_login_to_adcm_over_api')
 class TestHostMainPage:
     """Tests for the /host/{}/config page"""
 
@@ -532,7 +534,7 @@ class TestHostConfigPage:
             host_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
 
-@pytest.mark.usefixtures('login_to_adcm_over_api')
+@pytest.mark.usefixtures('_login_to_adcm_over_api')
 class TestHostStatusPage:
     """Tests for the /host/{}/status page"""
 
@@ -592,3 +594,71 @@ class TestHostStatusPage:
             with host_status_page.wait_rows_collapsed():
                 host_status_page.click_collapse_all_btn()
             assert len(host_status_page.get_all_rows()) == 1, "Status rows should have been collapsed"
+
+
+class TestHostRenaming:
+
+    SPECIAL_CHARS = (".", "-", "_")
+    DISALLOWED_AT_START = (".", "-")
+    EXPECTED_ERROR = "Please enter a valid name"
+
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
+    def test_rename_host(self, sdk_client_fs, app_fs, create_host):
+        host = create_host
+        page = HostListPage(app_fs.driver, app_fs.adcm.url).open()
+        self._test_correct_name_can_be_set(host, page)
+        self._test_an_error_is_shown_on_incorrect_char_in_name(page)
+        self._test_an_error_is_not_shown_on_correct_char_in_name(page)
+
+    @allure.step("Check settings new correct host FQDN")
+    def _test_correct_name_can_be_set(self, host: Host, page: HostListPage) -> None:
+        new_name = "best-host.fqdn"
+
+        dialog = page.open_rename_dialog(page.get_host_row())
+        dialog.set_new_name_in_rename_dialog(new_name)
+        dialog.click_save_on_rename_dialog()
+        with allure.step("Check fqdn of host in table"):
+            name_in_row = page.get_host_info_from_row(0).fqdn
+            assert name_in_row == new_name, f"Incorrect cluster name, expected: {new_name}"
+            host.reread()
+            assert host.fqdn == new_name, f"Host FQDN on backend is incorrect, expected: {new_name}"
+
+    def _test_an_error_is_shown_on_incorrect_char_in_name(self, page: HostListPage) -> None:
+        dummy_name = "hOst"
+        incorrect_names = (
+            *[f"{char}{dummy_name}" for char in self.DISALLOWED_AT_START],
+            *[f"{dummy_name[0]}{char}{dummy_name[1:]}" for char in ("и", "!", " ")],
+        )
+
+        dialog = page.open_rename_dialog(page.get_host_row())
+
+        for fqdn in incorrect_names:
+            with allure.step(f"Check if printing host FQDN '{fqdn}' triggers a warning message"):
+                dialog.set_new_name_in_rename_dialog(dummy_name)
+                dialog.set_new_name_in_rename_dialog(fqdn)
+                assert dialog.is_dialog_error_message_visible(), "Error about incorrect name should be visible"
+                assert (
+                    dialog.get_dialog_error_message() == self.EXPECTED_ERROR
+                ), f"Incorrect error message, expected: {self.EXPECTED_ERROR}"
+
+        dialog.click_cancel_on_rename_dialog()
+
+    def _test_an_error_is_not_shown_on_correct_char_in_name(self, page: HostListPage) -> None:
+        dummy_name = "clUster"
+        correct_names = (
+            *[f"{dummy_name[0]}{char}{dummy_name[1:]}" for char in (".", "-", "9")],
+            f"9{dummy_name}",
+            f"{dummy_name}-",
+        )
+
+        dialog = page.open_rename_dialog(page.get_host_row())
+
+        for fqdn in correct_names:
+            with allure.step(f"Check if printing host FQDN '{fqdn}' shows no error"):
+                dialog.set_new_name_in_rename_dialog(dummy_name)
+                dialog.set_new_name_in_rename_dialog(fqdn)
+                assert not dialog.is_dialog_error_message_visible(), "Error about correct name should not be shown"
+                dialog.click_save_on_rename_dialog()
+                name_in_row = page.get_host_info_from_row().fqdn
+                assert name_in_row == fqdn, f"Incorrect host FQDN, expected: {fqdn}"
+                dialog = page.open_rename_dialog(page.get_host_row())

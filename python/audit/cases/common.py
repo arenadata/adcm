@@ -1,4 +1,14 @@
-from django.db.models import Model
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from rest_framework.response import Response
 
 from audit.models import (
@@ -10,7 +20,14 @@ from audit.models import (
     AuditObjectType,
     AuditOperation,
 )
-from cm.models import Action, ClusterObject, TaskLog, Upgrade
+from cm.models import (
+    Action,
+    ADCMEntity,
+    ClusterObject,
+    ServiceComponent,
+    TaskLog,
+    Upgrade,
+)
 
 
 def _get_audit_operation(
@@ -49,7 +66,7 @@ def _task_case(task_pk: str, action: str) -> tuple[AuditOperation, AuditObject |
         operation_type=AuditLogOperationType.Update,
     )
 
-    if task:
+    if task and task.task_object:
         audit_object = get_or_create_audit_obj(
             object_id=task.task_object.pk,
             object_name=task.task_object.name,
@@ -61,7 +78,7 @@ def _task_case(task_pk: str, action: str) -> tuple[AuditOperation, AuditObject |
     return audit_operation, audit_object
 
 
-def get_obj_name(obj: Model, obj_type: str) -> str:
+def get_obj_name(obj: ClusterObject | ServiceComponent | ADCMEntity, obj_type: str) -> str:
     if obj_type == "service":
         obj_name = obj.display_name
         cluster = getattr(obj, "cluster")

@@ -12,7 +12,7 @@
 
 """Utilities for LDAP-related tests"""
 
-from typing import Collection
+from typing import Collection, Set
 
 import allure
 from adcm_client.base import ObjectNotFound
@@ -102,3 +102,21 @@ def login_should_fail(operation_name: str, client: ADCMClient, username: str, pa
             user=username,
             password=password,
         )
+
+
+def check_users_in_group(group: Group, *users: User):
+    """Method to check users in group"""
+    error_msg = f'Incorrect user list in group {group.name}'
+    sets_are_equal(actual=get_usernames_in_group(group), expected={u.username for u in users}, message=error_msg)
+
+
+def get_usernames_in_group(group: Group) -> Set:
+    """Method to get usernames from group"""
+    group.reread()
+    return {u.username for u in group.user_list()}
+
+
+@allure.step('Turn off periodic ldap sync')
+def turn_off_periodic_ldap_sync(client: ADCMClient) -> None:
+    """Method to turn off periodic ldap sync"""
+    client.adcm().config_set_diff({'ldap_integration': {'sync_interval': 0}})

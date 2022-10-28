@@ -91,11 +91,11 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def get_service_proto_id(self):
-        response: Response = self.client.get(reverse("service-type"))
+        response: Response = self.client.get(reverse("service-prototype-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        for service in response.json():
+        for service in response.json()["results"]:
             if service["name"] == self.service:
                 return service["id"]
 
@@ -115,27 +115,27 @@ class TestAPI(BaseTestCase):
         raise AssertionError
 
     def get_cluster_proto_id(self):
-        response: Response = self.client.get(reverse("cluster-type"))
+        response: Response = self.client.get(reverse("cluster-prototype-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        for cluster in response.json():
+        for cluster in response.json()["results"]:
             return cluster["bundle_id"], cluster["id"]
 
     def get_host_proto_id(self):
-        response: Response = self.client.get(reverse("host-type"))
+        response: Response = self.client.get(reverse("host-prototype-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        for host in response.json():
+        for host in response.json()["results"]:
             return host["bundle_id"], host["id"]
 
     def get_host_provider_proto_id(self):
-        response: Response = self.client.get(reverse("provider-type"))
+        response: Response = self.client.get(reverse("provider-prototype-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        for provider in response.json():
+        for provider in response.json()["results"]:
             return provider["bundle_id"], provider["id"]
 
     def create_host(self, fqdn, name=None):
@@ -162,7 +162,7 @@ class TestAPI(BaseTestCase):
     def test_access(self):
         self.client.logout()
 
-        api = [reverse("cluster"), reverse("host"), reverse("job"), reverse("task")]
+        api = [reverse("cluster"), reverse("host"), reverse("tasklog-list")]
         for url in api:
             response: Response = self.client.get(url)
 
@@ -296,7 +296,7 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.json()["code"], "CLUSTER_NOT_FOUND")
 
         response: Response = self.client.delete(
-            reverse("bundle-details", kwargs={"bundle_id": bundle_id})
+            reverse("bundle-detail", kwargs={"bundle_pk": bundle_id})
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
@@ -357,7 +357,7 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         response: Response = self.client.delete(
-            reverse("bundle-details", kwargs={"bundle_id": bundle_id})
+            reverse("bundle-detail", kwargs={"bundle_pk": bundle_id})
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
@@ -424,13 +424,13 @@ class TestAPI(BaseTestCase):
         self.client.delete(reverse("cluster-details", kwargs={"cluster_id": cluster_id2}))
         self.client.delete(reverse("host-details", kwargs={"host_id": host_id}))
         response: Response = self.client.delete(
-            reverse("bundle-details", kwargs={"bundle_id": adh_bundle_id})
+            reverse("bundle-detail", kwargs={"bundle_pk": adh_bundle_id})
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         response: Response = self.client.delete(
-            reverse("bundle-details", kwargs={"bundle_id": ssh_bundle_id})
+            reverse("bundle-detail", kwargs={"bundle_pk": ssh_bundle_id})
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -439,8 +439,8 @@ class TestAPI(BaseTestCase):
     def test_service(self):
         self.load_bundle(self.bundle_adh_name)
         service_id = self.get_service_proto_id()
-        service_url = reverse("service-type")
-        this_service_url = reverse("service-type-details", kwargs={"prototype_id": service_id})
+        service_url = reverse("service-prototype-list")
+        this_service_url = reverse("service-prototype-detail", kwargs={"prototype_pk": service_id})
 
         response: Response = self.client.post(service_url, {})
 
@@ -465,7 +465,7 @@ class TestAPI(BaseTestCase):
         bundle_id = response.json()["bundle_id"]
 
         response: Response = self.client.delete(
-            reverse("bundle-details", kwargs={"bundle_id": bundle_id})
+            reverse("bundle-detail", kwargs={"bundle_pk": bundle_id})
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
@@ -540,7 +540,7 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         response: Response = self.client.delete(
-            reverse("bundle-details", kwargs={"bundle_id": bundle_id})
+            reverse("bundle-detail", kwargs={"bundle_pk": bundle_id})
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
@@ -714,13 +714,13 @@ class TestAPI(BaseTestCase):
         self.client.delete(reverse("cluster-details", kwargs={"cluster_id": cluster_id2}))
         self.client.delete(reverse("host-details", kwargs={"host_id": host_id}))
         response: Response = self.client.delete(
-            reverse("bundle-details", kwargs={"bundle_id": adh_bundle_id})
+            reverse("bundle-detail", kwargs={"bundle_pk": adh_bundle_id})
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         response: Response = self.client.delete(
-            reverse("bundle-details", kwargs={"bundle_id": ssh_bundle_id})
+            reverse("bundle-detail", kwargs={"bundle_pk": ssh_bundle_id})
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -879,10 +879,10 @@ class TestAPI(BaseTestCase):
         self.assertEqual(len(response.json()), 2)
 
         self.client.delete(reverse("cluster-details", kwargs={"cluster_id": cluster_id}))
-        self.client.delete(reverse("bundle-details", kwargs={"bundle_id": adh_bundle_id}))
+        self.client.delete(reverse("bundle-detail", kwargs={"bundle_pk": adh_bundle_id}))
 
 
-class TestApi2(BaseTestCase):
+class TestAPI2(BaseTestCase):
     def setUp(self):
         gen_adcm()
         self.bundle = Bundle.objects.create(

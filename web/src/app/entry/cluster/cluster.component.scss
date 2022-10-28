@@ -1,0 +1,20 @@
+:host {
+  flex: 1;
+  max-width: 100%;
+}
+
+::ng-deep mat-row {
+
+  &:hover {
+
+    mat-cell {
+
+      button {
+
+        &.rename-button.editable {
+          display: flex !important;
+        }
+      }
+    }
+  }
+}

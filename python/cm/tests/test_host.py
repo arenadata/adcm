@@ -81,19 +81,19 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def get_host_proto_id(self):
-        response: Response = self.client.get(reverse("host-type"))
+        response: Response = self.client.get(reverse("host-prototype-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        for host in response.json():
+        for host in response.json()["results"]:
             return host["bundle_id"], host["id"]
 
     def get_host_provider_proto_id(self):
-        response: Response = self.client.get(reverse("provider-type"))
+        response: Response = self.client.get(reverse("provider-prototype-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        for provider in response.json():
+        for provider in response.json()["results"]:
             return provider["bundle_id"], provider["id"]
 
     def check_incorrect_fqdn_update(self, response: Response, expected_fqdn: str):
@@ -230,7 +230,7 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.json()["code"], "HOST_NOT_FOUND")
 
         response: Response = self.client.delete(
-            path=reverse("bundle-details", kwargs={"bundle_id": ssh_bundle_id})
+            path=reverse("bundle-detail", kwargs={"bundle_pk": ssh_bundle_id})
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -244,7 +244,7 @@ class TestHostAPI(BaseTestCase):
 
         self.provider.delete()
         response: Response = self.client.delete(
-            path=reverse("bundle-details", kwargs={"bundle_id": ssh_bundle_id})
+            path=reverse("bundle-detail", kwargs={"bundle_pk": ssh_bundle_id})
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)

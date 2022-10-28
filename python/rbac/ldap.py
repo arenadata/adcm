@@ -141,8 +141,8 @@ def get_ldap_default_settings() -> Tuple[dict, Optional[str]]:
             group_search = LDAPSearch(
                 base_dn=ldap_config["group_search_base"],
                 scope=ldap.SCOPE_SUBTREE,
-                filterstr=f"(objectClass={ldap_config.get('group_object_class') or '*'})"
-                f"{_process_extra_filter(ldap_config.get('group_search_filter'))}",
+                filterstr=f"(&(objectClass={ldap_config.get('group_object_class') or '*'})"
+                f"{_process_extra_filter(ldap_config.get('group_search_filter'))})",
             )
         user_attr_map = {
             "username": ldap_config["user_name_attribute"],
@@ -165,7 +165,7 @@ def get_ldap_default_settings() -> Tuple[dict, Optional[str]]:
             "GROUP_FILTER": _process_extra_filter(ldap_config.get("group_search_filter", "")),
             "USER_ATTR_MAP": user_attr_map,
             "ALWAYS_UPDATE_USER": True,
-            "CACHE_TIMEOUT": 3600,
+            "CACHE_TIMEOUT": 0,
         }
         if group_search:
             default_settings.update(
@@ -217,6 +217,7 @@ class CustomLDAPBackend(LDAPBackend):
 
         if isinstance(user_or_none, User):
             user_or_none.type = OriginType.LDAP
+            user_or_none.is_active = True
             user_or_none.save()
             self._process_groups(user_or_none, ldap_user.dn, user_local_groups)
 

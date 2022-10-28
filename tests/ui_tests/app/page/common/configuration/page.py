@@ -485,10 +485,10 @@ class CommonConfigMenuObj(BasePageObject):
             for item in item_rows:
                 self.check_element_should_be_hidden(item)
 
-    def get_group_names(self):
+    def get_group_names(self, timeout: int = 2):
         """Wait for group elements to be displayed and get them"""
         try:
-            return self.find_elements(self.locators.ConfigGroup.name, timeout=2)
+            return self.find_elements(self.locators.ConfigGroup.name, timeout=timeout)
         except TimeoutException:
             return []
 
@@ -510,9 +510,9 @@ class CommonConfigMenuObj(BasePageObject):
         wait_until_step_succeeds(_wait_changing_rows_amount, period=1, timeout=10)
 
     @allure.step('Check that there are no rows or groups on config page')
-    def check_no_rows_or_groups_on_page(self):
-        assert len(self.get_group_names()) == 0, "Config group should not be visible"
-        assert len(self.get_all_config_rows(timeout=1)) == 0, "There should not be any rows"
+    def check_no_rows_or_groups_on_page(self, timeout=1):
+        assert len(self.get_group_names(timeout)) == 0, "Config group should not be visible"
+        assert len(self.get_all_config_rows(timeout=timeout)) == 0, "There should not be any rows"
 
     @allure.step('Check that there are no rows or groups on config page with advanced settings')
     def check_no_rows_or_groups_on_page_with_advanced(self):

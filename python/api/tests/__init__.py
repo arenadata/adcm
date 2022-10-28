@@ -9,21 +9,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
-from django_filters import rest_framework as drf_filters
-
-from cm.models import Prototype
-
-
-class StringInFilter(drf_filters.BaseInFilter, drf_filters.CharFilter):
-    pass
-
-
-class PrototypeListFilter(drf_filters.FilterSet):
-    name = StringInFilter(label='name', field_name='name', lookup_expr='in')
-    parent_name = StringInFilter(label='parent_name', field_name='parent', lookup_expr='name__in')
-
-    class Meta:
-        model = Prototype
-        fields = ['bundle_id', 'type']

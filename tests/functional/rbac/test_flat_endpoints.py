@@ -33,7 +33,7 @@ GROUP_CONFIG_EP = 'group-config'
 
 
 @pytest.fixture()
-def prepare_configs(prepare_objects, second_objects) -> None:
+def _prepare_configs(prepare_objects, second_objects) -> None:
     """Change configs, crete group configs and change them"""
     changed_config = {'boolean': False}
     for first_object, second_object in zip(prepare_objects, second_objects):
@@ -44,7 +44,7 @@ def prepare_configs(prepare_objects, second_objects) -> None:
             _prepare_group_config(second_object)
 
 
-@pytest.mark.usefixtures('prepare_configs')
+@pytest.mark.usefixtures('_prepare_configs')
 def test_flat_endpoints(user, clients, prepare_objects, second_objects):
     """
     Test "flat" endpoints:
@@ -86,11 +86,10 @@ def check_jobs_and_tasks(client: ADCMClient, objects):
     task_flat_endpoint = "task"
 
     with allure.step(f'Check jobs at "{job_flat_endpoint}/" endpoint based on task_id'):
-        expected_jobs: set = {
-            job.task_id
-            for job in itertools.chain.from_iterable([obj.action(name=ACTION_NAME).task_list() for obj in objects])
-        }
-        actual_jobs: set = {job['task_id'] for job in _query_flat_endpoint(client, job_flat_endpoint)}
+        expected_jobs = set()
+        for task in itertools.chain.from_iterable([obj.action(name=ACTION_NAME).task_list() for obj in objects]):
+            expected_jobs |= {job.id for job in task.job_list()}
+        actual_jobs: set = {job['id'] for job in _query_flat_endpoint(client, job_flat_endpoint)}
         sets_are_equal(
             actual_jobs,
             expected_jobs,

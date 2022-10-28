@@ -11,8 +11,10 @@
 # limitations under the License.
 
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import patch
 
+from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
@@ -131,6 +133,8 @@ class TestBundle(BaseTestCase):
             log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user
         )
 
+        Path(settings.DOWNLOAD_DIR, self.test_bundle_filename).unlink()
+
     def test_upload_fail(self):
         with open(self.test_bundle_path, encoding="utf-8") as f:
             self.client.post(
@@ -149,7 +153,7 @@ class TestBundle(BaseTestCase):
             with self.no_rights_user_logged_in:
                 response: Response = self.client.post(
                     path=reverse("upload-bundle"),
-                    data={"no_file": f},
+                    data={"file": f},
                 )
 
         log: AuditLog = AuditLog.objects.first()
@@ -194,7 +198,7 @@ class TestBundle(BaseTestCase):
         )
 
     def test_load_denied(self):
-        self.upload_bundle_and_check()
+        self.upload_bundle()
 
         with self.no_rights_user_logged_in:
             response: Response = self.load_bundle()
@@ -217,8 +221,7 @@ class TestBundle(BaseTestCase):
     def test_update(self):
         with patch("api.stack.views.update_bundle"):
             self.client.put(
-                path=reverse("bundle-update", kwargs={"bundle_id": self.bundle.pk}),
-                data={"name": "new_bundle_name"},
+                path=reverse("bundle-update", kwargs={"bundle_pk": self.bundle.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -237,8 +240,7 @@ class TestBundle(BaseTestCase):
     def test_update_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.put(
-                path=reverse("bundle-update", kwargs={"bundle_id": self.bundle.pk}),
-                data={"name": "new_bundle_name"},
+                path=reverse("bundle-update", kwargs={"bundle_pk": self.bundle.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -249,7 +251,7 @@ class TestBundle(BaseTestCase):
         )
 
     def test_license_accepted(self):
-        self.client.put(path=reverse("accept-license", kwargs={"bundle_id": self.bundle.pk}))
+        self.client.put(path=reverse("accept-license", kwargs={"bundle_pk": self.bundle.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -267,7 +269,7 @@ class TestBundle(BaseTestCase):
     def test_license_accepted_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.put(
-                path=reverse("accept-license", kwargs={"bundle_id": self.bundle.pk})
+                path=reverse("accept-license", kwargs={"bundle_pk": self.bundle.pk})
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -281,7 +283,7 @@ class TestBundle(BaseTestCase):
 
     def test_delete(self):
         with patch("api.stack.views.delete_bundle"):
-            self.client.delete(path=reverse("bundle-details", kwargs={"bundle_id": self.bundle.pk}))
+            self.client.delete(path=reverse("bundle-detail", kwargs={"bundle_pk": self.bundle.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -290,7 +292,7 @@ class TestBundle(BaseTestCase):
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse("bundle-details", kwargs={"bundle_id": self.bundle.pk})
+                path=reverse("bundle-detail", kwargs={"bundle_pk": self.bundle.pk})
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -305,7 +307,7 @@ class TestBundle(BaseTestCase):
             prototype=Prototype.objects.create(bundle=self.bundle, type="cluster"),
             name="test_cluster",
         )
-        self.client.delete(path=reverse("bundle-details", kwargs={"bundle_id": self.bundle.pk}))
+        self.client.delete(path=reverse("bundle-detail", kwargs={"bundle_pk": self.bundle.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
