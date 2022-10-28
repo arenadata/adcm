@@ -19,33 +19,35 @@ operations:
       what:
         type: service
         name: "Test Cluster WITH Maintenance Mode/another_service"
-        operation_name: "Service updated"
-        operation_type: "update"
       how: change-properties
+  - update: *change-service
+    result: fail
+  - update: *change-service
   - update: *change-service
     result: denied
     username: {{ username }}
+  - update: *change-service
   - update: &change-component
       what:
         type: component
         name: "Test Cluster WITH Maintenance Mode/test_service/first_component"
-        operation_name: "Component updated"
-        operation_type: "update"
       how: change-properties
-    result: denied
+  - update: *change-component
+    result: fail
   - update: *change-component
   - update: *change-component
     result: denied
     username: {{ username }}
+  - update: *change-component
   - update: &change-host
       what:
         type: host
         name: "test-host-0"
-        operation_name: "Host updated"
-        operation_type: "update"
       how: change-properties
-    result: denied
+  - update: *change-host
+    result: fail
   - update: *change-host
   - update: *change-host
     result: denied
     username: {{ username }}
+  - update: *change-host
