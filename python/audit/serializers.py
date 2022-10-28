@@ -11,51 +11,51 @@
 # limitations under the License.
 
 
-from rest_framework import serializers
+from rest_framework.serializers import (
+    CharField,
+    HyperlinkedModelSerializer,
+    IntegerField,
+)
 
 from audit.models import AuditLog, AuditSession
 
 
-class AuditLogSerializer(serializers.HyperlinkedModelSerializer):
-    object_id = serializers.IntegerField(
-        read_only=True, source='audit_object.object_id', allow_null=True
-    )
-    object_type = serializers.CharField(
-        read_only=True, source='audit_object.object_type', allow_null=True
-    )
-    object_name = serializers.CharField(
-        read_only=True, source='audit_object.object_name', allow_null=True
-    )
+class AuditLogSerializer(HyperlinkedModelSerializer):
+    object_id = IntegerField(read_only=True, source="audit_object.object_id", allow_null=True)
+    object_type = CharField(read_only=True, source="audit_object.object_type", allow_null=True)
+    object_name = CharField(read_only=True, source="audit_object.object_name", allow_null=True)
+    username = CharField(read_only=True, source="user.username", allow_null=True)
 
     class Meta:
         model = AuditLog
         fields = [
-            'id',
-            'object_id',
-            'object_type',
-            'object_name',
-            'operation_type',
-            'operation_name',
-            'operation_result',
-            'operation_time',
-            'user_id',
-            'object_changes',
-            'url',
+            "id",
+            "object_id",
+            "object_type",
+            "object_name",
+            "operation_type",
+            "operation_name",
+            "operation_result",
+            "operation_time",
+            "user_id",
+            "username",
+            "object_changes",
+            "url",
         ]
-        extra_kwargs = {'url': {'view_name': 'audit:audit-operations-detail'}}
+        extra_kwargs = {"url": {"view_name": "audit:audit-operations-detail"}}
 
 
-class AuditSessionSerializer(serializers.HyperlinkedModelSerializer):
+class AuditSessionSerializer(HyperlinkedModelSerializer):
     class Meta:
         model = AuditSession
         fields = [
-            'id',
-            'user_id',
-            'login_result',
-            'login_time',
-            'login_details',
-            'url',
+            "id",
+            "user_id",
+            "login_result",
+            "login_time",
+            "login_details",
+            "url",
         ]
         extra_kwargs = {
-            'url': {'view_name': 'audit:audit-logins-detail'},
+            "url": {"view_name": "audit:audit-logins-detail"},
         }
