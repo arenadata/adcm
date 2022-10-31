@@ -1,10 +1,11 @@
-import { Component, forwardRef, OnInit } from '@angular/core';
+import { Component, ComponentRef, forwardRef, OnInit } from '@angular/core';
 import { ADD_SERVICE_PROVIDER } from "@app/shared/add-component/add-service-model";
 import { RbacAuditOperationsService } from "@app/services/rbac-audit-operations.service";
 import { AuditOperationsChangesHistory } from "@app/models/rbac/rbac-audit-operations.model";
 import { IColumns } from "@adwp-ui/widgets";
 import { ListService } from "@app/shared/components/list/list.service";
 import { BehaviorSubject } from "rxjs";
+import { WrapperColumnComponent } from "@app/components/columns/wrapper-column/wrapper-column.component";
 
 @Component({
   selector: 'app-rbac-audit-operations-form',
@@ -27,11 +28,19 @@ export class RbacAuditOperationsHistoryFormComponent implements OnInit {
     },
     {
       label: 'Old value',
-      value: (row) => row.old_value,
+      type: 'component',
+      component: WrapperColumnComponent,
+      instanceTaken: (componentRef: ComponentRef<WrapperColumnComponent>) => {
+        componentRef.instance.type = ['text-substr'];
+      }
     },
     {
       label: 'New Value',
-      value: (row) => row.new_value,
+      type: 'component',
+      component: WrapperColumnComponent,
+      instanceTaken: (componentRef: ComponentRef<WrapperColumnComponent>) => {
+        componentRef.instance.type = ['text-substr'];
+      }
     }
   ] as IColumns<AuditOperationsChangesHistory>;
 
@@ -40,7 +49,7 @@ export class RbacAuditOperationsHistoryFormComponent implements OnInit {
   ngOnInit(): void {
     const history = Object.keys(this.model.row.object_changes.current).map(v => {
       return {
-        attribute: v,
+        attribute: (v.charAt(0).toUpperCase() + v.slice(1)).replace('_', ' '),
         new_value: this.model.row.object_changes.current[v],
         old_value: this.model.row.object_changes.previous[v]
       }

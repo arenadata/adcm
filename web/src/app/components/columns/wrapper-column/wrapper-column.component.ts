@@ -1,8 +1,8 @@
-import {Component, Input, OnInit} from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 
 /*
 * Component wrapper for columns
-* If you need to change column value color - use type 'color'
+* If you need to change color of column value - use type 'color'
 * If you need to make sure that long names will be trimmed to the column size -  use type 'text-substr'
 */
 
@@ -18,7 +18,7 @@ export class WrapperColumnComponent implements OnInit {
   row: any;
   column: any;
   red: string[] = ['delete', 'fail'];
-  orange: string[] = ['update'];
+  orange: string[] = ['update', 'denied'];
   green: string[] = ['create', 'success'];
 
   constructor() { }

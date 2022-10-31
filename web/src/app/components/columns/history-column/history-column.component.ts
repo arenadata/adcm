@@ -32,8 +32,8 @@ export class HistoryColumnComponent implements OnInit {
 
   prepare(): void {
     let dialogModel: MatDialogConfig
-    const maxWidth = '800px';
-    const width = '600px';
+    const maxWidth = '1000px';
+    const width = '1000px';
     const title = 'Operation detail';
 
 

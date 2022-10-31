@@ -136,6 +136,7 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
       options: [
         {id: 1, name: 'success', display_name: 'Success', value: 'success'},
         {id: 2, name: 'fail', display_name: 'Fail', value: 'fail'},
+        {id: 3, name: 'denied', display_name: 'Denied', value: 'denied'},
       ]
     },
     {
