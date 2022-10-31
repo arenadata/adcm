@@ -23,7 +23,9 @@ export class HistoryColumnComponent implements OnInit {
   }
 
   show(event) {
-    this.prepare();
+    if (this.hasChangesHistory()) {
+      this.prepare();
+    }
     event.preventDefault();
     event.stopPropagation();
   }

@@ -36,18 +36,12 @@ import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-mode
 import { AddService } from '@app/shared/add-component/add.service';
 import { SnackBarComponent } from './components/snack-bar/snack-bar.component';
 import { RouterHistoryService } from '@app/core/services/router-history.service';
-import { RbacAuditOperationsHistoryFormComponent } from './components/rbac/audit-operations-history-form/rbac-audit-operations-history-form.component';
-import { HistoryColumnComponent } from './components/columns/history-column/history-column.component';
-import { WrapperColumnComponent } from './components/columns/wrapper-column/wrapper-column.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     LogComponent,
     SnackBarComponent,
-    RbacAuditOperationsHistoryFormComponent,
-    HistoryColumnComponent,
-    WrapperColumnComponent,
   ],
   imports: [
     BrowserModule,

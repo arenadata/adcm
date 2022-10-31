@@ -63,6 +63,8 @@ import { DynamicModule } from '@app/shared/directives/dynamic/dynamic.module';
 import { RbacObjectCandidateService } from '@app/services/rbac-object-candidate.service';
 import { UpgradeMasterConfigComponent } from "@app/shared/components/upgrades/master/upgrade-master-config.component";
 import { RbacAuditOperationsService } from "@app/services/rbac-audit-operations.service";
+import { HistoryColumnComponent } from "@app/components/columns/history-column/history-column.component";
+import { WrapperColumnComponent } from "@app/components/columns/wrapper-column/wrapper-column.component";
 
 @NgModule({
   imports: [
@@ -111,7 +113,9 @@ import { RbacAuditOperationsService } from "@app/services/rbac-audit-operations.
     TranslateKeysPipe,
     StatusTreeComponent,
     EntityStatusToStatusTreePipe,
-    StatusTreeLinkPipe
+    StatusTreeLinkPipe,
+    HistoryColumnComponent,
+    WrapperColumnComponent,
   ],
   exports: [
     FormsModule,
@@ -147,7 +151,9 @@ import { RbacAuditOperationsService } from "@app/services/rbac-audit-operations.
     TooltipModule,
     StatusTreeComponent,
     EntityStatusToStatusTreePipe,
-    StatusTreeLinkPipe
+    StatusTreeLinkPipe,
+    HistoryColumnComponent,
+    WrapperColumnComponent,
   ],
   providers: [
     JobService,
@@ -157,7 +163,7 @@ import { RbacAuditOperationsService } from "@app/services/rbac-audit-operations.
     RbacRoleService,
     RbacPolicyService,
     RbacAuditOperationsService,
-    RbacObjectCandidateService
+    RbacObjectCandidateService,
   ],
 })
 export class SharedModule {

@@ -35,6 +35,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RbacPolicyFormModule } from '../components/rbac/policy-form/rbac-policy-form.module';
 import { ConfigurationModule } from '../shared/configuration/configuration.module';
+import {
+  RbacAuditOperationsHistoryFormComponent
+} from "../components/rbac/audit-operations-history-form/rbac-audit-operations-history-form.component";
 
 const routes: Routes = [
   {
@@ -108,6 +111,7 @@ const routes: Routes = [
     RolesComponent,
     PoliciesComponent,
     AuditOperationsComponent,
+    RbacAuditOperationsHistoryFormComponent
   ],
 })
 export class AdminModule {
