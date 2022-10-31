@@ -14,6 +14,7 @@ from django.conf import settings
 from rest_framework.serializers import (
     BooleanField,
     CharField,
+    ChoiceField,
     HyperlinkedIdentityField,
     IntegerField,
     ModelSerializer,
@@ -29,7 +30,7 @@ from api.validators import HostUniqueValidator, StartMidEndValidator
 from cm.adcm_config import get_main_info
 from cm.api import add_host
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
-from cm.models import Action, Host, HostProvider, Prototype
+from cm.models import Action, Host, HostProvider, MaintenanceMode, Prototype
 from cm.status_api import get_host_status
 
 
@@ -54,7 +55,7 @@ class HostSerializer(EmptySerializer):
     )
     description = CharField(required=False, allow_blank=True)
     state = CharField(read_only=True)
-    maintenance_mode = BooleanField(read_only=True)
+    maintenance_mode = ChoiceField(choices=MaintenanceMode.choices, read_only=True)
     is_maintenance_mode_available = BooleanField(read_only=True)
     url = ObjectURL(read_only=True, view_name="host-details")
 
@@ -93,12 +94,7 @@ class HostDetailSerializer(HostSerializer):
 
 
 class HostUpdateSerializer(HostDetailSerializer):
-    maintenance_mode = BooleanField()
-
     def update(self, instance, validated_data):
-        instance.maintenance_mode = validated_data.get(
-            "maintenance_mode", instance.maintenance_mode
-        )
         instance.description = validated_data.get("description", instance.description)
         instance.fqdn = validated_data.get("fqdn", instance.fqdn)
         instance.save()
@@ -113,15 +109,21 @@ class HostUpdateSerializer(HostDetailSerializer):
 class HostAuditSerializer(ModelSerializer):
     fqdn = CharField(max_length=253)
     description = CharField(required=False, allow_blank=True)
-    maintenance_mode = BooleanField()
 
     class Meta:
         model = Host
         fields = (
             "fqdn",
             "description",
-            "maintenance_mode",
         )
+
+
+class HostChangeMaintenanceModeSerializer(ModelSerializer):
+    maintenance_mode = ChoiceField(choices=(MaintenanceMode.ON, MaintenanceMode.OFF))
+
+    class Meta:
+        model = Host
+        fields = ("maintenance_mode",)
 
 
 class ClusterHostSerializer(HostSerializer):

@@ -15,23 +15,23 @@ Test statuses aggregation when hosts are in MM
 """
 
 from operator import not_, truth
-from typing import Tuple, Collection
+from typing import Collection, Tuple
 
 import allure
 import pytest
 import requests
-from adcm_client.objects import Cluster, Component, ADCMClient
+from adcm_client.objects import ADCMClient, Cluster, Component
 
-from tests.library.assertions import dicts_are_equal
-from tests.library.status import ADCMObjectStatusChanger
 from tests.functional.maintenance_mode.conftest import (
-    add_hosts_to_cluster,
-    FIRST_COMPONENT,
-    SECOND_COMPONENT,
     ANOTHER_SERVICE_NAME,
     DEFAULT_SERVICE_NAME,
+    FIRST_COMPONENT,
+    SECOND_COMPONENT,
+    add_hosts_to_cluster,
     turn_mm_on,
 )
+from tests.library.assertions import dicts_are_equal
+from tests.library.status import ADCMObjectStatusChanger
 
 # pylint: disable=redefined-outer-name
 
@@ -74,7 +74,7 @@ class TestStatusAggregationWithMM:
 
     # pylint: disable-next=too-many-arguments
     def test_turn_mm_after_negative_status(
-        self, status_changer, sdk_client_fs, cluster_with_mm, deployed_component, hosts
+        self, api_client, status_changer, sdk_client_fs, cluster_with_mm, deployed_component, hosts
     ):
         """
         Test status aggregation when components on hosts are turned "off" after MM turned "on" on host
@@ -102,7 +102,7 @@ class TestStatusAggregationWithMM:
                 {host_2.fqdn},
             )
 
-        turn_mm_on(host_2)
+        turn_mm_on(api_client, host_2)
 
         with allure.step('Expect nothing but host and component on it to be disabled'):
             check_statuses(
@@ -115,7 +115,7 @@ class TestStatusAggregationWithMM:
 
     # pylint: disable-next=too-many-arguments
     def test_turn_mm_before_negative_status(
-        self, status_changer, sdk_client_fs, cluster_with_mm, deployed_component, hosts
+        self, api_client, status_changer, sdk_client_fs, cluster_with_mm, deployed_component, hosts
     ):
         """
         Test status aggregation when components on hosts are turned "off" before MM turned "on" on host
@@ -129,7 +129,7 @@ class TestStatusAggregationWithMM:
         component_name = f'{service_name}.{component.name}'
         host_on_component_name = f'{component_name}.{host_2.fqdn}'
 
-        turn_mm_on(host_2)
+        turn_mm_on(api_client, host_2)
 
         self.enable_cluster(status_changer, cluster)
 

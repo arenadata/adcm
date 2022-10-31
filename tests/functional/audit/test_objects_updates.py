@@ -432,7 +432,6 @@ class TestObjectUpdates:
                 {
                     "prototype_id": host.prototype_id,
                     "provider_id": host.provider_id,
-                    "maintenance_mode": host.maintenance_mode,
                 }
                 if method == "put"
                 else {}
@@ -440,9 +439,11 @@ class TestObjectUpdates:
         }
         with allure.step(f'Update host via {method.upper()} {url} with body: {body}'):
             check_succeed(getattr(requests, method)(url, json=body, headers=self.admin_creds))
-        body = {**body, "maintenance_mode": "on"}
         with allure.step(f'Fail updating host via {method.upper()} {url} with body: {body}'):
-            check_failed(getattr(requests, method)(url, json=body, headers=self.admin_creds), exact_code=409)
+            check_failed(
+                getattr(requests, method)(url, json={**body, "provider_id": False}, headers=self.admin_creds),
+                exact_code=400,
+            )
 
     def _update_host_in_cluster(self, host: Host, method: str):
         url = f'{self.client.url}/api/v1/cluster/{host.cluster_id}/host/{host.id}/'

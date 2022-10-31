@@ -30,6 +30,7 @@ from cm.models import (
     Cluster,
     ClusterObject,
     ConfigLog,
+    MaintenanceMode,
     ObjectConfig,
     Prototype,
     ServiceComponent,
@@ -108,17 +109,6 @@ class TestComponent(BaseTestCase):
         self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.object_changes, {})
-
-    def test_update(self):
-        self.client.patch(
-            path=reverse("component-details", kwargs={"component_id": self.component.pk}),
-            data={"maintenance_mode": True},
-            content_type=APPLICATION_JSON,
-        )
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        self.check_log(log=log, operation_name="Component updated")
 
     def test_update_config(self):
         self.client.post(
@@ -291,3 +281,84 @@ class TestComponent(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_action_log(log=log)
+
+    def test_change_maintenance_mode(self):
+        self.client.post(
+            path=reverse("component-maintenance-mode", kwargs={"component_id": self.component.pk}),
+            data={"maintenance_mode": MaintenanceMode.ON},
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            operation_name="Component updated",
+        )
+
+    def test_change_maintenance_mode_via_service(self):
+        self.client.post(
+            path=reverse(
+                "component-maintenance-mode",
+                kwargs={"service_id": self.service.pk, "component_id": self.component.pk},
+            ),
+            data={"maintenance_mode": MaintenanceMode.ON},
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            operation_name="Component updated",
+        )
+
+    def test_change_maintenance_mode_via_cluster(self):
+        self.client.post(
+            path=reverse(
+                "component-maintenance-mode",
+                kwargs={
+                    "cluster_id": self.cluster.pk,
+                    "service_id": self.service.pk,
+                    "component_id": self.component.pk,
+                },
+            ),
+            data={"maintenance_mode": MaintenanceMode.ON},
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            operation_name="Component updated",
+        )
+
+    def test_change_maintenance_mode_failed(self):
+        self.client.post(
+            path=reverse("component-maintenance-mode", kwargs={"component_id": self.component.pk}),
+            data={"maintenance_mode": MaintenanceMode.CHANGING},
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            operation_name="Component updated",
+            operation_result=AuditLogOperationResult.Fail,
+        )
+
+    def test_change_maintenance_mode_denied(self):
+        with self.no_rights_user_logged_in:
+            self.client.post(
+                path=reverse(
+                    "component-maintenance-mode", kwargs={"component_id": self.component.pk}
+                ),
+                data={"maintenance_mode": MaintenanceMode.ON},
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            operation_name="Component updated",
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )

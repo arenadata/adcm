@@ -20,11 +20,28 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework.serializers import HyperlinkedIdentityField
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST
+from rest_framework.serializers import HyperlinkedIdentityField, Serializer
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_409_CONFLICT,
+)
 
 from cm.errors import AdcmEx
-from cm.models import Action, ADCMEntity, ConcernType, PrototypeConfig
+from cm.job import start_task
+from cm.models import (
+    Action,
+    ADCMEntity,
+    ClusterObject,
+    ConcernType,
+    Host,
+    MaintenanceMode,
+    PrototypeConfig,
+    ServiceComponent,
+)
+from cm.issue import update_hierarchy_issues
+from cm.api import load_host_map
 
 
 def get_object_for_user(user, perms, klass, **kwargs):
@@ -123,30 +140,6 @@ def get_api_url_kwargs(obj, request, no_obj_type=False):
     return kwargs
 
 
-class CommonAPIURL(HyperlinkedIdentityField):
-    def get_url(self, obj, view_name, request, _format):
-        kwargs = get_api_url_kwargs(obj, request)
-
-        return reverse(view_name, kwargs=kwargs, request=request, format=_format)
-
-
-class ObjectURL(HyperlinkedIdentityField):
-    def get_url(self, obj, view_name, request, _format):
-        kwargs = get_api_url_kwargs(obj, request, True)
-
-        return reverse(view_name, kwargs=kwargs, request=request, format=_format)
-
-
-class UrlField(HyperlinkedIdentityField):
-    def get_kwargs(self, obj):
-        return {}
-
-    def get_url(self, obj, view_name, request, _format):
-        kwargs = self.get_kwargs(obj)
-
-        return reverse(self.view_name, kwargs=kwargs, request=request, format=_format)
-
-
 def getlist_from_querydict(query_params, field_name):
     params = query_params.get(field_name)
     if params is None:
@@ -174,6 +167,108 @@ def fix_ordering(field, view):
             fix = fix.replace("display_name", "prototype__display_name")
 
     return fix
+
+
+def get_maintenance_mode_response(
+    obj: Host | ClusterObject | ServiceComponent, serializer: Serializer
+) -> Response:
+    turn_on_action_name = "turn_on_maintenance_mode"
+    turn_off_action_name = "turn_off_maintenance_mode"
+    if isinstance(obj, Host):
+        obj_name = "host"
+        turn_on_action_name = f"{obj_name}_turn_on_maintenance_mode"
+        turn_off_action_name = f"{obj_name}_turn_off_maintenance_mode"
+    elif isinstance(obj, ClusterObject):
+        obj_name = "service"
+    elif isinstance(obj, ServiceComponent):
+        obj_name = "component"
+    else:
+        obj_name = "obj"
+
+    if obj.maintenance_mode == MaintenanceMode.CHANGING:
+        return Response(
+            data={"error": f"{obj_name.capitalize()} maintenance mode is changing now"},
+            status=HTTP_409_CONFLICT,
+        )
+
+    if obj.maintenance_mode == MaintenanceMode.OFF:
+        if serializer.validated_data["maintenance_mode"] == MaintenanceMode.OFF:
+            return Response()
+
+        turn_on_action = Action.objects.filter(
+            prototype=obj.prototype, name=turn_on_action_name
+        ).first()
+        if turn_on_action:
+            start_task(
+                action=turn_on_action,
+                obj=obj,
+                conf={},
+                attr={},
+                hc=[],
+                hosts=[],
+                verbose=False,
+            )
+            serializer.validated_data["maintenance_mode"] = MaintenanceMode.CHANGING
+
+        serializer.save()
+        update_hierarchy_issues(obj.cluster)
+        load_host_map()
+
+        return Response()
+
+    if obj.maintenance_mode == MaintenanceMode.ON:
+        if serializer.validated_data["maintenance_mode"] == MaintenanceMode.ON:
+            return Response()
+
+        turn_off_action = Action.objects.filter(
+            prototype=obj.prototype, name=turn_off_action_name
+        ).first()
+        if turn_off_action:
+            start_task(
+                action=turn_off_action,
+                obj=obj,
+                conf={},
+                attr={},
+                hc=[],
+                hosts=[],
+                verbose=False,
+            )
+            serializer.validated_data["maintenance_mode"] = MaintenanceMode.CHANGING
+
+        serializer.save()
+        update_hierarchy_issues(obj.cluster)
+        load_host_map()
+
+        return Response()
+
+    return Response(
+        data={"error": f'Unknown {obj_name} maintenance mode "{obj.maintenance_mode}"'},
+        status=HTTP_400_BAD_REQUEST,
+    )
+
+
+class CommonAPIURL(HyperlinkedIdentityField):
+    def get_url(self, obj, view_name, request, _format):
+        kwargs = get_api_url_kwargs(obj, request)
+
+        return reverse(view_name, kwargs=kwargs, request=request, format=_format)
+
+
+class ObjectURL(HyperlinkedIdentityField):
+    def get_url(self, obj, view_name, request, _format):
+        kwargs = get_api_url_kwargs(obj, request, True)
+
+        return reverse(view_name, kwargs=kwargs, request=request, format=_format)
+
+
+class UrlField(HyperlinkedIdentityField):
+    def get_kwargs(self, obj):
+        return {}
+
+    def get_url(self, obj, view_name, request, _format):
+        kwargs = self.get_kwargs(obj)
+
+        return reverse(self.view_name, kwargs=kwargs, request=request, format=_format)
 
 
 class AdcmOrderingFilter(OrderingFilter):

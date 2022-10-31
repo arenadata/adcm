@@ -16,10 +16,10 @@ from typing import Tuple
 
 import allure
 import pytest
-from adcm_client.objects import Host, Provider, Cluster
+from adcm_client.objects import Cluster, Host, Provider
 
 from tests.functional.conftest import only_clean_adcm
-from tests.functional.maintenance_mode.conftest import BUNDLES_DIR, turn_mm_on, turn_mm_off
+from tests.functional.maintenance_mode.conftest import BUNDLES_DIR, turn_mm_off, turn_mm_on
 from tests.functional.tools import AnyADCMObject
 
 # pylint: disable=redefined-outer-name
@@ -48,7 +48,9 @@ def _set_host_config(provider_host_with_concerns) -> None:
 
 
 @pytest.mark.usefixtures('_set_provider_config')
-def test_mm_host_with_concern_not_raising_issue_on_cluster_objects(cluster_with_mm, provider_host_with_concerns):
+def test_mm_host_with_concern_not_raising_issue_on_cluster_objects(
+    api_client, cluster_with_mm, provider_host_with_concerns
+):
     """
     Test that when there's a concern on host that is in MM and mapped to a cluster,
     cluster objects don't have issues, but host does
@@ -66,19 +68,19 @@ def test_mm_host_with_concern_not_raising_issue_on_cluster_objects(cluster_with_
         _check_concerns_are_presented_on_cluster_objects(cluster_with_mm)
 
     with allure.step('Turn MM on and check that concerns are gone'):
-        turn_mm_on(host)
+        turn_mm_on(api_client, host)
         _check_concern_is_presented_on_object(host, f'host {host.fqdn}')
         _check_no_concerns_on_cluster_objects(cluster_with_mm)
 
     with allure.step('Turn MM off and check that concerns have returned'):
-        turn_mm_off(host)
+        turn_mm_off(api_client, host)
         _check_concern_is_presented_on_object(host, f'host {host.fqdn}')
         _check_concerns_are_presented_on_cluster_objects(cluster_with_mm)
 
 
 @pytest.mark.usefixtures('_set_host_config')
 def test_host_from_provider_with_concern_not_raising_issue_on_cluster_objects(
-    cluster_with_mm, provider_host_with_concerns
+    api_client, cluster_with_mm, provider_host_with_concerns
 ):
     """
     Test that when there's a concern on provider, but not on host,
@@ -107,13 +109,13 @@ def test_host_from_provider_with_concern_not_raising_issue_on_cluster_objects(
         _check_concerns_are_presented_on_cluster_objects(cluster_with_mm)
 
     with allure.step('Turn MM on and check that concerns are gone'):
-        turn_mm_on(host)
+        turn_mm_on(api_client, host)
         _check_concern_is_presented_on_object(host, f'host {host.fqdn}')
         _check_concern_is_presented_on_object(provider, f'provider {provider.name}')
         _check_no_concerns_on_cluster_objects(cluster_with_mm)
 
     with allure.step('Turn MM off and check that concerns have returned'):
-        turn_mm_off(host)
+        turn_mm_off(api_client, host)
         _check_concern_is_presented_on_object(host, f'host {host.fqdn}')
         _check_concern_is_presented_on_object(provider, f'provider {provider.name}')
         _check_concerns_are_presented_on_cluster_objects(cluster_with_mm)

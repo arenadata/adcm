@@ -53,6 +53,12 @@ class ObjectType(models.TextChoices):
     Host = "host", "host"
 
 
+class MaintenanceMode(models.TextChoices):
+    ON = "ON", "ON"
+    OFF = "OFF", "OFF"
+    CHANGING = "CHANGING", "CHANGING"
+
+
 LICENSE_STATE = (
     ("absent", "absent"),
     ("accepted", "accepted"),
@@ -652,7 +658,11 @@ class Host(ADCMEntity):
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
-    maintenance_mode = models.BooleanField(default=False)
+    maintenance_mode = models.CharField(
+        max_length=64,
+        choices=MaintenanceMode.choices,
+        default=MaintenanceMode.OFF,
+    )
 
     __error_code__ = "HOST_NOT_FOUND"
 
@@ -685,6 +695,7 @@ class Host(ADCMEntity):
         cluster: Cluster | None = self.cluster
         if not cluster:
             return False
+
         return cluster.prototype.allow_maintenance_mode
 
 
@@ -697,7 +708,11 @@ class ClusterObject(ADCMEntity):
         content_type_field="object_type",
         on_delete=models.CASCADE,
     )
-    _maintenance_mode = models.BooleanField(default=False)
+    _maintenance_mode = models.CharField(
+        max_length=64,
+        choices=MaintenanceMode.choices,
+        default=MaintenanceMode.OFF,
+    )
 
     __error_code__ = "CLUSTER_SERVICE_NOT_FOUND"
 
@@ -735,20 +750,21 @@ class ClusterObject(ADCMEntity):
         return result if result["issue"] else {}
 
     @property
-    def maintenance_mode_attr(self) -> bool:
+    def maintenance_mode_attr(self) -> MaintenanceMode.choices:
         return self._maintenance_mode
 
     @property
-    def maintenance_mode(self) -> bool:
-        if self._maintenance_mode:
+    def maintenance_mode(self) -> MaintenanceMode.choices:
+        if self._maintenance_mode == MaintenanceMode.ON:
             return self._maintenance_mode
 
         service_components = ServiceComponent.objects.filter(service=self)
         if service_components:
             if all(
-                service_component.maintenance_mode_attr for service_component in service_components
+                service_component.maintenance_mode_attr == MaintenanceMode.ON
+                for service_component in service_components
             ):
-                return True
+                return MaintenanceMode.ON
 
             hosts_maintenance_modes = []
             for service_component in service_components:
@@ -760,9 +776,24 @@ class ClusterObject(ADCMEntity):
                 )
 
             if hosts_maintenance_modes:
-                return all(hosts_maintenance_modes)
+                return (
+                    MaintenanceMode.ON
+                    if all(
+                        host_maintenance_mode == MaintenanceMode.ON
+                        for host_maintenance_mode in hosts_maintenance_modes
+                    )
+                    else MaintenanceMode.OFF
+                )
 
         return self._maintenance_mode
+
+    @maintenance_mode.setter
+    def maintenance_mode(self, value: MaintenanceMode.choices) -> None:
+        self._maintenance_mode = value
+
+    @property
+    def is_maintenance_mode_available(self) -> bool:
+        return self.cluster.prototype.allow_maintenance_mode
 
     class Meta:
         unique_together = (("cluster", "prototype"),)
@@ -778,7 +809,11 @@ class ServiceComponent(ADCMEntity):
         content_type_field="object_type",
         on_delete=models.CASCADE,
     )
-    _maintenance_mode = models.BooleanField(default=False)
+    _maintenance_mode = models.CharField(
+        max_length=64,
+        choices=MaintenanceMode.choices,
+        default=MaintenanceMode.OFF,
+    )
 
     __error_code__ = "COMPONENT_NOT_FOUND"
 
@@ -820,22 +855,37 @@ class ServiceComponent(ADCMEntity):
         return result if result["issue"] else {}
 
     @property
-    def maintenance_mode_attr(self) -> bool:
+    def maintenance_mode_attr(self) -> MaintenanceMode.choices:
         return self._maintenance_mode
 
     @property
-    def maintenance_mode(self) -> bool:
-        if self._maintenance_mode:
+    def maintenance_mode(self) -> MaintenanceMode.choices:
+        if self._maintenance_mode == MaintenanceMode.ON:
             return self._maintenance_mode
 
-        if self.service.maintenance_mode_attr:
+        if self.service.maintenance_mode_attr == MaintenanceMode.ON:
             return self.service.maintenance_mode_attr
 
         host_ids = HostComponent.objects.filter(component=self).values_list("host_id", flat=True)
         if host_ids:
-            return all(Host.objects.get(pk=host_id).maintenance_mode for host_id in host_ids)
+            return (
+                MaintenanceMode.ON
+                if all(
+                    Host.objects.get(pk=host_id).maintenance_mode == MaintenanceMode.ON
+                    for host_id in host_ids
+                )
+                else MaintenanceMode.OFF
+            )
 
         return self._maintenance_mode
+
+    @maintenance_mode.setter
+    def maintenance_mode(self, value: MaintenanceMode.choices) -> None:
+        self._maintenance_mode = value
+
+    @property
+    def is_maintenance_mode_available(self) -> bool:
+        return self.cluster.prototype.allow_maintenance_mode
 
     class Meta:
         unique_together = (("cluster", "service", "prototype"),)
@@ -1237,36 +1287,46 @@ class Action(AbstractAction):
                 start_impossible_reason = NO_LDAP_SETTINGS
 
         if obj.prototype.type == "cluster":
-            mm = Host.objects.filter(cluster=obj, maintenance_mode=True).exists()
-            if not self.allow_in_maintenance_mode and mm:
+            if (
+                not self.allow_in_maintenance_mode
+                and Host.objects.filter(cluster=obj, maintenance_mode=MaintenanceMode.ON).exists()
+            ):
                 start_impossible_reason = MANY_HOSTS_IN_MM
         elif obj.prototype.type == "service":
-            mm = HostComponent.objects.filter(
-                service=obj, cluster=obj.cluster, host__maintenance_mode=True
-            ).exists()
-            if not self.allow_in_maintenance_mode and mm:
+            if (
+                not self.allow_in_maintenance_mode
+                and HostComponent.objects.filter(
+                    service=obj, cluster=obj.cluster, host__maintenance_mode=MaintenanceMode.ON
+                ).exists()
+            ):
                 start_impossible_reason = MANY_HOSTS_IN_MM
         elif obj.prototype.type == "component":
-            mm = HostComponent.objects.filter(
-                component=obj,
-                cluster=obj.cluster,
-                service=obj.service,
-                host__maintenance_mode=True,
-            ).exists()
-            if not self.allow_in_maintenance_mode and mm:
+            if (
+                not self.allow_in_maintenance_mode
+                and HostComponent.objects.filter(
+                    component=obj,
+                    cluster=obj.cluster,
+                    service=obj.service,
+                    host__maintenance_mode=MaintenanceMode.ON,
+                ).exists()
+            ):
                 start_impossible_reason = MANY_HOSTS_IN_MM
         elif obj.prototype.type == "host":
-            if not self.allow_in_maintenance_mode and obj.maintenance_mode:
+            if not self.allow_in_maintenance_mode and obj.maintenance_mode == MaintenanceMode.ON:
                 start_impossible_reason = HOST_IN_MM
             else:
-                mm = HostComponent.objects.filter(
-                    component_id__in=HostComponent.objects.filter(host=obj).values_list(
-                        "component_id"
-                    ),
-                    host__maintenance_mode=True,
-                ).exists()
-                if self.host_action and not self.allow_in_maintenance_mode and mm:
+                if (
+                    self.host_action
+                    and not self.allow_in_maintenance_mode
+                    and HostComponent.objects.filter(
+                        component_id__in=HostComponent.objects.filter(host=obj).values_list(
+                            "component_id"
+                        ),
+                        host__maintenance_mode=MaintenanceMode.ON,
+                    ).exists()
+                ):
                     start_impossible_reason = MANY_HOSTS_IN_MM
+
         return start_impossible_reason
 
 

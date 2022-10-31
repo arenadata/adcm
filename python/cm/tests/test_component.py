@@ -11,8 +11,6 @@
 # limitations under the License.
 
 from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.models import (
@@ -21,6 +19,7 @@ from cm.models import (
     ClusterObject,
     Host,
     HostComponent,
+    MaintenanceMode,
     Prototype,
     ServiceComponent,
 )
@@ -53,51 +52,16 @@ class TestComponent(BaseTestCase):
             service=self.service,
         )
 
-    def test_set_maintenance_mode_success(self):
-        response: Response = self.client.patch(
-            path=reverse("component-details", kwargs={"component_id": self.component.pk}),
-            data={"maintenance_mode": True},
-            content_type=APPLICATION_JSON,
-        )
-
-        self.component.refresh_from_db()
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertTrue(self.component.maintenance_mode)
-
-        response: Response = self.client.patch(
-            path=reverse("component-details", kwargs={"component_id": self.component.pk}),
-            data={"maintenance_mode": False},
-            content_type=APPLICATION_JSON,
-        )
-
-        self.component.refresh_from_db()
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertFalse(self.component.maintenance_mode)
-
-    def test_set_maintenance_mode_fail(self):
-        response: Response = self.client.patch(
-            path=reverse("component-details", kwargs={"component_id": self.component.pk}),
-            data={"maintenance_mode": "string"},
-            content_type=APPLICATION_JSON,
-        )
-
-        self.component.refresh_from_db()
-
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertFalse(self.component.maintenance_mode)
-
     def test_maintenance_mode_by_hosts(self):
         host_1 = Host.objects.create(
             fqdn="test_host_1",
             prototype=Prototype.objects.create(bundle=self.bundle, type="host"),
-            maintenance_mode=True,
+            maintenance_mode=MaintenanceMode.ON,
         )
         host_2 = Host.objects.create(
             fqdn="test_host_2",
             prototype=Prototype.objects.create(bundle=self.bundle, type="host"),
-            maintenance_mode=True,
+            maintenance_mode=MaintenanceMode.ON,
         )
         HostComponent.objects.create(
             cluster=self.cluster,
@@ -112,20 +76,20 @@ class TestComponent(BaseTestCase):
             component=self.component,
         )
 
-        self.assertTrue(self.component.maintenance_mode)
+        self.assertEqual(self.component.maintenance_mode, MaintenanceMode.ON)
 
-        host_2.maintenance_mode = False
+        host_2.maintenance_mode = MaintenanceMode.OFF
         host_2.save(update_fields=["maintenance_mode"])
 
-        self.assertFalse(self.component.maintenance_mode)
+        self.assertEqual(self.component.maintenance_mode, MaintenanceMode.OFF)
 
     def test_maintenance_mode_by_service(self):
-        self.client.patch(
-            path=reverse("service-details", kwargs={"service_id": self.service.pk}),
-            data={"maintenance_mode": True},
+        self.client.post(
+            path=reverse("service-maintenance-mode", kwargs={"service_id": self.service.pk}),
+            data={"maintenance_mode": MaintenanceMode.ON},
             content_type=APPLICATION_JSON,
         )
 
         self.service.refresh_from_db()
 
-        self.assertTrue(self.component.maintenance_mode)
+        self.assertEqual(self.component.maintenance_mode, MaintenanceMode.ON)

@@ -25,15 +25,10 @@ from api.action.serializers import (
 )
 from api.base_view import GenericUIView
 from api.job.serializers import RunTaskRetrieveSerializer
-from api.utils import (
-    AdcmFilterBackend,
-    create,
-    filter_actions,
-    get_object_for_user,
-)
+from api.utils import AdcmFilterBackend, create, filter_actions, get_object_for_user
 from audit.utils import audit
 from cm.errors import AdcmEx
-from cm.models import Action, get_model_by_type, Host, HostComponent, TaskLog
+from cm.models import Action, Host, HostComponent, TaskLog, get_model_by_type
 from rbac.viewsets import DjangoOnlyObjectPermissions
 
 VIEW_ACTION_PERM = "cm.view_action"

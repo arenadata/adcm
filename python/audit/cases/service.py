@@ -60,7 +60,7 @@ def service_case(  # pylint: disable=too-many-branches
             else:
                 audit_object = None
 
-        case ["service", service_pk]:
+        case ["service", service_pk] | ["service", service_pk, "maintenance-mode"]:
             deleted_obj: ClusterObject
             if view.request.method == "DELETE":
                 audit_operation = AuditOperation(
@@ -73,7 +73,7 @@ def service_case(  # pylint: disable=too-many-branches
                     operation_type=AuditLogOperationType.Update,
                 )
 
-            if deleted_obj:
+            if deleted_obj and "maintenance-mode" not in path:
                 audit_operation.name = f"{deleted_obj.display_name} {audit_operation.name}"
                 audit_object = get_or_create_audit_obj(
                     object_id=deleted_obj.cluster.pk,

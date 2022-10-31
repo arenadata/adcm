@@ -25,12 +25,13 @@ import pytest
 from adcm_client.objects import ADCMClient, Cluster, Host, Provider
 
 from tests.functional.tools import AnyADCMObject
+from tests.library.api.client import APIClient
 from tests.library.utils import get_hosts_fqdn_representation
 
 BUNDLES_DIR = Path(os.path.dirname(__file__)) / 'bundles'
 
-MM_IS_ON = True
-MM_IS_OFF = False
+MM_IS_ON = "ON"
+MM_IS_OFF = "OFF"
 MM_ALLOWED = True
 MM_NOT_ALLOWED = False
 
@@ -85,19 +86,21 @@ def cluster_without_mm(request, sdk_client_fs: ADCMClient):
     return cluster
 
 
-def turn_mm_on(host: Host):
+def turn_mm_on(api_client: APIClient, host: Host):
     """Turn maintenance mode "on" on host"""
     with allure.step(f'Turn MM "on" on host {host.fqdn}'):
-        host.maintenance_mode_set(MM_IS_ON)
+        api_client.host.change_maintenance_mode(host.id, MM_IS_ON).check_code(200)
+        host.reread()
         assert (
             actual_mm := host.maintenance_mode
         ) == MM_IS_ON, f'Maintenance mode of host {host.fqdn} should be {MM_IS_ON}, not {actual_mm}'
 
 
-def turn_mm_off(host: Host):
+def turn_mm_off(api_client: APIClient, host: Host):
     """Turn maintenance mode "off" on host"""
     with allure.step(f'Turn MM "off" on host {host.fqdn}'):
-        host.maintenance_mode_set(MM_IS_OFF)
+        api_client.host.change_maintenance_mode(host.id, MM_IS_OFF).check_code(200)
+        host.reread()
         assert (
             actual_mm := host.maintenance_mode
         ) == MM_IS_OFF, f'Maintenance mode of host {host.fqdn} should be {MM_IS_OFF}, not {actual_mm}'
@@ -117,7 +120,7 @@ def remove_hosts_from_cluster(cluster: Cluster, hosts: Iterable[Host]):
             cluster.host_delete(host)
 
 
-def check_hosts_mm_is(maintenance_mode: bool, *hosts: Host):
+def check_hosts_mm_is(maintenance_mode: str, *hosts: Host):
     """Check that MM of hosts is equal to the expected one"""
     with allure.step(
         f'Check that "maintenance_mode" is equal to "{maintenance_mode}" '
@@ -125,7 +128,7 @@ def check_hosts_mm_is(maintenance_mode: bool, *hosts: Host):
     ):
         for host in hosts:
             host.reread()
-        hosts_in_wrong_mode = tuple(host for host in hosts if host.maintenance_mode is not maintenance_mode)
+        hosts_in_wrong_mode = tuple(host for host in hosts if host.maintenance_mode != maintenance_mode)
         if len(hosts_in_wrong_mode) == 0:
             return
         raise AssertionError(

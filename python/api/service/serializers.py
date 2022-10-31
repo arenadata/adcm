@@ -17,7 +17,9 @@ from rest_framework.reverse import reverse
 from rest_framework.serializers import (
     BooleanField,
     CharField,
+    ChoiceField,
     HyperlinkedIdentityField,
+    HyperlinkedRelatedField,
     IntegerField,
     JSONField,
     ModelSerializer,
@@ -35,7 +37,14 @@ from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions
 from cm.adcm_config import get_main_info
 from cm.api import add_service_to_cluster, bind, multi_bind
 from cm.errors import AdcmEx
-from cm.models import Action, Cluster, ClusterObject, Prototype, ServiceComponent
+from cm.models import (
+    Action,
+    Cluster,
+    ClusterObject,
+    MaintenanceMode,
+    Prototype,
+    ServiceComponent,
+)
 from cm.status_api import get_service_status
 
 
@@ -47,6 +56,8 @@ class ServiceSerializer(EmptySerializer):
     state = CharField(read_only=True)
     prototype_id = IntegerField(required=True, help_text="id of service prototype")
     url = ObjectURL(read_only=True, view_name="service-details")
+    maintenance_mode = CharField(read_only=True)
+    is_maintenance_mode_available = BooleanField(read_only=True)
 
     @staticmethod
     def validate_prototype_id(prototype_id):
@@ -103,9 +114,9 @@ class ServiceDetailSerializer(ServiceSerializer):
     component = ObjectURL(read_only=True, view_name="component")
     imports = ObjectURL(read_only=True, view_name="service-import")
     bind = ObjectURL(read_only=True, view_name="service-bind")
-    prototype = HyperlinkedIdentityField(
+    prototype = HyperlinkedRelatedField(
+        read_only=True,
         view_name="service-prototype-detail",
-        lookup_field="pk",
         lookup_url_kwarg="prototype_pk",
     )
     multi_state = StringListSerializer(read_only=True)
@@ -200,8 +211,8 @@ class StatusSerializer(EmptySerializer):
         return get_service_status(obj)
 
 
-class ServicePatchSerializer(ModelSerializer):
-    maintenance_mode = BooleanField(source="_maintenance_mode")
+class ServiceChangeMaintenanceModeSerializer(ModelSerializer):
+    maintenance_mode = ChoiceField(choices=(MaintenanceMode.ON, MaintenanceMode.OFF))
 
     class Meta:
         model = ClusterObject

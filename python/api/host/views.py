@@ -14,6 +14,7 @@ from django_filters import rest_framework as drf_filters
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
@@ -25,6 +26,7 @@ from rest_framework.status import (
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.host.serializers import (
     ClusterHostSerializer,
+    HostChangeMaintenanceModeSerializer,
     HostDetailSerializer,
     HostDetailUISerializer,
     HostSerializer,
@@ -33,7 +35,12 @@ from api.host.serializers import (
     ProvideHostSerializer,
     StatusSerializer,
 )
-from api.utils import check_custom_perm, create, get_object_for_user
+from api.utils import (
+    check_custom_perm,
+    create,
+    get_maintenance_mode_response,
+    get_object_for_user,
+)
 from audit.utils import audit
 from cm.api import (
     add_host_to_cluster,
@@ -49,6 +56,7 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
+    MaintenanceMode,
     ServiceComponent,
 )
 from cm.status_api import make_ui_host_status
@@ -222,7 +230,7 @@ class HostDetail(PermissionListMixin, DetailView):
     error_code = "HOST_NOT_FOUND"
 
     @staticmethod
-    def _check_maintenance_mode_constraint(host: Host, new_mode: bool):
+    def _check_maintenance_mode_constraint(host: Host, new_mode: MaintenanceMode.choices) -> None:
         if host.maintenance_mode == new_mode:
             return
 
@@ -297,6 +305,22 @@ class HostDetail(PermissionListMixin, DetailView):
     @audit
     def put(self, request, *args, **kwargs):
         return self._update_host_object(request, partial=False, *args, **kwargs)
+
+
+class HostMaintenanceModeView(GenericUIView):
+    queryset = Host.objects.all()
+    permission_classes = (DjangoOnlyObjectPermissions,)
+    serializer_class = HostChangeMaintenanceModeSerializer
+    lookup_field = "id"
+    lookup_url_kwarg = "host_id"
+
+    @audit
+    def post(self, request: Request, **kwargs) -> Response:
+        host = self.get_object()
+        serializer = self.get_serializer(instance=host, data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        return get_maintenance_mode_response(obj=host, serializer=serializer)
 
 
 class StatusList(GenericUIView):
