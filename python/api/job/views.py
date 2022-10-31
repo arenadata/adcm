@@ -140,12 +140,22 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
 
 #  pylint:disable-next=too-many-ancestors
 class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
-    queryset = JobLog.objects.select_related("task", "action").order_by("-id").all()
+    queryset = JobLog.objects.select_related("task", "action").all()
     serializer_class = JobSerializer
     filterset_fields = ("action_id", "task_id", "pid", "status", "start_date", "finish_date")
     ordering_fields = ("status", "start_date", "finish_date")
+    ordering = ["-id"]
     permission_required = ["cm.view_joblog"]
     lookup_url_kwarg = "job_pk"
+
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+        if not self.request.user.is_superuser:
+            # NOT superuser shouldn't have access to ADCM tasks
+            queryset = queryset.exclude(
+                task__object_type=ContentType.objects.get(app_label="cm", model="adcm")
+            )
+        return queryset
 
     def get_permissions(self):
         if self.action == "list":
@@ -168,6 +178,7 @@ class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Gener
     serializer_class = TaskSerializer
     filterset_fields = ("action_id", "pid", "status", "start_date", "finish_date")
     ordering_fields = ("status", "start_date", "finish_date")
+    ordering = ["-id"]
     permission_required = [VIEW_TASKLOG_PERMISSION]
     lookup_url_kwarg = "task_pk"
 
@@ -178,7 +189,6 @@ class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Gener
             queryset = queryset.exclude(
                 object_type=ContentType.objects.get(app_label="cm", model="adcm")
             )
-
         return queryset
 
     def get_serializer_class(self):

@@ -22,7 +22,6 @@ from api.serializers import (
     MultiHyperlinkedRelatedField,
     UIConfigField,
 )
-from cm.adcm_config import ui_config
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
 from cm.models import ConfigLog, GroupConfig, Host, ObjectConfig
@@ -255,13 +254,10 @@ class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
     @atomic
     def create(self, validated_data):
         object_config = self.context.get('obj_ref')
-        ui = self.context.get('ui')
         config = validated_data.get('config')
         attr = validated_data.get('attr', {})
         description = validated_data.get('description', '')
         cl = update_obj_config(object_config, config, attr, description)
-        if ui:
-            cl.config = ui_config(object_config.object.object, cl)
         return cl
 
 
