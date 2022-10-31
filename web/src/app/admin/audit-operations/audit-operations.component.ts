@@ -122,7 +122,7 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
         {id: 10, name: 'host2cluster', display_name: 'Cluster Host', value: 'host2cluster'},
         {id: 11, name: 'hostcomponent', display_name: 'Host Component', value: 'hostcomponent'},
         {id: 12, name: 'job', display_name: 'Job', value: 'job'},
-        {id: 13, name: 'policy', display_name: 'policy', value: 'policy'},
+        {id: 13, name: 'policy', display_name: 'Policy', value: 'policy'},
         {id: 14, name: 'profile', display_name: 'Profile', value: 'profile'},
         {id: 15, name: 'provider', display_name: 'Provider', value: 'provider'},
         {id: 16, name: 'role', display_name: 'Role', value: 'role'},
