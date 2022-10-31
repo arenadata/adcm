@@ -20,6 +20,13 @@ operations:
         type: service
         name: "Test Cluster WITH Maintenance Mode/another_service"
       how: change-properties
+    result: fail
+  - update: *change-service
+  - update: *change-service
+    result: denied
+    username: {{ username }}
+  - update: *change-service
+
   - update: *change-service
     result: fail
   - update: *change-service
@@ -27,11 +34,19 @@ operations:
     result: denied
     username: {{ username }}
   - update: *change-service
+  # component
   - update: &change-component
       what:
         type: component
         name: "Test Cluster WITH Maintenance Mode/test_service/first_component"
       how: change-properties
+    result: fail
+  - update: *change-component
+  - update: *change-component
+    result: denied
+    username: {{ username }}
+  - update: *change-component
+
   - update: *change-component
     result: fail
   - update: *change-component
@@ -39,11 +54,35 @@ operations:
     result: denied
     username: {{ username }}
   - update: *change-component
+
+  - update: *change-component
+    result: fail
+  - update: *change-component
+  - update: *change-component
+    result: denied
+    username: {{ username }}
+  - update: *change-component
+  # host
   - update: &change-host
       what:
         type: host
         name: "test-host-0"
       how: change-properties
+    result: fail
+  - update: *change-host
+  - update: *change-host
+    result: denied
+    username: {{ username }}
+  - update: *change-host
+
+  - update: *change-host
+    result: fail
+  - update: *change-host
+  - update: *change-host
+    result: denied
+    username: {{ username }}
+  - update: *change-host
+
   - update: *change-host
     result: fail
   - update: *change-host
