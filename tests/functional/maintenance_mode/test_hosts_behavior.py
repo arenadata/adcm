@@ -65,7 +65,7 @@ def host_actions_cluster(sdk_client_fs) -> Cluster:
     ids=lambda x: x.strip('cluster_'),
     indirect=True,
 )
-def test_adding_host_to_cluster(cluster_with_mm, cluster_without_mm, hosts):
+def test_adding_host_to_cluster(api_client, cluster_with_mm, cluster_without_mm, hosts):
     """
     Test that adding/removing host to/from cluster affects "maintenance_mode" flag on host
     """
@@ -82,16 +82,18 @@ def test_adding_host_to_cluster(cluster_with_mm, cluster_without_mm, hosts):
     check_hosts_mm_is(MM_IS_OFF, *hosts_to_cluster_with_mm)
     check_mm_availability(MM_NOT_ALLOWED, *hosts_to_cluster_without_mm, *free_hosts)
 
-    turn_mm_on(first_host)
+    turn_mm_on(api_client, first_host)
     check_hosts_mm_is(MM_IS_ON, first_host)
     check_hosts_mm_is(MM_IS_OFF, second_host)
     check_mm_availability(MM_NOT_ALLOWED, *hosts_to_cluster_without_mm, *free_hosts)
 
     expect_api_error(
-        f'turn MM "on" host {third_host.fqdn}', turn_mm_on, third_host, err_=MAINTENANCE_MODE_NOT_AVAILABLE
+        f'turn MM "on" host {third_host.fqdn}', turn_mm_on, api_client, third_host, err_=MAINTENANCE_MODE_NOT_AVAILABLE
     )
     check_mm_availability(MM_NOT_ALLOWED, *hosts_to_cluster_without_mm)
-    expect_no_api_error(f'turn MM "off" host {third_host.fqdn} (will not be changed)', turn_mm_off, third_host)
+    expect_no_api_error(
+        f'turn MM "off" host {third_host.fqdn} (will not be changed)', turn_mm_off, api_client, third_host
+    )
     check_mm_availability(MM_NOT_ALLOWED, *hosts_to_cluster_without_mm)
 
     remove_hosts_from_cluster(cluster_with_mm, hosts_to_cluster_with_mm)
@@ -99,7 +101,7 @@ def test_adding_host_to_cluster(cluster_with_mm, cluster_without_mm, hosts):
     check_mm_availability(MM_NOT_ALLOWED, *hosts)
 
 
-def test_mm_hosts_not_allowed_in_hc_map(cluster_with_mm, hosts):
+def test_mm_hosts_not_allowed_in_hc_map(api_client, cluster_with_mm, hosts):
     """
     Test that hosts in MM aren't allowed to be used in hostcomponent map
     """
@@ -108,7 +110,7 @@ def test_mm_hosts_not_allowed_in_hc_map(cluster_with_mm, hosts):
     host_in_mm, regular_host, *_ = hosts
 
     add_hosts_to_cluster(cluster, (host_in_mm, regular_host))
-    turn_mm_on(host_in_mm)
+    turn_mm_on(api_client, host_in_mm)
     with allure.step('Try to set HC map with one of hosts in MM'):
         _expect_hc_set_to_fail(cluster, [(host_in_mm, first_component)], err_=INVALID_HC_HOST_IN_MM)
         _expect_hc_set_to_fail(
@@ -126,7 +128,7 @@ def test_mm_hosts_not_allowed_in_hc_map(cluster_with_mm, hosts):
         _check_hostcomponents_are_equal(cluster.hostcomponent(), hc_with_regular_host)
 
 
-def test_actions_not_allowed_in_mm_are_disabled_due_to_host_in_mm(cluster_with_mm, hosts):
+def test_actions_not_allowed_in_mm_are_disabled_due_to_host_in_mm(api_client, cluster_with_mm, hosts):
     """
     Test that actions that aren't allowed in maintenance mode
     - are disabled when MM host is in vertical hierarchy (cluster-service-component)
@@ -158,16 +160,16 @@ def test_actions_not_allowed_in_mm_are_disabled_due_to_host_in_mm(cluster_with_m
     check_all_actions_are_enabled(*all_objects)
 
     with allure.step(f'Turn MM "on" on host {first_host.fqdn} and check actions are disabled correctly'):
-        turn_mm_on(first_host)
+        turn_mm_on(api_client, first_host)
         check_actions_are_disabled_on(cluster, first_service, first_component)
         check_all_actions_are_enabled(second_component, second_service, *second_service_components)
 
     with allure.step(f'Turn MM "off" on host {first_host.fqdn} and expect all objects\' actions to be enabled'):
-        turn_mm_off(first_host)
+        turn_mm_off(api_client, first_host)
         check_all_actions_are_enabled(*all_objects)
 
 
-def test_provider_and_host_actions_affected_by_mm(cluster_with_mm, provider, hosts):
+def test_provider_and_host_actions_affected_by_mm(api_client, cluster_with_mm, provider, hosts):
     """
     Test that host in MM doesn't affect provider's actions,
     but cleans action list of this host (including `host_action: true`)
@@ -187,14 +189,14 @@ def test_provider_and_host_actions_affected_by_mm(cluster_with_mm, provider, hos
     cluster.hostcomponent_set((first_host, component), (second_host, component))
     _available_actions_are(actions_on_host, actions_on_host, actions_on_provider)
 
-    turn_mm_on(first_host)
+    turn_mm_on(api_client, first_host)
     _available_actions_are(actions_on_host, actions_on_host, actions_on_provider)
 
-    turn_mm_off(first_host)
+    turn_mm_off(api_client, first_host)
     _available_actions_are(actions_on_host, actions_on_host, actions_on_provider)
 
 
-def test_host_actions_on_another_component_host(host_actions_cluster, hosts):
+def test_host_actions_on_another_component_host(api_client, host_actions_cluster, hosts):
     """
     Test host_actions from cluster, service and component are working correctly
     with regular host with component that is also mapped to an MM host
@@ -211,7 +213,7 @@ def test_host_actions_on_another_component_host(host_actions_cluster, hosts):
     add_hosts_to_cluster(cluster, (host_in_mm, regular_host))
     cluster.hostcomponent_set((host_in_mm, component), (regular_host, component))
 
-    turn_mm_on(host_in_mm)
+    turn_mm_on(api_client, host_in_mm)
 
     enabled_actions = get_enabled_actions_names(regular_host)
     disabled_actions = get_disabled_actions_names(regular_host)
@@ -223,7 +225,7 @@ def test_host_actions_on_another_component_host(host_actions_cluster, hosts):
         )
 
 
-def test_running_disabled_actions_is_forbidden(cluster_with_mm, hosts):
+def test_running_disabled_actions_is_forbidden(api_client, cluster_with_mm, hosts):
     """
     Test that disabled actions actually can't be launched
     and that host's filtered action can't be launched directly via API
@@ -239,7 +241,7 @@ def test_running_disabled_actions_is_forbidden(cluster_with_mm, hosts):
     host_action_from_itself = first_host.action(name='default_action')
     host_action_from_component = first_host.action(name='see_me_on_host')
 
-    turn_mm_on(first_host)
+    turn_mm_on(api_client, first_host)
 
     expect_api_error(
         'run not allowed in MM action on service',
@@ -254,7 +256,7 @@ def test_running_disabled_actions_is_forbidden(cluster_with_mm, hosts):
 
 
 @only_clean_adcm
-def test_host_actions_with_mm(cluster_with_mm, hosts):
+def test_host_actions_with_mm(api_client, cluster_with_mm, hosts):
     """
     Test that host actions (`host_action: true`) are working correctly
     with `allow_in_maintenance_mode` flag
@@ -269,16 +271,16 @@ def test_host_actions_with_mm(cluster_with_mm, hosts):
 
     add_hosts_to_cluster(cluster, (host_in_mm, regular_host))
     cluster.hostcomponent_set((host_in_mm, component), (regular_host, component))
-    turn_mm_on(host_in_mm)
+    turn_mm_on(api_client, host_in_mm)
 
     check_visible_actions(host_in_mm, all_actions)
     check_visible_actions(regular_host, all_actions)
 
-    task = expect_no_api_error('run allowed in MM action', host_in_mm.action(name=allowed_action).run)
+    expect_no_api_error('run allowed in MM action', host_in_mm.action(name=allowed_action).run).wait()
+
     expect_api_error(
         'run not allowed in MM action', regular_host.action(name=not_allowed_action).run, err_=ACTION_ERROR
     )
-    task.wait()
     expect_api_error('run not allowed in MM action', host_in_mm.action(name=not_allowed_action).run, err_=ACTION_ERROR)
     expect_api_error(
         'run not allowed in MM action of host', host_in_mm.action(name=default_action_of_host).run, err_=ACTION_ERROR
@@ -287,7 +289,7 @@ def test_host_actions_with_mm(cluster_with_mm, hosts):
 
 
 @only_clean_adcm
-def test_hc_acl_action_with_mm(cluster_with_mm, hosts):
+def test_hc_acl_action_with_mm(api_client, cluster_with_mm, hosts):
     """
     Test behaviour of actions with `hc_acl`:
     - adding component on host in MM should be forbidden
@@ -306,9 +308,9 @@ def test_hc_acl_action_with_mm(cluster_with_mm, hosts):
         (mm_host_3, first_component),
         (mm_host_3, second_component),
     )
-    turn_mm_on(mm_host_1)
-    turn_mm_on(mm_host_2)
-    turn_mm_on(mm_host_3)
+    turn_mm_on(api_client, mm_host_1)
+    turn_mm_on(api_client, mm_host_2)
+    turn_mm_on(api_client, mm_host_3)
 
     with allure.step('Check "adding" component to a host in MM is forbidden'):
         expect_api_error(
@@ -367,7 +369,7 @@ def test_hosts_in_not_blocking_regular_hc_acl(cluster_with_mm, hosts):
 
 
 @only_clean_adcm
-def test_state_after_mm_switch(cluster_with_mm, hosts):
+def test_state_after_mm_switch(api_client, cluster_with_mm, hosts):
     """
     Test that state stays the same after switch of MM flag
     """
@@ -376,9 +378,9 @@ def test_state_after_mm_switch(cluster_with_mm, hosts):
 
     add_hosts_to_cluster(cluster_with_mm, [host])
     check_state(host, expected_state)
-    turn_mm_on(host)
+    turn_mm_on(api_client, host)
     check_state(host, expected_state)
-    turn_mm_off(host)
+    turn_mm_off(api_client, host)
     check_state(host, expected_state)
     remove_hosts_from_cluster(cluster_with_mm, [host])
     check_state(host, expected_state)
@@ -398,13 +400,13 @@ def test_set_value_not_in_enum_in_mm(cluster_with_mm, hosts):
     expect_api_error(f'Set value "{mm_value}" to MM', lambda: host.maintenance_mode_set(mm_value))
 
 
-def test_mm_after_cluster_deletion(cluster_with_mm, hosts):
+def test_mm_after_cluster_deletion(api_client, cluster_with_mm, hosts):
     """
     Test that MM on hosts from deleted cluster is "disabled"
     """
     host_1, host_2, *_ = hosts
     add_hosts_to_cluster(cluster_with_mm, [host_1, host_2])
-    turn_mm_on(host_2)
+    turn_mm_on(api_client, host_2)
     check_hosts_mm_is(MM_IS_OFF, host_1)
     check_hosts_mm_is(MM_IS_ON, host_2)
     with allure.step('Delete cluster'):

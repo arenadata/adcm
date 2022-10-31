@@ -28,6 +28,7 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
+    MaintenanceMode,
     Prototype,
     PrototypeExport,
     PrototypeImport,
@@ -278,7 +279,7 @@ def get_host_groups(cluster: Cluster, delta: dict, action_host: Host | None = No
         )
 
         for key, adcm_object in key_object_pairs:
-            if hc.host.maintenance_mode:
+            if hc.host.maintenance_mode == MaintenanceMode.ON:
                 key = f"{key}.{MAINTENANCE_MODE}"
 
             if key not in groups:
@@ -304,7 +305,9 @@ def get_host_groups(cluster: Cluster, delta: dict, action_host: Host | None = No
 def get_hosts(host_list, obj, action_host=None):
     group = {}
     for host in host_list:
-        if host.maintenance_mode or (action_host and host.id not in action_host):
+        if host.maintenance_mode == MaintenanceMode.ON or (
+            action_host and host.id not in action_host
+        ):
             continue
         group[host.fqdn] = get_obj_config(host)
         group[host.fqdn]['adcm_hostid'] = host.id

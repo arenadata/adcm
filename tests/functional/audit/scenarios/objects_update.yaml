@@ -62,10 +62,5 @@ operations:
   - update:
       what: *host
       how: change-properties
-      changes:
-        previous:
-          maintenance_mode: False
-        current:
-          maintenance_mode: True
   - update: *change-host
     result: fail

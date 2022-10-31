@@ -33,7 +33,12 @@ def host_and_provider_case(
     audit_object = None
 
     match path:
-        case ["host", host_pk] | ["provider", _, "host", host_pk]:
+        case (
+            ["host", host_pk]
+            | ["host", host_pk, _]
+            | ["provider", _, "host", host_pk]
+            | ["provider", _, "host", host_pk, "maintenance-mode"]
+        ):
             if view.request.method == "DELETE":
                 operation_type = AuditLogOperationType.Delete
             else:

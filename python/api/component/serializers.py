@@ -15,6 +15,7 @@
 from rest_framework.serializers import (
     BooleanField,
     CharField,
+    ChoiceField,
     HyperlinkedIdentityField,
     IntegerField,
     JSONField,
@@ -29,7 +30,7 @@ from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.serializers import StringListSerializer
 from api.utils import CommonAPIURL, ObjectURL, filter_actions
 from cm.adcm_config import get_main_info
-from cm.models import Action, ServiceComponent
+from cm.models import Action, MaintenanceMode, ServiceComponent
 from cm.status_api import get_component_status
 
 
@@ -43,6 +44,8 @@ class ComponentSerializer(EmptySerializer):
     state = CharField(read_only=True)
     prototype_id = IntegerField(required=True, help_text="id of component prototype")
     url = ObjectURL(read_only=True, view_name="component-details")
+    maintenance_mode = CharField(read_only=True)
+    is_maintenance_mode_available = BooleanField(read_only=True)
 
 
 class ComponentUISerializer(ComponentSerializer):
@@ -131,8 +134,8 @@ class ComponentDetailUISerializer(ComponentDetailSerializer):
         return get_main_info(obj)
 
 
-class ComponentPatchSerializer(ModelSerializer):
-    maintenance_mode = BooleanField(source="_maintenance_mode")
+class ComponentChangeMaintenanceModeSerializer(ModelSerializer):
+    maintenance_mode = ChoiceField(choices=(MaintenanceMode.ON, MaintenanceMode.OFF))
 
     class Meta:
         model = ServiceComponent

@@ -27,7 +27,7 @@ from rest_framework.status import (
 )
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.models import Bundle, Cluster, Host, HostProvider, Prototype
+from cm.models import Bundle, Cluster, Host, HostProvider, MaintenanceMode, Prototype
 
 
 class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
@@ -61,7 +61,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
             fqdn="test-fqdn",
             prototype=Prototype.objects.all()[0],
             provider=self.provider,
-            maintenance_mode=True,
+            maintenance_mode=MaintenanceMode.ON,
         )
 
     def load_bundle(self, bundle_name):
@@ -79,22 +79,6 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-
-    def create_host_in_cluster(self, name: str, mm_allowed: bool) -> Host:
-        cluster_proto_mm_allowed = Prototype.objects.create(
-            name=f"proto_for_{name}",
-            type="cluster",
-            bundle=Bundle.objects.create(name=f"bundle_for_{name}_mm_{mm_allowed}"),
-            allow_maintenance_mode=mm_allowed,
-        )
-        cluster = Cluster.objects.create(name=name, prototype=cluster_proto_mm_allowed)
-        return Host.objects.create(
-            fqdn=f"host-{name}",
-            prototype=Prototype.objects.all()[0],
-            provider=self.provider,
-            maintenance_mode=False,
-            cluster=cluster,
-        )
 
     def get_host_proto_id(self):
         response: Response = self.client.get(reverse("host-prototype-list"))
@@ -128,21 +112,12 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         self.host.refresh_from_db()
         self.assertEqual(self.host.fqdn, expected_fqdn)
 
-    def check_is_maintenance_mode_allowed(self, host: Host, expected: bool):
-        field = "is_maintenance_mode_available"
-        response = self.client.get(path=reverse("host-details", args=[host.pk]))
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        body = response.json()
-        self.assertEqual(body[field], expected)
-
-        response = self.client.get(path=reverse("host"))
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        body = response.json()
-        host_to_check = next(filter(lambda h: h["id"] == host.pk, body))
-        self.assertEqual(host_to_check[field], expected)
-
     def check_maintenance_mode_can_be_changed(self, host: Host):
-        new_mm = not host.maintenance_mode
+        new_mm = (
+            MaintenanceMode.ON
+            if host.maintenance_mode == MaintenanceMode.OFF
+            else MaintenanceMode.OFF
+        )
         response = self.client.put(
             path=reverse("host-details", args=[host.pk]),
             data={
@@ -157,7 +132,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["maintenance_mode"], new_mm)
 
-        new_mm = not new_mm
+        new_mm = MaintenanceMode.ON if new_mm == MaintenanceMode.OFF else MaintenanceMode.OFF
         response = self.client.patch(
             path=reverse("host-details", args=[host.pk]),
             data={"maintenance_mode": new_mm},
@@ -165,39 +140,11 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["maintenance_mode"], new_mm)
-
-    def check_maintenance_mode_can_not_be_changed(self, host: Host):
-        original_mm = host.maintenance_mode
-        new_mm = not host.maintenance_mode
-        response = self.client.put(
-            path=reverse("host-details", args=[host.pk]),
-            data={
-                "fqdn": host.fqdn,
-                "maintenance_mode": new_mm,
-                "description": host.description,
-                "provider_id": host.provider_id,
-                "prototype_id": host.prototype_id,
-            },
-            content_type=APPLICATION_JSON,
-        )
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        host.refresh_from_db()
-        self.assertEqual(host.maintenance_mode, original_mm)
-
-        response = self.client.patch(
-            path=reverse("host-details", args=[host.pk]),
-            data={"maintenance_mode": new_mm},
-            content_type=APPLICATION_JSON,
-        )
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        host.refresh_from_db()
-        self.assertEqual(host.maintenance_mode, original_mm)
 
     def test_host(self):  # pylint: disable=too-many-statements
         host = "test.server.net"
         host_url = reverse("host")
 
-        # self.load_bundle(self.bundle_ssh_name)
         ssh_bundle_id, host_proto = self.get_host_proto_id()
 
         response: Response = self.client.post(host_url, {})
@@ -285,7 +232,6 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
                 "prototype_id": ["This field is required."],
                 "provider_id": ["This field is required."],
                 "fqdn": ["This field is required."],
-                "maintenance_mode": ["This field is required."],
             },
         )
 
@@ -335,7 +281,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
 
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": new_test_fqdn, "maintenance_mode": True},
+            data={"fqdn": new_test_fqdn, "maintenance_mode": MaintenanceMode.ON},
             content_type=APPLICATION_JSON,
         )
         self.host.refresh_from_db()
@@ -349,7 +295,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
 
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": self.host.fqdn, "maintenance_mode": True},
+            data={"fqdn": self.host.fqdn, "maintenance_mode": MaintenanceMode.ON},
             content_type=APPLICATION_JSON,
         )
 
@@ -361,7 +307,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
 
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": "new-test-fqdn", "maintenance_mode": True},
+            data={"fqdn": "new-test-fqdn", "maintenance_mode": MaintenanceMode.ON},
             content_type=APPLICATION_JSON,
         )
 
@@ -382,7 +328,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
 
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": "new-test-fqdn", "maintenance_mode": True},
+            data={"fqdn": "new-test-fqdn", "maintenance_mode": MaintenanceMode.ON},
             content_type=APPLICATION_JSON,
         )
 
@@ -433,7 +379,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
             fqdn=fqdn,
             prototype=Prototype.objects.all()[0],
             provider=self.provider,
-            maintenance_mode=False,
+            maintenance_mode=MaintenanceMode.OFF,
         )
 
         response = self.client.put(
@@ -501,7 +447,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
                 self.assertEqual(response.json()["fqdn"], value)
 
     def test_host_update_fqdn_validation(self):
-        self.host.maintenance_mode = False
+        self.host.maintenance_mode = MaintenanceMode.OFF
         self.host.save(update_fields=["maintenance_mode"])
         fqdn = self.host.fqdn
         default_values = {
@@ -545,15 +491,3 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
                     content_type=APPLICATION_JSON,
                 )
                 self.check_success_fqdn_update(response, value)
-
-    def test_host_maintenance_mode(self):
-        self.check_is_maintenance_mode_allowed(self.host, False)
-        self.check_maintenance_mode_can_not_be_changed(self.host)
-
-        host_in_cluster_mm_allowed = self.create_host_in_cluster("mmallowed", True)
-        self.check_is_maintenance_mode_allowed(host_in_cluster_mm_allowed, True)
-        self.check_maintenance_mode_can_be_changed(host_in_cluster_mm_allowed)
-
-        host_in_cluster_mm_not_allowed = self.create_host_in_cluster("mmnotallowed", False)
-        self.check_is_maintenance_mode_allowed(host_in_cluster_mm_not_allowed, False)
-        self.check_maintenance_mode_can_not_be_changed(host_in_cluster_mm_not_allowed)

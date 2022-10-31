@@ -82,7 +82,7 @@ NEW_BUNDLE = [{**OLD_BUNDLE[0], 'version': 2, **UPGRADE}, {**OLD_BUNDLE[1], 'ver
     ],
     indirect=True,
 )
-def test_allow_mm_after_upgrade(sdk_client_fs, create_bundle_archives, hosts):
+def test_allow_mm_after_upgrade(api_client, sdk_client_fs, create_bundle_archives, hosts):
     """
     Test that after upgrade to the bundle version where MM is allowed:
     - hosts in cluster set to correct MM mode
@@ -107,7 +107,7 @@ def test_allow_mm_after_upgrade(sdk_client_fs, create_bundle_archives, hosts):
     check_mm_availability(MM_NOT_ALLOWED, *free_hosts)
 
     check_actions_are_disabled_correctly(set(DUMMY_ACTIONS_WITH_ALLOWED.keys()), set(), old_cluster, service, component)
-    turn_mm_on(hosts_in_cluster[0])
+    turn_mm_on(api_client, hosts_in_cluster[0])
     check_actions_are_disabled_correctly(
         set(ALLOWED_ACTION.keys()), set(TWO_DUMMY_ACTIONS.keys()), old_cluster, service, component
     )
@@ -149,7 +149,7 @@ def test_upgrade_to_mm_false(sdk_client_fs, create_bundle_archives, hosts):
     ],
     indirect=True,
 )
-def test_upgrade_from_true_to_false_mm(sdk_client_fs, create_bundle_archives, hosts):
+def test_upgrade_from_true_to_false_mm(api_client, sdk_client_fs, create_bundle_archives, hosts):
     """
     Test upgrade from version with `allow_maintenance_mode: true` to `allow_maintenance_mode: false`
     """
@@ -161,7 +161,7 @@ def test_upgrade_from_true_to_false_mm(sdk_client_fs, create_bundle_archives, ho
     old_cluster.hostcomponent_set(*[(h, component) for h in cluster_hosts])
 
     check_hosts_mm_is(MM_IS_OFF, *cluster_hosts)
-    turn_mm_on(cluster_hosts[0])
+    turn_mm_on(api_client, cluster_hosts[0])
 
     upgrade_task = old_cluster.upgrade().do()
     if upgrade_task:
@@ -201,7 +201,7 @@ def test_upgrade_from_true_to_false_mm(sdk_client_fs, create_bundle_archives, ho
     ],
     indirect=True,
 )
-def test_allowed_actions_changed(sdk_client_fs, create_bundle_archives, hosts):
+def test_allowed_actions_changed(api_client, sdk_client_fs, create_bundle_archives, hosts):
     """
     Test upgrade when allowed/disallowed in MM actions changed
     """
@@ -210,7 +210,7 @@ def test_allowed_actions_changed(sdk_client_fs, create_bundle_archives, hosts):
 
     add_hosts_to_cluster(old_cluster, hosts)
     old_cluster.hostcomponent_set((hosts[0], old_cluster.service_add(name='just_service').component()))
-    turn_mm_on(hosts[0])
+    turn_mm_on(api_client, hosts[0])
 
     check_actions_are_disabled_correctly({'enabled_at_first'}, {'disabled_at_first'}, old_cluster)
 
