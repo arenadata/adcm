@@ -19,6 +19,7 @@ from adcm_client.objects import ADCMClient, Cluster, Component, Host, Provider, 
 
 from tests.functional.audit.conftest import (
     NEW_USER,
+    BUNDLES_DIR,
     check_failed,
     check_succeed,
     make_auth_header,
@@ -27,7 +28,6 @@ from tests.functional.audit.conftest import (
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
     ANOTHER_SERVICE_NAME,
-    BUNDLES_DIR,
     CLUSTER_WITH_MM_NAME,
     DEFAULT_SERVICE_NAME,
     MM_IS_OFF,
@@ -44,7 +44,7 @@ pytestmark = [only_clean_adcm]
 @pytest.fixture()
 def provider(sdk_client_fs: ADCMClient) -> Provider:
     """Upload bundle and create default provider"""
-    bundle = sdk_client_fs.upload_from_fs(BUNDLES_DIR / 'default_provider')
+    bundle = sdk_client_fs.upload_from_fs(BUNDLES_DIR / 'provider')
     return bundle.provider_create(PROVIDER_NAME)
 
 
@@ -66,7 +66,7 @@ def cluster_with_mm(sdk_client_fs: ADCMClient) -> Cluster:
     return cluster
 
 
-def change_service_mm(admin_client: ADCMClient, service: Service, user_client: ADCMClient) -> None:
+def change_service_mm(admin_client: ADCMClient, user_client: ADCMClient, service: Service) -> None:
     """Method to change service to maintenance mode"""
     url_list = [
         f'{admin_client.url}/api/v1/cluster/{service.cluster_id}/service/{service.id}/maintenance-mode/',
@@ -90,7 +90,7 @@ def change_service_mm(admin_client: ADCMClient, service: Service, user_client: A
             check_succeed(requests.post(url, json=body, headers=make_auth_header(admin_client)))
 
 
-def change_component_mm(admin_client: ADCMClient, component: Component, user_client: ADCMClient) -> None:
+def change_component_mm(admin_client: ADCMClient, user_client: ADCMClient, component: Component) -> None:
     """Method to change component to maintenance mode"""
     url_list = [
         (
@@ -118,7 +118,7 @@ def change_component_mm(admin_client: ADCMClient, component: Component, user_cli
             check_succeed(requests.post(url, json=body, headers=make_auth_header(admin_client)))
 
 
-def change_host_mm(admin_client: ADCMClient, cluster: Cluster, host: Host, user_client: ADCMClient) -> None:
+def change_host_mm(admin_client: ADCMClient, user_client: ADCMClient, cluster: Cluster, host: Host) -> None:
     """Method to change host to maintenance mode"""
     url_list = [
         f'{admin_client.url}/api/v1/cluster/{cluster.id}/host/{host.id}/maintenance-mode/',
@@ -154,9 +154,9 @@ def test_mm_audit(sdk_client_fs, audit_log_checker, cluster_with_mm, hosts, new_
 
     add_hosts_to_cluster(cluster_with_mm, (first_host,))
 
-    change_service_mm(admin_client=sdk_client_fs, service=second_service, user_client=new_user_client)
-    change_component_mm(admin_client=sdk_client_fs, component=first_component, user_client=new_user_client)
-    change_host_mm(admin_client=sdk_client_fs, cluster=cluster_with_mm, host=first_host, user_client=new_user_client)
+    change_service_mm(admin_client=sdk_client_fs, user_client=new_user_client, service=second_service)
+    change_component_mm(admin_client=sdk_client_fs, user_client=new_user_client, component=first_component)
+    change_host_mm(admin_client=sdk_client_fs, user_client=new_user_client, cluster=cluster_with_mm, host=first_host)
 
     audit_log_checker.set_user_map(sdk_client_fs)
     audit_log_checker.check(list(sdk_client_fs.audit_operation_list()))

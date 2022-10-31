@@ -15,3 +15,36 @@
   name: maintenance_mode_allowed_cluster
   version: 5.4
   allow_maintenance_mode: true
+
+  actions: &actions
+    default_action:
+      type: job
+      script: ./actions.yaml
+      script_type: ansible
+      states:
+        available: any
+
+  config: &config
+    - name: some_param
+      type: integer
+      default: 12
+      group_customization: true
+
+- type: service
+  name: test_service
+  version: 4.3
+
+  actions: *actions
+  config: *config
+
+  components: &components
+    first_component:
+      actions: *actions
+      config: *config
+
+- type: service
+  name: another_service
+  version: 6.5
+
+  actions: *actions
+  components: *components
