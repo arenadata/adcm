@@ -45,5 +45,6 @@ mat-form-field {
 }
 
 ::ng-deep .mat-calendar-body-selected {
+  color: #333 !important;
   background: #00e676 !important;
 }

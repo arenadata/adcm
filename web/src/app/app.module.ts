@@ -38,7 +38,7 @@ import { SnackBarComponent } from './components/snack-bar/snack-bar.component';
 import { RouterHistoryService } from '@app/core/services/router-history.service';
 import { RbacAuditOperationsHistoryFormComponent } from './components/rbac/audit-operations-history-form/rbac-audit-operations-history-form.component';
 import { HistoryColumnComponent } from './components/columns/history-column/history-column.component';
-import { ColorTextColumnComponent } from './components/columns/color-text-column/color-text-column.component';
+import { WrapperColumnComponent } from './components/columns/wrapper-column/wrapper-column.component';
 
 @NgModule({
   declarations: [
@@ -47,7 +47,7 @@ import { ColorTextColumnComponent } from './components/columns/color-text-column
     SnackBarComponent,
     RbacAuditOperationsHistoryFormComponent,
     HistoryColumnComponent,
-    ColorTextColumnComponent,
+    WrapperColumnComponent,
   ],
   imports: [
     BrowserModule,

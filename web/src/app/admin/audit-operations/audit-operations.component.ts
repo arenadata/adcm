@@ -1,4 +1,4 @@
-import { Component, Type, ViewChild } from '@angular/core';
+import {Component, ComponentRef, Type, ViewChild} from '@angular/core';
 import { ADD_SERVICE_PROVIDER } from "../../shared/add-component/add-service-model";
 import { IColumns } from "@adwp-ui/widgets";
 import { TypeName } from "../../core/types";
@@ -18,7 +18,7 @@ import { BehaviorSubject } from "rxjs";
 import { IFilter } from "../../shared/configuration/tools/filter/filter.component";
 import { HistoryColumnComponent } from "../../components/columns/history-column/history-column.component";
 import { DateHelper } from "../../helpers/date-helper";
-import { ColorTextColumnComponent } from "../../components/columns/color-text-column/color-text-column.component";
+import { WrapperColumnComponent } from "../../components/columns/wrapper-column/wrapper-column.component";
 
 @Component({
   selector: 'app-audit-operations',
@@ -40,7 +40,13 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
     },
     {
       label: 'Object name',
-      value: (row) => row.object_name,
+      type: 'component',
+      headerClassName: 'width30pr',
+      className: 'width30pr',
+      component: WrapperColumnComponent,
+      instanceTaken: (componentRef: ComponentRef<WrapperColumnComponent>) => {
+        componentRef.instance.type = ['text-substr'];
+      }
     },
     {
       label: 'Operation name',
@@ -51,16 +57,22 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
       type: 'component',
       headerClassName: 'width100',
       className: 'width100',
-      component: ColorTextColumnComponent,
+      component: WrapperColumnComponent,
       value: (row) => row.operation_type,
+      instanceTaken: (componentRef: ComponentRef<WrapperColumnComponent>) => {
+        componentRef.instance.type = ['color'];
+      }
     },
     {
       label: 'Operation result',
       type: 'component',
       headerClassName: 'width100',
       className: 'width100',
-      component: ColorTextColumnComponent,
+      component: WrapperColumnComponent,
       value: (row) => row.operation_result,
+      instanceTaken: (componentRef: ComponentRef<WrapperColumnComponent>) => {
+        componentRef.instance.type = ['color'];
+      }
     },
     {
       label: 'Operation time',
@@ -98,10 +110,28 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
     {
       id: 3, name: 'object_type', display_name: 'Object type', filter_field: 'object_type', filter_type: 'list',
       options: [
-        {id: 1, name: 'host', display_name: 'Host', value: 'host'},
-        {id: 2, name: 'provider', display_name: 'Provider', value: 'provider'},
-        {id: 3, name: 'cluster', display_name: 'Cluster', value: 'cluster'},
-        {id: 4, name: 'bundle', display_name: 'Bundle', value: 'bundle'},
+        {id: 1, name: 'adcm', display_name: 'Adcm', value: 'adcm'},
+        {id: 2, name: 'audit_operations', display_name: 'Audit Operations', value: 'audit_operations'},
+        {id: 3, name: 'bundle', display_name: 'Bundle', value: 'bundle'},
+        {id: 4, name: 'cluster', display_name: 'Cluster', value: 'cluster'},
+        {id: 5, name: 'component', display_name: 'Component', value: 'component'},
+        {id: 6, name: 'group', display_name: 'Group', value: 'group'},
+        {id: 7, name: 'group_config', display_name: 'Group Configuration', value: 'group_config'},
+        {id: 8, name: 'group_config_hosts', display_name: 'Host Group Configuration', value: 'group_config_hosts'},
+        {id: 9, name: 'host', display_name: 'Host', value: 'host'},
+        {id: 10, name: 'host2cluster', display_name: 'Cluster Host', value: 'host2cluster'},
+        {id: 11, name: 'hostcomponent', display_name: 'Host Component', value: 'hostcomponent'},
+        {id: 12, name: 'job', display_name: 'Job', value: 'job'},
+        {id: 13, name: 'policy', display_name: 'policy', value: 'policy'},
+        {id: 14, name: 'profile', display_name: 'Profile', value: 'profile'},
+        {id: 15, name: 'provider', display_name: 'Provider', value: 'provider'},
+        {id: 16, name: 'role', display_name: 'Role', value: 'role'},
+        {id: 17, name: 'service', display_name: 'Service', value: 'service'},
+        {id: 18, name: 'service2cluster', display_name: 'Cluster Service', value: 'service2cluster'},
+        {id: 19, name: 'servicecomponent', display_name: 'Service Component', value: 'servicecomponent'},
+        {id: 20, name: 'stats', display_name: 'Stats', value: 'stats'},
+        {id: 21, name: 'task', display_name: 'Task', value: 'task'},
+        {id: 22, name: 'user', display_name: 'User', value: 'user'},
       ]
     },
     {
@@ -116,7 +146,7 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
       id: 5, name: 'operation_result', display_name: 'Operation result', filter_field: 'operation_result', filter_type: 'list',
       options: [
         {id: 1, name: 'success', display_name: 'Success', value: 'success'},
-        {id: 2, name: 'failed', display_name: 'Failed', value: 'failed'},
+        {id: 2, name: 'fail', display_name: 'Fail', value: 'fail'},
       ]
     },
     {
