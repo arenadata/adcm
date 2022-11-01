@@ -20,6 +20,7 @@ import allure
 import pytest
 from adcm_client.objects import ADCMClient, Host
 
+from tests.functional.maintenance_mode.conftest import MM_IS_OFF, MM_IS_ON
 from tests.functional.rbac.checkers import Deny
 from tests.functional.rbac.conftest import (
     create_policy,
@@ -98,8 +99,8 @@ class TestMaintenanceMode:
         host: Host,
         denial_method: Union[BR, BusinessRole],
         user_client: ADCMClient,
-        new_mm_value: str = 'on',
-        old_mm_value: str = 'off',
+        new_mm_value: str = MM_IS_ON,
+        old_mm_value: str = MM_IS_OFF,
     ):
         """
         Check that change maintenance mode is disallowed to the user
@@ -111,7 +112,9 @@ class TestMaintenanceMode:
             host.maintenance_mode == old_mm_value
         ), f'Host maintenance mode should be intact and be equal to "{old_mm_value}"'
 
-    def check_mm_change_is_allowed(self, host: Host, allow_method: Union[BR, BusinessRole], new_mm_value: str = 'on'):
+    def check_mm_change_is_allowed(
+        self, host: Host, allow_method: Union[BR, BusinessRole], new_mm_value: str = MM_IS_ON
+    ):
         """
         Check that change maintenance mode is allowed to the user
         and the value changed
