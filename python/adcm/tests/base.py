@@ -45,7 +45,7 @@ class BaseTestCase(TestCase):
             password="no_rights_user_password",
         )
 
-        self.client = Client(HTTP_USER_AGENT='Mozilla/5.0')
+        self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
         self.login()
 
         self.cluster_admin_role = Role.objects.create(
@@ -106,7 +106,7 @@ class BaseTestCase(TestCase):
         self.login()
 
     def upload_and_load_bundle(self, path: Path) -> Bundle:
-        with open(path, encoding="utf-8") as f:
+        with open(path, encoding=settings.ENCODING_UTF_8) as f:
             response: Response = self.client.post(
                 path=reverse("upload-bundle"),
                 data={"file": f},

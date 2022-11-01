@@ -24,7 +24,6 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from cm.config import ANSIBLE_SECRET, DEFAULT_SALT
 from cm.models import (
     Bundle,
     Cluster,
@@ -89,7 +88,7 @@ def get_bundle(prototype_id):
     :return: Bundle object
     :rtype: dict
     """
-    fields = ('name', 'version', 'edition', 'hash', 'description')
+    fields = ("name", "version", "edition", "hash", "description")
     prototype = Prototype.objects.get(id=prototype_id)
     bundle = get_object(Bundle, prototype.bundle_id, fields)
     return bundle
@@ -105,7 +104,7 @@ def get_bundle_hash(prototype_id):
     :rtype: str
     """
     bundle = get_bundle(prototype_id)
-    return bundle['hash']
+    return bundle["hash"]
 
 
 def get_config(object_config_id):
@@ -117,16 +116,16 @@ def get_config(object_config_id):
     :return: Current and previous config in dictionary format
     :rtype: dict
     """
-    fields = ('config', 'attr', 'date', 'description')
+    fields = ("config", "attr", "date", "description")
     try:
         object_config = ObjectConfig.objects.get(id=object_config_id)
     except ObjectConfig.DoesNotExist:
         return None
     config = {}
-    for name in ['current', 'previous']:
+    for name in ["current", "previous"]:
         _id = getattr(object_config, name)
         if _id:
-            config[name] = get_object(ConfigLog, _id, fields, ['date'])
+            config[name] = get_object(ConfigLog, _id, fields, ["date"])
         else:
             config[name] = None
     return config
@@ -142,13 +141,13 @@ def get_groups(object_id, model_name):
     :return: List with GroupConfig on that object in dict format
     :rtype: list
     """
-    fields = ('object_id', 'name', 'description', 'config', 'object_type')
+    fields = ("object_id", "name", "description", "config", "object_type")
     groups = []
     for gc in GroupConfig.objects.filter(object_id=object_id, object_type__model=model_name):
         group = get_object(GroupConfig, gc.id, fields)
-        group['config'] = get_config(group['config'])
-        group['model_name'] = model_name
-        group['hosts'] = [host.id for host in gc.hosts.all()]
+        group["config"] = get_config(group["config"])
+        group["model_name"] = model_name
+        group["hosts"] = [host.id for host in gc.hosts.all()]
         groups.append(group)
     return groups
 
@@ -163,18 +162,18 @@ def get_cluster(cluster_id):
     :rtype: dict
     """
     fields = (
-        'id',
-        'name',
-        'description',
-        'config',
-        'state',
-        'prototype',
-        '_multi_state',
+        "id",
+        "name",
+        "description",
+        "config",
+        "state",
+        "prototype",
+        "_multi_state",
     )
     cluster = get_object(Cluster, cluster_id, fields)
-    cluster['config'] = get_config(cluster['config'])
-    bundle = get_bundle(cluster.pop('prototype'))
-    cluster['bundle_hash'] = bundle['hash']
+    cluster["config"] = get_config(cluster["config"])
+    bundle = get_bundle(cluster.pop("prototype"))
+    cluster["bundle_hash"] = bundle["hash"]
     return cluster, bundle
 
 
@@ -188,18 +187,18 @@ def get_provider(provider_id):
     :rtype: dict
     """
     fields = (
-        'id',
-        'prototype',
-        'name',
-        'description',
-        'config',
-        'state',
-        '_multi_state',
+        "id",
+        "prototype",
+        "name",
+        "description",
+        "config",
+        "state",
+        "_multi_state",
     )
     provider = get_object(HostProvider, provider_id, fields)
-    provider['config'] = get_config(provider['config'])
-    bundle = get_bundle(provider.pop('prototype'))
-    provider['bundle_hash'] = bundle['hash']
+    provider["config"] = get_config(provider["config"])
+    bundle = get_bundle(provider.pop("prototype"))
+    provider["bundle_hash"] = bundle["hash"]
     return provider, bundle
 
 
@@ -213,19 +212,19 @@ def get_host(host_id):
     :rtype: dict
     """
     fields = (
-        'id',
-        'prototype',
-        'fqdn',
-        'description',
-        'provider',
-        'provider__name',
-        'config',
-        'state',
-        '_multi_state',
+        "id",
+        "prototype",
+        "fqdn",
+        "description",
+        "provider",
+        "provider__name",
+        "config",
+        "state",
+        "_multi_state",
     )
     host = get_object(Host, host_id, fields)
-    host['config'] = get_config(host['config'])
-    host['bundle_hash'] = get_bundle_hash(host.pop('prototype'))
+    host["config"] = get_config(host["config"])
+    host["bundle_hash"] = get_bundle_hash(host.pop("prototype"))
     return host
 
 
@@ -239,17 +238,16 @@ def get_service(service_id):
     :rtype: dict
     """
     fields = (
-        'id',
-        'prototype',
-        'prototype__name',
-        # 'service',  # TODO: you need to remove the field from the ClusterObject model
-        'config',
-        'state',
-        '_multi_state',
+        "id",
+        "prototype",
+        "prototype__name",
+        "config",
+        "state",
+        "_multi_state",
     )
     service = get_object(ClusterObject, service_id, fields)
-    service['config'] = get_config(service['config'])
-    service['bundle_hash'] = get_bundle_hash(service.pop('prototype'))
+    service["config"] = get_config(service["config"])
+    service["bundle_hash"] = get_bundle_hash(service.pop("prototype"))
     return service
 
 
@@ -263,17 +261,17 @@ def get_component(component_id):
     :rtype: dict
     """
     fields = (
-        'id',
-        'prototype',
-        'prototype__name',
-        'service',
-        'config',
-        'state',
-        '_multi_state',
+        "id",
+        "prototype",
+        "prototype__name",
+        "service",
+        "config",
+        "state",
+        "_multi_state",
     )
     component = get_object(ServiceComponent, component_id, fields)
-    component['config'] = get_config(component['config'])
-    component['bundle_hash'] = get_bundle_hash(component.pop('prototype'))
+    component["config"] = get_config(component["config"])
+    component["bundle_hash"] = get_bundle_hash(component.pop("prototype"))
     return component
 
 
@@ -287,11 +285,11 @@ def get_host_component(host_component_id):
     :rtype: dict
     """
     fields = (
-        'cluster',
-        'host',
-        'service',
-        'component',
-        'state',
+        "cluster",
+        "host",
+        "service",
+        "component",
+        "state",
     )
     host_component = get_object(HostComponent, host_component_id, fields)
     return host_component
@@ -302,7 +300,7 @@ def encrypt_data(pass_from_user, result):
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=DEFAULT_SALT,
+        salt=settings.DEFAULT_SALT,
         iterations=390000,
         backend=default_backend(),
     )
@@ -324,70 +322,70 @@ def dump(cluster_id, output):
     cluster, bundle = get_cluster(cluster_id)
 
     data = {
-        'ADCM_VERSION': settings.ADCM_VERSION,
-        'bundles': {
-            bundle['hash']: bundle,
+        "ADCM_VERSION": settings.ADCM_VERSION,
+        "bundles": {
+            bundle["hash"]: bundle,
         },
-        'cluster': cluster,
-        'hosts': [],
-        'providers': [],
-        'services': [],
-        'components': [],
-        'host_components': [],
-        'groups': [],
+        "cluster": cluster,
+        "hosts": [],
+        "providers": [],
+        "services": [],
+        "components": [],
+        "host_components": [],
+        "groups": [],
     }
 
     provider_ids = set()
-    data['groups'].extend(get_groups(cluster_id, 'cluster'))
+    data["groups"].extend(get_groups(cluster_id, "cluster"))
 
-    for host_obj in Host.objects.filter(cluster_id=cluster['id']):
+    for host_obj in Host.objects.filter(cluster_id=cluster["id"]):
         host = get_host(host_obj.id)
-        provider_ids.add(host['provider'])
-        data['hosts'].append(host)
+        provider_ids.add(host["provider"])
+        data["hosts"].append(host)
 
-    host_ids = [host['id'] for host in data['hosts']]
+    host_ids = [host["id"] for host in data["hosts"]]
 
     for provider_obj in HostProvider.objects.filter(id__in=provider_ids):
         provider, bundle = get_provider(provider_obj.id)
-        data['providers'].append(provider)
-        data['groups'].extend(get_groups(provider_obj.id, 'hostprovider'))
-        data['bundles'][bundle['hash']] = bundle
+        data["providers"].append(provider)
+        data["groups"].extend(get_groups(provider_obj.id, "hostprovider"))
+        data["bundles"][bundle["hash"]] = bundle
 
-    for service_obj in ClusterObject.objects.filter(cluster_id=cluster['id']):
+    for service_obj in ClusterObject.objects.filter(cluster_id=cluster["id"]):
         service = get_service(service_obj.id)
-        data['groups'].extend(get_groups(service_obj.id, 'clusterobject'))
-        data['services'].append(service)
+        data["groups"].extend(get_groups(service_obj.id, "clusterobject"))
+        data["services"].append(service)
 
-    service_ids = [service['id'] for service in data['services']]
+    service_ids = [service["id"] for service in data["services"]]
 
     for component_obj in ServiceComponent.objects.filter(
-        cluster_id=cluster['id'], service_id__in=service_ids
+        cluster_id=cluster["id"], service_id__in=service_ids
     ):
         component = get_component(component_obj.id)
-        data['groups'].extend(get_groups(component_obj.id, 'servicecomponent'))
-        data['components'].append(component)
+        data["groups"].extend(get_groups(component_obj.id, "servicecomponent"))
+        data["components"].append(component)
 
-    component_ids = [component['id'] for component in data['components']]
+    component_ids = [component["id"] for component in data["components"]]
 
     for host_component_obj in HostComponent.objects.filter(
-        cluster_id=cluster['id'],
+        cluster_id=cluster["id"],
         host_id__in=host_ids,
         service_id__in=service_ids,
         component_id__in=component_ids,
     ):
         host_component = get_host_component(host_component_obj.id)
-        data['host_components'].append(host_component)
-    data['adcm_password'] = ANSIBLE_SECRET
-    result = json.dumps(data, indent=2).encode('utf-8')
+        data["host_components"].append(host_component)
+    data["adcm_password"] = settings.ANSIBLE_SECRET
+    result = json.dumps(data, indent=2).encode(settings.ENCODING_UTF_8)
     password = getpass.getpass()
     encrypted = encrypt_data(password, result)
 
     if output is not None:
-        with open(output, 'wb') as f:
+        with open(output, "wb") as f:
             f.write(encrypted)
-        sys.stdout.write(f'Dump successfully done to file {output}\n')
+        sys.stdout.write(f"Dump successfully done to file {output}\n")
     else:
-        sys.stdout.write(encrypted.decode('utf8'))
+        sys.stdout.write(encrypted.decode(settings.ENCODING_UTF_8))
 
 
 class Command(BaseCommand):
@@ -398,25 +396,25 @@ class Command(BaseCommand):
         manage.py dumpcluster --cluster_id 1 --output cluster.json
     """
 
-    help = 'Dump cluster object to JSON format'
+    help = "Dump cluster object to JSON format"
 
     def add_arguments(self, parser):
         """
         Parsing command line arguments
         """
         parser.add_argument(
-            '-c',
-            '--cluster_id',
-            action='store',
-            dest='cluster_id',
+            "-c",
+            "--cluster_id",
+            action="store",
+            dest="cluster_id",
             required=True,
             type=int,
-            help='Cluster ID',
+            help="Cluster ID",
         )
-        parser.add_argument('-o', '--output', help='Specifies file to which the output is written.')
+        parser.add_argument("-o", "--output", help="Specifies file to which the output is written.")
 
     def handle(self, *args, **options):
         """Handler method"""
-        cluster_id = options['cluster_id']
-        output = options['output']
+        cluster_id = options["cluster_id"]
+        output = options["output"]
         dump(cluster_id, output)

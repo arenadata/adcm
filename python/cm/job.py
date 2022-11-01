@@ -17,11 +17,12 @@ from configparser import ConfigParser
 from pathlib import Path
 from typing import Any, Hashable, List, Optional, Tuple, Union
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
 from audit.utils import audit_finish_task
-from cm import adcm_config, api, config, inventory, issue, variant
+from cm import adcm_config, api, inventory, issue, variant
 from cm.adcm_config import process_file_type
 from cm.api_context import ctx
 from cm.errors import AdcmEx
@@ -43,6 +44,7 @@ from cm.models import (
     HostComponent,
     HostProvider,
     JobLog,
+    JobStatus,
     LogStorage,
     ObjectType,
     Prototype,
@@ -138,12 +140,12 @@ def prepare_task(
 
 
 def restart_task(task: TaskLog):
-    if task.status in (config.Job.CREATED, config.Job.RUNNING):
+    if task.status in (JobStatus.CREATED, JobStatus.RUNNING):
         err("TASK_ERROR", f"task #{task.pk} is running")
-    elif task.status == config.Job.SUCCESS:
+    elif task.status == JobStatus.SUCCESS:
         run_task(task, ctx.event)
         ctx.event.send_state()
-    elif task.status in (config.Job.FAILED, config.Job.ABORTED):
+    elif task.status in (JobStatus.FAILED, JobStatus.ABORTED):
         run_task(task, ctx.event, "restart")
         ctx.event.send_state()
     else:
@@ -397,9 +399,9 @@ def check_adcm(adcm_id: int) -> ADCM:
 def get_bundle_root(action: Action) -> str:
 
     if action.prototype.type == "adcm":
-        return str(Path(config.BASE_DIR, "conf"))
+        return str(Path(settings.BASE_DIR, "conf"))
 
-    return config.BUNDLE_DIR
+    return str(settings.BUNDLE_DIR)
 
 
 def cook_script(action: Action, sub_action: SubAction):
@@ -416,8 +418,8 @@ def cook_script(action: Action, sub_action: SubAction):
 
 
 def get_adcm_config():
-    adcm = ADCM.obj.get()
-    return get_obj_config(adcm)
+    adcm_ = ADCM.obj.get()
+    return get_obj_config(adcm_)
 
 
 def get_actual_hc(cluster: Cluster):
@@ -541,11 +543,11 @@ def prepare_job_config(
         "adcm": {"config": get_adcm_config()},
         "context": prepare_context(action, obj),
         "env": {
-            "run_dir": config.RUN_DIR,
-            "log_dir": config.LOG_DIR,
-            "tmp_dir": str(Path(config.RUN_DIR, f"{job_id}", "tmp")),
+            "run_dir": str(settings.RUN_DIR),
+            "log_dir": str(settings.LOG_DIR),
+            "tmp_dir": str(Path(settings.RUN_DIR, f"{job_id}", "tmp")),
             "stack_dir": str(Path(get_bundle_root(action), action.prototype.bundle.hash)),
-            "status_api_token": config.STATUS_SECRET_KEY,
+            "status_api_token": str(settings.STATUS_SECRET_KEY),
         },
         "job": {
             "id": job_id,
@@ -616,7 +618,9 @@ def prepare_job_config(
     if conf:
         job_conf["job"]["config"] = conf
 
-    fd = open(Path(config.RUN_DIR, f"{job_id}", "config.json"), "w", encoding="utf_8")
+    fd = open(
+        Path(settings.RUN_DIR, f"{job_id}", "config.json"), "w", encoding=settings.ENCODING_UTF_8
+    )
     json.dump(job_conf, fd, indent=3, sort_keys=True)
     fd.close()
 
@@ -644,10 +648,10 @@ def create_task(
         verbose=verbose,
         start_date=timezone.now(),
         finish_date=timezone.now(),
-        status=config.Job.CREATED,
+        status=JobStatus.CREATED,
         selector=get_selector(obj, action),
     )
-    set_task_status(task, config.Job.CREATED, ctx.event)
+    set_task_status(task, JobStatus.CREATED, ctx.event)
 
     if action.type == ActionType.Job.value:
         sub_actions = [None]
@@ -662,14 +666,14 @@ def create_task(
             log_files=action.log_files,
             start_date=timezone.now(),
             finish_date=timezone.now(),
-            status=config.Job.CREATED,
+            status=JobStatus.CREATED,
             selector=get_selector(obj, action),
         )
         log_type = sub_action.script_type if sub_action else action.script_type
         LogStorage.objects.create(job=job, name=log_type, type="stdout", format="txt")
         LogStorage.objects.create(job=job, name=log_type, type="stderr", format="txt")
-        set_job_status(job.pk, config.Job.CREATED, ctx.event)
-        Path(config.RUN_DIR, f"{job.pk}", "tmp").mkdir(parents=True, exist_ok=True)
+        set_job_status(job.pk, JobStatus.CREATED, ctx.event)
+        Path(settings.RUN_DIR, f"{job.pk}", "tmp").mkdir(parents=True, exist_ok=True)
 
     tree = Tree(obj)
     affected = (node.value for node in tree.get_all_affected(tree.built_from))
@@ -685,13 +689,13 @@ def get_state(
     if job and job.sub_action:
         sub_action = job.sub_action
 
-    if status == config.Job.SUCCESS:
+    if status == JobStatus.SUCCESS:
         multi_state_set = action.multi_state_on_success_set
         multi_state_unset = action.multi_state_on_success_unset
         state = action.state_on_success
         if not state:
             logger.warning('action "%s" success state is not set', action.name)
-    elif status == config.Job.FAILED:
+    elif status == JobStatus.FAILED:
         state = getattr_first("state_on_fail", sub_action, action)
         multi_state_set = getattr_first("multi_state_on_fail_set", sub_action, action)
         multi_state_unset = getattr_first("multi_state_on_fail_unset", sub_action, action)
@@ -738,7 +742,7 @@ def set_action_state(
 
 
 def restore_hc(task: TaskLog, action: Action, status: str):
-    if status not in [config.Job.FAILED, config.Job.ABORTED]:
+    if status not in [JobStatus.FAILED, JobStatus.ABORTED]:
         return
     if not action.hostcomponentmap:
         return
@@ -822,11 +826,13 @@ def check_all_status():
 
 
 def run_task(task: TaskLog, event, args: str = ""):
-    err_file = open(Path(config.LOG_DIR, "task_runner.err"), "a+", encoding="utf_8")
+    err_file = open(
+        Path(settings.LOG_DIR, "task_runner.err"), "a+", encoding=settings.ENCODING_UTF_8
+    )
     cmd = [
         "/adcm/python/job_venv_wrapper.sh",
         task.action.venv,
-        str(Path(config.CODE_DIR, "task_runner.py")),
+        str(Path(settings.CODE_DIR, "task_runner.py")),
         str(task.pk),
         args,
     ]
@@ -837,7 +843,7 @@ def run_task(task: TaskLog, event, args: str = ""):
     )
     logger.info("task run #%s, python process %s", task.pk, proc.pid)
 
-    set_task_status(task, config.Job.RUNNING, event)
+    set_task_status(task, JobStatus.RUNNING, event)
 
 
 def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
@@ -854,7 +860,7 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
     if mitogen:
         config_parser["defaults"]["strategy"] = "mitogen_linear"
         config_parser["defaults"]["strategy_plugins"] = str(
-            Path(config.PYTHON_SITE_PACKAGES, "ansible_mitogen", "plugins", "strategy")
+            Path(settings.PYTHON_SITE_PACKAGES, "ansible_mitogen", "plugins", "strategy")
         )
         config_parser["defaults"]["host_key_checking"] = "False"
 
@@ -869,7 +875,7 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
         config_parser["defaults"]["jinja2_native"] = str(params["jinja2_native"])
 
     with open(
-        Path(config.RUN_DIR, f"{job_id}", "ansible.cfg"), "w", encoding="utf_8"
+        Path(settings.RUN_DIR, f"{job_id}", "ansible.cfg"), "w", encoding=settings.ENCODING_UTF_8
     ) as config_file:
         config_parser.write(config_file)
 
@@ -887,11 +893,11 @@ def set_job_status(job_id: int, status: str, event, pid: int = 0):
 
 
 def abort_all(event):
-    for task in TaskLog.objects.filter(status=config.Job.RUNNING):
-        set_task_status(task, config.Job.ABORTED, event)
+    for task in TaskLog.objects.filter(status=JobStatus.RUNNING):
+        set_task_status(task, JobStatus.ABORTED, event)
         task.unlock_affected()
-    for job in JobLog.objects.filter(status=config.Job.RUNNING):
-        set_job_status(job.pk, config.Job.ABORTED, event)
+    for job in JobLog.objects.filter(status=JobStatus.RUNNING):
+        set_job_status(job.pk, JobStatus.ABORTED, event)
     ctx.event.send_state()
 
 

@@ -42,7 +42,7 @@ class TestBundle(BaseTestCase):
         Path(settings.DOWNLOAD_DIR, self.test_bundle_filename).unlink(missing_ok=True)
 
     def upload_bundle(self):
-        with open(self.test_bundle_path, encoding="utf-8") as f:
+        with open(self.test_bundle_path, encoding=settings.ENCODING_UTF_8) as f:
             return self.client.post(
                 path=reverse("upload-bundle"),
                 data={"file": f},

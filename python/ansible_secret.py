@@ -11,7 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm import config
+from django.conf import settings
 
-if __name__ == '__main__':
-    print(config.ANSIBLE_SECRET)
+import adcm.init_django  # pylint: disable=unused-import
+
+if __name__ == "__main__":
+    print(settings.ANSIBLE_SECRET)
