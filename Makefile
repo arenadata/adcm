@@ -56,6 +56,7 @@ ng_tests:
 linters: build_base
 	docker run -i --rm $(APP_IMAGE):$(APP_TAG) sh -e -c \
 		"pip install -r /adcm/requirements-test.txt && \
+		python /adcm/license_checker.py --folders /adcm/python /adcm/go && \
 		black /adcm/python && \
 		autoflake -r -i --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py /adcm/python && \
 		isort /adcm/python && \
