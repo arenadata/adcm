@@ -18,3 +18,33 @@ mat-form-field {
   margin: 0 10px;
   font-size: 14px;
 }
+
+::ng-deep .filter-field.datepicker {
+  & > .mat-form-field-wrapper {
+    & > .mat-form-field-underline {
+      display: none !important;
+    }
+  }
+
+  .datepicker-form {
+    .mat-form-field-suffix {
+      left: -20px;
+    }
+  }
+
+  .remove-button {
+    right: -10px;
+  }
+}
+
+::ng-deep .mat-calendar-body-in-range {
+  &:before {
+    background: #00e676 !important;
+    opacity: 0.3;
+  }
+}
+
+::ng-deep .mat-calendar-body-selected {
+  color: #333 !important;
+  background: #00e676 !important;
+}
