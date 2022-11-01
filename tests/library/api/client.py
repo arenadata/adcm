@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from tests.library.api.core import Requester
-from tests.library.api.nodes import HostNode
+from tests.library.api.nodes import HostNode, ServiceNode, ComponentNode
 
 
 class APIClient(Requester):
@@ -19,3 +19,5 @@ class APIClient(Requester):
         super().__init__(f"{url}/api/v1")
         self.auth_header = self.get_auth_header(credentials)
         self.host = HostNode(self)
+        self.service = ServiceNode(self)
+        self.component = ComponentNode(self)
