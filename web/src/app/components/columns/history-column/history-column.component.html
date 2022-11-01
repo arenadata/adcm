@@ -1,4 +1,4 @@
-<div title="{{ hasChangesHistory() ? 'Show object attribute changes' : 'No object attribute changes' }}">
+<div [matTooltip]="hasChangesHistory() ? 'Show object attribute changes' : 'No object attribute changes'">
   <button mat-icon-button color="primary" class="history-button" [class.has-history]="hasChangesHistory()" [disabled]="!hasChangesHistory()" (click)="show($event)">
     <mat-icon class="historyIcon">history</mat-icon>
   </button>
