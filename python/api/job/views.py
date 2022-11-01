@@ -131,7 +131,7 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
                         f'{f"{job.pk}-{dir_name_suffix}".strip("-")}'
                         f'/{log_storage.name}-{log_storage.type}.txt'
                     )
-                    body = io.BytesIO(bytes(log_storage.body, "utf-8"))
+                    body = io.BytesIO(bytes(log_storage.body, settings.ENCODING_UTF_8))
                     tarinfo.size = body.getbuffer().nbytes
                     tar_file.addfile(tarinfo=tarinfo, fileobj=body)
 
@@ -278,7 +278,7 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
                 f"{log_storage.name}-{log_storage.type}.{log_storage.format}",
             )
             if Path.is_file(file_path):
-                with open(file_path, "r", encoding="utf_8") as f:
+                with open(file_path, "r", encoding=settings.ENCODING_UTF_8) as f:
                     body = f.read()
                     length = len(body)
             else:
@@ -291,7 +291,7 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
         response = HttpResponse(body)
         response["Content-Type"] = mime_type
         response["Content-Length"] = length
-        response["Content-Encoding"] = "UTF-8"
+        response["Content-Encoding"] = settings.ENCODING_UTF_8
         response["Content-Disposition"] = f"attachment; filename={filename}"
 
         return response
