@@ -47,10 +47,15 @@ export interface DialogData {
       <ng-container *ngTemplateOutlet="isArray; context: { buttons: data.controls.buttons }"></ng-container>
     </ng-template>
     <ng-template #isArray let-buttons="buttons">
-      <button mat-raised-button color="primary" (click)="_noClick()" tabindex="-1">{{ buttons[1] }}</button>
-      <button mat-raised-button color="accent" [mat-dialog-close]="true" [disabled]="_getDisabledValue()" tabindex="2">
-        {{ buttons[0] }}
-      </button>
+      <ng-container [ngSwitch]="buttons.length">
+        <button *ngSwitchCase="1" mat-raised-button color="primary" (click)="_noClick()" tabindex="-1">{{ buttons[0] }}</button>
+        <ng-container *ngSwitchDefault>
+          <button mat-raised-button color="primary" (click)="_noClick()" tabindex="-1">{{ buttons[1] }}</button>
+          <button mat-raised-button color="accent" [mat-dialog-close]="true" [disabled]="_getDisabledValue()" tabindex="2">
+            {{ buttons[0] }}
+          </button>
+        </ng-container>
+      </ng-container>
     </ng-template>
   `,
   styles: [`

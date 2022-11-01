@@ -12,10 +12,10 @@
 
 import json
 from collections import defaultdict
-from django.conf import settings
 from typing import Iterable
 
 import requests
+from django.conf import settings
 
 from cm.logger import logger
 from cm.models import (

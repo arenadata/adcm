@@ -19,12 +19,12 @@ from django.conf import settings
 
 
 def dict_json_get_or_create(path: str | Path, field: str, value: Any = None) -> Any:
-    with open(path, encoding="utf-8") as f:
+    with open(path, encoding=settings.ENCODING_UTF_8) as f:
         data = json.load(f)
 
     if field not in data:
         data[field] = value
-        with open(path, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding=settings.ENCODING_UTF_8) as f:
             json.dump(data, f)
 
     return data[field]

@@ -20,10 +20,10 @@ import { UsersComponent } from './users/users.component';
 import { RbacGroupFormModule } from '../components/rbac/group-form/rbac-group-form.module';
 import { RbacUserFormModule } from '../components/rbac/user-form/rbac-user-form.module';
 import { RbacRoleFormModule } from '../components/rbac/role-form/rbac-role-form.module';
-
 import { GroupsComponent } from './groups/groups.component';
 import { RolesComponent } from './roles/roles.component';
 import { PoliciesComponent } from './policies/policies.component';
+import { AuditOperationsComponent } from './audit-operations/audit-operations.component';
 import { AdwpListModule } from '@adwp-ui/widgets';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -35,6 +35,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RbacPolicyFormModule } from '../components/rbac/policy-form/rbac-policy-form.module';
 import { ConfigurationModule } from '../shared/configuration/configuration.module';
+import {
+  RbacAuditOperationsHistoryFormComponent
+} from "../components/rbac/audit-operations-history-form/rbac-audit-operations-history-form.component";
 
 const routes: Routes = [
   {
@@ -71,6 +74,10 @@ const routes: Routes = [
       {
         path: 'policies',
         component: PoliciesComponent,
+      },
+      {
+        path: 'audit/operations',
+        component: AuditOperationsComponent,
       }
     ],
   },
@@ -103,6 +110,8 @@ const routes: Routes = [
     GroupsComponent,
     RolesComponent,
     PoliciesComponent,
+    AuditOperationsComponent,
+    RbacAuditOperationsHistoryFormComponent
   ],
 })
 export class AdminModule {

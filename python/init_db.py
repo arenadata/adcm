@@ -13,14 +13,13 @@
 
 import json
 from itertools import chain
-from pathlib import Path
 from secrets import token_hex
-from typing import Tuple, Optional
+from typing import Optional, Tuple
+
+from django.conf import settings
 
 import adcm.init_django  # pylint: disable=unused-import
-from django.conf import settings
 from cm.bundle import load_adcm
-from cm.config import SECRETS_FILE
 from cm.issue import update_hierarchy_issues
 from cm.job import abort_all
 from cm.logger import logger
@@ -36,25 +35,24 @@ from cm.models import (
 from cm.status_api import Event
 from rbac.models import User
 
-
 TOKEN_LENGTH = 20
 
 
 def prepare_secrets_json(status_user_username: str, status_user_password: Optional[str]) -> None:
     # we need to know status user's password to write it to secrets.json [old implementation]
-    if not Path(SECRETS_FILE).is_file() and status_user_username is not None:
-        with open(SECRETS_FILE, "w", encoding="utf_8") as f:
+    if not settings.SECRETS_FILE.is_file() and status_user_username is not None:
+        with open(settings.SECRETS_FILE, "w", encoding=settings.ENCODING_UTF_8) as f:
             json.dump(
                 {
                     "adcmuser": {"user": status_user_username, "password": status_user_password},
                     "token": token_hex(TOKEN_LENGTH),
-                    "adcm_internal_token": settings.ADCM_TOKEN
+                    "adcm_internal_token": settings.ADCM_TOKEN,
                 },
-                f
+                f,
             )
-        logger.info("Update secret file %s OK", SECRETS_FILE)
+        logger.info("Update secret file %s OK", settings.SECRETS_FILE)
     else:
-        logger.info("Secret file %s is not updated", SECRETS_FILE)
+        logger.info("Secret file %s is not updated", settings.SECRETS_FILE)
 
 
 def create_status_user() -> Tuple[str, Optional[str]]:

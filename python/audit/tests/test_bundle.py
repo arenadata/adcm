@@ -99,7 +99,7 @@ class TestBundle(BaseTestCase):
         )
 
     def upload_bundle(self) -> None:
-        with open(self.test_bundle_path, encoding="utf-8") as f:
+        with open(self.test_bundle_path, encoding=settings.ENCODING_UTF_8) as f:
             self.client.post(
                 path=reverse("upload-bundle"),
                 data={"file": f},
@@ -136,7 +136,7 @@ class TestBundle(BaseTestCase):
         Path(settings.DOWNLOAD_DIR, self.test_bundle_filename).unlink()
 
     def test_upload_fail(self):
-        with open(self.test_bundle_path, encoding="utf-8") as f:
+        with open(self.test_bundle_path, encoding=settings.ENCODING_UTF_8) as f:
             self.client.post(
                 path=reverse("upload-bundle"),
                 data={"no_file": f},
@@ -149,7 +149,7 @@ class TestBundle(BaseTestCase):
         )
 
     def test_upload_denied(self):
-        with open(self.test_bundle_path, encoding="utf-8") as f:
+        with open(self.test_bundle_path, encoding=settings.ENCODING_UTF_8) as f:
             with self.no_rights_user_logged_in:
                 response: Response = self.client.post(
                     path=reverse("upload-bundle"),

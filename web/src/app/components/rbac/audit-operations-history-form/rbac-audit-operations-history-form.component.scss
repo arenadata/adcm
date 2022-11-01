@@ -1,0 +1,31 @@
+:host {
+
+  ::ng-deep adwp-paginator {
+    display: none;
+  }
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.square-wrapper {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.square {
+  height: 30px;
+  width: 30px;
+  margin-right: 10px;
+
+  &.added {
+    background-color: #00e676;
+  }
+
+  &.deleted {
+    background-color: #ff8a80;
+  }
+}

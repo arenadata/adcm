@@ -45,9 +45,9 @@ pytest_release:
 	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
 	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" -e ALLURE_TESTPLAN_PATH="${ALLURE_TESTPLAN_PATH}" \
 	hub.adsw.io/library/functest:3.10.6.slim.buster.firefox-x64 /bin/sh -e \
-	./pytest.sh ${PYTEST_MARK_KEY} ${PYTEST_MARK_VALUE} ${PYTEST_EXPRESSION_KEY} ${PYTEST_EXPRESSION_VALUE} \ 
-	--adcm-image="hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))" \
-	--ldap-conf ${LDAP_CONF_FILE}
+	./pytest.sh --adcm-image="hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))" --ldap-conf ${LDAP_CONF_FILE} \
+	${PYTEST_MARK_KEY} ${PYTEST_MARK_VALUE} ${PYTEST_EXPRESSION_KEY} ${PYTEST_EXPRESSION_VALUE}
+
 
 ng_tests:
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64
@@ -56,6 +56,7 @@ ng_tests:
 linters: build_base
 	docker run -i --rm $(APP_IMAGE):$(APP_TAG) sh -e -c \
 		"pip install -r /adcm/requirements-test.txt && \
+		python /adcm/license_checker.py --folders /adcm/python /adcm/go && \
 		black /adcm/python && \
 		autoflake -r -i --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py /adcm/python && \
 		isort /adcm/python && \

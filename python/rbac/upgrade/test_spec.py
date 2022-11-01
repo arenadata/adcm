@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 
 import ruyaml
+from django.conf import settings
 from django.test import TestCase
 
 MANDATORY_KEYS = ["name", "type", "module_name", "class_name"]
@@ -36,7 +37,9 @@ BUSINESS_PARAMETRISATION = [
 
 class TestRoleSpecification(TestCase):
     def setUp(self) -> None:
-        with open(Path(os.path.dirname(__file__), "role_spec.yaml"), encoding="utf-8") as f:
+        with open(
+            Path(os.path.dirname(__file__), "role_spec.yaml"), encoding=settings.ENCODING_UTF_8
+        ) as f:
             self.spec_data: dict = ruyaml.YAML().load(f)
         self.role_map: dict = {role["name"]: role for role in self.spec_data["roles"]}
         self.roots = self.role_map.copy()

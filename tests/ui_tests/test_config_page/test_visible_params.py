@@ -16,6 +16,7 @@ from dataclasses import asdict, dataclass
 
 import allure
 import pytest
+from _pytest.fixtures import FixtureRequest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webelement import WebElement
@@ -27,7 +28,7 @@ from tests.ui_tests.app.helpers.configs_generator import (
     prepare_config,
     prepare_group_config,
 )
-from tests.ui_tests.app.page.cluster.page import ClusterGroupConfigConfig, ClusterConfigPage
+from tests.ui_tests.app.page.cluster.page import ClusterConfigPage, ClusterGroupConfigConfig
 from tests.ui_tests.utils import prepare_cluster_and_open_config_page
 
 # pylint: disable=too-many-arguments,too-many-locals,too-many-boolean-expressions, too-many-statements
@@ -35,6 +36,17 @@ from tests.ui_tests.utils import prepare_cluster_and_open_config_page
 pytestmark = [
     pytest.mark.usefixtures("_cleanup_browser_logs", "_attach_debug_info_on_ui_test_fail", "_login_over_api_ms")
 ]
+
+
+def skip_test_if_one_already_failed(request: FixtureRequest):
+    if request.session.testsfailed == 0:
+        return
+
+    test_base_name = request.node.originalname
+    for item in filter(lambda i: i.originalname == test_base_name, request.session.items):
+        if hasattr(item, "rep_call") and not item.rep_call.passed:
+            pytest.skip(f"There's already one {test_base_name} failed")
+            return
 
 
 def check_default_field_values_in_configs(
@@ -176,8 +188,10 @@ def _check_expectations_for_group_configs_fields(page, combo: ParamCombination, 
 @pytest.mark.parametrize(
     "combo", _prepare_combinations(), ids=lambda c: "-".join(f"{k}_{v}" for k, v in asdict(c).items())
 )
-def test_group_configs_fields(combo: ParamCombination, sdk_client_ms: ADCMClient, app_ms, objects_to_delete):
+def test_group_configs_fields(request, combo: ParamCombination, sdk_client_ms: ADCMClient, app_ms, objects_to_delete):
     """Test group configs with not-invisible fields"""
+    skip_test_if_one_already_failed(request)
+
     config, expected, path = prepare_group_config(generate_group_configs(group_invisible=False, **asdict(combo)))
     cluster, page = prepare_cluster_and_open_config_page(sdk_client_ms, path, app_ms)
     objects_to_delete.append(cluster)
@@ -213,6 +227,7 @@ def test_group_configs_fields(combo: ParamCombination, sdk_client_ms: ADCMClient
     ids=("group_customization_true", "group_customization_false", "no_group_customization"),
 )
 def test_visible_group_config_fields(
+    request,
     sdk_client_ms,
     app_ms,
     field_type,
@@ -225,6 +240,8 @@ def test_visible_group_config_fields(
     objects_to_delete,
 ):
     """Test group config fields that aren't invisible"""
+    skip_test_if_one_already_failed(request)
+
     config, expected, path = prepare_config(
         generate_configs(
             field_type=field_type,
@@ -320,6 +337,7 @@ def test_visible_group_config_fields(
     ids=("field_customization_true", "field_customization_false", "no_field_customization"),
 )
 def test_group_configs_fields_in_group_invisible_false(
+    request,
     sdk_client_ms: ADCMClient,
     app_ms,
     field_type,
@@ -334,6 +352,8 @@ def test_group_configs_fields_in_group_invisible_false(
     objects_to_delete,
 ):
     """Test group configs with not-invisible fields"""
+    skip_test_if_one_already_failed(request)
+
     config, expected, path = prepare_group_config(
         generate_group_configs(
             field_type=field_type,
@@ -486,6 +506,7 @@ def test_group_configs_fields_in_group_invisible_false(
     ],
 )
 def test_configs_fields_invisible_false(
+    request,
     sdk_client_ms: ADCMClient,
     app_ms,
     field_type,
@@ -498,6 +519,8 @@ def test_configs_fields_invisible_false(
     objects_to_delete,
 ):
     """Test config fields that aren't invisible"""
+    skip_test_if_one_already_failed(request)
+
     config, expected, path = prepare_config(
         generate_configs(
             field_type=field_type,

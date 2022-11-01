@@ -19,26 +19,26 @@ import subprocess
 import sys
 import time
 
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
 import adcm.init_django  # pylint: disable=unused-import
-from cm.config import CODE_DIR, LOG_DIR, RUN_DIR, Job
 from cm.job import finish_task, re_prepare_job
 from cm.logger import logger
-from cm.models import JobLog, LogStorage, TaskLog
+from cm.models import JobLog, JobStatus, LogStorage, TaskLog
 
 TASK_ID = 0
 
 
 def terminate_job(task, jobs):
-    running_job = jobs.get(status=Job.RUNNING)
+    running_job = jobs.get(status=JobStatus.RUNNING)
 
     if running_job.pid:
         os.kill(running_job.pid, signal.SIGTERM)
-        finish_task(task, running_job, Job.ABORTED)
+        finish_task(task, running_job, JobStatus.ABORTED)
     else:
-        finish_task(task, None, Job.ABORTED)
+        finish_task(task, None, JobStatus.ABORTED)
 
 
 def terminate_task(signum, frame):
@@ -48,7 +48,7 @@ def terminate_task(signum, frame):
 
     i = 0
     while i < 10:
-        if jobs.filter(status=Job.RUNNING):
+        if jobs.filter(status=JobStatus.RUNNING):
             terminate_job(task, jobs)
             break
         i += 1
@@ -56,7 +56,7 @@ def terminate_task(signum, frame):
 
     if i == 10:
         logger.warning("no jobs running for task #%s", TASK_ID)
-        finish_task(task, None, Job.ABORTED)
+        finish_task(task, None, JobStatus.ABORTED)
 
     os._exit(signum)
 
@@ -67,12 +67,12 @@ signal.signal(signal.SIGTERM, terminate_task)
 def run_job(task_id, job_id, err_file):
     logger.debug("task run job #%s of task #%s", job_id, task_id)
     cmd = [
-        '/adcm/python/job_venv_wrapper.sh',
+        "/adcm/python/job_venv_wrapper.sh",
         TaskLog.objects.get(id=task_id).action.venv,
-        os.path.join(CODE_DIR, 'job_runner.py'),
+        str(settings.CODE_DIR / "job_runner.py"),
         str(job_id),
     ]
-    logger.info("task run job cmd: %s", ' '.join(cmd))
+    logger.info("task run job cmd: %s", " ".join(cmd))
     try:
         proc = subprocess.Popen(cmd, stderr=err_file)
         res = proc.wait()
@@ -86,10 +86,10 @@ def run_job(task_id, job_id, err_file):
 
 def set_log_body(job):
     name = job.sub_action.script_type if job.sub_action else job.action.script_type
-    log_storage = LogStorage.objects.filter(job=job, name=name, type__in=['stdout', 'stderr'])
+    log_storage = LogStorage.objects.filter(job=job, name=name, type__in=["stdout", "stderr"])
     for ls in log_storage:
-        file_path = os.path.join(RUN_DIR, f'{ls.job.id}', f'{ls.name}-{ls.type}.{ls.format}')
-        with open(file_path, 'r', encoding='utf_8') as f:
+        file_path = settings.RUN_DIR / f"{ls.job.id}" / f"{ls.name}-{ls.type}.{ls.format}"
+        with open(file_path, "r", encoding=settings.ENCODING_UTF_8) as f:
             body = f.read()
 
         LogStorage.objects.filter(job=job, name=ls.name, type=ls.type).update(body=body)
@@ -106,14 +106,14 @@ def run_task(task_id, args=None):
 
     task.pid = os.getpid()
     task.save()
-    jobs = JobLog.objects.filter(task_id=task.id).order_by('id')
+    jobs = JobLog.objects.filter(task_id=task.id).order_by("id")
     if not jobs:
         logger.error("no jobs for task %s", task.id)
-        finish_task(task, None, Job.FAILED)
+        finish_task(task, None, JobStatus.FAILED)
 
         return
 
-    err_file = open(os.path.join(LOG_DIR, 'job_runner.err'), 'a+', encoding='utf_8')
+    err_file = open(settings.LOG_DIR / "job_runner.err", "a+", encoding=settings.ENCODING_UTF_8)
 
     logger.info("run task #%s", task_id)
 
@@ -121,7 +121,7 @@ def run_task(task_id, args=None):
     count = 0
     res = 0
     for job in jobs:
-        if args == 'restart' and job.status == Job.SUCCESS:
+        if args == "restart" and job.status == JobStatus.SUCCESS:
             logger.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
 
             continue
@@ -145,9 +145,9 @@ def run_task(task_id, args=None):
             break
 
     if res == 0:
-        finish_task(task, job, Job.SUCCESS)
+        finish_task(task, job, JobStatus.SUCCESS)
     else:
-        finish_task(task, job, Job.FAILED)
+        finish_task(task, job, JobStatus.FAILED)
 
     err_file.close()
 
@@ -167,5 +167,5 @@ def do():
         run_task(sys.argv[1])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     do()
