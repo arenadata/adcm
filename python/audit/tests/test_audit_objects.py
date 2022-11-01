@@ -53,9 +53,7 @@ class TestAuditObjects(BaseTestCase):
     # UTILITIES
 
     def create_provider_via_api(self, name: str = "Provider") -> Response:
-        return self.client.post(
-            path=reverse("provider"), data={"prototype_id": self.provider_proto.id, "name": name}
-        )
+        return self.client.post(path=reverse("provider"), data={"prototype_id": self.provider_proto.id, "name": name})
 
     def create_host_via_api(self, fqdn: str, provider_id: int) -> Response:
         return self.client.post(
@@ -64,9 +62,7 @@ class TestAuditObjects(BaseTestCase):
         )
 
     def create_cluster_via_api(self, name: str = "Cluster") -> Response:
-        return self.client.post(
-            path=reverse("cluster"), data={"prototype_id": self.cluster_proto.id, "name": name}
-        )
+        return self.client.post(path=reverse("cluster"), data={"prototype_id": self.cluster_proto.id, "name": name})
 
     def _get_id_from_create_response(self, resp: Response) -> int:
         self.assertEqual(resp.status_code, HTTP_201_CREATED)
@@ -76,9 +72,7 @@ class TestAuditObjects(BaseTestCase):
 
     def test_cluster_flow(self):
         provider_id = self._get_id_from_create_response(self.create_provider_via_api())
-        host_id = self._get_id_from_create_response(
-            self.create_host_via_api("test-fqdn", provider_id)
-        )
+        host_id = self._get_id_from_create_response(self.create_host_via_api("test-fqdn", provider_id))
 
         cluster_id = self._get_id_from_create_response(self.create_cluster_via_api())
         filter_kwargs = dict(object_id=cluster_id, object_type=AuditObjectType.Cluster)
@@ -92,23 +86,17 @@ class TestAuditObjects(BaseTestCase):
                 data={"cluster_id": cluster_id, "prototype_id": self.service_proto.id},
             )
         )
-        resp = self.client.post(
-            path=reverse("host", kwargs={"cluster_id": cluster_id}), data={"host_id": host_id}
-        )
+        resp = self.client.post(path=reverse("host", kwargs={"cluster_id": cluster_id}), data={"host_id": host_id})
         self.assertEqual(resp.status_code, HTTP_201_CREATED)
         self.assertEqual(AuditObject.objects.filter(**filter_kwargs).count(), 1)
         cluster_ao.refresh_from_db()
         self.assertFalse(cluster_ao.is_deleted)
 
         resp = self.client.delete(
-            path=reverse(
-                "service-details", kwargs={"cluster_id": cluster_id, "service_id": service_id}
-            )
+            path=reverse("service-details", kwargs={"cluster_id": cluster_id, "service_id": service_id})
         )
         self.assertEqual(resp.status_code, HTTP_204_NO_CONTENT)
-        resp = self.client.delete(
-            path=reverse("host-details", kwargs={"cluster_id": cluster_id, "host_id": host_id})
-        )
+        resp = self.client.delete(path=reverse("host-details", kwargs={"cluster_id": cluster_id, "host_id": host_id}))
         self.assertEqual(resp.status_code, HTTP_204_NO_CONTENT)
         cluster_ao.refresh_from_db()
         self.assertFalse(cluster_ao.is_deleted)
@@ -123,9 +111,7 @@ class TestAuditObjects(BaseTestCase):
 
     def test_provider_flow(self):
         provider_id = self._get_id_from_create_response(self.create_provider_via_api())
-        host_id = self._get_id_from_create_response(
-            self.create_host_via_api("test-fqdn", provider_id)
-        )
+        host_id = self._get_id_from_create_response(self.create_host_via_api("test-fqdn", provider_id))
         self.assertEqual(AuditObject.objects.count(), 2)
         self.assertEqual(AuditObject.objects.filter(is_deleted=True).count(), 0)
         resp = self.client.post(

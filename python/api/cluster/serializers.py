@@ -76,9 +76,7 @@ class ClusterSerializer(Serializer):
     description = CharField(help_text="Cluster description", required=False)
     state = CharField(read_only=True)
     before_upgrade = JSONField(read_only=True)
-    url = HyperlinkedIdentityField(
-        view_name="cluster-details", lookup_field="id", lookup_url_kwarg="cluster_id"
-    )
+    url = HyperlinkedIdentityField(view_name="cluster-details", lookup_field="id", lookup_url_kwarg="cluster_id")
 
     @staticmethod
     def validate_prototype_id(prototype_id):
@@ -105,9 +103,7 @@ class ClusterUISerializer(ClusterSerializer):
     prototype_version = SerializerMethodField()
     prototype_name = SerializerMethodField()
     prototype_display_name = SerializerMethodField()
-    upgrade = HyperlinkedIdentityField(
-        view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id"
-    )
+    upgrade = HyperlinkedIdentityField(view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id")
     upgradable = SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
@@ -145,22 +141,14 @@ class ClusterDetailSerializer(ClusterSerializer):
         view_name="host-component", lookup_field="id", lookup_url_kwarg="cluster_id"
     )
     status = SerializerMethodField()
-    status_url = HyperlinkedIdentityField(
-        view_name="cluster-status", lookup_field="id", lookup_url_kwarg="cluster_id"
-    )
+    status_url = HyperlinkedIdentityField(view_name="cluster-status", lookup_field="id", lookup_url_kwarg="cluster_id")
     config = CommonAPIURL(view_name="object-config")
     serviceprototype = HyperlinkedIdentityField(
         view_name="cluster-service-prototype", lookup_field="id", lookup_url_kwarg="cluster_id"
     )
-    upgrade = HyperlinkedIdentityField(
-        view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id"
-    )
-    imports = HyperlinkedIdentityField(
-        view_name="cluster-import", lookup_field="id", lookup_url_kwarg="cluster_id"
-    )
-    bind = HyperlinkedIdentityField(
-        view_name="cluster-bind", lookup_field="id", lookup_url_kwarg="cluster_id"
-    )
+    upgrade = HyperlinkedIdentityField(view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id")
+    imports = HyperlinkedIdentityField(view_name="cluster-import", lookup_field="id", lookup_url_kwarg="cluster_id")
+    bind = HyperlinkedIdentityField(view_name="cluster-bind", lookup_field="id", lookup_url_kwarg="cluster_id")
     prototype = HyperlinkedIdentityField(
         view_name="cluster-prototype-detail",
         lookup_field="pk",
@@ -196,11 +184,7 @@ class ClusterUpdateSerializer(EmptySerializer):
     description = CharField(required=False, help_text="Cluster description")
 
     def update(self, instance, validated_data):
-        if (
-            validated_data.get("name")
-            and validated_data.get("name") != instance.name
-            and instance.state != "created"
-        ):
+        if validated_data.get("name") and validated_data.get("name") != instance.name and instance.state != "created":
             raise ValidationError("Name change is available only in the 'created' state")
 
         instance.name = validated_data.get("name", instance.name)
@@ -286,9 +270,7 @@ class HostComponentSerializer(EmptySerializer):
     component_id = IntegerField(read_only=True, help_text="component id")
     state = CharField(read_only=True, required=False)
     url = MyUrlField(read_only=True, view_name="host-comp-details")
-    host_url = HyperlinkedIdentityField(
-        view_name="host-details", lookup_field="host_id", lookup_url_kwarg="host_id"
-    )
+    host_url = HyperlinkedIdentityField(view_name="host-details", lookup_field="host_id", lookup_url_kwarg="host_id")
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

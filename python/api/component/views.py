@@ -34,14 +34,10 @@ from rbac.viewsets import DjangoOnlyObjectPermissions
 def get_component_queryset(queryset, user, kwargs):
     if "cluster_id" in kwargs:
         cluster = get_object_for_user(user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"])
-        co = get_object_for_user(
-            user, "cm.view_clusterobject", ClusterObject, cluster=cluster, id=kwargs["service_id"]
-        )
+        co = get_object_for_user(user, "cm.view_clusterobject", ClusterObject, cluster=cluster, id=kwargs["service_id"])
         queryset = queryset.filter(cluster=cluster, service=co)
     elif "service_id" in kwargs:
-        co = get_object_for_user(
-            user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"]
-        )
+        co = get_object_for_user(user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
         queryset = queryset.filter(service=co)
 
     return queryset
@@ -98,9 +94,7 @@ class StatusList(GenericUIView):
 
     def get(self, request, *args, **kwargs):
         queryset = get_component_queryset(ServiceComponent.objects.all(), request.user, kwargs)
-        component = get_object_for_user(
-            request.user, "cm.view_servicecomponent", queryset, id=kwargs["component_id"]
-        )
+        component = get_object_for_user(request.user, "cm.view_servicecomponent", queryset, id=kwargs["component_id"])
         if self._is_for_ui():
             host_components = self.get_queryset().filter(component=component)
 

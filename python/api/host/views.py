@@ -166,14 +166,10 @@ class HostList(PermissionListMixin, PaginatedView):
         )
         if serializer.is_valid():
             if "provider_id" in kwargs:  # List provider hosts
-                provider = get_object_for_user(
-                    request.user, PROVIDER_VIEW, HostProvider, id=kwargs["provider_id"]
-                )
+                provider = get_object_for_user(request.user, PROVIDER_VIEW, HostProvider, id=kwargs["provider_id"])
             else:
                 provider = serializer.validated_data.get("provider_id")
-                provider = get_object_for_user(
-                    request.user, PROVIDER_VIEW, HostProvider, id=provider.id
-                )
+                provider = get_object_for_user(request.user, PROVIDER_VIEW, HostProvider, id=provider.id)
 
             check_custom_perm(request.user, "add_host_to", "hostprovider", provider)
 
@@ -197,9 +193,7 @@ class HostListCluster(HostList):
 
             cluster = None
             if "cluster_id" in kwargs:
-                cluster = get_object_for_user(
-                    request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"]
-                )
+                cluster = get_object_for_user(request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"])
 
             host = get_object_for_user(request.user, HOST_VIEW, Host, id=validated_data.get("id"))
             check_custom_perm(request.user, "map_host_to", "cluster", cluster)
@@ -260,15 +254,9 @@ class HostDetail(PermissionListMixin, DetailView):
 
         serializer.is_valid(raise_exception=True)
         if "maintenance_mode" in serializer.validated_data:
-            self._check_maintenance_mode_constraint(
-                host, serializer.validated_data.get("maintenance_mode")
-            )
+            self._check_maintenance_mode_constraint(host, serializer.validated_data.get("maintenance_mode"))
 
-        if (
-            "fqdn" in request.data
-            and request.data["fqdn"] != host.fqdn
-            and (host.cluster or host.state != "created")
-        ):
+        if "fqdn" in request.data and request.data["fqdn"] != host.fqdn and (host.cluster or host.state != "created"):
             raise AdcmEx("HOST_UPDATE_ERROR")
 
         serializer.save(**kwargs)
@@ -286,9 +274,7 @@ class HostDetail(PermissionListMixin, DetailView):
     def delete(self, request, *args, **kwargs):
         host = self.get_object()
         if "cluster_id" in kwargs:
-            cluster = get_object_for_user(
-                request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"]
-            )
+            cluster = get_object_for_user(request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"])
             check_host(host, cluster)
             check_custom_perm(request.user, "unmap_host_from", "cluster", cluster)
             remove_host_from_cluster(host)
@@ -332,14 +318,10 @@ class StatusList(GenericUIView):
         cluster = None
         host = get_object_for_user(request.user, HOST_VIEW, Host, id=kwargs["host_id"])
         if "cluster_id" in kwargs:
-            cluster = get_object_for_user(
-                request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"]
-            )
+            cluster = get_object_for_user(request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"])
 
         if "provider_id" in kwargs:
-            provider = get_object_for_user(
-                request.user, PROVIDER_VIEW, HostProvider, id=kwargs["provider_id"]
-            )
+            provider = get_object_for_user(request.user, PROVIDER_VIEW, HostProvider, id=kwargs["provider_id"])
             host = get_object_for_user(
                 request.user,
                 HOST_VIEW,

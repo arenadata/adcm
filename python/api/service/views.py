@@ -58,9 +58,7 @@ class ServiceListView(PermissionListMixin, PaginatedView):
     def get(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         if "cluster_id" in kwargs:
-            cluster = get_object_for_user(
-                request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
-            )
+            cluster = get_object_for_user(request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"])
             queryset = queryset.filter(cluster=cluster).select_related("config")
 
         return self.get_page(self.filter_queryset(queryset), request)
@@ -70,13 +68,9 @@ class ServiceListView(PermissionListMixin, PaginatedView):
         serializer_class = self.serializer_class
         if "cluster_id" in kwargs:
             serializer_class = self.serializer_class_cluster
-            cluster = get_object_for_user(
-                request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
-            )
+            cluster = get_object_for_user(request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"])
         else:
-            cluster = get_object_for_user(
-                request.user, "cm.view_cluster", Cluster, id=request.data["cluster_id"]
-            )
+            cluster = get_object_for_user(request.user, "cm.view_cluster", Cluster, id=request.data["cluster_id"])
 
         check_custom_perm(request.user, "add_service_to", "cluster", cluster)
         serializer = serializer_class(
@@ -99,9 +93,7 @@ class ServiceDetailView(PermissionListMixin, DetailView):
     def get_queryset(self, *args, **kwargs):
         queryset = super().get_queryset(*args, **kwargs)
         if "cluster_id" in self.kwargs:
-            cluster = get_object_for_user(
-                self.request.user, "cm.view_cluster", Cluster, id=self.kwargs["cluster_id"]
-            )
+            cluster = get_object_for_user(self.request.user, "cm.view_cluster", Cluster, id=self.kwargs["cluster_id"])
             queryset = queryset.filter(cluster=cluster)
 
         return queryset
@@ -141,21 +133,15 @@ class ServiceImportView(GenericUIView):
 
     @staticmethod
     def get(request, *args, **kwargs):
-        service = get_object_for_user(
-            request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"]
-        )
-        check_custom_perm(
-            request.user, "view_import_of", "clusterobject", service, "view_clusterbind"
-        )
+        service = get_object_for_user(request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
+        check_custom_perm(request.user, "view_import_of", "clusterobject", service, "view_clusterbind")
         cluster = service.cluster
 
         return Response(get_import(cluster, service))
 
     @audit
     def post(self, request, **kwargs):
-        service = get_object_for_user(
-            request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"]
-        )
+        service = get_object_for_user(request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
         check_custom_perm(request.user, "change_import_of", "clusterobject", service)
         cluster = service.cluster
         serializer = self.get_serializer(
@@ -174,12 +160,8 @@ class ServiceBindView(GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
-        service = get_object_for_user(
-            request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"]
-        )
-        check_custom_perm(
-            request.user, "view_import_of", "clusterobject", service, "view_clusterbind"
-        )
+        service = get_object_for_user(request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
+        check_custom_perm(request.user, "view_import_of", "clusterobject", service, "view_clusterbind")
         binds = self.get_queryset().filter(service=service)
         serializer = self.get_serializer(binds, many=True)
 
@@ -187,9 +169,7 @@ class ServiceBindView(GenericUIView):
 
     @audit
     def post(self, request, **kwargs):
-        service = get_object_for_user(
-            request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"]
-        )
+        service = get_object_for_user(request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
         check_custom_perm(request.user, "change_import_of", "clusterobject", service)
         cluster = service.cluster
         serializer = self.get_serializer(data=request.data)
@@ -212,9 +192,7 @@ class ServiceBindDetailView(GenericUIView):
 
     def get(self, request, *args, **kwargs):
         service, bind = self.get_obj(kwargs, kwargs["bind_id"])
-        check_custom_perm(
-            request.user, "view_import_of", "clusterobject", service, "view_clusterbind"
-        )
+        check_custom_perm(request.user, "view_import_of", "clusterobject", service, "view_clusterbind")
         serializer = self.get_serializer(bind)
 
         return Response(serializer.data)
@@ -234,9 +212,7 @@ class StatusList(GenericUIView):
     serializer_class = StatusSerializer
 
     def get(self, request, *args, **kwargs):
-        service = get_object_for_user(
-            request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"]
-        )
+        service = get_object_for_user(request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
         if self._is_for_ui():
             host_components = self.get_queryset().filter(service=service)
 

@@ -43,10 +43,7 @@ def get_oauth(oauth_key: str) -> tuple[str, str]:
     if not config_log.config.get(oauth_key):
         return None, None
 
-    if (
-        "client_id" not in config_log.config[oauth_key]
-        or "secret" not in config_log.config[oauth_key]
-    ):
+    if "client_id" not in config_log.config[oauth_key] or "secret" not in config_log.config[oauth_key]:
         return None, None
 
     return (

@@ -29,9 +29,7 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     'id',
-                    models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
-                    ),
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
                 ),
                 ('object_id', models.PositiveIntegerField()),
                 ('name', models.CharField(max_length=30)),
@@ -58,9 +56,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='groupconfig',
             name='object_type',
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype'
-            ),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype'),
         ),
         migrations.AlterUniqueTogether(
             name='groupconfig',

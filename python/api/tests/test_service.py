@@ -55,9 +55,7 @@ class TestServiceAPI(BaseTestCase):
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.ON)
 
     def test_change_maintenance_mode_on_with_action_success(self):
-        action = Action.objects.create(
-            prototype=self.service.prototype, name="turn_on_maintenance_mode"
-        )
+        action = Action.objects.create(prototype=self.service.prototype, name="turn_on_maintenance_mode")
 
         with patch("api.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
@@ -106,9 +104,7 @@ class TestServiceAPI(BaseTestCase):
     def test_change_maintenance_mode_off_with_action_success(self):
         self.service.maintenance_mode = MaintenanceMode.ON
         self.service.save()
-        action = Action.objects.create(
-            prototype=self.service.prototype, name="turn_off_maintenance_mode"
-        )
+        action = Action.objects.create(prototype=self.service.prototype, name="turn_off_maintenance_mode")
 
         with patch("api.utils.start_task") as start_task_mock:
             response: Response = self.client.post(

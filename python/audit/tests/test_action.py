@@ -58,9 +58,7 @@ class TestAction(BaseTestCase):
         self.config.save(update_fields=["current"])
 
         self.adcm_name = "ADCM"
-        self.adcm = ADCM.objects.create(
-            prototype=adcm_prototype, name=self.adcm_name, config=self.config
-        )
+        self.adcm = ADCM.objects.create(prototype=adcm_prototype, name=self.adcm_name, config=self.config)
         self.action = Action.objects.create(
             display_name="test_adcm_action",
             prototype=adcm_prototype,
@@ -132,11 +130,7 @@ class TestAction(BaseTestCase):
 
     def test_adcm_launch(self):
         with patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(
-                path=reverse(
-                    "run-task", kwargs={"adcm_pk": self.adcm.pk, "action_id": self.action.pk}
-                )
-            )
+            self.client.post(path=reverse("run-task", kwargs={"adcm_pk": self.adcm.pk, "action_id": self.action.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -151,9 +145,7 @@ class TestAction(BaseTestCase):
         )
 
         with patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(
-                path=reverse("run-task", kwargs={"adcm_pk": 999, "action_id": self.action.pk})
-            )
+            self.client.post(path=reverse("run-task", kwargs={"adcm_pk": 999, "action_id": self.action.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 

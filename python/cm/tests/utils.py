@@ -165,14 +165,10 @@ def gen_host_component(component: ServiceComponent, host: Host) -> HostComponent
     )
 
 
-def gen_concern_item(
-    concern_type, name: str | None = None, reason=None, blocking=True, owner=None
-) -> ConcernItem:
+def gen_concern_item(concern_type, name: str | None = None, reason=None, blocking=True, owner=None) -> ConcernItem:
     """Generate ConcernItem object"""
     reason = reason or {"message": "Test", "placeholder": {}}
-    return ConcernItem.objects.create(
-        type=concern_type, name=name, reason=reason, blocking=blocking, owner=owner
-    )
+    return ConcernItem.objects.create(type=concern_type, name=name, reason=reason, blocking=blocking, owner=owner)
 
 
 def gen_action(name: str | None = None, bundle=None, prototype=None) -> Action:

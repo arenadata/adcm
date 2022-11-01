@@ -92,9 +92,7 @@ class TestBundle(BaseTestCase):
         self.assertEqual(response.data["results"][0]["id"], self.bundle_1.pk)
 
     def test_list_filter_version(self):
-        response: Response = self.client.get(
-            reverse("bundle-list"), {"version": self.bundle_1.version}
-        )
+        response: Response = self.client.get(reverse("bundle-list"), {"version": self.bundle_1.version})
 
         self.assertEqual(response.data["results"][0]["id"], self.bundle_1.pk)
 

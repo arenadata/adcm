@@ -43,38 +43,25 @@ class TestCluster(BaseTestCase):
             "Ends with hyphen-",
             "Ends with dot.",
             "Ends with underscore_",
-        ) + tuple(
-            f"forbidden{c}char"
-            for c in set(string.punctuation) - set(self.allowed_name_chars_middle)
-        )
+        ) + tuple(f"forbidden{c}char" for c in set(string.punctuation) - set(self.allowed_name_chars_middle))
 
         self.bundle = Bundle.objects.create()
-        self.prototype = Prototype.objects.create(
-            name="test_prototype_name", type="cluster", bundle=self.bundle
-        )
+        self.prototype = Prototype.objects.create(name="test_prototype_name", type="cluster", bundle=self.bundle)
         self.cluster = Cluster.objects.create(name="test_cluster_name", prototype=self.prototype)
 
     def test_cluster_update_duplicate_name_fail(self):
         new_cluster = Cluster.objects.create(name="new_name", prototype=self.prototype)
         url = reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
 
-        response = self.client.patch(
-            path=url, data={"name": new_cluster.name}, content_type=APPLICATION_JSON
-        )
+        response = self.client.patch(path=url, data={"name": new_cluster.name}, content_type=APPLICATION_JSON)
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")
-        self.assertEqual(
-            response.json()["desc"], f'Cluster with name "{new_cluster.name}" already exists'
-        )
+        self.assertEqual(response.json()["desc"], f'Cluster with name "{new_cluster.name}" already exists')
 
-        response = self.client.put(
-            path=url, data={"name": new_cluster.name}, content_type=APPLICATION_JSON
-        )
+        response = self.client.put(path=url, data={"name": new_cluster.name}, content_type=APPLICATION_JSON)
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")
-        self.assertEqual(
-            response.json()["desc"], f'Cluster with name "{new_cluster.name}" already exists'
-        )
+        self.assertEqual(response.json()["desc"], f'Cluster with name "{new_cluster.name}" already exists')
 
     def test_cluster_create_duplicate_name_fail(self):
         response = self.client.post(
@@ -84,9 +71,7 @@ class TestCluster(BaseTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")
-        self.assertEqual(
-            response.json()["desc"], f'Cluster with name "{self.cluster.name}" already exists'
-        )
+        self.assertEqual(response.json()["desc"], f'Cluster with name "{self.cluster.name}" already exists')
 
     def test_cluster_create_name_validation(self):
         url = reverse("cluster")
@@ -117,31 +102,23 @@ class TestCluster(BaseTestCase):
         with self.another_user_logged_in(username="admin", password="admin"):
             for name in self.valid_names:
                 with self.subTest("correct-patch", name=name):
-                    response = self.client.patch(
-                        path=url, data={"name": name}, content_type=APPLICATION_JSON
-                    )
+                    response = self.client.patch(path=url, data={"name": name}, content_type=APPLICATION_JSON)
                     self.assertEqual(response.status_code, status.HTTP_200_OK)
                     self.assertEqual(response.json()["name"], name)
 
                 with self.subTest("correct-put", name=name):
-                    response = self.client.put(
-                        path=url, data={"name": name}, content_type=APPLICATION_JSON
-                    )
+                    response = self.client.put(path=url, data={"name": name}, content_type=APPLICATION_JSON)
                     self.assertEqual(response.status_code, status.HTTP_200_OK)
                     self.assertEqual(response.json()["name"], name)
 
             for name in self.invalid_names:
                 with self.subTest("incorrect-patch", name=name):
-                    response = self.client.patch(
-                        path=url, data={"name": name}, content_type=APPLICATION_JSON
-                    )
+                    response = self.client.patch(path=url, data={"name": name}, content_type=APPLICATION_JSON)
                     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
                     self.assertEqual(response.json()["code"], "WRONG_NAME")
 
                 with self.subTest("incorrect-put", name=name):
-                    response = self.client.put(
-                        path=url, data={"name": name}, content_type=APPLICATION_JSON
-                    )
+                    response = self.client.put(path=url, data={"name": name}, content_type=APPLICATION_JSON)
                     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
                     self.assertEqual(response.json()["code"], "WRONG_NAME")
 

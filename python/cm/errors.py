@@ -136,10 +136,7 @@ ERRORS = {
     "MESSAGE_TEMPLATING_ERROR": ("Message templating error", HTTP_409_CONFLICT, ERR),
     "ISSUE_INTEGRITY_ERROR": ("Issue object integrity error", HTTP_409_CONFLICT, ERR),
     "GROUP_CONFIG_HOST_ERROR": (
-        (
-            "host is not available for this object,"
-            " or host already is a member of another group of this object"
-        ),
+        "host is not available for this object, or host already is a member of another group of this object",
         HTTP_400_BAD_REQUEST,
     ),
     "GROUP_CONFIG_HOST_EXISTS": (
@@ -148,10 +145,7 @@ ERRORS = {
     ),
     "NOT_CHANGEABLE_FIELDS": ("fields cannot be changed", HTTP_400_BAD_REQUEST, ERR),
     "GROUP_CONFIG_TYPE_ERROR": (
-        (
-            "invalid type object for group config,"
-            " valid types: `cluster`, `service`, `component` and `provider`"
-        ),
+        "invalid type object for group config, valid types: `cluster`, `service`, `component` and `provider`",
         HTTP_400_BAD_REQUEST,
         ERR,
     ),

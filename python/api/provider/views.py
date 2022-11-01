@@ -101,15 +101,11 @@ class ProviderUpgrade(GenericUIView):
         """
         List all available upgrades for specified host provider
         """
-        provider = get_object_for_user(
-            request.user, "cm.view_hostprovider", HostProvider, id=kwargs["provider_id"]
-        )
+        provider = get_object_for_user(request.user, "cm.view_hostprovider", HostProvider, id=kwargs["provider_id"])
         check_custom_perm(request.user, "view_upgrade_of", "hostprovider", provider)
         update_hierarchy_issues(provider)
         obj = get_upgrade(provider, self.get_ordering())
-        serializer = self.serializer_class(
-            obj, many=True, context={"provider_id": provider.id, "request": request}
-        )
+        serializer = self.serializer_class(obj, many=True, context={"provider_id": provider.id, "request": request})
         return Response(serializer.data)
 
 
@@ -122,16 +118,10 @@ class ProviderUpgradeDetail(GenericUIView):
         """
         List all available upgrades for specified host provider
         """
-        provider = get_object_for_user(
-            request.user, "cm.view_hostprovider", HostProvider, id=kwargs["provider_id"]
-        )
+        provider = get_object_for_user(request.user, "cm.view_hostprovider", HostProvider, id=kwargs["provider_id"])
         check_custom_perm(request.user, "view_upgrade_of", "hostprovider", provider)
-        obj = check_obj(
-            Upgrade, {"id": kwargs["upgrade_id"], "bundle__name": provider.prototype.bundle.name}
-        )
-        serializer = self.serializer_class(
-            obj, context={"provider_id": provider.id, "request": request}
-        )
+        obj = check_obj(Upgrade, {"id": kwargs["upgrade_id"], "bundle__name": provider.prototype.bundle.name})
+        serializer = self.serializer_class(obj, context={"provider_id": provider.id, "request": request})
         return Response(serializer.data)
 
 
@@ -142,9 +132,7 @@ class DoProviderUpgrade(GenericUIView):
 
     @audit
     def post(self, request, *args, **kwargs):
-        provider = get_object_for_user(
-            request.user, "cm.view_hostprovider", HostProvider, id=kwargs["provider_id"]
-        )
+        provider = get_object_for_user(request.user, "cm.view_hostprovider", HostProvider, id=kwargs["provider_id"])
         check_custom_perm(request.user, "do_upgrade_of", "hostprovider", provider)
         serializer = self.get_serializer(data=request.data)
 

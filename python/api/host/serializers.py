@@ -141,9 +141,7 @@ class ProvideHostSerializer(HostSerializer):
         provider = check_obj(HostProvider, self.context.get("provider_id"))
         proto = Prototype.obj.get(bundle=provider.prototype.bundle, type="host")
 
-        return add_host(
-            proto, provider, validated_data.get("fqdn"), validated_data.get("description", "")
-        )
+        return add_host(proto, provider, validated_data.get("fqdn"), validated_data.get("description", ""))
 
 
 class StatusSerializer(EmptySerializer):

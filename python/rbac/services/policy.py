@@ -28,9 +28,7 @@ from rbac.utils import update_m2m_field
 def _get_policy_object(obj: ADCMEntity) -> PolicyObject:
     """Get PolicyObject for ADCM entity"""
     content_type = ContentType.objects.get_for_model(obj)
-    policy_object, _ = PolicyObject.objects.get_or_create(
-        object_id=obj.id, content_type=content_type
-    )
+    policy_object, _ = PolicyObject.objects.get_or_create(object_id=obj.id, content_type=content_type)
     return policy_object
 
 
@@ -96,9 +94,7 @@ def policy_create(name: str, role: Role, built_in: bool = False, **kwargs):
     _check_objects(role, objects)
     description = kwargs.get('description', '')
     try:
-        policy = Policy.objects.create(
-            name=name, role=role, built_in=built_in, description=description
-        )
+        policy = Policy.objects.create(name=name, role=role, built_in=built_in, description=description)
     except IntegrityError as exc:
         raise AdwpEx('POLICY_CREATE_ERROR', msg=f'Policy creation failed with error {exc}') from exc
     for obj in objects:

@@ -38,9 +38,7 @@ class ConcernFilter(drf_filters.FilterSet):
     type = drf_filters.ChoiceFilter(choices=models.ConcernType.choices)
     cause = drf_filters.ChoiceFilter(choices=models.ConcernCause.choices)
     object_id = drf_filters.NumberFilter(label='Related object ID', method='_pass')
-    object_type = drf_filters.ChoiceFilter(
-        label='Related object type', choices=CHOICES, method='_filter_by_object'
-    )
+    object_type = drf_filters.ChoiceFilter(label='Related object type', choices=CHOICES, method='_filter_by_object')
     owner_type = drf_filters.ChoiceFilter(choices=CHOICES, method='_filter_by_owner_type')
 
     class Meta:

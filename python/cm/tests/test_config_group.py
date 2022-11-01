@@ -236,9 +236,7 @@ class GroupConfigTest(BaseTestCase):
         group.refresh_from_db()
         cl = ConfigLog.objects.get(id=group.config.current)
 
-        self.assertDictEqual(
-            cl.config, {"group": {"string": "str"}, "activatable_group": {"integer": 100}}
-        )
+        self.assertDictEqual(cl.config, {"group": {"string": "str"}, "activatable_group": {"integer": 100}})
 
         parent_cl.config = {"group": {"string": "string"}, "activatable_group": {"integer": 100}}
         parent_cl.attr = {"activatable_group": {"active": False}}
@@ -246,9 +244,7 @@ class GroupConfigTest(BaseTestCase):
         group.refresh_from_db()
         cl = ConfigLog.objects.get(id=group.config.current)
 
-        self.assertDictEqual(
-            cl.config, {"group": {"string": "str"}, "activatable_group": {"integer": 100}}
-        )
+        self.assertDictEqual(cl.config, {"group": {"string": "str"}, "activatable_group": {"integer": 100}})
         self.assertDictEqual(
             cl.attr,
             {
@@ -309,9 +305,7 @@ class GroupConfigTest(BaseTestCase):
                 }
             }
         )
-        cl_new = ConfigLog.objects.create(
-            obj_ref=cl_current.obj_ref, config=cl_current.config, attr=attr
-        )
+        cl_new = ConfigLog.objects.create(obj_ref=cl_current.obj_ref, config=cl_current.config, attr=attr)
 
         self.assertDictEqual(cl_current.attr, cl_new.attr)
 

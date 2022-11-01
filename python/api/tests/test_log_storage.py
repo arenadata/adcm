@@ -119,18 +119,14 @@ class TestTaskAPI(BaseTestCase):
 
     def test_retrieve(self):
         response: Response = self.client.get(
-            reverse(
-                "joblog-detail", kwargs={"job_pk": self.job.pk, "log_pk": self.log_storage_1.pk}
-            ),
+            reverse("joblog-detail", kwargs={"job_pk": self.job.pk, "log_pk": self.log_storage_1.pk}),
         )
 
         self.assertEqual(response.data["id"], self.log_storage_1.pk)
 
     def test_download(self):
         response: Response = self.client.get(
-            reverse(
-                "joblog-download", kwargs={"job_pk": self.job.pk, "log_pk": self.log_storage_1.pk}
-            ),
+            reverse("joblog-download", kwargs={"job_pk": self.job.pk, "log_pk": self.log_storage_1.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

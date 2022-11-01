@@ -28,7 +28,9 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
+from cm.api import load_host_map
 from cm.errors import AdcmEx
+from cm.issue import update_hierarchy_issues
 from cm.job import start_task
 from cm.models import (
     Action,
@@ -40,8 +42,6 @@ from cm.models import (
     PrototypeConfig,
     ServiceComponent,
 )
-from cm.issue import update_hierarchy_issues
-from cm.api import load_host_map
 
 
 def get_object_for_user(user, perms, klass, **kwargs):
@@ -71,9 +71,7 @@ def check_obj(model, req, error=None):
 
 
 def hlink(view, lookup, lookup_url):
-    return HyperlinkedIdentityField(
-        view_name=view, lookup_field=lookup, lookup_url_kwarg=lookup_url
-    )
+    return HyperlinkedIdentityField(view_name=view, lookup_field=lookup, lookup_url_kwarg=lookup_url)
 
 
 def check_custom_perm(user, action_type, model, obj, second_perm=None):
@@ -112,9 +110,7 @@ def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
     for action in actions_set:
         if action.allowed(obj):
             allowed.append(action)
-            action.config = PrototypeConfig.objects.filter(
-                prototype=action.prototype, action=action
-            ).order_by("id")
+            action.config = PrototypeConfig.objects.filter(prototype=action.prototype, action=action).order_by("id")
 
     return allowed
 
@@ -169,9 +165,7 @@ def fix_ordering(field, view):
     return fix
 
 
-def get_maintenance_mode_response(
-    obj: Host | ClusterObject | ServiceComponent, serializer: Serializer
-) -> Response:
+def get_maintenance_mode_response(obj: Host | ClusterObject | ServiceComponent, serializer: Serializer) -> Response:
     turn_on_action_name = "turn_on_maintenance_mode"
     turn_off_action_name = "turn_off_maintenance_mode"
     if isinstance(obj, Host):
@@ -195,9 +189,7 @@ def get_maintenance_mode_response(
         if serializer.validated_data["maintenance_mode"] == MaintenanceMode.OFF:
             return Response()
 
-        turn_on_action = Action.objects.filter(
-            prototype=obj.prototype, name=turn_on_action_name
-        ).first()
+        turn_on_action = Action.objects.filter(prototype=obj.prototype, name=turn_on_action_name).first()
         if turn_on_action:
             start_task(
                 action=turn_on_action,
@@ -220,9 +212,7 @@ def get_maintenance_mode_response(
         if serializer.validated_data["maintenance_mode"] == MaintenanceMode.ON:
             return Response()
 
-        turn_off_action = Action.objects.filter(
-            prototype=obj.prototype, name=turn_off_action_name
-        ).first()
+        turn_off_action = Action.objects.filter(prototype=obj.prototype, name=turn_off_action_name).first()
         if turn_off_action:
             start_task(
                 action=turn_off_action,

@@ -124,9 +124,7 @@ class Tree:
             children_values = ClusterObject.objects.filter(cluster=node.value).all()
 
         elif node.type == 'service':
-            children_values = ServiceComponent.objects.filter(
-                cluster=node.value.cluster, service=node.value
-            ).all()
+            children_values = ServiceComponent.objects.filter(cluster=node.value.cluster, service=node.value).all()
 
         elif node.type == 'component':
             children_values = [

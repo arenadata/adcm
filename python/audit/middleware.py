@@ -42,9 +42,7 @@ class AuditLoginMiddleware:
                 result = AuditSessionLoginResult.UserNotFound
                 user = None
 
-        auditsession = AuditSession.objects.create(
-            user=user, login_result=result, login_details=details
-        )
+        auditsession = AuditSession.objects.create(user=user, login_result=result, login_details=details)
         cef_logger(audit_instance=auditsession, signature_id=resolve(request_path).route)
 
     def __call__(self, request):

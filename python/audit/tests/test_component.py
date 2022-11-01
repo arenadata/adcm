@@ -50,9 +50,7 @@ class TestComponent(BaseTestCase):
             type="service",
             display_name="test_service",
         )
-        self.service = ClusterObject.objects.create(
-            prototype=service_prototype, cluster=self.cluster
-        )
+        self.service = ClusterObject.objects.create(prototype=service_prototype, cluster=self.cluster)
         self.component_prototype = Prototype.objects.create(
             bundle=bundle,
             type="component",
@@ -348,9 +346,7 @@ class TestComponent(BaseTestCase):
     def test_change_maintenance_mode_denied(self):
         with self.no_rights_user_logged_in:
             self.client.post(
-                path=reverse(
-                    "component-maintenance-mode", kwargs={"component_id": self.component.pk}
-                ),
+                path=reverse("component-maintenance-mode", kwargs={"component_id": self.component.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
             )
 

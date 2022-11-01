@@ -201,9 +201,7 @@ def action_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | Non
 
             action = Action.objects.filter(pk=action_pk).first()
             if action:
-                audit_operation.name = audit_operation.name.format(
-                    action_display_name=action.display_name
-                )
+                audit_operation.name = audit_operation.name.format(action_display_name=action.display_name)
 
             obj = PATH_STR_TO_OBJ_CLASS_MAP[obj_type].objects.filter(pk=obj_pk).first()
             if obj:

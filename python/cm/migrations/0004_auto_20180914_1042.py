@@ -28,9 +28,7 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     'id',
-                    models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
-                    ),
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
                 ),
                 (
                     'cluster',
@@ -60,16 +58,12 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     'id',
-                    models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
-                    ),
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
                 ),
                 ('name', models.CharField(max_length=160)),
                 (
                     'prototype',
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to='cm.Prototype'
-                    ),
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Prototype'),
                 ),
             ],
         ),
@@ -78,18 +72,14 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     'id',
-                    models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
-                    ),
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
                 ),
                 ('name', models.CharField(max_length=160)),
                 ('min_version', models.CharField(max_length=80)),
                 ('max_version', models.CharField(max_length=80)),
                 (
                     'prototype',
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to='cm.Prototype'
-                    ),
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Prototype'),
                 ),
             ],
         ),
@@ -98,16 +88,12 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     'id',
-                    models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
-                    ),
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
                 ),
                 ('name', models.CharField(max_length=160)),
                 (
                     'prototype',
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to='cm.StagePrototype'
-                    ),
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.StagePrototype'),
                 ),
             ],
         ),
@@ -116,18 +102,14 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     'id',
-                    models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
-                    ),
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
                 ),
                 ('name', models.CharField(max_length=160)),
                 ('min_version', models.CharField(max_length=80)),
                 ('max_version', models.CharField(max_length=80)),
                 (
                     'prototype',
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to='cm.StagePrototype'
-                    ),
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.StagePrototype'),
                 ),
             ],
         ),

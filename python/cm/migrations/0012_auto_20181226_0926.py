@@ -28,9 +28,7 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     'id',
-                    models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
-                    ),
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
                 ),
                 (
                     'cluster',
@@ -38,31 +36,23 @@ class Migration(migrations.Migration):
                 ),
                 (
                     'component',
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to='cm.Component'
-                    ),
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Component'),
                 ),
                 (
                     'service',
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to='cm.ClusterObject'
-                    ),
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.ClusterObject'),
                 ),
             ],
         ),
         migrations.AlterField(
             model_name='hostcomponent',
             name='component',
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE, to='cm.ServiceComponent'
-            ),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.ServiceComponent'),
         ),
         migrations.AlterField(
             model_name='hostcomponent',
             name='service',
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE, to='cm.ClusterObject'
-            ),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.ClusterObject'),
         ),
         migrations.AlterUniqueTogether(
             name='servicecomponent',

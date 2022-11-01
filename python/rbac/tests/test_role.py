@@ -535,8 +535,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
             self.assertEqual(
                 count,
                 1,
-                f"Role does not exist or not unique: {count} !=  1\n"
-                f"{json.dumps(role_data, indent=2, default=str)}",
+                f"Role does not exist or not unique: {count} !=  1\n" f"{json.dumps(role_data, indent=2, default=str)}",
             )
 
             role = Role.objects.filter(**role_data).first()

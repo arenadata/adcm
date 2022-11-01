@@ -22,9 +22,7 @@ def fill_category(apps, schema_editor):
     ProductCategory = apps.get_model('cm', 'ProductCategory')
     Prototype = apps.get_model('cm', 'Prototype')
     for bundle in Bundle.objects.all():
-        prototype = Prototype.objects.filter(
-            bundle=bundle, name=bundle.name, type='cluster'
-        ).first()
+        prototype = Prototype.objects.filter(bundle=bundle, name=bundle.name, type='cluster').first()
         if prototype:  # skip non-product bundles
             value = prototype.display_name or bundle.name
             category, _ = ProductCategory.objects.get_or_create(value=value)
@@ -44,9 +42,7 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     'id',
-                    models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
-                    ),
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
                 ),
                 ('value', models.CharField(max_length=160, unique=True)),
                 ('visible', models.BooleanField(default=True)),
@@ -58,9 +54,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='bundle',
             name='category',
-            field=models.ForeignKey(
-                null=True, on_delete=django.db.models.deletion.RESTRICT, to='cm.productcategory'
-            ),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.RESTRICT, to='cm.productcategory'),
         ),
         migrations.RunPython(fill_category),
     ]

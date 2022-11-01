@@ -18,9 +18,7 @@ from api.object_config.serializers import ObjectConfigSerializer
 from cm.models import ObjectConfig
 
 
-class ObjectConfigViewSet(
-    PermissionListMixin, ReadOnlyModelViewSet
-):  # pylint: disable=too-many-ancestors
+class ObjectConfigViewSet(PermissionListMixin, ReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
     queryset = ObjectConfig.objects.all()
     serializer_class = ObjectConfigSerializer
     permission_classes = (DjangoObjectPermissions,)
@@ -28,8 +26,6 @@ class ObjectConfigViewSet(
 
     def get_queryset(self, *args, **kwargs):
         if self.request.user.has_perm('cm.view_settings_of_adcm'):
-            return super().get_queryset(*args, **kwargs) | ObjectConfig.objects.filter(
-                adcm__isnull=False
-            )
+            return super().get_queryset(*args, **kwargs) | ObjectConfig.objects.filter(adcm__isnull=False)
         else:
             return super().get_queryset(*args, **kwargs).filter(adcm__isnull=True)

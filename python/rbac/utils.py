@@ -41,9 +41,7 @@ def update_m2m_field(m2m, instances) -> None:
         m2m.clear()
 
 
-def create_model_serializer_class(
-    name: str, model: Type[Model], meta_fields: Tuple[str, ...], fields: dict = None
-):
+def create_model_serializer_class(name: str, model: Type[Model], meta_fields: Tuple[str, ...], fields: dict = None):
     """
     Creating serializer class for model
 

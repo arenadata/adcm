@@ -69,15 +69,11 @@ class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         super().run(tmp, task_vars)
         msg = 'You can add host only in cluster or service context'
-        cluster_id = get_object_id_from_context(
-            task_vars, 'cluster_id', 'cluster', 'service', err_msg=msg
-        )
+        cluster_id = get_object_id_from_context(task_vars, 'cluster_id', 'cluster', 'service', err_msg=msg)
         fqdn = self._task.args.get('fqdn', None)
         host_id = self._task.args.get('host_id', None)
 
-        logger.info(
-            'ansible module: cluster_id %s, fqdn %s, host_id: %s', cluster_id, fqdn, host_id
-        )
+        logger.info('ansible module: cluster_id %s, fqdn %s, host_id: %s', cluster_id, fqdn, host_id)
         try:
             cm.api.add_host_to_cluster_by_id(cluster_id, fqdn, host_id)
         except AdcmEx as e:

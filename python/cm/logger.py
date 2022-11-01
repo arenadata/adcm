@@ -20,9 +20,7 @@ logger.setLevel(logging.DEBUG)
 
 def get_log_handler(fname):
     handler = logging.FileHandler(fname, "a", settings.ENCODING_UTF_8)
-    fmt = logging.Formatter(
-        "%(asctime)s.%(msecs)03d %(levelname)s %(module)s %(message)s", "%m-%d %H:%M:%S"
-    )
+    fmt = logging.Formatter("%(asctime)s.%(msecs)03d %(levelname)s %(module)s %(message)s", "%m-%d %H:%M:%S")
     handler.setFormatter(fmt)
     return handler
 

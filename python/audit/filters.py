@@ -19,12 +19,8 @@ class AuditLogListFilter(drf_filters.FilterSet):
     object_type = drf_filters.ChoiceFilter(
         field_name='audit_object__object_type', choices=AuditObjectType.choices, label='Object type'
     )
-    object_name = drf_filters.CharFilter(
-        field_name='audit_object__object_name', label='Object name'
-    )
-    operation_date = drf_filters.DateFilter(
-        field_name='operation_time', lookup_expr='date', label='Operation date'
-    )
+    object_name = drf_filters.CharFilter(field_name='audit_object__object_name', label='Object name')
+    operation_date = drf_filters.DateFilter(field_name='operation_time', lookup_expr='date', label='Operation date')
     username = drf_filters.CharFilter(field_name='user__username', label='Username')
 
     class Meta:
@@ -38,9 +34,7 @@ class AuditLogListFilter(drf_filters.FilterSet):
 
 class AuditSessionListFilter(drf_filters.FilterSet):
     username = drf_filters.CharFilter(field_name='user__username', label='Username')
-    login_date = drf_filters.DateFilter(
-        field_name='login_time', lookup_expr='date', label='Login date'
-    )
+    login_date = drf_filters.DateFilter(field_name='login_time', lookup_expr='date', label='Login date')
 
     class Meta:
         model = AuditSession

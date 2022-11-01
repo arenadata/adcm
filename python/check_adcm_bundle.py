@@ -58,9 +58,7 @@ def check_bundle(bundle_file, use_directory=False, verbose=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Check ADCM bundle file")
     parser.add_argument("bundle_file", type=str, help="ADCM bundle file name (bundle.tgz)")
-    parser.add_argument(
-        "-d", "--dir", action="store_true", help="use bundle_file as bundle directory name"
-    )
+    parser.add_argument("-d", "--dir", action="store_true", help="use bundle_file as bundle directory name")
     parser.add_argument("-v", "--verbose", action="store_true", help="print OK result")
     args = parser.parse_args()
     check_bundle(args.bundle_file, args.dir, args.verbose)

@@ -43,9 +43,7 @@ class TestADCM(BaseTestCase):
         config.save(update_fields=["current"])
 
         self.adcm_name = "ADCM"
-        self.adcm = ADCM.objects.create(
-            prototype=self.prototype, name=self.adcm_name, config=config
-        )
+        self.adcm = ADCM.objects.create(prototype=self.prototype, name=self.adcm_name, config=config)
         self.action = Action.objects.create(
             display_name="test_adcm_action",
             prototype=self.prototype,
@@ -61,9 +59,7 @@ class TestADCM(BaseTestCase):
         )
         self.adcm_conf_updated_str = "ADCM configuration updated"
 
-    def check_adcm_updated(
-        self, log: AuditLog, operation_name: str, operation_result: str, user: User | None = None
-    ):
+    def check_adcm_updated(self, log: AuditLog, operation_name: str, operation_result: str, user: User | None = None):
         if log.audit_object:
             self.assertEqual(log.audit_object.object_id, self.adcm.pk)
             self.assertEqual(log.audit_object.object_name, self.adcm.name)

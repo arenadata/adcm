@@ -494,9 +494,7 @@ class TestService(BaseTestCase):
 
         bind = ClusterBind.objects.first()
         self.client.delete(
-            path=reverse(
-                "service-bind-details", kwargs={"service_id": self.service.pk, "bind_id": bind.pk}
-            ),
+            path=reverse("service-bind-details", kwargs={"service_id": self.service.pk, "bind_id": bind.pk}),
             content_type=APPLICATION_JSON,
         )
 
@@ -536,9 +534,7 @@ class TestService(BaseTestCase):
 
         bind = ClusterBind.objects.first()
         self.client.delete(
-            path=reverse(
-                "service-bind-details", kwargs={"service_id": self.service.pk, "bind_id": bind.pk}
-            ),
+            path=reverse("service-bind-details", kwargs={"service_id": self.service.pk, "bind_id": bind.pk}),
             content_type=APPLICATION_JSON,
         )
 
@@ -610,9 +606,7 @@ class TestService(BaseTestCase):
     def test_action_launch(self):
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
-                path=reverse(
-                    "run-task", kwargs={"service_id": self.service.pk, "action_id": self.action.pk}
-                )
+                path=reverse("run-task", kwargs={"service_id": self.service.pk, "action_id": self.action.pk})
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

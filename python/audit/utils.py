@@ -152,11 +152,7 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
     model = None
     pk = None
 
-    if (
-        isinstance(view, ModelViewSet)
-        and view.action in {"update", "partial_update"}
-        and view.kwargs.get("pk")
-    ):
+    if isinstance(view, ModelViewSet) and view.action in {"update", "partial_update"} and view.kwargs.get("pk"):
         pk = view.kwargs["pk"]
         if view.__class__.__name__ == "GroupViewSet":
             serializer_class = GroupAuditSerializer
@@ -236,8 +232,7 @@ def audit(func):
             res = None
 
             if getattr(exc, "msg", None) and (
-                "doesn't exist" in exc.msg
-                or "service is not installed in specified cluster" in exc.msg
+                "doesn't exist" in exc.msg or "service is not installed in specified cluster" in exc.msg
             ):
                 _kwargs = None
                 if "cluster_id" in kwargs:
@@ -270,13 +265,9 @@ def audit(func):
                 status_code = exc.status_code
                 if status_code == HTTP_404_NOT_FOUND:
                     action_perm_denied = (
-                        kwargs.get("action_id")
-                        and Action.objects.filter(pk=kwargs["action_id"]).exists()
+                        kwargs.get("action_id") and Action.objects.filter(pk=kwargs["action_id"]).exists()
                     )
-                    task_perm_denied = (
-                        kwargs.get("task_pk")
-                        and TaskLog.objects.filter(pk=kwargs["task_pk"]).exists()
-                    )
+                    task_perm_denied = kwargs.get("task_pk") and TaskLog.objects.filter(pk=kwargs["task_pk"]).exists()
                     if action_perm_denied or task_perm_denied:
                         status_code = HTTP_403_FORBIDDEN
             else:  # when denied returns 404 from PermissionListMixin

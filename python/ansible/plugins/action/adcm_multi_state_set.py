@@ -105,9 +105,7 @@ class ActionModule(ContextActionModule):
     _MANDATORY_ARGS = ('type', 'state')
 
     def _do_cluster(self, task_vars, context):
-        res = self._wrap_call(
-            set_cluster_multi_state, context['cluster_id'], self._task.args["state"]
-        )
+        res = self._wrap_call(set_cluster_multi_state, context['cluster_id'], self._task.args["state"])
         res['state'] = self._task.args["state"]
         return res
 
@@ -141,9 +139,7 @@ class ActionModule(ContextActionModule):
         return res
 
     def _do_provider(self, task_vars, context):
-        res = self._wrap_call(
-            set_provider_multi_state, context['provider_id'], self._task.args["state"]
-        )
+        res = self._wrap_call(set_provider_multi_state, context['provider_id'], self._task.args["state"])
         res['state'] = self._task.args["state"]
         return res
 

@@ -32,21 +32,15 @@ class TestService(BaseTestCase):
         super().setUp()
 
         self.bundle = Bundle.objects.create()
-        self.prototype = Prototype.objects.create(
-            name="test_prototype_name", type="cluster", bundle=self.bundle
-        )
+        self.prototype = Prototype.objects.create(name="test_prototype_name", type="cluster", bundle=self.bundle)
         self.prototype_service = Prototype.objects.create(type="service", bundle=self.bundle)
         self.cluster = Cluster.objects.create(name="test_cluster_name", prototype=self.prototype)
-        self.service = ClusterObject.objects.create(
-            cluster=self.cluster, prototype=self.prototype_service
-        )
+        self.service = ClusterObject.objects.create(cluster=self.cluster, prototype=self.prototype_service)
 
     def test_delete(self):
         self.service.state = "updated"
         self.service.save(update_fields=["state"])
-        url = reverse(
-            "service-details", kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk}
-        )
+        url = reverse("service-details", kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk})
 
         response: Response = self.client.delete(path=url, content_type=APPLICATION_JSON)
 

@@ -84,9 +84,7 @@ class TaskLogLockTest(BaseTestCase):
         self.assertFalse(cluster.locked)
         self.assertIsNone(task.lock)
 
-    @override_settings(
-        RUN_DIR=settings.BASE_DIR / "python" / "cm" / "tests" / "files" / "task_log_download"
-    )
+    @override_settings(RUN_DIR=settings.BASE_DIR / "python" / "cm" / "tests" / "files" / "task_log_download")
     def test_download(self):
         bundle = Bundle.objects.create()
         cluster = Cluster.objects.create(
@@ -202,9 +200,7 @@ class TaskLogLockTest(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-    @override_settings(
-        RUN_DIR=settings.BASE_DIR / "python" / "cm" / "tests" / "files" / "task_log_download"
-    )
+    @override_settings(RUN_DIR=settings.BASE_DIR / "python" / "cm" / "tests" / "files" / "task_log_download")
     def test_download_negative(self):
         bundle = Bundle.objects.create()
         cluster = Cluster.objects.create(

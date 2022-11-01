@@ -179,11 +179,7 @@ class TestBase(TestCase):
                 if field in _template_field_mutation:
                     template_mutations['delete'].append(field)
                     template_mutations['merge'].update(
-                        {
-                            _template_field_mutation[field][0]: _template_field_mutation[field][1](
-                                template[field]
-                            )
-                        }
+                        {_template_field_mutation[field][0]: _template_field_mutation[field][1](template[field])}
                     )
             for field in template_mutations['delete']:
                 del template[field]
@@ -192,9 +188,7 @@ class TestBase(TestCase):
 
 
 class TestViews(TestBase):
-    def _run_single_filter_test(
-        self, url_path, filter_kwargs, default_template, kwargs_name, create_kwargs=None
-    ):
+    def _run_single_filter_test(self, url_path, filter_kwargs, default_template, kwargs_name, create_kwargs=None):
         num_filter_target = randbelow(11) + 5
         num_others = num_filter_target - randbelow(3) + 1
 
@@ -216,22 +210,16 @@ class TestViews(TestBase):
     def test_audit_visibility_regular_user(self):
         self._login_as(self.user_username, self.user_password)
         audit_entities = self._populate_audit_tables(num=3)
-        response = self.client.get(
-            path=reverse('audit:audit-operations-list'), content_type="application/json"
-        )
+        response = self.client.get(path=reverse('audit:audit-operations-list'), content_type="application/json")
         self._check_response(response, expected_status_code=403, should_fail=True)
 
         response = self.client.get(
-            path=reverse(
-                'audit:audit-operations-detail', args=(audit_entities['audit_operations'][0].pk,)
-            ),
+            path=reverse('audit:audit-operations-detail', args=(audit_entities['audit_operations'][0].pk,)),
             content_type="application/json",
         )
         self._check_response(response, expected_status_code=403, should_fail=True)
 
-        response = self.client.get(
-            path=reverse('audit:audit-logins-list'), content_type="application/json"
-        )
+        response = self.client.get(path=reverse('audit:audit-logins-list'), content_type="application/json")
         self._check_response(response, expected_status_code=403, should_fail=True)
 
         response = self.client.get(
@@ -244,27 +232,17 @@ class TestViews(TestBase):
         self._login_as(self.superuser_username, self.superuser_password)
         num_entities = 5
         audit_entities = self._populate_audit_tables(num=num_entities)
-        response = self.client.get(
-            path=reverse('audit:audit-operations-list'), content_type="application/json"
-        )
+        response = self.client.get(path=reverse('audit:audit-operations-list'), content_type="application/json")
         self._check_response(response, template=self.default_auditlog, expected_count=num_entities)
 
         response = self.client.get(
-            path=reverse(
-                'audit:audit-operations-detail', args=(audit_entities['audit_operations'][0].pk,)
-            ),
+            path=reverse('audit:audit-operations-detail', args=(audit_entities['audit_operations'][0].pk,)),
             content_type="application/json",
         )
-        self._check_response(
-            response, template=self.default_auditlog, expected_count=num_entities, list_view=False
-        )
+        self._check_response(response, template=self.default_auditlog, expected_count=num_entities, list_view=False)
 
-        response = self.client.get(
-            path=reverse('audit:audit-logins-list'), content_type="application/json"
-        )
-        self._check_response(
-            response, template=self.default_auditsession, expected_count=num_entities
-        )
+        response = self.client.get(path=reverse('audit:audit-logins-list'), content_type="application/json")
+        self._check_response(response, template=self.default_auditsession, expected_count=num_entities)
 
         response = self.client.get(
             path=reverse('audit:audit-logins-detail', args=(audit_entities['audit_logins'][0].pk,)),

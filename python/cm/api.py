@@ -255,9 +255,7 @@ def add_host_to_cluster(cluster, host):
 
     cm.status_api.post_event("add", "host", host.id, "cluster", str(cluster.id))
     load_service_map()
-    logger.info(
-        "host #%s %s is added to cluster #%s %s", host.id, host.fqdn, cluster.id, cluster.name
-    )
+    logger.info("host #%s %s is added to cluster #%s %s", host.id, host.fqdn, cluster.id, cluster.name)
     return host
 
 
@@ -462,9 +460,7 @@ def add_service_to_cluster(cluster, proto):
             msg = '{} does not belong to bundle "{}" {}'
             err(
                 "SERVICE_CONFLICT",
-                msg.format(
-                    proto_ref(proto), cluster.prototype.bundle.name, cluster.prototype.version
-                ),
+                msg.format(proto_ref(proto), cluster.prototype.bundle.name, cluster.prototype.version),
             )
 
     with transaction.atomic():
@@ -478,9 +474,7 @@ def add_service_to_cluster(cluster, proto):
 
     cm.status_api.post_event("add", "service", cs.id, "cluster", str(cluster.id))
     load_service_map()
-    logger.info(
-        f"service #{cs.id} {cs.prototype.name} is added to cluster #{cluster.id} {cluster.name}"
-    )
+    logger.info(f"service #{cs.id} {cs.prototype.name} is added to cluster #{cluster.id} {cluster.name}")
 
     return cs
 
@@ -620,9 +614,7 @@ def check_hc(cluster, hc_in):
     check_sub_key(hc_in)
     host_comp_list = make_host_comp_list(cluster, hc_in)
     for service in ClusterObject.objects.filter(cluster=cluster):
-        cm.issue.check_component_constraint(
-            cluster, service.prototype, [i for i in host_comp_list if i[0] == service]
-        )
+        cm.issue.check_component_constraint(cluster, service.prototype, [i for i in host_comp_list if i[0] == service])
 
     cm.issue.check_component_requires(host_comp_list)
     cm.issue.check_bound_components(host_comp_list)
@@ -644,9 +636,7 @@ def still_existed_hc(cluster, host_comp_list):
     result = []
     for (service, host, comp) in host_comp_list:
         try:
-            existed_hc = HostComponent.objects.get(
-                cluster=cluster, service=service, host=host, component=comp
-            )
+            existed_hc = HostComponent.objects.get(cluster=cluster, service=service, host=host, component=comp)
             result.append(existed_hc)
         except HostComponent.DoesNotExist:
             continue

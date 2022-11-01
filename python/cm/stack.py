@@ -270,21 +270,13 @@ def check_versions(proto, conf, label):
     if "min" in conf["versions"] and "min_strict" in conf["versions"]:
         msg = "min and min_strict can not be used simultaneously in versions of {} ({})"
         err("INVALID_VERSION_DEFINITION", msg.format(label, ref))
-    if (
-        "min" not in conf["versions"]
-        and "min_strict" not in conf["versions"]
-        and "import" not in label
-    ):
+    if "min" not in conf["versions"] and "min_strict" not in conf["versions"] and "import" not in label:
         msg = "min or min_strict should be present in versions of {} ({})"
         err("INVALID_VERSION_DEFINITION", msg.format(label, ref))
     if "max" in conf["versions"] and "max_strict" in conf["versions"]:
         msg = "max and max_strict can not be used simultaneously in versions of {} ({})"
         err("INVALID_VERSION_DEFINITION", msg.format(label, ref))
-    if (
-        "max" not in conf["versions"]
-        and "max_strict" not in conf["versions"]
-        and "import" not in label
-    ):
+    if "max" not in conf["versions"] and "max_strict" not in conf["versions"] and "import" not in label:
         msg = "max and max_strict should be present in versions of {} ({})"
         err("INVALID_VERSION_DEFINITION", msg.format(label, ref))
     for name in ("min", "min_strict", "max", "max_strict"):
@@ -417,9 +409,7 @@ def save_sub_actions(conf, action):
         elif isinstance(on_fail, dict):
             sub_action.state_on_fail = _deep_get(on_fail, STATE, default="")
             sub_action.multi_state_on_fail_set = _deep_get(on_fail, MULTI_STATE, SET, default=[])
-            sub_action.multi_state_on_fail_unset = _deep_get(
-                on_fail, MULTI_STATE, UNSET, default=[]
-            )
+            sub_action.multi_state_on_fail_unset = _deep_get(on_fail, MULTI_STATE, UNSET, default=[])
         sub_action.save()
 
 
@@ -495,13 +485,9 @@ def save_action(proto, ac, bundle_hash, action_name):
         action.state_on_fail = _deep_get(ac, ON_FAIL, STATE, default="")
 
         action.multi_state_available = _deep_get(ac, MASKING, MULTI_STATE, AVAILABLE, default=ANY)
-        action.multi_state_unavailable = _deep_get(
-            ac, MASKING, MULTI_STATE, UNAVAILABLE, default=[]
-        )
+        action.multi_state_unavailable = _deep_get(ac, MASKING, MULTI_STATE, UNAVAILABLE, default=[])
         action.multi_state_on_success_set = _deep_get(ac, ON_SUCCESS, MULTI_STATE, SET, default=[])
-        action.multi_state_on_success_unset = _deep_get(
-            ac, ON_SUCCESS, MULTI_STATE, UNSET, default=[]
-        )
+        action.multi_state_on_success_unset = _deep_get(ac, ON_SUCCESS, MULTI_STATE, UNSET, default=[])
         action.multi_state_on_fail_set = _deep_get(ac, ON_FAIL, MULTI_STATE, SET, default=[])
         action.multi_state_on_fail_unset = _deep_get(ac, ON_FAIL, MULTI_STATE, UNSET, default=[])
     else:
@@ -669,10 +655,7 @@ def validate_name(value, err_msg):
     if not isinstance(value, str):
         err("WRONG_NAME", f"{err_msg} should be string")
     p = re.compile(NAME_REGEX)
-    msg1 = (
-        "{} is incorrect. Only latin characters, digits,"
-        " dots (.), dashes (-), and underscores (_) are allowed."
-    )
+    msg1 = "{} is incorrect. Only latin characters, digits, dots (.), dashes (-), and underscores (_) are allowed."
     if p.fullmatch(value) is None:
         err("WRONG_NAME", msg1.format(err_msg))
     return value

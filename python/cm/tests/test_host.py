@@ -112,11 +112,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(self.host.fqdn, expected_fqdn)
 
     def check_maintenance_mode_can_be_changed(self, host: Host):
-        new_mm = (
-            MaintenanceMode.ON
-            if host.maintenance_mode == MaintenanceMode.OFF
-            else MaintenanceMode.OFF
-        )
+        new_mm = MaintenanceMode.ON if host.maintenance_mode == MaintenanceMode.OFF else MaintenanceMode.OFF
         response = self.client.put(
             path=reverse("host-details", args=[host.pk]),
             data={
@@ -151,9 +147,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["fqdn"], ["This field is required."])
 
-        response: Response = self.client.post(
-            host_url, {"fqdn": host, "prototype_id": host_proto, "provider_id": 0}
-        )
+        response: Response = self.client.post(host_url, {"fqdn": host, "prototype_id": host_proto, "provider_id": 0})
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.assertEqual(response.json()["code"], "PROVIDER_NOT_FOUND")
@@ -167,9 +161,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
 
         provider_id = response.json()["id"]
 
-        response: Response = self.client.post(
-            host_url, {"fqdn": host, "prototype_id": 42, "provider_id": provider_id}
-        )
+        response: Response = self.client.post(host_url, {"fqdn": host, "prototype_id": 42, "provider_id": provider_id})
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.assertEqual(response.json()["code"], "PROTOTYPE_NOT_FOUND")
@@ -255,23 +247,17 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.assertEqual(response.json()["code"], "HOST_NOT_FOUND")
 
-        response: Response = self.client.delete(
-            path=reverse("bundle-detail", kwargs={"bundle_pk": ssh_bundle_id})
-        )
+        response: Response = self.client.delete(path=reverse("bundle-detail", kwargs={"bundle_pk": ssh_bundle_id}))
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "BUNDLE_CONFLICT")
 
-        response: Response = self.client.delete(
-            path=reverse("provider-details", kwargs={"provider_id": provider_id})
-        )
+        response: Response = self.client.delete(path=reverse("provider-details", kwargs={"provider_id": provider_id}))
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         self.provider.delete()
-        response: Response = self.client.delete(
-            path=reverse("bundle-detail", kwargs={"bundle_pk": ssh_bundle_id})
-        )
+        response: Response = self.client.delete(path=reverse("bundle-detail", kwargs={"bundle_pk": ssh_bundle_id}))
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
@@ -430,9 +416,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
                     self.assertEqual(err["code"], "WRONG_NAME")
                 else:
                     self.assertIn("fqdn", err)
-                    self.assertEqual(
-                        err["fqdn"], ["Ensure this field has no more than 253 characters."]
-                    )
+                    self.assertEqual(err["fqdn"], ["Ensure this field has no more than 253 characters."])
                 self.assertEqual(Host.objects.count(), amount_of_hosts)
 
         for value in self.correct_values:

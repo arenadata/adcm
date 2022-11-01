@@ -36,33 +36,25 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='joblog',
             name='finish_date',
-            field=models.DateTimeField(
-                default=datetime.datetime(2018, 1, 1, 12, 0, 0, 100500, tzinfo=utc)
-            ),
+            field=models.DateTimeField(default=datetime.datetime(2018, 1, 1, 12, 0, 0, 100500, tzinfo=utc)),
             preserve_default=False,
         ),
         migrations.AddField(
             model_name='joblog',
             name='start_date',
-            field=models.DateTimeField(
-                default=datetime.datetime(2018, 1, 1, 12, 0, 0, 100500, tzinfo=utc)
-            ),
+            field=models.DateTimeField(default=datetime.datetime(2018, 1, 1, 12, 0, 0, 100500, tzinfo=utc)),
             preserve_default=False,
         ),
         migrations.AddField(
             model_name='tasklog',
             name='finish_date',
-            field=models.DateTimeField(
-                default=datetime.datetime(2018, 1, 1, 12, 0, 0, 100500, tzinfo=utc)
-            ),
+            field=models.DateTimeField(default=datetime.datetime(2018, 1, 1, 12, 0, 0, 100500, tzinfo=utc)),
             preserve_default=False,
         ),
         migrations.AddField(
             model_name='tasklog',
             name='start_date',
-            field=models.DateTimeField(
-                default=datetime.datetime(2018, 1, 1, 12, 0, 0, 100500, tzinfo=utc)
-            ),
+            field=models.DateTimeField(default=datetime.datetime(2018, 1, 1, 12, 0, 0, 100500, tzinfo=utc)),
             preserve_default=False,
         ),
     ]

@@ -25,15 +25,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='group',
             name='type',
-            field=models.CharField(
-                choices=[('local', 'local'), ('ldap', 'ldap')], default='local', max_length=16
-            ),
+            field=models.CharField(choices=[('local', 'local'), ('ldap', 'ldap')], default='local', max_length=16),
         ),
         migrations.AddField(
             model_name='user',
             name='type',
-            field=models.CharField(
-                choices=[('local', 'local'), ('ldap', 'ldap')], default='local', max_length=16
-            ),
+            field=models.CharField(choices=[('local', 'local'), ('ldap', 'ldap')], default='local', max_length=16),
         ),
     ]

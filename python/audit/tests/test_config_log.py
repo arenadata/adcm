@@ -99,8 +99,7 @@ class TestConfigLog(BaseTestCase):
 
     def test_create_via_group_config(self):
         self.client.post(
-            path=f"/api/v1/group-config/{self.group_config.pk}/"
-            f"config/{self.config.pk}/config-log/",
+            path=f"/api/v1/group-config/{self.group_config.pk}/" f"config/{self.config.pk}/config-log/",
             data={"obj_ref": self.config.pk, "config": "{}"},
         )
 
@@ -116,8 +115,7 @@ class TestConfigLog(BaseTestCase):
     def test_create_via_group_config_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=f"/api/v1/group-config/{self.group_config.pk}/"
-                f"config/{self.config.pk}/config-log/",
+                path=f"/api/v1/group-config/{self.group_config.pk}/" f"config/{self.config.pk}/config-log/",
                 data={"obj_ref": self.config.pk, "config": "{}"},
             )
 

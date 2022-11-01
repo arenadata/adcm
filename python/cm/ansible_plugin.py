@@ -75,8 +75,7 @@ MSG_MANDATORY_ARGS = "Arguments {} are mandatory. Bad Dobby!"
 MSG_NO_ROUTE = "Incorrect combination of args. Bad Dobby!"
 MSG_NO_SERVICE_NAME = "You must specify service name in arguments."
 MSG_NO_MULTI_STATE_TO_DELETE = (
-    "You try to delete absent multi_state. You should define missing_ok as True "
-    "or choose an existing multi_state"
+    "You try to delete absent multi_state. You should define missing_ok as True or choose an existing multi_state"
 )
 
 
@@ -178,14 +177,10 @@ class ContextActionModule(ActionBase):
 
         if obj_type == "cluster":
             check_context_type(task_vars, "cluster", "service", "component")
-            res = self._do_cluster(
-                task_vars, {"cluster_id": self._get_job_var(task_vars, "cluster_id")}
-            )
+            res = self._do_cluster(task_vars, {"cluster_id": self._get_job_var(task_vars, "cluster_id")})
         elif obj_type == "service" and "service_name" in self._task.args:
             check_context_type(task_vars, "cluster", "service", "component")
-            res = self._do_service_by_name(
-                task_vars, {"cluster_id": self._get_job_var(task_vars, "cluster_id")}
-            )
+            res = self._do_service_by_name(task_vars, {"cluster_id": self._get_job_var(task_vars, "cluster_id")})
         elif obj_type == "service":
             check_context_type(task_vars, "service", "component")
             res = self._do_service(
@@ -203,9 +198,7 @@ class ContextActionModule(ActionBase):
             res = self._do_host(task_vars, {"host_id": self._get_job_var(task_vars, "host_id")})
         elif obj_type == "provider":
             check_context_type(task_vars, "provider", "host")
-            res = self._do_provider(
-                task_vars, {"provider_id": self._get_job_var(task_vars, "provider_id")}
-            )
+            res = self._do_provider(task_vars, {"provider_id": self._get_job_var(task_vars, "provider_id")})
         elif obj_type == "component" and "component_name" in self._task.args:
             if "service_name" in self._task.args:
                 check_context_type(task_vars, "cluster", "service", "component")
@@ -229,9 +222,7 @@ class ContextActionModule(ActionBase):
                 )
         elif obj_type == "component":
             check_context_type(task_vars, "component")
-            res = self._do_component(
-                task_vars, {"component_id": self._get_job_var(task_vars, "component_id")}
-            )
+            res = self._do_component(task_vars, {"component_id": self._get_job_var(task_vars, "component_id")})
         else:
             raise AnsibleError(MSG_NO_ROUTE)
 
@@ -245,9 +236,7 @@ class ContextActionModule(ActionBase):
 
 def get_component_by_name(cluster_id, service_id, component_name, service_name):
     if service_id is not None:
-        comp = ServiceComponent.obj.get(
-            cluster_id=cluster_id, service_id=service_id, prototype__name=component_name
-        )
+        comp = ServiceComponent.obj.get(cluster_id=cluster_id, service_id=service_id, prototype__name=component_name)
     else:
         comp = ServiceComponent.obj.get(
             cluster_id=cluster_id,
@@ -325,9 +314,7 @@ def set_service_multi_state(cluster_id, service_id, multi_state):
     return _set_object_multi_state(obj, multi_state)
 
 
-def set_component_multi_state_by_name(
-    cluster_id, service_id, component_name, service_name, multi_state
-):
+def set_component_multi_state_by_name(cluster_id, service_id, component_name, service_name, multi_state):
     obj = get_component_by_name(cluster_id, service_id, component_name, service_name)
     return _set_object_multi_state(obj, multi_state)
 
@@ -361,9 +348,7 @@ def change_hc(job_id, cluster_id, operations):  # pylint: disable=too-many-branc
     hc = get_hc(cluster)
     for op in operations:
         service = ClusterObject.obj.get(cluster=cluster, prototype__name=op["service"])
-        component = ServiceComponent.obj.get(
-            cluster=cluster, service=service, prototype__name=op["component"]
-        )
+        component = ServiceComponent.obj.get(cluster=cluster, service=service, prototype__name=op["component"])
         host = Host.obj.get(cluster=cluster, fqdn=op["host"])
         item = {
             "host_id": host.id,
@@ -452,9 +437,7 @@ def unset_service_multi_state(cluster_id, service_id, multi_state, missing_ok):
     return _unset_object_multi_state(obj, multi_state, missing_ok)
 
 
-def unset_component_multi_state_by_name(
-    cluster_id, service_id, component_name, service_name, multi_state, missing_ok
-):
+def unset_component_multi_state_by_name(cluster_id, service_id, component_name, service_name, multi_state, missing_ok):
     obj = get_component_by_name(cluster_id, service_id, component_name, service_name)
     return _unset_object_multi_state(obj, multi_state, missing_ok)
 
@@ -532,9 +515,7 @@ def get_check_log(job_id: int):
     for cl in CheckLog.objects.filter(job_id=job_id):
         group = cl.group
         if group is None:
-            data.append(
-                {"title": cl.title, "type": "check", "message": cl.message, "result": cl.result}
-            )
+            data.append({"title": cl.title, "type": "check", "message": cl.message, "result": cl.result})
         else:
             if group not in group_subs:
                 data.append(
@@ -546,9 +527,7 @@ def get_check_log(job_id: int):
                         "content": group_subs[group],
                     }
                 )
-            group_subs[group].append(
-                {"title": cl.title, "type": "check", "message": cl.message, "result": cl.result}
-            )
+            group_subs[group].append({"title": cl.title, "type": "check", "message": cl.message, "result": cl.result})
     return data
 
 
@@ -558,9 +537,7 @@ def finish_check(job_id: int):
         return
 
     job = JobLog.objects.get(id=job_id)
-    LogStorage.objects.filter(job=job, name="ansible", type="check", format="json").update(
-        body=json.dumps(data)
-    )
+    LogStorage.objects.filter(job=job, name="ansible", type="check", format="json").update(body=json.dumps(data))
 
     GroupCheckLog.objects.filter(job=job).delete()
     CheckLog.objects.filter(job=job).delete()

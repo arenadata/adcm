@@ -113,9 +113,7 @@ def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster, hosts:
         return
 
     if not action.partial_execution:
-        raise_adcm_ex(
-            "TASK_ERROR", "Only action with partial_execution permission can receive host list"
-        )
+        raise_adcm_ex("TASK_ERROR", "Only action with partial_execution permission can receive host list")
 
     if not isinstance(hosts, list):
         raise_adcm_ex("TASK_ERROR", "Hosts should be array")
@@ -129,9 +127,7 @@ def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster, hosts:
             raise_adcm_ex("TASK_ERROR", f"host #{host_id} does not belong to cluster #{cluster.pk}")
 
         if provider and host.provider != provider:
-            raise_adcm_ex(
-                "TASK_ERROR", f"host #{host_id} does not belong to host provider #{provider.pk}"
-            )
+            raise_adcm_ex("TASK_ERROR", f"host #{host_id} does not belong to host provider #{provider.pk}")
 
 
 def prepare_task(
@@ -220,9 +216,7 @@ def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster
     raise_adcm_ex("TASK_ERROR", "action is disabled")
 
 
-def check_action_config(
-    action: Action, obj: ADCMEntity, conf: dict, attr: dict
-) -> Tuple[dict, dict]:
+def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict) -> Tuple[dict, dict]:
     proto = action.prototype
     spec, flat_spec, _, _ = get_prototype_config(proto, action)
     if not spec:
@@ -245,9 +239,7 @@ def add_to_dict(my_dict: dict, key: Hashable, subkey: Hashable, value: Any):
     my_dict[key][subkey] = value
 
 
-def check_action_hc(
-    action_hc: List[dict], service: ClusterObject, component: ServiceComponent, action: Action
-) -> bool:
+def check_action_hc(action_hc: List[dict], service: ClusterObject, component: ServiceComponent, action: Action) -> bool:
     for item in action_hc:
         if item["service"] == service and item["component"] == component:
             if item["action"] == action:
@@ -270,8 +262,7 @@ def cook_delta(  # pylint: disable=too-many-branches
         _service, _comp = _key.split(".")
         if not check_action_hc(action_hc, _service, _comp, action):
             msg = (
-                f'no permission to "{action}" component "{_comp}" of '
-                f'service "{_service}" to/from hostcomponentmap'
+                f'no permission to "{action}" component "{_comp}" of ' f'service "{_service}" to/from hostcomponentmap'
             )
             raise_adcm_ex("WRONG_ACTION_HC", msg)
 
@@ -348,9 +339,7 @@ def check_constraints_for_upgrade(cluster, upgrade, host_comp_list):
     try:
         for service in ClusterObject.objects.filter(cluster=cluster):
             try:
-                prototype = Prototype.objects.get(
-                    name=service.name, type="service", bundle=upgrade.bundle
-                )
+                prototype = Prototype.objects.get(name=service.name, type="service", bundle=upgrade.bundle)
                 check_component_constraint(
                     cluster,
                     prototype,
@@ -414,10 +403,7 @@ def check_service_task(cluster_id: int, action: Action) -> ClusterObject | None:
         service = ClusterObject.objects.get(cluster=cluster, prototype=action.prototype)
         return service
     except ClusterObject.DoesNotExist:
-        msg = (
-            f"service #{action.prototype.pk} for action "
-            f'"{action.name}" is not installed in cluster #{cluster.pk}'
-        )
+        msg = f"service #{action.prototype.pk} for action " f'"{action.name}" is not installed in cluster #{cluster.pk}'
         raise_adcm_ex("CLUSTER_SERVICE_NOT_FOUND", msg)
 
     return None
@@ -431,8 +417,7 @@ def check_component_task(cluster_id: int, action: Action) -> ServiceComponent | 
         return component
     except ServiceComponent.DoesNotExist:
         msg = (
-            f"component #{action.prototype.pk} for action "
-            f'"{action.name}" is not installed in cluster #{cluster.pk}'
+            f"component #{action.prototype.pk} for action " f'"{action.name}" is not installed in cluster #{cluster.pk}'
         )
         raise_adcm_ex("COMPONENT_NOT_FOUND", msg)
 
@@ -539,9 +524,7 @@ def prepare_job(  # pylint: disable=too-many-arguments
     prepare_ansible_config(job_id, action, sub_action)
 
 
-def get_selector(
-    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host, action: Action
-) -> dict:
+def get_selector(obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host, action: Action) -> dict:
     selector = {obj.prototype.type: {"id": obj.pk, "name": obj.display_name}}
 
     if obj.prototype.type == ObjectType.Service:
@@ -557,13 +540,9 @@ def get_selector(
                 service = ClusterObject.objects.get(prototype=action.prototype, cluster=cluster)
                 selector[ObjectType.Service] = {"id": service.pk, "name": service.display_name}
             elif action.prototype.type == ObjectType.Component:
-                service = ClusterObject.objects.get(
-                    prototype=action.prototype.parent, cluster=cluster
-                )
+                service = ClusterObject.objects.get(prototype=action.prototype.parent, cluster=cluster)
                 selector[ObjectType.Service] = {"id": service.pk, "name": service.display_name}
-                component = ServiceComponent.objects.get(
-                    prototype=action.prototype, cluster=cluster, service=service
-                )
+                component = ServiceComponent.objects.get(prototype=action.prototype, cluster=cluster, service=service)
                 selector[ObjectType.Component] = {
                     "id": component.pk,
                     "name": component.display_name,
@@ -649,9 +628,7 @@ def prepare_job_config(
     elif action.prototype.type == "component":
         if action.host_action:
             service = ClusterObject.obj.get(prototype=action.prototype.parent, cluster=cluster)
-            comp = ServiceComponent.obj.get(
-                prototype=action.prototype, cluster=cluster, service=service
-            )
+            comp = ServiceComponent.obj.get(prototype=action.prototype, cluster=cluster, service=service)
             job_conf["job"]["hostgroup"] = f"{service.name}.{comp.name}"
             job_conf["job"]["service_id"] = service.pk
             job_conf["job"]["component_id"] = comp.pk
@@ -680,9 +657,7 @@ def prepare_job_config(
     if conf:
         job_conf["job"]["config"] = conf
 
-    fd = open(
-        Path(settings.RUN_DIR, f"{job_id}", "config.json"), "w", encoding=settings.ENCODING_UTF_8
-    )
+    fd = open(Path(settings.RUN_DIR, f"{job_id}", "config.json"), "w", encoding=settings.ENCODING_UTF_8)
     json.dump(job_conf, fd, indent=3, sort_keys=True)
     fd.close()
 
@@ -742,9 +717,7 @@ def create_task(  # pylint: disable=too-many-arguments
     return task
 
 
-def get_state(
-    action: Action, job: JobLog, status: str
-) -> Tuple[Optional[str], List[str], List[str]]:
+def get_state(action: Action, job: JobLog, status: str) -> Tuple[Optional[str], List[str], List[str]]:
     sub_action = None
     if job and job.sub_action:
         sub_action = job.sub_action
@@ -904,9 +877,7 @@ def log_custom(job_id, name, log_format, body):
 
 
 def run_task(task: TaskLog, event, args: str = ""):
-    err_file = open(
-        Path(settings.LOG_DIR, "task_runner.err"), "a+", encoding=settings.ENCODING_UTF_8
-    )
+    err_file = open(Path(settings.LOG_DIR, "task_runner.err"), "a+", encoding=settings.ENCODING_UTF_8)
     cmd = [
         "/adcm/python/job_venv_wrapper.sh",
         task.action.venv,
@@ -952,9 +923,7 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
     if "jinja2_native" in params:
         config_parser["defaults"]["jinja2_native"] = str(params["jinja2_native"])
 
-    with open(
-        Path(settings.RUN_DIR, f"{job_id}", "ansible.cfg"), "w", encoding=settings.ENCODING_UTF_8
-    ) as config_file:
+    with open(Path(settings.RUN_DIR, f"{job_id}", "ansible.cfg"), "w", encoding=settings.ENCODING_UTF_8) as config_file:
         config_parser.write(config_file)
 
 

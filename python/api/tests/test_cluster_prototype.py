@@ -53,9 +53,7 @@ class TestClusterPrototypeAPI(BaseTestCase):
         self.assertEqual(len(response.data["results"]), 2)
 
     def test_list_filter_name(self):
-        response: Response = self.client.get(
-            reverse("cluster-prototype-list"), {"name": "test_prototype_2"}
-        )
+        response: Response = self.client.get(reverse("cluster-prototype-list"), {"name": "test_prototype_2"})
 
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["id"], self.prototype_2.pk)
@@ -79,54 +77,42 @@ class TestClusterPrototypeAPI(BaseTestCase):
         self.assertEqual(response.data["results"][0]["id"], self.prototype_2.pk)
 
     def test_list_ordering_display_name(self):
-        response: Response = self.client.get(
-            reverse("cluster-prototype-list"), {"ordering": "display_name"}
-        )
+        response: Response = self.client.get(reverse("cluster-prototype-list"), {"ordering": "display_name"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.prototype_1.pk)
         self.assertEqual(response.data["results"][1]["id"], self.prototype_2.pk)
 
     def test_list_ordering_display_name_reverse(self):
-        response: Response = self.client.get(
-            reverse("cluster-prototype-list"), {"ordering": "-display_name"}
-        )
+        response: Response = self.client.get(reverse("cluster-prototype-list"), {"ordering": "-display_name"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.prototype_2.pk)
         self.assertEqual(response.data["results"][1]["id"], self.prototype_1.pk)
 
     def test_list_ordering_version_order(self):
-        response: Response = self.client.get(
-            reverse("cluster-prototype-list"), {"ordering": "version_order"}
-        )
+        response: Response = self.client.get(reverse("cluster-prototype-list"), {"ordering": "version_order"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.prototype_1.pk)
         self.assertEqual(response.data["results"][1]["id"], self.prototype_2.pk)
 
     def test_list_ordering_version_order_reverse(self):
-        response: Response = self.client.get(
-            reverse("cluster-prototype-list"), {"ordering": "-version_order"}
-        )
+        response: Response = self.client.get(reverse("cluster-prototype-list"), {"ordering": "-version_order"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.prototype_2.pk)
         self.assertEqual(response.data["results"][1]["id"], self.prototype_1.pk)
 
     def test_list_ordering_version(self):
-        response: Response = self.client.get(
-            reverse("cluster-prototype-list"), {"ordering": "version"}
-        )
+        response: Response = self.client.get(reverse("cluster-prototype-list"), {"ordering": "version"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.prototype_1.pk)
         self.assertEqual(response.data["results"][1]["id"], self.prototype_2.pk)
 
     def test_list_ordering_version_reverse(self):
-        response: Response = self.client.get(
-            reverse("cluster-prototype-list"), {"ordering": "-version"}
-        )
+        response: Response = self.client.get(reverse("cluster-prototype-list"), {"ordering": "-version"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.prototype_2.pk)

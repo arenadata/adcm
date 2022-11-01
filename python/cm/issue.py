@@ -137,9 +137,7 @@ def check_hc(cluster):
 
     for service in ClusterObject.objects.filter(cluster=cluster):
         try:
-            check_component_constraint(
-                cluster, service.prototype, [i for i in shc_list if i[0] == service]
-            )
+            check_component_constraint(cluster, service.prototype, [i for i in shc_list if i[0] == service])
         except AdcmEx:
             return False
     try:
@@ -176,9 +174,7 @@ def check_bound_components(shc_list):
         return [i for i in shc_list if i[1] == host and i[2].prototype == component]
 
     def bound_host_components(service, comp):
-        return [
-            i for i in shc_list if i[0].prototype.name == service and i[2].prototype.name == comp
-        ]
+        return [i for i in shc_list if i[0].prototype.name == service and i[2].prototype.name == comp]
 
     def check_bound_component(component):
         service = component.bound_to["service"]
@@ -257,9 +253,7 @@ def check_component_constraint(cluster, service_prototype, hc_in, old_bundle=Non
                 old_service_proto = Prototype.objects.get(
                     name=service_prototype.name, type="service", bundle=old_bundle
                 )
-                Prototype.objects.get(
-                    parent=old_service_proto, bundle=old_bundle, type="component", name=c.name
-                )
+                Prototype.objects.get(parent=old_service_proto, bundle=old_bundle, type="component", name=c.name)
             except Prototype.DoesNotExist:
                 continue
         check(c, c.constraint)

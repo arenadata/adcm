@@ -38,9 +38,7 @@ def _update_users(group: models.Group, users: [Empty, List[dict]]) -> None:
             user = models.User.objects.get(id=user_id)
         except ObjectDoesNotExist as exc:
             msg = f'User with ID {user_id} was not found'
-            raise AdwpEx(
-                'GROUP_UPDATE_ERROR', msg=msg, http_code=status.HTTP_400_BAD_REQUEST
-            ) from exc
+            raise AdwpEx('GROUP_UPDATE_ERROR', msg=msg, http_code=status.HTTP_400_BAD_REQUEST) from exc
         group.user_set.add(user)
         group_users[user_id] = user
 

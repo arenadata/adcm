@@ -146,9 +146,7 @@ class GroupConfigHostSerializer(serializers.ModelSerializer):
     """Serializer for hosts in group config"""
 
     id = serializers.PrimaryKeyRelatedField(queryset=Host.objects.all())
-    url = MultiHyperlinkedIdentityField(
-        'group-config-host-detail', 'parent_lookup_group_config', 'host_id'
-    )
+    url = MultiHyperlinkedIdentityField('group-config-host-detail', 'parent_lookup_group_config', 'host_id')
 
     class Meta:
         model = Host
@@ -192,9 +190,7 @@ class GroupConfigHostSerializer(serializers.ModelSerializer):
 class GroupConfigHostCandidateSerializer(GroupConfigHostSerializer):
     """Serializer for host candidate"""
 
-    url = MultiHyperlinkedIdentityField(
-        'group-config-host-candidate-detail', 'parent_lookup_group_config', 'host_id'
-    )
+    url = MultiHyperlinkedIdentityField('group-config-host-candidate-detail', 'parent_lookup_group_config', 'host_id')
 
 
 class GroupConfigConfigSerializer(serializers.ModelSerializer):
@@ -217,9 +213,7 @@ class GroupConfigConfigSerializer(serializers.ModelSerializer):
     )
     previous_id = serializers.IntegerField(source='previous')
     history = serializers.SerializerMethodField()
-    url = MultiHyperlinkedIdentityField(
-        'group-config-config-detail', 'parent_lookup_group_config', 'pk'
-    )
+    url = MultiHyperlinkedIdentityField('group-config-config-detail', 'parent_lookup_group_config', 'pk')
 
     class Meta:
         model = ObjectConfig

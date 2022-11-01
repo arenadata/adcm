@@ -150,9 +150,7 @@ class LoadBundleView(CreateModelMixin, GenericUIViewSet):
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
         return Response(
-            BundleSerializer(
-                load_bundle(serializer.validated_data["bundle_file"]), context={"request": request}
-            ).data,
+            BundleSerializer(load_bundle(serializer.validated_data["bundle_file"]), context={"request": request}).data,
         )
 
 
@@ -260,13 +258,9 @@ class ServicePrototypeViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewS
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        instance.actions = Action.objects.filter(
-            prototype__type="service", prototype__id=instance.id
-        )
+        instance.actions = Action.objects.filter(prototype__type="service", prototype__id=instance.id)
         instance.components = Prototype.objects.filter(parent=instance, type="component")
-        instance.config = PrototypeConfig.objects.filter(prototype=instance, action=None).order_by(
-            "id"
-        )
+        instance.config = PrototypeConfig.objects.filter(prototype=instance, action=None).order_by("id")
         instance.exports = PrototypeExport.objects.filter(prototype=instance)
         instance.imports = PrototypeImport.objects.filter(prototype=instance)
         serializer = self.get_serializer(instance)

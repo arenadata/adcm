@@ -38,12 +38,8 @@ class LoadBundleSerializer(EmptySerializer):
 
 
 class BundleSerializer(HyperlinkedModelSerializer):
-    license_url = HyperlinkedIdentityField(
-        view_name="bundle-license", lookup_field="pk", lookup_url_kwarg="bundle_pk"
-    )
-    update = HyperlinkedIdentityField(
-        view_name="bundle-update", lookup_field="pk", lookup_url_kwarg="bundle_pk"
-    )
+    license_url = HyperlinkedIdentityField(view_name="bundle-license", lookup_field="pk", lookup_url_kwarg="bundle_pk")
+    update = HyperlinkedIdentityField(view_name="bundle-update", lookup_field="pk", lookup_url_kwarg="bundle_pk")
 
     class Meta:
         model = Bundle

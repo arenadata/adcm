@@ -99,9 +99,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='servicecomponent',
             name='config',
-            field=models.OneToOneField(
-                null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.objectconfig'
-            ),
+            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.objectconfig'),
         ),
         migrations.AddField(
             model_name='servicecomponent',

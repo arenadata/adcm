@@ -152,9 +152,7 @@ def switch_encoding(msg):
 def process_config(proto, config):
     if config is not None and proto is not None:
         conf = config["config"]
-        for pconf in PrototypeConfig.objects.filter(
-            prototype=proto, type__in=("secrettext", "password")
-        ):
+        for pconf in PrototypeConfig.objects.filter(prototype=proto, type__in=("secrettext", "password")):
             if pconf.subname and conf[pconf.name][pconf.subname]:
                 conf[pconf.name][pconf.subname] = switch_encoding(conf[pconf.name][pconf.subname])
             elif conf.get(pconf.name) and not pconf.subname:
@@ -190,9 +188,7 @@ def create_cluster(cluster):
         prototype = get_prototype(bundle_hash=cluster.pop("bundle_hash"), type="cluster")
         ex_id = cluster.pop("id")
         config = cluster.pop("config")
-        cluster = Cluster.objects.create(
-            prototype=prototype, config=create_config(config, prototype), **cluster
-        )
+        cluster = Cluster.objects.create(prototype=prototype, config=create_config(config, prototype), **cluster)
         create_file_from_config(cluster, config)
         return ex_id, cluster
 
@@ -217,9 +213,7 @@ def create_provider(provider):
     except HostProvider.DoesNotExist:
         prototype = get_prototype(bundle_hash=bundle_hash, type="provider")
         config = provider.pop("config")
-        provider = HostProvider.objects.create(
-            prototype=prototype, config=create_config(config, prototype), **provider
-        )
+        provider = HostProvider.objects.create(prototype=prototype, config=create_config(config, prototype), **provider)
         create_file_from_config(provider, config)
         return ex_id, provider
 
