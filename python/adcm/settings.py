@@ -13,9 +13,12 @@
 import json
 import os
 import string
+import sys
 from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
+
+ENCODING_UTF_8 = "utf-8"
 
 BASE_DIR = os.getenv("ADCM_BASE_DIR")
 if BASE_DIR:
@@ -27,17 +30,38 @@ CONF_DIR = BASE_DIR / "data" / "conf"
 CONFIG_FILE = BASE_DIR / "config.json"
 SECRET_KEY_FILE = CONF_DIR / "secret_key.txt"
 STACK_DIR = os.getenv("ADCM_STACK_DIR", BASE_DIR)
-DOWNLOAD_DIR = Path(STACK_DIR, 'data', 'download')
+BUNDLE_DIR = STACK_DIR / "data" / "bundle"
+CODE_DIR = BASE_DIR / "python"
+DOWNLOAD_DIR = Path(STACK_DIR, "data", "download")
 RUN_DIR = BASE_DIR / "data" / "run"
+FILE_DIR = STACK_DIR / "data" / "file"
+LOG_DIR = BASE_DIR / "data" / "log"
+LOG_FILE = LOG_DIR / "adcm.log"
+SECRETS_FILE = BASE_DIR / "data" / "var" / "secrets.json"
+PYTHON_SITE_PACKAGES = Path(
+    sys.exec_prefix, f"lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages"
+)
+
+ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
+DEFAULT_SALT = b'"j\xebi\xc0\xea\x82\xe0\xa8\xba\x9e\x12E>\x11D'
+
+if SECRETS_FILE.is_file():
+    with open(SECRETS_FILE, encoding=ENCODING_UTF_8) as f:
+        data = json.load(f)
+        STATUS_SECRET_KEY = data["token"]
+        ANSIBLE_SECRET = data["adcmuser"]["password"]
+else:
+    STATUS_SECRET_KEY = ""
+    ANSIBLE_SECRET = ""
 
 if SECRET_KEY_FILE.is_file():
-    with open(SECRET_KEY_FILE, encoding="utf_8") as f:
+    with open(SECRET_KEY_FILE, encoding=ENCODING_UTF_8) as f:
         SECRET_KEY = f.read().strip()
 else:
     SECRET_KEY = get_random_secret_key()
 
 if CONFIG_FILE.is_file():
-    with open(CONFIG_FILE, encoding="utf_8") as f:
+    with open(CONFIG_FILE, encoding=ENCODING_UTF_8) as f:
         ADCM_VERSION = json.load(f)["version"]
 else:
     ADCM_VERSION = "2019.02.07.00"

@@ -12,6 +12,7 @@
 import json
 from json.decoder import JSONDecodeError
 
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.urls import resolve
 
@@ -55,7 +56,7 @@ class AuditLoginMiddleware:
         }:
 
             try:
-                username = json.loads(request.body.decode("utf-8")).get("username")
+                username = json.loads(request.body.decode(settings.ENCODING_UTF_8)).get("username")
             except JSONDecodeError:
                 username = ""
 

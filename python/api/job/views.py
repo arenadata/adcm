@@ -131,7 +131,7 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
                         f'{f"{job.pk}-{dir_name_suffix}".strip("-")}'
                         f'/{log_storage.name}-{log_storage.type}.txt'
                     )
-                    body = io.BytesIO(bytes(log_storage.body, "utf-8"))
+                    body = io.BytesIO(bytes(log_storage.body, settings.ENCODING_UTF_8))
                     tarinfo.size = body.getbuffer().nbytes
                     tar_file.addfile(tarinfo=tarinfo, fileobj=body)
 
@@ -140,12 +140,22 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
 
 #  pylint:disable-next=too-many-ancestors
 class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
-    queryset = JobLog.objects.select_related("task", "action").order_by("-id").all()
+    queryset = JobLog.objects.select_related("task", "action").all()
     serializer_class = JobSerializer
     filterset_fields = ("action_id", "task_id", "pid", "status", "start_date", "finish_date")
     ordering_fields = ("status", "start_date", "finish_date")
+    ordering = ["-id"]
     permission_required = ["cm.view_joblog"]
     lookup_url_kwarg = "job_pk"
+
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+        if not self.request.user.is_superuser:
+            # NOT superuser shouldn't have access to ADCM tasks
+            queryset = queryset.exclude(
+                task__object_type=ContentType.objects.get(app_label="cm", model="adcm")
+            )
+        return queryset
 
     def get_permissions(self):
         if self.action == "list":
@@ -168,6 +178,7 @@ class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Gener
     serializer_class = TaskSerializer
     filterset_fields = ("action_id", "pid", "status", "start_date", "finish_date")
     ordering_fields = ("status", "start_date", "finish_date")
+    ordering = ["-id"]
     permission_required = [VIEW_TASKLOG_PERMISSION]
     lookup_url_kwarg = "task_pk"
 
@@ -178,7 +189,6 @@ class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Gener
             queryset = queryset.exclude(
                 object_type=ContentType.objects.get(app_label="cm", model="adcm")
             )
-
         return queryset
 
     def get_serializer_class(self):
@@ -268,7 +278,7 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
                 f"{log_storage.name}-{log_storage.type}.{log_storage.format}",
             )
             if Path.is_file(file_path):
-                with open(file_path, "r", encoding="utf_8") as f:
+                with open(file_path, "r", encoding=settings.ENCODING_UTF_8) as f:
                     body = f.read()
                     length = len(body)
             else:
@@ -281,7 +291,7 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
         response = HttpResponse(body)
         response["Content-Type"] = mime_type
         response["Content-Length"] = length
-        response["Content-Encoding"] = "UTF-8"
+        response["Content-Encoding"] = settings.ENCODING_UTF_8
         response["Content-Disposition"] = f"attachment; filename={filename}"
 
         return response

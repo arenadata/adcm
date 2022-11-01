@@ -15,14 +15,13 @@ from rest_framework import permissions
 from rest_framework.response import Response
 
 from api.base_view import GenericUIView
-from cm import config
-from cm.models import JobLog, TaskLog
+from cm.models import JobLog, JobStatus, TaskLog
 
 
 class JobStats(PermissionListMixin, GenericUIView):
     queryset = JobLog.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
-    permission_required = ['cm.view_joblog']
+    permission_required = ["cm.view_joblog"]
 
     def get(self, request, pk):
         """
@@ -30,9 +29,9 @@ class JobStats(PermissionListMixin, GenericUIView):
         """
         jobs = self.get_queryset().filter(id__gt=pk)
         data = {
-            config.Job.FAILED: jobs.filter(status=config.Job.FAILED).count(),
-            config.Job.SUCCESS: jobs.filter(status=config.Job.SUCCESS).count(),
-            config.Job.RUNNING: jobs.filter(status=config.Job.RUNNING).count(),
+            JobStatus.FAILED.value: jobs.filter(status=JobStatus.FAILED).count(),
+            JobStatus.SUCCESS.value: jobs.filter(status=JobStatus.SUCCESS).count(),
+            JobStatus.RUNNING.value: jobs.filter(status=JobStatus.RUNNING).count(),
         }
         return Response(data)
 
@@ -40,7 +39,7 @@ class JobStats(PermissionListMixin, GenericUIView):
 class TaskStats(PermissionListMixin, GenericUIView):
     queryset = TaskLog.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
-    permission_required = ['cm.view_tasklog']
+    permission_required = ["cm.view_tasklog"]
 
     def get(self, request, pk):
         """
@@ -48,8 +47,8 @@ class TaskStats(PermissionListMixin, GenericUIView):
         """
         tasks = self.get_queryset().filter(id__gt=pk)
         data = {
-            config.Job.FAILED: tasks.filter(status=config.Job.FAILED).count(),
-            config.Job.SUCCESS: tasks.filter(status=config.Job.SUCCESS).count(),
-            config.Job.RUNNING: tasks.filter(status=config.Job.RUNNING).count(),
+            JobStatus.FAILED.value: tasks.filter(status=JobStatus.FAILED).count(),
+            JobStatus.SUCCESS.value: tasks.filter(status=JobStatus.SUCCESS).count(),
+            JobStatus.RUNNING.value: tasks.filter(status=JobStatus.RUNNING).count(),
         }
         return Response(data)

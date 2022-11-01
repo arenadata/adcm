@@ -316,7 +316,7 @@ class TestCluster(BaseTestCase):
 
         with open(
             Path(settings.BASE_DIR, "python/audit/tests/files", cluster_bundle_filename),
-            encoding="utf-8",
+            encoding=settings.ENCODING_UTF_8,
         ) as f:
             self.client.post(
                 path=reverse("upload-bundle"),
@@ -330,7 +330,7 @@ class TestCluster(BaseTestCase):
 
         with open(
             Path(settings.BASE_DIR, "python/audit/tests/files", provider_bundle_filename),
-            encoding="utf-8",
+            encoding=settings.ENCODING_UTF_8,
         ) as f:
             self.client.post(
                 path=reverse("upload-bundle"),

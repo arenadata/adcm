@@ -326,7 +326,9 @@ class TestPeriodicSync:
     def _check_sync_task_is_presented(self, client: ADCMClient, expected_amount: int = 1):
         with allure.step(f"Check {expected_amount} sync task(s) is presented among tasks"):
             sync_tasks = [
-                task for task in (j.task() for j in client.job_list()) if task.action().name == SYNC_ACTION_NAME
+                task
+                for task in (j.task() for j in client.job_list())
+                if task.wait() or (task.action().name == SYNC_ACTION_NAME)
             ]
             assert (
                 actual_amount := len(sync_tasks)

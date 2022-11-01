@@ -15,7 +15,6 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { MatTreeModule } from '@angular/material/tree';
-
 import { AddingModule } from './add-component/adding.module';
 import { UpgradeMasterComponent } from "@app/shared/components/upgrades/master/master.component";
 import {
@@ -62,7 +61,10 @@ import { RbacRoleService } from '@app/services/rbac-role.service';
 import { RbacPolicyService } from '@app/services/rbac-policy.service';
 import { DynamicModule } from '@app/shared/directives/dynamic/dynamic.module';
 import { RbacObjectCandidateService } from '@app/services/rbac-object-candidate.service';
-import {UpgradeMasterConfigComponent} from "@app/shared/components/upgrades/master/upgrade-master-config.component";
+import { UpgradeMasterConfigComponent } from "@app/shared/components/upgrades/master/upgrade-master-config.component";
+import { RbacAuditOperationsService } from "@app/services/rbac-audit-operations.service";
+import { HistoryColumnComponent } from "@app/components/columns/history-column/history-column.component";
+import { WrapperColumnComponent } from "@app/components/columns/wrapper-column/wrapper-column.component";
 
 @NgModule({
   imports: [
@@ -112,6 +114,8 @@ import {UpgradeMasterConfigComponent} from "@app/shared/components/upgrades/mast
     StatusTreeComponent,
     EntityStatusToStatusTreePipe,
     StatusTreeLinkPipe,
+    HistoryColumnComponent,
+    WrapperColumnComponent,
   ],
   exports: [
     FormsModule,
@@ -148,6 +152,8 @@ import {UpgradeMasterConfigComponent} from "@app/shared/components/upgrades/mast
     StatusTreeComponent,
     EntityStatusToStatusTreePipe,
     StatusTreeLinkPipe,
+    HistoryColumnComponent,
+    WrapperColumnComponent,
   ],
   providers: [
     JobService,
@@ -156,7 +162,8 @@ import {UpgradeMasterConfigComponent} from "@app/shared/components/upgrades/mast
     RbacGroupService,
     RbacRoleService,
     RbacPolicyService,
-    RbacObjectCandidateService
+    RbacAuditOperationsService,
+    RbacObjectCandidateService,
   ],
 })
 export class SharedModule {

@@ -11,7 +11,6 @@
 # limitations under the License.
 # pylint: disable=too-many-lines
 
-import os
 import string
 
 from django.conf import settings
@@ -65,7 +64,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         )
 
     def load_bundle(self, bundle_name):
-        with open(os.path.join(self.files_dir, bundle_name), encoding="utf-8") as f:
+        with open(self.files_dir / bundle_name, encoding=settings.ENCODING_UTF_8) as f:
             response: Response = self.client.post(
                 path=reverse("upload-bundle"),
                 data={"file": f},

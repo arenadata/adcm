@@ -142,7 +142,7 @@ class TestHC(BaseTestCase):
             "python/cm/tests/files",
             test_bundle_filename,
         )
-        with open(test_bundle_path, encoding="utf-8") as f:
+        with open(test_bundle_path, encoding=settings.ENCODING_UTF_8) as f:
             response: Response = self.client.post(
                 path=reverse("upload-bundle"),
                 data={"file": f},

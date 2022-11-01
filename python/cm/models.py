@@ -25,6 +25,7 @@ from enum import Enum
 from itertools import chain
 from typing import Dict, Iterable, List, Optional
 
+from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -33,7 +34,6 @@ from django.db.models.signals import m2m_changed, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
 
-from cm.config import FILE_DIR, Job
 from cm.errors import AdcmEx
 from cm.logger import logger
 
@@ -1092,7 +1092,7 @@ class GroupConfig(ADCMModel):
                     field.subname,
                 ]
             )
-            filepath = os.path.join(FILE_DIR, filename)
+            filepath = str(settings.FILE_DIR / filename)
 
             if field.subname:
                 value = config[field.name][field.subname]
@@ -1104,7 +1104,7 @@ class GroupConfig(ADCMModel):
                     if value != "":
                         if value[-1] == "-":
                             value += "\n"
-                with open(filepath, "w", encoding="utf-8") as f:
+                with open(filepath, "w", encoding=settings.ENCODING_UTF_8) as f:
                     f.write(value)
                 os.chmod(filepath, 0o0600)
             else:
@@ -1441,12 +1441,13 @@ class ClusterBind(ADCMModel):
         unique_together = (("cluster", "service", "source_cluster", "source_service"),)
 
 
-JOB_STATUS = (
-    ("created", "created"),
-    ("running", "running"),
-    ("success", "success"),
-    ("failed", "failed"),
-)
+class JobStatus(models.TextChoices):
+    CREATED = "created", "created"
+    SUCCESS = "success", "success"
+    FAILED = "failed", "failed"
+    RUNNING = "running", "running"
+    LOCKED = "locked", "locked"
+    ABORTED = "aborted", "aborted"
 
 
 class UserProfile(ADCMModel):
@@ -1461,7 +1462,7 @@ class TaskLog(ADCMModel):
     action = models.ForeignKey(Action, on_delete=models.SET_NULL, null=True, default=None)
     pid = models.PositiveIntegerField(blank=True, default=0)
     selector = models.JSONField(default=dict)
-    status = models.CharField(max_length=16, choices=JOB_STATUS)
+    status = models.CharField(max_length=16, choices=JobStatus.choices)
     config = models.JSONField(null=True, default=None)
     attr = models.JSONField(default=dict)
     hostcomponentmap = models.JSONField(null=True, default=None)
@@ -1515,9 +1516,9 @@ class TaskLog(ADCMModel):
                 "Termination is too early, try to execute later",
             )
         errors = {
-            Job.FAILED: ("TASK_IS_FAILED", f"task #{self.pk} is failed"),
-            Job.ABORTED: ("TASK_IS_ABORTED", f"task #{self.pk} is aborted"),
-            Job.SUCCESS: ("TASK_IS_SUCCESS", f"task #{self.pk} is success"),
+            JobStatus.FAILED: ("TASK_IS_FAILED", f"task #{self.pk} is failed"),
+            JobStatus.ABORTED: ("TASK_IS_ABORTED", f"task #{self.pk} is aborted"),
+            JobStatus.SUCCESS: ("TASK_IS_SUCCESS", f"task #{self.pk} is success"),
         }
         action = self.action
         if action and not action.allow_to_terminate and not obj_deletion:
@@ -1525,10 +1526,10 @@ class TaskLog(ADCMModel):
                 "NOT_ALLOWED_TERMINATION",
                 f"not allowed termination task #{self.pk} for action #{action.pk}",
             )
-        if self.status in [Job.FAILED, Job.ABORTED, Job.SUCCESS]:
+        if self.status in [JobStatus.FAILED, JobStatus.ABORTED, JobStatus.SUCCESS]:
             raise AdcmEx(*errors.get(self.status))
         i = 0
-        while not JobLog.objects.filter(task=self, status=Job.RUNNING) and i < 10:
+        while not JobLog.objects.filter(task=self, status=JobStatus.RUNNING) and i < 10:
             time.sleep(0.5)
             i += 1
         if i == 10:
@@ -1538,12 +1539,6 @@ class TaskLog(ADCMModel):
             event_queue.send_state()
         os.kill(self.pid, signal.SIGTERM)
 
-    @staticmethod
-    def get_adcm_tasks_qs():
-        return TaskLog.objects.filter(
-            object_type=ContentType.objects.get(app_label="cm", model="adcm")
-        )
-
 
 class JobLog(ADCMModel):
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
@@ -1552,15 +1547,11 @@ class JobLog(ADCMModel):
     pid = models.PositiveIntegerField(blank=True, default=0)
     selector = models.JSONField(default=dict)
     log_files = models.JSONField(default=list)
-    status = models.CharField(max_length=16, choices=JOB_STATUS)
+    status = models.CharField(max_length=16, choices=JobStatus.choices)
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField(db_index=True)
 
     __error_code__ = "JOB_NOT_FOUND"
-
-    @staticmethod
-    def get_adcm_jobs_qs():
-        return JobLog.objects.filter(task__in=TaskLog.get_adcm_tasks_qs())
 
 
 class GroupCheckLog(ADCMModel):
