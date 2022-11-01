@@ -29,6 +29,7 @@ from tests.functional.ldap_auth.utils import (
     get_ldap_group_from_adcm,
     login_should_fail,
     login_should_succeed,
+    LDAP_ACTION_CAN_NOT_START_REASON,
 )
 
 pytestmark = [only_clean_adcm, pytest.mark.usefixtures("configure_adcm_ldap_ad"), pytest.mark.ldap()]
@@ -179,11 +180,12 @@ def test_wrong_ldap_config_fail_actions(action_name: str, sdk_client_fs):
             task = adcm.action(name=action_name).run()
             wait_for_task_and_assert_result(task, "failed")
             adcm.config_set_diff(original_config)
+            task.wait()
     with allure.step(f"Deactivate LDAP integration in settings and check action {action_name} is disabled"):
         adcm.config_set_diff(_deactivate_ldap_integration[1])
         assert action_name in [
-            a.name for a in adcm.action_list() if a.disabling_cause == "no_ldap_settings"
-        ], f'Action {action_name} have "no_ldap_settings" disabling cause'
+            a.name for a in adcm.action_list() if LDAP_ACTION_CAN_NOT_START_REASON in a.start_impossible_reason
+        ], f'Action {action_name} should have "{LDAP_ACTION_CAN_NOT_START_REASON}" as the reason for disabled launch'
 
 
 def test_login_as_existing_user_is_forbidden(sdk_client_fs, ldap_user_in_group):
