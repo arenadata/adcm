@@ -97,7 +97,6 @@ export class TasksComponent extends BaseDirective implements OnInit {
       headerClassName: 'table-end center',
       component: DownloadButtonColumnComponent,
       instanceTaken: (componentRef: ComponentRef<DownloadButtonColumnComponent>) => {
-        console.log(this);
         componentRef.instance.url = `api/v1/task/${componentRef.instance['row']?.id}/download`;
         componentRef.instance.tooltip = 'Download job log';
       },
