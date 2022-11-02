@@ -65,6 +65,9 @@ import { UpgradeMasterConfigComponent } from "@app/shared/components/upgrades/ma
 import { RbacAuditOperationsService } from "@app/services/rbac-audit-operations.service";
 import { HistoryColumnComponent } from "@app/components/columns/history-column/history-column.component";
 import { WrapperColumnComponent } from "@app/components/columns/wrapper-column/wrapper-column.component";
+import {
+  DownloadButtonColumnComponent
+} from "@app/components/columns/download-button-column/download-button-column.component";
 
 @NgModule({
   imports: [
@@ -116,6 +119,7 @@ import { WrapperColumnComponent } from "@app/components/columns/wrapper-column/w
     StatusTreeLinkPipe,
     HistoryColumnComponent,
     WrapperColumnComponent,
+    DownloadButtonColumnComponent,
   ],
   exports: [
     FormsModule,
@@ -154,6 +158,7 @@ import { WrapperColumnComponent } from "@app/components/columns/wrapper-column/w
     StatusTreeLinkPipe,
     HistoryColumnComponent,
     WrapperColumnComponent,
+    DownloadButtonColumnComponent,
   ],
   providers: [
     JobService,

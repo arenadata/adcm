@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 
 import { MenuItemAbstractDirective } from '@app/abstract-directives/menu-item.abstract.directive';
 import { BaseEntity, Job } from '@app/core/types';
+import { AuthService } from "@app/core/auth/auth.service";
 
 @Component({
   selector: 'app-log-menu-item',
@@ -25,8 +26,12 @@ import { BaseEntity, Job } from '@app/core/types';
 })
 export class LogMenuItemComponent extends MenuItemAbstractDirective<BaseEntity> {
 
+  constructor(private auth: AuthService) {
+    super();
+  }
+
   download() {
-    const isLoggedIn = localStorage.getItem('auth');
+    const isLoggedIn = this.auth.auth;
 
     if (isLoggedIn) {
       if (this.data?.logId) {

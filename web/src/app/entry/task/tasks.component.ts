@@ -25,6 +25,9 @@ import { JobsComponent } from '@app/components/job/jobs/jobs.component';
 import { TaskNameComponent } from '@app/components/columns/task-name/task-name.component';
 import { TaskService } from '@app/services/task.service';
 import { JobService } from '@app/services/job.service';
+import {
+  DownloadButtonColumnComponent
+} from "../../components/columns/download-button-column/download-button-column.component";
 
 type TaskStatus = '' | 'running' | 'success' | 'failed';
 
@@ -86,6 +89,13 @@ export class TasksComponent extends BaseDirective implements OnInit {
       component: TaskStatusColumnComponent,
       className: 'table-end center status',
       headerClassName: 'table-end center status',
+    },
+    {
+      label: '',
+      type: 'component',
+      component: DownloadButtonColumnComponent,
+      className: 'table-end center',
+      headerClassName: 'table-end center',
     }
   ] as IColumns<Task>;
 
