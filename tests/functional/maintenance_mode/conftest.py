@@ -159,23 +159,6 @@ def check_mm_is(maintenance_mode: str, *adcm_object: Host | Service | Component)
         )
 
 
-def check_hosts_mm_is(maintenance_mode: str, *hosts: Host):
-    """Check that MM of hosts is equal to the expected one"""
-    with allure.step(
-        f'Check that "maintenance_mode" is equal to "{maintenance_mode}" '
-        f'on hosts: {get_hosts_fqdn_representation(hosts)}'
-    ):
-        for host in hosts:
-            host.reread()
-        hosts_in_wrong_mode = tuple(host for host in hosts if host.maintenance_mode != maintenance_mode)
-        if len(hosts_in_wrong_mode) == 0:
-            return
-        raise AssertionError(
-            'Some hosts have incorrect value of "maintenance_mode" flag.\n'
-            f'Hosts: {get_hosts_fqdn_representation(hosts_in_wrong_mode)}'
-        )
-
-
 def check_mm_availability(is_mm_available: bool, *hosts: Host):
     """Check that MM change is allowed/disallowed for the given hosts"""
     with allure.step(

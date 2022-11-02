@@ -22,7 +22,7 @@ from tests.functional.maintenance_mode.conftest import (
     MM_IS_OFF,
     MM_NOT_ALLOWED,
     add_hosts_to_cluster,
-    check_hosts_mm_is,
+    check_mm_is,
     check_mm_availability,
     get_disabled_actions_names,
     get_enabled_actions_names,
@@ -103,7 +103,7 @@ def test_allow_mm_after_upgrade(api_client, sdk_client_fs, create_bundle_archive
     if upgrade_task:
         upgrade_task.wait()
 
-    check_hosts_mm_is(MM_IS_OFF, *hosts_in_cluster)
+    check_mm_is(MM_IS_OFF, *hosts_in_cluster)
     check_mm_availability(MM_NOT_ALLOWED, *free_hosts)
 
     check_actions_are_disabled_correctly(set(DUMMY_ACTIONS_WITH_ALLOWED.keys()), set(), old_cluster, service, component)
@@ -160,7 +160,7 @@ def test_upgrade_from_true_to_false_mm(api_client, sdk_client_fs, create_bundle_
     component = service.component()
     old_cluster.hostcomponent_set(*[(h, component) for h in cluster_hosts])
 
-    check_hosts_mm_is(MM_IS_OFF, *cluster_hosts)
+    check_mm_is(MM_IS_OFF, *cluster_hosts)
     turn_mm_on(api_client, cluster_hosts[0])
 
     upgrade_task = old_cluster.upgrade().do()

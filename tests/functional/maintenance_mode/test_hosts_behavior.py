@@ -29,7 +29,7 @@ from tests.functional.maintenance_mode.conftest import (
     MM_IS_ON,
     MM_NOT_ALLOWED,
     add_hosts_to_cluster,
-    check_hosts_mm_is,
+    check_mm_is,
     check_mm_availability,
     get_disabled_actions_names,
     get_enabled_actions_names,
@@ -79,12 +79,12 @@ def test_adding_host_to_cluster(api_client, cluster_with_mm, cluster_without_mm,
     check_mm_availability(MM_NOT_ALLOWED, *hosts)
 
     add_hosts_to_cluster(cluster_with_mm, hosts_to_cluster_with_mm)
-    check_hosts_mm_is(MM_IS_OFF, *hosts_to_cluster_with_mm)
+    check_mm_is(MM_IS_OFF, *hosts_to_cluster_with_mm)
     check_mm_availability(MM_NOT_ALLOWED, *hosts_to_cluster_without_mm, *free_hosts)
 
     turn_mm_on(api_client, first_host)
-    check_hosts_mm_is(MM_IS_ON, first_host)
-    check_hosts_mm_is(MM_IS_OFF, second_host)
+    check_mm_is(MM_IS_ON, first_host)
+    check_mm_is(MM_IS_OFF, second_host)
     check_mm_availability(MM_NOT_ALLOWED, *hosts_to_cluster_without_mm, *free_hosts)
 
     expect_api_error(
@@ -407,8 +407,8 @@ def test_mm_after_cluster_deletion(api_client, cluster_with_mm, hosts):
     host_1, host_2, *_ = hosts
     add_hosts_to_cluster(cluster_with_mm, [host_1, host_2])
     turn_mm_on(api_client, host_2)
-    check_hosts_mm_is(MM_IS_OFF, host_1)
-    check_hosts_mm_is(MM_IS_ON, host_2)
+    check_mm_is(MM_IS_OFF, host_1)
+    check_mm_is(MM_IS_ON, host_2)
     with allure.step('Delete cluster'):
         cluster_with_mm.delete()
     check_mm_availability(MM_NOT_ALLOWED, host_1, host_2)
