@@ -9,7 +9,8 @@ import { AuthService } from "@app/core/auth/auth.service";
 })
 export class DownloadButtonColumnComponent implements OnInit {
 
-  row: Job;
+  url: string;
+  tooltip: string;
 
   constructor(private auth: AuthService) {}
 
@@ -19,7 +20,7 @@ export class DownloadButtonColumnComponent implements OnInit {
     const isLoggedIn = this.auth.auth;
 
     if (isLoggedIn) {
-      location.href = `api/v1/task/${this.row?.id}/download`;
+      location.href = this.url;
     } else {
       window.location.href = "/login";
     }
