@@ -628,17 +628,11 @@ class TestMMRoles(RBACBaseTestCase):
             self.assertEqual(response.status_code, 404)
 
             with self.assertRaises(PermissionDenied):
-                check_custom_perm(
-                    self.test_user, "change_maintenance_mode", obj._meta.model_name, obj
-                )
+                check_custom_perm(self.test_user, "change_maintenance_mode", obj._meta.model_name, obj)
 
     def test_mm_host_role(self):
-        policy_create(
-            name="mm host policy", object=[self.host], role=self.mm_role_host, user=[self.test_user]
-        )
-        check_custom_perm(
-            self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host
-        )
+        policy_create(name="mm host policy", object=[self.host], role=self.mm_role_host, user=[self.test_user])
+        check_custom_perm(self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host)
 
         response = self.client.post(
             path=reverse("host-maintenance-mode", kwargs={'host_id': self.host.pk}),
@@ -655,18 +649,14 @@ class TestMMRoles(RBACBaseTestCase):
             role=self.mm_role_cluster,
             user=[self.test_user],
         )
-        check_custom_perm(
-            self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host
-        )
+        check_custom_perm(self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host)
         check_custom_perm(
             self.test_user,
             "change_maintenance_mode",
             self.component._meta.model_name,
             self.component,
         )
-        check_custom_perm(
-            self.test_user, "change_maintenance_mode", self.service._meta.model_name, self.service
-        )
+        check_custom_perm(self.test_user, "change_maintenance_mode", self.service._meta.model_name, self.service)
 
         response = self.client.post(
             path=reverse("host-maintenance-mode", kwargs={'host_id': self.host.pk}),
@@ -699,18 +689,14 @@ class TestMMRoles(RBACBaseTestCase):
             role=Role.objects.get(name="Cluster Administrator"),
             user=[self.test_user],
         )
-        check_custom_perm(
-            self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host
-        )
+        check_custom_perm(self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host)
         check_custom_perm(
             self.test_user,
             "change_maintenance_mode",
             self.component._meta.model_name,
             self.component,
         )
-        check_custom_perm(
-            self.test_user, "change_maintenance_mode", self.service._meta.model_name, self.service
-        )
+        check_custom_perm(self.test_user, "change_maintenance_mode", self.service._meta.model_name, self.service)
 
         response = self.client.post(
             path=reverse("host-maintenance-mode", kwargs={'host_id': self.host.pk}),

@@ -118,13 +118,9 @@ class ServiceMaintenanceModeView(GenericUIView):
 
     @audit
     def post(self, request: Request, **kwargs) -> Response:
-        service = get_object_for_user(
-            request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"]
-        )
+        service = get_object_for_user(request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
         # pylint: disable=protected-access
-        check_custom_perm(
-            request.user, "change_maintenance_mode", service._meta.model_name, service
-        )
+        check_custom_perm(request.user, "change_maintenance_mode", service._meta.model_name, service)
         serializer = self.get_serializer(instance=service, data=request.data)
         serializer.is_valid(raise_exception=True)
 
