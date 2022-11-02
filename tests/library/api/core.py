@@ -41,9 +41,13 @@ class Requester:
         self.base_url = url
         self.auth_header: dict[Literal["Authorization"], str] = {}
 
+    @staticmethod
+    def _build_header(token: str) -> dict[str, str]:
+        return {"Authorization": f"Token {token}"}
+
     def get_auth_header(self, credentials: dict[str, str]) -> dict[str, str]:
         token = self.post("token", json=credentials, authorized=False)["token"]
-        return {"Authorization": f"Token {token}"}
+        return self._build_header(token)
 
     def post(self, *path: str, authorized: bool = True, **request_kwargs) -> RequestResult:
         if authorized:
