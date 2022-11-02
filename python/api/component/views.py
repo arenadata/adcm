@@ -89,9 +89,7 @@ class ComponentMaintenanceModeView(GenericUIView):
             request.user, "cm.view_servicecomponent", ServiceComponent, id=kwargs["component_id"]
         )
         # pylint: disable=protected-access
-        check_custom_perm(
-            request.user, "change_maintenance_mode", component._meta.model_name, component
-        )
+        check_custom_perm(request.user, "change_maintenance_mode", component._meta.model_name, component)
         serializer = self.get_serializer(instance=component, data=request.data)
         serializer.is_valid(raise_exception=True)
 
