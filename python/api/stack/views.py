@@ -14,6 +14,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.decorators import action
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
@@ -69,7 +70,8 @@ from cm.models import (
 )
 
 
-def load_servicemap_view(request: Request) -> Response:
+@csrf_exempt
+def load_servicemap_view(request: Request) -> HttpResponse:
     if request.method != "PUT":
         return HttpResponse(status=HTTP_405_METHOD_NOT_ALLOWED)
 
@@ -78,7 +80,8 @@ def load_servicemap_view(request: Request) -> Response:
     return HttpResponse(status=HTTP_200_OK)
 
 
-def load_hostmap_view(request: Request) -> Response:
+@csrf_exempt
+def load_hostmap_view(request: Request) -> HttpResponse:
     if request.method != "PUT":
         return HttpResponse(status=HTTP_405_METHOD_NOT_ALLOWED)
 
