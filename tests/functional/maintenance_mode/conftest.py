@@ -141,7 +141,7 @@ def remove_hosts_from_cluster(cluster: Cluster, hosts: Iterable[Host]):
 
 def check_mm_is(maintenance_mode: str, *adcm_object: Host | Service | Component) -> None:
     """Check value of maintenance_mode on object"""
-    representation = ",".join([get_object_represent(obj) for obj in adcm_object])
+    representation = [get_object_represent(obj) for obj in adcm_object]
     with allure.step(
             f'Check that "maintenance_mode" is equal to "{maintenance_mode}" '
             f'on objects: {representation}'
@@ -153,7 +153,7 @@ def check_mm_is(maintenance_mode: str, *adcm_object: Host | Service | Component)
         if len(obj_in_wrong_mode) == 0:
             return
         raise AssertionError(
-            f"{representation} have incorrect value of 'maintenance_mode' flag.\n"
+            f"{obj_in_wrong_mode} have incorrect value of 'maintenance_mode' flag.\n"
             f"Expected maintenance_mode flag: {maintenance_mode} "
             f"Actual maintenance_mode flag: {obj_in_wrong_mode[0].maintenance_mode}"
         )

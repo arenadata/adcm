@@ -48,9 +48,11 @@ def test_mm_state_service(api_client, cluster_with_mm, hosts):
 
     with allure.step('Check MM state calculation logic for service'):
         set_maintenance_mode(api_client=api_client, adcm_object=second_service, maintenance_mode=MM_IS_ON)
+        check_mm_is(MM_IS_ON, second_service)
         check_mm_is(MM_IS_OFF, first_host, second_host, first_component, second_component, first_service)
 
         set_maintenance_mode(api_client=api_client, adcm_object=first_service, maintenance_mode=MM_IS_ON)
+        check_mm_is(MM_IS_ON, first_component, second_component, first_service, second_service)
         check_mm_is(MM_IS_OFF, first_host, second_host)
 
         set_maintenance_mode(api_client=api_client, adcm_object=first_service, maintenance_mode=MM_IS_OFF)
@@ -58,6 +60,10 @@ def test_mm_state_service(api_client, cluster_with_mm, hosts):
         check_mm_is(
             MM_IS_OFF, first_host, second_host, first_component, second_component, first_service, second_service
         )
+
+        set_maintenance_mode(api_client=api_client, adcm_object=first_service, maintenance_mode=MM_IS_ON)
+        check_mm_is(MM_IS_ON, first_service)
+        check_mm_is(MM_IS_OFF, first_host, second_host, second_service)
 
 
 @only_clean_adcm
@@ -76,14 +82,20 @@ def test_mm_state_component(api_client, cluster_with_mm, hosts):
 
     with allure.step('Check MM state calculation logic for components'):
         set_maintenance_mode(api_client=api_client, adcm_object=first_component, maintenance_mode=MM_IS_ON)
+        check_mm_is(MM_IS_ON, first_component)
         check_mm_is(MM_IS_OFF, first_host, second_host, second_component, first_service)
 
         set_maintenance_mode(api_client=api_client, adcm_object=second_component, maintenance_mode=MM_IS_ON)
+        check_mm_is(MM_IS_ON, first_component, second_component, first_service)
         check_mm_is(MM_IS_OFF, first_host, second_host)
 
         set_maintenance_mode(api_client=api_client, adcm_object=first_component, maintenance_mode=MM_IS_OFF)
         set_maintenance_mode(api_client=api_client, adcm_object=second_component, maintenance_mode=MM_IS_OFF)
         check_mm_is(MM_IS_OFF, first_host, second_host, first_component, second_component, first_service)
+
+        set_maintenance_mode(api_client=api_client, adcm_object=second_component, maintenance_mode=MM_IS_ON)
+        check_mm_is(MM_IS_ON, second_component)
+        check_mm_is(MM_IS_OFF, first_host, second_host, first_component, first_service)
 
 
 @only_clean_adcm
@@ -102,6 +114,7 @@ def test_mm_state_host(api_client, cluster_with_mm, hosts):
 
     with allure.step('Check MM state calculation logic for hosts'):
         set_maintenance_mode(api_client=api_client, adcm_object=first_host, maintenance_mode=MM_IS_ON)
+        check_mm_is(MM_IS_ON, first_host, first_component)
         check_mm_is(MM_IS_OFF, first_service, second_host, second_component)
 
         set_maintenance_mode(api_client=api_client, adcm_object=second_host, maintenance_mode=MM_IS_ON)
@@ -110,3 +123,6 @@ def test_mm_state_host(api_client, cluster_with_mm, hosts):
         set_maintenance_mode(api_client=api_client, adcm_object=first_host, maintenance_mode=MM_IS_OFF)
         set_maintenance_mode(api_client=api_client, adcm_object=second_host, maintenance_mode=MM_IS_OFF)
         check_mm_is(MM_IS_OFF, first_service, first_host, first_component, second_host, second_component)
+
+        set_maintenance_mode(api_client=api_client, adcm_object=second_host, maintenance_mode=MM_IS_ON)
+        check_mm_is(MM_IS_ON, second_host, second_component)
