@@ -84,7 +84,7 @@ def change_service_mm(admin_client: ADCMClient, user_client: ADCMClient, service
 
         body = {"maintenance_mode": MM_IS_OFF}
         with allure.step(f'Deny update service via POST {url} with body: {body} with wrong user'):
-            check_failed(requests.post(url, json=body, headers=make_auth_header(user_client)), exact_code=403)
+            check_failed(requests.post(url, json=body, headers=make_auth_header(user_client)), exact_code=404)
 
         with allure.step(f'Success update service via POST {url} with body: {body}'):
             check_succeed(requests.post(url, json=body, headers=make_auth_header(admin_client)))
@@ -112,16 +112,17 @@ def change_component_mm(admin_client: ADCMClient, user_client: ADCMClient, compo
 
         body = {"maintenance_mode": MM_IS_OFF}
         with allure.step(f'Deny update component via POST {url} with body: {body} with wrong user'):
-            check_failed(requests.post(url, json=body, headers=make_auth_header(user_client)), exact_code=403)
+            check_failed(requests.post(url, json=body, headers=make_auth_header(user_client)), exact_code=404)
 
         with allure.step(f'Success update component via POST {url} with body: {body}'):
             check_succeed(requests.post(url, json=body, headers=make_auth_header(admin_client)))
 
 
-def change_host_mm(admin_client: ADCMClient, user_client: ADCMClient, cluster: Cluster, host: Host) -> None:
+def change_host_mm(admin_client: ADCMClient, user_client: ADCMClient, host: Host) -> None:
     """Method to change host to maintenance mode"""
+    host.reread()
     url_list = [
-        f'{admin_client.url}/api/v1/cluster/{cluster.id}/host/{host.id}/maintenance-mode/',
+        f'{admin_client.url}/api/v1/cluster/{host.cluster_id}/host/{host.id}/maintenance-mode/',
         f'{admin_client.url}/api/v1/host/{host.id}/maintenance-mode/',
         f'{admin_client.url}/api/v1/provider/{host.provider_id}/host/{host.id}/maintenance-mode/',
     ]
@@ -138,7 +139,7 @@ def change_host_mm(admin_client: ADCMClient, user_client: ADCMClient, cluster: C
 
         body = {"maintenance_mode": MM_IS_ON}
         with allure.step(f'Deny update host via POST {url} with body: {body} with wrong user'):
-            check_failed(requests.post(url, json=body, headers=make_auth_header(user_client)), exact_code=403)
+            check_failed(requests.post(url, json=body, headers=make_auth_header(user_client)), exact_code=404)
 
         with allure.step(f'Success update host via POST {url} with body: {body}'):
             check_succeed(requests.post(url, json=body, headers=make_auth_header(admin_client)))
@@ -156,7 +157,7 @@ def test_mm_audit(sdk_client_fs, audit_log_checker, cluster_with_mm, hosts, new_
 
     change_service_mm(admin_client=sdk_client_fs, user_client=new_user_client, service=second_service)
     change_component_mm(admin_client=sdk_client_fs, user_client=new_user_client, component=first_component)
-    change_host_mm(admin_client=sdk_client_fs, user_client=new_user_client, cluster=cluster_with_mm, host=first_host)
+    change_host_mm(admin_client=sdk_client_fs, user_client=new_user_client, host=first_host)
 
     audit_log_checker.set_user_map(sdk_client_fs)
     audit_log_checker.check(list(sdk_client_fs.audit_operation_list()))
