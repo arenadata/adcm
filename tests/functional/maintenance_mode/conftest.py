@@ -22,9 +22,9 @@ from typing import Iterable, Set, Tuple
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient, Cluster, Host, Provider
+from adcm_client.objects import ADCMClient, Cluster, Component, Host, Provider, Service
 
-from tests.functional.tools import AnyADCMObject
+from tests.functional.tools import AnyADCMObject, get_object_represent
 from tests.library.api.client import APIClient
 from tests.library.utils import get_hosts_fqdn_representation
 
@@ -86,6 +86,25 @@ def cluster_without_mm(request, sdk_client_fs: ADCMClient):
     return cluster
 
 
+def set_maintenance_mode(
+    api_client: APIClient, adcm_object: Host | Service | Component, maintenance_mode: bool
+) -> None:
+    """Change maintenance mode on ADCM objects"""
+    if isinstance(adcm_object, Service):
+        client = api_client.service
+    elif isinstance(adcm_object, Component):
+        client = api_client.component
+    else:
+        client = api_client.host
+    representation = get_object_represent(adcm_object)
+    with allure.step(f'Turn MM to mode {maintenance_mode} on object {representation}'):
+        client.change_maintenance_mode(adcm_object.id, maintenance_mode).check_code(200)
+        adcm_object.reread()
+        assert (actual_mm := adcm_object.maintenance_mode) == maintenance_mode, (
+            f'Maintenance mode of object {representation} should be {maintenance_mode},' f' not {actual_mm}'
+        )
+
+
 def turn_mm_on(api_client: APIClient, host: Host):
     """Turn maintenance mode "on" on host"""
     with allure.step(f'Turn MM "on" on host {host.fqdn}'):
@@ -120,20 +139,22 @@ def remove_hosts_from_cluster(cluster: Cluster, hosts: Iterable[Host]):
             cluster.host_delete(host)
 
 
-def check_hosts_mm_is(maintenance_mode: str, *hosts: Host):
-    """Check that MM of hosts is equal to the expected one"""
+def check_mm_is(maintenance_mode: str, *adcm_object: Host | Service | Component) -> None:
+    """Check value of maintenance_mode on object"""
+    representation = [get_object_represent(obj) for obj in adcm_object]
     with allure.step(
-        f'Check that "maintenance_mode" is equal to "{maintenance_mode}" '
-        f'on hosts: {get_hosts_fqdn_representation(hosts)}'
+        f'Check that "maintenance_mode" is equal to "{maintenance_mode}" ' f'on objects: {representation}'
     ):
-        for host in hosts:
-            host.reread()
-        hosts_in_wrong_mode = tuple(host for host in hosts if host.maintenance_mode != maintenance_mode)
-        if len(hosts_in_wrong_mode) == 0:
+
+        for obj in adcm_object:
+            obj.reread()
+        obj_in_wrong_mode = tuple(obj for obj in adcm_object if obj.maintenance_mode != maintenance_mode)
+        if len(obj_in_wrong_mode) == 0:
             return
         raise AssertionError(
-            'Some hosts have incorrect value of "maintenance_mode" flag.\n'
-            f'Hosts: {get_hosts_fqdn_representation(hosts_in_wrong_mode)}'
+            f"{obj_in_wrong_mode} have incorrect value of 'maintenance_mode' flag.\n"
+            f"Expected maintenance_mode flag: {maintenance_mode} "
+            f"Actual maintenance_mode flag: {obj_in_wrong_mode[0].maintenance_mode}"
         )
 
 
