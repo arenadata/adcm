@@ -22,7 +22,7 @@ from typing import Iterable, Set, Tuple
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient, Cluster, Host, Provider, Service, Component
+from adcm_client.objects import ADCMClient, Cluster, Component, Host, Provider, Service
 
 from tests.functional.tools import AnyADCMObject, get_object_represent
 from tests.library.api.client import APIClient
@@ -87,7 +87,8 @@ def cluster_without_mm(request, sdk_client_fs: ADCMClient):
 
 
 def set_maintenance_mode(
-        api_client: APIClient, adcm_object: Host | Service | Component, maintenance_mode: bool) -> None:
+    api_client: APIClient, adcm_object: Host | Service | Component, maintenance_mode: bool
+) -> None:
     """Change maintenance mode on ADCM objects"""
     if isinstance(adcm_object, Service):
         client = api_client.service
@@ -99,10 +100,9 @@ def set_maintenance_mode(
     with allure.step(f'Turn MM to mode {maintenance_mode} on object {representation}'):
         client.change_maintenance_mode(adcm_object.id, maintenance_mode).check_code(200)
         adcm_object.reread()
-        assert (
-           actual_mm := adcm_object.maintenance_mode
-        ) == maintenance_mode, (f'Maintenance mode of object {representation} should be {maintenance_mode},'
-                                f' not {actual_mm}')
+        assert (actual_mm := adcm_object.maintenance_mode) == maintenance_mode, (
+            f'Maintenance mode of object {representation} should be {maintenance_mode},' f' not {actual_mm}'
+        )
 
 
 def turn_mm_on(api_client: APIClient, host: Host):
@@ -143,8 +143,7 @@ def check_mm_is(maintenance_mode: str, *adcm_object: Host | Service | Component)
     """Check value of maintenance_mode on object"""
     representation = [get_object_represent(obj) for obj in adcm_object]
     with allure.step(
-            f'Check that "maintenance_mode" is equal to "{maintenance_mode}" '
-            f'on objects: {representation}'
+        f'Check that "maintenance_mode" is equal to "{maintenance_mode}" ' f'on objects: {representation}'
     ):
 
         for obj in adcm_object:
