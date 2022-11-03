@@ -51,6 +51,7 @@ class RBACBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-attri
             name="sample_cluster",
             version="1.0",
             display_name="Sample Cluster",
+            allow_maintenance_mode=True,
         )
         self.sp_1 = Prototype.objects.create(
             bundle=self.bundle_1,
@@ -58,6 +59,7 @@ class RBACBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-attri
             name="service_1",
             version="1.0",
             display_name="Service 1",
+            allow_maintenance_mode=True,
         )
 
         self.sp_2 = Prototype.objects.create(
@@ -75,6 +77,7 @@ class RBACBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-attri
             version="1.0",
             display_name="Component 1 from Service 1",
             parent=self.sp_1,
+            allow_maintenance_mode=True,
         )
         self.cop_12 = Prototype.objects.create(
             bundle=self.bundle_1,
@@ -101,8 +104,10 @@ class RBACBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-attri
             parent=self.sp_2,
         )
         self.bundle_2 = Bundle.objects.create(name="provider_bundle", version="1.0")
-        self.pp = Prototype.objects.create(bundle=self.bundle_2, type="provider", name="provider")
-        self.hp = Prototype.objects.create(bundle=self.bundle_2, type="host", name="host")
+        self.pp = Prototype.objects.create(
+            bundle=self.bundle_2, type="provider", name="provider", allow_maintenance_mode=True
+        )
+        self.hp = Prototype.objects.create(bundle=self.bundle_2, type="host", name="host", allow_maintenance_mode=True)
 
     def create_permissions(self):
         self.add_host_perm = cook_perm("add", "host")

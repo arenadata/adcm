@@ -24,7 +24,11 @@ from api.component.serializers import (
     ComponentUISerializer,
     StatusSerializer,
 )
-from api.utils import get_maintenance_mode_response, get_object_for_user
+from api.utils import (
+    check_custom_perm,
+    get_maintenance_mode_response,
+    get_object_for_user,
+)
 from audit.utils import audit
 from cm.models import Cluster, ClusterObject, HostComponent, ServiceComponent
 from cm.status_api import make_ui_component_status
@@ -74,13 +78,18 @@ class ComponentDetailView(PermissionListMixin, DetailView):
 
 class ComponentMaintenanceModeView(GenericUIView):
     queryset = ServiceComponent.objects.all()
+    permission_classes = (DjangoOnlyObjectPermissions,)
     serializer_class = ComponentChangeMaintenanceModeSerializer
     lookup_field = "id"
     lookup_url_kwarg = "component_id"
 
     @audit
     def post(self, request: Request, **kwargs) -> Response:
-        component = self.get_object()
+        component = get_object_for_user(
+            request.user, "cm.view_servicecomponent", ServiceComponent, id=kwargs["component_id"]
+        )
+        # pylint: disable=protected-access
+        check_custom_perm(request.user, "change_maintenance_mode", component._meta.model_name, component)
         serializer = self.get_serializer(instance=component, data=request.data)
         serializer.is_valid(raise_exception=True)
 

@@ -302,7 +302,9 @@ class HostMaintenanceModeView(GenericUIView):
 
     @audit
     def post(self, request: Request, **kwargs) -> Response:
-        host = self.get_object()
+        host = get_object_for_user(request.user, HOST_VIEW, Host, id=kwargs["host_id"])
+        # pylint: disable=protected-access
+        check_custom_perm(request.user, "change_maintenance_mode", host._meta.model_name, host)
         serializer = self.get_serializer(instance=host, data=request.data)
         serializer.is_valid(raise_exception=True)
 
