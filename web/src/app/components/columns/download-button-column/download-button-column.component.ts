@@ -17,7 +17,7 @@ export class DownloadButtonColumnComponent implements OnInit {
   ngOnInit(): void {}
 
   download() {
-    const isLoggedIn = this.auth.auth;
+    const isLoggedIn = this.auth.auth?.token !== '';
 
     if (isLoggedIn) {
       location.href = this.url;
