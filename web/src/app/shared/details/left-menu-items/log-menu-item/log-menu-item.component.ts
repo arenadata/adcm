@@ -31,21 +31,15 @@ export class LogMenuItemComponent extends MenuItemAbstractDirective<BaseEntity> 
   }
 
   download() {
-    const isLoggedIn = this.auth.auth;
-
-    if (isLoggedIn) {
-      if (this.data?.logId) {
-        const file = (this.entity as Job).log_files.find(job => job.id === this.data.logId);
-        if (file) {
-          location.href = file.download_url;
-        } else {
-          throw new Error('Log file not found!');
-        }
+    if (this.data?.logId) {
+      const file = (this.entity as Job).log_files.find(job => job.id === this.data.logId);
+      if (file) {
+        location.href = file.download_url;
       } else {
-        throw new Error('Log id isn\'t provided!');
+        throw new Error('Log file not found!');
       }
     } else {
-      window.location.href = "/login";
+      throw new Error('Log id isn\'t provided!');
     }
   }
 

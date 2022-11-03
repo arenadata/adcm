@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { Job } from "@app/core/types";
 import { AuthService } from "@app/core/auth/auth.service";
 
 @Component({
@@ -17,12 +16,6 @@ export class DownloadButtonColumnComponent implements OnInit {
   ngOnInit(): void {}
 
   download() {
-    const isLoggedIn = this.auth.auth?.token !== '';
-
-    if (isLoggedIn) {
-      location.href = this.url;
-    } else {
-      window.location.href = "/login";
-    }
+    location.href = this.url;
   }
 }
