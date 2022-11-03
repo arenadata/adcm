@@ -38,6 +38,7 @@ import { ConfigurationModule } from '../shared/configuration/configuration.modul
 import {
   RbacAuditOperationsHistoryFormComponent
 } from "../components/rbac/audit-operations-history-form/rbac-audit-operations-history-form.component";
+import { AuditLoginComponent } from './audit-login/audit-login.component';
 
 const routes: Routes = [
   {
@@ -111,7 +112,8 @@ const routes: Routes = [
     RolesComponent,
     PoliciesComponent,
     AuditOperationsComponent,
-    RbacAuditOperationsHistoryFormComponent
+    RbacAuditOperationsHistoryFormComponent,
+    AuditLoginComponent
   ],
 })
 export class AdminModule {

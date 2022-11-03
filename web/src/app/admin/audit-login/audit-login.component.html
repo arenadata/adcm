@@ -1,0 +1,14 @@
+<app-filter [filterList]="auditLoginFilters" [externalData]="data$" [innerData]="filteredData$"></app-filter>
+
+<adwp-list
+  [columns]="listColumns"
+  [dataSource]="filteredData$ | async"
+  [paging]="paging | async"
+  [sort]="sorting | async"
+  [defaultSort]="defaultSort"
+  (auxclickRow)="auxclickRow($event)"
+  (changePaging)="onChangePaging($event)"
+  (changeSort)="onChangeSort($event)"
+  (chooseAll)="chooseAll($event)"
+></adwp-list>
+<p>audit-login works!</p>
