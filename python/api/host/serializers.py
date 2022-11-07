@@ -115,6 +115,7 @@ class HostAuditSerializer(ModelSerializer):
         fields = (
             "fqdn",
             "description",
+            "maintenance_mode",
         )
 
 

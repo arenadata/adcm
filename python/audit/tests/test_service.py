@@ -88,7 +88,11 @@ class TestService(BaseTestCase):
         operation_type: AuditLogOperationType,
         operation_result: AuditLogOperationResult,
         user: User,
+        object_changes: dict | None = None,
     ):
+        if object_changes is None:
+            object_changes = {}
+
         self.assertEqual(log.audit_object.object_id, obj.pk)
         self.assertEqual(log.audit_object.object_name, obj_name)
         self.assertEqual(log.audit_object.object_type, object_type)
@@ -98,7 +102,7 @@ class TestService(BaseTestCase):
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
-        self.assertEqual(log.object_changes, {})
+        self.assertEqual(log.object_changes, object_changes)
 
     def check_action_log(self, log: AuditLog) -> None:
         self.check_log(
@@ -646,6 +650,7 @@ class TestService(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
+            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
         )
 
     def test_change_maintenance_mode_via_cluster(self):
@@ -668,6 +673,7 @@ class TestService(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
+            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
         )
 
     def test_change_maintenance_mode_failed(self):

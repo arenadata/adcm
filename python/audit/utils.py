@@ -30,7 +30,9 @@ from rest_framework.status import (
 from rest_framework.viewsets import ModelViewSet
 
 from api.cluster.serializers import ClusterAuditSerializer
+from api.component.serializers import ComponentAuditSerializer
 from api.host.serializers import HostAuditSerializer
+from api.service.serializers import ServiceAuditSerializer
 from audit.cases.cases import get_audit_operation_and_object
 from audit.cef_logger import cef_logger
 from audit.models import (
@@ -123,6 +125,10 @@ def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
         serializer_class = ClusterAuditSerializer
     elif isinstance(current_obj, Host):
         serializer_class = HostAuditSerializer
+    elif isinstance(current_obj, ClusterObject):
+        serializer_class = ServiceAuditSerializer
+    elif isinstance(current_obj, ServiceComponent):
+        serializer_class = ComponentAuditSerializer
 
     if not serializer_class:
         return {}
@@ -146,37 +152,43 @@ def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
 
 
 def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | None, Model | None]:
+    # pylint: disable=too-many-branches
+
     prev_data = None
     current_obj = None
     serializer_class = None
-    model = None
     pk = None
 
     if isinstance(view, ModelViewSet) and view.action in {"update", "partial_update"} and view.kwargs.get("pk"):
         pk = view.kwargs["pk"]
         if view.__class__.__name__ == "GroupViewSet":
             serializer_class = GroupAuditSerializer
-            model = Group
         elif view.__class__.__name__ == "RoleViewSet":
             serializer_class = RoleAuditSerializer
-            model = Role
         elif view.__class__.__name__ == "UserViewSet":
             serializer_class = UserAuditSerializer
-            model = User
         elif view.__class__.__name__ == "PolicyViewSet":
             serializer_class = PolicyAuditSerializer
-            model = Policy
     elif view.request.method in {"PATCH", "PUT"}:
         if view.__class__.__name__ == "ClusterDetail":
             serializer_class = ClusterAuditSerializer
             pk = view.kwargs["cluster_id"]
-            model = Cluster
         elif view.__class__.__name__ == "HostDetail":
             serializer_class = HostAuditSerializer
             pk = view.kwargs["host_id"]
-            model = Host
+    elif view.request.method == "POST":
+        if view.__class__.__name__ == "ServiceMaintenanceModeView":
+            serializer_class = ServiceAuditSerializer
+            pk = view.kwargs["service_id"]
+        elif view.__class__.__name__ == "HostMaintenanceModeView":
+            serializer_class = HostAuditSerializer
+            pk = view.kwargs["host_id"]
+        elif view.__class__.__name__ == "ComponentMaintenanceModeView":
+            serializer_class = ComponentAuditSerializer
+            pk = view.kwargs["component_id"]
 
     if serializer_class:
+        model = view.get_queryset().model
         current_obj = model.objects.filter(pk=pk).first()
         prev_data = serializer_class(model.objects.filter(pk=pk).first()).data
 

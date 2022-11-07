@@ -100,6 +100,7 @@ class TestHost(BaseTestCase):
     ) -> None:
         if object_changes is None:
             object_changes = {}
+
         if user is None:
             user = self.test_user
 
@@ -595,7 +596,11 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_host_updated_log(log=log, operation_name="Host updated")
+        self.check_host_updated_log(
+            log=log,
+            operation_name="Host updated",
+            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
+        )
 
     def test_change_maintenance_mode_via_cluster(self):
         self.client.post(
@@ -608,7 +613,11 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_host_updated_log(log=log, operation_name="Host updated")
+        self.check_host_updated_log(
+            log=log,
+            operation_name="Host updated",
+            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
+        )
 
     def test_change_maintenance_mode_via_provider(self):
         self.client.post(
@@ -621,7 +630,11 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_host_updated_log(log=log, operation_name="Host updated")
+        self.check_host_updated_log(
+            log=log,
+            operation_name="Host updated",
+            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
+        )
 
     def test_change_maintenance_mode_failed(self):
         self.client.post(
