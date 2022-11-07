@@ -25,6 +25,7 @@
                      "version": "2.3",
                      "state": "created",
                      "multi_state": [],
+                     "maintenance_mode": false,
                      "config": {
                         "somestring": null,
                         "someint": 12
@@ -36,7 +37,8 @@
                            "someint": 12
                         },
                         "state": "created",
-                        "multi_state": []
+                        "multi_state": [],
+                        "maintenance_mode": false
                      }
                   }
                }

@@ -57,10 +57,12 @@
                 "svc-w-installed": 222,
                 "svc-read-only": 2.5
               },
+              "maintenance_mode": false,
               "GROUP_BUDDY": {
                 "component_id": 1,
                 "state": "created",
                 "multi_state": [],
+                "maintenance_mode": false,
                 "config": {
                   "__main_info": "I'm a very important string, don't touch me",
                   "simple_field": 1,
@@ -90,7 +92,8 @@
                   "sc-file-type": null
                 },
                 "state": "created",
-                "multi_state": []
+                "multi_state": [],
+                "maintenance_mode": false
               },
               "ZOOKEEPER_SERVER": {
                 "component_id": 3,
@@ -108,7 +111,8 @@
                 "state": "created",
                 "multi_state": [
                   "component_multi_state"
-                ]
+                ],
+                "maintenance_mode": false
               }
             }
           }
@@ -150,7 +154,8 @@
                     }
                   },
                   "state": "created",
-                  "multi_state": []
+                  "multi_state": [],
+                  "maintenance_mode": false
                 },
                 "ZOOKEEPER_CLIENT": {
                   "component_id": 2,
@@ -170,7 +175,8 @@
                     "sc-file-type": null
                   },
                   "state": "created",
-                  "multi_state": []
+                  "multi_state": [],
+                  "maintenance_mode": false
                 },
                 "ZOOKEEPER_SERVER": {
                   "component_id": 3,
@@ -188,8 +194,10 @@
                   "state": "created",
                   "multi_state": [
                     "component_multi_state"
-                  ]
-                }
+                  ],
+                  "maintenance_mode": false
+                },
+                "maintenance_mode": false
               }
             }
           }
