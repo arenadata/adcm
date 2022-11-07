@@ -32,6 +32,7 @@ BUNDLES_DIR = Path(os.path.dirname(__file__)) / 'bundles'
 
 MM_IS_ON = "ON"
 MM_IS_OFF = "OFF"
+MM_IS_CHANGING = "CHANGING"
 MM_ALLOWED = True
 MM_NOT_ALLOWED = False
 
@@ -87,7 +88,7 @@ def cluster_without_mm(request, sdk_client_fs: ADCMClient):
 
 
 def set_maintenance_mode(
-    api_client: APIClient, adcm_object: Host | Service | Component, maintenance_mode: bool
+    api_client: APIClient, adcm_object: Host | Service | Component, maintenance_mode: bool, expect_code=200
 ) -> None:
     """Change maintenance mode on ADCM objects"""
     if isinstance(adcm_object, Service):
@@ -98,7 +99,7 @@ def set_maintenance_mode(
         client = api_client.host
     representation = get_object_represent(adcm_object)
     with allure.step(f'Turn MM to mode {maintenance_mode} on object {representation}'):
-        client.change_maintenance_mode(adcm_object.id, maintenance_mode).check_code(200)
+        client.change_maintenance_mode(adcm_object.id, maintenance_mode).check_code(expect_code)
         adcm_object.reread()
         assert (actual_mm := adcm_object.maintenance_mode) == maintenance_mode, (
             f'Maintenance mode of object {representation} should be {maintenance_mode},' f' not {actual_mm}'
