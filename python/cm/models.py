@@ -752,7 +752,7 @@ class ClusterObject(ADCMEntity):
 
     @property
     def maintenance_mode(self) -> MaintenanceMode.choices:
-        if self._maintenance_mode == MaintenanceMode.ON:
+        if self._maintenance_mode != MaintenanceMode.OFF:
             return self._maintenance_mode
 
         service_components = ServiceComponent.objects.filter(service=self)
@@ -854,7 +854,7 @@ class ServiceComponent(ADCMEntity):
 
     @property
     def maintenance_mode(self) -> MaintenanceMode.choices:
-        if self._maintenance_mode == MaintenanceMode.ON:
+        if self._maintenance_mode != MaintenanceMode.OFF:
             return self._maintenance_mode
 
         if self.service.maintenance_mode_attr == MaintenanceMode.ON:
