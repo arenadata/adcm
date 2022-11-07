@@ -47,14 +47,7 @@ def cluster_with_mm(sdk_client_fs: ADCMClient) -> Cluster:
     return cluster
 
 
-def _get_status_changing(api_client: APIClient, adcm_object: Service | Component, maintenance_mode: str) -> None:
-    """Try to change maintenance mode on ADCM objects and catch mode CHANGING"""
-    client = api_client.service if isinstance(adcm_object, Service) else api_client.component
-    client.change_maintenance_mode(adcm_object.id, maintenance_mode).check_code(200)
-    adcm_object.reread()
-
-
-def test_get_state_calculation_mode_service(api_client, cluster_with_mm):
+def test_state_calculation_mode_service(api_client, cluster_with_mm):
     """Test to check CHANGING mode for service when object changes his maintenance mode"""
     first_service = cluster_with_mm.service(name=DEFAULT_SERVICE_NAME)
     second_service = cluster_with_mm.service_add(name=ANOTHER_SERVICE_NAME)
@@ -63,17 +56,17 @@ def test_get_state_calculation_mode_service(api_client, cluster_with_mm):
 
     check_mm_is(MM_IS_OFF, first_service, second_service, first_component, second_component)
     with allure.step('Check service action maintenance mode set maintenance mode to CHANGING value'):
-        _get_status_changing(api_client, second_service, MM_IS_ON)
+        _status_changing(api_client, second_service, MM_IS_ON)
         check_mm_is(MM_IS_CHANGING, second_service)
         check_mm_is(MM_IS_OFF, first_service, first_component, second_component)
 
     with allure.step('Check CHANGING mode on service does not change other objects on service'):
-        _get_status_changing(api_client, first_service, MM_IS_ON)
+        _status_changing(api_client, first_service, MM_IS_ON)
         check_mm_is(MM_IS_CHANGING, first_service, second_service)
         check_mm_is(MM_IS_OFF, first_component, second_component)
 
 
-def test_get_state_calculation_mode_component(api_client, cluster_with_mm):
+def test_state_calculation_mode_component(api_client, cluster_with_mm):
     """Test to check CHANGING mode for component when object changes his maintenance mode"""
     first_service = cluster_with_mm.service(name=DEFAULT_SERVICE_NAME)
     second_service = cluster_with_mm.service_add(name=ANOTHER_SERVICE_NAME)
@@ -82,11 +75,18 @@ def test_get_state_calculation_mode_component(api_client, cluster_with_mm):
 
     check_mm_is(MM_IS_OFF, first_service, second_service, first_component, second_component)
     with allure.step('Check component action maintenance mode set maintenance mode to CHANGING value'):
-        _get_status_changing(api_client, first_component, MM_IS_ON)
+        _status_changing(api_client, first_component, MM_IS_ON)
         check_mm_is(MM_IS_CHANGING, first_component)
         check_mm_is(MM_IS_OFF, first_service, second_service, second_component)
 
     with allure.step('Check CHANGING mode on component does not change other objects in cluster'):
-        _get_status_changing(api_client, second_component, MM_IS_ON)
+        _status_changing(api_client, second_component, MM_IS_ON)
         check_mm_is(MM_IS_CHANGING, first_component, second_component)
         check_mm_is(MM_IS_OFF, first_service, second_service)
+
+
+def _status_changing(api_client: APIClient, adcm_object: Service | Component, maintenance_mode: str) -> None:
+    """Try to change maintenance mode on ADCM objects and catch mode CHANGING"""
+    client = api_client.service if isinstance(adcm_object, Service) else api_client.component
+    client.change_maintenance_mode(adcm_object.id, maintenance_mode).check_code(200)
+    adcm_object.reread()
