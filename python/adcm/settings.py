@@ -56,9 +56,7 @@ if SECRETS_FILE.is_file():
         ANSIBLE_SECRET = data["adcmuser"]["password"]
         # workaround to insert `adcm_internal_token` into existing SECRETS_FILE after startup
         if data.get("adcm_internal_token") is None:
-            dict_json_get_or_create(
-                path=SECRETS_FILE, field="adcm_internal_token", value=ADCM_TOKEN
-            )
+            dict_json_get_or_create(path=SECRETS_FILE, field="adcm_internal_token", value=ADCM_TOKEN)
 
 else:
     STATUS_SECRET_KEY = ""
