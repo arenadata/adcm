@@ -140,3 +140,9 @@ class ComponentChangeMaintenanceModeSerializer(ModelSerializer):
     class Meta:
         model = ServiceComponent
         fields = ("maintenance_mode",)
+
+
+class ComponentAuditSerializer(ModelSerializer):
+    class Meta:
+        model = ServiceComponent
+        fields = ("maintenance_mode",)

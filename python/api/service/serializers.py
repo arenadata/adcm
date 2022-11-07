@@ -217,3 +217,9 @@ class ServiceChangeMaintenanceModeSerializer(ModelSerializer):
     class Meta:
         model = ClusterObject
         fields = ("maintenance_mode",)
+
+
+class ServiceAuditSerializer(ModelSerializer):
+    class Meta:
+        model = ClusterObject
+        fields = ("maintenance_mode",)

@@ -76,7 +76,11 @@ class TestComponent(BaseTestCase):
         operation_result: AuditLogOperationResult = AuditLogOperationResult.Success,
         user: User | None = None,
         operation_name: str = "Component configuration updated",
+        object_changes: dict | None = None,
     ):
+        if object_changes is None:
+            object_changes = {}
+
         if user is None:
             user = self.test_user
 
@@ -92,7 +96,7 @@ class TestComponent(BaseTestCase):
         self.assertEqual(log.operation_result, operation_result)
         self.assertEqual(log.user.pk, user.pk)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.object_changes, {})
+        self.assertEqual(log.object_changes, object_changes)
 
     def check_action_log(self, log: AuditLog) -> None:
         self.assertEqual(log.audit_object.object_id, self.component.pk)
@@ -291,6 +295,7 @@ class TestComponent(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Component updated",
+            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
         )
 
     def test_change_maintenance_mode_via_service(self):
@@ -307,6 +312,7 @@ class TestComponent(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Component updated",
+            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
         )
 
     def test_change_maintenance_mode_via_cluster(self):
@@ -327,6 +333,7 @@ class TestComponent(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Component updated",
+            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
         )
 
     def test_change_maintenance_mode_failed(self):
