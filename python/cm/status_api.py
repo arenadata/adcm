@@ -64,7 +64,7 @@ def api_request(method, url, data=None):
     kwargs = {
         "headers": {
             "Content-Type": "application/json",
-            "Authorization": f"Token {settings.STATUS_SECRET_KEY}",
+            "Authorization": f"Token {settings.ADCM_TOKEN}",
         },
         "timeout": TIMEOUT,
     }
@@ -111,7 +111,7 @@ def set_obj_state(obj_type, obj_id, state):
     if obj_type == "adcm":
         return None
     if obj_type not in ("cluster", "service", "host", "provider", "component"):
-        logger.error('Unknown object type: "%s"', obj_type)
+        logger.error("Unknown object type: '%s'", obj_type)
         return None
     return post_event("change_state", obj_type, obj_id, "state", state)
 
@@ -120,7 +120,7 @@ def change_obj_multi_state(obj_type, obj_id, multi_state):
     if obj_type == "adcm":
         return None
     if obj_type not in ("cluster", "service", "host", "provider", "component"):
-        logger.error('Unknown object type: "%s"', obj_type)
+        logger.error("Unknown object type: '%s'", obj_type)
         return None
     return post_event("change_state", obj_type, obj_id, "multi_state", multi_state)
 

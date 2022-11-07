@@ -84,7 +84,7 @@ func (api *AdcmApi) getToken() (string, bool) {
 
 func (api *AdcmApi) checkAuth(token string) bool {
 	client := api.getClient()
-	req, _ := http.NewRequest("GET", api.Url+"/stack/", nil)
+	req, _ := http.NewRequest("GET", api.Url+"/rbac/me/", nil)
 	req.Header.Add("Authorization", "Token "+token)
 	//logg.D.f("checkAuth: client %+v, request %+v", client, req)
 	resp, err := client.Do(req)
