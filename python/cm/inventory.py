@@ -131,6 +131,7 @@ def get_service_variables(service: ClusterObject, service_config: dict = None):
         "state": service.state,
         "multi_state": service.multi_state,
         "config": service_config or get_obj_config(service),
+        MAINTENANCE_MODE: service.maintenance_mode == MaintenanceMode.ON,
     }
 
 
@@ -140,6 +141,7 @@ def get_component_variables(component: ServiceComponent, component_config: dict 
         "config": component_config or get_obj_config(component),
         "state": component.state,
         "multi_state": component.multi_state,
+        MAINTENANCE_MODE: component.maintenance_mode == MaintenanceMode.ON,
     }
 
 
@@ -271,7 +273,7 @@ def get_host_groups(cluster: Cluster, delta: dict, action_host: Host | None = No
             for fqdn in delta[htype][key]:
                 host = delta[htype][key][fqdn]
                 # TODO: What is `delta`? Need calculate delta for group_config?
-                if not host.maintenance_mode:
+                if host.maintenance_mode != MaintenanceMode.ON:
                     groups[lkey]["hosts"][host.fqdn] = get_obj_config(host)
 
     return groups
