@@ -168,6 +168,6 @@ func (w *fileWriter) ReopenLogFile() {
 
 	w.fp, err = os.OpenFile(w.filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-	    log.Fatalf("error opening log file %s: %v", w.filename, err)
+		log.Fatalf("error opening log file %s: %v", w.filename, err)
 	}
 }

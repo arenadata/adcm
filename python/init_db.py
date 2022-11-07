@@ -12,9 +12,9 @@
 # limitations under the License.
 
 import json
-import random
-import string
 from itertools import chain
+from secrets import token_hex
+from typing import Optional, Tuple
 
 from django.conf import settings
 
@@ -35,22 +35,34 @@ from cm.models import (
 from cm.status_api import Event
 from rbac.models import User
 
-
-def random_string(strlen=10):
-    return "".join([random.choice(string.ascii_letters) for _ in range(strlen)])
+TOKEN_LENGTH = 20
 
 
-def create_status_user():
+def prepare_secrets_json(status_user_username: str, status_user_password: Optional[str]) -> None:
+    # we need to know status user's password to write it to secrets.json [old implementation]
+    if not settings.SECRETS_FILE.is_file() and status_user_username is not None:
+        with open(settings.SECRETS_FILE, "w", encoding=settings.ENCODING_UTF_8) as f:
+            json.dump(
+                {
+                    "adcmuser": {"user": status_user_username, "password": status_user_password},
+                    "token": token_hex(TOKEN_LENGTH),
+                    "adcm_internal_token": settings.ADCM_TOKEN,
+                },
+                f,
+            )
+        logger.info("Update secret file %s OK", settings.SECRETS_FILE)
+    else:
+        logger.info("Secret file %s is not updated", settings.SECRETS_FILE)
+
+
+def create_status_user() -> Tuple[str, Optional[str]]:
     username = "status"
     if User.objects.filter(username=username).exists():
-        return
+        return username, None
 
-    password = random_string(40)
-    token = random_string(40)
+    password = token_hex(TOKEN_LENGTH)
     User.objects.create_superuser(username, "", password, built_in=True)
-    with open(settings.SECRETS_FILE, "w", encoding=settings.ENCODING_UTF_8) as f:
-        json.dump({"adcmuser": {"user": username, "password": password}, "token": token}, f)
-    logger.info("Update secret file %s OK", settings.SECRETS_FILE)
+    return username, password
 
 
 def create_dummy_data():
@@ -82,7 +94,8 @@ def init():
     logger.info("Start initializing ADCM DB...")
     if not User.objects.filter(username="admin").exists():
         User.objects.create_superuser("admin", "admin@example.com", "admin", built_in=True)
-    create_status_user()
+    status_user_username, status_user_password = create_status_user()
+    prepare_secrets_json(status_user_username, status_user_password)
     if not User.objects.filter(username="system").exists():
         User.objects.create_superuser("system", "", None, built_in=True)
         logger.info("Create system user")
