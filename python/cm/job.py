@@ -457,9 +457,7 @@ def cook_script(action: Action, sub_action: SubAction):
 
 
 def get_adcm_config():
-    adcm_ = ADCM.obj.get()
-
-    return get_obj_config(adcm_)
+    return get_obj_config(ADCM.obj.get())
 
 
 def get_actual_hc(cluster: Cluster):
