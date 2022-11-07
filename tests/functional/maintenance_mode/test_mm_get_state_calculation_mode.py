@@ -54,8 +54,7 @@ def _get_status_changing(api_client: APIClient, adcm_object: Service | Component
     adcm_object.reread()
 
 
-# pylint: disable-next=too-many-arguments
-def test_get_state_calculation_mode_service(sdk_client_fs, api_client, cluster_with_mm):
+def test_get_state_calculation_mode_service(api_client, cluster_with_mm):
     """Test to check CHANGING mode for service when object changes his maintenance mode"""
     first_service = cluster_with_mm.service(name=DEFAULT_SERVICE_NAME)
     second_service = cluster_with_mm.service_add(name=ANOTHER_SERVICE_NAME)
@@ -74,7 +73,7 @@ def test_get_state_calculation_mode_service(sdk_client_fs, api_client, cluster_w
         check_mm_is(MM_IS_OFF, first_component, second_component)
 
 
-def test_get_state_calculation_mode_component(sdk_client_fs, api_client, cluster_with_mm):
+def test_get_state_calculation_mode_component(api_client, cluster_with_mm):
     """Test to check CHANGING mode for component when object changes his maintenance mode"""
     first_service = cluster_with_mm.service(name=DEFAULT_SERVICE_NAME)
     second_service = cluster_with_mm.service_add(name=ANOTHER_SERVICE_NAME)
