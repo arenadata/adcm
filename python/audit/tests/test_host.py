@@ -73,7 +73,7 @@ class TestHost(BaseTestCase):
         self.host_created_str = "Host created"
         self.action_display_name = "test_host_action"
         self.cluster = Cluster.objects.create(
-            prototype=Prototype.objects.create(bundle=self.bundle, type="cluster"),
+            prototype=Prototype.objects.create(bundle=self.bundle, type="cluster", allow_maintenance_mode=True),
             name="test_cluster",
         )
 
@@ -588,6 +588,9 @@ class TestHost(BaseTestCase):
         self.check_action_log(log=log)
 
     def test_change_maintenance_mode(self):
+        self.host.cluster = self.cluster
+        self.host.save(update_fields=["cluster"])
+
         self.client.post(
             path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
@@ -598,6 +601,9 @@ class TestHost(BaseTestCase):
         self.check_host_updated_log(log=log, operation_name="Host updated")
 
     def test_change_maintenance_mode_via_cluster(self):
+        self.host.cluster = self.cluster
+        self.host.save(update_fields=["cluster"])
+
         self.client.post(
             path=reverse(
                 "host-maintenance-mode",
@@ -611,6 +617,9 @@ class TestHost(BaseTestCase):
         self.check_host_updated_log(log=log, operation_name="Host updated")
 
     def test_change_maintenance_mode_via_provider(self):
+        self.host.cluster = self.cluster
+        self.host.save(update_fields=["cluster"])
+
         self.client.post(
             path=reverse(
                 "host-maintenance-mode",

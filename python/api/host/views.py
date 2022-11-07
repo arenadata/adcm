@@ -21,6 +21,7 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
+    HTTP_409_CONFLICT,
 )
 
 from api.base_view import DetailView, GenericUIView, PaginatedView
@@ -223,14 +224,6 @@ class HostDetail(PermissionListMixin, DetailView):
     lookup_url_kwarg = "host_id"
     error_code = "HOST_NOT_FOUND"
 
-    @staticmethod
-    def _check_maintenance_mode_constraint(host: Host, new_mode: MaintenanceMode.choices) -> None:
-        if host.maintenance_mode == new_mode:
-            return
-
-        if not host.is_maintenance_mode_available:
-            raise AdcmEx("MAINTENANCE_MODE_NOT_AVAILABLE")
-
     def _update_host_object(
         self,
         request,
@@ -253,9 +246,6 @@ class HostDetail(PermissionListMixin, DetailView):
         )
 
         serializer.is_valid(raise_exception=True)
-        if "maintenance_mode" in serializer.validated_data:
-            self._check_maintenance_mode_constraint(host, serializer.validated_data.get("maintenance_mode"))
-
         if "fqdn" in request.data and request.data["fqdn"] != host.fqdn and (host.cluster or host.state != "created"):
             raise AdcmEx("HOST_UPDATE_ERROR")
 
@@ -303,10 +293,16 @@ class HostMaintenanceModeView(GenericUIView):
     @audit
     def post(self, request: Request, **kwargs) -> Response:
         host = get_object_for_user(request.user, HOST_VIEW, Host, id=kwargs["host_id"])
-        # pylint: disable=protected-access
-        check_custom_perm(request.user, "change_maintenance_mode", host._meta.model_name, host)
+
+        check_custom_perm(request.user, "change_maintenance_mode", Host.__name__.lower(), host)
+
         serializer = self.get_serializer(instance=host, data=request.data)
         serializer.is_valid(raise_exception=True)
+        if (
+            serializer.validated_data.get("maintenance_mode") == MaintenanceMode.ON
+            and not host.is_maintenance_mode_available
+        ):
+            return Response(data="MAINTENANCE_MODE_NOT_AVAILABLE", status=HTTP_409_CONFLICT)
 
         return get_maintenance_mode_response(obj=host, serializer=serializer)
 

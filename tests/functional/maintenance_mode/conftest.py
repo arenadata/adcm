@@ -18,7 +18,7 @@ conftest.py for maintenance mode related tests
 
 import os
 from pathlib import Path
-from typing import Iterable, Set, Tuple
+from typing import Iterable, Literal, Set, Tuple
 
 import allure
 import pytest
@@ -115,14 +115,33 @@ def turn_mm_on(api_client: APIClient, host: Host):
         ) == MM_IS_ON, f'Maintenance mode of host {host.fqdn} should be {MM_IS_ON}, not {actual_mm}'
 
 
-def turn_mm_off(api_client: APIClient, host: Host):
+def turn_mm_off(api_client: APIClient, host: Host, expected_code: int = 200):
     """Turn maintenance mode "off" on host"""
     with allure.step(f'Turn MM "off" on host {host.fqdn}'):
-        api_client.host.change_maintenance_mode(host.id, MM_IS_OFF).check_code(200)
+        api_client.host.change_maintenance_mode(host.id, MM_IS_OFF).check_code(expected_code)
         host.reread()
         assert (
             actual_mm := host.maintenance_mode
         ) == MM_IS_OFF, f'Maintenance mode of host {host.fqdn} should be {MM_IS_OFF}, not {actual_mm}'
+
+
+def expect_changing_mm_fail(
+    api_client: APIClient, object_with_mm: Host | Service | Component, new_mm: Literal["ON", "OFF"]
+) -> None:
+    """
+    Check that changing MM is disallowed on object.
+    Be careful with CHANGING status.
+    """
+    object_with_mm.reread()
+    previous_mm = object_with_mm.maintenance_mode
+    object_represent = get_object_represent(object_with_mm)
+    with allure.step(f'Check setting MM "{new_mm}" on "{object_represent}" will fail'):
+        api_node = getattr(api_client, object_with_mm.__class__.__name__.lower())
+        api_node.change_maintenance_mode(object_with_mm.id, new_mm).check_code(409)
+        object_with_mm.reread()
+        assert (
+            actual_mm := object_with_mm.maintenance_mode
+        ) == previous_mm, f'Maintenance mode of "{object_represent}" should stay {previous_mm}, not become {actual_mm}'
 
 
 def add_hosts_to_cluster(cluster: Cluster, hosts: Iterable[Host]):

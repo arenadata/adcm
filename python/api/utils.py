@@ -30,7 +30,7 @@ from rest_framework.status import (
 
 from cm.api import load_host_map
 from cm.errors import AdcmEx
-from cm.issue import update_hierarchy_issues
+from cm.issue import update_hierarchy_issues, update_issue_after_deleting
 from cm.job import start_task
 from cm.models import (
     Action,
@@ -204,6 +204,7 @@ def get_maintenance_mode_response(obj: Host | ClusterObject | ServiceComponent, 
 
         serializer.save()
         update_hierarchy_issues(obj.cluster)
+        update_issue_after_deleting()
         load_host_map()
 
         return Response()
