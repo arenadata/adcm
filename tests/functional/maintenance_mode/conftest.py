@@ -32,6 +32,7 @@ BUNDLES_DIR = Path(os.path.dirname(__file__)) / 'bundles'
 
 MM_IS_ON = "ON"
 MM_IS_OFF = "OFF"
+MM_IS_CHANGING = "CHANGING"
 MM_ALLOWED = True
 MM_NOT_ALLOWED = False
 
