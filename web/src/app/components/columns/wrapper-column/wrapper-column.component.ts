@@ -17,14 +17,15 @@ export class WrapperColumnComponent implements OnInit {
 
   row: any;
   column: any;
-  red: string[] = ['delete', 'fail'];
+  customColumnName: string;
+  red: string[] = ['delete', 'fail', 'wrong password'];
   orange: string[] = ['update', 'denied'];
   green: string[] = ['create', 'success'];
 
   constructor() { }
 
   get columnName(): string {
-    return this.column?.label?.toLowerCase()?.replace(' ', '_');
+    return this.customColumnName || this.column?.label?.toLowerCase()?.replace(' ', '_');
   }
 
   ngOnInit(): void {}

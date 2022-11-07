@@ -1,4 +1,4 @@
-import { Component, ComponentRef, Type, ViewChild } from '@angular/core';
+import { Component, ComponentRef, ViewChild } from '@angular/core';
 import { ADD_SERVICE_PROVIDER } from "../../shared/add-component/add-service-model";
 import { IColumns } from "@adwp-ui/widgets";
 import { TypeName } from "../../core/types";
@@ -32,16 +32,17 @@ export class AuditLoginComponent extends RbacEntityListDirective<RbacAuditLoginM
       label: 'Login',
       headerClassName: 'width30pr',
       className: 'width30pr',
-      value: (row) => row.login,
+      value: (row) => row.login_details.username
     },
     {
       label: 'Result',
       type: 'component',
-      headerClassName: 'width100',
-      className: 'width100',
+      headerClassName: 'width30pr',
+      className: 'width30pr',
       component: WrapperColumnComponent,
       instanceTaken: (componentRef: ComponentRef<WrapperColumnComponent>) => {
         componentRef.instance.type = ['color'];
+        componentRef.instance.customColumnName = 'login_result';
       }
     },
     {
@@ -58,45 +59,17 @@ export class AuditLoginComponent extends RbacEntityListDirective<RbacAuditLoginM
 
   auditLoginFilters: IFilter[] = [
     {
-      id: 1, name: 'username', display_name: 'Username', filter_field: 'username', filter_type: 'input',
+      id: 1, name: 'login', display_name: 'Login', filter_field: 'login', filter_type: 'input',
     },
     {
-      id: 2, name: 'object_name', display_name: 'Object name', filter_field: 'object_name', filter_type: 'input',
-    },
-    {
-      id: 3, name: 'object_type', display_name: 'Object type', filter_field: 'object_type', filter_type: 'list',
-      options: [
-        {id: 1, name: 'adcm', display_name: 'Adcm', value: 'adcm'},
-        {id: 2, name: 'bundle', display_name: 'Bundle', value: 'bundle'},
-        {id: 3, name: 'cluster', display_name: 'Cluster', value: 'cluster'},
-        {id: 4, name: 'component', display_name: 'Component', value: 'component'},
-        {id: 5, name: 'group', display_name: 'Group', value: 'group'},
-        {id: 6, name: 'host', display_name: 'Host', value: 'host'},
-        {id: 7, name: 'policy', display_name: 'Policy', value: 'policy'},
-        {id: 8, name: 'provider', display_name: 'Provider', value: 'provider'},
-        {id: 9, name: 'role', display_name: 'Role', value: 'role'},
-        {id: 10, name: 'service', display_name: 'Service', value: 'service'},
-        {id: 11, name: 'user', display_name: 'User', value: 'user'},
-      ]
-    },
-    {
-      id: 4, name: 'operation_type', display_name: 'Operation type', filter_field: 'operation_type', filter_type: 'list',
-      options: [
-        {id: 1, name: 'create', display_name: 'Create', value: 'create'},
-        {id: 2, name: 'update', display_name: 'Update', value: 'update'},
-        {id: 3, name: 'delete', display_name: 'Delete', value: 'delete'},
-      ]
-    },
-    {
-      id: 5, name: 'operation_result', display_name: 'Operation result', filter_field: 'operation_result', filter_type: 'list',
+      id: 2, name: 'login_result', display_name: 'Result', filter_field: 'login_result', filter_type: 'list',
       options: [
         {id: 1, name: 'success', display_name: 'Success', value: 'success'},
-        {id: 2, name: 'fail', display_name: 'Fail', value: 'fail'},
-        {id: 3, name: 'denied', display_name: 'Denied', value: 'denied'},
+        {id: 2, name: 'wrong password', display_name: 'Wrong password', value: 'wrong password'},
       ]
     },
     {
-      id: 6, name: 'operation_time', display_name: 'Operation time', filter_field: 'operation_time', filter_type: 'datepicker',
+      id: 3, name: 'login_time', display_name: 'Login time', filter_field: 'login_time', filter_type: 'datepicker',
     },
   ];
 
@@ -112,7 +85,7 @@ export class AuditLoginComponent extends RbacEntityListDirective<RbacAuditLoginM
   }
 
   getTitle(row: RbacAuditLoginModel): string {
-    return row.login;
+    return row.login_details.username;
   }
 
 }

@@ -65,6 +65,7 @@ import { UpgradeMasterConfigComponent } from "@app/shared/components/upgrades/ma
 import { RbacAuditOperationsService } from "@app/services/rbac-audit-operations.service";
 import { HistoryColumnComponent } from "@app/components/columns/history-column/history-column.component";
 import { WrapperColumnComponent } from "@app/components/columns/wrapper-column/wrapper-column.component";
+import { RbacAuditLoginService } from "@app/services/rbac-audit-login.service";
 
 @NgModule({
   imports: [
@@ -163,8 +164,8 @@ import { WrapperColumnComponent } from "@app/components/columns/wrapper-column/w
     RbacRoleService,
     RbacPolicyService,
     RbacAuditOperationsService,
+    RbacAuditLoginService,
     RbacObjectCandidateService,
   ],
 })
-export class SharedModule {
-}
+export class SharedModule {}
