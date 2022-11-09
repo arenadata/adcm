@@ -17,14 +17,14 @@
   allow_maintenance_mode: true
 
   actions: &actions
-    turn_on_maintenance_mode:
+    adcm_turn_on_maintenance_mode:
       type: job
       script: ./actions.yaml
       script_type: ansible
       states:
         available: any
 
-    turn_off_maintenance_mode:
+    adcm_turn_off_maintenance_mode:
       type: job
       script: ./actions.yaml
       script_type: ansible
