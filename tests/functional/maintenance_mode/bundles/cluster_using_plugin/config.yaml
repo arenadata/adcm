@@ -16,7 +16,7 @@
   allow_maintenance_mode: true
 
   actions:
-    host_turn_on_maintenance_mode: &host-action
+    adcm_host_turn_on_maintenance_mode: &host-action
       type: job
       script: ./host-mm.yaml
       script_type: ansible
@@ -26,7 +26,7 @@
       params:
         ansible_tags: turn_on
 
-    host_turn_off_maintenance_mode:
+    adcm_host_turn_off_maintenance_mode:
       <<: *host-action
       script: ./host-mm.yaml
       params:
@@ -38,7 +38,7 @@
   name: service_with_mm_plugin
 
   actions:
-    turn_on_maintenance_mode: &action
+    adcm_turn_on_maintenance_mode: &action
       type: job
       script: ./service-mm.yaml
       script_type: ansible
@@ -47,7 +47,7 @@
       params:
         ansible_tags: turn_on
 
-    turn_off_maintenance_mode:
+    adcm_turn_off_maintenance_mode:
       <<: *action
       script: ./service-mm.yaml
       params:
@@ -56,13 +56,13 @@
   components:
     component_with_mm_plugin:
       actions:
-        turn_on_maintenance_mode:
+        adcm_turn_on_maintenance_mode:
           <<: *action
           script: ./component-mm.yaml
           params:
             ansible_tags: turn_on
 
-        turn_off_maintenance_mode:
+        adcm_turn_off_maintenance_mode:
           <<: *action
           script: ./component-mm.yaml
           params:
