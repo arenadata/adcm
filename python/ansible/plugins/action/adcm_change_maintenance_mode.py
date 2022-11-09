@@ -86,12 +86,16 @@ class ActionModule(ActionBase):
             raise AnsibleActionFail('"value" should be boolean')
 
         obj_type = self._task.args["type"]
+        context_type = obj_type
+        if obj_type == "host":
+            context_type = "cluster"
+
         obj_value = "ON" if self._task.args["value"] else "OFF"
         obj_pk = get_object_id_from_context(
             task_vars,
             f'{obj_type}_id',
-            obj_type,
-            err_msg=f'You can change "{obj_type}" maintenance mode only in {obj_type} context',
+            context_type,
+            err_msg=f'You can change "{obj_type}" maintenance mode only in {context_type} context',
         )
 
         obj = type_class_map[obj_type].objects.filter(pk=obj_pk).first()

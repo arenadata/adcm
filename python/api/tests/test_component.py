@@ -12,6 +12,7 @@
 
 from unittest.mock import patch
 
+from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
@@ -73,7 +74,7 @@ class TestComponentAPI(BaseTestCase):
         self.assertEqual(self.component.maintenance_mode, MaintenanceMode.ON)
 
     def test_change_maintenance_mode_on_with_action_success(self):
-        action = Action.objects.create(prototype=self.component.prototype, name="turn_on_maintenance_mode")
+        action = Action.objects.create(prototype=self.component.prototype, name=settings.ADCM_TURN_ON_MM_ACTION_NAME)
 
         with patch("api.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
@@ -122,7 +123,7 @@ class TestComponentAPI(BaseTestCase):
     def test_change_maintenance_mode_off_with_action_success(self):
         self.component.maintenance_mode = MaintenanceMode.ON
         self.component.save()
-        action = Action.objects.create(prototype=self.component.prototype, name="turn_off_maintenance_mode")
+        action = Action.objects.create(prototype=self.component.prototype, name=settings.ADCM_TURN_OFF_MM_ACTION_NAME)
 
         with patch("api.utils.start_task") as start_task_mock:
             response: Response = self.client.post(

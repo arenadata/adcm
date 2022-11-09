@@ -64,12 +64,13 @@ def cook_obj_id(conf):
 def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm_=False):
     def_type = conf["type"]
     if def_type == "adcm" and not adcm_:
-        msg = "Invalid type \"{}\" in object definition: {}"
-        return err("INVALID_OBJECT_DEFINITION", msg.format(def_type, fname))
+        return err("INVALID_OBJECT_DEFINITION", f'Invalid type "{def_type}" in object definition: {fname}')
+
     check_object_definition(fname, conf, def_type, obj_list)
     obj = save_prototype(path, conf, def_type, bundle_hash)
     logger.info("Save definition of %s \"%s\" %s to stage", def_type, conf["name"], conf["version"])
     obj_list[cook_obj_id(conf)] = fname
+
     return obj
 
 
@@ -77,6 +78,28 @@ def check_object_definition(fname, conf, def_type, obj_list):
     ref = f"{def_type} \"{conf['name']}\" {conf['version']}"
     if cook_obj_id(conf) in obj_list:
         err("INVALID_OBJECT_DEFINITION", f"Duplicate definition of {ref} (file {fname})")
+
+    for action_name, action_data in conf.get("actions", {}).items():
+        if action_name in {
+            settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME,
+            settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
+        }:
+            if def_type != "cluster":
+                err("INVALID_OBJECT_DEFINITION", f'Action named "{action_name}" can be started only in cluster context')
+
+            if not action_data.get("host_action"):
+                err(
+                    "INVALID_OBJECT_DEFINITION",
+                    f'Action named "{action_name}" should have "host_action: true" property',
+                )
+
+        if action_name in settings.ADCM_MM_ACTION_NAMES_SET and set(action_data).intersection(
+            settings.ADCM_MM_ACTION_FORBIDDEN_PROPS_SET
+        ):
+            err(
+                "INVALID_OBJECT_DEFINITION",
+                f'Maintenance mode actions shouldn\'t have "{settings.ADCM_MM_ACTION_FORBIDDEN_PROPS_SET}" properties',
+            )
 
 
 def get_config_files(path, bundle_hash):
@@ -326,14 +349,17 @@ def save_export(proto, conf):
     ref = proto_ref(proto)
     if not in_dict(conf, "export"):
         return
+
+    export = {}
     if isinstance(conf["export"], str):
         export = [conf["export"]]
     elif isinstance(conf["export"], list):
         export = conf["export"]
-    msg = "{} does not has \"{}\" config group"
+
     for key in export:
         if not StagePrototypeConfig.objects.filter(prototype=proto, name=key):
-            err("INVALID_OBJECT_DEFINITION", msg.format(ref, key))
+            err("INVALID_OBJECT_DEFINITION", f'{ref} does not has "{key}" config group')
+
         se = StagePrototypeExport(prototype=proto, name=key)
         se.save()
 
@@ -526,17 +552,17 @@ def is_group(conf):
 
 
 def get_yspec(proto, ref, bundle_hash, conf, name, subname):
-    msg = f"yspec file of config key \"{name}/{subname}\":"
-    yspec_body = read_bundle_file(proto, conf["yspec"], bundle_hash, msg)
+    schema = None
+    yspec_body = read_bundle_file(proto, conf["yspec"], bundle_hash, f'yspec file of config key "{name}/{subname}":')
     try:
         schema = yaml.safe_load(yspec_body)
     except (yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
-        msg = "yspec file of config key \"{}/{}\" yaml decode error: {}"
-        err("CONFIG_TYPE_ERROR", msg.format(name, subname, e))
+        err("CONFIG_TYPE_ERROR", f'yspec file of config key "{name}/{subname}" yaml decode error: {e}')
+
     ok, error = yspec.checker.check_rule(schema)
     if not ok:
-        msg = "yspec file of config key \"{}/{}\" error: {}"
-        err("CONFIG_TYPE_ERROR", msg.format(name, subname, error))
+        err("CONFIG_TYPE_ERROR", f'yspec file of config key "{name}/{subname}" error: {error}')
+
     return schema
 
 
