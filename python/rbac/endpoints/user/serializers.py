@@ -99,6 +99,7 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
 
     def update(self, instance, validated_data):
         context_user = self.context["request"].user
+
         return user_services.update(instance, context_user, partial=self.partial, **validated_data)
 
     def create(self, validated_data):
