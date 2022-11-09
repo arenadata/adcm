@@ -40,7 +40,8 @@ export type TypeName =
   'group' |
   'role' |
   'policy' |
-  'audit_operations';
+  'audit_operations' |
+  'audit_login';
 export type Entities = ICluster | Service | Host | Provider | Job | Task | Bundle;
 
 /**

@@ -85,6 +85,9 @@ export class ListService implements IListService<Entities> {
       case 'audit_operations':
         params = { ...params['params'], 'expand': null };
         return this.api.getList(`${environment.apiRoot}audit/operation`, convertToParamMap(params));
+      case 'audit_login':
+        params = { ...params['params'], 'expand': null };
+        return this.api.getList(`${environment.apiRoot}audit/login`, convertToParamMap(params));
       default:
         return this.api.root.pipe(switchMap((root) => this.api.getList<Entities>(root[this.current.typeName], p)));
     }

@@ -68,6 +68,7 @@ import { WrapperColumnComponent } from "@app/components/columns/wrapper-column/w
 import {
   DownloadButtonColumnComponent
 } from "@app/components/columns/download-button-column/download-button-column.component";
+import { RbacAuditLoginService } from "@app/services/rbac-audit-login.service";
 
 @NgModule({
   imports: [
@@ -168,8 +169,8 @@ import {
     RbacRoleService,
     RbacPolicyService,
     RbacAuditOperationsService,
+    RbacAuditLoginService,
     RbacObjectCandidateService,
   ],
 })
-export class SharedModule {
-}
+export class SharedModule {}

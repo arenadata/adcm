@@ -18,6 +18,8 @@ from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
 
+from cm.utils import dict_json_get_or_create, get_adcm_token
+
 ENCODING_UTF_8 = "utf-8"
 
 BASE_DIR = os.getenv("ADCM_BASE_DIR")
@@ -38,6 +40,7 @@ FILE_DIR = STACK_DIR / "data" / "file"
 LOG_DIR = BASE_DIR / "data" / "log"
 LOG_FILE = LOG_DIR / "adcm.log"
 SECRETS_FILE = BASE_DIR / "data" / "var" / "secrets.json"
+ADCM_TOKEN_FILE = BASE_DIR / "data/var/adcm_token"
 PYTHON_SITE_PACKAGES = Path(
     sys.exec_prefix, f"lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages"
 )
@@ -45,11 +48,18 @@ PYTHON_SITE_PACKAGES = Path(
 ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
 DEFAULT_SALT = b'"j\xebi\xc0\xea\x82\xe0\xa8\xba\x9e\x12E>\x11D'
 
+ADCM_TOKEN = get_adcm_token()
 if SECRETS_FILE.is_file():
     with open(SECRETS_FILE, encoding=ENCODING_UTF_8) as f:
         data = json.load(f)
         STATUS_SECRET_KEY = data["token"]
         ANSIBLE_SECRET = data["adcmuser"]["password"]
+        # workaround to insert `adcm_internal_token` into existing SECRETS_FILE after startup
+        if data.get("adcm_internal_token") is None:
+            dict_json_get_or_create(
+                path=SECRETS_FILE, field="adcm_internal_token", value=ADCM_TOKEN
+            )
+
 else:
     STATUS_SECRET_KEY = ""
     ANSIBLE_SECRET = ""
@@ -181,9 +191,10 @@ STATIC_URL = "/static/"
 
 ADWP_EVENT_SERVER = {
     # path to json file with Event Server secret token
-    "SECRETS_FILE": BASE_DIR / "data/var/secrets.json",
+    "SECRETS_FILE": SECRETS_FILE,
     # URL of Event Server REST API
     "API_URL": "http://localhost:8020/api/v1",
+    "SECRET_KEY": ADCM_TOKEN,
 }
 
 LOGGING = {
