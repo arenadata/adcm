@@ -20,7 +20,7 @@ const rivers: string[] = [
   'Desna',
   'Dnieper',
   'Don',
-  'Itrysh',
+  'Irtysh',
   'Kama',
   'Limpopo',
   'Mekong',
