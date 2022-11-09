@@ -21,6 +21,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_409_CO
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.models import (
     Action,
+    ActionType,
     Bundle,
     Cluster,
     ClusterObject,
@@ -42,11 +43,15 @@ class TestHostAPI(BaseTestCase):
         )
         cluster = Cluster.objects.create(name="test_cluster", prototype=self.cluster_prototype)
 
+        self.provider_prototype = Prototype.objects.create(bundle=self.bundle, type="provider")
+        self.host_provider = HostProvider.objects.create(name="test_provider_2", prototype=self.provider_prototype)
+
         self.host_prototype = Prototype.objects.create(bundle=self.bundle, type="host")
         self.host = Host.objects.create(
             fqdn="test_host_fqdn",
             prototype=self.host_prototype,
             cluster=cluster,
+            provider=self.host_provider,
         )
 
     def test_change_maintenance_mode_wrong_name_fail(self):
@@ -78,7 +83,12 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.ON)
 
     def test_change_maintenance_mode_on_with_action_success(self):
-        action = Action.objects.create(prototype=self.host.prototype, name="host_turn_on_maintenance_mode")
+        action = Action.objects.create(
+            prototype=self.host.cluster.prototype,
+            name=settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME,
+            type=ActionType.Job,
+            state_available="any",
+        )
 
         with patch("api.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
@@ -127,7 +137,9 @@ class TestHostAPI(BaseTestCase):
     def test_change_maintenance_mode_off_with_action_success(self):
         self.host.maintenance_mode = MaintenanceMode.ON
         self.host.save(update_fields=["maintenance_mode"])
-        action = Action.objects.create(prototype=self.host.prototype, name="host_turn_off_maintenance_mode")
+        action = Action.objects.create(
+            prototype=self.host.cluster.prototype, name=settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME
+        )
 
         with patch("api.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
@@ -180,7 +192,7 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.data["error"], "Host maintenance mode is changing now")
 
     def test_cluster_clear_issue_success(self):
-        self.upload_and_load_bundle(
+        provider_bundle = self.upload_and_load_bundle(
             path=Path(
                 settings.BASE_DIR,
                 "python/api/tests/files/bundle_test_provider_concern.tar",
@@ -194,7 +206,7 @@ class TestHostAPI(BaseTestCase):
             ),
         )
 
-        provider_prototype = Prototype.objects.filter(type="provider").first()
+        provider_prototype = Prototype.objects.get(bundle=provider_bundle, type="provider")
         provider_response: Response = self.client.post(
             path=reverse("provider"),
             data={"name": "test_provider", "prototype_id": provider_prototype.pk},
@@ -268,3 +280,48 @@ class TestHostAPI(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+    def test_change_maintenance_mode_on_with_action_via_bundle_success(self):
+        bundle = self.upload_and_load_bundle(
+            path=Path(
+                settings.BASE_DIR,
+                "python/api/tests/files/cluster_using_plugin.tar",
+            ),
+        )
+        action = Action.objects.get(name=settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME)
+
+        cluster_prototype = Prototype.objects.get(bundle_id=bundle.pk, type="cluster")
+        cluster_response: Response = self.client.post(
+            path=reverse("cluster"),
+            data={"name": "test-cluster", "prototype_id": cluster_prototype.pk},
+        )
+        cluster = Cluster.objects.get(pk=cluster_response.data["id"])
+
+        self.client.post(
+            path=reverse("provider"),
+            data={"name": "test_provider", "prototype_id": self.provider_prototype.pk},
+        )
+        host_response: Response = self.client.post(
+            path=reverse("host", kwargs={"provider_id": self.host_provider.pk}),
+            data={"fqdn": "test-host"},
+        )
+        host = Host.objects.get(pk=host_response.data["id"])
+
+        self.client.post(
+            path=reverse("host", kwargs={"cluster_id": cluster.pk}),
+            data={"host_id": host.pk},
+        )
+
+        with patch("api.utils.start_task") as start_task_mock:
+            response: Response = self.client.post(
+                path=reverse("host-maintenance-mode", kwargs={"host_id": host.pk}),
+                data={"maintenance_mode": MaintenanceMode.ON},
+            )
+
+        host.refresh_from_db()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(host.maintenance_mode, MaintenanceMode.CHANGING)
+        start_task_mock.assert_called_once_with(
+            action=action, obj=host, conf={}, attr={}, hc=[], hosts=[], verbose=False
+        )
