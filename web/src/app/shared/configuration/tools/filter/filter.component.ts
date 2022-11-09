@@ -60,7 +60,7 @@ type FilterType = 'list' | 'input' | 'datepicker';
                   </mat-select>
                 </ng-container>
                 <ng-container *ngSwitchCase="'input'">
-                  <input  matInput placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}" (change)="applyFilters()">
+                  <input matInput autofocus placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}" (keyup.enter)="applyFilters()" (change)="applyFilters()">
                 </ng-container>
                 <ng-container *ngSwitchCase="'datepicker'">
                   <mat-form-field class="datepicker-form">
@@ -76,12 +76,12 @@ type FilterType = 'list' | 'input' | 'datepicker';
                   </mat-form-field>
                 </ng-container>
               </ng-container>
-              <button class="clear-button" mat-button matSuffix mat-icon-button aria-label="Clear"
+              <button type="button" class="clear-button" mat-button matSuffix mat-icon-button aria-label="Clear"
                       *ngIf="clearButtonVisible(filter.filter_field)"
                       (click)="clear(filter.filter_field, $event)">
                 <mat-icon>refresh</mat-icon>
               </button>
-              <button class="remove-button" mat-button matSuffix mat-icon-button aria-label="Remove"
+              <button type="button" class="remove-button" mat-button matSuffix mat-icon-button aria-label="Remove"
                       (click)="removeFilter(filter, $event)">
                 <mat-icon>close</mat-icon>
               </button>
@@ -195,8 +195,18 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
       data = data.filter((item) => {
         for (let key in filters) {
           if (this.filtersByType[key] === 'input') {
-            if (item[key] !== undefined && item[key] !== null && item[key].toLowerCase().includes(filters[key].toLowerCase())) {
-              return true;
+            if (key.includes('/')) {
+              let nestedKey = key.split('/');
+
+              if (item[nestedKey[0]][nestedKey[1]] !== undefined &&
+                  item[nestedKey[0]][nestedKey[1]] !== null &&
+                  item[nestedKey[0]][nestedKey[1]].toLowerCase().includes(filters[key].toLowerCase())) {
+                return true;
+              }
+            } else {
+              if (item[key] !== undefined && item[key] !== null && item[key].toLowerCase().includes(filters[key].toLowerCase())) {
+                return true;
+              }
             }
           }
         }

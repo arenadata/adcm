@@ -48,8 +48,8 @@ export class AuditLoginComponent extends RbacEntityListDirective<RbacAuditLoginM
     {
       label: 'Login time',
       sort: 'login_time',
-      className: 'action_date',
-      headerClassName: 'action_date',
+      className: 'width30pr action_date',
+      headerClassName: 'width30pr action_date',
       value: (row) => DateHelper.short(row.login_time),
     }
   ] as IColumns<RbacAuditLoginModel>;
@@ -59,7 +59,7 @@ export class AuditLoginComponent extends RbacEntityListDirective<RbacAuditLoginM
 
   auditLoginFilters: IFilter[] = [
     {
-      id: 1, name: 'login', display_name: 'Login', filter_field: 'login', filter_type: 'input',
+      id: 1, name: 'login', display_name: 'Login', filter_field: 'login_details/username', filter_type: 'input',
     },
     {
       id: 2, name: 'login_result', display_name: 'Result', filter_field: 'login_result', filter_type: 'list',
