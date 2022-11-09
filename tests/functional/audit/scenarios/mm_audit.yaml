@@ -15,78 +15,193 @@ settings:
   start-from-first: matched
 
 operations:
+  # service
   - update: &change-service
-      what:
+      what: &service
         type: service
         name: "Test Cluster WITH Maintenance Mode/another_service"
       how: change-properties
     result: fail
-  - update: *change-service
+  - update:
+      what: *service
+      how: change-properties
+      changes:
+        current:
+          maintenance_mode: "ON"
+        previous:
+          maintenance_mode: "OFF"
   - update: *change-service
     result: denied
     username: {{ username }}
-  - update: *change-service
+  - update:
+      what: *service
+      how: change-properties
+      changes:
+        current:
+          maintenance_mode: "OFF"
+        previous:
+          maintenance_mode: "ON"
 
   - update: *change-service
     result: fail
-  - update: *change-service
+  - update:
+      what: *service
+      how: change-properties
+      changes:
+        current:
+          maintenance_mode: "ON"
+        previous:
+          maintenance_mode: "OFF"
   - update: *change-service
     result: denied
     username: {{ username }}
-  - update: *change-service
+  - update:
+      what: *service
+      how: change-properties
+      changes:
+        current:
+          maintenance_mode: "OFF"
+        previous:
+          maintenance_mode: "ON"
+
   # component
   - update: &change-component
-      what:
+      what: &component
         type: component
         name: "Test Cluster WITH Maintenance Mode/test_service/first_component"
       how: change-properties
     result: fail
-  - update: *change-component
+  - update:
+      what: *component
+      how: change-properties
+      changes:
+        current:
+          maintenance_mode: "ON"
+        previous:
+          maintenance_mode: "OFF"
   - update: *change-component
     result: denied
     username: {{ username }}
-  - update: *change-component
+  - update:
+      what: *component
+      how: change-properties
+      changes:
+        current:
+          maintenance_mode: "OFF"
+        previous:
+          maintenance_mode: "ON"
 
   - update: *change-component
     result: fail
-  - update: *change-component
+  - update:
+      what: *component
+      how: change-properties
+      changes:
+        current:
+          maintenance_mode: "ON"
+        previous:
+          maintenance_mode: "OFF"
   - update: *change-component
     result: denied
     username: {{ username }}
-  - update: *change-component
+  - update:
+      what: *component
+      how: change-properties
+      changes:
+        current:
+          maintenance_mode: "OFF"
+        previous:
+          maintenance_mode: "ON"
 
   - update: *change-component
     result: fail
-  - update: *change-component
+  - update:
+      what: *component
+      how: change-properties
+      changes:
+        current:
+          maintenance_mode: "ON"
+        previous:
+          maintenance_mode: "OFF"
   - update: *change-component
     result: denied
     username: {{ username }}
-  - update: *change-component
+  - update:
+      what: *component
+      how: change-properties
+      changes:
+        current:
+          maintenance_mode: "OFF"
+        previous:
+          maintenance_mode: "ON"
+
   # host
   - update: &change-host
-      what:
+      what: &host
         type: host
         name: "test-host-0"
       how: change-properties
     result: fail
-  - update: *change-host
+  - update:
+      what: *host
+      how: change-properties
+      changes:
+        current:
+          maintenance_mode: "ON"
+        previous:
+          maintenance_mode: "OFF"
   - update: *change-host
     result: denied
     username: {{ username }}
-  - update: *change-host
+  - update:
+      what: *host
+      how: change-properties
+      changes:
+        current:
+          maintenance_mode: "OFF"
+        previous:
+          maintenance_mode: "ON"
 
   - update: *change-host
     result: fail
-  - update: *change-host
+  - update:
+      what: *host
+      how: change-properties
+      changes:
+        current:
+          maintenance_mode: "ON"
+        previous:
+          maintenance_mode: "OFF"
   - update: *change-host
     result: denied
     username: {{ username }}
-  - update: *change-host
+  - update:
+      what: *host
+      how: change-properties
+      changes:
+        current:
+          maintenance_mode: "OFF"
+        previous:
+          maintenance_mode: "ON"
 
   - update: *change-host
     result: fail
-  - update: *change-host
+  - update:
+      what: *host
+      how: change-properties
+      changes:
+        current:
+          maintenance_mode: "ON"
+        previous:
+          maintenance_mode: "OFF"
   - update: *change-host
     result: denied
     username: {{ username }}
-  - update: *change-host
+  - update:
+      what: *host
+      how: change-properties
+      changes:
+        current:
+          maintenance_mode: "OFF"
+        previous:
+          maintenance_mode: "ON"

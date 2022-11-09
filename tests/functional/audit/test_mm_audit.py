@@ -137,7 +137,7 @@ def change_host_mm(admin_client: ADCMClient, user_client: ADCMClient, host: Host
         with allure.step(f'Success update host via POST {url} with body: {body}'):
             check_succeed(requests.post(url, json=body, headers=make_auth_header(admin_client)))
 
-        body = {"maintenance_mode": MM_IS_ON}
+        body = {"maintenance_mode": MM_IS_OFF}
         with allure.step(f'Deny update host via POST {url} with body: {body} with wrong user'):
             check_failed(requests.post(url, json=body, headers=make_auth_header(user_client)), exact_code=404)
 
