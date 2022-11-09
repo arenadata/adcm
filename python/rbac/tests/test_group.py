@@ -16,7 +16,7 @@ from adcm.tests.base import BaseTestCase
 from rbac.models import Group, OriginType
 
 
-class GroupBaseTestCase(BaseTestCase):
+class GroupTestCase(BaseTestCase):
     def test_group_creation_blank(self):
         with self.assertRaisesRegex(
             RuntimeError, r"Check regex. Data: ", msg="group creation with no args is not allowed"
