@@ -30,9 +30,14 @@ export class AuditLoginComponent extends RbacEntityListDirective<RbacAuditLoginM
   listColumns = [
     {
       label: 'Login',
+      type: 'component',
       headerClassName: 'width30pr',
       className: 'width30pr',
-      value: (row) => row.login_details.username
+      component: WrapperColumnComponent,
+      instanceTaken: (componentRef: ComponentRef<WrapperColumnComponent>) => {
+        componentRef.instance.type = ['text-substr'];
+        componentRef.instance.customColumnName = 'login_details/username'
+      },
     },
     {
       label: 'Result',

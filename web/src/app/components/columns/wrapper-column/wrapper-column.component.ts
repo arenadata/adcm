@@ -28,6 +28,14 @@ export class WrapperColumnComponent implements OnInit {
     return this.customColumnName || this.column?.label?.toLowerCase()?.replace(' ', '_');
   }
 
+  get nestedColumnName(): string[] {
+    return this.customColumnName.split('/');
+  }
+
+  get columnNameNested(): boolean {
+    return this.customColumnName.includes('/');
+  }
+
   ngOnInit(): void {}
 
   getWrapperClass() {
