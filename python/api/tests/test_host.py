@@ -49,7 +49,7 @@ class TestHostAPI(BaseTestCase):
             cluster=cluster,
         )
 
-    def test_change_maintenance_mode_wrong_name_fail(self):
+    def test_change_mm_wrong_name_fail(self):
         response: Response = self.client.post(
             path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
             data={"maintenance_mode": "wrong"},
@@ -58,7 +58,7 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertIn("maintenance_mode", response.data)
 
-    def test_change_maintenance_mode_to_changing_fail(self):
+    def test_change_mm_to_changing_fail(self):
         response: Response = self.client.post(
             path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
             data={"maintenance_mode": MaintenanceMode.CHANGING},
@@ -66,7 +66,7 @@ class TestHostAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-    def test_change_maintenance_mode_on_no_action_success(self):
+    def test_change_mm_on_no_action_success(self):
         response: Response = self.client.post(
             path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
@@ -77,7 +77,7 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.ON)
 
-    def test_change_maintenance_mode_on_with_action_success(self):
+    def test_change_mm_on_with_action_success(self):
         action = Action.objects.create(prototype=self.host.prototype, name="host_turn_on_maintenance_mode")
 
         with patch("api.utils.start_task") as start_task_mock:
@@ -94,7 +94,7 @@ class TestHostAPI(BaseTestCase):
             action=action, obj=self.host, conf={}, attr={}, hc=[], hosts=[], verbose=False
         )
 
-    def test_change_maintenance_mode_on_from_on_with_action_success(self):
+    def test_change_mm_on_from_on_with_action_success(self):
         self.host.maintenance_mode = MaintenanceMode.ON
         self.host.save(update_fields=["maintenance_mode"])
 
@@ -110,7 +110,7 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.ON)
         start_task_mock.assert_not_called()
 
-    def test_change_maintenance_mode_off_no_action_success(self):
+    def test_change_mm_off_no_action_success(self):
         self.host.maintenance_mode = MaintenanceMode.ON
         self.host.save(update_fields=["maintenance_mode"])
 
@@ -124,7 +124,7 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.OFF)
 
-    def test_change_maintenance_mode_off_with_action_success(self):
+    def test_change_mm_off_with_action_success(self):
         self.host.maintenance_mode = MaintenanceMode.ON
         self.host.save(update_fields=["maintenance_mode"])
         action = Action.objects.create(prototype=self.host.prototype, name="host_turn_off_maintenance_mode")
@@ -143,7 +143,7 @@ class TestHostAPI(BaseTestCase):
             action=action, obj=self.host, conf={}, attr={}, hc=[], hosts=[], verbose=False
         )
 
-    def test_change_maintenance_mode_off_to_off_with_action_success(self):
+    def test_change_mm_off_to_off_with_action_success(self):
         self.host.maintenance_mode = MaintenanceMode.OFF
         self.host.save(update_fields=["maintenance_mode"])
 
@@ -159,7 +159,7 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.OFF)
         start_task_mock.assert_not_called()
 
-    def test_change_maintenance_mode_changing_now_fail(self):
+    def test_change_mm_changing_now_fail(self):
         self.host.maintenance_mode = MaintenanceMode.CHANGING
         self.host.save(update_fields=["maintenance_mode"])
 
@@ -247,7 +247,7 @@ class TestHostAPI(BaseTestCase):
 
         self.assertFalse(cluster.concerns.exists())
 
-    def test_maintenance_mode_constraint_by_no_cluster_fail(self):
+    def test_mm_constraint_by_no_cluster_fail(self):
         self.host.cluster = None
         self.host.save(update_fields=["cluster"])
 
@@ -258,7 +258,7 @@ class TestHostAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
-    def test_maintenance_mode_constraint_by_cluster_without_maintenance_mode_fail(self):
+    def test_mm_constraint_by_cluster_without_mm_fail(self):
         self.cluster_prototype.allow_maintenance_mode = False
         self.cluster_prototype.save(update_fields=["allow_maintenance_mode"])
 

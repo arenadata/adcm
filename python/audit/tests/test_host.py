@@ -658,9 +658,27 @@ class TestHost(BaseTestCase):
         )
 
     def test_change_maintenance_mode_denied(self):
+        self.host.cluster = self.cluster
+        self.host.save(update_fields=["cluster"])
+
         with self.no_rights_user_logged_in:
             self.client.post(
                 path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+                data={"maintenance_mode": MaintenanceMode.ON},
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host_updated_log(
+            log=log,
+            operation_result=AuditLogOperationResult.Denied,
+            operation_name="Host updated",
+            user=self.no_rights_user,
+        )
+
+        with self.no_rights_user_logged_in:
+            self.client.post(
+                path=reverse("host-maintenance-mode", kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
             )
 
