@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
 from unittest.mock import patch
 
 from django.conf import settings
@@ -72,6 +73,47 @@ class TestComponentAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(self.component.maintenance_mode, MaintenanceMode.ON)
+
+    def test_change_maintenance_mode_on_no_service_issue_success(self):
+        bundle = self.upload_and_load_bundle(
+            path=Path(
+                settings.BASE_DIR,
+                "python/api/tests/files/bundle_issue_component.tar",
+            ),
+        )
+
+        cluster_prototype = Prototype.objects.get(bundle=bundle, type="cluster")
+        cluster_response: Response = self.client.post(
+            path=reverse("cluster"),
+            data={"name": "test-cluster", "prototype_id": cluster_prototype.pk},
+        )
+        cluster = Cluster.objects.get(pk=cluster_response.data["id"])
+
+        service_prototype = Prototype.objects.get(bundle=bundle, type="service")
+        service_response: Response = self.client.post(
+            path=reverse("service", kwargs={"cluster_id": cluster.pk}),
+            data={"prototype_id": service_prototype.pk},
+        )
+        service = ClusterObject.objects.get(pk=service_response.data["id"])
+
+        component_1 = ServiceComponent.objects.get(service=service, prototype__name="first_component")
+        component_2 = ServiceComponent.objects.get(service=service, prototype__name="second_component")
+
+        self.assertTrue(service.concerns.exists())
+        self.assertTrue(component_2.concerns.exists())
+        self.assertFalse(component_1.concerns.exists())
+
+        response: Response = self.client.post(
+            path=reverse("component-maintenance-mode", kwargs={"component_id": component_2.pk}),
+            data={"maintenance_mode": MaintenanceMode.ON},
+        )
+
+        component_2.refresh_from_db()
+        service.refresh_from_db()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(component_2.maintenance_mode, MaintenanceMode.ON)
+        self.assertFalse(service.concerns.exists())
 
     def test_change_maintenance_mode_on_with_action_success(self):
         action = Action.objects.create(prototype=self.component.prototype, name=settings.ADCM_TURN_ON_MM_ACTION_NAME)

@@ -157,7 +157,10 @@ class Tree:
         elif node.type == 'service':
             parent_values = [node.value.cluster]
         elif node.type == 'component':
-            parent_values = [node.value.service]
+            if node.value.maintenance_mode == MaintenanceMode.OFF:
+                parent_values = [node.value.service]
+            else:
+                parent_values = []
         elif node.type == 'host':
             parent_values = [
                 hc.component
