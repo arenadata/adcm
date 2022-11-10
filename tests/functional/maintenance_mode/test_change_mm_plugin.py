@@ -131,7 +131,7 @@ def test_changing_host_mm_via_plugin(  # pylint: disable=too-many-arguments,too-
         api_client.host.change_maintenance_mode(host_1.id, MM_IS_ON).check_code(200)
         _wait_all_tasks_succeed(sdk_client_fs, 1)
         check_mm_is(MM_IS_ON, host_1)
-        check_mm_is(MM_IS_OFF, host_2, host_3, *first_cluster_hosts, *second_objects)
+        check_mm_is(MM_IS_OFF, host_2, host_3, *first_cluster_objects, *second_objects)
 
     with allure.step("Change second host's MM to 'ON'"):
         api_client.host.change_maintenance_mode(host_2.id, MM_IS_ON).check_code(200)
