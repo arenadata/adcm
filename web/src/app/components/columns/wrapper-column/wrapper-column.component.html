@@ -1,1 +1,1 @@
-<div class="{{ getWrapperClass() }}">{{ row[columnName] }}</div>
+<div class="{{ getWrapperClass() }}">{{ columnNameNested ? row[nestedColumnName[0]][nestedColumnName[1]] : row[columnName] }}</div>
