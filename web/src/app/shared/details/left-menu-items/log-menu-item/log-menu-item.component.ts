@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 
 import { MenuItemAbstractDirective } from '@app/abstract-directives/menu-item.abstract.directive';
 import { BaseEntity, Job } from '@app/core/types';
+import { AuthService } from "@app/core/auth/auth.service";
 
 @Component({
   selector: 'app-log-menu-item',
@@ -25,22 +26,20 @@ import { BaseEntity, Job } from '@app/core/types';
 })
 export class LogMenuItemComponent extends MenuItemAbstractDirective<BaseEntity> {
 
-  download() {
-    const isLoggedIn = localStorage.getItem('auth');
+  constructor(private auth: AuthService) {
+    super();
+  }
 
-    if (isLoggedIn) {
-      if (this.data?.logId) {
-        const file = (this.entity as Job).log_files.find(job => job.id === this.data.logId);
-        if (file) {
-          location.href = file.download_url;
-        } else {
-          throw new Error('Log file not found!');
-        }
+  download() {
+    if (this.data?.logId) {
+      const file = (this.entity as Job).log_files.find(job => job.id === this.data.logId);
+      if (file) {
+        location.href = file.download_url;
       } else {
-        throw new Error('Log id isn\'t provided!');
+        throw new Error('Log file not found!');
       }
     } else {
-      window.location.href = "/login";
+      throw new Error('Log id isn\'t provided!');
     }
   }
 
