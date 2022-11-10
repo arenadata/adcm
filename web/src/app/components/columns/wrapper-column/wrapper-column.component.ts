@@ -19,7 +19,7 @@ export class WrapperColumnComponent implements OnInit {
   column: any;
   customColumnName: string;
   red: string[] = ['delete', 'fail', 'user not found'];
-  orange: string[] = ['update', 'denied', 'wrong password', 'wrong user'];
+  orange: string[] = ['update', 'denied', 'wrong password', 'account disabled'];
   green: string[] = ['create', 'success'];
 
   constructor() { }

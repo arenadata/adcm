@@ -69,12 +69,10 @@ export class AuditLoginComponent extends RbacEntityListDirective<RbacAuditLoginM
     {
       id: 2, name: 'login_result', display_name: 'Result', filter_field: 'login_result', filter_type: 'list',
       options: [
-        {id: 1, name: 'success', display_name: 'Success', value: 'success'},
-        {id: 2, name: 'user not found', display_name: 'User not found', value: 'user not found'},
-        {id: 3, name: 'wrong password', display_name: 'Wrong password', value: 'wrong password'},
-        {id: 4, name: 'wrong user', display_name: 'Wrong user', value: 'wrong user'},
-
-
+        {id: 1, name: 'account disabled', display_name: 'Account disabled', value: 'account disabled'},
+        {id: 2, name: 'success', display_name: 'Success', value: 'success'},
+        {id: 3, name: 'user not found', display_name: 'User not found', value: 'user not found'},
+        {id: 4, name: 'wrong password', display_name: 'Wrong password', value: 'wrong password'},
       ]
     },
     {
