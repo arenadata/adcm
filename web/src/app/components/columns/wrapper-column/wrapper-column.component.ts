@@ -19,7 +19,7 @@ export class WrapperColumnComponent implements OnInit {
   column: any;
   customColumnName: string;
   red: string[] = ['delete', 'fail', 'user not found'];
-  orange: string[] = ['update', 'denied', 'wrong password'];
+  orange: string[] = ['update', 'denied', 'wrong password', 'wrong user'];
   green: string[] = ['create', 'success'];
 
   constructor() { }
@@ -29,11 +29,11 @@ export class WrapperColumnComponent implements OnInit {
   }
 
   get nestedColumnName(): string[] {
-    return this.customColumnName.split('/');
+    return this.customColumnName?.split('/');
   }
 
   get columnNameNested(): boolean {
-    return this.customColumnName.includes('/');
+    return this.customColumnName?.includes('/');
   }
 
   ngOnInit(): void {}
