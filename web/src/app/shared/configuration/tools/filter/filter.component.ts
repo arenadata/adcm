@@ -65,7 +65,7 @@ type FilterType = 'list' | 'input' | 'datepicker';
                 <ng-container *ngSwitchCase="'datepicker'">
                   <mat-form-field class="datepicker-form">
                     <mat-label>{{ filter.display_name }}</mat-label>
-                    <mat-date-range-input [formGroup]="datepickerGroup(filter.filter_field)" [rangePicker]="picker">
+                    <mat-date-range-input class="filter-datepicker-range-input" [formGroup]="datepickerGroup(filter.filter_field)" [rangePicker]="picker">
                       <input matStartDate formControlName="start">
                       <input matEndDate formControlName="end" (dateChange)="setDate($event)">
                     </mat-date-range-input>
@@ -195,7 +195,7 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
       data = data.filter((item) => {
         for (let key in filters) {
           if (this.filtersByType[key] === 'input') {
-            if (item[key] !== undefined && item[key] !== null && item[key].toLowerCase().includes(filters[key].toLowerCase())) {
+            if (item[key] !== undefined && item[key] !== null && item[key] !== '' && item[key].toLowerCase().includes(filters[key].toLowerCase())) {
               return true;
             }
           }

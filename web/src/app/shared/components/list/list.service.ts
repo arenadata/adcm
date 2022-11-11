@@ -48,7 +48,7 @@ export class ListService implements IListService<Entities> {
   getList(p: ParamMap, typeName: TypeName): Observable<ListResult<Entities>> {
     const listParamStr = localStorage.getItem('list:param');
 
-    if (p?.keys.length) {
+    if (p?.keys?.length > 0) {
       const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});
       delete param['page'];
 

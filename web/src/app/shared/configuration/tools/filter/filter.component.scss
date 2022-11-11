@@ -30,10 +30,11 @@ mat-form-field {
     .mat-form-field-suffix {
       left: -20px;
     }
-  }
 
-  .remove-button {
-    right: -10px;
+    .mat-form-field-infix {
+      width: 170px;
+      margin-right: 16px;
+    }
   }
 }
 
