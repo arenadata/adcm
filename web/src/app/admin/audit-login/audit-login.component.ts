@@ -30,9 +30,14 @@ export class AuditLoginComponent extends RbacEntityListDirective<RbacAuditLoginM
   listColumns = [
     {
       label: 'Login',
+      type: 'component',
       headerClassName: 'width30pr',
       className: 'width30pr',
-      value: (row) => row.login_details.username
+      component: WrapperColumnComponent,
+      instanceTaken: (componentRef: ComponentRef<WrapperColumnComponent>) => {
+        componentRef.instance.type = ['text-substr'];
+        componentRef.instance.customColumnName = 'login_details/username'
+      },
     },
     {
       label: 'Result',
@@ -48,8 +53,8 @@ export class AuditLoginComponent extends RbacEntityListDirective<RbacAuditLoginM
     {
       label: 'Login time',
       sort: 'login_time',
-      className: 'action_date',
-      headerClassName: 'action_date',
+      className: 'width30pr action_date',
+      headerClassName: 'width30pr action_date',
       value: (row) => DateHelper.short(row.login_time),
     }
   ] as IColumns<RbacAuditLoginModel>;
@@ -59,13 +64,15 @@ export class AuditLoginComponent extends RbacEntityListDirective<RbacAuditLoginM
 
   auditLoginFilters: IFilter[] = [
     {
-      id: 1, name: 'login', display_name: 'Login', filter_field: 'login', filter_type: 'input',
+      id: 1, name: 'login', display_name: 'Login', filter_field: 'login_details/username', filter_type: 'input',
     },
     {
       id: 2, name: 'login_result', display_name: 'Result', filter_field: 'login_result', filter_type: 'list',
       options: [
-        {id: 1, name: 'success', display_name: 'Success', value: 'success'},
-        {id: 2, name: 'wrong password', display_name: 'Wrong password', value: 'wrong password'},
+        {id: 1, name: 'account disabled', display_name: 'Account disabled', value: 'account disabled'},
+        {id: 2, name: 'success', display_name: 'Success', value: 'success'},
+        {id: 3, name: 'user not found', display_name: 'User not found', value: 'user not found'},
+        {id: 4, name: 'wrong password', display_name: 'Wrong password', value: 'wrong password'},
       ]
     },
     {
