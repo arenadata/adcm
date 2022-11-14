@@ -192,7 +192,7 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
         return true;
       });
 
-      if (this.filters.some((f) => f.filter_type === 'input')) {
+      if (this.filters.some((f) => f.filter_type === 'input' && filters[f.filter_field])) {
         data = data.filter((item) => {
           for (let key in filters) {
             if (this.filtersByType[key] === 'input') {
