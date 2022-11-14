@@ -93,7 +93,7 @@ def check_object_definition(fname, conf, def_type, obj_list):
                     f'Action named "{action_name}" should have "host_action: true" property',
                 )
 
-        if action_name in settings.ADCM_MM_ACTION_NAMES_SET and set(action_data).intersection(
+        if action_name in settings.ADCM_SERVICE_ACTION_NAMES_SET and set(action_data).intersection(
             settings.ADCM_MM_ACTION_FORBIDDEN_PROPS_SET
         ):
             err(

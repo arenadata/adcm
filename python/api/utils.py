@@ -39,10 +39,47 @@ from cm.models import (
     ClusterObject,
     ConcernType,
     Host,
+    HostComponent,
     MaintenanceMode,
+    Prototype,
     PrototypeConfig,
     ServiceComponent,
 )
+
+
+def _change_mm_via_action(
+    prototype: Prototype,
+    action_name: str,
+    obj: Host | ClusterObject | ServiceComponent,
+    serializer: Serializer,
+) -> Serializer:
+    action = Action.objects.filter(prototype=prototype, name=action_name).first()
+    if action:
+        start_task(
+            action=action,
+            obj=obj,
+            conf={},
+            attr={},
+            hc=[],
+            hosts=[],
+            verbose=False,
+        )
+        serializer.validated_data["maintenance_mode"] = MaintenanceMode.CHANGING
+
+    return serializer
+
+
+def _update_mm_hierarchy_issues(obj: Host | ClusterObject | ServiceComponent) -> None:
+    if isinstance(obj, Host):
+        update_hierarchy_issues(obj.provider)
+
+    hosts = (host_component.host for host_component in HostComponent.objects.filter(cluster=obj.cluster))
+    for host in hosts:
+        update_hierarchy_issues(host.provider)
+
+    update_hierarchy_issues(obj.cluster)
+    update_issue_after_deleting()
+    load_host_map()
 
 
 def get_object_for_user(user, perms, klass, **kwargs):
@@ -194,26 +231,11 @@ def get_maintenance_mode_response(obj: Host | ClusterObject | ServiceComponent, 
         if serializer.validated_data["maintenance_mode"] == MaintenanceMode.OFF:
             return Response()
 
-        turn_on_action = Action.objects.filter(prototype=prototype, name=turn_on_action_name).first()
-        if turn_on_action:
-            start_task(
-                action=turn_on_action,
-                obj=obj,
-                conf={},
-                attr={},
-                hc=[],
-                hosts=[],
-                verbose=False,
-            )
-            serializer.validated_data["maintenance_mode"] = MaintenanceMode.CHANGING
-
+        serializer = _change_mm_via_action(
+            prototype=prototype, action_name=turn_on_action_name, obj=obj, serializer=serializer
+        )
         serializer.save()
-        if isinstance(obj, Host):
-            update_hierarchy_issues(obj.provider)
-
-        update_hierarchy_issues(obj.cluster)
-        update_issue_after_deleting()
-        load_host_map()
+        _update_mm_hierarchy_issues(obj=obj)
 
         return Response()
 
@@ -221,25 +243,11 @@ def get_maintenance_mode_response(obj: Host | ClusterObject | ServiceComponent, 
         if serializer.validated_data["maintenance_mode"] == MaintenanceMode.ON:
             return Response()
 
-        turn_off_action = Action.objects.filter(prototype=prototype, name=turn_off_action_name).first()
-        if turn_off_action:
-            start_task(
-                action=turn_off_action,
-                obj=obj,
-                conf={},
-                attr={},
-                hc=[],
-                hosts=[],
-                verbose=False,
-            )
-            serializer.validated_data["maintenance_mode"] = MaintenanceMode.CHANGING
-
+        serializer = _change_mm_via_action(
+            prototype=prototype, action_name=turn_off_action_name, obj=obj, serializer=serializer
+        )
         serializer.save()
-        if isinstance(obj, Host):
-            update_hierarchy_issues(obj.provider)
-
-        update_hierarchy_issues(obj.cluster)
-        load_host_map()
+        _update_mm_hierarchy_issues(obj=obj)
 
         return Response()
 
