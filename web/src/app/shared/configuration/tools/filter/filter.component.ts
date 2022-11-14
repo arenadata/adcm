@@ -173,62 +173,66 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
   applyFilters() {
     const filters = this.filterForm.value;
 
-    Object.keys(filters).forEach((f) => {
+    if (Object.keys(filters).filter((f) => {
       if (filters[f] === '' || filters[f] === undefined) {
         delete filters[f];
-      }
-    });
+        return false;
+      } else return true;
+    }).length > 0) {
 
-    let data = this.backupData?.results?.filter((item) => {
-      for (let key in filters) {
-        if (this.filtersByType[key] === 'list') {
-          if (item[key] === undefined || item[key] !== filters[key]) {
-            return false;
+      let data = this.backupData?.results?.filter((item) => {
+        for (let key in filters) {
+          if (this.filtersByType[key] === 'list') {
+            if (item[key] === undefined || item[key] !== filters[key]) {
+              return false;
+            }
           }
         }
-      }
 
-      return true;
-    });
+        return true;
+      });
 
-    if (this.filters.some((f) => f.filter_type === 'input')) {
-      data = data.filter((item) => {
-        for (let key in filters) {
-          if (this.filtersByType[key] === 'input') {
-            if (key.includes('/')) {
-              let nestedKey = key.split('/');
+      if (this.filters.some((f) => f.filter_type === 'input')) {
+        data = data.filter((item) => {
+          for (let key in filters) {
+            if (this.filtersByType[key] === 'input') {
+              if (key.includes('/')) {
+                let nestedKey = key.split('/');
 
-              if (item[nestedKey[0]][nestedKey[1]] !== undefined &&
+                if (item[nestedKey[0]][nestedKey[1]] !== undefined &&
                   item[nestedKey[0]][nestedKey[1]] !== null &&
                   item[nestedKey[0]][nestedKey[1]] !== '' &&
                   item[nestedKey[0]][nestedKey[1]].toLowerCase().includes(filters[key].toLowerCase())) {
-                return true;
+                  return true;
+                }
+              } else {
+                if (item[key] !== undefined && item[key] !== null && item[key] !== '' && item[key].toLowerCase().includes(filters[key].toLowerCase())) {
+                  return true;
+                }
               }
-            } else {
-              if (item[key] !== undefined && item[key] !== null && item[key] !== '' && item[key].toLowerCase().includes(filters[key].toLowerCase())) {
+            }
+          }
+        })
+      }
+
+      if (this.filters.some((f) => f.filter_type === 'datepicker' && filters[f.filter_field].end)) {
+        data = data.filter((item) => {
+          for (let key in filters) {
+            if (this.filtersByType[key] === 'datepicker') {
+              if (item[key] !== undefined && item[key] !== null && (filters[key].start < new Date(item[key]) && new Date(item[key]) < filters[key].end)) {
                 return true;
               }
             }
           }
-        }
-      })
-    }
+        })
+      }
 
-    if (this.filters.some((f) => f.filter_type === 'datepicker' && filters[f.filter_field].end)) {
-      data = data.filter((item) => {
-        for (let key in filters) {
-          if (this.filtersByType[key] === 'datepicker') {
-            if (item[key] !== undefined && item[key] !== null && (filters[key].start < new Date(item[key]) && new Date(item[key]) < filters[key].end)) {
-              return true;
-            }
-          }
-        }
-      })
+      let count = this.activeFilters.length === 0 ? this.backupData.count : data.count;
+      this.freezeBackupData = true;
+      this.innerData.next({...this.backupData, count, results: data});
+    } else {
+      this.innerData.next(this.backupData);
     }
-
-    let count = this.activeFilters.length === 0 ? this.backupData.count : data.count;
-    this.freezeBackupData = true;
-    this.innerData.next({...this.backupData, count, results: data});
   }
 
   clearButtonVisible(field) {
