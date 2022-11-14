@@ -53,7 +53,7 @@ def get_obj(**kwargs):
 
 
 class ActionList(PermissionListMixin, GenericUIView):
-    queryset = Action.objects.filter(upgrade__isnull=True).exclude(name__in=settings.ADCM_MM_ACTION_NAMES_SET)
+    queryset = Action.objects.filter(upgrade__isnull=True).exclude(name__in=settings.ADCM_SERVICE_ACTION_NAMES_SET)
     serializer_class = ActionSerializer
     serializer_class_ui = ActionUISerializer
     filterset_fields = ("name",)

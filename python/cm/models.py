@@ -789,6 +789,20 @@ class ClusterObject(ADCMEntity):
     def is_maintenance_mode_available(self) -> bool:
         return self.cluster.prototype.allow_maintenance_mode
 
+    @property
+    def has_another_service_requires(self) -> bool:
+        components = ServiceComponent.objects.filter(service=self)
+        for component in components:
+            for require in component.requires:
+                if (
+                    require.get("service")
+                    and require["service"] != self.name
+                    and HostComponent.objects.filter(component=component)
+                ):
+                    return True
+
+        return False
+
     class Meta:
         unique_together = (("cluster", "prototype"),)
 

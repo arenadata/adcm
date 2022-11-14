@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.conf import settings
 from guardian.mixins import PermissionListMixin
 from rest_framework import permissions
 from rest_framework.request import Request
@@ -39,9 +40,19 @@ from api.utils import (
     get_object_for_user,
 )
 from audit.utils import audit
-from cm.api import delete_service, get_import, unbind
+from cm.api import cancel_locking_tasks, delete_service, get_import, unbind
 from cm.errors import raise_adcm_ex
-from cm.models import Cluster, ClusterBind, ClusterObject, HostComponent, Prototype
+from cm.job import start_task
+from cm.models import (
+    Action,
+    Cluster,
+    ClusterBind,
+    ClusterObject,
+    HostComponent,
+    JobStatus,
+    Prototype,
+    TaskLog,
+)
 from cm.status_api import make_ui_service_status
 from rbac.viewsets import DjangoOnlyObjectPermissions
 
@@ -100,11 +111,38 @@ class ServiceDetailView(PermissionListMixin, DetailView):
 
     @audit
     def delete(self, request, *args, **kwargs):
-        instance = self.get_object()
+        instance: ClusterObject = self.get_object()
         if instance.state != "created":
             raise_adcm_ex("SERVICE_DELETE_ERROR")
 
-        delete_service(instance)
+        if HostComponent.objects.filter(cluster=instance.cluster, service=instance).exists():
+            raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} has component(s) on host(s)")
+
+        if ClusterBind.objects.filter(source_service=instance).exists():
+            raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} has exports(s)")
+
+        if instance.has_another_service_requires:
+            raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} has another service requires host components")
+
+        delete_action = Action.objects.filter(
+            prototype=instance.prototype, name=settings.ADCM_DELETE_SERVICE_ACTION_NAME
+        ).first()
+        if TaskLog.objects.filter(action=delete_action, status=JobStatus.RUNNING).exists():
+            raise_adcm_ex("SERVICE_DELETE_ERROR", "Service is deleting now")
+
+        if delete_action:
+            start_task(
+                action=delete_action,
+                obj=instance,
+                conf={},
+                attr={},
+                hc=[],
+                hosts=[],
+                verbose=False,
+            )
+        else:
+            cancel_locking_tasks(obj=instance, obj_deletion=True)
+            delete_service(service=instance)
 
         return Response(status=HTTP_204_NO_CONTENT)
 

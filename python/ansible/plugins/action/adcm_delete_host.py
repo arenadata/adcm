@@ -63,7 +63,7 @@ class ActionModule(ActionBase):
         logger.info('ansible module adcm_delete_host: host #%s', host_id)
 
         try:
-            cm.api.delete_host_by_id(host_id)
+            cm.api.delete_host_by_pk(host_id)
         except AdcmEx as e:
             raise AnsibleError(e.code + ":" + e.msg) from e
 

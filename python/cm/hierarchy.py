@@ -117,6 +117,7 @@ class Tree:
             return node
 
     def _build_tree_down(self, node: Node) -> None:
+        children_values = []
         if node.type == 'root':
             children_values = [n.value for n in node.children]
 
@@ -155,7 +156,10 @@ class Tree:
         if node.type == 'cluster':
             parent_values = [None]
         elif node.type == 'service':
-            parent_values = [node.value.cluster]
+            if node.value.maintenance_mode == MaintenanceMode.OFF:
+                parent_values = [node.value.cluster]
+            else:
+                parent_values = []
         elif node.type == 'component':
             if node.value.maintenance_mode == MaintenanceMode.OFF:
                 parent_values = [node.value.service]

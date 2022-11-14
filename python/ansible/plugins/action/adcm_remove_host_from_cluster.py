@@ -75,7 +75,7 @@ class ActionModule(ActionBase):
 
         logger.info('ansible module: cluster_id %s, fqdn %s, host_id: %s', cluster_id, fqdn, host_id)
         try:
-            cm.api.remove_host_from_cluster_by_id(cluster_id, fqdn, host_id)
+            cm.api.remove_host_from_cluster_by_pk(cluster_id, fqdn, host_id)
         except AdcmEx as e:
             raise AnsibleError(e.code + ": " + e.msg) from e
 
