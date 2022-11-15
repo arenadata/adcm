@@ -22,12 +22,14 @@ from cm.models import (
     ClusterObject,
     Host,
     HostProvider,
+    Prototype,
     ServiceComponent,
 )
 from rbac.models import Group, Policy, Role, User
 
 
 class AuditObjectType(models.TextChoices):
+    Prototype = "prototype", "prototype"
     Cluster = "cluster", "cluster"
     Service = "service", "service"
     Component = "component", "component"
@@ -102,6 +104,7 @@ MODEL_TO_AUDIT_OBJECT_TYPE_MAP = {
     Group: AuditObjectType.Group,
     Role: AuditObjectType.Role,
     Policy: AuditObjectType.Policy,
+    Prototype: AuditObjectType.Prototype,
 }
 
 AUDIT_OBJECT_TYPE_TO_MODEL_MAP = {v: k for k, v in MODEL_TO_AUDIT_OBJECT_TYPE_MAP.items()}

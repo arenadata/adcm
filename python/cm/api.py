@@ -37,7 +37,6 @@ from cm.issue import (
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
-    Bundle,
     Cluster,
     ClusterBind,
     ClusterObject,
@@ -59,10 +58,10 @@ from cm.status_api import api_request, post_event
 from rbac.models import re_apply_object_policy
 
 
-def check_license(bundle: Bundle) -> None:
-    if bundle.license == "unaccepted":
+def check_license(proto: Prototype) -> None:
+    if proto.license == "unaccepted":
         raise_adcm_ex(
-            "LICENSE_ERROR", f'License for bundle "{bundle.name}" {bundle.version} {bundle.edition} is not accepted'
+            "LICENSE_ERROR", f'License for prototype "{proto.name}" {proto.type} {proto.version} is not accepted'
         )
 
 
@@ -150,7 +149,7 @@ def add_cluster(proto, name, desc=""):
     if proto.type != "cluster":
         raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be cluster, not {proto.type}")
 
-    check_license(proto.bundle)
+    check_license(proto)
     with transaction.atomic():
         cluster = Cluster.objects.create(prototype=proto, name=name, description=desc)
         obj_conf = init_object_config(proto, cluster)
@@ -169,7 +168,7 @@ def add_host(proto, provider, fqdn, desc=""):
     if proto.type != "host":
         raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be host, not {proto.type}")
 
-    check_license(proto.bundle)
+    check_license(proto)
     if proto.bundle != provider.prototype.bundle:
         raise_adcm_ex(
             "FOREIGN_HOST",
@@ -198,7 +197,7 @@ def add_host_provider(proto, name, desc=""):
     if proto.type != "provider":
         raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be provider, not {proto.type}")
 
-    check_license(proto.bundle)
+    check_license(proto)
     with transaction.atomic():
         provider = HostProvider.objects.create(prototype=proto, name=name, description=desc)
         obj_conf = init_object_config(proto, provider)
@@ -445,7 +444,7 @@ def add_service_to_cluster(cluster, proto):
     if proto.type != "service":
         raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be service, not {proto.type}")
 
-    check_license(proto.bundle)
+    check_license(proto)
     if not proto.shared:
         if cluster.prototype.bundle != proto.bundle:
             raise_adcm_ex(
@@ -479,29 +478,26 @@ def add_components_to_service(cluster, service):
         update_hierarchy_issues(sc)
 
 
-def get_license(bundle):
-    if not bundle.license_path:
+def get_license(proto: Prototype) -> str | None:
+    if not proto.license_path:
         return None
-
-    proto = Prototype.objects.filter(bundle=bundle, name=bundle.name).first()
-
-    return read_bundle_file(
-        proto, bundle.license_path, bundle.hash, "license file", f'bundle "{bundle.name}" {bundle.version}'
-    )
+    if not isinstance(proto, Prototype):
+        raise_adcm_ex("LICENSE_ERROR")
+    return read_bundle_file(proto, proto.license_path, proto.bundle.hash, "license file")
 
 
-def accept_license(bundle):
-    if not bundle.license_path:
+def accept_license(proto: Prototype) -> None:
+    if not proto.license_path:
         raise_adcm_ex("LICENSE_ERROR", "This bundle has no license")
 
-    if bundle.license == "absent":
+    if proto.license == "absent":
         raise_adcm_ex("LICENSE_ERROR", "This bundle has no license")
 
-    bundle.license = "accepted"
-    bundle.save()
+    proto.license = "accepted"
+    proto.save()
 
 
-def update_obj_config(obj_conf, conf, attr, desc=""):
+def update_obj_config(obj_conf, conf, attr, desc="") -> ConfigLog:
     if not isinstance(attr, dict):
         raise_adcm_ex("INVALID_CONFIG_UPDATE", "attr should be a map")
 

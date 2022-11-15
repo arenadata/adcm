@@ -188,7 +188,6 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
             version="1.0",
             hash="47b820a6d66a90b02b42017269904ab2c954bceb",
             edition="community",
-            license="absent",
             category=category,
         )
         self.bundle_1.refresh_from_db()

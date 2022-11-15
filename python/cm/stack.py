@@ -205,6 +205,12 @@ def save_prototype(path, conf, def_type, bundle_hash):
     fix_display_name(conf, proto)
     license_hash = get_license_hash(proto, conf, bundle_hash)
     if license_hash:
+        if def_type not in ["cluster", "service", "provider"]:
+            err(
+                "INVALID_OBJECT_DEFINITION",
+                f"Invalid license definition in {proto_ref(proto)}."
+                f" License can be placed in cluster, service or provider",
+            )
         proto.license_path = conf["license"]
         proto.license_hash = license_hash
     proto.save()
