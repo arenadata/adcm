@@ -15,10 +15,10 @@
  * "copy" of the BehaviourSubject with data for the table and pass it to the table. You must pass both the original
  * and the "copy" to the filter component
  */
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { FormControl, FormGroup } from '@angular/forms';
-import { BaseDirective } from "../../../directives";
-import { BehaviorSubject } from "rxjs";
+import {Component, Input, OnDestroy, OnInit} from '@angular/core';
+import {FormControl, FormGroup} from '@angular/forms';
+import {BaseDirective} from "../../../directives";
+import {BehaviorSubject} from "rxjs";
 
 export interface IFilter {
   id: number,
@@ -54,25 +54,33 @@ type FilterType = 'list' | 'input' | 'datepicker';
             <mat-form-field class="filter-field" [ngClass]="{ 'datepicker': filter.filter_type === 'datepicker' }">
               <ng-container [ngSwitch]="filter.filter_type">
                 <ng-container *ngSwitchCase="'list'">
-                  <mat-select  placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}"
-                               (selectionChange)="applyFilters()">
+                  <mat-select placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}"
+                              (selectionChange)="applyFilters()">
                     <mat-option *ngFor="let p of filter.options" [value]="p.value">{{ p.display_name }}</mat-option>
                   </mat-select>
                 </ng-container>
                 <ng-container *ngSwitchCase="'input'">
-                  <input matInput autofocus placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}" (keyup.enter)="applyFilters()" (change)="applyFilters()">
+                  <input matInput autofocus placeholder="{{ filter.display_name }}"
+                         formControlName="{{ filter.filter_field }}" (keyup.enter)="applyFilters()"
+                         (change)="applyFilters()">
                 </ng-container>
                 <ng-container *ngSwitchCase="'datepicker'">
                   <mat-form-field class="datepicker-form">
                     <mat-label>{{ filter.display_name }}</mat-label>
-                    <mat-date-range-input class="filter-datepicker-range-input" [formGroup]="datepickerGroup(filter.filter_field)" [rangePicker]="picker">
+                    <mat-date-range-input class="filter-datepicker-range-input"
+                                          [formGroup]="datepickerGroup(filter.filter_field)" [rangePicker]="picker">
                       <input matStartDate formControlName="start">
                       <input matEndDate formControlName="end" (dateChange)="setDate($event)">
                     </mat-date-range-input>
                     <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
                     <mat-date-range-picker #picker></mat-date-range-picker>
-                    <mat-error *ngIf="datepickerGroup(filter.filter_field).controls.start.hasError('matStartDateInvalid')">Invalid start date</mat-error>
-                    <mat-error *ngIf="datepickerGroup(filter.filter_field).controls.end.hasError('matEndDateInvalid')">Invalid end date</mat-error>
+                    <mat-error
+                      *ngIf="datepickerGroup(filter.filter_field).controls.start.hasError('matStartDateInvalid')">
+                      Invalid start date
+                    </mat-error>
+                    <mat-error *ngIf="datepickerGroup(filter.filter_field).controls.end.hasError('matEndDateInvalid')">
+                      Invalid end date
+                    </mat-error>
                   </mat-form-field>
                 </ng-container>
               </ng-container>
@@ -183,56 +191,56 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
       return;
     }
 
-      let data = this.backupData?.results?.filter((item) => {
-        for (let key in filters) {
-          if (this.filtersByType[key] === 'list') {
-            if (item[key] === undefined || item[key] !== filters[key]) {
-              return false;
-            }
+    let data = this.backupData?.results?.filter((item) => {
+      for (let key in filters) {
+        if (this.filtersByType[key] === 'list') {
+          if (item[key] === undefined || item[key] !== filters[key]) {
+            return false;
           }
         }
-
-        return true;
-      });
-
-      if (this.filters.some((f) => f.filter_type === 'input' && filters[f.filter_field])) {
-        data = data.filter((item) => {
-          for (let key in filters) {
-            if (this.filtersByType[key] === 'input') {
-              if (key.includes('/')) {
-                let nestedKey = key.split('/');
-
-                if (item[nestedKey[0]][nestedKey[1]] !== undefined &&
-                  item[nestedKey[0]][nestedKey[1]] !== null &&
-                  item[nestedKey[0]][nestedKey[1]] !== '' &&
-                  item[nestedKey[0]][nestedKey[1]].toLowerCase().includes(filters[key].toLowerCase())) {
-                  return true;
-                }
-              } else {
-                if (item[key] !== undefined && item[key] !== null && item[key] !== '' && item[key].toLowerCase().includes(filters[key].toLowerCase())) {
-                  return true;
-                }
-              }
-            }
-          }
-        })
       }
 
-      if (this.filters.some((f) => f.filter_type === 'datepicker' && filters[f.filter_field].end)) {
-        data = data.filter((item) => {
-          for (let key in filters) {
-            if (this.filtersByType[key] === 'datepicker') {
-              if (item[key] !== undefined && item[key] !== null && (filters[key].start < new Date(item[key]) && new Date(item[key]) < filters[key].end)) {
+      return true;
+    });
+
+    if (this.filters.some((f) => f.filter_type === 'input' && filters[f.filter_field])) {
+      data = data.filter((item) => {
+        for (let key in filters) {
+          if (this.filtersByType[key] === 'input') {
+            if (key.includes('/')) {
+              let nestedKey = key.split('/');
+
+              if (item[nestedKey[0]][nestedKey[1]] !== undefined &&
+                item[nestedKey[0]][nestedKey[1]] !== null &&
+                item[nestedKey[0]][nestedKey[1]] !== '' &&
+                item[nestedKey[0]][nestedKey[1]].toLowerCase().includes(filters[key].toLowerCase())) {
+                return true;
+              }
+            } else {
+              if (item[key] !== undefined && item[key] !== null && item[key] !== '' && item[key].toLowerCase().includes(filters[key].toLowerCase())) {
                 return true;
               }
             }
           }
-        })
-      }
+        }
+      })
+    }
 
-      let count = this.activeFilters.length === 0 ? this.backupData.count : data.count;
-      this.freezeBackupData = true;
-      this.innerData.next({...this.backupData, count, results: data});
+    if (this.filters.some((f) => f.filter_type === 'datepicker' && filters[f.filter_field].end)) {
+      data = data.filter((item) => {
+        for (let key in filters) {
+          if (this.filtersByType[key] === 'datepicker') {
+            if (item[key] !== undefined && item[key] !== null && (filters[key].start < new Date(item[key]) && new Date(item[key]) < filters[key].end)) {
+              return true;
+            }
+          }
+        }
+      })
+    }
+
+    let count = this.activeFilters.length === 0 ? this.backupData.count : data.count;
+    this.freezeBackupData = true;
+    this.innerData.next({...this.backupData, count, results: data});
   }
 
   clearButtonVisible(field) {
