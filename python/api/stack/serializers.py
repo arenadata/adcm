@@ -38,12 +38,9 @@ class LoadBundleSerializer(EmptySerializer):
 
 
 class BundleSerializer(HyperlinkedModelSerializer):
-    license_url = HyperlinkedIdentityField(
-        view_name="bundle-license", lookup_field="pk", lookup_url_kwarg="bundle_pk"
-    )
-    update = HyperlinkedIdentityField(
-        view_name="bundle-update", lookup_field="pk", lookup_url_kwarg="bundle_pk"
-    )
+    license_url = HyperlinkedIdentityField(view_name="bundle-license", lookup_field="pk", lookup_url_kwarg="bundle_pk")
+    update = HyperlinkedIdentityField(view_name="bundle-update", lookup_field="pk", lookup_url_kwarg="bundle_pk")
+    license = SerializerMethodField()
 
     class Meta:
         model = Bundle
@@ -53,8 +50,6 @@ class BundleSerializer(HyperlinkedModelSerializer):
             "version",
             "edition",
             "license",
-            "license_path",
-            "license_hash",
             "hash",
             "description",
             "date",
@@ -67,14 +62,24 @@ class BundleSerializer(HyperlinkedModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        proto = Prototype.objects.filter(bundle=instance, name=instance.name)
-        data["adcm_min_version"] = proto[0].adcm_min_version
-        data["display_name"] = proto[0].display_name
+        proto = Prototype.objects.filter(bundle=instance, name=instance.name).first()
+        data["adcm_min_version"] = proto.adcm_min_version
+        data["display_name"] = proto.display_name
 
         return data
 
+    def get_license(self, obj: Bundle) -> str | None:
+        proto = Prototype.objects.filter(bundle=obj, name=obj.name).first()
+        if proto:
+            return proto.license
+
+        return None
+
 
 class PrototypeSerializer(HyperlinkedModelSerializer):
+    license_url = HyperlinkedIdentityField(
+        view_name="prototype-license", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+    )
     bundle_edition = CharField(source="bundle.edition")
 
     class Meta:
@@ -85,6 +90,10 @@ class PrototypeSerializer(HyperlinkedModelSerializer):
             "type",
             "path",
             "name",
+            "license",
+            "license_path",
+            "license_hash",
+            "license_url",
             "display_name",
             "version",
             "required",
@@ -290,7 +299,6 @@ class ADCMPrototypeSerializer(PrototypeSerializer):
 
 
 class ClusterPrototypeSerializer(PrototypeSerializer):
-    license = CharField(source="bundle.license")
     url = HyperlinkedIdentityField(
         view_name="cluster-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
     )
@@ -299,7 +307,6 @@ class ClusterPrototypeSerializer(PrototypeSerializer):
         model = Prototype
         fields = (
             *PrototypeSerializer.Meta.fields,
-            "license",
             "url",
         )
         read_only_fields = fields
@@ -322,7 +329,6 @@ class HostPrototypeSerializer(PrototypeSerializer):
 
 
 class ProviderPrototypeSerializer(PrototypeSerializer):
-    license = CharField(source="bundle.license")
     url = HyperlinkedIdentityField(
         view_name="provider-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
     )
@@ -331,7 +337,6 @@ class ProviderPrototypeSerializer(PrototypeSerializer):
         model = Prototype
         fields = (
             *PrototypeSerializer.Meta.fields,
-            "license",
             "url",
         )
         read_only_fields = fields

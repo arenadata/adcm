@@ -17,9 +17,9 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metadata_version': '1.1', 'supported_by': 'Arenadata'}
+ANSIBLE_METADATA = {"metadata_version": "1.1", "supported_by": "Arenadata"}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: adcm_add_host
 short_description: add host to ADCM DB
@@ -35,19 +35,19 @@ options:
     description:
       - Comment
     required: no
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
  - name: add new host
    adcm_add_host:
      fqdn: my.host.org
      description: "add my host"
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 result:
   host_id: ID of new created host
-'''
+"""
 
 import sys
 
@@ -57,34 +57,38 @@ from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm/python')
 import adcm.init_django  # pylint: disable=unused-import
-import cm.api
+from cm.api import add_host
 from cm.ansible_plugin import get_object_id_from_context
 from cm.errors import AdcmEx
 from cm.logger import logger
+from cm.models import HostProvider, Prototype
 
 
 class ActionModule(ActionBase):
-
     TRANSFERS_FILES = False
-    _VALID_ARGS = frozenset(('fqdn', 'description'))
+    _VALID_ARGS = frozenset(("fqdn", "description"))
 
     def run(self, tmp=None, task_vars=None):
         super().run(tmp, task_vars)
-        msg = 'You can add host only in host provider context'
-        provider_id = get_object_id_from_context(task_vars, 'provider_id', 'provider', err_msg=msg)
 
-        if 'fqdn' not in self._task.args:
+        provider_pk = get_object_id_from_context(
+            task_vars, "provider_id", "provider", err_msg="You can add host only in host provider context"
+        )
+        if "fqdn" not in self._task.args:
             raise AnsibleError("fqdn is mandatory args of adcm_add_host")
-        fqdn = self._task.args['fqdn']
-        desc = ''
-        if 'description' in self._task.args:
-            desc = self._task.args['description']
 
-        logger.info('ansible module adcm_add_host: provider %s, fqdn %s', provider_id, fqdn)
+        fqdn = self._task.args["fqdn"]
+        desc = ""
+        if "description" in self._task.args:
+            desc = self._task.args["description"]
+
+        logger.info("ansible module adcm_add_host: provider %s, fqdn %s", provider_pk, fqdn)
 
         try:
-            host = cm.api.add_provider_host(provider_id, fqdn, desc)
+            provider = HostProvider.obj.get(pk=provider_pk)
+            proto = Prototype.objects.get(bundle=provider.prototype.bundle, type="host")
+            host = add_host(proto=proto, provider=provider, fqdn=fqdn, desc=desc)
         except AdcmEx as e:
-            raise AnsibleError(e.code + ":" + e.msg) from e
+            raise AnsibleError(f"{e.code}:{e.msg}") from e
 
-        return {"failed": False, "changed": True, "host_id": host.id}
+        return {"failed": False, "changed": True, "host_id": host.pk}

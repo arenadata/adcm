@@ -384,7 +384,7 @@ class TestObjectUpdates:
         self.admin_creds = make_auth_header(sdk_client_fs)
         self.new_user_creds = unauthorized_creds
 
-    @parametrize_audit_scenario_parsing('objects_update.yaml', NEW_USER)
+    @parametrize_audit_scenario_parsing("objects_update.yaml", NEW_USER)
     @pytest.mark.parametrize("method", ["put", "patch"])  # pylint: disable-next=too-many-arguments
     def test_update_objects(
         self, method: str, bundle_with_license, build_policy, audit_log_checker, generic_provider, sdk_client_fs
@@ -432,7 +432,6 @@ class TestObjectUpdates:
                 {
                     "prototype_id": host.prototype_id,
                     "provider_id": host.provider_id,
-                    "maintenance_mode": host.maintenance_mode,
                 }
                 if method == "put"
                 else {}
@@ -440,9 +439,11 @@ class TestObjectUpdates:
         }
         with allure.step(f'Update host via {method.upper()} {url} with body: {body}'):
             check_succeed(getattr(requests, method)(url, json=body, headers=self.admin_creds))
-        body = {**body, "maintenance_mode": "on"}
         with allure.step(f'Fail updating host via {method.upper()} {url} with body: {body}'):
-            check_failed(getattr(requests, method)(url, json=body, headers=self.admin_creds), exact_code=409)
+            check_failed(
+                getattr(requests, method)(url, json={**body, "provider_id": False}, headers=self.admin_creds),
+                exact_code=400,
+            )
 
     def _update_host_in_cluster(self, host: Host, method: str):
         url = f'{self.client.url}/api/v1/cluster/{host.cluster_id}/host/{host.id}/'

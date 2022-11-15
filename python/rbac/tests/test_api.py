@@ -102,9 +102,7 @@ class ApiTests(BaseTestCase):
             (
                 {"name": "test", "role": []},
                 {
-                    "role": {
-                        "non_field_errors": ["Invalid data. Expected a dictionary, but got list."]
-                    },
+                    "role": {"non_field_errors": ["Invalid data. Expected a dictionary, but got list."]},
                     "object": ["This field is required."],
                 },
             ),
@@ -379,9 +377,7 @@ class ApiTests(BaseTestCase):
             self.assertEqual(json.loads(response.content), response_data)
 
     def test_patch_empty_role_id(self):
-        role = Role.objects.create(
-            name="Test role", module_name="rbac.roles", class_name="ModelRole"
-        )
+        role = Role.objects.create(name="Test role", module_name="rbac.roles", class_name="ModelRole")
         policy = Policy.objects.create(name="Test policy", role=role, built_in=False)
         policy.user.add(self.test_user)
 
@@ -399,9 +395,7 @@ class ApiTests(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        response = self.client.patch(
-            path=path, data={**data_valid, **{"role": {}}}, content_type=APPLICATION_JSON
-        )
+        response = self.client.patch(path=path, data={**data_valid, **{"role": {}}}, content_type=APPLICATION_JSON)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["role"], ["This field may not be empty."])

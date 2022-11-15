@@ -25,9 +25,7 @@ logger = logging.getLogger("background_tasks")
 
 
 def get_settings(adcm_object):
-    current_configlog = ConfigLog.objects.get(
-        obj_ref=adcm_object.config, id=adcm_object.config.current
-    )
+    current_configlog = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
     if current_configlog.attr["ldap_integration"]["active"]:
         ldap_config = current_configlog.config["ldap_integration"]
         return ldap_config["sync_interval"]

@@ -77,6 +77,7 @@ def env_configuration(job_config):
     stack_dir = job_config["env"]["stack_dir"]
     env = os.environ.copy()
     env = set_pythonpath(env, stack_dir)
+
     # This condition is intended to support compatibility.
     # Since older bundle versions may contain their own ansible.cfg
     if not Path(stack_dir, "ansible.cfg").is_file():

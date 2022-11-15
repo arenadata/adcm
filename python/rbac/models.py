@@ -65,9 +65,7 @@ class User(AuthUser):
         self.is_active = False
         self.save()
 
-    type = models.CharField(
-        max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local
-    )
+    type = models.CharField(max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local)
 
     @property
     def name(self):
@@ -82,27 +80,21 @@ class Group(AuthGroup):
 
     description = models.CharField(max_length=255, null=True)
     built_in = models.BooleanField(default=False, null=False)
-    type = models.CharField(
-        max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local
-    )
+    type = models.CharField(max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local)
     # works as `name` field because `name` field now contains name and type
     # to bypass unique constraint on `AuthGroup` base table
     display_name = models.CharField(max_length=150, null=True)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(
-                fields=['display_name', 'type'], name='unique_display_name_type'
-            ),
+            models.UniqueConstraint(fields=['display_name', 'type'], name='unique_display_name_type'),
         ]
 
     def name_to_display(self):
         return self.display_name
 
 
-BASE_GROUP_NAME_PATTERN = re.compile(
-    rf'(?P<base_name>.*?)(?: \[(?:{"|".join(OriginType.values)})\]|$)'
-)
+BASE_GROUP_NAME_PATTERN = re.compile(rf'(?P<base_name>.*?)(?: \[(?:{"|".join(OriginType.values)})\]|$)')
 
 
 @receiver(pre_save, sender=Group)
@@ -138,22 +130,16 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
     init_params = models.JSONField(default=dict)
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE, null=True, default=None)
     built_in = models.BooleanField(default=True, null=False)
-    type = models.CharField(
-        max_length=32, choices=RoleTypes.choices, null=False, default=RoleTypes.role
-    )
+    type = models.CharField(max_length=32, choices=RoleTypes.choices, null=False, default=RoleTypes.role)
     category = models.ManyToManyField(ProductCategory)
     any_category = models.BooleanField(default=False)
-    parametrized_by_type = models.JSONField(
-        default=list, null=False, validators=[validate_object_type]
-    )
+    parametrized_by_type = models.JSONField(default=list, null=False, validators=[validate_object_type])
     __obj__ = None
 
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['name', 'built_in'], name='unique_name'),
-            models.UniqueConstraint(
-                fields=['display_name', 'built_in'], name='unique_display_name'
-            ),
+            models.UniqueConstraint(fields=['display_name', 'built_in'], name='unique_display_name'),
         ]
         indexes = [
             models.Index(fields=['name', 'display_name']),
@@ -221,11 +207,7 @@ class PolicyObject(models.Model):
     object = GenericForeignKey('content_type', 'object_id')
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['content_type', 'object_id'], name='unique_policy_object'
-            )
-        ]
+        constraints = [models.UniqueConstraint(fields=['content_type', 'object_id'], name='unique_policy_object')]
 
 
 class PolicyPermission(models.Model):

@@ -77,11 +77,7 @@ class Command(BaseCommand):
         target_logins = AuditSession.objects.filter(login_time__lt=threshold_date)
         target_objects = (
             AuditObject.objects.filter(is_deleted=True)
-            .annotate(
-                not_deleted_auditlogs_count=Count(
-                    "auditlog", filter=~Q(auditlog__in=target_operations)
-                )
-            )
+            .annotate(not_deleted_auditlogs_count=Count("auditlog", filter=~Q(auditlog__in=target_operations)))
             .filter(not_deleted_auditlogs_count__lte=0)
         )
 

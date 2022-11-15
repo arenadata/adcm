@@ -44,7 +44,6 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
-    MaintenanceModeType,
     ObjectConfig,
     Prototype,
     PrototypeExport,
@@ -72,9 +71,7 @@ class TestCluster(BaseTestCase):
         config.current = self.config_log.pk
         config.save(update_fields=["current"])
 
-        self.cluster = Cluster.objects.create(
-            prototype=self.cluster_prototype, name="test_cluster_2", config=config
-        )
+        self.cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_2", config=config)
         self.service_prototype = Prototype.objects.create(
             bundle=self.bundle,
             type="service",
@@ -105,9 +102,7 @@ class TestCluster(BaseTestCase):
         self.cluster_deleted_str = "Cluster deleted"
         self.action_display_name = "test_cluster_action"
 
-    def check_log_no_obj(
-        self, log: AuditLog, operation_result: AuditLogOperationResult, user: User
-    ) -> None:
+    def check_log_no_obj(self, log: AuditLog, operation_result: AuditLogOperationResult, user: User) -> None:
         self.assertFalse(log.audit_object)
         self.assertEqual(log.operation_name, "Cluster created")
         self.assertEqual(log.operation_type, AuditLogOperationType.Create)
@@ -144,9 +139,7 @@ class TestCluster(BaseTestCase):
         self.assertEqual(log.user.pk, user.pk)
         self.assertDictEqual(log.object_changes, object_changes)
 
-    def check_log_denied(
-        self, log: AuditLog, operation_name: str, operation_type: AuditLogOperationType
-    ) -> None:
+    def check_log_denied(self, log: AuditLog, operation_name: str, operation_type: AuditLogOperationType) -> None:
         self.assertEqual(log.audit_object.object_id, self.cluster.pk)
         self.assertEqual(log.audit_object.object_name, self.cluster.name)
         self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
@@ -214,9 +207,7 @@ class TestCluster(BaseTestCase):
 
     def get_cluster_service_for_bind(self):
         bundle = Bundle.objects.create(name="test_bundle_2")
-        cluster_prototype = Prototype.objects.create(
-            bundle=bundle, type="cluster", name="Export_cluster"
-        )
+        cluster_prototype = Prototype.objects.create(bundle=bundle, type="cluster", name="Export_cluster")
         service_prototype = Prototype.objects.create(
             bundle=bundle,
             type="service",
@@ -343,9 +334,7 @@ class TestCluster(BaseTestCase):
             data={"bundle_file": provider_bundle_filename},
         )
 
-        cluster_prototype = Prototype.objects.create(
-            bundle_id=cluster_bundle_response.data["id"], type="cluster"
-        )
+        cluster_prototype = Prototype.objects.create(bundle_id=cluster_bundle_response.data["id"], type="cluster")
         cluster_1_response: Response = self.create_cluster(
             bundle_id=cluster_bundle_response.data["id"],
             name="new-test-cluster-1",
@@ -357,9 +346,7 @@ class TestCluster(BaseTestCase):
             prototype_id=cluster_prototype.pk,
         )
 
-        provider_prototype = Prototype.objects.create(
-            bundle_id=provider_bundle_response.data["id"], type="provider"
-        )
+        provider_prototype = Prototype.objects.create(bundle_id=provider_bundle_response.data["id"], type="provider")
         provider_response: Response = self.client.post(
             path=reverse("provider"),
             data={
@@ -368,9 +355,7 @@ class TestCluster(BaseTestCase):
             },
         )
 
-        host_prototype = Prototype.objects.create(
-            bundle_id=provider_bundle_response.data["id"], type="host"
-        )
+        host_prototype = Prototype.objects.create(bundle_id=provider_bundle_response.data["id"], type="host")
         host_1_response: Response = self.client.post(
             path=reverse("host"),
             data={
@@ -414,9 +399,7 @@ class TestCluster(BaseTestCase):
 
         self.assertFalse(AuditObject.objects.filter(is_deleted=True))
 
-        self.client.delete(
-            path=reverse("cluster-details", kwargs={"cluster_id": cluster_1_response.data["id"]})
-        )
+        self.client.delete(path=reverse("cluster-details", kwargs={"cluster_id": cluster_1_response.data["id"]}))
 
         self.assertEqual(AuditObject.objects.filter(is_deleted=True).count(), 1)
 
@@ -434,9 +417,7 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Delete,
         )
 
-        response: Response = self.client.delete(
-            path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
-        )
+        response: Response = self.client.delete(path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -445,9 +426,7 @@ class TestCluster(BaseTestCase):
 
     def test_delete_failed(self):
         cluster_pks = ClusterObject.objects.all().values_list("pk", flat=True).order_by("-pk")
-        res = self.client.delete(
-            path=reverse("cluster-details", kwargs={"cluster_id": cluster_pks[0] + 1})
-        )
+        res = self.client.delete(path=reverse("cluster-details", kwargs={"cluster_id": cluster_pks[0] + 1}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -555,9 +534,7 @@ class TestCluster(BaseTestCase):
         )
 
         self.client.delete(
-            path=reverse(
-                "cluster-bind-details", kwargs={"cluster_id": self.cluster.pk, "bind_id": 411}
-            ),
+            path=reverse("cluster-bind-details", kwargs={"cluster_id": self.cluster.pk, "bind_id": 411}),
             content_type=APPLICATION_JSON,
         )
 
@@ -597,9 +574,7 @@ class TestCluster(BaseTestCase):
 
         bind = ClusterBind.objects.first()
         self.client.delete(
-            path=reverse(
-                "cluster-bind-details", kwargs={"cluster_id": self.cluster.pk, "bind_id": bind.pk}
-            ),
+            path=reverse("cluster-bind-details", kwargs={"cluster_id": self.cluster.pk, "bind_id": bind.pk}),
             content_type=APPLICATION_JSON,
         )
 
@@ -638,9 +613,7 @@ class TestCluster(BaseTestCase):
 
         bind = ClusterBind.objects.first()
         self.client.delete(
-            path=reverse(
-                "cluster-bind-details", kwargs={"cluster_id": self.cluster.pk, "bind_id": bind.pk}
-            ),
+            path=reverse("cluster-bind-details", kwargs={"cluster_id": self.cluster.pk, "bind_id": bind.pk}),
             content_type=APPLICATION_JSON,
         )
 
@@ -807,7 +780,9 @@ class TestCluster(BaseTestCase):
         )
 
     def test_update_host(self):
-        data = {"description": self.description, "maintenance_mode": "on"}
+        data = {"description": self.description}
+        self.cluster.prototype.allow_maintenance_mode = True
+        self.cluster.prototype.save(update_fields=["allow_maintenance_mode"])
         self.host.cluster = self.cluster
         self.host.save(update_fields=["cluster"])
         self.client.patch(
@@ -826,49 +801,28 @@ class TestCluster(BaseTestCase):
             obj_type=AuditObjectType.Host,
             operation_name=self.host_updated,
             operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Fail,
-        )
-        self.client.patch(
-            path=reverse(
-                "host-details",
-                kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
-            ),
-            data={"fqdn": "new_test_fqdn"},
-            content_type=APPLICATION_JSON,
-        )
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-        self.check_log(
-            log=log,
-            obj=self.host,
-            obj_name=self.host.name,
-            obj_type=AuditObjectType.Host,
-            operation_name=self.host_updated,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Fail,
-        )
-        self.host.maintenance_mode = MaintenanceModeType.Off
-        self.host.save(update_fields=["maintenance_mode"])
-
-        self.client.patch(
-            path=reverse(
-                "host-details",
-                kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
-            ),
-            data=data,
-            content_type=APPLICATION_JSON,
-        )
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-        self.check_log(
-            log=log,
-            obj=self.host,
-            obj_name=self.host.name,
-            obj_type=AuditObjectType.Host,
-            operation_name=self.host_updated,
-            operation_type=AuditLogOperationType.Update,
             object_changes={
                 "current": data,
-                "previous": {"description": "", "maintenance_mode": "off"},
+                "previous": {"description": ""},
             },
+        )
+        self.client.patch(
+            path=reverse(
+                "host-details",
+                kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
+            ),
+            data={"fqdn": "new-test-fqdn"},
+            content_type=APPLICATION_JSON,
+        )
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+        self.check_log(
+            log=log,
+            obj=self.host,
+            obj_name=self.host.name,
+            obj_type=AuditObjectType.Host,
+            operation_name=self.host_updated,
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Fail,
         )
 
     def test_update_host_config_denied(self):
@@ -1724,11 +1678,7 @@ class TestCluster(BaseTestCase):
             state_available="any",
         )
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(
-                path=reverse(
-                    "run-task", kwargs={"cluster_id": self.cluster.pk, "action_id": action.pk}
-                )
-            )
+            self.client.post(path=reverse("run-task", kwargs={"cluster_id": self.cluster.pk, "action_id": action.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -1753,7 +1703,10 @@ class TestCluster(BaseTestCase):
             max_version="99",
         )
 
-        with patch("api.cluster.views.create", return_value=Response(status=HTTP_201_CREATED)):
+        with (
+            patch("api.cluster.views.do_upgrade", return_value={}),
+            patch("api.cluster.views.check_obj"),
+        ):
             self.client.post(
                 path=reverse(
                     "do-cluster-upgrade",
@@ -1777,7 +1730,10 @@ class TestCluster(BaseTestCase):
             max_version="99",
         )
 
-        with patch("api.cluster.views.create", return_value=Response(status=HTTP_201_CREATED)):
+        with (
+            patch("api.cluster.views.do_upgrade", return_value={}),
+            patch("api.cluster.views.check_obj"),
+        ):
             self.client.post(
                 path=reverse(
                     "do-cluster-upgrade",

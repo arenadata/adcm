@@ -157,7 +157,7 @@ def read_file_type(proto, default, bundle_hash, name, subname):
     return read_bundle_file(proto, default, bundle_hash, msg)
 
 
-def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None):
+def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None) -> str | None:
     if not ref:
         ref = proto_ref(proto)
 
@@ -204,9 +204,7 @@ def get_prototype_config(proto: Prototype, action: Action = None) -> Tuple[dict,
     conf = {}
     attr = {}
     flist = ("default", "required", "type", "limits")
-    for c in PrototypeConfig.objects.filter(prototype=proto, action=action, type="group").order_by(
-        "id"
-    ):
+    for c in PrototypeConfig.objects.filter(prototype=proto, action=action, type="group").order_by("id"):
         spec[c.name] = {}
         conf[c.name] = {}
         if "activatable" in c.limits:
@@ -630,9 +628,7 @@ def restore_read_only(obj, spec, conf, old_conf):  # # pylint: disable=too-many-
     return conf
 
 
-def check_json_config(
-    proto, obj, new_config, current_config=None, new_attr=None, current_attr=None
-):
+def check_json_config(proto, obj, new_config, current_config=None, new_attr=None, current_attr=None):
     spec, flat_spec, _, _ = get_prototype_config(proto)
     check_attr(proto, obj, new_attr, flat_spec, current_attr)
 
@@ -684,9 +680,7 @@ def check_agreement_group_attr(group_keys, custom_group_keys, spec):
             raise_adcm_ex("ATTRIBUTE_ERROR", f"the `{key}` field cannot be included in the group")
 
 
-def check_value_unselected_field(
-    current_config, new_config, current_attr, new_attr, group_keys, spec, obj
-):
+def check_value_unselected_field(current_config, new_config, current_attr, new_attr, group_keys, spec, obj):
     """
     Check value unselected field
     :param current_config: Current config
@@ -702,8 +696,7 @@ def check_value_unselected_field(
     def check_empty_values(key, current, new):
         key_in_config = key in current and key in new
         if key_in_config and (
-            (bool(current[key]) is False and new[key] is None)
-            or (current[key] is None and bool(new[key]) is False)
+            (bool(current[key]) is False and new[key] is None) or (current[key] is None and bool(new[key]) is False)
         ):
             return True
 
@@ -734,17 +727,10 @@ def check_value_unselected_field(
             )
         else:
             if spec[k]["type"] in ["list", "map", "string", "structure"]:
-                if config_is_ro(obj, k, spec[k]["limits"]) or check_empty_values(
-                    k, current_config, new_config
-                ):
+                if config_is_ro(obj, k, spec[k]["limits"]) or check_empty_values(k, current_config, new_config):
                     continue
 
-            if (
-                not v
-                and k in current_config
-                and k in new_config
-                and current_config[k] != new_config[k]
-            ):
+            if not v and k in current_config and k in new_config and current_config[k] != new_config[k]:
                 msg = (
                     f"Value of `{k}` field is different in current and new config."
                     f" Current: ({current_config[k]}), New: ({new_config[k]})"
@@ -946,17 +932,10 @@ def check_config_type(
 
     def check_str(_idx, _v):
         if not isinstance(_v, str):
-            _msg = (
-                f'{label} ("{_v}") of element "{_idx}" of config key "{key}/{subkey}"'
-                f" should be string ({ref})"
-            )
+            _msg = f'{label} ("{_v}") of element "{_idx}" of config key "{key}/{subkey}"' f" should be string ({ref})"
             raise_adcm_ex("CONFIG_VALUE_ERROR", _msg)
 
-    if (
-        value is None
-        or (spec["type"] == "map" and value == {})
-        or (spec["type"] == "list" and value == [])
-    ):
+    if value is None or (spec["type"] == "map" and value == {}) or (spec["type"] == "list" and value == []):
         if inactive:
             return
 
@@ -1125,9 +1104,7 @@ def get_main_info(obj: Optional[ADCMEntity]) -> Optional[str]:
 
 def get_adcm_config(section=None):
     adcm_object = ADCM.objects.last()
-    current_configlog = ConfigLog.objects.get(
-        obj_ref=adcm_object.config, id=adcm_object.config.current
-    )
+    current_configlog = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
     if not section:
         return current_configlog.attr, current_configlog.config
 

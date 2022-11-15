@@ -1000,6 +1000,7 @@ class TestAdminPolicyPage:
             ), "There are no permission hint"
 
     # pylint: enable=too-many-locals
+    @pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3264")
     @pytest.mark.usefixtures("_login_to_adcm_over_api")
     def test_policy_with_maintenance_mode(self, sdk_client_fs, app_fs, another_user, create_cluster_with_component):
         """Test create a group on /admin/policies"""

@@ -55,9 +55,7 @@ def check_config_perm(user, action_type, obj):
 
 
 class GroupConfigFilterSet(FilterSet):
-    object_type = CharFilter(
-        field_name='object_type', label='object_type', method='filter_object_type'
-    )
+    object_type = CharFilter(field_name='object_type', label='object_type', method='filter_object_type')
 
     @staticmethod
     def filter_object_type(queryset, name, value):
@@ -217,9 +215,7 @@ class GroupConfigConfigLogViewSet(
         return super().create(request, *args, **kwargs)
 
 
-class GroupConfigViewSet(
-    PermissionListMixin, NestedViewSetMixin, ModelViewSet
-):  # pylint: disable=too-many-ancestors
+class GroupConfigViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
     queryset = GroupConfig.objects.all()
     serializer_class = GroupConfigSerializer
     filterset_class = GroupConfigFilterSet

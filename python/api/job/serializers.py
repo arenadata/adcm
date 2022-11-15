@@ -105,9 +105,7 @@ class TaskRetrieveSerializer(HyperlinkedModelSerializer):
         if not obj.action_id:
             return None
 
-        return reverse(
-            "action-detail", kwargs={"action_pk": obj.action_id}, request=self.context["request"]
-        )
+        return reverse("action-detail", kwargs={"action_pk": obj.action_id}, request=self.context["request"])
 
     @staticmethod
     def get_objects(obj: TaskLog) -> list:
@@ -215,9 +213,7 @@ class JobRetrieveSerializer(HyperlinkedModelSerializer):
         if not obj.action_id:
             return None
 
-        return reverse(
-            "action-detail", kwargs={"action_pk": obj.action_id}, request=self.context["request"]
-        )
+        return reverse("action-detail", kwargs={"action_pk": obj.action_id}, request=self.context["request"])
 
     @staticmethod
     def get_log_dir(obj: JobLog) -> str:

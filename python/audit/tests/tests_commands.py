@@ -54,9 +54,7 @@ class TestLogrotate(TestCase):
         prototype = Prototype.objects.create(bundle=bundle, type="cluster")
         config_2 = ObjectConfig.objects.create(current=4, previous=3)
         cluster = Cluster.objects.create(name="test_cluster", prototype=prototype, config=config_2)
-        TaskLog.objects.create(
-            object_id=cluster.id, start_date=date, finish_date=date, status="success"
-        )
+        TaskLog.objects.create(object_id=cluster.id, start_date=date, finish_date=date, status="success")
         JobLog.objects.create(start_date=date, finish_date=date)
         ConfigLog.objects.create(obj_ref=config_2)
         ConfigLog.objects.all().update(date=date)

@@ -80,9 +80,7 @@ def is_tls(ldap_uri: str) -> bool:
 
 def get_ldap_config() -> Optional[dict]:
     adcm_object = ADCM.objects.first()
-    current_configlog = ConfigLog.objects.get(
-        obj_ref=adcm_object.config, id=adcm_object.config.current
-    )
+    current_configlog = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
     if current_configlog.attr["ldap_integration"]["active"]:
         return current_configlog.config["ldap_integration"]
     return None
@@ -197,9 +195,7 @@ class CustomLDAPBackend(LDAPBackend):
         self.default_settings = {}
         self.is_tls = False
 
-    def authenticate_ldap_user(
-        self, ldap_user: User | _LDAPUser, password: str
-    ) -> Optional[_LDAPUser]:
+    def authenticate_ldap_user(self, ldap_user: User | _LDAPUser, password: str) -> Optional[_LDAPUser]:
         self.default_settings, _ = get_ldap_default_settings()
         if not self.default_settings:
             return None
@@ -225,9 +221,7 @@ class CustomLDAPBackend(LDAPBackend):
 
     @property
     def _group_search_enabled(self) -> bool:
-        return "GROUP_SEARCH" in self.default_settings and bool(
-            self.default_settings.get("GROUP_SEARCH")
-        )
+        return "GROUP_SEARCH" in self.default_settings and bool(self.default_settings.get("GROUP_SEARCH"))
 
     @staticmethod
     def _get_local_groups_by_username(username: str) -> List[Group]:
@@ -258,9 +252,7 @@ class CustomLDAPBackend(LDAPBackend):
         logger.debug("Found %s groups: %s", len(groups), [i[0] for i in groups])
         return groups
 
-    def _process_groups(
-        self, user: User | _LDAPUser, user_dn: str, additional_groups: List[Group] = ()
-    ) -> None:
+    def _process_groups(self, user: User | _LDAPUser, user_dn: str, additional_groups: List[Group] = ()) -> None:
         if not self._group_search_enabled:
             logger.warning("Group search is disabled. Getting all user groups")
             with self._ldap_connection() as conn:
@@ -324,9 +316,7 @@ class CustomLDAPBackend(LDAPBackend):
         elif isinstance(group, DjangoGroup):
             try:
                 # maybe we'll need more accurate filtering here
-                return Group.objects.get(
-                    name=f"{group.name} [{OriginType.LDAP.value}]", type=OriginType.LDAP.value
-                )
+                return Group.objects.get(name=f"{group.name} [{OriginType.LDAP.value}]", type=OriginType.LDAP.value)
             except Group.DoesNotExist:
                 with atomic():
                     rbac_group = Group.objects.create(

@@ -43,9 +43,7 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
 
     def get_queryset(self, *args, **kwargs):
         if self.request.user.has_perm('cm.view_settings_of_adcm'):
-            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(
-                obj_ref__adcm__isnull=False
-            )
+            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
         else:
             return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
 

@@ -56,9 +56,7 @@ if SECRETS_FILE.is_file():
         ANSIBLE_SECRET = data["adcmuser"]["password"]
         # workaround to insert `adcm_internal_token` into existing SECRETS_FILE after startup
         if data.get("adcm_internal_token") is None:
-            dict_json_get_or_create(
-                path=SECRETS_FILE, field="adcm_internal_token", value=ADCM_TOKEN
-            )
+            dict_json_get_or_create(path=SECRETS_FILE, field="adcm_internal_token", value=ADCM_TOKEN)
 
 else:
     STATUS_SECRET_KEY = ""
@@ -286,3 +284,17 @@ ALLOWED_CLUSTER_NAME_MID_CHARS = f"{ALLOWED_CLUSTER_NAME_START_END_CHARS}-. _"
 
 ALLOWED_HOST_FQDN_START_CHARS = LATIN_LETTERS_DIGITS
 ALLOWED_HOST_FQDN_MID_END_CHARS = f"{ALLOWED_HOST_FQDN_START_CHARS}-."
+
+ADCM_TURN_ON_MM_ACTION_NAME = "adcm_turn_on_maintenance_mode"
+ADCM_TURN_OFF_MM_ACTION_NAME = "adcm_turn_off_maintenance_mode"
+ADCM_HOST_TURN_ON_MM_ACTION_NAME = "adcm_host_turn_on_maintenance_mode"
+ADCM_HOST_TURN_OFF_MM_ACTION_NAME = "adcm_host_turn_off_maintenance_mode"
+ADCM_DELETE_SERVICE_ACTION_NAME = "adcm_delete_service"
+ADCM_SERVICE_ACTION_NAMES_SET = {
+    ADCM_TURN_ON_MM_ACTION_NAME,
+    ADCM_TURN_OFF_MM_ACTION_NAME,
+    ADCM_HOST_TURN_ON_MM_ACTION_NAME,
+    ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
+    ADCM_DELETE_SERVICE_ACTION_NAME,
+}
+ADCM_MM_ACTION_FORBIDDEN_PROPS_SET = {"config", "hc_acl", "ui_options"}

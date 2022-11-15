@@ -24,6 +24,7 @@ from cm.models import (
     DummyData,
     Host,
     HostProvider,
+    Prototype,
     ServiceComponent,
 )
 from rbac.models import Group, Policy
@@ -36,6 +37,7 @@ from rbac.models import Group, Policy
 @receiver(post_delete, sender=HostProvider)
 @receiver(post_delete, sender=Bundle)
 @receiver(post_delete, sender=ADCM)
+@receiver(post_delete, sender=Prototype)
 def mark_deleted_audit_object_handler(sender, instance, **kwargs) -> None:
     mark_deleted_audit_object(instance=instance, object_type=MODEL_TO_AUDIT_OBJECT_TYPE_MAP[sender])
 

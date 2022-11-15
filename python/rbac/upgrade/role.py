@@ -193,9 +193,7 @@ def prepare_hidden_roles(bundle: Bundle):
         role, _ = Role.objects.get_or_create(
             name=role_name,
             display_name=role_name,
-            description=(
-                f"run action {act.name} of {act.prototype.type} {act.prototype.display_name}"
-            ),
+            description=(f"run action {act.name} of {act.prototype.type} {act.prototype.display_name}"),
             bundle=bundle,
             type=RoleTypes.hidden,
             module_name="rbac.roles",
@@ -225,23 +223,15 @@ def prepare_hidden_roles(bundle: Bundle):
             ct_host = ContentType.objects.get_for_model(Host)
             role.permissions.add(get_perm(ct_host, "view_host"))
             role.permissions.add(
-                get_perm(
-                    ct_host, f"run_action_{act.display_name}", f"Can run {act.display_name} actions"
-                )
+                get_perm(ct_host, f"run_action_{act.display_name}", f"Can run {act.display_name} actions")
             )
         else:
-            role.permissions.add(
-                get_perm(
-                    ct, f"run_action_{act.display_name}", f"Can run {act.display_name} actions"
-                )
-            )
+            role.permissions.add(get_perm(ct, f"run_action_{act.display_name}", f"Can run {act.display_name} actions"))
 
     return hidden_roles
 
 
-def update_built_in_roles(
-    bundle: Bundle, business_role: Role, parametrized_by_type: list, built_in_roles: dict
-):
+def update_built_in_roles(bundle: Bundle, business_role: Role, parametrized_by_type: list, built_in_roles: dict):
     """Add action role to built-in roles"""
     if "cluster" in parametrized_by_type:
         if bundle.category:

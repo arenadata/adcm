@@ -115,9 +115,7 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     'id',
-                    models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
-                    ),
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
                 ),
                 ('name', models.CharField(max_length=160)),
                 ('description', models.TextField(blank=True)),
@@ -158,9 +156,7 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     'id',
-                    models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
-                    ),
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
                 ),
                 (
                     'group',
@@ -196,16 +192,12 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     'id',
-                    models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
-                    ),
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
                 ),
                 ('object_id', models.PositiveIntegerField()),
                 (
                     'content_type',
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype'
-                    ),
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype'),
                 ),
             ],
         ),
@@ -214,9 +206,7 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     'id',
-                    models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
-                    ),
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
                 ),
                 ('name', models.CharField(max_length=255, unique=True)),
                 ('description', models.TextField(blank=True)),
@@ -230,9 +220,7 @@ class Migration(migrations.Migration):
                 ('object', models.ManyToManyField(blank=True, to='rbac.PolicyObject')),
                 (
                     'role',
-                    models.ForeignKey(
-                        null=True, on_delete=django.db.models.deletion.SET_NULL, to='rbac.role'
-                    ),
+                    models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='rbac.role'),
                 ),
                 ('user', models.ManyToManyField(blank=True, to='rbac.User')),
                 (
@@ -263,14 +251,10 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='role',
-            constraint=models.UniqueConstraint(
-                fields=('display_name', 'built_in'), name='unique_display_name'
-            ),
+            constraint=models.UniqueConstraint(fields=('display_name', 'built_in'), name='unique_display_name'),
         ),
         migrations.AddConstraint(
             model_name='policyobject',
-            constraint=models.UniqueConstraint(
-                fields=('content_type', 'object_id'), name='unique_policy_object'
-            ),
+            constraint=models.UniqueConstraint(fields=('content_type', 'object_id'), name='unique_policy_object'),
         ),
     ]

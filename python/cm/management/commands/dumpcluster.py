@@ -358,9 +358,7 @@ def dump(cluster_id, output):
 
     service_ids = [service["id"] for service in data["services"]]
 
-    for component_obj in ServiceComponent.objects.filter(
-        cluster_id=cluster["id"], service_id__in=service_ids
-    ):
+    for component_obj in ServiceComponent.objects.filter(cluster_id=cluster["id"], service_id__in=service_ids):
         component = get_component(component_obj.id)
         data["groups"].extend(get_groups(component_obj.id, "servicecomponent"))
         data["components"].append(component)

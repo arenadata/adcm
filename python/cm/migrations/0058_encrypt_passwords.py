@@ -21,9 +21,7 @@ def get_prototype_config(proto, PrototypeConfig):
     spec = {}
     flist = ('default', 'required', 'type', 'limits')
 
-    for c in PrototypeConfig.objects.filter(prototype=proto, action=None, type='group').order_by(
-        'id'
-    ):
+    for c in PrototypeConfig.objects.filter(prototype=proto, action=None, type='group').order_by('id'):
         spec[c.name] = {}
 
     for c in PrototypeConfig.objects.filter(prototype=proto, action=None).order_by('id'):

@@ -110,9 +110,7 @@ def match_any(data, rules, rule, path, parent=None, is_service=False):
 def match_list(data, rules, rule, path, parent=None, is_service=False):
     check_match_type('match_list', data, list, path, rule, parent)
     for i, v in enumerate(data):
-        process_rule(
-            v, rules, rules[rule]['item'], path + [('Value of list index', i)], parent, is_service
-        )
+        process_rule(v, rules, rules[rule]['item'], path + [('Value of list index', i)], parent, is_service)
     return True
 
 

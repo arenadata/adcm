@@ -46,9 +46,7 @@ class _Context:
 
         job_id = Path(ansible_config).parent.name
         try:
-            self.job = models.JobLog.objects.select_related('task', 'task__lock').get(
-                id=int(job_id)
-            )
+            self.job = models.JobLog.objects.select_related('task', 'task__lock').get(id=int(job_id))
         except (ValueError, models.ObjectDoesNotExist):
             return
 

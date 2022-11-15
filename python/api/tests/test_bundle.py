@@ -16,7 +16,7 @@ from unittest.mock import patch
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
 
 from adcm.tests.base import BaseTestCase
 from cm.bundle import get_hash
@@ -24,6 +24,8 @@ from cm.models import Bundle, Prototype
 
 
 class TestBundle(BaseTestCase):
+    # pylint: disable=too-many-public-methods
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -31,18 +33,21 @@ class TestBundle(BaseTestCase):
             name="test_bundle_1",
             version="123",
             version_order=1,
-            license_path="some_path",
-            license="unaccepted",
         )
         self.bundle_2 = Bundle.objects.create(name="test_bundle_2", version="456", version_order=2)
-        Prototype.objects.create(bundle=self.bundle_1, name=self.bundle_1.name)
+        Prototype.objects.create(
+            bundle=self.bundle_1, name=self.bundle_1.name, license_path="some_path", license="unaccepted"
+        )
         Prototype.objects.create(bundle=self.bundle_2, name=self.bundle_2.name)
 
     def tearDown(self) -> None:
         Path(settings.DOWNLOAD_DIR, self.test_bundle_filename).unlink(missing_ok=True)
 
-    def upload_bundle(self):
-        with open(self.test_bundle_path, encoding=settings.ENCODING_UTF_8) as f:
+    def upload_bundle(self, bundle_path: Path = None):
+        if bundle_path is None:
+            bundle_path = self.test_bundle_path
+
+        with open(bundle_path, encoding=settings.ENCODING_UTF_8) as f:
             return self.client.post(
                 path=reverse("upload-bundle"),
                 data={"file": f},
@@ -64,6 +69,100 @@ class TestBundle(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["hash"], get_hash(self.test_bundle_path))
+
+    def test_load_bundle_wrong_cluster_mm_action_no_host_action_prop_fail(self):
+        bundle_filename = "bundle_test_cluster_wrong_host_action.tar"
+
+        self.upload_bundle(
+            Path(
+                settings.BASE_DIR,
+                "python/api/tests/files",
+                bundle_filename,
+            )
+        )
+
+        response: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": bundle_filename},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
+
+    def test_load_bundle_wrong_cluster_mm_action_false_host_action_prop_fail(self):
+        bundle_filename = "bundle_test_cluster_false_host_action.tar"
+
+        self.upload_bundle(
+            Path(
+                settings.BASE_DIR,
+                "python/api/tests/files",
+                bundle_filename,
+            )
+        )
+
+        response: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": bundle_filename},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
+
+    def test_load_bundle_cluster_mm_action_host_action_true_success(self):
+        bundle_filename = "bundle_test_cluster_host_action_true.tar"
+
+        self.upload_bundle(
+            Path(
+                settings.BASE_DIR,
+                "python/api/tests/files",
+                bundle_filename,
+            )
+        )
+
+        response: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": bundle_filename},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_load_bundle_service_with_host_mm_action_fail(self):
+        bundle_filename = "bundle_test_service_with_host_action.tar"
+
+        self.upload_bundle(
+            Path(
+                settings.BASE_DIR,
+                "python/api/tests/files",
+                bundle_filename,
+            )
+        )
+
+        response: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": bundle_filename},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
+
+    def test_load_bundle_cluster_with_host_mm_has_ui_options_fail(self):
+        bundle_filename = "bundle_test_cluster_action_with_ui_options.tar"
+
+        self.upload_bundle(
+            Path(
+                settings.BASE_DIR,
+                "python/api/tests/files",
+                bundle_filename,
+            )
+        )
+
+        response: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": bundle_filename},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
 
     def test_load_servicemap(self):
         with patch("api.stack.views.load_service_map"):
@@ -92,9 +191,7 @@ class TestBundle(BaseTestCase):
         self.assertEqual(response.data["results"][0]["id"], self.bundle_1.pk)
 
     def test_list_filter_version(self):
-        response: Response = self.client.get(
-            reverse("bundle-list"), {"version": self.bundle_1.version}
-        )
+        response: Response = self.client.get(reverse("bundle-list"), {"version": self.bundle_1.version})
 
         self.assertEqual(response.data["results"][0]["id"], self.bundle_1.pk)
 

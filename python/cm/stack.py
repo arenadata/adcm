@@ -64,12 +64,13 @@ def cook_obj_id(conf):
 def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm_=False):
     def_type = conf["type"]
     if def_type == "adcm" and not adcm_:
-        msg = "Invalid type \"{}\" in object definition: {}"
-        return err("INVALID_OBJECT_DEFINITION", msg.format(def_type, fname))
+        return err("INVALID_OBJECT_DEFINITION", f'Invalid type "{def_type}" in object definition: {fname}')
+
     check_object_definition(fname, conf, def_type, obj_list)
     obj = save_prototype(path, conf, def_type, bundle_hash)
     logger.info("Save definition of %s \"%s\" %s to stage", def_type, conf["name"], conf["version"])
     obj_list[cook_obj_id(conf)] = fname
+
     return obj
 
 
@@ -77,6 +78,28 @@ def check_object_definition(fname, conf, def_type, obj_list):
     ref = f"{def_type} \"{conf['name']}\" {conf['version']}"
     if cook_obj_id(conf) in obj_list:
         err("INVALID_OBJECT_DEFINITION", f"Duplicate definition of {ref} (file {fname})")
+
+    for action_name, action_data in conf.get("actions", {}).items():
+        if action_name in {
+            settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME,
+            settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
+        }:
+            if def_type != "cluster":
+                err("INVALID_OBJECT_DEFINITION", f'Action named "{action_name}" can be started only in cluster context')
+
+            if not action_data.get("host_action"):
+                err(
+                    "INVALID_OBJECT_DEFINITION",
+                    f'Action named "{action_name}" should have "host_action: true" property',
+                )
+
+        if action_name in settings.ADCM_SERVICE_ACTION_NAMES_SET and set(action_data).intersection(
+            settings.ADCM_MM_ACTION_FORBIDDEN_PROPS_SET
+        ):
+            err(
+                "INVALID_OBJECT_DEFINITION",
+                f'Maintenance mode actions shouldn\'t have "{settings.ADCM_MM_ACTION_FORBIDDEN_PROPS_SET}" properties',
+            )
 
 
 def get_config_files(path, bundle_hash):
@@ -182,6 +205,12 @@ def save_prototype(path, conf, def_type, bundle_hash):
     fix_display_name(conf, proto)
     license_hash = get_license_hash(proto, conf, bundle_hash)
     if license_hash:
+        if def_type not in ["cluster", "service", "provider"]:
+            err(
+                "INVALID_OBJECT_DEFINITION",
+                f"Invalid license definition in {proto_ref(proto)}."
+                f" License can be placed in cluster, service or provider",
+            )
         proto.license_path = conf["license"]
         proto.license_hash = license_hash
     proto.save()
@@ -270,21 +299,13 @@ def check_versions(proto, conf, label):
     if "min" in conf["versions"] and "min_strict" in conf["versions"]:
         msg = "min and min_strict can not be used simultaneously in versions of {} ({})"
         err("INVALID_VERSION_DEFINITION", msg.format(label, ref))
-    if (
-        "min" not in conf["versions"]
-        and "min_strict" not in conf["versions"]
-        and "import" not in label
-    ):
+    if "min" not in conf["versions"] and "min_strict" not in conf["versions"] and "import" not in label:
         msg = "min or min_strict should be present in versions of {} ({})"
         err("INVALID_VERSION_DEFINITION", msg.format(label, ref))
     if "max" in conf["versions"] and "max_strict" in conf["versions"]:
         msg = "max and max_strict can not be used simultaneously in versions of {} ({})"
         err("INVALID_VERSION_DEFINITION", msg.format(label, ref))
-    if (
-        "max" not in conf["versions"]
-        and "max_strict" not in conf["versions"]
-        and "import" not in label
-    ):
+    if "max" not in conf["versions"] and "max_strict" not in conf["versions"] and "import" not in label:
         msg = "max and max_strict should be present in versions of {} ({})"
         err("INVALID_VERSION_DEFINITION", msg.format(label, ref))
     for name in ("min", "min_strict", "max", "max_strict"):
@@ -334,14 +355,17 @@ def save_export(proto, conf):
     ref = proto_ref(proto)
     if not in_dict(conf, "export"):
         return
+
+    export = {}
     if isinstance(conf["export"], str):
         export = [conf["export"]]
     elif isinstance(conf["export"], list):
         export = conf["export"]
-    msg = "{} does not has \"{}\" config group"
+
     for key in export:
         if not StagePrototypeConfig.objects.filter(prototype=proto, name=key):
-            err("INVALID_OBJECT_DEFINITION", msg.format(ref, key))
+            err("INVALID_OBJECT_DEFINITION", f'{ref} does not has "{key}" config group')
+
         se = StagePrototypeExport(prototype=proto, name=key)
         se.save()
 
@@ -417,9 +441,7 @@ def save_sub_actions(conf, action):
         elif isinstance(on_fail, dict):
             sub_action.state_on_fail = _deep_get(on_fail, STATE, default="")
             sub_action.multi_state_on_fail_set = _deep_get(on_fail, MULTI_STATE, SET, default=[])
-            sub_action.multi_state_on_fail_unset = _deep_get(
-                on_fail, MULTI_STATE, UNSET, default=[]
-            )
+            sub_action.multi_state_on_fail_unset = _deep_get(on_fail, MULTI_STATE, UNSET, default=[])
         sub_action.save()
 
 
@@ -469,7 +491,6 @@ def save_action(proto, ac, bundle_hash, action_name):
     if ac["type"] == "job":
         action.script = ac["script"]
         action.script_type = ac["script_type"]
-    dict_to_obj(ac, "button", action)
     dict_to_obj(ac, "display_name", action)
     dict_to_obj(ac, "description", action)
     dict_to_obj(ac, "allow_to_terminate", action)
@@ -496,13 +517,9 @@ def save_action(proto, ac, bundle_hash, action_name):
         action.state_on_fail = _deep_get(ac, ON_FAIL, STATE, default="")
 
         action.multi_state_available = _deep_get(ac, MASKING, MULTI_STATE, AVAILABLE, default=ANY)
-        action.multi_state_unavailable = _deep_get(
-            ac, MASKING, MULTI_STATE, UNAVAILABLE, default=[]
-        )
+        action.multi_state_unavailable = _deep_get(ac, MASKING, MULTI_STATE, UNAVAILABLE, default=[])
         action.multi_state_on_success_set = _deep_get(ac, ON_SUCCESS, MULTI_STATE, SET, default=[])
-        action.multi_state_on_success_unset = _deep_get(
-            ac, ON_SUCCESS, MULTI_STATE, UNSET, default=[]
-        )
+        action.multi_state_on_success_unset = _deep_get(ac, ON_SUCCESS, MULTI_STATE, UNSET, default=[])
         action.multi_state_on_fail_set = _deep_get(ac, ON_FAIL, MULTI_STATE, SET, default=[])
         action.multi_state_on_fail_unset = _deep_get(ac, ON_FAIL, MULTI_STATE, UNSET, default=[])
     else:
@@ -541,17 +558,17 @@ def is_group(conf):
 
 
 def get_yspec(proto, ref, bundle_hash, conf, name, subname):
-    msg = f"yspec file of config key \"{name}/{subname}\":"
-    yspec_body = read_bundle_file(proto, conf["yspec"], bundle_hash, msg)
+    schema = None
+    yspec_body = read_bundle_file(proto, conf["yspec"], bundle_hash, f'yspec file of config key "{name}/{subname}":')
     try:
         schema = yaml.safe_load(yspec_body)
     except (yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
-        msg = "yspec file of config key \"{}/{}\" yaml decode error: {}"
-        err("CONFIG_TYPE_ERROR", msg.format(name, subname, e))
+        err("CONFIG_TYPE_ERROR", f'yspec file of config key "{name}/{subname}" yaml decode error: {e}')
+
     ok, error = yspec.checker.check_rule(schema)
     if not ok:
-        msg = "yspec file of config key \"{}/{}\" error: {}"
-        err("CONFIG_TYPE_ERROR", msg.format(name, subname, error))
+        err("CONFIG_TYPE_ERROR", f'yspec file of config key "{name}/{subname}" error: {error}')
+
     return schema
 
 
@@ -670,10 +687,7 @@ def validate_name(value, err_msg):
     if not isinstance(value, str):
         err("WRONG_NAME", f"{err_msg} should be string")
     p = re.compile(NAME_REGEX)
-    msg1 = (
-        "{} is incorrect. Only latin characters, digits,"
-        " dots (.), dashes (-), and underscores (_) are allowed."
-    )
+    msg1 = "{} is incorrect. Only latin characters, digits, dots (.), dashes (-), and underscores (_) are allowed."
     if p.fullmatch(value) is None:
         err("WRONG_NAME", msg1.format(err_msg))
     return value

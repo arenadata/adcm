@@ -148,9 +148,7 @@ class ActionRole(AbstractRole):
         assign_user_or_group_perm(user, group, policy, get_perm_for_model(Action), action)
         for obj in policy.get_objects(param_obj):
             for perm in role.get_permissions():
-                if action.host_action and perm.content_type == ContentType.objects.get_for_model(
-                    Host
-                ):
+                if action.host_action and perm.content_type == ContentType.objects.get_for_model(Host):
                     hosts = get_host_objects(obj)
                     for host in hosts:
                         assign_user_or_group_perm(user, group, policy, perm, host)
@@ -206,9 +204,7 @@ def re_apply_policy_for_jobs(action_object, task):
                     )
                 except UserObjectPermission.DoesNotExist:
                     continue
-                if uop in policy.user_object_perm.all() and user.has_perm(
-                    f'view_{object_model}', action_object
-                ):
+                if uop in policy.user_object_perm.all() and user.has_perm(f'view_{object_model}', action_object):
                     policy.role.child.add(task_role)
                     apply_jobs(task, policy, user, None)
             for group in policy.group.all():
@@ -263,9 +259,7 @@ class ParentRole(AbstractRole):
 
     def find_and_apply(self, obj, policy, role, user, group=None):
         """Find Role of appropriate type and apply it to specified object"""
-        for r in role.child.filter(
-            class_name__in=['ObjectRole', 'ActionRole', 'TaskRole', 'ConfigRole']
-        ):
+        for r in role.child.filter(class_name__in=['ObjectRole', 'ActionRole', 'TaskRole', 'ConfigRole']):
             if obj.prototype.type in r.parametrized_by_type:
                 r.apply(policy, user, group, obj)
 
@@ -308,9 +302,7 @@ class ParentRole(AbstractRole):
 
             elif obj.prototype.type == 'component':
                 if 'host' in parametrized_by:
-                    for hc in HostComponent.obj.filter(
-                        cluster=obj.cluster, service=obj.service, component=obj
-                    ):
+                    for hc in HostComponent.obj.filter(cluster=obj.cluster, service=obj.service, component=obj):
                         self.find_and_apply(hc.host, policy, role, user, group)
                 assign_user_or_group_perm(user, group, policy, view_cluster_perm, obj.cluster)
                 assign_user_or_group_perm(user, group, policy, view_service_perm, obj.service)

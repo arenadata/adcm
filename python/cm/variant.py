@@ -88,9 +88,7 @@ def var_host_get_service(cluster, args, func):
 def var_host_get_component(cluster, args, service, func):
     if 'component' not in args:
         err('CONFIG_VARIANT_ERROR', f'no "component" argument for predicate "{func}"')
-    return ServiceComponent.obj.get(
-        cluster=cluster, service=service, prototype__name=args['component']
-    )
+    return ServiceComponent.obj.get(cluster=cluster, service=service, prototype__name=args['component'])
 
 
 def var_host_in_service(cluster, args):
@@ -122,9 +120,7 @@ def var_host_in_component(cluster, args):
     out = []
     service = var_host_get_service(cluster, args, 'in_component')
     comp = var_host_get_component(cluster, args, service, 'in_component')
-    for hc in HostComponent.objects.filter(
-        cluster=cluster, service=service, component=comp
-    ).order_by('host__fqdn'):
+    for hc in HostComponent.objects.filter(cluster=cluster, service=service, component=comp).order_by('host__fqdn'):
         out.append(hc.host.fqdn)
     return out
 
@@ -237,20 +233,16 @@ def variant_host_in_cluster(obj, args=None):
             return []
         if 'component' in args:
             try:
-                comp = ServiceComponent.objects.get(
-                    cluster=cluster, service=service, prototype__name=args['component']
-                )
+                comp = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name=args['component'])
             except ServiceComponent.DoesNotExist:
                 return []
-            for hc in HostComponent.objects.filter(
-                cluster=cluster, service=service, component=comp
-            ).order_by('host__fqdn'):
+            for hc in HostComponent.objects.filter(cluster=cluster, service=service, component=comp).order_by(
+                'host__fqdn'
+            ):
                 out.append(hc.host.fqdn)
             return out
         else:
-            for hc in HostComponent.objects.filter(cluster=cluster, service=service).order_by(
-                'host__fqdn'
-            ):
+            for hc in HostComponent.objects.filter(cluster=cluster, service=service).order_by('host__fqdn'):
                 out.append(hc.host.fqdn)
             return out
 

@@ -31,9 +31,7 @@ class AuditRoot(APIRootView):
 # pylint: disable=too-many-ancestors
 class AuditLogViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
     not_superuser_error_code = 'AUDIT_OPERATIONS_FORBIDDEN'
-    queryset = AuditLog.objects.select_related('audit_object', 'user').order_by(
-        '-operation_time', '-pk'
-    )
+    queryset = AuditLog.objects.select_related('audit_object', 'user').order_by('-operation_time', '-pk')
     serializer_class = AuditLogSerializer
     filterset_class = AuditLogListFilter
 

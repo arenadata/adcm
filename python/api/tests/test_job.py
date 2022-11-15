@@ -218,9 +218,7 @@ class TestJobAPI(BaseTestCase):
         with self.no_rights_user_logged_in:
             with patch("cm.job.run_task"):
                 response: Response = self.client.post(
-                    path=reverse(
-                        "run-task", kwargs={"cluster_id": cluster.pk, "action_id": action.pk}
-                    )
+                    path=reverse("run-task", kwargs={"cluster_id": cluster.pk, "action_id": action.pk})
                 )
 
             response: Response = self.client.get(reverse("joblog-list"))

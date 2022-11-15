@@ -25,18 +25,12 @@ from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.serializers import DoUpgradeSerializer, StringListSerializer
-from api.utils import (
-    CommonAPIURL,
-    ObjectURL,
-    check_obj,
-    filter_actions,
-    get_upgradable_func,
-)
+from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions
 from cm.adcm_config import get_main_info
 from cm.api import add_host_provider
 from cm.errors import AdcmEx
 from cm.models import Action, HostProvider, Prototype, Upgrade
-from cm.upgrade import do_upgrade
+from cm.upgrade import do_upgrade, get_upgrade
 
 
 class ProviderSerializer(EmptySerializer):
@@ -46,15 +40,11 @@ class ProviderSerializer(EmptySerializer):
     description = CharField(required=False)
     state = CharField(read_only=True)
     before_upgrade = JSONField(read_only=True)
-    url = HyperlinkedIdentityField(
-        view_name="provider-details", lookup_field="id", lookup_url_kwarg="provider_id"
-    )
+    url = HyperlinkedIdentityField(view_name="provider-details", lookup_field="id", lookup_url_kwarg="provider_id")
 
     @staticmethod
     def validate_prototype_id(prototype_id):
-        proto = check_obj(
-            Prototype, {"id": prototype_id, "type": "provider"}, "PROTOTYPE_NOT_FOUND"
-        )
+        proto = check_obj(Prototype, {"id": prototype_id, "type": "provider"}, "PROTOTYPE_NOT_FOUND")
         return proto
 
     def create(self, validated_data):
@@ -79,9 +69,7 @@ class ProviderDetailSerializer(ProviderSerializer):
     )
     config = CommonAPIURL(view_name="object-config")
     action = CommonAPIURL(view_name="object-action")
-    upgrade = HyperlinkedIdentityField(
-        view_name="provider-upgrade", lookup_field="id", lookup_url_kwarg="provider_id"
-    )
+    upgrade = HyperlinkedIdentityField(view_name="provider-upgrade", lookup_field="id", lookup_url_kwarg="provider_id")
     host = ObjectURL(read_only=True, view_name="host")
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
@@ -96,15 +84,13 @@ class ProviderUISerializer(ProviderSerializer):
     prototype_version = SerializerMethodField()
     prototype_name = SerializerMethodField()
     prototype_display_name = SerializerMethodField()
-    upgrade = HyperlinkedIdentityField(
-        view_name="provider-upgrade", lookup_field="id", lookup_url_kwarg="provider_id"
-    )
+    upgrade = HyperlinkedIdentityField(view_name="provider-upgrade", lookup_field="id", lookup_url_kwarg="provider_id")
     upgradable = SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
 
     @staticmethod
     def get_upgradable(obj: HostProvider) -> bool:
-        return get_upgradable_func(obj)
+        return bool(get_upgrade(obj))
 
     @staticmethod
     def get_prototype_version(obj: HostProvider) -> str:
@@ -137,7 +123,7 @@ class ProviderDetailUISerializer(ProviderDetailSerializer):
 
     @staticmethod
     def get_upgradable(obj: HostProvider) -> bool:
-        return get_upgradable_func(obj)
+        return bool(get_upgrade(obj))
 
     @staticmethod
     def get_prototype_version(obj: HostProvider) -> str:

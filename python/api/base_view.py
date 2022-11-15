@@ -137,13 +137,7 @@ class PaginatedView(GenericUIView):
                     obj = obj.values(*fields)
 
             except (FieldError, ValueError):
-                qp = ",".join(
-                    [
-                        f"{k}={v}"
-                        for k, v in request.query_params.items()
-                        if k in ["fields", "distinct"]
-                    ]
-                )
+                qp = ",".join([f"{k}={v}" for k, v in request.query_params.items() if k in ["fields", "distinct"]])
                 msg = f"Bad query params: {qp}"
 
                 raise AdcmEx("BAD_QUERY_PARAMS", msg=msg) from None

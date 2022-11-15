@@ -19,7 +19,7 @@ from cm.models import (
     ConfigLog,
     Host,
     HostProvider,
-    MaintenanceModeType,
+    MaintenanceMode,
     ObjectConfig,
     Prototype,
 )
@@ -49,7 +49,7 @@ class TestAuditObjectRename(BaseTestCase):
             fqdn="test_fqdn",
             prototype=host_prototype,
             provider=provider,
-            maintenance_mode=MaintenanceModeType.On,
+            maintenance_mode=MaintenanceMode.ON,
             config=config,
         )
 
@@ -126,7 +126,7 @@ class TestAuditObjectRename(BaseTestCase):
 
         self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": new_test_host_fqdn, "maintenance_mode": MaintenanceModeType.On},
+            data={"fqdn": new_test_host_fqdn, "maintenance_mode": MaintenanceMode.ON},
             content_type=APPLICATION_JSON,
         )
 

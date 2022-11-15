@@ -33,16 +33,12 @@ class TestAuthentication(TestCase):
         object_config.save(update_fields=["current"])
 
         ADCM.objects.create(prototype=prototype, config=object_config)
-        self.admin: User = User.objects.create_superuser(
-            username="admin", email="admin@arenadata.io", password="admin"
-        )
+        self.admin: User = User.objects.create_superuser(username="admin", email="admin@arenadata.io", password="admin")
         self.disabled_user: User = User.objects.create_user(
             username="disabled_user", password="disabled_user", is_active=False
         )
 
-    def check_audit_session(
-        self, user_id: int | None, login_result: AuditSessionLoginResult, username: str
-    ) -> None:
+    def check_audit_session(self, user_id: int | None, login_result: AuditSessionLoginResult, username: str) -> None:
         log: AuditSession = AuditSession.objects.order_by("login_time").last()
 
         self.assertEqual(log.user_id, user_id)
@@ -54,23 +50,17 @@ class TestAuthentication(TestCase):
             reverse("rest_framework:login"),
             data={"username": self.admin.username, "password": self.admin.username},
         )
-        self.check_audit_session(
-            self.admin.id, AuditSessionLoginResult.Success, self.admin.username
-        )
+        self.check_audit_session(self.admin.id, AuditSessionLoginResult.Success, self.admin.username)
 
     def test_login_wrong_password(self):
         self.client.post(
             reverse("rest_framework:login"),
             data={"username": self.admin.username, "password": "qwerty"},
         )
-        self.check_audit_session(
-            self.admin.id, AuditSessionLoginResult.WrongPassword, self.admin.username
-        )
+        self.check_audit_session(self.admin.id, AuditSessionLoginResult.WrongPassword, self.admin.username)
 
         self.client.post(reverse("rest_framework:login"), data={"username": self.admin.username})
-        self.check_audit_session(
-            self.admin.id, AuditSessionLoginResult.WrongPassword, self.admin.username
-        )
+        self.check_audit_session(self.admin.id, AuditSessionLoginResult.WrongPassword, self.admin.username)
 
     def test_login_account_disabled(self):
         self.client.post(
@@ -104,22 +94,14 @@ class TestAuthentication(TestCase):
             reverse("token"),
             data={"username": self.admin.username, "password": self.admin.username},
         )
-        self.check_audit_session(
-            self.admin.id, AuditSessionLoginResult.Success, self.admin.username
-        )
+        self.check_audit_session(self.admin.id, AuditSessionLoginResult.Success, self.admin.username)
 
     def test_token_wrong_password(self):
-        self.client.post(
-            reverse("token"), data={"username": self.admin.username, "password": "qwerty"}
-        )
-        self.check_audit_session(
-            self.admin.id, AuditSessionLoginResult.WrongPassword, self.admin.username
-        )
+        self.client.post(reverse("token"), data={"username": self.admin.username, "password": "qwerty"})
+        self.check_audit_session(self.admin.id, AuditSessionLoginResult.WrongPassword, self.admin.username)
 
         self.client.post(reverse("token"), data={"username": self.admin.username})
-        self.check_audit_session(
-            self.admin.id, AuditSessionLoginResult.WrongPassword, self.admin.username
-        )
+        self.check_audit_session(self.admin.id, AuditSessionLoginResult.WrongPassword, self.admin.username)
 
     def test_token_account_disabled(self):
         self.client.post(
@@ -133,9 +115,7 @@ class TestAuthentication(TestCase):
         )
 
     def test_token_user_not_found(self):
-        self.client.post(
-            reverse("token"), data={"username": "unknown_user", "password": "unknown_user"}
-        )
+        self.client.post(reverse("token"), data={"username": "unknown_user", "password": "unknown_user"})
         self.check_audit_session(None, AuditSessionLoginResult.UserNotFound, "unknown_user")
 
         self.client.post(reverse("token"), data={})
@@ -152,22 +132,14 @@ class TestAuthentication(TestCase):
             reverse("rbac:token"),
             data={"username": self.admin.username, "password": self.admin.username},
         )
-        self.check_audit_session(
-            self.admin.id, AuditSessionLoginResult.Success, self.admin.username
-        )
+        self.check_audit_session(self.admin.id, AuditSessionLoginResult.Success, self.admin.username)
 
     def test_rbac_token_wrong_password(self):
-        self.client.post(
-            reverse("rbac:token"), data={"username": self.admin.username, "password": "qwerty"}
-        )
-        self.check_audit_session(
-            self.admin.id, AuditSessionLoginResult.WrongPassword, self.admin.username
-        )
+        self.client.post(reverse("rbac:token"), data={"username": self.admin.username, "password": "qwerty"})
+        self.check_audit_session(self.admin.id, AuditSessionLoginResult.WrongPassword, self.admin.username)
 
         self.client.post(reverse("rbac:token"), data={"username": self.admin.username})
-        self.check_audit_session(
-            self.admin.id, AuditSessionLoginResult.WrongPassword, self.admin.username
-        )
+        self.check_audit_session(self.admin.id, AuditSessionLoginResult.WrongPassword, self.admin.username)
 
     def test_rbac_token_account_disabled(self):
         self.client.post(
@@ -181,9 +153,7 @@ class TestAuthentication(TestCase):
         )
 
     def test_rbac_token_user_not_found(self):
-        self.client.post(
-            reverse("rbac:token"), data={"username": "unknown_user", "password": "unknown_user"}
-        )
+        self.client.post(reverse("rbac:token"), data={"username": "unknown_user", "password": "unknown_user"})
         self.check_audit_session(None, AuditSessionLoginResult.UserNotFound, "unknown_user")
 
         self.client.post(reverse("rbac:token"), data={})

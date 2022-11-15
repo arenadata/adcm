@@ -297,9 +297,7 @@ class HierarchyTest(BaseTestCase):
 
         for target_object, affected_objects in expected.items():
             target_node = tree.get_node(hierarchy_objects[target_object])
-            expected_affected = {
-                tree.get_node(hierarchy_objects[name]) for name in affected_objects
-            }
+            expected_affected = {tree.get_node(hierarchy_objects[name]) for name in affected_objects}
             got_affected = set(tree.get_directly_affected(target_node))
 
             self.assertSetEqual(expected_affected, got_affected)
@@ -422,9 +420,7 @@ class HierarchyTest(BaseTestCase):
 
         for target_object, affected_objects in expected.items():
             target_node = tree.get_node(hierarchy_objects[target_object])
-            expected_affected = {
-                tree.get_node(hierarchy_objects[name]) for name in affected_objects
-            }
+            expected_affected = {tree.get_node(hierarchy_objects[name]) for name in affected_objects}
             got_affected = set(tree.get_all_affected(target_node))
 
             self.assertSetEqual(expected_affected, got_affected)

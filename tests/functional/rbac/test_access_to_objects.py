@@ -18,26 +18,21 @@ Test that granting any permission on object allows user to:
 
 import os.path
 from contextlib import contextmanager
-from typing import Callable, Set, List, Iterable, Union, Dict
+from typing import Callable, Dict, Iterable, List, Set, Union
 
 import allure
 import pytest
 from adcm_client.base import ObjectNotFound
-from adcm_client.objects import ADCMClient, Task, Cluster, Service, Component, Provider, User, Group
+from adcm_client.objects import ADCMClient, Cluster, Component, Group, Provider, Service, Task, User
 from adcm_pytest_plugin.utils import catch_failed
+from coreapi.exceptions import ErrorMessage
 
-from tests.library.utils import lower_class_name
+from tests.functional.rbac.action_role_utils import action_business_role, create_action_policy
+from tests.functional.rbac.conftest import DATA_DIR
+from tests.functional.rbac.conftest import BusinessRoles as BR
+from tests.functional.rbac.conftest import RbacRoles, SDKClients, create_policy, delete_policy, get_as_client_object
 from tests.functional.tools import get_object_represent
-from tests.functional.rbac.conftest import (
-    DATA_DIR,
-    BusinessRoles as BR,
-    get_as_client_object,
-    delete_policy,
-    create_policy,
-    RbacRoles,
-    SDKClients,
-)
-from tests.functional.rbac.action_role_utils import create_action_policy, action_business_role
+from tests.library.utils import lower_class_name
 
 
 @contextmanager
@@ -552,8 +547,9 @@ def _get_objects_id(get_objects_list: Callable) -> Set[int]:
 def _expect_not_found(api, obj, message, **kwargs):
     try:
         get_as_client_object(api, obj, **kwargs)
-    except ObjectNotFound:
-        pass
+    except ErrorMessage as e:
+        if not hasattr(e.error, "title") or e.error.title != "404 Not Found":
+            raise AssertionError(message) from e
     else:
         raise AssertionError(message)
 

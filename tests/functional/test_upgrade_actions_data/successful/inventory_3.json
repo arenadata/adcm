@@ -30,6 +30,7 @@
                      "version": "2.3",
                      "state": "created",
                      "multi_state": [],
+                     "maintenance_mode": false,
                      "config": {
                         "somestring": null,
                         "someint": 12,
@@ -41,6 +42,7 @@
                      },
                      "test_component": {
                         "component_id": 1,
+                        "maintenance_mode": false,
                         "config": {
                            "somestring": null,
                            "someint": 12,

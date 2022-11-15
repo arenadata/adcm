@@ -109,9 +109,7 @@ def order_model_versions(model):
     count = 0
     for obj in sorted(
         items,
-        key=functools.cmp_to_key(
-            lambda obj1, obj2: rpm.compare_versions(obj1.version, obj2.version)
-        ),
+        key=functools.cmp_to_key(lambda obj1, obj2: rpm.compare_versions(obj1.version, obj2.version)),
     ):
         if ver != obj.version:
             count += 1
@@ -275,15 +273,11 @@ def re_check_actions():
         hc = act.hostcomponentmap
         ref = f'in hc_acl of action "{act.name}" of {proto_ref(act.prototype)}'
         for item in hc:
-            stage_proto = StagePrototype.objects.filter(
-                type="service", name=item["service"]
-            ).first()
+            stage_proto = StagePrototype.objects.filter(type="service", name=item["service"]).first()
             if not stage_proto:
                 msg = 'Unknown service "{}" {}'
                 err("INVALID_ACTION_DEFINITION", msg.format(item["service"], ref))
-            if not StagePrototype.objects.filter(
-                parent=stage_proto, type="component", name=item["component"]
-            ):
+            if not StagePrototype.objects.filter(parent=stage_proto, type="component", name=item["component"]):
                 msg = 'Unknown component "{}" of service "{}" {}'
                 err(
                     "INVALID_ACTION_DEFINITION",
@@ -360,9 +354,7 @@ def re_check_config():
             if len(keys) > 1:
                 subname = keys[1]
             try:
-                s = StagePrototypeConfig.objects.get(
-                    prototype=c.prototype, name=name, subname=subname
-                )
+                s = StagePrototypeConfig.objects.get(prototype=c.prototype, name=name, subname=subname)
             except StagePrototypeConfig.DoesNotExist:
                 msg = f'Unknown config source name "{{}}" for {ref} config "{c.name}/{c.subname}"'
                 err("INVALID_CONFIG_DEFINITION", msg.format(lim["source"]["name"]))
@@ -410,6 +402,8 @@ def copy_stage_prototype(stage_prototypes, bundle):
                 "version",
                 "required",
                 "shared",
+                "license_path",
+                "license_hash",
                 "monitoring",
                 "display_name",
                 "description",
@@ -419,6 +413,10 @@ def copy_stage_prototype(stage_prototypes, bundle):
                 "allow_maintenance_mode",
             ),
         )
+        if proto.license_path:
+            proto.license = "unaccepted"
+            if check_license(proto):
+                proto.license = "accepted"
         proto.bundle = bundle
         prototypes.append(proto)
     Prototype.objects.bulk_create(prototypes)
@@ -482,7 +480,6 @@ def copy_stage_actions(stage_actions, prototype):
             "params",
             "log_files",
             "hostcomponentmap",
-            "button",
             "display_name",
             "description",
             "ui_options",
@@ -562,9 +559,7 @@ def copy_stage_component(stage_components, stage_proto, prototype, bundle):
         componets.append(comp)
     Prototype.objects.bulk_create(componets)
     for sp in StagePrototype.objects.filter(type="component", parent=stage_proto):
-        proto = Prototype.objects.get(
-            name=sp.name, type="component", parent=prototype, bundle=bundle
-        )
+        proto = Prototype.objects.get(name=sp.name, type="component", parent=prototype, bundle=bundle)
         copy_stage_actions(StageAction.objects.filter(prototype=sp), proto)
         copy_stage_config(StagePrototypeConfig.objects.filter(prototype=sp), proto)
 
@@ -614,24 +609,17 @@ def copy_stage_config(stage_config, prototype):
     PrototypeConfig.objects.bulk_create(target_config)
 
 
-def check_license(bundle):
-    if not Bundle.objects.filter(license_hash=bundle.license_hash, license="accepted").exists():
-        return False
-    return True
+def check_license(proto):
+    return Prototype.objects.filter(license_hash=proto.license_hash, license="accepted").exists()
 
 
 def copy_stage(bundle_hash, bundle_proto):
     bundle = copy_obj(
         bundle_proto,
         Bundle,
-        ("name", "version", "edition", "license_path", "license_hash", "description"),
+        ("name", "version", "edition", "description"),
     )
     bundle.hash = bundle_hash
-    check_license(bundle)
-    if bundle.license_path:
-        bundle.license = "unaccepted"
-        if check_license(bundle):
-            bundle.license = "accepted"
     try:
         bundle.save()
     except IntegrityError:
@@ -646,9 +634,7 @@ def copy_stage(bundle_hash, bundle_proto):
         proto = Prototype.objects.get(name=sp.name, type=sp.type, bundle=bundle)
         copy_stage_actions(StageAction.objects.filter(prototype=sp), proto)
         copy_stage_config(StagePrototypeConfig.objects.filter(prototype=sp), proto)
-        copy_stage_component(
-            StagePrototype.objects.filter(parent=sp, type="component"), sp, proto, bundle
-        )
+        copy_stage_component(StagePrototype.objects.filter(parent=sp, type="component"), sp, proto, bundle)
         for se in StagePrototypeExport.objects.filter(prototype=sp):
             pe = PrototypeExport(prototype=proto, name=se.name)
             pe.save()
@@ -722,7 +708,6 @@ def update_bundle_from_stage(
                         "params",
                         "log_files",
                         "hostcomponentmap",
-                        "button",
                         "display_name",
                         "description",
                         "ui_options",
@@ -753,7 +738,6 @@ def update_bundle_from_stage(
                         "params",
                         "log_files",
                         "hostcomponentmap",
-                        "button",
                         "display_name",
                         "description",
                         "ui_options",
@@ -797,9 +781,7 @@ def update_bundle_from_stage(
             if sc.action:
                 act = Action.objects.get(prototype=p, name=sc.action.name)
             try:
-                pconfig = PrototypeConfig.objects.get(
-                    prototype=p, action=act, name=sc.name, subname=sc.subname
-                )
+                pconfig = PrototypeConfig.objects.get(prototype=p, action=act, name=sc.name, subname=sc.subname)
                 update_obj(pconfig, sc, flist)
             except PrototypeConfig.DoesNotExist:
                 pconfig = copy_obj(sc, PrototypeConfig, ("name", "subname") + flist)

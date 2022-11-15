@@ -31,22 +31,15 @@ from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializ
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.host.serializers import HostSerializer
 from api.serializers import DoUpgradeSerializer, StringListSerializer
-from api.utils import (
-    CommonAPIURL,
-    ObjectURL,
-    UrlField,
-    check_obj,
-    filter_actions,
-    get_upgradable_func,
-)
+from api.utils import CommonAPIURL, ObjectURL, UrlField, check_obj, filter_actions
 from api.validators import StartMidEndValidator
 from cm.adcm_config import get_main_info
 from cm.api import add_cluster, add_hc, bind, multi_bind
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues
-from cm.models import Action, Cluster, Host, Prototype, ServiceComponent, Upgrade
+from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 from cm.status_api import get_cluster_status, get_hc_status
-from cm.upgrade import do_upgrade
+from cm.upgrade import get_upgrade
 
 
 def get_cluster_id(obj):
@@ -83,9 +76,7 @@ class ClusterSerializer(Serializer):
     description = CharField(help_text="Cluster description", required=False)
     state = CharField(read_only=True)
     before_upgrade = JSONField(read_only=True)
-    url = HyperlinkedIdentityField(
-        view_name="cluster-details", lookup_field="id", lookup_url_kwarg="cluster_id"
-    )
+    url = HyperlinkedIdentityField(view_name="cluster-details", lookup_field="id", lookup_url_kwarg="cluster_id")
 
     @staticmethod
     def validate_prototype_id(prototype_id):
@@ -102,6 +93,7 @@ class ClusterSerializer(Serializer):
         instance.name = validated_data.get("name", instance.name)
         instance.description = validated_data.get("description", instance.description)
         instance.save()
+
         return instance
 
 
@@ -111,9 +103,7 @@ class ClusterUISerializer(ClusterSerializer):
     prototype_version = SerializerMethodField()
     prototype_name = SerializerMethodField()
     prototype_display_name = SerializerMethodField()
-    upgrade = HyperlinkedIdentityField(
-        view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id"
-    )
+    upgrade = HyperlinkedIdentityField(view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id")
     upgradable = SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
@@ -121,7 +111,7 @@ class ClusterUISerializer(ClusterSerializer):
 
     @staticmethod
     def get_upgradable(obj: Cluster) -> bool:
-        return get_upgradable_func(obj)
+        return bool(get_upgrade(obj))
 
     @staticmethod
     def get_prototype_version(obj: Cluster) -> str:
@@ -151,22 +141,14 @@ class ClusterDetailSerializer(ClusterSerializer):
         view_name="host-component", lookup_field="id", lookup_url_kwarg="cluster_id"
     )
     status = SerializerMethodField()
-    status_url = HyperlinkedIdentityField(
-        view_name="cluster-status", lookup_field="id", lookup_url_kwarg="cluster_id"
-    )
+    status_url = HyperlinkedIdentityField(view_name="cluster-status", lookup_field="id", lookup_url_kwarg="cluster_id")
     config = CommonAPIURL(view_name="object-config")
     serviceprototype = HyperlinkedIdentityField(
         view_name="cluster-service-prototype", lookup_field="id", lookup_url_kwarg="cluster_id"
     )
-    upgrade = HyperlinkedIdentityField(
-        view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id"
-    )
-    imports = HyperlinkedIdentityField(
-        view_name="cluster-import", lookup_field="id", lookup_url_kwarg="cluster_id"
-    )
-    bind = HyperlinkedIdentityField(
-        view_name="cluster-bind", lookup_field="id", lookup_url_kwarg="cluster_id"
-    )
+    upgrade = HyperlinkedIdentityField(view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id")
+    imports = HyperlinkedIdentityField(view_name="cluster-import", lookup_field="id", lookup_url_kwarg="cluster_id")
+    bind = HyperlinkedIdentityField(view_name="cluster-bind", lookup_field="id", lookup_url_kwarg="cluster_id")
     prototype = HyperlinkedIdentityField(
         view_name="cluster-prototype-detail",
         lookup_field="pk",
@@ -202,17 +184,14 @@ class ClusterUpdateSerializer(EmptySerializer):
     description = CharField(required=False, help_text="Cluster description")
 
     def update(self, instance, validated_data):
-        if (
-            validated_data.get("name")
-            and validated_data.get("name") != instance.name
-            and instance.state != "created"
-        ):
+        if validated_data.get("name") and validated_data.get("name") != instance.name and instance.state != "created":
             raise ValidationError("Name change is available only in the 'created' state")
 
         instance.name = validated_data.get("name", instance.name)
         instance.description = validated_data.get("description", instance.description)
         instance.save()
         update_hierarchy_issues(instance)
+
         return instance
 
 
@@ -230,11 +209,12 @@ class ClusterDetailUISerializer(ClusterDetailSerializer):
         self.context["object"] = obj
         self.context["cluster_id"] = obj.id
         actions = ActionShort(filter_actions(obj, act_set), many=True, context=self.context)
+
         return actions.data
 
     @staticmethod
     def get_upgradable(obj: Cluster) -> bool:
-        return get_upgradable_func(obj)
+        return bool(get_upgrade(obj))
 
     @staticmethod
     def get_prototype_version(obj: Cluster) -> str:
@@ -270,6 +250,7 @@ class StatusSerializer(EmptySerializer):
         data["monitoring"] = instance.component.prototype.monitoring
         status = get_hc_status(instance)
         data["status"] = status
+
         return data
 
 
@@ -289,9 +270,7 @@ class HostComponentSerializer(EmptySerializer):
     component_id = IntegerField(read_only=True, help_text="component id")
     state = CharField(read_only=True, required=False)
     url = MyUrlField(read_only=True, view_name="host-comp-details")
-    host_url = HyperlinkedIdentityField(
-        view_name="host-details", lookup_field="host_id", lookup_url_kwarg="host_id"
-    )
+    host_url = HyperlinkedIdentityField(view_name="host-details", lookup_field="host_id", lookup_url_kwarg="host_id")
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -301,6 +280,7 @@ class HostComponentSerializer(EmptySerializer):
         data["service_name"] = instance.service.prototype.name
         data["service_display_name"] = instance.service.prototype.display_name
         data["service_version"] = instance.service.prototype.version
+
         return data
 
 
@@ -311,10 +291,12 @@ class HostComponentUISerializer(EmptySerializer):
 
     def get_host(self, obj):
         hosts = Host.objects.filter(cluster=self.context.get("cluster"))
+
         return HostSerializer(hosts, many=True, context=self.context).data
 
     def get_component(self, obj):
         comps = ServiceComponent.objects.filter(cluster=self.context.get("cluster"))
+
         return HCComponentSerializer(comps, many=True, context=self.context).data
 
 
@@ -325,17 +307,22 @@ class HostComponentSaveSerializer(EmptySerializer):
     def validate_hc(hc):
         if not hc:
             raise AdcmEx("INVALID_INPUT", "hc field is required")
+
         if not isinstance(hc, list):
             raise AdcmEx("INVALID_INPUT", "hc field should be a list")
+
         for item in hc:
             for key in ("component_id", "host_id", "service_id"):
                 if key not in item:
                     msg = '"{}" sub-field is required'
+
                     raise AdcmEx("INVALID_INPUT", msg.format(key))
+
         return hc
 
     def create(self, validated_data):
         hc = validated_data.get("hc")
+
         return add_hc(self.context.get("cluster"), hc)
 
 
@@ -362,6 +349,7 @@ class HCComponentSerializer(ComponentShortSerializer):
     def get_requires(obj):
         if not obj.prototype.requires:
             return None
+
         comp_list = {}
 
         def process_requires(req_list):
@@ -374,10 +362,13 @@ class HCComponentSerializer(ComponentShortSerializer):
                 )
                 if _comp == obj.prototype:
                     return
+
                 if _comp.name not in comp_list:
                     comp_list[_comp.name] = {"components": {}, "service": _comp.parent}
+
                 if _comp.name in comp_list[_comp.name]["components"]:
                     return
+
                 comp_list[_comp.name]["components"][_comp.name] = _comp
                 if _comp.requires:
                     process_requires(_comp.requires)
@@ -396,8 +387,10 @@ class HCComponentSerializer(ComponentShortSerializer):
                         "display_name": comp.display_name,
                     }
                 )
+
             if not comp_out:
                 continue
+
             out.append(
                 {
                     "prototype_id": service.id,
@@ -406,6 +399,7 @@ class HCComponentSerializer(ComponentShortSerializer):
                     "components": comp_out,
                 }
             )
+
         return out
 
 
@@ -427,24 +421,28 @@ class BindSerializer(EmptySerializer):
     def get_export_service_name(obj):
         if obj.source_service:
             return obj.source_service.prototype.name
+
         return None
 
     @staticmethod
     def get_export_service_id(obj):
         if obj.source_service:
             return obj.source_service.id
+
         return None
 
     @staticmethod
     def get_import_service_id(obj):
         if obj.service:
             return obj.service.id
+
         return None
 
     @staticmethod
     def get_import_service_name(obj):
         if obj.service:
             return obj.service.prototype.name
+
         return None
 
 
@@ -465,6 +463,7 @@ class DoBindSerializer(EmptySerializer):
 
     def create(self, validated_data):
         export_cluster = check_obj(Cluster, validated_data.get("export_cluster_id"))
+
         return bind(
             validated_data.get("cluster"),
             None,
@@ -480,18 +479,12 @@ class PostImportSerializer(EmptySerializer):
         bind_data = validated_data.get("bind")
         cluster = self.context.get("cluster")
         service = self.context.get("service")
+
         return multi_bind(cluster, service, bind_data)
 
 
 class DoClusterUpgradeSerializer(DoUpgradeSerializer):
     hc = JSONField(required=False, default=list)
-
-    def create(self, validated_data):
-        upgrade = check_obj(Upgrade, validated_data.get("upgrade_id"), "UPGRADE_NOT_FOUND")
-        config = validated_data.get("config", {})
-        attr = validated_data.get("attr", {})
-        hc = validated_data.get("hc", [])
-        return do_upgrade(validated_data.get("obj"), upgrade, config, attr, hc)
 
 
 class ClusterAuditSerializer(ModelSerializer):

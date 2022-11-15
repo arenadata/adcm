@@ -187,9 +187,7 @@ def make_ui_single_host_status(host: Host) -> dict:
     }
 
 
-def make_ui_component_status(
-    component: ServiceComponent, host_components: Iterable[HostComponent]
-) -> dict:
+def make_ui_component_status(component: ServiceComponent, host_components: Iterable[HostComponent]) -> dict:
     """Make UI representation of component's status per host"""
     host_list = []
     for hc in host_components:
@@ -208,9 +206,7 @@ def make_ui_component_status(
     }
 
 
-def make_ui_service_status(
-    service: ClusterObject, host_components: Iterable[HostComponent]
-) -> dict:
+def make_ui_service_status(service: ClusterObject, host_components: Iterable[HostComponent]) -> dict:
     """Make UI representation of service and its children statuses"""
     component_hc_map = defaultdict(list)
     for hc in host_components:

@@ -15,21 +15,30 @@ import json
 from adwp_base.errors import AdwpEx
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
+from django.test import Client
+from django.urls import reverse
 
-from adcm.tests.base import BaseTestCase
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from api.utils import PermissionDenied, check_custom_perm
+from cm.api import add_host_to_cluster
 from cm.models import (
     Action,
     ActionType,
     Bundle,
     Cluster,
     ClusterObject,
+    Host,
+    HostProvider,
+    MaintenanceMode,
     ProductCategory,
     Prototype,
     ServiceComponent,
 )
 from init_db import init as init_adcm
-from rbac.models import Role, RoleTypes
+from rbac.models import Role, RoleTypes, User
 from rbac.roles import ModelRole
+from rbac.services.policy import policy_create
+from rbac.services.role import role_create
 from rbac.tests.test_base import RBACBaseTestCase
 from rbac.upgrade.role import init_roles, prepare_action_roles
 
@@ -179,7 +188,6 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
             version="1.0",
             hash="47b820a6d66a90b02b42017269904ab2c954bceb",
             edition="community",
-            license="absent",
             category=category,
         )
         self.bundle_1.refresh_from_db()
@@ -535,8 +543,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
             self.assertEqual(
                 count,
                 1,
-                f"Role does not exist or not unique: {count} !=  1\n"
-                f"{json.dumps(role_data, indent=2, default=str)}",
+                f"Role does not exist or not unique: {count} !=  1\n" f"{json.dumps(role_data, indent=2, default=str)}",
             )
 
             role = Role.objects.filter(**role_data).first()
@@ -567,3 +574,149 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         ).count()
 
         self.assertEqual(sa_role_count, 6, "Roles missing from base roles")
+
+
+# pylint: disable=too-many-instance-attributes, protected-access
+class TestMMRoles(RBACBaseTestCase):
+    def setUp(self) -> None:
+        init_adcm()
+        init_roles()
+
+        self.create_bundles_and_prototypes()
+        self.cluster = Cluster.objects.create(name="testcluster", prototype=self.clp)
+        self.provider = HostProvider.objects.create(
+            name="test_provider",
+            prototype=self.pp,
+        )
+        self.host = Host.objects.create(fqdn="testhost", prototype=self.hp)
+        add_host_to_cluster(self.cluster, self.host)
+        self.service = ClusterObject.objects.create(cluster=self.cluster, prototype=self.sp_1)
+        self.component = ServiceComponent.objects.create(
+            cluster=self.cluster, service=self.service, prototype=self.cop_11
+        )
+
+        self.test_user_username = "test_user"
+        self.test_user_password = "test_user_password"
+        self.test_user = User.objects.create_user(
+            username=self.test_user_username,
+            password=self.test_user_password,
+        )
+
+        self.client = Client(HTTP_USER_AGENT='Mozilla/5.0')
+        self.login()
+
+        self.mm_role_host = role_create(
+            name="mm role host",
+            display_name="mm role host",
+            child=[Role.objects.get(name="Manage Maintenance mode")],
+        )
+        self.mm_role_cluster = role_create(
+            name="mm role cluster",
+            display_name="mm role cluster",
+            child=[Role.objects.get(name="Manage cluster Maintenance mode")],
+        )
+
+    def test_no_roles(self):
+        for view_name, url_kwarg_name, obj in (
+            ("host-details", "host_id", self.host),
+            ("component-details", "component_id", self.component),
+            ("service-details", "service_id", self.service),
+        ):
+            url = reverse(view_name, kwargs={url_kwarg_name: obj.pk})
+            response = self.client.get(path=url, content_type=APPLICATION_JSON)
+            self.assertEqual(response.status_code, 404)
+
+            with self.assertRaises(PermissionDenied):
+                check_custom_perm(self.test_user, "change_maintenance_mode", obj._meta.model_name, obj)
+
+    def test_mm_host_role(self):
+        policy_create(name="mm host policy", object=[self.host], role=self.mm_role_host, user=[self.test_user])
+        check_custom_perm(self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host)
+
+        response = self.client.post(
+            path=reverse("host-maintenance-mode", kwargs={'host_id': self.host.pk}),
+            data={"maintenance_mode": MaintenanceMode.ON},
+            format="json",
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_mm_cluster_role(self):
+        policy_create(
+            name="mm cluster policy",
+            object=[self.cluster],
+            role=self.mm_role_cluster,
+            user=[self.test_user],
+        )
+        check_custom_perm(self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host)
+        check_custom_perm(
+            self.test_user,
+            "change_maintenance_mode",
+            self.component._meta.model_name,
+            self.component,
+        )
+        check_custom_perm(self.test_user, "change_maintenance_mode", self.service._meta.model_name, self.service)
+
+        response = self.client.post(
+            path=reverse("host-maintenance-mode", kwargs={'host_id': self.host.pk}),
+            data={"maintenance_mode": MaintenanceMode.ON},
+            format="json",
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+            path=reverse("component-maintenance-mode", kwargs={'component_id': self.component.pk}),
+            data={"maintenance_mode": MaintenanceMode.ON},
+            format="json",
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+            path=reverse("service-maintenance-mode", kwargs={'service_id': self.service.pk}),
+            data={"maintenance_mode": MaintenanceMode.ON},
+            format="json",
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_mm_cl_adm_role(self):
+        policy_create(
+            name="mm cluster policy",
+            object=[self.cluster],
+            role=Role.objects.get(name="Cluster Administrator"),
+            user=[self.test_user],
+        )
+        check_custom_perm(self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host)
+        check_custom_perm(
+            self.test_user,
+            "change_maintenance_mode",
+            self.component._meta.model_name,
+            self.component,
+        )
+        check_custom_perm(self.test_user, "change_maintenance_mode", self.service._meta.model_name, self.service)
+
+        response = self.client.post(
+            path=reverse("host-maintenance-mode", kwargs={'host_id': self.host.pk}),
+            data={"maintenance_mode": MaintenanceMode.ON},
+            format="json",
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+            path=reverse("component-maintenance-mode", kwargs={'component_id': self.component.pk}),
+            data={"maintenance_mode": MaintenanceMode.ON},
+            format="json",
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+            path=reverse("service-maintenance-mode", kwargs={'service_id': self.service.pk}),
+            data={"maintenance_mode": MaintenanceMode.ON},
+            format="json",
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, 200)

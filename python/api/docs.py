@@ -32,9 +32,7 @@ def docs_html(request):
 
 
 def get_context(request, patterns=None):
-    generator = SchemaGenerator(
-        title='ArenaData Cluster Manager API', description=intro(), patterns=patterns
-    )
+    generator = SchemaGenerator(title='ArenaData Cluster Manager API', description=intro(), patterns=patterns)
     data = generator.get_schema(request, True)
     context = {
         'document': data,

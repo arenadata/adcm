@@ -73,9 +73,7 @@ class TestJob(BaseTestCase):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
         action = Action.objects.create(prototype=prototype)
-        job = JobLog.objects.create(
-            action=action, start_date=timezone.now(), finish_date=timezone.now()
-        )
+        job = JobLog.objects.create(action=action, start_date=timezone.now(), finish_date=timezone.now())
         status = JobStatus.RUNNING
         pid = 10
         event = Mock()
@@ -93,9 +91,7 @@ class TestJob(BaseTestCase):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
         action = Action.objects.create(prototype=prototype)
-        task = TaskLog.objects.create(
-            action=action, object_id=1, start_date=timezone.now(), finish_date=timezone.now()
-        )
+        task = TaskLog.objects.create(action=action, object_id=1, start_date=timezone.now(), finish_date=timezone.now())
 
         set_task_status(task, JobStatus.RUNNING, event)
 
@@ -170,9 +166,7 @@ class TestJob(BaseTestCase):
         host_provider = HostProvider.objects.create(prototype=prototype)
         adcm = ADCM.objects.create(prototype=prototype)
         action = Action.objects.create(prototype=prototype)
-        task = TaskLog.objects.create(
-            action=action, object_id=1, start_date=timezone.now(), finish_date=timezone.now()
-        )
+        task = TaskLog.objects.create(action=action, object_id=1, start_date=timezone.now(), finish_date=timezone.now())
         to_set = "to set"
         to_unset = "to unset"
         for obj in (adcm, cluster, cluster_object, host_provider, host):
@@ -194,7 +188,7 @@ class TestJob(BaseTestCase):
             self.assertIn(to_set, obj.multi_state)
             self.assertNotIn(to_unset, obj.multi_state)
 
-    @patch("cm.job.api.save_hc")
+    @patch("cm.job.save_hc")
     def test_restore_hc(self, mock_save_hc):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
@@ -225,7 +219,7 @@ class TestJob(BaseTestCase):
         restore_hc(task, action, JobStatus.FAILED)
         mock_save_hc.assert_called_once_with(cluster, [(cluster_object, host, service_component)])
 
-    @patch("cm.job.err")
+    @patch("cm.job.raise_adcm_ex")
     def test_check_service_task(self, mock_err):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
@@ -238,7 +232,7 @@ class TestJob(BaseTestCase):
         self.assertEqual(cluster_object, service)
         self.assertEqual(mock_err.call_count, 0)
 
-    @patch("cm.job.err")
+    @patch("cm.job.raise_adcm_ex")
     def test_check_cluster(self, mock_err):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
@@ -251,17 +245,13 @@ class TestJob(BaseTestCase):
 
     @patch("cm.job.prepare_ansible_config")
     @patch("cm.job.prepare_job_config")
-    @patch("cm.job.inventory.prepare_job_inventory")
-    def test_prepare_job(
-        self, mock_prepare_job_inventory, mock_prepare_job_config, mock_prepare_ansible_config
-    ):
+    @patch("cm.job.prepare_job_inventory")
+    def test_prepare_job(self, mock_prepare_job_inventory, mock_prepare_job_config, mock_prepare_ansible_config):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
         cluster = Cluster.objects.create(prototype=prototype)
         action = Action.objects.create(prototype=prototype)
-        job = JobLog.objects.create(
-            action=action, start_date=timezone.now(), finish_date=timezone.now()
-        )
+        job = JobLog.objects.create(action=action, start_date=timezone.now(), finish_date=timezone.now())
 
         prepare_job(action, None, job.id, cluster, "", {}, None, False)
 
@@ -296,9 +286,7 @@ class TestJob(BaseTestCase):
         service = add_service_to_cluster(cluster, proto2)
         context = prepare_context(action2, service)
 
-        self.assertDictEqual(
-            context, {"type": "service", "service_id": service.id, "cluster_id": cluster.id}
-        )
+        self.assertDictEqual(context, {"type": "service", "service_id": service.id, "cluster_id": cluster.id})
 
     def test_get_bundle_root(self):
         bundle = Bundle.objects.create()
@@ -389,9 +377,7 @@ class TestJob(BaseTestCase):
             Path(settings.BUNDLE_DIR, cluster_action.prototype.bundle.hash, cluster_action.script)
         )
 
-        job = JobLog.objects.create(
-            action=cluster_action, start_date=timezone.now(), finish_date=timezone.now()
-        )
+        job = JobLog.objects.create(action=cluster_action, start_date=timezone.now(), finish_date=timezone.now())
 
         conf = "test"
         proto4 = Prototype.objects.create(bundle=bundle, type="provider")
@@ -477,9 +463,7 @@ class TestJob(BaseTestCase):
     @patch("cm.job.get_old_hc")
     @patch("cm.job.get_actual_hc")
     @patch("cm.job.prepare_job")
-    def test_re_prepare_job(
-        self, mock_prepare_job, mock_get_actual_hc, mock_get_old_hc, mock_cook_delta
-    ):
+    def test_re_prepare_job(self, mock_prepare_job, mock_get_actual_hc, mock_get_old_hc, mock_cook_delta):
         # pylint: disable=too-many-locals
 
         new_hc = Mock()
@@ -530,6 +514,4 @@ class TestJob(BaseTestCase):
         mock_get_actual_hc.assert_called_once_with(cluster)
         mock_get_old_hc.assert_called_once_with(task.hostcomponentmap)
         mock_cook_delta.assert_called_once_with(cluster, new_hc, action.hostcomponentmap, old_hc)
-        mock_prepare_job.assert_called_once_with(
-            action, sub_action, job.id, cluster, task.config, delta, None, False
-        )
+        mock_prepare_job.assert_called_once_with(action, sub_action, job.id, cluster, task.config, delta, None, False)

@@ -26,10 +26,10 @@ from rest_framework.status import (
 )
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.models import Bundle, Cluster, Host, HostProvider, Prototype
+from cm.models import Bundle, Cluster, Host, HostProvider, MaintenanceMode, Prototype
 
 
-class TestHostAPI(BaseTestCase):
+class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
     def setUp(self) -> None:
         super().setUp()
 
@@ -60,7 +60,7 @@ class TestHostAPI(BaseTestCase):
             fqdn="test-fqdn",
             prototype=Prototype.objects.all()[0],
             provider=self.provider,
-            maintenance_mode="on",
+            maintenance_mode=MaintenanceMode.ON,
         )
 
     def load_bundle(self, bundle_name):
@@ -111,11 +111,35 @@ class TestHostAPI(BaseTestCase):
         self.host.refresh_from_db()
         self.assertEqual(self.host.fqdn, expected_fqdn)
 
+    def check_maintenance_mode_can_be_changed(self, host: Host):
+        new_mm = MaintenanceMode.ON if host.maintenance_mode == MaintenanceMode.OFF else MaintenanceMode.OFF
+        response = self.client.put(
+            path=reverse("host-details", args=[host.pk]),
+            data={
+                "fqdn": host.fqdn,
+                "maintenance_mode": new_mm,
+                "description": host.description,
+                "provider_id": host.provider_id,
+                "prototype_id": host.prototype_id,
+            },
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["maintenance_mode"], new_mm)
+
+        new_mm = MaintenanceMode.ON if new_mm == MaintenanceMode.OFF else MaintenanceMode.OFF
+        response = self.client.patch(
+            path=reverse("host-details", args=[host.pk]),
+            data={"maintenance_mode": new_mm},
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["maintenance_mode"], new_mm)
+
     def test_host(self):  # pylint: disable=too-many-statements
         host = "test.server.net"
         host_url = reverse("host")
 
-        # self.load_bundle(self.bundle_ssh_name)
         ssh_bundle_id, host_proto = self.get_host_proto_id()
 
         response: Response = self.client.post(host_url, {})
@@ -123,9 +147,7 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["fqdn"], ["This field is required."])
 
-        response: Response = self.client.post(
-            host_url, {"fqdn": host, "prototype_id": host_proto, "provider_id": 0}
-        )
+        response: Response = self.client.post(host_url, {"fqdn": host, "prototype_id": host_proto, "provider_id": 0})
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.assertEqual(response.json()["code"], "PROVIDER_NOT_FOUND")
@@ -139,9 +161,7 @@ class TestHostAPI(BaseTestCase):
 
         provider_id = response.json()["id"]
 
-        response: Response = self.client.post(
-            host_url, {"fqdn": host, "prototype_id": 42, "provider_id": provider_id}
-        )
+        response: Response = self.client.post(host_url, {"fqdn": host, "prototype_id": 42, "provider_id": provider_id})
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.assertEqual(response.json()["code"], "PROTOTYPE_NOT_FOUND")
@@ -203,7 +223,6 @@ class TestHostAPI(BaseTestCase):
                 "prototype_id": ["This field is required."],
                 "provider_id": ["This field is required."],
                 "fqdn": ["This field is required."],
-                "maintenance_mode": ["This field is required."],
             },
         )
 
@@ -228,23 +247,17 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.assertEqual(response.json()["code"], "HOST_NOT_FOUND")
 
-        response: Response = self.client.delete(
-            path=reverse("bundle-detail", kwargs={"bundle_pk": ssh_bundle_id})
-        )
+        response: Response = self.client.delete(path=reverse("bundle-detail", kwargs={"bundle_pk": ssh_bundle_id}))
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "BUNDLE_CONFLICT")
 
-        response: Response = self.client.delete(
-            path=reverse("provider-details", kwargs={"provider_id": provider_id})
-        )
+        response: Response = self.client.delete(path=reverse("provider-details", kwargs={"provider_id": provider_id}))
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         self.provider.delete()
-        response: Response = self.client.delete(
-            path=reverse("bundle-detail", kwargs={"bundle_pk": ssh_bundle_id})
-        )
+        response: Response = self.client.delete(path=reverse("bundle-detail", kwargs={"bundle_pk": ssh_bundle_id}))
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
@@ -253,7 +266,7 @@ class TestHostAPI(BaseTestCase):
 
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": new_test_fqdn, "maintenance_mode": "on"},
+            data={"fqdn": new_test_fqdn, "maintenance_mode": MaintenanceMode.ON},
             content_type=APPLICATION_JSON,
         )
         self.host.refresh_from_db()
@@ -267,7 +280,7 @@ class TestHostAPI(BaseTestCase):
 
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": self.host.fqdn, "maintenance_mode": "on"},
+            data={"fqdn": self.host.fqdn, "maintenance_mode": MaintenanceMode.ON},
             content_type=APPLICATION_JSON,
         )
 
@@ -279,7 +292,7 @@ class TestHostAPI(BaseTestCase):
 
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": "new-test-fqdn", "maintenance_mode": "on"},
+            data={"fqdn": "new-test-fqdn", "maintenance_mode": MaintenanceMode.ON},
             content_type=APPLICATION_JSON,
         )
 
@@ -300,7 +313,7 @@ class TestHostAPI(BaseTestCase):
 
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": "new-test-fqdn", "maintenance_mode": "on"},
+            data={"fqdn": "new-test-fqdn", "maintenance_mode": MaintenanceMode.ON},
             content_type=APPLICATION_JSON,
         )
 
@@ -351,7 +364,7 @@ class TestHostAPI(BaseTestCase):
             fqdn=fqdn,
             prototype=Prototype.objects.all()[0],
             provider=self.provider,
-            maintenance_mode="disabled",
+            maintenance_mode=MaintenanceMode.OFF,
         )
 
         response = self.client.put(
@@ -403,9 +416,7 @@ class TestHostAPI(BaseTestCase):
                     self.assertEqual(err["code"], "WRONG_NAME")
                 else:
                     self.assertIn("fqdn", err)
-                    self.assertEqual(
-                        err["fqdn"], ["Ensure this field has no more than 253 characters."]
-                    )
+                    self.assertEqual(err["fqdn"], ["Ensure this field has no more than 253 characters."])
                 self.assertEqual(Host.objects.count(), amount_of_hosts)
 
         for value in self.correct_values:
@@ -419,7 +430,7 @@ class TestHostAPI(BaseTestCase):
                 self.assertEqual(response.json()["fqdn"], value)
 
     def test_host_update_fqdn_validation(self):
-        self.host.maintenance_mode = "disabled"
+        self.host.maintenance_mode = MaintenanceMode.OFF
         self.host.save(update_fields=["maintenance_mode"])
         fqdn = self.host.fqdn
         default_values = {

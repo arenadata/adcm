@@ -14,17 +14,20 @@ from django_filters import rest_framework as drf_filters
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
+    HTTP_409_CONFLICT,
 )
 
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.host.serializers import (
     ClusterHostSerializer,
+    HostChangeMaintenanceModeSerializer,
     HostDetailSerializer,
     HostDetailUISerializer,
     HostSerializer,
@@ -33,13 +36,19 @@ from api.host.serializers import (
     ProvideHostSerializer,
     StatusSerializer,
 )
-from api.utils import check_custom_perm, create, get_object_for_user
+from api.utils import (
+    check_custom_perm,
+    create,
+    get_maintenance_mode_response,
+    get_object_for_user,
+)
 from audit.utils import audit
 from cm.api import (
     add_host_to_cluster,
     delete_host,
     load_service_map,
     remove_host_from_cluster,
+    update_mm_objects,
 )
 from cm.errors import AdcmEx
 from cm.models import (
@@ -49,7 +58,7 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
-    MaintenanceModeType,
+    MaintenanceMode,
     ServiceComponent,
 )
 from cm.status_api import make_ui_host_status
@@ -159,14 +168,10 @@ class HostList(PermissionListMixin, PaginatedView):
         )
         if serializer.is_valid():
             if "provider_id" in kwargs:  # List provider hosts
-                provider = get_object_for_user(
-                    request.user, PROVIDER_VIEW, HostProvider, id=kwargs["provider_id"]
-                )
+                provider = get_object_for_user(request.user, PROVIDER_VIEW, HostProvider, id=kwargs["provider_id"])
             else:
                 provider = serializer.validated_data.get("provider_id")
-                provider = get_object_for_user(
-                    request.user, PROVIDER_VIEW, HostProvider, id=provider.id
-                )
+                provider = get_object_for_user(request.user, PROVIDER_VIEW, HostProvider, id=provider.id)
 
             check_custom_perm(request.user, "add_host_to", "hostprovider", provider)
 
@@ -190,9 +195,7 @@ class HostListCluster(HostList):
 
             cluster = None
             if "cluster_id" in kwargs:
-                cluster = get_object_for_user(
-                    request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"]
-                )
+                cluster = get_object_for_user(request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"])
 
             host = get_object_for_user(request.user, HOST_VIEW, Host, id=validated_data.get("id"))
             check_custom_perm(request.user, "map_host_to", "cluster", cluster)
@@ -222,39 +225,7 @@ class HostDetail(PermissionListMixin, DetailView):
     lookup_url_kwarg = "host_id"
     error_code = "HOST_NOT_FOUND"
 
-    def get_queryset(self, *args, **kwargs):
-        queryset = super().get_queryset(*args, **kwargs)
-        queryset = get_host_queryset(queryset, self.request.user, self.kwargs)
-
-        return get_objects_for_user(**self.get_get_objects_for_user_kwargs(queryset))
-
-    @audit
-    def delete(self, request, *args, **kwargs):
-        host = self.get_object()
-        if "cluster_id" in kwargs:
-            # Remove host from cluster
-            cluster = get_object_for_user(
-                request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"]
-            )
-            check_host(host, cluster)
-            check_custom_perm(request.user, "unmap_host_from", "cluster", cluster)
-            remove_host_from_cluster(host)
-        else:
-            # Delete host (and all corresponding host services:components)
-            check_custom_perm(request.user, "remove", "host", host)
-            delete_host(host)
-
-        return Response(status=HTTP_204_NO_CONTENT)
-
-    @audit
-    def patch(self, request, *args, **kwargs):
-        return self.__update_host_object(request, *args, **kwargs)
-
-    @audit
-    def put(self, request, *args, **kwargs):
-        return self.__update_host_object(request, partial=False, *args, **kwargs)
-
-    def __update_host_object(
+    def _update_host_object(
         self,
         request,
         *args,
@@ -276,16 +247,7 @@ class HostDetail(PermissionListMixin, DetailView):
         )
 
         serializer.is_valid(raise_exception=True)
-        if "maintenance_mode" in serializer.validated_data:
-            self.__check_maintenance_mode_constraint(
-                host.maintenance_mode, serializer.validated_data.get("maintenance_mode")
-            )
-
-        if (
-            "fqdn" in request.data
-            and request.data["fqdn"] != host.fqdn
-            and (host.cluster or host.state != "created")
-        ):
+        if "fqdn" in request.data and request.data["fqdn"] != host.fqdn and (host.cluster or host.state != "created"):
             raise AdcmEx("HOST_UPDATE_ERROR")
 
         serializer.save(**kwargs)
@@ -293,15 +255,58 @@ class HostDetail(PermissionListMixin, DetailView):
 
         return Response(self.get_serializer(self.get_object()).data, status=HTTP_200_OK)
 
-    @staticmethod
-    def __check_maintenance_mode_constraint(old_mode, new_mode):
-        if old_mode == new_mode:
-            return
-        if old_mode == MaintenanceModeType.Disabled or new_mode not in (
-            MaintenanceModeType.On,
-            MaintenanceModeType.Off,
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+        queryset = get_host_queryset(queryset, self.request.user, self.kwargs)
+
+        return get_objects_for_user(**self.get_get_objects_for_user_kwargs(queryset))
+
+    @audit
+    def delete(self, request, *args, **kwargs):
+        host = self.get_object()
+        if "cluster_id" in kwargs:
+            cluster = get_object_for_user(request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"])
+            check_host(host, cluster)
+            check_custom_perm(request.user, "unmap_host_from", "cluster", cluster)
+            remove_host_from_cluster(host)
+        else:
+            check_custom_perm(request.user, "remove", "host", host)
+            delete_host(host)
+
+        return Response(status=HTTP_204_NO_CONTENT)
+
+    @audit
+    def patch(self, request, *args, **kwargs):
+        return self._update_host_object(request, *args, **kwargs)
+
+    @audit
+    def put(self, request, *args, **kwargs):
+        return self._update_host_object(request, partial=False, *args, **kwargs)
+
+
+class HostMaintenanceModeView(GenericUIView):
+    queryset = Host.objects.all()
+    permission_classes = (DjangoOnlyObjectPermissions,)
+    serializer_class = HostChangeMaintenanceModeSerializer
+    lookup_field = "id"
+    lookup_url_kwarg = "host_id"
+
+    @update_mm_objects
+    @audit
+    def post(self, request: Request, **kwargs) -> Response:
+        host = get_object_for_user(request.user, HOST_VIEW, Host, id=kwargs["host_id"])
+
+        check_custom_perm(request.user, "change_maintenance_mode", Host.__name__.lower(), host)
+
+        serializer = self.get_serializer(instance=host, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if (
+            serializer.validated_data.get("maintenance_mode") == MaintenanceMode.ON
+            and not host.is_maintenance_mode_available
         ):
-            raise AdcmEx("MAINTENANCE_MODE_NOT_AVAILABLE")
+            return Response(data="MAINTENANCE_MODE_NOT_AVAILABLE", status=HTTP_409_CONFLICT)
+
+        return get_maintenance_mode_response(obj=host, serializer=serializer)
 
 
 class StatusList(GenericUIView):
@@ -313,13 +318,10 @@ class StatusList(GenericUIView):
         cluster = None
         host = get_object_for_user(request.user, HOST_VIEW, Host, id=kwargs["host_id"])
         if "cluster_id" in kwargs:
-            cluster = get_object_for_user(
-                request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"]
-            )
+            cluster = get_object_for_user(request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"])
+
         if "provider_id" in kwargs:
-            provider = get_object_for_user(
-                request.user, PROVIDER_VIEW, HostProvider, id=kwargs["provider_id"]
-            )
+            provider = get_object_for_user(request.user, PROVIDER_VIEW, HostProvider, id=kwargs["provider_id"])
             host = get_object_for_user(
                 request.user,
                 HOST_VIEW,

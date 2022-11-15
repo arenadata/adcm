@@ -56,9 +56,7 @@ def _update_groups(user: models.User, groups: [Empty, List[dict]]) -> None:
             group = models.Group.objects.get(id=group_id)
         except ObjectDoesNotExist as exc:
             msg = f"Group with ID {group_id} was not found"
-            raise AdwpEx(
-                "USER_UPDATE_ERROR", msg=msg, http_code=status.HTTP_400_BAD_REQUEST
-            ) from exc
+            raise AdwpEx("USER_UPDATE_ERROR", msg=msg, http_code=status.HTTP_400_BAD_REQUEST) from exc
         if group.type == models.OriginType.LDAP:
             raise AdwpEx("USER_UPDATE_ERROR", msg="You cannot add user to LDAP group")
         user.groups.add(group)

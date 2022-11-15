@@ -115,9 +115,7 @@ class Command(BaseCommand):
 
     def __get_logrotate_config(self):
         adcm_object = ADCM.objects.first()
-        current_configlog = ConfigLog.objects.get(
-            obj_ref=adcm_object.config, id=adcm_object.config.current
-        )
+        current_configlog = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
         adcm_conf = current_configlog.config
         logrotate_config = {
             "logrotate": {
@@ -173,9 +171,7 @@ class Command(BaseCommand):
             target_configlogs = target_configlogs.exclude(pk__in=exclude_pks)
             target_configlog_ids = set(i[0] for i in target_configlogs.values_list("id"))
             target_objectconfig_ids = set(
-                cl.obj_ref.id
-                for cl in target_configlogs
-                if not self.__has_related_records(cl.obj_ref)
+                cl.obj_ref.id for cl in target_configlogs if not self.__has_related_records(cl.obj_ref)
             )
             if target_configlog_ids or target_objectconfig_ids:
                 make_audit_log("config", AuditLogOperationResult.Success, "launched")
@@ -188,8 +184,7 @@ class Command(BaseCommand):
                     make_audit_log("config", AuditLogOperationResult.Success, "completed")
 
             self.__log(
-                f"Deleted {len(target_configlog_ids)} ConfigLogs and "
-                f"{len(target_objectconfig_ids)} ObjectConfigs",
+                f"Deleted {len(target_configlog_ids)} ConfigLogs and " f"{len(target_objectconfig_ids)} ObjectConfigs",
                 "info",
             )
 
@@ -227,8 +222,7 @@ class Command(BaseCommand):
             threshold_date_db = timezone.now() - timedelta(days=days_delta_db)
             threshold_date_fs = timezone.now() - timedelta(days=days_delta_fs)
             self.__log(
-                f"JobLog rotation started. Threshold dates: "
-                f"db - {threshold_date_db}, fs - {threshold_date_fs}",
+                f"JobLog rotation started. Threshold dates: " f"db - {threshold_date_db}, fs - {threshold_date_fs}",
                 "info",
             )
             is_deleted = False

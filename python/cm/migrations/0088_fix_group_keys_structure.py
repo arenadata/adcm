@@ -64,9 +64,7 @@ def get_config_spec(apps, group):
         obj = HostProvider.objects.get(id=group.object_id)
     else:
         raise models.ObjectDoesNotExist
-    for field in PrototypeConfig.objects.filter(
-        prototype=obj.prototype, action__isnull=True
-    ).order_by('id'):
+    for field in PrototypeConfig.objects.filter(prototype=obj.prototype, action__isnull=True).order_by('id'):
         group_customization = field.group_customization
         if group_customization is None:
             group_customization = obj.prototype.config_group_customization

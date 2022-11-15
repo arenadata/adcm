@@ -72,7 +72,7 @@ class ActionModule(ActionBase):
             service_id = get_object_id_from_context(task_vars, 'service_id', 'service', err_msg=msg)
             logger.info('ansible module adcm_delete_service: service #%s', service_id)
             try:
-                cm.api.delete_service_by_id(service_id)
+                cm.api.delete_service_by_pk(service_id)
             except AdcmEx as e:
                 raise AnsibleError(e.code + ":" + e.msg) from e
 

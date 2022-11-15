@@ -95,14 +95,10 @@ class ActionModule(ActionBase):
 
         try:
             if path is None:
-                logger.debug(
-                    'ansible adcm_custom_log: %s, %s, %s, %s', job_id, name, log_format, content
-                )
+                logger.debug('ansible adcm_custom_log: %s, %s, %s, %s', job_id, name, log_format, content)
                 log_custom(job_id, name, log_format, content)
             else:
-                logger.debug(
-                    'ansible adcm_custom_log: %s, %s, %s, %s', job_id, name, log_format, path
-                )
+                logger.debug('ansible adcm_custom_log: %s, %s, %s, %s', job_id, name, log_format, path)
                 slurp_return = self._execute_module(
                     module_name='slurp', module_args={'src': path}, task_vars=task_vars, tmp=tmp
                 )
@@ -111,9 +107,7 @@ class ActionModule(ActionBase):
                 except Error as error:
                     raise AdcmEx('UNKNOWN_ERROR', msg='Error b64decode for slurp module') from error
                 except UnicodeDecodeError as error:
-                    raise AdcmEx(
-                        'UNKNOWN_ERROR', msg='Error UnicodeDecodeError for slurp module'
-                    ) from error
+                    raise AdcmEx('UNKNOWN_ERROR', msg='Error UnicodeDecodeError for slurp module') from error
                 log_custom(job_id, name, log_format, body)
 
         except AdcmEx as e:

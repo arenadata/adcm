@@ -34,12 +34,15 @@ type Hub struct {
 	StatusEvent          *StatusEvent
 	AdcmApi              *AdcmApi
 	Secrets              *SecretConfig
+	MMObjects            *MMObjects
 }
 
 func Start(secrets *SecretConfig, logFile string, logLevel string) {
 	hub := Hub{Secrets: secrets}
 	initLog(logFile, logLevel)
 	initSignal()
+
+	hub.MMObjects = newMMObjects()
 
 	hub.HostComponentStorage = newStorage(dbMap2{}, "HostComponent")
 	go hub.HostComponentStorage.run()
@@ -100,6 +103,8 @@ func startHTTP(httpPort string, hub Hub) {
 	router.POST("/api/v1/object/host/", authWrap(hub, createHost, isADCM))
 	router.GET("/api/v1/object/host/:hostid/", authWrap(hub, retrieveHost, isADCM))
 	router.PUT("/api/v1/object/host/:hostid/", authWrap(hub, updateHost, isADCM))
+	router.GET("/api/v1/object/mm/", authWrap(hub, getMMObjects, isADCM))
+	router.POST("/api/v1/object/mm/", authWrap(hub, postMMObjects, isADCM))
 
 	router.GET("/api/v1/host/:hostid/component/:compid/", authWrap(hub, showHostComp, isStatusChecker, isADCM, isADCMUser))
 	router.POST("/api/v1/host/:hostid/component/:compid/", authWrap(hub, setHostComp, isStatusChecker, isADCM))

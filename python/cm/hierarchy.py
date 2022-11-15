@@ -17,7 +17,7 @@ from cm.models import (
     ClusterObject,
     Host,
     HostComponent,
-    MaintenanceModeType,
+    MaintenanceMode,
     ServiceComponent,
 )
 
@@ -117,6 +117,7 @@ class Tree:
             return node
 
     def _build_tree_down(self, node: Node) -> None:
+        children_values = []
         if node.type == 'root':
             children_values = [n.value for n in node.children]
 
@@ -124,9 +125,7 @@ class Tree:
             children_values = ClusterObject.objects.filter(cluster=node.value).all()
 
         elif node.type == 'service':
-            children_values = ServiceComponent.objects.filter(
-                cluster=node.value.cluster, service=node.value
-            ).all()
+            children_values = ServiceComponent.objects.filter(cluster=node.value.cluster, service=node.value).all()
 
         elif node.type == 'component':
             children_values = [
@@ -157,14 +156,20 @@ class Tree:
         if node.type == 'cluster':
             parent_values = [None]
         elif node.type == 'service':
-            parent_values = [node.value.cluster]
+            if node.value.maintenance_mode == MaintenanceMode.OFF:
+                parent_values = [node.value.cluster]
+            else:
+                parent_values = []
         elif node.type == 'component':
-            parent_values = [node.value.service]
+            if node.value.maintenance_mode == MaintenanceMode.OFF:
+                parent_values = [node.value.service]
+            else:
+                parent_values = []
         elif node.type == 'host':
             parent_values = [
                 hc.component
                 for hc in HostComponent.objects.filter(host=node.value)
-                .exclude(host__maintenance_mode=MaintenanceModeType.On)
+                .exclude(host__maintenance_mode=MaintenanceMode.ON)
                 .select_related('component')
                 .all()
             ]

@@ -140,9 +140,7 @@ class MultiHyperlinkedIdentityField(HyperlinkedIdentityField):
         kwargs = {}
         for url_arg in self.url_args:
             if url_arg.startswith(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX):
-                parent_name = url_arg.replace(
-                    extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX, '', 1
-                )
+                parent_name = url_arg.replace(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX, '', 1)
                 parent = self.context.get(parent_name)
                 kwargs.update({url_arg: parent.id})
             else:
@@ -164,9 +162,7 @@ class MultiHyperlinkedRelatedField(HyperlinkedRelatedField):
         kwargs = {}
         for url_arg in self.url_args:
             if url_arg.startswith(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX):
-                parent_name = url_arg.replace(
-                    extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX, '', 1
-                )
+                parent_name = url_arg.replace(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX, '', 1)
                 parent = self.context.get(parent_name)
                 if parent is None:
                     parent = obj

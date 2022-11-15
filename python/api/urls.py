@@ -19,9 +19,7 @@ from rbac.endpoints import token
 
 register_converter(views.NameConverter, 'name')
 swagger_view = get_swagger_view(title='ArenaData Chapel API')
-schema_view = get_schema_view(
-    title='ArenaData Chapel API', patterns=[path('api/v1/', include('api.urls'))]
-)
+schema_view = get_schema_view(title='ArenaData Chapel API', patterns=[path('api/v1/', include('api.urls'))])
 
 urlpatterns = [
     path('', views.APIRoot.as_view()),

@@ -104,9 +104,7 @@ class TestADCM(BaseTestCase):
             "main_info": None,
         }
 
-        response: Response = self.client.get(
-            f"{reverse('adcm-detail', kwargs={'adcm_pk': adcm.id})}?view=interface"
-        )
+        response: Response = self.client.get(f"{reverse('adcm-detail', kwargs={'adcm_pk': adcm.id})}?view=interface")
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertDictEqual(response.json(), test_data)
