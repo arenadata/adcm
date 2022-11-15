@@ -178,7 +178,10 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
         delete filters[f];
         return false;
       } else return true;
-    }).length > 0) {
+    }).length === 0) {
+      this.innerData.next(this.backupData);
+      return;
+    }
 
       let data = this.backupData?.results?.filter((item) => {
         for (let key in filters) {
@@ -230,9 +233,6 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
       let count = this.activeFilters.length === 0 ? this.backupData.count : data.count;
       this.freezeBackupData = true;
       this.innerData.next({...this.backupData, count, results: data});
-    } else {
-      this.innerData.next(this.backupData);
-    }
   }
 
   clearButtonVisible(field) {
