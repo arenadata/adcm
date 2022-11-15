@@ -40,7 +40,13 @@ from api.utils import (
     get_object_for_user,
 )
 from audit.utils import audit
-from cm.api import cancel_locking_tasks, delete_service, get_import, unbind
+from cm.api import (
+    cancel_locking_tasks,
+    delete_service,
+    get_import,
+    unbind,
+    update_mm_objects,
+)
 from cm.errors import raise_adcm_ex
 from cm.job import start_task
 from cm.models import (
@@ -154,6 +160,7 @@ class ServiceMaintenanceModeView(GenericUIView):
     lookup_field = "id"
     lookup_url_kwarg = "service_id"
 
+    @update_mm_objects
     @audit
     def post(self, request: Request, **kwargs) -> Response:
         service = get_object_for_user(request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])

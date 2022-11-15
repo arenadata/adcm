@@ -141,6 +141,20 @@ func (s *ServiceServer) getMap() ServiceMaps {
 	return resp.smap
 }
 
+func (s *ServiceServer) getServiceIDByComponentID(compId int) (resultServiceID int, found bool) {
+	resultServiceID = 0
+	found = false
+	for hostIDCompIDKey, clusterService := range s.smap.HostService {
+		compIdKey, _ := strconv.Atoi(strings.Split(hostIDCompIDKey, ".")[1])
+		if compIdKey == compId {
+			resultServiceID = clusterService.Service
+			found = true
+			break
+		}
+	}
+	return
+}
+
 func (s *ServiceServer) getHosts(clusterId int) ([]int, bool) {
 	s.in <- ssReq{command: "gethosts", cluster: clusterId}
 	resp := <-s.out

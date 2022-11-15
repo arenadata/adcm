@@ -422,6 +422,24 @@ func postServiceMap(h Hub, w http.ResponseWriter, r *http.Request) {
 	// h.ServiceStorage.pure()
 }
 
+func postMMObjects(h Hub, w http.ResponseWriter, r *http.Request) {
+	allow(w, "POST")
+	h.MMObjects.mutex.Lock()
+	defer h.MMObjects.mutex.Unlock()
+
+	var mmData MMObjectsData
+	if _, err := decodeBody(w, r, &mmData); err != nil {
+		ErrOut4(w, r, "JSON_ERROR", err.Error())
+		return
+	}
+	h.MMObjects.data = mmData
+}
+
+func getMMObjects(h Hub, w http.ResponseWriter, r *http.Request) {
+	allow(w, "GET")
+	jsonOut(w, r, h.MMObjects.data)
+}
+
 // Helpers
 
 func getGet(r *http.Request, key string) (string, bool) {
