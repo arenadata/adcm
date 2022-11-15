@@ -48,6 +48,7 @@ from tests.ui_tests.app.page.host.page import (
     HostStatusPage,
 )
 from tests.ui_tests.app.page.service.page import ServiceComponentPage
+from tests.ui_tests.utils import create_few_groups
 
 BUNDLE_COMMUNITY = "cluster_community"
 COMPONENT_WITH_REQUIRED_FIELDS = "component_with_required_string"
@@ -358,7 +359,7 @@ class TestComponentGroupConfigPage:
         group_conf_page = ComponentGroupConfigPage(
             app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
         ).open()
-        group_conf_page.group_config.create_few_groups(11)
+        create_few_groups(group_conf_page.group_config)
         group_conf_page.table.check_pagination(second_page_item_amount=1)
 
 

@@ -94,9 +94,3 @@ class GroupConfigList(BasePageObject):
         self.wait_element_visible(DeleteDialog.body)
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)
-
-    @allure.step("Create {group_amount} groups")
-    def create_few_groups(self, group_amount: int):
-        for i in range(group_amount):
-            with self.wait_rows_change():
-                self.create_group(name=f"Test name_{i}", description='Test description')
