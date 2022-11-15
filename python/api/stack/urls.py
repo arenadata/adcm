@@ -58,5 +58,10 @@ urlpatterns = [
         BundleViewSet.as_view({"put": "accept_license"}),
         name="accept-license",
     ),
+    path(
+        "prototype/<int:prototype_pk>/license/accept/",
+        PrototypeViewSet.as_view({"put": "accept_license"}),
+        name="accept-license",
+    ),
     *router.urls,  # for correct work of root view router urls must be at bottom of urlpatterns
 ]

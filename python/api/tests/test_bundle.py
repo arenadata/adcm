@@ -33,11 +33,11 @@ class TestBundle(BaseTestCase):
             name="test_bundle_1",
             version="123",
             version_order=1,
-            license_path="some_path",
-            license="unaccepted",
         )
         self.bundle_2 = Bundle.objects.create(name="test_bundle_2", version="456", version_order=2)
-        Prototype.objects.create(bundle=self.bundle_1, name=self.bundle_1.name)
+        Prototype.objects.create(
+            bundle=self.bundle_1, name=self.bundle_1.name, license_path="some_path", license="unaccepted"
+        )
         Prototype.objects.create(bundle=self.bundle_2, name=self.bundle_2.name)
 
     def tearDown(self) -> None:

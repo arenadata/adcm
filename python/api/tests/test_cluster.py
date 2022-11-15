@@ -22,7 +22,7 @@ class TestClusterAPI(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.bundle = Bundle.objects.create()
+        self.bundle = Bundle.objects.create(name="test_cluster_prototype")
         self.cluster_prototype = Prototype.objects.create(
             bundle=self.bundle,
             version=2,

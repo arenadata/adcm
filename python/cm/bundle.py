@@ -402,6 +402,8 @@ def copy_stage_prototype(stage_prototypes, bundle):
                 "version",
                 "required",
                 "shared",
+                "license_path",
+                "license_hash",
                 "monitoring",
                 "display_name",
                 "description",
@@ -411,6 +413,10 @@ def copy_stage_prototype(stage_prototypes, bundle):
                 "allow_maintenance_mode",
             ),
         )
+        if proto.license_path:
+            proto.license = "unaccepted"
+            if check_license(proto):
+                proto.license = "accepted"
         proto.bundle = bundle
         prototypes.append(proto)
     Prototype.objects.bulk_create(prototypes)
@@ -603,24 +609,17 @@ def copy_stage_config(stage_config, prototype):
     PrototypeConfig.objects.bulk_create(target_config)
 
 
-def check_license(bundle):
-    if not Bundle.objects.filter(license_hash=bundle.license_hash, license="accepted").exists():
-        return False
-    return True
+def check_license(proto):
+    return Prototype.objects.filter(license_hash=proto.license_hash, license="accepted").exists()
 
 
 def copy_stage(bundle_hash, bundle_proto):
     bundle = copy_obj(
         bundle_proto,
         Bundle,
-        ("name", "version", "edition", "license_path", "license_hash", "description"),
+        ("name", "version", "edition", "description"),
     )
     bundle.hash = bundle_hash
-    check_license(bundle)
-    if bundle.license_path:
-        bundle.license = "unaccepted"
-        if check_license(bundle):
-            bundle.license = "accepted"
     try:
         bundle.save()
     except IntegrityError:

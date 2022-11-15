@@ -157,7 +157,7 @@ def read_file_type(proto, default, bundle_hash, name, subname):
     return read_bundle_file(proto, default, bundle_hash, msg)
 
 
-def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None):
+def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None) -> str | None:
     if not ref:
         ref = proto_ref(proto)
 

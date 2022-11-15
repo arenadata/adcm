@@ -179,9 +179,6 @@ class Bundle(ADCMModel):
     version = models.CharField(max_length=80)
     version_order = models.PositiveIntegerField(default=0)
     edition = models.CharField(max_length=80, default="community")
-    license = models.CharField(max_length=16, choices=LICENSE_STATE, default="absent")
-    license_path = models.CharField(max_length=160, default=None, null=True)
-    license_hash = models.CharField(max_length=64, default=None, null=True)
     hash = models.CharField(max_length=64)
     description = models.TextField(blank=True)
     date = models.DateTimeField(auto_now=True)
@@ -240,6 +237,9 @@ class Prototype(ADCMModel):
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     path = models.CharField(max_length=160, default="")
     name = models.CharField(max_length=256)
+    license = models.CharField(max_length=16, choices=LICENSE_STATE, default="absent")
+    license_path = models.CharField(max_length=160, default=None, null=True)
+    license_hash = models.CharField(max_length=64, default=None, null=True)
     display_name = models.CharField(max_length=256, blank=True)
     version = models.CharField(max_length=80)
     version_order = models.PositiveIntegerField(default=0)
@@ -595,7 +595,7 @@ class Cluster(ADCMEntity):
 
     @property
     def license(self):
-        return self.prototype.bundle.license
+        return self.prototype.license
 
     @property
     def display_name(self):
@@ -634,7 +634,7 @@ class HostProvider(ADCMEntity):
 
     @property
     def license(self):
-        return self.prototype.bundle.license
+        return self.prototype.license
 
     @property
     def display_name(self):
@@ -1600,6 +1600,7 @@ class StagePrototype(ADCMModel):
     display_name = models.CharField(max_length=1000, blank=True)
     version = models.CharField(max_length=80)
     edition = models.CharField(max_length=80, default="community")
+    license = models.CharField(max_length=16, choices=LICENSE_STATE, default="absent")
     license_path = models.CharField(max_length=160, default=None, null=True)
     license_hash = models.CharField(max_length=64, default=None, null=True)
     required = models.BooleanField(default=False)

@@ -37,12 +37,14 @@ class TestBundle(BaseTestCase):
         super().setUp()
 
         bundle_name = "test_bundle"
-        self.bundle = Bundle.objects.create(
+        self.bundle = Bundle.objects.create(name=bundle_name)
+        self.prototype = Prototype.objects.create(
+            bundle=self.bundle,
+            type="cluster",
             name=bundle_name,
             license_path="test_bundle_license_path",
             license="unaccepted",
         )
-        Prototype.objects.create(bundle=self.bundle, type="cluster", name=bundle_name)
 
     def check_log_upload(self, log: AuditLog, operation_result: AuditLogOperationResult, user: User) -> None:
         self.assertFalse(log.audit_object)
@@ -72,6 +74,18 @@ class TestBundle(BaseTestCase):
         self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.no_rights_user.pk)
+        self.assertEqual(log.object_changes, {})
+
+    def check_prototype_licence(self, log: AuditLog, operation_result: AuditLogOperationResult, user: User):
+        self.assertEqual(log.audit_object.object_id, self.prototype.pk)
+        self.assertEqual(log.audit_object.object_name, self.prototype.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Prototype)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, "Cluster license accepted")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
         self.assertEqual(log.object_changes, {})
 
     def check_log_deleted(self, log: AuditLog, operation_result: AuditLogOperationResult):
@@ -256,6 +270,23 @@ class TestBundle(BaseTestCase):
             operation_name="Bundle license accepted",
             operation_type=AuditLogOperationType.Update,
         )
+
+    def test_prototype_license_accepted(self):
+        self.client.put(path=reverse("accept-license", kwargs={"prototype_pk": self.prototype.pk}))
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+        self.check_prototype_licence(log, AuditLogOperationResult.Success, self.test_user)
+
+    def test_prototype_license_accepted_denied(self):
+        with self.no_rights_user_logged_in:
+            response: Response = self.client.put(
+                path=reverse("accept-license", kwargs={"prototype_pk": self.prototype.pk})
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_prototype_licence(log, AuditLogOperationResult.Denied, self.no_rights_user)
 
     def test_delete(self):
         with patch("api.stack.views.delete_bundle"):

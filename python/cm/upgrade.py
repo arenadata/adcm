@@ -270,7 +270,8 @@ def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
 
         ok, _msg = check_upgrade_state(obj, upg)
         upg.upgradable = bool(ok)
-        upg.license = upg.bundle.license
+        upgrade_proto = Prototype.objects.filter(bundle=upg.bundle, name=upg.bundle.name).first()
+        upg.license = upgrade_proto.license
         if upg.upgradable:
             res.append(upg)
 
@@ -311,8 +312,9 @@ def do_upgrade(
     hc: list,
 ) -> dict:
     old_proto = obj.prototype
-    check_license(obj.prototype.bundle)
-    check_license(upgrade.bundle)
+    check_license(obj.prototype)
+    upgrade_proto = Prototype.objects.filter(bundle=upgrade.bundle, name=upgrade.bundle.name).first()
+    check_license(upgrade_proto)
     ok, msg = check_upgrade(obj, upgrade)
     if not ok:
         return raise_adcm_ex("UPGRADE_ERROR", msg)
