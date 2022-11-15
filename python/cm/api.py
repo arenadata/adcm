@@ -10,7 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-lines
+
 import json
+from functools import wraps
 
 from django.core.exceptions import MultipleObjectsReturned
 from django.db import transaction
@@ -48,6 +51,7 @@ from cm.models import (
     HostComponent,
     HostProvider,
     MaintenanceMode,
+    ObjectType,
     Prototype,
     PrototypeExport,
     PrototypeImport,
@@ -143,6 +147,44 @@ def load_service_map():
     }
     api_request("post", "/servicemap/", m)
     load_host_map()
+    load_mm_objects()
+
+
+def load_mm_objects():
+    """send ids of all objects in mm to status server"""
+    clusters = Cluster.objects.filter(prototype__type=ObjectType.Cluster, prototype__allow_maintenance_mode=True)
+
+    service_ids = set()
+    component_ids = set()
+    host_ids = []
+
+    for service in ClusterObject.objects.filter(cluster__in=clusters).prefetch_related("servicecomponent_set"):
+        if service.maintenance_mode == MaintenanceMode.ON:
+            service_ids.add(service.pk)
+        for component in service.servicecomponent_set.all():
+            if component.maintenance_mode == MaintenanceMode.ON:
+                component_ids.add(component.pk)
+
+    for host in Host.objects.filter(cluster__in=clusters):
+        if host.maintenance_mode == MaintenanceMode.ON:
+            host_ids.append(host.pk)
+
+    data = {
+        "services": list(service_ids),
+        "components": list(component_ids),
+        "hosts": host_ids,
+    }
+    return api_request("post", "/object/mm/", data)
+
+
+def update_mm_objects(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        res = func(*args, **kwargs)
+        load_mm_objects()
+        return res
+
+    return wrapper
 
 
 def add_cluster(proto, name, desc=""):

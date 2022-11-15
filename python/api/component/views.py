@@ -30,6 +30,7 @@ from api.utils import (
     get_object_for_user,
 )
 from audit.utils import audit
+from cm.api import update_mm_objects
 from cm.models import Cluster, ClusterObject, HostComponent, ServiceComponent
 from cm.status_api import make_ui_component_status
 from rbac.viewsets import DjangoOnlyObjectPermissions
@@ -83,6 +84,7 @@ class ComponentMaintenanceModeView(GenericUIView):
     lookup_field = "id"
     lookup_url_kwarg = "component_id"
 
+    @update_mm_objects
     @audit
     def post(self, request: Request, **kwargs) -> Response:
         component = get_object_for_user(

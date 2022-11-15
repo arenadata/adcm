@@ -11,7 +11,10 @@
 // limitations under the License.
 package status
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
 type Status struct {
 	Status  int `json:"status"`
@@ -61,6 +64,46 @@ type Storage struct {
 	dbMap   dbStorage
 	timeout int
 	label   string
+}
+
+// maintenance mode objects
+
+type MMObjectsData struct {
+	Services   []int `json:"services"`
+	Components []int `json:"components"`
+	Hosts      []int `json:"hosts"`
+}
+
+type MMObjects struct {
+	data  MMObjectsData
+	mutex sync.Mutex
+}
+
+func newMMObjects() *MMObjects {
+	return &MMObjects{
+		data: MMObjectsData{},
+	}
+}
+
+func (mm *MMObjects) IsHostInMM(hostID int) bool {
+	return intSliceContains(mm.data.Hosts, hostID)
+}
+
+func (mm *MMObjects) IsServiceInMM(serviceID int) bool {
+	return intSliceContains(mm.data.Services, serviceID)
+}
+
+func (mm *MMObjects) IsComponentInMM(componentID int) bool {
+	return intSliceContains(mm.data.Components, componentID)
+}
+
+func intSliceContains(a []int, x int) bool {
+	for _, n := range a {
+		if x == n {
+			return true
+		}
+	}
+	return false
 }
 
 // Server

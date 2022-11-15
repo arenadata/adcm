@@ -48,6 +48,7 @@ from cm.api import (
     delete_host,
     load_service_map,
     remove_host_from_cluster,
+    update_mm_objects,
 )
 from cm.errors import AdcmEx
 from cm.models import (
@@ -290,6 +291,7 @@ class HostMaintenanceModeView(GenericUIView):
     lookup_field = "id"
     lookup_url_kwarg = "host_id"
 
+    @update_mm_objects
     @audit
     def post(self, request: Request, **kwargs) -> Response:
         host = get_object_for_user(request.user, HOST_VIEW, Host, id=kwargs["host_id"])
