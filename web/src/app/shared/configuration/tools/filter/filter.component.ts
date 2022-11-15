@@ -205,24 +205,24 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
 
     if (this.filters.some((f) => f.filter_type === 'input' && filters[f.filter_field])) {
       data = data.filter((item) => {
-        for (let key in filters) {
-          if (this.filtersByType[key] === 'input') {
-            if (key.includes('/')) {
-              let nestedKey = key.split('/');
+        return Object.keys(filters).every((i) => {
+          if (this.filtersByType[i] === 'input') {
+            if (i.includes('/')) {
+              let nestedKey = i.split('/');
 
               if (item[nestedKey[0]][nestedKey[1]] !== undefined &&
                 item[nestedKey[0]][nestedKey[1]] !== null &&
                 item[nestedKey[0]][nestedKey[1]] !== '' &&
-                item[nestedKey[0]][nestedKey[1]].toLowerCase().includes(filters[key].toLowerCase())) {
+                item[nestedKey[0]][nestedKey[1]].toLowerCase().includes(filters[i].toLowerCase())) {
                 return true;
               }
             } else {
-              if (item[key] !== undefined && item[key] !== null && item[key] !== '' && item[key].toLowerCase().includes(filters[key].toLowerCase())) {
+              if (item[i] !== undefined && item[i] !== null && item[i] !== '' && item[i].toLowerCase().includes(filters[i].toLowerCase())) {
                 return true;
               }
             }
           }
-        }
+        })
       })
     }
 
