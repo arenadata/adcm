@@ -319,6 +319,7 @@ class TestHostListPage:
         page.run_action(0, INIT_ACTION)
         page.assert_host_state(0, 'running')
 
+    @pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3264")
     @pytest.mark.smoke()
     def test_maintenance_mode_on_host_page(self, page: HostListPage, create_bonded_host):
         """Test maintenance mode on host page"""
@@ -338,6 +339,7 @@ class TestHostListPage:
             page.driver.refresh()
             page.assert_maintenance_mode_state(0, None)
 
+    @pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3264")
     @pytest.mark.smoke()
     def test_action_with_maintenance_mode_on_host_page(self, page: HostListPage, create_bonded_host):
         """Test maintenance mode on host page"""
