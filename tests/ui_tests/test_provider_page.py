@@ -36,6 +36,7 @@ from tests.ui_tests.app.page.provider.page import (
     ProviderGroupConfigPage,
 )
 from tests.ui_tests.app.page.provider_list.page import ProviderListPage
+from tests.ui_tests.utils import create_few_groups
 
 # pylint: disable=redefined-outer-name,unused-argument
 
@@ -427,5 +428,5 @@ class TestProviderGroupConfigPage:
         group_conf_page = ProviderGroupConfigPage(
             app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
         ).open()
-        group_conf_page.group_config.create_few_groups(11)
+        create_few_groups(group_conf_page.group_config)
         group_conf_page.table.check_pagination(second_page_item_amount=1)
