@@ -63,5 +63,9 @@ class ClusterListLocators:
     class LicensePopup:
         """Cluster List page licence popup elements locators"""
 
-        block = Locator(By.XPATH, "//app-dialog[./h3[contains(text(), 'license')]]", "block with license agreement")
+        block = Locator(
+            By.XPATH,
+            "//app-dialog[./h3[contains(text(), 'license')]]",
+            "block with license agreement",
+        )
         agree_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Yes')]]", "Agree button")

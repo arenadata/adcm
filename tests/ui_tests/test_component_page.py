@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name,unused-argument
+# pylint: disable=redefined-outer-name
 
 """UI tests for /cluster page"""
 
@@ -186,7 +186,9 @@ class TestComponentConfigPage:
             component_config_page.config.click_on_group(params["group_name"])
 
     @pytest.mark.parametrize(
-        "bundle_archive", [utils.get_data_dir(__file__, COMPONENT_WITH_DESCRIPTION_FIELDS)], indirect=True
+        "bundle_archive",
+        [utils.get_data_dir(__file__, COMPONENT_WITH_DESCRIPTION_FIELDS)],
+        indirect=True,
     )
     def test_save_custom_config_on_component_config_page(
         self, app_fs, create_cluster_with_service, create_bundle_archives
@@ -213,7 +215,12 @@ class TestComponentConfigPage:
     def test_reset_config_in_row_on_component_config_page(self, app_fs, create_cluster_with_service):
         """Test config reset on /cluster/{}/service/{}/component/{}/config page"""
 
-        params = {"row_name": "str_param", "row_value_new": "test", "row_value_old": "123", "config_name": "test_name"}
+        params = {
+            "row_name": "str_param",
+            "row_value_new": "test",
+            "row_value_old": "123",
+            "config_name": "test_name",
+        }
 
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
@@ -234,7 +241,9 @@ class TestComponentConfigPage:
         )
 
     @pytest.mark.parametrize(
-        "bundle_archive", [utils.get_data_dir(__file__, COMPONENT_WITH_REQUIRED_FIELDS)], indirect=True
+        "bundle_archive",
+        [utils.get_data_dir(__file__, COMPONENT_WITH_REQUIRED_FIELDS)],
+        indirect=True,
     )
     def test_field_validation_on_component_config_page(
         self, app_fs, create_cluster_with_service, create_bundle_archives
@@ -258,11 +267,14 @@ class TestComponentConfigPage:
         component_config_page.config.check_field_is_invalid(params['not_req_name'])
         component_config_page.config.check_config_warn_icon_on_left_menu()
         component_config_page.toolbar.check_warn_button(
-            tab_name=FIRST_COMPONENT_NAME, expected_warn_text=[f'{FIRST_COMPONENT_NAME} has an issue with its config']
+            tab_name=FIRST_COMPONENT_NAME,
+            expected_warn_text=[f'{FIRST_COMPONENT_NAME} has an issue with its config'],
         )
 
     @pytest.mark.parametrize(
-        "bundle_archive", [utils.get_data_dir(__file__, COMPONENT_WITH_DEFAULT_FIELDS)], indirect=True
+        "bundle_archive",
+        [utils.get_data_dir(__file__, COMPONENT_WITH_DEFAULT_FIELDS)],
+        indirect=True,
     )
     def test_field_validation_on_component_config_page_with_default_value(
         self, app_fs, create_cluster_with_service, create_bundle_archives
@@ -287,7 +299,9 @@ class TestComponentConfigPage:
         )
 
     @pytest.mark.parametrize(
-        "bundle_archive", [utils.get_data_dir(__file__, COMPONENT_WITH_DESCRIPTION_FIELDS)], indirect=True
+        "bundle_archive",
+        [utils.get_data_dir(__file__, COMPONENT_WITH_DESCRIPTION_FIELDS)],
+        indirect=True,
     )
     def test_field_tooltips_on_component_config_page(self, app_fs, create_cluster_with_service, create_bundle_archives):
         """Test config fields tooltips on /cluster/{}/service/{}/component/{}/config page"""
@@ -374,13 +388,21 @@ class TestComponentStatusPage:
 
         success_status = [
             StatusRowInfo(
-                icon_status=True, group_name='first', state='successful 1/1', state_color=SUCCESS_COLOR, link=None
+                icon_status=True,
+                group_name='first',
+                state='successful 1/1',
+                state_color=SUCCESS_COLOR,
+                link=None,
             ),
             StatusRowInfo(icon_status=True, group_name=None, state=None, state_color=None, link='test-host'),
         ]
         negative_status = [
             StatusRowInfo(
-                icon_status=False, group_name='first', state='successful 0/1', state_color=NEGATIVE_COLOR, link=None
+                icon_status=False,
+                group_name='first',
+                state='successful 0/1',
+                state_color=NEGATIVE_COLOR,
+                link=None,
             ),
             StatusRowInfo(icon_status=False, group_name=None, state=None, state_color=None, link='test-host'),
         ]

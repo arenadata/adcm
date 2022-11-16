@@ -183,6 +183,7 @@ class TestClusterRelatedObjects:
         Test cluster and multi states and states after action
         Before action add multi state that should be unset via action
         """
+
         object_to_be_changed, check_objects_multi_state_changed = cluster_and_multi_states_plus_states_checker
         run_cluster_action_and_assert_result(object_to_be_changed, ACTION_SET_MULTISTATE_NAME)
         with check_objects_multi_state_changed(sdk_client_fs, {object_to_be_changed}), allure.step(

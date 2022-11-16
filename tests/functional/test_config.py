@@ -396,7 +396,6 @@ ASSERT_TYPE = {
 }
 
 
-# pylint: disable=too-many-arguments
 def assert_config_type(path, config_type, entities, is_required, is_default, sent_value_type):
     """
     Running test scenario for cluster, service, provider and host
@@ -721,7 +720,12 @@ class TestConfigFieldTypes:
             'secret_not_required_no_default',
             'secret_required_no_default',
         )
-        required_default, not_required_default, not_required_no_default, required_no_default = fields
+        (
+            required_default,
+            not_required_default,
+            not_required_no_default,
+            required_no_default,
+        ) = fields
         required_diff = {required_no_default: value_to_set}
         changed_diff = {field: value_to_set for field in fields if field != required_no_default}
         default_diff = {
@@ -751,7 +755,11 @@ class TestConfigFieldTypes:
             )
 
     def _change_config_and_check_changed_by_action(
-        self, objects_to_change: Tuple[AnyADCMObject], config_to_set: dict, action_before: str, action_after: str
+        self,
+        objects_to_change: Tuple[AnyADCMObject],
+        config_to_set: dict,
+        action_before: str,
+        action_after: str,
     ):
         """
         Loop over objects_to_change:

@@ -24,10 +24,13 @@ from tests.functional.ldap_auth.utils import (
 )
 from tests.library.ldap_interactions import LDAPEntityManager
 
-pytestmark = [only_clean_adcm, pytest.mark.usefixtures('configure_adcm_ldap_ad'), pytest.mark.ldap()]
+pytestmark = [
+    only_clean_adcm,
+    pytest.mark.usefixtures('configure_adcm_ldap_ad'),
+    pytest.mark.ldap(),
+]
 
 
-# pylint: disable-next=too-few-public-methods
 class TestLDAPEntitiesRelationsInADCM:
     """Test that relations from LDAP are correctly integrated to ADCM"""
 

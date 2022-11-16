@@ -91,6 +91,8 @@ class YAMLReader:
         data = yaml.safe_load(rendered_file_content)
         jsonschema.validate(data, _get_schema())
         allure.attach(
-            json.dumps(data, indent=2), name='Audit Log scenario', attachment_type=allure.attachment_type.JSON
+            json.dumps(data, indent=2),
+            name='Audit Log scenario',
+            attachment_type=allure.attachment_type.JSON,
         )
         return data

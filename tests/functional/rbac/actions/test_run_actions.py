@@ -94,7 +94,8 @@ def _test_basic_action_run_permissions(adcm_object, admin_sdk, user_sdk, user, a
 
     with allure.step(f"Check that granted permission doesn't allow running '{DO_NOTHING_ACTION}' on other objects"):
         for obj in filter(
-            lambda x: not _is_the_same(x, adcm_object) and not _do_nothing_action_not_presented(x), all_objects
+            lambda x: not _is_the_same(x, adcm_object) and not _do_nothing_action_not_presented(x),
+            all_objects,
         ):
             is_denied(obj, action_business_role(obj, DO_NOTHING_ACTION), client=user_sdk)
 
@@ -122,7 +123,11 @@ def test_config_change_via_plugin(clients, user, actions_cluster, actions_provid
     _test_config_change(cluster, (cluster,), user=user, user_client=clients.user, admin_client=clients.admin)
     _test_config_change(service, (cluster, service), user=user, user_client=clients.user, admin_client=clients.admin)
     _test_config_change(
-        component, (cluster, service, component), user=user, user_client=clients.user, admin_client=clients.admin
+        component,
+        (cluster, service, component),
+        user=user,
+        user_client=clients.user,
+        admin_client=clients.admin,
     )
 
     _test_config_change(provider, (provider,), user=user, user_client=clients.user, admin_client=clients.admin)
@@ -211,7 +216,9 @@ def test_host_actions(clients, actions_cluster, actions_cluster_bundle, actions_
     with allure.step('Grant permission to run host actions on cluster, service and component'):
         business_roles = [
             action_business_role(
-                obj, host_action_template.format(object_type=obj.__class__.__name__), action_on_host=first_host
+                obj,
+                host_action_template.format(object_type=obj.__class__.__name__),
+                action_on_host=first_host,
             )
             for obj in cluster_objects
         ]

@@ -117,7 +117,9 @@ def get_object_represent(obj: AnyADCMObject) -> str:
 
 
 def create_config_group_and_add_host(
-    group_name: str, object_with_group: Union[ClusterRelatedObject, Provider], *hosts: Iterable[Host]
+    group_name: str,
+    object_with_group: Union[ClusterRelatedObject, Provider],
+    *hosts: Iterable[Host],
 ) -> GroupConfig:
     """Create config group with given name and add all passed hosts"""
     with allure.step(f"Create config group '{group_name}' and add hosts: {' '.join((h.fqdn for h in hosts))}"):

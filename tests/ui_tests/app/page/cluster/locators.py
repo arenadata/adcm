@@ -66,8 +66,6 @@ class ClusterHostLocators:
     class HostTable(HostListLocators.HostTable):
         """Cluster host page host table elements locators"""
 
-        ...
-
 
 class ClusterComponentsLocators(HostComponentsLocators):
     """Cluster components page elements locators"""

@@ -22,7 +22,7 @@ import adcm.init_django  # pylint: disable=unused-import
 import cm.checker
 
 
-def check_config(data_file, schema_file, print_ok=True):
+def check_config(data_file, schema_file, print_ok=True):  # pylint: disable=too-many-return-statements
     rules = ruyaml.round_trip_load(open(schema_file, encoding=settings.ENCODING_UTF_8))
     try:
         # ruyaml.version_info=(0, 15, 0)   # switch off duplicate key error

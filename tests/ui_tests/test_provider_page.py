@@ -31,7 +31,7 @@ from tests.ui_tests.app.page.provider.page import (
 from tests.ui_tests.app.page.provider_list.page import ProviderListPage
 from tests.ui_tests.utils import create_few_groups
 
-# pylint: disable=redefined-outer-name,unused-argument
+# pylint: disable=redefined-outer-name
 
 
 pytestmark = pytest.mark.usefixtures("_login_to_adcm_over_api")
@@ -71,7 +71,9 @@ class TestProviderListPage:
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
     @pytest.mark.parametrize(
-        "bundle_archive", [pytest.param(utils.get_data_dir(__file__, "provider"), id="provider")], indirect=True
+        "bundle_archive",
+        [pytest.param(utils.get_data_dir(__file__, "provider"), id="provider")],
+        indirect=True,
     )
     def test_create_provider_on_provider_list_page(self, app_fs, bundle_archive):
         """Tests create provider from provider list page"""
@@ -97,7 +99,9 @@ class TestProviderListPage:
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
     @pytest.mark.parametrize(
-        "bundle_archive", [pytest.param(utils.get_data_dir(__file__, "provider"), id="provider")], indirect=True
+        "bundle_archive",
+        [pytest.param(utils.get_data_dir(__file__, "provider"), id="provider")],
+        indirect=True,
     )
     def test_create_custom_provider_on_provider_list_page(self, app_fs, bundle_archive):
         """Tests create provider from provider list page with custom params"""
@@ -110,7 +114,9 @@ class TestProviderListPage:
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
         with provider_page.table.wait_rows_change():
             provider_page.create_provider(
-                bundle=bundle_archive, name=provider_params['name'], description=provider_params['description']
+                bundle=bundle_archive,
+                name=provider_params['name'],
+                description=provider_params['description'],
             )
         with allure.step("Check uploaded provider"):
             rows = provider_page.table.get_all_rows()
@@ -348,7 +354,8 @@ class TestProviderConfigPage:
         provider_config_page.config.check_field_is_invalid(params['not_req_name'])
         provider_config_page.config.check_config_warn_icon_on_left_menu()
         provider_config_page.toolbar.check_warn_button(
-            tab_name="test_provider", expected_warn_text=['test_provider has an issue with its config']
+            tab_name="test_provider",
+            expected_warn_text=['test_provider has an issue with its config'],
         )
 
     @pytest.mark.parametrize("bundle", ["provider_default_fields"], indirect=True)

@@ -575,7 +575,7 @@ def get_action_variant(obj, conf):
                 c.limits["source"]["value"] = get_variant(obj, cl.config, c.limits)
 
 
-def config_is_ro(obj, key, limits):
+def config_is_ro(obj, key, limits):  # pylint: disable=too-many-return-statements
     if not limits:
         return False
 

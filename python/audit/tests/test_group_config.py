@@ -118,7 +118,7 @@ class TestGroupConfig(BaseTestCase):
             config=self.config,
         )
 
-    def check_log(  # pylint: disable=too-many-arguments
+    def check_log(
         self,
         log: AuditLog,
         obj,

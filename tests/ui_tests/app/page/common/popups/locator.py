@@ -66,7 +66,9 @@ class HostAddPopupLocators:
     """Host add popup locators"""
 
     add_new_host_btn = Locator(
-        By.CSS_SELECTOR, "div[class*='actions'] button[cdk-describedby-host]", "Button to open popup for host creating"
+        By.CSS_SELECTOR,
+        "div[class*='actions'] button[cdk-describedby-host]",
+        "Button to open popup for host creating",
     )
 
 

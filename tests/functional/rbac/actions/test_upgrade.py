@@ -113,9 +113,7 @@ class TestActionRolesOnUpgrade:
         ]
 
     @pytest.mark.usefixtures("new_bundle", "old_cluster_actions_policies")
-    def test_upgrade(
-        self, clients, user, old_cluster, all_business_roles, old_cluster_objects_map
-    ):  # pylint: disable=too-many-arguments
+    def test_upgrade(self, clients, user, old_cluster, all_business_roles, old_cluster_objects_map):
         """
         Test that upgrade works correctly considering permissions on actions:
         1. Actions with same name and display name are still available after upgrade if permissions were granted.
@@ -158,7 +156,8 @@ class TestActionRolesOnUpgrade:
             user_object_map,
             tuple(
                 self._get_roles_filter_exclude_by_action_name(
-                    all_business_roles, (ACTION_NAME_BEFORE_CHANGE, ACTION_TO_BE_DELETED, *self.NOT_ALLOWED_ACTIONS)
+                    all_business_roles,
+                    (ACTION_NAME_BEFORE_CHANGE, ACTION_TO_BE_DELETED, *self.NOT_ALLOWED_ACTIONS),
                 )
             ),
         )
@@ -206,7 +205,8 @@ class TestActionRolesOnUpgrade:
         """Check that given roles are allowed to be launched"""
         for role in business_roles:
             adcm_object, *_ = as_user_objects(
-                user_client, self._get_object_from_map_by_role_name(role.role_name, cluster_object_map)
+                user_client,
+                self._get_object_from_map_by_role_name(role.role_name, cluster_object_map),
             )
             is_allowed(adcm_object, role).wait()
 

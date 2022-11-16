@@ -108,7 +108,9 @@ def test_when_hostprovider_has_issue_then_upgrade_locked(sdk_client_fs: ADCMClie
 
 
 @allure.link("https://jira.arenadata.io/browse/ADCM-487")
-def test_when_component_has_no_constraint_then_cluster_doesnt_have_issues(sdk_client_fs: ADCMClient):
+def test_when_component_has_no_constraint_then_cluster_doesnt_have_issues(
+    sdk_client_fs: ADCMClient,
+):
     """Test no cluster issues if no constraints on components"""
     with allure.step("Create cluster (component has no constraint)"):
         bundle_path = utils.get_data_dir(__file__, "cluster_component_hasnt_constraint")
@@ -238,7 +240,11 @@ class TestProviderIndependence:
                 (
                     EventMessage(
                         'add',
-                        {'type': 'service', 'id': service.id, 'details': {'type': 'cluster', 'value': str(cluster.id)}},
+                        {
+                            'type': 'service',
+                            'id': service.id,
+                            'details': {'type': 'cluster', 'value': str(cluster.id)},
+                        },
                     ),
                     *[
                         self._concern_add_msg(type_)

@@ -174,7 +174,7 @@ class ClusterListPage(BasePageObject):  # pylint: disable=too-many-public-method
         dialog.wait_opened()
         return dialog
 
-    @allure.step("Run upgrade {upgrade_name} for cluster from row")  # pylint: disable-next=too-many-arguments
+    @allure.step("Run upgrade {upgrade_name} for cluster from row")
     def run_upgrade_in_cluster_row(
         self,
         row: WebElement,
@@ -223,7 +223,8 @@ class ClusterListPage(BasePageObject):  # pylint: disable=too-many-public-method
                 self.wait_element_visible(comp_row_name)
                 comp_row_name.click()
             self.find_child(
-                self.find_elements(ClusterComponentsLocators.host_row)[0], ClusterComponentsLocators.Row.name
+                self.find_elements(ClusterComponentsLocators.host_row)[0],
+                ClusterComponentsLocators.Row.name,
             ).click()
         self.find_and_click(ActionDialog.run)
         self.wait_element_hide(ActionDialog.body)

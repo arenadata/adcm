@@ -106,7 +106,10 @@ def config_group_objects(objects) -> Tuple[Tuple[int, ...], Tuple[int, ...]]:
 @pytest.fixture()
 def separated_configs(config_objects, config_group_objects) -> Tuple[Tuple[int, ...], Tuple[int, ...]]:
     """Return separately bonded and not bonded configs' and group configs' ids"""
-    return (*config_objects[0], *config_group_objects[0]), (*config_objects[1], *config_group_objects[1])
+    return (*config_objects[0], *config_group_objects[0]), (
+        *config_objects[1],
+        *config_group_objects[1],
+    )
 
 
 # !===== Tests =====!
@@ -263,7 +266,6 @@ def test_remove_only_expired_config_logs(sdk_client_fs, adcm_fs, adcm_db, separa
     _check_config_groups_exists(objects)
 
 
-# pylint: disable-next=too-many-arguments
 def test_logrotate_command_target_job(sdk_client_fs, adcm_fs, adcm_db, simple_tasks, separated_configs, objects):
     """
     Check that "logrotate --target job" deletes only configs, but not the jobs
@@ -283,7 +285,6 @@ def test_logrotate_command_target_job(sdk_client_fs, adcm_fs, adcm_db, simple_ta
     _check_config_groups_exists(objects)
 
 
-# pylint: disable-next=too-many-arguments
 def test_logrotate_command_target_config(sdk_client_fs, adcm_fs, adcm_db, simple_tasks, separated_configs, objects):
     """
     Check that "logrotate --target config" deletes only configs, but not the jobs
@@ -355,7 +356,10 @@ def test_only_finished_tasks_removed(sdk_client_fs, adcm_fs, adcm_db, objects):
 
 
 def set_rotation_info_in_adcm_config(
-    adcm: ADCM, jobs_in_db: Optional[int] = None, jobs_on_fs: Optional[int] = None, config_in_db: Optional[int] = None
+    adcm: ADCM,
+    jobs_in_db: Optional[int] = None,
+    jobs_on_fs: Optional[int] = None,
+    config_in_db: Optional[int] = None,
 ) -> dict:
     """Update ADCM config with new jobs/config log rotation info"""
     # `is not None` because 0 is a legit value
@@ -387,7 +391,9 @@ def check_task_logs_are_removed_from_db(client: ADCMClient, task_ids: Collection
     with allure.step(f'Check that task logs are removed from DB: {", ".join(map(str, task_ids))}'):
         presented_task_ids = {job.task().id for job in client.job_list()}
         does_not_intersect(
-            presented_task_ids, task_ids, 'Some of the task logs that should be removed were found in db'
+            presented_task_ids,
+            task_ids,
+            'Some of the task logs that should be removed were found in db',
         )
 
 
@@ -395,7 +401,11 @@ def check_job_logs_are_removed_from_db(client: ADCMClient, job_ids: Collection[i
     """Check job logs are removed from the database"""
     with allure.step(f'Check that job logs are removed from DB: {", ".join(map(str, job_ids))}'):
         presented_job_ids = {job.id for job in client.job_list()}
-        does_not_intersect(presented_job_ids, job_ids, 'Some of the job logs that should be removed were found in db')
+        does_not_intersect(
+            presented_job_ids,
+            job_ids,
+            'Some of the job logs that should be removed were found in db',
+        )
 
 
 def check_job_logs_are_removed_from_fs(container: Container, job_ids: Collection[int]):
@@ -403,7 +413,9 @@ def check_job_logs_are_removed_from_fs(container: Container, job_ids: Collection
     with allure.step(f'Check that job logs are removed from FS: {", ".join(map(str, job_ids))}'):
         presented_tasks = _get_ids_of_job_logs_on_fs(container)
         does_not_intersect(
-            presented_tasks, set(job_ids), 'Some of the job logs that should be removed were found on filesystem'
+            presented_tasks,
+            set(job_ids),
+            'Some of the job logs that should be removed were found on filesystem',
         )
 
 
@@ -412,7 +424,9 @@ def check_config_logs_are_removed(client: ADCMClient, config_ids: Collection[int
     with allure.step(f'Check that config logs are removed from DB: {", ".join(map(str, config_ids))}'):
         presented_configs = _retrieve_config_ids(client)
         does_not_intersect(
-            presented_configs, set(config_ids), 'Some of the config logs that should be removed were found in db'
+            presented_configs,
+            set(config_ids),
+            'Some of the config logs that should be removed were found in db',
         )
 
 

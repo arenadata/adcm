@@ -328,7 +328,11 @@ class BasePageObject:
 
     @allure.step('Write text to input element: "{text}"')
     def send_text_to_element(
-        self, element: Union[Locator, WebElement], text: str, clean_input: bool = True, timeout: Optional[int] = None
+        self,
+        element: Union[Locator, WebElement],
+        text: str,
+        clean_input: bool = True,
+        timeout: Optional[int] = None,
     ):
         """
         Writes text to input element found by locator

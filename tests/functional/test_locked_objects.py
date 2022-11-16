@@ -219,7 +219,8 @@ class TestComponentLock:
             - Host
         """
         task = _lock_obj(
-            complete_cluster.service(name="first_service").component(name="first_service_component_1"), lock_action
+            complete_cluster.service(name="first_service").component(name="first_service_component_1"),
+            lock_action,
         )
         is_locked(host)
         task.wait()
@@ -664,7 +665,9 @@ def _cluster_with_components(cluster: Cluster, hosts: List[Host]):
 
 
 def _lock_obj(
-    obj: Union[Cluster, Service, Component, Provider, Host], lock_action: str = "lock", duration: int = 5
+    obj: Union[Cluster, Service, Component, Provider, Host],
+    lock_action: str = "lock",
+    duration: int = 5,
 ) -> Task:
     """
     Run action lock on object

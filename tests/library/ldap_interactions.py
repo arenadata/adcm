@@ -67,8 +67,8 @@ class LDAPEntityManager:
     }
 
     def __init__(self, config: LDAPTestConfig, test_name: str):
-        ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)  # pylint: disable=no-member
-        self.conn = ldap.initialize(config.uri)  # pylint: disable=no-member
+        ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
+        self.conn = ldap.initialize(config.uri)
         self.conn.simple_bind_s(config.admin_dn, config.admin_pass)
 
         self._created_records = []
@@ -124,7 +124,10 @@ class LDAPEntityManager:
         extra_modlist = extra_modlist or []
         base_dn = custom_base_dn or self.test_dn
         new_dn = f"CN={name},{base_dn}"
-        self.conn.add_s(new_dn, self._BASE_USER_MODLIST + [("sAMAccountName", name.encode("utf-8"))] + extra_modlist)
+        self.conn.add_s(
+            new_dn,
+            self._BASE_USER_MODLIST + [("sAMAccountName", name.encode("utf-8"))] + extra_modlist,
+        )
         self._created_records.append(new_dn)
         self.set_user_password(new_dn, password)
         self.activate_user(new_dn)
@@ -138,25 +141,26 @@ class LDAPEntityManager:
     @allure.step("Activate user {user_dn}")
     def activate_user(self, user_dn: str, uac: bytes = _ACTIVE_USER_UAC) -> None:
         """Activate user"""
-        self.conn.modify_s(user_dn, [(ldap.MOD_REPLACE, "userAccountControl", uac)])  # pylint: disable=no-member
+        self.conn.modify_s(user_dn, [(ldap.MOD_REPLACE, "userAccountControl", uac)])
 
     @allure.step("Deactivate user {user_dn}")
     def deactivate_user(self, user_dn: str, uac: bytes = _INACTIVE_USER_UAC) -> None:
         """Deactivate user"""
-        self.conn.modify_s(user_dn, [(ldap.MOD_REPLACE, "userAccountControl", uac)])  # pylint: disable=no-member
+        self.conn.modify_s(user_dn, [(ldap.MOD_REPLACE, "userAccountControl", uac)])
 
     @allure.step('Set password "{password}" for user {user_dn}')
     def set_user_password(self, user_dn: str, password: str) -> None:
         """Set password for an existing user"""
         pass_utf16 = f'"{password}"'.encode("utf-16-le")
-        self.conn.modify_s(user_dn, [(ldap.MOD_REPLACE, "unicodePwd", [pass_utf16])])  # pylint: disable=no-member
+        self.conn.modify_s(user_dn, [(ldap.MOD_REPLACE, "unicodePwd", [pass_utf16])])
 
     @allure.step("Update user in LDAP")
     def update_user(self, user_dn: str, **fields: str):
         """Update user record"""
         try:
             self.conn.modify_s(
-                user_dn, [(ldap.MOD_REPLACE, self._ATTR_MAP[k], [v.encode("utf-8")]) for k, v in fields.items()]
+                user_dn,
+                [(ldap.MOD_REPLACE, self._ATTR_MAP[k], [v.encode("utf-8")]) for k, v in fields.items()],
             )
         except KeyError as e:
             unknown_fields = {k for k in fields if k in self._ATTR_MAP}
@@ -168,13 +172,13 @@ class LDAPEntityManager:
     @allure.step("Add user {user_dn} to {group_dn}")
     def add_user_to_group(self, user_dn: str, group_dn: str) -> None:
         """Add user to a group"""
-        mod_group = [(ldap.MOD_ADD, "member", [user_dn.encode("utf-8")])]  # pylint: disable=no-member
+        mod_group = [(ldap.MOD_ADD, "member", [user_dn.encode("utf-8")])]
         self.conn.modify_s(group_dn, mod_group)
 
     @allure.step("Remove user {user_dn} from {group_dn}")
     def remove_user_from_group(self, user_dn: str, group_dn: str) -> None:
         """Remove user from group"""
-        mod_group = [(ldap.MOD_DELETE, "member", [user_dn.encode("utf-8")])]  # pylint: disable=no-member
+        mod_group = [(ldap.MOD_DELETE, "member", [user_dn.encode("utf-8")])]
         self.conn.modify_s(group_dn, mod_group)
 
     @allure.step("Cleat test OU")
@@ -191,7 +195,7 @@ class LDAPEntityManager:
             if len(entities) == 0:
                 break
             with allure.step(f"Clean other entities, round #{i}"):
-                for dn in entities:  # pylint: disable=invalid-name
+                for dn in entities:
                     self.conn.delete_s(dn)
         else:
             # error was leading to tests re-run that can make more "dead" objects
@@ -213,15 +217,14 @@ class LDAPEntityManager:
     def _get_entities_from_test_ou(self):
         try:
             return sorted(
-                (dn for dn, _ in self.conn.search_s(self.test_dn, ldap.SCOPE_SUBTREE)),  # pylint: disable=no-member
+                (dn for dn, _ in self.conn.search_s(self.test_dn, ldap.SCOPE_SUBTREE)),
                 key=len,
                 reverse=True,
             )
-        except ldap.NO_SUCH_OBJECT:  # pylint: disable=no-member
+        except ldap.NO_SUCH_OBJECT:
             return []
 
 
-# pylint: disable-next=too-many-arguments
 def configure_adcm_for_ldap(
     client: ADCMClient,
     config: LDAPTestConfig,

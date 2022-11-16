@@ -33,7 +33,7 @@ from tests.ui_tests.app.page.cluster.page import (
 )
 from tests.ui_tests.utils import prepare_cluster_and_open_config_page
 
-# pylint: disable=too-many-arguments,too-many-locals,too-many-boolean-expressions, too-many-statements
+# pylint: disable=too-many-locals,too-many-boolean-expressions, too-many-statements
 
 pytestmark = [
     pytest.mark.usefixtures("_cleanup_browser_logs", "_attach_debug_info_on_ui_test_fail", "_login_over_api_ms")
@@ -122,7 +122,15 @@ class ParamCombination:  # pylint: disable=too-many-instance-attributes
 def _prepare_combinations():
     return [
         ParamCombination(
-            field_type, group_advanced, is_default, is_required, is_read_only, activatable, active, invisible, advanced
+            field_type,
+            group_advanced,
+            is_default,
+            is_required,
+            is_read_only,
+            activatable,
+            active,
+            invisible,
+            advanced,
         )
         for field_type in TYPES
         for group_advanced in (True, False)
@@ -188,7 +196,9 @@ def _check_expectations_for_group_configs_fields(page, combo: ParamCombination, 
 
 @pytest.mark.full()
 @pytest.mark.parametrize(
-    "combo", _prepare_combinations(), ids=lambda c: "-".join(f"{k}_{v}" for k, v in asdict(c).items())
+    "combo",
+    _prepare_combinations(),
+    ids=lambda c: "-".join(f"{k}_{v}" for k, v in asdict(c).items()),
 )
 def test_group_configs_fields(request, combo: ParamCombination, sdk_client_ms: ADCMClient, app_ms, objects_to_delete):
     """Test group configs with not-invisible fields"""
@@ -221,7 +231,11 @@ def test_group_configs_fields(request, combo: ParamCombination, sdk_client_ms: A
 @pytest.mark.parametrize(
     "config_group_customization",
     [True, False, None],
-    ids=("config_group_customization_true", "config_group_customization_false", "no_config_group_customization"),
+    ids=(
+        "config_group_customization_true",
+        "config_group_customization_false",
+        "no_config_group_customization",
+    ),
 )
 @pytest.mark.parametrize(
     "group_customization",
@@ -326,7 +340,11 @@ def test_visible_group_config_fields(
 @pytest.mark.parametrize(
     "config_group_customization",
     [True, False, None],
-    ids=("config_group_customization_true", "config_group_customization_false", "no_config_group_customization"),
+    ids=(
+        "config_group_customization_true",
+        "config_group_customization_false",
+        "no_config_group_customization",
+    ),
 )
 @pytest.mark.parametrize(
     "group_customization",

@@ -58,7 +58,7 @@ BUNDLE_DEFAULT_FIELDS = "cluster_and_service_with_default_string"
 BUNDLE_WITH_DESCRIPTION_FIELDS = "service_with_all_config_params"
 
 
-# pylint: disable=redefined-outer-name,unused-argument,too-many-locals
+# pylint: disable=redefined-outer-name,too-many-locals
 pytestmark = pytest.mark.usefixtures("_login_to_adcm_over_api")
 
 
@@ -293,7 +293,8 @@ class TestServiceConfigPage:
 
     @pytest.mark.skip("https://tracker.yandex.ru/ADCM-3017")
     @pytest.mark.parametrize(
-        "bundle_name", ["password_no_confirm_false_required_false", "password_no_confirm_true_required_false"]
+        "bundle_name",
+        ["password_no_confirm_false_required_false", "password_no_confirm_true_required_false"],
     )
     def test_password_required_false_in_config_on_service_config_page(self, app_fs, sdk_client_fs, bundle_name):
         """Test password field on /cluster/{}/service/{}/config page"""
@@ -355,7 +356,12 @@ class TestServiceConfigPage:
     def test_reset_config_in_row_on_service_config_page(self, app_fs, create_cluster_with_service):
         """Test config reset on /cluster/{}/service/{}/config page"""
 
-        params = {"row_name": "param1", "row_value_new": "test", "row_value_old": "", "config_name": "test_name"}
+        params = {
+            "row_name": "param1",
+            "row_value_new": "test",
+            "row_value_old": "",
+            "config_name": "test_name",
+        }
 
         cluster, service = create_cluster_with_service
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()

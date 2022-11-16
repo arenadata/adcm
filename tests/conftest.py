@@ -120,7 +120,7 @@ def pytest_runtest_setup(item: Function):
 
 
 @pytest.hookimpl(trylast=True)
-def pytest_collection_modifyitems(session, config, items):  # pylint: disable=unused-argument
+def pytest_collection_modifyitems(session, config, items):
     """Run tests with id "adcm_with_dummy_data" after everything else"""
     items.sort(key=lambda x: 'adcm_with_dummy_data' in x.name)
 
@@ -289,7 +289,7 @@ def user(sdk_client_fs) -> User:
 
 
 @pytest.fixture()
-def user_sdk(user, adcm_fs) -> ADCMClient:  # pylint: disable=unused-argument
+def user_sdk(user, adcm_fs) -> ADCMClient:
     """Returns ADCMClient object from adcm_client with testing user"""
     username, password = TEST_USER_CREDENTIALS
     return ADCMClient(url=adcm_fs.url, user=username, password=password)
@@ -343,7 +343,7 @@ def ldap_config(cmd_opts) -> dict:
         config = yaml.safe_load(file)
     if not isinstance(config, dict):
         raise ConfigError('LDAP config file should have root type "dict"')
-    ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)  # pylint: disable=no-member
+    ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
     return config
 
 
@@ -473,4 +473,8 @@ def configure_adcm_ldap_ad(request, sdk_client_fs: ADCMClient, ldap_basic_ous, a
 
 
 def _create_extra_user_modlist(user: dict) -> dict:
-    return {'first_name': user['name'], 'last_name': 'Testovich', 'email': f'{user["name"]}@nexistent.ru'}
+    return {
+        'first_name': user['name'],
+        'last_name': 'Testovich',
+        'email': f'{user["name"]}@nexistent.ru',
+    }

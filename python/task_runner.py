@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=unused-import, useless-return, protected-access, bare-except, global-statement
+# pylint: disable=unused-import,useless-return,protected-access,bare-except,global-statement
 
 import os
 import signal
@@ -23,7 +23,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django
 from cm.job import finish_task, re_prepare_job
 from cm.logger import logger
 from cm.models import JobLog, JobStatus, LogStorage, TaskLog

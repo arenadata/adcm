@@ -76,7 +76,7 @@ def ldap_user(sdk_client_fs, created_ldap_user, configure_adcm_ldap_ad) -> User:
 
 @only_clean_adcm
 @pytest.mark.ldap()
-@pytest.mark.usefixtures("configure_adcm_ldap_ad")  # pylint: disable-next=too-many-arguments
+@pytest.mark.usefixtures("configure_adcm_ldap_ad")
 def test_users_deactivation(
     adcm_user: User,
     ldap_user: User,

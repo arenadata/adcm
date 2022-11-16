@@ -62,7 +62,6 @@ COMPONENT_NAME = 'test_component'
 
 @pytest.fixture()
 @allure.title("Open /task page")
-# pylint: disable-next=unused-argument
 def page(app_fs: ADCMTest, _login_to_adcm_over_api) -> JobListPage:
     """Open /task page"""
     return JobListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -263,11 +262,15 @@ class TestTaskPage:
         with allure.step('Download logfiles'):
             job_page.click_on_log_download('stdout')
             wait_file_is_presented(
-                downloaded_file_template.format(job_id=job_id, log_type='stdout'), app_fs, dirname=downloads_directory
+                downloaded_file_template.format(job_id=job_id, log_type='stdout'),
+                app_fs,
+                dirname=downloads_directory,
             )
             job_page.click_on_log_download('stderr')
             wait_file_is_presented(
-                downloaded_file_template.format(job_id=job_id, log_type='stderr'), app_fs, dirname=downloads_directory
+                downloaded_file_template.format(job_id=job_id, log_type='stderr'),
+                app_fs,
+                dirname=downloads_directory,
             )
 
     def test_invoker_object_url(self, cluster: Cluster, provider: Provider, page: JobListPage):
@@ -443,7 +446,9 @@ class TestTaskHeaderPopup:
         with allure.step('Run actions in cluster'):
             for _ in range(6):
                 run_cluster_action_and_assert_result(
-                    cluster, cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME).name, status='success'
+                    cluster,
+                    cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME).name,
+                    status='success',
                 )
         cluster_page.header.click_job_block_in_header()
         with allure.step("Check that in popup 5 tasks"):
@@ -566,7 +571,9 @@ def _check_link_to_invoker_object(expected_link: str, page: JobListPage, action:
     with page.table.wait_rows_change():
         action.run()
     wait_and_assert_ui_info(
-        expected_value, page.get_task_info_from_table, get_info_kwargs={'full_invoker_objects_link': True}
+        expected_value,
+        page.get_task_info_from_table,
+        get_info_kwargs={'full_invoker_objects_link': True},
     )
     detail_page = JobPageStdout(page.driver, page.base_url, action.task_list()[0].id).open()
     wait_and_assert_ui_info(expected_value, detail_page.get_job_info)

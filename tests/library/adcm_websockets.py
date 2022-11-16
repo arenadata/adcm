@@ -94,7 +94,10 @@ class ADCMWebsocket:
 
     @allure.step('Get up to {max_messages} messages')
     async def get_messages(
-        self, max_messages: int, single_msg_timeout: WaitTimeout = 1, break_on_first_fail: bool = True
+        self,
+        max_messages: int,
+        single_msg_timeout: WaitTimeout = 1,
+        break_on_first_fail: bool = True,
     ) -> List[WSMessageData]:
         """
         Get messages until `max_messages` is reached
@@ -226,10 +229,14 @@ class ADCMWebsocket:
             return
 
         allure.attach(
-            pformat(expected), name='Expected message fields to be', attachment_type=allure.attachment_type.TEXT
+            pformat(expected),
+            name='Expected message fields to be',
+            attachment_type=allure.attachment_type.TEXT,
         )
         allure.attach(
-            pformat(message_object), name='Actual message fields', attachment_type=allure.attachment_type.TEXT
+            pformat(message_object),
+            name='Actual message fields',
+            attachment_type=allure.attachment_type.TEXT,
         )
         raise AssertionError(f'WS message is incorrect: {explanation}')
 
@@ -265,7 +272,9 @@ class ADCMWebsocket:
             attachment_type=allure.attachment_type.TEXT,
         )
         allure.attach(
-            pformat(message_object), name='Actual message fields', attachment_type=allure.attachment_type.TEXT
+            pformat(message_object),
+            name='Actual message fields',
+            attachment_type=allure.attachment_type.TEXT,
         )
         raise AssertionError('WS message should not match.\nCheck attachments for more details.')
 
@@ -290,7 +299,9 @@ class ADCMWebsocket:
         if len(missing_messages) == 0:
             return
         allure.attach(
-            pformat(missing_messages), name='Missing WS messages', attachment_type=allure.attachment_type.TEXT
+            pformat(missing_messages),
+            name='Missing WS messages',
+            attachment_type=allure.attachment_type.TEXT,
         )
         allure.attach(pformat(messages), name='Searched messages', attachment_type=allure.attachment_type.TEXT)
         raise AssertionError('Some of the expected WS messages were missing, check attachments for more details')

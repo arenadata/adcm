@@ -62,9 +62,7 @@ def new_user_and_client(sdk_client_fs) -> Tuple[User, ADCMClient]:
     return user, ADCMClient(url=sdk_client_fs.url, user=credentials["username"], password=credentials["password"])
 
 
-@pytest.mark.parametrize(
-    "parsed_audit_log", [ScenarioArg("simple.yaml", CONTEXT)], indirect=True
-)  # pylint: disable-next=too-many-arguments
+@pytest.mark.parametrize("parsed_audit_log", [ScenarioArg("simple.yaml", CONTEXT)], indirect=True)
 def test_simple_flow(sdk_client_fs, audit_log_checker, adb_bundle, dummy_host, new_user_and_client):
     """Test simple from with cluster objects manipulations"""
     config = {"just_string": "hoho"}
@@ -80,7 +78,13 @@ def test_simple_flow(sdk_client_fs, audit_log_checker, adb_bundle, dummy_host, n
     cluster.hostcomponent_set((dummy_host, component))
     run_cluster_action_and_assert_result(cluster, "install", "failed")
     new_user, new_client = new_user_and_client
-    create_policy(sdk_client_fs, BusinessRoles.ViewClusterConfigurations, [cluster], users=[new_user], groups=[])
+    create_policy(
+        sdk_client_fs,
+        BusinessRoles.ViewClusterConfigurations,
+        [cluster],
+        users=[new_user],
+        groups=[],
+    )
     new_client.reread()
     with allure.step("Try to change config from unauthorized user"):
         requests.post(

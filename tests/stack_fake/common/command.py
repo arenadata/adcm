@@ -58,7 +58,6 @@ def add_path(path):
     return env
 
 
-# pylint: disable-next=too-many-arguments
 def run_python_script(base_dir, py_script, command, json_config, out_file, err_file):
     try:
         res = call(

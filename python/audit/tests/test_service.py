@@ -78,7 +78,7 @@ class TestService(BaseTestCase):
             state_available="any",
         )
 
-    def check_log(  # pylint: disable=too-many-arguments
+    def check_log(
         self,
         log: AuditLog,
         obj,

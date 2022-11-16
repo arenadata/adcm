@@ -71,11 +71,18 @@ def two_ldap_groups_with_users(ldap_ad, ldap_basic_ous) -> Tuple[GroupInfo, User
 
 
 def check_sync_with_filters(
-    client: ADCMClient, user_filter: str, group_filter: str, expected_users: set, expected_groups: set
+    client: ADCMClient,
+    user_filter: str,
+    group_filter: str,
+    expected_users: set,
+    expected_groups: set,
 ) -> None:
     """Method to use filter and check result"""
     change_adcm_ldap_config(
-        client, attach_to_allure=False, user_search_filter=user_filter, group_search_filter=group_filter
+        client,
+        attach_to_allure=False,
+        user_search_filter=user_filter,
+        group_search_filter=group_filter,
     )
     sync_adcm_with_ldap(client)
 
@@ -87,12 +94,14 @@ def check_sync_with_filters(
         message="Not all filtered active LDAP users are presented in ADCM",
     )
     sets_are_equal(
-        actual=groups_records, expected=expected_groups, message="Not all filtered LDAP groups are presented in ADCM"
+        actual=groups_records,
+        expected=expected_groups,
+        message="Not all filtered LDAP groups are presented in ADCM",
     )
 
 
 @pytest.mark.usefixtures('configure_adcm_ldap_ad')
-# pylint: disable-next=too-many-arguments, too-many-locals, too-many-statements
+# pylint: disable-next=too-many-locals,too-many-statements
 def test_search_filters_users(sdk_client_fs, two_ldap_groups_with_users):
     """Check LDAP filters for users"""
     turn_off_periodic_ldap_sync(client=sdk_client_fs)
@@ -151,7 +160,10 @@ def test_search_filters_users(sdk_client_fs, two_ldap_groups_with_users):
     with allure.step('Check both LDAP users can login'):
         for user_info in (user_info_1, user_info_2):
             login_should_succeed(
-                f'login as {user_info["name"]}', sdk_client_fs, user_info['name'], user_info['password']
+                f'login as {user_info["name"]}',
+                sdk_client_fs,
+                user_info['name'],
+                user_info['password'],
             )
 
 
@@ -218,7 +230,9 @@ def test_search_filters_groups(sdk_client_fs, two_adcm_groups_with_users, two_ld
         )
 
     check_existing_groups(
-        sdk_client_fs, {group_info_1['name'], group_info_2['name']}, {adcm_group_1.name, adcm_group_2.name}
+        sdk_client_fs,
+        {group_info_1['name'], group_info_2['name']},
+        {adcm_group_1.name, adcm_group_2.name},
     )
     check_existing_users(sdk_client_fs, {user_info_1['name'], user_info_2['name']}, adcm_user_names)
 
@@ -234,7 +248,7 @@ def test_search_filters_groups(sdk_client_fs, two_adcm_groups_with_users, two_ld
 
 
 @pytest.mark.usefixtures('configure_adcm_ldap_ad')
-# pylint: disable-next=too-many-arguments, too-many-locals, too-many-statements
+# pylint: disable-next=too-many-locals,too-many-statements
 def test_search_filters_groups_with_symbols(sdk_client_fs, two_adcm_groups_with_users, two_ldap_groups_with_users):
     """Check LDAP filters for users and groups"""
     turn_off_periodic_ldap_sync(client=sdk_client_fs)
@@ -310,7 +324,9 @@ def test_search_filters_groups_with_symbols(sdk_client_fs, two_adcm_groups_with_
 
     with allure.step('Check that users are in groups'):
         check_existing_groups(
-            sdk_client_fs, {group_info_1['name'], group_info_2['name']}, {adcm_group_1.name, adcm_group_2.name}
+            sdk_client_fs,
+            {group_info_1['name'], group_info_2['name']},
+            {adcm_group_1.name, adcm_group_2.name},
         )
         check_existing_users(sdk_client_fs, {user_info_1['name'], user_info_2['name']}, adcm_user_names)
 
@@ -327,7 +343,10 @@ def test_search_filters_groups_with_symbols(sdk_client_fs, two_adcm_groups_with_
     with allure.step('Check both LDAP users can login'):
         for user_info in (user_info_1, user_info_2):
             login_should_succeed(
-                f'login as {user_info["name"]}', sdk_client_fs, user_info['name'], user_info['password']
+                f'login as {user_info["name"]}',
+                sdk_client_fs,
+                user_info['name'],
+                user_info['password'],
             )
 
 
@@ -366,19 +385,31 @@ def test_search_filters_login_users(sdk_client_fs, two_adcm_groups_with_users, t
     with allure.step('Check filter for one user and check'):
         search_filter = f"(&(objectcategory=person)(objectclass=person)(name={ldap_user_1.username}))"
         change_adcm_ldap_config(
-            sdk_client_fs, attach_to_allure=False, user_search_filter=search_filter, group_search_filter=""
+            sdk_client_fs,
+            attach_to_allure=False,
+            user_search_filter=search_filter,
+            group_search_filter="",
         )
     with allure.step('Check LDAP user_1 can login and LDAP user_2 login fail'):
         login_should_succeed(
-            f'login as {user_info_1["name"]}', sdk_client_fs, user_info_1['name'], user_info_1['password']
+            f'login as {user_info_1["name"]}',
+            sdk_client_fs,
+            user_info_1['name'],
+            user_info_1['password'],
         )
         login_should_fail(
-            f'login as {user_info_2["name"]}', sdk_client_fs, user_info_2['name'], user_info_2['password']
+            f'login as {user_info_2["name"]}',
+            sdk_client_fs,
+            user_info_2['name'],
+            user_info_2['password'],
         )
     with allure.step('Check filter for one group and check'):
         search_filter = f"(&(objectclass=group)(name={ldap_group_2.name}))"
         change_adcm_ldap_config(
-            sdk_client_fs, attach_to_allure=False, user_search_filter="", group_search_filter=search_filter
+            sdk_client_fs,
+            attach_to_allure=False,
+            user_search_filter="",
+            group_search_filter=search_filter,
         )
 
     with allure.step('Check that users are in groups'):
@@ -394,8 +425,14 @@ def test_search_filters_login_users(sdk_client_fs, two_adcm_groups_with_users, t
 
     with allure.step('Check LDAP user from filtered group can login and LDAP user_1 login fail'):
         login_should_succeed(
-            f'login as {user_info_2["name"]}', sdk_client_fs, user_info_2['name'], user_info_2['password']
+            f'login as {user_info_2["name"]}',
+            sdk_client_fs,
+            user_info_2['name'],
+            user_info_2['password'],
         )
         login_should_fail(
-            f'login as {user_info_1["name"]}', sdk_client_fs, user_info_1['name'], user_info_1['password']
+            f'login as {user_info_1["name"]}',
+            sdk_client_fs,
+            user_info_1['name'],
+            user_info_1['password'],
         )

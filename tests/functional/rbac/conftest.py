@@ -44,7 +44,7 @@ from tests.functional.maintenance_mode.conftest import MM_IS_OFF, MM_IS_ON
 from tests.functional.rbac.checkers import Deny
 from tests.functional.tools import ADCMObjects, AnyADCMObject, get_object_represent
 
-# pylint: disable=redefined-outer-name,unused-argument
+# pylint: disable=redefined-outer-name
 
 # Enum names doesn't conform to UPPER_CASE naming style
 
@@ -409,7 +409,6 @@ def delete_policy(policy):
     policy.delete()
 
 
-# pylint: disable-next=too-many-arguments
 def create_policy(
     sdk_client,
     permission: Union[BusinessRoles, List[BusinessRoles]],

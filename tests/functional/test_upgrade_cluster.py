@@ -146,21 +146,35 @@ def test_upgrade_cluster_with_config_groups(sdk_client_fs):
     with allure.step('Assert that configs save success after upgrade'):
         cluster.config_set(
             {
-                "attr": {"activatable_group_with_ro": {"active": True}, "activatable_group": {"active": True}},
+                "attr": {
+                    "activatable_group_with_ro": {"active": True},
+                    "activatable_group": {"active": True},
+                },
                 "config": {
                     **cluster.config(),
                     "activatable_group_with_ro": {"readonly-key": "value"},
-                    "activatable_group": {"required": 10, "writable-key": "value", "readonly-key": "value"},
+                    "activatable_group": {
+                        "required": 10,
+                        "writable-key": "value",
+                        "readonly-key": "value",
+                    },
                 },
             }
         )
         service.config_set(
             {
-                "attr": {"activatable_group_with_ro": {"active": True}, "activatable_group": {"active": True}},
+                "attr": {
+                    "activatable_group_with_ro": {"active": True},
+                    "activatable_group": {"active": True},
+                },
                 "config": {
                     **service.config(),
                     "activatable_group_with_ro": {"readonly-key": "value"},
-                    "activatable_group": {"required": 10, "writable-key": "value", "readonly-key": "value"},
+                    "activatable_group": {
+                        "required": 10,
+                        "writable-key": "value",
+                        "readonly-key": "value",
+                    },
                 },
             }
         )
@@ -219,7 +233,10 @@ class TestUpgradeWithComponent:
         """Upload new cluster bundle"""
         return sdk_client_fs.upload_from_fs(get_data_dir(__file__, self._DIR, 'new'))
 
-    @allure.issue(name='Component miss config after upgrade', url='https://arenadata.atlassian.net/browse/ADCM-2376')
+    @allure.issue(
+        name='Component miss config after upgrade',
+        url='https://arenadata.atlassian.net/browse/ADCM-2376',
+    )
     @pytest.mark.usefixtures('new_bundle')
     def test_upgrade_with_components(self, adcm_fs, sdk_client_fs, old_cluster):
         """

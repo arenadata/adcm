@@ -12,8 +12,6 @@
 
 """Test complex RBAC cases"""
 
-# pylint: disable=too-many-arguments
-
 from typing import Iterable
 
 import allure
@@ -106,7 +104,7 @@ class TestTwoUsers:
         return sdk_client_fs.user_create(*self._SECOND_USER_CREDS)
 
     @pytest.fixture()
-    def second_user_sdk(self, adcm_fs, second_user):  # pylint: disable=unused-argument
+    def second_user_sdk(self, adcm_fs, second_user):
         """ADCM Client for second non-superuser"""
         username, password = self._SECOND_USER_CREDS
         return ADCMClient(url=adcm_fs.url, user=username, password=password)

@@ -83,7 +83,9 @@ def _upload_bundle_to_both_adcm(bundle_archives, sdk_client_fs, second_adcm_sdk)
 
 
 @pytest.mark.parametrize(
-    'bundle_archives', [(get_data_dir(__file__, 'cluster'), get_data_dir(__file__, 'provider'))], indirect=True
+    'bundle_archives',
+    [(get_data_dir(__file__, 'cluster'), get_data_dir(__file__, 'provider'))],
+    indirect=True,
 )
 @pytest.mark.usefixtures('_upload_bundle_to_both_adcm')
 def test_export_cluster_from_another_adcm(adcm_fs, extra_adcm_fs, sdk_client_fs, second_adcm_sdk):
@@ -115,7 +117,8 @@ def import_cluster_to_second_adcm(
         copy_file_to_container(export_from_adcm.container, import_to_adcm.container, path_to_dump, path_to_dump)
     load_cluster(import_to_adcm, path_to_dump, password)
     with catch_failed(
-        ObjectNotFound, f'Either cluster "{CLUSTER_NAME}" or provider "{PROVIDER_NAME}" were not found after the import'
+        ObjectNotFound,
+        f'Either cluster "{CLUSTER_NAME}" or provider "{PROVIDER_NAME}" were not found after the import',
     ):
         return second_adcm_sdk.cluster(name=CLUSTER_NAME), second_adcm_sdk.provider(name=PROVIDER_NAME)
 

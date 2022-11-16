@@ -47,7 +47,10 @@ def test_roles_creation_on_cluster_bundle_upload(sdk_client_fs, actions_cluster_
     check_cluster_actions_roles_are_created_correctly(sdk_client_fs, cluster, hidden_role_names, hidden_role_prefix)
     for service_name in ALL_SERVICE_NAMES:
         check_service_and_components_roles_are_created_correctly(
-            sdk_client_fs, cluster.service_add(name=service_name), hidden_role_names, hidden_role_prefix
+            sdk_client_fs,
+            cluster.service_add(name=service_name),
+            hidden_role_names,
+            hidden_role_prefix,
         )
 
 

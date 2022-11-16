@@ -22,7 +22,7 @@ from pathlib import Path
 from django.conf import settings
 from django.db import transaction
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django
 import cm.job
 from cm.ansible_plugin import finish_check
 from cm.api import get_hc, save_hc

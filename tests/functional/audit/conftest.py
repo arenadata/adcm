@@ -217,7 +217,13 @@ def delete(sdk_client_fs) -> Callable:
     base_url = sdk_client_fs.url
     auth_header = make_auth_header(sdk_client_fs)
 
-    def _delete(path: str, *suffixes, headers: Optional[dict] = None, path_fmt: Optional[dict] = None, **kwargs):
+    def _delete(
+        path: str,
+        *suffixes,
+        headers: Optional[dict] = None,
+        path_fmt: Optional[dict] = None,
+        **kwargs,
+    ):
         headers = {**auth_header, **({} if headers is None else headers)}
         path_fmt = {} if path_fmt is None else path_fmt
         url = f'{base_url}/api/v1/{path.format(**path_fmt)}/{"/".join(map(str,suffixes))}/'
@@ -305,7 +311,9 @@ def format_date_for_db(date: datetime) -> str:
 
 
 def set_operations_date(
-    adcm_db: QueryExecutioner, new_date: datetime, operation_records: Union[AuditOperationList, List[AuditOperation]]
+    adcm_db: QueryExecutioner,
+    new_date: datetime,
+    operation_records: Union[AuditOperationList, List[AuditOperation]],
 ):
     """Set date for given operation audit records directly in ADCM database"""
     adcm_db.exec(
@@ -316,7 +324,9 @@ def set_operations_date(
 
 
 def set_logins_date(
-    adcm_db: QueryExecutioner, new_date: datetime, login_records: Union[AuditLoginList, List[AuditLogin]]
+    adcm_db: QueryExecutioner,
+    new_date: datetime,
+    login_records: Union[AuditLoginList, List[AuditLogin]],
 ):
     """Set date for given login audit records directly in ADCM database"""
     adcm_db.exec(

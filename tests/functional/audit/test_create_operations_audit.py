@@ -83,26 +83,48 @@ def test_bundle_upload_load(audit_log_checker, post, bundle_archives, sdk_client
     with allure.step("Upload and load incorrect bundles (as unauthorized and authorized user)"):
         for bundle_path in (incorrect_cluster_bundle, incorrect_provider_bundle):
             with bundle_path.open("rb") as f:
-                check_failed(post(CreateOperation.UPLOAD, files={"file": f}, headers=unauthorized_user_creds), 403)
+                check_failed(
+                    post(CreateOperation.UPLOAD, files={"file": f}, headers=unauthorized_user_creds),
+                    403,
+                )
             with bundle_path.open("rb") as f:
                 check_succeed(post(CreateOperation.UPLOAD, files={"file": f}))
             check_failed(
-                post(CreateOperation.LOAD, {"bundle_file": bundle_path.name}, headers=unauthorized_user_creds), 403
+                post(
+                    CreateOperation.LOAD,
+                    {"bundle_file": bundle_path.name},
+                    headers=unauthorized_user_creds,
+                ),
+                403,
             )
             check_failed(post(CreateOperation.LOAD, {"bundle_file": bundle_path.name}))
     with allure.step("Upload and load correct bundles (as unauthorized and authorized user)"):
         for bundle_path in (cluster_bundle, provider_bundle):
             with bundle_path.open("rb") as f:
-                check_failed(post(CreateOperation.UPLOAD, files={"file": f}, headers=unauthorized_user_creds), 403)
+                check_failed(
+                    post(CreateOperation.UPLOAD, files={"file": f}, headers=unauthorized_user_creds),
+                    403,
+                )
             with bundle_path.open("rb") as f:
                 check_succeed(post(CreateOperation.UPLOAD, files={"file": f}))
             check_failed(
-                post(CreateOperation.LOAD, {"bundle_file": bundle_path.name}, headers=unauthorized_user_creds), 403
+                post(
+                    CreateOperation.LOAD,
+                    {"bundle_file": bundle_path.name},
+                    headers=unauthorized_user_creds,
+                ),
+                403,
             )
             check_succeed(post(CreateOperation.LOAD, {"bundle_file": bundle_path.name}))
     with allure.step("Load/Upload with incorrect data in request (as unauthorized and authorized user)"):
-        check_failed(post(CreateOperation.UPLOAD, files={"wrongkey": "sldkj"}, headers=unauthorized_user_creds), 403)
-        check_failed(post(CreateOperation.LOAD, {"bundle": "somwthign"}, headers=unauthorized_user_creds), 403)
+        check_failed(
+            post(CreateOperation.UPLOAD, files={"wrongkey": "sldkj"}, headers=unauthorized_user_creds),
+            403,
+        )
+        check_failed(
+            post(CreateOperation.LOAD, {"bundle": "somwthign"}, headers=unauthorized_user_creds),
+            403,
+        )
         check_failed(post(CreateOperation.UPLOAD, files={"wrongkey": "sldkj"}))
         check_failed(post(CreateOperation.LOAD, {"bundle": "somwthign"}))
     audit_log_checker.set_user_map(sdk_client_fs)
@@ -127,7 +149,12 @@ def test_rbac_create_operations(parse_with_context, rbac_create_data, post, sdk_
             check_succeed(post(getattr(CreateOperation, object_type.upper()), create_data))
             check_failed(post(getattr(CreateOperation, object_type.upper()), create_data))
             check_failed(
-                post(getattr(CreateOperation, object_type.upper()), create_data, headers=new_user_auth_header), 403
+                post(
+                    getattr(CreateOperation, object_type.upper()),
+                    create_data,
+                    headers=new_user_auth_header,
+                ),
+                403,
             )
     audit_checker.set_user_map(sdk_client_fs)
     audit_checker.check(sdk_client_fs.audit_operation_list())
@@ -148,24 +175,37 @@ def test_create_adcm_objects(audit_log_checker, post, new_user_client, sdk_clien
     provider_bundle = sdk_client_fs.upload_from_fs(BUNDLES_DIR / "create" / "provider")
     with allure.step("Create cluster, try to create cluster from incorrect prototype and without permissions"):
         cluster_proto_id = cluster_bundle.cluster_prototype().id
-        cluster_create_args = (CreateOperation.CLUSTER, {"prototype_id": cluster_proto_id, "name": "cluster"})
+        cluster_create_args = (
+            CreateOperation.CLUSTER,
+            {"prototype_id": cluster_proto_id, "name": "cluster"},
+        )
         check_succeed(post(*cluster_create_args))
         check_failed(post(CreateOperation.CLUSTER, {"prototype_id": 1000, "name": "cluster"}), 404)
         check_failed(post(*cluster_create_args, headers=new_user_creds), 403)
     with allure.step("Create provider, try to create provider from incorrect prototype and without permissions"):
         provider_proto_id = provider_bundle.provider_prototype().id
-        provider_create_args = (CreateOperation.PROVIDER, {"prototype_id": provider_proto_id, "name": "provider"})
+        provider_create_args = (
+            CreateOperation.PROVIDER,
+            {"prototype_id": provider_proto_id, "name": "provider"},
+        )
         check_succeed(post(*provider_create_args))
         check_failed(post(CreateOperation.PROVIDER, {"prototype_id": 1000, "name": "provider"}), 404)
         check_failed(post(*provider_create_args, headers=new_user_creds), 403)
 
         provider = sdk_client_fs.provider()
     with allure.step("Create host from root and from provider"):
-        host_from_provider_args = {"data": {"fqdn": "host-from-provider"}, "path_fmt": {"provider_id": provider.id}}
+        host_from_provider_args = {
+            "data": {"fqdn": "host-from-provider"},
+            "path_fmt": {"provider_id": provider.id},
+        }
         check_succeed(post(CreateOperation.HOST_FROM_PROVIDER, **host_from_provider_args))
         host_prototype_id = provider.host().prototype_id
         host_from_root_args = {
-            "data": {"fqdn": "host-from-root", "prototype_id": host_prototype_id, "provider_id": provider.id}
+            "data": {
+                "fqdn": "host-from-root",
+                "prototype_id": host_prototype_id,
+                "provider_id": provider.id,
+            }
         }
         check_succeed(post(CreateOperation.HOST, **host_from_root_args))
     with allure.step("Try to incorrectly create host from root and from provider"):
@@ -175,7 +215,14 @@ def test_create_adcm_objects(audit_log_checker, post, new_user_client, sdk_clien
         create_policy(  # need it to be able to create host from provider's context
             sdk_client_fs, BusinessRoles.ViewProviderConfigurations, [provider], [new_user], []
         )
-        check_failed(post(CreateOperation.HOST_FROM_PROVIDER, **host_from_provider_args, headers=new_user_creds), 403)
+        check_failed(
+            post(
+                CreateOperation.HOST_FROM_PROVIDER,
+                **host_from_provider_args,
+                headers=new_user_creds,
+            ),
+            403,
+        )
         check_failed(post(CreateOperation.HOST, **host_from_root_args, headers=new_user_creds), 403)
     with allure.step(
         "Create group config for cluster, service and component, "

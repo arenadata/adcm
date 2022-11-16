@@ -582,13 +582,15 @@ class CommonConfigMenuObj(BasePageObject):
     @allure.step("Check warn icon on the left menu Host-Components element")
     def check_hostcomponents_warn_icon_on_left_menu(self):
         assert self.is_child_displayed(
-            self.find_element(ObjectPageMenuLocators.components_tab), ObjectPageMenuLocators.warn_icon
+            self.find_element(ObjectPageMenuLocators.components_tab),
+            ObjectPageMenuLocators.warn_icon,
         ), "No warn icon near Host-Components left menu element"
 
     @allure.step("Check warn icon on the left menu Host-Components element")
     def check_service_components_warn_icon_on_left_menu(self):
         assert self.is_child_displayed(
-            self.find_element(ObjectPageMenuLocators.service_components_tab), ObjectPageMenuLocators.warn_icon
+            self.find_element(ObjectPageMenuLocators.service_components_tab),
+            ObjectPageMenuLocators.warn_icon,
         ), "No warn icon near Host-Components left menu element"
 
     @allure.step("Fill config page with test values")
@@ -672,7 +674,8 @@ class CommonConfigMenuObj(BasePageObject):
             self.check_group_is_active("group", is_active=False)
         with allure.step("Check history value in structure type"):
             self.wait_history_row_with_value(
-                self.get_config_row("structure"), '[{"code":1,"country":"Test1"},{"code":2,"country":"Test2"}]'
+                self.get_config_row("structure"),
+                '[{"code":1,"country":"Test1"},{"code":2,"country":"Test2"}]',
             )
         with allure.step("Check history value in map type"):
             self.wait_history_row_with_value(self.get_config_row("map"), '{"age":"24","name":"Joe","sex":"m"}')

@@ -1,4 +1,17 @@
 include:
-  - project: 'arenadata/infrastructure/code/ci/gitlab_ci_files'
+  - project: "arenadata/infrastructure/code/ci/gitlab_ci_files"
     ref: master
-    file: '/development/adcm.yml'
+    file: "/development/adcm.yml"
+
+
+Linters:
+  script:
+    - apk update && apk upgrade && apk add build-base linux-headers openssl libc6-compat openldap-dev python3-dev py3-pip
+    - pip install -r requirements-venv-2.9.txt
+    - pip install autoflake black flake8 isort pylint
+    - black --check license_checker.py python tests
+    - autoflake --check --quiet -r --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python tests
+    - isort --check license_checker.py python tests
+    - python3 license_checker.py --folders python go
+    - flake8 --max-line-length=120 tests/functional tests/ui_tests
+    - pylint --rcfile pyproject.toml --recursive y python tests

@@ -66,7 +66,7 @@ LICENSE_STATE = (
 )
 
 
-def get_model_by_type(object_type):
+def get_model_by_type(object_type):  # pylint: disable=too-many-return-statements
     if object_type == "adcm":
         return ADCM
     if object_type == "cluster":
