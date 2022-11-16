@@ -21,9 +21,11 @@ from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider
 from adcm_pytest_plugin import params, utils
 from adcm_pytest_plugin.utils import get_data_dir, parametrize_by_data_subdirs
 from selenium.common.exceptions import TimeoutException
-
 from tests.library.status import ADCMObjectStatusChanger
-from tests.ui_tests.app.helpers.configs_generator import generate_configs, prepare_config
+from tests.ui_tests.app.helpers.configs_generator import (
+    generate_configs,
+    prepare_config,
+)
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import (
     ClusterComponentsPage,
@@ -42,9 +44,17 @@ from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
 from tests.ui_tests.app.page.common.host_components.page import ComponentsHostRowInfo
 from tests.ui_tests.app.page.common.import_page.page import ImportItemInfo
-from tests.ui_tests.app.page.common.status.page import NEGATIVE_COLOR, SUCCESS_COLOR, StatusRowInfo
+from tests.ui_tests.app.page.common.status.page import (
+    NEGATIVE_COLOR,
+    SUCCESS_COLOR,
+    StatusRowInfo,
+)
 from tests.ui_tests.app.page.host.page import HostConfigPage, HostMainPage
-from tests.ui_tests.app.page.service.page import ServiceConfigPage, ServiceImportPage, ServiceMainPage
+from tests.ui_tests.app.page.service.page import (
+    ServiceConfigPage,
+    ServiceImportPage,
+    ServiceMainPage,
+)
 from tests.ui_tests.utils import (
     check_host_value,
     prepare_cluster_and_open_config_page,

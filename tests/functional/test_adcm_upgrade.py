@@ -17,42 +17,43 @@
 import random
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Tuple, Union, List, Iterable, Any, Collection
+from typing import Any, Collection, Iterable, List, Tuple, Union
 
 import allure
 import pytest
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import (
     ADCMClient,
-    Cluster,
-    Host,
-    Service,
     Bundle,
+    Cluster,
     Component,
-    Provider,
-    Task,
-    Job,
-    Upgrade,
     GroupConfig,
+    Host,
+    Job,
+    Provider,
+    Service,
+    Task,
+    Upgrade,
 )
 from adcm_pytest_plugin import params
 from adcm_pytest_plugin.docker_utils import ADCM
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
     run_component_action_and_assert_result,
     run_provider_action_and_assert_result,
+    run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import catch_failed, get_data_dir, random_string
-
-from tests.library.assertions import dicts_are_not_equal, dicts_are_equal
-from tests.upgrade_utils import upgrade_adcm_version
-
 from tests.functional.conftest import only_clean_adcm
-from tests.functional.plugin_utils import build_objects_checker, build_objects_comparator
+from tests.functional.plugin_utils import (
+    build_objects_checker,
+    build_objects_comparator,
+)
 from tests.functional.tools import AnyADCMObject, get_config, get_objects_via_pagination
+from tests.library.assertions import dicts_are_equal, dicts_are_not_equal
 from tests.library.utils import previous_adcm_version_tag
+from tests.upgrade_utils import upgrade_adcm_version
 
 pytestmark = [only_clean_adcm]
 

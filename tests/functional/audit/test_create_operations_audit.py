@@ -19,7 +19,6 @@ from pathlib import Path
 import allure
 import pytest
 from adcm_client.objects import ADCMClient
-
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,

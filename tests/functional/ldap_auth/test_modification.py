@@ -16,18 +16,17 @@ from typing import Union
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient, User, Group
+from adcm_client.objects import ADCMClient, Group, User
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
-
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import (
-    get_ldap_user_from_adcm,
     SYNC_ACTION_NAME,
-    get_ldap_group_from_adcm,
     TEST_CONNECTION_ACTION,
+    get_ldap_group_from_adcm,
+    get_ldap_user_from_adcm,
 )
 from tests.library.assertions import expect_api_error, expect_no_api_error
-from tests.library.errorcodes import USER_UPDATE_ERROR, GROUP_UPDATE_ERROR
+from tests.library.errorcodes import GROUP_UPDATE_ERROR, USER_UPDATE_ERROR
 
 # pylint: disable=redefined-outer-name
 

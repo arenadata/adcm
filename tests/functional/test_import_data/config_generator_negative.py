@@ -11,7 +11,6 @@
 # limitations under the License.
 import os
 
-
 VARIABLES = [
     ("less-equal", "2.2", "3.0", 'max', 'min', "2.1"),
     ("less-equal", "2.2", "3.0", 'max', 'min_strict', "2.2"),

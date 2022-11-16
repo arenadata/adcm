@@ -19,8 +19,16 @@ from typing import Tuple
 import allure
 import pytest
 from adcm_client.base import ObjectNotFound
-from adcm_client.objects import Bundle, Cluster, Group, Host, Policy, Provider, Role, User
-
+from adcm_client.objects import (
+    Bundle,
+    Cluster,
+    Group,
+    Host,
+    Policy,
+    Provider,
+    Role,
+    User,
+)
 from tests.functional.audit.conftest import BUNDLES_DIR, NEW_USER
 from tests.functional.audit.conftest import CreateDeleteOperation as Delete
 from tests.functional.audit.conftest import check_failed, check_succeed

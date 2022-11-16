@@ -12,10 +12,11 @@
 
 """Tests for backend filtering"""
 
-from typing import List, Union, Type
+from typing import List, Type, Union
 
 import allure
 import pytest
+import pytest_check as check
 from adcm_client.base import BaseAPIObject
 from adcm_client.objects import (
     Action,
@@ -38,12 +39,11 @@ from adcm_client.objects import (
     ProviderList,
     ProviderPrototype,
     ProviderPrototypeList,
+    Service,
     Task,
     TaskList,
-    Service,
 )
 from adcm_pytest_plugin.utils import get_data_dir, get_subdirs_iter
-import pytest_check as check
 from pytest_lazyfixture import lazy_fixture
 
 # pylint: disable=redefined-outer-name,protected-access

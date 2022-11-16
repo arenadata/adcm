@@ -13,15 +13,18 @@
 """Test categories (filters for roles)"""
 
 import os
-from typing import Set, Generator, Dict
+from typing import Dict, Generator, Set
 from urllib import parse
 
 import allure
 import requests
 from adcm_client.objects import ADCMClient
-
-from tests.functional.rbac.conftest import DATA_DIR, RoleShortInfo, extract_role_short_info
-from tests.library.assertions import is_superset_of, is_empty
+from tests.functional.rbac.conftest import (
+    DATA_DIR,
+    RoleShortInfo,
+    extract_role_short_info,
+)
+from tests.library.assertions import is_empty, is_superset_of
 
 CATEGORIES_SUFFIX = 'api/v1/rbac/role/category'
 

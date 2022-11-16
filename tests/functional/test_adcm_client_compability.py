@@ -17,10 +17,9 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
     run_host_action_and_assert_result,
+    run_service_action_and_assert_result,
 )
-
 from adcm_pytest_plugin.utils import get_data_dir
 
 

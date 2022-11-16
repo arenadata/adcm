@@ -14,11 +14,10 @@
 # pylint: disable=redefined-outer-name
 from typing import List
 
-import pytest
 import allure
-
-from tests.api.testdata.generators import TestData, get_data_for_methods_check
+import pytest
 from tests.api.testdata.db_filler import DbFiller
+from tests.api.testdata.generators import TestData, get_data_for_methods_check
 
 pytestmark = [
     allure.suite("API Methods tests"),

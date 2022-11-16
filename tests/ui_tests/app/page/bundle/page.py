@@ -13,9 +13,15 @@
 """Bundle page PageObjects classes"""
 
 import allure
-
-from tests.ui_tests.app.page.bundle.locators import BundleLocators, BundleMainMenuLocators
-from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter
+from tests.ui_tests.app.page.bundle.locators import (
+    BundleLocators,
+    BundleMainMenuLocators,
+)
+from tests.ui_tests.app.page.common.base_page import (
+    BasePageObject,
+    PageFooter,
+    PageHeader,
+)
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 

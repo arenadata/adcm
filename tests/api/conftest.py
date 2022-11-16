@@ -14,12 +14,11 @@
 
 import allure
 import pytest
-
-from tests.conftest import DUMMY_DATA_PARAM
 from tests.api.steps.asserts import BodyAssertionError
 from tests.api.steps.common import assume_step
 from tests.api.utils.api_objects import ADCMTestApiWrapper
 from tests.api.utils.endpoints import Endpoints
+from tests.conftest import DUMMY_DATA_PARAM
 
 
 def pytest_generate_tests(metafunc):

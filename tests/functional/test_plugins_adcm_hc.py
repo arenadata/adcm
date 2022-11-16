@@ -12,17 +12,25 @@
 
 """Test plugin adcm_hc"""
 
-from typing import Tuple, Callable
+from typing import Callable, Tuple
 
 import allure
 import pytest
-from adcm_client.objects import Cluster, Provider, ADCMClient, Service, Host, Component, Job
-from adcm_pytest_plugin.utils import get_data_dir
+from adcm_client.objects import (
+    ADCMClient,
+    Cluster,
+    Component,
+    Host,
+    Job,
+    Provider,
+    Service,
+)
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
     run_component_action_and_assert_result,
+    run_service_action_and_assert_result,
 )
+from adcm_pytest_plugin.utils import get_data_dir
 
 # pylint: disable=redefined-outer-name
 

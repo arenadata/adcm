@@ -14,10 +14,9 @@
 # pylint: disable=missing-function-docstring, missing-class-docstring, missing-module-docstring
 # pylint: disable=import-error
 
-from cm.logger import logger
 from cm.errors import AdcmEx
-
-from cm.models import Prototype, Action
+from cm.logger import logger
+from cm.models import Action, Prototype
 
 
 def task_generator(action, selector):

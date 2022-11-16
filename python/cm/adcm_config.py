@@ -140,12 +140,25 @@ def get_default(c, proto=None):  # pylint: disable=too-many-branches
         if proto:
             if c.default:
                 value = read_file_type(proto, c.default, proto.bundle.hash, c.name, c.subname)
+    elif c.type == "secretfile":
+        if proto:
+            if c.default:
+                value = ansible_encrypt_and_format(
+                    read_file_type(proto, c.default, proto.bundle.hash, c.name, c.subname)
+                )
+
+    if c.type == "secretmap":
+        new_value = {}
+        for k, v in value.items():
+            new_value[k] = ansible_encrypt_and_format(v)
+
+        value = new_value
 
     return value
 
 
 def type_is_complex(conf_type):
-    if conf_type in ("json", "structure", "list", "map"):
+    if conf_type in ("json", "structure", "list", "map", "secretmap"):
         return True
 
     return False
@@ -385,17 +398,6 @@ def save_file_type(obj, key, subkey, value):
     return filename
 
 
-def process_file_type(obj: Any, spec: dict, conf: dict):
-    for key in conf:
-        if "type" in spec[key]:
-            if spec[key]["type"] == "file":
-                save_file_type(obj, key, "", conf[key])
-        elif conf[key]:
-            for subkey in conf[key]:
-                if spec[key][subkey]["type"] == "file":
-                    save_file_type(obj, key, subkey, conf[key][subkey])
-
-
 def ansible_encrypt(msg):
     vault = VaultAES256()
     secret = VaultSecret(bytes(settings.ANSIBLE_SECRET, settings.ENCODING_UTF_8))
@@ -407,6 +409,25 @@ def ansible_encrypt_and_format(msg):
     ciphertext = ansible_encrypt(msg)
 
     return f"{settings.ANSIBLE_VAULT_HEADER}\n{str(ciphertext, settings.ENCODING_UTF_8)}"
+
+
+def process_file_type(obj: Any, spec: dict, conf: dict):
+    for key in conf:
+        if "type" in spec[key]:
+            if spec[key]["type"] == "file":
+                save_file_type(obj, key, "", conf[key])
+            elif spec[key]["type"] == "secretfile":
+                value = ansible_encrypt_and_format(conf[key])
+                save_file_type(obj, key, "", value)
+                conf[key] = value
+        elif conf[key]:
+            for subkey in conf[key]:
+                if spec[key][subkey]["type"] == "file":
+                    save_file_type(obj, key, subkey, conf[key][subkey])
+                elif spec[key][subkey]["type"] == "secretfile":
+                    value = ansible_encrypt_and_format(conf[key][subkey])
+                    save_file_type(obj, key, subkey, value)
+                    conf[key][subkey] = value
 
 
 def ansible_decrypt(msg):
@@ -448,6 +469,17 @@ def process_password(spec, conf):
     return conf
 
 
+def process_secretmap(spec: dict, conf: dict) -> dict:
+    for key in conf:
+        if spec[key].get("type") != "secretmap" or settings.ANSIBLE_VAULT_HEADER in conf[key]:
+            continue
+
+        for k, v in conf[key].items():
+            conf[key][k] = ansible_encrypt_and_format(v)
+
+    return conf
+
+
 def process_config(obj, spec, old_conf):  # pylint: disable=too-many-branches
     if not old_conf:
         return old_conf
@@ -456,7 +488,7 @@ def process_config(obj, spec, old_conf):  # pylint: disable=too-many-branches
     for key in conf:  # pylint: disable=too-many-nested-blocks
         if "type" in spec[key]:
             if conf[key] is not None:
-                if spec[key]["type"] == "file":
+                if spec[key]["type"] in {"file", "secretfile"}:
                     conf[key] = cook_file_type_name(obj, key, "")
                 elif spec[key]["type"] in SECURE_PARAM_TYPES:
                     if settings.ANSIBLE_VAULT_HEADER in conf[key]:
@@ -464,7 +496,7 @@ def process_config(obj, spec, old_conf):  # pylint: disable=too-many-branches
         elif conf[key]:
             for subkey in conf[key]:
                 if conf[key][subkey] is not None:
-                    if spec[key][subkey]["type"] == "file":
+                    if spec[key][subkey]["type"] in {"file", "secretfile"}:
                         conf[key][subkey] = cook_file_type_name(obj, key, subkey)
                     elif spec[key][subkey]["type"] in SECURE_PARAM_TYPES:
                         if settings.ANSIBLE_VAULT_HEADER in conf[key][subkey]:
@@ -586,7 +618,7 @@ def check_read_only(obj, spec, conf, old_conf):
                 if isinstance(flat_conf[s], list) and not flat_conf[s]:
                     continue
 
-            if spec[s].type == "map":
+            if spec[s].type in {"map", "secretmap"}:
                 if isinstance(flat_conf[s], dict) and not flat_conf[s]:
                     continue
 
@@ -726,7 +758,7 @@ def check_value_unselected_field(current_config, new_config, current_attr, new_a
                 obj,
             )
         else:
-            if spec[k]["type"] in ["list", "map", "string", "structure"]:
+            if spec[k]["type"] in {"list", "map", "secretmap", "string", "structure"}:
                 if config_is_ro(obj, k, spec[k]["limits"]) or check_empty_values(k, current_config, new_config):
                     continue
 
@@ -913,6 +945,7 @@ def check_config_spec(
     # for process_file_type() function not need `if old_conf:`
     process_file_type(group or obj, spec, conf)
     process_password(spec, conf)
+    conf = process_secretmap(spec=spec, conf=conf)
 
     return conf
 
@@ -935,7 +968,12 @@ def check_config_type(
             _msg = f'{label} ("{_v}") of element "{_idx}" of config key "{key}/{subkey}"' f" should be string ({ref})"
             raise_adcm_ex("CONFIG_VALUE_ERROR", _msg)
 
-    if value is None or (spec["type"] == "map" and value == {}) or (spec["type"] == "list" and value == []):
+    if (
+        value is None  # pylint: disable=too-many-boolean-expressions
+        or (spec["type"] == "map" and value == {})
+        or (spec["type"] == "secretmap" and value == {})
+        or (spec["type"] == "list" and value == [])
+    ):
         if inactive:
             return
 
@@ -958,7 +996,7 @@ def check_config_type(
         for idx, v in enumerate(value):
             check_str(idx, v)
 
-    if spec["type"] == "map":
+    if spec["type"] in {"map", "secretmap"}:
         if not isinstance(value, dict):
             raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl1.format("should be a map"))
 
@@ -975,7 +1013,7 @@ def check_config_type(
         if "required" in spec and spec["required"] and value == "":
             raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl1.format(should_not_be_empty))
 
-    if spec["type"] == "file":
+    if spec["type"] in {"file", "secretfile"}:
         if not isinstance(value, str):
             raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl2.format("should be string"))
 
@@ -1073,7 +1111,7 @@ def set_object_config(obj, keys, value):
 
     check_config_type(proto, key, subkey, obj_to_dict(pconf, ("type", "limits", "option")), value)
     replace_object_config(obj, key, subkey, value, pconf)
-    if pconf.type == "file":
+    if pconf.type in {"file", "secretfile"}:
         save_file_type(obj, key, subkey, value)
 
     log_value = value

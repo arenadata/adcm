@@ -12,20 +12,22 @@
 
 """Test corner cases where permissions got messed up and allows more than they should be"""
 
-from typing import Iterable, Tuple, Callable
+from typing import Callable, Iterable, Tuple
 
 import allure
 import pytest
 from adcm_client.objects import Cluster
-
-from tests.functional.tools import AnyADCMObject
-from tests.functional.rbac.conftest import (
-    RbacRoles,
-    is_allowed,
-    as_user_objects,
-    BusinessRole,
+from tests.functional.rbac.action_role_utils import (
+    action_business_role,
+    create_action_policy,
 )
-from tests.functional.rbac.action_role_utils import action_business_role, create_action_policy
+from tests.functional.rbac.conftest import (
+    BusinessRole,
+    RbacRoles,
+    as_user_objects,
+    is_allowed,
+)
+from tests.functional.tools import AnyADCMObject
 
 pytestmark = [pytest.mark.extra_rbac]
 

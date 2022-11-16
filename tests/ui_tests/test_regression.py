@@ -16,11 +16,13 @@ from typing import Type
 
 import allure
 import pytest
-from adcm_client.objects import Cluster, Service, Component, Provider, Task, ADCMClient
+from adcm_client.objects import ADCMClient, Cluster, Component, Provider, Service, Task
+from adcm_pytest_plugin.steps.actions import (
+    run_cluster_action_and_assert_result,
+    run_provider_action_and_assert_result,
+)
 from adcm_pytest_plugin.utils import get_data_dir, wait_until_step_succeeds
-from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result, run_provider_action_and_assert_result
 from coreapi.exceptions import ErrorMessage
-
 from tests.conftest import TEST_USER_CREDENTIALS
 from tests.functional.tools import AnyADCMObject, get_object_represent
 from tests.ui_tests.app.app import ADCMTest

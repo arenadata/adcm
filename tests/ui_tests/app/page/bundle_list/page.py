@@ -16,9 +16,12 @@ from dataclasses import dataclass
 
 import allure
 from selenium.webdriver.remote.webelement import WebElement
-
 from tests.ui_tests.app.page.bundle_list.locators import BundleListLocators
-from tests.ui_tests.app.page.common.base_page import BasePageObject, PageFooter, PageHeader
+from tests.ui_tests.app.page.common.base_page import (
+    BasePageObject,
+    PageFooter,
+    PageHeader,
+)
 from tests.ui_tests.app.page.common.dialogs.locators import DeleteDialog
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 

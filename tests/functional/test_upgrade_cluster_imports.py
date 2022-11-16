@@ -17,7 +17,6 @@ import coreapi
 import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import get_data_dir, parametrize_by_data_subdirs
-
 from tests.library import errorcodes as err
 
 

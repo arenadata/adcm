@@ -13,9 +13,13 @@
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Component, Host, Service
-
 from tests.functional.conftest import only_clean_adcm
-from tests.functional.maintenance_mode.conftest import BUNDLES_DIR, MM_IS_OFF, MM_IS_ON, check_mm_is
+from tests.functional.maintenance_mode.conftest import (
+    BUNDLES_DIR,
+    MM_IS_OFF,
+    MM_IS_ON,
+    check_mm_is,
+)
 from tests.functional.tools import AnyADCMObject, get_object_represent
 from tests.library.assertions import does_not_intersect
 

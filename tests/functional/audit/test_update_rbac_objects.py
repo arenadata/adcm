@@ -19,8 +19,11 @@ import allure
 import pytest
 import requests
 from adcm_client.objects import ADCMClient, Group, Policy, Role, User
-
-from tests.functional.audit.conftest import check_failed, check_succeed, make_auth_header
+from tests.functional.audit.conftest import (
+    check_failed,
+    check_succeed,
+    make_auth_header,
+)
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles as BR
 from tests.library.audit.checkers import AuditLogChecker

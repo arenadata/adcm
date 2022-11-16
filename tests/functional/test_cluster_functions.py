@@ -17,11 +17,9 @@
 import allure
 import coreapi
 import pytest
-
-from adcm_client.objects import ADCMClient, Bundle, Cluster, Provider, Host
-from adcm_pytest_plugin.utils import get_data_dir
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider
 from adcm_pytest_plugin import utils
-
+from adcm_pytest_plugin.utils import get_data_dir
 from tests.library import errorcodes as err
 
 DEFAULT_CLUSTER_BUNDLE_PATH = get_data_dir(__file__, "cluster_simple")

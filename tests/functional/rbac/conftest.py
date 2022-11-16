@@ -19,7 +19,11 @@ from typing import Callable, Collection, List, NamedTuple, Optional, Tuple, Unio
 
 import allure
 import pytest
-from adcm_client.base import BaseAPIObject, NoSuchEndpointOrAccessIsDenied, ObjectNotFound
+from adcm_client.base import (
+    BaseAPIObject,
+    NoSuchEndpointOrAccessIsDenied,
+    ObjectNotFound,
+)
 from adcm_client.objects import (
     ADCM,
     ADCMClient,
@@ -36,7 +40,6 @@ from adcm_client.objects import (
 )
 from adcm_client.wrappers.api import AccessIsDenied, ADCMApiWrapper
 from adcm_pytest_plugin.utils import catch_failed, random_string
-
 from tests.functional.maintenance_mode.conftest import MM_IS_OFF, MM_IS_ON
 from tests.functional.rbac.checkers import Deny
 from tests.functional.tools import ADCMObjects, AnyADCMObject, get_object_represent

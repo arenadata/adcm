@@ -18,7 +18,6 @@ import allure
 import pytest
 from adcm_client.objects import ADCMClient, Bundle, Role
 from adcm_pytest_plugin.utils import get_data_dir
-
 from tests.functional.rbac.action_role_utils import get_roles_of_type
 from tests.functional.rbac.conftest import RoleType, extract_role_short_info
 from tests.library.assertions import sets_are_equal

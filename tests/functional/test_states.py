@@ -15,20 +15,19 @@
 # todo add new DSL variant for job and multijob
 
 # pylint:disable=redefined-outer-name
-from typing import Tuple, Callable
+from typing import Callable, Tuple
 
 import allure
 from adcm_client.objects import ADCMClient, Cluster, Provider
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
     run_component_action_and_assert_result,
-    run_provider_action_and_assert_result,
     run_host_action_and_assert_result,
+    run_provider_action_and_assert_result,
+    run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import fixture_parametrized_by_data_subdirs
 from tests.functional.plugin_utils import build_objects_checker
-
 
 ACTION_NAME = 'state_changing_action'
 ACTION_SET_MULTISTATE_NAME = "set_multistate"

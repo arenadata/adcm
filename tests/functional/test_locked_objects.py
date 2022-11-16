@@ -13,24 +13,24 @@
 
 """Tests for ADCM objects locks"""
 
-from typing import Union, Tuple, List
+from typing import List, Tuple, Union
 
 import allure
 import pytest
 from _pytest.outcomes import Failed
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import (
-    Provider,
-    Cluster,
-    Host,
     ADCMClient,
+    Cluster,
+    Component,
+    Host,
+    Provider,
     Service,
     Task,
-    Component,
 )
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.asserts import assert_state
-from adcm_pytest_plugin.utils import random_string, catch_failed
+from adcm_pytest_plugin.utils import catch_failed, random_string
 from coreapi.exceptions import ErrorMessage
 
 LOCK_ACTION_NAMES = ["lock", "lock_multijob"]

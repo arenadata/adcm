@@ -18,25 +18,27 @@ import pathlib
 import sys
 import tarfile
 from pathlib import PosixPath
-from typing import Optional, List, Tuple, Union, Generator
+from typing import Generator, List, Optional, Tuple, Union
 
 import allure
 import ldap
 import pytest
 import websockets.client
 import yaml
-
 from _pytest.python import Function, FunctionDefinition, Module
-from adcm_client.objects import ADCMClient, User, Provider, Bundle
+from adcm_client.objects import ADCMClient, Bundle, Provider, User
 from adcm_pytest_plugin.utils import random_string
-from allure_commons.model2 import TestResult, Parameter
+from allure_commons.model2 import Parameter, TestResult
 from allure_pytest.listener import AllureListener
 from docker.utils import parse_repository_tag
-
 from tests.library.adcm_websockets import ADCMWebsocket
 from tests.library.api.client import APIClient
 from tests.library.db import QueryExecutioner
-from tests.library.ldap_interactions import LDAPEntityManager, LDAPTestConfig, configure_adcm_for_ldap
+from tests.library.ldap_interactions import (
+    LDAPEntityManager,
+    LDAPTestConfig,
+    configure_adcm_for_ldap,
+)
 from tests.library.utils import ConfigError
 
 pytest_plugins = "adcm_pytest_plugin"

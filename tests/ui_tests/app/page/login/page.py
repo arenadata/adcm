@@ -14,11 +14,10 @@
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
-
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
-    PageHeader,
     PageFooter,
+    PageHeader,
 )
 from tests.ui_tests.app.page.login.locators import LoginPageLocators
 

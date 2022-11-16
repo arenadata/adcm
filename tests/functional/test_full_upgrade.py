@@ -12,9 +12,9 @@
 
 """Tests for full update of objects"""
 
+import allure
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import get_data_dir
-import allure
 
 
 def test_full_upgrade_hostprovider_first(sdk_client_fs: ADCMClient):

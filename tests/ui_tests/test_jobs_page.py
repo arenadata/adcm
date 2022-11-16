@@ -14,39 +14,33 @@
 
 import os
 from dataclasses import asdict
-from typing import Union, List
+from typing import List, Union
 
 import allure
 import pytest
 from adcm_client.objects import (
+    Action,
     ADCMClient,
-    Cluster,
     Bundle,
+    Cluster,
+    Component,
+    Host,
+    ObjectNotFound,
     Provider,
     Service,
-    Host,
-    Component,
-    Action,
-    ObjectNotFound,
 )
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.steps.actions import (
-    run_cluster_action_and_assert_result,
-)
+from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.utils import catch_failed
-
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.job.page import JobPageStdout
-from tests.ui_tests.app.page.job_list.page import (
-    JobListPage,
-    JobStatus,
-)
+from tests.ui_tests.app.page.job_list.page import JobListPage, JobStatus
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.utils import (
-    wait_and_assert_ui_info,
-    is_not_empty,
     is_empty,
+    is_not_empty,
+    wait_and_assert_ui_info,
     wait_file_is_presented,
     wait_until_step_succeeds,
 )

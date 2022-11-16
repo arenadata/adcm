@@ -17,7 +17,6 @@ from typing import Generator
 import allure
 import pytest
 from selenium.common.exceptions import WebDriverException
-
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.conftest import login_over_api
 

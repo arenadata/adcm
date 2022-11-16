@@ -12,10 +12,10 @@
 
 """Common utils for ADCM tests"""
 
-import time
 import json
 import random
-from typing import Tuple, Iterable
+import time
+from typing import Iterable, Tuple
 
 import requests
 from adcm_client.objects import Host

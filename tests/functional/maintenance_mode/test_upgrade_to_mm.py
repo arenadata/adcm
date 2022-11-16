@@ -16,14 +16,13 @@ from typing import Set
 
 import allure
 import pytest
-
 from tests.conftest import DUMMY_ACTION
 from tests.functional.maintenance_mode.conftest import (
     MM_IS_OFF,
     MM_NOT_ALLOWED,
     add_hosts_to_cluster,
-    check_mm_is,
     check_mm_availability,
+    check_mm_is,
     get_disabled_actions_names,
     get_enabled_actions_names,
     turn_mm_on,

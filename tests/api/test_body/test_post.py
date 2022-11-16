@@ -18,13 +18,12 @@ from typing import List
 
 import allure
 import pytest
-
 from tests.api.test_body import generate_body_for_checks
 from tests.api.testdata.db_filler import DbFiller
 from tests.api.testdata.generators import (
-    get_positive_data_for_post_body_check,
-    get_negative_data_for_post_body_check,
     TestDataWithPreparedBody,
+    get_negative_data_for_post_body_check,
+    get_positive_data_for_post_body_check,
 )
 from tests.api.utils.api_objects import ADCMTestApiWrapper
 from tests.api.utils.methods import Methods

@@ -12,31 +12,30 @@
 
 """Tests for adcm_config plugin"""
 
-from typing import Tuple, Callable
+from typing import Callable, Tuple
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient, Cluster, Provider, Host, Component, Service
+from adcm_client.objects import ADCMClient, Cluster, Component, Host, Provider, Service
 from adcm_pytest_plugin.steps.actions import (
-    run_provider_action_and_assert_result,
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
     run_host_action_and_assert_result,
+    run_provider_action_and_assert_result,
+    run_service_action_and_assert_result,
 )
-
-from tests.functional.tools import AnyADCMObject, get_config
 from tests.functional.plugin_utils import (
+    TestImmediateChange,
     build_objects_checker,
-    generate_cluster_success_params,
     compose_name,
-    run_successful_task,
-    get_cluster_related_object,
-    generate_provider_success_params,
-    get_provider_related_object,
     create_two_clusters,
     create_two_providers,
-    TestImmediateChange,
+    generate_cluster_success_params,
+    generate_provider_success_params,
+    get_cluster_related_object,
+    get_provider_related_object,
+    run_successful_task,
 )
+from tests.functional.tools import AnyADCMObject, get_config
 
 # pylint:disable=redefined-outer-name
 

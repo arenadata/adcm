@@ -12,33 +12,31 @@
 
 """Test adcm_plugin_multi_sate set/unset"""
 
-from typing import Tuple, Callable
+from typing import Callable, Tuple
 
-import pytest
 import allure
-
+import pytest
+from adcm_client.objects import ADCMClient, Cluster, Component, Host, Provider, Service
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
-    run_provider_action_and_assert_result,
-    run_host_action_and_assert_result,
     run_component_action_and_assert_result,
+    run_host_action_and_assert_result,
+    run_provider_action_and_assert_result,
+    run_service_action_and_assert_result,
 )
-from adcm_client.objects import ADCMClient, Cluster, Provider, Host, Service, Component
-
-from tests.functional.tools import AnyADCMObject
 from tests.functional.plugin_utils import (
-    generate_cluster_success_params,
-    generate_provider_success_params,
-    compose_name,
+    TestImmediateChange,
     build_objects_checker,
-    get_cluster_related_object,
-    get_provider_related_object,
+    compose_name,
     create_two_clusters,
     create_two_providers,
+    generate_cluster_success_params,
+    generate_provider_success_params,
+    get_cluster_related_object,
+    get_provider_related_object,
     run_successful_task,
-    TestImmediateChange,
 )
+from tests.functional.tools import AnyADCMObject
 
 # pylint: disable=redefined-outer-name,unnecessary-lambda-assignment
 

@@ -24,7 +24,6 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.custom_types import SecureString
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from ldap.ldapobject import SimpleLDAPObject
-
 from tests.library.utils import ConfigError
 
 LDAP_PREFIX = "ldap://"

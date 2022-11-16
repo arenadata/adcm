@@ -1366,8 +1366,10 @@ CONFIG_FIELD_TYPE = (
     ("variant", "variant"),
     ("boolean", "boolean"),
     ("file", "file"),
+    ("secretfile", "secretfile"),
     ("list", "list"),
     ("map", "map"),
+    ("secretmap", "secretmap"),
     ("structure", "structure"),
     ("group", "group"),
 )

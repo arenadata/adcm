@@ -14,10 +14,10 @@
 
 import allure
 import pytest
-from coreapi.exceptions import ErrorMessage
 from adcm_client.base import NoSuchEndpointOrAccessIsDenied
 from adcm_client.objects import ADCMClient, User
 from adcm_client.wrappers.api import ADCMApiError, MethodNotAllowed
+from coreapi.exceptions import ErrorMessage
 
 # pylint: disable=redefined-outer-name
 

@@ -14,8 +14,8 @@
 
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
-    PageHeader,
     PageFooter,
+    PageHeader,
 )
 
 

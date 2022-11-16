@@ -13,35 +13,35 @@
 """Endpoint data classes definition"""
 
 from abc import ABC
-from typing import List, Callable
+from typing import Callable, List
 
 # there's a local import, but it's not cyclic really
 from tests.api.utils.data_synchronization import (  # pylint: disable=cyclic-import
-    sync_object_and_role,
     sync_child_roles_hierarchy,
+    sync_object_and_role,
 )
 from tests.api.utils.tools import PARAMETRIZED_BY_LIST
 from tests.api.utils.types import (
+    BackReferenceFK,
+    Boolean,
+    DateTime,
+    Email,
+    EmptyList,
+    Enum,
     Field,
+    ForeignKey,
+    ForeignKeyM2M,
+    GenericForeignKeyList,
+    Json,
+    ListOf,
+    ObjectForeignKey,
+    Password,
     PositiveInt,
+    Relation,
+    SmallIntegerID,
     String,
     Text,
-    Json,
-    Enum,
-    ForeignKey,
-    BackReferenceFK,
-    DateTime,
-    Relation,
-    Boolean,
-    ForeignKeyM2M,
-    Email,
-    ListOf,
-    Password,
-    EmptyList,
-    GenericForeignKeyList,
-    ObjectForeignKey,
     Username,
-    SmallIntegerID,
 )
 
 AUTO_VALUE = "auto"

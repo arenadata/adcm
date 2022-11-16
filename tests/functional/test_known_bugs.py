@@ -14,11 +14,10 @@
 
 import allure
 import pytest
-from adcm_client.objects import Cluster, Provider, Bundle
+from adcm_client.objects import Bundle, Cluster, Provider
 from adcm_pytest_plugin.steps.actions import run_service_action_and_assert_result
-from adcm_pytest_plugin.utils import get_data_dir, catch_failed
+from adcm_pytest_plugin.utils import catch_failed, get_data_dir
 from coreapi.exceptions import ErrorMessage
-
 from tests.functional.conftest import only_clean_adcm
 
 # pylint: disable=redefined-outer-name

@@ -23,16 +23,23 @@ from _pytest.fixtures import SubRequest
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider
 from adcm_pytest_plugin import utils
 from selenium.common import StaleElementReferenceException
-
 from tests.library.retry import RetryFromCheckpoint, Step
 from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
-from tests.ui_tests.app.page.common.status.page import NEGATIVE_COLOR, SUCCESS_COLOR, StatusRowInfo
+from tests.ui_tests.app.page.common.status.page import (
+    NEGATIVE_COLOR,
+    SUCCESS_COLOR,
+    StatusRowInfo,
+)
 from tests.ui_tests.app.page.host.locators import HostLocators
-from tests.ui_tests.app.page.host.page import HostConfigPage, HostMainPage, HostStatusPage
+from tests.ui_tests.app.page.host.page import (
+    HostConfigPage,
+    HostMainPage,
+    HostStatusPage,
+)
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 from tests.ui_tests.app.page.host_list.page import HostListPage
 from tests.ui_tests.utils import expect_rows_amount_change, wait_and_assert_ui_info

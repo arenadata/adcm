@@ -15,25 +15,27 @@
 # pylint: disable=redefined-outer-name
 import allure
 import pytest
-
 from adcm_client.objects import Cluster, Provider
 from adcm_pytest_plugin.steps.actions import (
-    run_host_action_and_assert_result,
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
     run_component_action_and_assert_result,
+    run_host_action_and_assert_result,
+    run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import get_data_dir
-from tests.functional.tools import action_in_object_is_absent, action_in_object_is_present
 from tests.functional.test_actions import (
-    FIRST_SERVICE,
-    SECOND_SERVICE,
     FIRST_COMPONENT,
+    FIRST_SERVICE,
     SECOND_COMPONENT,
-    SWITCH_SERVICE_STATE,
+    SECOND_SERVICE,
     SWITCH_CLUSTER_STATE,
-    SWITCH_HOST_STATE,
     SWITCH_COMPONENT_STATE,
+    SWITCH_HOST_STATE,
+    SWITCH_SERVICE_STATE,
+)
+from tests.functional.tools import (
+    action_in_object_is_absent,
+    action_in_object_is_present,
 )
 
 ACTION_ON_HOST = "action_on_host"

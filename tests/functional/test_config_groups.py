@@ -14,41 +14,36 @@
 """Tests for config groups"""
 import json
 from collections import OrderedDict
-from typing import (
-    Union,
-    Tuple,
-    Type,
-)
+from typing import Tuple, Type, Union
 
 import allure
 import pytest
 from adcm_client.objects import (
     ADCMClient,
     Cluster,
-    Provider,
-    HostList,
-    Service,
-    Host,
-    GroupConfig,
     Component,
+    GroupConfig,
+    Host,
+    HostList,
+    Provider,
+    Service,
 )
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
     run_component_action_and_assert_result,
     run_provider_action_and_assert_result,
+    run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import get_data_dir
 from coreapi.exceptions import ErrorMessage
 from docker.models.containers import Container
-
 from tests.library.errorcodes import (
+    ATTRIBUTE_ERROR,
+    GROUP_CONFIG_CHANGE_UNSELECTED_FIELD,
     GROUP_CONFIG_HOST_ERROR,
     GROUP_CONFIG_HOST_EXISTS,
-    GROUP_CONFIG_CHANGE_UNSELECTED_FIELD,
     ADCMError,
-    ATTRIBUTE_ERROR,
 )
 
 CLUSTER_BUNDLE_PATH = get_data_dir(__file__, "cluster_simple")

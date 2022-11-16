@@ -28,8 +28,11 @@ from adcm_client.wrappers.api import ADCMApiError
 from adcm_pytest_plugin.docker_utils import ADCM, get_file_from_container
 from adcm_pytest_plugin.steps.commands import clearaudit
 from adcm_pytest_plugin.utils import random_string
-
-from tests.functional.audit.conftest import BUNDLES_DIR, set_logins_date, set_operations_date
+from tests.functional.audit.conftest import (
+    BUNDLES_DIR,
+    set_logins_date,
+    set_operations_date,
+)
 from tests.functional.conftest import only_clean_adcm
 from tests.library.assertions import sets_are_equal
 from tests.library.db import QueryExecutioner

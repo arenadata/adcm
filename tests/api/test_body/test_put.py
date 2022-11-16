@@ -17,17 +17,16 @@ from typing import List
 
 import allure
 import pytest
-
 from tests.api.test_body import _test_patch_put_body_positive
-from tests.api.testdata.generators import (
-    get_positive_data_for_put_body_check,
-    get_negative_data_for_put_body_check,
-    TestDataWithPreparedBody,
-)
 from tests.api.testdata.db_filler import DbFiller
+from tests.api.testdata.generators import (
+    TestDataWithPreparedBody,
+    get_negative_data_for_put_body_check,
+    get_positive_data_for_put_body_check,
+)
 from tests.api.utils.api_objects import ADCMTestApiWrapper
-from tests.api.utils.types import get_fields
 from tests.api.utils.methods import Methods
+from tests.api.utils.types import get_fields
 
 pytestmark = [
     allure.suite("PUT"),

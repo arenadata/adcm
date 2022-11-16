@@ -15,7 +15,6 @@
 import allure
 import pytest
 from adcm_pytest_plugin.params import including_https
-
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.login.page import LoginPage
 

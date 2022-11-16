@@ -22,11 +22,18 @@ from adcm_client.objects import ADCMClient, Group, User
 from adcm_pytest_plugin.docker_utils import ADCM
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from docker.models.containers import Container
-
 from tests.functional.audit.conftest import make_auth_header
 from tests.functional.conftest import only_clean_adcm
-from tests.functional.ldap_auth.utils import get_ldap_user_from_adcm, login_should_fail, login_should_succeed
-from tests.functional.tools import check_user_is_active, check_user_is_deactivated, run_ldap_sync
+from tests.functional.ldap_auth.utils import (
+    get_ldap_user_from_adcm,
+    login_should_fail,
+    login_should_succeed,
+)
+from tests.functional.tools import (
+    check_user_is_active,
+    check_user_is_deactivated,
+    run_ldap_sync,
+)
 from tests.library.ldap_interactions import LDAPEntityManager
 
 # pylint: disable=redefined-outer-name

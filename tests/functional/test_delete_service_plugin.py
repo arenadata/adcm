@@ -12,9 +12,9 @@
 
 """Tests for delete_service plugin"""
 
+import allure
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
-import allure
 
 
 def test_delete_service_plugin(sdk_client_fs: ADCMClient):

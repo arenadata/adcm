@@ -22,7 +22,6 @@ from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_resul
 from adcm_pytest_plugin.utils import get_data_dir
 from docker.models.containers import Container
 
-
 # pylint: disable=redefined-outer-name
 
 OLD_PASSWORD = 'simplePassword'

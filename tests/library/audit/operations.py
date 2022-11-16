@@ -13,7 +13,17 @@
 """Defines basic entities like Operation and NamedOperation to work with audit log scenarios"""
 
 from dataclasses import dataclass, field, fields
-from typing import ClassVar, Collection, Dict, List, Literal, NamedTuple, Optional, Tuple, Union
+from typing import (
+    ClassVar,
+    Collection,
+    Dict,
+    List,
+    Literal,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Union,
+)
 
 from adcm_client.audit import AuditOperation, ObjectType, OperationResult, OperationType
 

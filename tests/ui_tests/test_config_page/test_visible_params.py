@@ -20,7 +20,6 @@ from _pytest.fixtures import FixtureRequest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webelement import WebElement
-
 from tests.ui_tests.app.helpers.configs_generator import (
     TYPES,
     generate_configs,
@@ -28,7 +27,10 @@ from tests.ui_tests.app.helpers.configs_generator import (
     prepare_config,
     prepare_group_config,
 )
-from tests.ui_tests.app.page.cluster.page import ClusterConfigPage, ClusterGroupConfigConfig
+from tests.ui_tests.app.page.cluster.page import (
+    ClusterConfigPage,
+    ClusterGroupConfigConfig,
+)
 from tests.ui_tests.utils import prepare_cluster_and_open_config_page
 
 # pylint: disable=too-many-arguments,too-many-locals,too-many-boolean-expressions, too-many-statements

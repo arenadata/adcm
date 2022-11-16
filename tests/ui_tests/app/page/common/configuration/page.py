@@ -13,24 +13,18 @@
 """Config page PageObjects classes"""
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import (
-    List,
-    Collection,
-    Optional,
-    Union,
-)
+from typing import Collection, List, Optional, Union
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebElement
-
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.common_locators import (
-    ObjectPageMenuLocators,
     CommonLocators,
     ObjectPageLocators,
+    ObjectPageMenuLocators,
 )
 from tests.ui_tests.app.page.common.configuration.fields import ConfigFieldsManipulator
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu

@@ -21,14 +21,26 @@ from typing import Callable, Collection, Dict, List, NamedTuple, Set, Union
 
 import allure
 import pytest
-from adcm_client.objects import ADCM, ADCMClient, Cluster, Component, Host, Provider, Service, Task
+from adcm_client.objects import (
+    ADCM,
+    ADCMClient,
+    Cluster,
+    Component,
+    Host,
+    Provider,
+    Service,
+    Task,
+)
 from adcm_pytest_plugin.docker_utils import ADCM as ADCMTest
 from adcm_pytest_plugin.utils import get_data_dir
 from docker.models.containers import Container
-
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import TEST_CONNECTION_ACTION
-from tests.functional.tools import AnyADCMObject, ClusterRelatedObject, ProviderRelatedObject
+from tests.functional.tools import (
+    AnyADCMObject,
+    ClusterRelatedObject,
+    ProviderRelatedObject,
+)
 from tests.library.assertions import sets_are_equal
 
 # pylint: disable=redefined-outer-name

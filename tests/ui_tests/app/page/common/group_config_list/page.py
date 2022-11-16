@@ -20,10 +20,11 @@ import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webdriver import WebElement
-
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.dialogs.locators import DeleteDialog
-from tests.ui_tests.app.page.common.group_config_list.locators import GroupConfigListLocators
+from tests.ui_tests.app.page.common.group_config_list.locators import (
+    GroupConfigListLocators,
+)
 
 
 @dataclass

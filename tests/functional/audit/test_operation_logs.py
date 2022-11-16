@@ -21,7 +21,6 @@ from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, User
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.utils import random_string
 from docker.models.containers import Container
-
 from tests.functional.audit.conftest import BUNDLES_DIR, ScenarioArg
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles, create_policy

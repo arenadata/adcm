@@ -14,13 +14,13 @@
 
 import json
 import os
-from typing import Tuple, Any
+from typing import Any, Tuple
 
 import allure
 import coreapi
 import pytest
 from adcm_client.base import BaseAPIObject
-from adcm_client.objects import ADCMClient, Cluster, Service, Bundle, Provider
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Provider, Service
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from jsonschema import validate

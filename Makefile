@@ -68,3 +68,9 @@ linters: build_base
 
 npm_check:
 	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:16-alpine ./npm_check.sh
+
+pretty:
+	black license_checker.py python tests
+	autoflake -r -i --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python tests
+	isort license_checker.py python tests
+	python license_checker.py --fix --folders python go

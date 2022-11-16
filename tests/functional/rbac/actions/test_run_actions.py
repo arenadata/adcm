@@ -17,17 +17,24 @@
 import itertools
 import os
 from contextlib import contextmanager
-from typing import Optional, Union, Tuple
+from typing import Optional, Tuple, Union
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient, Cluster, Service, Component, User, Provider
-
+from adcm_client.objects import ADCMClient, Cluster, Component, Provider, Service, User
+from tests.functional.rbac.action_role_utils import (
+    action_business_role,
+    create_action_policy,
+)
 from tests.functional.rbac.actions.conftest import DATA_DIR
+from tests.functional.rbac.conftest import (
+    BusinessRole,
+    as_user_objects,
+    delete_policy,
+    is_allowed,
+    is_denied,
+)
 from tests.functional.tools import AnyADCMObject, get_object_represent
-from tests.functional.rbac.conftest import BusinessRole, delete_policy, is_denied, is_allowed, as_user_objects
-from tests.functional.rbac.action_role_utils import action_business_role, create_action_policy
-
 
 DO_NOTHING_ACTION = 'Do nothing'
 

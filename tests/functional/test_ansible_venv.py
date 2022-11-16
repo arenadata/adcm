@@ -16,13 +16,13 @@
 
 import allure
 import pytest
-from adcm_client.objects import Cluster, ADCMClient, Provider
+from adcm_client.objects import ADCMClient, Cluster, Provider
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
     run_component_action_and_assert_result,
-    run_provider_action_and_assert_result,
     run_host_action_and_assert_result,
+    run_provider_action_and_assert_result,
+    run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import get_data_dir
 

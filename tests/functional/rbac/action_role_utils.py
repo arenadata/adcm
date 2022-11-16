@@ -11,17 +11,36 @@
 # limitations under the License.
 """Checks and utilities for action roles"""
 from operator import itemgetter
-from typing import Iterable, Tuple, Set, List, Iterator, Optional, Union
+from typing import Iterable, Iterator, List, Optional, Set, Tuple, Union
 
 import allure
 from adcm_client.base import ObjectNotFound
-from adcm_client.objects import ADCMClient, Cluster, Prototype, Service, Role, Bundle, Host, Policy
+from adcm_client.objects import (
+    ADCMClient,
+    Bundle,
+    Cluster,
+    Host,
+    Policy,
+    Prototype,
+    Role,
+    Service,
+)
 from adcm_pytest_plugin.utils import catch_failed, random_string
-
 from tests.functional.rbac.checkers import ForbiddenCallChecker
-from tests.functional.rbac.conftest import RbacRoles, extract_role_short_info, RoleShortInfo, RoleType, BusinessRole
+from tests.functional.rbac.conftest import (
+    BusinessRole,
+    RbacRoles,
+    RoleShortInfo,
+    RoleType,
+    extract_role_short_info,
+)
 from tests.functional.tools import AnyADCMObject
-from tests.library.assertions import is_in_collection, is_not_in_collection, is_superset_of, does_not_intersect
+from tests.library.assertions import (
+    does_not_intersect,
+    is_in_collection,
+    is_not_in_collection,
+    is_superset_of,
+)
 from tests.library.consts import HTTPMethod
 
 

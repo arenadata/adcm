@@ -18,13 +18,22 @@ from contextlib import contextmanager
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebElement
-
-from tests.ui_tests.app.page.common.base_page import BaseDetailedPage, BasePageObject, PageFooter, PageHeader
-from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators, ObjectPageMenuLocators
+from tests.ui_tests.app.page.common.base_page import (
+    BaseDetailedPage,
+    BasePageObject,
+    PageFooter,
+    PageHeader,
+)
+from tests.ui_tests.app.page.common.common_locators import (
+    ObjectPageLocators,
+    ObjectPageMenuLocators,
+)
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs.locators import ActionDialog
-from tests.ui_tests.app.page.common.group_config_list.locators import GroupConfigListLocators
+from tests.ui_tests.app.page.common.group_config_list.locators import (
+    GroupConfigListLocators,
+)
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigList
 from tests.ui_tests.app.page.common.import_page.locators import ImportLocators
 from tests.ui_tests.app.page.common.import_page.page import ImportPage
