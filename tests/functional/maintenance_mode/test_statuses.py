@@ -78,7 +78,6 @@ def deployed_component(cluster_with_mm, hosts) -> Tuple[Component, Component, Co
 class TestStatusAggregationWithMM:
     """Test status aggregation with hosts in MM"""
 
-    # pylint: disable-next=too-many-arguments
     def test_turn_mm_after_negative_status(
         self, api_client, status_changer, sdk_client_fs, cluster_with_mm, deployed_component, hosts
     ):
@@ -119,7 +118,6 @@ class TestStatusAggregationWithMM:
 
         self._turn_off_component_not_on_mm_host(sdk_client_fs, status_changer, cluster, host_2, host_3)
 
-    # pylint: disable-next=too-many-arguments
     def test_turn_mm_before_negative_status(
         self, api_client, status_changer, sdk_client_fs, cluster_with_mm, deployed_component, hosts
     ):
@@ -150,7 +148,6 @@ class TestStatusAggregationWithMM:
 
         self._turn_off_component_not_on_mm_host(sdk_client_fs, status_changer, cluster, host_2, host_3)
 
-    # pylint: disable=too-many-arguments
     def test_status_service_mm_changed(
         self, api_client, status_changer, sdk_client_fs, cluster_with_mm, deployed_component, hosts
     ):
@@ -198,7 +195,7 @@ class TestStatusAggregationWithMM:
                 hosts=(),
             )
 
-    # pylint: disable=too-many-arguments,too-many-locals
+    # pylint: disable=too-many-locals
     def test_status_component_mm_changed(
         self, api_client, status_changer, sdk_client_fs, cluster_with_mm, deployed_component, hosts
     ):
@@ -324,7 +321,7 @@ def retrieve_status(client: ADCMClient, cluster: Cluster) -> dict:
     }
 
 
-@allure.step("Check statuses of a cluster's objects")  # pylint: disable-next=too-many-arguments
+@allure.step("Check statuses of a cluster's objects")
 def check_statuses(
     statuses: dict,
     cluster: str = None,

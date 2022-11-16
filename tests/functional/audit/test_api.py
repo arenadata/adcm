@@ -35,7 +35,6 @@ BUNDLES_DIR = Path(__file__).parent / "bundles"
 NOT_EXISTING_USER = "nosuchuser"
 
 
-# pylint: disable-next=too-many-arguments
 def _check_audit_logs(
     endpoint: str,
     operation: Callable,

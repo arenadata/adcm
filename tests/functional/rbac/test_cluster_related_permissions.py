@@ -12,7 +12,7 @@
 
 """Test business permissions related to cluster objects"""
 
-# pylint: disable=too-many-arguments,unused-argument,too-many-locals
+# pylint: disable=too-many-locals
 import itertools
 
 import allure

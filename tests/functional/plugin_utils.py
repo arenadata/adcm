@@ -132,7 +132,10 @@ def generate_cluster_success_params(action_prefix: str, id_template: str) -> Lis
                 from_obj_func,
                 id=id_template.format('service') + f'_from_{from_obj_id}',
             )
-            for from_obj_func, from_obj_id in ((first_service, 'self'), (first_service_first_component, 'component'))
+            for from_obj_func, from_obj_id in (
+                (first_service, 'self'),
+                (first_service_first_component, 'component'),
+            )
         ],
         pytest.param(
             f'{action_prefix}_component',
@@ -205,14 +208,27 @@ def generate_provider_success_params(action_prefix: str, id_template: str) -> Li
     host = (*provider, 'first-first')
 
     return [
-        pytest.param(f'{action_prefix}_provider', provider, provider, id=id_template.format('provider') + '_from_self'),
-        pytest.param(f'{action_prefix}_provider', provider, host, id=id_template.format('provider') + '_from_host'),
+        pytest.param(
+            f'{action_prefix}_provider',
+            provider,
+            provider,
+            id=id_template.format('provider') + '_from_self',
+        ),
+        pytest.param(
+            f'{action_prefix}_provider',
+            provider,
+            host,
+            id=id_template.format('provider') + '_from_host',
+        ),
         pytest.param(f'{action_prefix}_host', host, host, id=id_template.format('host') + '_from_self'),
     ]
 
 
 def get_cluster_related_object(
-    client: ADCMClient, cluster: str = 'first', service: Optional[str] = None, component: Optional[str] = None
+    client: ADCMClient,
+    cluster: str = 'first',
+    service: Optional[str] = None,
+    component: Optional[str] = None,
 ) -> ClusterRelatedObject:
     """
     Get function to get one of ADCM cluster objects:
@@ -446,7 +462,9 @@ class TestImmediateChange:
         return cluster, service, component
 
     def run_immediate_change_test(
-        self, provider_host: Tuple[Provider, Host], cluster_service_component: Tuple[Cluster, Service, Component]
+        self,
+        provider_host: Tuple[Provider, Host],
+        cluster_service_component: Tuple[Cluster, Service, Component],
     ):
         """
         Run the same action (self._action) for cluster, service, component, provider, host

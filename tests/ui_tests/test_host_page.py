@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name,unused-argument,too-many-arguments
+# pylint: disable=redefined-outer-name
 
 """UI tests for /host page"""
 
@@ -124,7 +124,6 @@ def upload_and_create_cluster(cluster_bundle: Bundle) -> Tuple[Bundle, Cluster]:
 
 @pytest.fixture()
 @allure.title("Open /host page")
-# pylint: disable-next=unused-argument
 def page(app_fs: ADCMTest, _login_to_adcm_over_api) -> HostListPage:
     """Open host page"""
     return HostListPage(app_fs.driver, app_fs.adcm.url).open()

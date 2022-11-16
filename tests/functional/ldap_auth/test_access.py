@@ -34,7 +34,11 @@ from tests.functional.rbac.conftest import (
     is_denied,
 )
 
-pytestmark = [only_clean_adcm, pytest.mark.usefixtures('configure_adcm_ldap_ad'), pytest.mark.ldap()]
+pytestmark = [
+    only_clean_adcm,
+    pytest.mark.usefixtures('configure_adcm_ldap_ad'),
+    pytest.mark.ldap(),
+]
 
 
 # pylint: disable=redefined-outer-name
@@ -67,7 +71,7 @@ def test_grant_policy_for_ldap_user(sdk_client_fs, cluster, ldap_user_in_group):
         is_denied(user_cluster, BusinessRoles.EditClusterConfigurations, client=user_client)
 
 
-# pylint: disable-next=unused-variable,too-many-arguments,too-many-locals
+# pylint: disable-next=unused-variable,too-many-locals
 def test_grant_policy_for_ldap_group(sdk_client_fs, cluster, ldap_ad, ldap_basic_ous, ldap_group, ldap_user_in_group):
     """
     Test that granting policy for LDAP group in ADCM works the same way as with regular group.

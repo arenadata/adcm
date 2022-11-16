@@ -159,7 +159,11 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         # Upgrades
         NamedOperation('do-upgrade', 'Upgraded to {name}', (ObjectType.CLUSTER, ObjectType.PROVIDER)),
         NamedOperation('launch-upgrade', '{name} upgrade launched', (ObjectType.CLUSTER, ObjectType.PROVIDER)),
-        NamedOperation('complete-upgrade', '{name} upgrade completed', (ObjectType.CLUSTER, ObjectType.PROVIDER)),
+        NamedOperation(
+            'complete-upgrade',
+            '{name} upgrade completed',
+            (ObjectType.CLUSTER, ObjectType.PROVIDER),
+        ),
     )
 }
 
@@ -305,10 +309,16 @@ class Operation:
 
 
 def convert_to_operations(
-    raw_operations: List[dict], default_username: str, default_result: str, username_id_map: Dict[str, int]
+    raw_operations: List[dict],
+    default_username: str,
+    default_result: str,
+    username_id_map: Dict[str, int],
 ) -> List[Operation]:
     """Convert parsed from file audit operations to Operation objects"""
-    required_users = {default_username, *[op['username'] for op in raw_operations if 'username' in op]}
+    required_users = {
+        default_username,
+        *[op['username'] for op in raw_operations if 'username' in op],
+    }
     _check_all_users_are_presented(required_users, username_id_map)
     operations = []
     for data in raw_operations:

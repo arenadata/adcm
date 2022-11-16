@@ -136,7 +136,6 @@ def parametrize_by_constraint(case_type: Literal['positive', 'negative']):
     return pytest.mark.parametrize(test_arg_names, parameters, ids=ids)
 
 
-# pylint: disable-next=too-many-arguments
 def _test_constraint(
     constraint: str,
     hosts_amounts: List[int],

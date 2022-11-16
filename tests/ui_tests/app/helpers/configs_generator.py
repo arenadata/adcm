@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-branches,too-many-statements,too-many-arguments,too-many-locals
+# pylint: disable=too-many-branches,too-many-statements,too-many-locals
 
 """UI tests for config page"""
 
@@ -25,7 +25,19 @@ from adcm_pytest_plugin.utils import random_string
 pytestmark = [pytest.mark.full()]
 
 
-TYPES = ['string', 'password', 'integer', 'text', 'boolean', 'float', 'list', 'map', 'json', 'file', 'secrettext']
+TYPES = [
+    'string',
+    'password',
+    'integer',
+    'text',
+    'boolean',
+    'float',
+    'list',
+    'map',
+    'json',
+    'file',
+    'secrettext',
+]
 
 CONFIG_FILE = 'config.yaml'
 DEFAULT_VALUE = {
@@ -159,7 +171,11 @@ def prepare_config(config, *, enforce_file: bool = False):
             file.write("test")
     with open(f"{d_name}/{CONFIG_FILE}", 'w', encoding='utf_8') as yaml_file:
         yaml.dump(config[0], yaml_file)
-    allure.attach.file("/".join([d_name, CONFIG_FILE]), attachment_type=allure.attachment_type.YAML, name=CONFIG_FILE)
+    allure.attach.file(
+        "/".join([d_name, CONFIG_FILE]),
+        attachment_type=allure.attachment_type.YAML,
+        name=CONFIG_FILE,
+    )
     return config[0][0], config[1], d_name
 
 
@@ -304,5 +320,9 @@ def prepare_group_config(config, *, enforce_file: bool = False):
             file.write("test")
     with open(f"{d_name}/{CONFIG_FILE}", 'w', encoding='utf_8') as yaml_file:
         yaml.dump(list(config[0]), yaml_file)
-    allure.attach.file("/".join([d_name, CONFIG_FILE]), attachment_type=allure.attachment_type.YAML, name=CONFIG_FILE)
+    allure.attach.file(
+        "/".join([d_name, CONFIG_FILE]),
+        attachment_type=allure.attachment_type.YAML,
+        name=CONFIG_FILE,
+    )
     return config[0][0], config[1], d_name

@@ -19,4 +19,8 @@ from tests.ui_tests.app.helpers.locator import Locator
 class ComponentMainLocators:
     """Component main page elements locators"""
 
-    text = Locator(By.CSS_SELECTOR, "app-service-component-details .mat-card-content", "Component main page text")
+    text = Locator(
+        By.CSS_SELECTOR,
+        "app-service-component-details .mat-card-content",
+        "Component main page text",
+    )

@@ -26,7 +26,7 @@ build: describe buildss buildjs build_base
 
 unittests: build_base
 	docker run -e DJANGO_SETTINGS_MODULE=adcm.settings -i --rm -v $(CURDIR)/data:/adcm/data $(APP_IMAGE):$(APP_TAG) \
-	sh -c "pip install --no-cache -r /adcm/requirements-test.txt && /adcm/python/manage.py test /adcm/python -v 2"
+	sh -c "pip install --no-cache -r /adcm/requirements.txt && /adcm/python/manage.py test /adcm/python -v 2"
 
 pytest:
 	docker pull hub.adsw.io/library/functest:3.10.6.slim.buster-x64
@@ -52,19 +52,6 @@ pytest_release:
 ng_tests:
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64 ./ng_test.sh
-
-linters: build_base
-	docker run -i --rm $(APP_IMAGE):$(APP_TAG) sh -e -c \
-		"pip install -r /adcm/requirements-test.txt && \
-		python /adcm/license_checker.py --folders /adcm/python /adcm/go && \
-		black --check /adcm/python && \
-		autoflake --check -r -i --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py /adcm/python && \
-		isort --check /adcm/python && \
-		pylint --rcfile /adcm/pyproject.toml --recursive y /adcm/python && \
-		pylint --rcfile /adcm/tests/pyproject.toml --recursive y /adcm/tests && \
-		black --check --diff --exclude '\.git|__pycache__|docs/source/conf\.py|old|build|dist' /adcm/tests && \
-		flake8 /adcm/tests/functional --max-line-length=120 && \
-		flake8 /adcm/tests/ui_tests --max-line-length=120"
 
 npm_check:
 	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:16-alpine ./npm_check.sh

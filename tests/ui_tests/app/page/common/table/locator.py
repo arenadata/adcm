@@ -30,7 +30,9 @@ class CommonTable:
 
         block = Locator(By.CSS_SELECTOR, "div[role='menu']", "Action popup block")
         button = TemplateLocator(
-            By.XPATH, "//button[@adcm_test='action_btn' and ./span[text()='{}']]", "Button with action {}"
+            By.XPATH,
+            "//button[@adcm_test='action_btn' and ./span[text()='{}']]",
+            "Button with action {}",
         )
         action_buttons = Locator(By.CSS_SELECTOR, "button[adcm_test='action_btn']", "Button with action")
 

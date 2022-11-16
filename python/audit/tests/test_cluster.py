@@ -111,7 +111,7 @@ class TestCluster(BaseTestCase):
         self.assertEqual(log.user.pk, user.pk)
         self.assertEqual(log.object_changes, {})
 
-    def check_log(  # pylint: disable=too-many-arguments
+    def check_log(
         self,
         log: AuditLog,
         obj: Cluster | Host | HostComponent | ClusterObject | ServiceComponent,

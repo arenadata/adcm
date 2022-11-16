@@ -62,7 +62,6 @@ def check_and_fix_files(fixed: int, skipped: int, fix: bool, root: Path | None =
     for path in root.iterdir():
         lic = None
 
-        # path = root / path
         if path.is_dir():
             if path.name.startswith("__"):
                 continue

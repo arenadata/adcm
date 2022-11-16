@@ -72,7 +72,7 @@ def second_cluster_hosts(second_cluster_objects, hosts) -> tuple[Host, Host, Hos
     return host_1, host_2, host_3
 
 
-def test_changing_mm_via_plugin(  # pylint: disable=too-many-arguments
+def test_changing_mm_via_plugin(
     api_client, sdk_client_fs, first_cluster_objects, second_cluster_objects, first_cluster_hosts, second_cluster_hosts
 ):
     """
@@ -112,7 +112,7 @@ def test_changing_mm_via_plugin(  # pylint: disable=too-many-arguments
     )
 
 
-def test_changing_host_mm_via_plugin(  # pylint: disable=too-many-arguments,too-many-locals
+def test_changing_host_mm_via_plugin(  # pylint: disable=too-many-locals
     api_client, sdk_client_fs, first_cluster_objects, second_cluster_objects, second_cluster_hosts, hosts
 ):
     """

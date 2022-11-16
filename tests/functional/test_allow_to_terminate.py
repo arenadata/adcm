@@ -82,7 +82,13 @@ def test_terminate_action_with_hc_acl(cluster, generic_provider):
 
     with allure.step('Run action with hc_acl and terminate it right away'):
         task = cluster.action(name='with_hc_acl').run(
-            hc=[{'host_id': host.id, 'service_id': component.service_id, 'component_id': component.id}]
+            hc=[
+                {
+                    'host_id': host.id,
+                    'service_id': component.service_id,
+                    'component_id': component.id,
+                }
+            ]
         )
         # action need time to "actually" launch
         wait_until_step_succeeds(

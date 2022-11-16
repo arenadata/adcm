@@ -508,7 +508,7 @@ def re_prepare_job(task: TaskLog, job: JobLog):
     prepare_job(action, sub_action, job.pk, obj, conf, delta, hosts, task.verbose)
 
 
-def prepare_job(  # pylint: disable=too-many-arguments
+def prepare_job(
     action: Action,
     sub_action: SubAction,
     job_id: int,
@@ -661,7 +661,7 @@ def prepare_job_config(
     fd.close()
 
 
-def create_task(  # pylint: disable=too-many-arguments
+def create_task(
     action: Action,
     obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
     conf: dict,

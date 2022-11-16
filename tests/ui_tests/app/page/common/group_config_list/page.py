@@ -67,7 +67,9 @@ class GroupConfigList(BasePageObject):
         self.wait_element_visible(GroupConfigListLocators.CreateGroupPopup.block)
         self.send_text_to_element(GroupConfigListLocators.CreateGroupPopup.name_input, name, clean_input=True)
         self.send_text_to_element(
-            GroupConfigListLocators.CreateGroupPopup.description_input, description, clean_input=True
+            GroupConfigListLocators.CreateGroupPopup.description_input,
+            description,
+            clean_input=True,
         )
         self.find_and_click(GroupConfigListLocators.CreateGroupPopup.create_btn)
         self.wait_element_hide(GroupConfigListLocators.CreateGroupPopup.block)

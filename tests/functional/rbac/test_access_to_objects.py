@@ -306,9 +306,7 @@ class TestAccessForJobsAndLogs:
         raise ValueError('param should be either "user" or "group"')
 
     # pylint: disable-next=too-many-locals
-    def test_access_to_tasks(
-        self, user_or_group: dict, clients, cluster, provider, finished_tasks
-    ):  # pylint: disable=too-many-arguments
+    def test_access_to_tasks(self, user_or_group: dict, clients, cluster, provider, finished_tasks):
         """
         Test that user:
         1. Have no access to task objects that were launched before user got permission to run action
@@ -379,7 +377,7 @@ class TestAccessForJobsAndLogs:
             self.check_access_granted_for_tasks(clients.user, [task])
             self.check_no_access_granted_for_tasks(clients.user, [second_task])
 
-    @pytest.mark.extra_rbac()  # pylint: disable-next=too-many-arguments
+    @pytest.mark.extra_rbac()
     def test_access_to_tasks_on_cluster_host_add_remove(
         self, user_or_group: Callable, cluster: Cluster, provider: Provider, clients: SDKClients
     ):
@@ -404,7 +402,7 @@ class TestAccessForJobsAndLogs:
             cluster.host_delete(host)
             self.check_access_granted_for_tasks(clients.user, [task, second_task])
 
-    @pytest.mark.extra_rbac()  # pylint: disable-next=too-many-arguments
+    @pytest.mark.extra_rbac()
     def test_access_to_tasks_on_hc_map_change(self, user_or_group: dict, cluster, provider, clients):
         """
         Test that access for task objects is correct after HC map is changed

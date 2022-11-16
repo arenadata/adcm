@@ -124,7 +124,7 @@ def prepared_changes(sdk_client_fs, rbac_create_data, new_rbac_objects_info) -> 
 
 
 @pytest.mark.parametrize("parse_with_context", ["update_rbac.yaml"], indirect=True)
-@pytest.mark.parametrize("http_method", ["PATCH", "PUT"])  # pylint: disable-next=too-many-arguments
+@pytest.mark.parametrize("http_method", ["PATCH", "PUT"])
 def test_update_rbac_objects(
     http_method: str,
     rbac_objects,

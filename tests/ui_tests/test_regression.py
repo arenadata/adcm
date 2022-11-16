@@ -61,7 +61,7 @@ class TestMainInfo:
         return provider
 
     @pytest.fixture()
-    def _login_as_custom_user(self, app_fs, user_sdk):  # pylint: disable=unused-argument
+    def _login_as_custom_user(self, app_fs, user_sdk):
         """Login as test user"""
         username, password = TEST_USER_CREDENTIALS
         login_over_api(app_fs, {'username': username, 'password': password})
@@ -70,7 +70,9 @@ class TestMainInfo:
     def _view_import_on_cluster(self, sdk_client_fs, cluster, user):
         """Grant permission to view import on cluster to new user"""
         role = sdk_client_fs.role_create(
-            name='Wrapper role', display_name='Wrapper', child=[{'id': sdk_client_fs.role(name='View imports').id}]
+            name='Wrapper role',
+            display_name='Wrapper',
+            child=[{'id': sdk_client_fs.role(name='View imports').id}],
         )
         sdk_client_fs.policy_create(name='Policy for cluster', role=role, objects=[cluster], user=[user])
 
@@ -99,7 +101,13 @@ class TestMainInfo:
         component = service.component()
         host = provider.host()
 
-        pages = (ClusterMainPage, ServiceMainPage, ComponentMainPage, ProviderMainPage, HostMainPage)
+        pages = (
+            ClusterMainPage,
+            ServiceMainPage,
+            ComponentMainPage,
+            ProviderMainPage,
+            HostMainPage,
+        )
         adcm_objects = (cluster, service, component, provider, host)
 
         with allure.step(
@@ -119,7 +127,11 @@ class TestMainInfo:
                 self._check_main_info_after_config_save(app_fs, page_type, adcm_object)
 
     def _check_detailed_page_main_info(
-        self, app: ADCMTest, page_type: Type[BaseDetailedPage], adcm_object: AnyADCMObject, expected_text: str
+        self,
+        app: ADCMTest,
+        page_type: Type[BaseDetailedPage],
+        adcm_object: AnyADCMObject,
+        expected_text: str,
     ):
         """Check that detailed page contains the expected text from __main_info in description"""
         object_represent = get_object_represent(adcm_object)

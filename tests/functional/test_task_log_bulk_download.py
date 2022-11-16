@@ -69,19 +69,41 @@ ACTION_NAME_MAP: Dict[str, TaskLogInfo] = {
         TaskLogInfo("without_display_name_simple", "withoutdisplaynamesimple", {"withoutdisplaynamesimple"}),
         TaskLogInfo("without_display_name_s.mpl-x", "withoutdisplaynamesmplx", {"withoutdisplaynamesmplx"}),
         TaskLogInfo("with_display_name_simple", "simple-action-display-name", {"simple-action-display-name"}),
-        TaskLogInfo("with_display_name_complex", "very-cool-n4mefor-b3t-actn", {"very-cool-n4mefor-b3t-actn"}),
-        TaskLogInfo("complex", "compl3x-task", {"withoutdisplaynamesimple", "wth-diisplaay-n4m3", "ill-just-fail"}),
+        TaskLogInfo(
+            "with_display_name_complex",
+            "very-cool-n4mefor-b3t-actn",
+            {"very-cool-n4mefor-b3t-actn"},
+        ),
+        TaskLogInfo(
+            "complex",
+            "compl3x-task",
+            {"withoutdisplaynamesimple", "wth-diisplaay-n4m3", "ill-just-fail"},
+        ),
     )
 }
-FS_RUN_DIR_FILES = {"inventory.json", "config.json", "ansible-stderr.txt", "ansible-stdout.txt", "ansible.cfg"}
-FS_RUN_DIR_FILES_PY = {"inventory.json", "config.json", "python-stderr.txt", "python-stdout.txt", "ansible.cfg"}
+FS_RUN_DIR_FILES = {
+    "inventory.json",
+    "config.json",
+    "ansible-stderr.txt",
+    "ansible-stdout.txt",
+    "ansible.cfg",
+}
+FS_RUN_DIR_FILES_PY = {
+    "inventory.json",
+    "config.json",
+    "python-stderr.txt",
+    "python-stdout.txt",
+    "ansible.cfg",
+}
 DB_RUN_DIR_FILES = {"ansible-stderr.txt", "ansible-stdout.txt"}
 
 # !===== Utilities =====!
 
 
 def build_full_archive_name(
-    adcm_object: Union[Cluster, Service, Component, Provider], task: Task, action_name_in_archive_name: str
+    adcm_object: Union[Cluster, Service, Component, Provider],
+    task: Task,
+    action_name_in_archive_name: str,
 ) -> str:
     """Build expected archive name for general object action's task"""
     top_level_object = adcm_object if not isinstance(adcm_object, (Service, Component)) else adcm_object.cluster()
@@ -245,7 +267,7 @@ class TestArchiveNaming:
     """Test task logs archive naming"""
 
     @only_clean_adcm
-    @pytest.mark.usefixtures("_prepare_cluster_and_provider")  # pylint: disable-next=too-many-arguments
+    @pytest.mark.usefixtures("_prepare_cluster_and_provider")
     def test_naming(self, cluster, provider, adcm_fs, sdk_client_fs, tmpdir):
         """Test naming of task's archive and its contents"""
         self._test_archiving_adcm_task(sdk_client_fs.adcm(), tmpdir)
@@ -294,16 +316,31 @@ class TestArchiveNaming:
 
     def _test_archiving_from_db(self, client: ADCMClient, adcm_container: Container, tmpdir: PathLike) -> None:
         remove_task_logs_from_fs(adcm_container)
-        for adcm_object in (client.cluster(), client.service(), client.component(), client.provider()):
+        for adcm_object in (
+            client.cluster(),
+            client.service(),
+            client.component(),
+            client.provider(),
+        ):
             check_archive_naming(
-                adcm_object, _get_task_of(adcm_object, client), DB_RUN_DIR_FILES, build_full_archive_name, tmpdir
+                adcm_object,
+                _get_task_of(adcm_object, client),
+                DB_RUN_DIR_FILES,
+                build_full_archive_name,
+                tmpdir,
             )
         host = client.host()
         check_archive_naming(host, _get_task_of(host, client), DB_RUN_DIR_FILES, build_host_archive_name, tmpdir)
 
     @allure.step("Test tasks without action's prototype")
     def _test_no_prototype(self, client: ADCMClient, tmpdir: PathLike) -> None:
-        objects = client.cluster(), client.service(), client.component(), client.provider(), client.host()
+        objects = (
+            client.cluster(),
+            client.service(),
+            client.component(),
+            client.provider(),
+            client.host(),
+        )
         each_object_tasks: List[Task] = [_get_task_of(adcm_object, client) for adcm_object in objects]
         with allure.step("Delete all bundles"):
             client.host().delete()

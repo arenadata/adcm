@@ -98,7 +98,11 @@ def _check_no_secrets_in_config(cluster: Cluster):
         found_secrets = [secret for secret in SECRETS if secret in text_config]
         if not found_secrets:
             return
-        allure.attach(text_config, name='Config with revealed secrets', attachment_type=allure.attachment_type.JSON)
+        allure.attach(
+            text_config,
+            name='Config with revealed secrets',
+            attachment_type=allure.attachment_type.JSON,
+        )
         raise AssertionError('\n'.join(('Some of secrets were found in config:', *found_secrets)))
 
 

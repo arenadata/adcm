@@ -28,7 +28,9 @@ class CommonConfigMenu:
         By.CSS_SELECTOR, "app-search button[aria-label='Clear']", "Clear search input button"
     )
     description_input = Locator(
-        By.CSS_SELECTOR, "input[data-placeholder='Description configuration']", "Config description input"
+        By.CSS_SELECTOR,
+        "input[data-placeholder='Description configuration']",
+        "Config description input",
     )
     save_btn = Locator(By.XPATH, "//button[.//span[text()='Save']]", "Save configuration button")
     history_btn = Locator(By.XPATH, "//button[.//mat-icon[text()='history']]", "History button")
@@ -48,7 +50,9 @@ class CommonConfigMenu:
     text_row = Locator(By.TAG_NAME, "app-fields-textbox", "Configuration textbox row")
     field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
     info_tooltip_icon = TemplateLocator(
-        By.XPATH, "//div[contains(@adcm_test, '{}')]//mat-icon[@mattooltipclass='info-tooltip']", 'info tooltip "{}"'
+        By.XPATH,
+        "//div[contains(@adcm_test, '{}')]//mat-icon[@mattooltipclass='info-tooltip']",
+        'info tooltip "{}"',
     )
     tooltip_text = Locator(By.CSS_SELECTOR, "mat-tooltip-component div", "Tooltip text")
     loading_text = Locator(By.XPATH, "//span[text()='Loading...']", "Loading text")
@@ -59,7 +63,11 @@ class CommonConfigMenu:
         name = Locator(By.CSS_SELECTOR, "label:not(.mat-checkbox-layout)", "Row name")
         value = Locator(By.CSS_SELECTOR, "input:not([type='checkbox']),textarea", "Row value")
 
-        input = Locator(By.CSS_SELECTOR, '*:not([style="display: none;"])>mat-form-field input,textarea', "Row input")
+        input = Locator(
+            By.CSS_SELECTOR,
+            '*:not([style="display: none;"])>mat-form-field input,textarea',
+            "Row input",
+        )
         password = Locator(
             By.XPATH,
             "(.//app-fields-password/div[not(contains(@style, 'none'))]//input)[1]",
@@ -77,7 +85,9 @@ class CommonConfigMenu:
 
         # complex parameters
         add_item_btn = Locator(
-            By.XPATH, ".//button//mat-icon[text()='add_circle_outline']", "Add item to parameter button"
+            By.XPATH,
+            ".//button//mat-icon[text()='add_circle_outline']",
+            "Add item to parameter button",
         )
         map_item = Locator(By.CSS_SELECTOR, "div.item", "Map parameter item")
         map_input_key = Locator(By.XPATH, ".//input[@formcontrolname='key']", "Map input key input")

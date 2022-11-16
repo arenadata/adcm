@@ -38,11 +38,17 @@ class BundleListLocators:
             description = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(4)", "Bundle description in row")
             delete_btn = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(5) button", "Bundle delete button in row")
             license_btn = Locator(
-                By.CSS_SELECTOR, "button[mattooltip='Accept license agreement']", "Licence warning button in row"
+                By.CSS_SELECTOR,
+                "button[mattooltip='Accept license agreement']",
+                "Licence warning button in row",
             )
 
     class LicensePopup:
         """Bundle List page licence popup elements locators"""
 
-        block = Locator(By.XPATH, "//app-dialog[./h3[contains(text(), 'license')]]", "block with license agreement")
+        block = Locator(
+            By.XPATH,
+            "//app-dialog[./h3[contains(text(), 'license')]]",
+            "block with license agreement",
+        )
         agree_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Yes')]]", "Agree button")

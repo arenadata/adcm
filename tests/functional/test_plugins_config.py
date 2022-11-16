@@ -147,7 +147,9 @@ def test_host_from_provider(two_providers: Tuple[Provider, Provider], sdk_client
 
 
 def test_multijob(
-    two_clusters: Tuple[Cluster, Cluster], two_providers: Tuple[Provider, Provider], sdk_client_fs: ADCMClient
+    two_clusters: Tuple[Cluster, Cluster],
+    two_providers: Tuple[Provider, Provider],
+    sdk_client_fs: ADCMClient,
 ):
     """Check that multijob actions change config or object itself"""
     component = (service := (cluster := two_clusters[0]).service()).component()
@@ -186,18 +188,25 @@ def test_forbidden_actions(sdk_client_fs: ADCMClient):
         first_host, second_host, *_ = provider.host_list()
         with check_config_changed(sdk_client_fs):
             run_host_action_and_assert_result(
-                first_host, 'change_host_from_provider', status='failed', config={'host_id': second_host.id}
+                first_host,
+                'change_host_from_provider',
+                status='failed',
+                config={'host_id': second_host.id},
             )
 
 
 def test_from_host_actions(
-    two_clusters: Tuple[Cluster, Cluster], two_providers: Tuple[Provider, Provider], sdk_client_fs: ADCMClient
+    two_clusters: Tuple[Cluster, Cluster],
+    two_providers: Tuple[Provider, Provider],
+    sdk_client_fs: ADCMClient,
 ):
     """Test that host actions actually change config"""
     name = "first"
     affected_objects = set()
     check_config_changed_local = build_objects_checker(
-        extractor=get_config, changed={**INITIAL_CONFIG, 'int': CHANGED_CONFIG['int']}, field_name='Config'
+        extractor=get_config,
+        changed={**INITIAL_CONFIG, 'int': CHANGED_CONFIG['int']},
+        field_name='Config',
     )
     with allure.step('Bind component to host'):
         component = (service := (cluster := two_clusters[0]).service(name=name)).component(name=name)

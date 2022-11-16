@@ -100,7 +100,10 @@ def check_categories_are_presented(client: ADCMClient, *categories: str):
     roles = tuple(
         map(
             extract_role_short_info,
-            filter(lambda x: ACTION_BUSINESS_ROLE_INFIX in x.name, get_roles_of_type(RoleType.BUSINESS, client)),
+            filter(
+                lambda x: ACTION_BUSINESS_ROLE_INFIX in x.name,
+                get_roles_of_type(RoleType.BUSINESS, client),
+            ),
         )
     )
     for category in categories:
@@ -138,7 +141,9 @@ def check_action_business_roles_have_hidden_roles(client: ADCMClient, bundles: I
             actual_child_names = _get_children_names(role)
             expected_child_names = extraction_function(bundles)
             sets_are_equal(
-                actual_child_names, expected_child_names, "Children of a business action role aren't correct"
+                actual_child_names,
+                expected_child_names,
+                "Children of a business action role aren't correct",
             )
 
 

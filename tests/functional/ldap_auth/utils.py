@@ -55,7 +55,9 @@ def get_ldap_group_from_adcm(client: ADCMClient, name: str) -> Group:
 
 @allure.step('Check users existing in ADCM')
 def check_existing_users(
-    client: ADCMClient, expected_ldap: Collection[str] = (), expected_local: Collection[str] = DEFAULT_LOCAL_USERS
+    client: ADCMClient,
+    expected_ldap: Collection[str] = (),
+    expected_local: Collection[str] = DEFAULT_LOCAL_USERS,
 ):
     """Check that only provided users exists (both ldap and local)"""
     expected_ldap = set(expected_ldap)
@@ -111,7 +113,11 @@ def login_should_fail(operation_name: str, client: ADCMClient, username: str, pa
 def check_users_in_group(group: Group, *users: User):
     """Method to check users in group"""
     error_msg = f'Incorrect user list in group {group.name}'
-    sets_are_equal(actual=get_usernames_in_group(group), expected={u.username for u in users}, message=error_msg)
+    sets_are_equal(
+        actual=get_usernames_in_group(group),
+        expected={u.username for u in users},
+        message=error_msg,
+    )
 
 
 def get_usernames_in_group(group: Group) -> Set:

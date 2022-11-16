@@ -121,9 +121,15 @@ def dicts_are_equal(actual: dict, expected: dict, message: Union[str, Callable] 
     if actual == expected:
         return
 
-    allure.attach(json.dumps(actual, indent=2), name='Actual dictionary', attachment_type=allure.attachment_type.JSON)
     allure.attach(
-        json.dumps(expected, indent=2), name='Expected dictionary', attachment_type=allure.attachment_type.JSON
+        json.dumps(actual, indent=2),
+        name='Actual dictionary',
+        attachment_type=allure.attachment_type.JSON,
+    )
+    allure.attach(
+        json.dumps(expected, indent=2),
+        name='Expected dictionary',
+        attachment_type=allure.attachment_type.JSON,
     )
     message = message if not callable(message) else message(**kwargs)
     if not message:

@@ -135,7 +135,11 @@ def check_cluster_actions_roles_are_created_correctly(
     full_hidden_prefix = f'{hidden_role_prefix}{get_prototype_prefix_for_action_role(cluster_proto)}'
     with allure.step('Check that "hidden" roles are created for each action in cluster'):
         cluster_actions_role_names = get_actions_role_names(full_hidden_prefix, actions)
-        is_superset_of(hidden_role_names, cluster_actions_role_names, 'Not all expected "hidden" roles were found')
+        is_superset_of(
+            hidden_role_names,
+            cluster_actions_role_names,
+            'Not all expected "hidden" roles were found',
+        )
     _, business = check_business_roles_children(client, cluster_proto, actions, cluster_actions_role_names)
 
     with allure.step('Check that business roles are applied correctly to RBAC default roles'):
@@ -175,7 +179,9 @@ def check_service_and_components_roles_are_created_correctly(
         with allure.step('Check that "hidden" roles are created for each action in service'):
             service_actions_role_names = get_actions_role_names(service_full_hidden_prefix, service_actions)
             is_superset_of(
-                hidden_role_names, service_actions_role_names, "Some of required roles weren't created for service"
+                hidden_role_names,
+                service_actions_role_names,
+                "Some of required roles weren't created for service",
             )
 
         _, business = check_business_roles_children(client, service_proto, service_actions, service_actions_role_names)
@@ -208,7 +214,8 @@ def _check_components_roles_are_created_correctly(client, service, hidden_role_n
         component_proto = component.prototype()
         component_actions = component_proto.actions
         component_actions_role_names = get_actions_role_names(
-            f'{prefix_for_component}{get_prototype_prefix_for_action_role(component_proto)}', component_actions
+            f'{prefix_for_component}{get_prototype_prefix_for_action_role(component_proto)}',
+            component_actions,
         )
         is_superset_of(hidden_role_names, component_actions_role_names, 'Not all roles were created')
 
@@ -242,7 +249,9 @@ def check_provider_based_object_action_roles_are_created_correctly(
     _, business = check_business_roles_children(client, prototype, actions, actions_role_names)
 
     check_roles_are_not_added_to_rbac_roles(
-        client, (RbacRoles.ClusterAdministrator, RbacRoles.ServiceAdministrator, RbacRoles.ADCMUser), business
+        client,
+        (RbacRoles.ClusterAdministrator, RbacRoles.ServiceAdministrator, RbacRoles.ADCMUser),
+        business,
     )
 
 

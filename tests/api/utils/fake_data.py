@@ -55,7 +55,6 @@ def gen_string(prop=None):
     return random_string(strlen=randint(min_length, max_length))
 
 
-# pylint: disable=unused-argument
 def gen_bool(prop=None):
     """
     Generate Boolean value

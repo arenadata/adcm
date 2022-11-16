@@ -100,7 +100,7 @@ class TestAction(BaseTestCase):
 
         return cluster, service, component
 
-    def check_obj_updated(  # pylint: disable=too-many-arguments
+    def check_obj_updated(
         self,
         log: AuditLog,
         obj_pk: int,

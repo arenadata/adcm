@@ -55,7 +55,7 @@ class TestPolicy(BaseTestCase):
             prototype=Prototype.objects.create(bundle=bundle, type="provider"),
         )
 
-    def check_log(  # pylint: disable=too-many-arguments
+    def check_log(
         self,
         log: AuditLog,
         obj: Policy | None,

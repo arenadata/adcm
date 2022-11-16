@@ -93,8 +93,8 @@ BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
 DISCLAIMER_TEXT = "Are you really want to click me?"
 
 
-# pylint: disable=redefined-outer-name,unused-argument,too-many-lines,too-many-public-methods
-# pylint: disable=too-many-arguments,too-many-boolean-expressions
+# pylint: disable=redefined-outer-name,too-many-lines,too-many-public-methods
+# pylint: disable=too-many-boolean-expressions
 # pylint: disable=too-many-branches,too-many-nested-blocks,too-many-locals
 
 pytestmark = pytest.mark.usefixtures("_login_to_adcm_over_api")
@@ -356,8 +356,20 @@ class TestClusterListPage:
             ("upgrade_with_config", {"somestring2": "test"}, False, False, False),
             ("upgrade_with_config_and_hc_acl", {"somestring2": "test"}, True, False, False),
             ("upgrade_with_hc_acl_and_disclaimer", None, True, False, DISCLAIMER_TEXT),
-            ("upgrade_with_config_and_disclaimer", {"somestring2": "test"}, False, False, DISCLAIMER_TEXT),
-            ("upgrade_with_config_and_hc_acl_and_disclaimer", {"somestring2": "test"}, True, False, DISCLAIMER_TEXT),
+            (
+                "upgrade_with_config_and_disclaimer",
+                {"somestring2": "test"},
+                False,
+                False,
+                DISCLAIMER_TEXT,
+            ),
+            (
+                "upgrade_with_config_and_hc_acl_and_disclaimer",
+                {"somestring2": "test"},
+                True,
+                False,
+                DISCLAIMER_TEXT,
+            ),
             # next steps are skipped until https://tracker.yandex.ru/ADCM-3001
             # ("upgrade_with_hc_acl", None, True, True, False),
             # ("upgrade_with_config_and_hc_acl", {"somestring2": "test"}, True, True, False),
@@ -828,7 +840,9 @@ class TestClusterComponentsPage:
             check_components_host_info(cluster_components_page.get_row_info(host_row), HOST_NAME, "1")
             component_row = cluster_components_page.get_components_rows()[0]
             check_components_host_info(
-                cluster_components_page.get_row_info(component_row), COMPONENT_NAME, "1" if is_not_required else "1 / 1"
+                cluster_components_page.get_row_info(component_row),
+                COMPONENT_NAME,
+                "1" if is_not_required else "1 / 1",
             )
 
     def test_check_cluster_components_page_restore_components(
@@ -899,7 +913,8 @@ class TestClusterComponentsPage:
         cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_components_page.config.check_hostcomponents_warn_icon_on_left_menu()
         cluster_components_page.toolbar.check_warn_button(
-            tab_name=CLUSTER_NAME, expected_warn_text=['Test cluster has an issue with host-component mapping']
+            tab_name=CLUSTER_NAME,
+            expected_warn_text=['Test cluster has an issue with host-component mapping'],
         )
 
 
@@ -952,7 +967,12 @@ class TestClusterConfigPage:
 
     def test_reset_config_in_row_on_cluster_config_page(self, app_fs, create_community_cluster):
         """Test config reset on cluster/{}/config page"""
-        params = {"row_name": "str_param", "row_value_new": "test", "row_value_old": "123", "config_name": "test_name"}
+        params = {
+            "row_name": "str_param",
+            "row_value_new": "test",
+            "row_value_old": "123",
+            "config_name": "test_name",
+        }
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         config_row = cluster_config_page.config.get_all_config_rows()[0]
         cluster_config_page.config.type_in_field_with_few_inputs(
@@ -1107,7 +1127,9 @@ class TestClusterConfigPage:
         )
         _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.type_in_field_with_few_inputs(
-            row=cluster_config_page.config.get_all_config_rows()[0], values=params["new_value"], clear=True
+            row=cluster_config_page.config.get_all_config_rows()[0],
+            values=params["new_value"],
+            clear=True,
         )
         cluster_config_page.config.save_config()
         cluster_config_page.driver.refresh()
@@ -1363,7 +1385,8 @@ class TestClusterImportPage:
         import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         import_page.config.check_import_warn_icon_on_left_menu()
         import_page.toolbar.check_warn_button(
-            tab_name=CLUSTER_NAME, expected_warn_text=['Test cluster has an issue with required import']
+            tab_name=CLUSTER_NAME,
+            expected_warn_text=['Test cluster has an issue with required import'],
         )
 
 

@@ -161,7 +161,10 @@ class TestReapplyTriggers:
         """Grant RBAC default role to a user"""
         with allure.step(f'Grant role "{role.value}" to user {user.username}'):
             return client.policy_create(
-                name=f'{user.username} is {role.value}', role=client.role(name=role.value), objects=objects, user=[user]
+                name=f'{user.username} is {role.value}',
+                role=client.role(name=role.value),
+                objects=objects,
+                user=[user],
             )
 
     def test_add_remove_user_from_group_and_policy(self, clients, is_denied_to_user, prepare_objects, user):
@@ -404,7 +407,9 @@ def check_role_wo_parametrization(clients, user, cluster_bundle, provider_bundle
     """Check that update of role without parametrization leads to correct permissions update"""
     role_name = "Role without parametrization"
     role = clients.admin.role_create(
-        name=role_name, display_name=role_name, child=_form_children(clients.admin, BusinessRoles.CreateCluster)
+        name=role_name,
+        display_name=role_name,
+        child=_form_children(clients.admin, BusinessRoles.CreateCluster),
     )
     policy = clients.admin.policy_create(name="User policy", role=role, user=[user])
     with new_client_instance(*TEST_USER_CREDENTIALS, clients.user.url) as user_client:
