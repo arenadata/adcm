@@ -274,8 +274,10 @@ config_dict_sub:
     secrettext: config_dict_sub_string
     text: config_dict_sub_string
     file: config_dict_sub_string
+    secretfile: config_dict_sub_string
     list: config_dict_sub_list
     map: config_dict_sub_map
+    secretmap: config_dict_sub_map
     structure: config_dict_sub_structure
     json: config_dict_sub_json
     option: config_dict_sub_option
@@ -385,8 +387,10 @@ config_list_object:
     secrettext: config_list_string
     text: config_list_string
     file: config_list_string
+    secretfile: config_list_string
     list: config_list_list
     map: config_list_map
+    secretmap: config_list_map
     structure: config_list_structure
     variant: config_list_variant
     json: config_list_json
@@ -430,8 +434,10 @@ config_sub_list_object:
     secrettext: config_list_string
     text: config_list_string
     file: config_list_string
+    secretfile: config_list_string
     list: config_list_list
     map: config_list_map
+    secretmap: config_list_map
     structure: config_list_structure
     variant: config_list_variant
     json: config_list_json

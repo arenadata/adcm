@@ -15,7 +15,6 @@ Test designed to check MM state calculation logic for services/components
 """
 
 import allure
-
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
     ANOTHER_SERVICE_NAME,
@@ -26,7 +25,6 @@ from tests.functional.maintenance_mode.conftest import (
     check_mm_is,
     set_maintenance_mode,
 )
-
 
 # pylint: disable=redefined-outer-name
 

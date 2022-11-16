@@ -16,9 +16,13 @@ from typing import Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
-
 from tests.ui_tests.app.helpers.locator import Locator
-from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter, BaseDetailedPage
+from tests.ui_tests.app.page.common.base_page import (
+    BaseDetailedPage,
+    BasePageObject,
+    PageFooter,
+    PageHeader,
+)
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj

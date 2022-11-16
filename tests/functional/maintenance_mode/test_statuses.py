@@ -21,18 +21,17 @@ import allure
 import pytest
 import requests
 from adcm_client.objects import ADCMClient, Cluster, Component
-
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
     ANOTHER_SERVICE_NAME,
     DEFAULT_SERVICE_NAME,
     FIRST_COMPONENT,
+    MM_IS_OFF,
+    MM_IS_ON,
     SECOND_COMPONENT,
     add_hosts_to_cluster,
-    turn_mm_on,
     set_maintenance_mode,
-    MM_IS_ON,
-    MM_IS_OFF,
+    turn_mm_on,
 )
 from tests.library.assertions import dicts_are_equal
 from tests.library.status import ADCMObjectStatusChanger

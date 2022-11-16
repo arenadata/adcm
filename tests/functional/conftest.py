@@ -13,8 +13,11 @@
 """Common fixtures for the functional tests"""
 
 import pytest
-
-from tests.conftest import CLEAN_ADCM_PARAM, DUMMY_DATA_FULL_PARAM, marker_in_node_or_its_parent
+from tests.conftest import (
+    CLEAN_ADCM_PARAM,
+    DUMMY_DATA_FULL_PARAM,
+    marker_in_node_or_its_parent,
+)
 
 only_clean_adcm = pytest.mark.only_clean_adcm
 

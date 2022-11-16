@@ -17,25 +17,36 @@ Test "scripts" section of bundle's "upgrade" section
 import json
 import os
 from pathlib import Path
-from typing import Set, Tuple, Optional, Collection
+from typing import Collection, Optional, Set, Tuple
 
 import allure
 import pytest
 import yaml
-from adcm_client.objects import Cluster, ADCMClient, Bundle, Host, Component, Service
-from adcm_pytest_plugin.docker_utils import get_file_from_container, ADCM
-from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result, wait_for_task_and_assert_result
-from adcm_pytest_plugin.utils import get_data_dir, catch_failed, parametrize_by_data_subdirs, random_string
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Component, Host, Service
+from adcm_pytest_plugin.docker_utils import ADCM, get_file_from_container
+from adcm_pytest_plugin.steps.actions import (
+    run_cluster_action_and_assert_result,
+    wait_for_task_and_assert_result,
+)
+from adcm_pytest_plugin.utils import (
+    catch_failed,
+    get_data_dir,
+    parametrize_by_data_subdirs,
+    random_string,
+)
 from coreapi.exceptions import ErrorMessage
-
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.tools import build_hc_for_hc_acl_action, get_inventory_file
-from tests.library.assertions import sets_are_equal, expect_api_error, expect_no_api_error
+from tests.library.assertions import (
+    expect_api_error,
+    expect_no_api_error,
+    sets_are_equal,
+)
 from tests.library.errorcodes import (
-    INVALID_UPGRADE_DEFINITION,
-    INVALID_OBJECT_DEFINITION,
-    INVALID_ACTION_DEFINITION,
     COMPONENT_CONSTRAINT_ERROR,
+    INVALID_ACTION_DEFINITION,
+    INVALID_OBJECT_DEFINITION,
+    INVALID_UPGRADE_DEFINITION,
 )
 
 # pylint: disable=redefined-outer-name

@@ -14,19 +14,17 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import TypeVar, Union, List
+from typing import List, TypeVar, Union
 
 import allure
 from selenium.common.exceptions import TimeoutException
-
 from selenium.webdriver.remote.webelement import WebElement
-
-from tests.library.conditional_retriever import FromOneOf, DataSource
+from tests.library.conditional_retriever import DataSource, FromOneOf
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
-    PageHeader,
     PageFooter,
+    PageHeader,
 )
 from tests.ui_tests.app.page.common.header_locators import AuthorizedHeaderLocators
 from tests.ui_tests.app.page.common.table.page import CommonTableObj

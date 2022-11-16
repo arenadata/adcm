@@ -16,13 +16,12 @@ import asyncio
 import json
 from datetime import datetime
 from pprint import pformat
-from typing import Any, Collection, NamedTuple, Dict, Optional, Tuple, List
+from typing import Any, Collection, Dict, List, NamedTuple, Optional, Tuple
 
 import allure
 from adcm_pytest_plugin.utils import catch_failed
-from websockets.legacy.client import WebSocketClientProtocol
-
 from tests.library.types import WaitTimeout
+from websockets.legacy.client import WebSocketClientProtocol
 
 WSMessageData = Dict[str, Any]
 MismatchReason = Optional[str]

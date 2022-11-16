@@ -18,9 +18,8 @@ import itertools
 import allure
 import pytest
 import requests
-from adcm_client.objects import Cluster, Host, ADCMClient, ADCM
+from adcm_client.objects import ADCM, ADCMClient, Cluster, Host
 from adcm_pytest_plugin.utils import random_string
-
 from tests.functional.rbac.conftest import RbacRoles
 from tests.library.assertions import sets_are_equal
 from tests.library.utils import lower_class_name

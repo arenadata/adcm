@@ -16,7 +16,18 @@ Retrieve data in more than one way in cases when source is unstable
 """
 import sys
 import traceback
-from typing import NamedTuple, Callable, Collection, Any, Dict, Optional, Type, List, Tuple, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Collection,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+)
 
 import allure
 

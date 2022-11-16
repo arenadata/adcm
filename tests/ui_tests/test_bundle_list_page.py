@@ -21,12 +21,11 @@ from adcm_client.objects import ADCMClient, Bundle
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import catch_failed
 from selenium.common.exceptions import ElementClickInterceptedException
-
 from tests.conftest import DUMMY_CLUSTER_BUNDLE
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.bundle.page import BundlePage
-from tests.ui_tests.app.page.bundle_list.page import BundleListPage, BundleInfo
+from tests.ui_tests.app.page.bundle_list.page import BundleInfo, BundleListPage
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.host_list.page import HostListPage
 

@@ -12,56 +12,43 @@
 
 """UI tests for /service page"""
 import os
-from typing import Tuple
 from collections import OrderedDict
+from typing import Tuple
 
 import allure
 import pytest
 from _pytest.fixtures import SubRequest
-from adcm_client.objects import (
-    ADCMClient,
-    Bundle,
-)
-from adcm_client.objects import (
-    Cluster,
-    Service,
-    Host,
-)
-from adcm_pytest_plugin import params
-from adcm_pytest_plugin import utils
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Service
+from adcm_pytest_plugin import params, utils
 from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
-from tests.ui_tests.app.page.cluster.page import (
-    ClusterServicesPage,
-)
+from tests.ui_tests.app.page.cluster.page import ClusterServicesPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
 from tests.ui_tests.app.page.common.import_page.page import ImportItemInfo
 from tests.ui_tests.app.page.common.status.page import (
-    SUCCESS_COLOR,
     NEGATIVE_COLOR,
+    SUCCESS_COLOR,
+    StatusRowInfo,
 )
-from tests.ui_tests.app.page.common.status.page import StatusRowInfo
 from tests.ui_tests.app.page.service.page import (
     ServiceComponentPage,
-    ServiceStatusPage,
-)
-from tests.ui_tests.app.page.service.page import (
-    ServiceMainPage,
     ServiceConfigPage,
     ServiceGroupConfigPage,
     ServiceImportPage,
+    ServiceMainPage,
+    ServiceStatusPage,
 )
 from tests.ui_tests.test_cluster_list_page import (
-    CLUSTER_NAME,
-    SERVICE_NAME,
-    PROVIDER_NAME,
-    HOST_NAME,
-    COMPONENT_NAME,
-    BUNDLE_REQUIRED_FIELDS,
-    BUNDLE_IMPORT,
     BUNDLE_COMMUNITY,
+    BUNDLE_IMPORT,
+    BUNDLE_REQUIRED_FIELDS,
+    CLUSTER_NAME,
+    COMPONENT_NAME,
+    HOST_NAME,
+    PROVIDER_NAME,
+    SERVICE_NAME,
 )
 
 BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"

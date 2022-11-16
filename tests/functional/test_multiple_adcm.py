@@ -16,20 +16,18 @@ Test cases that include two ADCM instances and their interaction
 
 # pylint: disable=redefined-outer-name
 
-from typing import Set, Iterable, Tuple
+from typing import Iterable, Set, Tuple
 
 import allure
 import pytest
 from adcm_client.base import ObjectNotFound
-from adcm_client.objects import ADCMClient, Provider, Cluster
-from adcm_pytest_plugin.utils import get_data_dir, catch_failed
-from adcm_pytest_plugin.docker_utils import copy_file_to_container, ADCM
+from adcm_client.objects import ADCMClient, Cluster, Provider
+from adcm_pytest_plugin.docker_utils import ADCM, copy_file_to_container
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.steps.commands import dump_cluster, load_cluster
-
-from tests.library.assertions import sets_are_equal, dicts_are_equal
+from adcm_pytest_plugin.utils import catch_failed, get_data_dir
 from tests.functional.tools import AnyADCMObject, get_object_represent
-
+from tests.library.assertions import dicts_are_equal, sets_are_equal
 
 CLUSTER_NAME = 'test cluster to export'
 PROVIDER_NAME = 'test_provider_to_export'

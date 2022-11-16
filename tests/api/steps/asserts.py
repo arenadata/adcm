@@ -12,14 +12,13 @@
 
 """Some asserts with allure steps"""
 import json
-from dataclasses import field, dataclass
+from dataclasses import dataclass, field
 from http import HTTPStatus
 from typing import Dict
 
 import allure
 from requests import Response
-
-from tests.api.utils.tools import NotSet, NotEqual
+from tests.api.utils.tools import NotEqual, NotSet
 
 
 @dataclass

@@ -13,34 +13,30 @@
 """The most basic PageObject classes"""
 
 from contextlib import contextmanager
-from typing import (
-    Optional,
-    List,
-    Union,
-    Callable,
-)
+from typing import Callable, List, Optional, Union
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
-from selenium.common.exceptions import ElementClickInterceptedException
 from selenium.common.exceptions import (
+    ElementClickInterceptedException,
     NoSuchElementException,
     StaleElementReferenceException,
     TimeoutException,
 )
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.remote.webdriver import WebElement
+from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
-
 from tests.ui_tests.app.helpers.locator import Locator
-from tests.ui_tests.app.page.common.common_locators import CommonLocators, ObjectPageLocators
+from tests.ui_tests.app.page.common.common_locators import (
+    CommonLocators,
+    ObjectPageLocators,
+)
 from tests.ui_tests.app.page.common.footer_locators import CommonFooterLocators
 from tests.ui_tests.app.page.common.header_locators import (
-    CommonHeaderLocators,
     AuthorizedHeaderLocators,
+    CommonHeaderLocators,
 )
 from tests.ui_tests.app.page.common.popups.locator import CommonPopupLocators
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators

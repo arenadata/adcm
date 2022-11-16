@@ -13,7 +13,6 @@
 
 import os
 
-
 integers = [
     (0, 0, 0, 'nulls'),
     (-10, 5, 0, 'positive_and_negative'),

@@ -18,10 +18,8 @@ import json
 from typing import Collection, Tuple, Union
 
 import requests
-
-from adcm_client.objects import Host, Component, ADCMClient, Cluster
+from adcm_client.objects import ADCMClient, Cluster, Component, Host
 from adcm_pytest_plugin.docker_utils import ADCM
-
 from tests.library.utils import RequestFailedException, get_json_or_text
 
 POSITIVE_STATUS = 0

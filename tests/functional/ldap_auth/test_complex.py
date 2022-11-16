@@ -19,7 +19,6 @@ import pytest
 from adcm_client.objects import ADCMClient, Group, User
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import random_string
-
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import (
     DEFAULT_LOCAL_USERS,

@@ -22,7 +22,6 @@ from adcm_pytest_plugin import utils
 from coreapi import exceptions
 from jsonschema import validate
 
-
 # pylint: disable=protected-access
 from tests.library import errorcodes
 

@@ -14,7 +14,6 @@
 from dataclasses import dataclass
 
 from selenium.webdriver.remote.webdriver import WebElement
-
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.import_page.locators import ImportLocators
 

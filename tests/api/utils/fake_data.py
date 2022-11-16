@@ -14,12 +14,11 @@
 Dummy data generators
 """
 
-from random import randint, choice
+from random import choice, randint
 
 import allure
 from genson import SchemaBuilder
 from rstr.xeger import Xeger
-
 from tests.api.utils.tools import random_string
 
 

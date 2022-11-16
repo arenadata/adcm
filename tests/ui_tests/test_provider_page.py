@@ -17,23 +17,16 @@ import os
 import allure
 import pytest
 from _pytest.fixtures import SubRequest
-from adcm_client.objects import (
-    ADCMClient,
-    Bundle,
-    Provider,
-)
+from adcm_client.objects import ADCMClient, Bundle, Provider
 from adcm_pytest_plugin import utils
-
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
-from tests.ui_tests.app.page.host.page import (
-    HostMainPage,
-)
+from tests.ui_tests.app.page.host.page import HostMainPage
 from tests.ui_tests.app.page.provider.page import (
-    ProviderMainPage,
     ProviderConfigPage,
     ProviderGroupConfigPage,
+    ProviderMainPage,
 )
 from tests.ui_tests.app.page.provider_list.page import ProviderListPage
 

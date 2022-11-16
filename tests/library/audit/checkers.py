@@ -19,7 +19,6 @@ from typing import Callable, Dict, List, Optional
 import allure
 from adcm_client.audit import AuditOperation
 from adcm_client.objects import ADCMClient
-
 from tests.library.audit.operations import Operation, convert_to_operations
 from tests.library.audit.readers import ParsedAuditLog
 

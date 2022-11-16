@@ -14,22 +14,17 @@
 
 from collections import ChainMap
 from http import HTTPStatus
-from typing import NamedTuple, List, Optional
+from typing import List, NamedTuple, Optional
 
 import allure
 import attr
 import pytest
 from _pytest.mark.structures import ParameterSet
-
-from tests.api.utils.api_objects import Request, ExpectedResponse, ExpectedBody
+from tests.api.utils.api_objects import ExpectedBody, ExpectedResponse, Request
 from tests.api.utils.endpoints import Endpoints
 from tests.api.utils.methods import Methods
 from tests.api.utils.tools import fill_lists_by_longest
-from tests.api.utils.types import (
-    get_fields,
-    BaseType,
-    PreparedFieldValue,
-)
+from tests.api.utils.types import BaseType, PreparedFieldValue, get_fields
 
 
 class MaxRetriesError(Exception):

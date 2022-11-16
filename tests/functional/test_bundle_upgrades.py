@@ -17,8 +17,11 @@ import coreapi
 import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
-
-from tests.library.errorcodes import INVALID_VERSION_DEFINITION, UPGRADE_ERROR, UPGRADE_NOT_FOUND
+from tests.library.errorcodes import (
+    INVALID_VERSION_DEFINITION,
+    UPGRADE_ERROR,
+    UPGRADE_NOT_FOUND,
+)
 
 # pylint: disable=redefined-outer-name
 

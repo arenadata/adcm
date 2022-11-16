@@ -18,21 +18,20 @@ from typing import Tuple
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Bundle
-from adcm_pytest_plugin.utils import random_string, get_data_dir
 from adcm_pytest_plugin.docker_utils import ADCM
-
+from adcm_pytest_plugin.utils import get_data_dir, random_string
+from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.action_role_utils import (
-    get_roles_of_type,
-    get_bundle_prefix_for_role_name,
     check_cluster_actions_roles_are_created_correctly,
-    check_service_and_components_roles_are_created_correctly,
     check_provider_based_object_action_roles_are_created_correctly,
     check_roles_does_not_have_category,
+    check_service_and_components_roles_are_created_correctly,
+    get_bundle_prefix_for_role_name,
+    get_roles_of_type,
 )
+from tests.functional.rbac.conftest import DATA_DIR, RoleType, extract_role_short_info
 from tests.library.utils import previous_adcm_version_tag
 from tests.upgrade_utils import upgrade_adcm_version
-from tests.functional.conftest import only_clean_adcm
-from tests.functional.rbac.conftest import DATA_DIR, RoleType, extract_role_short_info
 
 pytestmark = [only_clean_adcm]
 

@@ -13,12 +13,11 @@
 """Component page PageObjects classes"""
 
 import allure
-
 from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageHeader,
-    PageFooter,
     BaseDetailedPage,
+    BasePageObject,
+    PageFooter,
+    PageHeader,
 )
 from tests.ui_tests.app.page.common.common_locators import (
     ObjectPageLocators,
@@ -26,7 +25,9 @@ from tests.ui_tests.app.page.common.common_locators import (
 )
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
-from tests.ui_tests.app.page.common.group_config_list.locators import GroupConfigListLocators
+from tests.ui_tests.app.page.common.group_config_list.locators import (
+    GroupConfigListLocators,
+)
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigList
 from tests.ui_tests.app.page.common.status.locators import StatusLocators
 from tests.ui_tests.app.page.common.status.page import StatusPage

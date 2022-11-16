@@ -19,7 +19,6 @@ from typing import Iterable
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Host
-
 from tests.functional.maintenance_mode.conftest import MM_IS_OFF, MM_IS_ON
 from tests.functional.rbac.conftest import BusinessRoles as BR
 from tests.functional.rbac.conftest import (

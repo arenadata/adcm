@@ -13,7 +13,7 @@
 """Tests for cluster and provider configs after upgrade"""
 import json
 from collections import OrderedDict
-from typing import Callable, Union, Tuple
+from typing import Callable, Tuple, Union
 
 import allure
 import pytest
@@ -21,7 +21,6 @@ from adcm_client.objects import GroupConfig
 from adcm_pytest_plugin.utils import get_data_dir, ordered_dict_to_dict
 from allure_commons.types import AttachmentType
 from tests.functional.plugin_utils import AnyADCMObject
-
 
 ###############################
 # Tools

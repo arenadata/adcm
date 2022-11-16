@@ -15,13 +15,8 @@
 
 import allure
 import pytest
-from adcm_client.objects import (
-    ADCMClient,
-    Cluster,
-)
-from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
-from adcm_pytest_plugin.utils import random_string
-
+from adcm_client.objects import ADCMClient, Cluster
+from adcm_pytest_plugin.utils import parametrize_by_data_subdirs, random_string
 from tests.ui_tests.app.page.cluster.page import ClusterConfigPage
 
 pytestmark = [pytest.mark.usefixtures("_login_to_adcm_over_api")]

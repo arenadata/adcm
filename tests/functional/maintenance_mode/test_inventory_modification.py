@@ -19,10 +19,17 @@ from typing import Set, Tuple
 
 import allure
 import pytest
-from adcm_client.objects import Action, ADCMClient, Cluster, Component, GroupConfig, Host, Service
+from adcm_client.objects import (
+    Action,
+    ADCMClient,
+    Cluster,
+    Component,
+    GroupConfig,
+    Host,
+    Service,
+)
 from adcm_pytest_plugin.docker_utils import ADCM
 from adcm_pytest_plugin.utils import get_or_add_service
-
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
     BUNDLES_DIR,

@@ -13,20 +13,29 @@
 """Test roles reassignment in various situations"""
 
 from contextlib import contextmanager
-from typing import Dict, List, Generator, Collection, Tuple
+from typing import Collection, Dict, Generator, List, Tuple
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient, Bundle, User, Policy, Host, Cluster, Service, Provider, Role
+from adcm_client.objects import (
+    ADCMClient,
+    Bundle,
+    Cluster,
+    Host,
+    Policy,
+    Provider,
+    Role,
+    Service,
+    User,
+)
 from adcm_pytest_plugin.utils import get_data_dir
-
 from tests.functional.rbac.conftest import (
+    TEST_USER_CREDENTIALS,
     BusinessRoles,
+    RbacRoles,
+    as_user_objects,
     is_allowed,
     is_denied,
-    as_user_objects,
-    TEST_USER_CREDENTIALS,
-    RbacRoles,
 )
 from tests.functional.tools import AnyADCMObject, get_object_represent
 

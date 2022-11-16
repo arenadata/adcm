@@ -23,9 +23,17 @@ import allure
 import pytest
 import requests
 from adcm_client.audit import OperationResult
-from adcm_client.objects import ADCM, ADCMClient, Cluster, Component, GroupConfig, Host, Provider, Service
+from adcm_client.objects import (
+    ADCM,
+    ADCMClient,
+    Cluster,
+    Component,
+    GroupConfig,
+    Host,
+    Provider,
+    Service,
+)
 from adcm_pytest_plugin.utils import random_string
-
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,
@@ -37,7 +45,11 @@ from tests.functional.audit.conftest import (
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles as BR
 from tests.functional.rbac.conftest import create_policy
-from tests.functional.tools import ClusterRelatedObject, ProviderRelatedObject, get_object_represent
+from tests.functional.tools import (
+    ClusterRelatedObject,
+    ProviderRelatedObject,
+    get_object_represent,
+)
 
 # pylint: disable=redefined-outer-name
 

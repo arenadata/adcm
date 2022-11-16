@@ -14,9 +14,9 @@
 # Since this module is beyond QA responsibility we will not fix docstrings here
 # pylint: disable=missing-function-docstring, missing-class-docstring, missing-module-docstring
 
+import logging
 import os
 import sys
-import logging
 from contextlib import contextmanager
 from subprocess import call
 

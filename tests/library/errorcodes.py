@@ -12,7 +12,7 @@
 
 """Tools for ADCM errors handling in tests"""
 
-from typing import List, Iterable
+from typing import Iterable, List
 
 import pytest_check as check
 from adcm_client.wrappers.api import ADCMApiError

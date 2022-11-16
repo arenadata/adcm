@@ -24,7 +24,6 @@ import websocket
 # pylint: disable=redefined-outer-name
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
-
 from tests.functional.conftest import only_clean_adcm
 
 DATADIR = utils.get_data_dir(__file__)

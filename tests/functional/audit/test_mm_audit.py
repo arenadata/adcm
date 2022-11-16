@@ -16,10 +16,9 @@ import allure
 import pytest
 import requests
 from adcm_client.objects import ADCMClient, Cluster, Component, Host, Provider, Service
-
 from tests.functional.audit.conftest import (
-    NEW_USER,
     BUNDLES_DIR,
+    NEW_USER,
     check_failed,
     check_succeed,
     make_auth_header,

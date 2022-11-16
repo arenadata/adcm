@@ -17,12 +17,10 @@ import os
 import random
 
 import allure
-
 import pytest
-
-from adcm_client.objects import ADCMClient, Bundle, Provider, Cluster, Host
-from adcm_pytest_plugin.utils import get_data_dir
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider
 from adcm_pytest_plugin import utils
+from adcm_pytest_plugin.utils import get_data_dir
 from jsonschema import validate
 
 # pylint: disable=redefined-outer-name

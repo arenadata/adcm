@@ -18,12 +18,11 @@ from functools import partial
 import allure
 import pytest
 from adcm_client.base import NoSuchEndpointOrAccessIsDenied
-from adcm_client.objects import User, ADCMClient
+from adcm_client.objects import ADCMClient, User
 from adcm_client.wrappers.api import AccessIsDenied
 from adcm_pytest_plugin.utils import catch_failed
-
+from tests.functional.rbac.conftest import BusinessRoles, as_user_objects, is_allowed
 from tests.functional.tools import get_object_represent
-from tests.functional.rbac.conftest import as_user_objects, BusinessRoles, is_allowed
 
 SUPERUSER_CREDENTIALS = {'username': 'supausa', 'password': 'youcantcrackme'}
 

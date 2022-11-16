@@ -16,9 +16,12 @@ from dataclasses import dataclass
 from typing import Literal
 
 import allure
-
 from tests.ui_tests.app.helpers.locator import Locator
-from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter
+from tests.ui_tests.app.page.common.base_page import (
+    BasePageObject,
+    PageFooter,
+    PageHeader,
+)
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar

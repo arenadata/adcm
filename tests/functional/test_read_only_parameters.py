@@ -15,9 +15,7 @@
 import allure
 import coreapi
 import pytest
-
 from adcm_pytest_plugin import utils
-
 from tests.library.errorcodes import CONFIG_VALUE_ERROR
 
 # pylint: disable=too-many-arguments,redefined-outer-name

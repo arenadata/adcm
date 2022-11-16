@@ -14,9 +14,10 @@
 # Since this module is beyond QA responsibility we will not fix docstrings here
 # pylint: disable=missing-function-docstring, missing-class-docstring, missing-module-docstring
 
+import json
 import os
 import sys
-import json
+
 from jinja2 import Template
 
 
