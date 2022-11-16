@@ -60,6 +60,7 @@ from tests.ui_tests.utils import (
     prepare_cluster_and_open_config_page,
     wait_and_assert_ui_info,
     wrap_in_dict,
+    create_few_groups,
 )
 
 RANGE_VALUES = [
@@ -1204,7 +1205,7 @@ class TestClusterGroupConfigPage:
         """Test pagination on cluster/{}/group_config page"""
 
         group_conf_page = ClusterGroupConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        group_conf_page.group_config.create_few_groups(11)
+        create_few_groups(group_conf_page.group_config)
         group_conf_page.table.check_pagination(second_page_item_amount=1)
 
     # pylint: disable=too-many-locals, undefined-loop-variable, too-many-statements

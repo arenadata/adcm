@@ -110,7 +110,7 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
     {
       id: 3, name: 'object_type', display_name: 'Object type', filter_field: 'object_type', filter_type: 'list',
       options: [
-        {id: 1, name: 'adcm', display_name: 'Adcm', value: 'adcm'},
+        {id: 1, name: 'adcm', display_name: 'ADCM', value: 'adcm'},
         {id: 2, name: 'bundle', display_name: 'Bundle', value: 'bundle'},
         {id: 3, name: 'cluster', display_name: 'Cluster', value: 'cluster'},
         {id: 4, name: 'component', display_name: 'Component', value: 'component'},

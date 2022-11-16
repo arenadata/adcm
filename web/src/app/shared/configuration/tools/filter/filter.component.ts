@@ -15,10 +15,10 @@
  * "copy" of the BehaviourSubject with data for the table and pass it to the table. You must pass both the original
  * and the "copy" to the filter component
  */
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { FormControl, FormGroup } from '@angular/forms';
-import { BaseDirective } from "../../../directives";
-import { BehaviorSubject } from "rxjs";
+import {Component, Input, OnDestroy, OnInit} from '@angular/core';
+import {FormControl, FormGroup} from '@angular/forms';
+import {BaseDirective} from "../../../directives";
+import {BehaviorSubject} from "rxjs";
 
 export interface IFilter {
   id: number,
@@ -54,25 +54,33 @@ type FilterType = 'list' | 'input' | 'datepicker';
             <mat-form-field class="filter-field" [ngClass]="{ 'datepicker': filter.filter_type === 'datepicker' }">
               <ng-container [ngSwitch]="filter.filter_type">
                 <ng-container *ngSwitchCase="'list'">
-                  <mat-select  placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}"
-                               (selectionChange)="applyFilters()">
+                  <mat-select placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}"
+                              (selectionChange)="applyFilters()">
                     <mat-option *ngFor="let p of filter.options" [value]="p.value">{{ p.display_name }}</mat-option>
                   </mat-select>
                 </ng-container>
                 <ng-container *ngSwitchCase="'input'">
-                  <input matInput autofocus placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}" (keyup.enter)="applyFilters()" (change)="applyFilters()">
+                  <input matInput autofocus placeholder="{{ filter.display_name }}"
+                         formControlName="{{ filter.filter_field }}" (keyup.enter)="applyFilters()"
+                         (change)="applyFilters()">
                 </ng-container>
                 <ng-container *ngSwitchCase="'datepicker'">
                   <mat-form-field class="datepicker-form">
                     <mat-label>{{ filter.display_name }}</mat-label>
-                    <mat-date-range-input [formGroup]="datepickerGroup(filter.filter_field)" [rangePicker]="picker">
+                    <mat-date-range-input class="filter-datepicker-range-input"
+                                          [formGroup]="datepickerGroup(filter.filter_field)" [rangePicker]="picker">
                       <input matStartDate formControlName="start">
                       <input matEndDate formControlName="end" (dateChange)="setDate($event)">
                     </mat-date-range-input>
                     <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
                     <mat-date-range-picker #picker></mat-date-range-picker>
-                    <mat-error *ngIf="datepickerGroup(filter.filter_field).controls.start.hasError('matStartDateInvalid')">Invalid start date</mat-error>
-                    <mat-error *ngIf="datepickerGroup(filter.filter_field).controls.end.hasError('matEndDateInvalid')">Invalid end date</mat-error>
+                    <mat-error
+                      *ngIf="datepickerGroup(filter.filter_field).controls.start.hasError('matStartDateInvalid')">
+                      Invalid start date
+                    </mat-error>
+                    <mat-error *ngIf="datepickerGroup(filter.filter_field).controls.end.hasError('matEndDateInvalid')">
+                      Invalid end date
+                    </mat-error>
                   </mat-form-field>
                 </ng-container>
               </ng-container>
@@ -173,11 +181,15 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
   applyFilters() {
     const filters = this.filterForm.value;
 
-    Object.keys(filters).forEach((f) => {
+    if (Object.keys(filters).filter((f) => {
       if (filters[f] === '' || filters[f] === undefined) {
         delete filters[f];
-      }
-    });
+        return false;
+      } else return true;
+    }).length === 0) {
+      this.innerData.next(this.backupData);
+      return;
+    }
 
     let data = this.backupData?.results?.filter((item) => {
       for (let key in filters) {
@@ -191,37 +203,34 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
       return true;
     });
 
-    if (this.filters.some((f) => f.filter_type === 'input')) {
+    if (this.filters.some((f) => f.filter_type === 'input' && filters[f.filter_field])) {
       data = data.filter((item) => {
-        for (let key in filters) {
-          if (this.filtersByType[key] === 'input') {
-            if (key.includes('/')) {
-              let nestedKey = key.split('/');
+        return Object.keys(filters).filter((f) => this.filtersByType[f] === 'input').every((i) => {
+          if (i.includes('/')) {
+            let nestedKey = i.split('/');
 
-              if (item[nestedKey[0]][nestedKey[1]] !== undefined &&
-                  item[nestedKey[0]][nestedKey[1]] !== null &&
-                  item[nestedKey[0]][nestedKey[1]].toLowerCase().includes(filters[key].toLowerCase())) {
-                return true;
-              }
-            } else {
-              if (item[key] !== undefined && item[key] !== null && item[key].toLowerCase().includes(filters[key].toLowerCase())) {
-                return true;
-              }
+            if (item[nestedKey[0]][nestedKey[1]] !== undefined &&
+              item[nestedKey[0]][nestedKey[1]] !== null &&
+              item[nestedKey[0]][nestedKey[1]] !== '' &&
+              item[nestedKey[0]][nestedKey[1]].toLowerCase().includes(filters[i].toLowerCase())) {
+              return true;
+            }
+          } else {
+            if (item[i] !== undefined && item[i] !== null && item[i] !== '' && item[i].toLowerCase().includes(filters[i].toLowerCase())) {
+              return true;
             }
           }
-        }
+        })
       })
     }
 
     if (this.filters.some((f) => f.filter_type === 'datepicker' && filters[f.filter_field].end)) {
       data = data.filter((item) => {
-        for (let key in filters) {
-          if (this.filtersByType[key] === 'datepicker') {
-            if (item[key] !== undefined && item[key] !== null && (filters[key].start < new Date(item[key]) && new Date(item[key]) < filters[key].end)) {
-              return true;
-            }
+        return Object.keys(filters).filter((f) => this.filtersByType[f] === 'datepicker').every((i) => {
+          if (item[i] !== undefined && item[i] !== null && (filters[i].start < new Date(item[i]) && new Date(item[i]) < filters[i].end)) {
+            return true;
           }
-        }
+        })
       })
     }
 

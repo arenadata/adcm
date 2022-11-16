@@ -50,6 +50,7 @@ from tests.ui_tests.test_cluster_list_page import (
     PROVIDER_NAME,
     SERVICE_NAME,
 )
+from tests.ui_tests.utils import create_few_groups
 
 BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
 BUNDLE_WITH_REQUIRED_IMPORT = "cluster_required_import"
@@ -535,7 +536,7 @@ class TestServiceGroupConfigPage:
 
         cluster, service = create_cluster_with_service
         group_conf_page = ServiceGroupConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
-        group_conf_page.group_config.create_few_groups(11)
+        create_few_groups(group_conf_page.group_config)
         group_conf_page.table.check_pagination(second_page_item_amount=1)
 
 

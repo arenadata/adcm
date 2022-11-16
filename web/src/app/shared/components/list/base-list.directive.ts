@@ -113,7 +113,7 @@ export class BaseListDirective {
         this.takeUntil(),
         filter((p) => this.checkParam(p))
       )
-      .subscribe((p) => this.routeListener(+p.get('limit') || 10, +p.get('page'), p.get('ordering'), p));
+      .subscribe((p) => this.routeListener(+p.get('limit'), +p.get('page'), p.get('ordering'), p));
   }
 
   init(): void {
