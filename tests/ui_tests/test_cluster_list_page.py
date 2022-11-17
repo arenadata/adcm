@@ -57,10 +57,10 @@ from tests.ui_tests.app.page.service.page import (
 )
 from tests.ui_tests.utils import (
     check_host_value,
+    create_few_groups,
     prepare_cluster_and_open_config_page,
     wait_and_assert_ui_info,
     wrap_in_dict,
-    create_few_groups,
 )
 
 RANGE_VALUES = [
