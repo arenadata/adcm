@@ -26,7 +26,6 @@ from api.stack.views import (
     ProviderPrototypeViewSet,
     ServicePrototypeViewSet,
     UploadBundleView,
-    load_hostmap_view,
     load_servicemap_view,
 )
 
@@ -47,7 +46,6 @@ urlpatterns = [
     path("upload/", UploadBundleView.as_view({"post": "create"}), name="upload-bundle"),
     path("load/", LoadBundleView.as_view({"post": "create"}), name="load-bundle"),
     path("load/servicemap/", load_servicemap_view, name="load-servicemap"),
-    path("load/hostmap/", load_hostmap_view, name="load-hostmap"),
     path(
         "bundle/<int:bundle_pk>/update/",
         BundleViewSet.as_view({"put": "update_bundle"}),

@@ -87,18 +87,6 @@ def version_in(version: str, ver: PrototypeImport) -> bool:
     return True
 
 
-def load_host_map():
-    hosts = [
-        {
-            "id": host_data["id"],
-            "maintenance_mode": not host_data["maintenance_mode"] == MaintenanceMode.OFF,
-        }
-        for host_data in Host.objects.values("id", "maintenance_mode")
-    ]
-
-    return api_request("post", "/object/host/", hosts)
-
-
 def load_service_map():
     comps = {}
     hosts = {}
@@ -146,7 +134,6 @@ def load_service_map():
         "host": hosts,
     }
     api_request("post", "/servicemap/", m)
-    load_host_map()
     load_mm_objects()
 
 
