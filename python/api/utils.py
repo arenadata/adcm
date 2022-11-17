@@ -29,7 +29,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from cm.api import load_host_map
+from cm.api import load_mm_objects
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
 from cm.job import start_task
@@ -79,7 +79,7 @@ def _update_mm_hierarchy_issues(obj: Host | ClusterObject | ServiceComponent) ->
 
     update_hierarchy_issues(obj.cluster)
     update_issue_after_deleting()
-    load_host_map()
+    load_mm_objects()
 
 
 def get_object_for_user(user, perms, klass, **kwargs):

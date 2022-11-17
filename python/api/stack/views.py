@@ -57,7 +57,7 @@ from api.stack.serializers import (
 )
 from api.utils import check_obj
 from audit.utils import audit
-from cm.api import accept_license, get_license, load_host_map, load_service_map
+from cm.api import accept_license, get_license, load_service_map
 from cm.bundle import delete_bundle, load_bundle, update_bundle
 from cm.models import (
     Action,
@@ -76,16 +76,6 @@ def load_servicemap_view(request: Request) -> HttpResponse:
         return HttpResponse(status=HTTP_405_METHOD_NOT_ALLOWED)
 
     load_service_map()
-
-    return HttpResponse(status=HTTP_200_OK)
-
-
-@csrf_exempt
-def load_hostmap_view(request: Request) -> HttpResponse:
-    if request.method != "PUT":
-        return HttpResponse(status=HTTP_405_METHOD_NOT_ALLOWED)
-
-    load_host_map()
 
     return HttpResponse(status=HTTP_200_OK)
 

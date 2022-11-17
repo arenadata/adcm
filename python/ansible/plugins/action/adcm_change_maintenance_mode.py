@@ -48,13 +48,14 @@ EXAMPLES = r"""
 import sys
 
 from ansible.errors import AnsibleActionFail
+
 from ansible.plugins.action import ActionBase
 
 sys.path.append("/adcm/python")
 
 import adcm.init_django  # pylint: disable=unused-import
 from cm.ansible_plugin import get_object_id_from_context
-from cm.api import load_host_map
+from cm.api import load_mm_objects
 from cm.issue import update_hierarchy_issues
 from cm.models import ClusterObject, Host, ServiceComponent
 
@@ -108,6 +109,6 @@ class ActionModule(ActionBase):
         obj.maintenance_mode = obj_value
         obj.save()
         update_hierarchy_issues(obj.cluster)
-        load_host_map()
+        load_mm_objects()
 
         return {"failed": False, "changed": True}

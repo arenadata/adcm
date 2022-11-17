@@ -172,14 +172,6 @@ class TestBundle(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-    def test_load_hostmap(self):
-        with patch("api.stack.views.load_host_map"):
-            response: Response = self.client.put(
-                path=reverse("load-hostmap"),
-            )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-
     def test_list(self):
         response: Response = self.client.get(path=reverse("bundle-list"))
 
