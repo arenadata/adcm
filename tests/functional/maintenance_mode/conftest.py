@@ -25,6 +25,7 @@ import pytest
 from adcm_client.objects import ADCMClient, Cluster, Component, Host, Provider, Service
 from tests.functional.tools import AnyADCMObject, get_object_represent
 from tests.library.api.client import APIClient
+from tests.library.assertions import sets_are_equal
 from tests.library.utils import get_hosts_fqdn_representation
 
 BUNDLES_DIR = Path(os.path.dirname(__file__)) / 'bundles'
@@ -210,3 +211,36 @@ def get_disabled_actions_names(adcm_object: AnyADCMObject) -> Set[str]:
         for action in adcm_object.action_list()
         if action.start_impossible_reason in START_IMPOSSIBLE_REASONS
     }
+
+
+def check_concerns_on_object(adcm_object: AnyADCMObject, expected_concerns: set[str]) -> None:
+    """Check concerns on object"""
+    with allure.step(f"Check concerns on object {adcm_object}"):
+        adcm_object.reread()
+        actual_concerns = {concern.reason["placeholder"]["source"]["name"] for concern in adcm_object.concerns()}
+        sets_are_equal(
+            actual_concerns,
+            expected_concerns,
+            "Actual concerns must be equal with expected concerns"
+            f" on: {get_object_represent(adcm_object)}\n"
+            f"Actual concerns: {actual_concerns}\n"
+            f"Expected concerns: {expected_concerns}",
+        )
+
+
+def check_no_concerns_on_objects(*adcm_object):
+    """Method to check concerns on adcm_object is absent"""
+    for obj in adcm_object:
+        obj.reread()
+    report = [
+        (
+            f"{get_object_represent(obj)} have concern:\n"
+            f"{[issue.name for issue in obj.concerns()]}\n"
+            "while concern is not expected"
+        )
+        for obj in adcm_object
+        if len(obj.concerns()) != 0
+    ]
+    if not report:
+        return
+    raise AssertionError(f"{', '.join(obj for obj in report)}")
