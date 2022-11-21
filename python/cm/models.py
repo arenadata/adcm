@@ -223,6 +223,8 @@ MONITORING_TYPE = (
 )
 
 NO_LDAP_SETTINGS = "The Action is not available. You need to fill in the LDAP integration settings."
+SERVICE_IN_MM = "The Action is not available. Service in 'Maintenance mode'"
+COMPONENT_IN_MM = "The Action is not available. Component in 'Maintenance mode'"
 HOST_IN_MM = "The Action is not available. Host in 'Maintenance mode'"
 MANY_HOSTS_IN_MM = "The Action is not available. One or more hosts in 'Maintenance mode'"
 
@@ -1275,6 +1277,8 @@ class Action(AbstractAction):
         return state_allowed and multi_state_allowed
 
     def get_start_impossible_reason(self, obj: ADCMEntity) -> None:
+        # pylint: disable=too-many-branches
+
         start_impossible_reason = None
         if obj.prototype.type == "adcm":
             current_configlog = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
@@ -1288,31 +1292,33 @@ class Action(AbstractAction):
             ):
                 start_impossible_reason = MANY_HOSTS_IN_MM
         elif obj.prototype.type == "service":
-            if (
-                not self.allow_in_maintenance_mode
-                and HostComponent.objects.filter(
+            if not self.allow_in_maintenance_mode:
+                if obj.maintenance_mode == MaintenanceMode.ON:
+                    start_impossible_reason = SERVICE_IN_MM
+
+                if HostComponent.objects.filter(
                     service=obj, cluster=obj.cluster, host__maintenance_mode=MaintenanceMode.ON
-                ).exists()
-            ):
-                start_impossible_reason = MANY_HOSTS_IN_MM
+                ).exists():
+                    start_impossible_reason = MANY_HOSTS_IN_MM
         elif obj.prototype.type == "component":
-            if (
-                not self.allow_in_maintenance_mode
-                and HostComponent.objects.filter(
+            if not self.allow_in_maintenance_mode:
+                if obj.maintenance_mode == MaintenanceMode.ON:
+                    start_impossible_reason = COMPONENT_IN_MM
+
+                if HostComponent.objects.filter(
                     component=obj,
                     cluster=obj.cluster,
                     service=obj.service,
                     host__maintenance_mode=MaintenanceMode.ON,
-                ).exists()
-            ):
-                start_impossible_reason = MANY_HOSTS_IN_MM
+                ).exists():
+                    start_impossible_reason = MANY_HOSTS_IN_MM
         elif obj.prototype.type == "host":
-            if not self.allow_in_maintenance_mode and obj.maintenance_mode == MaintenanceMode.ON:
-                start_impossible_reason = HOST_IN_MM
-            else:
+            if not self.allow_in_maintenance_mode:
+                if obj.maintenance_mode == MaintenanceMode.ON:
+                    start_impossible_reason = HOST_IN_MM
+
                 if (
                     self.host_action
-                    and not self.allow_in_maintenance_mode
                     and HostComponent.objects.filter(
                         component_id__in=HostComponent.objects.filter(host=obj).values_list("component_id"),
                         host__maintenance_mode=MaintenanceMode.ON,
