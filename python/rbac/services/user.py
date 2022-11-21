@@ -14,13 +14,12 @@
 
 from typing import List
 
-from adwp_base.errors import AdwpEx
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
-from rest_framework import status
 from rest_framework.authtoken.models import Token
 
+from cm.errors import raise_adcm_ex
 from rbac import models
 from rbac.utils import Empty, set_not_empty_attr
 
@@ -32,7 +31,7 @@ def _set_password(user: models.User, value: str) -> None:
         return
 
     if not value:
-        raise AdwpEx("USER_UPDATE_ERROR", msg="Password could not be empty")
+        raise_adcm_ex("USER_UPDATE_ERROR", msg="Password could not be empty")
 
     new_password = make_password(value)
     if user.password == new_password:
@@ -54,11 +53,11 @@ def _update_groups(user: models.User, groups: [Empty, List[dict]]) -> None:
             continue
         try:
             group = models.Group.objects.get(id=group_id)
-        except ObjectDoesNotExist as exc:
+        except ObjectDoesNotExist:
             msg = f"Group with ID {group_id} was not found"
-            raise AdwpEx("USER_UPDATE_ERROR", msg=msg, http_code=status.HTTP_400_BAD_REQUEST) from exc
+            raise_adcm_ex("USER_UPDATE_ERROR", msg=msg)
         if group.type == models.OriginType.LDAP:
-            raise AdwpEx("USER_UPDATE_ERROR", msg="You cannot add user to LDAP group")
+            raise_adcm_ex("USER_CONFLICT", msg="You cannot add user to LDAP group")
         user.groups.add(group)
         user_groups[group_id] = group
 
@@ -66,7 +65,7 @@ def _update_groups(user: models.User, groups: [Empty, List[dict]]) -> None:
         if group_id in new_groups:
             continue
         if group.type == models.OriginType.LDAP:
-            raise AdwpEx("USER_UPDATE_ERROR", msg="You cannot remove user from original LDAP group")
+            raise_adcm_ex("USER_CONFLICT", msg="You cannot remove user from original LDAP group")
         user.groups.remove(group)
 
 
@@ -96,17 +95,17 @@ def update(
     # pylint: disable=too-many-locals
     """Full or partial User update"""
     if (username is not Empty) and (username != user.username):
-        raise AdwpEx("USER_UPDATE_ERROR", msg="Username could not be changed")
+        raise_adcm_ex("USER_CONFLICT", msg="Username could not be changed")
 
     args = (username, first_name, last_name, email, is_superuser, is_active)
     if not partial and not all((arg is not Empty for arg in args)):
-        raise AdwpEx("USER_UPDATE_ERROR", msg="Full User update with partial argset is forbidden")
+        raise_adcm_ex("USER_UPDATE_ERROR", msg="Full User update with partial argset is forbidden")
 
     user_exist = models.User.objects.filter(email=email).exists()
     if user_exist and (email != ""):
         email_user = models.User.objects.get(email=email)
         if email_user != user:
-            raise AdwpEx("USER_UPDATE_ERROR", msg="User with the same email already exist")
+            raise_adcm_ex("USER_CONFLICT", msg="User with the same email already exist")
     names = {
         "username": username,
         "first_name": first_name,
@@ -119,7 +118,7 @@ def update(
     if user.type == models.OriginType.LDAP and any(
         (value is not Empty and getattr(user, key) != value) for key, value in names.items()
     ):
-        raise AdwpEx("USER_UPDATE_ERROR", msg="You cannot change LDAP type user")
+        raise_adcm_ex("USER_CONFLICT", msg="You cannot change LDAP type user")
     set_not_empty_attr(user, partial, "first_name", first_name, "")
     set_not_empty_attr(user, partial, "last_name", last_name, "")
     set_not_empty_attr(user, partial, "email", email, "")
@@ -155,7 +154,7 @@ def create(
 
     user_exist = models.User.objects.filter(email=email).exists()
     if user_exist and (email != ""):
-        raise AdwpEx("USER_CREATE_ERROR", msg="User with the same email already exist")
+        raise_adcm_ex("USER_CREATE_ERROR", msg="User with the same email already exist")
 
     try:
         user = func(
@@ -168,7 +167,7 @@ def create(
             is_active=is_active,
         )
     except IntegrityError as exc:
-        raise AdwpEx("USER_CREATE_ERROR", msg=f"User creation failed with error {exc}") from exc
+        raise_adcm_ex("USER_CREATE_ERROR", msg=f"User creation failed with error {exc}")
     _update_groups(user, groups or [])
     _regenerate_token(user)
     return user

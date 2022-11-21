@@ -14,13 +14,13 @@
 from typing import List
 
 import ruyaml
-from adwp_base.errors import raise_AdwpEx as err
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.utils import timezone
 
 import cm.checker
+from cm.errors import raise_adcm_ex
 from cm.models import (
     Action,
     Bundle,
@@ -61,7 +61,7 @@ def find_role(name: str, roles: list):
     for role in roles:
         if role["name"] == name:
             return role
-    return err("INVALID_ROLE_SPEC", f'child role "{name}" is absent')
+    return raise_adcm_ex("INVALID_ROLE_SPEC", f'child role "{name}" is absent')
 
 
 def check_roles_child(data: dict):
@@ -83,7 +83,7 @@ def get_role_permissions(role: dict, data: dict) -> List[Permission]:
                 ct = ContentType.objects.get(app_label=app["label"], model=model["name"])
             except ContentType.DoesNotExist:
                 msg = 'no model "{}" in application "{}"'
-                err("INVALID_ROLE_SPEC", msg.format(model["name"], app["label"]))
+                raise_adcm_ex("INVALID_ROLE_SPEC", msg.format(model["name"], app["label"]))
             for code in model["codenames"]:
                 codename = f"{code}_{model['name']}"
                 try:
@@ -139,9 +139,9 @@ def get_role_spec(data: str, schema: str) -> dict:
         with open(data, encoding=settings.ENCODING_UTF_8) as fd:
             data = ruyaml.round_trip_load(fd)
     except FileNotFoundError:
-        err("INVALID_ROLE_SPEC", f'Can not open role file "{data}"')
+        raise_adcm_ex("INVALID_ROLE_SPEC", f'Can not open role file "{data}"')
     except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
-        err("INVALID_ROLE_SPEC", f'YAML decode "{data}" error: {e}')
+        raise_adcm_ex("INVALID_ROLE_SPEC", f'YAML decode "{data}" error: {e}')
 
     with open(schema, encoding=settings.ENCODING_UTF_8) as fd:
         rules = ruyaml.round_trip_load(fd)
@@ -155,7 +155,7 @@ def get_role_spec(data: str, schema: str) -> dict:
                 if "Input data for" in ee.message:
                     continue
                 args += f"line {ee.line}: {ee}\n"
-        err("INVALID_ROLE_SPEC", f"line {e.line} error: {e}", args)
+        raise_adcm_ex("INVALID_ROLE_SPEC", f"line {e.line} error: {e}", args)
 
     return data
 

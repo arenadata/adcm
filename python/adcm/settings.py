@@ -92,7 +92,6 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "social_django",
     "guardian",
-    "adwp_events",
     "cm.apps.CmConfig",
     "audit",
 ]
@@ -248,11 +247,6 @@ LOGGING = {
         },
         "django.utils.autoreload": {
             "level": "INFO",
-        },
-        "adwp": {
-            "handlers": ["adwp_file"],
-            "level": "DEBUG",
-            "propagate": True,
         },
         "django_auth_ldap": {
             "handlers": ["file"],
