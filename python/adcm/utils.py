@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.adcm_config import ansible_decrypt
 from cm.models import ADCM, ConfigLog
 
 
@@ -31,7 +32,7 @@ def str_remove_non_alnum(value: str) -> str:
     return result
 
 
-def get_oauth(oauth_key: str) -> tuple[str, str]:
+def get_oauth(oauth_key: str) -> tuple[str | None, str | None]:
     adcm = ADCM.objects.filter().first()
     if not adcm:
         return None, None
@@ -46,9 +47,13 @@ def get_oauth(oauth_key: str) -> tuple[str, str]:
     if "client_id" not in config_log.config[oauth_key] or "secret" not in config_log.config[oauth_key]:
         return None, None
 
+    secret = config_log.config[oauth_key]["secret"]
+    if not secret:
+        return None, None
+
     return (
         config_log.config[oauth_key]["client_id"],
-        config_log.config[oauth_key]["secret"],
+        ansible_decrypt(secret),
     )
 
 

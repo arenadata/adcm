@@ -10,37 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf import settings
 from social_core.backends.google import GoogleOAuth2
-from social_core.backends.oauth import BaseOAuth2
+from social_core.backends.yandex import YandexOAuth2
 
 from adcm.utils import get_google_oauth, get_yandex_oauth
 
 
-class YandexOAuth2(BaseOAuth2):
-    name = "yandex-oauth2"
-    AUTHORIZATION_URL = settings.YANDEX_OAUTH_AUTH_URL
-    ACCESS_TOKEN_URL = settings.YANDEX_OAUTH_TOKEN_URL
-    ACCESS_TOKEN_METHOD = "POST"
-    STATE_PARAMETER = False
-    REDIRECT_STATE = False
-
+class CustomYandexOAuth2(YandexOAuth2):
     def auth_html(self):
         pass  # not necessary
-
-    def get_user_details(self, response: dict) -> dict:
-        return {
-            "username": response.get("login"),
-            "email": response.get("emails")[0],
-            "first_name": response.get("first_name"),
-            "last_name": response.get("last_name"),
-        }
-
-    def user_data(self, access_token: str, *args, **kwargs) -> dict:
-        return self.get_json(
-            url=settings.YANDEX_OAUTH_USER_DATA_URL,
-            headers={"Authorization": f"OAuth {access_token}"},
-        )
 
     def get_key_and_secret(self) -> tuple[str, str]:
         return get_yandex_oauth()
