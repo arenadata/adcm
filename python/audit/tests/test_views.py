@@ -210,20 +210,20 @@ class TestViews(TestBase):
     def test_audit_visibility_regular_user(self):
         self._login_as(self.user_username, self.user_password)
         audit_entities = self._populate_audit_tables(num=3)
-        response = self.client.get(path=reverse('audit:audit-operations-list'), content_type="application/json")
+        response = self.client.get(path=reverse('audit:auditlog-list'), content_type="application/json")
         self._check_response(response, expected_status_code=403, should_fail=True)
 
         response = self.client.get(
-            path=reverse('audit:audit-operations-detail', args=(audit_entities['audit_operations'][0].pk,)),
+            path=reverse('audit:auditlog-detail', args=(audit_entities['audit_operations'][0].pk,)),
             content_type="application/json",
         )
         self._check_response(response, expected_status_code=403, should_fail=True)
 
-        response = self.client.get(path=reverse('audit:audit-logins-list'), content_type="application/json")
+        response = self.client.get(path=reverse('audit:auditsession-list'), content_type="application/json")
         self._check_response(response, expected_status_code=403, should_fail=True)
 
         response = self.client.get(
-            path=reverse('audit:audit-logins-detail', args=(audit_entities['audit_logins'][0].pk,)),
+            path=reverse('audit:auditsession-detail', args=(audit_entities['audit_logins'][0].pk,)),
             content_type="application/json",
         )
         self._check_response(response, expected_status_code=403, should_fail=True)
@@ -232,20 +232,20 @@ class TestViews(TestBase):
         self._login_as(self.superuser_username, self.superuser_password)
         num_entities = 5
         audit_entities = self._populate_audit_tables(num=num_entities)
-        response = self.client.get(path=reverse('audit:audit-operations-list'), content_type="application/json")
+        response = self.client.get(path=reverse('audit:auditlog-list'), content_type="application/json")
         self._check_response(response, template=self.default_auditlog, expected_count=num_entities)
 
         response = self.client.get(
-            path=reverse('audit:audit-operations-detail', args=(audit_entities['audit_operations'][0].pk,)),
+            path=reverse('audit:auditlog-detail', args=(audit_entities['audit_operations'][0].pk,)),
             content_type="application/json",
         )
         self._check_response(response, template=self.default_auditlog, expected_count=num_entities, list_view=False)
 
-        response = self.client.get(path=reverse('audit:audit-logins-list'), content_type="application/json")
+        response = self.client.get(path=reverse('audit:auditsession-list'), content_type="application/json")
         self._check_response(response, template=self.default_auditsession, expected_count=num_entities)
 
         response = self.client.get(
-            path=reverse('audit:audit-logins-detail', args=(audit_entities['audit_logins'][0].pk,)),
+            path=reverse('audit:auditsession-detail', args=(audit_entities['audit_logins'][0].pk,)),
             content_type="application/json",
         )
         self._check_response(
@@ -257,7 +257,7 @@ class TestViews(TestBase):
 
     def test_filters_operations(self):
         self._login_as(self.superuser_username, self.superuser_password)
-        url_operations = reverse('audit:audit-operations-list')
+        url_operations = reverse('audit:auditlog-list')
         date = '2000-01-05'
 
         self._run_single_filter_test(
@@ -323,7 +323,7 @@ class TestViews(TestBase):
 
     def test_filters_logins(self):
         self._login_as(self.superuser_username, self.superuser_password)
-        url_logins = reverse('audit:audit-logins-list')
+        url_logins = reverse('audit:auditsession-list')
         date = '2000-01-05'
 
         self._run_single_filter_test(

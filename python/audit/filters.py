@@ -10,34 +10,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django_filters import rest_framework as drf_filters
+from django_filters.rest_framework import (
+    CharFilter,
+    ChoiceFilter,
+    DateFilter,
+    FilterSet,
+    IsoDateTimeFromToRangeFilter,
+)
 
 from audit.models import AuditLog, AuditObjectType, AuditSession
 
 
-class AuditLogListFilter(drf_filters.FilterSet):
-    object_type = drf_filters.ChoiceFilter(
-        field_name='audit_object__object_type', choices=AuditObjectType.choices, label='Object type'
+class AuditLogListFilter(FilterSet):
+    object_type = ChoiceFilter(
+        field_name="audit_object__object_type", choices=AuditObjectType.choices, label="Object type"
     )
-    object_name = drf_filters.CharFilter(field_name='audit_object__object_name', label='Object name')
-    operation_date = drf_filters.DateFilter(field_name='operation_time', lookup_expr='date', label='Operation date')
-    username = drf_filters.CharFilter(field_name='user__username', label='Username')
+    object_name = CharFilter(field_name="audit_object__object_name", label="Object name")
+    operation_date = DateFilter(field_name="operation_time", lookup_expr="date", label="Operation date")
+    username = CharFilter(field_name="user__username", label="Username")
+    operation_time = IsoDateTimeFromToRangeFilter()
 
     class Meta:
         model = AuditLog
         fields = [
-            'operation_type',
-            'operation_name',
-            'operation_result',
+            "operation_type",
+            "operation_name",
+            "operation_result",
         ]
 
 
-class AuditSessionListFilter(drf_filters.FilterSet):
-    username = drf_filters.CharFilter(field_name='user__username', label='Username')
-    login_date = drf_filters.DateFilter(field_name='login_time', lookup_expr='date', label='Login date')
+class AuditSessionListFilter(FilterSet):
+    username = CharFilter(field_name="user__username", label="Username")
+    login_date = DateFilter(field_name="login_time", lookup_expr="date", label="Login date")
+    login_time = IsoDateTimeFromToRangeFilter()
 
     class Meta:
         model = AuditSession
         fields = [
-            'login_result',
+            "login_result",
         ]

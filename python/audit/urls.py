@@ -17,9 +17,9 @@ from rest_framework.routers import SimpleRouter
 from audit.views import AuditLogViewSet, AuditRoot, AuditSessionViewSet
 
 router = SimpleRouter()
-router.register("operation", AuditLogViewSet, basename="audit-operations")
-router.register("login", AuditSessionViewSet, basename="audit-logins")
+router.register("operation", AuditLogViewSet)
+router.register("login", AuditSessionViewSet)
 urlpatterns = [
-    path(r'', AuditRoot.as_view(), name='root'),
+    path("", AuditRoot.as_view(), name="root"),
     *router.urls,
 ]

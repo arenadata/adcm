@@ -42,7 +42,7 @@ class AuditLogSerializer(HyperlinkedModelSerializer):
             "object_changes",
             "url",
         ]
-        extra_kwargs = {"url": {"view_name": "audit:audit-operations-detail"}}
+        extra_kwargs = {"url": {"view_name": "audit:auditlog-detail"}}
 
 
 class AuditSessionSerializer(HyperlinkedModelSerializer):
@@ -57,5 +57,5 @@ class AuditSessionSerializer(HyperlinkedModelSerializer):
             "url",
         ]
         extra_kwargs = {
-            "url": {"view_name": "audit:audit-logins-detail"},
+            "url": {"view_name": "audit:auditsession-detail"},
         }
