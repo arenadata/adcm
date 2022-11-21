@@ -15,17 +15,16 @@
 import allure
 import pytest
 from adcm_client.objects import Cluster, Provider
-
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
     BUNDLES_DIR,
-    set_maintenance_mode,
-    MM_IS_ON,
     MM_IS_OFF,
+    MM_IS_ON,
     add_hosts_to_cluster,
-    check_no_concerns_on_objects,
-    check_mm_is,
     check_concerns_on_object,
+    check_mm_is,
+    check_no_concerns_on_objects,
+    set_maintenance_mode,
 )
 
 # pylint: disable=redefined-outer-name
