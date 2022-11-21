@@ -15,7 +15,6 @@
 import importlib
 import re
 
-from adwp_base.errors import raise_AdwpEx as err
 from django.contrib.auth.models import Group as AuthGroup
 from django.contrib.auth.models import Permission
 from django.contrib.auth.models import User as AuthUser
@@ -29,27 +28,28 @@ from django.utils import timezone
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from rest_framework.exceptions import ValidationError
 
+from cm.errors import raise_adcm_ex
 from cm.models import Bundle, DummyData, HostComponent, ProductCategory
 
 
 class ObjectType(models.TextChoices):
-    cluster = 'cluster', 'cluster'
-    service = 'service', 'service'
-    component = 'component', 'component'
-    provider = 'provider', 'provider'
-    host = 'host', 'host'
+    cluster = "cluster", "cluster"
+    service = "service", "service"
+    component = "component", "component"
+    provider = "provider", "provider"
+    host = "host", "host"
 
 
 def validate_object_type(value):
     if not isinstance(value, list):
-        raise ValidationError('Not a valid list.')
+        raise ValidationError("Not a valid list.")
     if not all((v in ObjectType.values for v in value)):
-        raise ValidationError('Not a valid object type.')
+        raise ValidationError("Not a valid object type.")
 
 
 class OriginType(models.TextChoices):
-    Local = 'local', 'local'
-    LDAP = 'ldap', 'ldap'
+    Local = "local", "local"
+    LDAP = "ldap", "ldap"
 
 
 class User(AuthUser):
@@ -87,7 +87,7 @@ class Group(AuthGroup):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['display_name', 'type'], name='unique_display_name_type'),
+            models.UniqueConstraint(fields=["display_name", "type"], name="unique_display_name_type"),
         ]
 
     def name_to_display(self):
@@ -100,17 +100,17 @@ BASE_GROUP_NAME_PATTERN = re.compile(rf'(?P<base_name>.*?)(?: \[(?:{"|".join(Ori
 @receiver(pre_save, sender=Group)
 def handle_name_type_display_name(sender, instance, **kwargs):
     match = BASE_GROUP_NAME_PATTERN.match(instance.name)
-    if match and match.group('base_name'):
-        instance.name = f'{match.group("base_name")} [{instance.type}]'
+    if match and match.group("base_name"):
+        instance.name = f"{match.group('base_name')} [{instance.type}]"
         instance.display_name = match.group("base_name")
     else:
-        raise RuntimeError(f'Check regex. Data: `{instance.name}`')
+        raise RuntimeError(f"Check regex. Data: `{instance.name}`")
 
 
 class RoleTypes(models.TextChoices):
-    business = 'business', 'business'
-    role = 'role', 'role'
-    hidden = 'hidden', 'hidden'
+    business = "business", "business"
+    role = "role", "role"
+    hidden = "hidden", "hidden"
 
 
 class Role(models.Model):  # pylint: disable=too-many-instance-attributes
@@ -138,11 +138,11 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['name', 'built_in'], name='unique_name'),
-            models.UniqueConstraint(fields=['display_name', 'built_in'], name='unique_display_name'),
+            models.UniqueConstraint(fields=["name", "built_in"], name="unique_name"),
+            models.UniqueConstraint(fields=["display_name", "built_in"], name="unique_display_name"),
         ]
         indexes = [
-            models.Index(fields=['name', 'display_name']),
+            models.Index(fields=["name", "display_name"]),
         ]
 
     def get_role_obj(self):
@@ -150,12 +150,12 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
         try:
             role_module = importlib.import_module(self.module_name)
         except ModuleNotFoundError:
-            err('ROLE_MODULE_ERROR', f'No module named "{self.module_name}"')
+            raise_adcm_ex("ROLE_MODULE_ERROR", f'No module named "{self.module_name}"')
         try:
             role_class = getattr(role_module, self.class_name)
         except AttributeError:
             msg = f'No class named "{self.class_name}" in module "{self.module_name}"'
-            err('ROLE_CLASS_ERROR', msg)
+            raise_adcm_ex("ROLE_CLASS_ERROR", msg)
 
         return role_class(**self.init_params)  # pylint: disable=E1134
 
@@ -204,10 +204,10 @@ class PolicyObject(models.Model):
 
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
-    object = GenericForeignKey('content_type', 'object_id')
+    object = GenericForeignKey("content_type", "object_id")
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=['content_type', 'object_id'], name='unique_policy_object')]
+        constraints = [models.UniqueConstraint(fields=["content_type", "object_id"], name="unique_policy_object")]
 
 
 class PolicyPermission(models.Model):
@@ -292,11 +292,11 @@ class Policy(models.Model):
 def get_objects_for_policy(obj):
     obj_type_map = {}
     obj_type = obj.prototype.type
-    if obj_type == 'component':
+    if obj_type == "component":
         object_list = [obj, obj.service, obj.cluster]
-    elif obj_type == 'service':
+    elif obj_type == "service":
         object_list = [obj, obj.cluster]
-    elif obj_type == 'host':
+    elif obj_type == "host":
         if obj.cluster:
             object_list = [obj, obj.provider, obj.cluster]
             for hc in HostComponent.objects.filter(cluster=obj.cluster, host=obj):

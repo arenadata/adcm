@@ -12,7 +12,6 @@
 
 import json
 
-from adwp_base.errors import AdwpEx
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.test import Client
@@ -21,6 +20,7 @@ from django.urls import reverse
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from api.utils import PermissionDenied, check_custom_perm
 from cm.api import add_host_to_cluster
+from cm.errors import AdcmEx
 from cm.models import (
     Action,
     ActionType,
@@ -46,16 +46,16 @@ from rbac.upgrade.role import init_roles, prepare_action_roles
 class RoleModelTest(BaseTestCase):
     def test_role_class(self):
         r = Role(module_name="qwe")
-        with self.assertRaises(AdwpEx) as context:
+        with self.assertRaises(AdcmEx) as context:
             r.get_role_obj()
 
-        self.assertEqual(context.exception.error_code, "ROLE_MODULE_ERROR")
+        self.assertEqual(context.exception.code, "ROLE_MODULE_ERROR")
 
         r = Role(module_name="rbac", class_name="qwe")
-        with self.assertRaises(AdwpEx) as context:
+        with self.assertRaises(AdcmEx) as context:
             r.get_role_obj()
 
-        self.assertEqual(context.exception.error_code, "ROLE_CLASS_ERROR")
+        self.assertEqual(context.exception.code, "ROLE_CLASS_ERROR")
 
         r = Role(module_name="rbac.roles", class_name="ModelRole")
         obj = r.get_role_obj()
@@ -122,10 +122,10 @@ class RoleModelTest(BaseTestCase):
             init_params={"app_name": "cm", "model": "qwe"},
         )
         r1.save()
-        with self.assertRaises(AdwpEx) as e:
+        with self.assertRaises(AdcmEx) as e:
             r1.filter()
 
-        self.assertEqual(e.exception.error_code, "ROLE_FILTER_ERROR")
+        self.assertEqual(e.exception.code, "ROLE_FILTER_ERROR")
 
         r2 = Role(
             name="add",
@@ -135,10 +135,10 @@ class RoleModelTest(BaseTestCase):
             init_params={"app_name": "qwe", "model": "qwe"},
         )
         r2.save()
-        with self.assertRaises(AdwpEx) as e:
+        with self.assertRaises(AdcmEx) as e:
             r1.filter()
 
-        self.assertEqual(e.exception.error_code, "ROLE_FILTER_ERROR")
+        self.assertEqual(e.exception.code, "ROLE_FILTER_ERROR")
 
     def test_object_complex_filter(self):
         r = Role(

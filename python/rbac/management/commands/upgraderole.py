@@ -12,9 +12,9 @@
 
 """UpgradeRole command for Django manage.py"""
 
-from adwp_base.errors import AdwpEx
 from django.core.management.base import BaseCommand, CommandError
 
+from cm.errors import AdcmEx
 from rbac.upgrade.role import init_roles
 
 
@@ -33,5 +33,5 @@ class Command(BaseCommand):
         try:
             msg = init_roles()
             self.stdout.write(self.style.SUCCESS(msg))
-        except AdwpEx as e:
-            raise CommandError(e.message) from None
+        except AdcmEx as e:
+            raise CommandError(e.msg) from None

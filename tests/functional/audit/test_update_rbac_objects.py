@@ -143,7 +143,8 @@ def test_update_rbac_objects(
     for obj in rbac_objects:
         new_info = {**new_rbac_objects_info[obj.__class__.__name__.lower()]}
         check_succeed(change_as_admin(rbac_object=obj, data=new_info["correct"]))
-        check_failed(change_as_admin(rbac_object=obj, data=new_info["incorrect"]), exact_code=400)
+        expected_code = 400 if not isinstance(obj, User) else 409
+        check_failed(change_as_admin(rbac_object=obj, data=new_info["incorrect"]), exact_code=expected_code)
         check_failed(change_as_unauthorized(rbac_object=obj, data=new_info["incorrect"]), exact_code=403)
     checker = AuditLogChecker(parse_with_context({**rbac_create_data, "changes": {**prepared_changes}}))
     checker.set_user_map(sdk_client_fs)
