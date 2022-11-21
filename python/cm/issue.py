@@ -63,14 +63,6 @@ def check_config(obj):  # pylint: disable=too-many-branches
     return True
 
 
-def check_object_concern(obj):
-    if obj.concerns.filter(type=ConcernType.Lock).exists():
-        err("LOCK_ERROR", f"object {obj} is locked")
-
-    if obj.concerns.filter(type=ConcernType.Issue).exists():
-        err("ISSUE_INTEGRITY_ERROR", f"object {obj} has issues")
-
-
 def check_required_services(cluster):
     bundle = cluster.prototype.bundle
     for proto in Prototype.objects.filter(bundle=bundle, type="service", required=True):
