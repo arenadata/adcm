@@ -14,7 +14,7 @@
 
 import allure
 import pytest
-from adcm_client.objects import Cluster, Provider
+from adcm_client.objects import ADCMClient, Cluster, Provider
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
     BUNDLES_DIR,
@@ -26,10 +26,13 @@ from tests.functional.maintenance_mode.conftest import (
     check_no_concerns_on_objects,
     set_maintenance_mode,
 )
+from tests.library.api.core import RequestResult
 
 # pylint: disable=redefined-outer-name
 
 pytestmark = [only_clean_adcm]
+DEFAULT_CLUSTER_PARAM = 12
+EXPECTED_ERROR = "LOCK_ERROR"
 
 
 @pytest.fixture()
@@ -266,3 +269,90 @@ def test_mm_concern_upgrade(api_client, sdk_client_fs, hosts):
         for obj in (cluster, first_service, second_component, second_host):
             check_concerns_on_object(obj, {second_component.name})
         check_no_concerns_on_objects(first_component, first_host)
+
+
+def test_mm_concern_action(api_client, sdk_client_fs, cluster_actions, hosts):
+    """
+    Test to check behaviour objects with concerns and actions
+    service and second_component have a concern
+    """
+    first_host, second_host, *_ = hosts
+    cluster = cluster_actions
+    first_service = cluster.service(name="first_service")
+    first_component = first_service.component(name="first_component")
+    second_component = first_service.component(name="second_component")
+
+    add_hosts_to_cluster(cluster, (first_host, second_host))
+    cluster.hostcomponent_set(
+        (first_host, first_component),
+        (second_host, second_component),
+    )
+
+    for obj in (cluster, first_service, second_component, second_host):
+        check_concerns_on_object(adcm_object=obj, expected_concerns={first_service.name, second_component.name})
+    for obj in (first_component, first_host):
+        check_concerns_on_object(adcm_object=obj, expected_concerns={first_service.name})
+
+    with allure.step("Switch component with concern and action to MM 'ON' and check cluster objects"):
+        api_client.component.change_maintenance_mode(second_component.id, MM_IS_ON).check_code(200)
+        _wait_all_tasks_succeed(sdk_client_fs, 1)
+        check_mm_is(MM_IS_ON, second_component)
+        check_mm_is(MM_IS_OFF, first_service, first_component, first_host, second_host)
+
+        check_concerns_on_object(
+            adcm_object=second_component, expected_concerns={first_service.name, second_component.name}
+        )
+        for obj in (cluster, first_service, first_component, first_host, second_host):
+            check_concerns_on_object(adcm_object=obj, expected_concerns={first_service.name})
+
+    with allure.step("Switch service with concern and action to MM 'ON' and check cluster objects"):
+        api_client.service.change_maintenance_mode(first_service.id, MM_IS_ON).check_code(200)
+        _wait_all_tasks_succeed(sdk_client_fs, 2)
+        check_mm_is(MM_IS_ON, first_service, first_component, second_component)
+        check_mm_is(MM_IS_OFF, first_host, second_host)
+
+        check_concerns_on_object(adcm_object=first_service, expected_concerns={first_service.name})
+        check_concerns_on_object(adcm_object=second_component, expected_concerns={second_component.name})
+        check_no_concerns_on_objects(cluster, first_host, second_host)
+
+    with allure.step("Switch seervice and component with concern and action to MM 'OFF'"):
+        api_client.service.change_maintenance_mode(first_service.id, MM_IS_OFF).check_code(200)
+        _wait_all_tasks_succeed(sdk_client_fs, 3)
+        api_client.component.change_maintenance_mode(second_component.id, MM_IS_OFF).check_code(200)
+        _wait_all_tasks_succeed(sdk_client_fs, 4)
+        check_mm_is(MM_IS_OFF, first_service, first_component, second_component, first_host, second_host)
+
+        for obj in (cluster, first_service, second_component, second_host):
+            check_concerns_on_object(adcm_object=obj, expected_concerns={first_service.name, second_component.name})
+        for obj in (first_component, first_host):
+            check_concerns_on_object(adcm_object=obj, expected_concerns={first_service.name})
+
+    with allure.step(f"Fix concern on {first_service.name} and {second_component.name}"):
+        service_config = first_service.config()
+        service_config["some_param_cluster"] = DEFAULT_CLUSTER_PARAM
+        first_service.config_set(service_config)
+        second_component_config = second_component.config()
+        second_component_config["some_param_cluster"] = DEFAULT_CLUSTER_PARAM
+        second_component.config_set(second_component_config)
+
+    with allure.step("Start simple cluster action and switch component to MM 'ON'"):
+        cluster.action(name="cluster_action").run()
+        check_response_error(
+            response=api_client.component.change_maintenance_mode(second_component.id, MM_IS_ON),
+            expected_error=EXPECTED_ERROR,
+        )
+
+
+@allure.step("Check amount of jobs and all tasks finish successfully")
+def _wait_all_tasks_succeed(client: ADCMClient, expected_amount: int):
+    jobs = client.job_list()
+    assert len(jobs) == expected_amount
+    assert all(job.task().wait() == "success" for job in jobs)
+
+
+@allure.step("Check response contain correct error")
+def check_response_error(response: RequestResult, expected_error: str) -> None:
+    """Method to check error message in response"""
+    assert (
+        response.data["code"] == expected_error
+    ), f"Incorrect request data code.\nActual: {response.data['code']}\nExpected: {expected_error}"
