@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 2.2
+  version: 2.3
 
   actions:
     run_ldap_sync:
@@ -52,8 +52,6 @@
     - name: "yandex_oauth"
       display_name: "Yandex Auth"
       type: "group"
-      ui_options:
-        invisible: true
       subs:
         - name: "client_id"
           type: string

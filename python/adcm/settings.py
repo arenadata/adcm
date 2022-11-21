@@ -129,6 +129,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "adcm.wsgi.application"
 LOGIN_URL = "/api/v1/auth/login/"
+LOGIN_REDIRECT_URL = "/admin/intro/"
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
@@ -170,13 +171,9 @@ AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.ModelBackend",
     "guardian.backends.ObjectPermissionBackend",
     "rbac.ldap.CustomLDAPBackend",
-    "adcm.auth_backend.YandexOAuth2",
+    "adcm.auth_backend.CustomYandexOAuth2",
     "adcm.auth_backend.CustomGoogleOAuth2",
 )
-
-YANDEX_OAUTH_AUTH_URL = "https://oauth.yandex.ru/authorize"
-YANDEX_OAUTH_TOKEN_URL = "https://oauth.yandex.ru/token"
-YANDEX_OAUTH_USER_DATA_URL = "https://login.yandex.ru/info?format=json"
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
