@@ -7,13 +7,15 @@ services:
       - ${DATA_DIR}:/adcm/data
     ports:
       - 8000:8000
+    environment:
+      POSTGRES_ADCM_PASS: ${POSTGRES_ADCM_PASS}
 
   db:
     image: postgres
     restart: always
-    environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      PGDATA: ${PGDATA}
-      POSTGRES_ADCM_PASS: ${POSTGRES_ADCM_PASS}
     volumes:
       - ./init-user-db.sh:/docker-entrypoint-initdb.d/init-user-db.sh
+      - ${DB_DIR}:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_ADCM_PASS: ${POSTGRES_ADCM_PASS}

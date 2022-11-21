@@ -103,3 +103,19 @@ sudo rm -rf ./node_modules OR rmdir -force ./node_modules(WIN)
 yarn link "@adwp-ui/widgets"
 yarn install
 ```
+
+## Migrate SQLite -> PostgreSQL, PostgreSQL -> Custom PostgreSQL
+
+1. PostgreSQL DB must be empty during first start
+2. `export POSTGRES_ADCM_PASS=`
+3. `docker-compose up -d`
+4. `docker exec adcm_adcm_1 /adcm/python/manage.py dumpdata > /adcm/data/var/data.json`
+5. `docker-compose down`
+6. `export POSTGRES_ADCM_PASS="SOME_STRONG_SECRET_PASS"`
+7. `docker-compose up -d`
+8. `docker exec adcm_adcm_1 /adcm/python/manage.py loaddata /adcm/data/var/data.json`
+
+## Using custom Postgres DB
+
+1. Environment variables should be exported before `docker-compose up` after data dump:
+   `POSTGRES_ADCM_PASS`, `DB_NAME`, `DB_USER`, `DB_HOST`, `DB_PORT`
