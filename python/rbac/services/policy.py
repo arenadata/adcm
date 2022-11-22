@@ -16,7 +16,6 @@ from typing import List
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
 from django.db.transaction import atomic
-from rest_framework import status
 
 from cm.errors import raise_adcm_ex
 from cm.models import ADCMEntity
