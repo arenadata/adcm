@@ -42,6 +42,7 @@ from tests.functional.tools import (
     ProviderRelatedObject,
 )
 from tests.library.assertions import sets_are_equal
+from tests.library.utils import build_full_archive_name
 
 # pylint: disable=redefined-outer-name
 
@@ -98,26 +99,6 @@ FS_RUN_DIR_FILES_PY = {
 DB_RUN_DIR_FILES = {"ansible-stderr.txt", "ansible-stdout.txt"}
 
 # !===== Utilities =====!
-
-
-def build_full_archive_name(
-    adcm_object: Union[Cluster, Service, Component, Provider],
-    task: Task,
-    action_name_in_archive_name: str,
-) -> str:
-    """Build expected archive name for general object action's task"""
-    top_level_object = adcm_object if not isinstance(adcm_object, (Service, Component)) else adcm_object.cluster()
-    return "_".join(
-        map(
-            lambda p: p.replace(" ", "-").replace("_", "").lower(),
-            (
-                top_level_object.name,
-                adcm_object.prototype().display_name,
-                action_name_in_archive_name,
-                str(task.id),
-            ),
-        )
-    )
 
 
 def build_host_archive_name(host: Host, task: Task, action_name_in_archive_name: str) -> str:

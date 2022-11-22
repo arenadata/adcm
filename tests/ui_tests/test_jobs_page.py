@@ -32,6 +32,7 @@ from adcm_client.objects import (
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.utils import catch_failed
+from tests.library.utils import build_full_archive_name
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.job.page import JobPageStdout
@@ -48,6 +49,7 @@ from tests.ui_tests.utils import (
 LONG_ACTION_DISPLAY_NAME = 'Long action'
 SUCCESS_ACTION_DISPLAY_NAME = 'Success action'
 SUCCESS_ACTION_NAME = 'success_action'
+CHECK_ACTION_NAME = "with_check"
 FAIL_ACTION_DISPLAY_NAME = 'Fail action'
 ON_HOST_ACTION_DISPLAY_NAME = 'Component host action'
 COMPONENT_ACTION_DISPLAY_NAME = 'Component action'
@@ -252,7 +254,7 @@ class TestTaskPage:
             job_page.check_jobs_toolbar(SUCCESS_ACTION_DISPLAY_NAME.upper())
 
     @pytest.mark.usefixtures("_login_to_adcm_over_ui", "_clean_downloads_fs")
-    def test_download_log(self, cluster: Cluster, app_fs: ADCMTest, downloads_directory):  # ...
+    def test_download_log(self, cluster: Cluster, app_fs: ADCMTest, downloads_directory):
         """Download log file from detailed page menu"""
         downloaded_file_template = '{job_id}-ansible-{log_type}.txt'
         action = cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME)
@@ -270,6 +272,18 @@ class TestTaskPage:
             wait_file_is_presented(
                 downloaded_file_template.format(job_id=job_id, log_type='stderr'),
                 app_fs,
+                dirname=downloads_directory,
+            )
+
+    @pytest.mark.usefixtures("_login_to_adcm_over_ui", "_clean_downloads_fs")
+    def test_download_bulk_log(self, cluster: Cluster, app_fs: ADCMTest, downloads_directory):
+        task = run_cluster_action_and_assert_result(cluster, CHECK_ACTION_NAME)
+        jobs_page = JobListPage(driver=app_fs.driver, base_url=app_fs.adcm.url).open()
+        with allure.step("Bulk download logfiles"):
+            jobs_page.click_on_log_download(row=jobs_page.table.get_row(0))
+            wait_file_is_presented(
+                app_fs=app_fs,
+                filename=f"{build_full_archive_name(cluster, task, CHECK_ACTION_NAME.replace('_', '-'))}.tar.gz",
                 dirname=downloads_directory,
             )
 

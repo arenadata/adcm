@@ -166,6 +166,10 @@ class JobListPage(BasePageObject):
         locator = TaskListLocators.Table.Row.action_name
         row.find_element(locator.by, locator.value).click()
 
+    @allure.step("Click on log download button")
+    def click_on_log_download(self, row: WebElement):
+        self.find_child(row, TaskListLocators.Table.Row.download_log).click()
+
     @allure.step('Select the "All" filter tab')
     def select_filter_all_tab(self):
         """Show all tasks"""
