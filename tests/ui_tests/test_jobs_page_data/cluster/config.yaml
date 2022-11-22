@@ -46,13 +46,24 @@
         - &multijob
           name: first_step
           script_type: ansible
-          script: actions.yaml
+          script: ./actions.yaml
           params:
             ansible_tags: success
         - <<: *multijob
           name: second_step
         - <<: *multijob
           name: third_step
+      states:
+        available: any
+    with_check:
+      type: task
+      display_name: "With check"
+      scripts:
+        - <<: *multijob
+        - <<: *multijob
+          name: second_step
+          params:
+            ansible_tags: check
       states:
         available: any
 
