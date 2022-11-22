@@ -18,17 +18,9 @@ from adwp_base.errors import raise_AdwpEx as err
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from django.utils import timezone
 
 import cm.checker
-from cm.models import (
-    Action,
-    Bundle,
-    DummyData,
-    Host,
-    ProductCategory,
-    get_model_by_type,
-)
+from cm.models import Action, Bundle, Host, ProductCategory, get_model_by_type
 from rbac import log
 from rbac.models import Permission, Role, RoleMigration, RoleTypes, re_apply_all_polices
 from rbac.settings import api_settings
@@ -252,7 +244,7 @@ def update_built_in_roles(bundle: Bundle, business_role: Role, parametrized_by_t
 @transaction.atomic
 def prepare_action_roles(bundle: Bundle):
     """Prepares action roles"""
-    DummyData.objects.filter(id=1).update(date=timezone.now())
+
     built_in_roles = {
         "Cluster Administrator": Role.objects.get(name="Cluster Administrator"),
         "Provider Administrator": Role.objects.get(name="Provider Administrator"),

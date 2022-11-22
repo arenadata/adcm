@@ -64,7 +64,6 @@ from cm.models import (
     ClusterObject,
     ConcernType,
     ConfigLog,
-    DummyData,
     Host,
     HostComponent,
     HostProvider,
@@ -157,8 +156,6 @@ def prepare_task(
         attr = {}
 
     with transaction.atomic():  # pylint: disable=too-many-locals
-        DummyData.objects.filter(id=1).update(date=timezone.now())
-
         task = create_task(action, obj, conf, attr, old_hc, hosts, verbose, post_upgrade_hc)
         if host_map or (hasattr(action, "upgrade") and host_map is not None):
             save_hc(cluster, host_map)
@@ -835,7 +832,6 @@ def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
     state, multi_state_set, multi_state_unset = get_state(action, job, status)
 
     with transaction.atomic():
-        DummyData.objects.filter(id=1).update(date=timezone.now())
         if hasattr(action, "upgrade"):
             set_before_upgrade_state(action, obj)
 
