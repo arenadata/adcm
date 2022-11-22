@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import json
 import os
 from contextlib import contextmanager
@@ -25,9 +26,6 @@ from rest_framework.status import HTTP_201_CREATED
 from adcm.tests.base import BaseTestCase
 from cm.adcm_config import ansible_decrypt
 from cm.models import Bundle, Cluster, ConfigLog, Prototype
-
-# Since this module is beyond QA responsibility we will not fix docstrings here
-# pylint: disable=missing-function-docstring, missing-class-docstring
 
 
 class TestBundle(BaseTestCase):
@@ -223,7 +221,7 @@ class TestBundle(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse("config-log-list"),
-            data={"obj_ref": cluster.pk, "config": json.dumps(config_log.config)},
+            data={"obj_ref": cluster.config.pk, "config": json.dumps(config_log.config)},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -244,7 +242,7 @@ class TestBundle(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse("config-log-list"),
-            data={"obj_ref": cluster.pk, "config": json.dumps(config_log.config)},
+            data={"obj_ref": cluster.config.pk, "config": json.dumps(config_log.config)},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)

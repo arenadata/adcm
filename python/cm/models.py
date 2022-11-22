@@ -32,7 +32,6 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
 from django.db.models.signals import m2m_changed, post_delete
 from django.dispatch import receiver
-from django.utils import timezone
 
 from cm.errors import AdcmEx
 from cm.logger import logger
@@ -370,7 +369,6 @@ class ConfigLog(ADCMModel):
                     correct_group_keys[field] = group_keys[field]
             return correct_group_keys
 
-        DummyData.objects.filter(id=1).update(date=timezone.now())
         obj = self.obj_ref.object
         if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
             # Sync group configs with object config
@@ -1692,10 +1690,6 @@ class StagePrototypeImport(ADCMModel):
 
     class Meta:
         unique_together = (("prototype", "name"),)
-
-
-class DummyData(ADCMModel):
-    date = models.DateTimeField(auto_now=True)
 
 
 class MessageTemplate(ADCMModel):

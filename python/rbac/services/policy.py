@@ -17,10 +17,9 @@ from adwp_base.errors import AdwpEx
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
 from django.db.transaction import atomic
-from django.utils import timezone
 from rest_framework import status
 
-from cm.models import ADCMEntity, DummyData
+from cm.models import ADCMEntity
 from rbac.models import Group, Policy, PolicyObject, Role, User
 from rbac.utils import update_m2m_field
 
@@ -90,13 +89,14 @@ def policy_create(name: str, role: Role, built_in: bool = False, **kwargs):
     _check_subjects(users, groups)
 
     objects = kwargs.get('object', [])
-    DummyData.objects.filter(id=1).update(date=timezone.now())
     _check_objects(role, objects)
     description = kwargs.get('description', '')
+
     try:
         policy = Policy.objects.create(name=name, role=role, built_in=built_in, description=description)
     except IntegrityError as exc:
         raise AdwpEx('POLICY_CREATE_ERROR', msg=f'Policy creation failed with error {exc}') from exc
+
     for obj in objects:
         policy.object.add(_get_policy_object(obj))
 
@@ -104,6 +104,7 @@ def policy_create(name: str, role: Role, built_in: bool = False, **kwargs):
     policy.group.add(*groups)
 
     policy.apply()
+
     return policy
 
 
@@ -122,7 +123,6 @@ def policy_update(policy: Policy, **kwargs) -> Policy:
 
     users = kwargs.get('user')
     groups = kwargs.get('group')
-    DummyData.objects.filter(id=1).update(date=timezone.now())
     _check_subjects(
         users if users is not None else policy.user.all(),
         groups if groups is not None else policy.group.all(),

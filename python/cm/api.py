@@ -17,7 +17,6 @@ from functools import wraps
 
 from django.core.exceptions import MultipleObjectsReturned
 from django.db import transaction
-from django.utils import timezone
 from version_utils import rpm
 
 from cm.adcm_config import (
@@ -45,7 +44,6 @@ from cm.models import (
     ClusterObject,
     ConcernType,
     ConfigLog,
-    DummyData,
     GroupConfig,
     Host,
     HostComponent,
@@ -272,8 +270,6 @@ def add_host_to_cluster(cluster, host):
             raise_adcm_ex("HOST_CONFLICT")
 
     with transaction.atomic():
-        DummyData.objects.filter(pk=1).update(date=timezone.now())
-
         host.cluster = cluster
         host.save()
         host.add_to_concerns(ctx.lock)
@@ -377,7 +373,6 @@ def delete_service_by_pk(service_pk):
     """
 
     with transaction.atomic():
-        DummyData.objects.filter(pk=1).update(date=timezone.now())
         service = ClusterObject.obj.get(pk=service_pk)
         _clean_up_related_hc(service)
         ClusterBind.objects.filter(source_service=service).delete()
@@ -392,7 +387,6 @@ def delete_service_by_name(service_name, cluster_pk):
     """
 
     with transaction.atomic():
-        DummyData.objects.filter(pk=1).update(date=timezone.now())
         service = ClusterObject.obj.get(cluster__pk=cluster_pk, prototype__name=service_name)
         _clean_up_related_hc(service)
         ClusterBind.objects.filter(source_service=service).delete()
@@ -462,7 +456,6 @@ def unbind(cbind):
     cbind_pk = cbind.pk
     cbind_cluster_pk = cbind.cluster.pk
     with transaction.atomic():
-        DummyData.objects.filter(id=1).update(date=timezone.now())
         cbind.delete()
         update_hierarchy_issues(cbind.cluster)
 
@@ -710,7 +703,6 @@ def save_hc(cluster, host_comp_list):
 def add_hc(cluster, hc_in):
     host_comp_list = check_hc(cluster, hc_in)
     with transaction.atomic():
-        DummyData.objects.filter(pk=1).update(date=timezone.now())
         new_hc = save_hc(cluster, host_comp_list)
 
     return new_hc
