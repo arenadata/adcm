@@ -9,34 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 ---
-- name: "SeeMeInAction"
-  hosts: localhost
+- name: sleep
+  hosts: all
+  connection: local
+  gather_facts: no
+
   tasks:
-    - name: "Success"
-      assert:
-        that:
-          - 1 == 1
-        msg: "Never gonna give you up"
-      tags:
-        - success
-    - name: "Fail"
-      assert:
-        that:
-          - 1 != 1
-        msg: "Never gonna give you up"
-      tags:
-        - fail
-    - name: "Pause"
+    - name: Sleep
       pause:
-        minutes: 1
-      tags:
-        - pause
-    - name: "Check"
-      adcm_check:
-        title: "Check entry"
-        msg: "Check text"
-        result: yes
-      tags:
-        - check
+        seconds: 5
+    - debug:
+        msg: "sleep"

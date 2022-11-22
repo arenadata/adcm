@@ -9,34 +9,35 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 ---
-- name: "SeeMeInAction"
+- name: Change MM of service
   hosts: localhost
+  connection: local
+  gather_facts: no
+
   tasks:
-    - name: "Success"
-      assert:
-        that:
-          - 1 == 1
-        msg: "Never gonna give you up"
+    - name: debug_info
+      debug:
+        msg: "Service turn ON"
       tags:
-        - success
-    - name: "Fail"
-      assert:
-        that:
-          - 1 != 1
-        msg: "Never gonna give you up"
+        - turn_on
+
+    - name: change mm
+      adcm_change_maintenance_mode:
+        type: service
+        value: True
       tags:
-        - fail
-    - name: "Pause"
-      pause:
-        minutes: 1
+        - turn_on
+
+    - name: debug_info
+      debug:
+        msg: "Service turn OFF"
       tags:
-        - pause
-    - name: "Check"
-      adcm_check:
-        title: "Check entry"
-        msg: "Check text"
-        result: yes
+        - turn_off
+
+    - name: change mm
+      adcm_change_maintenance_mode:
+        type: service
+        value: False
       tags:
-        - check
+        - turn_off

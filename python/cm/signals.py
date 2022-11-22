@@ -10,22 +10,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db.models.signals import post_delete, pre_save
+import casestyle
+from django.db import transaction
+from django.db.models.signals import m2m_changed, post_delete, post_save, pre_save
 from django.dispatch import receiver
 
 from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP, AuditObject
 from audit.utils import mark_deleted_audit_object
+from cm.logger import logger
 from cm.models import (
     ADCM,
+    ADCMEntity,
     Bundle,
     Cluster,
     ClusterObject,
+    GroupConfig,
     Host,
     HostProvider,
     Prototype,
     ServiceComponent,
 )
-from rbac.models import Group, Policy
+from cm.status_api import post_event
+from rbac.models import Group, Policy, Role, User
 
 
 @receiver(post_delete, sender=Cluster)
@@ -72,3 +78,76 @@ def rename_audit_object_host(sender, instance, **kwargs) -> None:
 
     audit_obj.object_name = instance.fqdn
     audit_obj.save(update_fields=["object_name"])
+
+
+def get_names(sender, **kwargs):
+    """getting model name, module name and object"""
+    if hasattr(sender, 'get_endpoint'):
+        name = sender.get_endpoint()
+    else:
+        name = casestyle.kebabcase(sender.__name__)
+    return name, sender.__module__, kwargs['instance']
+
+
+def _post_event(action, module, name, obj_pk):
+    """Wrapper for post_event to run in on_commit hook"""
+    transaction.on_commit(lambda: post_event(action, name, obj_pk, {'module': module}))
+
+
+@receiver(post_save, sender=User)
+@receiver(post_save, sender=Group)
+@receiver(post_save, sender=Policy)
+@receiver(post_save, sender=Role)
+@receiver(post_save, sender=GroupConfig)
+def model_change(sender, **kwargs):
+    """post_save handler"""
+    name, module, obj = get_names(sender, **kwargs)
+    if 'filter_out' in kwargs:
+        if kwargs['filter_out'](module, name, obj):
+            return
+    action = 'update'
+    if 'created' in kwargs and kwargs['created']:
+        action = 'create'
+    args = (action, module, name, obj.pk)
+    logger.info('%s %s %s #%s', *args)
+    _post_event(*args)
+
+
+@receiver(post_delete, sender=User)
+@receiver(post_delete, sender=Group)
+@receiver(post_delete, sender=Policy)
+@receiver(post_delete, sender=Role)
+@receiver(post_delete, sender=GroupConfig)
+def model_delete(sender, **kwargs):
+    """post_delete handler"""
+    name, module, obj = get_names(sender, **kwargs)
+    if 'filter_out' in kwargs:
+        if kwargs['filter_out'](module, name, obj):
+            return
+    action = 'delete'
+    args = (action, module, name, obj.pk)
+    logger.info('%s %s %s #%s', *args)
+    _post_event(*args)
+
+
+@receiver(m2m_changed, sender=GroupConfig)
+@receiver(m2m_changed, sender=ADCMEntity.concerns.through)
+@receiver(m2m_changed, sender=Policy)
+@receiver(m2m_changed, sender=Role)
+@receiver(m2m_changed, sender=User)
+@receiver(m2m_changed, sender=Group)
+def m2m_change(sender, **kwargs):
+    """m2m_changed handler"""
+    name, module, obj = get_names(sender, **kwargs)
+    if 'filter_out' in kwargs:
+        if kwargs['filter_out'](module, name, obj):
+            return
+    if kwargs['action'] == 'post_add':
+        action = 'add'
+    elif kwargs['action'] == 'post_remove':
+        action = 'delete'
+    else:
+        return
+    args = (action, module, name, obj.pk)
+    logger.info('%s %s %s #%s', *args)
+    _post_event(*args)

@@ -13,7 +13,6 @@
 
 from functools import wraps
 
-from adwp_base.errors import AdwpEx
 from django.contrib.auth.models import User as DjangoUser
 from django.db.models import Model
 from django.http.response import Http404
@@ -239,7 +238,7 @@ def audit(func):
                 status_code = res.status_code
             else:
                 status_code = HTTP_403_FORBIDDEN
-        except (AdcmEx, AdwpEx, ValidationError) as exc:
+        except (AdcmEx, ValidationError) as exc:
             error = exc
             res = None
 

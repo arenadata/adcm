@@ -17,7 +17,6 @@ from typing import Iterable, List
 import pytest_check as check
 from adcm_client.wrappers.api import ADCMApiError
 from coreapi.exceptions import ErrorMessage
-from pytest_check.check_methods import get_failures
 
 
 class ADCMError:
@@ -47,9 +46,11 @@ class ADCMError:
         error_args = error.get("args", "")
         check.equal(title, self.title, f'Expected title is "{self.title}", actual is "{title}"')
         check.equal(code, self.code, f'Expected error code is "{self.code}", actual is "{code}"')
+        # workaround for pytest-check 1.1.2 to stop execution right here
+        raise_assertion = False
         for i in args:
             err_msg = 'Unknown'
-            check.is_true(
+            check_result = check.is_true(
                 i in desc or i in error_args or i in (err_msg := self._get_data_err_messages(error)),
                 (
                     f"Text '{i}' should be present in error message. Either in:\n"
@@ -58,7 +59,10 @@ class ADCMError:
                     f'Or message: {err_msg}'
                 ),
             )
-        assert not get_failures(), "All assertions should passed"
+            if check_result is False:
+                raise_assertion = True
+        if raise_assertion:
+            raise AssertionError("All assertions should passed")
 
     def _compare_adcm_api_error(self, e: ADCMApiError, *_):
         code, *_ = e.args
