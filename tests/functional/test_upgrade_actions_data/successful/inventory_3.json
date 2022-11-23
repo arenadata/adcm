@@ -31,6 +31,7 @@
                      "state": "created",
                      "multi_state": [],
                      "maintenance_mode": false,
+                     "display_name": "test_service",
                      "config": {
                         "somestring": null,
                         "someint": 12,
@@ -43,6 +44,7 @@
                      "test_component": {
                         "component_id": 1,
                         "maintenance_mode": false,
+                        "display_name": "test_component",
                         "config": {
                            "somestring": null,
                            "someint": 12,
