@@ -31,6 +31,7 @@ from cm.models import (
     ClusterBind,
     ClusterObject,
     Host,
+    HostComponent,
     HostProvider,
     MaintenanceMode,
     Prototype,
@@ -42,11 +43,11 @@ class TestServiceAPI(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        bundle = Bundle.objects.create()
-        self.cluster_prototype = Prototype.objects.create(bundle=bundle, type="cluster")
+        self.bundle = Bundle.objects.create()
+        self.cluster_prototype = Prototype.objects.create(bundle=self.bundle, type="cluster")
         self.cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster")
         self.service_prototype = Prototype.objects.create(
-            bundle=bundle,
+            bundle=self.bundle,
             type="service",
             display_name="test_service",
         )
@@ -181,6 +182,37 @@ class TestServiceAPI(BaseTestCase):
 
     def test_delete_with_action(self):
         action = Action.objects.create(prototype=self.service.prototype, name=settings.ADCM_DELETE_SERVICE_ACTION_NAME)
+
+        with patch("api.service.views.delete_service"), patch("api.service.views.start_task") as start_task_mock:
+            response: Response = self.client.delete(
+                path=reverse("service-details", kwargs={"service_id": self.service.pk})
+            )
+
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        start_task_mock.assert_not_called()
+
+        host = Host.objects.create(
+            fqdn="test-fqdn",
+            prototype=Prototype.objects.create(bundle=self.bundle, type="host"),
+            provider=HostProvider.objects.create(
+                name="test_provider",
+                prototype=Prototype.objects.create(bundle=self.bundle, type="provider"),
+            ),
+        )
+        service_component = ServiceComponent.objects.create(
+            prototype=Prototype.objects.create(
+                bundle=self.bundle,
+                type="component",
+            ),
+            cluster=self.cluster,
+            service=self.service,
+        )
+        HostComponent.objects.create(
+            cluster=self.cluster,
+            host=host,
+            service=self.service,
+            component=service_component,
+        )
 
         with patch("api.service.views.delete_service"), patch("api.service.views.start_task") as start_task_mock:
             response: Response = self.client.delete(

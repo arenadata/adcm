@@ -121,12 +121,13 @@ class ServiceDetailView(PermissionListMixin, DetailView):
         delete_action = Action.objects.filter(
             prototype=instance.prototype, name=settings.ADCM_DELETE_SERVICE_ACTION_NAME
         ).first()
+        host_components_exists = HostComponent.objects.filter(cluster=instance.cluster, service=instance).exists()
 
         if not delete_action:
             if instance.state != "created":
                 raise_adcm_ex("SERVICE_DELETE_ERROR")
 
-            if HostComponent.objects.filter(cluster=instance.cluster, service=instance).exists():
+            if host_components_exists:
                 raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} has component(s) on host(s)")
 
         if ClusterBind.objects.filter(source_service=instance).exists():
@@ -144,7 +145,7 @@ class ServiceDetailView(PermissionListMixin, DetailView):
         if TaskLog.objects.filter(action=delete_action, status=JobStatus.RUNNING).exists():
             raise_adcm_ex("SERVICE_DELETE_ERROR", "Service is deleting now")
 
-        if delete_action:
+        if delete_action and host_components_exists:
             start_task(
                 action=delete_action,
                 obj=instance,
