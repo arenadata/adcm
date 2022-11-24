@@ -132,6 +132,7 @@ def get_service_variables(service: ClusterObject, service_config: dict = None):
         "multi_state": service.multi_state,
         "config": service_config or get_obj_config(service),
         MAINTENANCE_MODE: service.maintenance_mode == MaintenanceMode.ON,
+        "display_name": service.display_name,
     }
 
 
@@ -142,6 +143,7 @@ def get_component_variables(component: ServiceComponent, component_config: dict 
         "state": component.state,
         "multi_state": component.multi_state,
         MAINTENANCE_MODE: component.maintenance_mode == MaintenanceMode.ON,
+        "display_name": component.display_name,
     }
 
 
