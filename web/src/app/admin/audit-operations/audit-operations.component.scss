@@ -2,19 +2,26 @@
   width: 100%;
 }
 
+:host :ng-deep .object_name,
+:host :ng-deep .operation_name,
+:host :ng-deep .action_date,
+:host :ng-deep .username,
+:host :ng-deep .username_header,
+:host :ng-deep .table-end {
+  flex-grow: 0;
+}
+
 :host ::ng-deep .object_type {
   min-width: 70px;
 }
 
 :host ::ng-deep .object_name {
-  flex-grow: 0;
   flex-basis: 175px;
   width: 175px;
   min-width: 70px;
 }
 
 :host ::ng-deep .operation_name {
-  flex-grow: 0; 
   flex-basis: 300px;
   width: 300px;
   min-width: 90px;
@@ -26,7 +33,6 @@
 }
 
 :host ::ng-deep .action_date {
-  flex-grow: 0; 
   flex-basis: 220px;
   width: 220px;
   min-width: 220px;
@@ -36,7 +42,6 @@
 :host ::ng-deep .username_header {
   width: 150px;
   flex-basis: 150px;
-  flex-grow: 0;
   min-width: 100px
 }
 
@@ -47,7 +52,6 @@
 :host ::ng-deep .table-end {
   width: 80px;
   flex-basis: 80px;
-  flex-grow: 0;
 }
 
 .controls {
