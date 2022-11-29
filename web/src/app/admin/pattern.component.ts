@@ -59,7 +59,7 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
     { url: 'roles', title: 'Roles' },
     { url: 'policies', title: 'Policies' },
     { url: 'audit/operations', title: 'Audit operations' },
-    { url: 'audit/login', title: 'Audit login' }
+    { url: 'audit/login', title: 'Audit logins' }
   ];
   data = {
     '/admin': { title: 'Hi there!', crumbs: [{ path: '/admin/', name: 'intro' }] },
