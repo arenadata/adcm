@@ -97,39 +97,6 @@ class ClusterSerializer(Serializer):
         return instance
 
 
-class ClusterUISerializer(ClusterSerializer):
-    action = CommonAPIURL(view_name="object-action")
-    edition = CharField(read_only=True)
-    prototype_version = SerializerMethodField()
-    prototype_name = SerializerMethodField()
-    prototype_display_name = SerializerMethodField()
-    upgrade = HyperlinkedIdentityField(view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id")
-    upgradable = SerializerMethodField()
-    concerns = ConcernItemUISerializer(many=True, read_only=True)
-    locked = BooleanField(read_only=True)
-    status = SerializerMethodField()
-
-    @staticmethod
-    def get_upgradable(obj: Cluster) -> bool:
-        return bool(get_upgrade(obj))
-
-    @staticmethod
-    def get_prototype_version(obj: Cluster) -> str:
-        return obj.prototype.version
-
-    @staticmethod
-    def get_prototype_name(obj: Cluster) -> str:
-        return obj.prototype.name
-
-    @staticmethod
-    def get_prototype_display_name(obj: Cluster) -> str | None:
-        return obj.prototype.display_name
-
-    @staticmethod
-    def get_status(obj: Cluster) -> int:
-        return get_cluster_status(obj)
-
-
 class ClusterDetailSerializer(ClusterSerializer):
     bundle_id = IntegerField(read_only=True)
     edition = CharField(read_only=True)
@@ -158,6 +125,39 @@ class ClusterDetailSerializer(ClusterSerializer):
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
     group_config = GroupConfigsHyperlinkedIdentityField(view_name="group-config-list")
+
+    @staticmethod
+    def get_status(obj: Cluster) -> int:
+        return get_cluster_status(obj)
+
+
+class ClusterUISerializer(ClusterDetailSerializer):
+    action = CommonAPIURL(view_name="object-action")
+    edition = CharField(read_only=True)
+    prototype_version = SerializerMethodField()
+    prototype_name = SerializerMethodField()
+    prototype_display_name = SerializerMethodField()
+    upgrade = HyperlinkedIdentityField(view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id")
+    upgradable = SerializerMethodField()
+    concerns = ConcernItemUISerializer(many=True, read_only=True)
+    locked = BooleanField(read_only=True)
+    status = SerializerMethodField()
+
+    @staticmethod
+    def get_upgradable(obj: Cluster) -> bool:
+        return bool(get_upgrade(obj))
+
+    @staticmethod
+    def get_prototype_version(obj: Cluster) -> str:
+        return obj.prototype.version
+
+    @staticmethod
+    def get_prototype_name(obj: Cluster) -> str:
+        return obj.prototype.name
+
+    @staticmethod
+    def get_prototype_display_name(obj: Cluster) -> str | None:
+        return obj.prototype.display_name
 
     @staticmethod
     def get_status(obj: Cluster) -> int:
