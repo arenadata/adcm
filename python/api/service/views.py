@@ -57,6 +57,7 @@ from cm.models import (
     HostComponent,
     JobStatus,
     Prototype,
+    ServiceComponent,
     TaskLog,
 )
 from cm.status_api import make_ui_service_status
@@ -145,7 +146,13 @@ class ServiceDetailView(PermissionListMixin, DetailView):
         if TaskLog.objects.filter(action=delete_action, status=JobStatus.RUNNING).exists():
             raise_adcm_ex("SERVICE_DELETE_ERROR", "Service is deleting now")
 
-        if delete_action and host_components_exists:
+        if any(
+            service_component.requires_service_name(service_name=instance.name)
+            for service_component in ServiceComponent.objects.filter(cluster=instance.cluster)
+        ):
+            raise_adcm_ex("SERVICE_CONFLICT", "Another service component requires component of this service")
+
+        if delete_action and (host_components_exists or instance.state != "created"):
             start_task(
                 action=delete_action,
                 obj=instance,
