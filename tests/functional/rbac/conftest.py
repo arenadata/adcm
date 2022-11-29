@@ -40,6 +40,7 @@ from adcm_client.objects import (
 )
 from adcm_client.wrappers.api import AccessIsDenied, ADCMApiWrapper
 from adcm_pytest_plugin.utils import catch_failed, random_string
+from coreapi.exceptions import ErrorMessage
 from tests.functional.maintenance_mode.conftest import MM_IS_OFF, MM_IS_ON
 from tests.functional.rbac.checkers import Deny
 from tests.functional.tools import ADCMObjects, AnyADCMObject, get_object_represent
@@ -528,7 +529,7 @@ def is_denied(
             else:
                 try:
                     role.method_call(base_object, *args, **kwargs)
-                except (AccessIsDenied, NoSuchEndpointOrAccessIsDenied, ObjectNotFound):
+                except (AccessIsDenied, NoSuchEndpointOrAccessIsDenied, ObjectNotFound, ErrorMessage):
                     pass
                 else:
                     raise AssertionError(f"{role.role_name} on {object_represent} should not be allowed")
