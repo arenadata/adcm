@@ -894,6 +894,13 @@ class ServiceComponent(ADCMEntity):
     def is_maintenance_mode_available(self) -> bool:
         return self.cluster.prototype.allow_maintenance_mode
 
+    def requires_service_name(self, service_name: str) -> bool:
+        for item in self.requires:
+            if item.get("service") == service_name:
+                return True
+
+        return False
+
     class Meta:
         unique_together = (("cluster", "service", "prototype"),)
 
