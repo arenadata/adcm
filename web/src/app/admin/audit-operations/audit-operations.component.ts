@@ -34,15 +34,15 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
   listColumns = [
     {
       label: 'Object type',
-      headerClassName: 'width100 object_type',
-      className: 'width100 object_type',
+      headerClassName: 'object_type',
+      className: 'object_type',
       value: (row) => row.object_type,
     },
     {
       label: 'Object name',
       type: 'component',
       headerClassName: 'object_name',
-      className: 'object_name',
+      className: 'object_name object_name_content',
       value: (row) => row.object_name,
       component: WrapperColumnComponent,
       instanceTaken: (componentRef: ComponentRef<WrapperColumnComponent>) => {
@@ -58,8 +58,8 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
     {
       label: 'Operation type',
       type: 'component',
-      headerClassName: 'width100 operation_type',
-      className: 'width100 operation_type',
+      headerClassName: ' operation_type',
+      className: 'operation_type',
       component: WrapperColumnComponent,
       value: (row) => row.operation_type,
       instanceTaken: (componentRef: ComponentRef<WrapperColumnComponent>) => {
@@ -69,8 +69,8 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
     {
       label: 'Operation result',
       type: 'component',
-      headerClassName: 'width100 operation_result',
-      className: 'width100 operation_result',
+      headerClassName: 'operation_result',
+      className: 'operation_result',
       component: WrapperColumnComponent,
       value: (row) => row.operation_result,
       instanceTaken: (componentRef: ComponentRef<WrapperColumnComponent>) => {
@@ -86,9 +86,14 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
     },
     {
       label: 'Username',
-      headerClassName: 'username_header',
+      type: 'component',
+      headerClassName: 'username',
       className: 'username',
       value: (row) => row.username,
+      component: WrapperColumnComponent,
+      instanceTaken: (componentRef: ComponentRef<WrapperColumnComponent>) => {
+        componentRef.instance.type = ['text-substr'];
+      }
     },
     {
       label: '',

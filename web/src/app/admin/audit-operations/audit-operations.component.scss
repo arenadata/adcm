@@ -1,57 +1,58 @@
 :host {
+  flex: 1;
   width: 100%;
-}
 
-:host :ng-deep .object_name,
-:host :ng-deep .operation_name,
-:host :ng-deep .action_date,
-:host :ng-deep .username,
-:host :ng-deep .username_header,
-:host :ng-deep .table-end {
-  flex-grow: 0;
-}
+  ::ng-deep {
+    .object_name,
+    .operation_name,
+    .action_date,
+    .username,
+    .username_header,
+    .table-end {
+      flex-grow: 0;
+    }
 
-:host ::ng-deep .object_type {
-  min-width: 70px;
-}
+    .object_type {
+      min-width: 80px;
+    }
 
-:host ::ng-deep .object_name {
-  flex-basis: 175px;
-  width: 175px;
-  min-width: 70px;
-}
+    .object_name {
+      flex-basis: 200px;
+      width: 200px;
+      min-width: 50px;
+    }
 
-:host ::ng-deep .operation_name {
-  flex-basis: 300px;
-  width: 300px;
-  min-width: 90px;
-}
+    .operation_name {
+      flex-basis: 320px;
+      width: 320px;
+      min-width: 110px;
+    }
 
-:host ::ng-deep .operation_type,
-:host ::ng-deep .operation_result {
-  min-width: 90px;
-}
+    .operation_type,
+    .operation_result {
+      flex-basis: 100px;
+      width: 100px;
+      min-width: 70px;
+    }
 
-:host ::ng-deep .action_date {
-  flex-basis: 220px;
-  width: 220px;
-  min-width: 220px;
-}
+    .action_date {
+      flex-basis: 205px;
+      width: 205px;
+      min-width: 205px;
+      margin-left: 10px;
+    }
 
-:host ::ng-deep .username,
-:host ::ng-deep .username_header {
-  width: 150px;
-  flex-basis: 150px;
-  min-width: 100px
-}
+    .username {
+      width: 75px;
+      flex-basis: 75px;
+      min-width: 75px;
+    }
 
-:host ::ng-deep .username {
-  word-break: break-all;
-}
-
-:host ::ng-deep .table-end {
-  width: 80px;
-  flex-basis: 80px;
+    .table-end {
+      width: 50px;
+      flex-basis: 50px;
+    }
+  }
 }
 
 .controls {
