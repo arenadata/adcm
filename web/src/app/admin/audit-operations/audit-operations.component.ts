@@ -34,15 +34,16 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
   listColumns = [
     {
       label: 'Object type',
-      headerClassName: 'width100',
-      className: 'width100',
+      headerClassName: 'object_type',
+      className: 'object_type',
       value: (row) => row.object_type,
     },
     {
       label: 'Object name',
       type: 'component',
-      headerClassName: 'width30pr',
-      className: 'width30pr',
+      headerClassName: 'object_name',
+      className: 'object_name object_name_content',
+      value: (row) => row.object_name,
       component: WrapperColumnComponent,
       instanceTaken: (componentRef: ComponentRef<WrapperColumnComponent>) => {
         componentRef.instance.type = ['text-substr'];
@@ -50,13 +51,15 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
     },
     {
       label: 'Operation name',
+      headerClassName: 'operation_name',
+      className: 'operation_name',
       value: (row) => row.operation_name,
     },
     {
       label: 'Operation type',
       type: 'component',
-      headerClassName: 'width100',
-      className: 'width100',
+      headerClassName: ' operation_type',
+      className: 'operation_type',
       component: WrapperColumnComponent,
       value: (row) => row.operation_type,
       instanceTaken: (componentRef: ComponentRef<WrapperColumnComponent>) => {
@@ -66,8 +69,8 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
     {
       label: 'Operation result',
       type: 'component',
-      headerClassName: 'width100',
-      className: 'width100',
+      headerClassName: 'operation_result',
+      className: 'operation_result',
       component: WrapperColumnComponent,
       value: (row) => row.operation_result,
       instanceTaken: (componentRef: ComponentRef<WrapperColumnComponent>) => {
@@ -83,15 +86,20 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
     },
     {
       label: 'Username',
-      headerClassName: 'width100',
-      className: 'width100',
+      type: 'component',
+      headerClassName: 'username',
+      className: 'username',
       value: (row) => row.username,
+      component: WrapperColumnComponent,
+      instanceTaken: (componentRef: ComponentRef<WrapperColumnComponent>) => {
+        componentRef.instance.type = ['text-substr'];
+      }
     },
     {
       label: '',
       type: 'component',
-      headerClassName: 'width100',
-      className: 'width100',
+      headerClassName: 'table-end',
+      className: 'table-end',
       component: HistoryColumnComponent,
     }
 
