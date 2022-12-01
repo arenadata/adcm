@@ -313,7 +313,7 @@ export class FieldService {
 
     const runYspecParse = (v: any, f: Partial<IFieldOptions>) => ((!v || !Object.keys(v).length) && !f.value ? f.value : this.runYspec(v, f.limits.rules));
 
-    const replaceEmptyObjectWithNull = (v: any): string => ((Array.isArray(v) && v?.length === 0) || JSON.stringify(v) === '{}') ? null : v
+    const replaceEmptyObjectWithNull = (v: any): string => ((Array.isArray(v) && v?.length === 0) || JSON.stringify(v) === '{}' || this.emptyArrayInside(v)) ? null : v
 
     const runParse = (v: IOutput, parentName?: string): IOutput => {
       const runByValue = (p: IOutput, c: string) => {
@@ -390,5 +390,10 @@ export class FieldService {
       }
 
     return value;
+  }
+
+  emptyArrayInside(object: Object): boolean {
+    const keys = Object.keys(object);
+    return keys.length === 1 && Array.isArray(object[keys[0]]) && object[keys[0]].length === 0;
   }
 }
