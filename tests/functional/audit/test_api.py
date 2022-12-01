@@ -150,14 +150,13 @@ class TestAuditLogsAPI:
             ("object_name", ("Test Cluster", "simple_user")),
         ):
             self._check_audit_operations_filter(sdk_client_fs, field_name, filters)
-        # Removed until ADCM-3298 is resolved
-        # admin_id = sdk_client_fs.me().id
-        # self._check_audit_operations_filter(
-        #     sdk_client_fs,
-        #     "username",
-        #     ["admin"],
-        #     check_field_in_records=lambda _1, _2, logs: all(o.user_id == admin_id for o in logs),
-        # )
+        admin_id = sdk_client_fs.me().id
+        self._check_audit_operations_filter(
+            sdk_client_fs,
+            "username",
+            ["admin"],
+            check_field_in_records=lambda _1, _2, logs: all(o.user_id == admin_id for o in logs),
+        )
 
     def _check_audit_operations_filter(
         self, client: ADCMClient, field_name: str, filters: Union[Enum, Collection[str]], **kwargs
@@ -200,18 +199,17 @@ class TestAuditLoginAPI:
         return deactivated_user, user_does_not_exist
 
     @pytest.mark.usefixtures("_successful_logins", "failed_logins")
-    def test_audit_login_api_filtering(self, sdk_client_fs):
+    def test_audit_login_api_filtering(self, sdk_client_fs, users):
         """Test audit log list filtering: by operation result and username"""
         self._check_login_list_filtering(sdk_client_fs, 'login_result', LoginResult)
-        # Removed until ADCM-3298 is resolved
-        # self._check_login_list_filtering(
-        #     sdk_client_fs,
-        #     "username",
-        #     [u["username"] for u in users],
-        #     check_field_in_records=lambda _, expected_value, client_logs: all(
-        #         o.user_id == sdk_client_fs.user(username=expected_value).id for o in client_logs
-        #     ),
-        # )
+        self._check_login_list_filtering(
+            sdk_client_fs,
+            "username",
+            [u["username"] for u in users],
+            check_field_in_records=lambda _, expected_value, client_logs: all(
+                o.user_id == sdk_client_fs.user(username=expected_value).id for o in client_logs
+            ),
+        )
         with allure.step("Check that filtering by non existing user returns 0 records"):
             assert (
                 len(sdk_client_fs.audit_login_list(username=NOT_EXISTING_USER)) == 0
