@@ -1,6 +1,6 @@
 --extra-index-url https://ci.arenadata.io/artifactory/api/pypi/python-packages/simple
 
-adcm-client>=2022.11.25.16
+adcm-client>=2022.12.1.10
 adcm-pytest-plugin~=4.23
 attr
 autoflake
