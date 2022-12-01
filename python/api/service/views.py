@@ -134,9 +134,6 @@ class ServiceDetailView(PermissionListMixin, DetailView):
         if ClusterBind.objects.filter(source_service=instance).exists():
             raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} has exports(s)")
 
-        if instance.has_another_service_requires:
-            raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} has another service requires host components")
-
         if instance.prototype.required:
             raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} is required")
 
@@ -152,6 +149,7 @@ class ServiceDetailView(PermissionListMixin, DetailView):
         ):
             raise_adcm_ex("SERVICE_CONFLICT", "Another service component requires component of this service")
 
+        cancel_locking_tasks(obj=instance, obj_deletion=True)
         if delete_action and (host_components_exists or instance.state != "created"):
             start_task(
                 action=delete_action,
@@ -163,7 +161,6 @@ class ServiceDetailView(PermissionListMixin, DetailView):
                 verbose=False,
             )
         else:
-            cancel_locking_tasks(obj=instance, obj_deletion=True)
             delete_service(service=instance)
 
         return Response(status=HTTP_204_NO_CONTENT)
