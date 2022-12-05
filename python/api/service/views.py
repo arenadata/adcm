@@ -181,7 +181,11 @@ class ServiceMaintenanceModeView(GenericUIView):
         serializer = self.get_serializer(instance=service, data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        return get_maintenance_mode_response(obj=service, serializer=serializer)
+        response: Response = get_maintenance_mode_response(obj=service, serializer=serializer)
+        if response.status_code == HTTP_200_OK:
+            response.data = serializer.data
+
+        return response
 
 
 class ServiceImportView(GenericUIView):

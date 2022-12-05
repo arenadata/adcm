@@ -306,7 +306,11 @@ class HostMaintenanceModeView(GenericUIView):
         ):
             return Response(data="MAINTENANCE_MODE_NOT_AVAILABLE", status=HTTP_409_CONFLICT)
 
-        return get_maintenance_mode_response(obj=host, serializer=serializer)
+        response: Response = get_maintenance_mode_response(obj=host, serializer=serializer)
+        if response.status_code == HTTP_200_OK:
+            response.data = serializer.data
+
+        return response
 
 
 class StatusList(GenericUIView):

@@ -46,12 +46,18 @@ def cluster_with_mm(sdk_client_fs: ADCMClient) -> Cluster:
     return cluster
 
 
-def test_state_calculation_mode_service(api_client, cluster_with_mm):
+def test_state_calculation_mode_service(api_client, cluster_with_mm, hosts):
     """Test to check CHANGING mode for service when object changes his maintenance mode"""
     first_service = cluster_with_mm.service(name=DEFAULT_SERVICE_NAME)
     second_service = cluster_with_mm.service_add(name=ANOTHER_SERVICE_NAME)
     first_component = first_service.component(name=FIRST_COMPONENT)
     second_component = first_service.component(name=SECOND_COMPONENT)
+
+    cluster_with_mm.hostcomponent_set(
+        (cluster_with_mm.host_add(hosts[0]), first_component),
+        (cluster_with_mm.host_add(hosts[1]), second_component),
+        (cluster_with_mm.host_add(hosts[2]), second_service.component()),
+    )
 
     check_mm_is(MM_IS_OFF, first_service, second_service, first_component, second_component)
     with allure.step('Check service action maintenance mode set maintenance mode to CHANGING value'):
@@ -65,12 +71,16 @@ def test_state_calculation_mode_service(api_client, cluster_with_mm):
         check_mm_is(MM_IS_OFF, first_component, second_component)
 
 
-def test_state_calculation_mode_component(api_client, cluster_with_mm):
+def test_state_calculation_mode_component(api_client, cluster_with_mm, hosts):
     """Test to check CHANGING mode for component when object changes his maintenance mode"""
     first_service = cluster_with_mm.service(name=DEFAULT_SERVICE_NAME)
     second_service = cluster_with_mm.service_add(name=ANOTHER_SERVICE_NAME)
     first_component = first_service.component(name=FIRST_COMPONENT)
     second_component = first_service.component(name=SECOND_COMPONENT)
+
+    cluster_with_mm.hostcomponent_set(
+        (cluster_with_mm.host_add(hosts[0]), first_component), (cluster_with_mm.host_add(hosts[1]), second_component)
+    )
 
     check_mm_is(MM_IS_OFF, first_service, second_service, first_component, second_component)
     with allure.step('Check component action maintenance mode set maintenance mode to CHANGING value'):

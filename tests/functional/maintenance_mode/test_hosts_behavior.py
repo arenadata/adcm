@@ -103,7 +103,7 @@ def test_adding_host_to_cluster(api_client, cluster_with_mm, cluster_without_mm,
 
     expect_changing_mm_fail(api_client, third_host, MM_IS_ON)
     check_mm_availability(MM_NOT_ALLOWED, *hosts_to_cluster_without_mm)
-    turn_mm_off(api_client, third_host)
+    check_mm_is(MM_IS_OFF, third_host)
     check_mm_availability(MM_NOT_ALLOWED, *hosts_to_cluster_without_mm)
 
     remove_hosts_from_cluster(cluster_with_mm, hosts_to_cluster_with_mm)

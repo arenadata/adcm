@@ -697,6 +697,10 @@ class Host(ADCMEntity):
 
         return cluster.prototype.allow_maintenance_mode
 
+    @property
+    def maintenance_mode_attr(self) -> MaintenanceMode.choices:
+        return self.maintenance_mode
+
 
 class ClusterObject(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)

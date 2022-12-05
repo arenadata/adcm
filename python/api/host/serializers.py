@@ -120,7 +120,7 @@ class HostAuditSerializer(ModelSerializer):
 
 
 class HostChangeMaintenanceModeSerializer(ModelSerializer):
-    maintenance_mode = ChoiceField(choices=(MaintenanceMode.ON, MaintenanceMode.OFF))
+    maintenance_mode = ChoiceField(choices=(MaintenanceMode.ON.value, MaintenanceMode.OFF.value))
 
     class Meta:
         model = Host

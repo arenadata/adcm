@@ -82,7 +82,7 @@ def test_mm_action(api_client, cluster_mm_action_disallowed, hosts):
         )
 
     with allure.step("Switch component MM to 'OFF', switch service MM to 'ON' and check enabled and disabled actions"):
-        set_maintenance_mode(api_client, host_in_mm, MM_IS_OFF)
+        set_maintenance_mode(api_client, first_component, MM_IS_OFF)
         set_maintenance_mode(api_client, first_service, MM_IS_ON)
         check_mm_is(MM_IS_ON, first_service, first_component, second_component)
 
