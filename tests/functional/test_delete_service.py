@@ -132,8 +132,16 @@ def test_service_delete_with_concerns(cluster: Cluster, sdk_client_fs: ADCMClien
         cluster.hostcomponent_set((host, service_to_delete.component()))
         task = cluster.action().run()
         # to avoid catching "termination is too early"
-        sleep(1.1)
-        expect_no_api_error("delete service", operation=service_to_delete.delete)
+        err = None
+        for _ in range(12):
+            try:
+                expect_no_api_error("delete service", operation=service_to_delete.delete)
+                break
+            except AssertionError as e:
+                err = e
+                sleep(0.3)
+        else:
+            raise err
         _wait_job_status(task, "aborted")
         _wait_all_tasks_succeed_or_aborted(sdk_client_fs, 3)
 
