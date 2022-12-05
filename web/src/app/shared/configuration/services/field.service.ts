@@ -393,7 +393,9 @@ export class FieldService {
   }
 
   emptyArrayInside(object: Object): boolean {
-    const keys = Object.keys(object);
-    return keys.length === 1 && Array.isArray(object[keys[0]]) && object[keys[0]].length === 0;
+    if (object) {
+      const keys = Object.keys(object);
+      return keys?.length === 1 && Array.isArray(object[keys[0]]) && object[keys[0]]?.length === 0;
+    }
   }
 }
