@@ -71,6 +71,7 @@ from cm.models import (
     JobLog,
     JobStatus,
     LogStorage,
+    MaintenanceMode,
     ObjectType,
     Prototype,
     ServiceComponent,
@@ -838,6 +839,20 @@ def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
         operation_name = f"{action.display_name} upgrade completed"
     else:
         operation_name = f"{action.display_name} action completed"
+
+    if (
+        action.name in {settings.ADCM_TURN_ON_MM_ACTION_NAME, settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME}
+        and obj.maintenance_mode == MaintenanceMode.CHANGING
+    ):
+        obj.maintenance_mode = MaintenanceMode.OFF
+        obj.save()
+
+    if (
+        action.name in {settings.ADCM_TURN_OFF_MM_ACTION_NAME, settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME}
+        and obj.maintenance_mode == MaintenanceMode.CHANGING
+    ):
+        obj.maintenance_mode = MaintenanceMode.ON
+        obj.save()
 
     obj_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP.get(obj.__class__)
     if not obj_type:

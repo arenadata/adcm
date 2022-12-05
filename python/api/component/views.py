@@ -14,6 +14,7 @@ from guardian.mixins import PermissionListMixin
 from rest_framework import permissions
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
 
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.component.serializers import (
@@ -95,7 +96,11 @@ class ComponentMaintenanceModeView(GenericUIView):
         serializer = self.get_serializer(instance=component, data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        return get_maintenance_mode_response(obj=component, serializer=serializer)
+        response: Response = get_maintenance_mode_response(obj=component, serializer=serializer)
+        if response.status_code == HTTP_200_OK:
+            response.data = serializer.data
+
+        return response
 
 
 class StatusList(GenericUIView):

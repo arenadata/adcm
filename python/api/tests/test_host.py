@@ -80,6 +80,7 @@ class TestHostAPI(BaseTestCase):
         self.host.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.ON)
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.ON)
 
     def test_change_mm_on_with_action_success(self):
@@ -99,12 +100,13 @@ class TestHostAPI(BaseTestCase):
         self.host.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
             action=action, obj=self.host, conf={}, attr={}, hc=[], hosts=[], verbose=False
         )
 
-    def test_change_mm_on_from_on_with_action_success(self):
+    def test_change_mm_on_from_on_with_action_fail(self):
         self.host.maintenance_mode = MaintenanceMode.ON
         self.host.save(update_fields=["maintenance_mode"])
 
@@ -116,7 +118,7 @@ class TestHostAPI(BaseTestCase):
 
         self.host.refresh_from_db()
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.ON)
         start_task_mock.assert_not_called()
 
@@ -132,6 +134,7 @@ class TestHostAPI(BaseTestCase):
         self.host.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.OFF)
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.OFF)
 
     def test_change_mm_off_with_action_success(self):
@@ -150,12 +153,13 @@ class TestHostAPI(BaseTestCase):
         self.host.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
             action=action, obj=self.host, conf={}, attr={}, hc=[], hosts=[], verbose=False
         )
 
-    def test_change_mm_off_to_off_with_action_success(self):
+    def test_change_mm_off_to_off_with_action_fail(self):
         self.host.maintenance_mode = MaintenanceMode.OFF
         self.host.save(update_fields=["maintenance_mode"])
 
@@ -167,7 +171,7 @@ class TestHostAPI(BaseTestCase):
 
         self.host.refresh_from_db()
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.OFF)
         start_task_mock.assert_not_called()
 
@@ -181,7 +185,6 @@ class TestHostAPI(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.data["error"], "Host maintenance mode is changing now")
 
         response: Response = self.client.post(
             path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
@@ -189,7 +192,6 @@ class TestHostAPI(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.data["error"], "Host maintenance mode is changing now")
 
     def test_cluster_clear_issue_success(self):
         provider_bundle = self.upload_and_load_bundle(
@@ -321,6 +323,7 @@ class TestHostAPI(BaseTestCase):
         host.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
         self.assertEqual(host.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
             action=action, obj=host, conf={}, attr={}, hc=[], hosts=[], verbose=False

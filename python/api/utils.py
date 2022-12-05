@@ -221,31 +221,46 @@ def get_maintenance_mode_response(obj: Host | ClusterObject | ServiceComponent, 
     else:
         obj_name = "obj"
 
-    if obj.maintenance_mode == MaintenanceMode.CHANGING:
-        return Response(
-            data={"error": f"{obj_name.capitalize()} maintenance mode is changing now"},
-            status=HTTP_409_CONFLICT,
-        )
+    service_has_hc = None
+    if obj_name == "service":
+        service_has_hc = HostComponent.objects.filter(service=obj).exists()
 
-    if obj.maintenance_mode == MaintenanceMode.OFF:
+    component_has_hc = None
+    if obj_name == "component":
+        component_has_hc = HostComponent.objects.filter(component=obj).exists()
+
+    if obj.maintenance_mode_attr == MaintenanceMode.CHANGING:
+        return Response(data={"code": "MAINTENANCE_MODE_IS_CHANGING_NOW"}, status=HTTP_409_CONFLICT)
+
+    if obj.maintenance_mode_attr == MaintenanceMode.OFF:
         if serializer.validated_data["maintenance_mode"] == MaintenanceMode.OFF:
-            return Response()
+            return Response(data={"code": "MAINTENANCE_MODE_ALREADY_OFF"}, status=HTTP_409_CONFLICT)
 
-        serializer = _change_mm_via_action(
-            prototype=prototype, action_name=turn_on_action_name, obj=obj, serializer=serializer
-        )
+        if obj_name == "host" or service_has_hc or component_has_hc:
+            serializer = _change_mm_via_action(
+                prototype=prototype, action_name=turn_on_action_name, obj=obj, serializer=serializer
+            )
+        else:
+            obj.maintenance_mode = MaintenanceMode.ON
+            serializer.validated_data["maintenance_mode"] = MaintenanceMode.ON
+
         serializer.save()
         _update_mm_hierarchy_issues(obj=obj)
 
         return Response()
 
-    if obj.maintenance_mode == MaintenanceMode.ON:
+    if obj.maintenance_mode_attr == MaintenanceMode.ON:
         if serializer.validated_data["maintenance_mode"] == MaintenanceMode.ON:
-            return Response()
+            return Response(data={"code": "MAINTENANCE_MODE_ALREADY_ON"}, status=HTTP_409_CONFLICT)
 
-        serializer = _change_mm_via_action(
-            prototype=prototype, action_name=turn_off_action_name, obj=obj, serializer=serializer
-        )
+        if obj_name == "host" or service_has_hc or component_has_hc:
+            serializer = _change_mm_via_action(
+                prototype=prototype, action_name=turn_off_action_name, obj=obj, serializer=serializer
+            )
+        else:
+            obj.maintenance_mode = MaintenanceMode.OFF
+            serializer.validated_data["maintenance_mode"] = MaintenanceMode.OFF
+
         serializer.save()
         _update_mm_hierarchy_issues(obj=obj)
 
