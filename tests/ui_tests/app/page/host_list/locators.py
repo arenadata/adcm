@@ -32,6 +32,7 @@ class HostListLocators:
         cluster_option = TemplateLocator(
             By.XPATH, "//mat-option//span[contains(text(), '{}')]", "Table dropdown option"
         )
+        header = Locator(By.TAG_NAME, "mat-header-row", "Header of the table")
 
         class HostRow:
             """Host List page host row elements locators"""

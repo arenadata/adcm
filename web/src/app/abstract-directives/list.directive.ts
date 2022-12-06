@@ -111,7 +111,6 @@ export abstract class ListDirective extends BaseDirective implements OnInit, OnD
   }
 
   maintenanceModeToggle($event: MouseEvent, row: any): void {
-    EventHelper.stopPropagation($event);
     this.listItemEvt.emit({ cmd: 'maintenanceModeToggle', row} )
   }
 

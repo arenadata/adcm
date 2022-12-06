@@ -740,7 +740,6 @@ class TestClusterHostPage:
         cluster_host_page.table.check_pagination(1)
         cluster_host_page.check_cluster_toolbar(CLUSTER_NAME)
 
-    @pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3264")
     @pytest.mark.smoke()
     def test_maintenance_mode_from_cluster_host_page(self, app_fs, create_community_cluster_with_host):
         """Test turn on and off maintenance mode on cluster/{}/host page"""

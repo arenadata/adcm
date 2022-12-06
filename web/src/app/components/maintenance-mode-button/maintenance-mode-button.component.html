@@ -1,9 +1,9 @@
-<div [matTooltip]="status?.tooltip" (click)="preventIfDisabled($event)">
+<div [matTooltip]="!isMaintenanceModeAvailable ? mminaTooltip : status?.tooltip" (click)="preventIfDisabled($event)">
   <button
     mat-icon-button
     class="mm-button"
     color="{{status?.color}}"
-    [disabled]="!status?.isModeActive"
+    [disabled]="!isMaintenanceModeAvailable || !status?.isModeActive"
     (click)="clickCell($event, row)"
   >
   <mat-icon>medical_services</mat-icon>

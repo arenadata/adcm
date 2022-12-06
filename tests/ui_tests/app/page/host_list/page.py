@@ -132,17 +132,33 @@ class HostListPage(BasePageObject):  # pylint: disable=too-many-public-methods
         # because we don't pass provider name
         return provider_name
 
-    def get_all_available_actions(self, host_row_num: int):
-        "Return list with actions"
+    def open_run_action_menu(self, row: WebElement) -> None:
+        self.find_child(row, HostListLocators.HostTable.HostRow.actions).click()
+        self.wait_element_visible(HostListLocators.HostTable.HostRow.dropdown_menu, timeout=2)
 
-        host_row = HostListLocators.HostTable.HostRow
-        self.click_on_row_child(host_row_num, host_row.actions)
-        self.wait_element_visible(host_row.dropdown_menu)
+    def get_actions_from_opened_menu(self) -> list[WebElement]:
         try:
-            actions = [action.text for action in self.find_elements(host_row.action_option_all, timeout=2)]
-            return actions
+            return self.find_elements(HostListLocators.HostTable.HostRow.action_option_all, timeout=1)
         except TimeoutException:
             return []
+
+    def close_run_action_menu(self) -> None:
+        # Typing Escape and clicking somewhere doesn't work
+        self.driver.refresh()
+
+    def get_enabled_action_names(self, row_num: int) -> list[str]:
+        row = self.get_host_row(row_num)
+        self.open_run_action_menu(row)
+        action_names = [action.text for action in self.get_actions_from_opened_menu() if action.is_enabled()]
+        self.close_run_action_menu()
+        return action_names
+
+    def get_disabled_action_names(self, row_num: int) -> list[str]:
+        row = self.get_host_row(row_num)
+        self.open_run_action_menu(row)
+        action_names = [action.text for action in self.get_actions_from_opened_menu() if not action.is_enabled()]
+        self.close_run_action_menu()
+        return action_names
 
     @allure.step('Run action "{action_display_name}" on host in row {host_row_num}')
     def run_action(self, host_row_num: int, action_display_name: str):
