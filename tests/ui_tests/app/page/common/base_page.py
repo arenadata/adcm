@@ -227,7 +227,7 @@ class BasePageObject:
         try:
             self.wait_element_hide(element, timeout)
         except TimeoutException as e:
-            raise AssertionError(e.msg)
+            raise AssertionError(e.msg) from e
 
     def check_element_should_be_visible(
         self, element: Union[Locator, WebElement], timeout: Optional[int] = None
@@ -236,7 +236,7 @@ class BasePageObject:
         try:
             self.wait_element_visible(element, timeout)
         except TimeoutException as e:
-            raise AssertionError(e.msg)
+            raise AssertionError(e.msg) from e
 
     def find_and_click(self, locator: Locator, is_js: bool = False, timeout: int = None) -> None:
         """Find element on current page and click on it."""
@@ -402,6 +402,7 @@ class BasePageObject:
             NoSuchElementException,
             StaleElementReferenceException,
             TimeoutError,
+            AssertionError,
         ):
             return False
 

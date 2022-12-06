@@ -107,10 +107,10 @@ class JobListPage(BasePageObject):
         )
         get_name_element = FromOneOf(
             [
-                DataSource(self.find_child, [row, row_locators.action_name]),
-                DataSource(self.find_child, [row, row_locators.task_action_name]),
+                DataSource(self.find_child, [row, row_locators.action_name, 1]),
+                DataSource(self.find_child, [row, row_locators.task_action_name, 1]),
             ],
-            (TimeoutError, TimeoutException),
+            (TimeoutError, TimeoutException, AssertionError),
         )
         return TableTaskInfo(
             action_name=get_name_element().text,
