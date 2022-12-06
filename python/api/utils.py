@@ -230,11 +230,25 @@ def get_maintenance_mode_response(obj: Host | ClusterObject | ServiceComponent, 
         component_has_hc = HostComponent.objects.filter(component=obj).exists()
 
     if obj.maintenance_mode_attr == MaintenanceMode.CHANGING:
-        return Response(data={"code": "MAINTENANCE_MODE_IS_CHANGING_NOW"}, status=HTTP_409_CONFLICT)
+        return Response(
+            data={
+                "code": "MAINTENANCE_MODE",
+                "level": "error",
+                "desc": "Maintenance mode is changing now",
+            },
+            status=HTTP_409_CONFLICT,
+        )
 
     if obj.maintenance_mode_attr == MaintenanceMode.OFF:
         if serializer.validated_data["maintenance_mode"] == MaintenanceMode.OFF:
-            return Response(data={"code": "MAINTENANCE_MODE_ALREADY_OFF"}, status=HTTP_409_CONFLICT)
+            return Response(
+                data={
+                    "code": "MAINTENANCE_MODE",
+                    "level": "error",
+                    "desc": "Maintenance mode already off",
+                },
+                status=HTTP_409_CONFLICT,
+            )
 
         if obj_name == "host" or service_has_hc or component_has_hc:
             serializer = _change_mm_via_action(
@@ -251,7 +265,14 @@ def get_maintenance_mode_response(obj: Host | ClusterObject | ServiceComponent, 
 
     if obj.maintenance_mode_attr == MaintenanceMode.ON:
         if serializer.validated_data["maintenance_mode"] == MaintenanceMode.ON:
-            return Response(data={"code": "MAINTENANCE_MODE_ALREADY_ON"}, status=HTTP_409_CONFLICT)
+            return Response(
+                data={
+                    "code": "MAINTENANCE_MODE",
+                    "level": "error",
+                    "desc": "Maintenance mode already on",
+                },
+                status=HTTP_409_CONFLICT,
+            )
 
         if obj_name == "host" or service_has_hc or component_has_hc:
             serializer = _change_mm_via_action(
