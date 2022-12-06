@@ -38,6 +38,7 @@ import { ConfigAttributeNames } from '@app/shared/configuration/attributes/attri
 import { GroupKeysWrapperComponent } from '@app/shared/configuration/attributes/attributes/group-keys/group-keys-wrapper.component';
 import { FilterComponent } from "@app/shared/configuration/tools/filter/filter.component";
 import { FilterListComponent } from "@app/shared/configuration/tools/filter/filter-list/filter-list.component";
+import { ServerFilterComponent } from './tools/server-filter/server-filter.component';
 
 @NgModule({
   declarations: [
@@ -53,7 +54,8 @@ import { FilterListComponent } from "@app/shared/configuration/tools/filter/filt
     ToolsComponent,
     SchemeComponent,
     RootComponent,
-    ItemComponent
+    ItemComponent,
+    ServerFilterComponent
   ],
   imports: [
     CommonModule,
@@ -81,7 +83,7 @@ import { FilterListComponent } from "@app/shared/configuration/tools/filter/filt
       }
     }),
   ],
-  exports: [ConfigComponent, ConfigFieldsComponent, FilterComponent, FilterListComponent],
+  exports: [ConfigComponent, ConfigFieldsComponent, FilterComponent, FilterListComponent, ServerFilterComponent],
   providers: [FieldService, YspecService, SchemeService, ConfigService],
 })
 export class ConfigurationModule {

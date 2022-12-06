@@ -60,11 +60,11 @@ export class AuditLoginComponent extends RbacEntityListDirective<RbacAuditLoginM
   ] as IColumns<RbacAuditLoginModel>;
 
   type: TypeName = 'audit_login';
-  filteredData$: BehaviorSubject<any> = new BehaviorSubject<any>(null);
+  filterParams$: BehaviorSubject<any> = new BehaviorSubject<any>({});
 
   auditLoginFilters: IFilter[] = [
     {
-      id: 1, name: 'login', display_name: 'Login', filter_field: 'login_details/username', filter_type: 'input',
+      id: 1, name: 'login', display_name: 'Login', filter_field: 'username', filter_type: 'input',
     },
     {
       id: 2, name: 'login_result', display_name: 'Result', filter_field: 'login_result', filter_type: 'list',
@@ -89,6 +89,22 @@ export class AuditLoginComponent extends RbacEntityListDirective<RbacAuditLoginM
     protected entityService: RbacAuditLoginService,
   ) {
     super(service, store, route, router, dialog, entityService);
+  }
+
+  ngOnInit() {
+    super.ngOnInit();
+
+    this.filterParams$.subscribe((params) => {
+      const filter_params = this.baseListDirective.listParams;
+
+      if (filter_params) {
+        filter_params['params'] = { ...params };
+        this.router.navigate(['./', filter_params['params']], {
+          relativeTo: this.route,
+          replaceUrl: true,
+        });
+      }
+    })
   }
 
   getTitle(row: RbacAuditLoginModel): string {
