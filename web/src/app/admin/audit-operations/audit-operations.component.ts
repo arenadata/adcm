@@ -1,4 +1,4 @@
-import {Component, ComponentRef, Type, ViewChild} from '@angular/core';
+import { Component, ComponentRef, Type, ViewChild } from '@angular/core';
 import { ADD_SERVICE_PROVIDER } from "../../shared/add-component/add-service-model";
 import { IColumns } from "@adwp-ui/widgets";
 import { TypeName } from "../../core/types";
@@ -106,7 +106,7 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
   ] as IColumns<RbacAuditOperationsModel>;
 
   type: TypeName = 'audit_operations';
-  filteredData$: BehaviorSubject<any> = new BehaviorSubject<any>(null);
+  filterParams$: BehaviorSubject<any> = new BehaviorSubject<any>({});
 
   auditOperationsFilters: IFilter[] = [
     {
@@ -163,6 +163,22 @@ export class AuditOperationsComponent extends RbacEntityListDirective<RbacAuditO
     protected entityService: RbacAuditOperationsService,
   ) {
     super(service, store, route, router, dialog, entityService);
+  }
+
+  ngOnInit() {
+    super.ngOnInit();
+
+    this.filterParams$.subscribe((params) => {
+      const filter_params = this.baseListDirective.listParams;
+
+      if (filter_params) {
+        filter_params['params'] = { ...params };
+        this.router.navigate(['./', filter_params['params']], {
+          relativeTo: this.route,
+          replaceUrl: true,
+        });
+      }
+    })
   }
 
   getTitle(row: RbacAuditOperationsModel): string {

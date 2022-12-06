@@ -17,7 +17,6 @@ import { BaseDirective } from '@adwp-ui/widgets';
 import { ApiService } from '@app/core/api';
 import { getProfileSelector, settingsSave, State } from '@app/core/store';
 import { IConfig,ISettingsListResponse } from '@app/shared/configuration/types';
-import { BaseEntity } from "../core/types";
 import { Observable } from "rxjs";
 
 @Component({
