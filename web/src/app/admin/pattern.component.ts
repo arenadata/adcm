@@ -17,7 +17,6 @@ import { BaseDirective } from '@adwp-ui/widgets';
 import { ApiService } from '@app/core/api';
 import { getProfileSelector, settingsSave, State } from '@app/core/store';
 import { IConfig,ISettingsListResponse } from '@app/shared/configuration/types';
-import { BaseEntity } from "../core/types";
 import { Observable } from "rxjs";
 
 @Component({
@@ -59,7 +58,7 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
     { url: 'roles', title: 'Roles' },
     { url: 'policies', title: 'Policies' },
     { url: 'audit/operations', title: 'Audit operations' },
-    { url: 'audit/login', title: 'Audit login' }
+    { url: 'audit/logins', title: 'Audit logins' }
   ];
   data = {
     '/admin': { title: 'Hi there!', crumbs: [{ path: '/admin/', name: 'intro' }] },
@@ -70,7 +69,7 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
     '/admin/roles': { title: 'Role list', crumbs: [{ path: '/admin/roles', name: 'roles' }] },
     '/admin/policies': { title: 'Policy list', crumbs: [{ path: '/admin/policies', name: 'policies' }] },
     '/admin/audit/operations': { title: 'Audit operations', crumbs: [{ path: '/admin/audit/operations', name: 'audit operations' }] },
-    '/admin/audit/login': { title: 'Audit login', crumbs: [{ path: '/admin/audit/login', name: 'audit login' }] }
+    '/admin/audit/logins': { title: 'Audit logins', crumbs: [{ path: '/admin/audit/logins', name: 'audit logins' }] }
   };
 
   constructor(private store: Store<State>, private api: ApiService, private router: Router) {

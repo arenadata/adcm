@@ -179,7 +179,7 @@ class BasePageObject:
             except TimeoutException:
                 return []
 
-    def find_elements(self, locator: Locator, timeout: int = None) -> [WebElement]:
+    def find_elements(self, locator: Locator, timeout: int = None) -> list[WebElement]:
         """Find elements on current page."""
 
         loc_timeout = timeout or self.default_loc_timeout

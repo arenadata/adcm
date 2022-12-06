@@ -695,6 +695,10 @@ class Host(ADCMEntity):
 
         return cluster.prototype.allow_maintenance_mode
 
+    @property
+    def maintenance_mode_attr(self) -> MaintenanceMode.choices:
+        return self.maintenance_mode
+
 
 class ClusterObject(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
@@ -789,20 +793,6 @@ class ClusterObject(ADCMEntity):
     def is_maintenance_mode_available(self) -> bool:
         return self.cluster.prototype.allow_maintenance_mode
 
-    @property
-    def has_another_service_requires(self) -> bool:
-        components = ServiceComponent.objects.filter(service=self)
-        for component in components:
-            for require in component.requires:
-                if (
-                    require.get("service")
-                    and require["service"] != self.name
-                    and HostComponent.objects.filter(component=component)
-                ):
-                    return True
-
-        return False
-
     class Meta:
         unique_together = (("cluster", "prototype"),)
 
@@ -891,6 +881,13 @@ class ServiceComponent(ADCMEntity):
     @property
     def is_maintenance_mode_available(self) -> bool:
         return self.cluster.prototype.allow_maintenance_mode
+
+    def requires_service_name(self, service_name: str) -> bool:
+        for item in self.requires:
+            if item.get("service") == service_name:
+                return True
+
+        return False
 
     class Meta:
         unique_together = (("cluster", "service", "prototype"),)

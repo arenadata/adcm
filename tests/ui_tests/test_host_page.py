@@ -50,6 +50,7 @@ CLUSTER_NAME = 'Best Cluster Ever'
 PROVIDER_NAME = 'Black Mark'
 
 INIT_ACTION = 'Init'
+REINIT_ACTION = "Reinit"
 
 # config fields
 REGULAR_FIELD_NAME = 'Just item'
@@ -325,7 +326,6 @@ class TestHostListPage:
         page.run_action(0, INIT_ACTION)
         page.assert_host_state(0, 'running')
 
-    @pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3264")
     @pytest.mark.smoke()
     def test_maintenance_mode_on_host_page(self, page: HostListPage, create_bonded_host):
         """Test maintenance mode on host page"""
@@ -345,23 +345,32 @@ class TestHostListPage:
             page.driver.refresh()
             page.assert_maintenance_mode_state(0, None)
 
-    @pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3264")
     @pytest.mark.smoke()
-    def test_action_with_maintenance_mode_on_host_page(self, page: HostListPage, create_bonded_host):
+    def test_action_with_maintenance_mode_on_host_page(self, sdk_client_fs, page: HostListPage, create_bonded_host):
         """Test maintenance mode on host page"""
 
-        with allure.step("Turn OFF maintenance mode"):
-            page.driver.refresh()
-            page.click_on_maintenance_mode_btn(0)
-        with allure.step("Check there are no actions"):
-            assert not page.get_all_available_actions(0), "Action list with MM OFF should be empty"
-            page.driver.refresh()
         with allure.step("Turn ON maintenance mode"):
+            page.driver.refresh()
             page.click_on_maintenance_mode_btn(0)
-        with allure.step("Check there are action"):
-            assert page.get_all_available_actions(0) == [
+        with allure.step("Check actions are displayed"):
+            assert page.get_enabled_action_names(0) == [
                 INIT_ACTION
             ], f"Action list with MM ON should be with action {INIT_ACTION}"
+            assert page.get_disabled_action_names(0) == [], "There should be 0 disabled actions"
+        with allure.step("Run action and check available actions changed"):
+            page.run_action(0, INIT_ACTION)
+            _ = [job.wait() for job in sdk_client_fs.job_list()]
+            page.header.wait_success_job_amount_from_header(1)
+            page.driver.refresh()
+            assert page.get_disabled_action_names(0) == [
+                REINIT_ACTION
+            ], f"Action {REINIT_ACTION} should be shown and disabled in new state"
+            assert page.get_enabled_action_names(0) == [], "There should be 0 enabled actions"
+        with allure.step("Turn ON maintenance mode and check actions"):
+            page.click_on_maintenance_mode_btn(0)
+            assert page.get_enabled_action_names(0) == [
+                REINIT_ACTION
+            ], f"Action list with MM ON should be with action {REINIT_ACTION}"
 
 
 @pytest.mark.usefixtures('_login_to_adcm_over_api')

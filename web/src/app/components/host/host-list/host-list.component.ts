@@ -98,7 +98,7 @@ export class HostListComponent extends ConcernListDirective<IHost> {
     ListFactory.statusColumn(this),
     ListFactory.actionsButton(this),
     ListFactory.configColumn(this),
-    ListFactory.maintenanceModeColumn(this),
+    ListFactory.maintenanceModeColumn(this, 'host'),
     ListFactory.deleteColumn(this),
   ] as IColumns<IHost>;
 

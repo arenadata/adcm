@@ -70,6 +70,7 @@ from cm.models import (
     JobLog,
     JobStatus,
     LogStorage,
+    MaintenanceMode,
     ObjectType,
     Prototype,
     ServiceComponent,
@@ -206,26 +207,14 @@ def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster
     else:
         obj = task_object
 
-    locks = obj.concerns.filter(type=ConcernType.Lock)
-    if action.name == settings.ADCM_DELETE_SERVICE_ACTION_NAME:
-        non_task_locks = []
-        for lock in locks:
-            if isinstance(lock.owner, TaskLog):
-                cancel_task(task=lock.owner)
-            else:
-                non_task_locks.append(lock.owner)
+    if obj.concerns.filter(type=ConcernType.Lock).exists():
+        raise_adcm_ex("LOCK_ERROR", f"object {obj} is locked")
 
-        if non_task_locks:
-            raise_adcm_ex("LOCK_ERROR", f"object {obj} is locked")
-    else:
-        if locks.exists():
-            raise_adcm_ex("LOCK_ERROR", f"object {obj} is locked")
-
-        if (
-            obj.concerns.filter(type=ConcernType.Issue).exists()
-            and action.name not in settings.ADCM_SERVICE_ACTION_NAMES_SET
-        ):
-            raise_adcm_ex("ISSUE_INTEGRITY_ERROR", f"object {obj} has issues")
+    if (
+        action.name not in settings.ADCM_SERVICE_ACTION_NAMES_SET
+        and obj.concerns.filter(type=ConcernType.Issue).exists()
+    ):
+        raise_adcm_ex("ISSUE_INTEGRITY_ERROR", f"object {obj} has issues")
 
     if action.allowed(obj):
         return
@@ -846,6 +835,20 @@ def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
         operation_name = f"{action.display_name} upgrade completed"
     else:
         operation_name = f"{action.display_name} action completed"
+
+    if (
+        action.name in {settings.ADCM_TURN_ON_MM_ACTION_NAME, settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME}
+        and obj.maintenance_mode == MaintenanceMode.CHANGING
+    ):
+        obj.maintenance_mode = MaintenanceMode.OFF
+        obj.save()
+
+    if (
+        action.name in {settings.ADCM_TURN_OFF_MM_ACTION_NAME, settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME}
+        and obj.maintenance_mode == MaintenanceMode.CHANGING
+    ):
+        obj.maintenance_mode = MaintenanceMode.ON
+        obj.save()
 
     obj_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP.get(obj.__class__)
     if not obj_type:

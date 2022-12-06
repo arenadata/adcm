@@ -194,9 +194,11 @@ def test_mm_concern_provider_host(api_client, provider_with_concern, cluster_wit
         check_no_concerns_on_objects(cluster, first_service, first_host)
 
     with allure.step(
-        "Switch service to MM 'OFF', switch host without concern to MM 'ON' and check cluster objects and hosts"
+        "Switch service and component to MM 'OFF', "
+        "switch host without concern to MM 'ON' and check cluster objects and hosts"
     ):
         set_maintenance_mode(api_client=api_client, adcm_object=first_service, maintenance_mode=MM_IS_OFF)
+        set_maintenance_mode(api_client=api_client, adcm_object=first_component, maintenance_mode=MM_IS_OFF)
         set_maintenance_mode(api_client=api_client, adcm_object=first_host, maintenance_mode=MM_IS_ON)
         check_mm_is(MM_IS_ON, first_host)
         check_mm_is(MM_IS_OFF, first_service, first_component, host_concern)

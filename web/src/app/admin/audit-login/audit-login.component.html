@@ -1,8 +1,8 @@
-<app-filter [filterList]="auditLoginFilters" [externalData]="data$" [innerData]="filteredData$"></app-filter>
+<app-server-filter [filterList]="auditLoginFilters" [filterParams$]="filterParams$" [entity]="type"></app-server-filter>
 
 <adwp-list
   [columns]="listColumns"
-  [dataSource]="filteredData$ | async"
+  [dataSource]="data$ | async"
   [paging]="paging | async"
   [sort]="sorting | async"
   [defaultSort]="defaultSort"

@@ -57,6 +57,7 @@ from cm.models import (
     HostComponent,
     JobStatus,
     Prototype,
+    ServiceComponent,
     TaskLog,
 )
 from cm.status_api import make_ui_service_status
@@ -121,19 +122,17 @@ class ServiceDetailView(PermissionListMixin, DetailView):
         delete_action = Action.objects.filter(
             prototype=instance.prototype, name=settings.ADCM_DELETE_SERVICE_ACTION_NAME
         ).first()
+        host_components_exists = HostComponent.objects.filter(cluster=instance.cluster, service=instance).exists()
 
         if not delete_action:
             if instance.state != "created":
                 raise_adcm_ex("SERVICE_DELETE_ERROR")
 
-            if HostComponent.objects.filter(cluster=instance.cluster, service=instance).exists():
+            if host_components_exists:
                 raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} has component(s) on host(s)")
 
         if ClusterBind.objects.filter(source_service=instance).exists():
             raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} has exports(s)")
-
-        if instance.has_another_service_requires:
-            raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} has another service requires host components")
 
         if instance.prototype.required:
             raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} is required")
@@ -144,7 +143,14 @@ class ServiceDetailView(PermissionListMixin, DetailView):
         if TaskLog.objects.filter(action=delete_action, status=JobStatus.RUNNING).exists():
             raise_adcm_ex("SERVICE_DELETE_ERROR", "Service is deleting now")
 
-        if delete_action:
+        if any(
+            service_component.requires_service_name(service_name=instance.name)
+            for service_component in ServiceComponent.objects.filter(cluster=instance.cluster)
+        ):
+            raise_adcm_ex("SERVICE_CONFLICT", "Another service component requires component of this service")
+
+        cancel_locking_tasks(obj=instance, obj_deletion=True)
+        if delete_action and (host_components_exists or instance.state != "created"):
             start_task(
                 action=delete_action,
                 obj=instance,
@@ -155,7 +161,6 @@ class ServiceDetailView(PermissionListMixin, DetailView):
                 verbose=False,
             )
         else:
-            cancel_locking_tasks(obj=instance, obj_deletion=True)
             delete_service(service=instance)
 
         return Response(status=HTTP_204_NO_CONTENT)
@@ -176,7 +181,11 @@ class ServiceMaintenanceModeView(GenericUIView):
         serializer = self.get_serializer(instance=service, data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        return get_maintenance_mode_response(obj=service, serializer=serializer)
+        response: Response = get_maintenance_mode_response(obj=service, serializer=serializer)
+        if response.status_code == HTTP_200_OK:
+            response.data = serializer.data
+
+        return response
 
 
 class ServiceImportView(GenericUIView):

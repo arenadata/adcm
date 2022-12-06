@@ -1,0 +1,48 @@
+<div class="filter-container">
+  <div class="filter-toggle-button" [matMenuTriggerFor]="list.menu">
+    <mat-icon>filter_list</mat-icon>
+    <filter-list #list [filters]="availableFilters" (toggleFilter)="toggleFilters($event)"></filter-list>
+  </div>
+
+  <form [formGroup]="filterForm">
+    <ng-container *ngIf="filterList.length > 0">
+      <ng-container *ngFor="let filter of filters">
+        <mat-form-field class="filter-field" [ngClass]="{ 'datepicker': filter.filter_type === 'datepicker' }">
+          <ng-container [ngSwitch]="filter.filter_type">
+            <ng-container *ngSwitchCase="'list'">
+              <mat-select  placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}"
+                           (selectionChange)="applyFilters()">
+                <mat-option *ngFor="let p of filter.options" [value]="p.value">{{ p.display_name }}</mat-option>
+              </mat-select>
+            </ng-container>
+            <ng-container *ngSwitchCase="'input'">
+              <input matInput autofocus placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}" (keyup.enter)="applyFilters()" (change)="applyFilters()">
+            </ng-container>
+            <ng-container *ngSwitchCase="'datepicker'">
+              <mat-form-field class="datepicker-form">
+                <mat-label>{{ filter.display_name }}</mat-label>
+                <mat-date-range-input [formGroup]="datepickerGroup(filter.filter_field)" [rangePicker]="picker">
+                  <input matStartDate formControlName="start">
+                  <input matEndDate formControlName="end" (dateChange)="setDate($event)">
+                </mat-date-range-input>
+                <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                <mat-date-range-picker #picker></mat-date-range-picker>
+                <mat-error *ngIf="datepickerGroup(filter.filter_field).controls.start.hasError('matStartDateInvalid')">Invalid start date</mat-error>
+                <mat-error *ngIf="datepickerGroup(filter.filter_field).controls.end.hasError('matEndDateInvalid')">Invalid end date</mat-error>
+              </mat-form-field>
+            </ng-container>
+          </ng-container>
+          <button type="button" class="clear-button" mat-button matSuffix mat-icon-button aria-label="Clear"
+                  *ngIf="clearButtonVisible(filter.filter_field)"
+                  (click)="clear(filter.filter_field, $event);$event.stopPropagation()">
+            <mat-icon>refresh</mat-icon>
+          </button>
+          <button type="button" class="remove-button" mat-button matSuffix mat-icon-button aria-label="Remove"
+                  (click)="removeFilter(filter, $event)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </mat-form-field>
+      </ng-container>
+    </ng-container>
+  </form>
+</div>
