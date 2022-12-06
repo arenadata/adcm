@@ -36,7 +36,7 @@ export interface IAction {
   name: string;
   description: string;
   display_name: string;
-  disabling_cause: string;
+  start_impossible_reason: string;
   run: string;
   config: IConfig;
   hostcomponentmap: IActionParameter[];

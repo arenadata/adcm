@@ -128,7 +128,7 @@ export class ListService implements IListService<Entities> {
   }
 
   setMaintenanceMode(row: Entities) {
-    return this.api.patch(`/api/v1/host/${row.id}/`, { maintenance_mode: row['maintenance_mode'] });
+    return this.api.post(`/api/v1/${row['type']}/${row.id}/maintenance-mode/`, { maintenance_mode: row['maintenance_mode'] });
   }
 
   renameHost(column: string, value: any, id: number) {

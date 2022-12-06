@@ -55,7 +55,8 @@ class ClusterServicesLocators:
         actions = Locator(By.CSS_SELECTOR, "app-actions-button button", "Service actions")
         service_import = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(6) button", "Service import")
         config = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(7) button", "Service config")
-        delete_btn = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(8) button", "Row delete button")
+        maintenance_mode = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(8) button", "Maintenance mode button")
+        delete_btn = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(9) button", "Row delete button")
 
 
 class ClusterHostLocators:

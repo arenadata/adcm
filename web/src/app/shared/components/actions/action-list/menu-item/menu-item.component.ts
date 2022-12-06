@@ -22,10 +22,10 @@ import { MatMenu } from '@angular/material/menu';
     </div>
     <ng-template #list>
       <ng-container *ngFor="let a of items">
-        <div *ngIf="!a.children; else branch" [matTooltip]="actionListItemTooltip(a.disabling_cause)">
+        <div *ngIf="!a.children; else branch" [matTooltip]="a.start_impossible_reason">
           <button
             mat-menu-item
-            [disabled]="a.disabling_cause === 'maintenance_mode' || a.disabling_cause === 'no_ldap_settings'"
+            [disabled]="a.start_impossible_reason !== null"
             [appForTest]="'action_btn'"
             [appActions]="{ cluster: cluster, actions: [a] }"
             >
@@ -46,15 +46,4 @@ export class MenuItemComponent {
   @Input() items: IAction[] = [];
   @Input() cluster: { id: number; hostcomponent: string };
   @ViewChild('menu', { static: true }) menu: MatMenu;
-
-  actionListItemTooltip(value: string | null): string | null {
-    switch(value) {
-      case 'maintenance_mode':
-        return 'The Action is not available. One or more hosts in “Maintenance mode”';
-      case 'no_ldap_settings':
-        return 'The Action is not available. You need to fill in the LDAP integration settings.';
-      default:
-        return null;
-    }
-  }
 }

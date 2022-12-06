@@ -223,9 +223,7 @@ export class BaseListDirective {
   onLoad() {}
 
   maintenanceModeToggle(row) {
-    this.service.setMaintenanceMode(row)
-    .pipe(this.takeUntil())
-    .subscribe(() => {});
+    this.service.setMaintenanceMode(row).subscribe();
   }
 
   license() {
