@@ -11,7 +11,6 @@
 # limitations under the License.
 
 """The most basic PageObject classes"""
-
 from contextlib import contextmanager
 from typing import Callable, List, Optional, Union
 
@@ -365,7 +364,9 @@ class BasePageObject:
 
         def _clear():
             locator_before = element if isinstance(element, WebElement) else self.find_element(element)
-            locator_before.send_keys(Keys.CONTROL + "a")
+            actual_value = locator_before.get_property('value')
+            for _ in range(len(actual_value)):
+                locator_before.send_keys(Keys.BACKSPACE)
             locator_before.send_keys(Keys.BACK_SPACE)
             locator_after = element if isinstance(element, WebElement) else self.find_element(element)
             assert locator_after.text == ""
