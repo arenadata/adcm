@@ -31,7 +31,7 @@ class CommonGroupConfigMenu(BasePageObject):
 
     def is_customization_chbx_disabled(self, row: WebElement) -> bool:
         """Check if customization checkbox is disabled"""
-        return 'mat-checkbox-disabled' in str(
+        return "mat-checkbox-disabled" in str(
             self.find_child(row, self.locators.customization_chbx).get_attribute("class")
         )
 
@@ -48,7 +48,7 @@ class CommonGroupConfigMenu(BasePageObject):
     def is_customization_chbx_checked(self, row: WebElement) -> bool:
         """Check if customization checkbox is checked"""
 
-        return 'mat-checkbox-checked' in str(
+        return "mat-checkbox-checked" in str(
             self.find_child(row, self.locators.customization_chbx).get_attribute("class")
         )
 
@@ -72,6 +72,6 @@ class CommonGroupConfigMenu(BasePageObject):
         except TimeoutException:
             return []
 
-    @allure.step('Check that there are no rows on group config page')
+    @allure.step("Check that there are no rows on group config page")
     def check_no_rows(self):
         assert len(self.get_all_group_config_rows(timeout=1)) == 0, "There should not be any rows"

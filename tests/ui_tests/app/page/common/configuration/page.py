@@ -29,6 +29,8 @@ from tests.ui_tests.app.page.common.common_locators import (
 from tests.ui_tests.app.page.common.configuration.fields import ConfigFieldsManipulator
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 
+# pylint: disable=too-many-public-methods
+
 
 @dataclass
 class ConfigRowInfo:
@@ -45,6 +47,10 @@ class CommonConfigMenuObj(BasePageObject):
         super().__init__(driver, base_url)
         self.locators = config_class_locators
         self.fields = ConfigFieldsManipulator(self.driver, self.base_url)
+
+    @property
+    def rows_amount(self) -> int:
+        return len(self.get_all_config_rows())
 
     def get_all_config_rows(self, *, displayed_only: bool = True, timeout: int = 5) -> List[WebElement]:
         """Return all config field rows"""
@@ -63,8 +69,8 @@ class CommonConfigMenuObj(BasePageObject):
         #  maybe here isn't a good place for it or we need a better check in config hell test
         try:
             self.wait_element_visible(CommonConfigMenu.config_row, timeout=120)
-        except TimeoutException:
-            raise AssertionError("Config menu fields don't appear in time")
+        except TimeoutException as exc:
+            raise AssertionError("Config menu fields don't appear in time") from exc
         return [
             self.find_child(r, CommonConfigMenu.ConfigRow.name, timeout=2).text.rstrip(":")
             for r in self.get_all_config_rows(displayed_only=displayed_only)
@@ -77,7 +83,7 @@ class CommonConfigMenuObj(BasePageObject):
         for row in self.get_all_config_rows():
             if self.find_child(row, CommonConfigMenu.ConfigRow.name).text == row_name:
                 return row
-        raise AssertionError(f'Configuration field with name {display_name} was not found')
+        raise AssertionError(f"Configuration field with name {display_name} was not found")
 
     def get_textbox_rows(self, timeout=2) -> List[WebElement]:
         """Get textbox elements from the page"""
@@ -86,7 +92,7 @@ class CommonConfigMenuObj(BasePageObject):
         except TimeoutException:
             return []
 
-    @allure.step('Saving configuration')
+    @allure.step("Saving configuration")
     def save_config(self, load_timeout: int = 5):
         """Save current configuration"""
 
@@ -99,7 +105,7 @@ class CommonConfigMenuObj(BasePageObject):
         """Clear description field, set new value and get previous description"""
 
         desc = self.find_element(self.locators.description_input)
-        previous_description = desc.get_property('value')
+        previous_description = desc.get_property("value")
         self.send_text_to_element(self.locators.description_input, description, clean_input=True)
         return previous_description
 
@@ -107,7 +113,7 @@ class CommonConfigMenuObj(BasePageObject):
         """Click on history button and select compare to config option by its description"""
 
         base_version = f'"{base_compare_version}"' if base_compare_version else 'current'
-        with allure.step(f'Compare {base_version} configuration with {compare_with}'):
+        with allure.step(f"Compare {base_version} configuration with {compare_with}"):
             self.find_and_click(self.locators.history_btn)
             if base_compare_version:
                 self.find_and_click(self.locators.compare_version_select)
@@ -119,10 +125,9 @@ class CommonConfigMenuObj(BasePageObject):
             # to hide select panel so it won't block other actions
             self.find_element(self.locators.compare_to_select).send_keys(Keys.ESCAPE)
 
-    @allure.step('Click on advanced button')
+    @allure.step("Click on advanced button")
     def click_on_advanced(self):
         """Click on advanced button"""
-
         self.find_and_click(CommonConfigMenu.advanced_label)
 
     @property
@@ -147,15 +152,16 @@ class CommonConfigMenuObj(BasePageObject):
 
     def check_inputs_disabled(self, row: WebElement, is_password: bool = False):
         """Check that inputs in row are disabled"""
-
         row_locators = CommonConfigMenu.ConfigRow
         locator = row_locators.value if not is_password else row_locators.password
         for row_input in self.find_children(row, locator):
-            assert row_input.get_attribute("disabled") == 'true', "Input should be disabled"
+            assert row_input.get_attribute("disabled") == "true", "Input should be disabled"
+
+    def is_history_disabled(self):
+        return self.find_element(self.locators.history_btn).get_attribute("disabled") == "true"
 
     def activate_group_chbx(self, row: WebElement):
         """Activate group checkbox in row"""
-
         group_chbx = self.find_child(row, CommonConfigMenu.ConfigRow.group_chbx)
 
         def is_checked(chbx: WebElement):
@@ -178,14 +184,14 @@ class CommonConfigMenuObj(BasePageObject):
         for row_input in self.find_children(row, locator):
             assert not row_input.get_attribute("disabled"), "Input should be enabled"
 
-    @allure.step('Check bool field')
+    @allure.step("Check bool field")
     def assert_checkbox_state(self, row: WebElement, expected_value: bool):
         current_bool_state = "checked" in self.find_child(row, CommonConfigMenu.ConfigRow.checkbox).get_attribute(
             "class"
         )
         assert (
             current_bool_state == expected_value
-        ), f'Expected value was {expected_value} but presented is {current_bool_state}'
+        ), f"Expected value was {expected_value} but presented is {current_bool_state}"
 
     @allure.step('Check field "{display_name}" has value "{expected_value}"')
     def assert_input_value_is(
@@ -204,7 +210,7 @@ class CommonConfigMenuObj(BasePageObject):
 
         def _assert_value():
             input_value = self.get_input_value(row=self.get_config_row(display_name), is_password=is_password)
-            assert expected_value == input_value, f'Expected value was {expected_value} but presented is {input_value}'
+            assert expected_value == input_value, f"Expected value was {expected_value} but presented is {input_value}"
 
         wait_until_step_succeeds(_assert_value, timeout=4, period=0.5)
 
@@ -229,7 +235,7 @@ class CommonConfigMenuObj(BasePageObject):
             ]
             for i in range(0, len(row_values) - 1, 2):  # row values are key-value for each "input" in a map row
                 input_value[row_values[i]] = row_values[i + 1]
-            assert expected_value == input_value, f'Expected value was {expected_value} but presented is {input_value}'
+            assert expected_value == input_value, f"Expected value was {expected_value} but presented is {input_value}"
 
         wait_until_step_succeeds(_assert_value, timeout=4, period=0.5)
 
@@ -251,7 +257,7 @@ class CommonConfigMenuObj(BasePageObject):
                 v.get_attribute("value")
                 for v in self.find_children(self.get_config_row(display_name), self.locators.ConfigRow.input)
             ]
-            assert expected_value == input_value, f'Expected value was {expected_value} but presented is {input_value}'
+            assert expected_value == input_value, f"Expected value was {expected_value} but presented is {input_value}"
 
         wait_until_step_succeeds(_assert_value, timeout=4, period=0.5)
 
@@ -263,29 +269,29 @@ class CommonConfigMenuObj(BasePageObject):
         self.find_child(row, CommonConfigMenu.ConfigRow.reset_btn).click()
 
     @allure.step('Type "{values}" into config field with few inputs')
-    def type_in_field_with_few_inputs(self, row: Union[WebElement, str], values: [str], clear: bool = False):
+    def type_in_field_with_few_inputs(self, row: WebElement | str, values: list[str | int], clear: bool = False):
         """
         Send keys to config list
         :param row: Config field row
-        :param value: keys to send
+        :param values: keys to send
         :param clear: clean input before sending keys or not
         """
 
         field_row = row if isinstance(row, WebElement) else self.get_config_row(display_name=row)
         self.scroll_to(field_row)
-        for id, value in enumerate(values):
+        for value_id, value in enumerate(values):
             try:
-                field = self.find_children(field_row, self.locators.ConfigRow.input)[id]
+                field = self.find_children(field_row, self.locators.ConfigRow.input)[value_id]
             except IndexError:
                 self.find_child(field_row, self.locators.ConfigRow.add_item_btn).click()
                 self.wait_element_visible(self.find_child(field_row, self.locators.ConfigRow.input))
-                field = self.find_children(field_row, self.locators.ConfigRow.input)[id]
+                field = self.find_children(field_row, self.locators.ConfigRow.input)[value_id]
             if clear:
                 field.clear()
-            self.find_children(field_row, self.locators.ConfigRow.input)[id].click()
-            self.find_children(field_row, self.locators.ConfigRow.input)[id].send_keys(value)
+            self.find_children(field_row, self.locators.ConfigRow.input)[value_id].click()
+            self.find_children(field_row, self.locators.ConfigRow.input)[value_id].send_keys(value)
 
-    @allure.step('Click item button in config row')
+    @allure.step("Click item button in config row")
     def click_add_item_btn_in_row(self, row: Union[WebElement, str]):
         """Click item button in config row"""
         field_row = row if isinstance(row, WebElement) else self.get_config_row(display_name=row)
@@ -303,9 +309,9 @@ class CommonConfigMenuObj(BasePageObject):
             if item.text == option:
                 item.click()
                 return
-        raise AttributeError(f'Option {option} has not been found')
+        raise AttributeError(f"Option {option} has not been found")
 
-    @allure.step('Click on group {title}')
+    @allure.step("Click on group {title}")
     def click_on_group(self, title: str):
         """Click on group with given title"""
 
@@ -338,7 +344,7 @@ class CommonConfigMenuObj(BasePageObject):
 
         wait_until_step_succeeds(check_group_clicked, period=1, timeout=10)
 
-    @allure.step('Click on group {group_name} expanded toggle')
+    @allure.step("Click on group {group_name} expanded toggle")
     def expand_or_close_group(self, group_name: str, expand: bool = True):
         """Click on group with given title"""
 
@@ -358,14 +364,14 @@ class CommonConfigMenuObj(BasePageObject):
 
         wait_until_step_succeeds(click_on_group, period=1, timeout=10)
 
-    @allure.step('Search for {keys}')
+    @allure.step("Search for {keys}")
     def search(self, keys: str):
         """Clear search and send keys"""
         search = self.find_element(self.locators.search_input)
         search.clear()
         search.send_keys(keys)
 
-    @allure.step('Clear search')
+    @allure.step("Clear search")
     def clear_search(self):
         """Clear search input with button"""
         self.find_and_click(CommonConfigMenu.search_input_clear_btn)
@@ -382,7 +388,7 @@ class CommonConfigMenuObj(BasePageObject):
         """
         Assert that message "Field [{name}] is required!" is presented
         """
-        message = f'Field [{name}] is required!'
+        message = f"Field [{name}] is required!"
         self.check_element_should_be_visible(self.locators.field_error(message))
 
     @allure.step("Check {name} invalid error is presented")
@@ -390,7 +396,7 @@ class CommonConfigMenuObj(BasePageObject):
         """
         Assert that message "Field [{name}] is invalid!" is presented
         """
-        message = f'Field [{name}] is invalid!'
+        message = f"Field [{name}] is invalid!"
         self.check_element_should_be_visible(self.locators.field_error(message))
 
     @allure.step("Check {name} confirmation error is presented")
@@ -398,7 +404,7 @@ class CommonConfigMenuObj(BasePageObject):
         """
         Assert that message "Confirm [{name}] is required!" is presented
         """
-        message = f'Confirm [{name}] is required!'
+        message = f"Confirm [{name}] is required!"
         self.check_element_should_be_visible(self.locators.field_error(message))
 
     @allure.step("Check invalid value error is presented")
@@ -410,7 +416,7 @@ class CommonConfigMenuObj(BasePageObject):
 
     def is_save_btn_disabled(self):
         self.find_and_click(self.locators.search_input)
-        return self.find_element(self.locators.save_btn).get_attribute("disabled") == 'true'
+        return self.find_element(self.locators.save_btn).get_attribute("disabled") == "true"
 
     @allure.step("Check save button status")
     def check_save_btn_state_and_save_conf(self, expected_state: bool):
@@ -447,13 +453,13 @@ class CommonConfigMenuObj(BasePageObject):
         assert len(falsely_visible) == 0, f"Those fields shouldn't be visible in configuration: {falsely_visible}"
         assert len(visible_fields) == 0, f"Those fields should be visible: {visible_fields}"
 
-    @allure.step('Check that group is active = {is_active}')
+    @allure.step("Check that group is active = {is_active}")
     def check_group_is_active(self, group_name, is_active: bool = True):
         """Get group activity state"""
 
         group = self.find_element(self.locators.group_btn(group_name))
         toogle = self.find_child(group, CommonLocators.mat_slide_toggle)
-        toogle_is_active = 'mat-checked' in toogle.get_attribute("class")
+        toogle_is_active = "mat-checked" in toogle.get_attribute("class")
         assert (
             toogle_is_active if is_active else not toogle_is_active
         ), f"Group should{'' if is_active else ' not '}be active by default"
@@ -466,7 +472,7 @@ class CommonConfigMenuObj(BasePageObject):
         except TimeoutException:
             return []
 
-    @allure.step('Check that subs in group {group_name} is visible = {is_visible}')
+    @allure.step("Check that subs in group {group_name} is visible = {is_visible}")
     def check_subs_visibility(self, group_name: str, is_visible: bool = True):
         """Get config field group elements"""
 
@@ -503,12 +509,12 @@ class CommonConfigMenuObj(BasePageObject):
 
         wait_until_step_succeeds(_wait_changing_rows_amount, period=1, timeout=10)
 
-    @allure.step('Check that there are no rows or groups on config page')
+    @allure.step("Check that there are no rows or groups on config page")
     def check_no_rows_or_groups_on_page(self, timeout=1):
         assert len(self.get_group_names(timeout)) == 0, "Config group should not be visible"
         assert len(self.get_all_config_rows(timeout=timeout)) == 0, "There should not be any rows"
 
-    @allure.step('Check that there are no rows or groups on config page with advanced settings')
+    @allure.step("Check that there are no rows or groups on config page with advanced settings")
     def check_no_rows_or_groups_on_page_with_advanced(self):
         self.check_no_rows_or_groups_on_page()
         self.click_on_advanced()
@@ -535,7 +541,7 @@ class CommonConfigMenuObj(BasePageObject):
         """Get info by row"""
         return ConfigRowInfo(
             name=self.find_child(row, CommonConfigMenu.ConfigRow.name).text,
-            value=self.find_child(row, CommonConfigMenu.ConfigRow.value).get_attribute('value'),
+            value=self.find_child(row, CommonConfigMenu.ConfigRow.value).get_attribute("value"),
         )
 
     @allure.step("Clear search input")
@@ -602,40 +608,40 @@ class CommonConfigMenuObj(BasePageObject):
 
         row_value_new = "test"
         with allure.step("Change value in float type"):
-            self.type_in_field_with_few_inputs('float', ["1.1111111111"], True)
+            self.type_in_field_with_few_inputs("float", ["1.1111111111"], True)
         with allure.step("Change value in boolean type"):
             self.click_boolean_checkbox(self.get_config_row("boolean"))
         with allure.step("Change value in int type"):
-            self.type_in_field_with_few_inputs('integer', ["100500"], True)
+            self.type_in_field_with_few_inputs("integer", ["100500"], True)
         with allure.step("Change value in password type"):
-            self.type_in_field_with_few_inputs('password', [row_value_new] * 2, True)
+            self.type_in_field_with_few_inputs("password", [row_value_new] * 2, True)
         with allure.step("Change value in string type"):
-            self.type_in_field_with_few_inputs('string', [row_value_new], True)
+            self.type_in_field_with_few_inputs("string", [row_value_new], True)
         with allure.step("Change value in list type"):
-            self.type_in_field_with_few_inputs(row='list', values=[row_value_new] * 3, clear=True)
+            self.type_in_field_with_few_inputs(row="list", values=[row_value_new] * 3, clear=True)
         with allure.step("Change value in file type"):
-            self.type_in_field_with_few_inputs('file', [row_value_new * 2], True)
+            self.type_in_field_with_few_inputs("file", [row_value_new * 2], True)
         with allure.step("Change value in option type"):
-            self.select_option('option', "WEEKLY")
+            self.select_option("option", "WEEKLY")
         with allure.step("Change value in text type"):
-            self.type_in_field_with_few_inputs(row='text', values=[row_value_new], clear=True)
+            self.type_in_field_with_few_inputs(row="text", values=[row_value_new], clear=True)
         with allure.step("Deactivate group"):
             self.expand_or_close_group("group", expand=False)
         with allure.step("Change value in structure type"):
             self.type_in_field_with_few_inputs(
-                row='structure', values=["1", row_value_new, "2", row_value_new], clear=True
+                row="structure", values=["1", row_value_new, "2", row_value_new], clear=True
             )
         with allure.step("Change value in map type"):
-            self.type_in_field_with_few_inputs(row='map', values=[row_value_new] * 4, clear=True)
+            self.type_in_field_with_few_inputs(row="map", values=[row_value_new] * 4, clear=True)
         with allure.step("Change value in secrettext type"):
-            self.type_in_field_with_few_inputs(row='secrettext', values=[row_value_new], clear=True)
+            self.type_in_field_with_few_inputs(row="secrettext", values=[row_value_new], clear=True)
         with allure.step("Change value in json type"):
-            self.type_in_field_with_few_inputs(row='json', values=['{}'], clear=True)
+            self.type_in_field_with_few_inputs(row="json", values=['{}'], clear=True)
 
-    def is_element_read_only(self, row: WebElement) -> bool:
+    @staticmethod
+    def is_element_read_only(row: WebElement) -> bool:
         """Check if element is read-only by checking 'read-only' in class"""
-
-        return 'read-only' in str(row.get_attribute("class"))
+        return "read-only" in str(row.get_attribute("class"))
 
     @allure.step("Check row history on config page")
     def check_config_fields_history_with_test_values(self):
@@ -665,11 +671,11 @@ class CommonConfigMenuObj(BasePageObject):
                 self.get_config_row("list"), '["/dev/rdisk0s1","/dev/rdisk0s2","/dev/rdisk0s3"]'
             )
         with allure.step("Check history value in file type"):
-            self.wait_history_row_with_value(self.get_config_row("file"), 'file content')
+            self.wait_history_row_with_value(self.get_config_row("file"), "file content")
         with allure.step("Check history value in option type"):
-            self.wait_history_row_with_value(self.get_config_row("option"), 'DAILY')
+            self.wait_history_row_with_value(self.get_config_row("option"), "DAILY")
         with allure.step("Check history value in text type"):
-            self.wait_history_row_with_value(self.get_config_row("text"), 'text')
+            self.wait_history_row_with_value(self.get_config_row("text"), "text")
         with allure.step("Check group in not active"):
             self.check_group_is_active("group", is_active=False)
         with allure.step("Check history value in structure type"):
@@ -687,26 +693,26 @@ class CommonConfigMenuObj(BasePageObject):
     def get_config_title(self):
         return self.find_element(ObjectPageLocators.title).text
 
-    def is_element_editable(self, element: WebElement) -> bool:
+    @staticmethod
+    def is_element_editable(element: WebElement) -> bool:
         """Check if app-field element is read-only by checking 'read-only' class presence"""
-
-        return 'read-only' not in str(element.get_attribute("class"))
+        return "read-only" not in str(element.get_attribute("class"))
 
 
 CONFIG_ITEMS = [
-    'float',
-    'boolean',
-    'integer',
-    'password',
-    'string',
-    'list',
-    'file',
-    'option',
-    'text',
-    'structure',
-    'map',
-    'secrettext',
-    'json',
-    'usual_port',
-    'transport_port',
+    "float",
+    "boolean",
+    "integer",
+    "password",
+    "string",
+    "list",
+    "file",
+    "option",
+    "text",
+    "structure",
+    "map",
+    "secrettext",
+    "json",
+    "usual_port",
+    "transport_port",
 ]
