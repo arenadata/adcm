@@ -12,31 +12,30 @@
 
 """Tests for adcm_config plugin"""
 
-from typing import Tuple, Callable
+from typing import Callable, Tuple
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient, Cluster, Provider, Host, Component, Service
+from adcm_client.objects import ADCMClient, Cluster, Component, Host, Provider, Service
 from adcm_pytest_plugin.steps.actions import (
-    run_provider_action_and_assert_result,
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
     run_host_action_and_assert_result,
+    run_provider_action_and_assert_result,
+    run_service_action_and_assert_result,
 )
-
-from tests.functional.tools import AnyADCMObject, get_config
 from tests.functional.plugin_utils import (
+    TestImmediateChange,
     build_objects_checker,
-    generate_cluster_success_params,
     compose_name,
-    run_successful_task,
-    get_cluster_related_object,
-    generate_provider_success_params,
-    get_provider_related_object,
     create_two_clusters,
     create_two_providers,
-    TestImmediateChange,
+    generate_cluster_success_params,
+    generate_provider_success_params,
+    get_cluster_related_object,
+    get_provider_related_object,
+    run_successful_task,
 )
+from tests.functional.tools import AnyADCMObject, get_config
 
 # pylint:disable=redefined-outer-name
 
@@ -148,7 +147,9 @@ def test_host_from_provider(two_providers: Tuple[Provider, Provider], sdk_client
 
 
 def test_multijob(
-    two_clusters: Tuple[Cluster, Cluster], two_providers: Tuple[Provider, Provider], sdk_client_fs: ADCMClient
+    two_clusters: Tuple[Cluster, Cluster],
+    two_providers: Tuple[Provider, Provider],
+    sdk_client_fs: ADCMClient,
 ):
     """Check that multijob actions change config or object itself"""
     component = (service := (cluster := two_clusters[0]).service()).component()
@@ -187,18 +188,25 @@ def test_forbidden_actions(sdk_client_fs: ADCMClient):
         first_host, second_host, *_ = provider.host_list()
         with check_config_changed(sdk_client_fs):
             run_host_action_and_assert_result(
-                first_host, 'change_host_from_provider', status='failed', config={'host_id': second_host.id}
+                first_host,
+                'change_host_from_provider',
+                status='failed',
+                config={'host_id': second_host.id},
             )
 
 
 def test_from_host_actions(
-    two_clusters: Tuple[Cluster, Cluster], two_providers: Tuple[Provider, Provider], sdk_client_fs: ADCMClient
+    two_clusters: Tuple[Cluster, Cluster],
+    two_providers: Tuple[Provider, Provider],
+    sdk_client_fs: ADCMClient,
 ):
     """Test that host actions actually change config"""
     name = "first"
     affected_objects = set()
     check_config_changed_local = build_objects_checker(
-        extractor=get_config, changed={**INITIAL_CONFIG, 'int': CHANGED_CONFIG['int']}, field_name='Config'
+        extractor=get_config,
+        changed={**INITIAL_CONFIG, 'int': CHANGED_CONFIG['int']},
+        field_name='Config',
     )
     with allure.step('Bind component to host'):
         component = (service := (cluster := two_clusters[0]).service(name=name)).component(name=name)

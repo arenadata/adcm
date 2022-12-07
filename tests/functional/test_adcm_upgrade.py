@@ -12,47 +12,48 @@
 
 """Tests for ADCM upgrade"""
 
-# pylint:disable=redefined-outer-name, too-many-arguments
+# pylint:disable=redefined-outer-name
 
 import random
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Tuple, Union, List, Iterable, Any, Collection
+from typing import Any, Collection, Iterable, List, Tuple, Union
 
 import allure
 import pytest
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import (
     ADCMClient,
-    Cluster,
-    Host,
-    Service,
     Bundle,
+    Cluster,
     Component,
-    Provider,
-    Task,
-    Job,
-    Upgrade,
     GroupConfig,
+    Host,
+    Job,
+    Provider,
+    Service,
+    Task,
+    Upgrade,
 )
 from adcm_pytest_plugin import params
 from adcm_pytest_plugin.docker_utils import ADCM
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
     run_component_action_and_assert_result,
     run_provider_action_and_assert_result,
+    run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import catch_failed, get_data_dir, random_string
-
-from tests.library.assertions import dicts_are_not_equal, dicts_are_equal
-from tests.upgrade_utils import upgrade_adcm_version
-
 from tests.functional.conftest import only_clean_adcm
-from tests.functional.plugin_utils import build_objects_checker, build_objects_comparator
+from tests.functional.plugin_utils import (
+    build_objects_checker,
+    build_objects_comparator,
+)
 from tests.functional.tools import AnyADCMObject, get_config, get_objects_via_pagination
+from tests.library.assertions import dicts_are_equal, dicts_are_not_equal
 from tests.library.utils import previous_adcm_version_tag
+from tests.upgrade_utils import upgrade_adcm_version
 
 pytestmark = [only_clean_adcm]
 
@@ -354,9 +355,12 @@ class TestUpgradeFilledADCM:
         :returns: Dictionary with providers, clusters and sometimes bundles.
         """
         dirty_dir = Path(get_data_dir(__file__)) / "dirty_upgrade"
-        simple_provider_bundle, simple_providers, simple_hosts, all_tasks = self.create_simple_providers(
-            sdk_client_fs, dirty_dir
-        )
+        (
+            simple_provider_bundle,
+            simple_providers,
+            simple_hosts,
+            all_tasks,
+        ) = self.create_simple_providers(sdk_client_fs, dirty_dir)
         simple_cluster_bundle, simple_clusters, tasks = self.create_simple_clusters(sdk_client_fs, dirty_dir)
         complex_objects = self.create_complex_providers_and_clusters(sdk_client_fs, dirty_dir)
         upgraded_cluster, not_upgraded_cluster = self.create_upgradable_clusters(sdk_client_fs, dirty_dir)
@@ -373,7 +377,10 @@ class TestUpgradeFilledADCM:
                 'cluster_bundle': simple_cluster_bundle,
             },
             'complex': {
-                'providers': {'host_supplier': complex_objects[0], 'free_hosts': complex_objects[1]},
+                'providers': {
+                    'host_supplier': complex_objects[0],
+                    'free_hosts': complex_objects[1],
+                },
                 'clusters': {
                     'all_services': complex_objects[2],
                     'config_history': complex_objects[3],
@@ -430,7 +437,9 @@ class TestUpgradeFilledADCM:
             }
 
         comparator = build_objects_comparator(
-            get_compare_value=extract_job_info, field_name='Job info', name_composer=lambda obj: f"Job with id {obj.id}"
+            get_compare_value=extract_job_info,
+            field_name='Job info',
+            name_composer=lambda obj: f"Job with id {obj.id}",
         )
         jobs: List[Job] = get_objects_via_pagination(adcm_client.job_list)
         frozen_objects = {job.job_id: extract_job_info(job) for job in jobs}
@@ -480,7 +489,11 @@ class TestUpgradeFilledADCM:
         """
         amount_of_clusters = 34
         params = {
-            'cluster_altered_config': {'number_of_segments': 2, 'auto_reboot': False, 'textarea': self.LONG_TEXT},
+            'cluster_altered_config': {
+                'number_of_segments': 2,
+                'auto_reboot': False,
+                'textarea': self.LONG_TEXT,
+            },
             'service_altered_config': {'simple-is-best': False, 'mode': 'fast'},
             'component_altered_config': {'simpler-is-better': True},
             'cluster_action': 'install',
@@ -562,7 +575,13 @@ class TestUpgradeFilledADCM:
             cluster_bundle, tuple(provider.host_list())[:3]
         )
         cluster_with_hosts = self._create_cluster_with_hosts(cluster_bundle, tuple(provider.host_list())[3:])
-        return provider, provider_with_free_hosts, cluster_with_all_services, cluster_with_history, cluster_with_hosts
+        return (
+            provider,
+            provider_with_free_hosts,
+            cluster_with_all_services,
+            cluster_with_history,
+            cluster_with_hosts,
+        )
 
     @allure.step('Create two upgradable clusters, upgrade one of them')
     def create_upgradable_clusters(self, adcm_client: ADCMClient, bundles_directory: Path) -> Tuple[Cluster, Cluster]:
@@ -578,14 +597,22 @@ class TestUpgradeFilledADCM:
         adcm_client.upload_from_fs(bundles_directory / "cluster_greater_version")
         cluster_to_upgrade = old_version_bundle.cluster_create('I will be upgraded')
         good_old_cluster = old_version_bundle.cluster_create('I am good the way I am')
-        _wait_for_tasks((cluster_to_upgrade.action(name='dummy').run(), good_old_cluster.action(name='dummy').run()))
+        _wait_for_tasks(
+            (
+                cluster_to_upgrade.action(name='dummy').run(),
+                good_old_cluster.action(name='dummy').run(),
+            )
+        )
         upgrade: Upgrade = cluster_to_upgrade.upgrade()
         upgrade.do()
         return cluster_to_upgrade, good_old_cluster
 
     @allure.step('Run some actions in upgraded ADCM')
     def run_actions_after_upgrade(
-        self, cluster_all_services: Cluster, cluster_config_history: Cluster, simple_provider: Provider
+        self,
+        cluster_all_services: Cluster,
+        cluster_config_history: Cluster,
+        simple_provider: Provider,
     ) -> None:
         """
         Run successful actions on: cluster, service, component.
@@ -632,7 +659,10 @@ class TestUpgradeFilledADCM:
 
         def get_random_config_map() -> dict:
             return {
-                'a_lot_of_text': {'simple_string': random_string(25), 'file_pass': random_string(16)},
+                'a_lot_of_text': {
+                    'simple_string': random_string(25),
+                    'file_pass': random_string(16),
+                },
                 'from_doc': {
                     'memory_size': random.randint(2, 64),
                     'person': {
@@ -718,7 +748,10 @@ class TestUpgradeFilledADCM:
     def _delete_simple_cluster_with_job(self, simple_clusters: List[Cluster]) -> None:
         """Delete one of simple clusters where at least one job was ran"""
         cluster_with_job = next(
-            filter(lambda cluster: any(len(action.task_list()) for action in cluster.action_list()), simple_clusters),
+            filter(
+                lambda cluster: any(len(action.task_list()) for action in cluster.action_list()),
+                simple_clusters,
+            ),
             None,
         )
         if cluster_with_job is None:

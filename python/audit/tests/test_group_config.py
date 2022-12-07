@@ -70,9 +70,7 @@ class TestGroupConfig(BaseTestCase):
             object_type=ContentType.objects.get(app_label="cm", model="cluster"),
             config_id=self.config.pk,
         )
-        self.host = Host.objects.create(
-            fqdn="test_host_fqdn", prototype=prototype, cluster=self.cluster
-        )
+        self.host = Host.objects.create(fqdn="test_host_fqdn", prototype=prototype, cluster=self.cluster)
         self.conf_group_created_str = "configuration group created"
         self.created_operation_name = f"{self.name} {self.conf_group_created_str}"
 
@@ -120,7 +118,7 @@ class TestGroupConfig(BaseTestCase):
             config=self.config,
         )
 
-    def check_log(  # pylint: disable=too-many-arguments
+    def check_log(
         self,
         log: AuditLog,
         obj,
@@ -158,9 +156,7 @@ class TestGroupConfig(BaseTestCase):
         self.assertEqual(log.user.pk, user.pk)
         self.assertEqual(log.object_changes, {})
 
-    def check_log_updated(
-        self, log: AuditLog, operation_result: AuditLogOperationResult, user: User
-    ) -> None:
+    def check_log_updated(self, log: AuditLog, operation_result: AuditLogOperationResult, user: User) -> None:
         self.check_log(
             log=log,
             obj=self.cluster,
@@ -291,8 +287,7 @@ class TestGroupConfig(BaseTestCase):
         self.check_log(
             log=log,
             obj=component,
-            obj_name=f"{self.cluster.name}/{component.service.display_name}"
-            f"/{component.display_name}",
+            obj_name=f"{self.cluster.name}/{component.service.display_name}" f"/{component.display_name}",
             obj_type=AuditObjectType.Component,
             operation_name=self.created_operation_name,
             operation_type=AuditLogOperationType.Create,
@@ -454,8 +449,7 @@ class TestGroupConfig(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
-            operation_name=f"{self.host.fqdn} host added to "
-            f"{self.group_config.name} configuration group",
+            operation_name=f"{self.host.fqdn} host added to " f"{self.group_config.name} configuration group",
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
@@ -472,8 +466,7 @@ class TestGroupConfig(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
-            operation_name=f"{self.host.fqdn} host removed from "
-            f"{self.group_config.name} configuration group",
+            operation_name=f"{self.host.fqdn} host removed from " f"{self.group_config.name} configuration group",
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
@@ -515,8 +508,7 @@ class TestGroupConfig(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
-            operation_name=f"{self.host.fqdn} host added to "
-            f"{self.group_config.name} configuration group",
+            operation_name=f"{self.host.fqdn} host added to " f"{self.group_config.name} configuration group",
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
@@ -542,8 +534,7 @@ class TestGroupConfig(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
-            operation_name=f"{self.host.fqdn} host removed from "
-            f"{self.group_config.name} configuration group",
+            operation_name=f"{self.host.fqdn} host removed from " f"{self.group_config.name} configuration group",
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
@@ -581,7 +572,7 @@ class TestGroupConfigOperationName(BaseTestCase):
             "python/audit/tests/files",
             test_bundle_filename,
         )
-        with open(test_bundle_path, encoding="utf-8") as f:
+        with open(test_bundle_path, encoding=settings.ENCODING_UTF_8) as f:
             response: Response = self.client.post(
                 path=reverse("upload-bundle"),
                 data={"file": f},
@@ -639,16 +630,13 @@ class TestGroupConfigOperationName(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.check_log(
-            log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user
-        )
+        self.check_log(log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user)
 
     def test_group_config_operation_name_denied(self):
         self.create_cluster_from_bundle()
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=f"/api/v1/group-config/{self.group_config_id}"
-                f"/config/{self.config_id}/config-log/",
+                path=f"/api/v1/group-config/{self.group_config_id}" f"/config/{self.config_id}/config-log/",
                 data={
                     "config": {"param_1": "aaa", "param_2": None, "param_3": None},
                     "attr": {
@@ -662,9 +650,7 @@ class TestGroupConfigOperationName(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_log(
-            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
-        )
+        self.check_log(log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user)
 
     def test_group_config_operation_name_failed(self):
         self.create_cluster_from_bundle()

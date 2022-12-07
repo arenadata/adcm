@@ -72,18 +72,18 @@ export class UsersComponent extends RbacEntityListDirective<RbacUserModel> imple
   ] as IColumns<RbacUserModel>;
 
   type: TypeName = 'user'
-  filteredData$: BehaviorSubject<any> = new BehaviorSubject<any>(null);
+  filterParams$: BehaviorSubject<any> = new BehaviorSubject<any>({});
 
   userFilters: IFilter[] = [
     {
-      id: 1, name: 'status', display_name: 'Status', filter_field: 'is_active',
+      id: 1, name: 'status', display_name: 'Status', filter_field: 'is_active', filter_type: 'list',
       options: [
         {id: 1, name: 'active', display_name: 'Active', value: true},
         {id: 2, name: 'inactive', display_name: 'Inactive', value: false},
       ]
     },
     {
-      id: 2, name: 'type', display_name: 'Type', filter_field: 'type',
+      id: 2, name: 'type', display_name: 'Type', filter_field: 'type', filter_type: 'list',
       options: [
         {id: 1, name: 'local', display_name: 'Local', value: 'local'},
         {id: 2, name: 'ldap', display_name: 'Ldap', value: 'ldap'},
@@ -102,6 +102,22 @@ export class UsersComponent extends RbacEntityListDirective<RbacUserModel> imple
     protected entityService: RbacUserService
   ) {
     super(service, store, route, router, dialog, entityService);
+  }
+
+  ngOnInit() {
+    super.ngOnInit();
+
+    this.filterParams$.subscribe((params) => {
+      const filter_params = this.baseListDirective.listParams;
+
+      if (filter_params) {
+        filter_params['params'] = { ...params };
+        this.router.navigate(['./', filter_params['params']], {
+          relativeTo: this.route,
+          replaceUrl: true,
+        });
+      }
+    })
   }
 
   getTitle(row: RbacUserModel): string {

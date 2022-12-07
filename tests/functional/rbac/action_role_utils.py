@@ -1,16 +1,46 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Checks and utilities for action roles"""
 from operator import itemgetter
-from typing import Iterable, Tuple, Set, List, Iterator, Optional, Union
+from typing import Iterable, Iterator, List, Optional, Set, Tuple, Union
 
 import allure
 from adcm_client.base import ObjectNotFound
-from adcm_client.objects import ADCMClient, Cluster, Prototype, Service, Role, Bundle, Host, Policy
+from adcm_client.objects import (
+    ADCMClient,
+    Bundle,
+    Cluster,
+    Host,
+    Policy,
+    Prototype,
+    Role,
+    Service,
+)
 from adcm_pytest_plugin.utils import catch_failed, random_string
-
 from tests.functional.rbac.checkers import ForbiddenCallChecker
-from tests.functional.rbac.conftest import RbacRoles, extract_role_short_info, RoleShortInfo, RoleType, BusinessRole
+from tests.functional.rbac.conftest import (
+    BusinessRole,
+    RbacRoles,
+    RoleShortInfo,
+    RoleType,
+    extract_role_short_info,
+)
 from tests.functional.tools import AnyADCMObject
-from tests.library.assertions import is_in_collection, is_not_in_collection, is_superset_of, does_not_intersect
+from tests.library.assertions import (
+    does_not_intersect,
+    is_in_collection,
+    is_not_in_collection,
+    is_superset_of,
+)
 from tests.library.consts import HTTPMethod
 
 
@@ -105,7 +135,11 @@ def check_cluster_actions_roles_are_created_correctly(
     full_hidden_prefix = f'{hidden_role_prefix}{get_prototype_prefix_for_action_role(cluster_proto)}'
     with allure.step('Check that "hidden" roles are created for each action in cluster'):
         cluster_actions_role_names = get_actions_role_names(full_hidden_prefix, actions)
-        is_superset_of(hidden_role_names, cluster_actions_role_names, 'Not all expected "hidden" roles were found')
+        is_superset_of(
+            hidden_role_names,
+            cluster_actions_role_names,
+            'Not all expected "hidden" roles were found',
+        )
     _, business = check_business_roles_children(client, cluster_proto, actions, cluster_actions_role_names)
 
     with allure.step('Check that business roles are applied correctly to RBAC default roles'):
@@ -145,7 +179,9 @@ def check_service_and_components_roles_are_created_correctly(
         with allure.step('Check that "hidden" roles are created for each action in service'):
             service_actions_role_names = get_actions_role_names(service_full_hidden_prefix, service_actions)
             is_superset_of(
-                hidden_role_names, service_actions_role_names, "Some of required roles weren't created for service"
+                hidden_role_names,
+                service_actions_role_names,
+                "Some of required roles weren't created for service",
             )
 
         _, business = check_business_roles_children(client, service_proto, service_actions, service_actions_role_names)
@@ -178,7 +214,8 @@ def _check_components_roles_are_created_correctly(client, service, hidden_role_n
         component_proto = component.prototype()
         component_actions = component_proto.actions
         component_actions_role_names = get_actions_role_names(
-            f'{prefix_for_component}{get_prototype_prefix_for_action_role(component_proto)}', component_actions
+            f'{prefix_for_component}{get_prototype_prefix_for_action_role(component_proto)}',
+            component_actions,
         )
         is_superset_of(hidden_role_names, component_actions_role_names, 'Not all roles were created')
 
@@ -212,7 +249,9 @@ def check_provider_based_object_action_roles_are_created_correctly(
     _, business = check_business_roles_children(client, prototype, actions, actions_role_names)
 
     check_roles_are_not_added_to_rbac_roles(
-        client, (RbacRoles.ClusterAdministrator, RbacRoles.ServiceAdministrator, RbacRoles.ADCMUser), business
+        client,
+        (RbacRoles.ClusterAdministrator, RbacRoles.ServiceAdministrator, RbacRoles.ADCMUser),
+        business,
     )
 
 

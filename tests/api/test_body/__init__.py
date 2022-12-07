@@ -16,12 +16,11 @@ from typing import Tuple
 
 import allure
 import pytest
-
 from tests.api.steps.asserts import ExpectedBody
 from tests.api.testdata.generators import TestDataWithPreparedBody
 from tests.api.utils.data_classes import AUTO_VALUE
 from tests.api.utils.methods import Methods
-from tests.api.utils.tools import not_set, NotEqual
+from tests.api.utils.tools import NotEqual, not_set
 from tests.api.utils.types import get_fields, is_fk_field, is_password_field
 
 pytestmark = [

@@ -15,8 +15,7 @@
 import allure
 import pytest
 from coreapi.exceptions import ErrorMessage
-
-from tests.conftest import DUMMY_CLUSTER_BUNDLE, DUMMY_ACTION
+from tests.conftest import DUMMY_ACTION, DUMMY_CLUSTER_BUNDLE
 from tests.functional.conftest import only_clean_adcm
 from tests.library.errorcodes import INVALID_OBJECT_DEFINITION
 

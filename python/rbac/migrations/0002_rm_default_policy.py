@@ -17,12 +17,7 @@ from django.db import migrations
 
 def remove_permissions(policy, policy_model):
     for pp in policy.model_perm.all():
-        if (
-            policy_model.objects.filter(
-                user=pp.user, group=pp.group, model_perm__permission=pp.permission
-            ).count()
-            > 1
-        ):
+        if policy_model.objects.filter(user=pp.user, group=pp.group, model_perm__permission=pp.permission).count() > 1:
             continue
         if pp.user:
             pp.user.user_permissions.remove(pp.permission)

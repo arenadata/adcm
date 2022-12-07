@@ -30,7 +30,6 @@ from django.db.transaction import atomic
 from django.db.utils import IntegrityError
 
 from cm.adcm_config import save_file_type
-from cm.config import ANSIBLE_SECRET, ANSIBLE_VAULT_HEADER, DEFAULT_SALT
 from cm.errors import AdcmEx
 from cm.models import (
     Bundle,
@@ -72,7 +71,7 @@ def get_prototype(**kwargs):
     :return: Prototype object
     :rtype: models.Prototype
     """
-    bundle = Bundle.objects.get(hash=kwargs.pop('bundle_hash'))
+    bundle = Bundle.objects.get(hash=kwargs.pop("bundle_hash"))
     prototype = Prototype.objects.get(bundle=bundle, **kwargs)
     return prototype
 
@@ -87,10 +86,10 @@ def create_config(config, prototype=None):
     :rtype: models.ObjectConfig
     """
     if config is not None:
-        current_config = process_config(prototype, config['current'])
-        deserializer_datetime_fields(current_config, ['date'])
-        previous_config = process_config(prototype, config['previous'])
-        deserializer_datetime_fields(previous_config, ['date'])
+        current_config = process_config(prototype, config["current"])
+        deserializer_datetime_fields(current_config, ["date"])
+        previous_config = process_config(prototype, config["previous"])
+        deserializer_datetime_fields(previous_config, ["date"])
 
         conf = ObjectConfig.objects.create(current=0, previous=0)
 
@@ -121,12 +120,12 @@ def create_group(group, ex_hosts_list, obj):
     :return: GroupConfig object
     :rtype: models.GroupConfig
     """
-    model_name = group.pop('model_name')
-    ex_object_id = group.pop('object_id')
-    group.pop('object_type')
-    config = create_config(group.pop('config'))
+    model_name = group.pop("model_name")
+    ex_object_id = group.pop("object_id")
+    group.pop("object_type")
+    config = create_config(group.pop("config"))
     hosts = []
-    for host in group.pop('hosts'):
+    for host in group.pop("hosts"):
         hosts.append(ex_hosts_list[host])
     gc = GroupConfig.objects.create(
         object_id=obj.id,
@@ -140,27 +139,25 @@ def create_group(group, ex_hosts_list, obj):
 
 def switch_encoding(msg):
     ciphertext = msg
-    if ANSIBLE_VAULT_HEADER in msg:
+    if settings.ANSIBLE_VAULT_HEADER in msg:
         _, ciphertext = msg.split("\n")
     vault = VaultAES256()
-    secret_old = VaultSecret(bytes(OLD_ADCM_PASSWORD, 'utf-8'))
-    data = str(vault.decrypt(ciphertext, secret_old), 'utf-8')
-    secret_new = VaultSecret(bytes(ANSIBLE_SECRET, 'utf-8'))
-    ciphertext = vault.encrypt(bytes(data, 'utf-8'), secret_new)
-    return f'{ANSIBLE_VAULT_HEADER}\n{str(ciphertext, "utf-8")}'
+    secret_old = VaultSecret(bytes(OLD_ADCM_PASSWORD, settings.ENCODING_UTF_8))
+    data = str(vault.decrypt(ciphertext, secret_old), settings.ENCODING_UTF_8)
+    secret_new = VaultSecret(bytes(settings.ANSIBLE_SECRET, settings.ENCODING_UTF_8))
+    ciphertext = vault.encrypt(bytes(data, settings.ENCODING_UTF_8), secret_new)
+    return f"{settings.ANSIBLE_VAULT_HEADER}\n{str(ciphertext, settings.ENCODING_UTF_8)}"
 
 
 def process_config(proto, config):
     if config is not None and proto is not None:
-        conf = config['config']
-        for pconf in PrototypeConfig.objects.filter(
-            prototype=proto, type__in=('secrettext', 'password')
-        ):
+        conf = config["config"]
+        for pconf in PrototypeConfig.objects.filter(prototype=proto, type__in=("secrettext", "password")):
             if pconf.subname and conf[pconf.name][pconf.subname]:
                 conf[pconf.name][pconf.subname] = switch_encoding(conf[pconf.name][pconf.subname])
             elif conf.get(pconf.name) and not pconf.subname:
                 conf[pconf.name] = switch_encoding(conf[pconf.name])
-        config['config'] = conf
+        config["config"] = conf
     return config
 
 
@@ -168,11 +165,11 @@ def create_file_from_config(obj, config):
     if config is not None:
         conf = config["current"]["config"]
         proto = obj.prototype
-        for pconf in PrototypeConfig.objects.filter(prototype=proto, type='file'):
+        for pconf in PrototypeConfig.objects.filter(prototype=proto, type="file"):
             if pconf.subname and conf[pconf.name].get(pconf.subname):
                 save_file_type(obj, pconf.name, pconf.subname, conf[pconf.name][pconf.subname])
             elif conf.get(pconf.name):
-                save_file_type(obj, pconf.name, '', conf[pconf.name])
+                save_file_type(obj, pconf.name, "", conf[pconf.name])
 
 
 def create_cluster(cluster):
@@ -185,15 +182,13 @@ def create_cluster(cluster):
     :rtype: models.Cluster
     """
     try:
-        Cluster.objects.get(name=cluster['name'])
-        raise AdcmEx('CLUSTER_CONFLICT', 'Cluster with the same name already exist')
+        Cluster.objects.get(name=cluster["name"])
+        raise AdcmEx("CLUSTER_CONFLICT", "Cluster with the same name already exist")
     except Cluster.DoesNotExist:
-        prototype = get_prototype(bundle_hash=cluster.pop('bundle_hash'), type='cluster')
-        ex_id = cluster.pop('id')
-        config = cluster.pop('config')
-        cluster = Cluster.objects.create(
-            prototype=prototype, config=create_config(config, prototype), **cluster
-        )
+        prototype = get_prototype(bundle_hash=cluster.pop("bundle_hash"), type="cluster")
+        ex_id = cluster.pop("id")
+        config = cluster.pop("config")
+        cluster = Cluster.objects.create(prototype=prototype, config=create_config(config, prototype), **cluster)
         create_file_from_config(cluster, config)
         return ex_id, cluster
 
@@ -207,20 +202,18 @@ def create_provider(provider):
     :return: HostProvider object
     :rtype: models.HostProvider
     """
-    bundle_hash = provider.pop('bundle_hash')
-    ex_id = provider.pop('id')
+    bundle_hash = provider.pop("bundle_hash")
+    ex_id = provider.pop("id")
     try:
-        same_name_provider = HostProvider.objects.get(name=provider['name'])
+        same_name_provider = HostProvider.objects.get(name=provider["name"])
         if same_name_provider.prototype.bundle.hash != bundle_hash:
-            raise IntegrityError('Name of provider already in use in another bundle')
-        create_file_from_config(same_name_provider, provider['config'])
+            raise IntegrityError("Name of provider already in use in another bundle")
+        create_file_from_config(same_name_provider, provider["config"])
         return ex_id, same_name_provider
     except HostProvider.DoesNotExist:
-        prototype = get_prototype(bundle_hash=bundle_hash, type='provider')
-        config = provider.pop('config')
-        provider = HostProvider.objects.create(
-            prototype=prototype, config=create_config(config, prototype), **provider
-        )
+        prototype = get_prototype(bundle_hash=bundle_hash, type="provider")
+        config = provider.pop("config")
+        provider = HostProvider.objects.create(prototype=prototype, config=create_config(config, prototype), **provider)
         create_file_from_config(provider, config)
         return ex_id, provider
 
@@ -236,17 +229,17 @@ def create_host(host, cluster):
     :return: Host object
     :rtype: models.Host
     """
-    host.pop('provider')
-    provider = HostProvider.objects.get(name=host.pop('provider__name'))
+    host.pop("provider")
+    provider = HostProvider.objects.get(name=host.pop("provider__name"))
     try:
-        Host.objects.get(fqdn=host['fqdn'])
+        Host.objects.get(fqdn=host["fqdn"])
         provider.delete()
         cluster.delete()
-        raise AdcmEx('HOST_CONFLICT', 'Host fqdn already in use')
+        raise AdcmEx("HOST_CONFLICT", "Host fqdn already in use")
     except Host.DoesNotExist:
-        prototype = get_prototype(bundle_hash=host.pop('bundle_hash'), type='host')
-        ex_id = host.pop('id')
-        config = host.pop('config')
+        prototype = get_prototype(bundle_hash=host.pop("bundle_hash"), type="host")
+        ex_id = host.pop("id")
+        config = host.pop("config")
         new_host = Host.objects.create(
             prototype=prototype,
             provider=provider,
@@ -270,10 +263,10 @@ def create_service(service, cluster):
     :rtype: models.ClusterObject
     """
     prototype = get_prototype(
-        bundle_hash=service.pop('bundle_hash'), type='service', name=service.pop('prototype__name')
+        bundle_hash=service.pop("bundle_hash"), type="service", name=service.pop("prototype__name")
     )
-    ex_id = service.pop('id')
-    config = service.pop('config')
+    ex_id = service.pop("id")
+    config = service.pop("config")
     service = ClusterObject.objects.create(
         prototype=prototype, cluster=cluster, config=create_config(config, prototype), **service
     )
@@ -295,13 +288,13 @@ def create_component(component, cluster, service):
     :rtype: models.ServiceComponent
     """
     prototype = get_prototype(
-        bundle_hash=component.pop('bundle_hash'),
-        type='component',
-        name=component.pop('prototype__name'),
+        bundle_hash=component.pop("bundle_hash"),
+        type="component",
+        name=component.pop("prototype__name"),
         parent=service.prototype,
     )
-    ex_id = component.pop('id')
-    config = component.pop('config')
+    ex_id = component.pop("id")
+    config = component.pop("config")
     component = ServiceComponent.objects.create(
         prototype=prototype,
         cluster=cluster,
@@ -330,7 +323,7 @@ def create_host_component(host_component, cluster, host, service, component):
     :return: HostComponent object
     :rtype: models.HostComponent
     """
-    host_component.pop('cluster')
+    host_component.pop("cluster")
     host_component = HostComponent.objects.create(
         cluster=cluster, host=host, service=service, component=component, **host_component
     )
@@ -344,22 +337,22 @@ def check(data):
     :param data: Data from file
     :type data: dict
     """
-    if settings.ADCM_VERSION != data['ADCM_VERSION']:
+    if settings.ADCM_VERSION != data["ADCM_VERSION"]:
         raise AdcmEx(
-            'DUMP_LOAD_ADCM_VERSION_ERROR',
+            "DUMP_LOAD_ADCM_VERSION_ERROR",
             msg=(
-                f'ADCM versions do not match, dump version: {data["ADCM_VERSION"]},'
-                f' load version: {settings.ADCM_VERSION}'
+                f"ADCM versions do not match, dump version: {data['ADCM_VERSION']},"
+                f" load version: {settings.ADCM_VERSION}"
             ),
         )
 
-    for bundle_hash, bundle in data['bundles'].items():
+    for bundle_hash, bundle in data["bundles"].items():
         try:
             Bundle.objects.get(hash=bundle_hash)
         except Bundle.DoesNotExist as err:
             raise AdcmEx(
-                'DUMP_LOAD_BUNDLE_ERROR',
-                msg=f'Bundle "{bundle["name"]} {bundle["version"]}" not found',
+                "DUMP_LOAD_BUNDLE_ERROR",
+                msg=f"Bundle '{bundle['name']} {bundle['version']}' not found",
             ) from err
 
 
@@ -368,7 +361,7 @@ def decrypt_file(pass_from_user, file):
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=DEFAULT_SALT,
+        salt=settings.DEFAULT_SALT,
         iterations=390000,
         backend=default_backend(),
     )
@@ -393,60 +386,60 @@ def load(file_path):
     """
     try:
         password = getpass.getpass()
-        with open(file_path, 'r', encoding='utf_8') as f:
+        with open(file_path, "r", encoding=settings.ENCODING_UTF_8) as f:
             encrypted = f.read()
             decrypted = decrypt_file(password, encrypted)
-            data = json.loads(decrypted.decode('utf-8'))
+            data = json.loads(decrypted.decode(settings.ENCODING_UTF_8))
     except FileNotFoundError as err:
-        raise AdcmEx('DUMP_LOAD_CLUSTER_ERROR', msg='Loaded file not found') from err
+        raise AdcmEx("DUMP_LOAD_CLUSTER_ERROR", msg="Loaded file not found") from err
     except InvalidToken as err:
-        raise AdcmEx('WRONG_PASSWORD') from err
+        raise AdcmEx("WRONG_PASSWORD") from err
 
     check(data)
-    set_old_password(data['adcm_password'])
-    _, cluster = create_cluster(data['cluster'])
+    set_old_password(data["adcm_password"])
+    _, cluster = create_cluster(data["cluster"])
 
     ex_provider_ids = {}
-    for provider_data in data['providers']:
+    for provider_data in data["providers"]:
         ex_provider_id, provider = create_provider(provider_data)
         ex_provider_ids[ex_provider_id] = provider
 
     ex_host_ids = {}
-    for host_data in data['hosts']:
+    for host_data in data["hosts"]:
         ex_host_id, host = create_host(host_data, cluster)
         ex_host_ids[ex_host_id] = host
 
     ex_service_ids = {}
-    for service_data in data['services']:
+    for service_data in data["services"]:
         ex_service_id, service = create_service(service_data, cluster)
         ex_service_ids[ex_service_id] = service
 
     ex_component_ids = {}
-    for component_data in data['components']:
+    for component_data in data["components"]:
         ex_component_id, component = create_component(
-            component_data, cluster, ex_service_ids[component_data.pop('service')]
+            component_data, cluster, ex_service_ids[component_data.pop("service")]
         )
         ex_component_ids[ex_component_id] = component
 
-    for host_component_data in data['host_components']:
+    for host_component_data in data["host_components"]:
         create_host_component(
             host_component_data,
             cluster,
-            ex_host_ids[host_component_data.pop('host')],
-            ex_service_ids[host_component_data.pop('service')],
-            ex_component_ids[host_component_data.pop('component')],
+            ex_host_ids[host_component_data.pop("host")],
+            ex_service_ids[host_component_data.pop("service")],
+            ex_component_ids[host_component_data.pop("component")],
         )
-    for group_data in data['groups']:
-        if group_data['model_name'] == 'cluster':
+    for group_data in data["groups"]:
+        if group_data["model_name"] == "cluster":
             obj = cluster
-        elif group_data['model_name'] == 'clusterobject':
-            obj = ex_service_ids[group_data['object_id']]
-        elif group_data['model_name'] == 'servicecomponent':
-            obj = ex_component_ids[group_data['object_id']]
-        elif group_data['model_name'] == 'hostprovider':
-            obj = ex_provider_ids[group_data['object_id']]
+        elif group_data["model_name"] == "clusterobject":
+            obj = ex_service_ids[group_data["object_id"]]
+        elif group_data["model_name"] == "servicecomponent":
+            obj = ex_component_ids[group_data["object_id"]]
+        elif group_data["model_name"] == "hostprovider":
+            obj = ex_provider_ids[group_data["object_id"]]
         create_group(group_data, ex_host_ids, obj)
-    sys.stdout.write(f'Load successfully ended, cluster {cluster.display_name} created\n')
+    sys.stdout.write(f"Load successfully ended, cluster {cluster.display_name} created\n")
 
 
 class Command(BaseCommand):
@@ -457,13 +450,13 @@ class Command(BaseCommand):
         manage.py loadcluster cluster.json
     """
 
-    help = 'Load cluster object from JSON format'
+    help = "Load cluster object from JSON format"
 
     def add_arguments(self, parser):
         """Parsing command line arguments"""
-        parser.add_argument('file_path', nargs='?')
+        parser.add_argument("file_path", nargs="?")
 
     def handle(self, *args, **options):
         """Handler method"""
-        file_path = options.get('file_path')
+        file_path = options.get("file_path")
         load(file_path)

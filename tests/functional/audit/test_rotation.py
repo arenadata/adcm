@@ -28,8 +28,11 @@ from adcm_client.wrappers.api import ADCMApiError
 from adcm_pytest_plugin.docker_utils import ADCM, get_file_from_container
 from adcm_pytest_plugin.steps.commands import clearaudit
 from adcm_pytest_plugin.utils import random_string
-
-from tests.functional.audit.conftest import BUNDLES_DIR, set_logins_date, set_operations_date
+from tests.functional.audit.conftest import (
+    BUNDLES_DIR,
+    set_logins_date,
+    set_operations_date,
+)
 from tests.functional.conftest import only_clean_adcm
 from tests.library.assertions import sets_are_equal
 from tests.library.db import QueryExecutioner
@@ -56,14 +59,22 @@ def logins_to_be_archived(
 
     :returns: List of login audit records which dates were changed to the old ones.
     """
-    admin_credentials = {"username": adcm_api_credentials["user"], "password": adcm_api_credentials["password"]}
+    admin_credentials = {
+        "username": adcm_api_credentials["user"],
+        "password": adcm_api_credentials["password"],
+    }
     user_creds = {"username": "user1", "password": "password1password1"}
     not_existing_user = {"username": "user2", "password": "password1password1"}
     existing_logs: Set[int] = {rec.id for rec in sdk_client_fs.audit_login_list()}
     with allure.step("Create one more user and try to login with different pairs"):
         sdk_client_fs.user_create(**user_creds)
         for _ in range(2):
-            for creds in (admin_credentials, user_creds, not_existing_user, {**user_creds, "password": "wrongpass"}):
+            for creds in (
+                admin_credentials,
+                user_creds,
+                not_existing_user,
+                {**user_creds, "password": "wrongpass"},
+            ):
                 try:
                     ADCMClient(url=sdk_client_fs.url, user=creds["username"], password=creds["password"])
                 except ADCMApiError:

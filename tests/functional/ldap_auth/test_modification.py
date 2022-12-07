@@ -16,22 +16,25 @@ from typing import Union
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient, User, Group
+from adcm_client.objects import ADCMClient, Group, User
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
-
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import (
-    get_ldap_user_from_adcm,
     SYNC_ACTION_NAME,
-    get_ldap_group_from_adcm,
     TEST_CONNECTION_ACTION,
+    get_ldap_group_from_adcm,
+    get_ldap_user_from_adcm,
 )
 from tests.library.assertions import expect_api_error, expect_no_api_error
-from tests.library.errorcodes import USER_UPDATE_ERROR, GROUP_UPDATE_ERROR
+from tests.library.errorcodes import GROUP_UPDATE_ERROR, USER_UPDATE_ERROR
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm, pytest.mark.usefixtures('configure_adcm_ldap_ad'), pytest.mark.ldap()]
+pytestmark = [
+    only_clean_adcm,
+    pytest.mark.usefixtures('configure_adcm_ldap_ad'),
+    pytest.mark.ldap(),
+]
 
 
 @pytest.fixture()
@@ -61,7 +64,11 @@ def test_ldap_user_manual_modification_is_forbidden(sdk_client_fs, ldap_user_in_
         new_password = f'px-{ldap_user_in_group["password"]}'
         expect_api_error('change password of a user', user.change_password, new_password, err_=USER_UPDATE_ERROR)
         expect_api_error(
-            'login with "new" password', ADCMClient, url=sdk_client_fs.url, user=user.username, password=new_password
+            'login with "new" password',
+            ADCMClient,
+            url=sdk_client_fs.url,
+            user=user.username,
+            password=new_password,
         )
         expect_no_api_error(
             'login with "original LDAP" password',
@@ -85,8 +92,14 @@ def test_ldap_group_manual_modification_is_forbidden(sdk_client_fs, ldap_group):
         _check_change_is_forbidden(group, attr)
 
 
-# pylint: disable-next=too-many-arguments
-def test_membership(sdk_client_fs, local_user, local_group, ldap_group, ldap_user_in_group, another_ldap_user_in_group):
+def test_membership(
+    sdk_client_fs,
+    local_user,
+    local_group,
+    ldap_group,
+    ldap_user_in_group,
+    another_ldap_user_in_group,
+):
     """
     Test that LDAP user can be added to local groups, but not to LDAP ones in ADCM.
     And that no user can be added to an LDAP group in ADCM.

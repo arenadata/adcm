@@ -18,7 +18,6 @@ import allure
 import pytest
 import requests
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host
-
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,
@@ -61,7 +60,7 @@ def import_export_clusters(sdk_client_fs, import_bundle) -> Tuple[Cluster, Clust
 
 
 @pytest.fixture()
-def grant_cluster_view_permissions(sdk_client_fs, import_export_clusters, new_user_client) -> None:
+def _grant_cluster_view_permissions(sdk_client_fs, import_export_clusters, new_user_client) -> None:
     """Grant view config permissions on import cluster and service"""
     import_cluster, *_ = import_export_clusters
     create_policy(
@@ -81,18 +80,16 @@ class TestClusterUpdates:
     new_user_creds: dict
     admin_creds: dict
 
-    pytestmark = [pytest.mark.usefixtures("init")]
+    pytestmark = [pytest.mark.usefixtures("_init")]
 
     @pytest.fixture()
-    def init(self, sdk_client_fs, unauthorized_creds) -> None:
+    def _init(self, sdk_client_fs, unauthorized_creds) -> None:
         """Bind all required "context" to an instance"""
         self.client = sdk_client_fs
         self.admin_creds = make_auth_header(sdk_client_fs)
         self.new_user_creds = unauthorized_creds
 
-    @pytest.mark.parametrize(
-        "parse_with_context", ["plain_service_add.yaml"], indirect=True
-    )  # pylint: disable-next=too-many-arguments
+    @pytest.mark.parametrize("parse_with_context", ["plain_service_add.yaml"], indirect=True)
     def test_plain_service_add(self, import_bundle, parse_with_context, post, delete, new_user_client):
         """Test adding service from /api/v1/service/"""
         new_user = self.client.user(id=new_user_client.me().id)
@@ -116,15 +113,17 @@ class TestClusterUpdates:
             check_failed(delete(path, service.id), exact_code=404)
         checker = AuditLogChecker(
             parse_with_context(
-                {"cluster_name": cluster.name, "service_display_name": display_name, "username": NEW_USER["username"]}
+                {
+                    "cluster_name": cluster.name,
+                    "service_display_name": display_name,
+                    "username": NEW_USER["username"],
+                }
             )
         )
         checker.set_user_map(self.client)
         checker.check(self.client.audit_operation_list())
 
-    @pytest.mark.parametrize(
-        "parse_with_context", ["cluster_updates.yaml"], indirect=True
-    )  # pylint: disable-next=too-many-arguments
+    @pytest.mark.parametrize("parse_with_context", ["cluster_updates.yaml"], indirect=True)
     def test_cluster_service_updates(
         self,
         bundle_with_license,
@@ -149,12 +148,24 @@ class TestClusterUpdates:
         host = generic_provider.host_create("first")
         create_policy(self.client, [BusinessRoles.ViewClusterConfigurations], [cluster], [new_user], [])
         self._add_service(cluster)
-        create_policy(self.client, [BusinessRoles.ViewServiceConfigurations], [cluster.service()], [new_user], [])
+        create_policy(
+            self.client,
+            [BusinessRoles.ViewServiceConfigurations],
+            [cluster.service()],
+            [new_user],
+            [],
+        )
         self._remove_service(cluster)
         self._add_host(cluster, host)
         with allure.step("Return service back"):
             service = cluster.service_add(name="service_name")
-        create_policy(self.client, [BusinessRoles.ViewComponentConfigurations], [service.component()], [new_user], [])
+        create_policy(
+            self.client,
+            [BusinessRoles.ViewComponentConfigurations],
+            [service.component()],
+            [new_user],
+            [],
+        )
         self._set_hostcomponent(cluster, host)
         new_host = generic_provider.host_create("second")
         with allure.step("Add another host to a cluster"):
@@ -251,14 +262,14 @@ class TestImportAudit:
     admin_creds: dict
 
     @pytest.fixture()
-    def init(self, sdk_client_fs, unauthorized_creds):
+    def _init(self, sdk_client_fs, unauthorized_creds):
         """Bind common stuff to this instance"""
         self.client = sdk_client_fs
         self.new_user_creds = unauthorized_creds
         self.admin_creds = make_auth_header(self.client)
 
     @pytest.mark.parametrize("parse_with_context", ["import_updates.yaml"], indirect=True)
-    @pytest.mark.usefixtures("grant_cluster_view_permissions", "init")
+    @pytest.mark.usefixtures("_grant_cluster_view_permissions", "_init")
     def test_import_updates(self, import_export_clusters, parse_with_context):
         """
         Test update operations related to import/exports:
@@ -303,14 +314,18 @@ class TestImportAudit:
                 "bind": [
                     {
                         "import_id": service_import_id,
-                        "export_id": {"cluster_id": export_cluster.id, "service_id": export_service.id},
+                        "export_id": {
+                            "cluster_id": export_cluster.id,
+                            "service_id": export_service.id,
+                        },
                     }
                 ]
             }
             check_succeed(requests.post(import_path, json=data, headers=self.admin_creds))
         with allure.step("Fail to update cluster/service imports"):
             check_failed(
-                requests.post(f"{base_url}{cluster_import_path}", json={}, headers=self.admin_creds), exact_code=400
+                requests.post(f"{base_url}{cluster_import_path}", json={}, headers=self.admin_creds),
+                exact_code=400,
             )
             check_failed(requests.post(import_path, json={}, headers=self.admin_creds), exact_code=400)
         with allure.step("Performed denied cluster/service imports updates"):
@@ -344,8 +359,14 @@ class TestImportAudit:
         service_bind_id = requests.get(service_bind_url, headers=self.admin_creds).json()[0]["id"]
         unbind = self._unbind
         with allure.step("Perform denied cluster/service bind deletion"):
-            check_failed(unbind(f"{cluster_bind_url}{cluster_bind_id}/", headers=self.new_user_creds), exact_code=403)
-            check_failed(unbind(f"{service_bind_url}{service_bind_id}/", headers=self.new_user_creds), exact_code=403)
+            check_failed(
+                unbind(f"{cluster_bind_url}{cluster_bind_id}/", headers=self.new_user_creds),
+                exact_code=403,
+            )
+            check_failed(
+                unbind(f"{service_bind_url}{service_bind_id}/", headers=self.new_user_creds),
+                exact_code=403,
+            )
         with allure.step("Unbind cluster/service bind deletion"):
             check_succeed(unbind(f"{cluster_bind_url}{cluster_bind_id}/", headers=self.admin_creds))
             check_succeed(unbind(f"{service_bind_url}{service_bind_id}/", headers=self.admin_creds))
@@ -375,19 +396,25 @@ class TestObjectUpdates:
     new_user_creds: dict
     admin_creds: dict
 
-    pytestmark = [pytest.mark.usefixtures('init')]
+    pytestmark = [pytest.mark.usefixtures('_init')]
 
     @pytest.fixture()
-    def init(self, sdk_client_fs, unauthorized_creds) -> None:
+    def _init(self, sdk_client_fs, unauthorized_creds) -> None:
         """Bind all required "context" to an instance"""
         self.client = sdk_client_fs
         self.admin_creds = make_auth_header(sdk_client_fs)
         self.new_user_creds = unauthorized_creds
 
-    @parametrize_audit_scenario_parsing('objects_update.yaml', NEW_USER)
-    @pytest.mark.parametrize("method", ["put", "patch"])  # pylint: disable-next=too-many-arguments
+    @parametrize_audit_scenario_parsing("objects_update.yaml", NEW_USER)
+    @pytest.mark.parametrize("method", ["put", "patch"])
     def test_update_objects(
-        self, method: str, bundle_with_license, build_policy, audit_log_checker, generic_provider, sdk_client_fs
+        self,
+        method: str,
+        bundle_with_license,
+        build_policy,
+        audit_log_checker,
+        generic_provider,
+        sdk_client_fs,
     ):
         """Test update of cluster/host/host in cluster"""
         old_cluster_name, new_cluster_name = "Cluster Name", "New Cluster Name"
@@ -432,7 +459,6 @@ class TestObjectUpdates:
                 {
                     "prototype_id": host.prototype_id,
                     "provider_id": host.provider_id,
-                    "maintenance_mode": host.maintenance_mode,
                 }
                 if method == "put"
                 else {}
@@ -440,9 +466,11 @@ class TestObjectUpdates:
         }
         with allure.step(f'Update host via {method.upper()} {url} with body: {body}'):
             check_succeed(getattr(requests, method)(url, json=body, headers=self.admin_creds))
-        body = {**body, "maintenance_mode": "on"}
         with allure.step(f'Fail updating host via {method.upper()} {url} with body: {body}'):
-            check_failed(getattr(requests, method)(url, json=body, headers=self.admin_creds), exact_code=409)
+            check_failed(
+                getattr(requests, method)(url, json={**body, "provider_id": False}, headers=self.admin_creds),
+                exact_code=400,
+            )
 
     def _update_host_in_cluster(self, host: Host, method: str):
         url = f'{self.client.url}/api/v1/cluster/{host.cluster_id}/host/{host.id}/'

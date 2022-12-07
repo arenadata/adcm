@@ -12,6 +12,7 @@
 import json
 from json.decoder import JSONDecodeError
 
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.urls import resolve
 
@@ -41,9 +42,7 @@ class AuditLoginMiddleware:
                 result = AuditSessionLoginResult.UserNotFound
                 user = None
 
-        auditsession = AuditSession.objects.create(
-            user=user, login_result=result, login_details=details
-        )
+        auditsession = AuditSession.objects.create(user=user, login_result=result, login_details=details)
         cef_logger(audit_instance=auditsession, signature_id=resolve(request_path).route)
 
     def __call__(self, request):
@@ -55,7 +54,7 @@ class AuditLoginMiddleware:
         }:
 
             try:
-                username = json.loads(request.body.decode("utf-8")).get("username")
+                username = json.loads(request.body.decode(settings.ENCODING_UTF_8)).get("username")
             except JSONDecodeError:
                 username = ""
 

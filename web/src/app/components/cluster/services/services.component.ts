@@ -43,6 +43,7 @@ export class ServicesComponent extends ConcernListDirective<IClusterService> {
     ListFactory.actionsButton(this),
     ListFactory.importColumn(this),
     ListFactory.configColumn(this),
+    ListFactory.maintenanceModeColumn(this, 'service'),
     ListFactory.deleteColumn(this),
   ] as IColumns<IClusterService>;
 

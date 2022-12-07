@@ -43,9 +43,7 @@ class TestADCM(BaseTestCase):
         config.save(update_fields=["current"])
 
         self.adcm_name = "ADCM"
-        self.adcm = ADCM.objects.create(
-            prototype=self.prototype, name=self.adcm_name, config=config
-        )
+        self.adcm = ADCM.objects.create(prototype=self.prototype, name=self.adcm_name, config=config)
         self.action = Action.objects.create(
             display_name="test_adcm_action",
             prototype=self.prototype,
@@ -61,9 +59,7 @@ class TestADCM(BaseTestCase):
         )
         self.adcm_conf_updated_str = "ADCM configuration updated"
 
-    def check_adcm_updated(
-        self, log: AuditLog, operation_name: str, operation_result: str, user: User | None = None
-    ):
+    def check_adcm_updated(self, log: AuditLog, operation_name: str, operation_result: str, user: User | None = None):
         if log.audit_object:
             self.assertEqual(log.audit_object.object_id, self.adcm.pk)
             self.assertEqual(log.audit_object.object_name, self.adcm.name)
@@ -84,7 +80,7 @@ class TestADCM(BaseTestCase):
 
     def test_update_and_restore(self):
         self.client.post(
-            path=reverse("config-history", kwargs={"adcm_id": self.adcm.pk}),
+            path=reverse("config-history", kwargs={"adcm_pk": self.adcm.pk}),
             data={"config": {}},
             content_type=APPLICATION_JSON,
         )
@@ -101,7 +97,7 @@ class TestADCM(BaseTestCase):
         response: Response = self.client.patch(
             path=reverse(
                 "config-history-version-restore",
-                kwargs={"adcm_id": self.adcm.pk, "version": self.config_log.pk},
+                kwargs={"adcm_pk": self.adcm.pk, "version": self.config_log.pk},
             ),
             content_type=APPLICATION_JSON,
         )
@@ -120,7 +116,7 @@ class TestADCM(BaseTestCase):
     def test_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("config-history", kwargs={"adcm_id": self.adcm.pk}),
+                path=reverse("config-history", kwargs={"adcm_pk": self.adcm.pk}),
                 data={"config": {}},
                 content_type=APPLICATION_JSON,
             )

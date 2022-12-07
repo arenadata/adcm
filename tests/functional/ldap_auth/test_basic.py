@@ -20,10 +20,10 @@ from adcm_client.objects import ADCMClient, User
 from adcm_pytest_plugin.params import including_https
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import random_string
-
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import (
     DEFAULT_LOCAL_USERS,
+    LDAP_ACTION_CAN_NOT_START_REASON,
     check_existing_groups,
     check_existing_users,
     get_ldap_group_from_adcm,
@@ -31,7 +31,11 @@ from tests.functional.ldap_auth.utils import (
     login_should_succeed,
 )
 
-pytestmark = [only_clean_adcm, pytest.mark.usefixtures("configure_adcm_ldap_ad"), pytest.mark.ldap()]
+pytestmark = [
+    only_clean_adcm,
+    pytest.mark.usefixtures("configure_adcm_ldap_ad"),
+    pytest.mark.ldap(),
+]
 
 
 @pytest.mark.parametrize("configure_adcm_ldap_ad", [False, True], ids=["ssl_off", "ssl_on"], indirect=True)
@@ -42,7 +46,10 @@ def test_basic_ldap_auth(sdk_client_fs, ldap_user, ldap_user_in_group):
     2. Login of user not in group is not permitted
     """
     login_should_succeed(
-        "login with LDAP user in group", sdk_client_fs, ldap_user_in_group["name"], ldap_user_in_group["password"]
+        "login with LDAP user in group",
+        sdk_client_fs,
+        ldap_user_in_group["name"],
+        ldap_user_in_group["password"],
     )
     login_should_fail(
         "login with LDAP user not in allowed group",
@@ -147,7 +154,10 @@ _wrong_user_password = (
     ("wrong password", {"ldap_integration": {"ldap_password": random_string(6)}}),
 )
 
-_deactivate_ldap_integration = ("LDAP config turned off", {"attr": {"ldap_integration": {"active": False}}})
+_deactivate_ldap_integration = (
+    "LDAP config turned off",
+    {"attr": {"ldap_integration": {"active": False}}},
+)
 
 
 @pytest.mark.parametrize(
@@ -179,11 +189,12 @@ def test_wrong_ldap_config_fail_actions(action_name: str, sdk_client_fs):
             task = adcm.action(name=action_name).run()
             wait_for_task_and_assert_result(task, "failed")
             adcm.config_set_diff(original_config)
+            task.wait()
     with allure.step(f"Deactivate LDAP integration in settings and check action {action_name} is disabled"):
         adcm.config_set_diff(_deactivate_ldap_integration[1])
         assert action_name in [
-            a.name for a in adcm.action_list() if a.disabling_cause == "no_ldap_settings"
-        ], f'Action {action_name} have "no_ldap_settings" disabling cause'
+            a.name for a in adcm.action_list() if LDAP_ACTION_CAN_NOT_START_REASON in a.start_impossible_reason
+        ], f'Action {action_name} should have "{LDAP_ACTION_CAN_NOT_START_REASON}" as the reason for disabled launch'
 
 
 def test_login_as_existing_user_is_forbidden(sdk_client_fs, ldap_user_in_group):
@@ -222,7 +233,10 @@ def test_login_when_group_itself_is_group_search_base(
     check_existing_groups(sdk_client_fs)
     check_existing_users(sdk_client_fs)
     login_should_succeed(
-        "login as user in group", sdk_client_fs, ldap_user_in_group["name"], ldap_user_in_group["password"]
+        "login as user in group",
+        sdk_client_fs,
+        ldap_user_in_group["name"],
+        ldap_user_in_group["password"],
     )
     check_existing_groups(sdk_client_fs, {ldap_group_name})
     check_existing_users(sdk_client_fs, {ldap_user_in_group["name"]})
@@ -234,7 +248,10 @@ def test_login_when_group_itself_is_group_search_base(
         ), f"Incorrect LDAP user name.\nExpected: {expected}\nActual: {actual}"
     for disallowed_user in (ldap_user, another_ldap_user_in_group):
         login_should_fail(
-            f"login as {disallowed_user['name']}", sdk_client_fs, disallowed_user["name"], disallowed_user["password"]
+            f"login as {disallowed_user['name']}",
+            sdk_client_fs,
+            disallowed_user["name"],
+            disallowed_user["password"],
         )
     check_existing_groups(sdk_client_fs, {ldap_group_name})
     check_existing_users(sdk_client_fs, {ldap_user_in_group["name"]})

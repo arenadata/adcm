@@ -10,14 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import rest_framework
-from rest_framework import routers
+from rest_framework.permissions import AllowAny
+from rest_framework.routers import APIRootView
 
 
-class APIRoot(routers.APIRootView):
-    """ADCM API UI root"""
-
-    permission_classes = (rest_framework.permissions.AllowAny,)
+class APIRoot(APIRootView):
+    permission_classes = (AllowAny,)
     api_root_dict = {
-        'rbac': 'rbac-ui:root',
+        "rbac": "rbac-ui:root",
     }

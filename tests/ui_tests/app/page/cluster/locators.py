@@ -13,11 +13,10 @@
 """Cluster page locators"""
 
 from selenium.webdriver.common.by import By
-
-from tests.ui_tests.app.helpers.locator import (
-    Locator,
+from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.app.page.common.host_components.locators import (
+    HostComponentsLocators,
 )
-from tests.ui_tests.app.page.common.host_components.locators import HostComponentsLocators
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 
 
@@ -56,7 +55,8 @@ class ClusterServicesLocators:
         actions = Locator(By.CSS_SELECTOR, "app-actions-button button", "Service actions")
         service_import = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(6) button", "Service import")
         config = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(7) button", "Service config")
-        delete_btn = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(8) button", "Row delete button")
+        maintenance_mode = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(8) button", "Maintenance mode button")
+        delete_btn = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(9) button", "Row delete button")
 
 
 class ClusterHostLocators:
@@ -67,13 +67,9 @@ class ClusterHostLocators:
     class HostTable(HostListLocators.HostTable):
         """Cluster host page host table elements locators"""
 
-        ...
-
 
 class ClusterComponentsLocators(HostComponentsLocators):
     """Cluster components page elements locators"""
-
-    pass
 
 
 class ClusterActionLocators:

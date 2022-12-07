@@ -22,7 +22,6 @@ import requests
 from adcm_client.audit import LoginResult, ObjectType, OperationResult, OperationType
 from adcm_client.objects import ADCMClient, Group, Policy, Role, User
 from coreapi.exceptions import ErrorMessage
-
 from tests.functional.audit.conftest import check_failed, make_auth_header
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles
@@ -36,7 +35,6 @@ BUNDLES_DIR = Path(__file__).parent / "bundles"
 NOT_EXISTING_USER = "nosuchuser"
 
 
-# pylint: disable-next=too-many-arguments
 def _check_audit_logs(
     endpoint: str,
     operation: Callable,
@@ -182,7 +180,7 @@ class TestAuditLoginAPI:
         return user_1_creds, user_2_creds
 
     @pytest.fixture()
-    def successful_logins(self, sdk_client_fs, users) -> None:
+    def _successful_logins(self, sdk_client_fs, users) -> None:
         """Make successful logins"""
         for creds in users:
             self._login(sdk_client_fs, **creds)
@@ -200,7 +198,7 @@ class TestAuditLoginAPI:
         self._login(sdk_client_fs, **user_does_not_exist)
         return deactivated_user, user_does_not_exist
 
-    @pytest.mark.usefixtures("successful_logins", "failed_logins")
+    @pytest.mark.usefixtures("_successful_logins", "failed_logins")
     def test_audit_login_api_filtering(self, sdk_client_fs, users):
         """Test audit log list filtering: by operation result and username"""
         self._check_login_list_filtering(sdk_client_fs, 'login_result', LoginResult)

@@ -368,6 +368,11 @@ describe('Configuration fields service', () => {
 
     const result2 = service.parseValue(output2, source);
     expect(result2).toEqual({ field: null });
+
+    const output3: IOutput = { field: { field1: [] } };
+
+    const result3 = service.parseValue(output3, source);
+    expect(result3).toEqual({ field: null });
   });
 
   it('parseValue for structure should return list', () => {

@@ -1,3 +1,14 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from django.urls import reverse
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
@@ -8,7 +19,7 @@ from cm.models import (
     ConfigLog,
     Host,
     HostProvider,
-    MaintenanceModeType,
+    MaintenanceMode,
     ObjectConfig,
     Prototype,
 )
@@ -38,7 +49,7 @@ class TestAuditObjectRename(BaseTestCase):
             fqdn="test_fqdn",
             prototype=host_prototype,
             provider=provider,
-            maintenance_mode=MaintenanceModeType.On,
+            maintenance_mode=MaintenanceMode.ON,
             config=config,
         )
 
@@ -115,7 +126,7 @@ class TestAuditObjectRename(BaseTestCase):
 
         self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"fqdn": new_test_host_fqdn, "maintenance_mode": MaintenanceModeType.On},
+            data={"fqdn": new_test_host_fqdn, "maintenance_mode": MaintenanceMode.ON},
             content_type=APPLICATION_JSON,
         )
 

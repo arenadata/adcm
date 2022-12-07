@@ -52,10 +52,11 @@ class ExpandedGroupSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     user = GroupUserSerializer(many=True, source="user_set")
     url = HyperlinkedIdentityField(view_name="rbac:group-detail")
     name = CharField(max_length=150, source="group.display_name")
+    type = CharField(read_only=True, source="group.type")
 
     class Meta:
         model = Group
-        fields = ("id", "name", "user", "url")
+        fields = ("id", "name", "type", "user", "url")
         expandable_fields = {
             "user": (
                 "rbac.endpoints.user.views.UserSerializer",
@@ -73,12 +74,8 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
 
     id = IntegerField(read_only=True)
     username = RegexField(r"^[^\s]+$", max_length=150)
-    first_name = RegexField(
-        r"^[^\n]*$", max_length=150, allow_blank=True, required=False, default=""
-    )
-    last_name = RegexField(
-        r"^[^\n]*$", max_length=150, allow_blank=True, required=False, default=""
-    )
+    first_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False, default="")
+    last_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False, default="")
     email = EmailField(
         allow_blank=True,
         required=False,
@@ -98,6 +95,7 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
 
     def update(self, instance, validated_data):
         context_user = self.context["request"].user
+
         return user_services.update(instance, context_user, partial=self.partial, **validated_data)
 
     def create(self, validated_data):

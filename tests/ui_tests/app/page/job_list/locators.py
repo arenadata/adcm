@@ -13,7 +13,6 @@
 """Job List page locators"""
 
 from selenium.webdriver.common.by import By
-
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 
@@ -42,6 +41,7 @@ class TaskListLocators:
             invoker_objects = Locator(By.CSS_SELECTOR, "app-task-objects a", "Object that invoked action in row")
             start_date = Locator(By.CSS_SELECTOR, "mat-cell.action_date:nth-child(4)", "Start date in row")
             finish_date = Locator(By.CSS_SELECTOR, "mat-cell.action_date:nth-child(5)", "Finish date in row")
+            download_log = Locator(By.TAG_NAME, "app-download-button-column", "Log download button")
             # span for done_all and mat-icon for running
             # but in both cases we can identify status by class
             status = Locator(By.CSS_SELECTOR, "app-task-status-column *", "Status span in row")

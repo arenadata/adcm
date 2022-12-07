@@ -26,7 +26,6 @@ from _pytest.fixtures import SubRequest
 from adcm_client.objects import ADCMClient
 from adcm_client.wrappers.docker import ADCM
 from selenium.common.exceptions import WebDriverException
-
 from tests.conftest import CLEAN_ADCM_PARAM
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
@@ -57,7 +56,7 @@ def downloads_directory(tmpdir_factory: pytest.TempdirFactory):
 
 
 @pytest.fixture()
-def clean_downloads_fs(request: SubRequest, downloads_directory):
+def _clean_downloads_fs(request: SubRequest, downloads_directory):
     """Clean downloads directory before use"""
     if downloads_directory == SELENOID_DOWNLOADS_PATH:
         yield
@@ -93,18 +92,85 @@ def web_driver(browser, downloads_directory):
 
 
 @pytest.fixture()
-def skip_firefox(browser: str):
+def _skip_firefox(browser: str):
     """Skip one test on firefox"""
     if browser == 'Firefox':
         pytest.skip("This test shouldn't be launched on Firefox")
 
 
+@allure.title("Data for failure investigation")
 @pytest.fixture()
-def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
+def _attach_debug_info_on_ui_test_fail(request, web_driver):
+    """Attach screenshot, etc. to allure + cleanup for firefox"""
+    yield
+    try:
+        if not (request.node.rep_setup.failed or request.node.rep_call.failed):
+            return
+        allure.attach(
+            web_driver.driver.page_source,
+            name="page_source",
+            attachment_type=allure.attachment_type.HTML,
+        )
+        web_driver.driver.execute_script("document.body.bgColor = 'white';")
+        allure.attach(
+            web_driver.driver.get_screenshot_as_png(),
+            name="screenshot",
+            attachment_type=allure.attachment_type.PNG,
+        )
+        allure.attach(
+            json.dumps(web_driver.driver.execute_script("return localStorage"), indent=2),
+            name="localStorage",
+            attachment_type=allure.attachment_type.JSON,
+        )
+        # this way of getting logs does not work for Firefox, see ADCM-1497
+        if web_driver.capabilities['browserName'] != 'firefox':
+            console_logs = web_driver.driver.get_log('browser')
+            perf_log = web_driver.driver.get_log("performance")
+            events = [_process_browser_log_entry(entry) for entry in perf_log]
+            network_logs = [event for event in events if 'Network.response' in event['method']]
+            events_json = _write_json_file("all_logs", events)
+            network_console_logs = _write_json_file("network_log", network_logs)
+            console_logs = _write_json_file("console_logs", console_logs)
+            allure.attach(
+                web_driver.driver.current_url,
+                name='Current URL',
+                attachment_type=allure.attachment_type.TEXT,
+            )
+            allure.attach.file(console_logs, name="console_log", attachment_type=allure.attachment_type.TEXT)
+            allure.attach.file(
+                network_console_logs,
+                name="network_log",
+                attachment_type=allure.attachment_type.TEXT,
+            )
+            allure.attach.file(events_json, name="all_events_log", attachment_type=allure.attachment_type.TEXT)
+    except AttributeError:
+        # rep_setup and rep_call attributes are generated in runtime and can be absent
+        pass
+
+
+@pytest.fixture()
+def _cleanup_browser_logs(request, web_driver):
+    """Cleanup browser logs"""
+    try:
+        if (
+            not (request.node.rep_setup.failed or request.node.rep_call.failed)
+            and web_driver.capabilities['browserName'] != 'firefox'
+        ):
+            with allure.step("Flush browser logs so as not to affect next tests"):
+                web_driver.driver.get_log('browser')
+                web_driver.driver.get_log("performance")
+    except AttributeError:
+        # rep_setup and rep_call attributes are generated in runtime and can be absent
+        pass
+
+
+@pytest.fixture()
+def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, _attach_debug_info_on_ui_test_fail, _cleanup_browser_logs):
     """
     Attach ADCM API to ADCMTest object and open new tab in browser for test
     Collect logs on failure and close browser tab after test is done
     """
+    _ = _attach_debug_info_on_ui_test_fail
     web_driver.attache_adcm(adcm_fs)
     try:
         web_driver.new_tab()
@@ -112,53 +178,7 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
         # this exception could be raised in case
         # when driver was crashed for some reason
         web_driver.create_driver()
-    yield web_driver
-    try:
-        if request.node.rep_setup.failed or request.node.rep_call.failed:
-            allure.attach(
-                web_driver.driver.page_source,
-                name="page_source",
-                attachment_type=allure.attachment_type.HTML,
-            )
-            web_driver.driver.execute_script("document.body.bgColor = 'white';")
-            allure.attach(
-                web_driver.driver.get_screenshot_as_png(),
-                name="screenshot",
-                attachment_type=allure.attachment_type.PNG,
-            )
-            allure.attach(
-                json.dumps(web_driver.driver.execute_script("return localStorage"), indent=2),
-                name="localStorage",
-                attachment_type=allure.attachment_type.JSON,
-            )
-            # this way of getting logs does not work for Firefox, see ADCM-1497
-            if web_driver.capabilities['browserName'] != 'firefox':
-                console_logs = web_driver.driver.get_log('browser')
-                perf_log = web_driver.driver.get_log("performance")
-                events = [_process_browser_log_entry(entry) for entry in perf_log]
-                network_logs = [event for event in events if 'Network.response' in event['method']]
-                events_json = _write_json_file("all_logs", events)
-                network_console_logs = _write_json_file("network_log", network_logs)
-                console_logs = _write_json_file("console_logs", console_logs)
-                allure.attach(
-                    web_driver.driver.current_url,
-                    name='Current URL',
-                    attachment_type=allure.attachment_type.TEXT,
-                )
-                allure.attach.file(console_logs, name="console_log", attachment_type=allure.attachment_type.TEXT)
-                allure.attach.file(
-                    network_console_logs,
-                    name="network_log",
-                    attachment_type=allure.attachment_type.TEXT,
-                )
-                allure.attach.file(events_json, name="all_events_log", attachment_type=allure.attachment_type.TEXT)
-        elif web_driver.capabilities['browserName'] != 'firefox':
-            with allure.step("Flush browser logs so as not to affect next tests"):
-                web_driver.driver.get_log('browser')
-                web_driver.driver.get_log("performance")
-    except AttributeError:
-        # rep_setup and rep_call attributes are generated in runtime and can be absent
-        pass
+    return web_driver
 
 
 @pytest.fixture(scope='session')
@@ -199,14 +219,14 @@ def login_over_api(app_fs, credentials):
 
 @allure.title("Login in ADCM over API")
 @pytest.fixture()
-def login_to_adcm_over_api(app_fs, adcm_credentials):
+def _login_to_adcm_over_api(app_fs, adcm_credentials):
     """Perform login via API call"""
     login_over_api(app_fs, adcm_credentials).wait_config_loaded()
 
 
 @allure.title("Login in ADCM over UI")
 @pytest.fixture()
-def login_to_adcm_over_ui(app_fs, adcm_credentials):
+def _login_to_adcm_over_ui(app_fs, adcm_credentials):
     """Perform login on Login page ADCM"""
 
     login = LoginPage(app_fs.driver, app_fs.adcm.url).open()

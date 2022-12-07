@@ -1,5 +1,17 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from django.db.models import Model
-from django.views import View
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
 from audit.cases.common import (
@@ -20,7 +32,7 @@ from cm.models import Cluster, ClusterBind, ClusterObject, Host
 CONFIGURATION_STR = "configuration "
 
 
-def get_export_cluster_and_service_names(response: Response, view: View) -> tuple[str, str]:
+def get_export_cluster_and_service_names(response: Response, view: GenericAPIView) -> tuple[str, str]:
     cluster, service = None, None
     cluster_name, service_name = "", ""
     if response and response.data and isinstance(response.data.get("export_cluster_id"), int):
@@ -61,7 +73,7 @@ def make_export_name(cluster_name: str, service_name: str) -> str:
 # pylint: disable-next=too-many-locals,too-many-branches,too-many-statements
 def cluster_case(
     path: list[str, ...],
-    view: View,
+    view: GenericAPIView,
     response: Response,
     deleted_obj: Model,
 ) -> tuple[AuditOperation, AuditObject | None]:
@@ -119,7 +131,13 @@ def cluster_case(
                 object_type=AuditObjectType.Cluster,
             )
 
-        case ["cluster", cluster_pk, "host", host_pk]:
+        case ["cluster", cluster_pk, "host", host_pk] | [
+            "cluster",
+            cluster_pk,
+            "host",
+            host_pk,
+            "maintenance-mode",
+        ]:
             if view.request.method == "DELETE":
                 name = "host removed"
                 if not isinstance(deleted_obj, Host):
@@ -223,7 +241,7 @@ def cluster_case(
                 object_type=AuditObjectType.Cluster,
             )
 
-        case ["cluster", cluster_pk, "service", service_pk, "bind"]:
+        case ["cluster", _, "service", service_pk, "bind"]:
             service = ClusterObject.objects.get(pk=service_pk)
             cluster_name, service_name = get_export_cluster_and_service_names(response, view)
             audit_operation = AuditOperation(
@@ -275,6 +293,13 @@ def cluster_case(
                 operation_type=AuditLogOperationType.Update,
                 obj_pk=service_pk,
                 operation_aux_str="import ",
+            )
+
+        case ["cluster", _, "service", service_pk, "maintenance-mode"]:
+            audit_operation, audit_object = obj_pk_case(
+                obj_type=AuditObjectType.Service,
+                operation_type=AuditLogOperationType.Update,
+                obj_pk=service_pk,
             )
 
         case (
@@ -340,8 +365,7 @@ def cluster_case(
             )
 
         case (
-            ["cluster", cluster_pk, "config", "history"]
-            | ["cluster", cluster_pk, "config", "history", _, "restore"]
+            ["cluster", cluster_pk, "config", "history"] | ["cluster", cluster_pk, "config", "history", _, "restore"]
         ):
             audit_operation, audit_object = obj_pk_case(
                 obj_type=AuditObjectType.Cluster,
@@ -363,6 +387,18 @@ def cluster_case(
                 operation_type=AuditLogOperationType.Update,
                 obj_pk=host_pk,
                 operation_aux_str=CONFIGURATION_STR,
+            )
+
+        case (
+            ["component", component_pk]
+            | ["component", component_pk, _]
+            | ["cluster", _, "service", _, "component", component_pk, "maintenance-mode"]
+            | ["service", _, "component", component_pk, "maintenance-mode"]
+        ):
+            audit_operation, audit_object = obj_pk_case(
+                obj_type=AuditObjectType.Component,
+                operation_type=AuditLogOperationType.Update,
+                obj_pk=component_pk,
             )
 
     return audit_operation, audit_object

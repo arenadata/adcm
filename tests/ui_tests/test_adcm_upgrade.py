@@ -21,7 +21,6 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
-
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.bundle_list.page import BundleListPage
@@ -84,7 +83,8 @@ def test_upgrade_adcm(
         intro_page.wait_config_loaded()
     with allure.step('Start ADCM upgrade with client'):
         upgrade_thread = threading.Thread(
-            target=upgrade_adcm_version, args=(app_fs.adcm, sdk_client_fs, adcm_api_credentials, adcm_image_tags)
+            target=upgrade_adcm_version,
+            args=(app_fs.adcm, sdk_client_fs, adcm_api_credentials, adcm_image_tags),
         )
         upgrade_thread.start()
     with allure.step('Check update popup messages are present'):

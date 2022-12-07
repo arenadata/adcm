@@ -12,20 +12,7 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatOptionModule } from '@angular/material/core';
-import { MatExpansionModule } from '@angular/material/expansion';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatListModule } from '@angular/material/list';
-import { MatMenuModule } from "@angular/material/menu";
-import { MatSelectModule } from '@angular/material/select';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatTooltipModule } from '@angular/material/tooltip';
-
+import { MaterialModule } from "@app/shared/material.module";
 import { FormElementsModule } from '../form-elements/form-elements.module';
 import { StuffModule } from '../stuff.module';
 import { FieldService } from './services/field.service';
@@ -51,22 +38,7 @@ import { ConfigAttributeNames } from '@app/shared/configuration/attributes/attri
 import { GroupKeysWrapperComponent } from '@app/shared/configuration/attributes/attributes/group-keys/group-keys-wrapper.component';
 import { FilterComponent } from "@app/shared/configuration/tools/filter/filter.component";
 import { FilterListComponent } from "@app/shared/configuration/tools/filter/filter-list/filter-list.component";
-
-const material = [
-  MatIconModule,
-  MatInputModule,
-  MatButtonModule,
-  MatSelectModule,
-  MatOptionModule,
-  MatCheckboxModule,
-  MatTooltipModule,
-  MatToolbarModule,
-  MatFormFieldModule,
-  MatExpansionModule,
-  MatSlideToggleModule,
-  MatListModule,
-  MatMenuModule,
-];
+import { ServerFilterComponent } from './tools/server-filter/server-filter.component';
 
 @NgModule({
   declarations: [
@@ -83,6 +55,7 @@ const material = [
     SchemeComponent,
     RootComponent,
     ItemComponent,
+    ServerFilterComponent
   ],
   imports: [
     CommonModule,
@@ -90,7 +63,7 @@ const material = [
     ReactiveFormsModule,
     StuffModule,
     FormElementsModule,
-    ...material,
+    MaterialModule,
     AdwpListModule,
     AddingModule,
     ConfigGroupModule,
@@ -110,7 +83,7 @@ const material = [
       }
     }),
   ],
-  exports: [ConfigComponent, ConfigFieldsComponent, FilterComponent, FilterListComponent],
+  exports: [ConfigComponent, ConfigFieldsComponent, FilterComponent, FilterListComponent, ServerFilterComponent],
   providers: [FieldService, YspecService, SchemeService, ConfigService],
 })
 export class ConfigurationModule {

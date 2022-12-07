@@ -12,12 +12,11 @@
 
 """Tools for ADCM errors handling in tests"""
 
-from typing import List, Iterable
+from typing import Iterable, List
 
 import pytest_check as check
 from adcm_client.wrappers.api import ADCMApiError
 from coreapi.exceptions import ErrorMessage
-from pytest_check.check_methods import get_failures
 
 
 class ADCMError:
@@ -40,25 +39,30 @@ class ADCMError:
         self._compare_error_message(e, *args)
 
     def _compare_error_message(self, e: ErrorMessage, *args):
-        error = e.value.error if hasattr(e, 'value') else e.error
+        error = e.value.error if hasattr(e, "value") else e.error
         title = error.title
         code = error.get("code", "")
         desc = error.get("desc", "")
         error_args = error.get("args", "")
         check.equal(title, self.title, f'Expected title is "{self.title}", actual is "{title}"')
         check.equal(code, self.code, f'Expected error code is "{self.code}", actual is "{code}"')
+        # workaround for pytest-check 1.1.2 to stop execution right here
+        raise_assertion = False
         for i in args:
-            err_msg = 'Unknown'
-            check.is_true(
+            err_msg = "Unknown"
+            check_result = check.is_true(
                 i in desc or i in error_args or i in (err_msg := self._get_data_err_messages(error)),
                 (
                     f"Text '{i}' should be present in error message. Either in:\n"
-                    f'Description: {desc}\n'
-                    f'Error arguments: {error_args}\n'
-                    f'Or message: {err_msg}'
+                    f"Description: {desc}\n"
+                    f"Error arguments: {error_args}\n"
+                    f"Or message: {err_msg}"
                 ),
             )
-        assert not get_failures(), "All assertions should passed"
+            if check_result is False:
+                raise_assertion = True
+        if raise_assertion:
+            raise AssertionError("All assertions should passed")
 
     def _compare_adcm_api_error(self, e: ADCMApiError, *_):
         code, *_ = e.args
@@ -66,7 +70,7 @@ class ADCMError:
 
     def _get_data_err_messages(self, error) -> List[str]:
         """Extract all messages from _data attribute or an error if it is presented"""
-        data = getattr(error, '_data', None)
+        data = getattr(error, "_data", None)
         if data is None:
             return []
         if isinstance(data, dict):
@@ -79,211 +83,213 @@ class ADCMError:
                 else:
                     messages.append(val)
             return messages
-        raise ValueError('error._dict expected to be dict instance')
+        raise ValueError("error._dict expected to be dict instance")
 
     def __str__(self):
-        return f'{self.code} {self.title}'
+        return f"{self.code} {self.title}"
 
 
 INVALID_OBJECT_DEFINITION = ADCMError(
-    '409 Conflict',
-    'INVALID_OBJECT_DEFINITION',
+    "409 Conflict",
+    "INVALID_OBJECT_DEFINITION",
 )
 
 INVALID_CONFIG_DEFINITION = ADCMError(
-    '409 Conflict',
-    'INVALID_CONFIG_DEFINITION',
+    "409 Conflict",
+    "INVALID_CONFIG_DEFINITION",
 )
 
 UPGRADE_ERROR = ADCMError(
-    '409 Conflict',
-    'UPGRADE_ERROR',
+    "409 Conflict",
+    "UPGRADE_ERROR",
 )
 
 BUNDLE_ERROR = ADCMError(
-    '409 Conflict',
-    'BUNDLE_ERROR',
+    "409 Conflict",
+    "BUNDLE_ERROR",
 )
 
 BUNDLE_CONFLICT = ADCMError(
-    '409 Conflict',
-    'BUNDLE_CONFLICT',
+    "409 Conflict",
+    "BUNDLE_CONFLICT",
 )
 
 UPGRADE_NOT_FOUND = ADCMError(
-    '404 Not Found',
-    'UPGRADE_NOT_FOUND',
+    "404 Not Found",
+    "UPGRADE_NOT_FOUND",
 )
 
 CONFIG_VALUE_ERROR = ADCMError(
-    '400 Bad Request',
-    'CONFIG_VALUE_ERROR',
+    "400 Bad Request",
+    "CONFIG_VALUE_ERROR",
 )
 
 CONFIG_KEY_ERROR = ADCMError(
-    '400 Bad Request',
-    'CONFIG_KEY_ERROR',
+    "400 Bad Request",
+    "CONFIG_KEY_ERROR",
 )
 
 GROUP_CONFIG_HOST_ERROR = ADCMError(
-    '400 Bad Request',
-    'GROUP_CONFIG_HOST_ERROR',
+    "400 Bad Request",
+    "GROUP_CONFIG_HOST_ERROR",
 )
 
 GROUP_CONFIG_HOST_EXISTS = ADCMError(
-    '400 Bad Request',
-    'GROUP_CONFIG_HOST_EXISTS',
+    "400 Bad Request",
+    "GROUP_CONFIG_HOST_EXISTS",
 )
 
 ATTRIBUTE_ERROR = ADCMError(
-    '400 Bad Request',
-    'ATTRIBUTE_ERROR',
+    "400 Bad Request",
+    "ATTRIBUTE_ERROR",
 )
 
 TASK_ERROR = ADCMError(
-    '409 Conflict',
-    'TASK_ERROR',
+    "409 Conflict",
+    "TASK_ERROR",
 )
 
 GROUP_CONFIG_CHANGE_UNSELECTED_FIELD = ADCMError(
-    '400 Bad Request',
-    'GROUP_CONFIG_CHANGE_UNSELECTED_FIELD',
+    "400 Bad Request",
+    "GROUP_CONFIG_CHANGE_UNSELECTED_FIELD",
 )
 
 STACK_LOAD_ERROR = ADCMError(
-    '409 Conflict',
-    'STACK_LOAD_ERROR',
+    "409 Conflict",
+    "STACK_LOAD_ERROR",
 )
 
 DEFINITION_KEY_ERROR = ADCMError(
-    '409 Conflict',
-    'DEFINITION_KEY_ERROR',
+    "409 Conflict",
+    "DEFINITION_KEY_ERROR",
 )
 
 INVALID_UPGRADE_DEFINITION = ADCMError(
-    '409 Conflict',
-    'INVALID_UPGRADE_DEFINITION',
+    "409 Conflict",
+    "INVALID_UPGRADE_DEFINITION",
 )
 
 INVALID_VERSION_DEFINITION = ADCMError(
-    '409 Conflict',
-    'INVALID_VERSION_DEFINITION',
+    "409 Conflict",
+    "INVALID_VERSION_DEFINITION",
 )
 
 INVALID_ACTION_DEFINITION = ADCMError(
-    '409 Conflict',
-    'INVALID_ACTION_DEFINITION',
+    "409 Conflict",
+    "INVALID_ACTION_DEFINITION",
 )
 
 JSON_ERROR = ADCMError(
-    '400 Bad Request',
-    'JSON_ERROR',
+    "400 Bad Request",
+    "JSON_ERROR",
 )
 
 FOREIGN_HOST = ADCMError(
-    '409 Conflict',
-    'FOREIGN_HOST',
+    "409 Conflict",
+    "FOREIGN_HOST",
 )
 
 PROTOTYPE_NOT_FOUND = ADCMError(
-    '404 Not Found',
-    'PROTOTYPE_NOT_FOUND',
+    "404 Not Found",
+    "PROTOTYPE_NOT_FOUND",
 )
 
 CONFIG_NOT_FOUND = ADCMError(
-    '404 Not Found',
-    'CONFIG_NOT_FOUND',
+    "404 Not Found",
+    "CONFIG_NOT_FOUND",
 )
 
 PROVIDER_NOT_FOUND = ADCMError(
-    '404 Not Found',
-    'PROVIDER_NOT_FOUND',
+    "404 Not Found",
+    "PROVIDER_NOT_FOUND",
 )
 
 HOST_NOT_FOUND = ADCMError(
-    '404 Not Found',
-    'HOST_NOT_FOUND',
+    "404 Not Found",
+    "HOST_NOT_FOUND",
 )
 
 CLUSTER_NOT_FOUND = ADCMError(
-    '404 Not Found',
-    'CLUSTER_NOT_FOUND',
+    "404 Not Found",
+    "CLUSTER_NOT_FOUND",
 )
 
 CLUSTER_SERVICE_NOT_FOUND = ADCMError(
-    '404 Not Found',
-    'CLUSTER_SERVICE_NOT_FOUND',
+    "404 Not Found",
+    "CLUSTER_SERVICE_NOT_FOUND",
 )
 
 SERVICE_NOT_FOUND = ADCMError(
-    '404 Not Found',
-    'SERVICE_NOT_FOUND',
+    "404 Not Found",
+    "SERVICE_NOT_FOUND",
 )
 
 HOSTSERVICE_NOT_FOUND = ADCMError(
-    '404 Not Found',
-    'HOSTSERVICE_NOT_FOUND',
+    "404 Not Found",
+    "HOSTSERVICE_NOT_FOUND",
 )
 
 TASK_GENERATOR_ERROR = ADCMError(
-    '409 Conflict',
-    'TASK_GENERATOR_ERROR',
+    "409 Conflict",
+    "TASK_GENERATOR_ERROR",
 )
 
 SERVICE_CONFLICT = ADCMError(
-    '409 Conflict',
-    'SERVICE_CONFLICT',
+    "409 Conflict",
+    "SERVICE_CONFLICT",
 )
 
+SERVICE_DELETE_ERROR = ADCMError("409 Conflict", "SERVICE_DELETE_ERROR")
+
 HOST_CONFLICT = ADCMError(
-    '409 Conflict',
-    'HOST_CONFLICT',
+    "409 Conflict",
+    "HOST_CONFLICT",
 )
 
 CLUSTER_CONFLICT = ADCMError(
-    '409 Conflict',
-    'CLUSTER_CONFLICT',
+    "409 Conflict",
+    "CLUSTER_CONFLICT",
 )
 
 PROVIDER_CONFLICT = ADCMError(
-    '409 Conflict',
-    'PROVIDER_CONFLICT',
+    "409 Conflict",
+    "PROVIDER_CONFLICT",
 )
 
 WRONG_NAME = ADCMError(
-    '400 Bad Request',
-    'WRONG_NAME',
+    "400 Bad Request",
+    "WRONG_NAME",
 )
 
 BIND_ERROR = ADCMError(
-    '409 Conflict',
-    'BIND_ERROR',
+    "409 Conflict",
+    "BIND_ERROR",
 )
 
 MAINTENANCE_MODE_NOT_AVAILABLE = ADCMError(
-    '409 Conflict',
-    'MAINTENANCE_MODE_NOT_AVAILABLE',
+    "409 Conflict",
+    "MAINTENANCE_MODE_NOT_AVAILABLE",
 )
 
 ACTION_ERROR = ADCMError(
-    '409 Conflict',
-    'ACTION_ERROR',
+    "409 Conflict",
+    "ACTION_ERROR",
 )
 
 
 INVALID_HC_HOST_IN_MM = ADCMError(
-    '409 Conflict',
-    'INVALID_HC_HOST_IN_MM',
+    "409 Conflict",
+    "INVALID_HC_HOST_IN_MM",
 )
 
-USER_UPDATE_ERROR = ADCMError('400 Bad Request', 'USER_UPDATE_ERROR')
+USER_UPDATE_ERROR = ADCMError('409 Conflict', 'USER_CONFLICT')
 
-GROUP_UPDATE_ERROR = ADCMError('400 Bad Request', 'GROUP_UPDATE_ERROR')
+GROUP_UPDATE_ERROR = ADCMError('409 Conflict', 'GROUP_CONFLICT')
 
 # ADCMApiError
-AUTH_ERROR = ADCMError('400 Bad Request', 'AUTH_ERROR')
+AUTH_ERROR = ADCMError("400 Bad Request", "AUTH_ERROR")
 
 COMPONENT_CONSTRAINT_ERROR = ADCMError(
-    '409 Conflict',
-    'COMPONENT_CONSTRAINT_ERROR',
+    "409 Conflict",
+    "COMPONENT_CONSTRAINT_ERROR",
 )

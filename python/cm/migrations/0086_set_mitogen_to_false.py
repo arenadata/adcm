@@ -24,9 +24,7 @@ def update_adcm_config_settings(apps, schema_editor):
         if 'ansible_settings' in config and 'mitogen' in config['ansible_settings']:
             config['ansible_settings']['mitogen'] = False
             obj_conf = adcm.config
-            config_log = ConfigLog(
-                obj_ref=obj_conf, config=config, attr=cl.attr, description=cl.description
-            )
+            config_log = ConfigLog(obj_ref=obj_conf, config=config, attr=cl.attr, description=cl.description)
             config_log.save()
             obj_conf.previous = obj_conf.current
             obj_conf.current = config_log.id

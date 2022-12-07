@@ -10,15 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adwp_base.errors import AdwpEx
 from django_filters.rest_framework import CharFilter, DjangoFilterBackend, FilterSet
 from guardian.mixins import PermissionListMixin
 from rest_framework.filters import OrderingFilter
-from rest_framework.status import HTTP_405_METHOD_NOT_ALLOWED
 from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import DjangoModelPermissionsAudit
 from audit.utils import audit
+from cm.errors import raise_adcm_ex
 from rbac.endpoints.group.serializers import GroupSerializer
 from rbac.models import Group
 
@@ -76,10 +75,6 @@ class GroupViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-ma
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.built_in:
-            raise AdwpEx(
-                "GROUP_DELETE_ERROR",
-                msg="Built-in group could not be deleted",
-                http_code=HTTP_405_METHOD_NOT_ALLOWED,
-            )
+            raise_adcm_ex("GROUP_DELETE_ERROR")
 
         return super().destroy(request, args, kwargs)

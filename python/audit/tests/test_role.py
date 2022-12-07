@@ -42,7 +42,7 @@ class TestRole(BaseTestCase):
         self.role_created_str = "Role created"
         self.role_updated_str = "Role updated"
 
-    def check_log(  # pylint: disable=too-many-arguments
+    def check_log(
         self,
         log: AuditLog,
         obj: Role | None,

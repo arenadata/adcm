@@ -12,13 +12,13 @@
 
 """Common utils for ADCM tests"""
 
-import time
 import json
 import random
-from typing import Tuple, Iterable
+import time
+from typing import Iterable, Tuple
 
 import requests
-from adcm_client.objects import Host
+from adcm_client.objects import Cluster, Component, Host, Provider, Service, Task
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 
 
@@ -198,3 +198,26 @@ def lower_class_name(obj: object) -> str:
 def get_hosts_fqdn_representation(hosts: Iterable[Host]):
     """Return string with host FQDNs separated by ','"""
     return ", ".join(host.fqdn for host in hosts)
+
+
+# !===== Bulk Log Download =====!
+
+
+def build_full_archive_name(
+    adcm_object: Cluster | Service | Component | Provider,
+    task: Task,
+    action_name_in_archive_name: str,
+) -> str:
+    """Build expected archive name for general object action's task (without extension)"""
+    top_level_object = adcm_object if not isinstance(adcm_object, (Service, Component)) else adcm_object.cluster()
+    return "_".join(
+        map(
+            lambda p: p.replace(" ", "-").replace("_", "").lower(),
+            (
+                top_level_object.name,
+                adcm_object.prototype().display_name,
+                action_name_in_archive_name,
+                str(task.id),
+            ),
+        )
+    )

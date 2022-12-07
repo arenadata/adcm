@@ -84,9 +84,7 @@ def cook_provider(bundle, name):
 
 
 def cook_upgrade(bundle):
-    return Upgrade.objects.create(
-        bundle=bundle, min_version="1.0", max_version="2.0", state_available=["created"]
-    )
+    return Upgrade.objects.create(bundle=bundle, min_version="1.0", max_version="2.0", state_available=["created"])
 
 
 def get_config(obj):

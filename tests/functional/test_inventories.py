@@ -19,15 +19,26 @@ from uuid import uuid4
 import allure
 import pytest
 from _pytest.fixtures import SubRequest
-from adcm_client.objects import ADCM, ADCMClient, Cluster, Component, Host, Provider, Service
+from adcm_client.objects import (
+    ADCM,
+    ADCMClient,
+    Cluster,
+    Component,
+    Host,
+    Provider,
+    Service,
+)
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.docker_utils import get_file_from_container
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.utils import get_data_dir
 from docker.models.containers import Container
-
 from tests.functional.conftest import only_clean_adcm
-from tests.functional.tools import BEFORE_UPGRADE_DEFAULT_STATE, create_config_group_and_add_host, get_inventory_file
+from tests.functional.tools import (
+    BEFORE_UPGRADE_DEFAULT_STATE,
+    create_config_group_and_add_host,
+    get_inventory_file,
+)
 
 # pylint: disable=redefined-outer-name
 
@@ -46,8 +57,18 @@ CONFIG_TO_CHANGE = {
         'simple_field': 1,
     },
     'attr': {
-        'group_keys': {'json_field': True, 'map_field': True, 'simple_field': False, '__main_info': False},
-        'custom_group_keys': {'json_field': True, 'map_field': True, 'simple_field': True, '__main_info': False},
+        'group_keys': {
+            'json_field': True,
+            'map_field': True,
+            'simple_field': False,
+            '__main_info': False,
+        },
+        'custom_group_keys': {
+            'json_field': True,
+            'map_field': True,
+            'simple_field': True,
+            '__main_info': False,
+        },
     },
 }
 
@@ -147,14 +168,23 @@ class TestHostInMultipleConfigGroups:
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_with_components"))
         cluster = bundle.cluster_create("Test Cluster")
         service = cluster.service_add(name="test_service")
-        return cluster, service, service.component(name="first_component"), service.component(name="second_component")
+        return (
+            cluster,
+            service,
+            service.component(name="first_component"),
+            service.component(name="second_component"),
+        )
 
     @pytest.fixture()
     def second_service_with_components(self, cluster_with_components) -> Tuple[Service, Component, Component]:
         """Add second service to the cluster"""
         cluster, *_ = cluster_with_components
         service = cluster.service_add(name="second_service")
-        return service, service.component(name="first_component"), service.component(name="second_component")
+        return (
+            service,
+            service.component(name="first_component"),
+            service.component(name="second_component"),
+        )
 
     @pytest.fixture()
     def _map_hosts_to_components(self, hosts, cluster_with_components, second_service_with_components) -> None:

@@ -12,57 +12,45 @@
 
 """UI tests for /service page"""
 import os
-from typing import Tuple
 from collections import OrderedDict
+from typing import Tuple
 
 import allure
 import pytest
 from _pytest.fixtures import SubRequest
-from adcm_client.objects import (
-    ADCMClient,
-    Bundle,
-)
-from adcm_client.objects import (
-    Cluster,
-    Service,
-    Host,
-)
-from adcm_pytest_plugin import params
-from adcm_pytest_plugin import utils
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Service
+from adcm_pytest_plugin import params, utils
 from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
-from tests.ui_tests.app.page.cluster.page import (
-    ClusterServicesPage,
-)
+from tests.ui_tests.app.page.cluster.page import ClusterServicesPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
 from tests.ui_tests.app.page.common.import_page.page import ImportItemInfo
 from tests.ui_tests.app.page.common.status.page import (
-    SUCCESS_COLOR,
     NEGATIVE_COLOR,
+    SUCCESS_COLOR,
+    StatusRowInfo,
 )
-from tests.ui_tests.app.page.common.status.page import StatusRowInfo
 from tests.ui_tests.app.page.service.page import (
     ServiceComponentPage,
-    ServiceStatusPage,
-)
-from tests.ui_tests.app.page.service.page import (
-    ServiceMainPage,
     ServiceConfigPage,
     ServiceGroupConfigPage,
     ServiceImportPage,
+    ServiceMainPage,
+    ServiceStatusPage,
 )
 from tests.ui_tests.test_cluster_list_page import (
-    CLUSTER_NAME,
-    SERVICE_NAME,
-    PROVIDER_NAME,
-    HOST_NAME,
-    COMPONENT_NAME,
-    BUNDLE_REQUIRED_FIELDS,
-    BUNDLE_IMPORT,
     BUNDLE_COMMUNITY,
+    BUNDLE_IMPORT,
+    BUNDLE_REQUIRED_FIELDS,
+    CLUSTER_NAME,
+    COMPONENT_NAME,
+    HOST_NAME,
+    PROVIDER_NAME,
+    SERVICE_NAME,
 )
+from tests.ui_tests.utils import create_few_groups
 
 BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
 BUNDLE_WITH_REQUIRED_IMPORT = "cluster_required_import"
@@ -70,8 +58,8 @@ BUNDLE_DEFAULT_FIELDS = "cluster_and_service_with_default_string"
 BUNDLE_WITH_DESCRIPTION_FIELDS = "service_with_all_config_params"
 
 
-# pylint: disable=redefined-outer-name,unused-argument,too-many-locals
-pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
+# pylint: disable=redefined-outer-name,too-many-locals
+pytestmark = pytest.mark.usefixtures("_login_to_adcm_over_api")
 
 
 # !===== Fixtures =====!
@@ -305,7 +293,8 @@ class TestServiceConfigPage:
 
     @pytest.mark.skip("https://tracker.yandex.ru/ADCM-3017")
     @pytest.mark.parametrize(
-        "bundle_name", ["password_no_confirm_false_required_false", "password_no_confirm_true_required_false"]
+        "bundle_name",
+        ["password_no_confirm_false_required_false", "password_no_confirm_true_required_false"],
     )
     def test_password_required_false_in_config_on_service_config_page(self, app_fs, sdk_client_fs, bundle_name):
         """Test password field on /cluster/{}/service/{}/config page"""
@@ -367,7 +356,12 @@ class TestServiceConfigPage:
     def test_reset_config_in_row_on_service_config_page(self, app_fs, create_cluster_with_service):
         """Test config reset on /cluster/{}/service/{}/config page"""
 
-        params = {"row_name": "param1", "row_value_new": "test", "row_value_old": "", "config_name": "test_name"}
+        params = {
+            "row_name": "param1",
+            "row_value_new": "test",
+            "row_value_old": "",
+            "config_name": "test_name",
+        }
 
         cluster, service = create_cluster_with_service
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
@@ -548,7 +542,7 @@ class TestServiceGroupConfigPage:
 
         cluster, service = create_cluster_with_service
         group_conf_page = ServiceGroupConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
-        group_conf_page.group_config.create_few_groups(11)
+        create_few_groups(group_conf_page.group_config)
         group_conf_page.table.check_pagination(second_page_item_amount=1)
 
 

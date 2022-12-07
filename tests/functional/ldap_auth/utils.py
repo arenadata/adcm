@@ -12,16 +12,20 @@
 
 """Utilities for LDAP-related tests"""
 
-from typing import Collection
+from typing import Collection, Set
 
 import allure
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import ADCMClient, Group, User
-
-from tests.library.assertions import sets_are_equal, expect_api_error, expect_no_api_error
+from tests.library.assertions import (
+    expect_api_error,
+    expect_no_api_error,
+    sets_are_equal,
+)
 
 SYNC_ACTION_NAME = 'run_ldap_sync'
 TEST_CONNECTION_ACTION = 'test_ldap_connection'
+LDAP_ACTION_CAN_NOT_START_REASON = "You need to fill in the LDAP integration settings"
 DEFAULT_LOCAL_USERS = ('admin', 'status', 'system')
 
 
@@ -51,7 +55,9 @@ def get_ldap_group_from_adcm(client: ADCMClient, name: str) -> Group:
 
 @allure.step('Check users existing in ADCM')
 def check_existing_users(
-    client: ADCMClient, expected_ldap: Collection[str] = (), expected_local: Collection[str] = DEFAULT_LOCAL_USERS
+    client: ADCMClient,
+    expected_ldap: Collection[str] = (),
+    expected_local: Collection[str] = DEFAULT_LOCAL_USERS,
 ):
     """Check that only provided users exists (both ldap and local)"""
     expected_ldap = set(expected_ldap)
@@ -102,3 +108,25 @@ def login_should_fail(operation_name: str, client: ADCMClient, username: str, pa
             user=username,
             password=password,
         )
+
+
+def check_users_in_group(group: Group, *users: User):
+    """Method to check users in group"""
+    error_msg = f'Incorrect user list in group {group.name}'
+    sets_are_equal(
+        actual=get_usernames_in_group(group),
+        expected={u.username for u in users},
+        message=error_msg,
+    )
+
+
+def get_usernames_in_group(group: Group) -> Set:
+    """Method to get usernames from group"""
+    group.reread()
+    return {u.username for u in group.user_list()}
+
+
+@allure.step('Turn off periodic ldap sync')
+def turn_off_periodic_ldap_sync(client: ADCMClient) -> None:
+    """Method to turn off periodic ldap sync"""
+    client.adcm().config_set_diff({'ldap_integration': {'sync_interval': 0}})

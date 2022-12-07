@@ -15,7 +15,6 @@
 import allure
 import pytest
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
-
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import (
     SYNC_ACTION_NAME,
@@ -30,14 +29,14 @@ pytestmark = [only_clean_adcm, pytest.mark.ldap()]
 
 
 @pytest.fixture()
-def configure_adcm(sdk_client_fs, ad_config, ldap_basic_ous):
+def _configure_adcm(sdk_client_fs, ad_config, ldap_basic_ous):
     """Configure LDAP settings in ADCM and turn off LDAP sync"""
     _, users_ou = ldap_basic_ous
     configure_adcm_for_ldap(sdk_client_fs, ad_config, False, None, users_ou, None)
     sdk_client_fs.adcm().config_set_diff({'ldap_integration': {'sync_interval': 0}})
 
 
-@pytest.mark.usefixtures("configure_adcm", "another_ldap_group")
+@pytest.mark.usefixtures("_configure_adcm", "another_ldap_group")
 def test_login_no_group_base(sdk_client_fs, ldap_user, ldap_user_in_group, ldap_group):
     """
     Test that users with or without LDAP group can log in and their groups are created
@@ -46,12 +45,15 @@ def test_login_no_group_base(sdk_client_fs, ldap_user, ldap_user_in_group, ldap_
     check_existing_users(sdk_client_fs, [ldap_user["name"]])
     check_existing_groups(sdk_client_fs)
     login_should_succeed(
-        "login as ldap user in group", sdk_client_fs, ldap_user_in_group["name"], ldap_user_in_group["password"]
+        "login as ldap user in group",
+        sdk_client_fs,
+        ldap_user_in_group["name"],
+        ldap_user_in_group["password"],
     )
     _check_correct_objects_came_from_ldap(sdk_client_fs, ldap_user, ldap_user_in_group, ldap_group)
 
 
-@pytest.mark.usefixtures("configure_adcm", "another_ldap_group")
+@pytest.mark.usefixtures("_configure_adcm", "another_ldap_group")
 def test_sync_no_group_base(sdk_client_fs, ldap_user, ldap_user_in_group, ldap_group):
     """
     Test that sync without specified LDAP group_search_base works correctly:

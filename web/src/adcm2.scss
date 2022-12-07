@@ -15,6 +15,12 @@ mat-header-cell.list-control, mat-cell.list-control {
   width: 100px
 }
 
+.text-ellipsed  {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* BEGIN: Material header arrow crutch */
 .mat-header-cell .mat-sort-header-container.mat-sort-header-sorted .mat-sort-header-arrow {
   opacity: 1 !important;

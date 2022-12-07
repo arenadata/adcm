@@ -20,13 +20,25 @@ import allure
 import pytest
 from adcm_client.objects import ADCMClient, Cluster, User
 from adcm_pytest_plugin.utils import random_string
-
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.conftest import BASE_BUNDLES_DIR
-from tests.functional.ldap_auth.utils import get_ldap_user_from_adcm, get_ldap_group_from_adcm
-from tests.functional.rbac.conftest import is_denied, BusinessRoles, create_policy, is_allowed, delete_policy
+from tests.functional.ldap_auth.utils import (
+    get_ldap_group_from_adcm,
+    get_ldap_user_from_adcm,
+)
+from tests.functional.rbac.conftest import (
+    BusinessRoles,
+    create_policy,
+    delete_policy,
+    is_allowed,
+    is_denied,
+)
 
-pytestmark = [only_clean_adcm, pytest.mark.usefixtures('configure_adcm_ldap_ad'), pytest.mark.ldap()]
+pytestmark = [
+    only_clean_adcm,
+    pytest.mark.usefixtures('configure_adcm_ldap_ad'),
+    pytest.mark.ldap(),
+]
 
 
 # pylint: disable=redefined-outer-name
@@ -59,7 +71,7 @@ def test_grant_policy_for_ldap_user(sdk_client_fs, cluster, ldap_user_in_group):
         is_denied(user_cluster, BusinessRoles.EditClusterConfigurations, client=user_client)
 
 
-# pylint: disable-next=unused-variable,too-many-arguments,too-many-locals
+# pylint: disable-next=unused-variable,too-many-locals
 def test_grant_policy_for_ldap_group(sdk_client_fs, cluster, ldap_ad, ldap_basic_ous, ldap_group, ldap_user_in_group):
     """
     Test that granting policy for LDAP group in ADCM works the same way as with regular group.

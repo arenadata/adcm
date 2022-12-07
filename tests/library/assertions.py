@@ -13,13 +13,12 @@
 """Various "rich" checks for common assertions"""
 import json
 import pprint
-from typing import Callable, Union, Collection, TypeVar, Optional
+from typing import Callable, Collection, Optional, TypeVar, Union
 
 import allure
 from adcm_client.wrappers.api import ADCMApiError
 from adcm_pytest_plugin.utils import catch_failed
 from coreapi.exceptions import ErrorMessage
-
 from tests.library.errorcodes import ADCMError
 
 T = TypeVar('T')
@@ -122,9 +121,15 @@ def dicts_are_equal(actual: dict, expected: dict, message: Union[str, Callable] 
     if actual == expected:
         return
 
-    allure.attach(json.dumps(actual, indent=2), name='Actual dictionary', attachment_type=allure.attachment_type.JSON)
     allure.attach(
-        json.dumps(expected, indent=2), name='Expected dictionary', attachment_type=allure.attachment_type.JSON
+        json.dumps(actual, indent=2),
+        name='Actual dictionary',
+        attachment_type=allure.attachment_type.JSON,
+    )
+    allure.attach(
+        json.dumps(expected, indent=2),
+        name='Expected dictionary',
+        attachment_type=allure.attachment_type.JSON,
     )
     message = message if not callable(message) else message(**kwargs)
     if not message:

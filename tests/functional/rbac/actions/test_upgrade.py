@@ -14,24 +14,28 @@
 
 # pylint: disable=redefined-outer-name
 
-from typing import List, Tuple, Dict, Literal, Iterable
+from typing import Dict, Iterable, List, Literal, Tuple
 
 import allure
 import pytest
 from adcm_client.base import NoSuchEndpointOrAccessIsDenied, ObjectNotFound
-from adcm_client.objects import Bundle, Cluster, Policy, Component, Service, ADCMClient
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Component, Policy, Service
 from adcm_client.wrappers.api import AccessIsDenied
-
-from tests.library.consts import HTTPMethod
-from tests.functional.tools import ClusterRelatedObject
-from tests.functional.rbac.checkers import ForbiddenCallChecker
-from tests.functional.rbac.conftest import BusinessRole, is_allowed, is_denied, as_user_objects
 from tests.functional.rbac.action_role_utils import (
-    create_action_policy,
     action_business_role,
+    create_action_policy,
     get_action_display_name_from_role_name,
 )
 from tests.functional.rbac.actions.conftest import DATA_DIR
+from tests.functional.rbac.checkers import ForbiddenCallChecker
+from tests.functional.rbac.conftest import (
+    BusinessRole,
+    as_user_objects,
+    is_allowed,
+    is_denied,
+)
+from tests.functional.tools import ClusterRelatedObject
+from tests.library.consts import HTTPMethod
 
 ClusterObjectClassName = Literal['Cluster', 'Service', 'Component']
 
@@ -109,9 +113,7 @@ class TestActionRolesOnUpgrade:
         ]
 
     @pytest.mark.usefixtures("new_bundle", "old_cluster_actions_policies")
-    def test_upgrade(
-        self, clients, user, old_cluster, all_business_roles, old_cluster_objects_map
-    ):  # pylint: disable=too-many-arguments
+    def test_upgrade(self, clients, user, old_cluster, all_business_roles, old_cluster_objects_map):
         """
         Test that upgrade works correctly considering permissions on actions:
         1. Actions with same name and display name are still available after upgrade if permissions were granted.
@@ -154,7 +156,8 @@ class TestActionRolesOnUpgrade:
             user_object_map,
             tuple(
                 self._get_roles_filter_exclude_by_action_name(
-                    all_business_roles, (ACTION_NAME_BEFORE_CHANGE, ACTION_TO_BE_DELETED, *self.NOT_ALLOWED_ACTIONS)
+                    all_business_roles,
+                    (ACTION_NAME_BEFORE_CHANGE, ACTION_TO_BE_DELETED, *self.NOT_ALLOWED_ACTIONS),
                 )
             ),
         )
@@ -202,7 +205,8 @@ class TestActionRolesOnUpgrade:
         """Check that given roles are allowed to be launched"""
         for role in business_roles:
             adcm_object, *_ = as_user_objects(
-                user_client, self._get_object_from_map_by_role_name(role.role_name, cluster_object_map)
+                user_client,
+                self._get_object_from_map_by_role_name(role.role_name, cluster_object_map),
             )
             is_allowed(adcm_object, role).wait()
 

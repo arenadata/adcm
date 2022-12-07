@@ -13,7 +13,6 @@ import { Injectable } from '@angular/core';
 import { convertToParamMap, ParamMap, Params } from '@angular/router';
 import { map, switchMap, tap } from 'rxjs/operators';
 import { Observable } from 'rxjs';
-
 import { environment } from '@env/environment';
 import { ApiService } from '@app/core/api';
 import { ClusterService } from '@app/core/services/cluster.service';
@@ -48,8 +47,11 @@ export class ListService implements IListService<Entities> {
 
   getList(p: ParamMap, typeName: TypeName): Observable<ListResult<Entities>> {
     const listParamStr = localStorage.getItem('list:param');
-    if (p?.keys.length) {
+
+    if (p?.keys?.length > 0) {
       const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});
+      delete param['page'];
+
       if (listParamStr) {
         const json = JSON.parse(listParamStr);
         json[typeName] = param;
@@ -80,6 +82,12 @@ export class ListService implements IListService<Entities> {
       case 'policy':
         params = { ...params['params'], 'expand': 'child,role,user,group,object', 'built_in': 'false' };
         return this.api.getList(`${environment.apiRoot}rbac/policy/`, convertToParamMap(params));
+      case 'audit_operations':
+        params = { ...params['params'], 'expand': null };
+        return this.api.getList(`${environment.apiRoot}audit/operation`, convertToParamMap(params));
+      case 'audit_login':
+        params = { ...params['params'], 'expand': null };
+        return this.api.getList(`${environment.apiRoot}audit/login`, convertToParamMap(params));
       default:
         return this.api.root.pipe(switchMap((root) => this.api.getList<Entities>(root[this.current.typeName], p)));
     }
@@ -120,6 +128,14 @@ export class ListService implements IListService<Entities> {
   }
 
   setMaintenanceMode(row: Entities) {
-    return this.api.patch(`/api/v1/host/${row.id}/`, { maintenance_mode: row['maintenance_mode'] });
+    return this.api.post(`/api/v1/${row['type']}/${row.id}/maintenance-mode/`, { maintenance_mode: row['maintenance_mode'] });
+  }
+
+  renameHost(column: string, value: any, id: number) {
+    return this.api.patch(`/api/v1/host/${id}/`, { [column]: value });
+  }
+
+  renameCluster(column: string, value: any, id: number) {
+    return this.api.patch(`/api/v1/cluster/${id}/`, { [column]: value });
   }
 }

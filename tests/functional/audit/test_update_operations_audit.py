@@ -23,9 +23,17 @@ import allure
 import pytest
 import requests
 from adcm_client.audit import OperationResult
-from adcm_client.objects import ADCM, ADCMClient, Cluster, Component, GroupConfig, Host, Provider, Service
+from adcm_client.objects import (
+    ADCM,
+    ADCMClient,
+    Cluster,
+    Component,
+    GroupConfig,
+    Host,
+    Provider,
+    Service,
+)
 from adcm_pytest_plugin.utils import random_string
-
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,
@@ -37,7 +45,11 @@ from tests.functional.audit.conftest import (
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles as BR
 from tests.functional.rbac.conftest import create_policy
-from tests.functional.tools import ClusterRelatedObject, ProviderRelatedObject, get_object_represent
+from tests.functional.tools import (
+    ClusterRelatedObject,
+    ProviderRelatedObject,
+    get_object_represent,
+)
 
 # pylint: disable=redefined-outer-name
 
@@ -64,13 +76,17 @@ def basic_objects(sdk_client_fs) -> Tuple[Cluster, Service, Component, Provider,
 
 
 @pytest.fixture()
-def grant_view_config_permissions_on_adcm_objects(sdk_client_fs, basic_objects, new_user_client):
+def _grant_view_config_permissions_on_adcm_objects(sdk_client_fs, basic_objects, new_user_client):
     """Create policies that allow new user to get ADCM objects (via View Configuration) and ADCM itself"""
     cluster, service, component, provider, host = basic_objects
     user = sdk_client_fs.user(id=new_user_client.me().id)
     create_policy(
         sdk_client_fs,
-        [BR.ViewClusterConfigurations, BR.ViewServiceConfigurations, BR.ViewComponentConfigurations],
+        [
+            BR.ViewClusterConfigurations,
+            BR.ViewServiceConfigurations,
+            BR.ViewComponentConfigurations,
+        ],
         [cluster, service, component],
         users=[user],
         groups=[],
@@ -99,7 +115,7 @@ def group_configs(basic_objects) -> Tuple[GroupConfig, GroupConfig, GroupConfig]
 
 
 @parametrize_audit_scenario_parsing("update_restore_config.yaml", NEW_USER)
-@pytest.mark.usefixtures("grant_view_config_permissions_on_adcm_objects")
+@pytest.mark.usefixtures("_grant_view_config_permissions_on_adcm_objects")
 def test_update_config(basic_objects, audit_log_checker, sdk_client_fs, unauthorized_creds):
     """
     Test audit of config updates on (for results: SUCCESS, FAIL, DENIED):
@@ -126,7 +142,10 @@ def test_update_config(basic_objects, audit_log_checker, sdk_client_fs, unauthor
 
     _check_object_config_update(sdk_client_fs, adcm, unauthorized_creds, get_correct_config=get_correct_adcm_config)
     _check_object_config_restore(
-        sdk_client_fs, adcm, unauthorized_creds, get_correct_attrs=lambda: adcm.config(full=True)["attr"]
+        sdk_client_fs,
+        adcm,
+        unauthorized_creds,
+        get_correct_attrs=lambda: adcm.config(full=True)["attr"],
     )
     for obj in basic_objects:
         _check_object_config_update(sdk_client_fs, obj, unauthorized_creds)
@@ -140,7 +159,7 @@ def test_update_config(basic_objects, audit_log_checker, sdk_client_fs, unauthor
 
 @parametrize_audit_scenario_parsing("update_config_of_group_config.yaml", NEW_USER)
 @pytest.mark.usefixtures(
-    "grant_view_config_permissions_on_adcm_objects", "basic_objects"
+    "_grant_view_config_permissions_on_adcm_objects", "basic_objects"
 )  # pylint: disable-next=too-many-locals
 def test_update_config_of_group_config(group_configs, audit_log_checker, sdk_client_fs, unauthorized_creds):
     """
@@ -152,12 +171,21 @@ def test_update_config_of_group_config(group_configs, audit_log_checker, sdk_cli
         drop_object_id = lambda b: {**b, "object_id": "hello there"}  # noqa: E731
         with allure.step(f"Update group config info of {group_config.object_type}"):
             for result, credentials, check_response, change_body in (
-                (OperationResult.SUCCESS, admin_creds, check_succeed, lambda b: {**b, "description": "Changed"}),
+                (
+                    OperationResult.SUCCESS,
+                    admin_creds,
+                    check_succeed,
+                    lambda b: {**b, "description": "Changed"},
+                ),
                 (OperationResult.FAIL, admin_creds, expect_400, drop_object_id),
                 (OperationResult.DENIED, unauthorized_creds, expect_403, drop_object_id),
             ):
                 update_via = partial(
-                    update_group_config_info, sdk_client_fs, group_config, body_mutator=change_body, headers=credentials
+                    update_group_config_info,
+                    sdk_client_fs,
+                    group_config,
+                    body_mutator=change_body,
+                    headers=credentials,
                 )
                 with allure.step(f"Change group config info with result: {result.value}"):
                     check_response(update_via(method="PUT"))
@@ -169,7 +197,10 @@ def test_update_config_of_group_config(group_configs, audit_log_checker, sdk_cli
             "config": {**default_config, "param_1": random_string(4)},
             "attr": {**default_attr, "group_keys": {**default_attr["group_keys"], "param_1": True}},
         }
-        incorrect_config = {"config": {**default_config, "param_1": random_string(4)}, "attr": {**default_attr}}
+        incorrect_config = {
+            "config": {**default_config, "param_1": random_string(4)},
+            "attr": {**default_attr},
+        }
 
         with allure.step(
             f"Update config of group config of {group_config.object_type} with result: {OperationResult.SUCCESS}"
@@ -188,7 +219,7 @@ def test_update_config_of_group_config(group_configs, audit_log_checker, sdk_cli
 @parametrize_audit_scenario_parsing(
     "add_delete_host_group_config.yaml", {"username": NEW_USER["username"], "host": FQDN}
 )
-@pytest.mark.usefixtures("grant_view_config_permissions_on_adcm_objects")  # pylint: disable-next=too-many-arguments
+@pytest.mark.usefixtures("_grant_view_config_permissions_on_adcm_objects")
 def test_add_remove_hosts_from_group_config(
     group_configs, basic_objects, audit_log_checker, sdk_client_fs, post, delete, unauthorized_creds
 ):
@@ -223,7 +254,10 @@ def _check_object_config_update(
     client: ADCMClient,
     object_with_config: ObjectWithConfig,
     unauthorized_creds: dict,
-    get_correct_config=lambda: {"config": {"param_1": random_string(4), "param_2": None, "param_3": None}, "attr": {}},
+    get_correct_config=lambda: {
+        "config": {"param_1": random_string(4), "param_2": None, "param_3": None},
+        "attr": {},
+    },
     get_incorrect_config=lambda: {"config": {"param_2": randint(0, 50)}, "attr": {}},
 ):
     admin_credentials = make_auth_header(client)
@@ -266,7 +300,10 @@ def _check_object_config_restore(
         config_id = next(
             map(
                 itemgetter("id"),
-                filter(lambda c: c["id"] != current_config_id, object_with_config.config_history(full=True)),
+                filter(
+                    lambda c: c["id"] != current_config_id,
+                    object_with_config.config_history(full=True),
+                ),
             )
         )
         return f"{CONFIG_HISTORY_SUFFIX}{config_id}/restore/"
@@ -300,7 +337,11 @@ def update_config_from_root(client: ADCMClient, obj: ObjectWithConfig, config: d
     `config` should contain both "config" and "attr" keys.
     """
     url = f"{client.url}/api/v1/config-log/"
-    body = {"obj_ref": _get_obj_ref(client, obj), "description": f"Config {random_string(4)}", **config}
+    body = {
+        "obj_ref": _get_obj_ref(client, obj),
+        "description": f"Config {random_string(4)}",
+        **config,
+    }
     with allure.step(f'Update config from "root" via POST {url} with data: {body}'):
         return requests.post(url, json=body, **post_kwargs)
 
@@ -378,7 +419,8 @@ def get_host_from_cluster_url(client: ADCMClient, host: Host, suffix: str = "") 
 def _get_obj_ref(client: ADCMClient, obj: ObjectWithConfig):
     auth_headers = make_auth_header(client)
     current_config = requests.get(
-        f"{client.url}/api/v1/{obj.__class__.__name__.lower()}/{obj.id}/config/current/", headers=auth_headers
+        f"{client.url}/api/v1/{obj.__class__.__name__.lower()}/{obj.id}/config/current/",
+        headers=auth_headers,
     ).json()
     config_log = requests.get(f'{client.url}/api/v1/config-log/{current_config["id"]}', headers=auth_headers).json()
     return config_log["obj_ref"]

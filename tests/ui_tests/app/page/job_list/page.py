@@ -14,19 +14,17 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import TypeVar, Union, List
+from typing import List, TypeVar, Union
 
 import allure
 from selenium.common.exceptions import TimeoutException
-
 from selenium.webdriver.remote.webelement import WebElement
-
-from tests.library.conditional_retriever import FromOneOf, DataSource
+from tests.library.conditional_retriever import DataSource, FromOneOf
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
-    PageHeader,
     PageFooter,
+    PageHeader,
 )
 from tests.ui_tests.app.page.common.header_locators import AuthorizedHeaderLocators
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
@@ -109,10 +107,10 @@ class JobListPage(BasePageObject):
         )
         get_name_element = FromOneOf(
             [
-                DataSource(self.find_child, [row, row_locators.action_name]),
-                DataSource(self.find_child, [row, row_locators.task_action_name]),
+                DataSource(self.find_child, [row, row_locators.action_name, 1]),
+                DataSource(self.find_child, [row, row_locators.task_action_name, 1]),
             ],
-            (TimeoutError, TimeoutException),
+            (TimeoutError, TimeoutException, AssertionError),
         )
         return TableTaskInfo(
             action_name=get_name_element().text,
@@ -167,6 +165,10 @@ class JobListPage(BasePageObject):
         """Click on action name in row"""
         locator = TaskListLocators.Table.Row.action_name
         row.find_element(locator.by, locator.value).click()
+
+    @allure.step("Click on log download button")
+    def click_on_log_download(self, row: WebElement):
+        self.find_child(row, TaskListLocators.Table.Row.download_log).click()
 
     @allure.step('Select the "All" filter tab')
     def select_filter_all_tab(self):

@@ -11,21 +11,26 @@
 # limitations under the License.
 
 """Test relations between LDAP objects """
-from typing import Tuple, Collection, Union
+from typing import Collection, Tuple, Union
 
 import allure
 import pytest
 from adcm_client.objects import ADCMClient
-
 from tests.api.utils.tools import random_string
 from tests.functional.conftest import only_clean_adcm
-from tests.functional.ldap_auth.utils import get_ldap_user_from_adcm, get_ldap_group_from_adcm
+from tests.functional.ldap_auth.utils import (
+    get_ldap_group_from_adcm,
+    get_ldap_user_from_adcm,
+)
 from tests.library.ldap_interactions import LDAPEntityManager
 
-pytestmark = [only_clean_adcm, pytest.mark.usefixtures('configure_adcm_ldap_ad'), pytest.mark.ldap()]
+pytestmark = [
+    only_clean_adcm,
+    pytest.mark.usefixtures('configure_adcm_ldap_ad'),
+    pytest.mark.ldap(),
+]
 
 
-# pylint: disable-next=too-few-public-methods
 class TestLDAPEntitiesRelationsInADCM:
     """Test that relations from LDAP are correctly integrated to ADCM"""
 

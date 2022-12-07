@@ -13,37 +13,36 @@
 """ADCM Endpoints classes and methods"""
 
 from enum import Enum
-from typing import List, Type, Optional, Callable
+from typing import Callable, List, Optional, Type
 
 import attr
-
-from tests.api.utils.filters import (
-    is_business_role,
-    is_not_business_role,
-    is_built_in,
-    is_not_hidden_role,
-    is_not_built_in,
-    is_role_type,
-)
 from tests.api.utils.data_classes import (
     BaseClass,
+    ClusterFields,
+    ComponentFields,
+    ConfigLogFields,
     GroupConfigFields,
+    GroupConfigHostCandidatesFields,
     GroupConfigHostsFields,
     HostFields,
-    ClusterFields,
-    ServiceFields,
-    ComponentFields,
-    ProviderFields,
     ObjectConfigFields,
-    ConfigLogFields,
-    GroupConfigHostCandidatesFields,
-    RbacNotBuiltInPolicyFields,
-    RbacUserFields,
-    RbacGroupFields,
-    RbacSimpleRoleFields,
+    ProviderFields,
+    RbacBuiltInPolicyFields,
     RbacBuiltInRoleFields,
     RbacBusinessRoleFields,
-    RbacBuiltInPolicyFields,
+    RbacGroupFields,
+    RbacNotBuiltInPolicyFields,
+    RbacSimpleRoleFields,
+    RbacUserFields,
+    ServiceFields,
+)
+from tests.api.utils.filters import (
+    is_built_in,
+    is_business_role,
+    is_not_built_in,
+    is_not_business_role,
+    is_not_hidden_role,
+    is_role_type,
 )
 from tests.api.utils.methods import Methods
 from tests.api.utils.types import get_fields

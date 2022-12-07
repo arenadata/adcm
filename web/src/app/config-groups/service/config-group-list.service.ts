@@ -1,7 +1,6 @@
 import { Injectable, InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ParamMap } from '@angular/router';
-
 import { EntityService } from '@app/abstract/entity-service';
 import { ApiService } from '@app/core/api';
 import { environment } from '@env/environment';
@@ -13,7 +12,6 @@ import { Service } from '@app/core/types';
 import { ICluster } from '@app/models/cluster';
 
 export const CONFIG_GROUP_LIST_SERVICE = new InjectionToken<EntityService<ConfigGroup>>('EntityService');
-
 
 @Injectable({
   providedIn: 'root'
@@ -31,10 +29,12 @@ export class ConfigGroupListService extends EntityService<ConfigGroup> implement
 
   getList(p: ParamMap): Observable<ListResult<ConfigGroup>> {
     const current = this.cluster.Current as ICluster | Service;
-
     const listParamStr = localStorage.getItem('list:param');
+
     if (p?.keys.length) {
       const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});
+      delete param['page'];
+
       if (listParamStr) {
         const json = JSON.parse(listParamStr);
         json[`group_config_${current.typeName}`] = param;

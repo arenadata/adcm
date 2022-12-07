@@ -13,7 +13,7 @@
 """Tests for cluster and provider configs after upgrade"""
 import json
 from collections import OrderedDict
-from typing import Callable, Union, Tuple
+from typing import Callable, Tuple, Union
 
 import allure
 import pytest
@@ -21,7 +21,6 @@ from adcm_client.objects import GroupConfig
 from adcm_pytest_plugin.utils import get_data_dir, ordered_dict_to_dict
 from allure_commons.types import AttachmentType
 from tests.functional.plugin_utils import AnyADCMObject
-
 
 ###############################
 # Tools
@@ -115,7 +114,10 @@ def _update_config_and_attr_for_changed_types(
     config["text"] = "DAILY"
     config["option"] = "text"
     config["structure"] = {"port": 9200, "transport_port": 9300}
-    config["group"] = [OrderedDict({"code": 1, "country": "Test1"}), OrderedDict({"code": 2, "country": "Test2"})]
+    config["group"] = [
+        OrderedDict({"code": 1, "country": "Test1"}),
+        OrderedDict({"code": 2, "country": "Test2"}),
+    ]
 
     attr["structure"] = {"active": True}
     del attr["group"]
@@ -149,7 +151,10 @@ def _update_config_and_attr_for_changed_group_customisation_test(
         attr["custom_group_keys"]["password"] = False
         attr["custom_group_keys"]["list"] = False
         attr["custom_group_keys"]["option"] = False
-        attr["custom_group_keys"]["group"] = {"value": False, "fields": {"port": False, "transport_port": False}}
+        attr["custom_group_keys"]["group"] = {
+            "value": False,
+            "fields": {"port": False, "transport_port": False},
+        }
         attr["custom_group_keys"]["map"] = False
         attr["custom_group_keys"]["json"] = False
         attr["custom_group_keys"]["secrettext"] = True
@@ -329,9 +334,17 @@ class TestUpgradeWithConfigs:
         ref_config, ref_attr = update_func(*ref_config_and_attr, group_config=False)
         new_config, new_attr = _get_config_and_attr(obj)
         _assert_configs(
-            obj_type=obj.__class__.__name__, actual_config=new_config, expected_config=ref_config, group_config=False
+            obj_type=obj.__class__.__name__,
+            actual_config=new_config,
+            expected_config=ref_config,
+            group_config=False,
         )
-        _assert_attr(obj_type=obj.__class__.__name__, actual_attr=new_attr, expected_attr=ref_attr, group_config=False)
+        _assert_attr(
+            obj_type=obj.__class__.__name__,
+            actual_attr=new_attr,
+            expected_attr=ref_attr,
+            group_config=False,
+        )
 
 
 ##################################
@@ -479,6 +492,14 @@ class TestUpgradeWithGroupConfigs:
         ref_config, ref_attr = update_func(*ref_config_and_attr, group_config=True)
         new_config, new_attr = _get_config_and_attr(group_config)
         _assert_configs(
-            obj_type=group_config.object_type, actual_config=new_config, expected_config=ref_config, group_config=True
+            obj_type=group_config.object_type,
+            actual_config=new_config,
+            expected_config=ref_config,
+            group_config=True,
         )
-        _assert_attr(obj_type=group_config.object_type, actual_attr=new_attr, expected_attr=ref_attr, group_config=True)
+        _assert_attr(
+            obj_type=group_config.object_type,
+            actual_attr=new_attr,
+            expected_attr=ref_attr,
+            group_config=True,
+        )

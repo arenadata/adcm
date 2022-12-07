@@ -10,45 +10,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name, unused-argument, too-many-lines
+# pylint: disable=redefined-outer-name,too-many-lines
 
 """UI tests for /admin page"""
 
 import os
 from copy import deepcopy
-from typing import (
-    Tuple,
-)
+from typing import Tuple
 
 import allure
 import pytest
-from adcm_client.objects import (
-    Bundle,
-    Cluster,
-    ADCMClient,
-    Host,
-    Service,
-    Provider,
-)
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider, Service
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import random_string
-
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import (
-    AdminIntroPage,
-    AdminUsersPage,
-    AdminSettingsPage,
-    AdminRolesPage,
-    AdminGroupsPage,
-    AdminRoleInfo,
     AdminGroupInfo,
+    AdminGroupsPage,
+    AdminIntroPage,
     AdminPoliciesPage,
     AdminPolicyInfo,
+    AdminRoleInfo,
+    AdminRolesPage,
+    AdminSettingsPage,
+    AdminUsersPage,
 )
 from tests.ui_tests.app.page.cluster.page import (
-    ClusterConfigPage,
     ClusterComponentsPage,
+    ClusterConfigPage,
 )
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.component.page import ComponentConfigPage
@@ -66,8 +56,8 @@ BUNDLE = "cluster_with_services"
 CLUSTER_NAME = "test cluster"
 SERVICE_NAME = "test_service_1"
 FIRST_COMPONENT_NAME = "first"
-PROVIDER_NAME = 'test provider'
-HOST_NAME = 'test-host'
+PROVIDER_NAME = "test provider"
+HOST_NAME = "test-host"
 
 
 # !===== Fixtures =====!
@@ -108,9 +98,9 @@ def create_cluster_with_component(
     """Create cluster with component"""
 
     cluster, service = create_cluster_with_service
-    provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), 'provider'))
-    provider = provider_bundle.provider_create('test provider')
-    host = provider.host_create('test-host')
+    provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "provider"))
+    provider = provider_bundle.provider_create("test provider")
+    host = provider.host_create("test-host")
     cluster.host_add(host)
     cluster.hostcomponent_set((host, service.component(name=FIRST_COMPONENT_NAME)))
     return cluster, service, host, provider
@@ -119,7 +109,7 @@ def create_cluster_with_component(
 # !===== Tests =====!
 
 
-CUSTOM_ROLE_NAME = 'Test_Role'
+CUSTOM_ROLE_NAME = "Test_Role"
 CUSTOM_POLICY = AdminPolicyInfo(
     name="Test policy name",
     description="Test policy description",
@@ -130,7 +120,7 @@ CUSTOM_POLICY = AdminPolicyInfo(
 )
 
 
-@pytest.mark.usefixtures("login_to_adcm_over_api")
+@pytest.mark.usefixtures("_login_to_adcm_over_api")
 class TestAdminIntroPage:
     """Tests for the /admin/intro"""
 
@@ -143,7 +133,7 @@ class TestAdminIntroPage:
         intro_page.check_admin_toolbar()
 
 
-@pytest.mark.usefixtures("login_to_adcm_over_api")
+@pytest.mark.usefixtures("_login_to_adcm_over_api")
 class TestAdminSettingsPage:
     """Tests for the /admin/roles"""
 
@@ -161,61 +151,73 @@ class TestAdminSettingsPage:
     def test_settings_filter(self, settings_page: AdminSettingsPage):
         """Apply different filters on Admin Settings page"""
         params = {
-            'search_text': 'ADCM',
-            'field_display_name': "ADCM's URL",
-            'group': 'Global Options',
+            "search_text": "ADCM",
+            "field_display_name": "ADCM's URL",
+            "group": "Global Options",
         }
         get_rows_func = settings_page.config.get_all_config_rows
         with allure.step(
             f'Search {params["search_text"]} and check {params["field_display_name"]} is presented after search'
         ):
             with expect_rows_amount_change(get_rows_func):
-                settings_page.config.search(params['search_text'])
+                settings_page.config.search(params["search_text"])
             settings_page.config.get_config_row(params["field_display_name"])
-        with allure.step('Clear search'), expect_rows_amount_change(get_rows_func):
+        with allure.step("Clear search"), expect_rows_amount_change(get_rows_func):
             settings_page.config.clear_search()
         with allure.step(
             f'Click on {params["group"]} group and check {params["field_display_name"]} '
-            'is not presented after group roll up'
+            "is not presented after group roll up"
         ):
             with expect_rows_amount_change(get_rows_func):
-                settings_page.config.click_on_group(params['group'])
+                settings_page.config.click_on_group(params["group"])
             with pytest.raises(AssertionError):
                 settings_page.config.get_config_row(params["field_display_name"])
         with allure.step(
             f'Click on {params["group"]} group and check {params["field_display_name"]} '
-            'is presented after group expand'
+            "is presented after group expand"
         ):
             with expect_rows_amount_change(get_rows_func):
-                settings_page.config.click_on_group(params['group'])
+                settings_page.config.click_on_group(params["group"])
             settings_page.config.get_config_row(params["field_display_name"])
 
     @pytest.mark.full()
     def test_save_settings_with_different_name(self, settings_page: AdminSettingsPage):
         """Save settings with different name"""
-        params = {'new_name': 'test_settings', 'field_display_name': 'client_id', 'field_value': '123'}
-        settings_page.config.set_description(params['new_name'])
+        params = {
+            "new_name": "test_settings",
+            "field_display_name": "client_id",
+            "field_value": "123",
+        }
+        settings_page.config.set_description(params["new_name"])
         with allure.step(f'Change value of field {params["field_display_name"]} to {params["field_value"]}'):
-            config_field_row = settings_page.config.get_config_row(params['field_display_name'])
-            settings_page.config.type_in_field_with_few_inputs(row=config_field_row, values=[params['field_value']])
+            config_field_row = settings_page.config.get_config_row(params["field_display_name"])
+            settings_page.config.type_in_field_with_few_inputs(row=config_field_row, values=[params["field_value"]])
         settings_page.config.save_config()
-        settings_page.config.compare_versions(params['new_name'], 'init')
-        with allure.step('Check history'):
-            config_field_row = settings_page.config.get_config_row(params['field_display_name'])
+        settings_page.config.compare_versions(params["new_name"], "init")
+        with allure.step("Check history"):
+            config_field_row = settings_page.config.get_config_row(params["field_display_name"])
             history = settings_page.config.get_history_in_row(config_field_row)
             assert len(history) == 1, f'History should has exactly one entry for field {params["field_display_name"]}'
-            assert (actual_value := history[0]) == (expected_value := params['field_value']), (
+            assert (actual_value := history[0]) == (expected_value := params["field_value"]), (
                 f'History entry for field {params["field_display_name"]} '
-                f'should be {expected_value}, not {actual_value}'
+                f"should be {expected_value}, not {actual_value}"
             )
 
     @pytest.mark.full()
     def test_negative_values_in_adcm_config(self, settings_page: AdminSettingsPage):
         """Put negative numbers in the fields of ADCM settings"""
         params = (
-            ('Log rotation from file system', -1, 'Field [Log rotation from file system] value cannot be less than 0!'),
-            ('Log rotation from database', -1, 'Field [Log rotation from database] value cannot be less than 0!'),
-            ('Forks', 0, 'Field [Forks] value cannot be less than 1!'),
+            (
+                "Log rotation from file system",
+                -1,
+                "Field [Log rotation from file system] value cannot be less than 0!",
+            ),
+            (
+                "Log rotation from database",
+                -1,
+                "Field [Log rotation from database] value cannot be less than 0!",
+            ),
+            ("Forks", 0, "Field [Forks] value cannot be less than 1!"),
         )
 
         for field, inappropriate_value, error_message in params:
@@ -231,57 +233,61 @@ class TestAdminSettingsPage:
 
     def test_reset_config(self, settings_page: AdminSettingsPage):
         """Change config field, save, reset"""
-        params = {'field_display_name': 'client_id', 'init_value': '', 'changed_value': '123'}
+        params = {"field_display_name": "client_id", "init_value": "", "changed_value": "123"}
         with allure.step(f'Set value of {params["field_display_name"]} to {params["changed_value"]}'):
-            config_field_row = settings_page.config.get_config_row(params['field_display_name'])
-            settings_page.config.type_in_field_with_few_inputs(row=config_field_row, values=[params['changed_value']])
-        with allure.step('Save config'):
+            config_field_row = settings_page.config.get_config_row(params["field_display_name"])
+            settings_page.config.type_in_field_with_few_inputs(row=config_field_row, values=[params["changed_value"]])
+        with allure.step("Save config"):
             settings_page.config.save_config()
-            settings_page.config.assert_input_value_is(params['changed_value'], params['field_display_name'])
+            settings_page.config.assert_input_value_is(params["changed_value"], params["field_display_name"])
         with allure.step(f'Reset value of {params["field_display_name"]}'):
-            config_field_row = settings_page.config.get_config_row(params['field_display_name'])
+            config_field_row = settings_page.config.get_config_row(params["field_display_name"])
             settings_page.config.reset_to_default(config_field_row)
-            settings_page.config.assert_input_value_is(params['init_value'], params['field_display_name'])
+            settings_page.config.assert_input_value_is(params["init_value"], params["field_display_name"])
 
     @pytest.mark.ldap()
     def test_ldap_config(self, settings_page: AdminSettingsPage):
         """Test ldap"""
-        params = {'test_action': "Test LDAP connection", 'connect_action': "Run LDAP sync", "test_value": "test"}
+        params = {
+            "test_action": "Test LDAP connection",
+            "connect_action": "Run LDAP sync",
+            "test_value": "test",
+        }
         with allure.step("Check ldap actions are disabled"):
             assert settings_page.toolbar.is_adcm_action_inactive(
-                action_name=params['connect_action']
+                action_name=params["connect_action"]
             ), f"Action {params['connect_action']} should be disabled"
             assert settings_page.toolbar.is_adcm_action_inactive(
-                action_name=params['test_action']
+                action_name=params["test_action"]
             ), f"Action {params['test_action']} should be disabled"
         with allure.step("Fill ldap config"):
             settings_page.config.expand_or_close_group(group_name="LDAP integration")
-            settings_page.config.type_in_field_with_few_inputs(row="LDAP URI", values=[params['test_value']])
-            settings_page.config.type_in_field_with_few_inputs(row="Bind DN", values=[params['test_value']])
+            settings_page.config.type_in_field_with_few_inputs(row="LDAP URI", values=[params["test_value"]])
+            settings_page.config.type_in_field_with_few_inputs(row="Bind DN", values=[params["test_value"]])
             settings_page.config.type_in_field_with_few_inputs(
-                row="Bind Password", values=[params['test_value'], params['test_value']]
+                row="Bind Password", values=[params["test_value"], params["test_value"]]
             )
-            settings_page.config.type_in_field_with_few_inputs(row="User search base", values=[params['test_value']])
-            settings_page.config.type_in_field_with_few_inputs(row="Group search base", values=[params['test_value']])
+            settings_page.config.type_in_field_with_few_inputs(row="User search base", values=[params["test_value"]])
+            settings_page.config.type_in_field_with_few_inputs(row="Group search base", values=[params["test_value"]])
             settings_page.config.save_config()
             settings_page.config.wait_config_loaded()
         with allure.step("Check ldap actions are enabled"):
             assert not settings_page.toolbar.is_adcm_action_inactive(
-                action_name=params['connect_action']
+                action_name=params["connect_action"]
             ), f"Action {params['connect_action']} should be enabled"
             assert not settings_page.toolbar.is_adcm_action_inactive(
-                action_name=params['test_action']
+                action_name=params["test_action"]
             ), f"Action {params['test_action']} should be enabled"
         with allure.step("Check Test LDAP connection action"):
-            settings_page.toolbar.run_adcm_action(action_name=params['test_action'])
+            settings_page.toolbar.run_adcm_action(action_name=params["test_action"])
             settings_page.header.wait_in_progress_job_amount_from_header(expected_job_amount=1)
             settings_page.header.wait_in_progress_job_amount_from_header(expected_job_amount=0)
         with allure.step("Check Run LDAP sync action"):
-            settings_page.toolbar.run_adcm_action(action_name=params['connect_action'])
+            settings_page.toolbar.run_adcm_action(action_name=params["connect_action"])
             settings_page.header.wait_in_progress_job_amount_from_header(expected_job_amount=1)
 
 
-@pytest.mark.usefixtures("login_to_adcm_over_api")
+@pytest.mark.usefixtures("_login_to_adcm_over_api")
 class TestAdminUsersPage:
     """Tests for the /admin/users"""
 
@@ -299,65 +305,63 @@ class TestAdminUsersPage:
         """Create new user, change password and login with new password"""
 
         params = {
-            'username': 'testuser',
-            'password': 'test_pass',
-            'new_password': 'testtest',
-            'first_name': 'First',
-            'last_name': 'Last',
-            'email': 'priv@et.ru',
+            "username": "testuser",
+            "password": "test_pass",
+            "new_password": "testtest",
+            "first_name": "First",
+            "last_name": "Last",
+            "email": "priv@et.ru",
         }
         users_page.create_user(
-            params['username'], params['password'], params['first_name'], params['last_name'], params['email']
+            params["username"],
+            params["password"],
+            params["first_name"],
+            params["last_name"],
+            params["email"],
         )
         with allure.step(f'Check user {params["username"]} is listed in users list'):
-            assert users_page.is_user_presented(params['username']), f'User {params["username"]} was not created'
-        users_page.change_user_password(params['username'], params['new_password'])
+            assert users_page.is_user_presented(params["username"]), f'User {params["username"]} was not created'
+        users_page.change_user_password(params["username"], params["new_password"])
         users_page.header.logout()
         with allure.step(f'Login as user {params["username"]} with password {params["new_password"]}'):
             login_page = LoginPage(users_page.driver, users_page.base_url)
             login_page.wait_page_is_opened()
-            login_page.login_user(params['username'], params['new_password'])
-        with allure.step('Check login was successful'):
+            login_page.login_user(params["username"], params["new_password"])
+        with allure.step("Check login was successful"):
             AdminIntroPage(users_page.driver, users_page.base_url).wait_page_is_opened(timeout=5)
 
     def test_delete_user(self, users_page: AdminUsersPage):
         """Create new user, delete it and check current user can't be deleted"""
+        username = "testuser"
+        current_user = "admin"
 
-        params = {
-            'username': 'testuser',
-            'password': 'test_pass',
-            'current_user': 'admin',
-            'first_name': 'First',
-            'last_name': 'Last',
-            'email': 'priv@et.ru',
-        }
-        users_page.check_delete_button_not_presented(params['current_user'])
-        with allure.step(f'Create user {params["username"]}'):
-            users_page.create_user(
-                params['username'], params['password'], params['first_name'], params['last_name'], params['email']
-            )
-            assert users_page.is_user_presented(params['username']), f'User {params["username"]} was not created'
-        with allure.step(f'Deactivate user {params["username"]}'):
-            users_page.delete_user(params['username'])
-            assert users_page.is_user_presented(
-                params['username']
-            ), f'User {params["username"]} should be in users list'
-            # TODO after ADCM-2582
-            #  * check user row looks deactivated
-            #  * check user detail table can't be edited
+        with allure.step("Check user can't delete itself"):
+            assert not users_page.is_delete_button_presented(
+                current_user
+            ), f"Delete button for user {current_user} should be disabled"
+
+        with allure.step(f"Create user {username} and check it has appeared in users list"):
+            users_page.create_user(username, "test_pass", "First", "Last", "priv@et.ru")
+            assert users_page.is_user_presented(username), f"User {username} was not created"
+
+        with allure.step(f"Deactivate user {username} and check UI reacted on it"):
+            users_page.delete_user(username)
+            assert users_page.is_user_presented(username), f"User {username} should be in users list"
+            assert users_page.is_user_deactivated(username), "User should be deactivated"
+            users_page.check_user_update_is_not_allowed(username)
 
     def test_change_admin_password(self, users_page: AdminUsersPage):
         """Change admin password, login with new credentials"""
 
-        params = {'username': 'admin', 'password': 'new_pass'}
-        users_page.update_user_info(params['username'], first_name='Best', last_name='Admin')
+        params = {"username": "admin", "password": "new_pass"}
+        users_page.update_user_info(params["username"], first_name="Best", last_name="Admin")
         users_page.change_user_password(**params)
         users_page.driver.refresh()
-        with allure.step('Check Login page is opened'):
+        with allure.step("Check Login page is opened"):
             login_page = LoginPage(users_page.driver, users_page.base_url)
             login_page.wait_page_is_opened()
         login_page.login_user(**params)
-        with allure.step('Check login was successful'):
+        with allure.step("Check login was successful"):
             AdminIntroPage(users_page.driver, users_page.base_url).wait_page_is_opened(timeout=5)
 
     @pytest.mark.ldap()
@@ -368,32 +372,32 @@ class TestAdminUsersPage:
         users_page.header.wait_success_job_amount_from_header(1)
         with allure.step(f'Check user {ldap_user_in_group["name"]} is listed in users list'):
             assert users_page.is_user_presented(
-                ldap_user_in_group['name']
+                ldap_user_in_group["name"]
             ), f'User {ldap_user_in_group["name"]} was not created'
         users_page.check_ldap_user(ldap_user_in_group["name"])
 
     def test_add_user_to_group(self, user, users_page, sdk_client_fs):
         """Add group for user"""
-        params = {'name': 'test', 'email': 'test@test.ru'}
-        test_group = sdk_client_fs.group_create('test_group')
+        params = {"name": "test", "email": "test@test.ru"}
+        test_group = sdk_client_fs.group_create("test_group")
         users_page.update_user_info(
             user.username,
-            first_name=params['name'],
-            last_name=params['name'],
-            email=params['email'],
+            first_name=params["name"],
+            last_name=params["name"],
+            email=params["email"],
             group=test_group.name,
         )
-        with allure.step(f'Check user {user.username} is listed in users list with changed params'):
+        with allure.step(f"Check user {user.username} is listed in users list with changed params"):
             user_row = users_page.get_user_row_by_username(user.username)
             assert test_group.name in user_row.text, "User group didn't changed"
-            assert params['email'] in user_row.text, "User email didn't changed"
+            assert params["email"] in user_row.text, "User email didn't changed"
 
     @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
     def test_add_ldap_group_to_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
         """Check that user can't add ldap group to usual user"""
         with allure.step("Wait ldap integration ends"):
-            wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), 'success')
+            wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), "success")
         users_page.check_user_group_change_is_disabled(user.username, "adcm_users")
 
     @pytest.mark.ldap()
@@ -402,11 +406,11 @@ class TestAdminUsersPage:
         """Check that user can add group to ldap user"""
 
         with allure.step("Wait ldap integration ends"):
-            wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), 'success')
-        test_group = sdk_client_fs.group_create('test_group')
-        users_page.update_user_info(ldap_user_in_group['name'], group=test_group.name)
-        with allure.step(f'Check user {user.username} is listed in users list with changed params'):
-            user_row = users_page.get_user_row_by_username(ldap_user_in_group['name'])
+            wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), "success")
+        test_group = sdk_client_fs.group_create("test_group")
+        users_page.update_user_info(ldap_user_in_group["name"], group=test_group.name)
+        with allure.step(f"Check user {user.username} is listed in users list with changed params"):
+            user_row = users_page.get_user_row_by_username(ldap_user_in_group["name"])
             assert test_group.name in user_row.text, "User group didn't changed"
 
     @pytest.mark.ldap()
@@ -415,7 +419,7 @@ class TestAdminUsersPage:
         """Check that users can be filtered"""
 
         with allure.step("Wait ldap integration ends"):
-            wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), 'success')
+            wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), "success")
         users_page.driver.refresh()
         users_page.filter_users_by("status", "active")
         with allure.step("Check users are filtered by active status"):
@@ -432,29 +436,29 @@ class TestAdminUsersPage:
         users_page.filter_users_by("type", "local")
         with allure.step("Check users are filtered by local type"):
             assert users_page.get_all_user_names() == [
-                user.username for user in sdk_client_fs.user_list(type='local')
+                user.username for user in sdk_client_fs.user_list(type="local")
             ], "Not all local users are visible"
         users_page.remove_user_filter()
         users_page.filter_users_by("type", "ldap")
         with allure.step("Check users are filtered by ldap status"):
             assert users_page.get_all_user_names() == [
-                user.username for user in sdk_client_fs.user_list(type='ldap')
+                user.username for user in sdk_client_fs.user_list(type="ldap")
             ], "Not all ldap users are visible"
         users_page.filter_users_by("status", "active")
         with allure.step("Check users are filtered both by active status and ldap"):
             assert users_page.get_all_user_names() == [
-                user.username for user in sdk_client_fs.user_list(is_active=True, type='ldap')
+                user.username for user in sdk_client_fs.user_list(is_active=True, type="ldap")
             ], "Not all active ldap users are visible"
 
 
-@pytest.mark.usefixtures("login_to_adcm_over_api")
+@pytest.mark.usefixtures("_login_to_adcm_over_api")
 class TestAdminRolesPage:
     """Tests for the /admin/roles"""
 
     custom_role = AdminRoleInfo(
-        name='Test_role_name',
-        description='Test role description',
-        permissions='Create provider, Create cluster, Create user, Remove policy',
+        name="Test_role_name",
+        description="Test role description",
+        permissions="Create provider, Create cluster, Create user, Remove policy",
     )
 
     @pytest.mark.smoke()
@@ -466,7 +470,7 @@ class TestAdminRolesPage:
         roles_page = intro_page.open_roles_menu()
         roles_page.check_all_elements()
         roles_page.check_default_roles()
-        with allure.step('Check that there are 4 default roles'):
+        with allure.step("Check that there are 4 default roles"):
             assert len(roles_page.table.get_all_rows()) == 4, "There should be 4 default roles"
         roles_page.check_admin_toolbar()
 
@@ -496,9 +500,9 @@ class TestAdminRolesPage:
         """Test changing a role on /admin/roles page"""
 
         custom_role_changed = AdminRoleInfo(
-            name='Test_another_name',
-            description='Test role description 2',
-            permissions='Upload bundle',
+            name="Test_another_name",
+            description="Test role description 2",
+            permissions="Upload bundle",
         )
 
         page = AdminRolesPage(app_fs.driver, app_fs.adcm.url).open()
@@ -507,8 +511,8 @@ class TestAdminRolesPage:
         with allure.step("Check that update unavailable without the role name"):
             page.fill_role_name_in_role_popup(" ")
             page.check_save_button_disabled()
-            page.check_field_error_in_role_popup('Role name is required.')
-            page.check_field_error_in_role_popup('Role name too short.')
+            page.check_field_error_in_role_popup("Role name is required.")
+            page.check_field_error_in_role_popup("Role name too short.")
             page.fill_role_name_in_role_popup("")
             page.check_save_button_disabled()
             page.check_field_error_in_role_popup("Role name is required.")
@@ -536,15 +540,15 @@ class TestAdminRolesPage:
         page.select_all_roles()
         page.click_delete_button()
         page.check_default_roles()
-        with allure.step('Check that role has been deleted'):
+        with allure.step("Check that role has been deleted"):
             assert len(page.table.get_all_rows()) == 4, "There should be 4 default roles"
 
 
-@pytest.mark.usefixtures("login_to_adcm_over_api")
+@pytest.mark.usefixtures("_login_to_adcm_over_api")
 class TestAdminGroupsPage:
     """Tests for the /admin/groups"""
 
-    custom_group = AdminGroupInfo(name='Test_group', description='Test description', users='admin')
+    custom_group = AdminGroupInfo(name="Test_group", description="Test description", users="admin")
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -562,7 +566,7 @@ class TestAdminGroupsPage:
         groups_page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
         groups_page.create_custom_group(self.custom_group.name, self.custom_group.description, self.custom_group.users)
         current_groups = groups_page.get_all_groups()
-        with allure.step('Check that there are 1 custom group'):
+        with allure.step("Check that there are 1 custom group"):
             assert len(current_groups) == 1, "There should be 1 group on the page"
             assert self.custom_group in current_groups, "Created group should be on the page"
 
@@ -571,16 +575,20 @@ class TestAdminGroupsPage:
     def test_create_group_with_ldap_user_on_admin_groups_page(self, sdk_client_fs, app_fs, ldap_user_in_group):
         """Test create a group on /admin/groups"""
 
-        wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), 'success')
+        wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), "success")
         groups_page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
         groups_page.create_custom_group(
             self.custom_group.name, self.custom_group.description, ldap_user_in_group["name"]
         )
         current_groups = groups_page.get_all_groups()
-        with allure.step('Check that there are 1 custom group and 1 ldap'):
+        with allure.step("Check that there are 1 custom group and 1 ldap"):
             assert len(current_groups) == 2, "There should be 2 group on the page"
             assert (
-                AdminGroupInfo(name='Test_group', description='Test description', users=ldap_user_in_group["name"])
+                AdminGroupInfo(
+                    name="Test_group",
+                    description="Test description",
+                    users=ldap_user_in_group["name"],
+                )
                 in current_groups
             ), "Created group should be on the page"
 
@@ -605,7 +613,7 @@ class TestAdminGroupsPage:
         page.create_custom_group(self.custom_group.name, self.custom_group.description, self.custom_group.users)
         page.select_all_groups()
         page.click_delete_button()
-        with allure.step('Check that group has been deleted'):
+        with allure.step("Check that group has been deleted"):
             assert len(page.table.get_all_rows()) == 0, "There should be 0 groups"
 
     @pytest.mark.ldap()
@@ -613,35 +621,35 @@ class TestAdminGroupsPage:
     def test_ldap_group_change_is_forbidden(self, app_fs, ldap_user_in_group):
         """Change ldap group"""
 
-        params = {'group_name': 'adcm_users'}
+        params = {"group_name": "adcm_users"}
         groups_page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
         groups_page.header.wait_success_job_amount_from_header(1)
         with allure.step(f"Check group {params['group_name']} is listed in groups list"):
             assert (
-                groups_page.get_all_groups()[0].name == params['group_name']
+                groups_page.get_all_groups()[0].name == params["group_name"]
             ), f"Group {params['group_name']} should be in groups list"
-        groups_page.check_ldap_group(params['group_name'])
+        groups_page.check_ldap_group(params["group_name"])
 
     @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
     def test_add_ldap_user_to_group(self, app_fs, ldap_user_in_group):
         """Add ldap user to group"""
 
-        params = {'group_name': 'Test_group'}
+        params = {"group_name": "Test_group"}
         groups_page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
-        groups_page.create_custom_group(name=params['group_name'], description=None, users=None)
+        groups_page.create_custom_group(name=params["group_name"], description=None, users=None)
         groups_page.header.wait_success_job_amount_from_header(1)
-        groups_page.update_group(name=params['group_name'], users=ldap_user_in_group["name"])
+        groups_page.update_group(name=params["group_name"], users=ldap_user_in_group["name"])
         with allure.step(f"Check group {params['group_name']} has user {ldap_user_in_group['name']}"):
             assert (
-                ldap_user_in_group["name"] in groups_page.get_group_by_name(params['group_name']).text
+                ldap_user_in_group["name"] in groups_page.get_group_by_name(params["group_name"]).text
             ), f"Group {params['group_name']} should have user {ldap_user_in_group['name']}"
 
 
 class TestAdminPolicyPage:
     """Tests for the /admin/policies"""
 
-    @allure.step('Check custome policy')
+    @allure.step("Check custome policy")
     def check_custom_policy(self, policies_page, policy=None):
         """Check that there is only one created policy with expected params"""
 
@@ -650,7 +658,7 @@ class TestAdminPolicyPage:
         assert len(current_policies) == 1, "There should be 1 policy on the page"
         assert current_policies == [policy], "Created policy should be on the page"
 
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
     def test_open_by_tab_admin_policies_page(self, app_fs):
@@ -661,7 +669,7 @@ class TestAdminPolicyPage:
         policies_page.check_all_elements()
         policies_page.check_admin_toolbar()
 
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
     def test_create_policy_on_admin_groups_page(self, app_fs):
         """Test create a group on /admin/policies"""
 
@@ -674,7 +682,7 @@ class TestAdminPolicyPage:
         )
         self.check_custom_policy(policies_page)
 
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
     @pytest.mark.full()
     def test_check_pagination_policy_list_page(self, app_fs):
         """Test pagination on /admin/policies page"""
@@ -690,7 +698,7 @@ class TestAdminPolicyPage:
                 )
         policies_page.table.check_pagination(second_page_item_amount=1)
 
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
     def test_delete_policy_from_policies_page(self, app_fs):
         """Test delete custom group on /admin/policies page"""
 
@@ -703,31 +711,51 @@ class TestAdminPolicyPage:
         )
         policies_page.delete_all_policies()
 
-    # pylint: disable=too-many-arguments
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
     @pytest.mark.parametrize(
         ("clusters", "services", "providers", "hosts", "parents", "role_name"),
         [
-            (CLUSTER_NAME, None, None, None, None, 'View cluster configurations'),
-            (None, SERVICE_NAME, None, None, CLUSTER_NAME, 'View service configurations'),
-            (None, None, PROVIDER_NAME, None, None, 'View provider configurations'),
-            (None, None, None, HOST_NAME, None, 'View host configurations'),
-            (None, SERVICE_NAME, None, None, CLUSTER_NAME, 'View component configurations'),
-            (CLUSTER_NAME, None, None, None, None, 'View cluster configurations, View service configurations'),
+            (CLUSTER_NAME, None, None, None, None, "View cluster configurations"),
+            (None, SERVICE_NAME, None, None, CLUSTER_NAME, "View service configurations"),
+            (None, None, PROVIDER_NAME, None, None, "View provider configurations"),
+            (None, None, None, HOST_NAME, None, "View host configurations"),
+            (None, SERVICE_NAME, None, None, CLUSTER_NAME, "View component configurations"),
+            (
+                CLUSTER_NAME,
+                None,
+                None,
+                None,
+                None,
+                "View cluster configurations, View service configurations",
+            ),
             (
                 None,
                 SERVICE_NAME,
                 None,
                 None,
                 CLUSTER_NAME,
-                'View cluster configurations, View service configurations, View component configurations, '
-                'View host configurations',
+                "View cluster configurations, View service configurations, View component configurations, "
+                "View host configurations",
             ),
-            (None, None, PROVIDER_NAME, None, None, 'View provider configurations, View host configurations'),
-            (None, None, None, HOST_NAME, None, 'View provider configurations, View host configurations'),
+            (
+                None,
+                None,
+                PROVIDER_NAME,
+                None,
+                None,
+                "View provider configurations, View host configurations",
+            ),
+            (
+                None,
+                None,
+                None,
+                HOST_NAME,
+                None,
+                "View provider configurations, View host configurations",
+            ),
         ],
     )
-    @pytest.mark.usefixtures('parents', 'create_cluster_with_component')
+    @pytest.mark.usefixtures("parents", "create_cluster_with_component")
     def test_check_policy_popup_for_entities(
         self,
         sdk_client_fs,
@@ -781,7 +809,7 @@ class TestAdminPolicyPage:
             sdk_client_fs.policy_create(
                 name="Test policy",
                 role=test_role,
-                user=[sdk_client_fs.user(username=another_user['username'])],
+                user=[sdk_client_fs.user(username=another_user["username"])],
                 objects=[cluster],
             )
         with allure.step("Create second cluster"):
@@ -812,7 +840,7 @@ class TestAdminPolicyPage:
             sdk_client_fs.policy_create(
                 name="Test policy",
                 role=test_role,
-                user=[sdk_client_fs.user(username=another_user['username'])],
+                user=[sdk_client_fs.user(username=another_user["username"])],
                 objects=[service],
             )
         with allure.step("Create second service"):
@@ -847,13 +875,14 @@ class TestAdminPolicyPage:
             sdk_client_fs.policy_create(
                 name="Test policy",
                 role=test_role,
-                user=[sdk_client_fs.user(username=another_user['username'])],
+                user=[sdk_client_fs.user(username=another_user["username"])],
                 objects=[service],
             )
         with allure.step("Create second component"):
             second_service = cluster.service_add(name="test_service_2")
             cluster.hostcomponent_set(
-                (host, service.component(name=FIRST_COMPONENT_NAME)), (host, second_service.component(name="second"))
+                (host, service.component(name=FIRST_COMPONENT_NAME)),
+                (host, second_service.component(name="second")),
             )
         login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
         login_page.login_user(**another_user)
@@ -872,8 +901,8 @@ class TestAdminPolicyPage:
     def test_policy_permission_to_view_access_provider(self, sdk_client_fs, app_fs, another_user):
         """Test for the permissions to provider."""
 
-        provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), 'provider'))
-        provider = provider_bundle.provider_create('test_provider')
+        provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "provider"))
+        provider = provider_bundle.provider_create("test_provider")
         with allure.step("Create test role"):
             test_role = sdk_client_fs.role_create(
                 name=CUSTOM_ROLE_NAME,
@@ -884,14 +913,14 @@ class TestAdminPolicyPage:
             sdk_client_fs.policy_create(
                 name="Test policy",
                 role=test_role,
-                user=[sdk_client_fs.user(username=another_user['username'])],
+                user=[sdk_client_fs.user(username=another_user["username"])],
                 objects=[provider],
             )
         with allure.step("Create second provider"):
             provider_bundle = sdk_client_fs.upload_from_fs(
-                os.path.join(utils.get_data_dir(__file__), 'second_provider')
+                os.path.join(utils.get_data_dir(__file__), "second_provider")
             )
-            second_provider = provider_bundle.provider_create('second_test_provider')
+            second_provider = provider_bundle.provider_create("second_test_provider")
         login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
         login_page.login_user(**another_user)
         AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
@@ -905,9 +934,9 @@ class TestAdminPolicyPage:
     def test_policy_permission_to_view_access_host(self, sdk_client_fs, app_fs, another_user):
         """Test for the permissions to host."""
 
-        provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), 'provider'))
-        provider = provider_bundle.provider_create('test_provider')
-        host = provider.host_create('test-host')
+        provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "provider"))
+        provider = provider_bundle.provider_create("test_provider")
+        host = provider.host_create("test-host")
         with allure.step("Create test role"):
             test_role = sdk_client_fs.role_create(
                 name=CUSTOM_ROLE_NAME,
@@ -918,11 +947,11 @@ class TestAdminPolicyPage:
             sdk_client_fs.policy_create(
                 name="Test policy",
                 role=test_role,
-                user=[sdk_client_fs.user(username=another_user['username'])],
+                user=[sdk_client_fs.user(username=another_user["username"])],
                 objects=[host],
             )
         with allure.step("Create second host"):
-            second_host = provider.host_create('test-host-2')
+            second_host = provider.host_create("test-host-2")
         login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
         login_page.login_user(**another_user)
         AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
@@ -950,7 +979,7 @@ class TestAdminPolicyPage:
             sdk_client_fs.policy_create(
                 name="Test policy",
                 role=test_role,
-                user=[sdk_client_fs.user(username=another_user['username'])],
+                user=[sdk_client_fs.user(username=another_user["username"])],
                 objects=[cluster],
             )
         with allure.step("Create second cluster"):
@@ -971,7 +1000,7 @@ class TestAdminPolicyPage:
             sdk_client_fs.policy_create(
                 name="Test policy 2",
                 role=test_role_2,
-                user=[sdk_client_fs.user(username=another_user['username'])],
+                user=[sdk_client_fs.user(username=another_user["username"])],
                 objects=[second_cluster],
             )
         with allure.step("Check that user can view second cluster"):
@@ -980,13 +1009,13 @@ class TestAdminPolicyPage:
             assert len(cluster_rows) == 2, "There should be 2 row with cluster"
         with allure.step("Check actions in clusters"):
             assert cluster_list_page.get_all_actions_name_in_cluster(cluster_rows[0]) == [
-                'some_action'
+                "some_action"
             ], "First cluster action should be visible"
             assert (
                 cluster_list_page.get_all_actions_name_in_cluster(cluster_rows[1]) == []
             ), "Second cluster action should not be visible"
         with allure.step("Run action from first cluster"):
-            cluster_list_page.run_action_in_cluster_row(cluster_rows[0], 'some_action')
+            cluster_list_page.run_action_in_cluster_row(cluster_rows[0], "some_action")
         with allure.step("Check task"):
             cluster_list_page.header.click_job_block_in_header()
             assert len(cluster_list_page.header.get_job_rows_from_popup()) == 1, "Job amount should be 1"
@@ -994,7 +1023,7 @@ class TestAdminPolicyPage:
             job_rows = job_list_page.table.get_all_rows()
             assert len(job_rows) == 1, "Should be only 1 task"
             task_info = job_list_page.get_task_info_from_table(0)
-            assert task_info.action_name == 'some_action', "Wrong task name"
+            assert task_info.action_name == "some_action", "Wrong task name"
             assert task_info.invoker_objects == cluster.name, "Wrong cluster name"
             job_list_page.click_on_action_name_in_row(job_rows[0])
             JobPageStdout(app_fs.driver, app_fs.adcm.url, 1).wait_page_is_opened()
@@ -1006,7 +1035,7 @@ class TestAdminPolicyPage:
             ), "There are no permission hint"
 
     # pylint: enable=too-many-locals
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
     def test_policy_with_maintenance_mode(self, sdk_client_fs, app_fs, another_user, create_cluster_with_component):
         """Test create a group on /admin/policies"""
 
@@ -1021,7 +1050,7 @@ class TestAdminPolicyPage:
             sdk_client_fs.policy_create(
                 name="Test policy",
                 role=test_role,
-                user=[sdk_client_fs.user(username=another_user['username'])],
+                user=[sdk_client_fs.user(username=another_user["username"])],
                 objects=[host],
             )
         login_over_api(app_fs, another_user)

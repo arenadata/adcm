@@ -44,7 +44,7 @@ export class ApiService {
   getList<T>(url: string, paramMap: ParamMap, outsideParams?: { [item: string]: string }): Observable<ListResult<T>> {
     const params = paramMap?.keys.reduce((pr, c) => ({ ...pr, [c]: paramMap.get(c) }), {});
     if (paramMap) {
-      const limit = paramMap.get('limit') ? +paramMap.get('limit') : +localStorage.getItem('limit'),
+      const limit = paramMap.get('limit') ? +paramMap.get('limit') : +localStorage.getItem('limit') || 10,
         offset = (paramMap.get('page') ? +paramMap.get('page') : 0) * limit;
       params['limit'] = limit.toString();
       params['offset'] = offset.toString();

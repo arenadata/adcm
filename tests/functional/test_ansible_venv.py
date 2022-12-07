@@ -16,13 +16,13 @@
 
 import allure
 import pytest
-from adcm_client.objects import Cluster, ADCMClient, Provider
+from adcm_client.objects import ADCMClient, Cluster, Provider
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
     run_component_action_and_assert_result,
-    run_provider_action_and_assert_result,
     run_host_action_and_assert_result,
+    run_provider_action_and_assert_result,
+    run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import get_data_dir
 
@@ -96,12 +96,16 @@ def test_default_ansible(
     run_cluster_action_and_assert_result(cluster_no_venv, "no_venv", config=DEFAULT_ANSIBLE_VER)
     run_service_action_and_assert_result(cluster_no_venv.service(name="no_venv"), "no_venv", config=DEFAULT_ANSIBLE_VER)
     run_component_action_and_assert_result(
-        cluster_no_venv.service(name="no_venv").component(name="no_venv"), "no_venv", config=DEFAULT_ANSIBLE_VER
+        cluster_no_venv.service(name="no_venv").component(name="no_venv"),
+        "no_venv",
+        config=DEFAULT_ANSIBLE_VER,
     )
 
     run_cluster_action_and_assert_result(cluster_obj_venv_default, "obj_venv_default", config=DEFAULT_ANSIBLE_VER)
     run_service_action_and_assert_result(
-        cluster_obj_venv_default.service(name="obj_venv_default"), "obj_venv_default", config=DEFAULT_ANSIBLE_VER
+        cluster_obj_venv_default.service(name="obj_venv_default"),
+        "obj_venv_default",
+        config=DEFAULT_ANSIBLE_VER,
     )
     run_component_action_and_assert_result(
         cluster_obj_venv_default.service(name="obj_venv_default").component(name="obj_venv_default"),
@@ -114,7 +118,9 @@ def test_default_ansible(
 
     run_provider_action_and_assert_result(provider_obj_venv_default, "obj_venv_default", config=DEFAULT_ANSIBLE_VER)
     run_host_action_and_assert_result(
-        provider_obj_venv_default.host(fqdn="obj-venv-default"), "obj_venv_default", config=DEFAULT_ANSIBLE_VER
+        provider_obj_venv_default.host(fqdn="obj-venv-default"),
+        "obj_venv_default",
+        config=DEFAULT_ANSIBLE_VER,
     )
 
 
@@ -142,7 +148,9 @@ def test_ansible_set_on_prototype(cluster_obj_venv_9: Cluster, provider_obj_venv
     run_cluster_action_and_assert_result(cluster_obj_venv_9, "obj_venv_9", config=ANSIBLE_9)
     run_service_action_and_assert_result(cluster_obj_venv_9.service(name="obj_venv_9"), "obj_venv_9", config=ANSIBLE_9)
     run_component_action_and_assert_result(
-        cluster_obj_venv_9.service(name="obj_venv_9").component(name="obj_venv_9"), "obj_venv_9", config=ANSIBLE_9
+        cluster_obj_venv_9.service(name="obj_venv_9").component(name="obj_venv_9"),
+        "obj_venv_9",
+        config=ANSIBLE_9,
     )
 
     run_provider_action_and_assert_result(provider_obj_venv_9, "obj_venv_9", config=ANSIBLE_9)
@@ -208,7 +216,9 @@ def test_ansible_set_on_action(
 
     run_cluster_action_and_assert_result(cluster_obj_no_venv_action_9, "obj_no_venv_action_9", config=ANSIBLE_9)
     run_service_action_and_assert_result(
-        cluster_obj_no_venv_action_9.service(name="obj_no_venv_action_9"), "obj_no_venv_action_9", config=ANSIBLE_9
+        cluster_obj_no_venv_action_9.service(name="obj_no_venv_action_9"),
+        "obj_no_venv_action_9",
+        config=ANSIBLE_9,
     )
     run_component_action_and_assert_result(
         cluster_obj_no_venv_action_9.service(name="obj_no_venv_action_9").component(name="obj_no_venv_action_9"),
@@ -218,7 +228,9 @@ def test_ansible_set_on_action(
 
     run_provider_action_and_assert_result(provider_no_venv_action_9, "no_venv_action_9", config=ANSIBLE_9)
     run_host_action_and_assert_result(
-        provider_no_venv_action_9.host(fqdn="no-venv-action-9"), "no_venv_action_9", config=ANSIBLE_9
+        provider_no_venv_action_9.host(fqdn="no-venv-action-9"),
+        "no_venv_action_9",
+        config=ANSIBLE_9,
     )
 
     run_provider_action_and_assert_result(

@@ -16,8 +16,7 @@ import allure
 import pytest
 from adcm_client.objects import Cluster, Component
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
-
-from tests.library.assertions import expect_no_api_error, expect_api_error
+from tests.library.assertions import expect_api_error, expect_no_api_error
 
 # pylint: disable=redefined-outer-name
 
@@ -83,7 +82,13 @@ def test_terminate_action_with_hc_acl(cluster, generic_provider):
 
     with allure.step('Run action with hc_acl and terminate it right away'):
         task = cluster.action(name='with_hc_acl').run(
-            hc=[{'host_id': host.id, 'service_id': component.service_id, 'component_id': component.id}]
+            hc=[
+                {
+                    'host_id': host.id,
+                    'service_id': component.service_id,
+                    'component_id': component.id,
+                }
+            ]
         )
         # action need time to "actually" launch
         wait_until_step_succeeds(

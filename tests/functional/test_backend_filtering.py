@@ -12,11 +12,12 @@
 
 """Tests for backend filtering"""
 
-from typing import List, Union, Type
+from typing import List, Type, Union
 
 import allure
 import pytest
-from adcm_client.base import ResponseTooLong, BaseAPIListObject, BaseAPIObject
+import pytest_check as check
+from adcm_client.base import BaseAPIObject
 from adcm_client.objects import (
     Action,
     ADCMClient,
@@ -38,12 +39,11 @@ from adcm_client.objects import (
     ProviderList,
     ProviderPrototype,
     ProviderPrototypeList,
+    Service,
     Task,
     TaskList,
-    Service,
 )
 from adcm_pytest_plugin.utils import get_data_dir, get_subdirs_iter
-import pytest_check as check
 from pytest_lazyfixture import lazy_fixture
 
 # pylint: disable=redefined-outer-name,protected-access
@@ -175,6 +175,7 @@ def one_host_provider_id_attr(one_host: Host):
     return {'provider_id': one_host.provider_id}
 
 
+@pytest.mark.skip(reason="ADCM-3297")
 @pytest.mark.parametrize(
     'tested_class',
     [
@@ -212,32 +213,6 @@ def test_coreapi_schema(sdk_client_fs: ADCMClient, tested_class: Type[BaseAPIObj
                 params,
                 f"Filter {_filter} should be acceptable for coreapi in class {tested_class.__name__}",
             )
-
-
-@pytest.mark.full()
-@pytest.mark.parametrize(
-    ('sdk_client', 'tested_class'),
-    [
-        pytest.param(lazy_fixture('cluster_bundles'), ClusterPrototypeList, id="Cluster Prototype"),
-        pytest.param(lazy_fixture('cluster_bundles'), PrototypeList, id="Prototype"),
-        pytest.param(lazy_fixture('provider_bundles'), ProviderPrototypeList, id="Provider Prototype"),
-        pytest.param(lazy_fixture('provider_bundles'), HostPrototypeList, id="Host Prototype"),
-        pytest.param(lazy_fixture('provider_bundles'), BundleList, id="Bundle"),
-        pytest.param(lazy_fixture('clusters'), ClusterList, id="Cluster"),
-        pytest.param(lazy_fixture('hosts'), HostList, id="Host"),
-        pytest.param(lazy_fixture('hosts_with_jobs'), TaskList, id="Task"),
-        pytest.param(lazy_fixture('hosts_with_jobs'), JobList, id="Job"),
-    ],
-)
-def test_paging_fail(sdk_client, tested_class: Type[BaseAPIListObject]):
-    """Scenario:
-    * Prepare a lot of objects in ADCM
-    * Call listing api over objects.*List classes
-    * Expecting to have ResponseTooLong error
-    """
-    with allure.step(f'Prepare a lot of objects: {tested_class.__name__} ' f'in ADCM and check ResponseTooLong error'):
-        with pytest.raises(ResponseTooLong):
-            tested_class(sdk_client._api)
 
 
 @pytest.mark.parametrize(
@@ -506,7 +481,7 @@ def task_status_attr():
 @pytest.fixture()
 def job_task_id_attr(host_ok_action: Action):
     """Get task task_id attr"""
-    return {'task_id': host_ok_action.task().task_id}
+    return {'task_id': host_ok_action.task().id}
 
 
 @pytest.mark.parametrize(

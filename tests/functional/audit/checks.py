@@ -51,14 +51,21 @@ def check_audit_cef_logs(client: ADCMClient, adcm_container: Container):
     operations = client.audit_operation_list(paging={"limit": 200})
     logins = client.audit_login_list()
     logs: List[Union[AuditOperation, AuditLogin]] = list(operations) + list(logins)
-    logs.sort(key=lambda l: l.operation_time if isinstance(l, AuditOperation) else l.login_time)
+    logs.sort(
+        key=lambda log_operation: log_operation.operation_time
+        if isinstance(log_operation, AuditOperation)
+        else log_operation.login_time
+    )
     exit_code, out = adcm_container.exec_run(["cat", "/adcm/data/log/audit.log"])
     logfile_content = out.decode("utf-8")
     if exit_code != 0:
         raise ValueError(f"Failed to get audit logfile content: {logfile_content}")
     # filter out empty
     cef_records: Tuple[CEFRecord, ...] = tuple(
-        map(lambda r: CEFRecord(*r.split("|")), filter(lambda l: 'CEF' in l, logfile_content.split("\n")))
+        map(
+            lambda r: CEFRecord(*r.split("|")),
+            filter(lambda log_operation: 'CEF' in log_operation, logfile_content.split("\n")),
+        )
     )
     with allure.step("Check all logs have correct CEF version, vendor, product name and version"):
         for param, expected in (
@@ -84,7 +91,11 @@ def check_audit_cef_logs(client: ADCMClient, adcm_container: Container):
             with allure.step(f"Check CEF log #{i} is corresponding to {log.id} '{name}' with result '{result}'"):
                 corresponding_cef_log: CEFRecord = cef_records[i]
                 expected_severity = "3" if result == OperationResult.DENIED.value else "1"
-                for param, expected in (("name", name), ("severity", expected_severity), ("extension", extension)):
+                for param, expected in (
+                    ("name", name),
+                    ("severity", expected_severity),
+                    ("extension", extension),
+                ):
 
                     if getattr(corresponding_cef_log, param) != expected:
                         _attach_api_log(log)
@@ -130,7 +141,11 @@ def _format_time(time: datetime):
 
 
 def _attach_cef_logs(cef_logs: Collection[CEFRecord]) -> None:
-    allure.attach(pformat(cef_logs), name="Parsed CEF logs from container", attachment_type=allure.attachment_type.TEXT)
+    allure.attach(
+        pformat(cef_logs),
+        name="Parsed CEF logs from container",
+        attachment_type=allure.attachment_type.TEXT,
+    )
 
 
 def _attach_api_log(api_log: Union[AuditOperation, AuditLogin]) -> None:

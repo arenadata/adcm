@@ -22,7 +22,6 @@ from api.serializers import (
     MultiHyperlinkedRelatedField,
     UIConfigField,
 )
-from cm.adcm_config import ui_config
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
 from cm.models import ConfigLog, GroupConfig, Host, ObjectConfig
@@ -147,9 +146,7 @@ class GroupConfigHostSerializer(serializers.ModelSerializer):
     """Serializer for hosts in group config"""
 
     id = serializers.PrimaryKeyRelatedField(queryset=Host.objects.all())
-    url = MultiHyperlinkedIdentityField(
-        'group-config-host-detail', 'parent_lookup_group_config', 'host_id'
-    )
+    url = MultiHyperlinkedIdentityField('group-config-host-detail', 'parent_lookup_group_config', 'host_id')
 
     class Meta:
         model = Host
@@ -193,9 +190,7 @@ class GroupConfigHostSerializer(serializers.ModelSerializer):
 class GroupConfigHostCandidateSerializer(GroupConfigHostSerializer):
     """Serializer for host candidate"""
 
-    url = MultiHyperlinkedIdentityField(
-        'group-config-host-candidate-detail', 'parent_lookup_group_config', 'host_id'
-    )
+    url = MultiHyperlinkedIdentityField('group-config-host-candidate-detail', 'parent_lookup_group_config', 'host_id')
 
 
 class GroupConfigConfigSerializer(serializers.ModelSerializer):
@@ -218,9 +213,7 @@ class GroupConfigConfigSerializer(serializers.ModelSerializer):
     )
     previous_id = serializers.IntegerField(source='previous')
     history = serializers.SerializerMethodField()
-    url = MultiHyperlinkedIdentityField(
-        'group-config-config-detail', 'parent_lookup_group_config', 'pk'
-    )
+    url = MultiHyperlinkedIdentityField('group-config-config-detail', 'parent_lookup_group_config', 'pk')
 
     class Meta:
         model = ObjectConfig
@@ -255,13 +248,10 @@ class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
     @atomic
     def create(self, validated_data):
         object_config = self.context.get('obj_ref')
-        ui = self.context.get('ui')
         config = validated_data.get('config')
         attr = validated_data.get('attr', {})
         description = validated_data.get('description', '')
         cl = update_obj_config(object_config, config, attr, description)
-        if ui:
-            cl.config = ui_config(object_config.object.object, cl)
         return cl
 
 

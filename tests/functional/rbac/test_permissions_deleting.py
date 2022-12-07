@@ -14,13 +14,12 @@
 
 import allure
 from adcm_client.objects import ADCMClient
-
 from tests.functional.rbac.conftest import (
+    CLUSTER_VIEW_CONFIG_ROLES,
     BusinessRoles,
     create_policy,
     is_allowed,
     is_denied,
-    CLUSTER_VIEW_CONFIG_ROLES,
 )
 
 
@@ -30,7 +29,11 @@ def test_remove_user_from_policy(user_sdk: ADCMClient, user, prepare_objects, sd
     """
     cluster_via_admin, *_ = prepare_objects
     policy = create_policy(
-        sdk_client_fs, BusinessRoles.ViewClusterConfigurations, objects=[cluster_via_admin], users=[user], groups=[]
+        sdk_client_fs,
+        BusinessRoles.ViewClusterConfigurations,
+        objects=[cluster_via_admin],
+        users=[user],
+        groups=[],
     )
     cluster = user_sdk.cluster(id=cluster_via_admin.id)
     is_allowed(cluster, BusinessRoles.ViewComponentConfigurations)
@@ -47,7 +50,11 @@ def test_remove_group_from_policy(user_sdk: ADCMClient, user, prepare_objects, s
     group = sdk_client_fs.group_create("test_group", user=[{"id": user.id}])
     empty_group = sdk_client_fs.group_create("empty_group")
     policy = create_policy(
-        sdk_client_fs, BusinessRoles.ViewClusterConfigurations, objects=[cluster_via_admin], users=[], groups=[group]
+        sdk_client_fs,
+        BusinessRoles.ViewClusterConfigurations,
+        objects=[cluster_via_admin],
+        users=[],
+        groups=[group],
     )
     cluster = user_sdk.cluster(id=cluster_via_admin.id)
     is_allowed(cluster, BusinessRoles.ViewClusterConfigurations)
@@ -63,7 +70,11 @@ def test_remove_user_from_group(user_sdk: ADCMClient, user, prepare_objects, sdk
     cluster_via_admin, *_ = prepare_objects
     group = sdk_client_fs.group_create("test_group", user=[{"id": user.id}])
     create_policy(
-        sdk_client_fs, BusinessRoles.ViewClusterConfigurations, objects=[cluster_via_admin], users=[], groups=[group]
+        sdk_client_fs,
+        BusinessRoles.ViewClusterConfigurations,
+        objects=[cluster_via_admin],
+        users=[],
+        groups=[group],
     )
     cluster = user_sdk.cluster(id=cluster_via_admin.id)
     is_allowed(cluster, BusinessRoles.ViewClusterConfigurations)
@@ -100,7 +111,11 @@ def test_change_child_role(user_sdk: ADCMClient, user, prepare_objects, sdk_clie
     cluster_via_admin, *_ = prepare_objects
 
     policy = create_policy(
-        sdk_client_fs, BusinessRoles.ViewClusterConfigurations, objects=[cluster_via_admin], users=[user], groups=[]
+        sdk_client_fs,
+        BusinessRoles.ViewClusterConfigurations,
+        objects=[cluster_via_admin],
+        users=[user],
+        groups=[],
     )
 
     cluster = user_sdk.cluster(id=cluster_via_admin.id)
@@ -186,10 +201,18 @@ def test_remove_policy_but_exists_same_policy(user_sdk: ADCMClient, user, prepar
     """
     cluster_via_admin, *_ = prepare_objects
     create_policy(
-        sdk_client_fs, BusinessRoles.ViewClusterConfigurations, objects=[cluster_via_admin], users=[user], groups=[]
+        sdk_client_fs,
+        BusinessRoles.ViewClusterConfigurations,
+        objects=[cluster_via_admin],
+        users=[user],
+        groups=[],
     )
     second_policy = create_policy(
-        sdk_client_fs, BusinessRoles.ViewClusterConfigurations, objects=[cluster_via_admin], users=[user], groups=[]
+        sdk_client_fs,
+        BusinessRoles.ViewClusterConfigurations,
+        objects=[cluster_via_admin],
+        users=[user],
+        groups=[],
     )
     cluster = user_sdk.cluster(id=cluster_via_admin.id)
     is_allowed(cluster, BusinessRoles.ViewClusterConfigurations)

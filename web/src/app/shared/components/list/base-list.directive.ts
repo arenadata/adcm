@@ -9,7 +9,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 import { MatDialog } from '@angular/material/dialog';
 import { ParamMap } from '@angular/router';
 import { select, Store } from '@ngrx/store';
@@ -17,7 +16,6 @@ import { filter, mergeMap, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { IListResult } from '@adwp-ui/widgets';
 import { Sort } from '@angular/material/sort';
 import { Observable, Subject } from 'rxjs';
-
 import { clearMessages, EventMessage, getMessage, SocketState } from '@app/core/store';
 import { Bundle, EmmitRow, Entities, Host as AdcmHost, TypeName } from '@app/core/types';
 import { DialogComponent } from '@app/shared/components';
@@ -25,7 +23,6 @@ import { ListResult } from '@app/models/list-result';
 import { ListService } from './list.service';
 import { ListDirective } from '@app/abstract-directives/list.directive';
 import { ICluster } from '@app/models/cluster';
-
 
 const TemporaryEntityNameConverter = (currentName: Partial<TypeName>): string => {
 
@@ -94,7 +91,6 @@ export class BaseListDirective {
   }
 
   routeListener(limit: number, page: number, ordering: string, params: ParamMap) {
-
     this.parent.paginator.pageSize = limit;
     if (page === 0) {
       this.parent.paginator.firstPage();
@@ -117,7 +113,7 @@ export class BaseListDirective {
         this.takeUntil(),
         filter((p) => this.checkParam(p))
       )
-      .subscribe((p) => this.routeListener(+p.get('limit') || 10, +p.get('page'), p.get('ordering'), p));
+      .subscribe((p) => this.routeListener(+p.get('limit'), +p.get('page'), p.get('ordering'), p));
   }
 
   init(): void {
@@ -139,9 +135,12 @@ export class BaseListDirective {
 
   checkParam(p: ParamMap): boolean {
     const listParamStr = localStorage.getItem('list:param');
-    if (!p.keys.length && listParamStr) {
+
+    if (!p?.keys?.length && listParamStr) {
       const json = JSON.parse(listParamStr);
+
       if (json[this.typeName]) {
+        delete json[this.typeName]?.page;
         this.parent.router.navigate(['./', json[this.typeName]], {
           relativeTo: this.parent.route,
           replaceUrl: true,
@@ -194,9 +193,14 @@ export class BaseListDirective {
     }
   }
 
-  refresh(id?: number) {
+  refresh(id?: number, filter_params?: ParamMap) {
     if (id) this.parent.current = { id };
-    this.service.getList(this.listParams, this.typeName).subscribe((list: IListResult<Entities>) => {
+    if (!filter_params) {
+      let ls = localStorage.getItem('list:param');
+      let filters = ls ? JSON.parse(ls) : {};
+      if (filters[this.typeName]) this.listParams['params'] = { ...this.listParams['params'], ...filters[this.typeName] }
+    }
+    this.service.getList(filter_params || this.listParams, this.typeName).subscribe((list: IListResult<Entities>) => {
       if (this.reload) {
         this.reload(list);
       }
@@ -224,9 +228,7 @@ export class BaseListDirective {
   onLoad() {}
 
   maintenanceModeToggle(row) {
-    this.service.setMaintenanceMode(row)
-    .pipe(this.takeUntil())
-    .subscribe(() => {});
+    this.service.setMaintenanceMode(row).subscribe();
   }
 
   license() {

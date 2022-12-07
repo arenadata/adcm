@@ -21,8 +21,9 @@ import { IDetails } from '@app/models/details';
       </ng-container>
       <ng-template #link>
         <a [routerLink]="['/', cur.provider_id ? 'provider' : 'bundle', cur.provider_id || cur.bundle_id || {}]">
-          {{ cur.prototype_display_name || cur.prototype_name }}
-          {{ cur.prototype_version }}
+          {{ cur.provider_name || '' }}
+          {{ cur.typeName === 'host' ? '' : cur.prototype_display_name || cur.prototype_name }}
+          {{ cur.typeName === 'host' ? '' : cur.prototype_version }}
         </a>
       </ng-template>
     </ng-container>

@@ -25,6 +25,7 @@ from enum import Enum
 from itertools import chain
 from typing import Dict, Iterable, List, Optional
 
+from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -33,7 +34,6 @@ from django.db.models.signals import m2m_changed, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
 
-from cm.config import FILE_DIR, Job
 from cm.errors import AdcmEx
 from cm.logger import logger
 
@@ -53,6 +53,12 @@ class ObjectType(models.TextChoices):
     Host = "host", "host"
 
 
+class MaintenanceMode(models.TextChoices):
+    ON = "ON", "ON"
+    OFF = "OFF", "OFF"
+    CHANGING = "CHANGING", "CHANGING"
+
+
 LICENSE_STATE = (
     ("absent", "absent"),
     ("accepted", "accepted"),
@@ -60,7 +66,7 @@ LICENSE_STATE = (
 )
 
 
-def get_model_by_type(object_type):
+def get_model_by_type(object_type):  # pylint: disable=too-many-return-statements
     if object_type == "adcm":
         return ADCM
     if object_type == "cluster":
@@ -97,14 +103,14 @@ class ADCMManager(models.Manager):
     """
     Custom model manager catch ObjectDoesNotExist error and re-raise it as custom
     AdcmEx exception. AdcmEx is derived from DRF APIException, so it handled gracefully
-    by DRF and is reported out as nicely formated error instead of ugly exception.
+    by DRF and is reported out as nicely formatted error instead of ugly exception.
 
-    Using ADCMManager can shorten you code significaly. Insted of
+    Using ADCMManager can shorten you code significantly. Instead of
 
     try:
         cluster = Cluster.objects.get(id=id)
     except Cluster.DoesNotExist:
-        raise AdcmEx(f'Cluster {id} is not found')
+        raise AdcmEx(Cluster {id} is not found)
 
     You can just write
 
@@ -112,8 +118,8 @@ class ADCMManager(models.Manager):
 
     and DRF magic do the rest.
 
-    Please pay attention, to use ADCMManager you need reffer to "obj" model attribute,
-    not "objects". "objects" attribute is reffered to standard Django model manager,
+    Please pay attention, to use ADCMManager you need refer to "obj" model attribute,
+    not "objects". "objects" attribute is referred to standard Django model manager,
     so if you need familiar behavior you can use it as usual.
     """
 
@@ -143,8 +149,7 @@ class ADCMModel(models.Model):
         if len(values) != len(cls._meta.concrete_fields):
             values_iter = iter(values)
             values = [
-                next(values_iter) if f.attname in field_names else models.DEFERRED
-                for f in cls._meta.concrete_fields
+                next(values_iter) if f.attname in field_names else models.DEFERRED for f in cls._meta.concrete_fields
             ]
         instance = cls(*values)
         instance._state.adding = False
@@ -174,9 +179,6 @@ class Bundle(ADCMModel):
     version = models.CharField(max_length=80)
     version_order = models.PositiveIntegerField(default=0)
     edition = models.CharField(max_length=80, default="community")
-    license = models.CharField(max_length=16, choices=LICENSE_STATE, default="absent")
-    license_path = models.CharField(max_length=160, default=None, null=True)
-    license_hash = models.CharField(max_length=64, default=None, null=True)
     hash = models.CharField(max_length=64)
     description = models.TextField(blank=True)
     date = models.DateTimeField(auto_now=True)
@@ -190,7 +192,7 @@ class Bundle(ADCMModel):
 
 class ProductCategory(ADCMModel):
     """
-    Categories are used for some models categorization.
+    Categories are used for some model's categorization.
     It's same as Bundle.name but unlinked from it due to simplicity reasons.
     """
 
@@ -201,9 +203,7 @@ class ProductCategory(ADCMModel):
     def re_collect(cls) -> None:
         """Re-sync category list with installed bundles"""
         for bundle in Bundle.objects.filter(category=None).all():
-            prototype = Prototype.objects.filter(
-                bundle=bundle, name=bundle.name, type=ObjectType.Cluster
-            ).first()
+            prototype = Prototype.objects.filter(bundle=bundle, name=bundle.name, type=ObjectType.Cluster).first()
             if prototype:
                 value = prototype.display_name or bundle.name
                 bundle.category, _ = cls.objects.get_or_create(value=value)
@@ -222,6 +222,12 @@ MONITORING_TYPE = (
     ("passive", "passive"),
 )
 
+NO_LDAP_SETTINGS = "The Action is not available. You need to fill in the LDAP integration settings."
+SERVICE_IN_MM = "The Action is not available. Service in 'Maintenance mode'"
+COMPONENT_IN_MM = "The Action is not available. Component in 'Maintenance mode'"
+HOST_IN_MM = "The Action is not available. Host in 'Maintenance mode'"
+MANY_HOSTS_IN_MM = "The Action is not available. One or more hosts in 'Maintenance mode'"
+
 
 def get_default_constraint():
     return [0, "+"]
@@ -233,6 +239,9 @@ class Prototype(ADCMModel):
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     path = models.CharField(max_length=160, default="")
     name = models.CharField(max_length=256)
+    license = models.CharField(max_length=16, choices=LICENSE_STATE, default="absent")
+    license_path = models.CharField(max_length=160, default=None, null=True)
+    license_hash = models.CharField(max_length=64, default=None, null=True)
     display_name = models.CharField(max_length=256, blank=True)
     version = models.CharField(max_length=80)
     version_order = models.PositiveIntegerField(default=0)
@@ -539,7 +548,9 @@ class Upgrade(ADCMModel):
             else:
                 return False
         else:
-            return self.action.allowed(obj)
+            if hasattr(self, "action"):
+                return self.action.allowed(obj)
+            return False
 
 
 class ADCM(ADCMEntity):
@@ -586,7 +597,7 @@ class Cluster(ADCMEntity):
 
     @property
     def license(self):
-        return self.prototype.bundle.license
+        return self.prototype.license
 
     @property
     def display_name(self):
@@ -625,7 +636,7 @@ class HostProvider(ADCMEntity):
 
     @property
     def license(self):
-        return self.prototype.bundle.license
+        return self.prototype.license
 
     @property
     def display_name(self):
@@ -641,21 +652,15 @@ class HostProvider(ADCMEntity):
         return result if result["issue"] else {}
 
 
-class MaintenanceModeType(models.TextChoices):
-    Disabled = "disabled", "disabled"
-    On = "on", "on"
-    Off = "off", "off"
-
-
 class Host(ADCMEntity):
     fqdn = models.CharField(max_length=253, unique=True)
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
     maintenance_mode = models.CharField(
-        max_length=16,
-        choices=MaintenanceModeType.choices,
-        default=MaintenanceModeType.Disabled.value,
+        max_length=64,
+        choices=MaintenanceMode.choices,
+        default=MaintenanceMode.OFF,
     )
 
     __error_code__ = "HOST_NOT_FOUND"
@@ -684,6 +689,18 @@ class Host(ADCMEntity):
             result["issue"]["provider"] = provider_issue
         return result if result["issue"] else {}
 
+    @property
+    def is_maintenance_mode_available(self) -> bool:
+        cluster: Cluster | None = self.cluster
+        if not cluster:
+            return False
+
+        return cluster.prototype.allow_maintenance_mode
+
+    @property
+    def maintenance_mode_attr(self) -> MaintenanceMode.choices:
+        return self.maintenance_mode
+
 
 class ClusterObject(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
@@ -693,6 +710,11 @@ class ClusterObject(ADCMEntity):
         object_id_field="object_id",
         content_type_field="object_type",
         on_delete=models.CASCADE,
+    )
+    _maintenance_mode = models.CharField(
+        max_length=64,
+        choices=MaintenanceMode.choices,
+        default=MaintenanceMode.OFF,
     )
 
     __error_code__ = "CLUSTER_SERVICE_NOT_FOUND"
@@ -730,6 +752,49 @@ class ClusterObject(ADCMEntity):
         }
         return result if result["issue"] else {}
 
+    @property
+    def maintenance_mode_attr(self) -> MaintenanceMode.choices:
+        return self._maintenance_mode
+
+    @property
+    def maintenance_mode(self) -> MaintenanceMode.choices:
+        if self._maintenance_mode != MaintenanceMode.OFF:
+            return self._maintenance_mode
+
+        service_components = ServiceComponent.objects.filter(service=self)
+        if service_components:
+            if all(
+                service_component.maintenance_mode_attr == MaintenanceMode.ON
+                for service_component in service_components
+            ):
+                return MaintenanceMode.ON
+
+            hosts_maintenance_modes = []
+            for service_component in service_components:
+                host_ids = HostComponent.objects.filter(
+                    component=service_component,
+                ).values_list("host_id", flat=True)
+                hosts_maintenance_modes.extend(Host.objects.get(pk=host_id).maintenance_mode for host_id in host_ids)
+
+            if hosts_maintenance_modes:
+                return (
+                    MaintenanceMode.ON
+                    if all(
+                        host_maintenance_mode == MaintenanceMode.ON for host_maintenance_mode in hosts_maintenance_modes
+                    )
+                    else MaintenanceMode.OFF
+                )
+
+        return self._maintenance_mode
+
+    @maintenance_mode.setter
+    def maintenance_mode(self, value: MaintenanceMode.choices) -> None:
+        self._maintenance_mode = value
+
+    @property
+    def is_maintenance_mode_available(self) -> bool:
+        return self.cluster.prototype.allow_maintenance_mode
+
     class Meta:
         unique_together = (("cluster", "prototype"),)
 
@@ -743,6 +808,11 @@ class ServiceComponent(ADCMEntity):
         object_id_field="object_id",
         content_type_field="object_type",
         on_delete=models.CASCADE,
+    )
+    _maintenance_mode = models.CharField(
+        max_length=64,
+        choices=MaintenanceMode.choices,
+        default=MaintenanceMode.OFF,
     )
 
     __error_code__ = "COMPONENT_NOT_FOUND"
@@ -784,6 +854,43 @@ class ServiceComponent(ADCMEntity):
         }
         return result if result["issue"] else {}
 
+    @property
+    def maintenance_mode_attr(self) -> MaintenanceMode.choices:
+        return self._maintenance_mode
+
+    @property
+    def maintenance_mode(self) -> MaintenanceMode.choices:
+        if self._maintenance_mode != MaintenanceMode.OFF:
+            return self._maintenance_mode
+
+        if self.service.maintenance_mode_attr == MaintenanceMode.ON:
+            return self.service.maintenance_mode_attr
+
+        host_ids = HostComponent.objects.filter(component=self).values_list("host_id", flat=True)
+        if host_ids:
+            return (
+                MaintenanceMode.ON
+                if all(Host.objects.get(pk=host_id).maintenance_mode == MaintenanceMode.ON for host_id in host_ids)
+                else MaintenanceMode.OFF
+            )
+
+        return self._maintenance_mode
+
+    @maintenance_mode.setter
+    def maintenance_mode(self, value: MaintenanceMode.choices) -> None:
+        self._maintenance_mode = value
+
+    @property
+    def is_maintenance_mode_available(self) -> bool:
+        return self.cluster.prototype.allow_maintenance_mode
+
+    def requires_service_name(self, service_name: str) -> bool:
+        for item in self.requires:
+            if item.get("service") == service_name:
+                return True
+
+        return False
+
     class Meta:
         unique_together = (("cluster", "service", "prototype"),)
 
@@ -801,9 +908,7 @@ class GroupConfig(ADCMModel):
     name = models.CharField(max_length=30, validators=[validate_line_break_character])
     description = models.TextField(blank=True)
     hosts = models.ManyToManyField(Host, blank=True, related_name="group_config")
-    config = models.OneToOneField(
-        ObjectConfig, on_delete=models.CASCADE, null=True, related_name="group_config"
-    )
+    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True, related_name="group_config")
 
     __error_code__ = "GROUP_CONFIG_NOT_FOUND"
 
@@ -815,9 +920,9 @@ class GroupConfig(ADCMModel):
     def get_config_spec(self):
         """Return spec for config"""
         spec = {}
-        for field in PrototypeConfig.objects.filter(
-            prototype=self.object.prototype, action__isnull=True
-        ).order_by("id"):
+        for field in PrototypeConfig.objects.filter(prototype=self.object.prototype, action__isnull=True).order_by(
+            "id"
+        ):
             group_customization = field.group_customization
             if group_customization is None:
                 group_customization = self.object.prototype.config_group_customization
@@ -855,9 +960,7 @@ class GroupConfig(ADCMModel):
                     value = False
                 group_keys.setdefault(k, {"value": value, "fields": {}})
                 custom_group_keys.setdefault(k, {"value": v["group_customization"], "fields": {}})
-                self.create_group_keys(
-                    v["fields"], group_keys[k]["fields"], custom_group_keys[k]["fields"]
-                )
+                self.create_group_keys(v["fields"], group_keys[k]["fields"], custom_group_keys[k]["fields"])
             else:
                 group_keys[k] = False
                 custom_group_keys[k] = v["group_customization"]
@@ -900,9 +1003,7 @@ class GroupConfig(ADCMModel):
         for k, v in group_keys.items():
             if isinstance(v, Mapping):
                 config.setdefault(k, {})
-                self.merge_config(
-                    object_config[k], group_config[k], group_keys[k]["fields"], config[k]
-                )
+                self.merge_config(object_config[k], group_config[k], group_keys[k]["fields"], config[k])
             else:
                 if v and k in group_config:
                     config[k] = group_config[k]
@@ -952,13 +1053,9 @@ class GroupConfig(ADCMModel):
         if isinstance(self.object, (Cluster, HostProvider)):
             hosts = self.object.host_set.all()
         elif isinstance(self.object, ClusterObject):
-            hosts = Host.objects.filter(
-                cluster=self.object.cluster, hostcomponent__service=self.object
-            ).distinct()
+            hosts = Host.objects.filter(cluster=self.object.cluster, hostcomponent__service=self.object).distinct()
         elif isinstance(self.object, ServiceComponent):
-            hosts = Host.objects.filter(
-                cluster=self.object.cluster, hostcomponent__component=self.object
-            ).distinct()
+            hosts = Host.objects.filter(cluster=self.object.cluster, hostcomponent__component=self.object).distinct()
         else:
             raise AdcmEx("GROUP_CONFIG_TYPE_ERROR")
         return hosts.exclude(group_config__in=self.object.group_config.all())
@@ -989,7 +1086,7 @@ class GroupConfig(ADCMModel):
                     field.subname,
                 ]
             )
-            filepath = os.path.join(FILE_DIR, filename)
+            filepath = str(settings.FILE_DIR / filename)
 
             if field.subname:
                 value = config[field.name][field.subname]
@@ -1001,7 +1098,7 @@ class GroupConfig(ADCMModel):
                     if value != "":
                         if value[-1] == "-":
                             value += "\n"
-                with open(filepath, "w", encoding="utf-8") as f:
+                with open(filepath, "w", encoding=settings.ENCODING_UTF_8) as f:
                     f.write(value)
                 os.chmod(filepath, 0o0600)
             else:
@@ -1070,8 +1167,6 @@ class AbstractAction(ADCMModel):
     ui_options = models.JSONField(default=dict)
 
     type = models.CharField(max_length=16, choices=ActionType.choices)
-    button = models.CharField(max_length=64, default=None, null=True)
-
     script = models.CharField(max_length=160)
     script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
 
@@ -1178,6 +1273,58 @@ class Action(AbstractAction):
 
         return state_allowed and multi_state_allowed
 
+    def get_start_impossible_reason(self, obj: ADCMEntity) -> None:
+        # pylint: disable=too-many-branches
+
+        start_impossible_reason = None
+        if obj.prototype.type == "adcm":
+            current_configlog = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
+            if not current_configlog.attr["ldap_integration"]["active"]:
+                start_impossible_reason = NO_LDAP_SETTINGS
+
+        if obj.prototype.type == "cluster":
+            if (
+                not self.allow_in_maintenance_mode
+                and Host.objects.filter(cluster=obj, maintenance_mode=MaintenanceMode.ON).exists()
+            ):
+                start_impossible_reason = MANY_HOSTS_IN_MM
+        elif obj.prototype.type == "service":
+            if not self.allow_in_maintenance_mode:
+                if obj.maintenance_mode == MaintenanceMode.ON:
+                    start_impossible_reason = SERVICE_IN_MM
+
+                if HostComponent.objects.filter(
+                    service=obj, cluster=obj.cluster, host__maintenance_mode=MaintenanceMode.ON
+                ).exists():
+                    start_impossible_reason = MANY_HOSTS_IN_MM
+        elif obj.prototype.type == "component":
+            if not self.allow_in_maintenance_mode:
+                if obj.maintenance_mode == MaintenanceMode.ON:
+                    start_impossible_reason = COMPONENT_IN_MM
+
+                if HostComponent.objects.filter(
+                    component=obj,
+                    cluster=obj.cluster,
+                    service=obj.service,
+                    host__maintenance_mode=MaintenanceMode.ON,
+                ).exists():
+                    start_impossible_reason = MANY_HOSTS_IN_MM
+        elif obj.prototype.type == "host":
+            if not self.allow_in_maintenance_mode:
+                if obj.maintenance_mode == MaintenanceMode.ON:
+                    start_impossible_reason = HOST_IN_MM
+
+                if (
+                    self.host_action
+                    and HostComponent.objects.filter(
+                        component_id__in=HostComponent.objects.filter(host=obj).values_list("component_id"),
+                        host__maintenance_mode=MaintenanceMode.ON,
+                    ).exists()
+                ):
+                    start_impossible_reason = MANY_HOSTS_IN_MM
+
+        return start_impossible_reason
+
 
 class AbstractSubAction(ADCMModel):
     action = None
@@ -1222,8 +1369,10 @@ CONFIG_FIELD_TYPE = (
     ("variant", "variant"),
     ("boolean", "boolean"),
     ("file", "file"),
+    ("secretfile", "secretfile"),
     ("list", "list"),
     ("map", "map"),
+    ("secretmap", "secretmap"),
     ("structure", "structure"),
     ("group", "group"),
 )
@@ -1273,9 +1422,7 @@ class PrototypeImport(ADCMModel):
 class ClusterBind(ADCMModel):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE, null=True, default=None)
-    source_cluster = models.ForeignKey(
-        Cluster, related_name="source_cluster", on_delete=models.CASCADE
-    )
+    source_cluster = models.ForeignKey(Cluster, related_name="source_cluster", on_delete=models.CASCADE)
     source_service = models.ForeignKey(
         ClusterObject,
         related_name="source_service",
@@ -1290,12 +1437,13 @@ class ClusterBind(ADCMModel):
         unique_together = (("cluster", "service", "source_cluster", "source_service"),)
 
 
-JOB_STATUS = (
-    ("created", "created"),
-    ("running", "running"),
-    ("success", "success"),
-    ("failed", "failed"),
-)
+class JobStatus(models.TextChoices):
+    CREATED = "created", "created"
+    SUCCESS = "success", "success"
+    FAILED = "failed", "failed"
+    RUNNING = "running", "running"
+    LOCKED = "locked", "locked"
+    ABORTED = "aborted", "aborted"
 
 
 class UserProfile(ADCMModel):
@@ -1310,7 +1458,7 @@ class TaskLog(ADCMModel):
     action = models.ForeignKey(Action, on_delete=models.SET_NULL, null=True, default=None)
     pid = models.PositiveIntegerField(blank=True, default=0)
     selector = models.JSONField(default=dict)
-    status = models.CharField(max_length=16, choices=JOB_STATUS)
+    status = models.CharField(max_length=16, choices=JobStatus.choices)
     config = models.JSONField(null=True, default=None)
     attr = models.JSONField(default=dict)
     hostcomponentmap = models.JSONField(null=True, default=None)
@@ -1320,6 +1468,8 @@ class TaskLog(ADCMModel):
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField()
     lock = models.ForeignKey("ConcernItem", null=True, on_delete=models.SET_NULL, default=None)
+
+    __error_code__ = "TASK_NOT_FOUND"
 
     def lock_affected(self, objects: Iterable[ADCMEntity]) -> None:
         if self.lock:
@@ -1362,9 +1512,9 @@ class TaskLog(ADCMModel):
                 "Termination is too early, try to execute later",
             )
         errors = {
-            Job.FAILED: ("TASK_IS_FAILED", f"task #{self.pk} is failed"),
-            Job.ABORTED: ("TASK_IS_ABORTED", f"task #{self.pk} is aborted"),
-            Job.SUCCESS: ("TASK_IS_SUCCESS", f"task #{self.pk} is success"),
+            JobStatus.FAILED: ("TASK_IS_FAILED", f"task #{self.pk} is failed"),
+            JobStatus.ABORTED: ("TASK_IS_ABORTED", f"task #{self.pk} is aborted"),
+            JobStatus.SUCCESS: ("TASK_IS_SUCCESS", f"task #{self.pk} is success"),
         }
         action = self.action
         if action and not action.allow_to_terminate and not obj_deletion:
@@ -1372,10 +1522,10 @@ class TaskLog(ADCMModel):
                 "NOT_ALLOWED_TERMINATION",
                 f"not allowed termination task #{self.pk} for action #{action.pk}",
             )
-        if self.status in [Job.FAILED, Job.ABORTED, Job.SUCCESS]:
+        if self.status in [JobStatus.FAILED, JobStatus.ABORTED, JobStatus.SUCCESS]:
             raise AdcmEx(*errors.get(self.status))
         i = 0
-        while not JobLog.objects.filter(task=self, status=Job.RUNNING) and i < 10:
+        while not JobLog.objects.filter(task=self, status=JobStatus.RUNNING) and i < 10:
             time.sleep(0.5)
             i += 1
         if i == 10:
@@ -1385,12 +1535,6 @@ class TaskLog(ADCMModel):
             event_queue.send_state()
         os.kill(self.pid, signal.SIGTERM)
 
-    @staticmethod
-    def get_adcm_tasks_qs():
-        return TaskLog.objects.filter(
-            object_type=ContentType.objects.get(app_label="cm", model="adcm")
-        )
-
 
 class JobLog(ADCMModel):
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
@@ -1399,15 +1543,11 @@ class JobLog(ADCMModel):
     pid = models.PositiveIntegerField(blank=True, default=0)
     selector = models.JSONField(default=dict)
     log_files = models.JSONField(default=list)
-    status = models.CharField(max_length=16, choices=JOB_STATUS)
+    status = models.CharField(max_length=16, choices=JobStatus.choices)
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField(db_index=True)
 
     __error_code__ = "JOB_NOT_FOUND"
-
-    @staticmethod
-    def get_adcm_jobs_qs():
-        return JobLog.objects.filter(task__in=TaskLog.get_adcm_tasks_qs())
 
 
 class GroupCheckLog(ADCMModel):
@@ -1450,9 +1590,7 @@ class LogStorage(ADCMModel):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(
-                fields=["job"], condition=models.Q(type="check"), name="unique_check_job"
-            )
+            models.UniqueConstraint(fields=["job"], condition=models.Q(type="check"), name="unique_check_job")
         ]
 
 
@@ -1467,6 +1605,7 @@ class StagePrototype(ADCMModel):
     display_name = models.CharField(max_length=1000, blank=True)
     version = models.CharField(max_length=80)
     edition = models.CharField(max_length=80, default="community")
+    license = models.CharField(max_length=16, choices=LICENSE_STATE, default="absent")
     license_path = models.CharField(max_length=160, default=None, null=True)
     license_hash = models.CharField(max_length=64, default=None, null=True)
     required = models.BooleanField(default=False)
@@ -1705,7 +1844,7 @@ class ConcernItem(ADCMModel):
     `blocking` blocks actions from running
     `owner` is object-origin of concern
     `cause` is owner's parameter causing concern
-    `related_objects` are back-refs from affected ADCMEntities.concerns
+    `related_objects` are back-refs from affected `ADCMEntities.concerns`
     """
 
     type = models.CharField(max_length=8, choices=ConcernType.choices, default=ConcernType.Lock)

@@ -18,26 +18,38 @@ Test that granting any permission on object allows user to:
 
 import os.path
 from contextlib import contextmanager
-from typing import Callable, Set, List, Iterable, Union, Dict
+from typing import Callable, Dict, Iterable, List, Set, Union
 
 import allure
 import pytest
 from adcm_client.base import ObjectNotFound
-from adcm_client.objects import ADCMClient, Task, Cluster, Service, Component, Provider, User, Group
+from adcm_client.objects import (
+    ADCMClient,
+    Cluster,
+    Component,
+    Group,
+    Provider,
+    Service,
+    Task,
+    User,
+)
 from adcm_pytest_plugin.utils import catch_failed
-
-from tests.library.utils import lower_class_name
-from tests.functional.tools import get_object_represent
+from coreapi.exceptions import ErrorMessage
+from tests.functional.rbac.action_role_utils import (
+    action_business_role,
+    create_action_policy,
+)
+from tests.functional.rbac.conftest import DATA_DIR
+from tests.functional.rbac.conftest import BusinessRoles as BR
 from tests.functional.rbac.conftest import (
-    DATA_DIR,
-    BusinessRoles as BR,
-    get_as_client_object,
-    delete_policy,
-    create_policy,
     RbacRoles,
     SDKClients,
+    create_policy,
+    delete_policy,
+    get_as_client_object,
 )
-from tests.functional.rbac.action_role_utils import create_action_policy, action_business_role
+from tests.functional.tools import get_object_represent
+from tests.library.utils import lower_class_name
 
 
 @contextmanager
@@ -294,9 +306,7 @@ class TestAccessForJobsAndLogs:
         raise ValueError('param should be either "user" or "group"')
 
     # pylint: disable-next=too-many-locals
-    def test_access_to_tasks(
-        self, user_or_group: dict, clients, cluster, provider, finished_tasks
-    ):  # pylint: disable=too-many-arguments
+    def test_access_to_tasks(self, user_or_group: dict, clients, cluster, provider, finished_tasks):
         """
         Test that user:
         1. Have no access to task objects that were launched before user got permission to run action
@@ -367,7 +377,7 @@ class TestAccessForJobsAndLogs:
             self.check_access_granted_for_tasks(clients.user, [task])
             self.check_no_access_granted_for_tasks(clients.user, [second_task])
 
-    @pytest.mark.extra_rbac()  # pylint: disable-next=too-many-arguments
+    @pytest.mark.extra_rbac()
     def test_access_to_tasks_on_cluster_host_add_remove(
         self, user_or_group: Callable, cluster: Cluster, provider: Provider, clients: SDKClients
     ):
@@ -392,7 +402,7 @@ class TestAccessForJobsAndLogs:
             cluster.host_delete(host)
             self.check_access_granted_for_tasks(clients.user, [task, second_task])
 
-    @pytest.mark.extra_rbac()  # pylint: disable-next=too-many-arguments
+    @pytest.mark.extra_rbac()
     def test_access_to_tasks_on_hc_map_change(self, user_or_group: dict, cluster, provider, clients):
         """
         Test that access for task objects is correct after HC map is changed
@@ -528,7 +538,7 @@ class TestAccessForJobsAndLogs:
                 for job in task.job_list():
                     with catch_failed(ObjectNotFound, 'Job and log objects should be available directly via client'):
                         get_as_client_object(api, job)
-                        get_as_client_object(api, job.log(), path_args={'job_id': job.id})
+                        get_as_client_object(api, job.log(), path_args={'job_pk': job.id})
 
     def check_no_access_granted_for_tasks(self, user_client: ADCMClient, tasks: Iterable[Task]):
         """Check there's no access to tasks, their jobs and logs"""
@@ -541,7 +551,7 @@ class TestAccessForJobsAndLogs:
                     _expect_not_found(api, job, 'Job object should be available directly via client')
                     log = job.log()
                     _expect_not_found(
-                        api, log, 'Log object should be available directly via client', path_args={'job_id': job.id}
+                        api, log, 'Log object should be available directly via client', path_args={'job_pk': job.id}
                     )
 
 
@@ -552,8 +562,9 @@ def _get_objects_id(get_objects_list: Callable) -> Set[int]:
 def _expect_not_found(api, obj, message, **kwargs):
     try:
         get_as_client_object(api, obj, **kwargs)
-    except ObjectNotFound:
-        pass
+    except ErrorMessage as e:
+        if not hasattr(e.error, "title") or e.error.title != "404 Not Found":
+            raise AssertionError(message) from e
     else:
         raise AssertionError(message)
 

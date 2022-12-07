@@ -159,24 +159,16 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_2))
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21)
-        )
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
 
         p.apply()
 
         self.assertTrue(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertTrue(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
         self.assertTrue(self.user.has_perm("cm.change_config_of_clusterobject", self.service_2))
-        self.assertTrue(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
-        self.assertTrue(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21)
-        )
+        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
 
     def test_parent_policy4service(self):
         p = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component())
@@ -186,12 +178,8 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_2))
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21)
-        )
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
 
         p.apply()
 
@@ -199,12 +187,8 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertTrue(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_2))
-        self.assertTrue(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21)
-        )
+        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
 
     def test_parent_policy4service2(self):
         p = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component())
@@ -215,12 +199,8 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_2))
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21)
-        )
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
 
         p.apply()
 
@@ -228,12 +208,8 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
         self.assertTrue(self.user.has_perm("cm.change_config_of_clusterobject", self.service_2))
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
-        self.assertTrue(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21)
-        )
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
 
     def test_parent_policy4component(self):
         p = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component())
@@ -245,12 +221,8 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_2))
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21)
-        )
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
 
         p.apply()
 
@@ -259,12 +231,8 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_2))
-        self.assertTrue(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21)
-        )
+        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
 
     def test_parent_policy4host_in_cluster(self):
         provider, host1, host2 = self.get_hosts_and_provider()
@@ -306,21 +274,15 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
                 },
             ],
         )
-        p = Policy.objects.create(
-            role=self.object_role_custom_perm_cluster_service_component_host()
-        )
+        p = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component_host())
         p.user.add(self.user)
         p.add_object(self.service_1)
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_2))
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21)
-        )
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
@@ -329,12 +291,8 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
         self.assertFalse(self.user.has_perm("cm.change_confing_of_cluster", self.cluster))
         self.assertTrue(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_2))
-        self.assertTrue(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21)
-        )
+        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
@@ -365,21 +323,15 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
             ],
         )
 
-        p = Policy.objects.create(
-            role=self.object_role_custom_perm_cluster_service_component_host()
-        )
+        p = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component_host())
         p.user.add(self.user)
         p.add_object(self.component_21)
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_2))
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21)
-        )
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host3))
@@ -389,12 +341,8 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_2))
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
-        self.assertTrue(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21)
-        )
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host2))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host3))
@@ -465,17 +413,13 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
             ],
         )
 
-        p = Policy.objects.create(
-            role=self.object_role_custom_perm_cluster_service_component_host()
-        )
+        p = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component_host())
         p.user.add(self.user)
         p.add_object(self.cluster)
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
@@ -483,9 +427,7 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
 
         self.assertTrue(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertTrue(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
-        self.assertTrue(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
+        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
@@ -493,9 +435,7 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
 
         self.assertTrue(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertTrue(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
-        self.assertTrue(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
+        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host2))
 
@@ -518,12 +458,8 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
-        self.assertFalse(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_12)
-        )
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_12))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
@@ -531,12 +467,8 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertTrue(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
-        self.assertTrue(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
-        self.assertTrue(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_12)
-        )
+        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_12))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
@@ -559,11 +491,7 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertTrue(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
-        self.assertTrue(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11)
-        )
-        self.assertTrue(
-            self.user.has_perm("cm.change_config_of_servicecomponent", self.component_12)
-        )
+        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_12))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host2))

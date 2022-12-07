@@ -19,8 +19,11 @@ import allure
 import pytest
 import requests
 from adcm_client.objects import ADCMClient, Group, Policy, Role, User
-
-from tests.functional.audit.conftest import check_failed, check_succeed, make_auth_header
+from tests.functional.audit.conftest import (
+    check_failed,
+    check_succeed,
+    make_auth_header,
+)
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles as BR
 from tests.library.audit.checkers import AuditLogChecker
@@ -121,7 +124,7 @@ def prepared_changes(sdk_client_fs, rbac_create_data, new_rbac_objects_info) -> 
 
 
 @pytest.mark.parametrize("parse_with_context", ["update_rbac.yaml"], indirect=True)
-@pytest.mark.parametrize("http_method", ["PATCH", "PUT"])  # pylint: disable-next=too-many-arguments
+@pytest.mark.parametrize("http_method", ["PATCH", "PUT"])
 def test_update_rbac_objects(
     http_method: str,
     rbac_objects,
@@ -140,7 +143,8 @@ def test_update_rbac_objects(
     for obj in rbac_objects:
         new_info = {**new_rbac_objects_info[obj.__class__.__name__.lower()]}
         check_succeed(change_as_admin(rbac_object=obj, data=new_info["correct"]))
-        check_failed(change_as_admin(rbac_object=obj, data=new_info["incorrect"]), exact_code=400)
+        expected_code = 400 if not isinstance(obj, User) else 409
+        check_failed(change_as_admin(rbac_object=obj, data=new_info["incorrect"]), exact_code=expected_code)
         check_failed(change_as_unauthorized(rbac_object=obj, data=new_info["incorrect"]), exact_code=403)
     checker = AuditLogChecker(parse_with_context({**rbac_create_data, "changes": {**prepared_changes}}))
     checker.set_user_map(sdk_client_fs)

@@ -17,11 +17,9 @@
 import allure
 import coreapi
 import pytest
-
-from adcm_client.objects import ADCMClient, Bundle, Cluster, Provider, Host
-from adcm_pytest_plugin.utils import get_data_dir
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider
 from adcm_pytest_plugin import utils
-
+from adcm_pytest_plugin.utils import get_data_dir
 from tests.library import errorcodes as err
 
 DEFAULT_CLUSTER_BUNDLE_PATH = get_data_dir(__file__, "cluster_simple")
@@ -178,7 +176,7 @@ class TestClusterService:
         expected = []
         with allure.step("Create a list of services in the cluster"):
             for prototype in sdk_client_fs.service_prototype_list(bundle_id=cluster.bundle_id):
-                service = cluster.service_add(prototype_id=prototype.id)
+                service = cluster.service_add(name=prototype.name)
                 expected.append(service._data)
         with allure.step("Get a service list in cluster"):
             actual = [x._data for x in cluster.service_list()]

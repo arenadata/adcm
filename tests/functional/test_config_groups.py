@@ -9,46 +9,42 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=redefined-outer-name, unused-argument, dangerous-default-value
+
+# pylint: disable=redefined-outer-name,dangerous-default-value,too-many-lines
 
 """Tests for config groups"""
 import json
 from collections import OrderedDict
-from typing import (
-    Union,
-    Tuple,
-    Type,
-)
+from typing import Tuple, Type, Union
 
 import allure
 import pytest
 from adcm_client.objects import (
     ADCMClient,
     Cluster,
-    Provider,
-    HostList,
-    Service,
-    Host,
-    GroupConfig,
     Component,
+    GroupConfig,
+    Host,
+    HostList,
+    Provider,
+    Service,
 )
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
     run_component_action_and_assert_result,
     run_provider_action_and_assert_result,
+    run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import get_data_dir
 from coreapi.exceptions import ErrorMessage
 from docker.models.containers import Container
-
 from tests.library.errorcodes import (
+    ATTRIBUTE_ERROR,
+    GROUP_CONFIG_CHANGE_UNSELECTED_FIELD,
     GROUP_CONFIG_HOST_ERROR,
     GROUP_CONFIG_HOST_EXISTS,
-    GROUP_CONFIG_CHANGE_UNSELECTED_FIELD,
     ADCMError,
-    ATTRIBUTE_ERROR,
 )
 
 CLUSTER_BUNDLE_PATH = get_data_dir(__file__, "cluster_simple")
@@ -402,7 +398,18 @@ class TestDeleteHostInGroups:
 class TestChangeGroupsConfig:
     """Tests for changing group config"""
 
-    ASSERT_TYPE = ["float", "boolean", "integer", "string", "list", "option", "text", "group", "structure", "map"]
+    ASSERT_TYPE = [
+        "float",
+        "boolean",
+        "integer",
+        "string",
+        "list",
+        "option",
+        "text",
+        "group",
+        "structure",
+        "map",
+    ]
 
     PARAMS_TO_CHANGE = {
         "float": 1.1,
@@ -466,7 +473,10 @@ class TestChangeGroupsConfig:
     ]
 
     def _add_values_to_group_config_template(
-        self, custom_group_keys: dict = None, group_keys: dict = None, config_attr: dict = PARAMS_TO_CHANGE
+        self,
+        custom_group_keys: dict = None,
+        group_keys: dict = None,
+        config_attr: dict = PARAMS_TO_CHANGE,
     ) -> dict:
         """
         Template for group configuration.
@@ -541,13 +551,19 @@ class TestChangeGroupsConfig:
                     "config": {param: self.PARAMS_TO_CHANGE[param]},
                 }
                 self._check_error_with_adding_param_to_group(
-                    group, invalid_config, error_message=GROUP_ERROR_MESSAGE, adcm_error=ATTRIBUTE_ERROR
+                    group,
+                    invalid_config,
+                    error_message=GROUP_ERROR_MESSAGE,
+                    adcm_error=ATTRIBUTE_ERROR,
                 )
 
     @pytest.fixture(
         params=[
             pytest.param(CLUSTER_BUNDLE_WITH_GROUP_PATH, id="cluster_with_group_customization"),
-            pytest.param(CLUSTER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH, id="cluster_with_config_group_customization"),
+            pytest.param(
+                CLUSTER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH,
+                id="cluster_with_config_group_customization",
+            ),
         ]
     )
     def cluster_bundle(self, request, sdk_client_fs):
@@ -571,7 +587,12 @@ class TestChangeGroupsConfig:
                 actual_values=config_after,
                 expected_values=config_before,
             )
-            config_previous = {"map": {test_host_1.fqdn: dict(config_before), test_host_2.fqdn: dict(config_before)}}
+            config_previous = {
+                "map": {
+                    test_host_1.fqdn: dict(config_before),
+                    test_host_2.fqdn: dict(config_before),
+                }
+            }
             for hosts in self.CLUSTER_HOSTS_VARIANTS:
                 config_previous["hosts"] = hosts
                 with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
@@ -588,7 +609,10 @@ class TestChangeGroupsConfig:
                 expected_values=config_expected_with_groups['config'],
             )
             config_updated = {
-                "map": {test_host_1.fqdn: config_expected_with_groups['config'], test_host_2.fqdn: dict(config_before)}
+                "map": {
+                    test_host_1.fqdn: config_expected_with_groups['config'],
+                    test_host_2.fqdn: dict(config_before),
+                }
             }
             for hosts in self.CLUSTER_HOSTS_VARIANTS:
                 config_updated["hosts"] = hosts
@@ -614,7 +638,12 @@ class TestChangeGroupsConfig:
                 actual_values=config_after,
                 expected_values=config_before,
             )
-            config_previous = {"map": {test_host_1.fqdn: dict(config_before), test_host_2.fqdn: dict(config_before)}}
+            config_previous = {
+                "map": {
+                    test_host_1.fqdn: dict(config_before),
+                    test_host_2.fqdn: dict(config_before),
+                }
+            }
             for hosts in self.CLUSTER_HOSTS_VARIANTS:
                 config_previous["hosts"] = hosts
                 with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
@@ -631,7 +660,10 @@ class TestChangeGroupsConfig:
                 expected_values=config_expected_with_groups['config'],
             )
             config_updated = {
-                "map": {test_host_1.fqdn: config_expected_with_groups['config'], test_host_2.fqdn: dict(config_before)}
+                "map": {
+                    test_host_1.fqdn: config_expected_with_groups['config'],
+                    test_host_2.fqdn: dict(config_before),
+                }
             }
             for hosts in self.CLUSTER_HOSTS_VARIANTS:
                 config_updated["hosts"] = hosts
@@ -658,7 +690,12 @@ class TestChangeGroupsConfig:
                 actual_values=config_after,
                 expected_values=config_before,
             )
-            config_previous = {"map": {test_host_1.fqdn: dict(config_before), test_host_2.fqdn: dict(config_before)}}
+            config_previous = {
+                "map": {
+                    test_host_1.fqdn: dict(config_before),
+                    test_host_2.fqdn: dict(config_before),
+                }
+            }
             for hosts in self.CLUSTER_HOSTS_VARIANTS:
                 config_previous["hosts"] = hosts
                 with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
@@ -677,7 +714,10 @@ class TestChangeGroupsConfig:
                 expected_values=config_expected_with_groups['config'],
             )
             config_updated = {
-                "map": {test_host_1.fqdn: config_expected_with_groups['config'], test_host_2.fqdn: dict(config_before)}
+                "map": {
+                    test_host_1.fqdn: config_expected_with_groups['config'],
+                    test_host_2.fqdn: dict(config_before),
+                }
             }
             for hosts in self.CLUSTER_HOSTS_VARIANTS:
                 config_updated["hosts"] = hosts
@@ -692,7 +732,10 @@ class TestChangeGroupsConfig:
         "provider_bundle",
         [
             pytest.param(PROVIDER_BUNDLE_WITH_GROUP_PATH, id="provider_with_group_customization"),
-            pytest.param(PROVIDER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH, id="provider_with_config_group_customization"),
+            pytest.param(
+                PROVIDER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH,
+                id="provider_with_config_group_customization",
+            ),
         ],
         indirect=True,
     )
@@ -713,7 +756,12 @@ class TestChangeGroupsConfig:
                 actual_values=config_after,
                 expected_values=config_before,
             )
-            config_previous = {"map": {test_host_1.fqdn: dict(config_before), test_host_2.fqdn: dict(config_before)}}
+            config_previous = {
+                "map": {
+                    test_host_1.fqdn: dict(config_before),
+                    test_host_2.fqdn: dict(config_before),
+                }
+            }
             for hosts in self.CLUSTER_HOSTS_VARIANTS:
                 config_previous["hosts"] = hosts
                 with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
@@ -730,7 +778,10 @@ class TestChangeGroupsConfig:
                 expected_values=config_expected_with_groups['config'],
             )
             config_updated = {
-                "map": {test_host_1.fqdn: config_expected_with_groups['config'], test_host_2.fqdn: dict(config_before)}
+                "map": {
+                    test_host_1.fqdn: config_expected_with_groups['config'],
+                    test_host_2.fqdn: dict(config_before),
+                }
             }
             for hosts in self.CLUSTER_HOSTS_VARIANTS:
                 config_updated["hosts"] = hosts
@@ -750,7 +801,8 @@ class TestChangeGroupsConfig:
         "cluster_bundle",
         [
             pytest.param(
-                get_data_dir(__file__, "cluster_with_all_group_keys_false"), id="cluster_with_all_group_keys_false"
+                get_data_dir(__file__, "cluster_with_all_group_keys_false"),
+                id="cluster_with_all_group_keys_false",
             )
         ],
         indirect=True,
@@ -776,7 +828,8 @@ class TestChangeGroupsConfig:
         "cluster_bundle",
         [
             pytest.param(
-                get_data_dir(__file__, "cluster_with_all_group_keys_false"), id="cluster_with_all_group_keys_false"
+                get_data_dir(__file__, "cluster_with_all_group_keys_false"),
+                id="cluster_with_all_group_keys_false",
             )
         ],
         indirect=True,
@@ -804,7 +857,8 @@ class TestChangeGroupsConfig:
         "cluster_bundle",
         [
             pytest.param(
-                get_data_dir(__file__, "cluster_with_all_group_keys_false"), id="cluster_with_all_group_keys_false"
+                get_data_dir(__file__, "cluster_with_all_group_keys_false"),
+                id="cluster_with_all_group_keys_false",
             )
         ],
         indirect=True,
@@ -825,7 +879,10 @@ class TestChangeGroupsConfig:
         "provider_bundle",
         [
             pytest.param(PROVIDER_BUNDLE_WITH_GROUP_PATH, id="provider_with_group_customization"),
-            pytest.param(PROVIDER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH, id="provider_with_config_group_customization"),
+            pytest.param(
+                PROVIDER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH,
+                id="provider_with_config_group_customization",
+            ),
         ],
         indirect=True,
     )
@@ -879,7 +936,10 @@ class TestChangeGroupsConfig:
             config_expected['attr']['group'] = {'active': True}
             cluster_group.config_set(config_expected)
             config_updated = {
-                "map": {test_host_1.fqdn: config_expected['config'], test_host_2.fqdn: dict(config_before)}
+                "map": {
+                    test_host_1.fqdn: config_expected['config'],
+                    test_host_2.fqdn: dict(config_before),
+                }
             }
             run_cluster_action_and_assert_result(cluster, action=ACTION_NAME, config=config_updated)
             run_cluster_action_and_assert_result(cluster, action=ACTION_MULTIJOB_NAME, config=config_updated)

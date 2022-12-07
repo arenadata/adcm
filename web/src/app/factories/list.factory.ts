@@ -11,6 +11,12 @@ import { ConcernListDirective } from '@app/abstract-directives/concern-list.dire
 import {
   MaintenanceModeButtonComponent
 } from "@app/components/maintenance-mode-button/maintenance-mode-button.component";
+import {
+  editColumnValues,
+  NameEditColumnComponent
+} from "@app/components/columns/name-edit-column/name-edit-column.component";
+
+export type NameEditColumn = IComponentColumn<any> & { column_rules: editColumnValues; };
 
 export class ListFactory {
 
@@ -22,13 +28,33 @@ export class ListFactory {
     };
   }
 
-  static fqdnColumn(): IValueColumn<any> {
+  static nameColumnCLuster(): NameEditColumn {
+    return {
+      label: 'Name',
+      type: 'component',
+      sort: 'name',
+      component: NameEditColumnComponent,
+      column_rules: {
+        modal_placeholder: 'Cluster name',
+        entity_type: 'cluster',
+        regex: /^[a-z|A-Z|0-9]+(\w|\.|\-|\_|\s)*[a-z|A-Z|0-9]{1}$/
+      }
+    };
+  }
+
+  static fqdnColumn(): NameEditColumn {
     return {
       label: 'FQDN',
+      type: 'component',
       sort: 'fqdn',
       className: 'width30pr',
       headerClassName: 'width30pr',
-      value: row => row.fqdn,
+      component: NameEditColumnComponent,
+      column_rules: {
+        modal_placeholder: 'Fully qualified domain name',
+        entity_type: 'host',
+        regex: /^[A-Za-z0-9]{1}[A-Za-z0-9.-]*$/,
+      }
     };
   }
 
@@ -165,16 +191,20 @@ export class ListFactory {
     };
   }
 
-  static maintenanceModeColumn<T>(listDirective: AdwpListDirective<T>): IComponentColumn<T> {
+  static maintenanceModeColumn<T>(listDirective: AdwpListDirective<T>, type): IComponentColumn<T> {
     return {
       type: 'component',
       className: 'list-control',
       headerClassName: 'list-control',
       component: MaintenanceModeButtonComponent,
       instanceTaken: (componentRef: ComponentRef<MaintenanceModeButtonComponent<T>>) => {
+        componentRef.instance.type = type;
         componentRef.instance.onClick
-        .pipe(listDirective.takeUntil())
-        .subscribe(({event, value}) => listDirective.maintenanceModeToggle(event, value));
+        .subscribe(({event, value}) => {
+          listDirective.maintenanceModeToggle(event, value);
+          event.stopPropagation();
+          event.preventDefault();
+        });
       }
     };
   }

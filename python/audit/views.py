@@ -23,24 +23,22 @@ from audit.serializers import AuditLogSerializer, AuditSessionSerializer
 class AuditRoot(APIRootView):
     permission_classes = (AllowAny,)
     api_root_dict = {
-        'operations': 'audit-operations-list',
-        'logins': 'audit-logins-list',
+        "operations": "auditlog-list",
+        "logins": "auditsession-list",
     }
 
 
 # pylint: disable=too-many-ancestors
 class AuditLogViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
-    not_superuser_error_code = 'AUDIT_OPERATIONS_FORBIDDEN'
-    queryset = AuditLog.objects.select_related('audit_object', 'user').order_by(
-        '-operation_time', '-pk'
-    )
+    not_superuser_error_code = "AUDIT_OPERATIONS_FORBIDDEN"
+    queryset = AuditLog.objects.select_related("audit_object", "user").order_by("-operation_time", "-pk")
     serializer_class = AuditLogSerializer
     filterset_class = AuditLogListFilter
 
 
 # pylint: disable=too-many-ancestors
 class AuditSessionViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
-    not_superuser_error_code = 'AUDIT_LOGINS_FORBIDDEN'
-    queryset = AuditSession.objects.select_related('user').order_by('-login_time', '-pk')
+    not_superuser_error_code = "AUDIT_LOGINS_FORBIDDEN"
+    queryset = AuditSession.objects.select_related("user").order_by("-login_time", "-pk")
     serializer_class = AuditSessionSerializer
     filterset_class = AuditSessionListFilter

@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from django.urls import include, path
 
 from api.service.views import (
@@ -19,34 +18,40 @@ from api.service.views import (
     ServiceDetailView,
     ServiceImportView,
     ServiceListView,
+    ServiceMaintenanceModeView,
     StatusList,
 )
 
 urlpatterns = [
-    path('', ServiceListView.as_view(), name='service'),
+    path("", ServiceListView.as_view(), name="service"),
     path(
-        '<int:service_id>/',
+        "<int:service_id>/",
         include(
             [
-                path('', ServiceDetailView.as_view(), name='service-details'),
-                path('component/', include('api.component.urls')),
-                path('import/', ServiceImportView.as_view(), name='service-import'),
+                path("", ServiceDetailView.as_view(), name="service-details"),
                 path(
-                    'bind/',
+                    "maintenance-mode/",
+                    ServiceMaintenanceModeView.as_view(),
+                    name="service-maintenance-mode",
+                ),
+                path("component/", include("api.component.urls")),
+                path("import/", ServiceImportView.as_view(), name="service-import"),
+                path(
+                    "bind/",
                     include(
                         [
-                            path('', ServiceBindView.as_view(), name='service-bind'),
+                            path("", ServiceBindView.as_view(), name="service-bind"),
                             path(
-                                '<int:bind_id>/',
+                                "<int:bind_id>/",
                                 ServiceBindDetailView.as_view(),
-                                name='service-bind-details',
+                                name="service-bind-details",
                             ),
                         ]
                     ),
                 ),
-                path('config/', include('api.config.urls'), {'object_type': 'service'}),
-                path('action/', include('api.action.urls'), {'object_type': 'service'}),
-                path('status/', StatusList.as_view(), name='service-status'),
+                path("config/", include("api.config.urls"), {"object_type": "service"}),
+                path("action/", include("api.action.urls"), {"object_type": "service"}),
+                path("status/", StatusList.as_view(), name="service-status"),
             ]
         ),
     ),

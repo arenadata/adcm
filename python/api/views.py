@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.conf import settings
 from rest_framework import permissions, routers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from adcm.settings import ADCM_VERSION
 from adcm.utils import has_google_oauth, has_yandex_oauth
 from cm.stack import NAME_REGEX
 
@@ -22,7 +22,7 @@ from cm.stack import NAME_REGEX
 class APIRoot(routers.APIRootView):
     permission_classes = (permissions.AllowAny,)
     api_root_dict = {
-        "adcm": "adcm",
+        "adcm": "adcm-list",
         "audit": "audit:root",
         "cluster": "cluster",
         "provider": "provider",
@@ -32,10 +32,10 @@ class APIRoot(routers.APIRootView):
         "group-config": "group-config-list",
         "config": "config-list",
         "config-log": "config-log-list",
-        "job": "job",
+        "job": "joblog-list",
         "stack": "stack",
         "stats": "stats",
-        "task": "task",
+        "task": "tasklog-list",
         "info": "adcm-info",
         "concern": "concern",
         "rbac": "rbac:root",
@@ -62,7 +62,7 @@ class ADCMInfo(APIView):
     def get(request):
         return Response(
             {
-                "adcm_version": ADCM_VERSION,
+                "adcm_version": settings.ADCM_VERSION,
                 "google_oauth": has_google_oauth(),
                 "yandex_oauth": has_yandex_oauth(),
             }

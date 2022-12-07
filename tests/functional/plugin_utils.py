@@ -13,33 +13,38 @@
 Common functions and helpers for testing plugins (state, multi_state, config)
 """
 
-from typing import Callable, TypeVar, Collection, Type, Optional, List, Tuple, Dict, Set
 from contextlib import contextmanager
 from operator import methodcaller
+from typing import Callable, Collection, Dict, List, Optional, Set, Tuple, Type, TypeVar
 
 import allure
 import pytest
-
 from _pytest.mark.structures import ParameterSet
-from adcm_client.objects import Cluster, Service, Component, Provider, Host, ADCMClient, Action
+from adcm_client.objects import (
+    Action,
+    ADCMClient,
+    Cluster,
+    Component,
+    Host,
+    Provider,
+    Service,
+)
 from adcm_pytest_plugin import utils as plugin_utils
 from adcm_pytest_plugin.steps.actions import (
-    wait_for_task_and_assert_result,
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
     run_component_action_and_assert_result,
-    run_provider_action_and_assert_result,
     run_host_action_and_assert_result,
+    run_provider_action_and_assert_result,
+    run_service_action_and_assert_result,
+    wait_for_task_and_assert_result,
 )
-
 from tests.functional.tools import (
-    get_objects_via_pagination,
+    ADCMObjects,
+    AnyADCMObject,
     ClusterRelatedObject,
     ProviderRelatedObject,
-    AnyADCMObject,
-    ADCMObjects,
+    get_objects_via_pagination,
 )
-
 
 # value of object's field (e.g. "created" as value for state)
 ADCMObjectField = TypeVar('ADCMObjectField')
@@ -127,7 +132,10 @@ def generate_cluster_success_params(action_prefix: str, id_template: str) -> Lis
                 from_obj_func,
                 id=id_template.format('service') + f'_from_{from_obj_id}',
             )
-            for from_obj_func, from_obj_id in ((first_service, 'self'), (first_service_first_component, 'component'))
+            for from_obj_func, from_obj_id in (
+                (first_service, 'self'),
+                (first_service_first_component, 'component'),
+            )
         ],
         pytest.param(
             f'{action_prefix}_component',
@@ -200,14 +208,27 @@ def generate_provider_success_params(action_prefix: str, id_template: str) -> Li
     host = (*provider, 'first-first')
 
     return [
-        pytest.param(f'{action_prefix}_provider', provider, provider, id=id_template.format('provider') + '_from_self'),
-        pytest.param(f'{action_prefix}_provider', provider, host, id=id_template.format('provider') + '_from_host'),
+        pytest.param(
+            f'{action_prefix}_provider',
+            provider,
+            provider,
+            id=id_template.format('provider') + '_from_self',
+        ),
+        pytest.param(
+            f'{action_prefix}_provider',
+            provider,
+            host,
+            id=id_template.format('provider') + '_from_host',
+        ),
         pytest.param(f'{action_prefix}_host', host, host, id=id_template.format('host') + '_from_self'),
     ]
 
 
 def get_cluster_related_object(
-    client: ADCMClient, cluster: str = 'first', service: Optional[str] = None, component: Optional[str] = None
+    client: ADCMClient,
+    cluster: str = 'first',
+    service: Optional[str] = None,
+    component: Optional[str] = None,
 ) -> ClusterRelatedObject:
     """
     Get function to get one of ADCM cluster objects:
@@ -441,7 +462,9 @@ class TestImmediateChange:
         return cluster, service, component
 
     def run_immediate_change_test(
-        self, provider_host: Tuple[Provider, Host], cluster_service_component: Tuple[Cluster, Service, Component]
+        self,
+        provider_host: Tuple[Provider, Host],
+        cluster_service_component: Tuple[Cluster, Service, Component],
     ):
         """
         Run the same action (self._action) for cluster, service, component, provider, host

@@ -15,29 +15,28 @@
 import json
 import re
 from functools import partial
-from typing import Type, Collection, Union, Callable, Optional
+from typing import Callable, Collection, Optional, Type, Union
 from urllib import parse
 
 import allure
 import requests
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import (
-    ADCMClient,
-    Cluster,
-    Service,
-    Component,
-    Provider,
-    Host,
-    User,
-    Group,
-    Role,
-    Policy,
-    Bundle,
     ADCM,
+    ADCMClient,
+    Bundle,
+    Cluster,
+    Component,
+    Group,
+    Host,
+    Policy,
+    Provider,
+    Role,
+    Service,
+    User,
 )
-
-from tests.library.consts import HTTPMethod
 from tests.functional.tools import AnyADCMObject, AnyRBACObject
+from tests.library.consts import HTTPMethod
 
 RoleTargetObject = Union[AnyADCMObject, AnyRBACObject, Bundle, ADCM]
 RoleTargetType = Type[RoleTargetObject]

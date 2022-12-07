@@ -39,7 +39,9 @@ export type TypeName =
   'group_config_hosts' |
   'group' |
   'role' |
-  'policy';
+  'policy' |
+  'audit_operations' |
+  'audit_login';
 export type Entities = ICluster | Service | Host | Provider | Job | Task | Bundle;
 
 /**
@@ -87,6 +89,7 @@ export interface Provider extends BaseEntity {
 export interface Host extends BaseEntity {
   fqdn: string;
   provider_id: number;
+  provider_name: string;
   cluster: string;
   cluster_id?: number;
   cluster_name?: string;

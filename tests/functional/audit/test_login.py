@@ -18,7 +18,6 @@ import allure
 import pytest
 import requests
 from adcm_client.objects import ADCMClient
-
 from tests.functional.audit.conftest import make_auth_header
 from tests.functional.conftest import only_clean_adcm
 
@@ -43,14 +42,22 @@ def _viewer_login(client: ADCMClient, username: str, password: str) -> requests.
             .split('<input type="hidden" name="csrfmiddlewaretoken" value="')[-1]
             .split('"', maxsplit=1)[0]
         )
-        return session.post(url, headers={"X-CSRFToken": csrf_token}, data={"username": username, "password": password})
+        return session.post(
+            url,
+            headers={"X-CSRFToken": csrf_token},
+            data={"username": username, "password": password},
+        )
 
 
 @pytest.mark.parametrize(
-    "login", [_token_login, _rbac_token_login, _viewer_login], ids=["via_token", "via_rbac_token", "via_auth_login"]
+    "login",
+    [_token_login, _rbac_token_login, _viewer_login],
+    ids=["via_token", "via_rbac_token", "via_auth_login"],
 )
 def test_login_audit(
-    login: Callable[[ADCMClient, str, str], requests.Response], sdk_client_fs: ADCMClient, adcm_api_credentials: dict
+    login: Callable[[ADCMClient, str, str], requests.Response],
+    sdk_client_fs: ADCMClient,
+    adcm_api_credentials: dict,
 ):
     """Test audit of logins: results, details"""
 

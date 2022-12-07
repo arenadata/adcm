@@ -13,15 +13,18 @@
 """Test categories (filters for roles)"""
 
 import os
-from typing import Set, Generator, Dict
+from typing import Dict, Generator, Set
 from urllib import parse
 
 import allure
 import requests
 from adcm_client.objects import ADCMClient
-
-from tests.functional.rbac.conftest import DATA_DIR, RoleShortInfo, extract_role_short_info
-from tests.library.assertions import is_superset_of, is_empty
+from tests.functional.rbac.conftest import (
+    DATA_DIR,
+    RoleShortInfo,
+    extract_role_short_info,
+)
+from tests.library.assertions import is_empty, is_superset_of
 
 CATEGORIES_SUFFIX = 'api/v1/rbac/role/category'
 
@@ -106,7 +109,8 @@ def check_categories_after_provider_bundle_upload(client: ADCMClient, bundle_pat
 def _check_category_list(client: ADCMClient, categories: Set[str]):
     """Check if category list is the same as expected"""
     categories_request = requests.get(
-        parse.urljoin(client.url, CATEGORIES_SUFFIX), headers={'Authorization': f'Token {client.api_token()}'}
+        parse.urljoin(client.url, CATEGORIES_SUFFIX),
+        headers={'Authorization': f'Token {client.api_token()}'},
     )
     categories_request.raise_for_status()
     category_list = categories_request.json()
@@ -114,7 +118,11 @@ def _check_category_list(client: ADCMClient, categories: Set[str]):
         expected := len(categories)
     ), f'Amount of categories should be exactly {expected}, not {actual}'
     # is superset is ok, because length is the same, but if one day we have "is_equal_to", change it
-    is_superset_of(set(category_list), categories, 'Categories list is incorrect. See attachment for more details.')
+    is_superset_of(
+        set(category_list),
+        categories,
+        'Categories list is incorrect. See attachment for more details.',
+    )
 
 
 def _get_all_roles_info(client: ADCMClient) -> Generator[RoleShortInfo, None, None]:

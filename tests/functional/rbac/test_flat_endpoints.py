@@ -18,9 +18,8 @@ import itertools
 import allure
 import pytest
 import requests
-from adcm_client.objects import Cluster, Host, ADCMClient, ADCM
+from adcm_client.objects import ADCM, ADCMClient, Cluster, Host
 from adcm_pytest_plugin.utils import random_string
-
 from tests.functional.rbac.conftest import RbacRoles
 from tests.library.assertions import sets_are_equal
 from tests.library.utils import lower_class_name
@@ -33,7 +32,7 @@ GROUP_CONFIG_EP = 'group-config'
 
 
 @pytest.fixture()
-def prepare_configs(prepare_objects, second_objects) -> None:
+def _prepare_configs(prepare_objects, second_objects) -> None:
     """Change configs, crete group configs and change them"""
     changed_config = {'boolean': False}
     for first_object, second_object in zip(prepare_objects, second_objects):
@@ -44,7 +43,7 @@ def prepare_configs(prepare_objects, second_objects) -> None:
             _prepare_group_config(second_object)
 
 
-@pytest.mark.usefixtures('prepare_configs')
+@pytest.mark.usefixtures('_prepare_configs')
 def test_flat_endpoints(user, clients, prepare_objects, second_objects):
     """
     Test "flat" endpoints:
@@ -55,7 +54,15 @@ def test_flat_endpoints(user, clients, prepare_objects, second_objects):
       config/
     """
     cluster, service, component, provider, host = prepare_objects
-    all_objects = [*second_objects, cluster, service, provider, host, *service.component_list(), clients.admin.adcm()]
+    all_objects = [
+        *second_objects,
+        cluster,
+        service,
+        provider,
+        host,
+        *service.component_list(),
+        clients.admin.adcm(),
+    ]
 
     clients.admin.policy_create(
         name=f'Service administrator of {service.name}',
@@ -86,11 +93,10 @@ def check_jobs_and_tasks(client: ADCMClient, objects):
     task_flat_endpoint = "task"
 
     with allure.step(f'Check jobs at "{job_flat_endpoint}/" endpoint based on task_id'):
-        expected_jobs: set = {
-            job.task_id
-            for job in itertools.chain.from_iterable([obj.action(name=ACTION_NAME).task_list() for obj in objects])
-        }
-        actual_jobs: set = {job['task_id'] for job in _query_flat_endpoint(client, job_flat_endpoint)}
+        expected_jobs = set()
+        for task in itertools.chain.from_iterable([obj.action(name=ACTION_NAME).task_list() for obj in objects]):
+            expected_jobs |= {job.id for job in task.job_list()}
+        actual_jobs: set = {job['id'] for job in _query_flat_endpoint(client, job_flat_endpoint)}
         sets_are_equal(
             actual_jobs,
             expected_jobs,
@@ -119,7 +125,10 @@ def check_configs(client: ADCMClient, objects):
 @allure.step(f'Check tasks at "{GROUP_CONFIG_EP}/" endpoint based on object type, object_id and config_id')
 def _check_group_config_endpoint(client, objects):
     objects_with_group_config = tuple(
-        filter(lambda x: not isinstance(x, Host) and not isinstance(x, ADCM) and x.group_config(), objects)
+        filter(
+            lambda x: not isinstance(x, Host) and not isinstance(x, ADCM) and x.group_config(),
+            objects,
+        )
     )
     expected_group_configs = {
         (lower_class_name(obj), obj.id, obj.group_config()[0].config_id) for obj in objects_with_group_config
@@ -165,7 +174,9 @@ def _check_configs_endpoint(client, expected_config_logs):
     }
     actual_configs = {config['id'] for config in _query_flat_endpoint(client, CONFIG_EP)}
     sets_are_equal(
-        actual_configs, expected_configs, f'Configs at flat endpoint "{CONFIG_EP}/" are not the same as expected'
+        actual_configs,
+        expected_configs,
+        f'Configs at flat endpoint "{CONFIG_EP}/" are not the same as expected',
     )
 
 
@@ -191,7 +202,10 @@ def _query_flat_endpoint(client: ADCMClient, endpoint: str):
 def _prepare_group_config(adcm_object: Cluster):
     group = adcm_object.group_config_create(f'{adcm_object.name} group {random_string(4)}')
     group.config_set_diff(
-        {'config': {'boolean': True}, 'attr': {'group_keys': {'boolean': True}, 'custom_group_keys': {'boolean': True}}}
+        {
+            'config': {'boolean': True},
+            'attr': {'group_keys': {'boolean': True}, 'custom_group_keys': {'boolean': True}},
+        }
     )
 
 

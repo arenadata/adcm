@@ -21,8 +21,8 @@ from typing import Tuple
 
 def sync_object_and_role(adcm, fields: dict) -> dict:
     """Sync `object` and `role` fields in Policy data"""
-    from tests.api.utils.endpoints import Endpoints
     from tests.api.testdata.getters import get_endpoint_data
+    from tests.api.utils.endpoints import Endpoints
 
     if 'role' not in fields or 'object' not in fields:
         return fields
@@ -49,8 +49,8 @@ def sync_object_and_role(adcm, fields: dict) -> dict:
 
 def sync_child_roles_hierarchy(adcm, fields: dict):
     """Child roles can be only in infrastructure or application hierarchy"""
-    from tests.api.utils.endpoints import Endpoints
     from tests.api.testdata.getters import get_endpoint_data
+    from tests.api.utils.endpoints import Endpoints
 
     if "child" not in fields:
         return fields

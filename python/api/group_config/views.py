@@ -55,9 +55,7 @@ def check_config_perm(user, action_type, obj):
 
 
 class GroupConfigFilterSet(FilterSet):
-    object_type = CharFilter(
-        field_name='object_type', label='object_type', method='filter_object_type'
-    )
+    object_type = CharFilter(field_name='object_type', label='object_type', method='filter_object_type')
 
     @staticmethod
     def filter_object_type(queryset, name, value):
@@ -176,11 +174,15 @@ class GroupConfigConfigLogViewSet(
     GenericUIViewSet,
 ):  # pylint: disable=too-many-ancestors
     serializer_class = GroupConfigConfigLogSerializer
-    serializer_class_ui = UIGroupConfigConfigLogSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
     permission_required = ['view_configlog']
     filterset_fields = ('id',)
     ordering_fields = ('id',)
+
+    def get_serializer_class(self):
+        if self.is_for_ui():
+            return UIGroupConfigConfigLogSerializer
+        return super().get_serializer_class()
 
     def get_queryset(self, *args, **kwargs):
         kwargs = {
@@ -204,7 +206,7 @@ class GroupConfigConfigLogViewSet(
             obj_ref = ObjectConfig.obj.get(id=obj_ref_id)
             context.update({'obj_ref': obj_ref})
 
-        context['ui'] = self._is_for_ui()
+        context["ui"] = self.is_for_ui()
 
         return context
 
@@ -213,9 +215,7 @@ class GroupConfigConfigLogViewSet(
         return super().create(request, *args, **kwargs)
 
 
-class GroupConfigViewSet(
-    PermissionListMixin, NestedViewSetMixin, ModelViewSet
-):  # pylint: disable=too-many-ancestors
+class GroupConfigViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
     queryset = GroupConfig.objects.all()
     serializer_class = GroupConfigSerializer
     filterset_class = GroupConfigFilterSet

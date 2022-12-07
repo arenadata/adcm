@@ -23,10 +23,14 @@ import pytest
 import yaml
 from _pytest.mark import ParameterSet
 from adcm_client.base import ObjectNotFound
-from adcm_client.objects import ADCMClient, Bundle, Provider, Cluster
-from adcm_pytest_plugin.utils import random_string, get_data_dir, get_data_subdirs_as_parameters, catch_failed
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Provider
+from adcm_pytest_plugin.utils import (
+    catch_failed,
+    get_data_dir,
+    get_data_subdirs_as_parameters,
+    random_string,
+)
 from coreapi.exceptions import ErrorMessage
-
 from tests.functional.conftest import only_clean_adcm
 
 CASES_PATH = "cases"
@@ -132,7 +136,6 @@ def parametrize_by_constraint(case_type: Literal['positive', 'negative']):
     return pytest.mark.parametrize(test_arg_names, parameters, ids=ids)
 
 
-# pylint: disable-next=too-many-arguments
 def _test_constraint(
     constraint: str,
     hosts_amounts: List[int],

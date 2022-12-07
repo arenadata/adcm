@@ -12,26 +12,28 @@
 
 """Test business permissions related to cluster objects"""
 
-# pylint: disable=too-many-arguments,unused-argument,too-many-locals
+# pylint: disable=too-many-locals
 import itertools
 
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Policy
-
 from tests.functional.rbac.conftest import (
-    BusinessRoles as BR,
-    use_role,
+    CLUSTER_EDIT_CONFIG_ROLES,
+    CLUSTER_VIEW_CONFIG_ROLES,
+    PROVIDER_EDIT_CONFIG_ROLES,
+    PROVIDER_VIEW_CONFIG_ROLES,
+)
+from tests.functional.rbac.conftest import BusinessRoles as BR
+from tests.functional.rbac.conftest import (
+    RbacRoles,
     as_user_objects,
+    check_mm_change_is_allowed,
+    create_policy,
+    delete_policy,
     is_allowed,
     is_denied,
-    delete_policy,
-    create_policy,
-    RbacRoles,
-    CLUSTER_VIEW_CONFIG_ROLES,
-    PROVIDER_VIEW_CONFIG_ROLES,
-    CLUSTER_EDIT_CONFIG_ROLES,
-    PROVIDER_EDIT_CONFIG_ROLES,
+    use_role,
 )
 
 pytestmark = [pytest.mark.extra_rbac]
@@ -476,20 +478,29 @@ def test_service_administrator(user, user_sdk: ADCMClient, sdk_client_fs, prepar
     is_denied_to_view(cluster, second_service_on_first_cluster, *second_objects, *provider_objects, client=user_sdk)
 
 
-def test_cluster_administrator(user, user_sdk: ADCMClient, sdk_client_fs, prepare_objects, second_objects):
+def test_cluster_administrator(user, mm_changing_roles, clients, prepare_objects, second_objects):
     """Test that cluster administrator role grants access to single cluster and related services and components"""
-    cluster, service, component, *provider_objects = prepare_objects
+    cluster, service, component, provider, host = prepare_objects
 
-    role = sdk_client_fs.role(name=RbacRoles.ClusterAdministrator.value)
-    sdk_client_fs.policy_create(
+    cluster.host_add(host)
+
+    role = clients.admin.role(name=RbacRoles.ClusterAdministrator.value)
+    clients.admin.policy_create(
         name=f"Policy with role {role.name}", role=role, objects=[cluster], user=[user], group=[]
     )
-    user_sdk.reread()
+    clients.user.reread()
 
-    allowed_user_objects = as_user_objects(user_sdk, cluster, service, component)
+    allowed_user_objects = *_, user_service, user_component, user_host = as_user_objects(
+        clients.user, cluster, service, component, host
+    )
     is_allowed_to_view(*allowed_user_objects)
     is_allowed_to_edit(*allowed_user_objects)
-    is_denied_to_view(*second_objects, *provider_objects, client=user_sdk)
+    is_denied_to_view(*second_objects, provider, client=clients.user)
+
+    service_role, component_role, host_role = mm_changing_roles
+    check_mm_change_is_allowed(user_host, host_role, clients.user)
+    check_mm_change_is_allowed(user_service, service_role, clients.user)
+    check_mm_change_is_allowed(user_component, component_role, clients.user)
 
 
 def test_provider_administrator(user, user_sdk: ADCMClient, sdk_client_fs, prepare_objects, second_objects):

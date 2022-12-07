@@ -15,24 +15,26 @@
 from rest_framework.serializers import (
     BooleanField,
     CharField,
+    ChoiceField,
     HyperlinkedIdentityField,
     IntegerField,
     JSONField,
-    Serializer,
+    ModelSerializer,
     SerializerMethodField,
 )
 
+from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.serializers import StringListSerializer
 from api.utils import CommonAPIURL, ObjectURL, filter_actions
 from cm.adcm_config import get_main_info
-from cm.models import Action, ServiceComponent
+from cm.models import Action, MaintenanceMode, ServiceComponent
 from cm.status_api import get_component_status
 
 
-class ComponentSerializer(Serializer):
+class ComponentSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     cluster_id = IntegerField(read_only=True)
     service_id = IntegerField(read_only=True)
@@ -42,6 +44,8 @@ class ComponentSerializer(Serializer):
     state = CharField(read_only=True)
     prototype_id = IntegerField(required=True, help_text="id of component prototype")
     url = ObjectURL(read_only=True, view_name="component-details")
+    maintenance_mode = CharField(read_only=True)
+    is_maintenance_mode_available = BooleanField(read_only=True)
 
 
 class ComponentUISerializer(ComponentSerializer):
@@ -66,9 +70,9 @@ class ComponentShortSerializer(ComponentSerializer):
     bound_to = JSONField(read_only=True)
     bundle_id = IntegerField(read_only=True)
     prototype = HyperlinkedIdentityField(
-        view_name="component-type-details",
-        lookup_field="prototype_id",
-        lookup_url_kwarg="prototype_id",
+        view_name="component-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
 
 
@@ -82,9 +86,9 @@ class ComponentDetailSerializer(ComponentSerializer):
     action = CommonAPIURL(read_only=True, view_name="object-action")
     config = CommonAPIURL(read_only=True, view_name="object-config")
     prototype = HyperlinkedIdentityField(
-        view_name="component-type-details",
-        lookup_field="prototype_id",
-        lookup_url_kwarg="prototype_id",
+        view_name="component-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
@@ -96,7 +100,7 @@ class ComponentDetailSerializer(ComponentSerializer):
         return get_component_status(obj)
 
 
-class StatusSerializer(Serializer):
+class StatusSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     name = CharField(read_only=True)
     status = SerializerMethodField()
@@ -118,6 +122,7 @@ class ComponentDetailUISerializer(ComponentDetailSerializer):
         self.context["component_id"] = obj.id
         actions = filter_actions(obj, act_set)
         acts = ActionShort(actions, many=True, context=self.context)
+
         return acts.data
 
     @staticmethod
@@ -127,3 +132,17 @@ class ComponentDetailUISerializer(ComponentDetailSerializer):
     @staticmethod
     def get_main_info(obj: ServiceComponent) -> str | None:
         return get_main_info(obj)
+
+
+class ComponentChangeMaintenanceModeSerializer(ModelSerializer):
+    maintenance_mode = ChoiceField(choices=(MaintenanceMode.ON.value, MaintenanceMode.OFF.value))
+
+    class Meta:
+        model = ServiceComponent
+        fields = ("maintenance_mode",)
+
+
+class ComponentAuditSerializer(ModelSerializer):
+    class Meta:
+        model = ServiceComponent
+        fields = ("maintenance_mode",)

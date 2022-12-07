@@ -11,17 +11,16 @@
 # limitations under the License.
 
 """Module contains api objects for executing and checking requests"""
-from dataclasses import field, dataclass
+from dataclasses import dataclass, field
 from typing import Optional, Union
 from urllib.parse import urlencode
 
 import allure
 from adcm_client.wrappers.api import ADCMApiWrapper
-
+from tests.api.steps.asserts import ExpectedBody, body_should_be, status_code_should_be
 from tests.api.utils.endpoints import Endpoints
 from tests.api.utils.methods import Methods
 from tests.api.utils.tools import attach_request_log
-from tests.api.steps.asserts import status_code_should_be, body_should_be, ExpectedBody
 
 
 @dataclass

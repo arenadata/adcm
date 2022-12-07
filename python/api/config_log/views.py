@@ -30,16 +30,20 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
     queryset = ConfigLog.objects.all()
     serializer_class = ConfigLogSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
-    serializer_class_ui = UIConfigLogSerializer
     permission_required = ['cm.view_configlog']
     filterset_fields = ('id', 'obj_ref')
     ordering_fields = ('id',)
 
+    def get_serializer_class(self):
+
+        if self.is_for_ui():
+            return UIConfigLogSerializer
+
+        return super().get_serializer_class()
+
     def get_queryset(self, *args, **kwargs):
         if self.request.user.has_perm('cm.view_settings_of_adcm'):
-            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(
-                obj_ref__adcm__isnull=False
-            )
+            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
         else:
             return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
 

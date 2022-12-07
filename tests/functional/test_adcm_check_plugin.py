@@ -18,9 +18,8 @@ from adcm_client.objects import ADCMClient, Cluster, Host
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.steps.asserts import assert_action_result
-
 from tests.functional.conftest import only_clean_adcm
-from tests.library.consts import States, MessageStates
+from tests.library.consts import MessageStates, States
 
 NO_FIELD = [
     "no_title",
@@ -78,8 +77,7 @@ def test_all_fields(sdk_client_fs: ADCMClient, name, result):
     task = run_cluster_action_and_assert_result(cluster, action=params["action"], status=params["expected_state"])
     job = task.job()
     with allure.step("Check all fields after action execution"):
-        logs = job.log_list()
-        content = job.log(job_id=job.id, log_id=logs[2].id).content[0]
+        content = job.log_list()[2].content[0]
         assert content["message"] == group_msg, f'Expected message {group_msg}. Current message {content["message"]}'
         assert content["result"] is group_result
         assert (
@@ -117,8 +115,7 @@ def test_message_with_other_field(sdk_client_fs: ADCMClient, name):
     job = task.job()
     assert_action_result(result=job.status, status=params["expected_state"], name=params["action"])
     with allure.step(f"Check if content message is {name}"):
-        logs = job.log_list()
-        log = job.log(log_id=logs[2].id)
+        log = job.log_list()[2]
         content = log.content[0]
         assert content["message"] == name, f'Expected content message {name}. Current {content["message"]}'
 
@@ -140,8 +137,7 @@ def test_success_and_fail_msg_on_success(sdk_client_fs: ADCMClient):
     job = task.job()
     assert_action_result(result=job.status, status=params["expected_state"], name=params["action"])
     with allure.step("Check if success and fail message are in their own fields."):
-        logs = job.log_list()
-        log = job.log(job_id=job.id, log_id=logs[2].id)
+        log = job.log_list()[2]
         content = log.content[0]
         assert content["result"], f'Result is {content["result"]} expected True'
         assert content["message"] == params["expected_message"], (
@@ -166,8 +162,7 @@ def test_success_and_fail_msg_on_fail(sdk_client_fs: ADCMClient):
     job = task.job()
     assert_action_result(result=job.status, status=params["expected_state"], name=params["action"])
     with allure.step("Check if success and fail message are in their own fields"):
-        logs = job.log_list()
-        log = job.log(job_id=job.id, log_id=logs[2].id)
+        log = job.log_list()[2]
         content = log.content[0]
         assert not content["result"], f'Result is {content["result"]} expected True'
         assert content["message"] == params["expected_message"], (
@@ -201,8 +196,7 @@ def test_multiple_tasks(sdk_client_fs: ADCMClient):
     action.wait()
     with allure.step(f'Check if log content is equal {params["logs_amount"]}'):
         job = action.job()
-        logs = job.log_list()
-        log = job.log(job_id=job.id, log_id=logs[2].id)
+        log = job.log_list()[2]
         assert len(log.content) == params["logs_amount"], log.content
     with allure.step("Check log's messages, titles and results."):
         for result in expected_result:
@@ -246,8 +240,7 @@ def test_multiple_group_tasks(sdk_client_fs: ADCMClient):
     action.wait()
     with allure.step("Check log content amount"):
         job = action.job()
-        logs = job.log_list()
-        log = job.log(job_id=job.id, log_id=logs[2].id)
+        log = job.log_list()[2]
         assert len(log.content) == 2, log.content
         assert len(log.content[0]["content"]) == 2, log.content[0].content
         assert len(log.content[1]["content"]) == 1, log.content[1].content
@@ -291,8 +284,7 @@ def test_multiple_group_tasks_without_group_title(sdk_client_fs: ADCMClient):
     action.wait()
     with allure.step(f'Check log content amount is equal {params["logs_amount"]}'):
         job = action.job()
-        logs = job.log_list()
-        log = job.log(job_id=job.id, log_id=logs[2].id)
+        log = job.log_list()[2]
         assert len(log.content) == params["logs_amount"], log.content
     with allure.step("Check title and result in log content"):
         for log_entry in log.content:
@@ -317,8 +309,7 @@ def test_multiple_tasks_action_with_log_files_check(sdk_client_fs: ADCMClient):
     job = task.job()
     assert_action_result(result=job.status, status=params["expected_state"], name=params["action"])
     with allure.step("Check if result is True"):
-        logs = job.log_list()
-        log = job.log(job_id=job.id, log_id=logs[2].id)
+        log = job.log_list()[2]
         content = log.content[0]
         assert content["result"], f'Result is {content["result"]}, Expected True'
 
@@ -337,8 +328,7 @@ def test_result_no(sdk_client_fs: ADCMClient):
     job = task.job()
     assert_action_result(result=job.status, status=params["expected_state"], name=params["action"])
     with allure.step("Check if result is False"):
-        logs = job.log_list()
-        log = job.log(job_id=job.id, log_id=logs[2].id)
+        log = job.log_list()[2]
         content = log.content[0]
         assert not content["result"], f'Result is {content["result"]}, Expected False'
 

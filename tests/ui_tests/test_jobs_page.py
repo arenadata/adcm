@@ -14,39 +14,34 @@
 
 import os
 from dataclasses import asdict
-from typing import Union, List
+from typing import List, Union
 
 import allure
 import pytest
 from adcm_client.objects import (
+    Action,
     ADCMClient,
-    Cluster,
     Bundle,
+    Cluster,
+    Component,
+    Host,
+    ObjectNotFound,
     Provider,
     Service,
-    Host,
-    Component,
-    Action,
-    ObjectNotFound,
 )
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.steps.actions import (
-    run_cluster_action_and_assert_result,
-)
+from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.utils import catch_failed
-
+from tests.library.utils import build_full_archive_name
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.job.page import JobPageStdout
-from tests.ui_tests.app.page.job_list.page import (
-    JobListPage,
-    JobStatus,
-)
+from tests.ui_tests.app.page.job_list.page import JobListPage, JobStatus
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.utils import (
-    wait_and_assert_ui_info,
-    is_not_empty,
     is_empty,
+    is_not_empty,
+    wait_and_assert_ui_info,
     wait_file_is_presented,
     wait_until_step_succeeds,
 )
@@ -54,6 +49,7 @@ from tests.ui_tests.utils import (
 LONG_ACTION_DISPLAY_NAME = 'Long action'
 SUCCESS_ACTION_DISPLAY_NAME = 'Success action'
 SUCCESS_ACTION_NAME = 'success_action'
+CHECK_ACTION_NAME = "with_check"
 FAIL_ACTION_DISPLAY_NAME = 'Fail action'
 ON_HOST_ACTION_DISPLAY_NAME = 'Component host action'
 COMPONENT_ACTION_DISPLAY_NAME = 'Component action'
@@ -68,8 +64,7 @@ COMPONENT_NAME = 'test_component'
 
 @pytest.fixture()
 @allure.title("Open /task page")
-# pylint: disable-next=unused-argument
-def page(app_fs: ADCMTest, login_to_adcm_over_api) -> JobListPage:
+def page(app_fs: ADCMTest, _login_to_adcm_over_api) -> JobListPage:
     """Open /task page"""
     return JobListPage(app_fs.driver, app_fs.adcm.url).open()
 
@@ -238,7 +233,7 @@ class TestTaskPage:
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
     @pytest.mark.parametrize('log_type', ['stdout', 'stderr'], ids=['stdout_menu', 'stderr_menu'])
-    @pytest.mark.usefixtures('login_to_adcm_over_api')
+    @pytest.mark.usefixtures('_login_to_adcm_over_api')
     def test_open_log_menu(self, log_type: str, cluster: Cluster, app_fs: ADCMTest):
         """Open stdout/stderr log menu and check info"""
         action = cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME)
@@ -258,7 +253,7 @@ class TestTaskPage:
             )
             job_page.check_jobs_toolbar(SUCCESS_ACTION_DISPLAY_NAME.upper())
 
-    @pytest.mark.usefixtures("login_to_adcm_over_api", "clean_downloads_fs")
+    @pytest.mark.usefixtures("_login_to_adcm_over_ui", "_clean_downloads_fs")
     def test_download_log(self, cluster: Cluster, app_fs: ADCMTest, downloads_directory):
         """Download log file from detailed page menu"""
         downloaded_file_template = '{job_id}-ansible-{log_type}.txt'
@@ -269,11 +264,27 @@ class TestTaskPage:
         with allure.step('Download logfiles'):
             job_page.click_on_log_download('stdout')
             wait_file_is_presented(
-                downloaded_file_template.format(job_id=job_id, log_type='stdout'), app_fs, dirname=downloads_directory
+                downloaded_file_template.format(job_id=job_id, log_type='stdout'),
+                app_fs,
+                dirname=downloads_directory,
             )
             job_page.click_on_log_download('stderr')
             wait_file_is_presented(
-                downloaded_file_template.format(job_id=job_id, log_type='stderr'), app_fs, dirname=downloads_directory
+                downloaded_file_template.format(job_id=job_id, log_type='stderr'),
+                app_fs,
+                dirname=downloads_directory,
+            )
+
+    @pytest.mark.usefixtures("_login_to_adcm_over_ui", "_clean_downloads_fs")
+    def test_download_bulk_log(self, cluster: Cluster, app_fs: ADCMTest, downloads_directory):
+        task = run_cluster_action_and_assert_result(cluster, CHECK_ACTION_NAME)
+        jobs_page = JobListPage(driver=app_fs.driver, base_url=app_fs.adcm.url).open()
+        with allure.step("Bulk download logfiles"):
+            jobs_page.click_on_log_download(row=jobs_page.table.get_row(0))
+            wait_file_is_presented(
+                app_fs=app_fs,
+                filename=f"{build_full_archive_name(cluster, task, CHECK_ACTION_NAME.replace('_', '-'))}.tar.gz",
+                dirname=downloads_directory,
             )
 
     def test_invoker_object_url(self, cluster: Cluster, provider: Provider, page: JobListPage):
@@ -314,7 +325,7 @@ class TestTaskHeaderPopup:
         ],
         ids=["all_jobs", 'in_progress_jobs', 'success_jobs', 'failed_jobs'],
     )
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("_login_to_adcm_over_api")
     def test_link_to_jobs_in_header_popup(self, app_fs, job_link, job_filter):
         """Link to /task from popup with filter"""
 
@@ -395,7 +406,7 @@ class TestTaskHeaderPopup:
         ],
         ids=['success_job', 'failed_job', 'in_progress_job', 'three_job'],
     )
-    @pytest.mark.usefixtures('login_to_adcm_over_api')
+    @pytest.mark.usefixtures('_login_to_adcm_over_api')
     def test_job_has_correct_info_in_header_popup(self, job_info: dict, cluster: Cluster, app_fs):
         """Run action that finishes (success/failed) and check it in header popup"""
 
@@ -442,14 +453,16 @@ class TestTaskHeaderPopup:
             job_page.check_title(action_name)
             job_page.check_text(success_task=action_name == SUCCESS_ACTION_DISPLAY_NAME)
 
-    @pytest.mark.usefixtures('login_to_adcm_over_api')
+    @pytest.mark.usefixtures('_login_to_adcm_over_api')
     def test_six_tasks_in_header_popup(self, cluster: Cluster, app_fs):
         """Check list of tasks in header popup"""
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         with allure.step('Run actions in cluster'):
             for _ in range(6):
                 run_cluster_action_and_assert_result(
-                    cluster, cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME).name, status='success'
+                    cluster,
+                    cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME).name,
+                    status='success',
                 )
         cluster_page.header.click_job_block_in_header()
         with allure.step("Check that in popup 5 tasks"):
@@ -461,7 +474,7 @@ class TestTaskHeaderPopup:
         with allure.step("Check that in job list page 6 tasks"):
             assert job_page.table.row_count == 6, "Job list page should contain 6 tasks"
 
-    @pytest.mark.usefixtures('login_to_adcm_over_api', 'cluster')
+    @pytest.mark.usefixtures('_login_to_adcm_over_api', 'cluster')
     def test_acknowledge_running_job_in_header_popup(self, app_fs):
         """Run action and click acknowledge in header popup while it runs"""
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -572,7 +585,9 @@ def _check_link_to_invoker_object(expected_link: str, page: JobListPage, action:
     with page.table.wait_rows_change():
         action.run()
     wait_and_assert_ui_info(
-        expected_value, page.get_task_info_from_table, get_info_kwargs={'full_invoker_objects_link': True}
+        expected_value,
+        page.get_task_info_from_table,
+        get_info_kwargs={'full_invoker_objects_link': True},
     )
     detail_page = JobPageStdout(page.driver, page.base_url, action.task_list()[0].id).open()
     wait_and_assert_ui_info(expected_value, detail_page.get_job_info)

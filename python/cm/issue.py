@@ -63,14 +63,6 @@ def check_config(obj):  # pylint: disable=too-many-branches
     return True
 
 
-def check_object_concern(obj):
-    if obj.concerns.filter(type=ConcernType.Lock).exists():
-        err("LOCK_ERROR", f"object {obj} is locked")
-
-    if obj.concerns.filter(type=ConcernType.Issue).exists():
-        err("ISSUE_INTEGRITY_ERROR", f"object {obj} has issues")
-
-
 def check_required_services(cluster):
     bundle = cluster.prototype.bundle
     for proto in Prototype.objects.filter(bundle=bundle, type="service", required=True):
@@ -137,9 +129,7 @@ def check_hc(cluster):
 
     for service in ClusterObject.objects.filter(cluster=cluster):
         try:
-            check_component_constraint(
-                cluster, service.prototype, [i for i in shc_list if i[0] == service]
-            )
+            check_component_constraint(cluster, service.prototype, [i for i in shc_list if i[0] == service])
         except AdcmEx:
             return False
     try:
@@ -176,9 +166,7 @@ def check_bound_components(shc_list):
         return [i for i in shc_list if i[1] == host and i[2].prototype == component]
 
     def bound_host_components(service, comp):
-        return [
-            i for i in shc_list if i[0].prototype.name == service and i[2].prototype.name == comp
-        ]
+        return [i for i in shc_list if i[0].prototype.name == service and i[2].prototype.name == comp]
 
     def check_bound_component(component):
         service = component.bound_to["service"]
@@ -257,9 +245,7 @@ def check_component_constraint(cluster, service_prototype, hc_in, old_bundle=Non
                 old_service_proto = Prototype.objects.get(
                     name=service_prototype.name, type="service", bundle=old_bundle
                 )
-                Prototype.objects.get(
-                    parent=old_service_proto, bundle=old_bundle, type="component", name=c.name
-                )
+                Prototype.objects.get(parent=old_service_proto, bundle=old_bundle, type="component", name=c.name)
             except Prototype.DoesNotExist:
                 continue
         check(c, c.constraint)
@@ -297,17 +283,24 @@ def _gen_issue_name(obj: ADCMEntity, cause: ConcernCause) -> str:
     return f"{obj} has issue with {cause.value}"
 
 
+def _create_concern_item(obj: ADCMEntity, issue_cause: ConcernCause) -> ConcernItem:
+    msg_name = _issue_template_map[issue_cause]
+    reason = MessageTemplate.get_message_from_template(msg_name.value, source=obj)
+    issue_name = _gen_issue_name(obj, issue_cause)
+    issue = ConcernItem.objects.create(
+        type=ConcernType.Issue, name=issue_name, reason=reason, owner=obj, cause=issue_cause
+    )
+    return issue
+
+
 def create_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
     """Create newly discovered issue and add it to linked objects concerns"""
     issue = obj.get_own_issue(issue_cause)
     if issue is None:
-        msg_name = _issue_template_map[issue_cause]
-        reason = MessageTemplate.get_message_from_template(msg_name.value, source=obj)
-        issue_name = _gen_issue_name(obj, issue_cause)
-        issue = ConcernItem.objects.create(
-            type=ConcernType.Issue, name=issue_name, reason=reason, owner=obj, cause=issue_cause
-        )
-
+        issue = _create_concern_item(obj, issue_cause)
+    if issue.name != _gen_issue_name(obj, issue_cause):
+        issue.delete()
+        issue = _create_concern_item(obj, issue_cause)
     tree = Tree(obj)
     affected_nodes = tree.get_directly_affected(tree.built_from)
     for node in affected_nodes:

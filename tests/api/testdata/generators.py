@@ -14,22 +14,17 @@
 
 from collections import ChainMap
 from http import HTTPStatus
-from typing import NamedTuple, List, Optional
+from typing import List, NamedTuple, Optional
 
 import allure
 import attr
 import pytest
 from _pytest.mark.structures import ParameterSet
-
-from tests.api.utils.api_objects import Request, ExpectedResponse, ExpectedBody
+from tests.api.utils.api_objects import ExpectedBody, ExpectedResponse, Request
 from tests.api.utils.endpoints import Endpoints
 from tests.api.utils.methods import Methods
 from tests.api.utils.tools import fill_lists_by_longest
-from tests.api.utils.types import (
-    get_fields,
-    BaseType,
-    PreparedFieldValue,
-)
+from tests.api.utils.types import BaseType, PreparedFieldValue, get_fields
 
 
 class MaxRetriesError(Exception):
@@ -481,7 +476,21 @@ def get_data_for_body_check(method: Methods, endpoints_with_test_sets: List[tupl
         for test_group, group_name in test_groups:
             values: List[TestDataWithPreparedBody] = []
             for test_set in test_group:
-                status_code = method.default_success_code if positive else HTTPStatus.BAD_REQUEST
+                if positive:
+                    status_code = method.default_success_code
+                elif (
+                    method in {Methods.PUT, Methods.PATCH}
+                    and endpoint == Endpoints.RbacUser
+                    and (
+                        # If there's an attempt to change username, 409 will be the response
+                        # if there's a drop - 400
+                        "username" in test_group[0].keys()
+                        and not test_group[0]["username"].drop_key
+                    )
+                ):
+                    status_code = HTTPStatus.CONFLICT
+                else:
+                    status_code = HTTPStatus.BAD_REQUEST
                 # It makes no sense to check with all fields if test_set contains only one field
                 if positive or len(test_set) > 1:
                     values.append(_prepare_test_data_with_all_fields(endpoint, method, status_code, test_set))
@@ -575,16 +584,15 @@ def _get_datasets(
     dataset = {}
     if "generated_value" in value_properties and "value" in value_properties:
         raise ValueError("'generated_value', 'value' properties are not compatible")
-    for field in get_fields(endpoint.data_class):
-        if field_conditions(field):
-            dataset[field.name] = PreparedFieldValue(
-                value=value_properties.get("value", None),
-                unchanged_value=value_properties.get("unchanged_value", False),
-                generated_value=value_properties.get("generated_value", False),
-                error_messages=[value_properties.get("error_message", None)],
-                drop_key=value_properties.get("drop_key", False),
-                f_type=field.f_type,
-            )
+    for field in filter(field_conditions, get_fields(endpoint.data_class)):
+        dataset[field.name] = PreparedFieldValue(
+            value=value_properties.get("value", None),
+            unchanged_value=value_properties.get("unchanged_value", False),
+            generated_value=value_properties.get("generated_value", False),
+            error_messages=[value_properties.get("error_message", None)],
+            drop_key=value_properties.get("drop_key", False),
+            f_type=field.f_type,
+        )
     return [dataset] if dataset else [], desc
 
 

@@ -17,28 +17,25 @@ from typing import Tuple
 
 import allure
 import pytest
-
-from adcm_client.objects import ADCMClient, Cluster, Provider, Host, Service, Component
+from adcm_client.objects import ADCMClient, Cluster, Component, Host, Provider, Service
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
-    run_provider_action_and_assert_result,
     run_host_action_and_assert_result,
+    run_provider_action_and_assert_result,
+    run_service_action_and_assert_result,
 )
-
 from tests.functional.plugin_utils import (
-    build_objects_checker,
-    generate_cluster_success_params,
-    get_cluster_related_object,
-    compose_name,
-    generate_provider_success_params,
-    get_provider_related_object,
-    create_two_providers,
-    create_two_clusters,
-    run_successful_task,
     TestImmediateChange,
+    build_objects_checker,
+    compose_name,
+    create_two_clusters,
+    create_two_providers,
+    generate_cluster_success_params,
+    generate_provider_success_params,
+    get_cluster_related_object,
+    get_provider_related_object,
+    run_successful_task,
 )
-
 
 check_objects_state_changed = build_objects_checker(
     field_name='State',
@@ -59,7 +56,9 @@ def two_providers(sdk_client_fs: ADCMClient) -> Tuple[Provider, Provider]:
 def two_clusters(request, sdk_client_fs: ADCMClient) -> Tuple[Cluster, Cluster]:
     """Get two clusters with both services"""
     return create_two_clusters(
-        sdk_client_fs, caller_file=__file__, bundle_dir="cluster" if not hasattr(request, 'param') else request.param
+        sdk_client_fs,
+        caller_file=__file__,
+        bundle_dir="cluster" if not hasattr(request, 'param') else request.param,
     )
 
 
@@ -158,7 +157,10 @@ def test_forbidden_state_set_actions(sdk_client_fs: ADCMClient):
         host_second = sdk_client_fs.host(fqdn=first_second_fqdn)
         with check_objects_state_changed(sdk_client_fs):
             run_host_action_and_assert_result(
-                host_first, 'set_host_from_provider', config={'host_id': host_second.id}, status='failed'
+                host_first,
+                'set_host_from_provider',
+                config={'host_id': host_second.id},
+                status='failed',
             )
 
 
@@ -172,7 +174,9 @@ def test_double_call_to_state_set(two_clusters: Tuple[Cluster, Cluster], sdk_cli
 
 
 def test_state_set_from_host_actions(
-    two_providers: Tuple[Provider, Provider], two_clusters: Tuple[Cluster, Cluster], sdk_client_fs: ADCMClient
+    two_providers: Tuple[Provider, Provider],
+    two_clusters: Tuple[Cluster, Cluster],
+    sdk_client_fs: ADCMClient,
 ):
     """Test that host actions actually change state"""
     name = "first"

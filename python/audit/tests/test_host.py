@@ -38,6 +38,7 @@ from cm.models import (
     ConfigLog,
     Host,
     HostProvider,
+    MaintenanceMode,
     ObjectConfig,
     Prototype,
 )
@@ -72,7 +73,7 @@ class TestHost(BaseTestCase):
         self.host_created_str = "Host created"
         self.action_display_name = "test_host_action"
         self.cluster = Cluster.objects.create(
-            prototype=Prototype.objects.create(bundle=self.bundle, type="cluster"),
+            prototype=Prototype.objects.create(bundle=self.bundle, type="cluster", allow_maintenance_mode=True),
             name="test_cluster",
         )
 
@@ -99,6 +100,7 @@ class TestHost(BaseTestCase):
     ) -> None:
         if object_changes is None:
             object_changes = {}
+
         if user is None:
             user = self.test_user
 
@@ -318,16 +320,12 @@ class TestHost(BaseTestCase):
 
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
-            response: Response = self.client.delete(
-                path=reverse("host-details", kwargs={"host_id": self.host.pk})
-            )
+            response: Response = self.client.delete(path=reverse("host-details", kwargs={"host_id": self.host.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.check_host_deleted_log(
-            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
-        )
+        self.check_host_deleted_log(log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user)
 
     def test_delete_failed(self):
         self.host.cluster = self.cluster
@@ -341,9 +339,7 @@ class TestHost(BaseTestCase):
 
     def test_delete_via_provider(self):
         self.client.delete(
-            path=reverse(
-                "host-details", kwargs={"host_id": self.host.pk, "provider_id": self.provider.pk}
-            ),
+            path=reverse("host-details", kwargs={"host_id": self.host.pk, "provider_id": self.provider.pk}),
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -362,18 +358,14 @@ class TestHost(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.check_host_deleted_log(
-            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
-        )
+        self.check_host_deleted_log(log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user)
 
     def test_delete_via_provider_failed(self):
         self.host.cluster = self.cluster
         self.host.save(update_fields=["cluster"])
 
         self.client.delete(
-            path=reverse(
-                "host-details", kwargs={"host_id": self.host.pk, "provider_id": self.provider.pk}
-            ),
+            path=reverse("host-details", kwargs={"host_id": self.host.pk, "provider_id": self.provider.pk}),
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -449,7 +441,7 @@ class TestHost(BaseTestCase):
 
         self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
-            data={"maintenance_mode": "on"},
+            data={"fqdn": "/*-/*-"},
             content_type=APPLICATION_JSON,
         )
 
@@ -472,9 +464,7 @@ class TestHost(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_host_updated_log(
-            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
-        )
+        self.check_host_updated_log(log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user)
 
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
@@ -488,9 +478,7 @@ class TestHost(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_host_updated_log(
-            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
-        )
+        self.check_host_updated_log(log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user)
 
     def test_update_and_restore_via_provider(self):
         self.client.post(
@@ -537,9 +525,7 @@ class TestHost(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_host_updated_log(
-            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
-        )
+        self.check_host_updated_log(log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user)
 
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
@@ -553,9 +539,7 @@ class TestHost(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_host_updated_log(
-            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
-        )
+        self.check_host_updated_log(log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user)
 
     def test_action_launch(self):
         action = Action.objects.create(
@@ -565,9 +549,7 @@ class TestHost(BaseTestCase):
             state_available="any",
         )
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(
-                path=reverse("run-task", kwargs={"host_id": self.host.pk, "action_id": action.pk})
-            )
+            self.client.post(path=reverse("run-task", kwargs={"host_id": self.host.pk, "action_id": action.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -605,3 +587,106 @@ class TestHost(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_action_log(log=log)
+
+    def test_change_maintenance_mode(self):
+        self.host.cluster = self.cluster
+        self.host.save(update_fields=["cluster"])
+
+        self.client.post(
+            path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+            data={"maintenance_mode": MaintenanceMode.ON},
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host_updated_log(
+            log=log,
+            operation_name="Host updated",
+            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
+        )
+
+    def test_change_maintenance_mode_via_cluster(self):
+        self.host.cluster = self.cluster
+        self.host.save(update_fields=["cluster"])
+
+        self.client.post(
+            path=reverse(
+                "host-maintenance-mode",
+                kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
+            ),
+            data={"maintenance_mode": MaintenanceMode.ON},
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host_updated_log(
+            log=log,
+            operation_name="Host updated",
+            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
+        )
+
+    def test_change_maintenance_mode_via_provider(self):
+        self.host.cluster = self.cluster
+        self.host.save(update_fields=["cluster"])
+
+        self.client.post(
+            path=reverse(
+                "host-maintenance-mode",
+                kwargs={"provider_id": self.provider.pk, "host_id": self.host.pk},
+            ),
+            data={"maintenance_mode": MaintenanceMode.ON},
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host_updated_log(
+            log=log,
+            operation_name="Host updated",
+            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
+        )
+
+    def test_change_maintenance_mode_failed(self):
+        self.client.post(
+            path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+            data={"maintenance_mode": MaintenanceMode.CHANGING},
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host_updated_log(
+            log=log, operation_result=AuditLogOperationResult.Fail, operation_name="Host updated"
+        )
+
+    def test_change_maintenance_mode_denied(self):
+        self.host.cluster = self.cluster
+        self.host.save(update_fields=["cluster"])
+
+        with self.no_rights_user_logged_in:
+            self.client.post(
+                path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+                data={"maintenance_mode": MaintenanceMode.ON},
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host_updated_log(
+            log=log,
+            operation_result=AuditLogOperationResult.Denied,
+            operation_name="Host updated",
+            user=self.no_rights_user,
+        )
+
+        with self.no_rights_user_logged_in:
+            self.client.post(
+                path=reverse("host-maintenance-mode", kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk}),
+                data={"maintenance_mode": MaintenanceMode.ON},
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host_updated_log(
+            log=log,
+            operation_result=AuditLogOperationResult.Denied,
+            operation_name="Host updated",
+            user=self.no_rights_user,
+        )

@@ -17,25 +17,36 @@ Test "scripts" section of bundle's "upgrade" section
 import json
 import os
 from pathlib import Path
-from typing import Set, Tuple, Optional, Collection
+from typing import Collection, Optional, Set, Tuple
 
 import allure
 import pytest
 import yaml
-from adcm_client.objects import Cluster, ADCMClient, Bundle, Host, Component, Service
-from adcm_pytest_plugin.docker_utils import get_file_from_container, ADCM
-from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result, wait_for_task_and_assert_result
-from adcm_pytest_plugin.utils import get_data_dir, catch_failed, parametrize_by_data_subdirs, random_string
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Component, Host, Service
+from adcm_pytest_plugin.docker_utils import ADCM, get_file_from_container
+from adcm_pytest_plugin.steps.actions import (
+    run_cluster_action_and_assert_result,
+    wait_for_task_and_assert_result,
+)
+from adcm_pytest_plugin.utils import (
+    catch_failed,
+    get_data_dir,
+    parametrize_by_data_subdirs,
+    random_string,
+)
 from coreapi.exceptions import ErrorMessage
-
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.tools import build_hc_for_hc_acl_action, get_inventory_file
-from tests.library.assertions import sets_are_equal, expect_api_error, expect_no_api_error
+from tests.library.assertions import (
+    expect_api_error,
+    expect_no_api_error,
+    sets_are_equal,
+)
 from tests.library.errorcodes import (
-    INVALID_UPGRADE_DEFINITION,
-    INVALID_OBJECT_DEFINITION,
-    INVALID_ACTION_DEFINITION,
     COMPONENT_CONSTRAINT_ERROR,
+    INVALID_ACTION_DEFINITION,
+    INVALID_OBJECT_DEFINITION,
+    INVALID_UPGRADE_DEFINITION,
 )
 
 # pylint: disable=redefined-outer-name
@@ -265,7 +276,8 @@ class TestSuccessfulUpgrade:
         for job_name in ('before_switch', 'after_switch'):
             job = next(
                 filter(
-                    lambda x: x.display_name == job_name, sdk_client_fs.job_list()  # pylint: disable=cell-var-from-loop
+                    lambda x: x.display_name == job_name,  # pylint: disable=cell-var-from-loop
+                    sdk_client_fs.job_list(),
                 )
             )
             assert expected_message in job.log().content, f'"{expected_message}" should be in log'
@@ -359,9 +371,13 @@ class TestSuccessfulUpgrade:
             self._check_host_is_in_group(host_1, second_component_group, groups)
             self._check_host_is_in_group(host_1, some_component_group, groups)
 
-    # pylint: disable=too-many-arguments
     def _upgrade_to_newly_uploaded_version(
-        self, client, old_cluster, upgrade_name, upgrade_config, new_bundle_dirs=('successful', 'new')
+        self,
+        client,
+        old_cluster,
+        upgrade_name,
+        upgrade_config,
+        new_bundle_dirs=('successful', 'new'),
     ):
         with allure.step('Upload new version of cluster bundle'):
             new_bundle = client.upload_from_fs(get_data_dir(__file__, *new_bundle_dirs))
@@ -391,7 +407,6 @@ class TestSuccessfulUpgrade:
         ), f'Host {host.fqdn} should be in group {group_name}, but not found in: {hosts}'
 
 
-# pylint: disable-next=too-few-public-methods
 class FailedUploadMixin:
     """Useful methods for upload failures tests"""
 
@@ -499,7 +514,9 @@ class TestUpgradeWithHCFailures(FailedUploadMixin):
     """Test upgrades failures with `hc_acl` in upgrade"""
 
     @pytest.mark.parametrize(
-        'upgrade_name', ['fail after switch', 'fail on first action after switch'], ids=lambda x: x.replace(' ', '_')
+        'upgrade_name',
+        ['fail after switch', 'fail on first action after switch'],
+        ids=lambda x: x.replace(' ', '_'),
     )
     def test_hc_acl_fail_after_switch(self, upgrade_name: str, sdk_client_fs, old_cluster, two_hosts):
         """
@@ -540,7 +557,6 @@ class TestUpgradeWithHCFailures(FailedUploadMixin):
         sets_are_equal(actual_hc, expected_hc, 'The hostcomponent from before the upgrade was expected')
 
 
-# pylint: disable-next=too-few-public-methods
 class TestUpgradeActionRelations:
     """Test cases when upgrade action"""
 
@@ -661,7 +677,7 @@ class TestConstraintsChangeAfterUpgrade:
             ]
         }
 
-    @pytest.fixture()  # pylint: disable-next=too-many-arguments
+    @pytest.fixture()
     def upload_bundles(
         self, request, sdk_client_fs, tmpdir, with_hc_in_upgrade, hc_acl_block, dummy_action_content
     ) -> Tuple[Bundle, Bundle]:
@@ -722,7 +738,7 @@ class TestConstraintsChangeAfterUpgrade:
 
     @allure.title('Create hosts and set hostcomponent')
     @pytest.fixture()
-    def set_hc(self, request, cluster_with_component, generic_provider) -> None:
+    def _set_hc(self, request, cluster_with_component, generic_provider) -> None:
         """Set hostcomponent based on given component on host / hosts in cluster amount"""
         # total amount of hosts shouldn't be 0, it'll conflict with dummy component
         if isinstance(request.param, int):
@@ -743,7 +759,7 @@ class TestConstraintsChangeAfterUpgrade:
     # wrap it in something readable
     @pytest.mark.parametrize('with_hc_in_upgrade', [True, False], indirect=True, ids=lambda i: f'with_hc_acl_{i}')
     @pytest.mark.parametrize(
-        ('upload_bundles', 'set_hc'),
+        ('upload_bundles', '_set_hc'),
         [
             # from many hosts to 1
             ((['+'], [1]), 2),
@@ -768,7 +784,7 @@ class TestConstraintsChangeAfterUpgrade:
         indirect=True,
         ids=_set_ids_for_upload_bundles_set_hc,
     )
-    @pytest.mark.usefixtures('set_hc', 'upload_bundles')
+    @pytest.mark.usefixtures('_set_hc', 'upload_bundles')
     def test_incorrect_hc_in_upgrade_with_actions(self, sdk_client_fs, cluster_with_component, with_hc_in_upgrade):
         """
         Test that when incorrect for new constraints HC is set,
@@ -805,12 +821,12 @@ class TestConstraintsChangeAfterUpgrade:
         ],
     )
     @pytest.mark.parametrize(
-        ('upload_bundles', 'set_hc'),
+        ('upload_bundles', '_set_hc'),
         [(([1], []), 1)],
         indirect=True,
         ids=_set_ids_for_upload_bundles_set_hc,
     )
-    @pytest.mark.usefixtures('set_hc', 'upload_bundles', 'with_hc_in_upgrade')
+    @pytest.mark.usefixtures('_set_hc', 'upload_bundles', 'with_hc_in_upgrade')
     def test_constraint_removed(self, cluster_with_component):
         """Test constraint is removed in new bundle version"""
         cluster, component = cluster_with_component

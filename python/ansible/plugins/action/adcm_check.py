@@ -131,17 +131,12 @@ class ActionModule(ActionBase):
         old_optional_condition = 'msg' in self._task.args
         new_optional_condition = 'fail_msg' in self._task.args and 'success_msg' in self._task.args
         optional_condition = old_optional_condition or new_optional_condition
-        required_condition = (
-            'title' in self._task.args and 'result' in self._task.args and optional_condition
-        )
+        required_condition = 'title' in self._task.args and 'result' in self._task.args and optional_condition
 
         if not required_condition:
             return {
                 "failed": True,
-                "msg": (
-                    "title, result and msg, fail_msg or success"
-                    "_msg are mandatory args of adcm_check"
-                ),
+                "msg": ("title, result and msg, fail_msg or success" "_msg are mandatory args of adcm_check"),
             }
 
         title = self._task.args['title']

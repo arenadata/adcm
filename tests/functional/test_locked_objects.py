@@ -13,24 +13,24 @@
 
 """Tests for ADCM objects locks"""
 
-from typing import Union, Tuple, List
+from typing import List, Tuple, Union
 
 import allure
 import pytest
 from _pytest.outcomes import Failed
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import (
-    Provider,
-    Cluster,
-    Host,
     ADCMClient,
+    Cluster,
+    Component,
+    Host,
+    Provider,
     Service,
     Task,
-    Component,
 )
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.asserts import assert_state
-from adcm_pytest_plugin.utils import random_string, catch_failed
+from adcm_pytest_plugin.utils import catch_failed, random_string
 from coreapi.exceptions import ErrorMessage
 
 LOCK_ACTION_NAMES = ["lock", "lock_multijob"]
@@ -219,7 +219,8 @@ class TestComponentLock:
             - Host
         """
         task = _lock_obj(
-            complete_cluster.service(name="first_service").component(name="first_service_component_1"), lock_action
+            complete_cluster.service(name="first_service").component(name="first_service_component_1"),
+            lock_action,
         )
         is_locked(host)
         task.wait()
@@ -664,7 +665,9 @@ def _cluster_with_components(cluster: Cluster, hosts: List[Host]):
 
 
 def _lock_obj(
-    obj: Union[Cluster, Service, Component, Provider, Host], lock_action: str = "lock", duration: int = 5
+    obj: Union[Cluster, Service, Component, Provider, Host],
+    lock_action: str = "lock",
+    duration: int = 5,
 ) -> Task:
     """
     Run action lock on object

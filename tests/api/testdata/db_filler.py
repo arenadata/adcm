@@ -15,29 +15,25 @@
 import random
 from collections import defaultdict
 from copy import deepcopy
-from typing import Literal, List, Dict, Any
+from typing import Any, Dict, List, Literal
 
 import allure
-
 from tests.api.steps.common import assume_step
 from tests.api.testdata.getters import get_endpoint_data, get_object_data
-from tests.api.utils.api_objects import Request, ExpectedResponse
+from tests.api.utils.api_objects import ADCMTestApiWrapper, ExpectedResponse, Request
 from tests.api.utils.endpoints import Endpoints
 from tests.api.utils.fake_data import build_schema_by_json
 from tests.api.utils.methods import Methods
 from tests.api.utils.types import (
-    get_fields,
     Field,
-    is_fk_field,
-    ForeignKeyM2M,
     ForeignKey,
-    get_field_name_by_fk_dataclass,
+    ForeignKeyM2M,
     GenericForeignKeyList,
     ObjectForeignKey,
+    get_field_name_by_fk_dataclass,
+    get_fields,
+    is_fk_field,
 )
-
-
-from tests.api.utils.api_objects import ADCMTestApiWrapper
 
 
 class DbFiller:

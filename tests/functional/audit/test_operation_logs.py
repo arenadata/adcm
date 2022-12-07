@@ -21,7 +21,6 @@ from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, User
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.utils import random_string
 from docker.models.containers import Container
-
 from tests.functional.audit.conftest import BUNDLES_DIR, ScenarioArg
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles, create_policy
@@ -63,9 +62,7 @@ def new_user_and_client(sdk_client_fs) -> Tuple[User, ADCMClient]:
     return user, ADCMClient(url=sdk_client_fs.url, user=credentials["username"], password=credentials["password"])
 
 
-@pytest.mark.parametrize(
-    "parsed_audit_log", [ScenarioArg("simple.yaml", CONTEXT)], indirect=True
-)  # pylint: disable-next=too-many-arguments
+@pytest.mark.parametrize("parsed_audit_log", [ScenarioArg("simple.yaml", CONTEXT)], indirect=True)
 def test_simple_flow(sdk_client_fs, audit_log_checker, adb_bundle, dummy_host, new_user_and_client):
     """Test simple from with cluster objects manipulations"""
     config = {"just_string": "hoho"}
@@ -81,7 +78,13 @@ def test_simple_flow(sdk_client_fs, audit_log_checker, adb_bundle, dummy_host, n
     cluster.hostcomponent_set((dummy_host, component))
     run_cluster_action_and_assert_result(cluster, "install", "failed")
     new_user, new_client = new_user_and_client
-    create_policy(sdk_client_fs, BusinessRoles.ViewClusterConfigurations, [cluster], users=[new_user], groups=[])
+    create_policy(
+        sdk_client_fs,
+        BusinessRoles.ViewClusterConfigurations,
+        [cluster],
+        users=[new_user],
+        groups=[],
+    )
     new_client.reread()
     with allure.step("Try to change config from unauthorized user"):
         requests.post(
@@ -136,7 +139,7 @@ def _exec_django_shell(container: Container, statement: str) -> str:
             [
                 "sh",
                 "-c",
-                "source /adcm/venv/default/bin/activate " f"&& python3 /adcm/python/manage.py shell -c '{script}'",
+                ". /adcm/venv/default/bin/activate " f"&& python /adcm/python/manage.py shell -c '{script}'",
             ]
         )
         out = output.decode("utf-8").strip()

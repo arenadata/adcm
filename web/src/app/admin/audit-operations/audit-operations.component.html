@@ -1,0 +1,13 @@
+<app-server-filter [filterList]="auditOperationsFilters" [filterParams$]="filterParams$" [entity]="type"></app-server-filter>
+
+<adwp-list
+  [columns]="listColumns"
+  [dataSource]="data$ | async"
+  [paging]="paging | async"
+  [sort]="sorting | async"
+  [defaultSort]="defaultSort"
+  (auxclickRow)="auxclickRow($event)"
+  (changePaging)="onChangePaging($event)"
+  (changeSort)="onChangeSort($event)"
+  (chooseAll)="chooseAll($event)"
+></adwp-list>

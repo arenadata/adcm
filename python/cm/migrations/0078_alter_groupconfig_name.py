@@ -34,9 +34,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='groupconfig',
             name='name',
-            field=models.CharField(
-                max_length=30, validators=[cm.models.validate_line_break_character]
-            ),
+            field=models.CharField(max_length=30, validators=[cm.models.validate_line_break_character]),
         ),
         migrations.RunPython(remove_line_break_character),
     ]

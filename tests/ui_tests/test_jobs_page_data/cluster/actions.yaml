@@ -33,3 +33,10 @@
         minutes: 1
       tags:
         - pause
+    - name: "Check"
+      adcm_check:
+        title: "Check entry"
+        msg: "Check text"
+        result: yes
+      tags:
+        - check

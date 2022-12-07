@@ -13,34 +13,30 @@
 """The most basic PageObject classes"""
 
 from contextlib import contextmanager
-from typing import (
-    Optional,
-    List,
-    Union,
-    Callable,
-)
+from typing import Callable, List, Optional, Union
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
-from selenium.common.exceptions import ElementClickInterceptedException
 from selenium.common.exceptions import (
+    ElementClickInterceptedException,
     NoSuchElementException,
     StaleElementReferenceException,
     TimeoutException,
 )
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.remote.webdriver import WebElement
+from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
-
 from tests.ui_tests.app.helpers.locator import Locator
-from tests.ui_tests.app.page.common.common_locators import CommonLocators, ObjectPageLocators
+from tests.ui_tests.app.page.common.common_locators import (
+    CommonLocators,
+    ObjectPageLocators,
+)
 from tests.ui_tests.app.page.common.footer_locators import CommonFooterLocators
 from tests.ui_tests.app.page.common.header_locators import (
-    CommonHeaderLocators,
     AuthorizedHeaderLocators,
+    CommonHeaderLocators,
 )
 from tests.ui_tests.app.page.common.popups.locator import CommonPopupLocators
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
@@ -183,7 +179,7 @@ class BasePageObject:
             except TimeoutException:
                 return []
 
-    def find_elements(self, locator: Locator, timeout: int = None) -> [WebElement]:
+    def find_elements(self, locator: Locator, timeout: int = None) -> list[WebElement]:
         """Find elements on current page."""
 
         loc_timeout = timeout or self.default_loc_timeout
@@ -231,7 +227,7 @@ class BasePageObject:
         try:
             self.wait_element_hide(element, timeout)
         except TimeoutException as e:
-            raise AssertionError(e.msg)
+            raise AssertionError(e.msg) from e
 
     def check_element_should_be_visible(
         self, element: Union[Locator, WebElement], timeout: Optional[int] = None
@@ -240,7 +236,7 @@ class BasePageObject:
         try:
             self.wait_element_visible(element, timeout)
         except TimeoutException as e:
-            raise AssertionError(e.msg)
+            raise AssertionError(e.msg) from e
 
     def find_and_click(self, locator: Locator, is_js: bool = False, timeout: int = None) -> None:
         """Find element on current page and click on it."""
@@ -332,7 +328,11 @@ class BasePageObject:
 
     @allure.step('Write text to input element: "{text}"')
     def send_text_to_element(
-        self, element: Union[Locator, WebElement], text: str, clean_input: bool = True, timeout: Optional[int] = None
+        self,
+        element: Union[Locator, WebElement],
+        text: str,
+        clean_input: bool = True,
+        timeout: Optional[int] = None,
     ):
         """
         Writes text to input element found by locator
@@ -402,6 +402,7 @@ class BasePageObject:
             NoSuchElementException,
             StaleElementReferenceException,
             TimeoutError,
+            AssertionError,
         ):
             return False
 

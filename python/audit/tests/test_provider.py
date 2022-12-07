@@ -250,9 +250,7 @@ class TestProvider(BaseTestCase):
 
     def test_update_and_restore(self):
         config = ObjectConfig.objects.create(current=0, previous=0)
-        provider = HostProvider.objects.create(
-            prototype=self.prototype, name="test_provider", config=config
-        )
+        provider = HostProvider.objects.create(prototype=self.prototype, name="test_provider", config=config)
 
         config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
         config.current = config_log.pk
@@ -293,9 +291,7 @@ class TestProvider(BaseTestCase):
 
     def test_update_and_restore_denied(self):
         config = ObjectConfig.objects.create(current=1, previous=1)
-        provider = HostProvider.objects.create(
-            prototype=self.prototype, name="test_provider", config=config
-        )
+        provider = HostProvider.objects.create(prototype=self.prototype, name="test_provider", config=config)
 
         ConfigLog.objects.create(obj_ref=config, config="{}")
         with self.no_rights_user_logged_in:
@@ -346,17 +342,11 @@ class TestProvider(BaseTestCase):
             state_available="any",
         )
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(
-                path=reverse(
-                    "run-task", kwargs={"provider_id": provider.pk, "action_id": action.pk}
-                )
-            )
+            self.client.post(path=reverse("run-task", kwargs={"provider_id": provider.pk, "action_id": action.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_action_log(
-            log=log, provider=provider, operation_name=f"{action.display_name} action launched"
-        )
+        self.check_action_log(log=log, provider=provider, operation_name=f"{action.display_name} action launched")
 
     def test_do_upgrade(self):
         provider = HostProvider.objects.create(

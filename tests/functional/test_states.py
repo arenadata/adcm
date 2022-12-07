@@ -15,20 +15,19 @@
 # todo add new DSL variant for job and multijob
 
 # pylint:disable=redefined-outer-name
-from typing import Tuple, Callable
+from typing import Callable, Tuple
 
 import allure
 from adcm_client.objects import ADCMClient, Cluster, Provider
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
     run_component_action_and_assert_result,
-    run_provider_action_and_assert_result,
     run_host_action_and_assert_result,
+    run_provider_action_and_assert_result,
+    run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import fixture_parametrized_by_data_subdirs
 from tests.functional.plugin_utils import build_objects_checker
-
 
 ACTION_NAME = 'state_changing_action'
 ACTION_SET_MULTISTATE_NAME = "set_multistate"
@@ -184,6 +183,7 @@ class TestClusterRelatedObjects:
         Test cluster and multi states and states after action
         Before action add multi state that should be unset via action
         """
+
         object_to_be_changed, check_objects_multi_state_changed = cluster_and_multi_states_plus_states_checker
         run_cluster_action_and_assert_result(object_to_be_changed, ACTION_SET_MULTISTATE_NAME)
         with check_objects_multi_state_changed(sdk_client_fs, {object_to_be_changed}), allure.step(

@@ -16,18 +16,17 @@ import allure
 import pytest
 from adcm_client.objects import ADCMClient
 from coreapi.exceptions import ErrorMessage
-
 from tests.api.utils.tools import random_string
 from tests.functional.rbac.conftest import (
-    create_policy,
-    BusinessRoles,
-    as_user_objects,
-    is_allowed,
-    delete_policy,
-    is_denied,
-    TEST_USER_CREDENTIALS,
     CLUSTER_VIEW_CONFIG_ROLES,
     PROVIDER_VIEW_CONFIG_ROLES,
+    TEST_USER_CREDENTIALS,
+    BusinessRoles,
+    as_user_objects,
+    create_policy,
+    delete_policy,
+    is_allowed,
+    is_denied,
 )
 
 

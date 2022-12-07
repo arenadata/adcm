@@ -11,19 +11,18 @@
 # limitations under the License.
 
 """Some useful methods"""
-from dataclasses import dataclass
 import random
 import socket
 import string
+from dataclasses import dataclass
 from itertools import repeat
 from json import JSONEncoder
 from time import sleep
 
+import allure
 import ifaddr
 import requests
-import allure
 from requests_toolbelt.utils import dump
-
 
 PARAMETRIZED_BY_LIST = ["cluster", "service", "component", "provider", "host"]
 

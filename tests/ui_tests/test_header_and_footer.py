@@ -15,27 +15,22 @@
 import allure
 import pytest
 from adcm_pytest_plugin.common import add_dummy_objects_to_adcm
-
 from tests.ui_tests.app.page.admin.page import AdminIntroPage, AdminSettingsPage
 from tests.ui_tests.app.page.bundle_list.page import BundleListPage
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
-    PageHeader,
     PageFooter,
+    PageHeader,
 )
 from tests.ui_tests.app.page.host_list.page import HostListPage
 from tests.ui_tests.app.page.hostprovider_list.page import ProviderListPage
 from tests.ui_tests.app.page.job_list.page import JobListPage
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.app.page.profile.page import ProfilePage
-from tests.ui_tests.utils import (
-    wait_for_new_window,
-    close_current_tab,
-)
+from tests.ui_tests.utils import close_current_tab, wait_for_new_window
 
-
-pytestmark = [pytest.mark.usefixtures("login_to_adcm_over_api")]
+pytestmark = [pytest.mark.usefixtures("_login_to_adcm_over_api")]
 
 
 class TestHeader:

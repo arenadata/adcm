@@ -80,13 +80,12 @@ func newEventMsg(status int, objType string, objId int) eventMsg {
 func getServiceStatus(h Hub, cluster int, service int) (Status, []hostCompStatus) {
 	hc := []hostCompStatus{}
 	hostComp, _ := h.ServiceMap.getServiceHC(cluster, service)
-	servStatus := Status{}
+	servStatus := Status{Status: 0}
 	for _, key := range hostComp {
 		spl := strings.Split(key, ".")
 		hostId, _ := strconv.Atoi(spl[0])
 		compId, _ := strconv.Atoi(spl[1])
-		host, ok := h.HostStorage.retrieve(hostId)
-		if ok && host.MaintenanceMode {
+		if h.MMObjects.IsHostInMM(hostId) || h.MMObjects.IsComponentInMM(compId) {
 			continue
 		}
 		status, ok := h.HostComponentStorage.get(hostId, compId)
@@ -107,10 +106,14 @@ func getComponentStatus(h Hub, compId int) (Status, map[int]Status) {
 	if len(hostList) == 0 {
 		return Status{Status: 32}, hosts
 	}
+
 	status := 0
+	if h.MMObjects.IsComponentInMM(compId) {
+		return Status{Status: status}, hosts
+	}
+
 	for _, hostId := range hostList {
-		host, ok := h.HostStorage.retrieve(hostId)
-		if ok && host.MaintenanceMode {
+		if h.MMObjects.IsHostInMM(hostId) {
 			continue
 		}
 		hostStatus, ok := h.HostComponentStorage.get(hostId, compId)
@@ -133,8 +136,7 @@ func getClusterHostStatus(h Hub, clusterId int) (int, map[int]Status) {
 	}
 	result := 0
 	for _, hostId := range hostList {
-		host, ok := h.HostStorage.retrieve(hostId)
-		if ok && host.MaintenanceMode {
+		if h.MMObjects.IsHostInMM(hostId) {
 			continue
 		}
 		status, ok := h.HostStatusStorage.get(ALL, hostId)

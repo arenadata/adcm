@@ -19,7 +19,6 @@ from typing import Callable, Dict, List, Optional
 import allure
 from adcm_client.audit import AuditOperation
 from adcm_client.objects import ADCMClient
-
 from tests.library.audit.operations import Operation, convert_to_operations
 from tests.library.audit.readers import ParsedAuditLog
 
@@ -76,7 +75,10 @@ class AuditLogChecker:
         sorted_audit_records = sorted(audit_records, key=lambda rec: rec.operation_time)
         total_amount = len(sorted_audit_records)
         operations = convert_to_operations(
-            self._raw_operations, self._operation_defaults.username, self._operation_defaults.result, self._user_map
+            self._raw_operations,
+            self._operation_defaults.username,
+            self._operation_defaults.result,
+            self._user_map,
         )
         first_expected_operation = operations[0]
         try:
@@ -105,7 +107,10 @@ class AuditLogChecker:
                 last_found_ind = total_amount - len(suitable_records) - 1
 
     def set_user_map(
-        self, client_: Optional[ADCMClient] = None, user_id_map_: Optional[Dict[str, int]] = None, **user_ids: int
+        self,
+        client_: Optional[ADCMClient] = None,
+        user_id_map_: Optional[Dict[str, int]] = None,
+        **user_ids: int,
     ) -> None:
         """
         When there are custom users in the scenario, you should use this method to provide full user list.

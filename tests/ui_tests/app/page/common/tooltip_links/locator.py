@@ -13,11 +13,7 @@
 """Tooltip page locators"""
 
 from selenium.webdriver.common.by import By
-
-from tests.ui_tests.app.helpers.locator import (
-    Locator,
-    TemplateLocator,
-)
+from tests.ui_tests.app.helpers.locator import Locator, TemplateLocator
 
 
 class CommonToolbarLocators:
@@ -29,7 +25,9 @@ class CommonToolbarLocators:
     text_link = TemplateLocator(By.XPATH, "//a[text()='{}']", "Link to {}")
     action_btn = TemplateLocator(By.XPATH, "//span[.//a[text()='{}']]//app-action-list/button", "Action button to {}")
     adcm_action_btn = Locator(
-        By.XPATH, "//mat-nav-list[./a[@routerlink='/admin']]//app-action-list/button", "Action button to adcm"
+        By.XPATH,
+        "//mat-nav-list[./a[@routerlink='/admin']]//app-action-list/button",
+        "Action button to adcm",
     )
     upgrade_btn = TemplateLocator(By.XPATH, "//*[.//a[text()='{}']]//app-upgrade/button", "Upgrade button to {}")
     warn_btn = TemplateLocator(By.XPATH, "//span[.//a[text()='{}']]//app-concern-list-ref/button", "Warn button to {}")

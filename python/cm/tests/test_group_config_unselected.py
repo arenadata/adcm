@@ -1,3 +1,14 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
 
@@ -95,9 +106,7 @@ class TestUnselectedFields(TestCase):
             self.cluster,
         )
         new_config = {"list": None, "string": None, "map": None, "structure": None, "json": {}}
-        with self.assertRaisesRegex(
-            AdcmEx, r"Value of `json` field is different in current and new config."
-        ):
+        with self.assertRaisesRegex(AdcmEx, r"Value of `json` field is different in current and new config."):
             check_value_unselected_field(
                 self.cluster_config,
                 new_config,
@@ -115,9 +124,7 @@ class TestUnselectedFields(TestCase):
             "structure": {"test": []},
             "json": None,
         }
-        with self.assertRaisesRegex(
-            AdcmEx, r"Value of `structure` field is different in current and new config."
-        ):
+        with self.assertRaisesRegex(AdcmEx, r"Value of `structure` field is different in current and new config."):
             check_value_unselected_field(
                 self.cluster_config,
                 new_config,
@@ -134,9 +141,7 @@ class TestUnselectedFields(TestCase):
         self.cluster.save()
 
         new_config = {"list": [], "string": "wow", "map": {}, "structure": {}, "json": {}}
-        with self.assertRaisesRegex(
-            AdcmEx, r"Value of `string` field is different in current and new config."
-        ):
+        with self.assertRaisesRegex(AdcmEx, r"Value of `string` field is different in current and new config."):
             check_value_unselected_field(
                 self.cluster_config,
                 new_config,
@@ -148,9 +153,7 @@ class TestUnselectedFields(TestCase):
             )
 
         new_config = {"list": [1, 2, 3], "string": "", "map": {}, "structure": {}, "json": {}}
-        with self.assertRaisesRegex(
-            AdcmEx, r"Value of `list` field is different in current and new config."
-        ):
+        with self.assertRaisesRegex(AdcmEx, r"Value of `list` field is different in current and new config."):
             check_value_unselected_field(
                 self.cluster_config,
                 new_config,
@@ -162,9 +165,7 @@ class TestUnselectedFields(TestCase):
             )
 
         new_config = {"list": [], "string": "", "map": {"key": 1}, "structure": {}, "json": {}}
-        with self.assertRaisesRegex(
-            AdcmEx, r"Value of `map` field is different in current and new config."
-        ):
+        with self.assertRaisesRegex(AdcmEx, r"Value of `map` field is different in current and new config."):
             check_value_unselected_field(
                 self.cluster_config,
                 new_config,
@@ -176,9 +177,7 @@ class TestUnselectedFields(TestCase):
             )
 
         new_config = {"list": [], "string": "", "map": {}, "structure": {"key": 1}, "json": {}}
-        with self.assertRaisesRegex(
-            AdcmEx, r"Value of `structure` field is different in current and new config."
-        ):
+        with self.assertRaisesRegex(AdcmEx, r"Value of `structure` field is different in current and new config."):
             check_value_unselected_field(
                 self.cluster_config,
                 new_config,
@@ -190,9 +189,7 @@ class TestUnselectedFields(TestCase):
             )
 
         new_config = {"list": [], "string": "", "map": {}, "structure": {}, "json": {"key": 1}}
-        with self.assertRaisesRegex(
-            AdcmEx, r"Value of `json` field is different in current and new config."
-        ):
+        with self.assertRaisesRegex(AdcmEx, r"Value of `json` field is different in current and new config."):
             check_value_unselected_field(
                 self.cluster_config,
                 new_config,

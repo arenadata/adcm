@@ -31,7 +31,7 @@ import { BaseFormDirective } from './base-form.directive';
     <ng-template #not>
       <p>
         <i>
-          There are no new services. You cluster already has all of them.
+          There are no new services. Your cluster already has all of them.
         </i>
       </p>
     </ng-template>

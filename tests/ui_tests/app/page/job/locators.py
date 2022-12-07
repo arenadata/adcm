@@ -13,11 +13,8 @@
 """Job page locators"""
 
 from selenium.webdriver.common.by import By
-
 from tests.ui_tests.app.helpers.locator import Locator
-from tests.ui_tests.app.page.common.common_locators import (
-    ObjectPageLocators,
-)
+from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
 
 
 class JobPageLocators(ObjectPageLocators):

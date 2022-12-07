@@ -17,6 +17,8 @@ import { ChannelService } from '@app/core/services';
 import { keyChannelStrim } from '@app/core/services';
 import { ActionParameters } from '@app/shared/components/actions/actions.directive';
 
+type disabledFunction = (args: any) => boolean;
+
 export interface DialogData {
   title: string;
   component: Type<DynamicComponent>;
@@ -24,7 +26,7 @@ export interface DialogData {
   event?: EventEmitter<any>;
   text?: string;
   controls?: any[] | any;
-  disabled?: boolean;
+  disabled?: disabledFunction | boolean;
 }
 
 @Component({
@@ -45,10 +47,15 @@ export interface DialogData {
       <ng-container *ngTemplateOutlet="isArray; context: { buttons: data.controls.buttons }"></ng-container>
     </ng-template>
     <ng-template #isArray let-buttons="buttons">
-      <button mat-raised-button color="primary" (click)="_noClick()" tabindex="-1">{{ buttons[1] }}</button>
-      <button mat-raised-button color="accent" [mat-dialog-close]="true" [disabled]="data?.disabled" tabindex="2">
-        {{ buttons[0] }}
-      </button>
+      <ng-container [ngSwitch]="buttons.length">
+        <button *ngSwitchCase="1" mat-raised-button color="primary" (click)="_noClick()" tabindex="-1">{{ buttons[0] }}</button>
+        <ng-container *ngSwitchDefault>
+          <button mat-raised-button color="primary" (click)="_noClick()" tabindex="-1">{{ buttons[1] }}</button>
+          <button mat-raised-button color="accent" [mat-dialog-close]="true" [disabled]="_getDisabledValue()" tabindex="2">
+            {{ buttons[0] }}
+          </button>
+        </ng-container>
+      </ng-container>
     </ng-template>
   `,
   styles: [`
@@ -137,5 +144,9 @@ export class DialogComponent implements OnInit {
 
   _isUserInactive() {
     return this.data?.model?.value?.is_active === false;
+  }
+
+  _getDisabledValue() {
+    return typeof this.data?.disabled === 'function' ? this.data?.disabled(this.data?.model) : this.data?.disabled;
   }
 }

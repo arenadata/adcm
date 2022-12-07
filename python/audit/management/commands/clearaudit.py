@@ -18,6 +18,7 @@ from pathlib import Path
 from shutil import rmtree
 from tarfile import TarFile
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.models import Count, Q
 from django.utils import timezone
@@ -31,7 +32,6 @@ logger = logging.getLogger("background_tasks")
 
 # pylint: disable=protected-access
 class Command(BaseCommand):
-    encoding = "utf-8"
     config_key = "audit_data_retention"
     archive_base_dir = "/adcm/data/audit/"
     archive_tmp_dir = "/adcm/data/audit/tmp"
@@ -40,12 +40,12 @@ class Command(BaseCommand):
         read=dict(
             name=os.path.join(archive_base_dir, archive_name),
             mode="r:gz",
-            encoding="utf-8",
+            encoding=settings.ENCODING_UTF_8,
         ),
         write=dict(
             name=os.path.join(archive_base_dir, archive_name),
             mode="w:gz",
-            encoding="utf-8",
+            encoding=settings.ENCODING_UTF_8,
             compresslevel=9,
         ),
     )
@@ -77,11 +77,7 @@ class Command(BaseCommand):
         target_logins = AuditSession.objects.filter(login_time__lt=threshold_date)
         target_objects = (
             AuditObject.objects.filter(is_deleted=True)
-            .annotate(
-                not_deleted_auditlogs_count=Count(
-                    "auditlog", filter=~Q(auditlog__in=target_operations)
-                )
-            )
+            .annotate(not_deleted_auditlogs_count=Count("auditlog", filter=~Q(auditlog__in=target_operations)))
             .filter(not_deleted_auditlogs_count__lte=0)
         )
 
@@ -165,7 +161,7 @@ class Command(BaseCommand):
                 qs_fields = header
 
             mode = "at" if header else "wt"
-            with open(tmp_cvf_name, mode, newline="", encoding=self.encoding) as csv_file:
+            with open(tmp_cvf_name, mode, newline="", encoding=settings.ENCODING_UTF_8) as csv_file:
                 writer = csv.writer(csv_file)
 
                 if header is None:
@@ -182,7 +178,7 @@ class Command(BaseCommand):
     def __get_csv_header(self, path):
         header = None
         if Path(path).is_file():
-            with open(path, "rt", encoding=self.encoding) as csv_file:
+            with open(path, "rt", encoding=settings.ENCODING_UTF_8) as csv_file:
                 header = csv_file.readline().strip().split(",")
         return header
 

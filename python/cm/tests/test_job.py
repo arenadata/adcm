@@ -15,11 +15,11 @@
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+from django.conf import settings
 from django.utils import timezone
 
 from adcm.tests.base import BaseTestCase
 from cm.api import add_cluster, add_service_to_cluster
-from cm.config import BASE_DIR, BUNDLE_DIR, RUN_DIR, Job
 from cm.job import (
     check_cluster,
     check_service_task,
@@ -46,6 +46,7 @@ from cm.models import (
     Host,
     HostProvider,
     JobLog,
+    JobStatus,
     Prototype,
     ServiceComponent,
     SubAction,
@@ -72,10 +73,8 @@ class TestJob(BaseTestCase):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
         action = Action.objects.create(prototype=prototype)
-        job = JobLog.objects.create(
-            action=action, start_date=timezone.now(), finish_date=timezone.now()
-        )
-        status = Job.RUNNING
+        job = JobLog.objects.create(action=action, start_date=timezone.now(), finish_date=timezone.now())
+        status = JobStatus.RUNNING
         pid = 10
         event = Mock()
 
@@ -92,14 +91,12 @@ class TestJob(BaseTestCase):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
         action = Action.objects.create(prototype=prototype)
-        task = TaskLog.objects.create(
-            action=action, object_id=1, start_date=timezone.now(), finish_date=timezone.now()
-        )
+        task = TaskLog.objects.create(action=action, object_id=1, start_date=timezone.now(), finish_date=timezone.now())
 
-        set_task_status(task, Job.RUNNING, event)
+        set_task_status(task, JobStatus.RUNNING, event)
 
-        self.assertEqual(task.status, Job.RUNNING)
-        event.set_task_status.assert_called_once_with(task.id, Job.RUNNING)
+        self.assertEqual(task.status, JobStatus.RUNNING)
+        event.set_task_status.assert_called_once_with(task.id, JobStatus.RUNNING)
 
     def test_get_state_single_job(self):
         bundle = gen_bundle()
@@ -118,9 +115,9 @@ class TestJob(BaseTestCase):
 
         # status: expected state, expected multi_state set, expected multi_state unset
         test_data = [
-            [Job.SUCCESS, "success", ["success"], ["success unset"]],
-            [Job.FAILED, "fail", ["fail"], ["fail unset"]],
-            [Job.ABORTED, None, [], []],
+            [JobStatus.SUCCESS, "success", ["success"], ["success unset"]],
+            [JobStatus.FAILED, "fail", ["fail"], ["fail unset"]],
+            [JobStatus.ABORTED, None, [], []],
         ]
         for status, exp_state, exp_m_state_set, exp_m_state_unset in test_data:
             state, m_state_set, m_state_unset = get_state(action, job, status)
@@ -147,9 +144,9 @@ class TestJob(BaseTestCase):
 
         # status: expected state, expected multi_state set, expected multi_state unset
         test_data = [
-            [Job.SUCCESS, "success", ["success"], ["success unset"]],
-            [Job.FAILED, "sub_action fail", ["fail"], ["fail unset"]],
-            [Job.ABORTED, None, [], []],
+            [JobStatus.SUCCESS, "success", ["success"], ["success unset"]],
+            [JobStatus.FAILED, "sub_action fail", ["fail"], ["fail unset"]],
+            [JobStatus.ABORTED, None, [], []],
         ]
         for status, exp_state, exp_m_state_set, exp_m_state_unset in test_data:
             state, m_state_set, m_state_unset = get_state(action, job, status)
@@ -169,9 +166,7 @@ class TestJob(BaseTestCase):
         host_provider = HostProvider.objects.create(prototype=prototype)
         adcm = ADCM.objects.create(prototype=prototype)
         action = Action.objects.create(prototype=prototype)
-        task = TaskLog.objects.create(
-            action=action, object_id=1, start_date=timezone.now(), finish_date=timezone.now()
-        )
+        task = TaskLog.objects.create(action=action, object_id=1, start_date=timezone.now(), finish_date=timezone.now())
         to_set = "to set"
         to_unset = "to unset"
         for obj in (adcm, cluster, cluster_object, host_provider, host):
@@ -193,7 +188,7 @@ class TestJob(BaseTestCase):
             self.assertIn(to_set, obj.multi_state)
             self.assertNotIn(to_unset, obj.multi_state)
 
-    @patch("cm.job.api.save_hc")
+    @patch("cm.job.save_hc")
     def test_restore_hc(self, mock_save_hc):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
@@ -221,10 +216,10 @@ class TestJob(BaseTestCase):
             hostcomponentmap=hostcomponentmap,
         )
 
-        restore_hc(task, action, Job.FAILED)
+        restore_hc(task, action, JobStatus.FAILED)
         mock_save_hc.assert_called_once_with(cluster, [(cluster_object, host, service_component)])
 
-    @patch("cm.job.err")
+    @patch("cm.job.raise_adcm_ex")
     def test_check_service_task(self, mock_err):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
@@ -237,7 +232,7 @@ class TestJob(BaseTestCase):
         self.assertEqual(cluster_object, service)
         self.assertEqual(mock_err.call_count, 0)
 
-    @patch("cm.job.err")
+    @patch("cm.job.raise_adcm_ex")
     def test_check_cluster(self, mock_err):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
@@ -250,17 +245,13 @@ class TestJob(BaseTestCase):
 
     @patch("cm.job.prepare_ansible_config")
     @patch("cm.job.prepare_job_config")
-    @patch("cm.job.inventory.prepare_job_inventory")
-    def test_prepare_job(
-        self, mock_prepare_job_inventory, mock_prepare_job_config, mock_prepare_ansible_config
-    ):
+    @patch("cm.job.prepare_job_inventory")
+    def test_prepare_job(self, mock_prepare_job_inventory, mock_prepare_job_config, mock_prepare_ansible_config):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
         cluster = Cluster.objects.create(prototype=prototype)
         action = Action.objects.create(prototype=prototype)
-        job = JobLog.objects.create(
-            action=action, start_date=timezone.now(), finish_date=timezone.now()
-        )
+        job = JobLog.objects.create(action=action, start_date=timezone.now(), finish_date=timezone.now())
 
         prepare_job(action, None, job.id, cluster, "", {}, None, False)
 
@@ -295,16 +286,14 @@ class TestJob(BaseTestCase):
         service = add_service_to_cluster(cluster, proto2)
         context = prepare_context(action2, service)
 
-        self.assertDictEqual(
-            context, {"type": "service", "service_id": service.id, "cluster_id": cluster.id}
-        )
+        self.assertDictEqual(context, {"type": "service", "service_id": service.id, "cluster_id": cluster.id})
 
     def test_get_bundle_root(self):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
         action = Action.objects.create(prototype=prototype)
 
-        data = [("adcm", str(Path(BASE_DIR, "conf"))), ("", BUNDLE_DIR)]
+        data = [("adcm", str(Path(settings.BASE_DIR, "conf"))), ("", str(settings.BUNDLE_DIR))]
 
         for prototype_type, test_path in data:
             prototype.type = prototype_type
@@ -320,23 +309,23 @@ class TestJob(BaseTestCase):
         prototype = Prototype.objects.create(bundle=bundle)
         action = Action.objects.create(prototype=prototype)
         sub_action = SubAction.objects.create(action=action, script="ansible/sleep.yaml")
-        mock_get_bundle_root.return_value = BUNDLE_DIR
+        mock_get_bundle_root.return_value = str(settings.BUNDLE_DIR)
 
         data = [
             (
                 sub_action,
                 "main.yaml",
-                str(Path(BUNDLE_DIR, action.prototype.bundle.hash, "ansible/sleep.yaml")),
+                str(Path(settings.BUNDLE_DIR, action.prototype.bundle.hash, "ansible/sleep.yaml")),
             ),
             (
                 None,
                 "main.yaml",
-                str(Path(BUNDLE_DIR, action.prototype.bundle.hash, "main.yaml")),
+                str(Path(settings.BUNDLE_DIR, action.prototype.bundle.hash, "main.yaml")),
             ),
             (
                 None,
                 "./main.yaml",
-                str(Path(BUNDLE_DIR, action.prototype.bundle.hash, "main.yaml")),
+                str(Path(settings.BUNDLE_DIR, action.prototype.bundle.hash, "main.yaml")),
             ),
         ]
 
@@ -383,14 +372,12 @@ class TestJob(BaseTestCase):
         mock_open.return_value = fd
         mock_get_adcm_config.return_value = {}
         mock_prepare_context.return_value = {"type": "cluster", "cluster_id": 1}
-        mock_get_bundle_root.return_value = BUNDLE_DIR
+        mock_get_bundle_root.return_value = str(settings.BUNDLE_DIR)
         mock_cook_script.return_value = str(
-            Path(BUNDLE_DIR, cluster_action.prototype.bundle.hash, cluster_action.script)
+            Path(settings.BUNDLE_DIR, cluster_action.prototype.bundle.hash, cluster_action.script)
         )
 
-        job = JobLog.objects.create(
-            action=cluster_action, start_date=timezone.now(), finish_date=timezone.now()
-        )
+        job = JobLog.objects.create(action=cluster_action, start_date=timezone.now(), finish_date=timezone.now())
 
         conf = "test"
         proto4 = Prototype.objects.create(bundle=bundle, type="provider")
@@ -418,7 +405,7 @@ class TestJob(BaseTestCase):
                     "env": {
                         "run_dir": mock_dump.call_args[0][0]["env"]["run_dir"],
                         "log_dir": mock_dump.call_args[0][0]["env"]["log_dir"],
-                        "tmp_dir": str(Path(RUN_DIR, f"{job.id}", "tmp")),
+                        "tmp_dir": str(Path(settings.RUN_DIR, f"{job.id}", "tmp")),
                         "stack_dir": mock_dump.call_args[0][0]["env"]["stack_dir"],
                         "status_api_token": mock_dump.call_args[0][0]["env"]["status_api_token"],
                     },
@@ -462,7 +449,9 @@ class TestJob(BaseTestCase):
                     job_config["job"]["hostgroup"] = "127.0.0.1"
 
                 mock_open.assert_called_with(
-                    Path(f"{RUN_DIR}", f"{job.id}", "config.json"), "w", encoding="utf_8"
+                    settings.RUN_DIR / f"{job.id}" / "config.json",
+                    "w",
+                    encoding=settings.ENCODING_UTF_8,
                 )
                 mock_dump.assert_called_with(job_config, fd, indent=3, sort_keys=True)
                 mock_get_adcm_config.assert_called()
@@ -474,9 +463,7 @@ class TestJob(BaseTestCase):
     @patch("cm.job.get_old_hc")
     @patch("cm.job.get_actual_hc")
     @patch("cm.job.prepare_job")
-    def test_re_prepare_job(
-        self, mock_prepare_job, mock_get_actual_hc, mock_get_old_hc, mock_cook_delta
-    ):
+    def test_re_prepare_job(self, mock_prepare_job, mock_get_actual_hc, mock_get_old_hc, mock_cook_delta):
         # pylint: disable=too-many-locals
 
         new_hc = Mock()
@@ -527,6 +514,4 @@ class TestJob(BaseTestCase):
         mock_get_actual_hc.assert_called_once_with(cluster)
         mock_get_old_hc.assert_called_once_with(task.hostcomponentmap)
         mock_cook_delta.assert_called_once_with(cluster, new_hc, action.hostcomponentmap, old_hc)
-        mock_prepare_job.assert_called_once_with(
-            action, sub_action, job.id, cluster, task.config, delta, None, False
-        )
+        mock_prepare_job.assert_called_once_with(action, sub_action, job.id, cluster, task.config, delta, None, False)

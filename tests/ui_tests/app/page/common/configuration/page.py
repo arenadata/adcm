@@ -13,24 +13,18 @@
 """Config page PageObjects classes"""
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import (
-    List,
-    Collection,
-    Optional,
-    Union,
-)
+from typing import Collection, List, Optional, Union
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebElement
-
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.common_locators import (
-    ObjectPageMenuLocators,
     CommonLocators,
     ObjectPageLocators,
+    ObjectPageMenuLocators,
 )
 from tests.ui_tests.app.page.common.configuration.fields import ConfigFieldsManipulator
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
@@ -485,10 +479,10 @@ class CommonConfigMenuObj(BasePageObject):
             for item in item_rows:
                 self.check_element_should_be_hidden(item)
 
-    def get_group_names(self):
+    def get_group_names(self, timeout: int = 2):
         """Wait for group elements to be displayed and get them"""
         try:
-            return self.find_elements(self.locators.ConfigGroup.name, timeout=2)
+            return self.find_elements(self.locators.ConfigGroup.name, timeout=timeout)
         except TimeoutException:
             return []
 
@@ -510,9 +504,9 @@ class CommonConfigMenuObj(BasePageObject):
         wait_until_step_succeeds(_wait_changing_rows_amount, period=1, timeout=10)
 
     @allure.step('Check that there are no rows or groups on config page')
-    def check_no_rows_or_groups_on_page(self):
-        assert len(self.get_group_names()) == 0, "Config group should not be visible"
-        assert len(self.get_all_config_rows(timeout=1)) == 0, "There should not be any rows"
+    def check_no_rows_or_groups_on_page(self, timeout=1):
+        assert len(self.get_group_names(timeout)) == 0, "Config group should not be visible"
+        assert len(self.get_all_config_rows(timeout=timeout)) == 0, "There should not be any rows"
 
     @allure.step('Check that there are no rows or groups on config page with advanced settings')
     def check_no_rows_or_groups_on_page_with_advanced(self):
@@ -588,13 +582,15 @@ class CommonConfigMenuObj(BasePageObject):
     @allure.step("Check warn icon on the left menu Host-Components element")
     def check_hostcomponents_warn_icon_on_left_menu(self):
         assert self.is_child_displayed(
-            self.find_element(ObjectPageMenuLocators.components_tab), ObjectPageMenuLocators.warn_icon
+            self.find_element(ObjectPageMenuLocators.components_tab),
+            ObjectPageMenuLocators.warn_icon,
         ), "No warn icon near Host-Components left menu element"
 
     @allure.step("Check warn icon on the left menu Host-Components element")
     def check_service_components_warn_icon_on_left_menu(self):
         assert self.is_child_displayed(
-            self.find_element(ObjectPageMenuLocators.service_components_tab), ObjectPageMenuLocators.warn_icon
+            self.find_element(ObjectPageMenuLocators.service_components_tab),
+            ObjectPageMenuLocators.warn_icon,
         ), "No warn icon near Host-Components left menu element"
 
     @allure.step("Fill config page with test values")
@@ -678,7 +674,8 @@ class CommonConfigMenuObj(BasePageObject):
             self.check_group_is_active("group", is_active=False)
         with allure.step("Check history value in structure type"):
             self.wait_history_row_with_value(
-                self.get_config_row("structure"), '[{"code":1,"country":"Test1"},{"code":2,"country":"Test2"}]'
+                self.get_config_row("structure"),
+                '[{"code":1,"country":"Test1"},{"code":2,"country":"Test2"}]',
             )
         with allure.step("Check history value in map type"):
             self.wait_history_row_with_value(self.get_config_row("map"), '{"age":"24","name":"Joe","sex":"m"}')

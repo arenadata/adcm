@@ -19,8 +19,16 @@ from typing import Tuple
 import allure
 import pytest
 from adcm_client.base import ObjectNotFound
-from adcm_client.objects import Bundle, Cluster, Group, Host, Policy, Provider, Role, User
-
+from adcm_client.objects import (
+    Bundle,
+    Cluster,
+    Group,
+    Host,
+    Policy,
+    Provider,
+    Role,
+    User,
+)
 from tests.functional.audit.conftest import BUNDLES_DIR, NEW_USER
 from tests.functional.audit.conftest import CreateDeleteOperation as Delete
 from tests.functional.audit.conftest import check_failed, check_succeed
@@ -81,13 +89,17 @@ def rbac_objects(sdk_client_fs, rbac_create_data) -> Tuple[User, Group, Role, Po
 
 
 @pytest.fixture()
-def grant_view_config_permissions_on_adcm_objects(sdk_client_fs, adcm_objects, new_user_client):
+def _grant_view_config_permissions_on_adcm_objects(sdk_client_fs, adcm_objects, new_user_client):
     """Create policies that allow new user to get ADCM objects (via View Configuration)"""
     cluster, provider, host_1, host_2 = adcm_objects
     user = sdk_client_fs.user(id=new_user_client.me().id)
     create_policy(
         sdk_client_fs,
-        [BR.ViewClusterConfigurations, BR.ViewServiceConfigurations, BR.ViewComponentConfigurations],
+        [
+            BR.ViewClusterConfigurations,
+            BR.ViewServiceConfigurations,
+            BR.ViewComponentConfigurations,
+        ],
         [cluster, (s := cluster.service()), s.component()],
         users=[user],
         groups=[],
@@ -104,9 +116,7 @@ def grant_view_config_permissions_on_adcm_objects(sdk_client_fs, adcm_objects, n
 
 
 @pytest.mark.parametrize('parse_with_context', ['delete_objects.yaml'], indirect=True)
-@pytest.mark.usefixtures(
-    "grant_view_config_permissions_on_adcm_objects"
-)  # pylint: disable-next=too-many-locals,too-many-arguments
+@pytest.mark.usefixtures("_grant_view_config_permissions_on_adcm_objects")  # pylint: disable-next=too-many-locals
 def test_delete(
     parse_with_context,
     sdk_client_fs,

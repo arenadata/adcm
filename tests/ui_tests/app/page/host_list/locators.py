@@ -13,11 +13,7 @@
 """Host List page locators"""
 
 from selenium.webdriver.common.by import By
-
-from tests.ui_tests.app.helpers.locator import (
-    Locator,
-    TemplateLocator,
-)
+from tests.ui_tests.app.helpers.locator import Locator, TemplateLocator
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 
 
@@ -36,6 +32,7 @@ class HostListLocators:
         cluster_option = TemplateLocator(
             By.XPATH, "//mat-option//span[contains(text(), '{}')]", "Table dropdown option"
         )
+        header = Locator(By.TAG_NAME, "mat-header-row", "Header of the table")
 
         class HostRow:
             """Host List page host row elements locators"""
@@ -55,3 +52,4 @@ class HostListLocators:
             dropdown_menu = Locator(By.CSS_SELECTOR, "div[role='menu']", "Dropdown menu")
             action_option = TemplateLocator(By.XPATH, "//button/span[text()='{}']", "Action dropdown option")
             action_option_all = Locator(By.CSS_SELECTOR, "button[adcm_test='action_btn']", "Action dropdown options")
+            rename_btn = Locator(By.CLASS_NAME, "rename-button", "Cluster rename button in row")

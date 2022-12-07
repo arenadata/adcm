@@ -55,7 +55,7 @@ class TestPolicy(BaseTestCase):
             prototype=Prototype.objects.create(bundle=bundle, type="provider"),
         )
 
-    def check_log(  # pylint: disable=too-many-arguments
+    def check_log(
         self,
         log: AuditLog,
         obj: Policy | None,
@@ -134,9 +134,7 @@ class TestPolicy(BaseTestCase):
                 path=reverse(self.list_name),
                 data={
                     "name": self.name,
-                    "object": [
-                        {"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}
-                    ],
+                    "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
                     "role": {"id": self.role.pk},
                     "user": [{"id": self.test_user.pk}],
                 },
@@ -241,9 +239,7 @@ class TestPolicy(BaseTestCase):
                 path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
                 data={
                     "name": self.policy.name,
-                    "object": [
-                        {"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}
-                    ],
+                    "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
                     "role": {"id": self.role.pk},
                     "user": [{"id": self.test_user.pk}],
                     "description": "new_test_description",
@@ -317,9 +313,7 @@ class TestPolicy(BaseTestCase):
             response: Response = self.client.patch(
                 path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
                 data={
-                    "object": [
-                        {"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}
-                    ],
+                    "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
                     "role": {"id": self.role.pk},
                     "user": [{"id": self.test_user.pk}],
                     "description": "new_test_description",
@@ -342,9 +336,7 @@ class TestPolicy(BaseTestCase):
             self.client.patch(
                 path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
                 data={
-                    "object": [
-                        {"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}
-                    ],
+                    "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
                     "role": {},
                     "user": [{"id": self.test_user.pk}],
                     "description": "new_test_description",

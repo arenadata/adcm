@@ -13,13 +13,12 @@
 
 from functools import wraps
 
-from adwp_base.errors import AdwpEx
 from django.contrib.auth.models import User as DjangoUser
 from django.db.models import Model
 from django.http.response import Http404
 from django.urls import resolve
-from django.views.generic.base import View
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
 from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
@@ -29,12 +28,13 @@ from rest_framework.status import (
 )
 from rest_framework.viewsets import ModelViewSet
 
-from api import cluster, host
+from api.cluster.serializers import ClusterAuditSerializer
+from api.component.serializers import ComponentAuditSerializer
+from api.host.serializers import HostAuditSerializer
+from api.service.serializers import ServiceAuditSerializer
 from audit.cases.cases import get_audit_operation_and_object
-from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
 from audit.models import (
-    MODEL_TO_AUDIT_OBJECT_TYPE_MAP,
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
@@ -49,6 +49,7 @@ from cm.models import (
     ClusterObject,
     Host,
     HostProvider,
+    ServiceComponent,
     TaskLog,
 )
 from rbac.endpoints.group.serializers import GroupAuditSerializer
@@ -58,18 +59,18 @@ from rbac.endpoints.user.serializers import UserAuditSerializer
 from rbac.models import Group, Policy, Role, User
 
 
-def _get_view_and_request(args) -> tuple[View, Request]:
+def _get_view_and_request(args) -> tuple[GenericAPIView, Request]:
     if len(args) == 2:  # for audit view methods
-        view: View = args[0]
+        view: GenericAPIView = args[0]
         request: Request = args[1]
     else:  # for audit has_permissions method
-        view: View = args[2]
+        view: GenericAPIView = args[2]
         request: Request = args[1]
 
     return view, request
 
 
-def _get_deleted_obj(view: View, request: Request, kwargs) -> Model | None:
+def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs) -> Model | None:
     # pylint: disable=too-many-branches
 
     try:
@@ -120,9 +121,13 @@ def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
     elif isinstance(current_obj, Policy):
         serializer_class = PolicyAuditSerializer
     elif isinstance(current_obj, Cluster):
-        serializer_class = cluster.serializers.ClusterAuditSerializer
+        serializer_class = ClusterAuditSerializer
     elif isinstance(current_obj, Host):
-        serializer_class = host.serializers.HostAuditSerializer
+        serializer_class = HostAuditSerializer
+    elif isinstance(current_obj, ClusterObject):
+        serializer_class = ServiceAuditSerializer
+    elif isinstance(current_obj, ServiceComponent):
+        serializer_class = ComponentAuditSerializer
 
     if not serializer_class:
         return {}
@@ -145,41 +150,47 @@ def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
     return object_changes
 
 
-def _get_obj_changes_data(view: View | ModelViewSet) -> tuple[dict | None, Model | None]:
+def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | None, Model | None]:
+    # pylint: disable=too-many-branches
+
     prev_data = None
     current_obj = None
     serializer_class = None
-    model = None
-    if (
-        isinstance(view, ModelViewSet)
-        and view.action in {"update", "partial_update"}
-        and view.kwargs.get("pk")
-    ):
+    pk = None
+
+    if isinstance(view, ModelViewSet) and view.action in {"update", "partial_update"} and view.kwargs.get("pk"):
         pk = view.kwargs["pk"]
         if view.__class__.__name__ == "GroupViewSet":
             serializer_class = GroupAuditSerializer
-            model = Group
         elif view.__class__.__name__ == "RoleViewSet":
             serializer_class = RoleAuditSerializer
-            model = Role
         elif view.__class__.__name__ == "UserViewSet":
             serializer_class = UserAuditSerializer
-            model = User
         elif view.__class__.__name__ == "PolicyViewSet":
             serializer_class = PolicyAuditSerializer
-            model = Policy
     elif view.request.method in {"PATCH", "PUT"}:
         if view.__class__.__name__ == "ClusterDetail":
-            serializer_class = cluster.serializers.ClusterAuditSerializer
+            serializer_class = ClusterAuditSerializer
             pk = view.kwargs["cluster_id"]
-            model = Cluster
         elif view.__class__.__name__ == "HostDetail":
-            serializer_class = host.serializers.HostAuditSerializer
+            serializer_class = HostAuditSerializer
             pk = view.kwargs["host_id"]
-            model = Host
+    elif view.request.method == "POST":
+        if view.__class__.__name__ == "ServiceMaintenanceModeView":
+            serializer_class = ServiceAuditSerializer
+            pk = view.kwargs["service_id"]
+        elif view.__class__.__name__ == "HostMaintenanceModeView":
+            serializer_class = HostAuditSerializer
+            pk = view.kwargs["host_id"]
+        elif view.__class__.__name__ == "ComponentMaintenanceModeView":
+            serializer_class = ComponentAuditSerializer
+            pk = view.kwargs["component_id"]
+
     if serializer_class:
+        model = view.get_queryset().model
         current_obj = model.objects.filter(pk=pk).first()
         prev_data = serializer_class(model.objects.filter(pk=pk).first()).data
+
         if current_obj:
             prev_data = serializer_class(current_obj).data
 
@@ -195,7 +206,7 @@ def audit(func):
         audit_operation: AuditOperation
         audit_object: AuditObject
         operation_name: str
-        view: View | ModelViewSet
+        view: GenericAPIView | ModelViewSet
         request: Request
         object_changes: dict
 
@@ -207,7 +218,14 @@ def audit(func):
             if "bind_id" in kwargs:
                 deleted_obj = ClusterBind.objects.filter(pk=kwargs["bind_id"]).first()
         else:
-            deleted_obj = None
+            if "host_id" in kwargs and "maintenance-mode" in request.path:
+                deleted_obj = Host.objects.filter(pk=kwargs["host_id"]).first()
+            elif "service_id" in kwargs and "maintenance-mode" in request.path:
+                deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
+            elif "component_id" in kwargs and "maintenance-mode" in request.path:
+                deleted_obj = ServiceComponent.objects.filter(pk=kwargs["component_id"]).first()
+            else:
+                deleted_obj = None
 
         prev_data, current_obj = _get_obj_changes_data(view=view)
 
@@ -220,13 +238,12 @@ def audit(func):
                 status_code = res.status_code
             else:
                 status_code = HTTP_403_FORBIDDEN
-        except (AdcmEx, AdwpEx, ValidationError) as exc:
+        except (AdcmEx, ValidationError) as exc:
             error = exc
             res = None
 
             if getattr(exc, "msg", None) and (
-                "doesn't exist" in exc.msg
-                or "service is not installed in specified cluster" in exc.msg
+                "doesn't exist" in exc.msg or "service is not installed in specified cluster" in exc.msg
             ):
                 _kwargs = None
                 if "cluster_id" in kwargs:
@@ -234,7 +251,7 @@ def audit(func):
                 elif "cluster_id" in view.kwargs:
                     _kwargs = view.kwargs
 
-                if _kwargs:
+                if _kwargs and "maintenance-mode" not in request.path:
                     deleted_obj = Cluster.objects.filter(pk=_kwargs["cluster_id"]).first()
 
                 if "provider_id" in kwargs and "host_id" in kwargs:
@@ -257,13 +274,13 @@ def audit(func):
 
             if not deleted_obj:
                 status_code = exc.status_code
-                if (
-                    status_code == HTTP_404_NOT_FOUND
-                    and kwargs.get("action_id")
-                    and Action.objects.filter(pk=kwargs["action_id"]).exists()
-                ):
-                    status_code = HTTP_403_FORBIDDEN
-
+                if status_code == HTTP_404_NOT_FOUND:
+                    action_perm_denied = (
+                        kwargs.get("action_id") and Action.objects.filter(pk=kwargs["action_id"]).exists()
+                    )
+                    task_perm_denied = kwargs.get("task_pk") and TaskLog.objects.filter(pk=kwargs["task_pk"]).exists()
+                    if action_perm_denied or task_perm_denied:
+                        status_code = HTTP_403_FORBIDDEN
             else:  # when denied returns 404 from PermissionListMixin
                 if getattr(exc, "msg", None) and (  # pylint: disable=too-many-boolean-expressions
                     "There is host" in exc.msg
@@ -271,6 +288,8 @@ def audit(func):
                     or "of bundle" in exc.msg
                     or ("host doesn't exist" in exc.msg and not isinstance(deleted_obj, Host))
                 ):
+                    status_code = error.status_code
+                elif isinstance(exc, ValidationError):
                     status_code = error.status_code
                 else:
                     status_code = HTTP_403_FORBIDDEN
@@ -360,29 +379,3 @@ def make_audit_log(operation_type, result, operation_status):
         user=system_user,
     )
     cef_logger(audit_instance=audit_log, signature_id="Background operation", empty_resource=True)
-
-
-def audit_finish_task(obj, operation_name: str, status: str) -> None:
-    obj_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP.get(obj.__class__)
-    if not obj_type:
-        return
-
-    audit_object = get_or_create_audit_obj(
-        object_id=obj.pk,
-        object_name=obj.name,
-        object_type=obj_type,
-    )
-    if status == "success":
-        operation_result = AuditLogOperationResult.Success
-    else:
-        operation_result = AuditLogOperationResult.Fail
-
-    audit_log = AuditLog.objects.create(
-        audit_object=audit_object,
-        operation_name=operation_name,
-        operation_type=AuditLogOperationType.Update,
-        operation_result=operation_result,
-        object_changes={},
-    )
-
-    cef_logger(audit_instance=audit_log, signature_id="Action completion")

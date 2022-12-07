@@ -12,22 +12,19 @@
 
 """Tests for actions config"""
 
-import pytest
 import allure
-
-from coreapi.exceptions import ErrorMessage
-
-from adcm_client.objects import ADCMClient, Cluster, Service, Component, Provider, Host
+import pytest
+from adcm_client.objects import ADCMClient, Cluster, Component, Host, Provider, Service
 from adcm_pytest_plugin import utils as plugin_utils
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
     run_component_action_and_assert_result,
-    run_provider_action_and_assert_result,
     run_host_action_and_assert_result,
+    run_provider_action_and_assert_result,
+    run_service_action_and_assert_result,
 )
-
-from tests.library.errorcodes import CONFIG_VALUE_ERROR, CONFIG_KEY_ERROR
+from coreapi.exceptions import ErrorMessage
+from tests.library.errorcodes import CONFIG_KEY_ERROR, CONFIG_VALUE_ERROR
 
 # pylint: disable=redefined-outer-name
 

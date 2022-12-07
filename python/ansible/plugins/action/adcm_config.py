@@ -127,9 +127,7 @@ class ActionModule(ContextActionModule):
         return res
 
     def _do_host(self, task_vars, context):
-        res = self._wrap_call(
-            set_host_config, context['host_id'], self._task.args["key"], self._task.args["value"]
-        )
+        res = self._wrap_call(set_host_config, context['host_id'], self._task.args["key"], self._task.args["value"])
         res['value'] = self._task.args["value"]
         return res
 

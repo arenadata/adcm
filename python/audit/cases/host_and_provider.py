@@ -1,3 +1,14 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from django.db.models import Model
 from django.views import View
 from rest_framework.response import Response
@@ -22,11 +33,17 @@ def host_and_provider_case(
     audit_object = None
 
     match path:
-        case ["host", host_pk] | ["provider", _, "host", host_pk]:
+        case (
+            ["host", host_pk]
+            | ["host", host_pk, _]
+            | ["provider", _, "host", host_pk]
+            | ["provider", _, "host", host_pk, "maintenance-mode"]
+        ):
             if view.request.method == "DELETE":
                 operation_type = AuditLogOperationType.Delete
             else:
                 operation_type = AuditLogOperationType.Update
+
             object_name = None
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Host.capitalize()} {operation_type}d",

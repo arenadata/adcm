@@ -15,10 +15,9 @@ Utility functions for ADCM upgrade process
 from typing import Tuple
 
 import allure
-
-from version_utils import rpm
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.docker_utils import ADCM
+from version_utils import rpm
 
 
 @allure.step("Check that ADCM version has been changed")

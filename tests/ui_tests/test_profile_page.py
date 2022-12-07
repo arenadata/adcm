@@ -13,14 +13,17 @@
 """UI tests for /profile page"""
 
 import pytest
-
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.app.page.profile.page import ProfilePage
 
 # pylint: disable=redefined-outer-name
-pytestmark = [pytest.mark.smoke(), pytest.mark.include_firefox(), pytest.mark.usefixtures('login_to_adcm_over_api')]
+pytestmark = [
+    pytest.mark.smoke(),
+    pytest.mark.include_firefox(),
+    pytest.mark.usefixtures('_login_to_adcm_over_api'),
+]
 
 
 def test_open_profile(app_fs: ADCMTest):

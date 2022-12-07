@@ -10,10 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.logger import logger
 from cm.errors import AdcmEx
-
-from cm.models import Prototype, Action
+from cm.logger import logger
+from cm.models import Action, Prototype
 
 
 def task_generator(action, selector):

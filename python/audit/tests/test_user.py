@@ -207,9 +207,7 @@ class TestUser(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_log(
-            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
-        )
+        self.check_log(log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user)
 
     def test_update_patch(self):
         prev_first_name = self.test_user.first_name
@@ -243,6 +241,4 @@ class TestUser(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_log(
-            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
-        )
+        self.check_log(log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user)

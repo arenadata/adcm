@@ -20,7 +20,6 @@ import allure
 from _pytest.outcomes import Skipped
 
 
-# pylint: disable=no-else-return
 def assume_step(title, exception=None):
     """
     Allows you to suppress exception within the Allure steps.

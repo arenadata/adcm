@@ -18,24 +18,27 @@ import pathlib
 import sys
 import tarfile
 from pathlib import PosixPath
-from typing import Optional, List, Tuple, Union, Generator
+from typing import Generator, List, Optional, Tuple, Union
 
 import allure
 import ldap
 import pytest
 import websockets.client
 import yaml
-
 from _pytest.python import Function, FunctionDefinition, Module
-from adcm_client.objects import ADCMClient, User, Provider, Bundle
+from adcm_client.objects import ADCMClient, Bundle, Provider, User
 from adcm_pytest_plugin.utils import random_string
-from allure_commons.model2 import TestResult, Parameter
+from allure_commons.model2 import Parameter, TestResult
 from allure_pytest.listener import AllureListener
 from docker.utils import parse_repository_tag
-
 from tests.library.adcm_websockets import ADCMWebsocket
+from tests.library.api.client import APIClient
 from tests.library.db import QueryExecutioner
-from tests.library.ldap_interactions import LDAPEntityManager, LDAPTestConfig, configure_adcm_for_ldap
+from tests.library.ldap_interactions import (
+    LDAPEntityManager,
+    LDAPTestConfig,
+    configure_adcm_for_ldap,
+)
 from tests.library.utils import ConfigError
 
 pytest_plugins = "adcm_pytest_plugin"
@@ -117,7 +120,7 @@ def pytest_runtest_setup(item: Function):
 
 
 @pytest.hookimpl(trylast=True)
-def pytest_collection_modifyitems(session, config, items):  # pylint: disable=unused-argument
+def pytest_collection_modifyitems(session, config, items):
     """Run tests with id "adcm_with_dummy_data" after everything else"""
     items.sort(key=lambda x: 'adcm_with_dummy_data' in x.name)
 
@@ -170,6 +173,16 @@ def _get_listener_by_item_if_present(item: Function) -> Optional[AllureListener]
         )
         return listener
     return None
+
+
+# API Client
+
+
+@pytest.fixture()
+def api_client(adcm_fs, adcm_api_credentials) -> APIClient:
+    return APIClient(
+        adcm_fs.url, {"username": adcm_api_credentials["user"], "password": adcm_api_credentials["password"]}
+    )
 
 
 # Generic bundles
@@ -276,7 +289,7 @@ def user(sdk_client_fs) -> User:
 
 
 @pytest.fixture()
-def user_sdk(user, adcm_fs) -> ADCMClient:  # pylint: disable=unused-argument
+def user_sdk(user, adcm_fs) -> ADCMClient:
     """Returns ADCMClient object from adcm_client with testing user"""
     username, password = TEST_USER_CREDENTIALS
     return ADCMClient(url=adcm_fs.url, user=username, password=password)
@@ -330,7 +343,7 @@ def ldap_config(cmd_opts) -> dict:
         config = yaml.safe_load(file)
     if not isinstance(config, dict):
         raise ConfigError('LDAP config file should have root type "dict"')
-    ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)  # pylint: disable=no-member
+    ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
     return config
 
 
@@ -460,4 +473,8 @@ def configure_adcm_ldap_ad(request, sdk_client_fs: ADCMClient, ldap_basic_ous, a
 
 
 def _create_extra_user_modlist(user: dict) -> dict:
-    return {'first_name': user['name'], 'last_name': 'Testovich', 'email': f'{user["name"]}@nexistent.ru'}
+    return {
+        'first_name': user['name'],
+        'last_name': 'Testovich',
+        'email': f'{user["name"]}@nexistent.ru',
+    }

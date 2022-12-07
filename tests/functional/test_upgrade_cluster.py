@@ -15,14 +15,11 @@
 """Tests for cluster upgrade"""
 
 import allure
-import coreapi
 import pytest
-from coreapi.exceptions import ErrorMessage
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Service
-from adcm_pytest_plugin.utils import get_data_dir, catch_failed
 from adcm_pytest_plugin.docker_utils import ADCM
-
-from tests.library.errorcodes import UPGRADE_ERROR
+from adcm_pytest_plugin.utils import catch_failed, get_data_dir
+from coreapi.exceptions import ErrorMessage
 from tests.functional.tools import BEFORE_UPGRADE_DEFAULT_STATE, get_object_represent
 
 
@@ -149,27 +146,40 @@ def test_upgrade_cluster_with_config_groups(sdk_client_fs):
     with allure.step('Assert that configs save success after upgrade'):
         cluster.config_set(
             {
-                "attr": {"activatable_group_with_ro": {"active": True}, "activatable_group": {"active": True}},
+                "attr": {
+                    "activatable_group_with_ro": {"active": True},
+                    "activatable_group": {"active": True},
+                },
                 "config": {
                     **cluster.config(),
                     "activatable_group_with_ro": {"readonly-key": "value"},
-                    "activatable_group": {"required": 10, "writable-key": "value", "readonly-key": "value"},
+                    "activatable_group": {
+                        "required": 10,
+                        "writable-key": "value",
+                        "readonly-key": "value",
+                    },
                 },
             }
         )
         service.config_set(
             {
-                "attr": {"activatable_group_with_ro": {"active": True}, "activatable_group": {"active": True}},
+                "attr": {
+                    "activatable_group_with_ro": {"active": True},
+                    "activatable_group": {"active": True},
+                },
                 "config": {
                     **service.config(),
                     "activatable_group_with_ro": {"readonly-key": "value"},
-                    "activatable_group": {"required": 10, "writable-key": "value", "readonly-key": "value"},
+                    "activatable_group": {
+                        "required": 10,
+                        "writable-key": "value",
+                        "readonly-key": "value",
+                    },
                 },
             }
         )
 
 
-@pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3033")
 def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient, old_bundle):
     """Test upgrade should not be available ant stater"""
     with allure.step('Create upgradable cluster with unsupported state'):
@@ -179,11 +189,7 @@ def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient, old_bundle):
         upgr = cluster.upgrade(name='upgrade to 1.6')
         upgr.do()
         cluster.reread()
-        upgr = cluster.upgrade(name='upgrade 2')
-        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            upgr.do()
-    with allure.step('Check error: cluster state is not in available states list'):
-        UPGRADE_ERROR.equal(e, 'cluster state', 'is not in available states list')
+        assert len(cluster.upgrade_list()) == 0, "No upgrade should be available"
 
 
 @pytest.mark.usefixtures("upgradable_bundle")
@@ -227,7 +233,10 @@ class TestUpgradeWithComponent:
         """Upload new cluster bundle"""
         return sdk_client_fs.upload_from_fs(get_data_dir(__file__, self._DIR, 'new'))
 
-    @allure.issue(name='Component miss config after upgrade', url='https://arenadata.atlassian.net/browse/ADCM-2376')
+    @allure.issue(
+        name='Component miss config after upgrade',
+        url='https://arenadata.atlassian.net/browse/ADCM-2376',
+    )
     @pytest.mark.usefixtures('new_bundle')
     def test_upgrade_with_components(self, adcm_fs, sdk_client_fs, old_cluster):
         """

@@ -13,8 +13,10 @@
 from rest_framework.exceptions import APIException
 from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
+    HTTP_401_UNAUTHORIZED,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
+    HTTP_405_METHOD_NOT_ALLOWED,
     HTTP_409_CONFLICT,
     HTTP_501_NOT_IMPLEMENTED,
 )
@@ -27,7 +29,7 @@ ERR = "error"
 CRIT = "critical"
 
 ERRORS = {
-    "AUTH_ERROR": ("authenticate error", HTTP_409_CONFLICT, ERR),
+    "AUTH_ERROR": ("Wrong user or password", HTTP_401_UNAUTHORIZED, ERR),
     "STACK_LOAD_ERROR": ("stack loading error", HTTP_409_CONFLICT, ERR),
     "NO_MODEL_ERROR_CODE": (
         "django model doesn't has __error_code__ attribute",
@@ -136,10 +138,7 @@ ERRORS = {
     "MESSAGE_TEMPLATING_ERROR": ("Message templating error", HTTP_409_CONFLICT, ERR),
     "ISSUE_INTEGRITY_ERROR": ("Issue object integrity error", HTTP_409_CONFLICT, ERR),
     "GROUP_CONFIG_HOST_ERROR": (
-        (
-            "host is not available for this object,"
-            " or host already is a member of another group of this object"
-        ),
+        "host is not available for this object, or host already is a member of another group of this object",
         HTTP_400_BAD_REQUEST,
     ),
     "GROUP_CONFIG_HOST_EXISTS": (
@@ -148,10 +147,7 @@ ERRORS = {
     ),
     "NOT_CHANGEABLE_FIELDS": ("fields cannot be changed", HTTP_400_BAD_REQUEST, ERR),
     "GROUP_CONFIG_TYPE_ERROR": (
-        (
-            "invalid type object for group config,"
-            " valid types: `cluster`, `service`, `component` and `provider`"
-        ),
+        "invalid type object for group config, valid types: `cluster`, `service`, `component` and `provider`",
         HTTP_400_BAD_REQUEST,
         ERR,
     ),
@@ -201,11 +197,26 @@ ERRORS = {
         HTTP_409_CONFLICT,
         ERR,
     ),
-    "SERVICE_DELETE_ERROR": (
-        "Service can't be deleted if it has not CREATED state",
+    "SERVICE_DELETE_ERROR": ("Service can't be deleted if it has not CREATED state", HTTP_409_CONFLICT, ERR),
+    "ROLE_MODULE_ERROR": ("No role module with this name", HTTP_409_CONFLICT, ERR),
+    "ROLE_CLASS_ERROR": ("No matching class in this module", HTTP_409_CONFLICT, ERR),
+    "ROLE_FILTER_ERROR": ("Incorrect filter in role", HTTP_409_CONFLICT, ERR),
+    "ROLE_CREATE_ERROR": ("Error during process of role creating", HTTP_409_CONFLICT, ERR),
+    "ROLE_UPDATE_ERROR": ("Error during process of role updating", HTTP_409_CONFLICT, ERR),
+    "ROLE_CONFLICT": (
+        "Combination of cluster/service/component and provider permissions is not allowed",
         HTTP_409_CONFLICT,
         ERR,
     ),
+    "GROUP_CREATE_ERROR": ("Error during process of group creating", HTTP_409_CONFLICT, ERR),
+    "GROUP_UPDATE_ERROR": ("Error during process of group updating", HTTP_400_BAD_REQUEST, ERR),
+    "GROUP_DELETE_ERROR": ("Built-in group could not be deleted", HTTP_405_METHOD_NOT_ALLOWED, ERR),
+    "POLICY_INTEGRITY_ERROR": ("Incorrect role or user list of policy", HTTP_400_BAD_REQUEST, ERR),
+    "POLICY_CREATE_ERROR": ("Error during process of policy creating", HTTP_409_CONFLICT, ERR),
+    "POLICY_UPDATE_ERROR": ("Error during process of policy updating", HTTP_409_CONFLICT, ERR),
+    "USER_CREATE_ERROR": ("Error during process of user creating", HTTP_409_CONFLICT, ERR),
+    "USER_UPDATE_ERROR": ("Error during process of user updating", HTTP_400_BAD_REQUEST, ERR),
+    "USER_DELETE_ERROR": ("Built-in user could not be deleted", HTTP_405_METHOD_NOT_ALLOWED, ERR),
 }
 
 

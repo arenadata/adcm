@@ -14,23 +14,21 @@
 
 import django.contrib.auth
 import rest_framework.authtoken.serializers
-from adwp_base.errors import AdwpEx
 from rest_framework import authentication, permissions
 from rest_framework.authtoken.models import Token
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from rest_framework.status import HTTP_401_UNAUTHORIZED
+
+from cm.errors import raise_adcm_ex
 
 
 class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
     """Authentication token serializer"""
 
     def validate(self, attrs):
-        user = django.contrib.auth.authenticate(
-            username=attrs.get('username'), password=attrs.get('password')
-        )
+        user = django.contrib.auth.authenticate(username=attrs.get('username'), password=attrs.get('password'))
         if not user:
-            raise AdwpEx('AUTH_ERROR', 'Wrong user or password', http_code=HTTP_401_UNAUTHORIZED)
+            raise_adcm_ex('AUTH_ERROR')
         attrs['user'] = user
         return attrs
 
@@ -60,7 +58,5 @@ class GetAuthToken(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
         token, _created = Token.objects.get_or_create(user=user)
-        django.contrib.auth.login(
-            request, user, backend='django.contrib.auth.backends.ModelBackend'
-        )
+        django.contrib.auth.login(request, user, backend='django.contrib.auth.backends.ModelBackend')
         return Response({'token': token.key})

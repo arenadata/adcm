@@ -1,0 +1,64 @@
+#!/bin/sh
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+set +x
+
+. /etc/adcmenv
+
+echo "Application initialisation ..."
+
+mkdir -p "${adcmlog}"
+exec 1>>"${adcmlog}/init.out"
+exec 2>>"${adcmlog}/init.err"
+mkdir -p "${adcmrun}"
+mkdir -p "${adcmbundle}"
+mkdir -p "${adcmdownload}"
+mkdir -p "${adcmfile}"
+chmod 700 "${adcmfile}"
+mkdir -p "${adcmvar}"
+mkdir -p "${adcmtmp}"
+chmod 777 "${adcmtmp}"
+chmod a+t "${adcmtmp}"
+mkdir -p "${adcmuserconf}"
+mkdir -p "${adcmlog}/nginx"
+rm -r /var/log/nginx
+[ ! -L  "/var/log/nginx" ] && ln -s "${adcmlog}/nginx" /var/log/
+
+## We got an issue on existing installation with folded log/nginx/nginx/nginx....
+[ -L "${adcmlog}/nginx/nginx" ] && rm -f "${adcmlog}/nginx/nginx"
+
+echo "Root keys generation"
+key=/root/.ssh/id_rsa
+[ ! -f ${key} ] && ssh-keygen -f ${key} -t rsa -N ""
+
+if [ ! -f "${adcmvar}"/cluster.db ]; then
+    echo "Assume first run, generate Django secret key"
+    "${adcmroot}"/python/manage.py generate_secret_key "${adcmsecretfile}"
+fi
+
+if [ ! \( -f "${adcmuserconf}/ssl/cert.pem" -a -f "${adcmuserconf}/ssl/key.pem" \) ]; then
+    mkdir -p "${adcmuserconf}/ssl"
+    cd "${adcmuserconf}/ssl"
+    openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 3650 -subj "/C=RU/ST=Moscow/L=Moscow/O=Arenadata Software LLC/OU=Release/CN=ADCM" -nodes
+
+fi
+
+"${adcmroot}"/python/backupdb.py
+"${adcmroot}"/python/manage.py migrate
+"${adcmroot}"/python/init_db.py
+"${adcmroot}"/python/manage.py upgraderole
+touch "${initreadyfile}"
+
+# That is sleep forever case because I have no idea how to force
+# runit to do one time action
+exec tail -f /dev/null

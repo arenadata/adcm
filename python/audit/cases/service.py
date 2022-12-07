@@ -1,3 +1,14 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from django.db.models import Model
 from django.views import View
 from rest_framework.response import Response
@@ -13,7 +24,7 @@ from audit.models import (
 from cm.models import Cluster, ClusterBind, ClusterObject
 
 
-def service_case(
+def service_case(  # pylint: disable=too-many-branches
     path: list[str, ...],
     view: View,
     response: Response,
@@ -24,7 +35,6 @@ def service_case(
 
     match path:
         case ["service"]:
-            cluster = None
             audit_operation = AuditOperation(
                 name="service added",
                 operation_type=AuditLogOperationType.Update,
@@ -50,13 +60,20 @@ def service_case(
             else:
                 audit_object = None
 
-        case ["service", _]:
+        case ["service", service_pk] | ["service", service_pk, "maintenance-mode"]:
             deleted_obj: ClusterObject
-            audit_operation = AuditOperation(
-                name="service removed",
-                operation_type=AuditLogOperationType.Update,
-            )
-            if deleted_obj:
+            if view.request.method == "DELETE":
+                audit_operation = AuditOperation(
+                    name="service removed",
+                    operation_type=AuditLogOperationType.Update,
+                )
+            else:
+                audit_operation = AuditOperation(
+                    name=f"{AuditObjectType.Service.capitalize()} {AuditLogOperationType.Update}d",
+                    operation_type=AuditLogOperationType.Update,
+                )
+
+            if deleted_obj and "maintenance-mode" not in path:
                 audit_operation.name = f"{deleted_obj.display_name} {audit_operation.name}"
                 audit_object = get_or_create_audit_obj(
                     object_id=deleted_obj.cluster.pk,
@@ -64,7 +81,15 @@ def service_case(
                     object_type=AuditObjectType.Cluster,
                 )
             else:
-                audit_object = None
+                obj = ClusterObject.objects.filter(pk=service_pk).first()
+                if obj:
+                    audit_object = get_or_create_audit_obj(
+                        object_id=service_pk,
+                        object_name=get_obj_name(obj=obj, obj_type=AuditObjectType.Service),
+                        object_type=AuditObjectType.Service,
+                    )
+                else:
+                    audit_object = None
 
         case ["service", service_pk, "bind"]:
             obj = ClusterObject.objects.get(pk=service_pk)

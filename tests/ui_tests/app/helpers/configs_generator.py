@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-branches,too-many-statements,too-many-arguments,too-many-locals
+# pylint: disable=too-many-branches,too-many-statements,too-many-locals
 
 """UI tests for config page"""
 
@@ -25,7 +25,19 @@ from adcm_pytest_plugin.utils import random_string
 pytestmark = [pytest.mark.full()]
 
 
-TYPES = ['string', 'password', 'integer', 'text', 'boolean', 'float', 'list', 'map', 'json', 'file', 'secrettext']
+TYPES = [
+    'string',
+    'password',
+    'integer',
+    'text',
+    'boolean',
+    'float',
+    'list',
+    'map',
+    'json',
+    'file',
+    'secrettext',
+]
 
 CONFIG_FILE = 'config.yaml'
 DEFAULT_VALUE = {
@@ -137,7 +149,7 @@ def generate_configs(
     return (config, expected_result)
 
 
-def prepare_config(config):
+def prepare_config(config, *, enforce_file: bool = False):
     """Create config file and return config, expected result and path to config file"""
 
     config_info = config[0][0]['config'][0]
@@ -154,12 +166,16 @@ def prepare_config(config):
 
     os.makedirs(d_name)
     config[0][0]["name"] = random_string()
-    if config_info['name'] == 'file':
+    if enforce_file or config_info['name'] == 'file':
         with open(f"{d_name}/file.txt", 'w', encoding='utf_8') as file:
             file.write("test")
     with open(f"{d_name}/{CONFIG_FILE}", 'w', encoding='utf_8') as yaml_file:
         yaml.dump(config[0], yaml_file)
-    allure.attach.file("/".join([d_name, CONFIG_FILE]), attachment_type=allure.attachment_type.YAML, name=CONFIG_FILE)
+    allure.attach.file(
+        "/".join([d_name, CONFIG_FILE]),
+        attachment_type=allure.attachment_type.YAML,
+        name=CONFIG_FILE,
+    )
     return config[0][0], config[1], d_name
 
 
@@ -268,7 +284,7 @@ def generate_group_configs(
     return (config, expected_result)
 
 
-def prepare_group_config(config):
+def prepare_group_config(config, *, enforce_file: bool = False):
     """Create config file with group and return config, expected result and path to config file"""
 
     config_info = config[0][0]['config'][0]
@@ -299,10 +315,14 @@ def prepare_group_config(config):
     d_name = f"{temdir}/configs/groups/{config_folder_name}"
     os.makedirs(d_name)
     config[0][0]["name"] = random_string()
-    if config_subs['name'] == 'file':
+    if enforce_file or config_subs['name'] == 'file':
         with open(f"{d_name}/file.txt", 'w', encoding='utf_8') as file:
             file.write("test")
     with open(f"{d_name}/{CONFIG_FILE}", 'w', encoding='utf_8') as yaml_file:
         yaml.dump(list(config[0]), yaml_file)
-    allure.attach.file("/".join([d_name, CONFIG_FILE]), attachment_type=allure.attachment_type.YAML, name=CONFIG_FILE)
+    allure.attach.file(
+        "/".join([d_name, CONFIG_FILE]),
+        attachment_type=allure.attachment_type.YAML,
+        name=CONFIG_FILE,
+    )
     return config[0][0], config[1], d_name

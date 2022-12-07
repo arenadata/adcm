@@ -14,16 +14,15 @@
 
 import allure
 import pytest
+from adcm_client.objects import ADCMClient, Role, User
+from adcm_pytest_plugin.utils import catch_failed, random_string
 from coreapi.exceptions import ErrorMessage
-from adcm_client.objects import Role, ADCMClient, User
-from adcm_pytest_plugin.utils import random_string, catch_failed
-
-from tests.library.errorcodes import ADCMError
-from tests.functional.tools import AnyADCMObject
 from tests.functional.rbac.action_role_utils import (
     get_bundle_prefix_for_role_name,
     get_prototype_prefix_for_action_role,
 )
+from tests.functional.tools import AnyADCMObject
+from tests.library.errorcodes import ADCMError
 
 pytestmark = [pytest.mark.extra_rbac]
 

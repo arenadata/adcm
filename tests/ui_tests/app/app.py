@@ -15,7 +15,7 @@
 # Created by a1wen at 27.02.19
 
 import os
-from typing import Union, Optional
+from typing import Optional, Union
 
 import allure
 from adcm_client.wrappers.docker import ADCM

@@ -13,12 +13,8 @@
 """Tests for hostprovider update"""
 
 import allure
-import coreapi
-import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import get_data_dir
-
-from tests.library.errorcodes import UPGRADE_ERROR
 
 
 @allure.step('Create host')
@@ -161,7 +157,6 @@ def test_change_config(sdk_client_fs: ADCMClient):
             assert host_config_before[key] == host_config_after[key]
 
 
-@pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3033")
 def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient):
     """Upgrade hostprovider from unsupported state"""
     with allure.step('Create hostprovider with unsupported state'):
@@ -172,8 +167,4 @@ def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient):
         upgr = hostprovider.upgrade(name='upgrade to 2.0')
         upgr.do()
         hostprovider.reread()
-        upgr = hostprovider.upgrade(name='upgrade 2')
-        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            upgr.do()
-    with allure.step('Check error: provider state is not in available states list'):
-        UPGRADE_ERROR.equal(e, 'provider state', 'is not in available states list')
+        assert len(hostprovider.upgrade_list()) == 0, "No upgrade should be available at new state"

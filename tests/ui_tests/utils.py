@@ -14,19 +14,20 @@
 
 # pylint: disable=too-many-ancestors
 import os
-from collections import UserDict
 from contextlib import contextmanager
-from typing import Callable, TypeVar, Any, Union, Optional, Dict, Tuple, Sized
+from typing import Any, Callable, Dict, Optional, Sized, Tuple, TypeVar, Union
 
 import allure
 import requests
 from adcm_client.objects import ADCMClient, Cluster
 from adcm_pytest_plugin.utils import random_string, wait_until_step_succeeds
-from selenium.common.exceptions import StaleElementReferenceException, NoSuchElementException
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    StaleElementReferenceException,
+)
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
-
 from tests.ui_tests.app.app import ADCMTest
 
 ValueType = TypeVar('ValueType')
@@ -38,91 +39,6 @@ def _prepare_cluster(sdk_client: ADCMClient, path) -> Cluster:
     cluster_name = "_".join(path.split("/")[-1:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     return cluster
-
-
-class BundleObjectDefinition(UserDict):
-    """Data class for ADCM object"""
-
-    def __init__(self, obj_type=None, name=None, version=None):
-        super().__init__()
-        self["type"] = obj_type
-        self["name"] = name
-        if version is not None:
-            self["version"] = version
-
-    def _set_ui_option(self, option, value):
-        if "ui_options" not in self:
-            self["ui_options"] = {}
-        self["ui_options"][option] = value
-
-    def set_advanced(self, value):
-        """set advanced property value"""
-        self._set_ui_option("advanced", value)
-
-    @classmethod
-    def to_dict(cls, obj) -> dict:
-        """Represent object as dict"""
-        if isinstance(obj, cls):
-            obj = cls.to_dict(obj.data)
-        elif isinstance(obj, list):
-            for i, v in enumerate(obj):
-                obj[i] = cls.to_dict(v)
-        elif isinstance(obj, dict):
-            for k in obj:
-                obj[k] = cls.to_dict(obj[k])
-        return obj
-
-
-class ClusterDefinition(BundleObjectDefinition):
-    """Data class for cluster"""
-
-    def __init__(self, name=None, version=None):
-        """Data class for cluster"""
-        super().__init__(obj_type="cluster", name=name, version=version)
-
-
-class ServiceDefinition(BundleObjectDefinition):
-    """Data class for service"""
-
-    def __init__(self, name=None, version=None):
-        super().__init__(obj_type="service", name=name, version=version)
-
-
-class ProviderDefinition(BundleObjectDefinition):
-    """Data class for provider"""
-
-    def __init__(self, name=None, version=None):
-        super().__init__(obj_type="provider", name=name, version=version)
-
-
-class HostDefinition(BundleObjectDefinition):
-    """Data class for host"""
-
-    def __init__(self, name=None, version=None):
-        super().__init__(obj_type="host", name=name, version=version)
-
-
-class GroupDefinition(BundleObjectDefinition):
-    """Data class for group"""
-
-    def __init__(self, name=None):
-        super().__init__(obj_type="group", name=name)
-        self["activatable"] = True
-        self["subs"] = []
-
-    def add_fields(self, *fields):
-        """Add fields to the object"""
-        for field in fields:
-            self["subs"].append(field)
-        return self
-
-
-class FieldDefinition(BundleObjectDefinition):
-    """Data class for field"""
-
-    def __init__(self, prop_type, prop_name=None):
-        super().__init__(obj_type=prop_type, name=prop_name)
-        self["required"] = False
 
 
 @allure.step('Wait for a new window after action')
@@ -325,3 +241,30 @@ def expect_rows_amount_change(get_all_rows: Callable[[], Sized]):
         assert len(get_all_rows()) != current_amount, "Amount of rows on the page hasn't changed"
 
     wait_until_step_succeeds(_check_rows_amount_is_changed, period=1, timeout=10)
+
+
+# common steps
+
+
+@allure.step("Prepare cluster and open config page")
+def prepare_cluster_and_open_config_page(sdk_client: ADCMClient, path: os.PathLike, app):
+    """Upload bundle, create cluster and open config page"""
+    from tests.ui_tests.app.page.cluster.page import (  # pylint: disable=import-outside-toplevel
+        ClusterConfigPage,
+    )
+
+    bundle = sdk_client.upload_from_fs(path)
+    cluster = bundle.cluster_create(name=f"Test cluster {random_string()}")
+    config = ClusterConfigPage(app.driver, app.adcm.url, cluster.cluster_id).open()
+    config.wait_page_is_opened()
+    return cluster, config
+
+
+@allure.step("Create 11 group configs")
+def create_few_groups(group_config_list_page):
+    for i in range(10):
+        with group_config_list_page.wait_rows_change():
+            group_config_list_page.create_group(name=f"Test name_{i}", description="Test description")
+
+    group_config_list_page.create_group(name="Test name_10", description="Test description")
+    assert len(group_config_list_page.get_all_config_rows()) == 10, "There should be exactly 10 groups on 1st page"

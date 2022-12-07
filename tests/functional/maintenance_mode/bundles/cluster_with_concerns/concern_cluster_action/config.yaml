@@ -1,0 +1,79 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+- type: cluster
+  name: maintenance_mode_allowed_cluster
+  version: 5.4
+  allow_maintenance_mode: true
+  config: &config_no_issue
+    - name: some_param_cluster
+      type: integer
+      default: 12
+  actions:
+    cluster_action:
+      type: job
+      script: ./sleep.yaml
+      script_type: ansible
+      states:
+        available: any
+
+
+- type: service
+  name: first_service
+  version: 4.3
+  config: &config_issue
+    - name: some_param_cluster
+      type: integer
+  actions:
+    adcm_turn_on_maintenance_mode: &action
+      type: job
+      script: ./service-mm.yaml
+      script_type: ansible
+      states:
+        available: any
+      params:
+        ansible_tags: turn_on
+    adcm_turn_off_maintenance_mode:
+      <<: *action
+      script: ./service-mm.yaml
+      params:
+        ansible_tags: turn_off
+
+  components:
+    first_component:
+      config: *config_no_issue
+      actions:
+        adcm_turn_on_maintenance_mode:
+          <<: *action
+          script: ./component-mm.yaml
+          params:
+            ansible_tags: turn_on
+        adcm_turn_off_maintenance_mode:
+          <<: *action
+          script: ./component-mm.yaml
+          params:
+            ansible_tags: turn_off
+
+    second_component:
+      config: *config_issue
+      actions:
+        adcm_turn_on_maintenance_mode:
+          <<: *action
+          script: ./component-mm.yaml
+          params:
+            ansible_tags: turn_on
+        adcm_turn_off_maintenance_mode:
+          <<: *action
+          script: ./component-mm.yaml
+          params:
+            ansible_tags: turn_off

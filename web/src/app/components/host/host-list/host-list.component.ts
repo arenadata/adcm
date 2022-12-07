@@ -39,7 +39,7 @@ import { ApiService } from '@app/core/api';
       (changeSort)="onChangeSort($event)"
     ></adwp-list>
   `,
-  styles: [':host { flex: 1; }'],
+  styleUrls: ['./host-list.component.scss'],
 })
 export class HostListComponent extends ConcernListDirective<IHost> {
 
@@ -98,7 +98,7 @@ export class HostListComponent extends ConcernListDirective<IHost> {
     ListFactory.statusColumn(this),
     ListFactory.actionsButton(this),
     ListFactory.configColumn(this),
-    ListFactory.maintenanceModeColumn(this),
+    ListFactory.maintenanceModeColumn(this, 'host'),
     ListFactory.deleteColumn(this),
   ] as IColumns<IHost>;
 
@@ -114,5 +114,4 @@ export class HostListComponent extends ConcernListDirective<IHost> {
   ) {
     super(service, store, route, router, dialog, concernService);
   }
-
 }

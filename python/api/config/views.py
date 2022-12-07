@@ -64,7 +64,8 @@ def get_obj(object_type, object_id):
 
 def get_object_type_id_version(**kwargs):
     object_type = kwargs.get('object_type')
-    object_id = kwargs.get(f'{object_type}_id')
+    # TODO: this is a temporary patch for `config` endpoint
+    object_id = kwargs.get(f'{object_type}_id') or kwargs.get(f"{object_type}_pk")
     version = kwargs.get('version')
     return object_type, object_id, version
 
@@ -107,9 +108,7 @@ class ConfigHistoryView(PermissionListMixin, GenericUIView):
 
     def get_queryset(self, *args, **kwargs):
         if self.request.user.has_perm('cm.view_settings_of_adcm'):
-            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(
-                obj_ref__adcm__isnull=False
-            )
+            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
         else:
             return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
 
@@ -141,9 +140,7 @@ class ConfigVersionView(PermissionListMixin, GenericUIView):
 
     def get_queryset(self, *args, **kwargs):
         if self.request.user.has_perm('cm.view_settings_of_adcm'):
-            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(
-                obj_ref__adcm__isnull=False
-            )
+            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
         else:
             return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
 
@@ -165,9 +162,7 @@ class ConfigHistoryRestoreView(PermissionListMixin, GenericUIView):
 
     def get_queryset(self, *args, **kwargs):
         if self.request.user.has_perm('cm.view_settings_of_adcm'):
-            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(
-                obj_ref__adcm__isnull=False
-            )
+            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
         else:
             return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
 

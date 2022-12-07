@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import logging
 from datetime import timedelta
 
@@ -17,17 +18,14 @@ from django.utils import timezone
 
 from audit.models import AuditLogOperationResult
 from audit.utils import make_audit_log
-from cm.config import Job
 from cm.job import start_task
-from cm.models import ADCM, Action, ConfigLog, TaskLog
+from cm.models import ADCM, Action, ConfigLog, JobStatus, TaskLog
 
 logger = logging.getLogger("background_tasks")
 
 
 def get_settings(adcm_object):
-    current_configlog = ConfigLog.objects.get(
-        obj_ref=adcm_object.config, id=adcm_object.config.current
-    )
+    current_configlog = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
     if current_configlog.attr["ldap_integration"]["active"]:
         ldap_config = current_configlog.config["ldap_integration"]
         return ldap_config["sync_interval"]
@@ -43,11 +41,11 @@ class Command(BaseCommand):
         period = get_settings(adcm_object)
         if period <= 0:
             return
-        if TaskLog.objects.filter(action__name="run_ldap_sync", status=Job.RUNNING).exists():
+        if TaskLog.objects.filter(action__name="run_ldap_sync", status=JobStatus.RUNNING).exists():
             logger.debug("Sync has already launched, we need to wait for the task end")
             return
         last_sync = TaskLog.objects.filter(
-            action__name="run_ldap_sync", status__in=[Job.SUCCESS, Job.FAILED]
+            action__name="run_ldap_sync", status__in=[JobStatus.SUCCESS, JobStatus.FAILED]
         ).last()
         if last_sync is None:
             logger.debug("First ldap sync launched in %s", timezone.now())

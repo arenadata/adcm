@@ -13,7 +13,6 @@
 """Cluster List page locators"""
 
 from selenium.webdriver.common.by import By
-
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 
@@ -59,9 +58,14 @@ class ClusterListLocators:
             upgrade = Locator(By.CSS_SELECTOR, "app-upgrade button", "Cluster upgrade in row")
             config = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(9) button", "Cluster config in row")
             delete_btn = Locator(By.CSS_SELECTOR, "mat-cell:last-of-type button", "Cluster delete button in row")
+            rename_btn = Locator(By.CLASS_NAME, "rename-button", "Cluster rename button in row")
 
     class LicensePopup:
         """Cluster List page licence popup elements locators"""
 
-        block = Locator(By.XPATH, "//app-dialog[./h3[contains(text(), 'license')]]", "block with license agreement")
+        block = Locator(
+            By.XPATH,
+            "//app-dialog[./h3[contains(text(), 'license')]]",
+            "block with license agreement",
+        )
         agree_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Yes')]]", "Agree button")

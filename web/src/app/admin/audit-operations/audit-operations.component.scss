@@ -1,0 +1,62 @@
+:host {
+  flex: 1;
+  width: 100%;
+
+  ::ng-deep {
+    .object_name,
+    .operation_name,
+    .action_date,
+    .username,
+    .username_header,
+    .table-end {
+      flex-grow: 0;
+    }
+
+    .object_type {
+      min-width: 80px;
+    }
+
+    .object_name {
+      flex-basis: 200px;
+      width: 200px;
+      min-width: 50px;
+    }
+
+    .operation_name {
+      flex-basis: 320px;
+      width: 320px;
+      min-width: 110px;
+    }
+
+    .operation_type,
+    .operation_result {
+      flex-basis: 100px;
+      width: 100px;
+      min-width: 70px;
+    }
+
+    .action_date {
+      flex-basis: 205px;
+      width: 205px;
+      min-width: 205px;
+      margin-left: 10px;
+    }
+
+    .username {
+      width: 75px;
+      flex-basis: 75px;
+      min-width: 75px;
+    }
+
+    .table-end {
+      width: 50px;
+      flex-basis: 50px;
+    }
+  }
+}
+
+.controls {
+  position: absolute;
+  right: 40px;
+  top: 16px;
+}

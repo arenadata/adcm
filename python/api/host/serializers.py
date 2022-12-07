@@ -30,7 +30,7 @@ from api.validators import HostUniqueValidator, StartMidEndValidator
 from cm.adcm_config import get_main_info
 from cm.api import add_host
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
-from cm.models import Action, Host, HostProvider, MaintenanceModeType, Prototype
+from cm.models import Action, Host, HostProvider, MaintenanceMode, Prototype
 from cm.status_api import get_host_status
 
 
@@ -55,7 +55,8 @@ class HostSerializer(EmptySerializer):
     )
     description = CharField(required=False, allow_blank=True)
     state = CharField(read_only=True)
-    maintenance_mode = ChoiceField(choices=MaintenanceModeType.choices, read_only=True)
+    maintenance_mode = ChoiceField(choices=MaintenanceMode.choices, read_only=True)
+    is_maintenance_mode_available = BooleanField(read_only=True)
     url = ObjectURL(read_only=True, view_name="host-details")
 
     @staticmethod
@@ -81,7 +82,7 @@ class HostDetailSerializer(HostSerializer):
     config = CommonAPIURL(view_name="object-config")
     action = CommonAPIURL(view_name="object-action")
     prototype = HyperlinkedIdentityField(
-        view_name="host-type-details", lookup_field="prototype_id", lookup_url_kwarg="prototype_id"
+        view_name="host-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
     )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
@@ -93,12 +94,7 @@ class HostDetailSerializer(HostSerializer):
 
 
 class HostUpdateSerializer(HostDetailSerializer):
-    maintenance_mode = ChoiceField(choices=MaintenanceModeType.choices)
-
     def update(self, instance, validated_data):
-        instance.maintenance_mode = validated_data.get(
-            "maintenance_mode", instance.maintenance_mode
-        )
         instance.description = validated_data.get("description", instance.description)
         instance.fqdn = validated_data.get("fqdn", instance.fqdn)
         instance.save()
@@ -113,7 +109,6 @@ class HostUpdateSerializer(HostDetailSerializer):
 class HostAuditSerializer(ModelSerializer):
     fqdn = CharField(max_length=253)
     description = CharField(required=False, allow_blank=True)
-    maintenance_mode = ChoiceField(choices=MaintenanceModeType.choices)
 
     class Meta:
         model = Host
@@ -122,6 +117,14 @@ class HostAuditSerializer(ModelSerializer):
             "description",
             "maintenance_mode",
         )
+
+
+class HostChangeMaintenanceModeSerializer(ModelSerializer):
+    maintenance_mode = ChoiceField(choices=(MaintenanceMode.ON.value, MaintenanceMode.OFF.value))
+
+    class Meta:
+        model = Host
+        fields = ("maintenance_mode",)
 
 
 class ClusterHostSerializer(HostSerializer):
@@ -139,9 +142,7 @@ class ProvideHostSerializer(HostSerializer):
         provider = check_obj(HostProvider, self.context.get("provider_id"))
         proto = Prototype.obj.get(bundle=provider.prototype.bundle, type="host")
 
-        return add_host(
-            proto, provider, validated_data.get("fqdn"), validated_data.get("description", "")
-        )
+        return add_host(proto, provider, validated_data.get("fqdn"), validated_data.get("description", ""))
 
 
 class StatusSerializer(EmptySerializer):

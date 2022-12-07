@@ -14,9 +14,9 @@
 # Since this module is beyond QA responsibility we will not fix docstrings here
 # pylint: disable=missing-function-docstring, missing-class-docstring, missing-module-docstring
 
+import logging
 import os
 import sys
-import logging
 from contextlib import contextmanager
 from subprocess import call
 
@@ -58,7 +58,6 @@ def add_path(path):
     return env
 
 
-# pylint: disable-next=too-many-arguments
 def run_python_script(base_dir, py_script, command, json_config, out_file, err_file):
     try:
         res = call(

@@ -10,13 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adwp_base.errors import AdwpEx
 from guardian.mixins import PermissionListMixin
-from rest_framework.status import HTTP_405_METHOD_NOT_ALLOWED
 from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import DjangoModelPermissionsAudit
 from audit.utils import audit
+from cm.errors import raise_adcm_ex
 from rbac import models
 from rbac.endpoints.user.serializers import UserSerializer
 
@@ -35,6 +34,7 @@ class UserViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
         "is_superuser",
         "built_in",
         "is_active",
+        "type",
     )
     ordering_fields = ("id", "username", "first_name", "last_name", "email", "is_superuser")
     search_fields = ("username", "first_name", "last_name", "email")
@@ -51,9 +51,5 @@ class UserViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.built_in:
-            raise AdwpEx(
-                "USER_DELETE_ERROR",
-                msg="Built-in user could not be deleted",
-                http_code=HTTP_405_METHOD_NOT_ALLOWED,
-            )
+            raise_adcm_ex("USER_DELETE_ERROR")
         return super().destroy(request, args, kwargs)

@@ -12,33 +12,31 @@
 
 """Test adcm_plugin_multi_sate set/unset"""
 
-from typing import Tuple, Callable
+from typing import Callable, Tuple
 
-import pytest
 import allure
-
+import pytest
+from adcm_client.objects import ADCMClient, Cluster, Component, Host, Provider, Service
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
-    run_service_action_and_assert_result,
-    run_provider_action_and_assert_result,
-    run_host_action_and_assert_result,
     run_component_action_and_assert_result,
+    run_host_action_and_assert_result,
+    run_provider_action_and_assert_result,
+    run_service_action_and_assert_result,
 )
-from adcm_client.objects import ADCMClient, Cluster, Provider, Host, Service, Component
-
-from tests.functional.tools import AnyADCMObject
 from tests.functional.plugin_utils import (
-    generate_cluster_success_params,
-    generate_provider_success_params,
-    compose_name,
+    TestImmediateChange,
     build_objects_checker,
-    get_cluster_related_object,
-    get_provider_related_object,
+    compose_name,
     create_two_clusters,
     create_two_providers,
+    generate_cluster_success_params,
+    generate_provider_success_params,
+    get_cluster_related_object,
+    get_provider_related_object,
     run_successful_task,
-    TestImmediateChange,
 )
+from tests.functional.tools import AnyADCMObject
 
 # pylint: disable=redefined-outer-name,unnecessary-lambda-assignment
 
@@ -64,7 +62,9 @@ check_multi_state_was_unset = build_objects_checker(field_name=FIELD_NAME, chang
 def two_clusters(request, sdk_client_fs: ADCMClient) -> Tuple[Cluster, Cluster]:
     """Get two clusters with both services"""
     return create_two_clusters(
-        sdk_client_fs, caller_file=__file__, bundle_dir="cluster" if not hasattr(request, 'param') else request.param
+        sdk_client_fs,
+        caller_file=__file__,
+        bundle_dir="cluster" if not hasattr(request, 'param') else request.param,
     )
 
 
@@ -133,7 +133,9 @@ def test_provider_related_objects(
 def test_double_call_to_multi_state_set(two_clusters: Tuple[Cluster, Cluster], sdk_client_fs: ADCMClient):
     """Test that double call to plugin from two files doesn't fail"""
     check_multi_state_after_set = build_objects_checker(
-        sorted(['much', 'better', 'actually']), extractor=_multi_state_extractor, field_name=FIELD_NAME
+        sorted(['much', 'better', 'actually']),
+        extractor=_multi_state_extractor,
+        field_name=FIELD_NAME,
     )
     check_multi_state_after_unset = build_objects_checker(
         ['actually'], extractor=_multi_state_extractor, field_name=FIELD_NAME
@@ -175,7 +177,12 @@ def test_forbidden_multi_state_set_actions(sdk_client_fs: ADCMClient):
     with allure.step(f'Check forbidden from cluster "{name}" context actions'):
         cluster = sdk_client_fs.cluster(name=name)
         # missing is used because it should fail for misconfiguration reasons, not because state not set
-        for forbidden_action in ('set_service', 'set_component', 'unset_service_missing', 'unset_component_missing'):
+        for forbidden_action in (
+            'set_service',
+            'set_component',
+            'unset_service_missing',
+            'unset_component_missing',
+        ):
             with check_objects_multi_state_changed(sdk_client_fs):
                 run_cluster_action_and_assert_result(cluster, forbidden_action, status='failed')
     with allure.step(f'Check forbidden from service "{name}" context actions'):
@@ -191,7 +198,9 @@ def test_forbidden_multi_state_set_actions(sdk_client_fs: ADCMClient):
 
 
 def test_missing_ok_multi_state_unset(
-    two_providers: Tuple[Provider, Provider], two_clusters: Tuple[Cluster, Cluster], sdk_client_fs: ADCMClient
+    two_providers: Tuple[Provider, Provider],
+    two_clusters: Tuple[Cluster, Cluster],
+    sdk_client_fs: ADCMClient,
 ):
     """
     Checking behaviour of flag "missing_ok":
@@ -232,7 +241,9 @@ def test_missing_ok_multi_state_unset(
 
 
 def test_multi_state_set_from_host_actions(
-    two_clusters: Tuple[Cluster, Cluster], two_providers: Tuple[Provider, Provider], sdk_client_fs: ADCMClient
+    two_clusters: Tuple[Cluster, Cluster],
+    two_providers: Tuple[Provider, Provider],
+    sdk_client_fs: ADCMClient,
 ):
     """Test that host actions actually change multi state"""
     name = "first"
