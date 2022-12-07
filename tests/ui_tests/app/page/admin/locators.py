@@ -48,10 +48,12 @@ class AdminUsersLocators:
 
     create_user_button = Locator(By.XPATH, "//button[@adcm_test='create-btn']", "Add user button")
     user_row = Locator(By.CSS_SELECTOR, "mat-row", "Table row")
-    filter_btn = Locator(By.CSS_SELECTOR, "app-filter .filter-toggle-button", "Fulter button")
-    filter_dropdown_select = Locator(By.CSS_SELECTOR, "app-filter mat-select", "Filter dropdown select")
+    filter_btn = Locator(By.CSS_SELECTOR, "app-server-filter .filter-toggle-button", "Filter button")
+    filter_dropdown_select = Locator(By.CSS_SELECTOR, "app-server-filter mat-select", "Filter dropdown select")
     filter_dropdown_option = Locator(By.CSS_SELECTOR, "div[role='listbox'] mat-option", "Filter dropdown option")
-    filter_dropdown_remove = Locator(By.CSS_SELECTOR, "app-filter button[aria-label='Remove']", "Filter remove button")
+    filter_dropdown_remove = Locator(
+        By.CSS_SELECTOR, "app-server-filter button[aria-label='Remove']", "Filter remove button"
+    )
 
     class Row:
         """Existing user row"""
