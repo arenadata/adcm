@@ -51,3 +51,11 @@ class CommonTable:
             By.XPATH, "//a[contains(@class, 'page-button') and text()='{}']", "Page button"
         )
         next_page = Locator(By.CSS_SELECTOR, "button[aria-label='Next page']", "Next page button")
+
+        per_page_dropdown = Locator(
+            By.CSS_SELECTOR, "mat-select[aria-label='Items per page:']", "Rows per page dropdown"
+        )
+        per_page_block = Locator(
+            By.CSS_SELECTOR, "div[aria-label='Items per page:']", "Container of rows per page options"
+        )
+        per_page_element = Locator(By.TAG_NAME, "mat-option", "Rows per page option")

@@ -37,3 +37,12 @@ class ActionDialog(Dialog):
     text = Locator(By.CSS_SELECTOR, "app-dialog mat-dialog-content", "Dialog content")
     next_btn = Locator(By.CSS_SELECTOR, ".mat-stepper-next", "Next button in action dialog")
     run = Locator(By.CSS_SELECTOR, "app-dialog button[color='accent']", "Run button in action dialog")
+
+
+class OperationChangesDialogLocators(Dialog):
+    row = Locator(By.TAG_NAME, "mat-row", "Changes row")
+
+    class Row:
+        attribute = Locator(By.CSS_SELECTOR, "mat-cell:first-child", "Attribute value of changes row")
+        old_value = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Old value of changes row")
+        new_value = Locator(By.CSS_SELECTOR, "mat-cell:last-child", "New value of changes row")

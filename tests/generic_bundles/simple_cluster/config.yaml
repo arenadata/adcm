@@ -10,17 +10,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- type: provider
-  version: 10.20
-  name: simple_provider
+- type: cluster
+  version: 44
+  name: simple_cluster
 
   config: &config
     - name: key
       type: string
-      default: www
+      default: qqq
 
-- type: host
-  version: 2.2
-  name: simple_host
+  actions: &actions
+    simple:
+      type: job
+      script_type: ansible
+      script: ./actions.yaml
+      allow_to_terminate: true
+      states:
+        available: any
+
+- type: service
+  version: 22
+  name: simple_service
 
   config: *config
+
+  actions: *actions
+
+  components:
+    simple_component:
+      config: *config
+
+      actions: *actions

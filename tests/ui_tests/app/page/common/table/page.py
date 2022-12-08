@@ -29,7 +29,7 @@ from tests.ui_tests.utils import assert_enough_rows
 class CommonTableObj(BasePageObject):
     """Class for manipulating with common tables elements."""
 
-    LOADING_STATE_TEXT = 'autorenew'
+    LOADING_STATE_TEXT = "autorenew"
 
     def __init__(self, driver, base_url, table_class_locators=CommonTable):
         super().__init__(driver, base_url)
@@ -90,6 +90,27 @@ class CommonTableObj(BasePageObject):
             message=f"Can't find page {number} in table on page {self.driver.current_url} "
             f"for {self.default_loc_timeout} seconds",
         ).click()
+
+    @allure.step("Set rows per page to {rows_amount}")
+    def set_rows_per_page(self, rows_amount: int) -> None:
+        paging = self.locators.Pagination
+
+        self.find_and_click(paging.per_page_dropdown)
+        self.wait_element_visible(paging.per_page_block, timeout=1.5)
+        per_page_options = self.find_element(paging.per_page_block, timeout=0.5)
+
+        suitable_option = next(
+            filter(
+                lambda child: child.text.strip() == str(rows_amount),
+                self.find_children(per_page_options, paging.per_page_element),
+            ),
+            None,
+        )
+        if suitable_option is None:
+            raise AssertionError(f"Failed to find suitable option to show {rows_amount} per page")
+
+        suitable_option.click()
+        self.wait_element_hide(paging.per_page_block)
 
     @allure.step("Check pagination")
     def check_pagination(self, second_page_item_amount: int):

@@ -10,17 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- type: provider
-  version: 10.20
-  name: simple_provider
+from selenium.webdriver.remote.webelement import WebElement
+from tests.ui_tests.app.page.admin.page import LoginAuditPage, OperationsAuditPage
 
-  config: &config
-    - name: key
-      type: string
-      default: www
 
-- type: host
-  version: 2.2
-  name: simple_host
-
-  config: *config
+def add_filter(page: OperationsAuditPage | LoginAuditPage, filter_menu_name: str) -> WebElement:
+    filter_name = filter_menu_name.replace(" ", "_").lower()
+    page.add_filter(filter_menu_name=filter_menu_name)
+    assert page.is_filter_visible(filter_name=filter_name), f"Filter for {filter_menu_name} should be visible"
+    return page.get_filter_input(filter_name=filter_name)

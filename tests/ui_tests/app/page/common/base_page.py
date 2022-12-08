@@ -147,46 +147,51 @@ class BasePageObject:
 
     def find_element(self, locator: Locator, timeout: int = None) -> WebElement:
         """Find element on current page."""
-
         loc_timeout = timeout or self.default_loc_timeout
-        with allure.step(f'Find element "{locator.name}" on page'):
-            return WDW(self.driver, loc_timeout).until(
-                EC.presence_of_element_located([locator.by, locator.value]),
-                message=f"Can't find {locator.name} on page " f"{self.driver.current_url} for {loc_timeout} seconds",
-            )
+
+        return WDW(self.driver, loc_timeout).until(
+            EC.presence_of_element_located([locator.by, locator.value]),
+            message=f"Can't find {locator.name} on page " f"{self.driver.current_url} for {loc_timeout} seconds",
+        )
 
     def find_child(self, element: WebElement, child: Locator, timeout: int = None) -> WebElement:
         """Find child element on current page."""
-
         loc_timeout = timeout or self.default_loc_timeout
-        with allure.step(f'Find element "{child.name}" on page'):
+
+        try:
             return WDW(element, loc_timeout).until(
                 EC.presence_of_element_located([child.by, child.value]),
                 message=f"Can't find {child.name} on page " f"{self.driver.current_url} for {loc_timeout} seconds",
             )
+        except TimeoutException:
+            raise AssertionError(f"Element {child.name} not found for {loc_timeout} seconds")
 
     def find_children(self, element: WebElement, child: Locator, timeout: int = None) -> List[WebElement]:
         """Find children element on current page."""
-
         loc_timeout = timeout or self.default_loc_timeout
-        with allure.step(f'Find element "{child.name}" on page'):
-            try:
-                return WDW(element, loc_timeout).until(
-                    EC.presence_of_all_elements_located([child.by, child.value]),
-                    message=f"Can't find {child.name} on page " f"{self.driver.current_url} for {loc_timeout} seconds",
-                )
-            except TimeoutException:
-                return []
+
+        try:
+            return WDW(element, loc_timeout).until(
+                EC.presence_of_all_elements_located([child.by, child.value]),
+                message=f"Can't find {child.name} on page " f"{self.driver.current_url} for {loc_timeout} seconds",
+            )
+        except TimeoutException:
+            return []
 
     def find_elements(self, locator: Locator, timeout: int = None) -> list[WebElement]:
         """Find elements on current page."""
-
         loc_timeout = timeout or self.default_loc_timeout
-        with allure.step(f'Find elements "{locator.name}" on page'):
-            return WDW(self.driver, loc_timeout).until(
-                EC.presence_of_all_elements_located([locator.by, locator.value]),
-                message=f"Can't find {locator.name} on page " f"{self.driver.current_url} for {loc_timeout} seconds",
-            )
+
+        return WDW(self.driver, loc_timeout).until(
+            EC.presence_of_all_elements_located([locator.by, locator.value]),
+            message=f"Can't find {locator.name} on page " f"{self.driver.current_url} for {loc_timeout} seconds",
+        )
+
+    def find_elements_or_empty(self, locator: Locator, timeout: int = 2) -> list[WebElement]:
+        try:
+            return self.find_elements(locator, timeout=timeout)
+        except TimeoutException:
+            return []
 
     def is_element_displayed(self, element: Union[Locator, WebElement], timeout: int = None) -> bool:
         """Checks if element is displayed."""
