@@ -26,7 +26,7 @@ import pytest
 import websockets.client
 import yaml
 from _pytest.python import Function, FunctionDefinition, Module
-from adcm_client.objects import ADCMClient, Bundle, Provider, User
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Provider, User
 from adcm_pytest_plugin.utils import random_string
 from allure_commons.model2 import Parameter, TestResult
 from allure_pytest.listener import AllureListener
@@ -196,6 +196,13 @@ def generic_bundle(request, sdk_client_fs) -> Bundle:
     if not hasattr(request, "param") or not isinstance(request.param, str):
         raise ValueError('You should parametrize "generic_bundle" fixture with bundle dir name as string')
     return sdk_client_fs.upload_from_fs(GENERIC_BUNDLES_DIR / request.param)
+
+
+@pytest.fixture()
+def generic_cluster(sdk_client_fs) -> Cluster:
+    """Create generic simple cluster to use as "dummy" cluster in tests"""
+    bundle = sdk_client_fs.upload_from_fs(GENERIC_BUNDLES_DIR / "simple_cluster")
+    return bundle.cluster_create(f"Simple Test Cluster {random_string(4)}")
 
 
 @pytest.fixture()

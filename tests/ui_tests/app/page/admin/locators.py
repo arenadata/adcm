@@ -32,6 +32,13 @@ class CommonAdminPagesLocators:
     cancel_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Cancel')]]", "Cancel button")
 
 
+class FilterLocators:
+    filter_btn = Locator(By.CSS_SELECTOR, "app-filter .filter-toggle-button", "Filter button")
+    filter_dropdown_select = Locator(By.CSS_SELECTOR, "app-filter mat-select", "Filter dropdown select")
+    filter_dropdown_option = Locator(By.CSS_SELECTOR, "div[role='listbox'] mat-option", "Filter dropdown option")
+    filter_dropdown_remove = Locator(By.CSS_SELECTOR, "app-filter button[aria-label='Remove']", "Filter remove button")
+
+
 class AdminIntroLocators:
     """Locators for Admin Intro menu"""
 
@@ -43,7 +50,7 @@ class AdminSettingsLocators(CommonConfigMenu):
     """Locators for Admin Settings menu"""
 
 
-class AdminUsersLocators:
+class AdminUsersLocators(FilterLocators):
     """Locators for Admin Users menu"""
 
     create_user_button = Locator(By.XPATH, "//button[@adcm_test='create-btn']", "Add user button")
@@ -260,3 +267,56 @@ class AdminPoliciesLocators(CommonAdminPagesLocators):
                 "Next button from third step",
             )
             cancel_btn = Locator(By.XPATH, "//button[./span[text()='Cancel']]", "Cancel button")
+
+
+class AuditFilter:
+    button = Locator(By.XPATH, "//app-server-filter//mat-icon", "Filters button")
+    menu = Locator(By.XPATH, "//div[@role='menu']", "Filters choice menu")
+    choice = Locator(By.TAG_NAME, "button", "Filters choice item")
+    block = Locator(By.TAG_NAME, "form", "Form container for picked filters")
+    remove_button = Locator(By.XPATH, "//mat-icon[text()='close']", "Remove filter button")
+    refresh_button = Locator(By.XPATH, "//mat-icon[text()='refresh']", "Refresh filter button")
+
+    # not very accurate, but for works fine for operations audit
+    dropdown_option = Locator(By.TAG_NAME, "mat-option", "Filter dropdown option")
+
+
+class OperationsAuditLocators:
+    title = Locator(By.TAG_NAME, "mat-card-title", "Audit operations list page's title")
+
+    class Filter(AuditFilter):
+        class Item:
+            username = Locator(By.XPATH, ".//input[@data-placeholder='Username']", "Username filter item")
+            object_name = Locator(By.XPATH, ".//input[@data-placeholder='Object name']", "Object name filter item")
+            object_type = Locator(By.XPATH, ".//mat-select[.//span[text()='Object type']]", "Object type filter item")
+            operation_type = Locator(
+                By.XPATH, ".//mat-select[.//span[text()='Operation type']]", "Operation type filter item"
+            )
+            operation_result = Locator(
+                By.XPATH, ".//mat-select[.//span[text()='Operation result']]", "Operation result filter item"
+            )
+            operation_time = Locator(By.TAG_NAME, "mat-date-range-input", "Operation time filter item")
+
+    class Row:
+        object_type = Locator(By.CSS_SELECTOR, "mat-cell:first-child", "Object type in row")
+        object_name = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Object name in row")
+        operation_name = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(3)", "Operation name in row")
+        operation_type = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(4)", "Operation type in row")
+        operation_result = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(5)", "Operation result in row")
+        operation_time = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(6)", "Operation time in row")
+        username = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(7)", "Username in row")
+        show_changes = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(8) button", "Show changes button in row")
+
+
+class LoginAuditLocators:
+    title = Locator(By.TAG_NAME, "mat-card-title", "Audit login list page's title")
+
+    class Filter(AuditFilter):
+        class Item:
+            login = Locator(By.XPATH, ".//input[@data-placeholder='Login']", "Login filter item")
+            result = Locator(By.XPATH, ".//mat-select[.//span[text()='Result']]", "Result filter item")
+
+    class Row:
+        login = Locator(By.CSS_SELECTOR, "mat-cell:first-child", "Login in row")
+        result = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Result in row")
+        login_time = Locator(By.CSS_SELECTOR, "mat-cell:last-child", "Login time in row")

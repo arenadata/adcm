@@ -13,7 +13,7 @@
 """Admin pages PageObjects classes"""
 
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Collection, List, Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -27,6 +27,8 @@ from tests.ui_tests.app.page.admin.locators import (
     AdminRolesLocators,
     AdminSettingsLocators,
     AdminUsersLocators,
+    LoginAuditLocators,
+    OperationsAuditLocators,
 )
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
@@ -36,11 +38,16 @@ from tests.ui_tests.app.page.common.base_page import (
 from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs.locators import DeleteDialog
+from tests.ui_tests.app.page.common.dialogs.operation_changes import (
+    OperationChangesDialog,
+)
 from tests.ui_tests.app.page.common.popups.locator import CommonPopupLocators
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
+
+# pylint: disable=too-many-lines
 
 
 @dataclass
@@ -77,7 +84,7 @@ class GeneralAdminPage(BasePageObject):
     """Base class for admin pages"""
 
     MENU_SUFFIX: str
-    MAIN_ELEMENTS: List[Locator]
+    MAIN_ELEMENTS: Collection[Locator]
     header: PageHeader
     footer: PageFooter
     config: CommonConfigMenuObj
@@ -87,7 +94,7 @@ class GeneralAdminPage(BasePageObject):
     def __init__(self, driver, base_url):
         if self.MENU_SUFFIX is None:
             raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
-        super().__init__(driver, base_url, "/admin/" + self.MENU_SUFFIX)
+        super().__init__(driver, base_url, f"/admin/{self.MENU_SUFFIX}")
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
@@ -158,6 +165,13 @@ class GeneralAdminPage(BasePageObject):
 
         self.find_and_click(ObjectPageMenuLocators.policies_tab)
         page = AdminPoliciesPage(self.driver, self.base_url)
+        page.wait_page_is_opened()
+        return page
+
+    @allure.step("Open Admin Operations Audit page by left menu item click")
+    def open_operations_menu(self) -> "OperationsAuditPage":
+        self.find_and_click(ObjectPageMenuLocators.operations_tab)
+        page = OperationsAuditPage(self.driver, self.base_url)
         page.wait_page_is_opened()
         return page
 
@@ -878,3 +892,168 @@ class AdminPoliciesPage(GeneralAdminPage):
             assert len(self.table.get_all_rows()) == 0, "There should be 0 policies on the page"
 
         wait_until_step_succeeds(delete_all, period=5)
+
+
+# !===== Audit =====!
+
+
+class GeneralAuditPage(GeneralAdminPage):
+    FILTER_LOCATORS = None
+
+    def add_filter(self, filter_menu_name: str) -> None:
+        """Filter name is the visible name of filter in menu"""
+        filter_locators = self.FILTER_LOCATORS
+        self.find_and_click(filter_locators.button)
+        self.wait_element_visible(filter_locators.menu)
+
+        suitable_option = next(
+            filter(
+                lambda child: child.text.strip() == filter_menu_name,
+                self.find_children(self.find_element(filter_locators.menu, timeout=0.5), filter_locators.choice),
+            ),
+            None,
+        )
+        if suitable_option is None:
+            raise AssertionError(f"Failed to find filter named '{filter_menu_name}'")
+
+        suitable_option.click()
+        self.wait_element_hide(filter_locators.menu)
+
+    def remove_filter(self, filter_position: int) -> None:
+        filter_buttons = self.find_elements_or_empty(self.FILTER_LOCATORS.remove_button)
+        amount_of_buttons = len(filter_buttons)
+        if filter_position >= amount_of_buttons:
+            raise ValueError(f"Can't get remove element #{filter_position}, because there's only {amount_of_buttons}")
+
+        filter_buttons[filter_position].click()
+
+        wait_until_step_succeeds(
+            self._remove_buttons_amount_should_decrease, initial_amount=amount_of_buttons, timeout=2, period=0.5
+        )
+
+    def refresh_filter(self, filter_position: int) -> None:
+        filter_buttons = self.find_elements_or_empty(self.FILTER_LOCATORS.refresh_button)
+        amount_of_buttons = len(filter_buttons)
+        if filter_position >= amount_of_buttons:
+            raise ValueError(f"Can't get remove element #{filter_position}, because there's only {amount_of_buttons}")
+
+        filter_buttons[filter_position].click()
+
+    def is_filter_visible(self, filter_name: str, timeout: int = 1) -> bool:
+        locators = self.FILTER_LOCATORS.Item
+
+        if not hasattr(locators, filter_name):
+            raise ValueError("Incorrect filter name")
+
+        filters_block = self.find_element(self.FILTER_LOCATORS.block, timeout=1)
+        return self.is_child_displayed(filters_block, getattr(locators, filter_name), timeout=timeout)
+
+    def get_filter_input(self, filter_name: str) -> WebElement:
+        """
+        Based on filter, return element will be:
+        - input
+        - mat-select
+        - mat-date-range-input
+        """
+        locators = self.FILTER_LOCATORS.Item
+
+        if not hasattr(locators, filter_name):
+            raise ValueError("Incorrect filter name")
+
+        filters_block = self.find_element(self.FILTER_LOCATORS.block, timeout=1)
+        return self.find_child(filters_block, getattr(locators, filter_name), timeout=3)
+
+    def pick_filter_value(self, filter_input: WebElement, value_to_pick: str) -> None:
+        filter_input.click()
+        dropdown_locator = self.FILTER_LOCATORS.dropdown_option
+        self.wait_element_visible(dropdown_locator)
+
+        suitable_option: WebElement | None = next(
+            filter(lambda option: option.text.strip() == value_to_pick, self.find_elements(dropdown_locator)), None
+        )
+        if suitable_option is None:
+            raise AssertionError(f"Failed to find option with value '{value_to_pick}'")
+
+        suitable_option.click()
+
+        self.wait_element_hide(dropdown_locator)
+
+    def _remove_buttons_amount_should_decrease(self, initial_amount: int) -> None:
+        assert (
+            len(self.find_elements_or_empty(self.FILTER_LOCATORS.remove_button)) < initial_amount
+        ), f"There should be less than {initial_amount} buttons"
+
+
+@dataclass()
+class OperationRowInfo:
+    object_type: str
+    object_name: str
+    operation_name: str
+    operation_type: str
+    operation_result: str
+    operation_time: str
+    username: str
+
+
+class OperationsAuditPage(GeneralAuditPage):
+
+    MENU_SUFFIX = "audit/operations"
+    FILTER_LOCATORS = OperationsAuditLocators.Filter
+    MAIN_ELEMENTS = (OperationsAuditLocators.Filter.button,)
+
+    def get_audit_operation_info(self, row: WebElement) -> OperationRowInfo:
+        return OperationRowInfo(
+            **{
+                field: self.find_child(row, getattr(OperationsAuditLocators.Row, field), timeout=0.5).text
+                for field in (
+                    "object_type",
+                    "object_name",
+                    "operation_name",
+                    "operation_type",
+                    "operation_result",
+                    "operation_time",
+                    "username",
+                )
+            }
+        )
+
+    def get_info_from_all_rows(self) -> tuple[OperationRowInfo, ...]:
+        return tuple(self.get_audit_operation_info(row) for row in self.table.get_all_rows(timeout=2))
+
+    def open_changes_dialog(self, row: WebElement) -> OperationChangesDialog:
+        self.get_show_changes_button(row).click()
+        return OperationChangesDialog(self.driver, self.base_url)
+
+    def get_show_changes_button(self, row: WebElement) -> WebElement:
+        return self.find_child(row, OperationsAuditLocators.Row.show_changes, timeout=1)
+
+    def click_out_of_filter(self):
+        self.find_and_click(OperationsAuditLocators.title, timeout=1.5)
+
+
+@dataclass()
+class LoginRowInfo:
+    login: str
+    result: str
+    login_time: str
+
+
+class LoginAuditPage(GeneralAuditPage):
+
+    MENU_SUFFIX = "audit/logins"
+    MAIN_ELEMENTS = (LoginAuditLocators.Filter.button,)
+    FILTER_LOCATORS = LoginAuditLocators.Filter
+
+    def get_audit_login_info(self, row: WebElement) -> LoginRowInfo:
+        return LoginRowInfo(
+            **{
+                field: self.find_child(row, getattr(LoginAuditLocators.Row, field), timeout=0.5).text
+                for field in ("login", "result", "login_time")
+            }
+        )
+
+    def get_info_from_all_rows(self) -> tuple[LoginRowInfo, ...]:
+        return tuple(self.get_audit_login_info(row) for row in self.table.get_all_rows(timeout=2))
+
+    def click_out_of_filter(self):
+        self.find_and_click(LoginAuditLocators.title, timeout=1.5)

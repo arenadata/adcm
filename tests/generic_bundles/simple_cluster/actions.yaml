@@ -10,17 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- type: provider
-  version: 10.20
-  name: simple_provider
+---
 
-  config: &config
-    - name: key
-      type: string
-      default: www
+- hosts: localhost
+  gather_facts: false
+  connection: local
+  tasks:
 
-- type: host
-  version: 2.2
-  name: simple_host
-
-  config: *config
+    - debug:
+        msg: "Hello there"
