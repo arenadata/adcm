@@ -28,9 +28,7 @@ if BASE_DIR:
 else:
     BASE_DIR = Path(__file__).absolute().parent.parent.parent
 
-CONF_DIR = BASE_DIR / "data" / "conf"
 CONFIG_FILE = BASE_DIR / "config.json"
-SECRET_KEY_FILE = CONF_DIR / "secret_key.txt"
 STACK_DIR = os.getenv("ADCM_STACK_DIR", BASE_DIR)
 BUNDLE_DIR = STACK_DIR / "data" / "bundle"
 CODE_DIR = BASE_DIR / "python"
@@ -62,11 +60,7 @@ else:
     STATUS_SECRET_KEY = ""
     ANSIBLE_SECRET = ""
 
-if SECRET_KEY_FILE.is_file():
-    with open(SECRET_KEY_FILE, encoding=ENCODING_UTF_8) as f:
-        SECRET_KEY = f.read().strip()
-else:
-    SECRET_KEY = get_random_secret_key()
+SECRET_KEY = os.getenv("SECRET_KEY", get_random_secret_key())
 
 if CONFIG_FILE.is_file():
     with open(CONFIG_FILE, encoding=ENCODING_UTF_8) as f:
@@ -78,7 +72,6 @@ DEBUG = False
 ALLOWED_HOSTS = ["*"]
 INSTALLED_APPS = [
     "rbac",  # keep it above 'django.contrib.auth' in order to keep "createsuperuser" working
-    "django_generate_secret_key",
     "django_filters",
     "django.contrib.auth",
     "django.contrib.contenttypes",
