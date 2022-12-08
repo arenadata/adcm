@@ -433,6 +433,7 @@ def save_sub_actions(conf, action):
         if "display_name" in sub:
             sub_action.display_name = sub["display_name"]
         dict_to_obj(sub, "params", sub_action)
+        dict_to_obj(sub, "allow_to_terminate", sub_action)
         on_fail = sub.get(ON_FAIL, "")
         if isinstance(on_fail, str):
             sub_action.state_on_fail = on_fail

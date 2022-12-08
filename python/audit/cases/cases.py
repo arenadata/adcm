@@ -18,7 +18,7 @@ from rest_framework.response import Response
 
 from audit.cases.adcm import adcm_case
 from audit.cases.cluster import cluster_case
-from audit.cases.common import action_case, task_case, upgrade_case
+from audit.cases.common import action_case, task_job_case, upgrade_case
 from audit.cases.config import config_case
 from audit.cases.host_and_provider import host_and_provider_case
 from audit.cases.rbac import rbac_case
@@ -87,8 +87,8 @@ def get_audit_operation_and_object(
         )
     elif "adcm" in path:
         audit_operation, audit_object = adcm_case(path=path)
-    elif "task" in path:
-        audit_operation, audit_object = task_case(path=path)
+    elif "task" in path or "job" in path:
+        audit_operation, audit_object = task_job_case(path=path)
     else:
         return None, None, None
 
