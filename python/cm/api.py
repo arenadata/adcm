@@ -522,8 +522,7 @@ def accept_license(proto: Prototype) -> None:
     if proto.license == "absent":
         raise_adcm_ex("LICENSE_ERROR", "This bundle has no license")
 
-    proto.license = "accepted"
-    proto.save()
+    Prototype.objects.filter(license_hash=proto.license_hash, license="unaccepted").update(license="accepted")
 
 
 def update_obj_config(obj_conf, conf, attr, desc="") -> ConfigLog:
