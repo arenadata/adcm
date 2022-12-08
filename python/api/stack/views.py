@@ -209,7 +209,7 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
 class PrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
     queryset = Prototype.objects.all()
     serializer_class = PrototypeSerializer
-    filterset_fields = ("name", "bundle_id")
+    filterset_fields = ("name", "bundle_id", "license")
     ordering_fields = ("display_name", "version_order")
     lookup_url_kwarg = "prototype_pk"
 
@@ -265,7 +265,7 @@ class ProtoActionViewSet(RetrieveModelMixin, GenericUIViewSet):
 class ServicePrototypeViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
     queryset = Prototype.objects.filter(type="service")
     serializer_class = ServicePrototypeSerializer
-    filterset_fields = ("name", "bundle_id")
+    filterset_fields = ("name", "bundle_id", "license")
     ordering_fields = ("display_name", "version_order")
     lookup_url_kwarg = "prototype_pk"
 
