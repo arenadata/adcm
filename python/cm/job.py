@@ -746,7 +746,8 @@ def get_state(action: Action, job: JobLog, status: str) -> Tuple[Optional[str], 
         if not state:
             logger.warning('action "%s" fail state is not set', action.name)
     else:
-        logger.error("unknown task status: %s", status)
+        if status != JobStatus.ABORTED:
+            logger.error("unknown task status: %s", status)
         state = None
         multi_state_set = []
         multi_state_unset = []

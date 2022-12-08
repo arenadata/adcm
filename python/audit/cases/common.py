@@ -24,6 +24,7 @@ from cm.models import (
     Action,
     ADCMEntity,
     ClusterObject,
+    JobLog,
     ServiceComponent,
     TaskLog,
     Upgrade,
@@ -71,6 +72,39 @@ def _task_case(task_pk: str, action: str) -> tuple[AuditOperation, AuditObject |
             object_id=task.task_object.pk,
             object_name=task.task_object.name,
             object_type=task.object_type.name,
+        )
+    else:
+        audit_object = None
+
+    return audit_operation, audit_object
+
+
+def _job_case(job_pk: str, action: str) -> tuple[AuditOperation, AuditObject | None]:
+    job = JobLog.objects.filter(pk=job_pk).first()
+    operation_name = None
+
+    if job:
+        if job.sub_action:
+            operation_name = f"Job \"{job.sub_action.display_name}\""
+        if job.action and operation_name is not None:
+            operation_name = f"{operation_name} of action \"{job.action.display_name}\""
+
+    if operation_name is None:
+        operation_name = "Job"
+    operation_name_postfix = {
+        "cancel": " cancelled",
+    }.get(action, None) or f" {action}ed"
+
+    audit_operation = AuditOperation(
+        name=f"{operation_name}{operation_name_postfix}",
+        operation_type=AuditLogOperationType.Update,
+    )
+
+    if job and job.task and job.task.task_object:
+        audit_object = get_or_create_audit_obj(
+            object_id=job.task.task_object.pk,
+            object_name=job.task.task_object.name,
+            object_type=job.task.object_type.name,
         )
     else:
         audit_object = None
@@ -249,12 +283,14 @@ def upgrade_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | No
     return audit_operation, audit_object
 
 
-def task_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | None]:
+def task_job_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | None]:
     audit_operation = None
     audit_object = None
 
     match path:
         case ["task", task_pk, action] | ["task", task_pk, action]:
             audit_operation, audit_object = _task_case(task_pk=task_pk, action=action)
+        case ["job", job_pk, action]:
+            audit_operation, audit_object = _job_case(job_pk=job_pk, action=action)
 
     return audit_operation, audit_object

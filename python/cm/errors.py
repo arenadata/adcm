@@ -217,6 +217,7 @@ ERRORS = {
     "USER_CREATE_ERROR": ("Error during process of user creating", HTTP_409_CONFLICT, ERR),
     "USER_UPDATE_ERROR": ("Error during process of user updating", HTTP_400_BAD_REQUEST, ERR),
     "USER_DELETE_ERROR": ("Built-in user could not be deleted", HTTP_405_METHOD_NOT_ALLOWED, ERR),
+    "JOB_TERMINATION_ERROR": ("Can't terminate job", HTTP_409_CONFLICT, ERR),
 }
 
 
