@@ -43,3 +43,8 @@ class CommonToolbarLocators:
 
         popup_block = Locator(By.CSS_SELECTOR, "app-popover", "Warning popup block")
         item = Locator(By.CSS_SELECTOR, "app-popover app-concern", "Item with warning")
+
+    class Hint:
+        """Hints with information"""
+
+        hint_text = Locator(By.CSS_SELECTOR, "mat-tooltip-component div", "Hint text")
