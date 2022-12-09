@@ -35,7 +35,6 @@ from adcm_pytest_plugin.utils import (
     random_string,
 )
 from coreapi.exceptions import ErrorMessage
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.tools import build_hc_for_hc_acl_action, get_inventory_file
 from tests.library.assertions import (
     expect_api_error,
@@ -282,7 +281,6 @@ class TestSuccessfulUpgrade:
             )
             assert expected_message in job.log().content, f'"{expected_message}" should be in log'
 
-    @only_clean_adcm
     def test_inventories(self, adcm_fs, sdk_client_fs, old_cluster):
         """Check that inventories of jobs before and after bundle switch are correct"""
         upgrade_name = 'simple_upgrade'
@@ -295,7 +293,6 @@ class TestSuccessfulUpgrade:
         with allure.step('Check inventory of job after the bundle_switch'):
             _compare_inventory_files(adcm_fs, job_after_id)
 
-    @only_clean_adcm
     def test_hc_acl(self, adcm_fs, sdk_client_fs, old_cluster, two_hosts):
         """
         Test successful upgrade with `hc_acl` section
@@ -622,8 +619,6 @@ class TestConstraintsChangeAfterUpgrade:
     """
     Test upgrade when constraints are changed in new version
     """
-
-    pytestmark = [only_clean_adcm]
 
     OLD_CLUSTER = {'type': 'cluster', 'name': 'cluster_with_constraints', 'version': '1.0'}
     NEW_CLUSTER = {**OLD_CLUSTER, 'version': '2.0'}

@@ -42,7 +42,6 @@ from tests.functional.audit.conftest import (
     make_auth_header,
     parametrize_audit_scenario_parsing,
 )
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles as BR
 from tests.functional.rbac.conftest import create_policy
 from tests.functional.tools import (
@@ -53,7 +52,6 @@ from tests.functional.tools import (
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm]
 
 ObjectWithConfig = Union[ADCM, ClusterRelatedObject, ProviderRelatedObject]
 

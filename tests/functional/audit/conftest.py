@@ -30,7 +30,6 @@ from adcm_client.audit import (
 )
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import ADCM, ADCMClient, Policy
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles, create_policy
 from tests.functional.tools import ClusterRelatedObject, ProviderRelatedObject
 from tests.library.audit.checkers import AuditLogChecker
@@ -39,7 +38,6 @@ from tests.library.db import Query, QueryExecutioner
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm]
 
 AUDIT_LOG_SCENARIOS_DIR = Path(__file__).parent / "scenarios"
 

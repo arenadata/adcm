@@ -45,6 +45,7 @@ from adcm_client.objects import (
 )
 from adcm_pytest_plugin.utils import get_data_dir, get_subdirs_iter
 from pytest_lazyfixture import lazy_fixture
+from tests.conftest import include_dummy_data
 
 # pylint: disable=redefined-outer-name,protected-access
 
@@ -175,6 +176,7 @@ def one_host_provider_id_attr(one_host: Host):
     return {'provider_id': one_host.provider_id}
 
 
+@include_dummy_data
 @pytest.mark.skip(reason="ADCM-3297")
 @pytest.mark.parametrize(
     'tested_class',

@@ -24,13 +24,10 @@ import websocket
 # pylint: disable=redefined-outer-name
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
-from tests.functional.conftest import only_clean_adcm
+from tests.conftest import include_dummy_data
 
 DATADIR = utils.get_data_dir(__file__)
 R_WWW_PREFIX = re.compile(r"https?://(www.\.)?")
-
-
-pytestmark = [only_clean_adcm]
 
 
 def repr_template(event_type, obj_type, obj_id, dtype=None, value=None):
@@ -216,6 +213,7 @@ def test_events_when_cluster_action_(case, action_name, expected, websocket_conn
         assert_events(websocket_connection, *expected(cluster, job))
 
 
+@include_dummy_data
 @pytest.mark.parametrize(('case', 'action_name', 'expected'), svc_actions)
 def test_events_when_service_(case, action_name, expected, websocket_connection, cluster_with_svc_and_host):
     """Test events on service manipulations"""

@@ -26,6 +26,7 @@ from adcm_pytest_plugin.docker_utils import ADCM, copy_file_to_container
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.steps.commands import dump_cluster, load_cluster
 from adcm_pytest_plugin.utils import catch_failed, get_data_dir
+from tests.conftest import include_dummy_data
 from tests.functional.tools import AnyADCMObject, get_object_represent
 from tests.library.assertions import dicts_are_equal, sets_are_equal
 
@@ -82,6 +83,7 @@ def _upload_bundle_to_both_adcm(bundle_archives, sdk_client_fs, second_adcm_sdk)
         provider_from_second_adcm.host_create(f'second-adcm-host-{i}')
 
 
+@include_dummy_data
 @pytest.mark.parametrize(
     'bundle_archives',
     [(get_data_dir(__file__, 'cluster'), get_data_dir(__file__, 'provider'))],

@@ -30,7 +30,6 @@ from adcm_client.objects import (
 )
 from adcm_pytest_plugin.docker_utils import ADCM
 from adcm_pytest_plugin.utils import get_or_add_service
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
     BUNDLES_DIR,
     DEFAULT_SERVICE_NAME,
@@ -53,7 +52,6 @@ from tests.library.assertions import sets_are_equal
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm]
 
 DEFAULT_ACTION_NAME = "default_action"
 HC_ACL_SERVICE_NAME = "hc_acl_service"

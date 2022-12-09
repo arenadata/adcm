@@ -33,7 +33,6 @@ from adcm_pytest_plugin.docker_utils import get_file_from_container
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.utils import get_data_dir
 from docker.models.containers import Container
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.tools import (
     BEFORE_UPGRADE_DEFAULT_STATE,
     create_config_group_and_add_host,
@@ -41,8 +40,6 @@ from tests.functional.tools import (
 )
 
 # pylint: disable=redefined-outer-name
-
-pytestmark = [only_clean_adcm]
 
 
 HOST_FQDN = 'awesome-future'

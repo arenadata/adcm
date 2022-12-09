@@ -20,7 +20,6 @@ import pytest
 from adcm_client.objects import ADCMClient, Bundle
 from adcm_pytest_plugin.docker_utils import ADCM
 from adcm_pytest_plugin.utils import get_data_dir, random_string
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.action_role_utils import (
     check_cluster_actions_roles_are_created_correctly,
     check_provider_based_object_action_roles_are_created_correctly,
@@ -32,8 +31,6 @@ from tests.functional.rbac.action_role_utils import (
 from tests.functional.rbac.conftest import DATA_DIR, RoleType, extract_role_short_info
 from tests.library.utils import previous_adcm_version_tag
 from tests.upgrade_utils import upgrade_adcm_version
-
-pytestmark = [only_clean_adcm]
 
 LAST_NON_RBAC_VER = '2021.11.22.15'
 SERVICE_NAMES = 'test_service', 'new_service'

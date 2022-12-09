@@ -23,7 +23,6 @@ from adcm_pytest_plugin.docker_utils import ADCM
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from docker.models.containers import Container
 from tests.functional.audit.conftest import make_auth_header
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import (
     get_ldap_user_from_adcm,
     login_should_fail,
@@ -74,7 +73,6 @@ def ldap_user(sdk_client_fs, created_ldap_user, configure_adcm_ldap_ad) -> User:
     return get_ldap_user_from_adcm(sdk_client_fs, username)
 
 
-@only_clean_adcm
 @pytest.mark.ldap()
 @pytest.mark.usefixtures("configure_adcm_ldap_ad")
 def test_users_deactivation(

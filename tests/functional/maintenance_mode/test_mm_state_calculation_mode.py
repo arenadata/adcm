@@ -15,7 +15,6 @@ Test designed to check MM state calculation logic for services/components
 """
 
 import allure
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
     ANOTHER_SERVICE_NAME,
     DEFAULT_SERVICE_NAME,
@@ -29,7 +28,6 @@ from tests.functional.maintenance_mode.conftest import (
 # pylint: disable=redefined-outer-name
 
 
-@only_clean_adcm
 def test_mm_state_service(api_client, cluster_with_mm, hosts):
     """Test to check maintenance_mode on services and hosts"""
     first_host, second_host, *_ = hosts
@@ -64,7 +62,6 @@ def test_mm_state_service(api_client, cluster_with_mm, hosts):
         check_mm_is(MM_IS_OFF, first_host, second_host, second_service)
 
 
-@only_clean_adcm
 def test_mm_state_component(api_client, cluster_with_mm, hosts):
     """Test to check maintenance_mode on components and hosts"""
     first_host, second_host, *_ = hosts
@@ -96,7 +93,6 @@ def test_mm_state_component(api_client, cluster_with_mm, hosts):
         check_mm_is(MM_IS_OFF, first_host, second_host, first_component, first_service)
 
 
-@only_clean_adcm
 def test_mm_state_host(api_client, cluster_with_mm, hosts):
     """Test to check maintenance_mode on components and hosts"""
     first_host, second_host, *_ = hosts

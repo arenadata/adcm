@@ -45,7 +45,6 @@ from adcm_pytest_plugin.steps.actions import (
     run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import catch_failed, get_data_dir, random_string
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.plugin_utils import (
     build_objects_checker,
     build_objects_comparator,
@@ -54,8 +53,6 @@ from tests.functional.tools import AnyADCMObject, get_config, get_objects_via_pa
 from tests.library.assertions import dicts_are_equal, dicts_are_not_equal
 from tests.library.utils import previous_adcm_version_tag
 from tests.upgrade_utils import upgrade_adcm_version
-
-pytestmark = [only_clean_adcm]
 
 AVAILABLE_ACTIONS = {
     "single_state-available",

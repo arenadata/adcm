@@ -15,7 +15,6 @@
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Cluster, Component, Service
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
     ANOTHER_SERVICE_NAME,
     BUNDLES_DIR,
@@ -30,8 +29,6 @@ from tests.functional.maintenance_mode.conftest import (
 from tests.library.api.client import APIClient
 
 # pylint: disable=redefined-outer-name
-
-pytestmark = [only_clean_adcm]
 
 
 @pytest.fixture()
