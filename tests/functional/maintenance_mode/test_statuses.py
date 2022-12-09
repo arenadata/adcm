@@ -21,7 +21,6 @@ import allure
 import pytest
 import requests
 from adcm_client.objects import ADCMClient, Cluster, Component
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
     ANOTHER_SERVICE_NAME,
     DEFAULT_SERVICE_NAME,
@@ -42,9 +41,6 @@ CHILDREN_KEY = "chilren"
 
 POSITIVE_STATUS = 0
 NEGATIVE_STATUS = 16
-
-
-pytestmark = [only_clean_adcm]
 
 
 @pytest.fixture()

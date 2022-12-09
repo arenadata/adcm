@@ -33,13 +33,11 @@ from tests.functional.audit.conftest import (
     set_logins_date,
     set_operations_date,
 )
-from tests.functional.conftest import only_clean_adcm
 from tests.library.assertions import sets_are_equal
 from tests.library.db import QueryExecutioner
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm]
 
 DATA_DIR = "/adcm/data"
 AUDIT_DIR = f"{DATA_DIR}/audit/"

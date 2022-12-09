@@ -18,7 +18,6 @@ import allure
 import pytest
 from adcm_client.objects import ADCMClient, Group, User
 from adcm_pytest_plugin.utils import random_string
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import (
     DEFAULT_LOCAL_USERS,
     check_existing_groups,
@@ -36,7 +35,7 @@ from tests.library.ldap_interactions import change_adcm_ldap_config, sync_adcm_w
 # pylint: disable=redefined-outer-name
 
 
-pytestmark = [pytest.mark.ldap(), only_clean_adcm]
+pytestmark = [pytest.mark.ldap()]
 UserInfo = dict
 GroupInfo = dict
 

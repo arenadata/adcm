@@ -23,13 +23,11 @@ from adcm_client.audit import LoginResult, ObjectType, OperationResult, Operatio
 from adcm_client.objects import ADCMClient, Group, Policy, Role, User
 from coreapi.exceptions import ErrorMessage
 from tests.functional.audit.conftest import check_failed, make_auth_header
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles
 from tests.library.assertions import sets_are_equal
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm]
 
 BUNDLES_DIR = Path(__file__).parent / "bundles"
 NOT_EXISTING_USER = "nosuchuser"

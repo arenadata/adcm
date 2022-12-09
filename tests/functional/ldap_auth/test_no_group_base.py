@@ -15,7 +15,6 @@
 import allure
 import pytest
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import (
     SYNC_ACTION_NAME,
     check_existing_groups,
@@ -25,7 +24,7 @@ from tests.functional.ldap_auth.utils import (
 )
 from tests.library.ldap_interactions import configure_adcm_for_ldap
 
-pytestmark = [only_clean_adcm, pytest.mark.ldap()]
+pytestmark = [pytest.mark.ldap()]
 
 
 @pytest.fixture()

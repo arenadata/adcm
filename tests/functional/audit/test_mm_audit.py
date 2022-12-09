@@ -24,7 +24,6 @@ from tests.functional.audit.conftest import (
     make_auth_header,
     parametrize_audit_scenario_parsing,
 )
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
     ANOTHER_SERVICE_NAME,
     CLUSTER_WITH_MM_NAME,
@@ -36,8 +35,6 @@ from tests.functional.maintenance_mode.conftest import (
 )
 
 # pylint: disable=redefined-outer-name
-
-pytestmark = [only_clean_adcm]
 
 
 @pytest.fixture()
