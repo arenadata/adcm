@@ -172,7 +172,7 @@ export class ClusterService {
           )
         );
       } else {
-        this.api.post<Service>(this.Cluster.service, { prototype_id: o.prototype_id });
+        return this.api.post<Service>(this.Cluster.service, { prototype_id: o.prototype_id });
       }
     }));
   }
