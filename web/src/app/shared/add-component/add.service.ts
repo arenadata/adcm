@@ -148,7 +148,7 @@ export class AddService implements IAddService {
     return forkJoin([...ids.map(id => this.cluster.addHost(id))]);
   }
 
-  addService(data: { prototype_id: number }[]) {
+  addService(data: { prototype_id: number, name?: string, licence_url?: string }[]) {
     return this.cluster.addServices(data);
   }
 

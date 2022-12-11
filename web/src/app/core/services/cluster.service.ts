@@ -23,6 +23,8 @@ import { EntityNames } from '@app/models/entity-names';
 import { setPathOfRoute } from '@app/store/navigation/navigation.store';
 import { EntityService } from '@app/abstract/entity-service';
 import { ICluster } from '@app/models/cluster';
+import { DialogComponent } from "@app/shared/components";
+import { MatDialog } from "@angular/material/dialog";
 
 export interface WorkerInstance {
   current: Entities;
@@ -55,6 +57,7 @@ export class ClusterService {
     protected api: ApiService,
     protected serviceComponentService: ServiceComponentService,
     protected store: Store,
+    public dialog: MatDialog,
   ) {}
 
   clearWorker() {
@@ -140,8 +143,38 @@ export class ClusterService {
     );
   }
 
-  addServices(output: { prototype_id: number }[]) {
-    return forkJoin(output.map((o) => this.api.post<Service>(this.Cluster.service, o)));
+  addServices(output: { prototype_id: number, name?: string, licence_url?: string }[]) {
+    return forkJoin(output.map((o) => {
+      if (o.licence_url) {
+        return this.api.root.pipe(
+          switchMap((root) =>
+            this.api.get<{ text: string }>(`/api/v1/stack/prototype/${o.prototype_id}/license/`).pipe(
+              switchMap((info) =>
+                this.dialog
+                  .open(DialogComponent, {
+                    data: {
+                      title: `Accept license agreement ${o.name}`,
+                      text: info.text,
+                      controls: { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] },
+                    },
+                  })
+                  .beforeClosed()
+                  .pipe(
+                    filter((yes) => yes),
+                    switchMap(() =>
+                      this.api.put(`/api/v1/stack/prototype/${o.prototype_id}/license/accept/`, {}).pipe(
+                        switchMap(() => this.api.post<Service>(this.Cluster.service, { prototype_id: o.prototype_id }))
+                      )
+                    )
+                  )
+              )
+            )
+          )
+        );
+      } else {
+        this.api.post<Service>(this.Cluster.service, { prototype_id: o.prototype_id });
+      }
+    }));
   }
 
   getHosts(p: ParamMap) {
