@@ -3,7 +3,7 @@ import {BaseMapListDirective} from "@app/shared/form-elements/map.component";
 
 @Component({
   selector: 'app-fields-secret-map',
-  templateUrl: './secret-map.component.html',
+  templateUrl: '../map-list.template.html',
   styleUrls: ['./secret-map.component.scss']
 })
 export class SecretMapComponent extends BaseMapListDirective implements OnInit {
