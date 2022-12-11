@@ -25,7 +25,7 @@ import { EventMessage, SocketState } from '@app/core/store';
 import { SocketListenerDirective } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
 import { BehaviorSubject, Observable, of, Subscription } from 'rxjs';
-import { catchError, finalize, tap } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, finalize, tap } from 'rxjs/operators';
 
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
@@ -78,7 +78,12 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   ) {
     super(socket);
     this.isGroupConfig = route.snapshot.data['isGroupConfig'];
-    this.worker$ = service.worker$.pipe(this.takeUntil());
+    this.worker$ = service.worker$.pipe(distinctUntilChanged());
+
+    service.worker$.subscribe((data) => {
+      this.getConfigUrlFromWorker();
+      this._getConfig(data.current.config).subscribe();
+    });
   }
 
   ngAfterViewInit(): void {}
