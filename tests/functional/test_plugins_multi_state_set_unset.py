@@ -24,6 +24,7 @@ from adcm_pytest_plugin.steps.actions import (
     run_provider_action_and_assert_result,
     run_service_action_and_assert_result,
 )
+from tests.conftest import include_dummy_data
 from tests.functional.plugin_utils import (
     TestImmediateChange,
     build_objects_checker,
@@ -77,6 +78,7 @@ def two_providers(sdk_client_fs: ADCMClient) -> Tuple[Provider, Provider]:
 # !===== Tests =====!
 
 
+@include_dummy_data
 @pytest.mark.parametrize(
     ('set_action_name', 'object_to_be_changed', 'action_owner'),
     generate_cluster_success_params(action_prefix='set', id_template='set_{}_multi_state'),
@@ -103,6 +105,7 @@ def test_cluster_related_objects(
     )
 
 
+@include_dummy_data
 @pytest.mark.parametrize(
     ('set_action_name', 'object_to_be_changed', 'action_owner'),
     generate_provider_success_params(action_prefix='set', id_template='set_{}_multi_state'),
@@ -129,6 +132,7 @@ def test_provider_related_objects(
     )
 
 
+@include_dummy_data
 @pytest.mark.parametrize("two_clusters", ["cluster_double_call"], indirect=True)
 def test_double_call_to_multi_state_set(two_clusters: Tuple[Cluster, Cluster], sdk_client_fs: ADCMClient):
     """Test that double call to plugin from two files doesn't fail"""
@@ -149,6 +153,7 @@ def test_double_call_to_multi_state_set(two_clusters: Tuple[Cluster, Cluster], s
             run_cluster_action_and_assert_result(cluster, 'double_unset')
 
 
+@include_dummy_data
 def test_host_from_provider(two_providers: Tuple[Provider, Provider], sdk_client_fs: ADCMClient):
     """Change host multi state from provider"""
     provider = two_providers[0]
@@ -197,6 +202,7 @@ def test_forbidden_multi_state_set_actions(sdk_client_fs: ADCMClient):
                 run_provider_action_and_assert_result(provider, forbidden_action, status='failed')
 
 
+@include_dummy_data
 def test_missing_ok_multi_state_unset(
     two_providers: Tuple[Provider, Provider],
     two_clusters: Tuple[Cluster, Cluster],
@@ -297,6 +303,7 @@ class TestImmediateMultiStateChange(TestImmediateChange):
 
     _file = __file__
 
+    @include_dummy_data
     @allure.issue(url='https://arenadata.atlassian.net/browse/ADCM-2116')
     def test_immediate_multi_state_change(
         self,

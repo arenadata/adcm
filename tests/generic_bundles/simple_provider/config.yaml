@@ -14,6 +14,13 @@
   version: 10.20
   name: simple_provider
 
+  config: &config
+    - name: key
+      type: string
+      default: www
+
 - type: host
   version: 2.2
   name: simple_host
+
+  config: *config

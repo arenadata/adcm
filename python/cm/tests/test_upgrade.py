@@ -97,6 +97,10 @@ def get_config(obj):
 
 
 class TestUpgradeVersion(TestCase):
+    def setUp(self):
+        self.obj = gen_cluster()
+        self.upgrade = self.cook_upgrade()
+
     @staticmethod
     def cook_upgrade():
         return Upgrade(
@@ -112,57 +116,48 @@ class TestUpgradeVersion(TestCase):
         self.assertEqual(ok, result, f"check_upgrade msg: {msg or None}")
 
     def test_version(self):
-        obj = gen_cluster()
-        upgrade = self.cook_upgrade()
+        self.obj.prototype.version = "1.5"
+        self.check_upgrade(self.obj, self.upgrade, True)
 
-        obj.prototype.version = "1.5"
-        self.check_upgrade(obj, upgrade, True)
+        self.obj.prototype.version = "2.5"
+        self.check_upgrade(self.obj, self.upgrade, False)
 
-        obj.prototype.version = "2.5"
-        self.check_upgrade(obj, upgrade, False)
+        self.obj.prototype.version = "2.0"
+        self.check_upgrade(self.obj, self.upgrade, True)
 
-        obj.prototype.version = "2.0"
-        self.check_upgrade(obj, upgrade, True)
-
-        obj.prototype.version = "1.0"
-        self.check_upgrade(obj, upgrade, True)
+        self.obj.prototype.version = "1.0"
+        self.check_upgrade(self.obj, self.upgrade, True)
 
     def test_strict_version(self):
-        obj = gen_cluster()
-        upgrade = self.cook_upgrade()
-        upgrade.min_strict = True
-        upgrade.max_strict = True
+        self.upgrade.min_strict = True
+        self.upgrade.max_strict = True
 
-        obj.prototype.version = "1.5"
-        self.check_upgrade(obj, upgrade, True)
+        self.obj.prototype.version = "1.5"
+        self.check_upgrade(self.obj, self.upgrade, True)
 
-        obj.prototype.version = "2.5"
-        self.check_upgrade(obj, upgrade, False)
+        self.obj.prototype.version = "2.5"
+        self.check_upgrade(self.obj, self.upgrade, False)
 
-        obj.prototype.version = "1.0"
-        self.check_upgrade(obj, upgrade, False)
+        self.obj.prototype.version = "1.0"
+        self.check_upgrade(self.obj, self.upgrade, False)
 
-        obj.prototype.version = "2.0"
-        self.check_upgrade(obj, upgrade, False)
+        self.obj.prototype.version = "2.0"
+        self.check_upgrade(self.obj, self.upgrade, False)
 
     def test_state(self):
-        obj = gen_cluster()
-        upgrade = self.cook_upgrade()
-        upgrade.state_available = ["installed", "any"]
-        obj.prototype.version = "1.5"
+        self.upgrade.state_available = ["installed", "any"]
+        self.obj.prototype.version = "1.5"
 
-        obj.state = "created"
-        self.check_upgrade(obj, upgrade, False)
+        self.obj.state = "created"
+        self.check_upgrade(self.obj, self.upgrade, False)
 
-        obj.state = "installed"
-        self.check_upgrade(obj, upgrade, True)
+        self.obj.state = "installed"
+        self.check_upgrade(self.obj, self.upgrade, True)
 
     def test_issue(self):
-        obj = gen_cluster()
-        create_issue(obj, ConcernCause.Config)
-        upgrade = self.cook_upgrade()
+        create_issue(self.obj, ConcernCause.Config)
 
-        self.check_upgrade(obj, upgrade, False)
+        self.check_upgrade(self.obj, self.upgrade, False)
 
 
 class TestConfigUpgrade(TestCase):
@@ -384,6 +379,35 @@ class TestConfigUpgrade(TestCase):
 
 
 class TestUpgrade(TestCase):
+    def test_upgrade_with_license(self):
+        b1 = cook_cluster_bundle("1.0")
+        b2 = cook_cluster_bundle("2.0")
+        cluster = cook_cluster(b1, "Test1")
+        upgrade = cook_upgrade(b2)
+
+        license_hash_1 = "36e8d9f836e8ddc797f6e1b39bc856da8ab14da201258125175f5b9180f69304"
+        license_hash_2 = "9dbd1b5494fd6040863339dece1306358d4f0f16f8246086b05c2f32886ae5ef"
+        old_proto = Prototype.objects.get(type="service", name="hadoop", bundle=b1)
+        old_proto.license = "unaccepted"
+        old_proto.license_hash = license_hash_1
+        old_proto.save(update_fields=["license", "license_hash"])
+        with self.assertRaisesRegex(AdcmEx, 'License for prototype "hadoop" service 1.0 is not accepted'):
+            do_upgrade(cluster, upgrade, {}, {}, [])
+
+        old_proto = Prototype.objects.get(type="service", name="hadoop", bundle=b1)
+        new_proto = Prototype.objects.get(type="service", name="hadoop", bundle=b2)
+        old_proto.license = "accepted"
+        new_proto.license = "unaccepted"
+        new_proto.license_hash = license_hash_2
+        old_proto.save(update_fields=["license"])
+        new_proto.save(update_fields=["license", "license_hash"])
+        with self.assertRaisesRegex(AdcmEx, 'License for prototype "hadoop" service 2.0 is not accepted'):
+            do_upgrade(cluster, upgrade, {}, {}, [])
+
+        new_proto.license = "accepted"
+        new_proto.save(update_fields=["license"])
+        do_upgrade(cluster, upgrade, {}, {}, [])
+
     def test_cluster_upgrade(self):
         b1 = cook_cluster_bundle("1.0")
         b2 = cook_cluster_bundle("2.0")

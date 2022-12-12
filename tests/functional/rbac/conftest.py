@@ -50,14 +50,14 @@ from tests.functional.tools import ADCMObjects, AnyADCMObject, get_object_repres
 # Enum names doesn't conform to UPPER_CASE naming style
 
 
-def pytest_collection_modifyitems(session, config, items: list):
-    """Ignore adcm_with_dummy_data"""
-    # location[0] includes path (relative?) to a file with the test
-    rbac_dummy_data = tuple(
-        filter(lambda i: 'rbac' in i.location[0] and 'adcm_with_dummy_data' in i.callspec.id, items)
-    )
-    for item in rbac_dummy_data:
-        items.remove(item)
+# def pytest_collection_modifyitems(session, config, items: list):
+#     """Ignore adcm_with_dummy_data"""
+#     # location[0] includes path (relative?) to a file with the test
+#     rbac_dummy_data = tuple(
+#         filter(lambda i: 'rbac' in i.location[0] and 'adcm_with_dummy_data' in i.callspec.id, items)
+#     )
+#     for item in rbac_dummy_data:
+#         items.remove(item)
 
 
 TEST_USER_CREDENTIALS = "test_user", "password"

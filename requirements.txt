@@ -5,7 +5,6 @@ cryptography==37.0.2
 django-auth-ldap==4.1.0
 django-cors-headers==3.13.0
 django-filter==22.1
-django-generate-secret-key
 django-guardian==2.4.0
 django-rest-swagger==2.2.0
 drf-extensions==0.7.1

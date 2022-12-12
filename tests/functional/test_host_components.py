@@ -31,7 +31,6 @@ from adcm_pytest_plugin.utils import (
     random_string,
 )
 from coreapi.exceptions import ErrorMessage
-from tests.functional.conftest import only_clean_adcm
 
 CASES_PATH = "cases"
 CONSTRAINTS_DIR = get_data_dir(__file__, 'bundle_configs', 'constraints')
@@ -172,7 +171,6 @@ def provider(sdk_client_fs) -> Provider:
     return bundle.provider_create(f'Provider {random_string(6)}')
 
 
-@only_clean_adcm
 @parametrize_by_constraint('positive')
 def test_hostcomponent_constraints_positive(constraint: str, hosts_amounts: List[int], cluster_bundle, provider):
     """
@@ -181,7 +179,6 @@ def test_hostcomponent_constraints_positive(constraint: str, hosts_amounts: List
     _test_constraint(constraint, hosts_amounts, cluster_bundle, provider, 'succeed', expect_hostcomponent_set_success)
 
 
-@only_clean_adcm
 @parametrize_by_constraint('negative')
 def test_hostcomponent_constraints_negative(constraint: str, hosts_amounts: List[int], cluster_bundle, provider):
     """
@@ -190,7 +187,6 @@ def test_hostcomponent_constraints_negative(constraint: str, hosts_amounts: List
     _test_constraint(constraint, hosts_amounts, cluster_bundle, provider, 'fail', expect_hostcomponent_set_fail)
 
 
-@only_clean_adcm
 def test_hostcomponent_plus_constraint(cluster_bundle, provider):
     """
     Test positive and negative cases with [+] constraint

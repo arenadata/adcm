@@ -26,10 +26,8 @@ from tests.functional.audit.conftest import (
     parametrize_audit_scenario_parsing,
 )
 from tests.functional.audit.test_objects_updates import EXPORT_SERVICE, IMPORT_SERVICE
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles, create_policy
 
-pytestmark = [only_clean_adcm]
 # pylint: disable=redefined-outer-name
 
 

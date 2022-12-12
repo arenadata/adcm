@@ -118,6 +118,7 @@ def start_subprocess(job_id, cmd, conf, out_file, err_file):
     event = Event()
     logger.info("job run cmd: %s", " ".join(cmd))
     proc = subprocess.Popen(cmd, env=env_configuration(conf), stdout=out_file, stderr=err_file)
+    JobLog.objects.filter(pk=job_id).update(pid=proc.pid)
     cm.job.set_job_status(job_id, JobStatus.RUNNING, event, proc.pid)
     event.send_state()
     logger.info("run job #%s, pid %s", job_id, proc.pid)

@@ -524,6 +524,7 @@ def copy_stage_sub_actons(bundle):
                 "multi_state_on_fail_set",
                 "multi_state_on_fail_unset",
                 "params",
+                "allow_to_terminate",
             ),
         )
         sub.action = action

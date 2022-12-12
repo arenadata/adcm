@@ -17,7 +17,6 @@ Test designed to check that actions are disallowed when cluster object in MM
 import allure
 import pytest
 from adcm_client.objects import Cluster
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
     BUNDLES_DIR,
     MM_IS_OFF,
@@ -31,7 +30,6 @@ from tests.functional.maintenance_mode.conftest import (
 # pylint: disable=redefined-outer-name
 
 CLUSTER_OBJECTS = ("cluster", "service", "component")
-pytestmark = [only_clean_adcm]
 
 
 @pytest.fixture()

@@ -747,6 +747,7 @@ task_action:
     display_name: string
     params: json
     on_fail: post_action_or_string
+    allow_to_terminate: boolean
   required_items:
     - name
     - script

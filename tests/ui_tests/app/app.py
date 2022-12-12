@@ -33,7 +33,7 @@ class ADCMTest:
 
     def __init__(self, browser="Chrome", downloads: Optional[Union[os.PathLike, str]] = None):
         self.opts = FirefoxOptions() if browser == "Firefox" else ChromeOptions()
-        self.opts.headless = True
+        self.opts.headless = os.getenv("UI_TEST_DEBUG") != "True"
         self.opts.add_argument("--no-sandbox")
         self.opts.add_argument("--disable-extensions")
         self.opts.add_argument("--ignore-certificate-errors")

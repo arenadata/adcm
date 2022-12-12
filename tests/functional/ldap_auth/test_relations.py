@@ -17,7 +17,6 @@ import allure
 import pytest
 from adcm_client.objects import ADCMClient
 from tests.api.utils.tools import random_string
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import (
     get_ldap_group_from_adcm,
     get_ldap_user_from_adcm,
@@ -25,7 +24,6 @@ from tests.functional.ldap_auth.utils import (
 from tests.library.ldap_interactions import LDAPEntityManager
 
 pytestmark = [
-    only_clean_adcm,
     pytest.mark.usefixtures('configure_adcm_ldap_ad'),
     pytest.mark.ldap(),
 ]

@@ -18,7 +18,7 @@ from adcm_client.objects import ADCMClient, Cluster, Host
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.steps.asserts import assert_action_result
-from tests.functional.conftest import only_clean_adcm
+from tests.conftest import include_dummy_data
 from tests.library.consts import MessageStates, States
 
 NO_FIELD = [
@@ -31,6 +31,7 @@ NO_FIELD = [
 ]
 
 
+@include_dummy_data
 @pytest.mark.parametrize("missed_field", NO_FIELD)
 def test_field_validation(sdk_client_fs: ADCMClient, missed_field):
     """Check bad configurations: missed title,
@@ -92,6 +93,7 @@ def test_all_fields(sdk_client_fs: ADCMClient, name, result):
         assert content["content"][0]["result"] is task_result
 
 
+@include_dummy_data
 @pytest.mark.parametrize(
     "name",
     ["with_success", "with_fail", "with_success_msg_on_fail", "with_fail_msg_on_fail"],
@@ -350,7 +352,6 @@ class TestDatabaseIsMalformed:
         return [cluster.host_add(provider.host_create(fqdn=f'test-host-{i}')) for i in range(50)]
 
     @allure.issue(name='Database is malformed', url='https://arenadata.atlassian.net/browse/ADCM-2169')
-    @only_clean_adcm
     @pytest.mark.full()
     @pytest.mark.usefixtures('hosts')
     def test_multiple_parallel_check_run(self, cluster):

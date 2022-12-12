@@ -15,7 +15,6 @@
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Cluster, Provider
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
     BUNDLES_DIR,
     MM_IS_OFF,
@@ -30,7 +29,6 @@ from tests.library.api.core import RequestResult
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm]
 DEFAULT_CLUSTER_PARAM = 12
 EXPECTED_ERROR = "LOCK_ERROR"
 

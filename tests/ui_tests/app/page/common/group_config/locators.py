@@ -22,3 +22,5 @@ class GroupConfigLocators:
     group_row = Locator(By.CSS_SELECTOR, "app-group-fields mat-expansion-panel-header", "Configuration row")
     config_row = Locator(By.CSS_SELECTOR, "app-config-field-attribute-provider", "Configuration row")
     customization_chbx = Locator(By.CSS_SELECTOR, "mat-checkbox", "Checkbox customization")
+    input = Locator(By.CSS_SELECTOR, '*:not([style="display: none;"])>mat-form-field input,textarea', "Row input")
+    add_item_btn = Locator(By.XPATH, ".//button//mat-icon[text()='add_circle_outline']", "Add item to parameter button")

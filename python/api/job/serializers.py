@@ -178,6 +178,13 @@ class JobRetrieveSerializer(HyperlinkedModelSerializer):
         view_name="tasklog-detail",
         lookup_url_kwarg="task_pk",
     )
+    terminatable = SerializerMethodField()
+
+    @staticmethod
+    def get_terminatable(obj: JobLog):
+        if obj.sub_action is None:
+            return False
+        return obj.sub_action.allowed_to_terminate
 
     class Meta:
         model = JobLog
@@ -191,6 +198,7 @@ class JobRetrieveSerializer(HyperlinkedModelSerializer):
             "log_files",
             "action_url",
             "task_url",
+            "terminatable",
         )
         extra_kwargs = {"url": {"lookup_url_kwarg": "job_pk"}}
 

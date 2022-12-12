@@ -39,10 +39,12 @@ from api.job.serializers import (
 from api.utils import check_custom_perm, get_object_for_user
 from audit.utils import audit
 from cm.job import cancel_task, restart_task
-from cm.models import ActionType, JobLog, LogStorage, TaskLog
+from cm.models import ActionType, JobLog, JobStatus, LogStorage, TaskLog
+from cm.status_api import Event
 from rbac.viewsets import DjangoOnlyObjectPermissions
 
 VIEW_TASKLOG_PERMISSION = "cm.view_tasklog"
+VIEW_JOBLOG_PERMISSION = "cm.view_joblog"
 
 
 def get_task_download_archive_name(task: TaskLog) -> str:
@@ -159,10 +161,22 @@ class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Generi
         return [permission() for permission in permission_classes]
 
     def get_serializer_class(self):
-        if self.is_for_ui() or self.action == "retrieve":
+        if self.is_for_ui() or self.action in ("retrieve", "cancel"):
             return JobRetrieveSerializer
 
         return super().get_serializer_class()
+
+    @audit
+    @action(methods=["put"], detail=True)
+    def cancel(self, request: Request, job_pk: int) -> Response:
+        job: JobLog = get_object_for_user(request.user, VIEW_JOBLOG_PERMISSION, JobLog, id=job_pk)
+        check_custom_perm(request.user, "change", JobLog, job_pk)
+
+        event = Event()
+        event.set_job_status(job.pk, JobStatus.ABORTED.value)
+        job.cancel(event)
+
+        return Response(status=HTTP_200_OK)
 
 
 #  pylint:disable-next=too-many-ancestors

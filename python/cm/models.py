@@ -1335,6 +1335,7 @@ class AbstractSubAction(ADCMModel):
     multi_state_on_fail_set = models.JSONField(default=list)
     multi_state_on_fail_unset = models.JSONField(default=list)
     params = models.JSONField(default=dict)
+    allow_to_terminate = models.BooleanField(null=True, default=None)
 
     class Meta:
         abstract = True
@@ -1342,6 +1343,12 @@ class AbstractSubAction(ADCMModel):
 
 class SubAction(AbstractSubAction):
     action = models.ForeignKey(Action, on_delete=models.CASCADE)
+
+    @property
+    def allowed_to_terminate(self) -> bool:
+        if self.allow_to_terminate is None:
+            return self.action.allow_to_terminate
+        return self.allow_to_terminate
 
 
 class HostComponent(ADCMModel):
@@ -1546,6 +1553,23 @@ class JobLog(ADCMModel):
     finish_date = models.DateTimeField(db_index=True)
 
     __error_code__ = "JOB_NOT_FOUND"
+
+    def cancel(self, event_queue: "cm.status_api.Event" = None):
+        if not self.sub_action.allowed_to_terminate:
+            raise AdcmEx("JOB_TERMINATION_ERROR", f"Job #{self.pk} can not be terminated")
+
+        if self.pid == 0:  # not started yet
+            self.status = JobStatus.ABORTED
+            self.save()
+        elif self.status not in (JobStatus.RUNNING, JobStatus.CREATED):
+            raise AdcmEx(
+                "JOB_TERMINATION_ERROR", f"Can't terminate job #{self.pk}, pid: {self.pid} with status {self.status}"
+            )
+        else:
+            os.kill(self.pid, signal.SIGTERM)
+
+        if event_queue:
+            event_queue.send_state()
 
 
 class GroupCheckLog(ADCMModel):

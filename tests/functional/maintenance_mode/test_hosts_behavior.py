@@ -19,7 +19,6 @@ from typing import Iterable, Set, Tuple
 import allure
 import pytest
 from adcm_client.objects import Cluster, Component, Host
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
     ANOTHER_SERVICE_NAME,
     BUNDLES_DIR,
@@ -72,7 +71,6 @@ def host_actions_cluster(sdk_client_fs) -> Cluster:
     return cluster
 
 
-@only_clean_adcm
 @pytest.mark.parametrize(
     'cluster_without_mm',
     ['cluster_mm_disallowed', 'cluster_mm_missing'],
@@ -265,7 +263,6 @@ def test_running_disabled_actions_is_forbidden(api_client, cluster_with_mm, host
     expect_no_api_error('run action `host_action: true` on host in MM', host_action_from_component.run)
 
 
-@only_clean_adcm
 def test_host_actions_with_mm(api_client, cluster_with_mm, hosts):
     """
     Test that host actions (`host_action: true`) are working correctly
@@ -298,7 +295,6 @@ def test_host_actions_with_mm(api_client, cluster_with_mm, hosts):
     expect_no_api_error('run allowed in MM action', regular_host.action(name=allowed_action).run)
 
 
-@only_clean_adcm
 def test_hc_acl_action_with_mm(api_client, cluster_with_mm, hosts):
     """
     Test behaviour of actions with `hc_acl`:
@@ -346,7 +342,6 @@ def test_hc_acl_action_with_mm(api_client, cluster_with_mm, hosts):
         )
 
 
-@only_clean_adcm
 def test_hosts_in_not_blocking_regular_hc_acl(cluster_with_mm, hosts):
     """
     Test that hosts in MM doesn't block operations on "regular" hosts
@@ -378,7 +373,6 @@ def test_hosts_in_not_blocking_regular_hc_acl(cluster_with_mm, hosts):
     )
 
 
-@only_clean_adcm
 def test_state_after_mm_switch(api_client, cluster_with_mm, hosts):
     """
     Test that state stays the same after switch of MM flag
@@ -396,7 +390,6 @@ def test_state_after_mm_switch(api_client, cluster_with_mm, hosts):
     check_state(host, expected_state)
 
 
-@only_clean_adcm
 def test_set_value_not_in_enum_in_mm(cluster_with_mm, hosts):
     """
     Test that value 'disabled' can't be set to a host in 'on/off' mode
