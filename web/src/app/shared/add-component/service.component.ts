@@ -58,7 +58,8 @@ export class ServiceComponent extends BaseFormDirective implements OnInit {
     const result = this.listServices.selectedOptions.selected.filter(a => a.value).map(a => ({
       prototype_id: +a.value.id,
       service_name: a.value.name,
-      licence_url: a.value.licence_url,
+      license: a.value.license,
+      license_url: a.value.license_url,
     }));
     this.service
       .addService(result)

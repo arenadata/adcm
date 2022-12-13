@@ -148,8 +148,37 @@ export class AddService implements IAddService {
     return forkJoin([...ids.map(id => this.cluster.addHost(id))]);
   }
 
-  addService(data: { prototype_id: number, name?: string, licence_url?: string }[]) {
-    return this.cluster.addServices(data);
+  addService(data: { prototype_id: number, service_name?: string, license?: string, license_url?: string }[]) {
+    return forkJoin(data.map((o) => {
+      if (o.license_url && o.license === 'unaccepted') {
+        return this.api.root.pipe(
+          switchMap((root) =>
+            this.api.get<{ text: string }>(`/api/v1/stack/prototype/${o.prototype_id}/license/`).pipe(
+              switchMap((info) =>
+                this.dialog
+                  .open(DialogComponent, {
+                    data: {
+                      title: `Accept license agreement ${o.service_name}`,
+                      text: info.text,
+                      controls: {label: 'Do you accept the license agreement?', buttons: ['Yes', 'No']},
+                    },
+                  })
+                  .beforeClosed()
+                  .pipe(
+                    filter((yes) => yes),
+                    switchMap(() =>
+                      this.api.put(`/api/v1/stack/prototype/${o.prototype_id}/license/accept/`, {}).pipe(
+                        switchMap(() => this.cluster.addServices({prototype_id: o.prototype_id})
+                        )
+                      )
+                    )
+                  )
+              )
+            )
+          )
+        )
+      } else return this.cluster.addServices({prototype_id: o.prototype_id});
+    }));
   }
 
   getListResults<T>(type: TypeName, param: Params = {}) {
