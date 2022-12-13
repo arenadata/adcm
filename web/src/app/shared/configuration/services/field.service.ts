@@ -79,6 +79,7 @@ const fn = {
   boolean: (v: boolean | null, d: boolean | null, r: boolean): boolean | null => (String(v) === 'true' || String(v) === 'false' || String(v) === 'null' ? v : r ? d : null),
   json: (v: string): string => (v === null ? '' : JSON.stringify(v, undefined, 4)),
   map: (v: object, d: object): object => (!v ? d : v),
+  secretmap: (v: object, d: object): object => (!v ? d : v),
   list: (v: string[], d: string[]): string[] => (!v ? d : v),
   structure: (v: any): any => v,
 };
@@ -290,11 +291,12 @@ export class FieldService {
       v.push(jsonParse());
     }
 
-    if (field.controlType === 'map') {
+    if (field.controlType === 'map' || field.controlType === 'secretmap') {
       const parseKey = (): ValidatorFn => (control: AbstractControl): { [key: string]: any } | null =>
         control.value && Object.keys(control.value).length && Object.keys(control.value).some((a) => !a) ? { parseKey: true } : null;
       v.push(parseKey());
     }
+
     return v;
   }
 
@@ -360,7 +362,7 @@ export class FieldService {
 
   checkValue(value: resultTypes, type: TNForm): resultTypes {
     if (value === '' || value === null || isEmptyObject(value)) {
-      if (type === 'map') return {};
+      if (type === 'map' || type === 'secretmap') return {};
       if (type === 'list') return [];
       return null;
     }
@@ -381,6 +383,7 @@ export class FieldService {
     else
       switch (type) {
         case 'map':
+        case 'secretmap':
           return Object.keys(value)
             .filter((a) => !!a)
             .reduce((p, c) => ({ ...p, [c]: value[c] }), {});

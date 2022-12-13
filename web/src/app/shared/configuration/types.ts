@@ -133,7 +133,8 @@ export type controlType =
   | 'file'
   | 'text'
   | 'structure'
-  | 'secrettext';
+  | 'secrettext'
+  | 'secretmap';
 
 /**
  *```
