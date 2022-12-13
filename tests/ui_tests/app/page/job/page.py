@@ -17,11 +17,7 @@ from typing import Literal
 
 import allure
 from tests.ui_tests.app.helpers.locator import Locator
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageFooter,
-    PageHeader,
-)
+from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
@@ -50,8 +46,6 @@ class JobPageMixin(BasePageObject):
 
     def __init__(self, driver, base_url, job_id: int):
         super().__init__(driver, base_url, "/job/{job_id}", job_id=job_id)
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
         self.job_id = job_id
         self.toolbar = CommonToolbar(self.driver, self.base_url)
 

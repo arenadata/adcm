@@ -21,11 +21,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
 from tests.library.conditional_retriever import DataSource, FromOneOf
 from tests.ui_tests.app.helpers.locator import Locator
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageFooter,
-    PageHeader,
-)
+from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.header_locators import AuthorizedHeaderLocators
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
@@ -74,8 +70,6 @@ class JobListPage(BasePageObject):
 
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/task")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url, TaskListLocators.Table)
 
     def get_task_info_from_table(self, row_num: int = 0, *, full_invoker_objects_link: bool = False) -> TableTaskInfo:

@@ -13,15 +13,12 @@
 """Bundle page PageObjects classes"""
 
 import allure
+from tests.ui_tests.app.checks import check_elements_are_displayed
 from tests.ui_tests.app.page.bundle.locators import (
     BundleLocators,
     BundleMainMenuLocators,
 )
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageFooter,
-    PageHeader,
-)
+from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 
@@ -30,15 +27,11 @@ class BundlePage(BasePageObject):
     """Helpers for working with bundle page"""
 
     bundle_id: int
-    header: PageHeader
-    footer: PageFooter
     config: CommonConfigMenuObj
     toolbar: CommonToolbar
 
     def __init__(self, driver, base_url, bundle_id: int):
         super().__init__(driver, base_url, "/bundle/{bundle_id}/main", bundle_id=bundle_id)
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.bundle_id = bundle_id
         self.toolbar = CommonToolbar(self.driver, self.base_url)
@@ -53,12 +46,13 @@ class BundlePage(BasePageObject):
     @allure.step('Check all fields are presented on Main page')
     def check_all_main_menu_fields_are_presented(self):
         """Check all fields on main menu page are presented"""
-        self.assert_displayed_elements(
+        check_elements_are_displayed(
+            self,
             [
                 BundleMainMenuLocators.title,
                 BundleMainMenuLocators.subtitle,
                 BundleMainMenuLocators.text,
-            ]
+            ],
         )
 
     def check_bundle_toolbar(self, bundle_name: str):

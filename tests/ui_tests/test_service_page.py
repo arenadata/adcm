@@ -137,16 +137,12 @@ class TestServiceMainPage:
         cluster_page.check_cluster_toolbar(CLUSTER_NAME)
 
     def test_run_action_on_service_page_by_toolbar(self, app_fs, create_cluster_with_service):
-        """Test run action from the /cluster/{}/service/{}/main page toolbar"""
-
-        params = {"action_name": "test_action"}
-
         cluster, service = create_cluster_with_service
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
-        service_main_page.toolbar.run_action(CLUSTER_NAME, params["action_name"])
+        service_main_page.toolbar.run_action(CLUSTER_NAME, "test_action")
         with allure.step("Check success job"):
             assert (
-                service_main_page.header.get_in_progress_job_amount_from_header() == "1"
+                service_main_page.header.get_in_progress_job_amount() == 1
             ), "There should be 1 in progress job in header"
 
 
@@ -183,7 +179,7 @@ class TestServiceComponentPage:
             ), f"Cluster state should be {params['expected_state']}"
         with allure.step("Check success service job"):
             assert (
-                service_component_page.header.get_success_job_amount_from_header() == "1"
+                service_component_page.header.get_success_job_amount() == 1
             ), "There should be 1 success service job in header"
 
 
@@ -402,7 +398,7 @@ class TestServiceConfigPage:
         service_config_page.config.check_field_is_required(params['req_name'])
         config_row = service_config_page.config.get_all_config_rows()[0]
         service_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params['wrong_value']])
-        service_config_page.config.check_field_is_invalid(params['not_req_name'])
+        service_config_page.config.check_field_is_invalid_error(params['not_req_name'])
         service_config_page.config.check_config_warn_icon_on_left_menu()
         with allure.step("Check save button is disabled"):
             assert service_config_page.config.is_save_btn_disabled(), "Save button should be disabled"

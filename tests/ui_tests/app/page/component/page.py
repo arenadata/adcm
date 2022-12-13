@@ -13,12 +13,8 @@
 """Component page PageObjects classes"""
 
 import allure
-from tests.ui_tests.app.page.common.base_page import (
-    BaseDetailedPage,
-    BasePageObject,
-    PageFooter,
-    PageHeader,
-)
+from tests.ui_tests.app.checks import check_elements_are_displayed
+from tests.ui_tests.app.page.common.base_page import BaseDetailedPage, BasePageObject
 from tests.ui_tests.app.page.common.common_locators import (
     ObjectPageLocators,
     ObjectPageMenuLocators,
@@ -46,8 +42,6 @@ class ComponentPageMixin(BasePageObject):
     cluster_id: int
     service_id: int
     component_id: int
-    header: PageHeader
-    footer: PageFooter
     config: CommonConfigMenuObj
     toolbar: CommonToolbar
     table: CommonTableObj
@@ -67,8 +61,6 @@ class ComponentPageMixin(BasePageObject):
         self.cluster_id = cluster_id
         self.service_id = service_id
         self.component_id = component_id
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.toolbar = CommonToolbar(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url)
@@ -109,7 +101,7 @@ class ComponentPageMixin(BasePageObject):
     @allure.step("Assert that all main elements on the page are presented")
     def check_all_elements(self):
         """Assert all main elements presence"""
-        self.assert_displayed_elements(self.MAIN_ELEMENTS)
+        check_elements_are_displayed(self, self.MAIN_ELEMENTS)
 
     @allure.step("Click on link {link_name}")
     def click_link_by_name(self, link_name: str):

@@ -13,6 +13,7 @@
 """Utilities for retrying operations that require some context"""
 
 from dataclasses import dataclass, field
+from time import sleep
 from typing import Any, Callable, Collection
 
 import allure
@@ -59,3 +60,12 @@ class RetryFromCheckpoint:
                 for step in self._restoration_steps:
                     step.exec()
                     self(restore_from, max_retries, counter=counter + 1)
+
+
+def should_become_truth(check: Callable[..., bool], retries: int = 3, period: int | float = 0.5, **kwargs) -> None:
+    for _ in range(retries):
+        if check(**kwargs):
+            return
+        sleep(period)
+
+    raise AssertionError(f"Check failed with {retries} attempts")

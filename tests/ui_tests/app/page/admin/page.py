@@ -19,6 +19,10 @@ import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
+from tests.ui_tests.app.checks import (
+    check_element_is_visible,
+    check_elements_are_displayed,
+)
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.admin.locators import (
     AdminGroupsLocators,
@@ -30,11 +34,7 @@ from tests.ui_tests.app.page.admin.locators import (
     LoginAuditLocators,
     OperationsAuditLocators,
 )
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageFooter,
-    PageHeader,
-)
+from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs.locators import DeleteDialog
@@ -84,9 +84,8 @@ class GeneralAdminPage(BasePageObject):
     """Base class for admin pages"""
 
     MENU_SUFFIX: str
+    MAIN_ELEMENTS: List[Locator]
     MAIN_ELEMENTS: Collection[Locator]
-    header: PageHeader
-    footer: PageFooter
     config: CommonConfigMenuObj
     table: CommonTableObj
     toolbar: CommonToolbar
@@ -94,9 +93,7 @@ class GeneralAdminPage(BasePageObject):
     def __init__(self, driver, base_url):
         if self.MENU_SUFFIX is None:
             raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
-        super().__init__(driver, base_url, f"/admin/{self.MENU_SUFFIX}")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
+        super().__init__(driver, base_url, "/admin/" + self.MENU_SUFFIX)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url)
         self.toolbar = CommonToolbar(self.driver, self.base_url)
@@ -107,12 +104,11 @@ class GeneralAdminPage(BasePageObject):
 
         if len(self.MAIN_ELEMENTS) == 0:
             raise AttributeError('MAIN_ELEMENTS should contain at least 1 element')
-        self.assert_displayed_elements(self.MAIN_ELEMENTS)
+        check_elements_are_displayed(self, self.MAIN_ELEMENTS)
 
     @allure.step("Check admin toolbar")
     def check_admin_toolbar(self):
-        """Check that admin toolbar has all required elements in place"""
-        self.assert_displayed_elements([CommonToolbarLocators.admin_link])
+        check_elements_are_displayed(self, [CommonToolbarLocators.admin_link])
 
     @allure.step('Open Admin Intro page by left menu item click')
     def open_intro_menu(self) -> "AdminIntroPage":
@@ -686,9 +682,7 @@ class AdminRolesPage(GeneralAdminPage):
 
     @allure.step("Check {error_message} error is presented")
     def check_field_error_in_role_popup(self, error_message: str):
-        """Assert that message "{error_message}" is presented"""
-
-        self.check_element_should_be_visible(AdminRolesLocators.field_error(error_message))
+        check_element_is_visible(self, AdminRolesLocators.field_error(error_message))
 
     def select_all_roles(self):
         self.find_elements(self.table.locators.header)[0].click()

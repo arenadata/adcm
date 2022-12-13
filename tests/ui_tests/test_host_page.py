@@ -26,6 +26,7 @@ from selenium.common import StaleElementReferenceException
 from tests.library.retry import RetryFromCheckpoint, Step
 from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.app import ADCMTest
+from tests.ui_tests.app.checks import check_element_is_hidden, check_element_is_visible
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
@@ -293,18 +294,18 @@ class TestHostListPage:
         }
         wait_and_assert_ui_info(expected_values, page.get_host_info_from_row)
         page.delete_host(0)
-        page.check_element_should_be_hidden(HostListLocators.HostTable.row)
+        check_element_is_hidden(page, HostListLocators.HostTable.row)
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
     def test_delete_bonded_host(self, page: HostListPage, create_bonded_host):
         """Host shouldn't be deleted"""
 
-        page.check_element_should_be_visible(HostListLocators.HostTable.row)
+        check_element_is_visible(page, HostListLocators.HostTable.row)
         page.open_host_creation_popup()
         page.host_popup.create_host(HOST_FQDN, cluster=CLUSTER_NAME)
         page.delete_host(0)
-        page.check_element_should_be_visible(HostListLocators.HostTable.row)
+        check_element_is_visible(page, HostListLocators.HostTable.row)
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -360,7 +361,7 @@ class TestHostListPage:
         with allure.step("Run action and check available actions changed"):
             page.run_action(0, INIT_ACTION)
             _ = [job.wait() for job in sdk_client_fs.job_list()]
-            page.header.wait_success_job_amount_from_header(1)
+            page.header.wait_success_job_amount(1)
             page.driver.refresh()
             assert page.get_disabled_action_names(0) == [
                 REINIT_ACTION
@@ -416,7 +417,7 @@ class TestHostMainPage:
         host_main_page.toolbar.run_action(HOST_FQDN, params["action_name"])
         with allure.step("Check success job"):
             assert (
-                host_main_page.header.get_in_progress_job_amount_from_header() == "1"
+                host_main_page.header.get_in_progress_job_amount() == 1
             ), "There should be 1 in progress job in header"
 
 
@@ -519,7 +520,7 @@ class TestHostConfigPage:
         host_page.config.check_password_confirm_required(PASSWORD_FIELD_NAME)
         host_page.config.check_field_is_required(REQUIRED_FIELD_NAME)
         host_page.config.type_in_field_with_few_inputs(row=regular_row, values=[wrong_value])
-        host_page.config.check_field_is_invalid(REGULAR_FIELD_NAME)
+        host_page.config.check_field_is_invalid_error(REGULAR_FIELD_NAME)
         host_page.config.check_config_warn_icon_on_left_menu()
         host_page.toolbar.check_warn_button(
             tab_name=HOST_FQDN, expected_warn_text=[f'{HOST_FQDN} has an issue with its config']
