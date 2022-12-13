@@ -17,6 +17,7 @@ from typing import Optional
 import allure
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
+from tests.ui_tests.app.checks import check_element_is_visible
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.popups.locator import HostCreationLocators
@@ -67,7 +68,7 @@ class HostCreatePopupObj(BasePageObject):
         option = HostCreationLocators.Cluster.cluster_option
         self.wait_and_click_on_cluster_option(cluster_name, option)
         self.wait_element_hide(option)
-        self.check_element_should_be_visible(HostCreationLocators.Cluster.chosen_cluster(cluster_name))
+        check_element_is_visible(self, HostCreationLocators.Cluster.chosen_cluster(cluster_name))
 
     def wait_and_click_on_cluster_option(self, cluster_name: str, option_locator: Locator):
         """Wait for cluster and click on it"""

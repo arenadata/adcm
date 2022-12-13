@@ -12,8 +12,6 @@
 
 """Tools for ADCM UI over selenium interactions"""
 
-# Created by a1wen at 27.02.19
-
 import os
 from typing import Optional, Union
 

@@ -283,9 +283,7 @@ class TestClusterListPage:
                 get_info_kwargs={'row': row},
             )
         with allure.step("Check success cluster job"):
-            assert (
-                cluster_page.header.get_success_job_amount_from_header() == "1"
-            ), "There should be 1 success cluster job in header"
+            assert cluster_page.header.get_success_job_amount() == 1, "There should be 1 success cluster job in header"
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -409,7 +407,7 @@ class TestClusterListPage:
             disclaimer_text=disclaimer_text,
         )
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-        cluster_page.header.wait_success_job_amount_from_header(1)
+        cluster_page.header.wait_success_job_amount(1)
         check_cluster_upgraded(app_fs, CLUSTER_NAME, params["state"])
 
 
@@ -466,7 +464,7 @@ class TestClusterMainPage:
         cluster_main_page.toolbar.run_action(CLUSTER_NAME, params["action_name"])
         with allure.step("Check success job"):
             assert (
-                cluster_main_page.header.get_in_progress_job_amount_from_header() == "1"
+                cluster_main_page.header.get_in_progress_job_amount() == 1
             ), "There should be 1 in progress job in header"
 
 
@@ -537,7 +535,7 @@ class TestClusterServicePage:
             ), f"Cluster state should be {params['expected_state']}"
         with allure.step("Check success service job"):
             assert (
-                cluster_service_page.header.get_success_job_amount_from_header() == "1"
+                cluster_service_page.header.get_success_job_amount() == 1
             ), "There should be 1 success service job in header"
 
     def test_check_service_list_page_import_run(self, app_fs, create_import_cluster_with_service):
@@ -692,7 +690,7 @@ class TestClusterHostPage:
             ), f"Cluster state should be {params['expected_state']}"
         with allure.step("Check success host job"):
             assert (
-                cluster_host_page.header.get_success_job_amount_from_header() == "1"
+                cluster_host_page.header.get_success_job_amount() == 1
             ), "There should be 1 success host job in header"
 
     def test_check_delete_host_from_cluster_host_page(self, app_fs, create_community_cluster_with_host):
@@ -766,7 +764,7 @@ class TestClusterComponentsPage:
         cluster_components_page.check_cluster_toolbar(CLUSTER_NAME)
 
     def test_check_cluster_components_page_open_service_page(self, app_fs, create_community_cluster):
-        """Test open /cluter/{}/service from /cluter/{}/component"""
+        """Test open /cluster/{}/service from /cluster/{}/component"""
         cluster_components_page = ClusterComponentsPage(
             app_fs.driver, app_fs.adcm.url, create_community_cluster.id
         ).open()
@@ -1006,7 +1004,7 @@ class TestClusterConfigPage:
         cluster_config_page.config.check_field_is_required(params['req_name'])
         config_row = cluster_config_page.config.get_all_config_rows()[0]
         cluster_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params['wrong_value']])
-        cluster_config_page.config.check_field_is_invalid(params['not_req_name'])
+        cluster_config_page.config.check_field_is_invalid_error(params['not_req_name'])
         cluster_config_page.config.check_config_warn_icon_on_left_menu()
         cluster_config_page.toolbar.check_warn_button(
             tab_name=CLUSTER_NAME, expected_warn_text=['Test cluster has an issue with its config']
@@ -1062,7 +1060,7 @@ class TestClusterConfigPage:
         cluster_config_page.config.type_in_field_with_few_inputs(
             row=cluster_config_page.config.get_all_config_rows()[0], values=["asdsa"]
         )
-        cluster_config_page.config.check_field_is_invalid(params["filed_name"])
+        cluster_config_page.config.check_field_is_invalid_error(params["filed_name"])
         with allure.step('Check that save button is disabled'):
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
@@ -1108,7 +1106,7 @@ class TestClusterConfigPage:
         )
         with allure.step('Check that we cannot set float in integer field'):
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
-            cluster_config_page.config.check_field_is_invalid(params["filed_name"])
+            cluster_config_page.config.check_field_is_invalid_error(params["filed_name"])
 
     def test_save_list_on_cluster_config_page(self, sdk_client_fs: ADCMClient, app_fs):
         """Test set value for list field, save and refresh page"""

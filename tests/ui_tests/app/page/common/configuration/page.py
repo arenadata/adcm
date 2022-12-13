@@ -20,6 +20,7 @@ from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebElement
+from tests.ui_tests.app.checks import check_element_is_hidden, check_element_is_visible
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.common_locators import (
     CommonLocators,
@@ -127,13 +128,11 @@ class CommonConfigMenuObj(BasePageObject):
 
     @allure.step("Click on advanced button")
     def click_on_advanced(self):
-        """Click on advanced button"""
         self.find_and_click(CommonConfigMenu.advanced_label)
 
     @property
     def advanced(self):
         """Get advanced checkbox status"""
-
         return "checked" in self.find_element(CommonConfigMenu.advanced_label).get_attribute("class")
 
     def get_input_value(self, row: WebElement, *, is_password: bool = False) -> str:
@@ -388,31 +387,20 @@ class CommonConfigMenuObj(BasePageObject):
         """
         Assert that message "Field [{name}] is required!" is presented
         """
-        message = f"Field [{name}] is required!"
-        self.check_element_should_be_visible(self.locators.field_error(message))
+        message = f'Field [{name}] is required!'
+        check_element_is_visible(self, self.locators.field_error(message))
 
     @allure.step("Check {name} invalid error is presented")
-    def check_field_is_invalid(self, name: str):
-        """
-        Assert that message "Field [{name}] is invalid!" is presented
-        """
-        message = f"Field [{name}] is invalid!"
-        self.check_element_should_be_visible(self.locators.field_error(message))
+    def check_field_is_invalid_error(self, name: str):
+        check_element_is_visible(self, self.locators.field_error(f"Field [{name}] is invalid!"))
 
     @allure.step("Check {name} confirmation error is presented")
     def check_password_confirm_required(self, name: str):
-        """
-        Assert that message "Confirm [{name}] is required!" is presented
-        """
-        message = f"Confirm [{name}] is required!"
-        self.check_element_should_be_visible(self.locators.field_error(message))
+        check_element_is_visible(self, self.locators.field_error(f"Confirm [{name}] is required!"))
 
     @allure.step("Check invalid value error is presented")
     def check_invalid_value_message(self, error_message: str):
-        """
-        Assert that message [{error_message}] is presented
-        """
-        self.check_element_should_be_visible(self.locators.field_error(error_message))
+        check_element_is_visible(self, self.locators.field_error(error_message))
 
     def is_save_btn_disabled(self):
         self.find_and_click(self.locators.search_input)
@@ -480,10 +468,10 @@ class CommonConfigMenuObj(BasePageObject):
         if is_visible:
             assert item_rows, "There should be items in the group"
             for item in item_rows:
-                self.check_element_should_be_visible(item)
+                check_element_is_visible(self, item)
         else:
             for item in item_rows:
-                self.check_element_should_be_hidden(item)
+                check_element_is_hidden(self, item)
 
     def get_group_names(self, timeout: int = 2):
         """Wait for group elements to be displayed and get them"""

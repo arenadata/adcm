@@ -18,17 +18,15 @@ import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webdriver import WebElement
-from tests.ui_tests.app.page.cluster.locators import ClusterComponentsLocators
 from tests.ui_tests.app.page.cluster_list.locators import ClusterListLocators
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageFooter,
-    PageHeader,
-)
+from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs.locators import ActionDialog, DeleteDialog
 from tests.ui_tests.app.page.common.dialogs.rename import RenameDialog
+from tests.ui_tests.app.page.common.host_components.locators import (
+    HostComponentsLocators,
+)
 from tests.ui_tests.app.page.common.host_components.page import HostComponentsPage
 from tests.ui_tests.app.page.common.popups.locator import (
     HostCreationLocators,
@@ -43,8 +41,6 @@ class ClusterListPage(BasePageObject):  # pylint: disable=too-many-public-method
 
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/cluster")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url, ClusterListLocators.ClusterTable)
         self.host_popup = HostCreatePopupObj(self.driver, self.base_url)
@@ -218,13 +214,13 @@ class ClusterListPage(BasePageObject):  # pylint: disable=too-many-public-method
                 components_page.click_add_host_btn()
                 self.host_popup.create_host("Test_host")
                 self.wait_element_hide(HostCreationLocators.block)
-            for comp_row in self.find_elements(ClusterComponentsLocators.component_row):
-                comp_row_name = self.find_child(comp_row, ClusterComponentsLocators.Row.name)
+            for comp_row in self.find_elements(HostComponentsLocators.component_row):
+                comp_row_name = self.find_child(comp_row, HostComponentsLocators.Row.name)
                 self.wait_element_visible(comp_row_name)
                 comp_row_name.click()
             self.find_child(
-                self.find_elements(ClusterComponentsLocators.host_row)[0],
-                ClusterComponentsLocators.Row.name,
+                self.find_elements(HostComponentsLocators.host_row)[0],
+                HostComponentsLocators.Row.name,
             ).click()
         self.find_and_click(ActionDialog.run)
         self.wait_element_hide(ActionDialog.body)
