@@ -53,7 +53,7 @@ class HostComponentsPage(BasePageObject):
 
     def get_host_rows(self):
         """Get all hosts rows"""
-        return self.find_elements(HostComponentsLocators.host_row)
+        return self.find_elements(HostComponentsLocators.host_row, timeout=5)
 
     def get_components_rows(self):
         """Get all components rows"""
