@@ -8,11 +8,11 @@ from selenium.common import (
     StaleElementReferenceException,
     TimeoutException,
 )
-from selenium.webdriver import ActionChains
+from selenium.webdriver import ActionChains, Keys
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
-from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.core.locators import BaseLocator
 
 
 class Interactor:
@@ -20,27 +20,27 @@ class Interactor:
         self._driver = driver
         self._timeout = default_timeout
 
-    def hover_element(self, element: Locator | WebElement):
+    def hover_element(self, element: BaseLocator | WebElement):
         hover = ActionChains(self._driver).move_to_element(
             element if isinstance(element, WebElement) else self.find_element(element)
         )
         hover.perform()
 
-    def find_element(self, locator: Locator, timeout: int = None) -> WebElement:
+    def find_element(self, locator: BaseLocator, timeout: int = None) -> WebElement:
         timeout = timeout or self._timeout
         return WDW(self._driver, timeout).until(
             EC.presence_of_element_located([locator.by, locator.value]),
             message=f"Can't find {locator.name} on page " f"{self._driver.current_url} for {timeout} seconds",
         )
 
-    def find_child(self, element: WebElement, child: Locator, timeout: int = None) -> WebElement:
+    def find_child(self, element: WebElement, child: BaseLocator, timeout: int = 1) -> WebElement:
         timeout = timeout or self._timeout
         return WDW(element, timeout).until(
             EC.presence_of_element_located([child.by, child.value]),
             message=f"Can't find {child.name} on page " f"{self._driver.current_url} for {timeout} seconds",
         )
 
-    def find_children(self, element: WebElement, child: Locator, timeout: int = 1) -> list[WebElement]:
+    def find_children(self, element: WebElement, child: BaseLocator, timeout: int = 1) -> list[WebElement]:
         try:
             return WDW(element, timeout).until(
                 EC.presence_of_all_elements_located([child.by, child.value]),
@@ -49,29 +49,29 @@ class Interactor:
         except TimeoutException:
             return []
 
-    def find_elements(self, locator: Locator, timeout: int = 1) -> list[WebElement]:
+    def find_elements(self, locator: BaseLocator, timeout: int = 1) -> list[WebElement]:
         return WDW(self._driver, timeout).until(
             EC.presence_of_all_elements_located([locator.by, locator.value]),
             message=f"Can't find {locator.name} on page " f"{self._driver.current_url} for {timeout} seconds",
         )
 
-    def find_elements_or_empty(self, locator: Locator, timeout: int = 2) -> list[WebElement]:
+    def find_elements_or_empty(self, locator: BaseLocator, timeout: int = 2) -> list[WebElement]:
         try:
             return self.find_elements(locator, timeout=timeout)
         except TimeoutException:
             return []
 
-    def is_element_displayed(self, element: Locator | WebElement, timeout: int | None = None) -> bool:
+    def is_element_displayed(self, element: BaseLocator | WebElement, timeout: int | None = None) -> bool:
         return self._is_displayed(
             lambda: element
             if isinstance(element, WebElement)
             else self.find_element(element, timeout=timeout or self._timeout)
         )
 
-    def is_child_displayed(self, parent: WebElement, child: Locator, timeout: int | None = None) -> bool:
+    def is_child_displayed(self, parent: WebElement, child: BaseLocator, timeout: int | None = None) -> bool:
         return self._is_displayed(lambda: self.find_child(parent, child, timeout=timeout or self._timeout))
 
-    def find_and_click(self, locator: Locator, is_js: bool = False, timeout: int | None = None) -> None:
+    def find_and_click(self, locator: BaseLocator, is_js: bool = False, timeout: int | None = None) -> None:
         if is_js:
             with allure.step(f'Click with js on "{locator.name}"'):
                 loc = self.find_element(locator)
@@ -81,7 +81,7 @@ class Interactor:
                 self.wait_element_clickable(locator, timeout=timeout)
                 self.find_element(locator).click()
 
-    def wait_element_clickable(self, locator: Locator, timeout: int = None) -> WebElement:
+    def wait_element_clickable(self, locator: BaseLocator, timeout: int = None) -> WebElement:
         loc_timeout = timeout or self._timeout
         with allure.step(f'Wait "{locator.name}" is clickable'):
             return WDW(self._driver, loc_timeout).until(
@@ -89,10 +89,10 @@ class Interactor:
                 message=f"locator {locator.name} hasn't become clickable for " f"{loc_timeout} seconds",
             )
 
-    def wait_element_visible(self, element: Locator | WebElement, timeout: int | None = None) -> WebElement:
+    def wait_element_visible(self, element: BaseLocator | WebElement, timeout: int | None = None) -> WebElement:
         timeout = timeout or self._timeout
 
-        if isinstance(element, Locator):
+        if isinstance(element, BaseLocator):
             method = EC.visibility_of_element_located([element.by, element.value])
             name = element.name
         else:
@@ -104,10 +104,10 @@ class Interactor:
                 method=method, message=f"{name} hasn't become visible for {timeout} seconds"
             )
 
-    def wait_element_hide(self, element: Locator | WebElement, timeout: int | None = None) -> None:
+    def wait_element_hide(self, element: BaseLocator | WebElement, timeout: int | None = None) -> None:
         timeout = timeout or self._timeout
 
-        if isinstance(element, Locator):
+        if isinstance(element, BaseLocator):
             locator = [element.by, element.value]
             name = element.name
         else:
@@ -122,7 +122,7 @@ class Interactor:
 
     def wait_element_attribute(
         self,
-        locator: Locator,
+        locator: BaseLocator,
         attribute: str,
         expected_value: str,
         exact_match: bool = True,
@@ -142,6 +142,54 @@ class Interactor:
             )
 
         wait_until_step_succeeds(_assert_attribute_value, period=0.5, timeout=timeout)
+
+    @allure.step('Write text to input element: "{text}"')
+    def send_text_to_element(
+        self,
+        element: BaseLocator | WebElement,
+        text: str,
+        clean_input: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Writes text to input element found by locator
+
+        If value of input before and after is the same, then retries to send keys again,
+        because sometimes text doesn't appear in input
+
+        :param element: Locator of element to write into (should be input)
+        :param text: Text to use in .send_keys method, and it's also a expected_value
+        :param clean_input: Clear input before saving element or not
+        :param timeout: Timeout on finding element
+        """
+
+        def _send_keys_and_check():
+            if clean_input:
+                self.clear_by_keys(element)
+            input_element = self.find_element(element, timeout) if isinstance(element, BaseLocator) else element
+            input_element.click()
+            input_element.send_keys(text)
+            assert (actual_value := input_element.get_property('value')) == text, (
+                f'Value of input {element.name if isinstance(element, BaseLocator) else element.text} '
+                f'expected to be "{text}", but "{actual_value}" was found'
+            )
+
+        wait_until_step_succeeds(_send_keys_and_check, period=0.5, timeout=1.5)
+
+    @allure.step('Clear element')
+    def clear_by_keys(self, element: BaseLocator | WebElement) -> None:
+        """Clears element value by keyboard."""
+
+        def _clear():
+            locator_before = element if isinstance(element, WebElement) else self.find_element(element)
+            actual_value = locator_before.get_property('value')
+            for _ in range(len(actual_value)):
+                locator_before.send_keys(Keys.BACKSPACE)
+            locator_before.send_keys(Keys.BACK_SPACE)
+            locator_after = element if isinstance(element, WebElement) else self.find_element(element)
+            assert locator_after.text == ""
+
+        wait_until_step_succeeds(_clear, period=0.5, timeout=self._timeout)
 
     @staticmethod
     def _is_displayed(find_element_func: Callable[[], WebElement]) -> bool:

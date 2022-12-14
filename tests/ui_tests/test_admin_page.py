@@ -50,6 +50,7 @@ from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.app.page.provider.page import ProviderConfigPage
 from tests.ui_tests.app.page.service.page import ServiceConfigPage
 from tests.ui_tests.conftest import login_over_api
+from tests.ui_tests.core.checks import check_pagination
 from tests.ui_tests.utils import expect_rows_amount_change
 
 BUNDLE = "cluster_with_services"
@@ -497,7 +498,7 @@ class TestAdminRolesPage:
                     self.custom_role.description,
                     self.custom_role.permissions,
                 )
-        page.table.check_pagination(second_page_item_amount=1)
+        check_pagination(page.table, expected_on_second=1)
 
     def test_check_role_popup_on_roles_page(self, app_fs):
         """Test changing a role on /admin/roles page"""
@@ -607,7 +608,7 @@ class TestAdminGroupsPage:
                     self.custom_group.description,
                     self.custom_group.users,
                 )
-        page.table.check_pagination(second_page_item_amount=1)
+        check_pagination(page.table, expected_on_second=1)
 
     def test_delete_group_from_groups_page(self, app_fs):
         """Test delete custom group on /admin/groups page"""
@@ -699,7 +700,7 @@ class TestAdminPolicyPage:
                     role=CUSTOM_POLICY.role,
                     users=CUSTOM_POLICY.users,
                 )
-        policies_page.table.check_pagination(second_page_item_amount=1)
+        check_pagination(policies_page.table, expected_on_second=1)
 
     @pytest.mark.usefixtures("_login_to_adcm_over_api")
     def test_delete_policy_from_policies_page(self, app_fs):

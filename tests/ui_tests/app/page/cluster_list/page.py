@@ -22,17 +22,16 @@ from tests.ui_tests.app.page.cluster_list.locators import ClusterListLocators
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
+from tests.ui_tests.app.page.common.dialogs.create_host_locators import (
+    HostCreationLocators,
+    ListConcernPopupLocators,
+)
 from tests.ui_tests.app.page.common.dialogs.locators import ActionDialog, DeleteDialog
 from tests.ui_tests.app.page.common.dialogs.rename import RenameDialog
 from tests.ui_tests.app.page.common.host_components.locators import (
     HostComponentsLocators,
 )
 from tests.ui_tests.app.page.common.host_components.page import HostComponentsPage
-from tests.ui_tests.app.page.common.popups.locator import (
-    HostCreationLocators,
-    ListConcernPopupLocators,
-)
-from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 
 
@@ -42,8 +41,7 @@ class ClusterListPage(BasePageObject):  # pylint: disable=too-many-public-method
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/cluster")
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
-        self.table = CommonTableObj(self.driver, self.base_url, ClusterListLocators.ClusterTable)
-        self.host_popup = HostCreatePopupObj(self.driver, self.base_url)
+        self.table = CommonTableObj(driver=self.driver, locators_class=ClusterListLocators.ClusterTable)
 
     @allure.step("Create cluster")
     def create_cluster(self, bundle: str, description: str = None, is_license: bool = False):
@@ -166,9 +164,7 @@ class ClusterListPage(BasePageObject):  # pylint: disable=too-many-public-method
     def open_rename_cluster_dialog(self, row: WebElement) -> RenameDialog:
         self.hover_element(row)
         self.find_child(row, self.table.locators.ClusterRow.rename_btn).click()
-        dialog = RenameDialog(driver=self.driver, base_url=self.base_url)
-        dialog.wait_opened()
-        return dialog
+        return RenameDialog.wait_opened(driver=self.driver)
 
     @allure.step("Run upgrade {upgrade_name} for cluster from row")
     def run_upgrade_in_cluster_row(
@@ -211,8 +207,8 @@ class ClusterListPage(BasePageObject):  # pylint: disable=too-many-public-method
         if hc_acl:
             if is_new_host:
                 components_page = HostComponentsPage(self.driver, self.base_url)
-                components_page.click_add_host_btn()
-                self.host_popup.create_host("Test_host")
+                dialog = components_page.click_add_host_btn()
+                dialog.create_host("Test_host")
                 self.wait_element_hide(HostCreationLocators.block)
             for comp_row in self.find_elements(HostComponentsLocators.component_row):
                 comp_row_name = self.find_child(comp_row, HostComponentsLocators.Row.name)

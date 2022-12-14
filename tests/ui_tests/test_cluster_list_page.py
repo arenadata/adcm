@@ -12,20 +12,14 @@
 
 """UI tests for /cluster page"""
 
-import os
-
 import allure
 import pytest
 from _pytest.fixtures import SubRequest
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider
-from adcm_pytest_plugin import params, utils
+from adcm_pytest_plugin.params import including_https
 from adcm_pytest_plugin.utils import get_data_dir, parametrize_by_data_subdirs
 from selenium.common.exceptions import TimeoutException
 from tests.library.status import ADCMObjectStatusChanger
-from tests.ui_tests.app.helpers.configs_generator import (
-    generate_configs,
-    prepare_config,
-)
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import (
     ClusterComponentsPage,
@@ -55,6 +49,8 @@ from tests.ui_tests.app.page.service.page import (
     ServiceImportPage,
     ServiceMainPage,
 )
+from tests.ui_tests.core.checks import check_pagination
+from tests.ui_tests.generator_helper import generate_configs, prepare_config
 from tests.ui_tests.utils import (
     check_host_value,
     create_few_groups,
@@ -139,14 +135,14 @@ def create_import_cluster_with_service(sdk_client_fs: ADCMClient):
 @allure.step("Upload cluster bundle")
 def cluster_bundle(sdk_client_fs: ADCMClient, data_dir_name: str) -> Bundle:
     """Upload cluster bundle"""
-    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), data_dir_name))
+    return sdk_client_fs.upload_from_fs(get_data_dir(__file__, data_dir_name))
 
 
 @pytest.fixture(params=["provider"])
 @allure.title("Upload provider bundle")
 def provider_bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
     """Upload provider bundle"""
-    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
+    return sdk_client_fs.upload_from_fs(get_data_dir(__file__, request.param))
 
 
 @pytest.fixture()
@@ -223,8 +219,8 @@ class TestClusterListPage:
     @pytest.mark.parametrize(
         "bundle_archive",
         [
-            pytest.param(utils.get_data_dir(__file__, BUNDLE_COMMUNITY), id="community"),
-            pytest.param(utils.get_data_dir(__file__, BUNDLE_ENTERPRISE), id="enterprise"),
+            pytest.param(get_data_dir(__file__, BUNDLE_COMMUNITY), id="community"),
+            pytest.param(get_data_dir(__file__, BUNDLE_ENTERPRISE), id="enterprise"),
         ],
         indirect=True,
     )
@@ -264,7 +260,7 @@ class TestClusterListPage:
                 bundle.cluster_create(name=f"{CLUSTER_NAME} {i}")
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         cluster_page.close_info_popup()
-        cluster_page.table.check_pagination(second_page_item_amount=1)
+        check_pagination(cluster_page.table, expected_on_second=1)
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -517,7 +513,7 @@ class TestClusterServicePage:
         service_main_page.wait_page_is_opened()
         service_main_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
-    @params.including_https
+    @including_https
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
     def test_check_actions_from_service_list_page(self, app_fs, create_community_cluster_with_service):
@@ -571,7 +567,7 @@ class TestClusterServicePage:
         except TimeoutException:
             cluster_service_page.driver.refresh()
             cluster_service_page.wait_page_is_opened(timeout=30)
-        cluster_service_page.table.check_pagination(second_page_item_amount=2)
+        check_pagination(cluster_service_page.table, expected_on_second=2)
 
     def test_delete_service_on_service_list_page(self, app_fs, create_community_cluster_with_service):
         """Test delete service from cluster/{}/service page"""
@@ -601,7 +597,7 @@ class TestClusterHostPage:
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
-    @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, "provider")], indirect=True)
+    @pytest.mark.parametrize("bundle_archive", [get_data_dir(__file__, "provider")], indirect=True)
     def test_create_host_and_hostprovider_from_cluster_host_page(
         self, app_fs, bundle_archive, create_community_cluster_with_service
     ):
@@ -609,8 +605,8 @@ class TestClusterHostPage:
         cluster, _ = create_community_cluster_with_service
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_host_page.wait_page_is_opened()
-        cluster_host_page.click_add_host_btn(is_not_first_host=False)
-        new_provider_name = cluster_host_page.host_popup.create_provider_and_host(bundle_archive, HOST_NAME)
+        dialog = cluster_host_page.click_add_host_btn(is_not_first_host=False)
+        new_provider_name = dialog.create_provider_and_host(bundle_archive, HOST_NAME)
         expected_values = {
             'fqdn': HOST_NAME,
             'provider': new_provider_name,
@@ -637,8 +633,8 @@ class TestClusterHostPage:
         cluster, _ = create_community_cluster_with_service
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_host_page.wait_page_is_opened()
-        cluster_host_page.click_add_host_btn(is_not_first_host=False)
-        cluster_host_page.host_popup.create_host(HOST_NAME)
+        dialog = cluster_host_page.click_add_host_btn(is_not_first_host=False)
+        dialog.create_host(HOST_NAME)
         wait_and_assert_ui_info(
             expected_values,
             cluster_host_page.get_host_info_from_row,
@@ -656,8 +652,8 @@ class TestClusterHostPage:
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_host_page.wait_page_is_opened()
         cluster_host_page.close_info_popup()
-        cluster_host_page.click_add_host_btn()
-        cluster_host_page.host_popup.create_host(HOST_NAME)
+        dialog = cluster_host_page.click_add_host_btn()
+        dialog.create_host(HOST_NAME)
         with allure.step("Check error message"):
             assert (
                 cluster_host_page.get_info_popup_text() == '[ CONFLICT ] HOST_CONFLICT -- duplicate host'
@@ -735,7 +731,7 @@ class TestClusterHostPage:
                 host = provider.host_create(f"{HOST_NAME}-{i}")
                 cluster.host_add(host)
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
-        cluster_host_page.table.check_pagination(1)
+        check_pagination(cluster_host_page.table, expected_on_second=1)
         cluster_host_page.check_cluster_toolbar(CLUSTER_NAME)
 
     @pytest.mark.smoke()
@@ -783,14 +779,14 @@ class TestClusterComponentsPage:
         host_page.wait_page_is_opened()
         host_page.check_cluster_toolbar(CLUSTER_NAME)
 
-    @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, "provider")], indirect=True)
+    @pytest.mark.parametrize("bundle_archive", [get_data_dir(__file__, "provider")], indirect=True)
     def test_check_cluster_components_page_create_host(self, app_fs, bundle_archive, create_community_cluster):
-        """Test add host from /cluter/{}/component"""
+        """Test add host from /cluster/{}/component"""
         cluster_components_page = ClusterComponentsPage(
             app_fs.driver, app_fs.adcm.url, create_community_cluster.id
         ).open()
-        cluster_components_page.click_add_host_btn()
-        cluster_components_page.host_popup.create_provider_and_host(bundle_path=bundle_archive, fqdn=HOST_NAME)
+        dialog = cluster_components_page.click_add_host_btn()
+        dialog.create_provider_and_host(bundle_path=bundle_archive, fqdn=HOST_NAME)
         host_row = cluster_components_page.get_host_rows()[0]
         check_components_host_info(cluster_components_page.get_row_info(host_row), HOST_NAME, "0")
 
@@ -1220,12 +1216,11 @@ class TestClusterGroupConfigPage:
         with cluster_group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
             cluster_group_conf_page.group_config.delete_row(group_row)
 
-    def test_check_pagination_on_group_config_component_page(self, app_fs, create_community_cluster):
+    def test_check_pagination_on_group_config_component_page(self, sdk_client_fs, app_fs, create_community_cluster):
         """Test pagination on cluster/{}/group_config page"""
-
+        create_few_groups(sdk_client_fs, create_community_cluster)
         group_conf_page = ClusterGroupConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        create_few_groups(group_conf_page.group_config)
-        group_conf_page.table.check_pagination(second_page_item_amount=1)
+        check_pagination(group_conf_page.table, expected_on_second=1)
 
     # pylint: disable=too-many-locals, undefined-loop-variable, too-many-statements
 
@@ -1405,8 +1400,8 @@ class TestClusterRenaming:
         new_name = "Hahahah"
 
         dialog = page.open_rename_cluster_dialog(page.get_row_by_cluster_name(cluster.name))
-        dialog.set_new_name_in_rename_dialog(new_name)
-        dialog.click_save_on_rename_dialog()
+        dialog.set_new_name(new_name)
+        dialog.save()
         with allure.step("Check name of cluster in table"):
             name_in_row = page.get_cluster_info_from_row(0)["name"]
             assert name_in_row == new_name, f"Incorrect cluster name, expected: {new_name}"
@@ -1425,14 +1420,12 @@ class TestClusterRenaming:
 
         for cluster_name in incorrect_names:
             with allure.step(f"Check if printing cluster name '{cluster_name}' triggers a warning message"):
-                dialog.set_new_name_in_rename_dialog(dummy_name)
-                dialog.set_new_name_in_rename_dialog(cluster_name)
-                assert dialog.is_dialog_error_message_visible(), "Error about incorrect name should be visible"
-                assert (
-                    dialog.get_dialog_error_message() == self.EXPECTED_ERROR
-                ), f"Incorrect error message, expected: {self.EXPECTED_ERROR}"
+                dialog.set_new_name(dummy_name)
+                dialog.set_new_name(cluster_name)
+                assert dialog.is_error_message_visible(), "Error about incorrect name should be visible"
+                assert dialog.error == self.EXPECTED_ERROR, f"Incorrect error message, expected: {self.EXPECTED_ERROR}"
 
-        dialog.click_cancel_on_rename_dialog()
+        dialog.cancel()
 
     def _test_an_error_is_not_shown_on_correct_char_in_name(self, cluster: Cluster, page: ClusterListPage) -> None:
         dummy_name = "clUster"
@@ -1445,10 +1438,10 @@ class TestClusterRenaming:
 
         for cluster_name in correct_names:
             with allure.step(f"Check if printing cluster name '{cluster_name}' shows no error"):
-                dialog.set_new_name_in_rename_dialog(dummy_name)
-                dialog.set_new_name_in_rename_dialog(cluster_name)
-                assert not dialog.is_dialog_error_message_visible(), "Error about correct name should not be shown"
-                dialog.click_save_on_rename_dialog()
+                dialog.set_new_name(dummy_name)
+                dialog.set_new_name(cluster_name)
+                assert not dialog.is_error_message_visible(), "Error about correct name should not be shown"
+                dialog.save()
                 name_in_row = page.get_cluster_info_from_row(0)["name"]
                 assert name_in_row == cluster_name, f"Incorrect cluster name, expected: {cluster_name}"
                 dialog = page.open_rename_cluster_dialog(page.get_row_by_cluster_name(cluster_name))

@@ -31,7 +31,6 @@ from adcm_client.objects import (
 )
 from tests.library.assertions import are_equal, tuples_are_equal
 from tests.ui_tests.app.page.admin.page import OperationRowInfo, OperationsAuditPage
-from tests.ui_tests.app.page.common.dialogs.operation_changes import ChangesRow
 from tests.ui_tests.audit.utils import add_filter
 
 # pylint: disable=redefined-outer-name
@@ -188,9 +187,9 @@ def _test_object_changes(page: OperationsAuditPage):
 
     changes_dialog = page.open_changes_dialog(page.table.get_row(0))
 
-    changes = changes_dialog.get_changes()
-    name_change = ChangesRow(attribute="Last name", old_value="Bebe", new_value="Bobo")
-    email_change = ChangesRow(attribute="Email", old_value="", new_value="not@ex.ist")
+    changes: list[dict] = list(map(dict, changes_dialog.get_rows()))
+    name_change = dict(attribute="Last name", old_value="Bebe", new_value="Bobo")
+    email_change = dict(attribute="Email", old_value="", new_value="not@ex.ist")
     assert any(change == name_change for change in changes), f"Not found change: {name_change}\nFound: {changes}"
     assert any(change == email_change for change in changes), f"Not found change: {email_change}\nFound: {changes}"
 

@@ -14,18 +14,16 @@
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Callable, List, Optional
+from typing import List, Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebElement
-from tests.ui_tests.app.checks import check_elements_are_displayed
-from tests.ui_tests.app.page.cluster.components import ComponentRow
+from tests.ui_tests.app.page.cluster.elements import ComponentRow, ServiceRow
 from tests.ui_tests.app.page.cluster.locators import (
     ClusterHostLocators,
     ClusterServicesLocators,
 )
-from tests.ui_tests.app.page.cluster.services import ServiceRow
 from tests.ui_tests.app.page.common.base_page import BaseDetailedPage, BasePageObject
 from tests.ui_tests.app.page.common.common_locators import (
     ObjectPageLocators,
@@ -33,6 +31,13 @@ from tests.ui_tests.app.page.common.common_locators import (
 )
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
+from tests.ui_tests.app.page.common.dialogs.create_host import HostCreateDialog
+from tests.ui_tests.app.page.common.dialogs.create_host_locators import (
+    HostAddPopupLocators,
+    HostCreationLocators,
+    ListConcernPopupLocators,
+    PageConcernPopupLocators,
+)
 from tests.ui_tests.app.page.common.dialogs.locators import ActionDialog, DeleteDialog
 from tests.ui_tests.app.page.common.group_config.page import CommonGroupConfigMenu
 from tests.ui_tests.app.page.common.group_config_list.locators import (
@@ -45,18 +50,13 @@ from tests.ui_tests.app.page.common.host_components.locators import (
 from tests.ui_tests.app.page.common.host_components.page import HostComponentsPage
 from tests.ui_tests.app.page.common.import_page.locators import ImportLocators
 from tests.ui_tests.app.page.common.import_page.page import ImportPage
-from tests.ui_tests.app.page.common.popups.locator import (
-    HostAddPopupLocators,
-    HostCreationLocators,
-    ListConcernPopupLocators,
-    PageConcernPopupLocators,
-)
-from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.status.page import StatusPage
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 from tests.ui_tests.app.page.host_list.page import HostRowInfo
+from tests.ui_tests.core.checks import check_elements_are_displayed
+from tests.ui_tests.core.elements import ObjectRowMixin
 
 
 @dataclass
@@ -77,7 +77,6 @@ class CommonClusterPage(BasePageObject):  # pylint: disable=too-many-instance-at
     config: CommonConfigMenuObj
     toolbar: CommonToolbar
     table: CommonTableObj
-    host_popup: HostCreatePopupObj
     group_config = GroupConfigList
 
     def __init__(self, driver, base_url, cluster_id: int, **kwargs):
@@ -87,8 +86,7 @@ class CommonClusterPage(BasePageObject):  # pylint: disable=too-many-instance-at
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.cluster_id = cluster_id
         self.toolbar = CommonToolbar(self.driver, self.base_url)
-        self.table = CommonTableObj(self.driver, self.base_url)
-        self.host_popup = HostCreatePopupObj(self.driver, self.base_url)
+        self.table = CommonTableObj(driver=self.driver)
         self.group_config = GroupConfigList(self.driver, self.base_url)
 
     def open_main_tab(self):
@@ -175,9 +173,10 @@ class ClusterMainPage(CommonClusterPage, BaseDetailedPage):
     ]
 
 
-class ClusterServicesPage(CommonClusterPage):
+class ClusterServicesPage(CommonClusterPage, ObjectRowMixin):
     """Cluster page services menu"""
 
+    ROW_CLASS = ServiceRow
     MENU_SUFFIX = 'service'
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
@@ -187,25 +186,6 @@ class ClusterServicesPage(CommonClusterPage):
         CommonTable.Pagination.next_page,
         CommonTable.Pagination.previous_page,
     ]
-
-    def get_row(self, predicate: Callable[[ServiceRow], bool]) -> ServiceRow:
-        suitable_rows = self.get_rows(predicate=predicate)
-
-        if suitable_rows:
-            return suitable_rows[0]
-
-        raise AssertionError("No suitable service row found")
-
-    def get_rows(self, predicate: Callable[[ServiceRow], bool] = lambda _: True) -> tuple[ServiceRow, ...]:
-        return tuple(
-            filter(
-                predicate,
-                map(
-                    lambda element: ServiceRow(row_element=element, driver=self._driver),
-                    self.table.get_all_rows(timeout=1),
-                ),
-            )
-        )
 
     def click_add_service_btn(self):
         """Click on Add service button"""
@@ -283,7 +263,9 @@ class ClusterServicesPage(CommonClusterPage):
         wait_until_step_succeeds(_wait_state, period=1, timeout=self.default_loc_timeout)
 
 
-class ServiceComponentsPage(BasePageObject):
+class ServiceComponentsPage(BasePageObject, ObjectRowMixin):
+    ROW_CLASS = ComponentRow
+
     def __init__(self, driver, base_url, cluster_id: int, service_id: int):
         super().__init__(
             driver,
@@ -292,26 +274,7 @@ class ServiceComponentsPage(BasePageObject):
             cluster_id=cluster_id,
             service_id=service_id,
         )
-        self.table = CommonTableObj(self.driver, self.base_url)
-
-    def get_row(self, predicate: Callable[[ComponentRow], bool]) -> ComponentRow:
-        suitable_rows = self.get_rows(predicate=predicate)
-
-        if suitable_rows:
-            return suitable_rows[0]
-
-        raise AssertionError("No suitable component row found")
-
-    def get_rows(self, predicate: Callable[[ComponentRow], bool] = lambda _: True) -> tuple[ComponentRow, ...]:
-        return tuple(
-            filter(
-                predicate,
-                map(
-                    lambda element: ComponentRow(row_element=element, driver=self._driver),
-                    self.table.get_all_rows(timeout=1),
-                ),
-            )
-        )
+        self.table = CommonTableObj(driver=self.driver)
 
 
 class ClusterImportPage(CommonClusterPage, ImportPage):
@@ -390,7 +353,7 @@ class ClusterHostPage(CommonClusterPage):
     ]
 
     @allure.step("Click on add host button")
-    def click_add_host_btn(self, is_not_first_host: bool = True):
+    def click_add_host_btn(self, is_not_first_host: bool = True) -> HostCreateDialog:
         """
         Click on the button 'Add host' under the host table.
         In case there are any hosts that have been added earlier
@@ -406,6 +369,7 @@ class ClusterHostPage(CommonClusterPage):
         self.wait_element_visible(HostCreationLocators.block)
         if is_not_first_host:
             self.wait_element_visible(HostAddPopupLocators.add_new_host_btn).click()
+        return HostCreateDialog(driver=self.driver)
 
     @allure.step("Get info about host row")
     def get_host_info_from_row(self, row_num: int = 0, table_has_cluster_column: bool = True) -> HostRowInfo:
@@ -594,7 +558,7 @@ class ClusterGroupConfigPageMixin(BasePageObject):  # pylint: disable-next=too-m
         self.cluster_id = cluster_id
         self.group_config_id = group_config_id
         self.toolbar = CommonToolbar(self.driver, self.base_url)
-        self.table = CommonTableObj(self.driver, self.base_url)
+        self.table = CommonTableObj(driver=self.driver)
 
     @allure.step("Assert that all main elements on the page are presented")
     def check_all_elements(self):

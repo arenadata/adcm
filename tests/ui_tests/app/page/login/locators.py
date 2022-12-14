@@ -13,16 +13,16 @@
 """Login page locators"""
 
 from selenium.webdriver.common.by import By
-from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.core.locators import BaseLocator
 
 
 class LoginPageLocators:
     """Login page elements locators"""
 
-    login_form_block = Locator(By.CSS_SELECTOR, "*.form-auth", "login block")
-    login_input = Locator(By.CSS_SELECTOR, "#login", "login input")
-    password_input = Locator(By.CSS_SELECTOR, "#password", "password input")
+    login_form_block = BaseLocator(By.CSS_SELECTOR, "*.form-auth", "login block")
+    login_input = BaseLocator(By.CSS_SELECTOR, "#login", "login input")
+    password_input = BaseLocator(By.CSS_SELECTOR, "#password", "password input")
 
-    login_btn = Locator(By.XPATH, "//button[./span[text()='Login']]", "button Login")
+    login_btn = BaseLocator(By.XPATH, "//button[./span[text()='Login']]", "button Login")
 
-    login_warning = Locator(By.CSS_SELECTOR, ".warn", "warning on login page")
+    login_warning = BaseLocator(By.CSS_SELECTOR, ".warn", "warning on login page")

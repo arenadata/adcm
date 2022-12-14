@@ -13,55 +13,44 @@
 """Common locators"""
 
 from selenium.webdriver.common.by import By
-from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.core.locators import BaseLocator, Descriptor, Locator, autoname
 
 
 class CommonLocators:
     """Locators common to all pages"""
 
-    socket = Locator(By.CSS_SELECTOR, ".socket", "open socket marker")
-    profile = Locator(By.CSS_SELECTOR, ".profile", "profile load marker")
-    load_marker = Locator(By.CSS_SELECTOR, '.load_complete', "page load marker")
-    mat_slide_toggle = Locator(By.CSS_SELECTOR, "mat-slide-toggle", "toggle")
+    socket = BaseLocator(By.CSS_SELECTOR, ".socket", "open socket marker")
+    profile = BaseLocator(By.CSS_SELECTOR, ".profile", "profile load marker")
+    load_marker = BaseLocator(By.CSS_SELECTOR, '.load_complete', "page load marker")
+    mat_slide_toggle = BaseLocator(By.CSS_SELECTOR, "mat-slide-toggle", "toggle")
 
 
+@autoname
 class ObjectPageLocators:
     """Common locators for object's detailed page"""
 
-    title = Locator(By.CSS_SELECTOR, "mat-card-header mat-card-title", "Title")
-    subtitle = Locator(By.CSS_SELECTOR, "mat-card-header mat-card-subtitle", "Subtitle")
-    text = Locator(By.CSS_SELECTOR, "mat-card-content", "Cluster main page text")
+    title = Locator(By.CSS_SELECTOR, "mat-card-header mat-card-title", Descriptor.TEXT)
+    subtitle = Locator(By.CSS_SELECTOR, "mat-card-header mat-card-subtitle", Descriptor.TEXT)
+    text = Locator(By.CSS_SELECTOR, "mat-card-content", Descriptor.TEXT)
 
 
 class ObjectPageMenuLocators:
     """Menu elements locators"""
 
-    main_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_main']", "Tab main")
-    services_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_service']", "Tab services")
-    hosts_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_host']", "Tab hosts")
-    components_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_host_component']", "Tab components")
-    service_components_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_component']", "Tab service components")
-    config_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_config']", "Tab config")
-    group_config_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_group_config']", "Tab group config")
-    status_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_status']", "Tab status")
-    import_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_import']", "Tab import")
-    intro_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_intro']", "Tab admin intro")
-    settings_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_settings']", "Tab admin settings")
-    users_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_users']", "Tab admin users")
-    groups_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_groups']", "Tab admin groups")
-    roles_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_roles']", "Tab admin roles")
-    policies_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_policies']", "Tab admin policies")
-    operations_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_audit/operations']", "Tab admin audit operations")
-    warn_icon = Locator(By.CSS_SELECTOR, "mat-icon[color='warn']", 'Icon "!"')
-
-
-class CommonActionLocators:
-    """Common action page elements locators"""
-
-    action_card = Locator(By.CSS_SELECTOR, "app-action-card", "Action card")
-    info_text = Locator(By.CSS_SELECTOR, "app-action-card>p", "Text on action page")
-
-    class ActionCard:
-        """Common action page action card elements locators"""
-
-        play_btn = Locator(By.CSS_SELECTOR, "button", "Action run button")
+    main_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_main']", "Tab main")
+    services_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_service']", "Tab services")
+    hosts_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_host']", "Tab hosts")
+    components_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_host_component']", "Tab components")
+    service_components_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_component']", "Tab service components")
+    config_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_config']", "Tab config")
+    group_config_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_group_config']", "Tab group config")
+    status_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_status']", "Tab status")
+    import_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_import']", "Tab import")
+    intro_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_intro']", "Tab admin intro")
+    settings_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_settings']", "Tab admin settings")
+    users_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_users']", "Tab admin users")
+    groups_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_groups']", "Tab admin groups")
+    roles_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_roles']", "Tab admin roles")
+    policies_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_policies']", "Tab admin policies")
+    operations_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_audit/operations']", "Tab admin audit operations")
+    warn_icon = BaseLocator(By.CSS_SELECTOR, "mat-icon[color='warn']", 'Icon "!"')

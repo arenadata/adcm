@@ -20,12 +20,11 @@ from tests.library.predicates import attr_is, name_is
 from tests.library.retry import should_become_truth
 from tests.library.utils import get_or_raise
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.page.cluster.components import ComponentRow
+from tests.ui_tests.app.page.cluster.elements import ComponentRow, ServiceRow
 from tests.ui_tests.app.page.cluster.page import (
     ClusterServicesPage,
     ServiceComponentsPage,
 )
-from tests.ui_tests.app.page.cluster.services import ServiceRow
 from tests.ui_tests.app.page.common.base_page import Header
 
 # pylint: disable=redefined-outer-name

@@ -19,7 +19,7 @@ from typing import Any, Callable, Dict, Optional, Sized, Tuple, TypeVar, Union
 
 import allure
 import requests
-from adcm_client.objects import ADCMClient, Cluster
+from adcm_client.objects import ADCMClient, Cluster, Component, Provider, Service
 from adcm_pytest_plugin.utils import random_string, wait_until_step_succeeds
 from selenium.common.exceptions import (
     NoSuchElementException,
@@ -261,10 +261,16 @@ def prepare_cluster_and_open_config_page(sdk_client: ADCMClient, path: os.PathLi
 
 
 @allure.step("Create 11 group configs")
-def create_few_groups(group_config_list_page):
-    for i in range(10):
-        with group_config_list_page.wait_rows_change():
-            group_config_list_page.create_group(name=f"Test name_{i}", description="Test description")
-
-    group_config_list_page.create_group(name="Test name_10", description="Test description")
-    assert len(group_config_list_page.get_all_config_rows()) == 10, "There should be exactly 10 groups on 1st page"
+def create_few_groups(client: ADCMClient, adcm_object: Cluster | Service | Component | Provider):
+    for i in range(11):
+        response = requests.post(
+            f"{client.url}/api/v1/group-config/",
+            json={
+                "name": f"Test name_{i}",
+                "object_type": adcm_object.__class__.__name__.lower(),
+                "object_id": adcm_object.id,
+                "description": "Test description",
+            },
+            headers={"Authorization": f"Token {client.api_token()}"},
+        )
+        response.raise_for_status()

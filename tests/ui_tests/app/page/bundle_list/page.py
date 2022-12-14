@@ -16,11 +16,11 @@ from dataclasses import dataclass
 
 import allure
 from selenium.webdriver.remote.webelement import WebElement
-from tests.ui_tests.app.checks import check_element_is_visible
 from tests.ui_tests.app.page.bundle_list.locators import BundleListLocators
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.dialogs.locators import DeleteDialog
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
+from tests.ui_tests.core.checks import check_element_is_visible
 
 
 @dataclass
@@ -38,7 +38,7 @@ class BundleListPage(BasePageObject):
 
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/bundle")
-        self.table = CommonTableObj(self.driver, self.base_url, BundleListLocators.Table)
+        self.table = CommonTableObj(driver=self.driver, locators_class=BundleListLocators.Table)
 
     @allure.step('Get bundle information from row #{row_num}')
     def get_bundle_info(self, row_num: int = 0) -> BundleInfo:

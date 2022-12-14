@@ -19,16 +19,16 @@ import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait as WDW
-from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import BasePageObject
+from tests.ui_tests.app.page.common.dialogs.create_host import HostCreateDialog
+from tests.ui_tests.app.page.common.dialogs.create_host_locators import (
+    HostCreationLocators,
+)
 from tests.ui_tests.app.page.common.dialogs.locators import ActionDialog, DeleteDialog
 from tests.ui_tests.app.page.common.dialogs.rename import RenameDialog
-from tests.ui_tests.app.page.common.popups.locator import HostCreationLocators
-from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
+from tests.ui_tests.core.locators import BaseLocator
 from tests.ui_tests.utils import assert_enough_rows
 
 
@@ -49,8 +49,7 @@ class HostListPage(BasePageObject):  # pylint: disable=too-many-public-methods
 
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/host")
-        self.table = CommonTableObj(self.driver, self.base_url, HostListLocators.HostTable)
-        self.host_popup = HostCreatePopupObj(self.driver, self.base_url)
+        self.table = CommonTableObj(driver=self.driver, locators_class=HostListLocators.HostTable)
 
     @allure.step('Get host information from row #{row_num}')
     def get_host_row(self, row_num: int = 0) -> WebElement:
@@ -78,53 +77,10 @@ class HostListPage(BasePageObject):  # pylint: disable=too-many-public-methods
         )
 
     @allure.step('Click on cell {child_locator} (row #{row_num})')
-    def click_on_row_child(self, row_num: int, child_locator: Locator):
+    def click_on_row_child(self, row_num: int, child_locator: BaseLocator):
         """Click on row child"""
         row = self.table.get_row(row_num)
         self.find_child(row, child_locator).click()
-
-    @allure.step("Create new host")
-    def create_host(
-        self,
-        fqdn: str,
-        cluster: Optional[str] = None,
-    ):
-        """Create host in popup"""
-        self.open_host_creation_popup()
-        self._insert_new_host_info(fqdn, cluster)
-        self.click_create_host_in_popup()
-        self.close_host_creation_popup()
-
-    @allure.step("Upload bundle from host creation popup")
-    def upload_bundle_from_host_create_popup(self, bundle_path: str):
-        """Upload bundle in host creation popup and close popup"""
-        self.open_host_creation_popup()
-        self._upload_bundle(bundle_path)
-        self.close_host_creation_popup()
-
-    @allure.step("Create new provider and host")
-    def create_provider_and_host(
-        self,
-        bundle_path: str,
-        fqdn: str,
-        cluster: Optional[str] = None,
-    ) -> str:
-        """
-        Open host creation popup
-        Upload bundle and create provider
-        Fill in information about new host
-        Create host
-        Close popup
-        :returns: Name of created provider
-        """
-        self.open_host_creation_popup()
-        self._upload_bundle(bundle_path)
-        provider_name = self._get_hostprovider_name()
-        self._insert_new_host_info(fqdn, cluster)
-        self.click_create_host_in_popup()
-        self.close_host_creation_popup()
-        # because we don't pass provider name
-        return provider_name
 
     def open_run_action_menu(self, row: WebElement) -> None:
         self.find_child(row, HostListLocators.HostTable.HostRow.actions).click()
@@ -177,7 +133,9 @@ class HostListPage(BasePageObject):  # pylint: disable=too-many-public-methods
     def bind_host_to_cluster(self, host_row_num: int, cluster_name: str):
         """Assign host to cluster in host list table"""
         self.click_on_row_child(host_row_num, HostListLocators.HostTable.HostRow.cluster)
-        self.host_popup.wait_and_click_on_cluster_option(cluster_name, HostListLocators.HostTable.cluster_option)
+        option = HostCreationLocators.Cluster.cluster_option(cluster_name)
+        self.find_element(option, timeout=2).click()
+        self.wait_element_hide(option)
 
     @allure.step('Assert host in row {row_num} is assigned to cluster {cluster_name}')
     def assert_host_bonded_to_cluster(self, row_num: int, cluster_name: str):
@@ -246,63 +204,14 @@ class HostListPage(BasePageObject):  # pylint: disable=too-many-public-methods
         wait_until_step_succeeds(_check_mm_state, timeout=4, period=0.5, page=self, row=host_row)
 
     @allure.step('Open host creation popup')
-    def open_host_creation_popup(self):
+    def open_host_creation_popup(self) -> HostCreateDialog:
         """Open host creation popup"""
         self.find_and_click(HostListLocators.Tooltip.host_add_btn)
         self.wait_element_visible(HostCreationLocators.block)
-
-    @allure.step('Close host creation popup')
-    def close_host_creation_popup(self):
-        """Close popup with `Cancel` button"""
-        self.find_and_click(HostCreationLocators.cancel_btn)
-
-    @allure.step('Click "Create host" in popup')
-    def click_create_host_in_popup(self):
-        """Click create host button in popup"""
-        self.find_and_click(HostCreationLocators.create_btn)
+        return HostCreateDialog(driver=self.driver)
 
     @allure.step("Open host rename dialog by clicking on host rename button")
     def open_rename_dialog(self, row: WebElement) -> RenameDialog:
         self.hover_element(row)
         self.find_child(row, self.table.locators.HostRow.rename_btn).click()
-        dialog = RenameDialog(driver=self.driver, base_url=self.base_url)
-        dialog.wait_opened()
-        return dialog
-
-    def _insert_new_host_info(self, fqdn: str, cluster: Optional[str] = None):
-        """Insert new host info in fields of opened popup"""
-        self.wait_element_visible(HostCreationLocators.fqdn_input)
-        self.send_text_to_element(HostCreationLocators.fqdn_input, fqdn)
-        if cluster:
-            self._choose_cluster_in_popup(cluster)
-
-    def _upload_bundle(self, bundle_path: str):
-        """
-        Add new host provider
-        Popup should be opened
-        Popup is not closed at the end
-        """
-        provider_section = HostCreationLocators.Provider
-        self.find_and_click(provider_section.add_btn)
-        self.wait_element_visible(provider_section.new_provider_block)
-        self.find_element(provider_section.upload_bundle_btn).send_keys(bundle_path)
-        self.find_and_click(provider_section.new_provider_add_btn)
-        self.wait_element_hide(provider_section.new_provider_block)
-
-    def _get_hostprovider_name(self) -> str:
-        """Get chosen provider from opened new host popup"""
-        return self.find_element(HostCreationLocators.Provider.chosen_provider).text
-
-    def _choose_cluster_in_popup(self, cluster_name: str):
-        self.find_and_click(HostCreationLocators.Cluster.cluster_select)
-        option = HostCreationLocators.Cluster.cluster_option
-        self._wait_and_click_on_cluster_option(cluster_name, option)
-        self.wait_element_hide(option)
-
-    def _wait_and_click_on_cluster_option(self, cluster_name: str, option_locator: Locator):
-        WDW(self.driver, self.default_loc_timeout).until(
-            EC.presence_of_element_located([option_locator.by, option_locator.value.format(cluster_name)]),
-            message=f"Can't find cluster with name {cluster_name} "
-            f"in dropdown on page {self.driver.current_url} "
-            f"for {self.default_loc_timeout} seconds",
-        ).click()
+        return RenameDialog.wait_opened(driver=self.driver)

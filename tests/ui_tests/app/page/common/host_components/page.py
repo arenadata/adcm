@@ -17,10 +17,13 @@ from dataclasses import dataclass
 import allure
 from selenium.webdriver.remote.webdriver import WebElement
 from tests.ui_tests.app.page.common.base_page import BasePageObject
+from tests.ui_tests.app.page.common.dialogs.create_host import HostCreateDialog
+from tests.ui_tests.app.page.common.dialogs.create_host_locators import (
+    HostCreationLocators,
+)
 from tests.ui_tests.app.page.common.host_components.locators import (
     HostComponentsLocators,
 )
-from tests.ui_tests.app.page.common.popups.locator import HostCreationLocators
 
 
 @dataclass
@@ -42,10 +45,11 @@ class HostComponentsPage(BasePageObject):
         """Click on Hosts page link"""
         self.find_and_click(HostComponentsLocators.hosts_page_link)
 
-    def click_add_host_btn(self):
+    def click_add_host_btn(self) -> HostCreateDialog:
         """Click on Add Host button"""
         self.find_and_click(HostComponentsLocators.create_hosts_btn)
         self.wait_element_visible(HostCreationLocators.block)
+        return HostCreateDialog(driver=self.driver)
 
     def get_host_rows(self):
         """Get all hosts rows"""

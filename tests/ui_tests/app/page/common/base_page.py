@@ -13,7 +13,7 @@
 """The most basic PageObject classes"""
 
 from contextlib import contextmanager
-from typing import List, Optional, Union
+from typing import List, Union
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -24,24 +24,25 @@ from selenium.common.exceptions import (
     TimeoutException,
 )
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
-from tests.ui_tests.app.checks import check_elements_are_displayed
-from tests.ui_tests.app.core import Interactor
-from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.common_locators import (
     CommonLocators,
     ObjectPageLocators,
 )
-from tests.ui_tests.app.page.common.footer_locators import CommonFooterLocators
+from tests.ui_tests.app.page.common.dialogs.create_host_locators import (
+    CommonPopupLocators,
+)
 from tests.ui_tests.app.page.common.header_locators import (
     AuthorizedHeaderLocators,
     CommonHeaderLocators,
 )
-from tests.ui_tests.app.page.common.popups.locator import CommonPopupLocators
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
+from tests.ui_tests.core.checks import check_elements_are_displayed
+from tests.ui_tests.core.interactors import Interactor
+from tests.ui_tests.core.locators import BaseLocator, Locator, autoname
 from tests.ui_tests.utils import assert_enough_rows
 
 
@@ -158,54 +159,6 @@ class BasePageObject(Interactor):
         self.wait_element_visible(CommonPopupLocators.block)
         return self.wait_element_visible(CommonPopupLocators.text, timeout=5).text
 
-    @allure.step('Write text to input element: "{text}"')
-    def send_text_to_element(
-        self,
-        element: Union[Locator, WebElement],
-        text: str,
-        clean_input: bool = True,
-        timeout: Optional[int] = None,
-    ):
-        """
-        Writes text to input element found by locator
-
-        If value of input before and after is the same, then retries to send keys again,
-        because sometimes text doesn't appear in input
-
-        :param element: Locator of element to write into (should be input)
-        :param text: Text to use in .send_keys method, and it's also a expected_value
-        :param clean_input: Clear input before saving element or not
-        :param timeout: Timeout on finding element
-        """
-
-        def _send_keys_and_check():
-            if clean_input:
-                self.clear_by_keys(element)
-            input_element = self.find_element(element, timeout) if isinstance(element, Locator) else element
-            input_element.click()
-            input_element.send_keys(text)
-            assert (actual_value := input_element.get_property('value')) == text, (
-                f'Value of input {element.name if isinstance(element, Locator) else element.text} '
-                f'expected to be "{text}", but "{actual_value}" was found'
-            )
-
-        wait_until_step_succeeds(_send_keys_and_check, period=0.5, timeout=1.5)
-
-    @allure.step('Clear element')
-    def clear_by_keys(self, element: Union[Locator, WebElement]) -> None:
-        """Clears element value by keyboard."""
-
-        def _clear():
-            locator_before = element if isinstance(element, WebElement) else self.find_element(element)
-            actual_value = locator_before.get_property('value')
-            for _ in range(len(actual_value)):
-                locator_before.send_keys(Keys.BACKSPACE)
-            locator_before.send_keys(Keys.BACK_SPACE)
-            locator_after = element if isinstance(element, WebElement) else self.find_element(element)
-            assert locator_after.text == ""
-
-        wait_until_step_succeeds(_clear, period=0.5, timeout=self.default_loc_timeout)
-
     @allure.step("Click back button in browser")
     def click_back_button_in_browser(self):
         self.driver.back()
@@ -215,7 +168,7 @@ class BasePageObject(Interactor):
         self.driver.refresh()
 
     @allure.step('Scroll to element')
-    def scroll_to(self, locator: Union[Locator, WebElement]) -> WebElement:
+    def scroll_to(self, locator: Union[BaseLocator, WebElement]) -> WebElement:
         """Scroll to element"""
         element = locator if isinstance(locator, WebElement) else self.find_element(locator)
         # Hack for firefox because of move_to_element does not scroll to the element
@@ -496,19 +449,24 @@ class Header(Interactor):  # pylint: disable=too-many-public-methods
 
 
 class Footer(Interactor):
+    @autoname
+    class Locators:
+        version_link = Locator(By.CSS_SELECTOR, "footer a[href*='docs']", name="Link to version doc page")
+        logo = Locator(By.XPATH, "//footer//*[contains(text(), 'ARENADATA ©')]")
+
     @allure.step("Check elements in footer")
     def check_all_elements(self):
         check_elements_are_displayed(
             self,
             [
-                CommonFooterLocators.version_link,
-                CommonFooterLocators.logo,
+                self.Locators.version_link,
+                self.Locators.logo,
             ],
         )
 
     @allure.step("Click on version link in footer")
     def click_version_link_in_footer(self):
-        self.find_and_click(CommonFooterLocators.version_link)
+        self.find_and_click(self.Locators.version_link)
 
 
 class BaseDetailedPage(BasePageObject):
