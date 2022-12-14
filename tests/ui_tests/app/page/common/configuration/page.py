@@ -20,7 +20,6 @@ from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebElement
-from tests.ui_tests.app.checks import check_element_is_hidden, check_element_is_visible
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.common_locators import (
     CommonLocators,
@@ -29,6 +28,7 @@ from tests.ui_tests.app.page.common.common_locators import (
 )
 from tests.ui_tests.app.page.common.configuration.fields import ConfigFieldsManipulator
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
+from tests.ui_tests.core.checks import check_element_is_hidden, check_element_is_visible
 
 # pylint: disable=too-many-public-methods
 
@@ -227,7 +227,7 @@ class CommonConfigMenuObj(BasePageObject):
         """
 
         def _assert_value():
-            input_value = dict()
+            input_value = {}
             row_values = [
                 v.get_attribute("value")
                 for v in self.find_children(self.get_config_row(display_name), self.locators.ConfigRow.input)

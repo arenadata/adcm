@@ -13,25 +13,25 @@
 """Group Configuration list page locators"""
 
 from selenium.webdriver.common.by import By
-from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.core.locators import BaseLocator
 
 
 class GroupConfigListLocators:
     """Group Configuration list locators"""
 
-    add_btn = Locator(By.CSS_SELECTOR, "button[adcm_test='create-btn']", "Add config group button")
-    header_item = Locator(By.CSS_SELECTOR, "mat-table mat-header-cell", "Header item")
-    group_config_row = Locator(By.CSS_SELECTOR, "mat-table mat-row", "Group Configuration row")
+    add_btn = BaseLocator(By.CSS_SELECTOR, "button[adcm_test='create-btn']", "Add config group button")
+    header_item = BaseLocator(By.CSS_SELECTOR, "mat-table mat-header-cell", "Header item")
+    group_config_row = BaseLocator(By.CSS_SELECTOR, "mat-table mat-row", "Group Configuration row")
 
     class GroupConfigRow:
         """Group Configuration row locators"""
 
-        name = Locator(By.CSS_SELECTOR, "mat-cell:first-child", "Row name")
-        description = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Row description")
-        delete_btn = Locator(By.CSS_SELECTOR, "button", "Row delete button")
+        name = BaseLocator(By.CSS_SELECTOR, "mat-cell:first-child", "Row name")
+        description = BaseLocator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Row description")
+        delete_btn = BaseLocator(By.CSS_SELECTOR, "button", "Row delete button")
 
     class CreateGroupPopup:
-        block = Locator(By.CSS_SELECTOR, "app-dialog", "Popup block")
-        name_input = Locator(By.CSS_SELECTOR, "input[data-placeholder='Name']", "Name input")
-        description_input = Locator(By.CSS_SELECTOR, "input[data-placeholder='Description']", "Description input")
-        create_btn = Locator(By.CSS_SELECTOR, "app-add-controls button[color='accent']", "Create button")
+        block = BaseLocator(By.CSS_SELECTOR, "app-dialog", "Popup block")
+        name_input = BaseLocator(By.CSS_SELECTOR, "input[data-placeholder='Name']", "Name input")
+        description_input = BaseLocator(By.CSS_SELECTOR, "input[data-placeholder='Description']", "Description input")
+        create_btn = BaseLocator(By.CSS_SELECTOR, "app-add-controls button[color='accent']", "Create button")

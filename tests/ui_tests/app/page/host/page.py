@@ -16,8 +16,6 @@ from typing import Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
-from tests.ui_tests.app.checks import check_elements_are_displayed
-from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import BaseDetailedPage, BasePageObject
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
@@ -25,6 +23,8 @@ from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuOb
 from tests.ui_tests.app.page.common.status.page import StatusPage
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 from tests.ui_tests.app.page.host.locators import HostLocators
+from tests.ui_tests.core.checks import check_elements_are_displayed
+from tests.ui_tests.core.locators import BaseLocator
 
 
 class HostPageMixin(BasePageObject):
@@ -94,7 +94,7 @@ class HostPageMixin(BasePageObject):
         page.wait_page_is_opened()
         return page
 
-    def active_menu_is(self, menu_locator: Locator) -> bool:
+    def active_menu_is(self, menu_locator: BaseLocator) -> bool:
         """
         Check that menu item is active
         :param menu_locator: Menu locator from HostLocators.Menu

@@ -17,9 +17,9 @@ from typing import Optional
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebElement
-from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.status.locators import StatusLocators
+from tests.ui_tests.core.locators import BaseLocator
 
 SUCCESS_COLOR = '0, 230, 118'
 NEGATIVE_COLOR = '255, 152, 0'
@@ -54,7 +54,7 @@ class StatusPage(BasePageObject):
         page_rows = self.get_all_rows()
         components_items = []
 
-        def get_child_text(row: WebElement, locator: Locator) -> str:
+        def get_child_text(row: WebElement, locator: BaseLocator) -> str:
             return self.find_child(row, locator).text if self.is_child_displayed(row, locator, timeout=1) else None
 
         for row in page_rows:

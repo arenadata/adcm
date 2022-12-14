@@ -29,21 +29,24 @@ from adcm_client.objects import (
     Provider,
     Service,
 )
-from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
-from adcm_pytest_plugin.utils import catch_failed
+from adcm_pytest_plugin.utils import (
+    catch_failed,
+    get_data_dir,
+    wait_until_step_succeeds,
+)
 from tests.library.utils import build_full_archive_name
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.job.page import JobPageStdout
 from tests.ui_tests.app.page.job_list.page import JobListPage, JobStatus
 from tests.ui_tests.app.page.login.page import LoginPage
+from tests.ui_tests.core.checks import check_pagination
 from tests.ui_tests.utils import (
     is_empty,
     is_not_empty,
     wait_and_assert_ui_info,
     wait_file_is_presented,
-    wait_until_step_succeeds,
 )
 
 LONG_ACTION_DISPLAY_NAME = 'Long action'
@@ -73,14 +76,14 @@ def page(app_fs: ADCMTest, _login_to_adcm_over_api) -> JobListPage:
 @pytest.fixture()
 def cluster_bundle(sdk_client_fs: ADCMClient) -> Bundle:
     """Upload cluster bundle"""
-    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "cluster"))
+    return sdk_client_fs.upload_from_fs(os.path.join(get_data_dir(__file__), "cluster"))
 
 
 @allure.title("Upload provider bundle")
 @pytest.fixture()
 def provider_bundle(sdk_client_fs: ADCMClient) -> Bundle:
     """Upload provider bundle"""
-    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "provider"))
+    return sdk_client_fs.upload_from_fs(os.path.join(get_data_dir(__file__), "provider"))
 
 
 @allure.title("Create cluster")
@@ -215,7 +218,7 @@ class TestTaskPage:
         with allure.step('Check pagination'):
             with page.table.wait_rows_change():
                 page.select_filter_all_tab()
-            page.table.check_pagination(params['second_page'])
+            check_pagination(page.table, expected_on_second=params['second_page'])
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -605,5 +608,5 @@ def _wait_and_get_action_on_host(host: Host, display_name: str) -> Action:
                 False
             ), f'Action "{display_name}" is not presented on host {host.fqdn}. Actions: {host.action_list()}'
 
-    utils.wait_until_step_succeeds(_wait_for_action_to_be_presented, period=0.1, timeout=10)
+    wait_until_step_succeeds(_wait_for_action_to_be_presented, period=0.1, timeout=10)
     return host.action(display_name=display_name)

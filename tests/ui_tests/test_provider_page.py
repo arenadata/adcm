@@ -29,6 +29,7 @@ from tests.ui_tests.app.page.provider.page import (
     ProviderMainPage,
 )
 from tests.ui_tests.app.page.provider_list.page import ProviderListPage
+from tests.ui_tests.core.checks import check_pagination
 from tests.ui_tests.utils import create_few_groups
 
 # pylint: disable=redefined-outer-name
@@ -135,7 +136,7 @@ class TestProviderListPage:
                 bundle.provider_create(name=f"Test provider {i}")
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
         provider_page.close_info_popup()
-        provider_page.table.check_pagination(second_page_item_amount=1)
+        check_pagination(provider_page.table, expected_on_second=1)
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -422,11 +423,13 @@ class TestProviderGroupConfigPage:
         with provider_group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
             provider_group_conf_page.group_config.delete_row(group_row)
 
-    def test_check_pagination_on_group_config_provider_page(self, app_fs, upload_and_create_test_provider):
+    def test_check_pagination_on_group_config_provider_page(
+        self, sdk_client_fs, app_fs, upload_and_create_test_provider
+    ):
         """Test pagination on /cluster/{}/service/{}/component/{}/group_config page"""
 
+        create_few_groups(sdk_client_fs, upload_and_create_test_provider)
         group_conf_page = ProviderGroupConfigPage(
             app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
         ).open()
-        create_few_groups(group_conf_page.group_config)
-        group_conf_page.table.check_pagination(second_page_item_amount=1)
+        check_pagination(group_conf_page.table, expected_on_second=1)

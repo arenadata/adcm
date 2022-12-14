@@ -13,18 +13,18 @@
 """Tooltip page locators"""
 
 from selenium.webdriver.common.by import By
-from tests.ui_tests.app.helpers.locator import Locator, TemplateLocator
+from tests.ui_tests.core.locators import BaseLocator, TemplateLocator
 
 
 class CommonToolbarLocators:
     """Common toolbar elements locators"""
 
-    progress_bar = Locator(By.CSS_SELECTOR, "*.mat-progress-bar-background", "Loading info")
-    all_links = Locator(By.CSS_SELECTOR, "app-navigation mat-nav-list", "Link to /admin")
-    admin_link = Locator(By.CSS_SELECTOR, "a[routerlink='/admin']", "Link to /admin")
+    progress_bar = BaseLocator(By.CSS_SELECTOR, "*.mat-progress-bar-background", "Loading info")
+    all_links = BaseLocator(By.CSS_SELECTOR, "app-navigation mat-nav-list", "Link to /admin")
+    admin_link = BaseLocator(By.CSS_SELECTOR, "a[routerlink='/admin']", "Link to /admin")
     text_link = TemplateLocator(By.XPATH, "//a[text()='{}']", "Link to {}")
     action_btn = TemplateLocator(By.XPATH, "//span[.//a[text()='{}']]//app-action-list/button", "Action button to {}")
-    adcm_action_btn = Locator(
+    adcm_action_btn = BaseLocator(
         By.XPATH,
         "//mat-nav-list[./a[@routerlink='/admin']]//app-action-list/button",
         "Action button to adcm",
@@ -35,16 +35,16 @@ class CommonToolbarLocators:
     class Popup:
         """Popup to choose action or import"""
 
-        popup_block = Locator(By.CSS_SELECTOR, "*.mat-menu-content", "Header popup block")
+        popup_block = BaseLocator(By.CSS_SELECTOR, "*.mat-menu-content", "Header popup block")
         item = TemplateLocator(By.XPATH, "//button[@role='menuitem' and ./*[text()='{}']]", "Item {}")
 
     class WarnPopup:
         """Warning Popup"""
 
-        popup_block = Locator(By.CSS_SELECTOR, "app-popover", "Warning popup block")
-        item = Locator(By.CSS_SELECTOR, "app-popover app-concern", "Item with warning")
+        popup_block = BaseLocator(By.CSS_SELECTOR, "app-popover", "Warning popup block")
+        item = BaseLocator(By.CSS_SELECTOR, "app-popover app-concern", "Item with warning")
 
     class Hint:
         """Hints with information"""
 
-        hint_text = Locator(By.CSS_SELECTOR, "mat-tooltip-component div", "Hint text")
+        hint_text = BaseLocator(By.CSS_SELECTOR, "mat-tooltip-component div", "Hint text")
