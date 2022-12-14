@@ -1,4 +1,4 @@
-import { Component, OnChanges, OnInit } from '@angular/core';
+import {Component, OnChanges, OnInit, ViewChild} from '@angular/core';
 import { BaseMapListDirective } from "@app/shared/form-elements/map.component";
 import {FormArray, FormControl, FormGroup} from "@angular/forms";
 import { TValue } from "@app/shared/configuration/types";
@@ -10,7 +10,10 @@ import {first} from "rxjs/operators";
   styleUrls: ['../map.component.scss', './secret-map.component.scss']
 })
 export class SecretMapComponent extends BaseMapListDirective implements OnInit, OnChanges {
+  @ViewChild("secretInput") secretInput;
+
   dummy = '********';
+  dummyLength = this.dummy.length;
   dummyControl = new FormArray([]);
   value: TValue;
   asList = false;
@@ -54,7 +57,8 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
     this.dummyControl.at(index).setValue({ key: this.dummyControl.value[index].key, value: this.dummyControl.value[index] ? this.dummy : '' });
   }
 
-  onFocus(index): void {
-    this.dummyControl.at(index).setValue({ key: this.dummyControl.value[index].key, value: null });
+  onFocus(): void {
+    this.secretInput.nativeElement.setSelectionRange(this.dummyLength, this.dummyLength);
+    // this.secretInput.nativeElement.focus();
   }
 }
