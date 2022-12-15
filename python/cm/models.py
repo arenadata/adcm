@@ -1558,17 +1558,18 @@ class JobLog(ADCMModel):
 
     def cancel(self, event_queue: "cm.status_api.Event" = None):
         if not self.sub_action.allowed_to_terminate:
+            event_queue.clear_state()
             raise AdcmEx("JOB_TERMINATION_ERROR", f"Job #{self.pk} can not be terminated")
 
-        if self.pid == 0:  # not started yet
-            self.status = JobStatus.ABORTED
-            self.save()
-        elif self.status not in (JobStatus.RUNNING, JobStatus.CREATED):
+        if self.status != JobStatus.RUNNING or self.pid == 0:
+            event_queue.clear_state()
             raise AdcmEx(
                 "JOB_TERMINATION_ERROR", f"Can't terminate job #{self.pk}, pid: {self.pid} with status {self.status}"
             )
-        else:
-            os.kill(self.pid, signal.SIGTERM)
+
+        os.kill(self.pid, signal.SIGTERM)
+        self.status = JobStatus.ABORTED
+        self.save()
 
         if event_queue:
             event_queue.send_state()
