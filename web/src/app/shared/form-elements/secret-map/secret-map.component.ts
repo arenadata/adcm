@@ -20,6 +20,16 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
 
   ngOnChanges(): void {
     this.value = this.field?.value;
+
+    this.control.valueChanges
+      .pipe(this.takeUntil())
+      .subscribe((a) => {
+        this.dummyControl.clear();
+        Object.keys(a).forEach((key) => {
+          const value = a[key] === '' ? '' : this.dummy
+          this.dummyControl.push(new FormGroup({ key: new FormControl(key), value: new FormControl(value) }));
+        })
+      })
   }
 
   ngOnInit() {
@@ -37,16 +47,6 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
         this.dummyControl.at(i).patchValue({ key: key, value: this.dummy }, { emitEvent: false });
       })
     }
-
-    this.control.valueChanges
-      .pipe(this.takeUntil())
-      .subscribe((a) => {
-        this.dummyControl.clear();
-        Object.keys(a).forEach((key) => {
-          const value = a[key] === '' ? '' : this.dummy
-          this.dummyControl.push(new FormGroup({ key: new FormControl(key), value: new FormControl(value) }));
-        })
-      })
   }
 
   onBlur(index): void {
