@@ -42,6 +42,11 @@ from tests.ui_tests.app.page.host.page import (
 )
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 from tests.ui_tests.app.page.host_list.page import HostListPage
+from tests.ui_tests.core.checks import (
+    check_element_is_hidden,
+    check_element_is_visible,
+    check_pagination,
+)
 from tests.ui_tests.utils import expect_rows_amount_change, wait_and_assert_ui_info
 
 # defaults
@@ -127,7 +132,7 @@ def upload_and_create_cluster(cluster_bundle: Bundle) -> Tuple[Bundle, Cluster]:
 @allure.title("Open /host page")
 def page(app_fs: ADCMTest, _login_to_adcm_over_api) -> HostListPage:
     """Open host page"""
-    return HostListPage(app_fs.driver, app_fs.adcm.url).open()
+    return HostListPage(app_fs.driver, app_fs.adcm.url).open(close_popup=True)
 
 
 @allure.step('Open host config menu from host list')
@@ -177,8 +182,8 @@ class TestHostListPage:
         """Upload bundle and create host"""
 
         host_fqdn = 'howdy-host-fqdn'
-        page.open_host_creation_popup()
-        new_provider_name = page.host_popup.create_provider_and_host(bundle_archive, host_fqdn)
+        creation_dialog = page.open_host_creation_popup()
+        new_provider_name = creation_dialog.create_provider_and_host(bundle_archive, host_fqdn)
         expected_values = {
             'fqdn': host_fqdn,
             'provider': new_provider_name,
@@ -214,12 +219,10 @@ class TestHostListPage:
     def _create_host_bonded_to_cluster(page: HostListPage, fqdn: str) -> None:
         host_bonding_retry = RetryFromCheckpoint(
             execution_steps=[
-                Step(page.open_host_creation_popup),
-                Step(page.host_popup.create_host, [fqdn], {"cluster": CLUSTER_NAME}),
+                Step(lambda: page.open_host_creation_popup().create_host(fqdn, cluster=CLUSTER_NAME)),
             ],
             restoration_steps=[
                 Step(page.driver.refresh),
-                Step(page.open_host_creation_popup),
             ],
         )
         with allure.step("Try to bound host to cluster during new host creation"):
@@ -230,9 +233,7 @@ class TestHostListPage:
     def test_host_list_pagination(self, page: HostListPage):
         """Create more than 10 hosts and check pagination"""
 
-        hosts_on_second_page = 2
-        page.close_info_popup()
-        page.table.check_pagination(hosts_on_second_page)
+        check_pagination(page.table, expected_on_second=2)
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -246,8 +247,8 @@ class TestHostListPage:
             'cluster': None,
             'state': 'created',
         }
-        page.open_host_creation_popup()
-        page.host_popup.create_host(HOST_FQDN)
+        dialog = page.open_host_creation_popup()
+        dialog.create_host(HOST_FQDN)
         with allure.step("Check host is created and isn't bound to a cluster"):
             wait_and_assert_ui_info(
                 expected_values,
@@ -293,18 +294,18 @@ class TestHostListPage:
         }
         wait_and_assert_ui_info(expected_values, page.get_host_info_from_row)
         page.delete_host(0)
-        page.check_element_should_be_hidden(HostListLocators.HostTable.row)
+        check_element_is_hidden(page, HostListLocators.HostTable.row)
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
     def test_delete_bonded_host(self, page: HostListPage, create_bonded_host):
         """Host shouldn't be deleted"""
 
-        page.check_element_should_be_visible(HostListLocators.HostTable.row)
-        page.open_host_creation_popup()
-        page.host_popup.create_host(HOST_FQDN, cluster=CLUSTER_NAME)
+        check_element_is_visible(page, HostListLocators.HostTable.row)
+        dialog = page.open_host_creation_popup()
+        dialog.create_host(HOST_FQDN, cluster=CLUSTER_NAME)
         page.delete_host(0)
-        page.check_element_should_be_visible(HostListLocators.HostTable.row)
+        check_element_is_visible(page, HostListLocators.HostTable.row)
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -360,7 +361,7 @@ class TestHostListPage:
         with allure.step("Run action and check available actions changed"):
             page.run_action(0, INIT_ACTION)
             _ = [job.wait() for job in sdk_client_fs.job_list()]
-            page.header.wait_success_job_amount_from_header(1)
+            page.header.wait_success_job_amount(1)
             page.driver.refresh()
             assert page.get_disabled_action_names(0) == [
                 REINIT_ACTION
@@ -416,7 +417,7 @@ class TestHostMainPage:
         host_main_page.toolbar.run_action(HOST_FQDN, params["action_name"])
         with allure.step("Check success job"):
             assert (
-                host_main_page.header.get_in_progress_job_amount_from_header() == "1"
+                host_main_page.header.get_in_progress_job_amount() == 1
             ), "There should be 1 in progress job in header"
 
 
@@ -519,7 +520,7 @@ class TestHostConfigPage:
         host_page.config.check_password_confirm_required(PASSWORD_FIELD_NAME)
         host_page.config.check_field_is_required(REQUIRED_FIELD_NAME)
         host_page.config.type_in_field_with_few_inputs(row=regular_row, values=[wrong_value])
-        host_page.config.check_field_is_invalid(REGULAR_FIELD_NAME)
+        host_page.config.check_field_is_invalid_error(REGULAR_FIELD_NAME)
         host_page.config.check_config_warn_icon_on_left_menu()
         host_page.toolbar.check_warn_button(
             tab_name=HOST_FQDN, expected_warn_text=[f'{HOST_FQDN} has an issue with its config']
@@ -632,8 +633,8 @@ class TestHostRenaming:
         new_name = "best-host.fqdn"
 
         dialog = page.open_rename_dialog(page.get_host_row())
-        dialog.set_new_name_in_rename_dialog(new_name)
-        dialog.click_save_on_rename_dialog()
+        dialog.set_new_name(new_name)
+        dialog.save()
         with allure.step("Check fqdn of host in table"):
             name_in_row = page.get_host_info_from_row(0).fqdn
             assert name_in_row == new_name, f"Incorrect cluster name, expected: {new_name}"
@@ -651,14 +652,12 @@ class TestHostRenaming:
 
         for fqdn in incorrect_names:
             with allure.step(f"Check if printing host FQDN '{fqdn}' triggers a warning message"):
-                dialog.set_new_name_in_rename_dialog(dummy_name)
-                dialog.set_new_name_in_rename_dialog(fqdn)
-                assert dialog.is_dialog_error_message_visible(), "Error about incorrect name should be visible"
-                assert (
-                    dialog.get_dialog_error_message() == self.EXPECTED_ERROR
-                ), f"Incorrect error message, expected: {self.EXPECTED_ERROR}"
+                dialog.set_new_name(dummy_name)
+                dialog.set_new_name(fqdn)
+                assert dialog.is_error_message_visible(), "Error about incorrect name should be visible"
+                assert dialog.error == self.EXPECTED_ERROR, f"Incorrect error message, expected: {self.EXPECTED_ERROR}"
 
-        dialog.click_cancel_on_rename_dialog()
+        dialog.cancel()
 
     def _test_an_error_is_not_shown_on_correct_char_in_name(self, page: HostListPage) -> None:
         dummy_name = "clUster"
@@ -672,10 +671,10 @@ class TestHostRenaming:
 
         for fqdn in correct_names:
             with allure.step(f"Check if printing host FQDN '{fqdn}' shows no error"):
-                dialog.set_new_name_in_rename_dialog(dummy_name)
-                dialog.set_new_name_in_rename_dialog(fqdn)
-                assert not dialog.is_dialog_error_message_visible(), "Error about correct name should not be shown"
-                dialog.click_save_on_rename_dialog()
+                dialog.set_new_name(dummy_name)
+                dialog.set_new_name(fqdn)
+                assert not dialog.is_error_message_visible(), "Error about correct name should not be shown"
+                dialog.save()
                 name_in_row = page.get_host_info_from_row().fqdn
                 assert name_in_row == fqdn, f"Incorrect host FQDN, expected: {fqdn}"
                 dialog = page.open_rename_dialog(page.get_host_row())

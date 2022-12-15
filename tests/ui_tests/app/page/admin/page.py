@@ -19,7 +19,6 @@ import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
-from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.admin.locators import (
     AdminGroupsLocators,
     AdminIntroLocators,
@@ -30,22 +29,25 @@ from tests.ui_tests.app.page.admin.locators import (
     LoginAuditLocators,
     OperationsAuditLocators,
 )
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageFooter,
-    PageHeader,
-)
+from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
+from tests.ui_tests.app.page.common.dialogs.create_host_locators import (
+    CommonPopupLocators,
+)
 from tests.ui_tests.app.page.common.dialogs.locators import DeleteDialog
 from tests.ui_tests.app.page.common.dialogs.operation_changes import (
     OperationChangesDialog,
 )
-from tests.ui_tests.app.page.common.popups.locator import CommonPopupLocators
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
+from tests.ui_tests.core.checks import (
+    check_element_is_visible,
+    check_elements_are_displayed,
+)
+from tests.ui_tests.core.locators import BaseLocator
 
 # pylint: disable=too-many-lines
 
@@ -84,9 +86,8 @@ class GeneralAdminPage(BasePageObject):
     """Base class for admin pages"""
 
     MENU_SUFFIX: str
-    MAIN_ELEMENTS: Collection[Locator]
-    header: PageHeader
-    footer: PageFooter
+    MAIN_ELEMENTS: List[BaseLocator]
+    MAIN_ELEMENTS: Collection[BaseLocator]
     config: CommonConfigMenuObj
     table: CommonTableObj
     toolbar: CommonToolbar
@@ -94,11 +95,9 @@ class GeneralAdminPage(BasePageObject):
     def __init__(self, driver, base_url):
         if self.MENU_SUFFIX is None:
             raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
-        super().__init__(driver, base_url, f"/admin/{self.MENU_SUFFIX}")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
+        super().__init__(driver, base_url, "/admin/" + self.MENU_SUFFIX)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
-        self.table = CommonTableObj(self.driver, self.base_url)
+        self.table = CommonTableObj(driver=self.driver)
         self.toolbar = CommonToolbar(self.driver, self.base_url)
 
     @allure.step("Assert that all main elements are presented on the page")
@@ -107,12 +106,11 @@ class GeneralAdminPage(BasePageObject):
 
         if len(self.MAIN_ELEMENTS) == 0:
             raise AttributeError('MAIN_ELEMENTS should contain at least 1 element')
-        self.assert_displayed_elements(self.MAIN_ELEMENTS)
+        check_elements_are_displayed(self, self.MAIN_ELEMENTS)
 
     @allure.step("Check admin toolbar")
     def check_admin_toolbar(self):
-        """Check that admin toolbar has all required elements in place"""
-        self.assert_displayed_elements([CommonToolbarLocators.admin_link])
+        check_elements_are_displayed(self, [CommonToolbarLocators.admin_link])
 
     @allure.step('Open Admin Intro page by left menu item click')
     def open_intro_menu(self) -> "AdminIntroPage":
@@ -352,7 +350,7 @@ class AdminUsersPage(GeneralAdminPage):
     def check_ldap_user(self, username: str):
         """Check that changing ldap user is prohibited"""
 
-        def is_disabled(locators: [Locator]):
+        def is_disabled(locators: [BaseLocator]):
             for loc in locators:
                 assert self.find_element(loc).get_attribute("disabled") == 'true', "Ldap user fields should be disabled"
 
@@ -521,7 +519,7 @@ class AdminGroupsPage(GeneralAdminPage):
     def check_ldap_group(self, group_name: str):
         """Check that changing ldap group is prohibited"""
 
-        def is_disabled(locators: [Locator]):
+        def is_disabled(locators: [BaseLocator]):
             for loc in locators:
                 assert (
                     self.find_element(loc).get_attribute("disabled") == 'true'
@@ -553,7 +551,7 @@ class AdminRolesPage(GeneralAdminPage):
         AdminRolesLocators.create_btn,
         AdminRolesLocators.delete_btn,
         CommonTable.header,
-        CommonTable.visible_row,
+        CommonTable.row,
     ]
 
     def get_all_roles_info(self) -> [AdminRoleInfo]:
@@ -686,9 +684,7 @@ class AdminRolesPage(GeneralAdminPage):
 
     @allure.step("Check {error_message} error is presented")
     def check_field_error_in_role_popup(self, error_message: str):
-        """Assert that message "{error_message}" is presented"""
-
-        self.check_element_should_be_visible(AdminRolesLocators.field_error(error_message))
+        check_element_is_visible(self, AdminRolesLocators.field_error(error_message))
 
     def select_all_roles(self):
         self.find_elements(self.table.locators.header)[0].click()
@@ -782,7 +778,7 @@ class AdminPoliciesPage(GeneralAdminPage):
     ):
         self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
 
-        def fill_select(locator_select: Locator, locator_items: Locator, values: str):
+        def fill_select(locator_select: BaseLocator, locator_items: BaseLocator, values: str):
             with allure.step(f"Select {values} in popup"):
                 self.wait_element_visible(locator_select)
                 self.find_and_click(locator_select)

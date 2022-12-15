@@ -14,12 +14,9 @@
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageFooter,
-    PageHeader,
-)
+from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.login.locators import LoginPageLocators
+from tests.ui_tests.core.checks import check_elements_are_displayed
 
 
 class LoginPage(BasePageObject):
@@ -27,20 +24,19 @@ class LoginPage(BasePageObject):
 
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/login")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
 
     @allure.step('Check elements on login page')
     def check_all_elements(self):
         """Check elements on login page"""
         self.header.check_unauth_page_elements()
-        self.assert_displayed_elements(
+        check_elements_are_displayed(
+            self,
             [
                 LoginPageLocators.login_form_block,
                 LoginPageLocators.login_input,
                 LoginPageLocators.password_input,
                 LoginPageLocators.login_btn,
-            ]
+            ],
         )
         self.footer.check_all_elements()
 

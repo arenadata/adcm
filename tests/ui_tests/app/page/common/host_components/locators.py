@@ -13,26 +13,28 @@
 """Cluster List page locators"""
 
 from selenium.webdriver.common.by import By
-from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.core.locators import BaseLocator
 
 
 class HostComponentsLocators:
     """Common host components page locators"""
 
-    restore_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Restore')]]", "Restore button")
-    save_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Save button")
+    restore_btn = BaseLocator(By.XPATH, "//button[./span[contains(text(), 'Restore')]]", "Restore button")
+    save_btn = BaseLocator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Save button")
 
-    components_title = Locator(By.XPATH, "//h3[./span[contains(text(), 'Components')]]", "Title for Components block")
-    service_page_link = Locator(By.CSS_SELECTOR, "mat-card-content a[href*='service']", "Link to service page")
+    components_title = BaseLocator(
+        By.XPATH, "//h3[./span[contains(text(), 'Components')]]", "Title for Components block"
+    )
+    service_page_link = BaseLocator(By.CSS_SELECTOR, "mat-card-content a[href*='service']", "Link to service page")
 
-    hosts_title = Locator(By.XPATH, "//h3[./span[contains(text(), 'Hosts')]]", "Title for Hosts block")
-    hosts_page_link = Locator(By.CSS_SELECTOR, "mat-card-content a[href*='host']", "Link to hosts page")
-    create_hosts_btn = Locator(
+    hosts_title = BaseLocator(By.XPATH, "//h3[./span[contains(text(), 'Hosts')]]", "Title for Hosts block")
+    hosts_page_link = BaseLocator(By.CSS_SELECTOR, "mat-card-content a[href*='host']", "Link to hosts page")
+    create_hosts_btn = BaseLocator(
         By.CSS_SELECTOR, "app-service-host button[adcm_test='create-btn']", "Create hosts button"
     )
 
-    host_row = Locator(By.XPATH, "//div[./h3/span[contains(text(), 'Host')]]//app-much-2-many", "Host row")
-    component_row = Locator(
+    host_row = BaseLocator(By.XPATH, "//div[./h3/span[contains(text(), 'Host')]]//app-much-2-many", "Host row")
+    component_row = BaseLocator(
         By.XPATH,
         "//div[./h3/span[contains(text(), 'Components')]]//app-much-2-many",
         "Component row",
@@ -41,12 +43,12 @@ class HostComponentsLocators:
     class Row:
         """Components page row elements locators"""
 
-        name = Locator(By.XPATH, ".//button[@mat-button]/span/span[not(contains(@class, 'warn'))]", "Item name")
-        number = Locator(By.CSS_SELECTOR, "button[mat-raised-button] span:first-of-type", "Amount of links")
-        relations_row = Locator(By.CSS_SELECTOR, "div[class*='relations-list']", "Row with relations")
+        name = BaseLocator(By.XPATH, ".//button[@mat-button]/span/span[not(contains(@class, 'warn'))]", "Item name")
+        number = BaseLocator(By.CSS_SELECTOR, "button[mat-raised-button] span:first-of-type", "Amount of links")
+        relations_row = BaseLocator(By.CSS_SELECTOR, "div[class*='relations-list']", "Row with relations")
 
         class RelationsRow:
             """Components page relations row elements locators"""
 
-            name = Locator(By.CSS_SELECTOR, "div>span", "Related item name")
-            delete_btn = Locator(By.CSS_SELECTOR, "button", "Delete item button")
+            name = BaseLocator(By.CSS_SELECTOR, "div>span", "Related item name")
+            delete_btn = BaseLocator(By.CSS_SELECTOR, "button", "Delete item button")

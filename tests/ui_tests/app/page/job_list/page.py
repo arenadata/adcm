@@ -20,16 +20,12 @@ import allure
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
 from tests.library.conditional_retriever import DataSource, FromOneOf
-from tests.ui_tests.app.helpers.locator import Locator
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageFooter,
-    PageHeader,
-)
+from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.header_locators import AuthorizedHeaderLocators
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.app.page.job_list.locators import TaskListLocators
+from tests.ui_tests.core.locators import BaseLocator
 
 
 class JobStatus(Enum):
@@ -74,9 +70,7 @@ class JobListPage(BasePageObject):
 
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/task")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
-        self.table = CommonTableObj(self.driver, self.base_url, TaskListLocators.Table)
+        self.table = CommonTableObj(driver=self.driver, locators_class=TaskListLocators.Table)
 
     def get_task_info_from_table(self, row_num: int = 0, *, full_invoker_objects_link: bool = False) -> TableTaskInfo:
         """
@@ -190,7 +184,7 @@ class JobListPage(BasePageObject):
         """Show only failed tasks"""
         self._select_filter(TaskListLocators.Filter.failed)
 
-    def _select_filter(self, filter_locator: Locator):
+    def _select_filter(self, filter_locator: BaseLocator):
         """Click on filter tab and wait it is pressed"""
         self.find_and_click(filter_locator)
         self.wait_element_attribute(filter_locator, 'aria-pressed', "true")

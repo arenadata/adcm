@@ -14,12 +14,9 @@
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageFooter,
-    PageHeader,
-)
+from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.profile.locators import ProfileLocators
+from tests.ui_tests.core.checks import check_elements_are_displayed
 
 
 class ProfilePage(BasePageObject):
@@ -27,8 +24,6 @@ class ProfilePage(BasePageObject):
 
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/profile")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
 
     def get_username(self) -> str:
         """Get username of authorized user"""
@@ -44,14 +39,14 @@ class ProfilePage(BasePageObject):
 
     @allure.step('Check required fields are presented on Profile page')
     def check_required_fields_are_presented(self):
-        """Check that all fields that should be on page by default are presented"""
-        self.assert_displayed_elements(
+        check_elements_are_displayed(
+            self,
             [
                 ProfileLocators.username,
                 ProfileLocators.password,
                 ProfileLocators.confirm_password,
                 ProfileLocators.save_password_btn,
-            ]
+            ],
         )
 
     @allure.step('Check that username is {expected_username}')

@@ -16,19 +16,15 @@ from typing import Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
-from tests.ui_tests.app.helpers.locator import Locator
-from tests.ui_tests.app.page.common.base_page import (
-    BaseDetailedPage,
-    BasePageObject,
-    PageFooter,
-    PageHeader,
-)
+from tests.ui_tests.app.page.common.base_page import BaseDetailedPage, BasePageObject
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.status.page import StatusPage
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 from tests.ui_tests.app.page.host.locators import HostLocators
+from tests.ui_tests.core.checks import check_elements_are_displayed
+from tests.ui_tests.core.locators import BaseLocator
 
 
 class HostPageMixin(BasePageObject):
@@ -39,8 +35,6 @@ class HostPageMixin(BasePageObject):
     MAIN_ELEMENTS: list
     host_id: int
     cluster_id: int
-    header: PageHeader
-    footer: PageFooter
     config: CommonConfigMenuObj
     toolbar: CommonToolbar
     __ACTIVE_MENU_CLASS = 'active'
@@ -57,8 +51,6 @@ class HostPageMixin(BasePageObject):
             cluster_id=cluster_id,
             host_id=host_id,
         )
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.host_id = host_id
         self.toolbar = CommonToolbar(self.driver, self.base_url)
@@ -102,7 +94,7 @@ class HostPageMixin(BasePageObject):
         page.wait_page_is_opened()
         return page
 
-    def active_menu_is(self, menu_locator: Locator) -> bool:
+    def active_menu_is(self, menu_locator: BaseLocator) -> bool:
         """
         Check that menu item is active
         :param menu_locator: Menu locator from HostLocators.Menu
@@ -113,8 +105,7 @@ class HostPageMixin(BasePageObject):
 
     @allure.step("Assert that all main elements on the page are presented")
     def check_all_elements(self):
-        """Assert all main elements presence"""
-        self.assert_displayed_elements(self.MAIN_ELEMENTS)
+        check_elements_are_displayed(self, self.MAIN_ELEMENTS)
 
     def check_host_toolbar(self, host_name: str):
         self.toolbar.check_toolbar_elements(["HOSTS", host_name])

@@ -15,11 +15,13 @@
 import json
 import random
 import time
-from typing import Iterable, Tuple
+from typing import Callable, Iterable, Tuple, TypeVar
 
 import requests
 from adcm_client.objects import Cluster, Component, Host, Provider, Service, Task
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
+
+T = TypeVar("T")
 
 
 class ConfigError(Exception):
@@ -198,6 +200,14 @@ def lower_class_name(obj: object) -> str:
 def get_hosts_fqdn_representation(hosts: Iterable[Host]):
     """Return string with host FQDNs separated by ','"""
     return ", ".join(host.fqdn for host in hosts)
+
+
+def get_or_raise(collection: Iterable[T], predicate: Callable[[T], bool]) -> T:
+    suitable_object = next(filter(predicate, iter(collection)), None)
+    if suitable_object:
+        return suitable_object
+
+    raise AssertionError("Failed to get object by given params")
 
 
 # !===== Bulk Log Download =====!

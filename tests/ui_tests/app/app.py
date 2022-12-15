@@ -12,8 +12,6 @@
 
 """Tools for ADCM UI over selenium interactions"""
 
-# Created by a1wen at 27.02.19
-
 import os
 from typing import Optional, Union
 
@@ -22,8 +20,6 @@ from adcm_client.wrappers.docker import ADCM
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver import ChromeOptions, FirefoxOptions
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait as WDW
 
 
 class ADCMTest:
@@ -79,24 +75,6 @@ class ADCMTest:
     def attache_adcm(self, adcm: ADCM):
         """Attache ADCM instance to the driver wrapper"""
         self.adcm = adcm
-
-    def wait_for(self, condition: EC, locator: tuple, timer=5):
-        """Wait for condition"""
-
-        def _get_element(element):
-            return WDW(self.driver, timer).until(condition(element))
-
-        return _get_element(locator)
-
-    @allure.step("Wait for element displayed")
-    def wait_element_present(self, locator: tuple):
-        """Wait for element displayed"""
-        return self.wait_for(EC.presence_of_element_located, locator)
-
-    @allure.step("Wait for adress string to contain: {url}")
-    def contains_url(self, url: str, timer=5):
-        """Wait for adress string to contain given URL"""
-        return WDW(self.driver, timer).until(EC.url_contains(url))
 
     @allure.step("Open a new tab")
     def new_tab(self):

@@ -16,16 +16,12 @@ from dataclasses import dataclass
 from typing import Literal
 
 import allure
-from tests.ui_tests.app.helpers.locator import Locator
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageFooter,
-    PageHeader,
-)
+from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 from tests.ui_tests.app.page.job.locators import JobPageLocators
+from tests.ui_tests.core.locators import BaseLocator
 
 
 @dataclass
@@ -50,8 +46,6 @@ class JobPageMixin(BasePageObject):
 
     def __init__(self, driver, base_url, job_id: int):
         super().__init__(driver, base_url, "/job/{job_id}", job_id=job_id)
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
         self.job_id = job_id
         self.toolbar = CommonToolbar(self.driver, self.base_url)
 
@@ -98,7 +92,7 @@ class JobPageMixin(BasePageObject):
         locator = getattr(JobPageLocators.Menu, f'{log_type}_download_btn')
         self.find_and_click(locator)
 
-    def _open_menu(self, locator: Locator):
+    def _open_menu(self, locator: BaseLocator):
         self.find_and_click(locator)
         self.wait_element_attribute(locator, 'class', 'active', exact_match=False)
         self.wait_element_hide(CommonToolbarLocators.progress_bar)

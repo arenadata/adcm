@@ -16,6 +16,7 @@ import allure
 import pytest
 from adcm_client.objects import ADCMClient, Cluster, Service
 from adcm_pytest_plugin.utils import get_data_dir
+from tests.library.retry import should_become_truth
 from tests.ui_tests.app.page.cluster.page import ClusterGroupConfigConfig
 from tests.ui_tests.app.page.service.page import ServiceConfigPage
 
@@ -55,7 +56,7 @@ class TestServiceConfigSave:
     @allure.step("Save config and check popup")
     def _save_config_and_refresh(self, config):
         config.config.save_config()
-        assert not config.is_popup_presented_on_page(), "No popup should be shown after save"
+        should_become_truth(lambda: not config.is_popup_presented_on_page(timeout=1), retries=8)
         config.driver.refresh()
 
     @staticmethod
@@ -90,7 +91,9 @@ class TestServiceConfigSave:
             service = cluster.service_add(name="service_config_default")
 
         with allure.step("Create service config"):
-            service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+            service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open(
+                close_popup=True
+            )
             service_config_page.config.set_description(self.CONFIG_NAME_NEW)
             self._save_config_and_refresh(service_config_page)
             service_config_page.config.compare_versions(self.CONFIG_NAME_OLD)
@@ -109,7 +112,9 @@ class TestServiceConfigSave:
             service = cluster.service_add(name="service_config_empty")
 
         with allure.step("Create service config"):
-            service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+            service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open(
+                close_popup=True
+            )
             service_config_page.config.set_description(self.CONFIG_NAME_NEW)
             self._save_config_and_refresh(service_config_page)
             service_config_page.config.is_history_disabled()
@@ -132,7 +137,9 @@ class TestServiceConfigSave:
             )
 
         with allure.step("Add new params in service config"):
-            service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+            service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open(
+                close_popup=True
+            )
             structure_params = [self.CHANGE_STRUCTURE_COUNTRY, self.CHANGE_STRUCTURE_CODE]
             for i in range(3):
                 service_config_page.config.click_add_item_btn_in_row(self.STRUCTURE_ROW_NAME)
@@ -172,7 +179,9 @@ class TestServiceConfigSave:
             service = cluster.service_add(name="service_invisible")
 
         with allure.step("Create service config"):
-            service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+            service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open(
+                close_popup=True
+            )
 
         with allure.step("Check config ui option invisible"):
             self.check_invisible_params(service, self.CONFIG_PARAM_AMOUNT)
@@ -183,12 +192,12 @@ class TestServiceConfigSave:
             service_group_config = service.group_config_create("service-group")
             cluster_group_config_page = ClusterGroupConfigConfig(
                 app_fs.driver, app_fs.adcm.url, cluster.id, service_group_config.id
-            ).open()
+            ).open(close_popup=True)
             cluster_group_config_page.config.set_description(self.CONFIG_NAME_NEW)
 
         with allure.step("Save group config and check that popup is not presented on page"):
             cluster_group_config_page.config.save_config()
-            assert not cluster_group_config_page.is_popup_presented_on_page(), "No popup should be shown after save"
+            should_become_truth(lambda: not cluster_group_config_page.is_popup_presented_on_page(timeout=1))
 
     def test_config_save_advanced(self, app_fs, sdk_client_fs, create_cluster):
         """Test to check config save with ui option advanced"""
@@ -197,7 +206,9 @@ class TestServiceConfigSave:
             service = cluster.service_add(name="service_advanced")
 
         with allure.step("Create service config"):
-            service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+            service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open(
+                close_popup=True
+            )
 
         with allure.step("Check config ui option advanced"):
             self.check_advanced_params(service_config_page)
@@ -208,12 +219,12 @@ class TestServiceConfigSave:
             service_group_config = service.group_config_create("service-group")
             cluster_group_config_page = ClusterGroupConfigConfig(
                 app_fs.driver, app_fs.adcm.url, cluster.id, service_group_config.id
-            ).open()
+            ).open(close_popup=True)
             cluster_group_config_page.config.set_description(self.CONFIG_NAME_NEW)
 
         with allure.step("Save group config and check that popup is not presented on page"):
             cluster_group_config_page.config.save_config()
-            assert not cluster_group_config_page.is_popup_presented_on_page(), "No popup should be shown after save"
+            should_become_truth(lambda: not cluster_group_config_page.is_popup_presented_on_page(timeout=1))
 
     def test_config_save_read_only(self, app_fs, sdk_client_fs, create_cluster):
         """Test to check config save with ui option advanced"""
@@ -269,7 +280,7 @@ class TestServiceConfigSave:
             service_group_config = service.group_config_create("service-group")
             cluster_group_config_page = ClusterGroupConfigConfig(
                 app_fs.driver, app_fs.adcm.url, cluster.id, service_group_config.id
-            ).open()
+            ).open(close_popup=True)
 
         with allure.step("Add params to group config and save"):
             _, structure_row, *_ = cluster_group_config_page.group_config.get_all_group_config_rows()
@@ -295,7 +306,9 @@ class TestServiceConfigSave:
             service = cluster.service_add(name="service_config_default")
 
         with allure.step("Create service config"):
-            service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+            service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open(
+                close_popup=True
+            )
             service_config_page.config.set_description(self.CONFIG_NAME_NEW)
             self._save_config_and_refresh(service_config_page)
             service_config_page.config.compare_versions(self.CONFIG_NAME_OLD)

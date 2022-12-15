@@ -20,6 +20,7 @@ import pytest
 from _pytest.fixtures import SubRequest
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Service
 from adcm_pytest_plugin import params, utils
+from tests.library.retry import should_become_truth
 from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
@@ -40,6 +41,7 @@ from tests.ui_tests.app.page.service.page import (
     ServiceMainPage,
     ServiceStatusPage,
 )
+from tests.ui_tests.core.checks import check_pagination
 from tests.ui_tests.test_cluster_list_page import (
     BUNDLE_COMMUNITY,
     BUNDLE_IMPORT,
@@ -137,17 +139,11 @@ class TestServiceMainPage:
         cluster_page.check_cluster_toolbar(CLUSTER_NAME)
 
     def test_run_action_on_service_page_by_toolbar(self, app_fs, create_cluster_with_service):
-        """Test run action from the /cluster/{}/service/{}/main page toolbar"""
-
-        params = {"action_name": "test_action"}
-
         cluster, service = create_cluster_with_service
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
-        service_main_page.toolbar.run_action(CLUSTER_NAME, params["action_name"])
+        service_main_page.toolbar.run_action(CLUSTER_NAME, "test_action")
         with allure.step("Check success job"):
-            assert (
-                service_main_page.header.get_in_progress_job_amount_from_header() == "1"
-            ), "There should be 1 in progress job in header"
+            should_become_truth(lambda: service_main_page.header.get_in_progress_job_amount() == 1)
 
 
 class TestServiceComponentPage:
@@ -183,7 +179,7 @@ class TestServiceComponentPage:
             ), f"Cluster state should be {params['expected_state']}"
         with allure.step("Check success service job"):
             assert (
-                service_component_page.header.get_success_job_amount_from_header() == "1"
+                service_component_page.header.get_success_job_amount() == 1
             ), "There should be 1 success service job in header"
 
 
@@ -402,7 +398,7 @@ class TestServiceConfigPage:
         service_config_page.config.check_field_is_required(params['req_name'])
         config_row = service_config_page.config.get_all_config_rows()[0]
         service_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params['wrong_value']])
-        service_config_page.config.check_field_is_invalid(params['not_req_name'])
+        service_config_page.config.check_field_is_invalid_error(params['not_req_name'])
         service_config_page.config.check_config_warn_icon_on_left_menu()
         with allure.step("Check save button is disabled"):
             assert service_config_page.config.is_save_btn_disabled(), "Save button should be disabled"
@@ -493,6 +489,7 @@ class TestServiceConfigPage:
                     display_name in ui_display_names or display_name in config_group_names
                 ), f"Config named '{display_name}' should be presented in config"
         with allure.step('Fill required fields'):
+            service_config_page.close_info_popup()
             for param_display_name, value in required_fields.items():
                 row = service_config_page.config.get_config_row(param_display_name)
                 service_config_page.config.type_in_field_with_few_inputs(row=row, values=value)
@@ -537,13 +534,13 @@ class TestServiceGroupConfigPage:
         with service_group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
             service_group_conf_page.group_config.delete_row(group_row)
 
-    def test_check_pagination_on_group_config_service_page(self, app_fs, create_cluster_with_service):
+    def test_check_pagination_on_group_config_service_page(self, sdk_client_fs, app_fs, create_cluster_with_service):
         """Test pagination on /cluster/{}/service/{}/group_config page"""
 
         cluster, service = create_cluster_with_service
+        create_few_groups(sdk_client_fs, service)
         group_conf_page = ServiceGroupConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
-        create_few_groups(group_conf_page.group_config)
-        group_conf_page.table.check_pagination(second_page_item_amount=1)
+        check_pagination(group_conf_page.table, expected_on_second=1)
 
 
 class TestServiceStatusPage:

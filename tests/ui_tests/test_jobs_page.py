@@ -29,21 +29,24 @@ from adcm_client.objects import (
     Provider,
     Service,
 )
-from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
-from adcm_pytest_plugin.utils import catch_failed
+from adcm_pytest_plugin.utils import (
+    catch_failed,
+    get_data_dir,
+    wait_until_step_succeeds,
+)
 from tests.library.utils import build_full_archive_name
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.job.page import JobPageStdout
 from tests.ui_tests.app.page.job_list.page import JobListPage, JobStatus
 from tests.ui_tests.app.page.login.page import LoginPage
+from tests.ui_tests.core.checks import check_pagination
 from tests.ui_tests.utils import (
     is_empty,
     is_not_empty,
     wait_and_assert_ui_info,
     wait_file_is_presented,
-    wait_until_step_succeeds,
 )
 
 LONG_ACTION_DISPLAY_NAME = 'Long action'
@@ -73,14 +76,14 @@ def page(app_fs: ADCMTest, _login_to_adcm_over_api) -> JobListPage:
 @pytest.fixture()
 def cluster_bundle(sdk_client_fs: ADCMClient) -> Bundle:
     """Upload cluster bundle"""
-    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "cluster"))
+    return sdk_client_fs.upload_from_fs(os.path.join(get_data_dir(__file__), "cluster"))
 
 
 @allure.title("Upload provider bundle")
 @pytest.fixture()
 def provider_bundle(sdk_client_fs: ADCMClient) -> Bundle:
     """Upload provider bundle"""
-    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "provider"))
+    return sdk_client_fs.upload_from_fs(os.path.join(get_data_dir(__file__), "provider"))
 
 
 @allure.title("Create cluster")
@@ -215,7 +218,7 @@ class TestTaskPage:
         with allure.step('Check pagination'):
             with page.table.wait_rows_change():
                 page.select_filter_all_tab()
-            page.table.check_pagination(params['second_page'])
+            check_pagination(page.table, expected_on_second=params['second_page'])
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -330,7 +333,7 @@ class TestTaskHeaderPopup:
         """Link to /task from popup with filter"""
 
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-        cluster_page.header.click_job_block_in_header()
+        cluster_page.header.click_job_block()
         open_filter = getattr(cluster_page.header, job_link)
         open_filter()
         job_page = JobListPage(app_fs.driver, app_fs.adcm.url)
@@ -344,12 +347,12 @@ class TestTaskHeaderPopup:
         with allure.step('Run action in cluster'):
             action = cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME)
             run_cluster_action_and_assert_result(cluster, action.name, status='success')
-        page.header.click_job_block_in_header()
+        page.header.click_job_block()
         page.header.click_acknowledge_btn_in_job_popup()
         page.header.check_no_jobs_presented()
-        assert page.header.get_success_job_amount_from_header() == "0", "Success job amount should be 0"
-        assert page.header.get_in_progress_job_amount_from_header() == "0", "In progress job amount should be 0"
-        assert page.header.get_failed_job_amount_from_header() == "0", "Failed job amount should be 0"
+        assert page.header.get_success_job_amount() == 0, "Success job amount should be 0"
+        assert page.header.get_in_progress_job_amount() == 0, "In progress job amount should be 0"
+        assert page.header.get_failed_job_amount() == 0, "Failed job amount should be 0"
         assert 'background: transparent' in page.header.get_jobs_circle_color(), "Bell circle should be without color"
         page.header.check_acknowledge_btn_not_displayed()
 
@@ -361,9 +364,9 @@ class TestTaskHeaderPopup:
             {
                 'status': JobStatus.SUCCESS,
                 'action_name': {SUCCESS_ACTION_DISPLAY_NAME: 'success'},
-                'success_jobs': "1",
-                'in_progress_job_jobs': "0",
-                'failed_jobs': "0",
+                'success_jobs': 1,
+                'in_progress_job_jobs': 0,
+                'failed_jobs': 0,
                 'background': 'conic-gradient(rgb(255, 234, 0) 0deg, rgb(255, 234, 0) 0deg, '
                 'rgb(30, 229, 100) 0deg, rgb(30, 229, 100) 360deg, '
                 'rgb(255, 138, 128) 360deg, rgb(255, 138, 128) 360deg)',
@@ -371,9 +374,9 @@ class TestTaskHeaderPopup:
             {
                 'status': JobStatus.FAILED,
                 'action_name': {FAIL_ACTION_DISPLAY_NAME: 'failed'},
-                'success_jobs': "0",
-                'in_progress_job_jobs': "0",
-                'failed_jobs': "1",
+                'success_jobs': 0,
+                'in_progress_job_jobs': 0,
+                'failed_jobs': 1,
                 'background': 'conic-gradient(rgb(255, 234, 0) 0deg, rgb(255, 234, 0) 0deg, '
                 'rgb(30, 229, 100) 0deg, rgb(30, 229, 100) 0deg, '
                 'rgb(255, 138, 128) 0deg, rgb(255, 138, 128) 360deg)',
@@ -381,9 +384,9 @@ class TestTaskHeaderPopup:
             {
                 'status': JobStatus.RUNNING,
                 'action_name': {LONG_ACTION_DISPLAY_NAME: ''},
-                'success_jobs': "0",
-                'in_progress_job_jobs': "1",
-                'failed_jobs': "0",
+                'success_jobs': 0,
+                'in_progress_job_jobs': 1,
+                'failed_jobs': 0,
                 'background': 'conic-gradient(rgb(255, 234, 0) 0deg, rgb(255, 234, 0) 360deg, '
                 'rgb(30, 229, 100) 360deg, rgb(30, 229, 100) 360deg, '
                 'rgb(255, 138, 128) 360deg, rgb(255, 138, 128) 360deg)',
@@ -396,9 +399,9 @@ class TestTaskHeaderPopup:
                     SUCCESS_ACTION_DISPLAY_NAME: 'success',
                     LONG_ACTION_DISPLAY_NAME: '',
                 },
-                'success_jobs': "1",
-                'in_progress_job_jobs': "1",
-                'failed_jobs': "1",
+                'success_jobs': 1,
+                'in_progress_job_jobs': 1,
+                'failed_jobs': 1,
                 'background': 'conic-gradient(rgb(255, 234, 0) 0deg, rgb(255, 234, 0) 120deg, '
                 'rgb(30, 229, 100) 120deg, rgb(30, 229, 100) 240deg, '
                 'rgb(255, 138, 128) 240deg, rgb(255, 138, 128) 360deg)',
@@ -420,15 +423,15 @@ class TestTaskHeaderPopup:
                 run_cluster_action_and_assert_result(
                     cluster, cluster.action(display_name=action_name).name, status=expected_status
                 )
-        cluster_page.header.click_job_block_in_header()
+        cluster_page.header.click_job_block()
         assert (
-            cluster_page.header.get_success_job_amount_from_header() == job_info['success_jobs']
+            cluster_page.header.get_success_job_amount() == job_info['success_jobs']
         ), f"Success job amount should be {job_info['success_jobs']}"
         assert (
-            cluster_page.header.get_in_progress_job_amount_from_header() == job_info['in_progress_job_jobs']
+            cluster_page.header.get_in_progress_job_amount() == job_info['in_progress_job_jobs']
         ), f"In progress job amount should be {job_info['in_progress_job_jobs']}"
         assert (
-            cluster_page.header.get_failed_job_amount_from_header() == job_info['failed_jobs']
+            cluster_page.header.get_failed_job_amount() == job_info['failed_jobs']
         ), f"Failed job amount should be {job_info['failed_jobs']}"
 
         def _wait_for_background():
@@ -446,7 +449,7 @@ class TestTaskHeaderPopup:
             for action_name, status in actions.items():
                 action = cluster.action(display_name=action_name)
                 run_cluster_action_and_assert_result(cluster, action.name, status=status)
-        page.header.click_job_block_in_header()
+        page.header.click_job_block()
         for action_name, _ in actions.items():
             page.header.click_on_task_row_by_name(task_name=action_name)
             job_page = JobPageStdout(app_fs.driver, app_fs.adcm.url, job_id=1)
@@ -464,7 +467,7 @@ class TestTaskHeaderPopup:
                     cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME).name,
                     status='success',
                 )
-        cluster_page.header.click_job_block_in_header()
+        cluster_page.header.click_job_block()
         with allure.step("Check that in popup 5 tasks"):
             assert len(cluster_page.header.get_job_rows_from_popup()) == 5, "Popup should contain 5 tasks"
         cluster_page.header.click_all_link_in_job_popup()
@@ -481,12 +484,12 @@ class TestTaskHeaderPopup:
         with allure.step('Run action in cluster'):
             row = cluster_page.table.get_all_rows()[0]
             cluster_page.run_action_in_cluster_row(row, LONG_ACTION_DISPLAY_NAME)
-        cluster_page.header.click_job_block_in_header()
+        cluster_page.header.click_job_block()
         cluster_page.header.click_acknowledge_btn_in_job_popup()
 
-        cluster_page.header.wait_success_job_amount_from_header(1)
-        assert cluster_page.header.get_in_progress_job_amount_from_header() == "0", "In progress job amount should be 0"
-        assert cluster_page.header.get_failed_job_amount_from_header() == "0", "Failed job amount should be 0"
+        cluster_page.header.wait_success_job_amount(1)
+        assert cluster_page.header.get_in_progress_job_amount() == 0, "In progress job amount should be 0"
+        assert cluster_page.header.get_failed_job_amount() == 0, "Failed job amount should be 0"
 
     @pytest.mark.skip(reason="Test is only for https://arenadata.atlassian.net/browse/ADCM-2660")
     @pytest.mark.usefixtures("cluster_bundle")
@@ -605,5 +608,5 @@ def _wait_and_get_action_on_host(host: Host, display_name: str) -> Action:
                 False
             ), f'Action "{display_name}" is not presented on host {host.fqdn}. Actions: {host.action_list()}'
 
-    utils.wait_until_step_succeeds(_wait_for_action_to_be_presented, period=0.1, timeout=10)
+    wait_until_step_succeeds(_wait_for_action_to_be_presented, period=0.1, timeout=10)
     return host.action(display_name=display_name)

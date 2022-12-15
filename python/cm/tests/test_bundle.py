@@ -127,11 +127,11 @@ class TestBundle(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         return response.json()["id"]
 
-    def upload_bundle_create_cluster_config_log(self) -> tuple[Bundle, Cluster, ConfigLog]:
+    def upload_bundle_create_cluster_config_log(self, bundle_path: str) -> tuple[Bundle, Cluster, ConfigLog]:
         bundle = self.upload_and_load_bundle(
             path=Path(
                 settings.BASE_DIR,
-                "python/cm/tests/files/config_cluster_secretfile_secretmap.tar",
+                bundle_path,
             ),
         )
 
@@ -201,7 +201,9 @@ class TestBundle(BaseTestCase):
                 Bundle.objects.get(pk=bundle_id).delete()
 
     def test_secretfile(self):
-        bundle, cluster, config_log = self.upload_bundle_create_cluster_config_log()
+        bundle, cluster, config_log = self.upload_bundle_create_cluster_config_log(
+            bundle_path="python/cm/tests/files/config_cluster_secretfile_secretmap.tar"
+        )
 
         with open(Path(settings.BUNDLE_DIR, bundle.hash, "secretfile"), encoding=settings.ENCODING_UTF_8) as f:
             secret_file_bundle_content = f.read()
@@ -234,7 +236,9 @@ class TestBundle(BaseTestCase):
         self.assertEqual(new_content, ansible_decrypt(new_config_log.config["secretfile"]))
 
     def test_secretmap(self):
-        _, cluster, config_log = self.upload_bundle_create_cluster_config_log()
+        _, cluster, config_log = self.upload_bundle_create_cluster_config_log(
+            bundle_path="python/cm/tests/files/config_cluster_secretfile_secretmap.tar"
+        )
 
         self.assertIn(settings.ANSIBLE_VAULT_HEADER, config_log.config["secretmap"]["key"])
         self.assertEqual("value", ansible_decrypt(config_log.config["secretmap"]["key"]))
@@ -253,3 +257,13 @@ class TestBundle(BaseTestCase):
 
         self.assertIn(settings.ANSIBLE_VAULT_HEADER, new_config_log.config["secretmap"]["key"])
         self.assertEqual(new_value, ansible_decrypt(new_config_log.config["secretmap"]["key"]))
+
+    def test_secretmap_no_default(self):
+        self.upload_bundle_create_cluster_config_log(
+            bundle_path="python/cm/tests/files/test_secret_config_v10_community.tar"
+        )
+
+    def test_secretmap_no_default1(self):
+        self.upload_bundle_create_cluster_config_log(
+            bundle_path="python/cm/tests/files/test_secret_config_v12_community.tar"
+        )

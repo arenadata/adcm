@@ -147,7 +147,7 @@ def get_default(c, proto=None):  # pylint: disable=too-many-branches
                     read_file_type(proto, c.default, proto.bundle.hash, c.name, c.subname)
                 )
 
-    if c.type == "secretmap":
+    if c.type == "secretmap" and c.default:
         new_value = {}
         for k, v in value.items():
             new_value[k] = ansible_encrypt_and_format(v)
@@ -417,7 +417,11 @@ def process_file_type(obj: Any, spec: dict, conf: dict):
             if spec[key]["type"] == "file":
                 save_file_type(obj, key, "", conf[key])
             elif spec[key]["type"] == "secretfile":
-                value = ansible_encrypt_and_format(conf[key])
+                if conf[key] is not None:
+                    value = ansible_encrypt_and_format(conf[key])
+                else:
+                    value = None
+
                 save_file_type(obj, key, "", value)
                 conf[key] = value
         elif conf[key]:
@@ -425,7 +429,11 @@ def process_file_type(obj: Any, spec: dict, conf: dict):
                 if spec[key][subkey]["type"] == "file":
                     save_file_type(obj, key, subkey, conf[key][subkey])
                 elif spec[key][subkey]["type"] == "secretfile":
-                    value = ansible_encrypt_and_format(conf[key][subkey])
+                    if conf[key][subkey] is not None:
+                        value = ansible_encrypt_and_format(conf[key][subkey])
+                    else:
+                        value = None
+
                     save_file_type(obj, key, subkey, value)
                     conf[key][subkey] = value
 

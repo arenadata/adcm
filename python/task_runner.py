@@ -119,13 +119,9 @@ def run_task(task_id, args=None):
     job = None
     count = 0
     res = 0
-    last_job_status = None
     for job in jobs:
         job.refresh_from_db()
-        last_job_status = job.status
-        if (args == "restart" and job.status == JobStatus.SUCCESS) or (
-            args != "restart" and job.status == JobStatus.ABORTED
-        ):
+        if args == "restart" and job.status == JobStatus.SUCCESS:
             logger.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
             continue
 
@@ -144,14 +140,16 @@ def run_task(task_id, args=None):
                 task.object_id = 0
                 task.object_type = None
 
+        job.refresh_from_db()
         count += 1
         if res != 0:
-            # job aborted while running
-            job.refresh_from_db()
             if job.status != JobStatus.ABORTED:
                 break
 
-    if last_job_status == JobStatus.ABORTED and args != "restart":
+    if job is not None:
+        job.refresh_from_db()
+
+    if job is not None and job.status == JobStatus.ABORTED:
         finish_task(task, job, JobStatus.ABORTED)
     elif res == 0:
         finish_task(task, job, JobStatus.SUCCESS)
