@@ -1,8 +1,9 @@
 import {Component, OnChanges, OnInit, ViewChild} from '@angular/core';
 import { BaseMapListDirective } from "@app/shared/form-elements/map.component";
-import {FormArray, FormControl, FormGroup} from "@angular/forms";
+import {FormArray, FormControl, FormGroup, FormGroupDirective, NgForm, Validators} from "@angular/forms";
 import { TValue } from "@app/shared/configuration/types";
 import {first} from "rxjs/operators";
+import {ErrorStateMatcher} from "@angular/material/core";
 
 @Component({
   selector: 'app-fields-secret-map',
@@ -17,6 +18,7 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
   dummyControl = new FormArray([]);
   value: TValue;
   asList = false;
+  matcher = new MyErrorStateMatcher();
 
   ngOnChanges(): void {
     this.value = this.field?.value;
@@ -28,7 +30,7 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
         if (a) {
           Object.keys(a).forEach((key) => {
             const value = a[key] === '' ? '' : this.dummy
-            this.dummyControl.push(new FormGroup({key: new FormControl(key), value: new FormControl(value)}));
+            this.dummyControl.push(new FormGroup({key: new FormControl(key, Validators.required), value: new FormControl(value)}));
           })
         }
       })
@@ -40,7 +42,7 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
     if (this.field?.value) {
       Object.keys(this.field.value)?.forEach((key, i) => {
         this.dummyControl.push(new FormGroup({
-            key: new FormControl(key),
+            key: new FormControl(key, Validators.required),
             value: new FormControl(this.field.value[key]),
 
           }
@@ -61,6 +63,11 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
 
   onFocus(): void {
     this.secretInput.nativeElement.setSelectionRange(this.dummyLength, this.dummyLength);
-    // this.secretInput.nativeElement.focus();
+  }
+}
+
+export class MyErrorStateMatcher implements ErrorStateMatcher {
+  isErrorState(control: FormControl | null): boolean {
+    return !(control?.value !== '' && control?.value !== null);
   }
 }
