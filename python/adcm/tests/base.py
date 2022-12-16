@@ -12,6 +12,7 @@
 
 from contextlib import contextmanager
 from pathlib import Path
+from shutil import rmtree
 
 from django.conf import settings
 from django.test import Client, TestCase
@@ -61,6 +62,21 @@ class BaseTestCase(TestCase):
             "python/audit/tests/files",
             self.test_bundle_filename,
         )
+
+    def tearDown(self) -> None:
+        dirs_to_clear = (
+            *Path(settings.BUNDLE_DIR).iterdir(),
+            *Path(settings.DOWNLOAD_DIR).iterdir(),
+            *Path(settings.FILE_DIR).iterdir(),
+            *Path(settings.LOG_DIR).iterdir(),
+            *Path(settings.RUN_DIR).iterdir(),
+        )
+        for item in dirs_to_clear:
+            if item.is_dir():
+                rmtree(item)
+            else:
+                if item.name != ".gitkeep":
+                    item.unlink()
 
     def login(self):
         response: Response = self.client.post(
