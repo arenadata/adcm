@@ -24,7 +24,7 @@ from rest_framework.status import HTTP_201_CREATED
 
 from adcm.tests.base import BaseTestCase
 from cm.adcm_config import ansible_decrypt
-from cm.models import Bundle, Cluster, ConfigLog, Prototype
+from cm.models import Bundle, ConfigLog
 
 # Since this module is beyond QA responsibility we will not fix docstrings here
 # pylint: disable=missing-function-docstring, missing-class-docstring
@@ -127,23 +127,6 @@ class TestBundle(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         return response.json()["id"]
 
-    def upload_bundle_create_cluster_config_log(self, bundle_path: str) -> tuple[Bundle, Cluster, ConfigLog]:
-        bundle = self.upload_and_load_bundle(
-            path=Path(
-                settings.BASE_DIR,
-                bundle_path,
-            ),
-        )
-
-        cluster_prototype = Prototype.objects.get(bundle_id=bundle.pk, type="cluster")
-        cluster_response: Response = self.client.post(
-            path=reverse("cluster"),
-            data={"name": "test-cluster", "prototype_id": cluster_prototype.pk},
-        )
-        cluster = Cluster.objects.get(pk=cluster_response.data["id"])
-
-        return bundle, cluster, ConfigLog.objects.get(obj_ref=cluster.config)
-
     def test_upload_duplicated_upgrade_script_names(self):
         same_upgrade_name = "Upgrade name"
         same_script_name = "Script name"
@@ -202,7 +185,10 @@ class TestBundle(BaseTestCase):
 
     def test_secretfile(self):
         bundle, cluster, config_log = self.upload_bundle_create_cluster_config_log(
-            bundle_path="python/cm/tests/files/config_cluster_secretfile_secretmap.tar"
+            bundle_path=Path(
+                settings.BASE_DIR,
+                "python/cm/tests/files/config_cluster_secretfile_secretmap.tar",
+            ),
         )
 
         with open(Path(settings.BUNDLE_DIR, bundle.hash, "secretfile"), encoding=settings.ENCODING_UTF_8) as f:
@@ -237,7 +223,10 @@ class TestBundle(BaseTestCase):
 
     def test_secretmap(self):
         _, cluster, config_log = self.upload_bundle_create_cluster_config_log(
-            bundle_path="python/cm/tests/files/config_cluster_secretfile_secretmap.tar"
+            bundle_path=Path(
+                settings.BASE_DIR,
+                "python/cm/tests/files/config_cluster_secretfile_secretmap.tar",
+            ),
         )
 
         self.assertIn(settings.ANSIBLE_VAULT_HEADER, config_log.config["secretmap"]["key"])
@@ -260,10 +249,16 @@ class TestBundle(BaseTestCase):
 
     def test_secretmap_no_default(self):
         self.upload_bundle_create_cluster_config_log(
-            bundle_path="python/cm/tests/files/test_secret_config_v10_community.tar"
+            bundle_path=Path(
+                settings.BASE_DIR,
+                "python/cm/tests/files/test_secret_config_v10_community.tar",
+            ),
         )
 
     def test_secretmap_no_default1(self):
         self.upload_bundle_create_cluster_config_log(
-            bundle_path="python/cm/tests/files/test_secret_config_v12_community.tar"
+            bundle_path=Path(
+                settings.BASE_DIR,
+                "python/cm/tests/files/test_secret_config_v12_community.tar",
+            ),
         )
