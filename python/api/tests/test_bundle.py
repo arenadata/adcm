@@ -40,9 +40,6 @@ class TestBundle(BaseTestCase):
         )
         Prototype.objects.create(bundle=self.bundle_2, name=self.bundle_2.name)
 
-    def tearDown(self) -> None:
-        Path(settings.DOWNLOAD_DIR, self.test_bundle_filename).unlink(missing_ok=True)
-
     def upload_bundle(self, bundle_path: Path = None):
         if bundle_path is None:
             bundle_path = self.test_bundle_path
@@ -252,3 +249,37 @@ class TestBundle(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_distinct(self):
+        self.upload_and_load_bundle(
+            path=Path(
+                settings.BASE_DIR,
+                "python/api/tests/files/bundle_cluster_requires.tar",
+            )
+        )
+        self.upload_and_load_bundle(
+            path=Path(
+                settings.BASE_DIR,
+                "python/api/tests/files/test_bundle_distinct_1.tar",
+            )
+        )
+        self.upload_and_load_bundle(
+            path=Path(
+                settings.BASE_DIR,
+                "python/api/tests/files/test_bundle_distinct_2.tar",
+            )
+        )
+
+        response: Response = self.client.get(
+            reverse("cluster-prototype-list"),
+            {
+                "fields": "display_name",
+                "distinct": 1,
+                "ordering": "display_name",
+                "limit": 50,
+                "offset": 0,
+                "view": "interface",
+            },
+        )
+
+        self.assertEqual(response.data["count"], 2)
