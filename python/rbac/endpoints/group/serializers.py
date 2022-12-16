@@ -24,7 +24,7 @@ from rbac.models import Group, User
 from rbac.services import group as group_services
 
 
-class UserSerializer(EmptySerializer):
+class GroupUserSerializer(EmptySerializer):
     id = IntegerField()
     url = HyperlinkedIdentityField(view_name="rbac:user-detail")
 
@@ -68,7 +68,7 @@ class GroupSerializer(FlexFieldsSerializerMixin, Serializer):
     id = IntegerField(read_only=True)
     name = RegexField(r"^[^\n]+$", max_length=150, source="name_to_display")
     description = CharField(max_length=255, allow_blank=True, required=False, default="")
-    user = UserSerializer(many=True, required=False, source="user_set")
+    user = GroupUserSerializer(many=True, required=False, source="user_set")
     url = HyperlinkedIdentityField(view_name="rbac:group-detail")
     built_in = BooleanField(read_only=True)
     type = CharField(read_only=True)

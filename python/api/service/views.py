@@ -28,8 +28,8 @@ from api.service.serializers import (
     ServiceDetailSerializer,
     ServiceDetailUISerializer,
     ServiceSerializer,
+    ServiceStatusSerializer,
     ServiceUISerializer,
-    StatusSerializer,
 )
 from api.stack.serializers import ImportSerializer
 from api.utils import (
@@ -272,7 +272,7 @@ class ServiceBindDetailView(GenericUIView):
 class StatusList(GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
     queryset = HostComponent.objects.all()
-    serializer_class = StatusSerializer
+    serializer_class = ServiceStatusSerializer
 
     def get(self, request, *args, **kwargs):
         service = get_object_for_user(request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])

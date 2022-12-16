@@ -10,16 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Stats endpoint root view"""
-
 from rest_framework import permissions, routers
 
 
 class StatsRoot(routers.APIRootView):
-    """Stats Root"""
-
     permission_classes = (permissions.AllowAny,)
     api_root_dict = {
-        'task': 'task-stats',
-        'job': 'job-stats',
+        "task": "task-stats",
+        "job": "job-stats",
     }

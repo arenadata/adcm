@@ -26,7 +26,7 @@ class PasswordField(serializers.CharField):
         return user_services.PW_MASK
 
 
-class UserSerializer(serializers.Serializer):
+class MeUserSerializer(serializers.Serializer):
     """
     User serializer
     TODO: add old password field for changing password
@@ -50,7 +50,7 @@ class UserSerializer(serializers.Serializer):
 
 class MyselfView(RetrieveUpdateAPIView):
     queryset = models.User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = MeUserSerializer
 
     def get_object(self):
         # request user object is disconnected from DB, use another instance

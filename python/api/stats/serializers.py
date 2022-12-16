@@ -10,13 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path
+from rest_framework.serializers import IntegerField
 
-from api.stats.root import StatsRoot
-from api.stats.views import JobStats, TaskStats
+from adcm.serializers import EmptySerializer
 
-urlpatterns = [
-    path("", StatsRoot.as_view(), {"pk": 0}, name="stats"),
-    path("task/<int:pk>/", TaskStats.as_view(), name="task-stats"),
-    path("job/<int:pk>/", JobStats.as_view(), name="job-stats"),
-]
+
+class StatsSerializer(EmptySerializer):
+    status = IntegerField()
