@@ -25,10 +25,12 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
       .pipe(this.takeUntil())
       .subscribe((a) => {
         this.dummyControl.clear();
-        Object.keys(a).forEach((key) => {
-          const value = a[key] === '' ? '' : this.dummy
-          this.dummyControl.push(new FormGroup({ key: new FormControl(key), value: new FormControl(value) }));
-        })
+        if (a) {
+          Object.keys(a).forEach((key) => {
+            const value = a[key] === '' ? '' : this.dummy
+            this.dummyControl.push(new FormGroup({key: new FormControl(key), value: new FormControl(value)}));
+          })
+        }
       })
   }
 
