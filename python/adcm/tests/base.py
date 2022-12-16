@@ -12,6 +12,7 @@
 
 from contextlib import contextmanager
 from pathlib import Path
+from shutil import rmtree
 
 from django.conf import settings
 from django.test import Client, TestCase
@@ -19,7 +20,7 @@ from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-from cm.models import Bundle
+from cm.models import Bundle, Cluster, ConfigLog, Prototype
 from rbac.models import Role, User
 
 APPLICATION_JSON = "application/json"
@@ -61,6 +62,21 @@ class BaseTestCase(TestCase):
             "python/audit/tests/files",
             self.test_bundle_filename,
         )
+
+    def tearDown(self) -> None:
+        dirs_to_clear = (
+            *Path(settings.BUNDLE_DIR).iterdir(),
+            *Path(settings.DOWNLOAD_DIR).iterdir(),
+            *Path(settings.FILE_DIR).iterdir(),
+            *Path(settings.LOG_DIR).iterdir(),
+            *Path(settings.RUN_DIR).iterdir(),
+        )
+        for item in dirs_to_clear:
+            if item.is_dir():
+                rmtree(item)
+            else:
+                if item.name != ".gitkeep":
+                    item.unlink()
 
     def login(self):
         response: Response = self.client.post(
@@ -122,3 +138,15 @@ class BaseTestCase(TestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         return Bundle.objects.get(pk=response.data["id"])
+
+    def upload_bundle_create_cluster_config_log(self, bundle_path: Path) -> tuple[Bundle, Cluster, ConfigLog]:
+        bundle = self.upload_and_load_bundle(path=bundle_path)
+
+        cluster_prototype = Prototype.objects.get(bundle_id=bundle.pk, type="cluster")
+        cluster_response: Response = self.client.post(
+            path=reverse("cluster"),
+            data={"name": "test-cluster", "prototype_id": cluster_prototype.pk},
+        )
+        cluster = Cluster.objects.get(pk=cluster_response.data["id"])
+
+        return bundle, cluster, ConfigLog.objects.get(obj_ref=cluster.config)

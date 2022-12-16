@@ -15,40 +15,41 @@ from rest_framework import permissions
 from rest_framework.response import Response
 
 from api.base_view import GenericUIView
+from api.stats.serializers import StatsSerializer
 from cm.models import JobLog, JobStatus, TaskLog
 
 
 class JobStats(PermissionListMixin, GenericUIView):
     queryset = JobLog.objects.all()
+    serializer_class = StatsSerializer
     permission_classes = (permissions.IsAuthenticated,)
     permission_required = ["cm.view_joblog"]
 
     def get(self, request, pk):
-        """
-        Show jobs stats
-        """
         jobs = self.get_queryset().filter(id__gt=pk)
-        data = {
-            JobStatus.FAILED.value: jobs.filter(status=JobStatus.FAILED).count(),
-            JobStatus.SUCCESS.value: jobs.filter(status=JobStatus.SUCCESS).count(),
-            JobStatus.RUNNING.value: jobs.filter(status=JobStatus.RUNNING).count(),
-        }
-        return Response(data)
+
+        return Response(
+            data={
+                JobStatus.FAILED.value: jobs.filter(status=JobStatus.FAILED).count(),
+                JobStatus.SUCCESS.value: jobs.filter(status=JobStatus.SUCCESS).count(),
+                JobStatus.RUNNING.value: jobs.filter(status=JobStatus.RUNNING).count(),
+            }
+        )
 
 
 class TaskStats(PermissionListMixin, GenericUIView):
     queryset = TaskLog.objects.all()
+    serializer_class = StatsSerializer
     permission_classes = (permissions.IsAuthenticated,)
     permission_required = ["cm.view_tasklog"]
 
     def get(self, request, pk):
-        """
-        Show tasks stats
-        """
         tasks = self.get_queryset().filter(id__gt=pk)
-        data = {
-            JobStatus.FAILED.value: tasks.filter(status=JobStatus.FAILED).count(),
-            JobStatus.SUCCESS.value: tasks.filter(status=JobStatus.SUCCESS).count(),
-            JobStatus.RUNNING.value: tasks.filter(status=JobStatus.RUNNING).count(),
-        }
-        return Response(data)
+
+        return Response(
+            data={
+                JobStatus.FAILED.value: tasks.filter(status=JobStatus.FAILED).count(),
+                JobStatus.SUCCESS.value: tasks.filter(status=JobStatus.SUCCESS).count(),
+                JobStatus.RUNNING.value: tasks.filter(status=JobStatus.RUNNING).count(),
+            }
+        )

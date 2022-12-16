@@ -18,9 +18,9 @@ from rest_framework.response import Response
 from api.base_view import GenericUIView
 from api.config.serializers import (
     ConfigHistorySerializer,
+    ConfigObjectConfigSerializer,
     HistoryCurrentPreviousConfigSerializer,
     ObjectConfigRestoreSerializer,
-    ObjectConfigSerializer,
     ObjectConfigUpdateSerializer,
 )
 from api.utils import check_obj, create, update
@@ -135,7 +135,7 @@ class ConfigHistoryView(PermissionListMixin, GenericUIView):
 class ConfigVersionView(PermissionListMixin, GenericUIView):
     queryset = ConfigLog.objects.all()
     permission_classes = (DjangoOnlyObjectPermissions,)
-    serializer_class = ObjectConfigSerializer
+    serializer_class = ConfigObjectConfigSerializer
     permission_required = ['cm.view_configlog']
 
     def get_queryset(self, *args, **kwargs):

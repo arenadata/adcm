@@ -22,8 +22,8 @@ from api.component.serializers import (
     ComponentDetailSerializer,
     ComponentDetailUISerializer,
     ComponentSerializer,
+    ComponentStatusSerializer,
     ComponentUISerializer,
-    StatusSerializer,
 )
 from api.utils import (
     check_custom_perm,
@@ -106,7 +106,7 @@ class ComponentMaintenanceModeView(GenericUIView):
 class StatusList(GenericUIView):
     queryset = HostComponent.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
-    serializer_class = StatusSerializer
+    serializer_class = ComponentStatusSerializer
 
     def get(self, request, *args, **kwargs):
         queryset = get_component_queryset(ServiceComponent.objects.all(), request.user, kwargs)

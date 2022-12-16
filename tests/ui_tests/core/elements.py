@@ -25,8 +25,17 @@ class AutoChildElement:
         )
 
         for name, locator in locator_fields:
+            if Descriptor.SERVICE in locator.flags:
+                continue
+
             if Descriptor.BUTTON in locator.flags:
                 setattr(cls, f"{name}_button", _build_property(locator))
+
+            if Descriptor.ELEMENT in locator.flags:
+                setattr(cls, f"{name}_element", _build_property(locator))
+
+            if Descriptor.INPUT in locator.flags:
+                setattr(cls, f"{name}_input", _build_input(locator))
 
             # place "same named" properties after this check
             if name in dir(cls):
@@ -58,15 +67,46 @@ class AutoChildDialog(AutoChildElement):
     Locators: DialogLocatorsLike
 
     @classmethod
-    def wait_opened(cls, driver: WebDriver):
-        interactor = Interactor(driver=driver, default_timeout=0.5)
+    def wait_opened(cls, driver: WebDriver | None = None, interactor: Interactor | None = None):
+        if not (driver or interactor):
+            raise ValueError("Provide either 'driver' or 'interactor'")
+
+        interactor = interactor or Interactor(driver=driver, default_timeout=0.5)
         interactor.wait_element_visible(cls.Locators.body, timeout=5)
         return cls(parent_element=interactor.find_element(cls.Locators.body), interactor=interactor)
+
+    def wait_closed(self):
+        self._view.wait_element_hide(self.Locators.body, timeout=5)
 
 
 def _build_property(locator: Locator, retrieve: Callable[[WebElement], Any] = lambda element: element) -> property:
     # pylint: disable-next=protected-access
     return property(lambda self: retrieve(self._view.find_child(element=self._element, child=locator)))
+
+
+def _build_input(locator: Locator) -> property:
+    return property(  # pylint: disable-next=protected-access
+        lambda self: Input(element=self._view.find_child(element=self._element, child=locator), interactor=self._view)
+    )
+
+
+# !===== Element Wrappers =====!
+
+
+class Input:
+    def __init__(self, element: WebElement, interactor: Interactor):
+        self.element = element
+        self._view = interactor
+
+    @property
+    def value(self) -> str:
+        return self.element.get_attribute("value")
+
+    def fill(self, value: str) -> None:
+        self._view.send_text_to_element(self.element, value, timeout=3)
+
+    def clear(self):
+        self._view.clear_by_keys(self.element)
 
 
 # !===== Mixins =====!

@@ -24,7 +24,10 @@ from tests.ui_tests.app.page.common.dialogs.create_host import HostCreateDialog
 from tests.ui_tests.app.page.common.dialogs.create_host_locators import (
     HostCreationLocators,
 )
-from tests.ui_tests.app.page.common.dialogs.locators import ActionDialog, DeleteDialog
+from tests.ui_tests.app.page.common.dialogs.locators import (
+    ActionDialog,
+    DeleteDialogLocators,
+)
 from tests.ui_tests.app.page.common.dialogs.rename import RenameDialog
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
@@ -125,9 +128,9 @@ class HostListPage(BasePageObject):  # pylint: disable=too-many-public-methods
     def delete_host(self, host_row_num: int):
         """Delete host from table row"""
         self.click_on_row_child(host_row_num, HostListLocators.HostTable.HostRow.delete_btn)
-        self.wait_element_visible(DeleteDialog.body)
-        self.find_and_click(DeleteDialog.yes)
-        self.wait_element_hide(DeleteDialog.body)
+        self.wait_element_visible(DeleteDialogLocators.body)
+        self.find_and_click(DeleteDialogLocators.yes)
+        self.wait_element_hide(DeleteDialogLocators.body)
 
     @allure.step('Bind host in row {host_row_num} to cluster "{cluster_name}"')
     def bind_host_to_cluster(self, host_row_num: int, cluster_name: str):
