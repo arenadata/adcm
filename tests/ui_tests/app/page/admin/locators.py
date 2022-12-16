@@ -14,7 +14,13 @@
 
 from selenium.webdriver.common.by import By
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
-from tests.ui_tests.core.locators import BaseLocator, TemplateLocator
+from tests.ui_tests.core.locators import (
+    BaseLocator,
+    Descriptor,
+    Locator,
+    TemplateLocator,
+    autoname,
+)
 
 
 class CommonAdminPagesLocators:
@@ -52,10 +58,12 @@ class AdminSettingsLocators(CommonConfigMenu):
     """Locators for Admin Settings menu"""
 
 
+@autoname
 class AdminUsersLocators(FilterLocators):
     """Locators for Admin Users menu"""
 
     create_user_button = BaseLocator(By.XPATH, "//button[@adcm_test='create-btn']", "Add user button")
+    delete_users = Locator(By.XPATH, "//button[.//mat-icon[text()='delete']]", Descriptor.BUTTON)
     user_row = BaseLocator(By.CSS_SELECTOR, "mat-row", "Table row")
     filter_btn = BaseLocator(By.CSS_SELECTOR, "app-server-filter .filter-toggle-button", "Filter button")
     filter_dropdown_select = BaseLocator(By.CSS_SELECTOR, "app-server-filter mat-select", "Filter dropdown select")
@@ -63,24 +71,6 @@ class AdminUsersLocators(FilterLocators):
     filter_dropdown_remove = BaseLocator(
         By.CSS_SELECTOR, "app-server-filter button[aria-label='Remove']", "Filter remove button"
     )
-
-    class Row:
-        """Existing user row"""
-
-        username = BaseLocator(By.XPATH, ".//mat-cell[2]", "Username in row")
-        password = BaseLocator(By.CSS_SELECTOR, "input[data-placeholder='Password']", "Password in row")
-        password_confirm = BaseLocator(
-            By.CSS_SELECTOR,
-            "input[data-placeholder='Confirm Password']",
-            "Password confirmation in row",
-        )
-        confirm_update_btn = BaseLocator(
-            By.XPATH,
-            ".//button[.//mat-icon[text()='done']]",
-            "Confirm password update button in row",
-        )
-        select_checkbox = BaseLocator(By.XPATH, ".//span[.//input[@type='checkbox']]", "Select user checkbox in row")
-        delete_btn = BaseLocator(By.XPATH, ".//button[.//mat-icon[text()='delete']]", "Delete user button in row")
 
     class AddUserPopup(CommonAdminPagesLocators):
         """Popup with new user info"""
@@ -109,34 +99,6 @@ class AdminUsersLocators(FilterLocators):
 
         block = BaseLocator(By.CSS_SELECTOR, "div[role='menu']", "Filter popup block")
         filter_item = BaseLocator(By.CSS_SELECTOR, "button[role='menuitem']", "Filter item")
-
-
-class AdminGroupsLocators(CommonAdminPagesLocators):
-    """Locators for Admin Groups menu"""
-
-    class GroupRow:
-        """Row with groups info"""
-
-        checkbox = BaseLocator(By.CSS_SELECTOR, "mat-checkbox", "Group checkbox")
-        name = BaseLocator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Group name")
-        description = BaseLocator(By.CSS_SELECTOR, "mat-cell:nth-child(3)", "Group description")
-        users = BaseLocator(By.CSS_SELECTOR, "mat-cell:nth-child(4)", "Group users")
-
-    class AddGroupPopup:
-        """Locators for creating groups popup"""
-
-        block = BaseLocator(By.CSS_SELECTOR, "app-rbac-group-form", "Add group popup block")
-        title = BaseLocator(By.CSS_SELECTOR, "mat-dialog-container h3", "Popup title")
-        name_input = BaseLocator(By.CSS_SELECTOR, "adwp-input[label='Group name'] input", "Input name")
-        description_input = BaseLocator(By.CSS_SELECTOR, "adwp-input[label='Description'] input", "Input description")
-        users_select = BaseLocator(
-            By.CSS_SELECTOR, "adwp-input-select[label='Select users'] adwp-select", "select users"
-        )
-
-        class UserRow:
-            """Locators for user row in creating groups popup"""
-
-            checkbox = BaseLocator(By.CSS_SELECTOR, "mat-pseudo-checkbox", "Group checkbox")
 
 
 class AdminRolesLocators(CommonAdminPagesLocators):

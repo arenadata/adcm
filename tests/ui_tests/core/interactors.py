@@ -143,6 +143,18 @@ class Interactor:
 
         wait_until_step_succeeds(_assert_attribute_value, period=0.5, timeout=timeout)
 
+    @allure.step('Scroll to element')
+    def scroll_to(self, locator: BaseLocator | WebElement) -> WebElement:
+        """Scroll to element"""
+        element = locator if isinstance(locator, WebElement) else self.find_element(locator)
+        # Hack for firefox because of move_to_element does not scroll to the element
+        # https://github.com/mozilla/geckodriver/issues/776
+        if self._driver.capabilities['browserName'] == 'firefox':
+            self._driver.execute_script('arguments[0].scrollIntoView(true)', element)
+        action = ActionChains(self._driver)
+        action.move_to_element(element).perform()
+        return element
+
     @allure.step('Write text to input element: "{text}"')
     def send_text_to_element(
         self,

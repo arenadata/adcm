@@ -18,7 +18,7 @@ import allure
 from selenium.webdriver.remote.webelement import WebElement
 from tests.ui_tests.app.page.bundle_list.locators import BundleListLocators
 from tests.ui_tests.app.page.common.base_page import BasePageObject
-from tests.ui_tests.app.page.common.dialogs.locators import DeleteDialog
+from tests.ui_tests.app.page.common.dialogs.locators import DeleteDialogLocators
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.core.checks import check_element_is_visible
 
@@ -67,9 +67,9 @@ class BundleListPage(BasePageObject):
         """Remove bundle by clicking on trash icon in row"""
         row = self.table.get_row(row_num)
         self.find_child(row, BundleListLocators.Table.Row.delete_btn).click()
-        self.wait_element_visible(DeleteDialog.body)
-        self.find_and_click(DeleteDialog.yes)
-        self.wait_element_hide(DeleteDialog.body)
+        self.wait_element_visible(DeleteDialogLocators.body)
+        self.find_and_click(DeleteDialogLocators.yes)
+        self.wait_element_hide(DeleteDialogLocators.body)
 
     @allure.step('Accept licence agreement')
     def accept_licence(self, row_num: int = 0):

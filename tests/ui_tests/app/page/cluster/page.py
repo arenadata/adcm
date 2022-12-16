@@ -38,7 +38,10 @@ from tests.ui_tests.app.page.common.dialogs.create_host_locators import (
     ListConcernPopupLocators,
     PageConcernPopupLocators,
 )
-from tests.ui_tests.app.page.common.dialogs.locators import ActionDialog, DeleteDialog
+from tests.ui_tests.app.page.common.dialogs.locators import (
+    ActionDialog,
+    DeleteDialogLocators,
+)
 from tests.ui_tests.app.page.common.group_config.page import CommonGroupConfigMenu
 from tests.ui_tests.app.page.common.group_config_list.locators import (
     GroupConfigListLocators,
@@ -221,9 +224,9 @@ class ClusterServicesPage(CommonClusterPage, ObjectRowMixin):
     def click_delete_btn_in_row(self, row: WebElement):
         """Click on delete button from the row"""
         self.find_child(row, ClusterServicesLocators.ServiceTableRow.delete_btn).click()
-        self.wait_element_visible(DeleteDialog.body)
-        self.find_and_click(DeleteDialog.yes)
-        self.wait_element_hide(DeleteDialog.body)
+        self.wait_element_visible(DeleteDialogLocators.body)
+        self.find_and_click(DeleteDialogLocators.yes)
+        self.wait_element_hide(DeleteDialogLocators.body)
 
     def click_import_btn_in_row(self, row: WebElement):
         """Click on Import button from the row"""
@@ -452,9 +455,9 @@ class ClusterHostPage(CommonClusterPage):
     def delete_host_by_row(self, row: WebElement):
         """Delete Host by button from the row"""
         self.find_child(row, ClusterHostLocators.HostTable.HostRow.link_off_btn).click()
-        self.wait_element_visible(DeleteDialog.body)
-        self.find_and_click(DeleteDialog.yes)
-        self.wait_element_hide(DeleteDialog.body)
+        self.wait_element_visible(DeleteDialogLocators.body)
+        self.find_and_click(DeleteDialogLocators.yes)
+        self.wait_element_hide(DeleteDialogLocators.body)
 
     def check_cluster_hosts_toolbar(self, cluster_name: str, host_name: str):
         self.toolbar.check_toolbar_elements(["CLUSTERS", cluster_name, "HOSTS", host_name])
