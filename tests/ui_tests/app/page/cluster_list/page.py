@@ -26,7 +26,10 @@ from tests.ui_tests.app.page.common.dialogs.create_host_locators import (
     HostCreationLocators,
     ListConcernPopupLocators,
 )
-from tests.ui_tests.app.page.common.dialogs.locators import ActionDialog, DeleteDialog
+from tests.ui_tests.app.page.common.dialogs.locators import (
+    ActionDialog,
+    DeleteDialogLocators,
+)
 from tests.ui_tests.app.page.common.dialogs.rename import RenameDialog
 from tests.ui_tests.app.page.common.host_components.locators import (
     HostComponentsLocators,
@@ -156,9 +159,9 @@ class ClusterListPage(BasePageObject):  # pylint: disable=too-many-public-method
     def delete_cluster_by_row(self, row: WebElement):
         """Delete Cluster by button from the row"""
         self.find_child(row, self.table.locators.ClusterRow.delete_btn).click()
-        self.wait_element_visible(DeleteDialog.body)
-        self.find_and_click(DeleteDialog.yes)
-        self.wait_element_hide(DeleteDialog.body)
+        self.wait_element_visible(DeleteDialogLocators.body)
+        self.find_and_click(DeleteDialogLocators.yes)
+        self.wait_element_hide(DeleteDialogLocators.body)
 
     @allure.step("Open cluster rename dialog by clicking on cluster rename button")
     def open_rename_cluster_dialog(self, row: WebElement) -> RenameDialog:
