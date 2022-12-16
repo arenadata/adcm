@@ -31,10 +31,10 @@ from api.host.serializers import (
     HostDetailSerializer,
     HostDetailUISerializer,
     HostSerializer,
+    HostStatusSerializer,
     HostUISerializer,
     HostUpdateSerializer,
     ProvideHostSerializer,
-    StatusSerializer,
 )
 from api.utils import (
     check_custom_perm,
@@ -316,7 +316,7 @@ class HostMaintenanceModeView(GenericUIView):
 class StatusList(GenericUIView):
     queryset = HostComponent.objects.all()
     permission_classes = (IsAuthenticated,)
-    serializer_class = StatusSerializer
+    serializer_class = HostStatusSerializer
 
     def get(self, request, *args, **kwargs):
         cluster = None

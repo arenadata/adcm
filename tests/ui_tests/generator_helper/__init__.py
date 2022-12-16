@@ -10,14 +10,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Footer locators"""
-
-from selenium.webdriver.common.by import By
-from tests.ui_tests.app.helpers.locator import Locator
-
-
-class CommonFooterLocators:
-    """ADCM footer locators"""
-
-    version_link = Locator(By.CSS_SELECTOR, "footer a[href*='docs']", "Link to version doc page")
-    logo = Locator(By.XPATH, "//footer//*[contains(text(), 'ARENADATA ©')]", "Footer logo")
+from tests.ui_tests.generator_helper.configs_generator import *  # noqa

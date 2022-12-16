@@ -10,4 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""UI tests helpers"""
+from rest_framework.serializers import IntegerField
+
+from adcm.serializers import EmptySerializer
+
+
+class StatsSerializer(EmptySerializer):
+    status = IntegerField()

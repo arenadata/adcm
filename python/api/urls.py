@@ -12,13 +12,11 @@
 
 from django.urls import include, path, register_converter
 from rest_framework.schemas import get_schema_view
-from rest_framework_swagger.views import get_swagger_view
 
 from api import docs, views
 from rbac.endpoints import token
 
 register_converter(views.NameConverter, 'name')
-swagger_view = get_swagger_view(title='ArenaData Chapel API')
 schema_view = get_schema_view(title='ArenaData Chapel API', patterns=[path('api/v1/', include('api.urls'))])
 
 urlpatterns = [
@@ -39,7 +37,6 @@ urlpatterns = [
     path('job/', include('api.job.urls')),
     path('concern/', include('api.concern.urls')),
     path('audit/', include(('audit.urls', 'audit'))),
-    path('swagger/', swagger_view),
     path('schema/', schema_view),
     path('auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('docs/md/', docs.docs_md),

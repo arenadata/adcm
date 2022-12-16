@@ -38,6 +38,9 @@ class Event:
     def __del__(self):
         self.send_state()
 
+    def clear_state(self):
+        self.events = []
+
     def send_state(self):
         while self.events:
             try:

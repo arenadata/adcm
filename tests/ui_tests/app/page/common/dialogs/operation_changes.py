@@ -10,37 +10,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
-
-from selenium.webdriver.remote.webelement import WebElement
-from tests.ui_tests.app.page.common.base_page import BasePageObject
-from tests.ui_tests.app.page.common.dialogs.locators import (
-    OperationChangesDialogLocators,
-)
-
-
-@dataclass()
-class ChangesRow:
-    attribute: str
-    old_value: str
-    new_value: str
+from selenium.webdriver.chrome.webdriver import WebDriver
+from selenium.webdriver.common.by import By
+from tests.ui_tests.app.page.common.dialogs.locators import Dialog
+from tests.ui_tests.app.page.common.table.page import CommonTableObj
+from tests.ui_tests.core.elements import AutoChildElement, ObjectRowMixin
+from tests.ui_tests.core.interactors import Interactor
+from tests.ui_tests.core.locators import Locator, autoname
 
 
-class OperationChangesDialog(BasePageObject):
-    def wait_opened(self):
-        self.wait_element_visible(OperationChangesDialogLocators.body)
+class ChangesRow(AutoChildElement):
+    @autoname
+    class Locators:
+        attribute = Locator(By.CSS_SELECTOR, "mat-cell:first-child")
+        old_value = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)")
+        new_value = Locator(By.CSS_SELECTOR, "mat-cell:last-child")
 
-    def get_rows(self) -> list[WebElement]:
-        body = self.find_element(OperationChangesDialogLocators.body, timeout=0.5)
-        return self.find_children(body, OperationChangesDialogLocators.row, timeout=1)
+    def __iter__(self):
+        yield "attribute", self.attribute.strip()
+        yield "old_value", self.old_value.strip()
+        yield "new_value", self.new_value.strip()
 
-    def get_changes(self) -> list[ChangesRow]:
-        row_locators = OperationChangesDialogLocators.Row
-        return [
-            ChangesRow(
-                attribute=self.find_child(row, row_locators.attribute, timeout=0.5).text.strip(),
-                old_value=self.find_child(row, row_locators.old_value, timeout=0.5).text.strip(),
-                new_value=self.find_child(row, row_locators.new_value, timeout=0.5).text.strip(),
-            )
-            for row in self.get_rows()
-        ]
+
+class OperationChangesDialog(Interactor, ObjectRowMixin):
+    ROW_CLASS = ChangesRow
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.table = CommonTableObj(driver=self._driver)
+
+    @classmethod
+    def wait_opened(cls, driver: WebDriver) -> "OperationChangesDialog":
+        interactor = Interactor(driver=driver, default_timeout=0.5)
+        interactor.wait_element_visible(Dialog.body, timeout=5)
+        return cls(parent_element=interactor.find_element(Dialog.body), interactor=interactor)

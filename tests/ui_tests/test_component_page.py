@@ -38,6 +38,7 @@ from tests.ui_tests.app.page.component.page import (
 )
 from tests.ui_tests.app.page.host.page import HostStatusPage
 from tests.ui_tests.app.page.service.page import ServiceComponentPage
+from tests.ui_tests.core.checks import check_pagination
 from tests.ui_tests.utils import create_few_groups
 
 BUNDLE_COMMUNITY = "cluster_community"
@@ -264,7 +265,7 @@ class TestComponentConfigPage:
         component_config_page.config.check_field_is_required(params['req_name'])
         config_row = component_config_page.config.get_all_config_rows()[0]
         component_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params['wrong_value']])
-        component_config_page.config.check_field_is_invalid(params['not_req_name'])
+        component_config_page.config.check_field_is_invalid_error(params['not_req_name'])
         component_config_page.config.check_config_warn_icon_on_left_menu()
         component_config_page.toolbar.check_warn_button(
             tab_name=FIRST_COMPONENT_NAME,
@@ -355,16 +356,16 @@ class TestComponentGroupConfigPage:
         with component_group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
             component_group_conf_page.group_config.delete_row(group_row)
 
-    def test_check_pagination_on_group_config_component_page(self, app_fs, create_cluster_with_service):
+    def test_check_pagination_on_group_config_component_page(self, sdk_client_fs, app_fs, create_cluster_with_service):
         """Test pagination on /cluster/{}/service/{}/component/{}/group_config page"""
 
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
+        create_few_groups(sdk_client_fs, component)
         group_conf_page = ComponentGroupConfigPage(
             app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
         ).open()
-        create_few_groups(group_conf_page.group_config)
-        group_conf_page.table.check_pagination(second_page_item_amount=1)
+        check_pagination(group_conf_page.table, expected_on_second=1)
 
 
 @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)

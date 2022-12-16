@@ -15,14 +15,14 @@
 import allure
 import pytest
 from adcm_client.objects import ADCMClient
-from tests.ui_tests.app.helpers.configs_generator import (
+from tests.ui_tests.app.page.cluster.page import ClusterGroupConfigConfig
+from tests.ui_tests.generator_helper import (
     TYPES,
     generate_configs,
     generate_group_configs,
     prepare_config,
     prepare_group_config,
 )
-from tests.ui_tests.app.page.cluster.page import ClusterGroupConfigConfig
 from tests.ui_tests.utils import prepare_cluster_and_open_config_page
 
 

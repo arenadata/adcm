@@ -13,10 +13,14 @@
 """Tooltip page PageObjects classes"""
 
 import allure
-from selenium.common.exceptions import TimeoutException
+from selenium.common import TimeoutException
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.dialogs.locators import ActionDialog
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
+from tests.ui_tests.core.checks import (
+    check_element_is_hidden,
+    check_elements_are_displayed,
+)
 
 
 class CommonToolbar(BasePageObject):
@@ -24,9 +28,6 @@ class CommonToolbar(BasePageObject):
 
     default_find_timeout = 1
     default_visible_timeout = 5
-
-    def __init__(self, driver, base_url):
-        super().__init__(driver, base_url)
 
     @allure.step("Click on admin link")
     def click_admin_link(self):
@@ -114,14 +115,14 @@ class CommonToolbar(BasePageObject):
     def check_no_warn_button(self, tab_name: str):
         """Check there are no warn button from toolbar"""
         self.wait_element_visible(CommonToolbarLocators.admin_link)
-        self.check_element_should_be_hidden(CommonToolbarLocators.warn_btn(tab_name.upper().strip("_")), timeout=3)
+        check_element_is_hidden(self, CommonToolbarLocators.warn_btn(tab_name.upper().strip("_")), timeout=3)
 
     def check_toolbar_elements(self, tab_names: [str]):
-        self.assert_displayed_elements([CommonToolbarLocators.admin_link])
+        check_elements_are_displayed(self, [CommonToolbarLocators.admin_link])
         tab_names_upper = [tab_name.upper().strip("_") for tab_name in tab_names]
 
         for tab_name in tab_names_upper:
-            self.assert_displayed_elements([CommonToolbarLocators.text_link(tab_name)])
+            check_elements_are_displayed(self, [CommonToolbarLocators.text_link(tab_name)])
 
         tab_names_actual = (
             self.find_element(CommonToolbarLocators.all_links)

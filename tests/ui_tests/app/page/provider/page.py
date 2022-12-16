@@ -13,12 +13,7 @@
 """Provider page PageObjects classes"""
 
 import allure
-from tests.ui_tests.app.page.common.base_page import (
-    BaseDetailedPage,
-    BasePageObject,
-    PageFooter,
-    PageHeader,
-)
+from tests.ui_tests.app.page.common.base_page import BaseDetailedPage, BasePageObject
 from tests.ui_tests.app.page.common.common_locators import (
     ObjectPageLocators,
     ObjectPageMenuLocators,
@@ -32,6 +27,7 @@ from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigLis
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
+from tests.ui_tests.core.checks import check_elements_are_displayed
 
 
 class ProviderPageMixin(BasePageObject):
@@ -41,8 +37,6 @@ class ProviderPageMixin(BasePageObject):
     MENU_SUFFIX: str
     MAIN_ELEMENTS: list
     provider_id: int
-    header: PageHeader
-    footer: PageFooter
     config: CommonConfigMenuObj
     toolbar: CommonToolbar
     table: CommonTableObj
@@ -52,12 +46,10 @@ class ProviderPageMixin(BasePageObject):
         if self.MENU_SUFFIX is None:
             raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
         super().__init__(driver, base_url, "/provider/{provider_id}/" + self.MENU_SUFFIX, provider_id=provider_id)
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.provider_id = provider_id
         self.toolbar = CommonToolbar(self.driver, self.base_url)
-        self.table = CommonTableObj(self.driver, self.base_url)
+        self.table = CommonTableObj(driver=self.driver)
         self.group_config = GroupConfigList(self.driver, self.base_url)
 
     @allure.step("Open 'Main' tab")
@@ -86,8 +78,7 @@ class ProviderPageMixin(BasePageObject):
 
     @allure.step("Check all main elements on the page are presented")
     def check_all_elements(self):
-        """Check all main elements on the page are presented"""
-        self.assert_displayed_elements(self.MAIN_ELEMENTS)
+        check_elements_are_displayed(self, self.MAIN_ELEMENTS)
 
 
 class ProviderMainPage(ProviderPageMixin, BaseDetailedPage):

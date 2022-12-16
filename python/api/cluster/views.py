@@ -29,6 +29,7 @@ from api.cluster.serializers import (
     ClusterDetailSerializer,
     ClusterDetailUISerializer,
     ClusterSerializer,
+    ClusterStatusSerializer,
     ClusterUISerializer,
     ClusterUpdateSerializer,
     DoBindSerializer,
@@ -37,7 +38,6 @@ from api.cluster.serializers import (
     HostComponentSerializer,
     HostComponentUISerializer,
     PostImportSerializer,
-    StatusSerializer,
 )
 from api.serializers import ClusterUpgradeSerializer
 from api.stack.serializers import (
@@ -300,7 +300,7 @@ class DoClusterUpgrade(GenericUIView):
 class StatusList(GenericUIView):
     permission_classes = (IsAuthenticated,)
     queryset = HostComponent.objects.all()
-    serializer_class = StatusSerializer
+    serializer_class = ClusterStatusSerializer
 
     def get(self, request, *args, **kwargs):
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])

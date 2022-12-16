@@ -13,6 +13,14 @@
         try_files $uri $uri/ /index.html;
     }
 
+    location /swagger {
+        uwsgi_pass  django;
+        uwsgi_read_timeout 300s;
+        uwsgi_send_timeout 300s;
+        include     /adcm/conf/nginx/uwsgi_params;
+        proxy_set_header Host $http_host;
+    }
+
     location /api {
         uwsgi_pass  django;
         uwsgi_read_timeout 300s;
@@ -40,7 +48,7 @@
     }
 
     location /status/ {
-        # That takes so many lines in acess log for statuses,
+        # That takes so many lines in access log for statuses,
         # so it is better to disable access for that url
         access_log /var/log/nginx/access.log combined if=$abnormal;
         proxy_pass http://127.0.0.1:8020/;

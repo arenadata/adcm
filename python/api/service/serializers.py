@@ -201,7 +201,7 @@ class ServiceBindPostSerializer(EmptySerializer):
         )
 
 
-class StatusSerializer(EmptySerializer):
+class ServiceStatusSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     name = CharField(read_only=True)
     status = SerializerMethodField()

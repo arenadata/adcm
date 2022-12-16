@@ -10,15 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=protected-access
-
 from pathlib import Path
+from signal import SIGTERM
 from unittest.mock import Mock, patch
+from urllib.parse import urljoin
 
 from django.conf import settings
+from django.urls import reverse
 from django.utils import timezone
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
 
-from adcm.tests.base import BaseTestCase
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.api import add_cluster, add_service_to_cluster
 from cm.job import (
     check_cluster,
@@ -36,7 +39,6 @@ from cm.job import (
     set_job_status,
     set_task_status,
 )
-from cm.logger import logger
 from cm.models import (
     ADCM,
     Action,
@@ -60,14 +62,69 @@ from cm.tests.utils import (
     gen_prototype,
     gen_task_log,
 )
+from init_db import init as init_adcm
+from rbac.upgrade.role import init_roles
 
 
 class TestJob(BaseTestCase):
+    # pylint: disable=too-many-public-methods
+
     def setUp(self):
-        logger.debug = Mock()
-        logger.error = Mock()
-        logger.info = Mock()
-        logger.warning = Mock()
+        self.files_dir = settings.BASE_DIR / "python" / "cm" / "tests" / "files"
+        self.multijob_bundle = "multijob_cluster.tar"
+        self.multijob_cluster_name = "multijob_cluster"
+        self.test_user_username = "admin"
+        self.test_user_password = "admin"
+        self.job_fake_pid = 9999
+
+    # some tests do not need client / manually create `ADCM` object
+    def init_adcm(self):
+        init_adcm()
+        init_roles()
+
+    def create_multijob_cluster(self) -> Response:
+        bundle_id = self.upload_and_load_bundle(path=Path(self.files_dir, self.multijob_bundle)).pk
+
+        return self.client.post(
+            path=reverse("cluster"),
+            data={
+                "prototype_id": Prototype.objects.get(name=self.multijob_cluster_name).pk,
+                "name": self.multijob_cluster_name,
+                "display_name": self.multijob_cluster_name,
+                "bundle_id": bundle_id,
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+    def get_cluster_action(self, cluster_id: int, action_name: str) -> tuple[Response, dict | None]:
+        response: Response = self.client.get(
+            path=reverse("object-action", kwargs={"cluster_id": cluster_id, "object_type": "cluster"}),
+            content_type=APPLICATION_JSON,
+        )
+
+        target_action = None
+        for action in response.json():
+            if action["name"] == action_name:
+                target_action = action
+                break
+
+        return response, target_action
+
+    def run_action_get_target_job(
+        self, action: dict, job_display_name: str, force_job_status: JobStatus | None = None
+    ) -> tuple[Response, dict | None]:
+        response: Response = self.client.post(path=urljoin(action["url"], "run/"), content_type=APPLICATION_JSON)
+
+        target_job = None
+        for job in response.json()["jobs"]:
+            if job["display_name"] == job_display_name:
+                target_job = job
+                break
+
+        if target_job is not None and force_job_status is not None:
+            JobLog.objects.filter(pk=target_job["id"]).update(status=force_job_status, pid=self.job_fake_pid)
+
+        return response, target_job
 
     def test_set_job_status(self):
         bundle = Bundle.objects.create()
@@ -515,3 +572,235 @@ class TestJob(BaseTestCase):
         mock_get_old_hc.assert_called_once_with(task.hostcomponentmap)
         mock_cook_delta.assert_called_once_with(cluster, new_hc, action.hostcomponentmap, old_hc)
         mock_prepare_job.assert_called_once_with(action, sub_action, job.id, cluster, task.config, delta, None, False)
+
+    def test_job_termination_allowed_action_termination_allowed(self):
+        self.init_adcm()
+        self.login()
+        action_name = "action_termination_allowed"
+        job_display_name = "subaction_termination_allowed"
+
+        response = self.create_multijob_cluster()
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response, action = self.get_cluster_action(cluster_id=response.json()["id"], action_name=action_name)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        if action is None:
+            raise AssertionError(f"Can't find '{action_name}' action in cluster '{self.multijob_cluster_name}'")
+
+        with patch("cm.job.run_task"):
+            response, job = self.run_action_get_target_job(
+                action=action, job_display_name=job_display_name, force_job_status=JobStatus.RUNNING
+            )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        if job is None:
+            raise AssertionError(
+                f"Can't find job '{job_display_name}' "
+                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'"
+            )
+
+        with patch("cm.models.os.kill") as kill_mock:
+            response: Response = self.client.put(
+                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}), content_type=APPLICATION_JSON
+            )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        kill_mock.assert_called_once_with(self.job_fake_pid, SIGTERM)
+
+    def test_job_termination_disallowed_action_termination_allowed(self):
+        self.init_adcm()
+        self.login()
+        action_name = "action_termination_allowed"
+        job_display_name = "subaction_termination_disallowed"
+
+        response = self.create_multijob_cluster()
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response, action = self.get_cluster_action(cluster_id=response.json()["id"], action_name=action_name)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        if action is None:
+            raise AssertionError(f"Can't find '{action_name}' action in cluster '{self.multijob_cluster_name}'")
+
+        with patch("cm.job.run_task"):
+            response, job = self.run_action_get_target_job(
+                action=action, job_display_name=job_display_name, force_job_status=JobStatus.RUNNING
+            )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        if job is None:
+            raise AssertionError(
+                f"Can't find job '{job_display_name}' "
+                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'"
+            )
+
+        with patch("cm.models.os.kill") as kill_mock:
+            response: Response = self.client.put(
+                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}), content_type=APPLICATION_JSON
+            )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        kill_mock.assert_not_called()
+
+    def test_job_termination_not_defined_action_termination_allowed(self):
+        self.init_adcm()
+        self.login()
+        action_name = "action_termination_allowed"
+        job_display_name = "subaction_termination_not_defined"
+
+        response = self.create_multijob_cluster()
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response, action = self.get_cluster_action(cluster_id=response.json()["id"], action_name=action_name)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        if action is None:
+            raise AssertionError(f"Can't find '{action_name}' action in cluster '{self.multijob_cluster_name}'")
+
+        with patch("cm.job.run_task"):
+            response, job = self.run_action_get_target_job(
+                action=action, job_display_name=job_display_name, force_job_status=JobStatus.RUNNING
+            )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        if job is None:
+            raise AssertionError(
+                f"Can't find job '{job_display_name}' "
+                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'"
+            )
+
+        with patch("cm.models.os.kill") as kill_mock:
+            response: Response = self.client.put(
+                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}), content_type=APPLICATION_JSON
+            )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        kill_mock.assert_called_once_with(self.job_fake_pid, SIGTERM)
+
+    def test_job_termination_allowed_action_termination_not_allowed(self):
+        self.init_adcm()
+        self.login()
+        action_name = "action_termination_not_allowed"
+        job_display_name = "subaction_termination_allowed"
+
+        response = self.create_multijob_cluster()
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response, action = self.get_cluster_action(cluster_id=response.json()["id"], action_name=action_name)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        if action is None:
+            raise AssertionError(f"Can't find '{action_name}' action in cluster '{self.multijob_cluster_name}'")
+
+        with patch("cm.job.run_task"):
+            response, job = self.run_action_get_target_job(
+                action=action, job_display_name=job_display_name, force_job_status=JobStatus.RUNNING
+            )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        if job is None:
+            raise AssertionError(
+                f"Can't find job '{job_display_name}' "
+                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'"
+            )
+
+        with patch("cm.models.os.kill") as kill_mock:
+            response: Response = self.client.put(
+                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}), content_type=APPLICATION_JSON
+            )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        kill_mock.assert_called_once_with(self.job_fake_pid, SIGTERM)
+
+    def test_job_termination_disallowed_action_termination_not_allowed(self):
+        self.init_adcm()
+        self.login()
+        action_name = "action_termination_not_allowed"
+        job_display_name = "subaction_termination_disallowed"
+
+        response = self.create_multijob_cluster()
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response, action = self.get_cluster_action(cluster_id=response.json()["id"], action_name=action_name)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        if action is None:
+            raise AssertionError(f"Can't find '{action_name}' action in cluster '{self.multijob_cluster_name}'")
+
+        with patch("cm.job.run_task"):
+            response, job = self.run_action_get_target_job(
+                action=action, job_display_name=job_display_name, force_job_status=JobStatus.RUNNING
+            )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        if job is None:
+            raise AssertionError(
+                f"Can't find job '{job_display_name}' "
+                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'"
+            )
+
+        with patch("cm.models.os.kill") as kill_mock:
+            response: Response = self.client.put(
+                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}), content_type=APPLICATION_JSON
+            )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        kill_mock.assert_not_called()
+
+    def test_job_termination_not_defined_action_termination_not_allowed(self):
+        self.init_adcm()
+        self.login()
+        action_name = "action_termination_not_allowed"
+        job_display_name = "subaction_termination_not_defined"
+
+        response = self.create_multijob_cluster()
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response, action = self.get_cluster_action(cluster_id=response.json()["id"], action_name=action_name)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        if action is None:
+            raise AssertionError(f"Can't find '{action_name}' action in cluster '{self.multijob_cluster_name}'")
+
+        with patch("cm.job.run_task"):
+            response, job = self.run_action_get_target_job(
+                action=action, job_display_name=job_display_name, force_job_status=JobStatus.RUNNING
+            )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        if job is None:
+            raise AssertionError(
+                f"Can't find job '{job_display_name}' "
+                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'"
+            )
+
+        with patch("cm.models.os.kill") as kill_mock:
+            response: Response = self.client.put(
+                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}), content_type=APPLICATION_JSON
+            )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        kill_mock.assert_not_called()
+
+    def test_job_termination_not_allowed_if_job_not_in_running_status(self):
+        self.init_adcm()
+        self.login()
+        action_name = "action_termination_allowed"
+        job_display_name = "subaction_termination_not_defined"
+
+        response = self.create_multijob_cluster()
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response, action = self.get_cluster_action(cluster_id=response.json()["id"], action_name=action_name)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        if action is None:
+            raise AssertionError(f"Can't find '{action_name}' action in cluster '{self.multijob_cluster_name}'")
+
+        with patch("cm.job.run_task"):
+            response, job = self.run_action_get_target_job(
+                action=action,
+                job_display_name=job_display_name,
+            )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        if job is None:
+            raise AssertionError(
+                f"Can't find job '{job_display_name}' "
+                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'"
+            )
+
+        with patch("cm.models.os.kill") as kill_mock:
+            response: Response = self.client.put(
+                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}), content_type=APPLICATION_JSON
+            )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        kill_mock.assert_not_called()

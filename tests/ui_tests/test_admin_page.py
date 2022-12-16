@@ -21,9 +21,9 @@ from typing import Tuple
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider, Service
-from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
-from adcm_pytest_plugin.utils import random_string
+from adcm_pytest_plugin.utils import get_data_dir, random_string
+from tests.library.retry import should_become_truth
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import (
     AdminGroupInfo,
@@ -50,6 +50,7 @@ from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.app.page.provider.page import ProviderConfigPage
 from tests.ui_tests.app.page.service.page import ServiceConfigPage
 from tests.ui_tests.conftest import login_over_api
+from tests.ui_tests.core.checks import check_pagination
 from tests.ui_tests.utils import expect_rows_amount_change
 
 BUNDLE = "cluster_with_services"
@@ -65,27 +66,21 @@ HOST_NAME = "test-host"
 
 @pytest.fixture()
 def users_page(app_fs: ADCMTest) -> AdminUsersPage:
-    """Get Admin Users Page"""
-    return AdminUsersPage(app_fs.driver, app_fs.adcm.url).open()
+    return AdminUsersPage(app_fs.driver, app_fs.adcm.url).open(close_popup=True)
 
 
 @pytest.fixture()
 def settings_page(app_fs: ADCMTest) -> AdminSettingsPage:
-    """Get Admin Settings Page"""
-    return AdminSettingsPage(app_fs.driver, app_fs.adcm.url).open()
+    return AdminSettingsPage(app_fs.driver, app_fs.adcm.url).open(close_popup=True)
 
 
 @allure.step("Upload cluster bundle")
 def cluster_bundle(sdk_client_fs: ADCMClient, data_dir_name: str) -> Bundle:
-    """Upload cluster bundle"""
-
-    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), data_dir_name))
+    return sdk_client_fs.upload_from_fs(get_data_dir(__file__, data_dir_name))
 
 
 @pytest.fixture()
 def create_cluster_with_service(sdk_client_fs: ADCMClient) -> Tuple[Cluster, Service]:
-    """Create cluster and add service"""
-
     bundle = cluster_bundle(sdk_client_fs, BUNDLE)
     cluster = bundle.cluster_create(name=CLUSTER_NAME)
     return cluster, cluster.service_add(name=SERVICE_NAME)
@@ -98,7 +93,7 @@ def create_cluster_with_component(
     """Create cluster with component"""
 
     cluster, service = create_cluster_with_service
-    provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "provider"))
+    provider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider"))
     provider = provider_bundle.provider_create("test provider")
     host = provider.host_create("test-host")
     cluster.host_add(host)
@@ -289,11 +284,11 @@ class TestAdminSettingsPage:
             ), f"Action {params['test_action']} should be enabled"
         with allure.step("Check Test LDAP connection action"):
             settings_page.toolbar.run_adcm_action(action_name=params["test_action"])
-            settings_page.header.wait_in_progress_job_amount_from_header(expected_job_amount=1)
-            settings_page.header.wait_in_progress_job_amount_from_header(expected_job_amount=0)
+            settings_page.header.wait_in_progress_job_amount(expected_job_amount=1)
+            settings_page.header.wait_in_progress_job_amount(expected_job_amount=0)
         with allure.step("Check Run LDAP sync action"):
             settings_page.toolbar.run_adcm_action(action_name=params["connect_action"])
-            settings_page.header.wait_in_progress_job_amount_from_header(expected_job_amount=1)
+            settings_page.header.wait_in_progress_job_amount(expected_job_amount=1)
 
 
 @pytest.mark.usefixtures("_login_to_adcm_over_api")
@@ -378,7 +373,7 @@ class TestAdminUsersPage:
     def test_ldap_user_change_is_forbidden(self, users_page: AdminUsersPage, ldap_user_in_group):
         """Change ldap user"""
 
-        users_page.header.wait_success_job_amount_from_header(1)
+        users_page.header.wait_success_job_amount(1)
         with allure.step(f'Check user {ldap_user_in_group["name"]} is listed in users list'):
             assert users_page.is_user_presented(
                 ldap_user_in_group["name"]
@@ -503,7 +498,7 @@ class TestAdminRolesPage:
                     self.custom_role.description,
                     self.custom_role.permissions,
                 )
-        page.table.check_pagination(second_page_item_amount=1)
+        check_pagination(page.table, expected_on_second=1)
 
     def test_check_role_popup_on_roles_page(self, app_fs):
         """Test changing a role on /admin/roles page"""
@@ -613,7 +608,7 @@ class TestAdminGroupsPage:
                     self.custom_group.description,
                     self.custom_group.users,
                 )
-        page.table.check_pagination(second_page_item_amount=1)
+        check_pagination(page.table, expected_on_second=1)
 
     def test_delete_group_from_groups_page(self, app_fs):
         """Test delete custom group on /admin/groups page"""
@@ -632,7 +627,7 @@ class TestAdminGroupsPage:
 
         params = {"group_name": "adcm_users"}
         groups_page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
-        groups_page.header.wait_success_job_amount_from_header(1)
+        groups_page.header.wait_success_job_amount(1)
         with allure.step(f"Check group {params['group_name']} is listed in groups list"):
             assert (
                 groups_page.get_all_groups()[0].name == params["group_name"]
@@ -647,7 +642,7 @@ class TestAdminGroupsPage:
         params = {"group_name": "Test_group"}
         groups_page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
         groups_page.create_custom_group(name=params["group_name"], description=None, users=None)
-        groups_page.header.wait_success_job_amount_from_header(1)
+        groups_page.header.wait_success_job_amount(1)
         groups_page.update_group(name=params["group_name"], users=ldap_user_in_group["name"])
         with allure.step(f"Check group {params['group_name']} has user {ldap_user_in_group['name']}"):
             assert (
@@ -705,7 +700,7 @@ class TestAdminPolicyPage:
                     role=CUSTOM_POLICY.role,
                     users=CUSTOM_POLICY.users,
                 )
-        policies_page.table.check_pagination(second_page_item_amount=1)
+        check_pagination(policies_page.table, expected_on_second=1)
 
     @pytest.mark.usefixtures("_login_to_adcm_over_api")
     def test_delete_policy_from_policies_page(self, app_fs):
@@ -910,7 +905,7 @@ class TestAdminPolicyPage:
     def test_policy_permission_to_view_access_provider(self, sdk_client_fs, app_fs, another_user):
         """Test for the permissions to provider."""
 
-        provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "provider"))
+        provider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider"))
         provider = provider_bundle.provider_create("test_provider")
         with allure.step("Create test role"):
             test_role = sdk_client_fs.role_create(
@@ -926,9 +921,7 @@ class TestAdminPolicyPage:
                 objects=[provider],
             )
         with allure.step("Create second provider"):
-            provider_bundle = sdk_client_fs.upload_from_fs(
-                os.path.join(utils.get_data_dir(__file__), "second_provider")
-            )
+            provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(get_data_dir(__file__, "second_provider")))
             second_provider = provider_bundle.provider_create("second_test_provider")
         login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
         login_page.login_user(**another_user)
@@ -943,7 +936,7 @@ class TestAdminPolicyPage:
     def test_policy_permission_to_view_access_host(self, sdk_client_fs, app_fs, another_user):
         """Test for the permissions to host."""
 
-        provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "provider"))
+        provider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider"))
         provider = provider_bundle.provider_create("test_provider")
         host = provider.host_create("test-host")
         with allure.step("Create test role"):
@@ -1026,7 +1019,7 @@ class TestAdminPolicyPage:
         with allure.step("Run action from first cluster"):
             cluster_list_page.run_action_in_cluster_row(cluster_rows[0], "some_action")
         with allure.step("Check task"):
-            cluster_list_page.header.click_job_block_in_header()
+            cluster_list_page.header.click_job_block()
             assert len(cluster_list_page.header.get_job_rows_from_popup()) == 1, "Job amount should be 1"
             job_list_page = JobListPage(app_fs.driver, app_fs.adcm.url).open()
             job_rows = job_list_page.table.get_all_rows()
@@ -1038,10 +1031,8 @@ class TestAdminPolicyPage:
             JobPageStdout(app_fs.driver, app_fs.adcm.url, 1).wait_page_is_opened()
         with allure.step("Check forbidden page hint"):
             cluster_hc_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
-            assert (
-                "[ FORBIDDEN ] You do not have permission to perform this action"
-                in cluster_hc_page.get_info_popup_text()
-            ), "There are no permission hint"
+            expected_text = "[ FORBIDDEN ] You do not have permission to perform this action"
+            should_become_truth(lambda: expected_text in cluster_hc_page.get_info_popup_text())
 
     # pylint: enable=too-many-locals
     @pytest.mark.usefixtures("_login_to_adcm_over_api")

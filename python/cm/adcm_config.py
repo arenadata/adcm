@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Optional, Tuple
 
 import yspec.checker
+from ansible.errors import AnsibleError
 from ansible.parsing.vault import VaultAES256, VaultSecret
 from django.conf import settings
 
@@ -147,7 +148,7 @@ def get_default(c, proto=None):  # pylint: disable=too-many-branches
                     read_file_type(proto, c.default, proto.bundle.hash, c.name, c.subname)
                 )
 
-    if c.type == "secretmap":
+    if c.type == "secretmap" and c.default:
         new_value = {}
         for k, v in value.items():
             new_value[k] = ansible_encrypt_and_format(v)
@@ -412,12 +413,29 @@ def ansible_encrypt_and_format(msg):
 
 
 def process_file_type(obj: Any, spec: dict, conf: dict):
+    # pylint: disable=too-many-branches,disable=too-many-nested-blocks
+
     for key in conf:
         if "type" in spec[key]:
             if spec[key]["type"] == "file":
                 save_file_type(obj, key, "", conf[key])
             elif spec[key]["type"] == "secretfile":
-                value = ansible_encrypt_and_format(conf[key])
+                if conf[key] is not None:
+                    if conf[key].startswith(settings.ANSIBLE_VAULT_HEADER):
+                        try:
+                            ansible_decrypt(msg=conf[key])
+                        except AnsibleError:
+                            raise_adcm_ex(
+                                code="CONFIG_VALUE_ERROR",
+                                msg=f"Secret value must not starts with {settings.ANSIBLE_VAULT_HEADER}",
+                            )
+
+                        value = conf[key]
+                    else:
+                        value = ansible_encrypt_and_format(msg=conf[key])
+                else:
+                    value = None
+
                 save_file_type(obj, key, "", value)
                 conf[key] = value
         elif conf[key]:
@@ -425,7 +443,22 @@ def process_file_type(obj: Any, spec: dict, conf: dict):
                 if spec[key][subkey]["type"] == "file":
                     save_file_type(obj, key, subkey, conf[key][subkey])
                 elif spec[key][subkey]["type"] == "secretfile":
-                    value = ansible_encrypt_and_format(conf[key][subkey])
+                    if conf[key][subkey] is not None:
+                        if conf[key].startswith(settings.ANSIBLE_VAULT_HEADER):
+                            try:
+                                ansible_decrypt(msg=conf[key])
+                            except AnsibleError:
+                                raise_adcm_ex(
+                                    code="CONFIG_VALUE_ERROR",
+                                    msg=f"Secret value must not starts with {settings.ANSIBLE_VAULT_HEADER}",
+                                )
+
+                            value = conf[key][subkey]
+                        else:
+                            value = ansible_encrypt_and_format(msg=conf[key][subkey])
+                    else:
+                        value = None
+
                     save_file_type(obj, key, subkey, value)
                     conf[key][subkey] = value
 
@@ -450,32 +483,55 @@ def is_ansible_encrypted(msg):
     return False
 
 
-def process_password(spec, conf):
-    def update_password(passwd):
-        if "$ANSIBLE_VAULT;" in passwd:
-            return passwd
-
-        return ansible_encrypt_and_format(passwd)
-
-    for key in conf:
+def process_secret_params(spec, conf):
+    for key in conf:  # pylint: disable=too-many-nested-blocks
         if "type" in spec[key]:
             if spec[key]["type"] in SECURE_PARAM_TYPES and conf[key]:
-                conf[key] = update_password(conf[key])
+                if conf[key].startswith(settings.ANSIBLE_VAULT_HEADER):
+                    try:
+                        ansible_decrypt(msg=conf[key])
+                    except AnsibleError:
+                        raise_adcm_ex(
+                            code="CONFIG_VALUE_ERROR",
+                            msg=f"Secret value must not starts with {settings.ANSIBLE_VAULT_HEADER}",
+                        )
+                else:
+                    conf[key] = ansible_encrypt_and_format(msg=conf[key])
         else:
             for subkey in conf[key]:
                 if spec[key][subkey]["type"] in SECURE_PARAM_TYPES and conf[key][subkey]:
-                    conf[key][subkey] = update_password(conf[key][subkey])
+                    if conf[key][subkey].startswith(settings.ANSIBLE_VAULT_HEADER):
+                        try:
+                            ansible_decrypt(msg=conf[key][subkey])
+                        except AnsibleError:
+                            raise_adcm_ex(
+                                code="CONFIG_VALUE_ERROR",
+                                msg=f"Secret value must not starts with {settings.ANSIBLE_VAULT_HEADER}",
+                            )
+                    else:
+                        conf[key][subkey] = ansible_encrypt_and_format(msg=conf[key][subkey])
 
     return conf
 
 
 def process_secretmap(spec: dict, conf: dict) -> dict:
     for key in conf:
-        if spec[key].get("type") != "secretmap" or settings.ANSIBLE_VAULT_HEADER in conf[key]:
+        if spec[key].get("type") != "secretmap":
             continue
 
         for k, v in conf[key].items():
-            conf[key][k] = ansible_encrypt_and_format(v)
+            if v.startswith(settings.ANSIBLE_VAULT_HEADER):
+                try:
+                    ansible_decrypt(msg=v)
+                except AnsibleError:
+                    raise_adcm_ex(
+                        code="CONFIG_VALUE_ERROR",
+                        msg=f"Secret value must not starts with {settings.ANSIBLE_VAULT_HEADER}",
+                    )
+
+                conf[key][k] = v
+            else:
+                conf[key][k] = ansible_encrypt_and_format(msg=v)
 
     return conf
 
@@ -944,7 +1000,7 @@ def check_config_spec(
 
     # for process_file_type() function not need `if old_conf:`
     process_file_type(group or obj, spec, conf)
-    process_password(spec, conf)
+    process_secret_params(spec, conf)
     conf = process_secretmap(spec=spec, conf=conf)
 
     return conf

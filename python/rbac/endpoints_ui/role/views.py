@@ -31,7 +31,7 @@ from cm import models as cm_models
 from rbac import models
 
 
-class RoleSerializer(Serializer):
+class RoleUISerializer(Serializer):
     id = IntegerField()
     name = CharField()
     parametrized_by_type = JSONField()
@@ -40,7 +40,7 @@ class RoleSerializer(Serializer):
 
 class RoleViewSet(ListModelMixin, GenericUIViewSet):
     queryset = models.Role.objects.all()
-    serializer_class = RoleSerializer
+    serializer_class = RoleUISerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
 
     @action(methods=["get"], detail=True)
