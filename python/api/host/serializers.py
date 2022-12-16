@@ -145,7 +145,7 @@ class ProvideHostSerializer(HostSerializer):
         return add_host(proto, provider, validated_data.get("fqdn"), validated_data.get("description", ""))
 
 
-class StatusSerializer(EmptySerializer):
+class HostStatusSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     fqdn = CharField(read_only=True)
     status = SerializerMethodField()

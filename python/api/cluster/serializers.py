@@ -233,7 +233,7 @@ class ClusterDetailUISerializer(ClusterDetailSerializer):
         return get_main_info(obj)
 
 
-class StatusSerializer(EmptySerializer):
+class ClusterStatusSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     component_id = IntegerField(read_only=True)
     service_id = IntegerField(read_only=True)

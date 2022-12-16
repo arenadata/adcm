@@ -47,7 +47,7 @@ class HistoryCurrentPreviousConfigSerializer(EmptySerializer):
     previous = CommonAPIURL(read_only=True, view_name='config-previous')
 
 
-class ObjectConfigSerializer(EmptySerializer):
+class ConfigObjectConfigSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     date = DateTimeField(read_only=True)
     description = CharField(required=False, allow_blank=True)
@@ -55,7 +55,7 @@ class ObjectConfigSerializer(EmptySerializer):
     attr = JSONField(required=False)
 
 
-class ObjectConfigUpdateSerializer(ObjectConfigSerializer):
+class ObjectConfigUpdateSerializer(ConfigObjectConfigSerializer):
     def update(self, instance, validated_data):
         conf = validated_data.get('config')
         attr = validated_data.get('attr', {})
@@ -66,7 +66,7 @@ class ObjectConfigUpdateSerializer(ObjectConfigSerializer):
         return cl
 
 
-class ObjectConfigRestoreSerializer(ObjectConfigSerializer):
+class ObjectConfigRestoreSerializer(ConfigObjectConfigSerializer):
     config = JSONField(read_only=True)
 
     def update(self, instance, validated_data):
@@ -75,7 +75,7 @@ class ObjectConfigRestoreSerializer(ObjectConfigSerializer):
         )
 
 
-class ConfigHistorySerializer(ObjectConfigSerializer):
+class ConfigHistorySerializer(ConfigObjectConfigSerializer):
     url = ConfigVersionURL(read_only=True, view_name='config-history-version')
 
 

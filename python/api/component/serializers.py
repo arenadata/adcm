@@ -100,7 +100,7 @@ class ComponentDetailSerializer(ComponentSerializer):
         return get_component_status(obj)
 
 
-class StatusSerializer(EmptySerializer):
+class ComponentStatusSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     name = CharField(read_only=True)
     status = SerializerMethodField()
