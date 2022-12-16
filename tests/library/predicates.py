@@ -30,3 +30,7 @@ def name_is(expected_name: str) -> PredicateOfOne:
 
 def name_in(names: Collection[str]) -> PredicateOfOne:
     return lambda object_with_name: object_with_name.name in names
+
+
+def display_name_is(display_name: str) -> PredicateOfOne:
+    return lambda object_with_display_name: object_with_display_name.display_name == display_name
