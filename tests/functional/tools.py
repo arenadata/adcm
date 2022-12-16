@@ -13,7 +13,7 @@
 Common functions and helpers for testing ADCM
 """
 import json
-from typing import Callable, Collection, Dict, Iterable, List, Tuple, Union
+from typing import Callable, Collection, Dict, Iterable, List, Optional, Tuple, Union
 
 import allure
 import pytest
@@ -35,7 +35,7 @@ from adcm_client.objects import (
     User,
 )
 from adcm_pytest_plugin.docker_utils import ADCM, get_file_from_container
-from adcm_pytest_plugin.utils import catch_failed
+from adcm_pytest_plugin.utils import catch_failed, wait_until_step_succeeds
 from coreapi.exceptions import ErrorMessage
 
 BEFORE_UPGRADE_DEFAULT_STATE = None
@@ -49,6 +49,9 @@ ProviderRelatedObject = Union[Provider, Host]
 AnyADCMObject = Union[ClusterRelatedObject, ProviderRelatedObject, ADCMClient]
 AnyRBACObject = Union[User, Group, Role, Policy]
 
+DEFAULT_TIMEOUT = 20
+DEFAULT_PERIOD = 2
+
 
 def get_config(adcm_object: AnyADCMObject):
     """Get config or empty tuple (if config not defined)"""
@@ -56,6 +59,25 @@ def get_config(adcm_object: AnyADCMObject):
         return adcm_object.config()
     except ErrorMessage:
         return ()
+
+
+@allure.step("Wait all tasks are finished")
+def wait_all_jobs_are_finished(client: ADCMClient):
+    for job in client.job_list():
+        job.task().wait()
+
+
+def wait_for_job_status(
+    job: Job,
+    status: str = "running",
+    timeout: Optional[int] = DEFAULT_TIMEOUT,
+    period: Optional[int | float] = DEFAULT_PERIOD,
+):
+    def _wait():
+        job.reread()
+        assert job.status == status, f"Job {job.display_name} should be in status {status}"
+
+    wait_until_step_succeeds(_wait, timeout=timeout, period=period)
 
 
 def get_objects_via_pagination(
