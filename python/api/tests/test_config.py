@@ -26,6 +26,7 @@ from cm.models import ConfigLog
 class TestConfigPasswordAPI(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
+
         _, self.cluster, self.config_log = self.upload_bundle_create_cluster_config_log(
             bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_password.tar")
         )
@@ -80,6 +81,7 @@ class TestConfigPasswordAPI(BaseTestCase):
 class TestConfigSecrettextAPI(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
+
         _, self.cluster, self.config_log = self.upload_bundle_create_cluster_config_log(
             bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_secrettext.tar")
         )
@@ -134,6 +136,7 @@ class TestConfigSecrettextAPI(BaseTestCase):
 class TestConfigSecretfileAPI(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
+
         _, self.cluster, self.config_log = self.upload_bundle_create_cluster_config_log(
             bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_secretfile.tar")
         )
@@ -188,6 +191,7 @@ class TestConfigSecretfileAPI(BaseTestCase):
 class TestConfigSecretmapAPI(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
+
         _, self.cluster, self.config_log = self.upload_bundle_create_cluster_config_log(
             bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_secretmap.tar")
         )

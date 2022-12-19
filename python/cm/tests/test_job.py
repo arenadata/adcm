@@ -62,7 +62,7 @@ from cm.tests.utils import (
     gen_prototype,
     gen_task_log,
 )
-from init_db import init as init_adcm
+from init_db import init
 from rbac.upgrade.role import init_roles
 
 
@@ -78,8 +78,9 @@ class TestJob(BaseTestCase):
         self.job_fake_pid = 9999
 
     # some tests do not need client / manually create `ADCM` object
-    def init_adcm(self):
-        init_adcm()
+    @staticmethod
+    def init_adcm():
+        init()
         init_roles()
 
     def create_multijob_cluster(self) -> Response:

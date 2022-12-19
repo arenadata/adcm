@@ -30,7 +30,7 @@ from cm.models import ADCM, Bundle, Prototype, TaskLog
 from rbac.models import User
 
 
-class TestPolicy(BaseTestCase):
+class TestTaskAudit(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 

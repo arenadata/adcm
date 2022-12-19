@@ -45,8 +45,6 @@ from cm.tests.utils import (
 
 
 class TaskLogLockTest(BaseTestCase):
-    """Tests for `cm.models.TaskLog` lock-related methods"""
-
     def setUp(self) -> None:
         super().setUp()
 
@@ -240,7 +238,7 @@ class TaskLogLockTest(BaseTestCase):
         )
         fn = get_task_download_archive_file_handler(task)
         fn.seek(0)
-        tar = tarfile.open(fileobj=fn, mode='r:gz')
+        tar = tarfile.open(fileobj=fn, mode="r:gz")
         self.assertEqual(
             sorted(
                 [
@@ -265,7 +263,8 @@ class TaskLogLockTest(BaseTestCase):
         task.refresh_from_db()
         fn = get_task_download_archive_file_handler(task)
         fn.seek(0)
-        tar = tarfile.open(fileobj=fn, mode='r:gz')
+        tar = tarfile.open(fileobj=fn, mode="r:gz")
+
         self.assertEqual(
             sorted(
                 [

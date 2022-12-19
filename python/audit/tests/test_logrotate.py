@@ -12,9 +12,9 @@
 from datetime import datetime, timedelta
 
 from django.core.management import call_command
-from django.test import TestCase
 from django.utils import timezone
 
+from adcm.tests.base import BaseTestCase
 from audit.models import AuditLog, AuditLogOperationResult, AuditLogOperationType
 from cm.models import (
     ADCM,
@@ -29,7 +29,7 @@ from cm.models import (
 from rbac.models import User
 
 
-class TestLogrotate(TestCase):
+class TestLogrotate(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -71,12 +71,14 @@ class TestLogrotate(TestCase):
         self,
     ):
         call_command("logrotate", "--target=all")
-        logs: AuditLog = AuditLog.objects.order_by("operation_time")
+        logs = AuditLog.objects.order_by("operation_time")
+
         self.assertEqual(logs.count(), 4)
-        self.check_auditlog(logs[0], "\"Task log cleanup on schedule\" job launched")
-        self.check_auditlog(logs[1], "\"Task log cleanup on schedule\" job completed")
-        self.check_auditlog(logs[2], "\"Objects configurations cleanup on schedule\" job launched")
-        self.check_auditlog(logs[3], "\"Objects configurations cleanup on schedule\" job completed")
+        self.check_auditlog(logs[0], '"Task log cleanup on schedule" job launched')
+        self.check_auditlog(logs[1], '"Task log cleanup on schedule" job completed')
+        self.check_auditlog(logs[2], '"Objects configurations cleanup on schedule" job launched')
+        self.check_auditlog(logs[3], '"Objects configurations cleanup on schedule" job completed')
+
         call_command("logrotate", "--target=all")
         new_logs = AuditLog.objects.order_by("operation_time")
         self.assertEqual(new_logs.count(), 4)

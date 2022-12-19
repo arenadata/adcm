@@ -26,7 +26,7 @@ from audit.models import (
 from rbac.models import Group, User
 
 
-class TestGroup(BaseTestCase):
+class TestGroupAudit(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 

@@ -46,8 +46,10 @@ from cm.tests.utils import (
 
 class TestInventory(BaseTestCase):
     # pylint: disable=too-many-instance-attributes
+
     def setUp(self):
         super().setUp()
+
         self.cluster_bundle = gen_bundle()
         self.cluster_pt = gen_prototype(self.cluster_bundle, "cluster", "cluster")
         self.cluster = gen_cluster(prototype=self.cluster_pt, config=gen_config(), name="cluster")
@@ -162,7 +164,6 @@ class TestInventory(BaseTestCase):
     @patch("cm.inventory.get_provider_hosts")
     @patch("cm.inventory.get_hosts")
     def test_get_host(self, mock_get_hosts, mock_get_provider_hosts):
-        self.maxDiff = None
         mock_get_hosts.return_value = []
         mock_get_provider_hosts.return_value = {"PROVIDER": {"hosts": [], "vars": []}}
 
@@ -293,6 +294,7 @@ class TestInventory(BaseTestCase):
 
     def test_host_vars(self):
         # pylint: disable=too-many-locals
+
         service_pt_1 = gen_prototype(self.cluster_bundle, "service", "service_1")
         service_pt_2 = gen_prototype(self.cluster_bundle, "service", "service_2")
         component_pt_11 = gen_prototype(self.cluster_bundle, "component", "component_11")
@@ -347,11 +349,12 @@ class TestInventory(BaseTestCase):
         gen_host_component(component_12, self.host)
         gen_host_component(component_21, self.host)
 
-        groups = []
-        groups.append(gen_group("cluster", self.cluster.id, "cluster"))
-        groups.append(gen_group("service_1", service_1.id, "clusterobject"))
-        groups.append(gen_group("service_2", service_2.id, "clusterobject"))
-        groups.append(gen_group("component_1", component_11.id, "servicecomponent"))
+        groups = [
+            gen_group("cluster", self.cluster.id, "cluster"),
+            gen_group("service_1", service_1.id, "clusterobject"),
+            gen_group("service_2", service_2.id, "clusterobject"),
+            gen_group("component_1", component_11.id, "servicecomponent"),
+        ]
         for group in groups:
             group.hosts.add(self.host)
             update_obj_config(group.config, {"some_string": group.name}, {"group_keys": {"some_string": True}})
@@ -359,6 +362,7 @@ class TestInventory(BaseTestCase):
         self.assertDictEqual(get_host_vars(self.host, self.cluster)["cluster"]["config"], {"some_string": "cluster"})
 
         service_1_host_vars = get_host_vars(self.host, service_1)
+
         self.assertDictEqual(service_1_host_vars["services"]["service_1"]["config"], {"some_string": "service_1"})
         self.assertDictEqual(service_1_host_vars["services"]["service_2"]["config"], {"some_string": "service_2"})
         self.assertDictEqual(
@@ -375,6 +379,7 @@ class TestInventory(BaseTestCase):
         )
 
         component_11_host_vars = get_host_vars(self.host, component_11)
+
         self.assertDictEqual(component_11_host_vars["services"]["service_1"]["config"], {"some_string": "service_1"})
         self.assertDictEqual(
             component_11_host_vars["services"]["service_1"]["component_11"]["config"],
@@ -387,4 +392,5 @@ class TestInventory(BaseTestCase):
         self.assertFalse("service_2" in component_11_host_vars["services"].keys())
 
         component_12_host_vars = get_host_vars(self.host, component_12)
+
         self.assertDictEqual(component_12_host_vars, {})

@@ -16,9 +16,9 @@ from cm.tests.utils import gen_concern_item, generate_hierarchy
 
 
 class ADCMEntityConcernTest(BaseTestCase):
-    """Tests for `cm.models.ADCMEntity` lock-related methods"""
-
     def setUp(self):
+        super().setUp()
+
         self.hierarchy = generate_hierarchy()
 
     def test_is_locked__false(self):
