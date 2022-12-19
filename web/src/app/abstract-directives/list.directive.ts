@@ -127,6 +127,18 @@ export abstract class ListDirective extends BaseDirective implements OnInit, OnD
     const pageIndex = this.getPageIndex();
     const pageSize = this.getPageSize();
     const ordering = this.getSortParam(sort);
+    const ls = localStorage.getItem('list:param');
+    let listParam = ls ? JSON.parse(ls) : null;
+
+    listParam = {
+      ...listParam,
+      [this.type]: {
+        ...listParam?.[this.type],
+        ordering
+      }
+    }
+
+    localStorage.setItem('list:param', JSON.stringify(listParam));
 
     this.router.navigate(
       [
