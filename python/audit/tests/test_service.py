@@ -47,7 +47,7 @@ from rbac.models import Policy, Role, User
 from rbac.upgrade.role import init_roles
 
 
-class TestService(BaseTestCase):
+class TestServiceAudit(BaseTestCase):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
     def setUp(self) -> None:

@@ -121,7 +121,7 @@ class BaseTestCase(TestCase):
 
         self.login()
 
-    def upload_and_load_bundle(self, path: Path) -> Bundle:
+    def upload_bundle(self, path: Path) -> None:
         with open(path, encoding=settings.ENCODING_UTF_8) as f:
             response: Response = self.client.post(
                 path=reverse("upload-bundle"),
@@ -130,6 +130,7 @@ class BaseTestCase(TestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
+    def load_bundle(self, path: Path) -> Bundle:
         response: Response = self.client.post(
             path=reverse("load-bundle"),
             data={"bundle_file": path.name},
@@ -138,6 +139,11 @@ class BaseTestCase(TestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         return Bundle.objects.get(pk=response.data["id"])
+
+    def upload_and_load_bundle(self, path: Path) -> Bundle:
+        self.upload_bundle(path=path)
+
+        return self.load_bundle(path=path)
 
     def upload_bundle_create_cluster_config_log(self, bundle_path: Path) -> tuple[Bundle, Cluster, ConfigLog]:
         bundle = self.upload_and_load_bundle(path=bundle_path)

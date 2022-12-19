@@ -19,8 +19,6 @@ from cm.tests.utils import gen_adcm
 
 
 class MessageTemplateTest(BaseTestCase):
-    """Tests for `cm.models.MessageTemplate` methods"""
-
     def setUp(self):
         super().setUp()
 

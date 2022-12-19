@@ -44,7 +44,7 @@ from rbac.models import Policy, Role, User
 from rbac.upgrade.role import init_roles
 
 
-class TestAction(BaseTestCase):
+class TestActionAudit(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
