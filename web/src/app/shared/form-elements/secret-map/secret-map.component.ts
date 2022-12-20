@@ -58,7 +58,9 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
     delete controlValue[""];
 
     this.control.setValue( controlValue || this.value, { emitEvent: false });
-    this.dummyControl.at(index).setValue({ key: this.dummyControl.value[index].key, value: this.dummyControl.value[index] ? this.dummy : '' });
+
+    const value = this.dummyControl.value[index]?.value === null || this.dummyControl.value[index]?.value === '' ? '' : this.dummy
+    this.dummyControl.at(index).setValue({ key: this.dummyControl.value[index].key, value });
   }
 
   onFocus(): void {
