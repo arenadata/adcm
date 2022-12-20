@@ -40,6 +40,10 @@ export class SecretTextComponent extends FieldDirective implements OnInit, OnCha
     this.dummyControl.setValue(null);
   }
 
+  clear(): void {
+    this.dummyControl.setValue(null);
+  }
+
   private _initDummyControl(): void {
     this.dummyControl = new FormControl(
       { value: this.control.value ? this.dummy : '', disabled: this.control.disabled },
