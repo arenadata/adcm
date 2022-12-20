@@ -27,7 +27,7 @@ from cm.models import Bundle, Cluster, HostProvider, Prototype
 from rbac.models import Policy, Role, RoleTypes, User
 
 
-class TestPolicy(BaseTestCase):
+class TestPolicyAudit(BaseTestCase):
     # pylint: disable=too-many-instance-attributes
 
     def setUp(self) -> None:

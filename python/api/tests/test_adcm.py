@@ -16,13 +16,14 @@ from rest_framework.status import HTTP_200_OK
 
 from adcm.tests.base import BaseTestCase
 from cm.models import ADCM
-from init_db import init as init_adcm
+from init_db import init
 
 
 class TestADCM(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
-        init_adcm()
+
+        init()
 
     def test_list(self):
         adcm = ADCM.objects.select_related("prototype").last()

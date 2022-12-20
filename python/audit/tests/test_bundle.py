@@ -30,7 +30,7 @@ from cm.models import Bundle, Cluster, Prototype
 from rbac.models import User
 
 
-class TestBundle(BaseTestCase):
+class TestBundleAudit(BaseTestCase):
     # pylint: disable=too-many-public-methods
 
     def setUp(self) -> None:
@@ -100,26 +100,12 @@ class TestBundle(BaseTestCase):
         self.assertEqual(log.user.pk, self.test_user.pk)
         self.assertEqual(log.object_changes, {})
 
-    def load_bundle(self) -> Response:
-        return self.client.post(
-            path=reverse("load-bundle"),
-            data={"bundle_file": self.test_bundle_filename},
-        )
+    def upload_bundle_and_check(self) -> Bundle:
+        bundle = self.upload_and_load_bundle(path=self.test_bundle_path)
 
-    def upload_bundle(self) -> None:
-        with open(self.test_bundle_path, encoding=settings.ENCODING_UTF_8) as f:
-            self.client.post(
-                path=reverse("upload-bundle"),
-                data={"file": f},
-            )
-
-    def upload_bundle_and_check(self) -> Response:
-        self.upload_bundle()
-
-        response: Response = self.load_bundle()
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(log.audit_object.object_id, response.data["id"])
+        self.assertEqual(log.audit_object.object_id, bundle.pk)
         self.assertEqual(log.audit_object.object_name, "hc_acl_in_service_noname")
         self.assertEqual(log.audit_object.object_type, AuditObjectType.Bundle)
         self.assertFalse(log.audit_object.is_deleted)
@@ -130,10 +116,10 @@ class TestBundle(BaseTestCase):
         self.assertEqual(log.user.pk, self.test_user.pk)
         self.assertEqual(log.object_changes, {})
 
-        return response
+        return bundle
 
     def test_upload_success(self):
-        self.upload_bundle()
+        self.upload_bundle(path=self.test_bundle_path)
 
         log: AuditLog = AuditLog.objects.first()
 
@@ -167,7 +153,10 @@ class TestBundle(BaseTestCase):
 
     def test_load(self):
         self.upload_bundle_and_check()
-        self.load_bundle()
+        self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": self.test_bundle_filename},
+        )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -194,10 +183,13 @@ class TestBundle(BaseTestCase):
         self.check_log_load_no_obj(log=log, operation_result=AuditLogOperationResult.Fail, user=self.test_user)
 
     def test_load_denied(self):
-        self.upload_bundle()
+        self.upload_bundle(path=self.test_bundle_path)
 
         with self.no_rights_user_logged_in:
-            response: Response = self.load_bundle()
+            response: Response = self.client.post(
+                path=reverse("load-bundle"),
+                data={"bundle_file": self.test_bundle_path.name},
+            )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -205,9 +197,9 @@ class TestBundle(BaseTestCase):
         self.check_log_load_no_obj(log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user)
 
     def test_load_and_delete(self):
-        response: Response = self.upload_bundle_and_check()
+        bundle = self.upload_bundle_and_check()
 
-        Bundle.objects.get(pk=response.data["id"]).delete()
+        bundle.delete()
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertTrue(log.audit_object.is_deleted)

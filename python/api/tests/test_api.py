@@ -52,17 +52,15 @@ from cm.tests.utils import (
     gen_service,
     gen_task_log,
 )
-from init_db import init as init_adcm
+from init_db import init
 from rbac.upgrade.role import init_roles
 
 
 class TestAPI(BaseTestCase):
-    # pylint: disable=too-many-public-methods
-
     def setUp(self) -> None:
         super().setUp()
 
-        init_adcm()
+        init()
         init_roles()
 
         self.files_dir = settings.BASE_DIR / "python" / "cm" / "tests" / "files"
@@ -73,23 +71,7 @@ class TestAPI(BaseTestCase):
         self.service = "ZOOKEEPER"
         self.component = "ZOOKEEPER_SERVER"
 
-    def load_bundle(self, bundle_name):
-        with open(self.files_dir / bundle_name, encoding=settings.ENCODING_UTF_8) as f:
-            response: Response = self.client.post(
-                path=reverse("upload-bundle"),
-                data={"file": f},
-            )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        response: Response = self.client.post(
-            path=reverse("load-bundle"),
-            data={"bundle_file": bundle_name},
-        )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-
-    def get_service_proto_id(self):
+    def get_service_proto_id(self) -> int | None:
         response: Response = self.client.get(reverse("service-prototype-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -98,9 +80,9 @@ class TestAPI(BaseTestCase):
             if service["name"] == self.service:
                 return service["id"]
 
-        raise AssertionError
+        return None
 
-    def get_component_id(self, cluster_id, service_id, component_name):
+    def get_component_id(self, cluster_id: int, service_id: int, component_name: str) -> int | None:
         response: Response = self.client.get(
             reverse("component", kwargs={"cluster_id": cluster_id, "service_id": service_id})
         )
@@ -111,36 +93,31 @@ class TestAPI(BaseTestCase):
             if comp["name"] == component_name:
                 return comp["id"]
 
-        raise AssertionError
+        return None
 
-    def get_cluster_proto_id(self):
+    def get_cluster_proto_id(self) -> tuple[int, int]:
         response: Response = self.client.get(reverse("cluster-prototype-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        for cluster in response.json()["results"]:
-            return cluster["bundle_id"], cluster["id"]
+        return response.json()["results"][0]["bundle_id"], response.json()["results"][0]["id"]
 
-    def get_host_proto_id(self):
+    def create_host(self, fqdn: str, name: str | None = None) -> tuple[int, int, int]:
+        name = name or uuid4().hex
+
         response: Response = self.client.get(reverse("host-prototype-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        for host in response.json()["results"]:
-            return host["bundle_id"], host["id"]
+        ssh_bundle_id = response.json()["results"][0]["bundle_id"]
+        host_proto = response.json()["results"][0]["id"]
 
-    def get_host_provider_proto_id(self):
         response: Response = self.client.get(reverse("provider-prototype-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        for provider in response.json()["results"]:
-            return provider["bundle_id"], provider["id"]
+        provider_proto = response.json()["results"][0]["id"]
 
-    def create_host(self, fqdn, name=None):
-        name = name or uuid4().hex
-        ssh_bundle_id, host_proto = self.get_host_proto_id()
-        _, provider_proto = self.get_host_provider_proto_id()
         response: Response = self.client.post(reverse("provider"), {"name": name, "prototype_id": provider_proto})
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -201,7 +178,7 @@ class TestAPI(BaseTestCase):
     def test_cluster(self):  # pylint: disable=too-many-statements
         cluster_name = "test-cluster"
         cluster_url = reverse("cluster")
-        self.load_bundle(self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
         bundle_id, proto_id = self.get_cluster_proto_id()
 
         response: Response = self.client.post(cluster_url, {})
@@ -282,7 +259,7 @@ class TestAPI(BaseTestCase):
         name = "test-cluster"
         cluster_url = reverse("cluster")
 
-        self.load_bundle(self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
         bundle_id, proto_id = self.get_cluster_proto_id()
 
         response: Response = self.client.post(cluster_url, {"name": name, "prototype_id": proto_id})
@@ -339,8 +316,8 @@ class TestAPI(BaseTestCase):
         host = "test.host.net"
         cluster_url = reverse("cluster")
 
-        self.load_bundle(self.bundle_adh_name)
-        self.load_bundle(self.bundle_ssh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_ssh_name)
 
         adh_bundle_id, cluster_proto = self.get_cluster_proto_id()
 
@@ -402,7 +379,7 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.json()["code"], "BUNDLE_CONFLICT")
 
     def test_service(self):
-        self.load_bundle(self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
         service_id = self.get_service_proto_id()
         service_url = reverse("service-prototype-list")
         this_service_url = reverse("service-prototype-detail", kwargs={"prototype_pk": service_id})
@@ -434,7 +411,7 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
     def test_cluster_service(self):
-        self.load_bundle(self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
 
         service_proto_id = self.get_service_proto_id()
         bundle_id, cluster_proto_id = self.get_cluster_proto_id()
@@ -459,7 +436,7 @@ class TestAPI(BaseTestCase):
         response: Response = self.client.post(
             this_service_url,
             {
-                "prototype_id": -service_proto_id,
+                "prototype_id": -1 * service_proto_id,
             },
         )
 
@@ -503,8 +480,8 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
     def test_hostcomponent(self):  # pylint: disable=too-many-statements,too-many-locals
-        self.load_bundle(self.bundle_adh_name)
-        self.load_bundle(self.bundle_ssh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_ssh_name)
 
         adh_bundle_id, cluster_proto = self.get_cluster_proto_id()
         ssh_bundle_id, _, host_id = self.create_host(self.host)
@@ -676,7 +653,7 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.json()["code"], "BUNDLE_CONFLICT")
 
     def test_config(self):  # pylint: disable=too-many-statements
-        self.load_bundle(self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
         adh_bundle_id, proto_id = self.get_cluster_proto_id()
         service_proto_id = self.get_service_proto_id()
         response: Response = self.client.post(reverse("cluster"), {"name": self.cluster, "prototype_id": proto_id})

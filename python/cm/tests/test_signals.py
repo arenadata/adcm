@@ -21,8 +21,6 @@ from rbac.models import User
 
 
 class SignalsTest(BaseTestCase):
-    """Tests for `cm.models.MessageTemplate` methods"""
-
     @patch("cm.signals.model_delete")
     @patch("cm.signals.model_change")
     def test_update_delete_signals(self, model_change, model_delete):
@@ -48,4 +46,5 @@ class SignalsTest(BaseTestCase):
         )
 
         gc.hosts.add(host)
+
         self.assertEqual(2, m2m_change.call_count)

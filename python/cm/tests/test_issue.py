@@ -37,23 +37,30 @@ class CreateIssueTest(BaseTestCase):
     """Tests for `cm.issue.create_issues()`"""
 
     def setUp(self) -> None:
+        super().setUp()
+
         self.hierarchy = generate_hierarchy()
         self.cluster = self.hierarchy['cluster']
         self.tree = Tree(self.cluster)
 
     def test_new_issue(self):
         """Test if new issue is propagated to all affected objects"""
+
         issue_type = ConcernCause.Config
         create_issue(self.cluster, issue_type)
         own_issue = self.cluster.get_own_issue(issue_type)
+
         self.assertIsNotNone(own_issue)
+
         for node in self.tree.get_directly_affected(self.tree.built_from):
             concerns = list(node.value.concerns.all())
+
             self.assertEqual(len(concerns), 1)
             self.assertEqual(own_issue.pk, concerns[0].pk)
 
     def test_same_issue(self):
         """Test if issue could not be added more than once"""
+
         issue_type = ConcernCause.Config
         create_issue(self.cluster, issue_type)
         create_issue(self.cluster, issue_type)  # create twice
@@ -64,6 +71,7 @@ class CreateIssueTest(BaseTestCase):
 
     def test_few_issues(self):
         """Test if object could have more than one issue"""
+
         issue_type_1 = ConcernCause.Config
         issue_type_2 = ConcernCause.Import
         create_issue(self.cluster, issue_type_1)
@@ -101,9 +109,9 @@ class CreateIssueTest(BaseTestCase):
 
 
 class RemoveIssueTest(BaseTestCase):
-    """Tests for `cm.issue.create_issues()`"""
-
     def setUp(self) -> None:
+        super().setUp()
+
         self.hierarchy = generate_hierarchy()
         self.cluster = self.hierarchy['cluster']
         self.tree = Tree(self.cluster)

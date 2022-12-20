@@ -27,7 +27,7 @@ from audit.models import (
 from rbac.models import User
 
 
-class TestUser(BaseTestCase):
+class TestUserAudit(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 

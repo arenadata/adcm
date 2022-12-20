@@ -33,7 +33,6 @@ class TestAdcmConfig(BaseTestCase):
 
         for spec, conf, test_conf in test_data:
             with self.subTest(conf=conf, spec=spec):
-
                 config = process_config(obj_mock, spec, conf)
 
                 self.assertDictEqual(config, test_conf)

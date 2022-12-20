@@ -43,6 +43,11 @@ class TestPrototypeAPI(BaseTestCase):
 
         self.assertEqual(len(response.data["results"]), 2)
 
+    def test_adcm_list(self):
+        response: Response = self.client.get(path=reverse("adcm-prototype-list"))
+
+        self.assertEqual(response.data["count"], 1)
+
     def test_list_filter_name(self):
         response: Response = self.client.get(reverse("prototype-list"), {"name": "test_prototype_2"})
 
@@ -56,6 +61,15 @@ class TestPrototypeAPI(BaseTestCase):
         )
 
         self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["id"], self.prototype_1.pk)
+
+    def test_adcm_list_filter_bundle_id(self):
+        response: Response = self.client.get(
+            reverse("adcm-prototype-list"),
+            {"bundle_id": self.bundle_1.pk},
+        )
+
+        self.assertEqual(response.data["count"], 1)
         self.assertEqual(response.data["results"][0]["id"], self.prototype_1.pk)
 
     def test_list_ordering_display_name(self):
@@ -92,3 +106,10 @@ class TestPrototypeAPI(BaseTestCase):
         )
 
         self.assertEqual(response.data["id"], self.prototype_2.pk)
+
+    def test_adcm_retrieve(self):
+        response: Response = self.client.get(
+            reverse("adcm-prototype-detail", kwargs={"prototype_pk": self.prototype_1.pk}),
+        )
+
+        self.assertEqual(response.data["id"], self.prototype_1.pk)
