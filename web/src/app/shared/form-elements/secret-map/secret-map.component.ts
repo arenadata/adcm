@@ -27,12 +27,10 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
       .pipe(this.takeUntil())
       .subscribe((a) => {
         this.dummyControl.clear();
-        if (a) {
-          Object.keys(a).forEach((key) => {
-            const value = a[key] === '' ? '' : this.dummy
-            this.dummyControl.push(new FormGroup({key: new FormControl(key, Validators.required), value: new FormControl(value)}));
-          })
-        }
+        this.items.controls.forEach((control, i)=>{
+          const itemsValue = control.value.value === '' ? '' : this.dummy
+          this.dummyControl.push(new FormGroup({key: new FormControl(control.value.key, Validators.required), value: new FormControl(itemsValue)}));
+        })
       })
   }
 
@@ -54,13 +52,8 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
   }
 
   onBlur(index): void {
-    const controlValue = { ...this.control.value, [this.dummyControl.value[index].key]: this.dummyControl.value[index].value };
-    delete controlValue[""];
-
-    this.control.setValue( controlValue || this.value, { emitEvent: false });
-
-    const value = this.dummyControl.value[index]?.value === null || this.dummyControl.value[index]?.value === '' ? '' : this.dummy
-    this.dummyControl.at(index).setValue({ key: this.dummyControl.value[index].key, value });
+    const controlValue = { key: this.dummyControl.value[index].key, value: this.dummyControl.value[index].value };
+    this.items.at(index).setValue( controlValue);
   }
 
   onFocus(): void {
