@@ -42,6 +42,7 @@ export class FieldDirective extends BaseDirective implements OnInit {
   }
 
   hasError(name: string) {
+    this.control.markAsTouched();
     return this.control.hasError(name);
   }
 }
