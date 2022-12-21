@@ -43,7 +43,8 @@ key=/root/.ssh/id_rsa
 
 if [ ! -f "${adcmvar}"/cluster.db ]; then
     echo "Assume first run, generate Django secret key"
-    "${adcmroot}"/python/manage.py generate_secret_key "${adcmsecretfile}"
+    "${adcmroot}"/python/manage.py generate_secret_key
+    mv "${adcmroot}/python/secretkey.txt" "${adcmsecretfile}"
 fi
 
 if [ ! \( -f "${adcmuserconf}/ssl/cert.pem" -a -f "${adcmuserconf}/ssl/key.pem" \) ]; then
