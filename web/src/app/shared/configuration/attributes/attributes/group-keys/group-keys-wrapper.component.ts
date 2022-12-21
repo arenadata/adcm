@@ -103,8 +103,10 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
         this.groupControl.enable();
         if (this.groupControl.value) {
           this.parameterControl().enable();
+          if (this.field) this.field.disabled = false;
         } else {
           this.parameterControl().disable();
+          if (this.field) this.field.disabled = true;
         }
         this.disableIfReadOnly();
       })
