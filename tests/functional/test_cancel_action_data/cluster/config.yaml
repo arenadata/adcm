@@ -29,9 +29,6 @@
             ansible_tags: success
         - <<: *multijob
           name: second_step
-          script: sleep.yaml
-        - <<: *multijob
-          name: third_step
       states:
         available: any
         on_success: success
@@ -44,26 +41,20 @@
         - <<: *multijob
         - <<: *multijob
           name: second_step
-          script: sleep.yaml
-        - <<: *multijob
-          name: third_step
           script: failed.yaml
       states:
         available: any
         on_fail: failed
 
-    multi_job_fail_second_job:
+    multi_job_fail_first_job:
       type: task
-      display_name: "multi_job_fail_second_job"
+      display_name: "multi_job_fail_first_job"
       allow_to_terminate: true
       scripts:
         - <<: *multijob
-          script: sleep.yaml
-        - <<: *multijob
-          name: second_step
           script: failed.yaml
         - <<: *multijob
-          name: third_step
+          name: second_step
       states:
         available: any
         on_success: success

@@ -61,6 +61,7 @@ class TaskListLocators:
                 """Task List page row elements locators"""
 
                 job_name = BaseLocator(By.CSS_SELECTOR, "app-job-name a", "Job name")
+                job_name_aborted = BaseLocator(By.CSS_SELECTOR, "app-job-name span", "Job name aborted")
                 job_start_date = BaseLocator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Job start date")
                 job_finish_date = BaseLocator(By.CSS_SELECTOR, "mat-cell:nth-child(3)", "Job finish date")
                 job_status = BaseLocator(By.CSS_SELECTOR, "app-job-status-column mat-icon", "Job status")
