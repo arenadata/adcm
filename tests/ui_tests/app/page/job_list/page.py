@@ -124,19 +124,49 @@ class JobListPage(BasePageObject):
         )
 
     def get_all_jobs_info(self) -> List[SubTaskJobInfo]:
-        """
-        Returns information about all jobs
-        from expanded first task's jobs list
-        """
         expand_task_locators = TaskListLocators.Table.ExpandedTask
         job_rows = self.find_elements(expand_task_locators.row)
-        return [
-            SubTaskJobInfo(
-                name=self.find_child(job, expand_task_locators.Row.job_name).text,
-                status=self._get_status_from_class_string(self.find_child(job, expand_task_locators.Row.job_status)),
-            )
-            for job in job_rows
-        ]
+        jobs = []
+        for job in job_rows:
+            status = self._get_status_from_class_string(self.find_child(job, expand_task_locators.Row.job_status))
+            if status == JobStatus.ABORTED:
+                jobs.append(
+                    SubTaskJobInfo(
+                        name=self.find_child(job, expand_task_locators.Row.job_name_aborted).text, status=status
+                    )
+                )
+            else:
+                jobs.append(
+                    SubTaskJobInfo(name=self.find_child(job, expand_task_locators.Row.job_name).text, status=status)
+                )
+        return jobs
+
+    def get_jobs_amount(self) -> int:
+        expand_task_locators = TaskListLocators.Table.ExpandedTask
+        return len(self.find_elements(expand_task_locators.row))
+
+    def get_task_info(self, job_row: int = 0) -> SubTaskJobInfo:  # action
+        row = self.table.get_row(job_row)
+
+        def extract_status(locator):
+            return self._get_status_from_class_string(self.find_child(row, locator, timeout=4))
+
+        row_locators = TaskListLocators.Table.Row
+        get_status = FromOneOf(
+            [
+                DataSource(extract_status, [row_locators.status]),
+                DataSource(extract_status, [row_locators.status_under_btn]),
+            ],
+            (KeyError, TimeoutError),
+        )
+        get_name_element = FromOneOf(
+            [
+                DataSource(self.find_child, [row, row_locators.action_name, 1]),
+                DataSource(self.find_child, [row, row_locators.task_action_name, 1]),
+            ],
+            (TimeoutError, TimeoutException, AssertionError),
+        )
+        return SubTaskJobInfo(name=get_name_element().text, status=get_status())
 
     @allure.step('Expand task in row {row_num}')
     def expand_task_in_row(self, row_num: int = 0):
