@@ -227,7 +227,9 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   private _getConfig(url: string): Observable<IConfig> {
     this.isLoading = true;
     return this.service.getConfig(url).pipe(
-      tap((config) => this.attributeUniqId = this.attributesSrv.init(config.attr)),
+      tap((config) => {
+        if (!this.attributeUniqId) this.attributeUniqId = this.attributesSrv.init(config.attr);
+      }),
       tap((c) => this.rawConfig.next(c)),
       finalize(() => this.isLoading = false),
       catchError(() => {
