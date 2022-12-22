@@ -37,6 +37,7 @@ export class FieldDirective extends BaseDirective implements OnInit {
 
   get isValid() {
     if (this.field.read_only) return true;
+    this.control.markAsTouched();
     const control = this.control;
     return control.valid && (control.dirty || control.touched);
   }
