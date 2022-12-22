@@ -89,13 +89,13 @@ def check_save_in_configs(cluster_config_page, field_type, expected_state, is_de
     if field_type in ['string', 'integer', 'text', 'float', 'file', 'json']:
         config_row.click()
     if field_type == 'secrettext':
-        cluster_config_page.config.reset_to_default(config_row)
+        cluster_config_page.config.clear_secret(config_row)
     if field_type == 'boolean' and is_default:
         for _ in range(3):
             cluster_config_page.config.click_boolean_checkbox(config_row)
     if field_type == 'password':
         if is_default:
-            cluster_config_page.config.reset_to_default(config_row)
+            cluster_config_page.config.clear_secret(config_row)
         else:
             config_row.click()
     if field_type == 'map':
