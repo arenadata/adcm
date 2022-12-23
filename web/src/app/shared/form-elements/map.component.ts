@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Directive, OnInit } from '@angular/core';
+import { Component, Directive, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 import { FieldDirective } from './field.directive';
@@ -17,7 +17,7 @@ import { FieldDirective } from './field.directive';
 @Directive({
   selector: '[appBaseMapList]'
 })
-export class BaseMapListDirective extends FieldDirective implements OnInit {
+export class BaseMapListDirective extends FieldDirective implements OnInit, OnChanges {
   asList: boolean;
   items = new FormArray([]);
 
@@ -25,13 +25,7 @@ export class BaseMapListDirective extends FieldDirective implements OnInit {
     super();
   }
 
-  ngOnInit() {
-    if (!Object.keys(this.field.value || {}).length) this.control.setValue('');
-    this.reload();
-    this.items.valueChanges.pipe(
-      this.takeUntil()
-    ).subscribe((a: { key: string; value: string }[]) => this.prepare(a));
-
+  ngOnChanges(changes: SimpleChanges) {
     this.control.statusChanges.pipe(
       this.takeUntil()
     ).subscribe((state) => {
@@ -49,6 +43,14 @@ export class BaseMapListDirective extends FieldDirective implements OnInit {
         this.control.markAsTouched();
       }
     });
+  }
+
+  ngOnInit() {
+    if (!Object.keys(this.field.value || {}).length) this.control.setValue('');
+    this.reload();
+    this.items.valueChanges.pipe(
+      this.takeUntil()
+    ).subscribe((a: { key: string; value: string }[]) => this.prepare(a));
   }
 
   prepare(a: { key: string; value: string }[]) {
