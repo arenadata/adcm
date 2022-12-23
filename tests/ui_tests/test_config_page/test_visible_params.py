@@ -187,7 +187,7 @@ def _check_expectations_for_group_configs_fields(page, combo: ParamCombination, 
                 page.config.click_on_advanced()
             page.config.expand_or_close_group(group_name, expand=True)
         if combo.field_type == "password":
-            page.config.reset_to_default(config_item)
+            page.config.clear_secret(config_item)
         else:
             page.config.click_on_advanced()
             page.config.click_on_advanced()

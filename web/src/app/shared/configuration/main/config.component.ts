@@ -214,11 +214,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
       Object.keys(attr[a]).forEach((key) => {
         // we use here hasOwnProperty because field has boolean value and ruin condition check
         if (attrSrv[a] && attrSrv[a].hasOwnProperty(key)) {
-          if (attr[a][key]?.fields) {
-            attr[a][key].fields = attrSrv[a][key];
-          } else {
-            attr[a][key] = attrSrv[a][key];
-          }
+          attr[a][key] = attrSrv[a][key];
         }
       });
     })
