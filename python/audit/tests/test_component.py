@@ -38,7 +38,7 @@ from cm.models import (
 from rbac.models import User
 
 
-class TestComponent(BaseTestCase):
+class TestComponentAudit(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 

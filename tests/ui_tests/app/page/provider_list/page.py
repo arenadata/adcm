@@ -20,7 +20,10 @@ import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webelement import WebElement
 from tests.ui_tests.app.page.common.base_page import BasePageObject
-from tests.ui_tests.app.page.common.dialogs.locators import ActionDialog, DeleteDialog
+from tests.ui_tests.app.page.common.dialogs.locators import (
+    ActionDialog,
+    DeleteDialogLocators,
+)
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
@@ -108,6 +111,6 @@ class ProviderListPage(BasePageObject):
     def delete_provider_in_row(self, row: WebElement):
         """Delete host by button from row"""
         self.find_child(row, ProviderListLocators.ProviderTable.ProviderRow.delete_btn).click()
-        self.wait_element_visible(DeleteDialog.body)
-        self.find_and_click(DeleteDialog.yes)
-        self.wait_element_hide(DeleteDialog.body)
+        self.wait_element_visible(DeleteDialogLocators.body)
+        self.find_and_click(DeleteDialogLocators.yes)
+        self.wait_element_hide(DeleteDialogLocators.body)

@@ -5,6 +5,9 @@ from typing import Type
 
 
 class Descriptor(Flag):
+    # locator is for internal use (e.g. element of list)
+    SERVICE = auto()
+    # locator should be available as element
     ELEMENT = auto()
     TEXT = auto()
     BUTTON = auto()

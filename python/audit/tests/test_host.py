@@ -45,7 +45,7 @@ from cm.models import (
 from rbac.models import User
 
 
-class TestHost(BaseTestCase):
+class TestHostAudit(BaseTestCase):
     # pylint: disable=too-many-public-methods,too-many-instance-attributes
 
     def setUp(self) -> None:

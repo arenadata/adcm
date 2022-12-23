@@ -16,10 +16,9 @@ from unittest.mock import patch
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
+from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
 
 from adcm.tests.base import BaseTestCase
-from cm.bundle import get_hash
 from cm.models import Bundle, Prototype
 
 
@@ -40,41 +39,20 @@ class TestBundle(BaseTestCase):
         )
         Prototype.objects.create(bundle=self.bundle_2, name=self.bundle_2.name)
 
-    def tearDown(self) -> None:
-        Path(settings.DOWNLOAD_DIR, self.test_bundle_filename).unlink(missing_ok=True)
-
-    def upload_bundle(self, bundle_path: Path = None):
-        if bundle_path is None:
-            bundle_path = self.test_bundle_path
-
-        with open(bundle_path, encoding=settings.ENCODING_UTF_8) as f:
-            return self.client.post(
-                path=reverse("upload-bundle"),
-                data={"file": f},
-            )
-
     def test_upload_bundle(self) -> None:
-        response: Response = self.upload_bundle()
+        self.upload_bundle(path=self.test_bundle_path)
 
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertTrue(Path(settings.DOWNLOAD_DIR, self.test_bundle_filename).exists())
 
     def test_load_bundle(self):
-        self.upload_bundle()
-
-        response: Response = self.client.post(
-            path=reverse("load-bundle"),
-            data={"bundle_file": self.test_bundle_filename},
-        )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data["hash"], get_hash(self.test_bundle_path))
+        self.upload_bundle(path=self.test_bundle_path)
+        self.load_bundle(path=self.test_bundle_path)
 
     def test_load_bundle_wrong_cluster_mm_action_no_host_action_prop_fail(self):
         bundle_filename = "bundle_test_cluster_wrong_host_action.tar"
 
         self.upload_bundle(
-            Path(
+            path=Path(
                 settings.BASE_DIR,
                 "python/api/tests/files",
                 bundle_filename,
@@ -93,7 +71,7 @@ class TestBundle(BaseTestCase):
         bundle_filename = "bundle_test_cluster_false_host_action.tar"
 
         self.upload_bundle(
-            Path(
+            path=Path(
                 settings.BASE_DIR,
                 "python/api/tests/files",
                 bundle_filename,
@@ -112,7 +90,7 @@ class TestBundle(BaseTestCase):
         bundle_filename = "bundle_test_cluster_host_action_true.tar"
 
         self.upload_bundle(
-            Path(
+            path=Path(
                 settings.BASE_DIR,
                 "python/api/tests/files",
                 bundle_filename,
@@ -130,7 +108,7 @@ class TestBundle(BaseTestCase):
         bundle_filename = "bundle_test_service_with_host_action.tar"
 
         self.upload_bundle(
-            Path(
+            path=Path(
                 settings.BASE_DIR,
                 "python/api/tests/files",
                 bundle_filename,
@@ -149,7 +127,7 @@ class TestBundle(BaseTestCase):
         bundle_filename = "bundle_test_cluster_action_with_ui_options.tar"
 
         self.upload_bundle(
-            Path(
+            path=Path(
                 settings.BASE_DIR,
                 "python/api/tests/files",
                 bundle_filename,
@@ -252,3 +230,37 @@ class TestBundle(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_distinct(self):
+        self.upload_and_load_bundle(
+            path=Path(
+                settings.BASE_DIR,
+                "python/api/tests/files/bundle_cluster_requires.tar",
+            )
+        )
+        self.upload_and_load_bundle(
+            path=Path(
+                settings.BASE_DIR,
+                "python/api/tests/files/test_bundle_distinct_1.tar",
+            )
+        )
+        self.upload_and_load_bundle(
+            path=Path(
+                settings.BASE_DIR,
+                "python/api/tests/files/test_bundle_distinct_2.tar",
+            )
+        )
+
+        response: Response = self.client.get(
+            reverse("cluster-prototype-list"),
+            {
+                "fields": "display_name",
+                "distinct": 1,
+                "ordering": "display_name",
+                "limit": 50,
+                "offset": 0,
+                "view": "interface",
+            },
+        )
+
+        self.assertEqual(response.data["count"], 2)

@@ -519,6 +519,9 @@ def process_secretmap(spec: dict, conf: dict) -> dict:
         if spec[key].get("type") != "secretmap":
             continue
 
+        if conf[key] is None:
+            continue
+
         for k, v in conf[key].items():
             if v.startswith(settings.ANSIBLE_VAULT_HEADER):
                 try:

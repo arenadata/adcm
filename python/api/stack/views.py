@@ -368,18 +368,19 @@ class ClusterPrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
         distinct = self.request.query_params.get("distinct")
         if field_names and distinct:
             for field_name in field_names.split(","):
-                values_list = queryset.values(field_name, "pk")
-                if not values_list:
-                    continue
+                unique_field_values = {getattr(item, field_name) for item in queryset}
+                for unique_field_value in unique_field_values:
+                    values_list = queryset.filter(**{field_name: unique_field_value}).values(field_name, "pk")
+                    if not values_list:
+                        continue
 
-                field_value = values_list[0][field_name]
-                pks.add(values_list[0]["pk"])
-                if len(values_list) == 1:
-                    continue
+                    pks.add(values_list[0]["pk"])
+                    if len(values_list) == 1:
+                        continue
 
-                for value in values_list[1:]:
-                    if value[field_name] != field_value:
-                        pks.add(value["pk"])
+                    for value in values_list[1:]:
+                        if value[field_name] != unique_field_value:
+                            pks.add(value["pk"])
 
         if pks:
             return queryset.filter(pk__in=pks)

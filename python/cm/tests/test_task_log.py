@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import tarfile
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -45,8 +46,6 @@ from cm.tests.utils import (
 
 
 class TaskLogLockTest(BaseTestCase):
-    """Tests for `cm.models.TaskLog` lock-related methods"""
-
     def setUp(self) -> None:
         super().setUp()
 

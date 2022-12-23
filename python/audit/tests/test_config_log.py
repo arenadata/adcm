@@ -28,7 +28,7 @@ from cm.models import Bundle, Cluster, ConfigLog, GroupConfig, ObjectConfig, Pro
 from rbac.models import User
 
 
-class TestConfigLog(BaseTestCase):
+class TestConfigLogAudit(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 

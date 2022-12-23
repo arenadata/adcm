@@ -25,7 +25,16 @@ from rest_framework.status import HTTP_201_CREATED
 
 from adcm.tests.base import BaseTestCase
 from cm.adcm_config import ansible_decrypt
+from cm.api import delete_host_provider
+from cm.bundle import delete_bundle
+from cm.errors import AdcmEx
 from cm.models import Bundle, ConfigLog
+from cm.tests.test_upgrade import (
+    cook_cluster,
+    cook_cluster_bundle,
+    cook_provider,
+    cook_provider_bundle,
+)
 
 
 class TestBundle(BaseTestCase):
@@ -109,7 +118,7 @@ class TestBundle(BaseTestCase):
         finally:
             os.remove(bundle_filepath)
 
-    def load_bundle(self, bundle_name: str) -> int:
+    def _load_bundle(self, bundle_name: str) -> int:
         with open(Path(self.files_dir, bundle_name), encoding=settings.ENCODING_UTF_8) as f:
             with transaction.atomic():
                 response = self.client.post(
@@ -157,7 +166,7 @@ class TestBundle(BaseTestCase):
             filename="test_bundle.tar.gz",
         ) as bundle:
             try:
-                bundle_id = self.load_bundle(bundle)
+                bundle_id = self._load_bundle(bundle)
                 Bundle.objects.get(pk=bundle_id).delete()
             except transaction.TransactionManagementError:  # == IntegrityError
                 pass
@@ -178,7 +187,7 @@ class TestBundle(BaseTestCase):
                 bundle_content=self.bundle_config_template.format(**{**kwargs, **value}),
                 filename="test_bundle.tar.gz",
             ) as bundle:
-                bundle_id = self.load_bundle(bundle)
+                bundle_id = self._load_bundle(bundle)
                 Bundle.objects.get(pk=bundle_id).delete()
 
     def test_secretfile(self):
@@ -260,3 +269,24 @@ class TestBundle(BaseTestCase):
                 "python/cm/tests/files/test_secret_config_v12_community.tar",
             ),
         )
+
+    def test_cluster_bundle_deletion(self):
+        bundle = cook_cluster_bundle("1.0")
+        cook_cluster(bundle, "TestCluster")
+        try:
+            delete_bundle(bundle)
+        except AdcmEx as e:
+            self.assertEqual(e.code, "BUNDLE_CONFLICT")
+
+    def test_provider_bundle_deletion(self):
+        bundle = cook_provider_bundle("1.0")
+        provider = cook_provider(bundle, "TestProvider")
+        try:
+            delete_bundle(bundle)
+        except AdcmEx as e:
+            self.assertEqual(e.code, "BUNDLE_CONFLICT")
+
+        try:
+            delete_host_provider(provider)
+        except AdcmEx as e:
+            self.assertEqual(e.code, "PROVIDER_CONFLICT")

@@ -45,7 +45,7 @@ from cm.models import (
 from rbac.models import User
 
 
-class TestGroupConfig(BaseTestCase):
+class TestGroupConfigAudit(BaseTestCase):
     # pylint: disable=too-many-public-methods,too-many-instance-attributes
 
     def setUp(self) -> None:

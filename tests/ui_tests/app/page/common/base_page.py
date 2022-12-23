@@ -13,7 +13,7 @@
 """The most basic PageObject classes"""
 
 from contextlib import contextmanager
-from typing import List, Union
+from typing import List
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -23,7 +23,6 @@ from selenium.common.exceptions import (
     StaleElementReferenceException,
     TimeoutException,
 )
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from selenium.webdriver.support import expected_conditions as EC
@@ -42,7 +41,7 @@ from tests.ui_tests.app.page.common.header_locators import (
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.core.checks import check_elements_are_displayed
 from tests.ui_tests.core.interactors import Interactor
-from tests.ui_tests.core.locators import BaseLocator, Locator, autoname
+from tests.ui_tests.core.locators import Locator, autoname
 from tests.ui_tests.utils import assert_enough_rows
 
 
@@ -81,7 +80,7 @@ class BasePageObject(Interactor):
         self.footer = Footer(self.driver, self.default_loc_timeout)
         allure.dynamic.label("page_url", path_template)
 
-    def open(self, timeout: int = None, *, close_popup: bool = False):
+    def open(self, timeout: int | None = None, *, close_popup: bool = False):
         url = self.base_url + self.path
 
         def _open_page():
@@ -166,18 +165,6 @@ class BasePageObject(Interactor):
     @allure.step("Refresh page")
     def refresh(self):
         self.driver.refresh()
-
-    @allure.step('Scroll to element')
-    def scroll_to(self, locator: Union[BaseLocator, WebElement]) -> WebElement:
-        """Scroll to element"""
-        element = locator if isinstance(locator, WebElement) else self.find_element(locator)
-        # Hack for firefox because of move_to_element does not scroll to the element
-        # https://github.com/mozilla/geckodriver/issues/776
-        if self.driver.capabilities['browserName'] == 'firefox':
-            self.driver.execute_script('arguments[0].scrollIntoView(true)', element)
-        action = ActionChains(self.driver)
-        action.move_to_element(element).perform()
-        return element
 
 
 class Header(Interactor):  # pylint: disable=too-many-public-methods

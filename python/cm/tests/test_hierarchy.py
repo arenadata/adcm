@@ -202,7 +202,6 @@ class HierarchyTest(BaseTestCase):
                 tree.get_node(hierarchy_objects[name])
 
     def test_get_directly_affected(self):
-        """Test `hierarchy.Tree.get_directly_affected()` function"""
         hierarchy_objects = generate_hierarchy()
         tree = Tree(hierarchy_objects["cluster_1"])
 
@@ -303,7 +302,6 @@ class HierarchyTest(BaseTestCase):
             self.assertSetEqual(expected_affected, got_affected)
 
     def test_get_all_affected(self):
-        """Test `hierarchy.Tree.get_all_affected()` function"""
         hierarchy_objects = generate_hierarchy()
         tree = Tree(hierarchy_objects["cluster_1"])
 

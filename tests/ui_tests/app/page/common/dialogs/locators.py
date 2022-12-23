@@ -22,7 +22,7 @@ class Dialog:
     body = BaseLocator(By.CSS_SELECTOR, "mat-dialog-container", "Dialog with choices")
 
 
-class DeleteDialog(Dialog):
+class DeleteDialogLocators(Dialog):
     yes = BaseLocator(By.XPATH, "//button//span[contains(text(), 'Yes')]", "Yes button in delete dialog")
 
 

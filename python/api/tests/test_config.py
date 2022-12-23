@@ -26,6 +26,7 @@ from cm.models import ConfigLog
 class TestConfigPasswordAPI(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
+
         _, self.cluster, self.config_log = self.upload_bundle_create_cluster_config_log(
             bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_password.tar")
         )
@@ -80,6 +81,7 @@ class TestConfigPasswordAPI(BaseTestCase):
 class TestConfigSecrettextAPI(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
+
         _, self.cluster, self.config_log = self.upload_bundle_create_cluster_config_log(
             bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_secrettext.tar")
         )
@@ -134,6 +136,7 @@ class TestConfigSecrettextAPI(BaseTestCase):
 class TestConfigSecretfileAPI(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
+
         _, self.cluster, self.config_log = self.upload_bundle_create_cluster_config_log(
             bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_secretfile.tar")
         )
@@ -188,6 +191,7 @@ class TestConfigSecretfileAPI(BaseTestCase):
 class TestConfigSecretmapAPI(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
+
         _, self.cluster, self.config_log = self.upload_bundle_create_cluster_config_log(
             bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_secretmap.tar")
         )
@@ -240,3 +244,18 @@ class TestConfigSecretmapAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertEqual(config_log.config["secretmap"], self.config_log.config["secretmap"])
+
+    def test_post_null_secretmap_success(self):
+
+        response: Response = self.client.post(
+            path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+            params={"view": "interface"},
+            data={"config": {"secretmap": None}},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.cluster.refresh_from_db()
+        config_log = ConfigLog.objects.get(pk=self.cluster.config.current)
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertIsNone(config_log.config["secretmap"])

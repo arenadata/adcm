@@ -55,7 +55,7 @@ from rbac.models import Policy, Role, User
 from rbac.upgrade.role import init_roles
 
 
-class TestCluster(BaseTestCase):
+class TestClusterAudit(BaseTestCase):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
     def setUp(self) -> None:
@@ -199,6 +199,7 @@ class TestCluster(BaseTestCase):
 
     def get_sc(self) -> HostComponent:
         service_component_prototype = Prototype.objects.create(bundle=self.bundle, type="component")
+
         return ServiceComponent.objects.create(
             cluster=self.cluster,
             service=self.service,
@@ -465,7 +466,6 @@ class TestCluster(BaseTestCase):
         )
 
     def test_update(self):
-
         self.client.patch(
             path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
             data={

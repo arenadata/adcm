@@ -207,11 +207,12 @@ def gen_job_log(task: TaskLog) -> JobLog:
     )
 
 
-def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements
+def generate_hierarchy():
     """
     Generates hierarchy:
         cluster - service - component - host - provider
     """
+
     adcm = gen_adcm()
     adcm.config = gen_config()
     adcm.save()

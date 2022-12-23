@@ -26,7 +26,7 @@ from cm.models import (
 )
 
 
-class TestPrototypeAPI(BaseTestCase):
+class TestActionAPI(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 

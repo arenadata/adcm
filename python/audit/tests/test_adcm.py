@@ -29,7 +29,7 @@ from cm.models import ADCM, Action, Bundle, ConfigLog, ObjectConfig, Prototype, 
 from rbac.models import User
 
 
-class TestADCM(BaseTestCase):
+class TestADCMAudit(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
