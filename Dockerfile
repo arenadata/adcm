@@ -13,7 +13,8 @@ RUN apk update && \
         runit \
         nginx \
         openssh-client \
-        logrotate
+        logrotate \
+        sshpass
 COPY requirements*.txt /adcm/
 RUN pip install --upgrade pip &&  \
     pip install --no-cache-dir -r /adcm/requirements-venv-default.txt && \
