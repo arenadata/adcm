@@ -25,7 +25,7 @@ import { EventMessage, SocketState } from '@app/core/store';
 import { SocketListenerDirective } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
 import { BehaviorSubject, Observable, of, Subscription } from 'rxjs';
-import { catchError, finalize, tap } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, finalize, tap } from 'rxjs/operators';
 
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
@@ -78,7 +78,15 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   ) {
     super(socket);
     this.isGroupConfig = route.snapshot.data['isGroupConfig'];
-    this.worker$ = service.worker$.pipe(this.takeUntil());
+    this.worker$ = service.worker$.pipe(distinctUntilChanged());
+
+    service.worker$.subscribe((data) => {
+      this.getConfigUrlFromWorker();
+      if (data.current.config && !this.isLoading) {
+        this.service.changeService(data.current.typeName);
+        this._getConfig(data.current.config).subscribe();
+      }
+    });
   }
 
   ngAfterViewInit(): void {}
@@ -206,11 +214,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
       Object.keys(attr[a]).forEach((key) => {
         // we use here hasOwnProperty because field has boolean value and ruin condition check
         if (attrSrv[a] && attrSrv[a].hasOwnProperty(key)) {
-          if (attr[a][key]?.fields) {
-            attr[a][key].fields = attrSrv[a][key];
-          } else {
-            attr[a][key] = attrSrv[a][key];
-          }
+          attr[a][key] = attrSrv[a][key];
         }
       });
     })
@@ -222,7 +226,11 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   private _getConfig(url: string): Observable<IConfig> {
     this.isLoading = true;
     return this.service.getConfig(url).pipe(
-      tap((config) => this.attributeUniqId = this.attributesSrv.init(config.attr)),
+      tap((config) => {
+        if (!this.attributeUniqId) {
+          this.attributeUniqId = this.attributesSrv.init(config.attr);
+        }
+      }),
       tap((c) => this.rawConfig.next(c)),
       finalize(() => this.isLoading = false),
       catchError(() => {

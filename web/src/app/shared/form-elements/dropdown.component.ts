@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { Observable, of } from 'rxjs';
 
 import { FieldDirective } from './field.directive';
@@ -31,11 +31,18 @@ import { FieldDirective } from './field.directive';
     </ng-container>
   `,
 })
-export class DropdownComponent extends FieldDirective implements OnInit {
+export class DropdownComponent extends FieldDirective implements OnInit, AfterViewInit {
   options$: Observable<{ id: number | string; name: string }[]>;
+
+  ngAfterViewInit() {
+    setTimeout(() => {
+      this.form.get(this.field.name).markAsTouched();
+    }, 100)
+  }
 
   ngOnInit() {
     super.ngOnInit();
+
     if (this.field.limits) {
       const o = Object.entries<string | number>(this.field.limits.option).map((e) => ({
         id: String(e[1]),

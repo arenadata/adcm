@@ -80,6 +80,7 @@ class CommonConfigMenu:
         )
         history = Locator(By.CSS_SELECTOR, "mat-list-item span.accent", "Row history")
         reset_btn = Locator(By.CSS_SELECTOR, "button[mattooltip='Reset to default']", "Reset button")
+        clear_btn = Locator(By.CSS_SELECTOR, "button[mattooltip='Remove value']", "Clear button")
         group_chbx = Locator(By.CSS_SELECTOR, ".group-checkbox mat-checkbox", "Group checkbox")
         checkbox = Locator(By.CSS_SELECTOR, "app-fields-boolean mat-checkbox", "Checkbox")
 
