@@ -49,7 +49,7 @@ export class MainService {
 
   constructor(private fields: FieldService,
               public cluster: ClusterService,
-              injector: Injector) {
+              private injector: Injector) {
     const current: TypeName | undefined = cluster.Current?.typeName;
     if (current === 'group_config') {
       this.configService = injector.get(ConfigGroupService);
@@ -72,6 +72,14 @@ export class MainService {
 
   changeVersion(url: string, id: number) {
     return this.configService.changeVersion(id, url);
+  }
+
+  changeService(type) {
+    if (type === 'group_config') {
+      this.configService = this.injector.get(ConfigGroupService);
+    } else {
+      this.configService = this.injector.get(ConfigService);
+    }
   }
 
   filterApply(options: TFormOptions[], search: ISearchParam) {
