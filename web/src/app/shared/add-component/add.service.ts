@@ -15,7 +15,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { convertToParamMap, Params } from '@angular/router';
 import { environment } from '@env/environment';
 import { forkJoin, Observable, of, throwError } from 'rxjs';
-import { catchError, concatAll, filter, map, switchMap } from 'rxjs/operators';
+import { catchError, concatAll, filter, map, switchMap, tap } from 'rxjs/operators';
 
 import { StackInfo, StackService } from '@app/core/services';
 import { ClusterService } from '@app/core/services/cluster.service';
@@ -168,10 +168,10 @@ export class AddService implements IAddService {
                     filter((yes) => yes),
                     switchMap(() =>
                       this.api.put(`/api/v1/stack/prototype/${o.prototype_id}/license/accept/`, {}).pipe(
-                        switchMap(() => this.cluster.addServices({prototype_id: o.prototype_id})
-                        )
+                        switchMap(() => this.cluster.addServices({prototype_id: o.prototype_id}))
                       )
-                    )
+                    ),
+                    tap(() => this.dialog.closeAll())
                   )
               )
             )
