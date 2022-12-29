@@ -66,7 +66,7 @@ class TestHeader:
     def test_header_help_links_for_authorised_user(self, app_fs):
         """Test header help links for authorised user"""
         params = {
-            "help_link": "t.me/joinchat/",
+            "help_link": "t.me/arenadata_cm",
             "arenadata_url": "docs.arenadata.io/",
             "docs_link_en": "en/ADCM/current/introduction/",
         }
