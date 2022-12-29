@@ -15,15 +15,15 @@ import { Component } from '@angular/core';
   selector: 'app-intro',
   template: `
     <p>
-      This is Arenadata Cluster Manager (ADCM) - the home of all your data. It connects together different data applications, providing a fast, reliable and enterprise-ready way to
-      manage your data landscape. Please read this short notice to start use ADCM in its most efficient way.
+      This is <a [href]="adcm_docs" target="_blank">Arenadata Cluster Manager (ADCM)</a> - the home of all your data. It connects together different data applications, providing a fast, reliable and enterprise-ready way to
+      manage your data landscape. Please read this short notice to start using ADCM in its most efficient way.
     </p>
     <div class="admin-warn">
       <ul>
         <li>
           <i
-            >We have to know ADCM's Url [ <b style="color: #00e676;">{{ adcm_url }}</b> ] to send information from host. We try to gues that information from url you enter in
-            browser. <br />But if your network has more complicated structure and we gues wrong, <a routerLink="/admin/settings">please fix that here</a>.</i
+            >We have to know ADCM's Url [ <b style="color: #00e676;">{{ adcm_url }}</b> ] to send information from host. We try to guess that information from url you enter in
+            browser. <br />But if your network has more complicated structure and we guess wrong, <a routerLink="/admin/settings">please fix that here</a>.</i
           >
         </li>
       </ul>
@@ -66,7 +66,7 @@ import { Component } from '@angular/core';
       <li>Component is a part of service, that is located on some host (ex. DataNode)</li>
     </ul>
     If you need a more deep dive into ADCM's functionality,
-    <a href="https://docs.arenadata.io/adcm/" target="_blank">start from docs</a>.
+    <a [href]="adcm_docs" target="_blank">start from docs</a>.
     <br />
     Now you are ready to start exploring ADCM by yourself - enjoy it!
     <p>&nbsp;</p>
@@ -75,4 +75,6 @@ import { Component } from '@angular/core';
 })
 export class IntroComponent {
   adcm_url = `${location.protocol}//${location.host}`;
+
+  adcm_docs = 'https://docs.arenadata.io/en/ADCM/current/introduction/intro.html';
 }
