@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Directive, Input, OnInit } from '@angular/core';
+import {Directive, HostListener, Input, OnInit} from '@angular/core';
 import { FormGroup } from '@angular/forms';
 
 import { IFieldOptions } from '../configuration/types';
@@ -23,6 +23,10 @@ export class FieldDirective extends BaseDirective implements OnInit {
   @Input() field: IFieldOptions;
   @Input() disabled: boolean;
 
+  @HostListener('keyup') changes() {
+    this.control.markAsTouched();
+  }
+
   ngOnInit() {
     this.control.markAllAsTouched();
   }
@@ -33,11 +37,13 @@ export class FieldDirective extends BaseDirective implements OnInit {
 
   get isValid() {
     if (this.field.read_only) return true;
+    this.control.markAsTouched();
     const control = this.control;
     return control.valid && (control.dirty || control.touched);
   }
 
   hasError(name: string) {
+    this.control.markAsTouched();
     return this.control.hasError(name);
   }
 }

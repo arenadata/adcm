@@ -51,13 +51,36 @@ export abstract class ListDirective extends BaseDirective implements OnInit, OnD
   addToSorting = false;
 
   @Input()
-  set dataSource(data: { results: any; count: number }) {
+  set dataSource(data: { results: any; count: number; previous: any }) {
     if (data) {
       const list = data.results;
+      const isListBlank = list.length === 0;
+      const hasPreviousPage = data.previous !== null;
       this.data = new MatTableDataSource<any>(list);
       this.changeCount(data.count);
       if (Array.isArray(list)) {
         this.listItemEvt.emit({ cmd: 'onLoad', row: list[0] });
+      }
+
+      if (hasPreviousPage && isListBlank) {
+        const url = this.router.url;
+        const urlHasSubdomain = url.includes('admin');
+        const path = this.route.snapshot.routeConfig.path;
+
+        const urlParams = {
+          page: this.getPageIndex() < 1 ? '0' : String(this.getPageIndex() - 1),
+          limit: this.getPageSize(),
+          filter: this.baseListDirective.listParams.get('filter'),
+          ordering: this.getSortParam(this.getSort()),
+        }
+
+        if (urlHasSubdomain && path) {
+          this.router.navigate(['./admin', path, urlParams]);
+        } else {
+          const { page } = urlParams;
+          this.updateLocalStorage('page', page);
+          history.back();
+        }
       }
     }
   }
@@ -127,6 +150,7 @@ export abstract class ListDirective extends BaseDirective implements OnInit, OnD
     const pageIndex = this.getPageIndex();
     const pageSize = this.getPageSize();
     const ordering = this.getSortParam(sort);
+    this.updateLocalStorage('ordering', ordering);
 
     this.router.navigate(
       [
@@ -201,4 +225,18 @@ export abstract class ListDirective extends BaseDirective implements OnInit, OnD
     this.clickCell(data.event, data.action, data.row);
   }
 
+  updateLocalStorage(key: string, value: string) {
+    const ls = localStorage.getItem('list:param');
+    let listParam = ls ? JSON.parse(ls) : null;
+
+    listParam = {
+      ...listParam,
+      [this.type]: {
+        ...listParam?.[this.type],
+        [key]: value
+      }
+    }
+
+    localStorage.setItem('list:param', JSON.stringify(listParam));
+  }
 }

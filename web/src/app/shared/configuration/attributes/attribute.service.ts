@@ -100,10 +100,24 @@ export class AttributeService {
       for (const [key, value] of this._attributes[uniqId].entries()) {
         json = {
           ...json,
-          [key]: value.form.getRawValue()
+          [key]: this.makeValue(value)
         };
       }
     }
+
+    return json;
+  }
+
+  makeValue(values) {
+    let json = {};
+    const formValue = values.form.getRawValue();
+
+    Object.keys(values.value).forEach((key, index) => {
+      json = {
+        ...json,
+        [key]: values.value[key]?.['fields'] ? { fields: formValue[key], value: values.value[key]?.value } : formValue[key]
+      }
+    })
 
     return json;
   }

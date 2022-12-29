@@ -267,6 +267,9 @@ class CommonConfigMenuObj(BasePageObject):
         """Click reset button"""
         self.find_child(row, CommonConfigMenu.ConfigRow.reset_btn).click()
 
+    def clear_secret(self, row: WebElement):
+        self.find_child(row, CommonConfigMenu.ConfigRow.clear_btn).click()
+
     @allure.step('Type "{values}" into config field with few inputs')
     def type_in_field_with_few_inputs(self, row: WebElement | str, values: list[str | int], clear: bool = False):
         """

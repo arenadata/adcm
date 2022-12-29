@@ -25,6 +25,18 @@ export class SecretTextComponent extends FieldDirective implements OnInit, OnCha
 
   ngOnChanges(): void {
     this.value = this.field.value as string;
+
+    this.control.statusChanges.pipe(this.takeUntil()).subscribe((status) => {
+      if (status === 'DISABLED') {
+        this.dummyControl.disable();
+        this.dummyControl.markAsUntouched();
+        this.control.markAsUntouched();
+      } else {
+        this.dummyControl.enable();
+        this.dummyControl.markAsTouched();
+        this.control.markAsTouched();
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -40,24 +52,16 @@ export class SecretTextComponent extends FieldDirective implements OnInit, OnCha
     this.dummyControl.setValue(null);
   }
 
+  clear(): void {
+    this.dummyControl.setValue(null);
+  }
+
   private _initDummyControl(): void {
     this.dummyControl = new FormControl(
       { value: this.control.value ? this.dummy : '', disabled: this.control.disabled },
       Validators.compose(this.field.required ? [Validators.required] : [])
     );
     this.dummyControl.markAllAsTouched();
-
-    this.control.statusChanges.pipe(this.takeUntil()).subscribe((status) => {
-      if (status === 'DISABLED') {
-        this.dummyControl.disable();
-        this.dummyControl.markAsUntouched();
-        this.control.markAsUntouched();
-      } else {
-        this.dummyControl.enable();
-        this.dummyControl.markAsTouched();
-        this.control.markAsTouched();
-      }
-    });
   }
 
 }

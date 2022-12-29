@@ -37,7 +37,6 @@ OBJECT_STATE_CREATED = "created"
 class JobStep:
     FIRST = "first_step"
     SECOND = "second_step"
-    THIRD = "third_step"
 
 
 class Status:
@@ -74,20 +73,20 @@ class TestTaskCancelRestart:
             action = cluster.action(name=action_name)
             expected_state = action.state_on_success
             task = action.run()
-            wait_for_job_status(get_or_raise(task.job_list(), display_name_is(JobStep.SECOND)))
-        with allure.step(f"Try to stop {JobStep.THIRD} when it not in running status"):
-            check_failed(self._cancel_job(get_or_raise(task.job_list(), display_name_is(JobStep.THIRD))), 409)
+            wait_for_job_status(get_or_raise(task.job_list(), display_name_is(JobStep.FIRST)))
+        with allure.step(f"Try to stop {JobStep.SECOND} when it not in running status"):
+            check_failed(self._cancel_job(get_or_raise(task.job_list(), display_name_is(JobStep.SECOND))), 409)
             self._check_task_status(task=task, expected_status=Status.SUCCESS)
             self._check_object_status(adcm_object=cluster, expected_state=expected_state)
-            self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.SUCCESS, Status.SUCCESS])
+            self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.SUCCESS])
 
         with allure.step("Run task on service"):
             service = cluster.service()
             action = service.action(name=action_name)
             task = action.run()
-            wait_for_job_status(get_or_raise(task.job_list(), display_name_is(JobStep.SECOND)))
-        with allure.step(f"Try to stop {JobStep.THIRD} when it not in running status"):
-            check_failed(self._cancel_job(get_or_raise(task.job_list(), display_name_is(JobStep.THIRD))), 409)
+            wait_for_job_status(get_or_raise(task.job_list(), display_name_is(JobStep.FIRST)))
+        with allure.step(f"Try to stop {JobStep.SECOND} when it not in running status"):
+            check_failed(self._cancel_job(get_or_raise(task.job_list(), display_name_is(JobStep.SECOND))), 409)
             self._check_task_status(task=task, expected_status=Status.SUCCESS)
             self._check_object_status(adcm_object=service, expected_state=expected_state)
             self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.SUCCESS, Status.SUCCESS])
@@ -96,9 +95,9 @@ class TestTaskCancelRestart:
             component = service.component()
             action = component.action(name=action_name)
             task = action.run()
-            wait_for_job_status(get_or_raise(task.job_list(), display_name_is(JobStep.SECOND)))
-        with allure.step(f"Try to stop {JobStep.THIRD} when it not in running status"):
-            check_failed(self._cancel_job(get_or_raise(task.job_list(), display_name_is(JobStep.THIRD))), 409)
+            wait_for_job_status(get_or_raise(task.job_list(), display_name_is(JobStep.FIRST)))
+        with allure.step(f"Try to stop {JobStep.SECOND} when it not in running status"):
+            check_failed(self._cancel_job(get_or_raise(task.job_list(), display_name_is(JobStep.SECOND))), 409)
             self._check_task_status(task=task, expected_status=Status.SUCCESS)
             self._check_object_status(adcm_object=component, expected_state=expected_state)
             self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.SUCCESS, Status.SUCCESS])
@@ -138,28 +137,28 @@ class TestTaskCancelRestart:
         with allure.step("Run task on cluster"):
             action = cluster.action(name=action_name)
             task = action.run()
-            self.wait_job_and_abort(task=task, job_wait=JobStep.THIRD, job_abort=JobStep.THIRD)
+            self.wait_job_and_abort(task=task, job_wait=JobStep.SECOND, job_abort=JobStep.SECOND)
             self._check_task_status(task=task, expected_status=Status.ABORTED)
             self._check_object_status(adcm_object=cluster, expected_state=OBJECT_STATE_CREATED)
-            self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.SUCCESS, Status.ABORTED])
+            self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.ABORTED])
 
         with allure.step("Run task on service"):
             service = cluster.service()
             action = service.action(name=action_name)
             task = action.run()
-            self.wait_job_and_abort(task=task, job_wait=JobStep.THIRD, job_abort=JobStep.THIRD)
+            self.wait_job_and_abort(task=task, job_wait=JobStep.SECOND, job_abort=JobStep.SECOND)
             self._check_task_status(task=task, expected_status=Status.ABORTED)
             self._check_object_status(adcm_object=service, expected_state=OBJECT_STATE_CREATED)
-            self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.SUCCESS, Status.ABORTED])
+            self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.ABORTED])
 
         with allure.step("Run task on component"):
             component = service.component()
             action = component.action(name=action_name)
             task = action.run()
-            self.wait_job_and_abort(task=task, job_wait=JobStep.THIRD, job_abort=JobStep.THIRD)
+            self.wait_job_and_abort(task=task, job_wait=JobStep.SECOND, job_abort=JobStep.SECOND)
             self._check_task_status(task=task, expected_status=Status.ABORTED)
             self._check_object_status(adcm_object=component, expected_state=OBJECT_STATE_CREATED)
-            self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.SUCCESS, Status.ABORTED])
+            self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.ABORTED])
 
     @pytest.mark.parametrize("action_name", ["multi_job_success"])
     def test_success_task_status_not_changing(self, cluster, action_name):
@@ -170,30 +169,30 @@ class TestTaskCancelRestart:
             action = cluster.action(name=action_name)
             expected_state = action.state_on_success
             task = action.run()
-            self.wait_job_and_abort(task=task, job_wait=JobStep.SECOND, job_abort=JobStep.SECOND)
+            self.wait_job_and_abort(task=task, job_wait=JobStep.FIRST, job_abort=JobStep.FIRST)
             self._check_task_status(task=task, expected_status=Status.SUCCESS)
             self._check_object_status(adcm_object=cluster, expected_state=expected_state)
-            self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.ABORTED, Status.SUCCESS])
+            self._check_jobs_status(task, expected_job_status=[Status.ABORTED, Status.SUCCESS])
 
         with allure.step("Run success task on service"):
             service = cluster.service()
             action = service.action(name=action_name)
             task = action.run()
-            self.wait_job_and_abort(task=task, job_wait=JobStep.SECOND, job_abort=JobStep.SECOND)
+            self.wait_job_and_abort(task=task, job_wait=JobStep.FIRST, job_abort=JobStep.FIRST)
             self._check_task_status(task=task, expected_status=Status.SUCCESS)
             self._check_object_status(adcm_object=service, expected_state=expected_state)
-            self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.ABORTED, Status.SUCCESS])
+            self._check_jobs_status(task, expected_job_status=[Status.ABORTED, Status.SUCCESS])
 
         with allure.step("Run success task on component"):
             component = service.component()
             action = component.action(name=action_name)
             task = action.run()
-            self.wait_job_and_abort(task=task, job_wait=JobStep.SECOND, job_abort=JobStep.SECOND)
+            self.wait_job_and_abort(task=task, job_wait=JobStep.FIRST, job_abort=JobStep.FIRST)
             self._check_task_status(task=task, expected_status=Status.SUCCESS)
             self._check_object_status(adcm_object=component, expected_state=expected_state)
-            self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.ABORTED, Status.SUCCESS])
+            self._check_jobs_status(task, expected_job_status=[Status.ABORTED, Status.SUCCESS])
 
-    @pytest.mark.parametrize("action_name", ["multi_job_fail_second_job"])
+    @pytest.mark.parametrize("action_name", ["multi_job_fail_first_job"])
     def test_cancel_failed_job_in_success_task(self, cluster, action_name):
         """
         Test to check that task with canceled failed job has success status
@@ -202,28 +201,28 @@ class TestTaskCancelRestart:
             action = cluster.action(name=action_name)
             expected_state = action.state_on_success
             task = action.run()
-            self.wait_job_and_abort(task=task, job_wait=JobStep.SECOND, job_abort=JobStep.SECOND)
+            self.wait_job_and_abort(task=task, job_wait=JobStep.FIRST, job_abort=JobStep.FIRST)
             self._check_task_status(task=task, expected_status=Status.SUCCESS)
             self._check_object_status(adcm_object=cluster, expected_state=expected_state)
-            self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.ABORTED, Status.SUCCESS])
+            self._check_jobs_status(task, expected_job_status=[Status.ABORTED, Status.SUCCESS])
 
         with allure.step("Run success task on service"):
             service = cluster.service()
             action = service.action(name=action_name)
             task = action.run()
-            self.wait_job_and_abort(task=task, job_wait=JobStep.SECOND, job_abort=JobStep.SECOND)
+            self.wait_job_and_abort(task=task, job_wait=JobStep.FIRST, job_abort=JobStep.FIRST)
             self._check_task_status(task=task, expected_status=Status.SUCCESS)
             self._check_object_status(adcm_object=service, expected_state=expected_state)
-            self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.ABORTED, Status.SUCCESS])
+            self._check_jobs_status(task, expected_job_status=[Status.ABORTED, Status.SUCCESS])
 
         with allure.step("Run success task on component"):
             component = service.component()
             action = component.action(name=action_name)
             task = action.run()
-            self.wait_job_and_abort(task=task, job_wait=JobStep.SECOND, job_abort=JobStep.SECOND)
+            self.wait_job_and_abort(task=task, job_wait=JobStep.FIRST, job_abort=JobStep.FIRST)
             self._check_task_status(task=task, expected_status=Status.SUCCESS)
             self._check_object_status(adcm_object=component, expected_state=expected_state)
-            self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.ABORTED, Status.SUCCESS])
+            self._check_jobs_status(task, expected_job_status=[Status.ABORTED, Status.SUCCESS])
 
     @pytest.mark.parametrize("action_name", ["multi_job_fail"])
     def test_failed_task_status_not_changing(self, cluster, action_name):
@@ -234,28 +233,28 @@ class TestTaskCancelRestart:
             action = cluster.action(name=action_name)
             expected_state = action.state_on_fail
             task = action.run()
-            self.wait_job_and_abort(task=task, job_wait=JobStep.SECOND, job_abort=JobStep.SECOND)
+            self.wait_job_and_abort(task=task, job_wait=JobStep.FIRST, job_abort=JobStep.FIRST)
             self._check_task_status(task=task, expected_status=Status.FAILED)
             self._check_object_status(adcm_object=cluster, expected_state=expected_state)
-            self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.ABORTED, Status.FAILED])
+            self._check_jobs_status(task, expected_job_status=[Status.ABORTED, Status.FAILED])
 
         with allure.step("Run failed task on service"):
             service = cluster.service()
             action = service.action(name=action_name)
             task = action.run()
-            self.wait_job_and_abort(task=task, job_wait=JobStep.SECOND, job_abort=JobStep.SECOND)
+            self.wait_job_and_abort(task=task, job_wait=JobStep.FIRST, job_abort=JobStep.FIRST)
             self._check_task_status(task=task, expected_status=Status.FAILED)
             self._check_object_status(adcm_object=service, expected_state=expected_state)
-            self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.ABORTED, Status.FAILED])
+            self._check_jobs_status(task, expected_job_status=[Status.ABORTED, Status.FAILED])
 
         with allure.step("Run failed task on component"):
             component = service.component()
             action = component.action(name=action_name)
             task = action.run()
-            self.wait_job_and_abort(task=task, job_wait=JobStep.SECOND, job_abort=JobStep.SECOND)
+            self.wait_job_and_abort(task=task, job_wait=JobStep.FIRST, job_abort=JobStep.FIRST)
             self._check_task_status(task=task, expected_status=Status.FAILED)
             self._check_object_status(adcm_object=component, expected_state=expected_state)
-            self._check_jobs_status(task, expected_job_status=[Status.SUCCESS, Status.ABORTED, Status.FAILED])
+            self._check_jobs_status(task, expected_job_status=[Status.ABORTED, Status.FAILED])
 
     def _cancel_job(self, job: Job):
         url = f"{self.client.url}/api/v1/job/{job.id}/cancel/"

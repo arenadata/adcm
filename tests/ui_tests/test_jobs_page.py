@@ -18,6 +18,7 @@ from typing import List, Union
 
 import allure
 import pytest
+import requests
 from adcm_client.objects import (
     Action,
     ADCMClient,
@@ -25,6 +26,7 @@ from adcm_client.objects import (
     Cluster,
     Component,
     Host,
+    Job,
     ObjectNotFound,
     Provider,
     Service,
@@ -35,12 +37,17 @@ from adcm_pytest_plugin.utils import (
     get_data_dir,
     wait_until_step_succeeds,
 )
-from tests.library.utils import build_full_archive_name
+from tests.functional.audit.conftest import check_succeed, make_auth_header
+from tests.functional.tools import wait_all_jobs_are_finished, wait_for_job_status
+from tests.library.predicates import display_name_is
+from tests.library.utils import build_full_archive_name, get_or_raise
 from tests.ui_tests.app.app import ADCMTest
+from tests.ui_tests.app.page.cluster.page import ClusterServicesPage
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.job.page import JobPageStdout
 from tests.ui_tests.app.page.job_list.page import JobListPage, JobStatus
 from tests.ui_tests.app.page.login.page import LoginPage
+from tests.ui_tests.app.page.service.page import ServiceMainPage
 from tests.ui_tests.core.checks import check_pagination
 from tests.ui_tests.utils import (
     is_empty,
@@ -57,10 +64,14 @@ FAIL_ACTION_DISPLAY_NAME = 'Fail action'
 ON_HOST_ACTION_DISPLAY_NAME = 'Component host action'
 COMPONENT_ACTION_DISPLAY_NAME = 'Component action'
 MULTIJOB_ACTION_DISPLAY_NAME = 'Multijob'
+ONE_JOB_ACTION = "one_job_action"
 
 CLUSTER_NAME = 'test cluster'
 SERVICE_NAME = 'test_service'
 COMPONENT_NAME = 'test_component'
+
+FIRST_STEP_TASK = "first_step"
+THIRD_STEP_TASK = "third_step"
 
 # pylint: disable=redefined-outer-name
 
@@ -199,6 +210,181 @@ class TestTaskPage:
             page.click_on_job()
             detail_page = JobPageStdout(page.driver, page.base_url, task.jobs[0]['id'])
             detail_page.wait_page_is_opened()
+
+    def test_cancel_multijob_cluster(self, app_fs, sdk_client_fs, cluster: Cluster, page: JobListPage):
+        """Run action on cluster with many jobs and cancel last job. Expect task status aborted"""
+        with allure.step('Run action with multiple job'):
+            expected_cluster_state = cluster.state
+            action = cluster.action(display_name=MULTIJOB_ACTION_DISPLAY_NAME)
+            task = action.run()
+            last_job = get_or_raise(task.job_list(), display_name_is(THIRD_STEP_TASK))
+            wait_for_job_status(job=last_job, timeout=30, period=2)
+
+        _cancel_job(sdk_client_fs, job=last_job)
+        wait_all_jobs_are_finished(sdk_client_fs)
+
+        with allure.step('Check jobs info'):
+            page.expand_task_in_row(0)
+            expected_jobs = [
+                {
+                    'name': job['name'],
+                    'status': JobStatus.SUCCESS if job['name'] != THIRD_STEP_TASK else JobStatus.ABORTED,
+                }
+                for job in action.subs
+            ]
+            jobs_info = [asdict(i) for i in page.get_all_jobs_info()]
+            assert jobs_info == expected_jobs, f"Actual jobs: {jobs_info} not found in expected jobs {expected_jobs}"
+
+        with allure.step('Check object state'):
+            cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+            row = cluster_page.get_row_by_cluster_name(cluster.name)
+            assert (
+                cluster_page.get_cluster_state_from_row(row) == expected_cluster_state
+            ), f"State of {cluster.name} should be {expected_cluster_state}"
+
+    def test_cancel_multijob_service(self, app_fs, sdk_client_fs, cluster: Cluster, page: JobListPage):
+        """Run action with many jobs on service and cancel last job. Expect task status aborted"""
+        with allure.step('Run action with one job'):
+            service = cluster.service(name=SERVICE_NAME)
+            expected_service_state = service.state
+            action = service.action(display_name=MULTIJOB_ACTION_DISPLAY_NAME)
+            task = action.run()
+            last_job = get_or_raise(task.job_list(), display_name_is(THIRD_STEP_TASK))
+            wait_for_job_status(job=last_job, timeout=30, period=2)
+
+        _cancel_job(sdk_client_fs, job=last_job)
+        wait_all_jobs_are_finished(sdk_client_fs)
+
+        with allure.step('Check jobs info'):
+            page.expand_task_in_row(0)
+            expected_jobs = [
+                {
+                    'name': job['name'],
+                    'status': JobStatus.SUCCESS if job['name'] != THIRD_STEP_TASK else JobStatus.ABORTED,
+                }
+                for job in action.subs
+            ]
+            jobs_info = [asdict(i) for i in page.get_all_jobs_info()]
+            assert jobs_info == expected_jobs, f"Actual jobs: {jobs_info} not found in expected jobs {expected_jobs}"
+
+        with allure.step('Check object state'):
+            cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+            row = cluster_service_page.table.get_all_rows()[0]
+            assert (
+                cluster_service_page.get_service_state_from_row(row) == expected_service_state
+            ), f"State of {service.name}  should be {expected_service_state}"
+
+    def test_cancel_multijob_component(self, app_fs, sdk_client_fs, cluster: Cluster, page: JobListPage):
+        """Run action with many jobs on component and cancel last job. Expect task status aborted"""
+        with allure.step('Run action with one job'):
+            service = cluster.service(name=SERVICE_NAME)
+            component = service.component(name=COMPONENT_NAME)
+            expected_component_state = component.state
+            action = component.action(display_name="component_cancel_multijob")
+            task = action.run()
+            last_job = get_or_raise(task.job_list(), display_name_is(THIRD_STEP_TASK))
+            wait_for_job_status(job=last_job, timeout=30, period=2)
+
+        _cancel_job(sdk_client_fs, job=last_job)
+        wait_all_jobs_are_finished(sdk_client_fs)
+
+        with allure.step('Check jobs info'):
+            page.expand_task_in_row(0)
+            expected_jobs = [
+                {
+                    'name': job['name'],
+                    'status': JobStatus.SUCCESS if job['name'] != THIRD_STEP_TASK else JobStatus.ABORTED,
+                }
+                for job in action.subs
+            ]
+            jobs_info = [asdict(i) for i in page.get_all_jobs_info()]
+            assert jobs_info == expected_jobs, f"Actual jobs: {jobs_info} not found in expected jobs {expected_jobs}"
+
+        with allure.step('Check object state'):
+            service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+            service_components_page = service_main_page.open_components_tab()
+            assert (
+                service_components_page.get_component_state_from_row(service_components_page.table.get_all_rows()[0])
+                == expected_component_state
+            ), f"State of {component.name}  should be {expected_component_state}"
+
+    def test_cancel_one_job_action_cluster(self, app_fs, sdk_client_fs, cluster: Cluster, page: JobListPage):
+        """Run action with one job and cancel job. Expect task status aborted"""
+        expected_cluster_state = cluster.state
+        with allure.step('Run action with one job'):
+            action = cluster.action(display_name=ONE_JOB_ACTION)
+            task = action.run()
+            last_job = get_or_raise(task.job_list(), display_name_is(FIRST_STEP_TASK))
+            wait_for_job_status(job=last_job)
+
+        _cancel_job(sdk_client_fs, job=last_job)
+        wait_all_jobs_are_finished(sdk_client_fs)
+
+        with allure.step('Check job info'):
+            expected_job = {'name': action.name, 'status': JobStatus.ABORTED}
+            job_info = asdict(page.get_task_info())
+            assert expected_job == job_info, f"Expected job: {expected_job} is not equal actual job: {job_info}"
+
+        with allure.step('Check object state'):
+            cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+            row = cluster_page.get_row_by_cluster_name(cluster.name)
+            assert (
+                cluster_page.get_cluster_state_from_row(row) == expected_cluster_state
+            ), f"State of {cluster.name}  should be {expected_cluster_state}"
+
+    def test_cancel_one_job_action_service(self, app_fs, sdk_client_fs, cluster: Cluster, page: JobListPage):
+        """Run action with one job and cancel job. Expect task status aborted"""
+        with allure.step('Run action with one job'):
+            service = cluster.service(name=SERVICE_NAME)
+            expected_service_state = service.state
+            action = service.action(display_name=ONE_JOB_ACTION)
+            task = action.run()
+            last_job = get_or_raise(task.job_list(), display_name_is(FIRST_STEP_TASK))
+            wait_for_job_status(job=last_job)
+
+        _cancel_job(sdk_client_fs, job=last_job)
+        wait_all_jobs_are_finished(sdk_client_fs)
+
+        with allure.step('Check job info'):
+            expected_job = {'name': action.name, 'status': JobStatus.ABORTED}
+            page.open()
+            job_info = asdict(page.get_task_info())
+            assert expected_job == job_info, f"Expected job: {expected_job} is not equal actual job: {job_info}"
+
+        with allure.step('Check object state'):
+            cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+            row = cluster_service_page.table.get_all_rows()[0]
+            assert (
+                cluster_service_page.get_service_state_from_row(row) == expected_service_state
+            ), f"State of {service.name} should be {expected_service_state}"
+
+    def test_cancel_one_job_action_component(self, app_fs, sdk_client_fs, cluster: Cluster, page: JobListPage):
+        """Run action with one job and cancel job. Expect task status aborted"""
+        with allure.step('Run action with one job on component'):
+            service = cluster.service(name=SERVICE_NAME)
+            component = service.component(name=COMPONENT_NAME)
+            expected_component_state = component.state
+            action = component.action(display_name="component_cancel")
+            task = action.run()
+            last_job = get_or_raise(task.job_list(), display_name_is(FIRST_STEP_TASK))
+            wait_for_job_status(job=last_job)
+
+        _cancel_job(sdk_client_fs, job=last_job)
+        wait_all_jobs_are_finished(sdk_client_fs)
+
+        with allure.step('Check job info'):
+            expected_job = {'name': action.name, 'status': JobStatus.ABORTED}
+            page.open()
+            job_info = asdict(page.get_task_info())
+            assert expected_job == job_info, f"Expected job: {expected_job} is not equal actual job: {job_info}"
+
+        with allure.step('Check object state'):
+            service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+            service_components_page = service_main_page.open_components_tab()
+            assert (
+                service_components_page.get_component_state_from_row(service_components_page.table.get_all_rows()[0])
+                == expected_component_state
+            ), f"State of {component.name}  should be {expected_component_state}"
 
     def test_filtering_and_pagination(self, created_hosts: List[Host], page: JobListPage):
         """Check filtering and pagination"""
@@ -610,3 +796,10 @@ def _wait_and_get_action_on_host(host: Host, display_name: str) -> Action:
 
     wait_until_step_succeeds(_wait_for_action_to_be_presented, period=0.1, timeout=10)
     return host.action(display_name=display_name)
+
+
+@allure.step("Cancel job in task")
+def _cancel_job(sdk_client_fs: ADCMClient, job: Job) -> None:
+    # Change when can be able to abort job from web
+    url = f"{sdk_client_fs.url}/api/v1/job/{job.id}/cancel/"
+    check_succeed(requests.put(url, headers=make_auth_header(sdk_client_fs)))

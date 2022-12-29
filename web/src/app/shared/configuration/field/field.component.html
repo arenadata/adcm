@@ -13,7 +13,7 @@
       <app-fields-list [field]="options" [form]="currentFormGroup" #cc></app-fields-list>
     </ng-container>
     <ng-container *ngSwitchCase="'password'">
-      <app-fields-password [field]="options" [form]="currentFormGroup"></app-fields-password>
+      <app-fields-password [field]="options" [form]="currentFormGroup" #pass></app-fields-password>
     </ng-container>
     <ng-container *ngSwitchCase="'boolean'">
       <app-fields-boolean [field]="options" [form]="currentFormGroup"></app-fields-boolean>
@@ -34,7 +34,7 @@
       <app-fields-variant [field]="options" [form]="currentFormGroup"></app-fields-variant>
     </ng-container>
     <ng-container *ngSwitchCase="'secrettext'">
-      <app-fields-secret-text [field]="options" [form]="currentFormGroup"></app-fields-secret-text>
+      <app-fields-secret-text [field]="options" [form]="currentFormGroup" #sc></app-fields-secret-text>
     </ng-container>
     <ng-container *ngSwitchCase="'secretmap'">
       <app-fields-secret-map [field]="options" [form]="currentFormGroup" #cc></app-fields-secret-map>
@@ -43,10 +43,15 @@
     <span class="info">
       <mat-icon *ngIf="options.description" style="vertical-align: middle;" [ngClass]="'info-icon'"
                 matTooltipClass="info-tooltip" [matTooltip]="options.description">info_outline</mat-icon>
-      <button (click)="restore()" [disabled]="options.read_only || disabled" mat-icon-button matSuffix
+      <button *ngIf="!isSecretField()" (click)="restore()" [disabled]="options.read_only || disabled" mat-icon-button matSuffix
               color="primary"
               matTooltip="Reset to default">
         <mat-icon>refresh</mat-icon>
+      </button>
+      <button *ngIf="isSecretField()" (click)="reset()" [disabled]="options.read_only || disabled" mat-icon-button matSuffix
+              color="primary"
+              matTooltip="Remove value">
+        <mat-icon>close</mat-icon>
       </button>
     </span>
   </ng-container>

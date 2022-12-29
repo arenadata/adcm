@@ -503,7 +503,7 @@ class TestHostConfigPage:
         host_page.config.save_config()
         host_page.config.reset_to_default(host_page.config.get_config_row(REQUIRED_FIELD_NAME))
         host_page.config.assert_input_value_is(params['init_value'], REQUIRED_FIELD_NAME)
-        host_page.config.reset_to_default(host_page.config.get_config_row(PASSWORD_FIELD_NAME))
+        host_page.config.clear_secret(host_page.config.get_config_row(PASSWORD_FIELD_NAME))
         host_page.config.assert_input_value_is(
             params['init_value'],
             PASSWORD_FIELD_NAME,

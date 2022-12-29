@@ -18,17 +18,18 @@
     multi_job_success:
       type: task
       display_name: "multi_job_success"
-      allow_to_terminate: true
       scripts:
         - &multijob
           name: first_step
           script_type: ansible
           script: sleep.yaml
-          allow_to_terminate: true
           params:
             ansible_tags: success
         - <<: *multijob
           name: second_step
+          script: sleep.yaml
+        - <<: *multijob
+          name: third_step
       states:
         available: any
         on_success: success
@@ -36,25 +37,30 @@
     multi_job_fail:
       type: task
       display_name: "multi_job_fail"
-      allow_to_terminate: true
       scripts:
         - <<: *multijob
         - <<: *multijob
           name: second_step
+          script: sleep.yaml
+        - <<: *multijob
+          name: third_step
           script: failed.yaml
       states:
         available: any
         on_fail: failed
 
-    multi_job_fail_first_job:
+    multi_job_fail_second_job:
       type: task
-      display_name: "multi_job_fail_first_job"
-      allow_to_terminate: true
+      display_name: "multi_job_fail_second_job"
       scripts:
         - <<: *multijob
-          script: failed.yaml
+          script: sleep.yaml
         - <<: *multijob
           name: second_step
+          allow_to_terminate: true
+          script: failed.yaml
+        - <<: *multijob
+          name: third_step
       states:
         available: any
         on_success: success
@@ -63,9 +69,9 @@
     one_job_success:
       type: task
       display_name: "one_job_success"
-      allow_to_terminate: true
       scripts:
         - <<: *multijob
+          allow_to_terminate: true
       states:
         available: any
         on_success: success
@@ -73,9 +79,9 @@
     one_job_fail:
       type: task
       display_name: "one_job_fail"
-      allow_to_terminate: true
       scripts:
         - <<: *multijob
+          allow_to_terminate: true
           script: failed.yaml
       states:
         available: any

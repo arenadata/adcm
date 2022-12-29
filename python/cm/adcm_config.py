@@ -1139,49 +1139,6 @@ def check_config_type(
                     raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl2.format(msg))
 
 
-def replace_object_config(obj, key, subkey, value, proto_conf):
-    cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-    conf = cl.config
-
-    if proto_conf.type in SECURE_PARAM_TYPES and not is_ansible_encrypted(value):
-        value = ansible_encrypt_and_format(value)
-
-    if subkey:
-        conf[key][subkey] = value
-    else:
-        conf[key] = value
-
-    save_obj_config(obj.config, conf, cl.attr, "ansible update")
-
-
-def set_object_config(obj, keys, value):
-    proto = obj.prototype
-    spl = keys.split("/")
-    key = spl[0]
-    if len(spl) == 1:
-        subkey = ""
-    else:
-        subkey = spl[1]
-
-    pconf = PrototypeConfig.obj.get(prototype=proto, action=None, name=key, subname=subkey)
-    if pconf.type == "group":
-        msg = 'You can not update config group "{}" for {}'
-        raise_adcm_ex("CONFIG_VALUE_ERROR", msg.format(key, obj_ref(obj)))
-
-    check_config_type(proto, key, subkey, obj_to_dict(pconf, ("type", "limits", "option")), value)
-    replace_object_config(obj, key, subkey, value, pconf)
-    if pconf.type in {"file", "secretfile"}:
-        save_file_type(obj, key, subkey, value)
-
-    log_value = value
-    if pconf.type in SECURE_PARAM_TYPES:
-        log_value = "****"
-
-    logger.info('update %s config %s/%s to "%s"', obj_ref(obj), key, subkey, log_value)
-
-    return value
-
-
 def get_main_info(obj: Optional[ADCMEntity]) -> Optional[str]:
     """Return __main_info for object"""
     if obj.config is None:
