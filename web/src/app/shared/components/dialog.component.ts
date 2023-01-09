@@ -51,7 +51,7 @@ export interface DialogData {
         <button *ngSwitchCase="1" mat-raised-button color="primary" (click)="_noClick()" tabindex="-1">{{ buttons[0] }}</button>
         <ng-container *ngSwitchDefault>
           <button mat-raised-button color="primary" (click)="_noClick()" tabindex="-1">{{ buttons[1] }}</button>
-          <button mat-raised-button color="accent" [mat-dialog-close]="true" [disabled]="_getDisabledValue()" tabindex="2">
+          <button mat-raised-button color="accent" (click)="_close()" [mat-dialog-close]="true" [disabled]="_getDisabledValue()" tabindex="2">
             {{ buttons[0] }}
           </button>
         </ng-container>
@@ -118,6 +118,12 @@ export class DialogComponent implements OnInit {
 
   scroll(stop: { direct: -1 | 1 | 0; screenTop: number }) {
     this.channel.next(keyChannelStrim.scroll, stop);
+  }
+
+  _close() {
+    if (this.data.controls?.closeOnGreenButtonCLick) {
+      this.dialogRef.close();
+    }
   }
 
   _noClick(): void {

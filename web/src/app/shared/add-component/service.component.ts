@@ -64,6 +64,8 @@ export class ServiceComponent extends BaseFormDirective implements OnInit {
     this.service
       .addService(result)
       .pipe(this.takeUntil())
-      .subscribe(() => this.dialog.closeAll());
+      .subscribe();
+
+    this.dialog.closeAll()
   }
 }

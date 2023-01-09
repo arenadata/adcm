@@ -16,11 +16,12 @@ import { IUpgrade } from "./upgrade.component";
 import { concat, Observable, of } from "rxjs";
 import { filter, map, switchMap, tap } from "rxjs/operators";
 import { ApiService } from "@app/core/api";
-import { EmmitRow } from "@app/core/types";
+import { EmmitRow, Entities } from "@app/core/types";
 import { BaseDirective } from "../../directives";
 import { UpgradeMasterComponent as component } from "../upgrades/master/master.component";
 import { AddService } from "@app/shared/add-component/add.service";
 import { IRawHosComponent } from "@app/shared/host-components-map/types";
+import { ListResult } from "@app/models/list-result";
 
 export interface UpgradeParameters {
   cluster?: {
@@ -36,10 +37,13 @@ export interface UpgradeParameters {
 export class UpgradesDirective extends BaseDirective {
   @Input('appUpgrades') inputData: IUpgrade;
   @Input() clusterId: number;
+  @Input() bundleId: number;
   @Output() refresh: EventEmitter<EmmitRow> = new EventEmitter<EmmitRow>();
 
   hc: IRawHosComponent;
   needPrototype = false;
+  needLicenseAcceptance: [];
+
 
   constructor(private api: ApiService, private dialog: MatDialog, private service: AddService) {
     super();
@@ -48,11 +52,7 @@ export class UpgradesDirective extends BaseDirective {
   @HostListener('click')
   onClick() {
     this.dialog.closeAll();
-    if (this.hasHostComponent) {
-      this.checkHostComponents();
-    } else {
-      this.prepare();
-    }
+    this.checkServicesAndPrepare();
   }
 
   get hasConfig(): boolean {
@@ -158,7 +158,9 @@ export class UpgradesDirective extends BaseDirective {
             .beforeClosed()
             .pipe(
               filter(yes => yes),
-              switchMap(() => concat(license$, do$))
+              switchMap(() => this.service.addService(this.needLicenseAcceptance).pipe(
+                switchMap(() => concat(license$, do$))
+              )),
             )
         )
       )
@@ -168,6 +170,31 @@ export class UpgradesDirective extends BaseDirective {
   fork(item: IUpgrade) {
     const flag = item.license === 'unaccepted';
     return flag ? this.api.get<{ text: string }>(item.license_url).pipe(map(a => a.text)) : of(item.description);
+  }
+
+  checkServicesAndPrepare() {
+    let oldVersionAcceptedServices;
+
+      this.getClusterServices(this.clusterId).subscribe(res => {
+        oldVersionAcceptedServices = res.map(service => service.name);
+
+        this.getPrototypeServices().subscribe(res => {
+          this.needLicenseAcceptance = res.results
+              .filter((service) => service.bundle_id === this.inputData.bundle_id && oldVersionAcceptedServices.includes(service.name) && service.license === 'unaccepted')
+              .map((i) => ({
+                  prototype_id: i.id,
+                  service_name: i.name,
+                  license: i.license,
+                  license_url: i.license_url,
+              }));
+
+          if (this.hasHostComponent) {
+            this.checkHostComponents();
+          } else {
+            this.prepare();
+          }
+        })
+      })
   }
 
   checkHostComponents() {
@@ -212,10 +239,18 @@ export class UpgradesDirective extends BaseDirective {
   }
 
   getClusterInfo(): Observable<any> {
-    return this.api.get(`api/v1/cluster/${this.clusterId}/hostcomponent/`)
+    return this.api.get(`api/v1/cluster/${this.clusterId}/hostcomponent/`);
   }
 
   getPrototype(params): Observable<any> {
-    return this.service.getPrototype('prototype', params)
+    return this.service.getPrototype('prototype', params);
+  }
+
+  getClusterServices(clusterId): Observable<any> {
+    return this.api.get<ListResult<Entities>>(`api/v1/cluster/${clusterId}/service/`);
+  }
+
+  getPrototypeServices(): Observable<any> {
+    return this.api.get<ListResult<Entities>>('/api/v1/stack/service/');
   }
 }

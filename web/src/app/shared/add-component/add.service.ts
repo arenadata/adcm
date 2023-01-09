@@ -160,6 +160,7 @@ export class AddService implements IAddService {
                     data: {
                       title: `Accept license agreement ${o.service_name}`,
                       text: info.text,
+                      closeOnGreenButtonCLick: true,
                       controls: {label: 'Do you accept the license agreement?', buttons: ['Yes', 'No']},
                     },
                   })
@@ -170,15 +171,14 @@ export class AddService implements IAddService {
                       this.api.put(`/api/v1/stack/prototype/${o.prototype_id}/license/accept/`, {}).pipe(
                         switchMap(() => this.cluster.addServices({prototype_id: o.prototype_id}))
                       )
-                    ),
-                    tap(() => this.dialog.closeAll())
+                    )
                   )
               )
             )
           )
         )
       } else return this.cluster.addServices({prototype_id: o.prototype_id});
-    }));
+    }))
   }
 
   getListResults<T>(type: TypeName, param: Params = {}) {
