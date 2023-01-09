@@ -80,6 +80,31 @@ def wait_for_job_status(
     wait_until_step_succeeds(_wait, timeout=timeout, period=period)
 
 
+@allure.step("Check object state")
+def check_object_status(adcm_object: Cluster | Service | Component, expected_state: str) -> None:
+    adcm_object.reread()
+    actual = adcm_object.state
+    assert actual == expected_state, f"Expected object state {expected_state} Actual {actual}"
+
+
+@allure.step("Check object multi state")
+def check_object_multi_state(adcm_object: Cluster | Service | Component, expected_state: str) -> None:
+    adcm_object.reread()
+    assert (
+        len(adcm_object.multi_state) > 0
+    ), f"Expected object does not have multi state while expected state: {expected_state}"
+    actual = adcm_object.multi_state[0]
+    assert actual == expected_state, f"Expected object state {expected_state} Actual {actual}"
+
+
+@allure.step("Check task status")
+def check_task_status(client: ADCMClient, task: Task, expected_status: str, wait_finished: bool = True) -> None:
+    if wait_finished:
+        wait_all_jobs_are_finished(client)
+    task.reread()
+    assert task.status == expected_status, f"Expected task status {expected_status} Actual status {task.status}"
+
+
 def get_objects_via_pagination(
     object_list_method: Callable, pagination_step: int = 20
 ) -> List[Union[AnyADCMObject, Job, Task]]:

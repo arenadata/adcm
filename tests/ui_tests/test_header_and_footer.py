@@ -65,7 +65,11 @@ class TestHeader:
 
     def test_header_help_links_for_authorised_user(self, app_fs):
         """Test header help links for authorised user"""
-        params = {"help_link": "t.me/joinchat/", "docs_link": "docs.arenadata.io/adcm/"}
+        params = {
+            "help_link": "t.me/arenadata_cm",
+            "arenadata_url": "docs.arenadata.io/",
+            "docs_link_en": "en/ADCM/current/introduction/",
+        }
         page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
         header = page.header
         header.click_help_button()
@@ -78,8 +82,8 @@ class TestHeader:
         header.click_help_button()
         with wait_for_new_window(app_fs.driver):
             header.click_doc_link_in_help_popup()
-        with allure.step(f"Check new opened page: {params['docs_link']}"):
-            page.wait_url_contains_path(params["docs_link"])
+        with allure.step(f"Check new opened page: {params['docs_link_en']}"):
+            page.wait_url_contains_path(params["arenadata_url"] + params["docs_link_en"])
 
     def test_check_header_user_settings_for_authorised_user(self, app_fs):
         """Test header user settings buttons for authorised user"""
@@ -145,11 +149,11 @@ class TestFooter:
 
     def test_check_footer_for_authorised_user(self, app_fs):
         """Test footer for authorised user"""
-        params = {"docs": "docs.arenadata.io/adcm/notes"}
+        params = {"arenadata_url": "docs.arenadata.io/", "docs": "en/ADCM/current/release-notes/"}
         page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
         footer = page.footer
         footer.check_all_elements()
         with wait_for_new_window(app_fs.driver):
             footer.click_version_link_in_footer()
         with allure.step(f"Check new opened page: {params['docs']}"):
-            page.wait_url_contains_path(params["docs"])
+            page.wait_url_contains_path(params["arenadata_url"] + params["docs"])
