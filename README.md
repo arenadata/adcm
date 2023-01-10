@@ -111,7 +111,7 @@ yarn install
 3. `export DB_DIR=/tmp`
 4. `export DATA_DIR=./data`
 5. `docker-compose up -d`
-6. `docker exec adcm_adcm_1 /adcm/python/manage.py dumpdata > /adcm/data/var/data.json`
+6. `docker exec adcm_adcm_1 /adcm/python/manage.py dumpdata -o /adcm/data/var/data.json`
 7. `docker-compose down`
 8. `export POSTGRES_ADCM_PASS="SOME_STRONG_SECRET_PASS"`
 9. `export POSTGRES_PASSWORD="SOME_ANOTHER_STRONG_SECRET_PASS"`
