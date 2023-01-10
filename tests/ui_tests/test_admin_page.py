@@ -31,7 +31,6 @@ from tests.ui_tests.app.page.admin.page import (
     AdminGroupsPage,
     AdminIntroPage,
     AdminPoliciesPage,
-    AdminPolicyInfo,
     AdminRolesPage,
     AdminSettingsPage,
     AdminUsersPage,
@@ -110,13 +109,13 @@ def create_cluster_with_component(
 
 
 CUSTOM_ROLE_NAME = "Test_Role"
-CUSTOM_POLICY = AdminPolicyInfo(
+CUSTOM_POLICY = dict(
     name="Test policy name",
     description="Test policy description",
     role="ADCM User",
-    users="admin, status",
-    groups=None,
-    objects=None,
+    users=["admin", "status"],
+    groups=[],
+    objects=[],
 )
 ACTION_HINT = "The Action is not available. You need to fill in the LDAP integration settings."
 
@@ -799,14 +798,12 @@ class TestAdminGroupsPage:
 class TestAdminPolicyPage:
     """Tests for the /admin/policies"""
 
-    @allure.step("Check custome policy")
-    def check_custom_policy(self, policies_page, policy=None):
+    @allure.step("Check custom policy")
+    def check_custom_policy(self, policies_page, policy):
         """Check that there is only one created policy with expected params"""
-
-        policy = policy or CUSTOM_POLICY
-        current_policies = policies_page.get_all_policies()
+        current_policies = policies_page.get_rows()
         assert len(current_policies) == 1, "There should be 1 policy on the page"
-        assert current_policies == [policy], "Created policy should be on the page"
+        assert dict(current_policies[0]) == policy, "Created policy should be on the page"
 
     @pytest.mark.usefixtures("_login_to_adcm_over_api")
     @pytest.mark.smoke()
@@ -825,12 +822,12 @@ class TestAdminPolicyPage:
 
         policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
         policies_page.create_policy(
-            policy_name=CUSTOM_POLICY.name,
-            description=CUSTOM_POLICY.description,
-            role=CUSTOM_POLICY.role,
-            users=CUSTOM_POLICY.users,
+            policy_name=CUSTOM_POLICY["name"],
+            description=CUSTOM_POLICY["description"],
+            role=CUSTOM_POLICY["role"],
+            users=CUSTOM_POLICY["users"],
         )
-        self.check_custom_policy(policies_page)
+        self.check_custom_policy(policies_page, policy=CUSTOM_POLICY)
 
     @pytest.mark.usefixtures("_login_to_adcm_over_api")
     @pytest.mark.full()
@@ -841,10 +838,10 @@ class TestAdminPolicyPage:
         with allure.step("Create 11 policies"):
             for i in range(11):
                 policies_page.create_policy(
-                    policy_name=f"{CUSTOM_POLICY.name}_{i}",
-                    description=CUSTOM_POLICY.description,
-                    role=CUSTOM_POLICY.role,
-                    users=CUSTOM_POLICY.users,
+                    policy_name=f"{CUSTOM_POLICY['name']}_{i}",
+                    description=CUSTOM_POLICY["description"],
+                    role=CUSTOM_POLICY["role"],
+                    users=CUSTOM_POLICY["users"],
                 )
         check_pagination(policies_page.table, expected_on_second=1)
 
@@ -854,24 +851,24 @@ class TestAdminPolicyPage:
 
         policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
         policies_page.create_policy(
-            policy_name=CUSTOM_POLICY.name,
-            description=CUSTOM_POLICY.description,
-            role=CUSTOM_POLICY.role,
-            users=CUSTOM_POLICY.users,
+            policy_name=CUSTOM_POLICY["name"],
+            description=CUSTOM_POLICY["description"],
+            role=CUSTOM_POLICY["role"],
+            users=CUSTOM_POLICY["users"],
         )
         policies_page.delete_all_policies()
 
     @pytest.mark.usefixtures("_login_to_adcm_over_api")
     @pytest.mark.parametrize(
-        ("clusters", "services", "providers", "hosts", "parents", "role_name"),
+        ("clusters", "service", "providers", "hosts", "parents", "role_name"),
         [
-            (CLUSTER_NAME, None, None, None, None, "View cluster configurations"),
+            ([CLUSTER_NAME], None, None, None, None, "View cluster configurations"),
             (None, SERVICE_NAME, None, None, CLUSTER_NAME, "View service configurations"),
-            (None, None, PROVIDER_NAME, None, None, "View provider configurations"),
-            (None, None, None, HOST_NAME, None, "View host configurations"),
+            (None, None, [PROVIDER_NAME], None, None, "View provider configurations"),
+            (None, None, None, [HOST_NAME], None, "View host configurations"),
             (None, SERVICE_NAME, None, None, CLUSTER_NAME, "View component configurations"),
             (
-                CLUSTER_NAME,
+                [CLUSTER_NAME],
                 None,
                 None,
                 None,
@@ -890,7 +887,7 @@ class TestAdminPolicyPage:
             (
                 None,
                 None,
-                PROVIDER_NAME,
+                [PROVIDER_NAME],
                 None,
                 None,
                 "View provider configurations, View host configurations",
@@ -899,7 +896,7 @@ class TestAdminPolicyPage:
                 None,
                 None,
                 None,
-                HOST_NAME,
+                [HOST_NAME],
                 None,
                 "View provider configurations, View host configurations",
             ),
@@ -911,7 +908,7 @@ class TestAdminPolicyPage:
         sdk_client_fs,
         app_fs,
         clusters,
-        services,
+        service,
         providers,
         hosts,
         role_name,
@@ -919,8 +916,12 @@ class TestAdminPolicyPage:
         """Test creating policy"""
 
         custom_policy = deepcopy(CUSTOM_POLICY)
-        custom_policy.role = CUSTOM_ROLE_NAME
-        custom_policy.objects = clusters or services or providers or hosts
+        custom_policy["role"] = CUSTOM_ROLE_NAME
+        if service:
+            custom_policy["objects"] = [service]
+        else:
+            custom_policy["objects"] = clusters or providers or hosts
+
         with allure.step("Create test role"):
             sdk_client_fs.role_create(
                 name=CUSTOM_ROLE_NAME,
@@ -929,12 +930,12 @@ class TestAdminPolicyPage:
             )
         policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
         policies_page.create_policy(
-            policy_name=custom_policy.name,
-            description=custom_policy.description,
-            role=custom_policy.role,
-            users=custom_policy.users,
+            policy_name=custom_policy["name"],
+            description=custom_policy["description"],
+            role=custom_policy["role"],
+            users=custom_policy["users"],
             clusters=clusters,
-            services=services,
+            service=service,
             parent=CLUSTER_NAME,
             providers=providers,
             hosts=hosts,
