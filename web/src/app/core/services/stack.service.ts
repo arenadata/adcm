@@ -16,7 +16,7 @@ import { Bundle } from '@app/core/types';
 import { environment } from '@env/environment';
 import { select, Store } from '@ngrx/store';
 import { combineLatest, Observable } from 'rxjs';
-import {filter, map, mergeMap, switchMap, tap} from 'rxjs/operators';
+import { filter, map, mergeMap, switchMap } from 'rxjs/operators';
 import { ListResult } from '@app/models/list-result';
 
 export type StackInfo = 'cluster' | 'host' | 'provider' | 'service' | 'bundle' | 'prototype';

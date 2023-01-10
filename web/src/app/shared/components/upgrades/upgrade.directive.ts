@@ -107,7 +107,12 @@ export class UpgradesDirective extends BaseDirective {
         dialogModel.data.text = 'The cluster will be prepared for upgrade';
       }
 
-      this.dialog.open(DialogComponent, dialogModel);
+      this.service.addService(this.needLicenseAcceptance).pipe(
+        filter(yes => !!yes),
+        tap((res) => {
+            if (res) this.dialog.open(DialogComponent, dialogModel);
+          }
+        ))
     }
   }
 
@@ -127,10 +132,20 @@ export class UpgradesDirective extends BaseDirective {
                   } : ['Yes', 'No']
                 }
               })
-              .afterClosed()
-              .subscribe((res) => {
-                if (res) this.dialog.open(DialogComponent, dialogModel);
-              })
+              // .afterClosed()
+              // .subscribe((res) => {
+              //   if (res) this.dialog.open(DialogComponent, dialogModel);
+              // })
+              .beforeClosed()
+              .pipe(
+                filter(yes => yes),
+                switchMap(() => this.service.addService(this.needLicenseAcceptance).pipe(
+                  filter(yes => !!yes),
+                  tap((res) => {
+                    if (res) this.dialog.open(DialogComponent, dialogModel);
+                  }
+                ))
+              ))
           }
         )
       ).subscribe();
@@ -159,6 +174,7 @@ export class UpgradesDirective extends BaseDirective {
             .pipe(
               filter(yes => yes),
               switchMap(() => this.service.addService(this.needLicenseAcceptance).pipe(
+                filter(yes => !!yes),
                 switchMap(() => concat(license$, do$))
               )),
             )

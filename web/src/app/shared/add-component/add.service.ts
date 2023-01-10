@@ -14,8 +14,8 @@ import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { convertToParamMap, Params } from '@angular/router';
 import { environment } from '@env/environment';
-import { forkJoin, Observable, of, throwError } from 'rxjs';
-import { catchError, concatAll, filter, map, switchMap, tap } from 'rxjs/operators';
+import { combineLatest, forkJoin, Observable, of, throwError } from 'rxjs';
+import { catchError, concatAll, filter, map, switchMap } from 'rxjs/operators';
 
 import { StackInfo, StackService } from '@app/core/services';
 import { ClusterService } from '@app/core/services/cluster.service';
@@ -149,7 +149,7 @@ export class AddService implements IAddService {
   }
 
   addService(data: { prototype_id: number, service_name?: string, license?: string, license_url?: string }[]) {
-    return forkJoin(data.map((o) => {
+    return combineLatest(data.map((o) => {
       if (o.license_url && o.license === 'unaccepted') {
         return this.api.root.pipe(
           switchMap((root) =>
