@@ -112,8 +112,10 @@ yarn install
 4. `docker exec adcm_adcm_1 /adcm/python/manage.py dumpdata > /adcm/data/var/data.json`
 5. `docker-compose down`
 6. `export POSTGRES_ADCM_PASS="SOME_STRONG_SECRET_PASS"`
-7. `docker-compose up -d`
-8. `docker exec adcm_adcm_1 /adcm/python/manage.py loaddata /adcm/data/var/data.json`
+7. `export POSTGRES_PASSWORD="SOME_ANOTHER_STRONG_SECRET_PASS"`
+8. `export DB_DIR="SOME_LOCAL_DIR_FOR_DB_DATA_PERSISTENCY"`
+9. `docker-compose up -d`
+10. `docker exec adcm_adcm_1 /adcm/python/manage.py loaddata /adcm/data/var/data.json`
 
 ## Using custom Postgres DB
 
