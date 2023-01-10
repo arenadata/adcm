@@ -444,7 +444,7 @@ def process_file_type(obj: Any, spec: dict, conf: dict):
                     save_file_type(obj, key, subkey, conf[key][subkey])
                 elif spec[key][subkey]["type"] == "secretfile":
                     if conf[key][subkey] is not None:
-                        if conf[key].startswith(settings.ANSIBLE_VAULT_HEADER):
+                        if conf[key][subkey].startswith(settings.ANSIBLE_VAULT_HEADER):
                             try:
                                 ansible_decrypt(msg=conf[key])
                             except AnsibleError:
@@ -549,17 +549,29 @@ def process_config(obj, spec, old_conf):  # pylint: disable=too-many-branches
             if conf[key] is not None:
                 if spec[key]["type"] in {"file", "secretfile"}:
                     conf[key] = cook_file_type_name(obj, key, "")
+
                 elif spec[key]["type"] in SECURE_PARAM_TYPES:
                     if settings.ANSIBLE_VAULT_HEADER in conf[key]:
                         conf[key] = {"__ansible_vault": conf[key]}
+
+                elif spec[key]["type"] == "secretmap":
+                    for map_key, map_value in conf[key].items():
+                        if settings.ANSIBLE_VAULT_HEADER in map_value:
+                            conf[key][map_key] = {"__ansible_vault": map_value}
         elif conf[key]:
             for subkey in conf[key]:
                 if conf[key][subkey] is not None:
                     if spec[key][subkey]["type"] in {"file", "secretfile"}:
                         conf[key][subkey] = cook_file_type_name(obj, key, subkey)
+
                     elif spec[key][subkey]["type"] in SECURE_PARAM_TYPES:
                         if settings.ANSIBLE_VAULT_HEADER in conf[key][subkey]:
                             conf[key][subkey] = {"__ansible_vault": conf[key][subkey]}
+
+                    elif spec[key][subkey]["type"] == "secretmap":
+                        for map_key, map_value in conf[key][subkey].items():
+                            if settings.ANSIBLE_VAULT_HEADER in map_value:
+                                conf[key][subkey][map_key] = {"__ansible_vault": map_value}
 
     return conf
 
