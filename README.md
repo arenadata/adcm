@@ -108,7 +108,7 @@ yarn install
 
 1. PostgreSQL DB must be empty during first start
 2. `export POSTGRES_ADCM_PASS=`
-3. `export DB_DIR=`
+3. `export DB_DIR=/tmp`
 4. `docker-compose up -d`
 5. docker exec adcm_adcm_1 /adcm/python/manage.py dumpdata > /adcm/data/var/data.json`
 6. `docker-compose down`
