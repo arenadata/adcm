@@ -109,14 +109,15 @@ yarn install
 1. PostgreSQL DB must be empty during first start
 2. `export POSTGRES_ADCM_PASS=`
 3. `export DB_DIR=/tmp`
-4. `docker-compose up -d`
-5. docker exec adcm_adcm_1 /adcm/python/manage.py dumpdata > /adcm/data/var/data.json`
-6. `docker-compose down`
-7. `export POSTGRES_ADCM_PASS="SOME_STRONG_SECRET_PASS"`
-8. `export POSTGRES_PASSWORD="SOME_ANOTHER_STRONG_SECRET_PASS"`
-9. `export DB_DIR="SOME_LOCAL_DIR_FOR_DB_DATA_PERSISTENCY"`
-10. `docker-compose up -d`
-11. `docker exec adcm_adcm_1 /adcm/python/manage.py loaddata /adcm/data/var/data.json`
+4. `export DATA_DIR=./data`
+5. `docker-compose up -d`
+6. docker exec adcm_adcm_1 /adcm/python/manage.py dumpdata > /adcm/data/var/data.json`
+7. `docker-compose down`
+8. `export POSTGRES_ADCM_PASS="SOME_STRONG_SECRET_PASS"`
+9. `export POSTGRES_PASSWORD="SOME_ANOTHER_STRONG_SECRET_PASS"`
+10. `export DB_DIR="SOME_LOCAL_DIR_FOR_DB_DATA_PERSISTENCY"`
+11. `docker-compose up -d`
+12. `docker exec adcm_adcm_1 /adcm/python/manage.py loaddata /adcm/data/var/data.json`
 
 ## Using custom Postgres DB
 
