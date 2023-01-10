@@ -50,6 +50,9 @@ def mark_deleted_audit_object_handler(sender, instance, **kwargs) -> None:
 @receiver(pre_save, sender=Group)
 @receiver(pre_save, sender=Policy)
 def rename_audit_object(sender, instance, **kwargs) -> None:
+    if kwargs["raw"]:
+        return
+
     if instance.pk and sender.objects.get(pk=instance.pk).name == instance.name:
         return
 
@@ -66,6 +69,9 @@ def rename_audit_object(sender, instance, **kwargs) -> None:
 
 @receiver(pre_save, sender=Host)
 def rename_audit_object_host(sender, instance, **kwargs) -> None:
+    if kwargs["raw"]:
+        return
+
     if instance.pk and sender.objects.get(pk=instance.pk).fqdn == instance.fqdn:
         return
 
