@@ -25,6 +25,7 @@ import { DialogComponent } from '@app/shared/components/dialog.component';
 import { GenName } from './naming';
 import { MainService } from '@app/shared/configuration/main/main.service';
 import { FormModel, IAddService } from '@app/shared/add-component/add-service-model';
+import {ServiceService} from "@app/services/service.service";
 
 
 const fromBundle = () =>
@@ -83,6 +84,7 @@ export class AddService implements IAddService {
               private cluster: ClusterService,
               public dialog: MatDialog,
               private main: MainService,
+              private service: ServiceService,
   ) {}
 
   model(name: string) {
@@ -126,7 +128,10 @@ export class AddService implements IAddService {
                 .pipe(
                   filter((yes) => yes),
                   switchMap(() =>
-                    this.api.put(`${root.stack}bundle/${currentPrototype.bundle_id}/license/accept/`, {}).pipe(switchMap(() => this.api.post<T>(root[name], data)))
+                    this.api.put(`${root.stack}bundle/${currentPrototype.bundle_id}/license/accept/`, {})
+                      .pipe(
+                        switchMap(() => this.api.post<T>(root[name], data))
+                      )
                   )
                 )
             )
@@ -151,32 +156,10 @@ export class AddService implements IAddService {
   addService(data: { prototype_id: number, service_name?: string, license?: string, license_url?: string }[]) {
     return combineLatest(data.map((o) => {
       if (o.license_url && o.license === 'unaccepted') {
-        return this.api.root.pipe(
-          switchMap((root) =>
-            this.api.get<{ text: string }>(`/api/v1/stack/prototype/${o.prototype_id}/license/`).pipe(
-              switchMap((info) =>
-                this.dialog
-                  .open(DialogComponent, {
-                    data: {
-                      title: `Accept license agreement ${o.service_name}`,
-                      text: info.text,
-                      closeOnGreenButtonCLick: true,
-                      controls: {label: 'Do you accept the license agreement?', buttons: ['Yes', 'No']},
-                    },
-                  })
-                  .beforeClosed()
-                  .pipe(
-                    filter((yes) => yes),
-                    switchMap(() =>
-                      this.api.put(`/api/v1/stack/prototype/${o.prototype_id}/license/accept/`, {}).pipe(
-                        switchMap(() => this.cluster.addServices({prototype_id: o.prototype_id}))
-                      )
-                    )
-                  )
-              )
-            )
+        return this.service.acceptServiceLicense(o)
+          .pipe(
+            switchMap(() => this.cluster.addServices({prototype_id: o.prototype_id}))
           )
-        )
       } else return this.cluster.addServices({prototype_id: o.prototype_id});
     }))
   }

@@ -13,7 +13,7 @@ import { Directive, EventEmitter, HostListener, Input, Output } from '@angular/c
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { DialogComponent } from '../dialog.component';
 import { IUpgrade } from "./upgrade.component";
-import { concat, Observable, of } from "rxjs";
+import {combineLatest, concat, Observable, of} from "rxjs";
 import { filter, map, switchMap, tap } from "rxjs/operators";
 import { ApiService } from "@app/core/api";
 import { EmmitRow, Entities } from "@app/core/types";
@@ -22,6 +22,9 @@ import { UpgradeMasterComponent as component } from "../upgrades/master/master.c
 import { AddService } from "@app/shared/add-component/add.service";
 import { IRawHosComponent } from "@app/shared/host-components-map/types";
 import { ListResult } from "@app/models/list-result";
+import {ClusterService} from "@app/core/services/cluster.service";
+import {ICluster} from "@app/models/cluster";
+import {ServiceService} from "@app/services/service.service";
 
 export interface UpgradeParameters {
   cluster?: {
@@ -45,7 +48,11 @@ export class UpgradesDirective extends BaseDirective {
   needLicenseAcceptance: [];
 
 
-  constructor(private api: ApiService, private dialog: MatDialog, private service: AddService) {
+  constructor(private api: ApiService,
+              private dialog: MatDialog,
+              private add: AddService,
+              private service: ServiceService,
+              private cluster: ClusterService) {
     super();
   }
 
@@ -107,12 +114,18 @@ export class UpgradesDirective extends BaseDirective {
         dialogModel.data.text = 'The cluster will be prepared for upgrade';
       }
 
-      this.service.addService(this.needLicenseAcceptance).pipe(
-        filter(yes => !!yes),
-        tap((res) => {
-            if (res) this.dialog.open(DialogComponent, dialogModel);
-          }
-        ))
+      if (this.needLicenseAcceptance.length > 0) {
+        combineLatest(this.needLicenseAcceptance.map((o) => {
+          this.service.acceptServiceLicense(o).pipe(
+            tap(() => {
+                this.dialog.open(DialogComponent, dialogModel);
+              }
+            )).subscribe();
+        }));
+      } else {
+        this.dialog.open(DialogComponent, dialogModel);
+      }
+
     }
   }
 
@@ -132,20 +145,24 @@ export class UpgradesDirective extends BaseDirective {
                   } : ['Yes', 'No']
                 }
               })
-              // .afterClosed()
-              // .subscribe((res) => {
-              //   if (res) this.dialog.open(DialogComponent, dialogModel);
-              // })
-              .beforeClosed()
+              .afterClosed()
               .pipe(
-                filter(yes => yes),
-                switchMap(() => this.service.addService(this.needLicenseAcceptance).pipe(
-                  filter(yes => !!yes),
-                  tap((res) => {
-                    if (res) this.dialog.open(DialogComponent, dialogModel);
-                  }
-                ))
-              ))
+                filter(yes => yes)
+              )
+              .subscribe(() => {
+                if (this.needLicenseAcceptance.length > 0) {
+                  combineLatest(this.needLicenseAcceptance.map((o) => {
+                    this.service.acceptServiceLicense(o).pipe(
+                      tap(() => {
+                          this.dialog.open(DialogComponent, dialogModel);
+                        }
+                      )).subscribe();
+                  }));
+                } else {
+                  this.dialog.open(DialogComponent, dialogModel);
+                }
+              })
+
           }
         )
       ).subscribe();
@@ -157,7 +174,7 @@ export class UpgradesDirective extends BaseDirective {
 
     this.fork(item)
       .pipe(
-        switchMap(text =>
+        tap(text =>
           this.dialog
             .open(DialogComponent, {
               data: {
@@ -170,17 +187,23 @@ export class UpgradesDirective extends BaseDirective {
                 } : ['Yes', 'No']
               }
             })
-            .beforeClosed()
+            .afterClosed()
             .pipe(
               filter(yes => yes),
-              switchMap(() => this.service.addService(this.needLicenseAcceptance).pipe(
-                filter(yes => !!yes),
-                switchMap(() => concat(license$, do$))
-              )),
+              switchMap(() => concat(license$, do$))
             )
+            .subscribe((row) => {
+              if (this.needLicenseAcceptance.length > 0) {
+                combineLatest(this.needLicenseAcceptance.map((o) => {
+                  this.service.acceptServiceLicense(o).subscribe(() => this.refresh.emit({cmd: 'refresh', row}));
+                }));
+              } else {
+                this.refresh.emit({cmd: 'refresh', row});
+              }
+            })
         )
       )
-      .subscribe(row => this.refresh.emit({cmd: 'refresh', row}));
+      .subscribe();
   }
 
   fork(item: IUpgrade) {
@@ -191,7 +214,13 @@ export class UpgradesDirective extends BaseDirective {
   checkServicesAndPrepare() {
     let oldVersionAcceptedServices;
 
-      this.getClusterServices(this.clusterId).subscribe(res => {
+    if (!this.add.Cluster) {
+      this.getCluster().pipe(
+        tap((res: ICluster) => this.cluster.Cluster = res)
+      ).subscribe();
+    }
+
+      this.getClusterServices().subscribe(res => {
         oldVersionAcceptedServices = res.map(service => service.name);
 
         this.getPrototypeServices().subscribe(res => {
@@ -232,7 +261,7 @@ export class UpgradesDirective extends BaseDirective {
               };
 
               // fix later
-              this.service.getPrototype('prototype', params).subscribe((prototype): any => {
+              this.add.getPrototype('prototype', params).subscribe((prototype): any => {
                 if (prototype[0]) {
                   cluster.component.push(prototype[0]);
                   this.hc = cluster;
@@ -254,16 +283,20 @@ export class UpgradesDirective extends BaseDirective {
       ).subscribe();
   }
 
+  getCluster(): Observable<any> {
+    return this.api.get(`api/v1/cluster/${this.clusterId}/`);
+  }
+
   getClusterInfo(): Observable<any> {
     return this.api.get(`api/v1/cluster/${this.clusterId}/hostcomponent/`);
   }
 
   getPrototype(params): Observable<any> {
-    return this.service.getPrototype('prototype', params);
+    return this.add.getPrototype('prototype', params);
   }
 
-  getClusterServices(clusterId): Observable<any> {
-    return this.api.get<ListResult<Entities>>(`api/v1/cluster/${clusterId}/service/`);
+  getClusterServices(): Observable<any> {
+    return this.api.get<ListResult<Entities>>(`api/v1/cluster/${this.clusterId}/service/`);
   }
 
   getPrototypeServices(): Observable<any> {
