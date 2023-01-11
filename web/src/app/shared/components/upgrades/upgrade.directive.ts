@@ -162,7 +162,6 @@ export class UpgradesDirective extends BaseDirective {
                   this.dialog.open(DialogComponent, dialogModel);
                 }
               })
-
           }
         )
       ).subscribe();
