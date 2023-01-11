@@ -32,10 +32,11 @@ from cm.models import JobLog, JobStatus, LogStorage, TaskLog
 
 class JobShortSerializer(HyperlinkedModelSerializer):
     display_name = SerializerMethodField()
+    terminatable = SerializerMethodField()
 
     class Meta:
         model = JobLog
-        fields = ("id", "display_name", "status", "start_date", "finish_date", "url")
+        fields = ("id", "display_name", "status", "terminatable", "start_date", "finish_date", "url")
         extra_kwargs = {"url": {"lookup_url_kwarg": "job_pk"}}
 
     @staticmethod
@@ -46,6 +47,13 @@ class JobShortSerializer(HyperlinkedModelSerializer):
             return obj.action.display_name
         else:
             return None
+
+    @staticmethod
+    def get_terminatable(obj: JobLog):
+        if obj.sub_action is None:
+            return False
+
+        return obj.sub_action.allowed_to_terminate
 
 
 class TaskSerializer(HyperlinkedModelSerializer):
