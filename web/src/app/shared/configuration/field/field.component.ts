@@ -145,6 +145,10 @@ export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
         field.updateValueAndValidity();
         (this.secretTextControl as SecretTextComponent).clear();
         break;
+      case('secretmap'):
+        field.setValue(null);
+        field.updateValueAndValidity();
+        break;
     }
 
     this.options.value = field.value;

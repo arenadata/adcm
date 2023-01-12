@@ -27,10 +27,17 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
       .pipe(this.takeUntil())
       .subscribe((a) => {
         this.dummyControl.clear();
-        this.items.controls.forEach((control, i)=>{
-          const itemsValue = control.value.value === '' ? '' : this.dummy
-          this.dummyControl.push(new FormGroup({key: new FormControl(control.value.key, Validators.required), value: new FormControl(itemsValue)}));
-        })
+        if (a === null) {
+          this.items.clear();
+        } else {
+          this.items.controls.forEach((control, i) => {
+            const itemsValue = control.value.value === '' ? '' : this.dummy
+            this.dummyControl.push(new FormGroup({
+              key: new FormControl(control.value.key, Validators.required),
+              value: new FormControl(itemsValue)
+            }));
+          });
+        }
       })
   }
 
@@ -58,6 +65,10 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
 
   onFocus(): void {
     this.secretInput.nativeElement.setSelectionRange(this.dummyLength, this.dummyLength);
+  }
+
+  clear(): void {
+    this.dummyControl.setValue(null);
   }
 }
 
