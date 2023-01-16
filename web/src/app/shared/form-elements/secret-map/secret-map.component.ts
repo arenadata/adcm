@@ -1,8 +1,7 @@
 import {Component, OnChanges, OnInit, ViewChild} from '@angular/core';
 import { BaseMapListDirective } from "@app/shared/form-elements/map.component";
-import {FormArray, FormControl, FormGroup, FormGroupDirective, NgForm, Validators} from "@angular/forms";
+import {FormArray, FormControl, FormGroup, Validators} from "@angular/forms";
 import { TValue } from "@app/shared/configuration/types";
-import {first} from "rxjs/operators";
 import {ErrorStateMatcher} from "@angular/material/core";
 
 @Component({
@@ -39,6 +38,24 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
           });
         }
       })
+
+      this.control.statusChanges
+        .pipe(this.takeUntil())
+        .subscribe((state) => {
+          if (state === 'DISABLED') {
+            this.items.controls.forEach((control) => {
+              control.disable({ emitEvent: false });
+              control.markAsUntouched();
+            });
+            this.control.markAsUntouched();
+          } else {
+            this.items.controls.forEach((control) => {
+              control.enable({ emitEvent: false });
+              control.markAsTouched();
+            });
+            this.control.markAsTouched();
+          }
+      });
   }
 
   ngOnInit() {
@@ -49,7 +66,6 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
         this.dummyControl.push(new FormGroup({
             key: new FormControl(key, Validators.required),
             value: new FormControl(this.field.value[key]),
-
           }
         ));
 
