@@ -43,13 +43,13 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
         .pipe(this.takeUntil())
         .subscribe((state) => {
           if (state === 'DISABLED') {
-            this.items.controls.forEach((control) => {
+            this.dummyControl.controls.forEach((control) => {
               control.disable({ emitEvent: false });
               control.markAsUntouched();
             });
             this.control.markAsUntouched();
           } else {
-            this.items.controls.forEach((control) => {
+            this.dummyControl.controls.forEach((control) => {
               control.enable({ emitEvent: false });
               control.markAsTouched();
             });
