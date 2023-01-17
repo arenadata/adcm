@@ -82,6 +82,13 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
   onFocus(): void {
     this.secretInput.nativeElement.setSelectionRange(this.dummyLength, this.dummyLength);
   }
+
+  validate() {
+    const obj = {};
+    this.dummyControl.value.forEach((i) => obj[i.key] = i.value);
+    this.control.patchValue(obj, { emitEvent: false });
+    this.control.updateValueAndValidity({ emitEvent: false })
+  }
 }
 
 export class MyErrorStateMatcher implements ErrorStateMatcher {
