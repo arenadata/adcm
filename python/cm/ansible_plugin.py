@@ -24,7 +24,7 @@ from ansible.plugins.action import ActionBase
 # isort: on
 from django.conf import settings
 
-from cm.api import add_hc, get_hc, update_obj_config
+from cm.api import add_hc, get_hc, set_object_config
 from cm.api_context import ctx
 from cm.errors import AdcmEx
 from cm.errors import raise_adcm_ex as err
@@ -389,7 +389,7 @@ def update_config(obj: ADCMEntity, conf: dict) -> dict | int | str:
         else:
             config_log.config[key] = value
 
-    update_obj_config(obj_conf=obj.config, conf=config_log.config, attr=config_log.attr, desc="ansible_update")
+    set_object_config(obj=obj, config=config_log.config)
 
     if len(conf) == 1:
         return list(conf.values())[0]
