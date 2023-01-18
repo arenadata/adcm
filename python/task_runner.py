@@ -24,6 +24,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
 import adcm.init_django
+from cm.errors import AdcmEx
 from cm.job import finish_task, re_prepare_job
 from cm.logger import logger
 from cm.models import JobLog, JobStatus, LogStorage, TaskLog
@@ -35,7 +36,10 @@ def terminate_job(task, jobs):
     running_job = jobs.get(status=JobStatus.RUNNING)
 
     if running_job.pid:
-        os.kill(running_job.pid, signal.SIGTERM)
+        try:
+            os.kill(running_job.pid, signal.SIGTERM)
+        except OSError as e:
+            raise AdcmEx("NOT_ALLOWED_TERMINATION", f"Failed to terminate process: {e}") from e
         finish_task(task, running_job, JobStatus.ABORTED)
     else:
         finish_task(task, None, JobStatus.ABORTED)
