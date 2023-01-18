@@ -170,7 +170,7 @@ class TestTaskAPI(BaseTestCase):
         self.assertEqual(response.data["id"], self.task_2.pk)
         self.assertSetEqual(
             set(response.data["jobs"][0].keys()),
-            {"display_name", "finish_date", "id", "start_date", "status", "url"},
+            {"display_name", "finish_date", "id", "terminatable", "start_date", "status", "url"},
         )
 
     def test_restart(self):

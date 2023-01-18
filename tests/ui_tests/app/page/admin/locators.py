@@ -72,97 +72,11 @@ class AdminUsersLocators(FilterLocators):
         By.CSS_SELECTOR, "app-server-filter button[aria-label='Remove']", "Filter remove button"
     )
 
-    class AddUserPopup(CommonAdminPagesLocators):
-        """Popup with new user info"""
-
-        block = BaseLocator(By.TAG_NAME, "mat-dialog-container", "Add user popup block")
-        username = BaseLocator(By.NAME, "username", "New user username")
-        password = BaseLocator(By.CSS_SELECTOR, "input[data-placeholder='Password']", "New user password")
-        password_confirm = BaseLocator(
-            By.CSS_SELECTOR,
-            "input[data-placeholder='Confirm password']",
-            "New user password confirmation",
-        )
-        adcm_admin_chbx = BaseLocator(
-            By.CSS_SELECTOR,
-            "mat-checkbox[formcontrolname='is_superuser']",
-            "Checkbox ADCM Administrator",
-        )
-        first_name = BaseLocator(By.NAME, "first_name", "New user first name")
-        last_name = BaseLocator(By.NAME, "last_name", "New user last name")
-        email = BaseLocator(By.NAME, "email", "New user email")
-        select_groups = BaseLocator(By.CSS_SELECTOR, "adwp-input-select[controlname='group']", "Select groups")
-        group_item = BaseLocator(By.CSS_SELECTOR, "mat-list-option[role='option']", "Group item")
-
     class FilterPopup:
         """Popup for filter info"""
 
         block = BaseLocator(By.CSS_SELECTOR, "div[role='menu']", "Filter popup block")
         filter_item = BaseLocator(By.CSS_SELECTOR, "button[role='menuitem']", "Filter item")
-
-
-class AdminRolesLocators(CommonAdminPagesLocators):
-    """Locators for Admin Roles menu"""
-
-    class RoleRow:
-        """Row with role info"""
-
-        checkbox = BaseLocator(By.CSS_SELECTOR, "mat-checkbox", "Role checkbox")
-        name = BaseLocator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Role name")
-        description = BaseLocator(By.CSS_SELECTOR, "mat-cell:nth-child(3)", "Role description")
-        permissions = BaseLocator(By.CSS_SELECTOR, "mat-cell:nth-child(4)", "Role permissions")
-
-    class AddRolePopup:
-        """Locators for creating roles popup"""
-
-        block = BaseLocator(By.CSS_SELECTOR, "app-rbac-role-form", "Add role popup block")
-        role_name_input = BaseLocator(
-            By.CSS_SELECTOR, "adwp-input[controlname='display_name'] input", "Input for role name"
-        )
-        description_name_input = BaseLocator(
-            By.CSS_SELECTOR,
-            "adwp-input[controlname='description'] input",
-            "Input for role description",
-        )
-
-        class PermissionItemsBlock:
-            filter_input = BaseLocator(
-                By.CSS_SELECTOR,
-                ".adcm-input-rbac-permissions__selected-filter input",
-                "Filter input",
-            )
-            item = BaseLocator(
-                By.CSS_SELECTOR,
-                ".adcm-input-rbac-permissions__selected-field mat-chip",
-                "Selected permission item",
-            )
-            clear_all_btn = BaseLocator(
-                By.CSS_SELECTOR,
-                ".adcm-input-rbac-permissions__selected-filter-clear",
-                "Clear all button",
-            )
-
-            class PermissionItem:
-                name = BaseLocator(By.CSS_SELECTOR, "div", "Name")
-                delete_btn = BaseLocator(By.CSS_SELECTOR, "button", "Delete button")
-
-        class SelectPermissionsBlock:
-            permissions_filters = BaseLocator(
-                By.CSS_SELECTOR,
-                ".adcm-rbac-permission__filter mat-chip",
-                "filter item for permissions list",
-            )
-            permissions_search_row = BaseLocator(
-                By.CSS_SELECTOR, "adwp-selection-list-actions", "Permission search row"
-            )
-            permissions_item_row = BaseLocator(
-                By.CSS_SELECTOR, ".adcm-rbac-permission__options mat-list-option", "Permission row"
-            )
-            select_btn = BaseLocator(By.CSS_SELECTOR, ".adcm-rbac-permission__actions button", "Select button")
-
-            class SelectPermissionsRow:
-                checkbox = BaseLocator(By.CSS_SELECTOR, "mat-pseudo-checkbox", "Checkbox")
-                name = BaseLocator(By.CSS_SELECTOR, ".mat-list-text", "Name")
 
 
 class AdminPoliciesLocators(CommonAdminPagesLocators):

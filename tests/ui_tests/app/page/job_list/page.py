@@ -126,20 +126,13 @@ class JobListPage(BasePageObject):
     def get_all_jobs_info(self) -> List[SubTaskJobInfo]:
         expand_task_locators = TaskListLocators.Table.ExpandedTask
         job_rows = self.find_elements(expand_task_locators.row)
-        jobs = []
-        for job in job_rows:
-            status = self._get_status_from_class_string(self.find_child(job, expand_task_locators.Row.job_status))
-            if status == JobStatus.ABORTED:
-                jobs.append(
-                    SubTaskJobInfo(
-                        name=self.find_child(job, expand_task_locators.Row.job_name_aborted).text, status=status
-                    )
-                )
-            else:
-                jobs.append(
-                    SubTaskJobInfo(name=self.find_child(job, expand_task_locators.Row.job_name).text, status=status)
-                )
-        return jobs
+        return [
+            SubTaskJobInfo(
+                name=self.find_child(job, expand_task_locators.Row.job_name).text,
+                status=self._get_status_from_class_string(self.find_child(job, expand_task_locators.Row.job_status)),
+            )
+            for job in job_rows
+        ]
 
     def get_jobs_amount(self) -> int:
         expand_task_locators = TaskListLocators.Table.ExpandedTask
