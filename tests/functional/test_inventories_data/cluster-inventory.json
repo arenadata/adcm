@@ -4,209 +4,201 @@
       "CLUSTER": {
         "hosts": {
           "awesome-future": {
-            "sometext": "Nothing to see here",
             "adcm_hostid": 1,
-            "state": "created",
-            "multi_state": []
-          }
-        },
-        "vars": {
-          "cluster": {
-            "config": {
-              "required": 10,
-              "str-key": "value",
-              "int_key": 150,
-              "float_key": 34.7,
-              "bool": false,
-              "option": null,
-              "json": {},
-              "text-type": "lorem ipsum",
-              "file-type": null,
-              "read-only-int": null,
-              "writable-when-installed": null,
-              "read-only-when-runned": null
-            },
-            "name": "dumMxpQA",
-            "id": 1,
-            "version": "1.001",
-            "edition": "community",
-            "state": "created",
-            "multi_state": [
-              "cluster_multi_state"
-            ],
-            "before_upgrade": {
-              "state": null
-            }
-          },
-          "services": {
-            "zookeeper": {
-              "id": 1,
-              "version": "3.4.10",
-              "state": "created",
-              "multi_state": [
-                "service_multi_state"
-              ],
+            "cluster": {
+              "before_upgrade": {
+                "state": null
+              },
               "config": {
-                "dirs": {
-                  "data": "/var/lib/zookeeper"
-                },
-                "client_port": "2181",
-                "svc-file": null,
-                "svc-text-area": "big dataaaaaaaaaaaaa",
-                "svc-ro-created": "bluh",
-                "svc-w-installed": 222,
-                "svc-read-only": 2.5
+                "bool": false,
+                "file-type": null,
+                "float_key": 34.7,
+                "int_key": 150,
+                "json": {},
+                "option": null,
+                "read-only-int": null,
+                "read-only-when-runned": null,
+                "required": 10,
+                "str-key": "value",
+                "text-type": "lorem ipsum",
+                "writable-when-installed": null
               },
-              "maintenance_mode": false,
-              "display_name": "zookeeper",
-              "GROUP_BUDDY": {
-                "component_id": 1,
-                "state": "created",
-                "multi_state": [],
-                "maintenance_mode": false,
-                "display_name": "GROUP_BUDDY",
-                "config": {
-                  "__main_info": "I'm a very important string, don't touch me",
-                  "simple_field": 1,
-                  "json_field": {
-                    "long_time": "ago"
-                  },
-                  "map_field": {
-                    "long_time": "ago"
-                  }
-                }
-              },
-              "ZOOKEEPER_CLIENT": {
-                "component_id": 2,
-                "config": {
-                  "sc-required": 10111,
-                  "sc-str-key": "value",
-                  "sc-int_key": 130,
-                  "sc-float_key": 154.7,
-                  "sc-bool": true,
-                  "sc-option": null,
-                  "sc-json": [
-                    {
-                      "test": 1
-                    }
-                  ],
-                  "sc-text-type": "lorem ipsum sum",
-                  "sc-file-type": null
-                },
-                "state": "created",
-                "multi_state": [],
-                "maintenance_mode": false,
-                "display_name": "ZOOKEEPER_CLIENT"
-              },
-              "ZOOKEEPER_SERVER": {
-                "component_id": 3,
-                "config": {
-                  "required": 10,
-                  "str-key": "value",
-                  "int_key": 150,
-                  "float_key": 34.7,
-                  "bool": false,
-                  "option": null,
-                  "json": {},
-                  "text-type": "lorem ipsum",
-                  "file-type": null
-                },
-                "state": "created",
-                "multi_state": [
-                  "component_multi_state"
-                ],
-                "maintenance_mode": false,
-                "display_name": "ZOOKEEPER_SERVER"
-              }
-            }
-          }
-        }
-      },
-      "zookeeper.GROUP_BUDDY": {
-        "hosts": {
-          "awesome-future": {
-            "sometext": "Nothing to see here",
+              "edition": "community",
+              "id": 1,
+              "multi_state": ["cluster_multi_state"],
+              "name": "dumMxpQA",
+              "state": "created",
+              "version": "1.001"
+            },
+            "multi_state": [],
             "services": {
               "zookeeper": {
-                "id": 1,
-                "version": "3.4.10",
-                "state": "created",
-                "multi_state": [
-                  "service_multi_state"
-                ],
-                "config": {
-                  "dirs": {
-                    "data": "/var/lib/zookeeper"
-                  },
-                  "client_port": "2181",
-                  "svc-file": null,
-                  "svc-text-area": "big dataaaaaaaaaaaaa",
-                  "svc-ro-created": "bluh",
-                  "svc-w-installed": 222,
-                  "svc-read-only": 2.5
-                },
                 "GROUP_BUDDY": {
                   "component_id": 1,
                   "config": {
                     "__main_info": "I'm a very important string, don't touch me",
-                    "simple_field": 1,
                     "json_field": {
                       "there_is": "no one"
                     },
                     "map_field": {
                       "here": "but me"
-                    }
+                    },
+                    "simple_field": 1
                   },
-                  "state": "created",
-                  "multi_state": [],
+                  "display_name": "GROUP_BUDDY",
                   "maintenance_mode": false,
-                  "display_name": "GROUP_BUDDY"
+                  "multi_state": [],
+                  "state": "created"
                 },
                 "ZOOKEEPER_CLIENT": {
                   "component_id": 2,
                   "config": {
+                    "sc-bool": true,
+                    "sc-file-type": null,
+                    "sc-float_key": 154.7,
+                    "sc-int_key": 130,
+                    "sc-json": [{"test": 1}],
+                    "sc-option": null,
                     "sc-required": 10111,
                     "sc-str-key": "value",
-                    "sc-int_key": 130,
-                    "sc-float_key": 154.7,
-                    "sc-bool": true,
-                    "sc-option": null,
-                    "sc-json": [
-                      {
-                        "test": 1
-                      }
-                    ],
-                    "sc-text-type": "lorem ipsum sum",
-                    "sc-file-type": null
+                    "sc-text-type": "lorem ipsum sum"
                   },
-                  "state": "created",
-                  "multi_state": [],
+                  "display_name": "ZOOKEEPER_CLIENT",
                   "maintenance_mode": false,
-                  "display_name": "ZOOKEEPER_CLIENT"
+                  "multi_state": [],
+                  "state": "created"
                 },
                 "ZOOKEEPER_SERVER": {
                   "component_id": 3,
                   "config": {
+                    "bool": false,
+                    "file-type": null,
+                    "float_key": 34.7,
+                    "int_key": 150,
+                    "json": {},
+                    "option": null,
                     "required": 10,
                     "str-key": "value",
-                    "int_key": 150,
-                    "float_key": 34.7,
-                    "bool": false,
-                    "option": null,
-                    "json": {},
-                    "text-type": "lorem ipsum",
-                    "file-type": null
+                    "text-type": "lorem ipsum"
                   },
-                  "state": "created",
-                  "multi_state": [
-                    "component_multi_state"
-                  ],
+                  "display_name": "zookeeper",
                   "maintenance_mode": false,
-                  "display_name": "ZOOKEEPER_SERVER"
+                  "multi_state": ["component_multi_state"],
+                  "state": "created"
                 },
+                "config": {
+                  "client_port": "2181",
+                  "dirs": {"data": "/var/lib/zookeeper"},
+                  "svc-file": null,
+                  "svc-read-only": 2.5,
+                  "svc-ro-created": "bluh",
+                  "svc-text-area": "big dataaaaaaaaaaaaa",
+                  "svc-w-installed": 222
+                },
+                "display_name": "zookeeper",
+                "id": 1,
                 "maintenance_mode": false,
-                "display_name": "zookeeper"
+                "multi_state": ["service_multi_state"],
+                "state": "created",
+                "version": "3.4.10"
               }
+            },
+            "sometext": "Nothing to see here",
+            "state": "created"
+          }
+        },
+        "vars": {
+          "cluster": {
+            "before_upgrade": {
+              "state": null
+            },
+            "config": {
+              "bool": false,
+              "file-type": null,
+              "float_key": 34.7,
+              "int_key": 150,
+              "json": {},
+              "option": null,
+              "read-only-int": null,
+              "read-only-when-runned": null,
+              "required": 10,
+              "str-key": "value",
+              "text-type": "lorem ipsum",
+              "writable-when-installed": null
+            },
+            "edition": "community",
+            "id": 1,
+            "multi_state": ["cluster_multi_state"],
+            "name": "dumMxpQA",
+            "state": "created",
+            "version": "1.001"
+          },
+          "services": {
+            "zookeeper": {
+              "GROUP_BUDDY": {
+                "component_id": 1,
+                "config": {
+                  "__main_info": "I'm a very important string, don't touch me",
+                  "json_field": {"long_time": "ago"},
+                  "map_field": {"long_time": "ago"},
+                  "simple_field": 1
+                },
+                "display_name": "GROUP_BUDDY",
+                "maintenance_mode": false,
+                "multi_state": [],
+                "state": "created"
+              },
+              "ZOOKEEPER_CLIENT": {
+                "component_id": 2,
+                "config": {
+                  "sc-bool": true,
+                  "sc-file-type": null,
+                  "sc-float_key": 154.7,
+                  "sc-int_key": 130,
+                  "sc-json": [{"test": 1}],
+                  "sc-option": null,
+                  "sc-required": 10111,
+                  "sc-str-key": "value",
+                  "sc-text-type": "lorem ipsum sum"
+                },
+                "display_name": "ZOOKEEPER_CLIENT",
+                "maintenance_mode": false,
+                "multi_state": [],
+                "state": "created"
+              },
+              "ZOOKEEPER_SERVER": {
+                "component_id": 3,
+                "config": {
+                  "bool": false,
+                  "file-type": null,
+                  "float_key": 34.7,
+                  "int_key": 150,
+                  "json": {},
+                  "option": null,
+                  "required": 10,
+                  "str-key": "value",
+                  "text-type": "lorem ipsum"
+                },
+                "display_name": "zookeeper",
+                "maintenance_mode": false,
+                "multi_state": ["component_multi_state"],
+                "state": "created"
+              },
+              "config": {
+                "client_port": "2181",
+                "dirs": {"data": "/var/lib/zookeeper"},
+                "svc-file": null,
+                "svc-read-only": 2.5,
+                "svc-ro-created": "bluh",
+                "svc-text-area": "big dataaaaaaaaaaaaa",
+                "svc-w-installed": 222
+              },
+              "display_name": "zookeeper",
+              "id": 1,
+              "maintenance_mode": false,
+              "multi_state": ["service_multi_state"],
+              "state": "created",
+              "version": "3.4.10"
             }
           }
         }
@@ -214,6 +206,157 @@
       "zookeeper": {
         "hosts": {
           "awesome-future": {
+            "services": {
+              "zookeeper": {
+                "GROUP_BUDDY": {
+                  "component_id": 1,
+                  "config": {
+                    "__main_info": "I'm a very important string, don't touch me",
+                    "json_field": {
+                      "there_is": "no one"
+                    },
+                    "map_field": {
+                      "here": "but me"
+                    },
+                    "simple_field": 1
+                  },
+                  "display_name": "GROUP_BUDDY",
+                  "maintenance_mode": false,
+                  "multi_state": [],
+                  "state": "created"
+                },
+                "ZOOKEEPER_CLIENT": {
+                  "component_id": 2,
+                  "config": {
+                    "sc-bool": true,
+                    "sc-file-type": null,
+                    "sc-float_key": 154.7,
+                    "sc-int_key": 130,
+                    "sc-json": [{"test": 1}],
+                    "sc-option": null,
+                    "sc-required": 10111,
+                    "sc-str-key": "value",
+                    "sc-text-type": "lorem ipsum sum"
+                  },
+                  "display_name": "ZOOKEEPER_CLIENT",
+                  "maintenance_mode": false,
+                  "multi_state": [],
+                  "state": "created"
+                },
+                "ZOOKEEPER_SERVER": {
+                  "component_id": 3,
+                  "config": {
+                    "bool": false,
+                    "file-type": null,
+                    "float_key": 34.7,
+                    "int_key": 150,
+                    "json": {},
+                    "option": null,
+                    "required": 10,
+                    "str-key": "value",
+                    "text-type": "lorem ipsum"
+                  },
+                  "display_name": "zookeeper",
+                  "maintenance_mode": false,
+                  "multi_state": ["component_multi_state"],
+                  "state": "created"
+                },
+                "config": {
+                  "client_port": "2181",
+                  "dirs": {"data": "/var/lib/zookeeper"},
+                  "svc-file": null,
+                  "svc-read-only": 2.5,
+                  "svc-ro-created": "bluh",
+                  "svc-text-area": "big dataaaaaaaaaaaaa",
+                  "svc-w-installed": 222
+                },
+                "display_name": "zookeeper",
+                "id": 1,
+                "maintenance_mode": false,
+                "multi_state": ["service_multi_state"],
+                "state": "created",
+                "version": "3.4.10"
+              }
+            },
+            "sometext": "Nothing to see here"
+          }
+        }
+      },
+      "zookeeper.GROUP_BUDDY": {
+        "hosts": {
+          "awesome-future": {
+            "services": {
+              "zookeeper": {
+                "GROUP_BUDDY": {
+                  "component_id": 1,
+                  "config": {
+                    "__main_info": "I'm a very important string, don't touch me",
+                    "json_field": {
+                      "there_is": "no one"
+                    },
+                    "map_field": {
+                      "here": "but me"
+                    },
+                    "simple_field": 1
+                  },
+                  "display_name": "GROUP_BUDDY",
+                  "maintenance_mode": false,
+                  "multi_state": [],
+                  "state": "created"
+                },
+                "ZOOKEEPER_CLIENT": {
+                  "component_id": 2,
+                  "config": {
+                    "sc-bool": true,
+                    "sc-file-type": null,
+                    "sc-float_key": 154.7,
+                    "sc-int_key": 130,
+                    "sc-json": [{"test": 1}],
+                    "sc-option": null,
+                    "sc-required": 10111,
+                    "sc-str-key": "value",
+                    "sc-text-type": "lorem ipsum sum"
+                  },
+                  "display_name": "ZOOKEEPER_CLIENT",
+                  "maintenance_mode": false,
+                  "multi_state": [],
+                  "state": "created"
+                },
+                "ZOOKEEPER_SERVER": {
+                  "component_id": 3,
+                  "config": {
+                    "bool": false,
+                    "file-type": null,
+                    "float_key": 34.7,
+                    "int_key": 150,
+                    "json": {},
+                    "option": null,
+                    "required": 10,
+                    "str-key": "value",
+                    "text-type": "lorem ipsum"
+                  },
+                  "display_name": "zookeeper",
+                  "maintenance_mode": false,
+                  "multi_state": ["component_multi_state"],
+                  "state": "created"
+                },
+                "config": {
+                  "client_port": "2181",
+                  "dirs": {"data": "/var/lib/zookeeper"},
+                  "svc-file": null,
+                  "svc-read-only": 2.5,
+                  "svc-ro-created": "bluh",
+                  "svc-text-area": "big dataaaaaaaaaaaaa",
+                  "svc-w-installed": 222
+                },
+                "display_name": "zookeeper",
+                "id": 1,
+                "maintenance_mode": false,
+                "multi_state": ["service_multi_state"],
+                "state": "created",
+                "version": "3.4.10"
+              }
+            },
             "sometext": "Nothing to see here"
           }
         }
@@ -221,4 +364,3 @@
     }
   }
 }
-
