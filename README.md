@@ -124,7 +124,7 @@ yarn install
    -e POSTGRES_ADCM_PASS="DATABASE_USER_PASSWORD" --name adcm hub.arenadata.io/adcm/adcm:latest
    ```
    Use `-v /opt/adcm:/adcm/data:Z` for SELinux
-   Target PostgreSQL DB must not have DB with name `adcm`
+   Target PostgreSQL DB must not have DB with name `DATABASE_NAME`
 
 ## Running ADCM using docker-compose PostgreSQL DB
 1. Create env file `.env` containing:
@@ -133,12 +133,14 @@ yarn install
    POSTGRES_ADCM_PASS="SOME_STRONG_SECRET_PASS"
    DATA_DIR="./data"
    DB_DIR="./db_dir"
+   POSTGRES_PASSWORD="SOME_ANOTHER_STRONG_SECRET_PASS"
    ```
    where
    - `POSTGRES_ADCM_PASS` - password which will be used to create `adcm` PostgreSQL role
    - `DATA_DIR` - path to directory which will contain all ADCM data
    - `DB_DIR` - path to directory which will contain PostgreSQL DB data to keep it persistent 
    across containers restart, it must be empty beforehand
+   - `POSTGRES_PASSWORD` - password for `postgres` PostgreSQL role
 
 ## Migrate SQLite -> docker-compose PostgreSQL
 
@@ -148,17 +150,20 @@ yarn install
    POSTGRES_ADCM_PASS=""
    DATA_DIR="./data"
    DB_DIR="./db_dir"
+   POSTGRES_PASSWORD="ANY_STRING"
    ```
    where
    - `POSTGRES_ADCM_PASS` - password which will be used to create `adcm` PostgreSQL role
    - `DATA_DIR` - path to directory which now contains all ADCM data, including SQLite DB file
-   - `DB_DIR` - path to directory which will contain PostgreSQL DB data to keep it persistent 
+   - `DB_DIR` - path to directory which will contain PostgreSQL DB data to keep it persistent
    across containers restart, it must be empty beforehand
+   - `POSTGRES_PASSWORD` - password for `postgres` PostgreSQL role (it will be changed later)
 
 2. `docker-compose up -d`
 3. `docker exec adcm_adcm_1 /adcm/python/manage.py dumpdata -o /adcm/data/var/data.json`
 4. `docker-compose down`
-5. Edit `.env` file and fill `POSTGRES_ADCM_PASS="SOME_ANOTHER_STRONG_SECRET_PASS"`
+5. Edit `.env` file and fill `POSTGRES_ADCM_PASS="SOME_STRONG_SECRET_PASS"`
+   `POSTGRES_PASSWORD="SOME_ANOTHER_STRONG_SECRET_PASS"`
 6. `docker-compose up -d`
 7. `docker exec adcm_adcm_1 /adcm/python/manage.py loaddata /adcm/data/var/data.json`
 
@@ -175,7 +180,7 @@ yarn install
    -e POSTGRES_ADCM_PASS="DATABASE_USER_PASSWORD" --name adcm hub.arenadata.io/adcm/adcm:latest
    ```
    Use `-v /opt/adcm:/adcm/data:Z` for SELinux
-   Target PostgreSQL DB must not have DB with name `adcm`
+   Target PostgreSQL DB must not have DB with name `DATABASE_NAME`
 3. Load dumped SQLite DB data to PostgreSQL
    ```shell
    docker exec -it adcm /adcm/python/manage.py loaddata /adcm/data/var/data.json
