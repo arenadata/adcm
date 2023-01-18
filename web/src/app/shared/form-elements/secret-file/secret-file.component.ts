@@ -4,7 +4,6 @@ import { SecretTextComponent } from "@app/shared/form-elements/secret-text/secre
 @Component({
   selector: 'app-fields-secret-file',
   templateUrl: '../secret-text/secret-text.component.html',
-  styleUrls: ['../secret-text/secret-text.component.css']
 })
 export class SecretFileComponent extends SecretTextComponent implements OnInit {
 
