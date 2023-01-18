@@ -101,7 +101,7 @@ def group_keys_to_flat(origin: dict, spec: dict):
                 result[key] = v
             else:
                 if "fields" not in v or "value" not in origin[k]:
-                    raise_adcm_ex("ATTRIBUTE_ERROR", "invalid format `group_keys` field")
+                    raise_adcm_ex(code="ATTRIBUTE_ERROR", msg="invalid format `group_keys` field")
                 result[key] = v["value"]
 
                 for _k, _v in origin[k]["fields"].items():
@@ -184,11 +184,9 @@ def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None) -> str | None
     try:
         fd = open(path, "r", encoding=settings.ENCODING_UTF_8)
     except FileNotFoundError:
-        msg = '{} "{}" is not found ({})'
-        raise_adcm_ex("CONFIG_TYPE_ERROR", msg.format(pattern, path, ref))
+        raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'{pattern} "{path}" is not found ({ref})')
     except PermissionError:
-        msg = '{} "{}" can not be open ({})'
-        raise_adcm_ex("CONFIG_TYPE_ERROR", msg.format(pattern, path, ref))
+        raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'{pattern} "{path}" can not be open ({ref})')
 
     if fd:
         body = fd.read()
@@ -646,7 +644,8 @@ def get_action_variant(obj, conf):
                 c.limits["source"]["value"] = get_variant(obj, cl.config, c.limits)
 
 
-def config_is_ro(obj, key, limits):  # pylint: disable=too-many-return-statements
+def config_is_ro(obj: ADCMEntity | Action, key: str, limits: dict) -> bool:
+    # pylint: disable=too-many-return-statements
     if not limits:
         return False
 
@@ -657,8 +656,13 @@ def config_is_ro(obj, key, limits):  # pylint: disable=too-many-return-statement
     wr = limits.get("writable", [])
 
     if ro and wr:
-        msg = 'can not have "read_only" and "writable" simultaneously (config key "{}" of {})'
-        raise_adcm_ex("INVALID_CONFIG_DEFINITION", msg.format(key, proto_ref(obj.prototype)))
+        raise_adcm_ex(
+            code="INVALID_CONFIG_DEFINITION",
+            msg=(
+                'can not have "read_only" and "writable"'
+                f' simultaneously (config key "{key}" of {proto_ref(obj.prototype)})'
+            ),
+        )
 
     if ro == "any":
         return True
@@ -694,8 +698,9 @@ def check_read_only(obj, spec, conf, old_conf):
                     continue
 
             if flat_conf[s] != flat_old_conf[s]:
-                msg = "config key {} of {} is read only"
-                raise_adcm_ex("CONFIG_VALUE_ERROR", msg.format(s, proto_ref(obj.prototype)))
+                raise_adcm_ex(
+                    code="CONFIG_VALUE_ERROR", msg=f"config key {s} of {proto_ref(obj.prototype)} is read only"
+                )
 
 
 def restore_read_only(obj, spec, conf, old_conf):  # # pylint: disable=too-many-branches
@@ -720,7 +725,7 @@ def restore_read_only(obj, spec, conf, old_conf):  # # pylint: disable=too-many-
                     conf[key] = old_conf[key]
         else:
             for subkey in spec[key]:
-                if config_is_ro(obj, key + "/" + subkey, spec[key][subkey]["limits"]):
+                if config_is_ro(obj=obj, key=f"{key}/{subkey}", limits=spec[key][subkey]["limits"]):
                     if key in conf:
                         if subkey not in conf:
                             if key in old_conf and subkey in old_conf[key]:
@@ -731,9 +736,17 @@ def restore_read_only(obj, spec, conf, old_conf):  # # pylint: disable=too-many-
     return conf
 
 
-def check_json_config(proto, obj, new_config, current_config=None, new_attr=None, current_attr=None):
+def check_and_process_json_config(
+    proto: Prototype,
+    obj: ADCMEntity | Action,
+    new_config: dict,
+    current_config: dict = None,
+    new_attr=None,
+    current_attr=None,
+):
     spec, flat_spec, _, _ = get_prototype_config(proto)
     check_attr(proto, obj, new_attr, flat_spec, current_attr)
+    group = None
 
     if isinstance(obj, GroupConfig):
         config_spec = obj.get_config_spec()
@@ -741,10 +754,15 @@ def check_json_config(proto, obj, new_config, current_config=None, new_attr=None
         check_value_unselected_field(
             current_config, new_config, current_attr, new_attr, group_keys, config_spec, obj.object
         )
+        group = obj
+        obj = group.object
 
     process_variant(obj, spec, new_config)
+    check_config_spec(proto=proto, obj=obj, spec=spec, flat_spec=flat_spec, conf=new_config, attr=new_attr)
 
-    return check_config_spec(proto, obj, spec, flat_spec, new_config, current_config, new_attr)
+    new_config = process_config_spec(obj=group or obj, spec=spec, new_config=new_config)
+
+    return new_config
 
 
 def check_structure_for_group_attr(group_keys, spec, key_name):
@@ -752,7 +770,7 @@ def check_structure_for_group_attr(group_keys, spec, key_name):
     flat_group_attr = group_keys_to_flat(group_keys, spec)
     for key, value in flat_group_attr.items():
         if key not in spec:
-            raise_adcm_ex("ATTRIBUTE_ERROR", f"invalid `{key}` field in `{key_name}`")
+            raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"invalid `{key}` field in `{key_name}`")
 
         if spec[key].type == "group":
             if not (
@@ -761,15 +779,15 @@ def check_structure_for_group_attr(group_keys, spec, key_name):
                 or value is None
                 and "activatable" not in spec[key].limits
             ):
-                raise_adcm_ex("ATTRIBUTE_ERROR", f"invalid type `value` field in `{key}`")
+                raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"invalid type `value` field in `{key}`")
         else:
             if not isinstance(value, bool):
-                raise_adcm_ex("ATTRIBUTE_ERROR", f"invalid type `{key}` field in `{key_name}`")
+                raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"invalid type `{key}` field in `{key_name}`")
 
     for key, value in spec.items():
         if value.type != "group":
             if key not in flat_group_attr:
-                raise_adcm_ex("ATTRIBUTE_ERROR", f"there is no `{key}` field in `{key_name}`")
+                raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"there is no `{key}` field in `{key_name}`")
 
     return flat_group_attr
 
@@ -780,7 +798,7 @@ def check_agreement_group_attr(group_keys, custom_group_keys, spec):
     flat_custom_group_keys = group_keys_to_flat(custom_group_keys, spec)
     for key, value in flat_custom_group_keys.items():
         if not value and flat_group_keys[key]:
-            raise_adcm_ex("ATTRIBUTE_ERROR", f"the `{key}` field cannot be included in the group")
+            raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"the `{key}` field cannot be included in the group")
 
 
 def check_value_unselected_field(current_config, new_config, current_attr, new_attr, group_keys, spec, obj):
@@ -817,7 +835,7 @@ def check_value_unselected_field(current_config, new_config, current_attr, new_a
                     f' Current: ({current_attr[k]["active"]}), New: ({new_attr[k]["active"]})'
                 )
                 logger.info(msg)
-                raise_adcm_ex("GROUP_CONFIG_CHANGE_UNSELECTED_FIELD", msg)
+                raise_adcm_ex(code="GROUP_CONFIG_CHANGE_UNSELECTED_FIELD", msg=msg)
 
             check_value_unselected_field(
                 current_config[k],
@@ -839,13 +857,13 @@ def check_value_unselected_field(current_config, new_config, current_attr, new_a
                     f" Current: ({current_config[k]}), New: ({new_config[k]})"
                 )
                 logger.info(msg)
-                raise_adcm_ex("GROUP_CONFIG_CHANGE_UNSELECTED_FIELD", msg)
+                raise_adcm_ex(code="GROUP_CONFIG_CHANGE_UNSELECTED_FIELD", msg=msg)
 
 
 def check_group_keys_attr(attr, spec, group_config):
     """Check attr for group config"""
     if "group_keys" not in attr:
-        raise_adcm_ex("ATTRIBUTE_ERROR", '`attr` must contain "group_keys" key')
+        raise_adcm_ex(code="ATTRIBUTE_ERROR", msg='`attr` must contain "group_keys" key')
 
     group_keys = attr.get("group_keys")
     _, custom_group_keys = group_config.create_group_keys(group_config.get_config_spec())
@@ -863,42 +881,43 @@ def check_attr(
     ref = proto_ref(proto)
     allowed_key = ("active",)
     if not isinstance(attr, dict):
-        raise_adcm_ex("ATTRIBUTE_ERROR", "`attr` should be a map")
+        raise_adcm_ex(code="ATTRIBUTE_ERROR", msg="`attr` should be a map")
 
     for key, value in attr.items():
         if key in ["group_keys", "custom_group_keys"]:
             if not is_group_config:
-                raise_adcm_ex("ATTRIBUTE_ERROR", f"not allowed key `{key}` for object ({ref})")
+                raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"not allowed key `{key}` for object ({ref})")
             continue
 
-        if key + "/" not in spec:
-            raise_adcm_ex("ATTRIBUTE_ERROR", f"there isn't `{key}` group in the config ({ref})")
-        if spec[key + "/"].type != "group":
-            raise_adcm_ex("ATTRIBUTE_ERROR", f"config key `{key}` is not a group ({ref})")
+        if f"{key}/" not in spec:
+            raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"there isn't `{key}` group in the config ({ref})")
+
+        if spec[f"{key}/"].type != "group":
+            raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"config key `{key}` is not a group ({ref})")
 
     for value in spec.values():
         key = value.name
         if value.type == "group" and "activatable" in value.limits:
             if key not in attr:
-                raise_adcm_ex("ATTRIBUTE_ERROR", f"there isn't `{key}` group in the `attr`")
+                raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"there isn't `{key}` group in the `attr`")
 
             if not isinstance(attr[key], dict):
                 raise_adcm_ex(
-                    "ATTRIBUTE_ERROR",
-                    f"value of attribute `{key}` should be a map ({ref})",
+                    code="ATTRIBUTE_ERROR",
+                    msg=f"value of attribute `{key}` should be a map ({ref})",
                 )
 
             for attr_key in attr[key]:
                 if attr_key not in allowed_key:
                     raise_adcm_ex(
-                        "ATTRIBUTE_ERROR",
-                        f"not allowed key `{attr_key}` of attribute `{key}` ({ref})",
+                        code="ATTRIBUTE_ERROR",
+                        msg=f"not allowed key `{attr_key}` of attribute `{key}` ({ref})",
                     )
 
                 if not isinstance(attr[key]["active"], bool):
                     raise_adcm_ex(
-                        "ATTRIBUTE_ERROR",
-                        f"value of key `active` of attribute `{key}` should be boolean ({ref})",
+                        code="ATTRIBUTE_ERROR",
+                        msg=f"value of key `active` of attribute `{key}` should be boolean ({ref})",
                     )
 
                 if (
@@ -906,116 +925,115 @@ def check_attr(
                     and (current_attr[key]["active"] != attr[key]["active"])
                     and config_is_ro(obj, key, value.limits)
                 ):
-                    msg = "config key {} of {} is read only"
-                    raise_adcm_ex("CONFIG_VALUE_ERROR", msg.format(key, ref))
+                    raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=f"config key {key} of {ref} is read only")
 
     if is_group_config:
         check_group_keys_attr(attr, spec, obj)
 
 
-def check_config_spec(
-    proto, obj, spec, flat_spec, conf, old_conf=None, attr=None
-):  # pylint: disable=too-many-branches,too-many-statements
-    group = None
-    if isinstance(obj, GroupConfig):
-        group = obj
-        obj = group.object
+def key_is_required(obj: ADCMEntity | Action, key: str, subkey: str, spec: dict) -> bool:
+    if config_is_ro(obj, f"{key}/{subkey}", spec.get("limits", "")):
+        return False
 
-    ref = proto_ref(proto)
-    if isinstance(conf, (float, int)):
-        raise_adcm_ex("JSON_ERROR", "config should not be just one int or float")
+    if subkey:
+        return spec[key][subkey]["required"]
 
-    if isinstance(conf, str):
-        raise_adcm_ex("JSON_ERROR", "config should not be just one string")
+    return spec[key]["required"]
 
-    def key_is_required(_key, subkey, _spec):
-        if config_is_ro(obj, f"{_key}/{subkey}", spec.get("limits", "")):
-            return False
 
-        if _spec["required"]:
+def is_inactive(key: str, attr: dict, flat_spec: dict) -> bool:
+    if attr and flat_spec[f"{key}/"].type == "group":
+        if key in attr and "active" in attr[key]:
+            return not bool(attr[key]["active"])
+
+    return False
+
+
+def sub_key_is_required(key: str, attr: dict, flat_spec: dict, spec: dict, obj: ADCMEntity) -> bool:
+    if is_inactive(key=key, attr=attr, flat_spec=flat_spec):
+        return False
+
+    for subkey in spec[key]:
+        if key_is_required(obj=obj, key=key, subkey=subkey, spec=spec):
             return True
 
-        return False
+    return False
 
-    def is_inactive(_key):
-        if attr and flat_spec[f"{_key}/"].type == "group":
-            if _key in attr and "active" in attr[_key]:
-                return not bool(attr[_key]["active"])
 
-        return False
+def check_config_spec(
+    proto: Prototype, obj: ADCMEntity | Action, spec: dict, flat_spec: dict, conf: dict, attr: dict = None
+) -> None:
+    # pylint: disable=too-many-branches
+    ref = proto_ref(proto)
+    if isinstance(conf, (float, int)):
+        raise_adcm_ex(code="JSON_ERROR", msg="config should not be just one int or float")
 
-    def check_sub(_key):
-        if not isinstance(conf[_key], dict):
-            _msg = 'There are not any subkeys for key "{}" ({})'
-            raise_adcm_ex("CONFIG_KEY_ERROR", _msg.format(_key, ref))
-
-        if not conf[_key]:
-            _msg = 'Key "{}" should contains some subkeys ({})'
-            raise_adcm_ex("CONFIG_KEY_ERROR", _msg.format(_key, ref), list(spec[_key].keys()))
-
-        for subkey in conf[_key]:
-            if subkey not in spec[_key]:
-                _msg = 'There is unknown subkey "{}" for key "{}" in input config ({})'
-                raise_adcm_ex("CONFIG_KEY_ERROR", _msg.format(subkey, _key, ref))
-
-        for subkey in spec[_key]:
-            if subkey in conf[_key]:
-                check_config_type(
-                    proto,
-                    _key,
-                    subkey,
-                    spec[_key][subkey],
-                    conf[_key][subkey],
-                    False,
-                    is_inactive(_key),
-                )
-            elif key_is_required(_key, subkey, spec[_key][subkey]):
-                _msg = 'There is no required subkey "{}" for key "{}" ({})'
-                raise_adcm_ex("CONFIG_KEY_ERROR", _msg.format(subkey, _key, ref))
-
-    def sub_key_is_required(_key):
-        if is_inactive(_key):
-            return False
-
-        for subkey in spec[_key]:
-            if key_is_required(_key, subkey, spec[_key][subkey]):
-                return True
-
-        return False
+    if isinstance(conf, str):
+        raise_adcm_ex(code="JSON_ERROR", msg="config should not be just one string")
 
     for key in conf:
         if key not in spec:
-            msg = 'There is unknown key "{}" in input config ({})'
-            raise_adcm_ex("CONFIG_KEY_ERROR", msg.format(key, ref))
+            raise_adcm_ex(code="CONFIG_KEY_ERROR", msg=f'There is unknown key "{key}" in input config ({ref})')
 
         if "type" in spec[key] and spec[key]["type"] != "group":
             if isinstance(conf[key], dict) and not type_is_complex(spec[key]["type"]):
-                msg = 'Key "{}" in input config should not have any subkeys ({})'
-                raise_adcm_ex("CONFIG_KEY_ERROR", msg.format(key, ref))
+                raise_adcm_ex(
+                    code="CONFIG_KEY_ERROR", msg=f'Key "{key}" in input config should not have any subkeys ({ref})'
+                )
 
     for key in spec:
         if "type" in spec[key] and spec[key]["type"] != "group":
             if key in conf:
-                check_config_type(proto, key, "", spec[key], conf[key])
-            elif key_is_required(key, "", spec[key]):
-                msg = 'There is no required key "{}" in input config ({})'
-                raise_adcm_ex("CONFIG_KEY_ERROR", msg.format(key, ref))
+                check_config_type(proto=proto, key=key, subkey="", spec=spec[key], value=conf[key])
+            elif key_is_required(obj=obj, key=key, subkey="", spec=spec):
+                raise_adcm_ex(code="CONFIG_KEY_ERROR", msg=f'There is no required key "{key}" in input config ({ref})')
+
         else:
             if key not in conf:
-                if sub_key_is_required(key):
-                    msg = 'There are no required key "{}" in input config'
-                    raise_adcm_ex("CONFIG_KEY_ERROR", msg.format(key))
+                if sub_key_is_required(key=key, attr=attr, flat_spec=flat_spec, spec=spec, obj=obj):
+                    raise_adcm_ex(code="CONFIG_KEY_ERROR", msg=f'There are no required key "{key}" in input config')
+
             else:
-                check_sub(key)
+                if not isinstance(conf[key], dict):
+                    raise_adcm_ex(code="CONFIG_KEY_ERROR", msg=f'There are not any subkeys for key "{key}" ({ref})')
 
-    if old_conf:
-        # TODO: it is necessary to investigate the problem
-        # check_read_only(obj, flat_spec, conf, old_conf)
-        restore_read_only(obj, spec, conf, old_conf)
+                if not conf[key]:
+                    raise_adcm_ex(
+                        code="CONFIG_KEY_ERROR",
+                        msg=f'Key "{key}" should contains some subkeys ({ref}): {list(spec[key].keys())}',
+                    )
 
-    # for process_file_type() function not need `if old_conf:`
-    process_file_type(group or obj, spec, conf)
-    process_secret_params(spec, conf)
+                for subkey in conf[key]:
+                    if subkey not in spec[key]:
+                        raise_adcm_ex(
+                            code="CONFIG_KEY_ERROR",
+                            msg=f'There is unknown subkey "{subkey}" for key "{key}" in input config ({ref})',
+                        )
+
+                for subkey in spec[key]:
+                    if subkey in conf[key]:
+                        check_config_type(
+                            proto=proto,
+                            key=key,
+                            subkey=subkey,
+                            spec=spec[key][subkey],
+                            value=conf[key][subkey],
+                            default=False,
+                            inactive=is_inactive(key, attr, flat_spec),
+                        )
+                    elif key_is_required(obj=obj, key=key, subkey=subkey, spec=spec):
+                        raise_adcm_ex(
+                            code="CONFIG_KEY_ERROR",
+                            msg=f'There is no required subkey "{subkey}" for key "{key}" ({ref})',
+                        )
+
+
+def process_config_spec(obj: ADCMEntity, spec: dict, new_config: dict, current_config: dict = None) -> dict:
+    if current_config:
+        new_config = restore_read_only(obj=obj, spec=spec, conf=new_config, old_conf=current_config)
+
+    process_file_type(obj=obj, spec=spec, conf=new_config)
+    conf = process_secret_params(spec=spec, conf=new_config)
     conf = process_secretmap(spec=spec, conf=conf)
 
     return conf

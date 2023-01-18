@@ -21,7 +21,7 @@ from django.utils import timezone
 from version_utils import rpm
 
 from cm.adcm_config import (
-    check_json_config,
+    check_and_process_json_config,
     init_object_config,
     obj_ref,
     proto_ref,
@@ -51,6 +51,7 @@ from cm.models import (
     HostComponent,
     HostProvider,
     MaintenanceMode,
+    ObjectConfig,
     ObjectType,
     Prototype,
     PrototypeExport,
@@ -525,7 +526,7 @@ def accept_license(proto: Prototype) -> None:
     Prototype.objects.filter(license_hash=proto.license_hash, license="unaccepted").update(license="accepted")
 
 
-def update_obj_config(obj_conf, conf, attr, desc="") -> ConfigLog:
+def update_obj_config(obj_conf: ObjectConfig, conf: dict, attr: dict, desc: str = "") -> ConfigLog:
     if not isinstance(attr, dict):
         raise_adcm_ex("INVALID_CONFIG_UPDATE", "attr should be a map")
 
@@ -542,9 +543,16 @@ def update_obj_config(obj_conf, conf, attr, desc="") -> ConfigLog:
         proto = obj.prototype
 
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
-    new_conf = check_json_config(proto, group or obj, conf, old_conf.config, attr, old_conf.attr)
+    new_conf = check_and_process_json_config(
+        proto=proto,
+        obj=group or obj,
+        new_config=conf,
+        current_config=old_conf.config,
+        new_attr=attr,
+        current_attr=old_conf.attr,
+    )
     with transaction.atomic():
-        cl = save_obj_config(obj_conf, new_conf, attr, desc)
+        cl = save_obj_config(obj_conf=obj_conf, conf=new_conf, attr=attr, desc=desc)
         update_hierarchy_issues(obj)
         re_apply_object_policy(obj)
 
@@ -554,6 +562,19 @@ def update_obj_config(obj_conf, conf, attr, desc="") -> ConfigLog:
         post_event("change_config", proto.type, obj.pk, "version", str(cl.pk))
 
     return cl
+
+
+def set_object_config(obj: ADCMEntity, config: dict):
+    old_conf = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
+    new_conf = check_and_process_json_config(proto=obj.prototype, obj=obj, new_config=config, new_attr=old_conf.attr)
+
+    with transaction.atomic():
+        config_log = save_obj_config(obj_conf=obj.config, conf=new_conf, attr=old_conf.attr, desc="ansible update")
+        update_hierarchy_issues(obj)
+        re_apply_object_policy(obj)
+
+    post_event("change_config", obj.prototype.type, obj.pk, "version", str(config_log.pk))
+    return config_log
 
 
 def get_hc(cluster):
