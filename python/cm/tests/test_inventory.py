@@ -81,7 +81,9 @@ class TestInventory(BaseTestCase):
     def test_get_obj_config(self, mock_process_config_and_attr):
         get_obj_config(self.cluster)
         config_log = ConfigLog.objects.get(id=self.cluster.config.current)
-        mock_process_config_and_attr.assert_called_once_with(self.cluster, config_log.config, config_log.attr)
+        mock_process_config_and_attr.assert_called_once_with(
+            obj=self.cluster, conf=config_log.config, attr=config_log.attr
+        )
 
     @patch("cm.inventory.get_import")
     @patch("cm.inventory.get_obj_config")
@@ -105,7 +107,7 @@ class TestInventory(BaseTestCase):
         self.assertDictEqual(res, test_res)
 
         mock_get_obj_config.assert_called_once_with(self.cluster)
-        mock_get_import.assert_called_once_with(self.cluster)
+        mock_get_import.assert_called_once_with(cluster=self.cluster)
 
     @patch("cm.inventory.get_obj_config")
     def test_get_provider_config(self, mock_get_obj_config):
@@ -389,8 +391,11 @@ class TestInventory(BaseTestCase):
             component_11_host_vars["services"]["service_1"]["component_12"]["config"],
             {"some_string": "some_string"},
         )
-        self.assertFalse("service_2" in component_11_host_vars["services"].keys())
+        self.assertIn("service_2", component_11_host_vars["services"].keys())
 
         component_12_host_vars = get_host_vars(self.host, component_12)
 
-        self.assertDictEqual(component_12_host_vars, {})
+        self.assertDictEqual(
+            component_12_host_vars["services"]["service_1"]["component_12"]["config"],
+            {"some_string": "some_string"},
+        )
