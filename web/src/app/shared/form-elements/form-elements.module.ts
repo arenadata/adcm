@@ -68,7 +68,8 @@ import { SecretFileComponent } from './secret-file/secret-file.component';
     ButtonUploaderComponent,
     VariantComponent,
     ConfirmEqualValidatorDirective,
-    SecretTextComponent
+    SecretTextComponent,
+    SecretFileComponent
   ],
 })
 export class FormElementsModule {}

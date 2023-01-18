@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { SecretTextComponent } from "@app/shared/form-elements/secret-text/secret-text.component";
 
 @Component({
-  selector: 'app-secret-file',
+  selector: 'app-fields-secret-file',
   templateUrl: './secret-file.component.html',
   styleUrls: ['./secret-file.component.scss']
 })
