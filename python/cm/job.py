@@ -33,6 +33,7 @@ from cm.adcm_config import (
     check_attr,
     check_config_spec,
     get_prototype_config,
+    process_config_spec,
     process_file_type,
 )
 from cm.api import (
@@ -232,10 +233,12 @@ def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict)
         raise_adcm_ex("TASK_ERROR", "action config is required")
 
     check_attr(proto, action, attr, flat_spec)
-    process_variant(obj, spec, conf)
-    new_conf = check_config_spec(proto, action, spec, flat_spec, conf, None, attr)
+    process_variant(obj=obj, spec=spec, conf=conf)
+    check_config_spec(proto=proto, obj=action, spec=spec, flat_spec=flat_spec, conf=conf, attr=attr)
 
-    return new_conf, spec
+    new_config = process_config_spec(obj=obj, spec=spec, new_config=conf)
+
+    return new_config, spec
 
 
 def add_to_dict(my_dict: dict, key: Hashable, subkey: Hashable, value: Any):

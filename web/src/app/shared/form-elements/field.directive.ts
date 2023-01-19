@@ -9,8 +9,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import {Directive, HostListener, Input, OnInit} from '@angular/core';
-import { FormGroup } from '@angular/forms';
+import { Directive, HostListener, Input, OnInit } from '@angular/core';
+import { FormGroup} from '@angular/forms';
 
 import { IFieldOptions } from '../configuration/types';
 import { BaseDirective } from '../directives';

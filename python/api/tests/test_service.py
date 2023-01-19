@@ -341,7 +341,21 @@ class TestServiceAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
-    def test_delete_bind_fail(self):
+    def test_delete_export_bind_fail(self):
+        cluster_2 = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_2")
+        service_2 = ClusterObject.objects.create(prototype=self.service_prototype, cluster=cluster_2)
+        ClusterBind.objects.create(
+            cluster=cluster_2, service=service_2, source_cluster=self.cluster, source_service=self.service
+        )
+
+        with patch("api.service.views.delete_service"):
+            response: Response = self.client.delete(
+                path=reverse("service-details", kwargs={"service_id": self.service.pk})
+            )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+    def test_delete_import_bind_success(self):
         cluster_2 = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_2")
         service_2 = ClusterObject.objects.create(prototype=self.service_prototype, cluster=cluster_2)
         ClusterBind.objects.create(
@@ -353,7 +367,7 @@ class TestServiceAPI(BaseTestCase):
                 path=reverse("service-details", kwargs={"service_id": self.service.pk})
             )
 
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
     def test_delete_with_dependent_component_fail(self):
         host = self.get_host(bundle_path="python/api/tests/files/bundle_test_provider.tar")

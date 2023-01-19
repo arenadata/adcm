@@ -47,6 +47,7 @@
 
   components:
     ZOOKEEPER_SERVER:
+      display_name: "zookeeper"
       constraint: [0,+]
       config:
         required:
