@@ -15,7 +15,10 @@ import allure
 import pytest
 import requests
 from adcm_client.objects import ADCMClient, Cluster, Job, Task
-from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
+from adcm_pytest_plugin.steps.actions import (
+    run_cluster_action_and_assert_result,
+    wait_for_task_and_assert_result,
+)
 from adcm_pytest_plugin.utils import get_data_dir
 from tests.functional.audit.conftest import (
     check_failed,
@@ -24,8 +27,7 @@ from tests.functional.audit.conftest import (
 )
 from tests.functional.tools import (
     check_object_multi_state,
-    check_object_status,
-    check_task_status,
+    check_object_state,
     wait_for_job_status,
 )
 from tests.library.predicates import display_name_is
@@ -99,12 +101,12 @@ class TestTaskCancelRestart:
             task = action.run()
             wait_for_job_status(get_or_raise(task.job_list(), display_name_is(JobStep.FIRST)))
             check_failed(self._restart_task(task=task), 409)
-            check_task_status(client=self.client, task=task, expected_status=expected_task_status)
+            wait_for_task_and_assert_result(task=task, status=expected_task_status)
 
         with allure.step("Restart finished task on cluster"):
             check_succeed(self._restart_task(task=task))
-            check_task_status(client=self.client, task=task, expected_status=Status.RUNNING, wait_finished=False)
-            check_task_status(client=self.client, task=task, expected_status=expected_task_status)
+            self._check_task_status_is_running(task=task)
+            wait_for_task_and_assert_result(task=task, status=expected_task_status)
 
         with allure.step("Run task on service"):
             service = cluster.service()
@@ -112,12 +114,12 @@ class TestTaskCancelRestart:
             task = action.run()
             wait_for_job_status(get_or_raise(task.job_list(), display_name_is(JobStep.FIRST)))
             check_failed(self._restart_task(task=task), 409)
-            check_task_status(client=self.client, task=task, expected_status=expected_task_status)
+            wait_for_task_and_assert_result(task=task, status=expected_task_status)
 
         with allure.step("Restart finished task on service"):
             check_succeed(self._restart_task(task=task))
-            check_task_status(client=self.client, task=task, expected_status=Status.RUNNING, wait_finished=False)
-            check_task_status(client=self.client, task=task, expected_status=expected_task_status)
+            self._check_task_status_is_running(task=task)
+            wait_for_task_and_assert_result(task=task, status=expected_task_status)
 
         with allure.step("Run task on component"):
             component = service.component()
@@ -125,12 +127,12 @@ class TestTaskCancelRestart:
             task = action.run()
             wait_for_job_status(get_or_raise(task.job_list(), display_name_is(JobStep.FIRST)))
             check_failed(self._restart_task(task=task), 409)
-            check_task_status(client=self.client, task=task, expected_status=expected_task_status)
+            wait_for_task_and_assert_result(task=task, status=expected_task_status)
 
         with allure.step("Restart finished task on component"):
             check_succeed(self._restart_task(task=task))
-            check_task_status(client=self.client, task=task, expected_status=Status.RUNNING, wait_finished=False)
-            check_task_status(client=self.client, task=task, expected_status=expected_task_status)
+            self._check_task_status_is_running(task=task)
+            wait_for_task_and_assert_result(task=task, status=expected_task_status)
 
     @pytest.mark.parametrize("action_name", ["multi_job_success", "multi_job_fail"])
     def test_restart_multi_job_task(self, cluster, action_name):
@@ -150,12 +152,12 @@ class TestTaskCancelRestart:
             check_failed(self._restart_task(task=task), 409)
             wait_for_job_status(get_or_raise(task.job_list(), display_name_is(JobStep.THIRD)))
             check_failed(self._restart_task(task=task), 409)
-            check_task_status(client=self.client, task=task, expected_status=expected_task_status)
+            wait_for_task_and_assert_result(task=task, status=expected_task_status)
 
         with allure.step("Restart finished task on cluster"):
             check_succeed(self._restart_task(task=task))
-            check_task_status(client=self.client, task=task, expected_status=Status.RUNNING, wait_finished=False)
-            check_task_status(client=self.client, task=task, expected_status=expected_task_status)
+            self._check_task_status_is_running(task=task)
+            wait_for_task_and_assert_result(task=task, status=expected_task_status)
 
         with allure.step("Run task on service"):
             service = cluster.service()
@@ -167,12 +169,12 @@ class TestTaskCancelRestart:
             check_failed(self._restart_task(task=task), 409)
             wait_for_job_status(get_or_raise(task.job_list(), display_name_is(JobStep.THIRD)))
             check_failed(self._restart_task(task=task), 409)
-            check_task_status(client=self.client, task=task, expected_status=expected_task_status)
+            wait_for_task_and_assert_result(task=task, status=expected_task_status)
 
         with allure.step("Restart finished task on service"):
             check_succeed(self._restart_task(task=task))
-            check_task_status(client=self.client, task=task, expected_status=Status.RUNNING, wait_finished=False)
-            check_task_status(client=self.client, task=task, expected_status=expected_task_status)
+            self._check_task_status_is_running(task=task)
+            wait_for_task_and_assert_result(task=task, status=expected_task_status)
 
         with allure.step("Run task on component"):
             component = service.component()
@@ -184,12 +186,12 @@ class TestTaskCancelRestart:
             check_failed(self._restart_task(task=task), 409)
             wait_for_job_status(get_or_raise(task.job_list(), display_name_is(JobStep.THIRD)))
             check_failed(self._restart_task(task=task), 409)
-            check_task_status(client=self.client, task=task, expected_status=expected_task_status)
+            wait_for_task_and_assert_result(task=task, status=expected_task_status)
 
         with allure.step("Restart finished task on component"):
             check_succeed(self._restart_task(task=task))
-            check_task_status(client=self.client, task=task, expected_status=Status.RUNNING, wait_finished=False)
-            check_task_status(client=self.client, task=task, expected_status=expected_task_status)
+            self._check_task_status_is_running(task=task)
+            wait_for_task_and_assert_result(task=task, status=expected_task_status)
 
     @pytest.mark.parametrize("action_name", ["multi_job_fail_second_job"])
     def test_restart_task_with_aborted_job(self, cluster, action_name):
@@ -203,12 +205,12 @@ class TestTaskCancelRestart:
             failed_job = get_or_raise(task.job_list(), display_name_is(JobStep.SECOND))
             wait_for_job_status(failed_job)
             check_succeed(self._cancel_job(failed_job))
-            check_task_status(client=self.client, task=task, expected_status=Status.SUCCESS)
+            wait_for_task_and_assert_result(task=task, status=Status.SUCCESS)
 
         with allure.step("Restart finished task on cluster"):
             check_succeed(self._restart_task(task=task))
-            check_task_status(client=self.client, task=task, expected_status=Status.RUNNING, wait_finished=False)
-            check_task_status(client=self.client, task=task, expected_status=Status.FAILED)
+            self._check_task_status_is_running(task=task)
+            wait_for_task_and_assert_result(task=task, status=Status.FAILED)
 
         with allure.step("Run task on service"):
             service = cluster.service()
@@ -217,12 +219,12 @@ class TestTaskCancelRestart:
             failed_job = get_or_raise(task.job_list(), display_name_is(JobStep.SECOND))
             wait_for_job_status(failed_job)
             check_succeed(self._cancel_job(failed_job))
-            check_task_status(client=self.client, task=task, expected_status=Status.SUCCESS)
+            wait_for_task_and_assert_result(task=task, status=Status.SUCCESS)
 
         with allure.step("Restart finished task on service"):
             check_succeed(self._restart_task(task=task))
-            check_task_status(client=self.client, task=task, expected_status=Status.RUNNING, wait_finished=False)
-            check_task_status(client=self.client, task=task, expected_status=Status.FAILED)
+            self._check_task_status_is_running(task=task)
+            wait_for_task_and_assert_result(task=task, status=Status.FAILED)
 
         with allure.step("Run task on component"):
             component = service.component()
@@ -231,12 +233,12 @@ class TestTaskCancelRestart:
             failed_job = get_or_raise(task.job_list(), display_name_is(JobStep.SECOND))
             wait_for_job_status(failed_job)
             check_succeed(self._cancel_job(failed_job))
-            check_task_status(client=self.client, task=task, expected_status=Status.SUCCESS)
+            wait_for_task_and_assert_result(task=task, status=Status.SUCCESS)
 
         with allure.step("Restart finished task on component"):
             check_succeed(self._restart_task(task=task))
-            check_task_status(client=self.client, task=task, expected_status=Status.RUNNING, wait_finished=False)
-            check_task_status(client=self.client, task=task, expected_status=Status.FAILED)
+            self._check_task_status_is_running(task=task)
+            wait_for_task_and_assert_result(task=task, status=Status.FAILED)
 
     @pytest.mark.parametrize("action_name", ["one_job_success", "one_job_fail"])
     def test_restart_aborted_task(self, cluster, action_name):
@@ -250,12 +252,12 @@ class TestTaskCancelRestart:
             job = get_or_raise(task.job_list(), display_name_is(JobStep.FIRST))
             wait_for_job_status(job)
             check_succeed(self._cancel_job(job))
-            check_task_status(client=self.client, task=task, expected_status=Status.ABORTED)
+            wait_for_task_and_assert_result(task=task, status=Status.ABORTED)
 
         with allure.step("Restart finished task on cluster"):
             check_succeed(self._restart_task(task=task))
-            check_task_status(client=self.client, task=task, expected_status=Status.RUNNING, wait_finished=False)
-            check_task_status(client=self.client, task=task, expected_status=expected_task_status)
+            self._check_task_status_is_running(task=task)
+            wait_for_task_and_assert_result(task=task, status=expected_task_status)
 
         with allure.step("Run task on service"):
             service = cluster.service()
@@ -264,12 +266,12 @@ class TestTaskCancelRestart:
             job = get_or_raise(task.job_list(), display_name_is(JobStep.FIRST))
             wait_for_job_status(job)
             check_succeed(self._cancel_job(job))
-            check_task_status(client=self.client, task=task, expected_status=Status.ABORTED)
+            wait_for_task_and_assert_result(task=task, status=Status.ABORTED)
 
         with allure.step("Restart finished task on service"):
             check_succeed(self._restart_task(task=task))
-            check_task_status(client=self.client, task=task, expected_status=Status.RUNNING, wait_finished=False)
-            check_task_status(client=self.client, task=task, expected_status=expected_task_status)
+            self._check_task_status_is_running(task=task)
+            wait_for_task_and_assert_result(task=task, status=expected_task_status)
 
         with allure.step("Run task on component"):
             component = service.component()
@@ -278,12 +280,12 @@ class TestTaskCancelRestart:
             job = get_or_raise(task.job_list(), display_name_is(JobStep.FIRST))
             wait_for_job_status(job)
             check_succeed(self._cancel_job(job))
-            check_task_status(client=self.client, task=task, expected_status=Status.ABORTED)
+            wait_for_task_and_assert_result(task=task, status=Status.ABORTED)
 
         with allure.step("Restart finished task on component"):
             check_succeed(self._restart_task(task=task))
-            check_task_status(client=self.client, task=task, expected_status=Status.RUNNING, wait_finished=False)
-            check_task_status(client=self.client, task=task, expected_status=expected_task_status)
+            self._check_task_status_is_running(task=task)
+            wait_for_task_and_assert_result(task=task, status=expected_task_status)
 
     @pytest.mark.parametrize("action_name", ["state_changing_fail"])
     def test_restart_multi_state_task(self, cluster_multi_state, action_name):
@@ -297,21 +299,21 @@ class TestTaskCancelRestart:
         with allure.step("Run task on cluster"):
             action = cluster.action(name=action_name)
             task = action.run()
-            check_task_status(client=self.client, task=task, expected_status=Status.FAILED)
-            check_object_status(adcm_object=cluster, expected_state=MultiState.FAILED)
-            check_object_multi_state(adcm_object=cluster, expected_state=MultiState.FAILED)
+            wait_for_task_and_assert_result(task=task, status=Status.FAILED)
+            check_object_state(adcm_object=cluster, expected_state=MultiState.FAILED)
+            check_object_multi_state(adcm_object=cluster, expected_state=[MultiState.FAILED])
 
         with allure.step("Restart finished task on cluster"):
             check_succeed(self._restart_task(task=task))
-            check_task_status(client=self.client, task=task, expected_status=Status.RUNNING, wait_finished=False)
+            self._check_task_status_is_running(task=task)
 
         with allure.step("Abort failed job and check states"):
             job = get_or_raise(task.job_list(), display_name_is(JobStep.FIRST))
             wait_for_job_status(job)
             check_succeed(self._cancel_job(job))
-            check_task_status(client=self.client, task=task, expected_status=Status.SUCCESS)
-            check_object_status(adcm_object=cluster, expected_state=MultiState.SUCCESS)
-            check_object_multi_state(adcm_object=cluster, expected_state=MultiState.FAILED)
+            wait_for_task_and_assert_result(task=task, status=Status.SUCCESS)
+            check_object_state(adcm_object=cluster, expected_state=MultiState.SUCCESS)
+            check_object_multi_state(adcm_object=cluster, expected_state=[MultiState.FAILED])
 
     @allure.step("Restarting task")
     def _restart_task(self, task: Task):
@@ -324,3 +326,8 @@ class TestTaskCancelRestart:
         url = f"{self.client.url}/api/v1/job/{job.id}/cancel/"
         with allure.step(f"Cancel job via PUT {url}"):
             return requests.put(url, headers=self.admin_creds)
+
+    @allure.step("Check task status")
+    def _check_task_status_is_running(self, task: Task) -> None:
+        task.reread()
+        assert task.status == Status.RUNNING, f"Expected task status {Status.RUNNING} Actual status {task.status}"
