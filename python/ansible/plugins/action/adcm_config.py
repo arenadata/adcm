@@ -39,7 +39,7 @@ DOCUMENTATION = r'''
 module: adcm_config
 short_description: Change values in config in runtime
 description:
-  - This is special ADCM only module which is useful for setting of specified config key for various ADCM objects.
+  - This is special ADCM only module which is useful for setting of specified config key or set of config keys for various ADCM objects.
   - There is support of cluster, service, host and providers config.
   - This one is allowed to be used in various execution contexts.
 options:
@@ -53,13 +53,18 @@ options:
     description: type of object which should be changed
 
   - option-name: key
-    required: true
+    required: false
     type: string
     description: name of key which should be set
 
   - option-name: value
-    required: true
+    required: false
     description: value which should be set
+
+  - option-name: parameters
+    required: false
+    type: list
+    description: list of keys and values which should be set
 
   - option-name: service_name
     required: false
@@ -83,6 +88,18 @@ EXAMPLES = r'''
     value:
       key1: value1
       key2: value2
+
+- adcm_config:
+    type: "host"
+    parameters:
+      - key: "some_group/some_string"
+        value: "string"
+      - key: "some_map"
+        value:
+          key1: value1
+          key2: value2
+      - key: "some_string"
+        value: "string"
 '''
 RETURN = r'''
 value:
@@ -116,7 +133,7 @@ class ActionModule(ContextActionModule):
         if (key or value) and is_params:
             raise AnsibleError("'Parameters' must not be use with 'key'/'value'")
 
-        if not ((key and value) or is_params):
+        if not ((key is not None and value is not None) or is_params):
             raise AnsibleError("'key'/'value' or 'parameters' arguments are mandatory")
 
         if is_params:
