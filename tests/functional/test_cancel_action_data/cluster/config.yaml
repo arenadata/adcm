@@ -49,12 +49,18 @@
     multi_job_fail_first_job:
       type: task
       display_name: "multi_job_fail_first_job"
-      allow_to_terminate: true
       scripts:
-        - <<: *multijob
+        - name: first_step
+          script_type: ansible
           script: failed.yaml
-        - <<: *multijob
-          name: second_step
+          allow_to_terminate: true
+          params:
+            ansible_tags: success
+        - name: second_step
+          script_type: ansible
+          script: sleep.yaml
+          params:
+            ansible_tags: success
       states:
         available: any
         on_success: success
@@ -81,11 +87,12 @@
         available: any
         on_fail: failed
 
+
 - type: service
   version: 3.4
   name: test_service
   actions: *actions
 
   components:
-    test_component:
+    first_component:
       actions: *actions
