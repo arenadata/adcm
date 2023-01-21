@@ -164,8 +164,9 @@ yarn install
 4. `docker-compose down`
 5. Edit `.env` file and fill `POSTGRES_ADCM_PASS="SOME_STRONG_SECRET_PASS"`
    `POSTGRES_PASSWORD="SOME_ANOTHER_STRONG_SECRET_PASS"`
-6. `docker-compose up -d`
-7. `docker exec adcm_adcm_1 /adcm/python/manage.py loaddata /adcm/data/var/data.json`
+6. `rm -rf db_dir`
+7. `docker-compose up -d`
+8. `docker exec adcm_adcm_1 /adcm/python/manage.py loaddata /adcm/data/var/data.json`
 
 ## Migrate SQLite -> client PostgreSQL
 1. Dump SQLite DB to file:
