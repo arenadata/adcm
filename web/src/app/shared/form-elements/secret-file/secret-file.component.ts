@@ -11,7 +11,4 @@ export class SecretFileComponent extends SecretTextComponent implements OnInit {
     super();
   }
 
-  ngOnInit(): void {
-  }
-
 }
