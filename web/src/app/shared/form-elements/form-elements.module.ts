@@ -30,6 +30,7 @@ import { TextBoxComponent } from './text-box.component';
 import { TextareaComponent } from './textarea.component';
 import { VariantComponent } from './variant.component';
 import { SecretTextComponent } from './secret-text/secret-text.component';
+import { SecretFileComponent } from './secret-file/secret-file.component';
 import { SecretMapComponent } from './secret-map/secret-map.component';
 
 @NgModule({
@@ -51,6 +52,7 @@ import { SecretMapComponent } from './secret-map/secret-map.component';
     ErrorInfoComponent,
     VariantComponent,
     SecretTextComponent,
+    SecretFileComponent,
     SecretMapComponent
   ],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, StuffModule],
@@ -69,6 +71,7 @@ import { SecretMapComponent } from './secret-map/secret-map.component';
     VariantComponent,
     ConfirmEqualValidatorDirective,
     SecretTextComponent,
+    SecretFileComponent,
     SecretMapComponent
   ],
 })
