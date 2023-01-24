@@ -358,35 +358,6 @@ class ClusterPrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
 
         return super().get_serializer_class()
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        if self.action != "list":
-            return queryset
-
-        pks = set()
-        field_names = self.request.query_params.get("fields")
-        distinct = self.request.query_params.get("distinct")
-        if field_names and distinct:
-            for field_name in field_names.split(","):
-                unique_field_values = {getattr(item, field_name) for item in queryset}
-                for unique_field_value in unique_field_values:
-                    values_list = queryset.filter(**{field_name: unique_field_value}).values(field_name, "pk")
-                    if not values_list:
-                        continue
-
-                    pks.add(values_list[0]["pk"])
-                    if len(values_list) == 1:
-                        continue
-
-                    for value in values_list[1:]:
-                        if value[field_name] != unique_field_value:
-                            pks.add(value["pk"])
-
-        if pks:
-            return queryset.filter(pk__in=pks)
-
-        return queryset
-
 
 #  pylint:disable-next=too-many-ancestors
 class ADCMPrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):

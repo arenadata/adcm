@@ -124,24 +124,3 @@ class TestClusterPrototypeAPI(BaseTestCase):
         )
 
         self.assertEqual(response.data["id"], self.prototype_2.pk)
-
-    def test_display_name_distinct_two_objs(self):
-        self.prototype_1.display_name = "test_prototype"
-        self.prototype_2.display_name = "test_prototype"
-        self.prototype_1.save(update_fields=["display_name"])
-        self.prototype_2.save(update_fields=["display_name"])
-
-        response: Response = self.client.get(
-            reverse("cluster-prototype-list"),
-            {"fields": "display_name", "distinct": 1},
-        )
-
-        self.assertEqual(len(response.data["results"]), 1)
-
-    def test_display_name_distinct_one_obj(self):
-        response: Response = self.client.get(
-            reverse("cluster-prototype-list"),
-            {"fields": "display_name", "distinct": 1},
-        )
-
-        self.assertEqual(len(response.data["results"]), 2)
