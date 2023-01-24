@@ -310,36 +310,42 @@ export class FieldService {
   /**
    * Output form, cast to source type
    */
-  public parseValue(output: IOutput, source: ISource[]): IOutput {
-    const findField = (name: string, p?: string): Partial<IFieldStack> => source.find((a) => (p ? a.name === p && a.subname === name : a.name === name));
+  public parseValue(formValue: IOutput, configData: ISource[]): IOutput {
+    const findField = (name: string, parentName?: string): Partial<IFieldStack> => configData.find((a) => (parentName ? a.name === parentName && a.subname === name : a.name === name && !a.subname));
 
-    const runYspecParse = (v: any, f: Partial<IFieldOptions>) => ((!v || !Object.keys(v).length) && !f.value ? f.value : this.runYspec(v, f.limits.rules));
+    const runYspecParse = (formData: any, fieldProperties: Partial<IFieldOptions>) => ((!formData || !Object.keys(formData).length) && !fieldProperties.value ? fieldProperties.value : this.runYspec(formData, fieldProperties.limits.rules));
 
-    const replaceEmptyObjectWithNull = (v: any): string => ((Array.isArray(v) && v?.length === 0) || JSON.stringify(v) === '{}' || this.emptyArrayInside(v)) ? null : v
+    const replaceEmptyObjectWithNull = (value: any): string => ((Array.isArray(value) && value?.length === 0) || JSON.stringify(value) === '{}' || this.emptyArrayInside(value)) ? null : value
 
-    const runParse = (v: IOutput, parentName?: string): IOutput => {
-      const runByValue = (p: IOutput, c: string) => {
-        const checkType = (data: resultTypes | IOutput, field: Partial<IFieldStack>): resultTypes => {
-          const { type } = field;
-          if (type === 'structure') return replaceEmptyObjectWithNull(runYspecParse(data, field));
-          else if (type === 'group') return this.checkValue(runParse(data as IOutput, field.name), type);
-          else return this.checkValue(data, type);
+    const runParse = (configElements: IOutput, parentName?: string): IOutput => {
+
+      const runByValue = (siblingConfigElements: IOutput, name: string) => {
+
+        const checkType = (formData: resultTypes | IOutput, elementProperties: Partial<IFieldStack>): resultTypes => {
+          const { type } = elementProperties;
+          if (type === 'structure') return replaceEmptyObjectWithNull(runYspecParse(formData, elementProperties));
+          else if (type === 'group') {
+            return this.checkValue(runParse(formData as IOutput, elementProperties.name), type);
+          }
+          else {
+            return this.checkValue(formData, type);
+          }
         };
 
-        const f = findField(c, parentName);
-        if (f) {
-          const result = checkType(v[c], f);
-          return f.type !== 'group' || result ? { ...p, [c]: result } : p;
+        const configElement = findField(name, parentName);
+        if (configElement) {
+          const result = checkType(configElements[name], configElement);
+          return configElement.type !== 'group' || result ? { ...siblingConfigElements, [name]: result } : siblingConfigElements;
         }
-        return p;
+        return siblingConfigElements;
       };
 
-      return Object.keys(v).reduce(runByValue, {});
+      return Object.keys(configElements).reduce(runByValue, {});
     };
 
     const __main_info = findField('__main_info');
 
-    return runParse(!!__main_info ? { ...output, __main_info: __main_info.value } : { ...output });
+    return runParse(!!__main_info ? { ...formValue, __main_info: __main_info.value } : { ...formValue });
   }
 
   private runYspec(value: resultTypes, rules: any) {
