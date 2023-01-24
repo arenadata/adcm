@@ -13,8 +13,8 @@ import { Directive, EventEmitter, HostListener, Input, Output } from '@angular/c
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { DialogComponent } from '../dialog.component';
 import { IUpgrade } from "./upgrade.component";
-import {combineLatest, concat, Observable, of} from "rxjs";
-import { filter, map, switchMap, tap } from "rxjs/operators";
+import { concat, Observable, of } from "rxjs";
+import { combineAll, filter, map, switchMap, tap } from "rxjs/operators";
 import { ApiService } from "@app/core/api";
 import { EmmitRow, Entities } from "@app/core/types";
 import { BaseDirective } from "../../directives";
@@ -22,9 +22,9 @@ import { UpgradeMasterComponent as component } from "../upgrades/master/master.c
 import { AddService } from "@app/shared/add-component/add.service";
 import { IRawHosComponent } from "@app/shared/host-components-map/types";
 import { ListResult } from "@app/models/list-result";
-import {ClusterService} from "@app/core/services/cluster.service";
-import {ICluster} from "@app/models/cluster";
-import {ServiceService} from "@app/services/service.service";
+import { ClusterService } from "@app/core/services/cluster.service";
+import { ICluster } from "@app/models/cluster";
+import { ServiceService } from "@app/services/service.service";
 
 export interface UpgradeParameters {
   cluster?: {
@@ -114,14 +114,17 @@ export class UpgradesDirective extends BaseDirective {
         dialogModel.data.text = 'The cluster will be prepared for upgrade';
       }
 
+      const observableArray = [];
       if (this.needLicenseAcceptance.length > 0) {
-        combineLatest(this.needLicenseAcceptance.map((o) => {
-          this.service.acceptServiceLicense(o).pipe(
-            tap(() => {
-                this.dialog.open(DialogComponent, dialogModel);
-              }
-            )).subscribe();
-        }));
+        this.needLicenseAcceptance.map((o) => {
+          observableArray.push(this.service.acceptServiceLicense(o))
+        })
+
+        of(...observableArray)
+          .pipe(
+            combineAll(),
+          )
+          .subscribe(() => this.dialog.open(DialogComponent, dialogModel));
       } else {
         this.dialog.open(DialogComponent, dialogModel);
       }
@@ -150,14 +153,17 @@ export class UpgradesDirective extends BaseDirective {
                 filter(yes => yes)
               )
               .subscribe(() => {
+                const observableArray = [];
                 if (this.needLicenseAcceptance.length > 0) {
-                  combineLatest(this.needLicenseAcceptance.map((o) => {
-                    this.service.acceptServiceLicense(o).pipe(
-                      tap(() => {
-                          this.dialog.open(DialogComponent, dialogModel);
-                        }
-                      )).subscribe();
-                  }));
+                  this.needLicenseAcceptance.map((o) => {
+                    observableArray.push(this.service.acceptServiceLicense(o))
+                  })
+
+                  of(...observableArray)
+                    .pipe(
+                      combineAll(),
+                    )
+                    .subscribe(() => this.dialog.open(DialogComponent, dialogModel));
                 } else {
                   this.dialog.open(DialogComponent, dialogModel);
                 }
@@ -192,10 +198,17 @@ export class UpgradesDirective extends BaseDirective {
               switchMap(() => concat(license$, do$))
             )
             .subscribe((row) => {
+              const observableArray = [];
               if (this.needLicenseAcceptance.length > 0) {
-                combineLatest(this.needLicenseAcceptance.map((o) => {
-                  this.service.acceptServiceLicense(o).subscribe(() => this.refresh.emit({cmd: 'refresh', row}));
-                }));
+                this.needLicenseAcceptance.map((o) => {
+                  observableArray.push(this.service.acceptServiceLicense(o))
+                })
+
+                of(...observableArray)
+                  .pipe(
+                    combineAll(),
+                  )
+                  .subscribe(() => this.refresh.emit({cmd: 'refresh', row}));
               } else {
                 this.refresh.emit({cmd: 'refresh', row});
               }

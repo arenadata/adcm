@@ -54,8 +54,7 @@ export class ServiceService extends EntityService<Service> implements HavingStat
                   .pipe(
                     filter((yes) => yes),
                     switchMap(() =>
-                      this.api.put(`/api/v1/stack/prototype/${item.prototype_id}/license/accept/`, {}).pipe(
-                      )
+                      this.api.put(`/api/v1/stack/prototype/${item.prototype_id}/license/accept/`, {}).pipe()
                     )
                   )
               )
