@@ -770,12 +770,11 @@ class ClusterObject(ADCMEntity):
                 return MaintenanceMode.ON
 
             hosts_maintenance_modes = []
-            for service_component in service_components:
-                host_ids = HostComponent.objects.filter(
-                    component=service_component,
-                ).values_list("host_id", flat=True)
-                hosts_maintenance_modes.extend(Host.objects.get(pk=host_id).maintenance_mode for host_id in host_ids)
+            host_ids = HostComponent.objects.filter(service=self).values_list("host_id", flat=True)
 
+            hosts_maintenance_modes.extend(
+                Host.objects.filter(id__in=host_ids).values_list("maintenance_mode", flat=True)
+            )
             if hosts_maintenance_modes:
                 return (
                     MaintenanceMode.ON
