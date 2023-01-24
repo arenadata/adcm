@@ -1540,7 +1540,10 @@ class TaskLog(ADCMModel):
         self.unlock_affected()
         if event_queue:
             event_queue.send_state()
-        os.kill(self.pid, signal.SIGTERM)
+        try:
+            os.kill(self.pid, signal.SIGTERM)
+        except OSError as e:
+            raise AdcmEx("NOT_ALLOWED_TERMINATION", f"Failed to terminate process: {e}") from e
 
 
 class JobLog(ADCMModel):
@@ -1566,8 +1569,10 @@ class JobLog(ADCMModel):
             raise AdcmEx(
                 "JOB_TERMINATION_ERROR", f"Can't terminate job #{self.pk}, pid: {self.pid} with status {self.status}"
             )
-
-        os.kill(self.pid, signal.SIGTERM)
+        try:
+            os.kill(self.pid, signal.SIGTERM)
+        except OSError as e:
+            raise AdcmEx("NOT_ALLOWED_TERMINATION", f"Failed to terminate process: {e}") from e
         self.status = JobStatus.ABORTED
         self.save()
 

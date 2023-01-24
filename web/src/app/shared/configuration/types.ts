@@ -17,7 +17,7 @@ export type stateType = 'created' | 'locked';
 
 export type TNBase = 'string' | 'integer' | 'int' | 'boolean' | 'bool' | 'float';
 export type TNReq = 'dict' | 'list';
-export type TNSpec = 'structure' | 'group' | 'option' | 'json' | 'map' | 'file' | 'secretfile' | 'text' | 'password' | 'secrettext' | 'variant';
+export type TNSpec = 'structure' | 'group' | 'option' | 'json' | 'map' | 'file' | 'text' | 'password' | 'secrettext' | 'secretmap' | 'secretfile' | 'variant';
 export type TNForm = TNBase | TNReq | TNSpec;
 export type simpleTypes = string | number | boolean;
 export type resultTypes = simpleTypes | simpleTypes[] | object;
@@ -134,7 +134,8 @@ export type controlType =
   | 'text'
   | 'structure'
   | 'secrettext'
-  | 'secretfile';
+  | 'secretfile'
+  | 'secretmap';
 
 /**
  *```
