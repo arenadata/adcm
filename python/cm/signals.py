@@ -9,11 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import casestyle
 from django.db import transaction
 from django.db.models.signals import m2m_changed, post_delete, post_save, pre_save
 from django.dispatch import receiver
-from django.utils import timezone
 
 from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP, AuditObject
 from audit.utils import mark_deleted_audit_object
@@ -24,7 +24,6 @@ from cm.models import (
     Bundle,
     Cluster,
     ClusterObject,
-    DummyData,
     GroupConfig,
     Host,
     HostProvider,
@@ -51,7 +50,9 @@ def mark_deleted_audit_object_handler(sender, instance, **kwargs) -> None:
 @receiver(pre_save, sender=Group)
 @receiver(pre_save, sender=Policy)
 def rename_audit_object(sender, instance, **kwargs) -> None:
-    DummyData.objects.filter(id=1).update(date=timezone.now())
+    if kwargs["raw"]:
+        return
+
     if instance.pk and sender.objects.get(pk=instance.pk).name == instance.name:
         return
 
@@ -68,7 +69,9 @@ def rename_audit_object(sender, instance, **kwargs) -> None:
 
 @receiver(pre_save, sender=Host)
 def rename_audit_object_host(sender, instance, **kwargs) -> None:
-    DummyData.objects.filter(id=1).update(date=timezone.now())
+    if kwargs["raw"]:
+        return
+
     if instance.pk and sender.objects.get(pk=instance.pk).fqdn == instance.fqdn:
         return
 

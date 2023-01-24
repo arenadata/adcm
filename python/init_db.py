@@ -30,7 +30,6 @@ from cm.models import (
     Cluster,
     ConcernItem,
     ConcernType,
-    DummyData,
     GroupCheckLog,
     HostProvider,
 )
@@ -65,10 +64,6 @@ def create_status_user() -> Tuple[str, Optional[str]]:
     password = token_hex(TOKEN_LENGTH)
     User.objects.create_superuser(username, "", password, built_in=True)
     return username, password
-
-
-def create_dummy_data():
-    DummyData.objects.create()
 
 
 def clear_temp_tables():
@@ -106,7 +101,6 @@ def init():
     clear_temp_tables()
     event.send_state()
     load_adcm()
-    create_dummy_data()
     drop_locks()
     recheck_issues()
     logger.info("ADCM DB is initialized")

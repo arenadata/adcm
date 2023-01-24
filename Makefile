@@ -24,9 +24,10 @@ build_base:
 
 build: describe buildss buildjs build_base
 
-unittests: build_base
-	docker run -e DJANGO_SETTINGS_MODULE=adcm.settings -i --rm -v $(CURDIR)/data:/adcm/data $(APP_IMAGE):$(APP_TAG) \
-	sh -c "pip install --no-cache -r /adcm/requirements.txt && /adcm/python/manage.py test /adcm/python -v 2"
+unittests: buildss buildjs
+	DATA_DIR=$(CURDIR)/data DB_DIR=/var/adcm_db POSTGRES_ADCM_PASS="test_pass" POSTGRES_PASSWORD="test_pass" \
+	docker compose run --rm -e DJANGO_SETTINGS_MODULE=adcm.settings \
+	adcm sh -c "pip install --no-cache -r /adcm/requirements.txt && /adcm/python/manage.py test /adcm/python -v 2"
 
 pytest:
 	docker pull hub.adsw.io/library/functest:3.10.6.slim.buster-x64

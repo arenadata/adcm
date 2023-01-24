@@ -20,6 +20,7 @@ lxml
 markupsafe==1.1.1
 mitogen
 multipledispatch
+psycopg2-binary
 pycryptodome
 requests-toolbelt
 rstr

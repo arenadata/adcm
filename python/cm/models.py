@@ -32,7 +32,6 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
 from django.db.models.signals import m2m_changed, post_delete
 from django.dispatch import receiver
-from django.utils import timezone
 
 from cm.errors import AdcmEx
 from cm.logger import logger
@@ -175,11 +174,11 @@ class ADCMModel(models.Model):
 
 
 class Bundle(ADCMModel):
-    name = models.CharField(max_length=160)
-    version = models.CharField(max_length=80)
+    name = models.CharField(max_length=1000)
+    version = models.CharField(max_length=1000)
     version_order = models.PositiveIntegerField(default=0)
-    edition = models.CharField(max_length=80, default="community")
-    hash = models.CharField(max_length=64)
+    edition = models.CharField(max_length=1000, default="community")
+    hash = models.CharField(max_length=1000)
     description = models.TextField(blank=True)
     date = models.DateTimeField(auto_now=True)
     category = models.ForeignKey("ProductCategory", on_delete=models.RESTRICT, null=True)
@@ -196,7 +195,7 @@ class ProductCategory(ADCMModel):
     It's same as Bundle.name but unlinked from it due to simplicity reasons.
     """
 
-    value = models.CharField(max_length=160, unique=True)
+    value = models.CharField(max_length=1000, unique=True)
     visible = models.BooleanField(default=True)
 
     @classmethod
@@ -235,26 +234,26 @@ def get_default_constraint():
 
 class Prototype(ADCMModel):
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
-    type = models.CharField(max_length=16, choices=ObjectType.choices)
+    type = models.CharField(max_length=1000, choices=ObjectType.choices)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
-    path = models.CharField(max_length=160, default="")
-    name = models.CharField(max_length=256)
-    license = models.CharField(max_length=16, choices=LICENSE_STATE, default="absent")
-    license_path = models.CharField(max_length=160, default=None, null=True)
-    license_hash = models.CharField(max_length=64, default=None, null=True)
-    display_name = models.CharField(max_length=256, blank=True)
-    version = models.CharField(max_length=80)
+    path = models.CharField(max_length=1000, default="")
+    name = models.CharField(max_length=1000)
+    license = models.CharField(max_length=1000, choices=LICENSE_STATE, default="absent")
+    license_path = models.CharField(max_length=1000, default=None, null=True)
+    license_hash = models.CharField(max_length=1000, default=None, null=True)
+    display_name = models.CharField(max_length=1000, blank=True)
+    version = models.CharField(max_length=1000)
     version_order = models.PositiveIntegerField(default=0)
     required = models.BooleanField(default=False)
     shared = models.BooleanField(default=False)
     constraint = models.JSONField(default=get_default_constraint)
     requires = models.JSONField(default=list)
     bound_to = models.JSONField(default=dict)
-    adcm_min_version = models.CharField(max_length=80, default=None, null=True)
-    monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default="active")
+    adcm_min_version = models.CharField(max_length=1000, default=None, null=True)
+    monitoring = models.CharField(max_length=1000, choices=MONITORING_TYPE, default="active")
     description = models.TextField(blank=True)
     config_group_customization = models.BooleanField(default=False)
-    venv = models.CharField(default="default", max_length=160, blank=False)
+    venv = models.CharField(default="default", max_length=1000, blank=False)
     allow_maintenance_mode = models.BooleanField(default=False)
 
     __error_code__ = "PROTOTYPE_NOT_FOUND"
@@ -370,7 +369,6 @@ class ConfigLog(ADCMModel):
                     correct_group_keys[field] = group_keys[field]
             return correct_group_keys
 
-        DummyData.objects.filter(id=1).update(date=timezone.now())
         obj = self.obj_ref.object
         if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
             # Sync group configs with object config
@@ -414,7 +412,7 @@ class ConfigLog(ADCMModel):
 class ADCMEntity(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
-    state = models.CharField(max_length=64, default="created")
+    state = models.CharField(max_length=1000, default="created")
     _multi_state = models.JSONField(default=dict, db_column="multi_state")
     concerns = models.ManyToManyField("ConcernItem", blank=True, related_name="%(class)s_entities")
     policy_object = GenericRelation("rbac.PolicyObject")
@@ -524,15 +522,15 @@ class ADCMEntity(ADCMModel):
 
 class Upgrade(ADCMModel):
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
-    name = models.CharField(max_length=160, blank=True)
+    name = models.CharField(max_length=1000, blank=True)
     description = models.TextField(blank=True)
-    min_version = models.CharField(max_length=80)
-    max_version = models.CharField(max_length=80)
+    min_version = models.CharField(max_length=1000)
+    max_version = models.CharField(max_length=1000)
     from_edition = models.JSONField(default=get_default_from_edition)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
     state_available = models.JSONField(default=list)
-    state_on_success = models.CharField(max_length=64, blank=True)
+    state_on_success = models.CharField(max_length=1000, blank=True)
     action = models.OneToOneField("Action", on_delete=models.CASCADE, null=True)
 
     __error_code__ = "UPGRADE_NOT_FOUND"
@@ -554,7 +552,7 @@ class Upgrade(ADCMModel):
 
 
 class ADCM(ADCMEntity):
-    name = models.CharField(max_length=16, choices=(("ADCM", "ADCM"),), unique=True)
+    name = models.CharField(max_length=1000, choices=(("ADCM", "ADCM"),), unique=True)
 
     @property
     def bundle_id(self):
@@ -575,7 +573,7 @@ class ADCM(ADCMEntity):
 
 
 class Cluster(ADCMEntity):
-    name = models.CharField(max_length=80, unique=True)
+    name = models.CharField(max_length=1000, unique=True)
     description = models.TextField(blank=True)
     group_config = GenericRelation(
         "GroupConfig",
@@ -614,7 +612,7 @@ class Cluster(ADCMEntity):
 
 
 class HostProvider(ADCMEntity):
-    name = models.CharField(max_length=80, unique=True)
+    name = models.CharField(max_length=1000, unique=True)
     description = models.TextField(blank=True)
     group_config = GenericRelation(
         "GroupConfig",
@@ -653,12 +651,12 @@ class HostProvider(ADCMEntity):
 
 
 class Host(ADCMEntity):
-    fqdn = models.CharField(max_length=253, unique=True)
+    fqdn = models.CharField(max_length=1000, unique=True)
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
     maintenance_mode = models.CharField(
-        max_length=64,
+        max_length=1000,
         choices=MaintenanceMode.choices,
         default=MaintenanceMode.OFF,
     )
@@ -712,7 +710,7 @@ class ClusterObject(ADCMEntity):
         on_delete=models.CASCADE,
     )
     _maintenance_mode = models.CharField(
-        max_length=64,
+        max_length=1000,
         choices=MaintenanceMode.choices,
         default=MaintenanceMode.OFF,
     )
@@ -810,7 +808,7 @@ class ServiceComponent(ADCMEntity):
         on_delete=models.CASCADE,
     )
     _maintenance_mode = models.CharField(
-        max_length=64,
+        max_length=1000,
         choices=MaintenanceMode.choices,
         default=MaintenanceMode.OFF,
     )
@@ -905,7 +903,7 @@ class GroupConfig(ADCMModel):
     object_id = models.PositiveIntegerField()
     object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object = GenericForeignKey("object_type", "object_id")
-    name = models.CharField(max_length=30, validators=[validate_line_break_character])
+    name = models.CharField(max_length=1000, validators=[validate_line_break_character])
     description = models.TextField(blank=True)
     hosts = models.ManyToManyField(Host, blank=True, related_name="group_config")
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True, related_name="group_config")
@@ -1162,18 +1160,18 @@ class AbstractAction(ADCMModel):
     prototype = None
 
     name = models.CharField(max_length=1000)
-    display_name = models.CharField(max_length=160, blank=True)
+    display_name = models.CharField(max_length=1000, blank=True)
     description = models.TextField(blank=True)
     ui_options = models.JSONField(default=dict)
 
-    type = models.CharField(max_length=16, choices=ActionType.choices)
-    script = models.CharField(max_length=160)
-    script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
+    type = models.CharField(max_length=1000, choices=ActionType.choices)
+    script = models.CharField(max_length=1000)
+    script_type = models.CharField(max_length=1000, choices=SCRIPT_TYPE)
 
     state_available = models.JSONField(default=list)
     state_unavailable = models.JSONField(default=list)
-    state_on_success = models.CharField(max_length=64, blank=True)
-    state_on_fail = models.CharField(max_length=64, blank=True)
+    state_on_success = models.CharField(max_length=1000, blank=True)
+    state_on_fail = models.CharField(max_length=1000, blank=True)
 
     multi_state_available = models.JSONField(default=get_any)
     multi_state_unavailable = models.JSONField(default=list)
@@ -1191,7 +1189,7 @@ class AbstractAction(ADCMModel):
     host_action = models.BooleanField(default=False)
     allow_in_maintenance_mode = models.BooleanField(default=False)
 
-    _venv = models.CharField(default="default", db_column="venv", max_length=160, blank=False)
+    _venv = models.CharField(default="default", db_column="venv", max_length=1000, blank=False)
 
     @property
     def venv(self):
@@ -1330,10 +1328,10 @@ class AbstractSubAction(ADCMModel):
     action = None
 
     name = models.CharField(max_length=1000)
-    display_name = models.CharField(max_length=160, blank=True)
-    script = models.CharField(max_length=160)
-    script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
-    state_on_fail = models.CharField(max_length=64, blank=True)
+    display_name = models.CharField(max_length=1000, blank=True)
+    script = models.CharField(max_length=1000)
+    script_type = models.CharField(max_length=1000, choices=SCRIPT_TYPE)
+    state_on_fail = models.CharField(max_length=1000, blank=True)
     multi_state_on_fail_set = models.JSONField(default=list)
     multi_state_on_fail_unset = models.JSONField(default=list)
     params = models.JSONField(default=dict)
@@ -1358,7 +1356,7 @@ class HostComponent(ADCMModel):
     host = models.ForeignKey(Host, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
     component = models.ForeignKey(ServiceComponent, on_delete=models.CASCADE)
-    state = models.CharField(max_length=64, default="created")
+    state = models.CharField(max_length=1000, default="created")
 
     class Meta:
         unique_together = (("host", "service", "component"),)
@@ -1388,11 +1386,11 @@ CONFIG_FIELD_TYPE = (
 class PrototypeConfig(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     action = models.ForeignKey(Action, on_delete=models.CASCADE, null=True, default=None)
-    name = models.CharField(max_length=256)
-    subname = models.CharField(max_length=256, blank=True)
+    name = models.CharField(max_length=1000)
+    subname = models.CharField(max_length=1000, blank=True)
     default = models.TextField(blank=True)
-    type = models.CharField(max_length=16, choices=CONFIG_FIELD_TYPE)
-    display_name = models.CharField(max_length=256, blank=True)
+    type = models.CharField(max_length=1000, choices=CONFIG_FIELD_TYPE)
+    display_name = models.CharField(max_length=1000, blank=True)
     description = models.TextField(blank=True)
     limits = models.JSONField(default=dict)
     ui_options = models.JSONField(blank=True, default=dict)
@@ -1405,7 +1403,7 @@ class PrototypeConfig(ADCMModel):
 
 class PrototypeExport(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=160)
+    name = models.CharField(max_length=1000)
 
     class Meta:
         unique_together = (("prototype", "name"),)
@@ -1413,9 +1411,9 @@ class PrototypeExport(ADCMModel):
 
 class PrototypeImport(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=160)
-    min_version = models.CharField(max_length=80)
-    max_version = models.CharField(max_length=80)
+    name = models.CharField(max_length=1000)
+    min_version = models.CharField(max_length=1000)
+    max_version = models.CharField(max_length=1000)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
     default = models.JSONField(null=True, default=None)
@@ -1454,7 +1452,7 @@ class JobStatus(models.TextChoices):
 
 
 class UserProfile(ADCMModel):
-    login = models.CharField(max_length=32, unique=True)
+    login = models.CharField(max_length=1000, unique=True)
     profile = models.JSONField(default=str)
 
 
@@ -1465,7 +1463,7 @@ class TaskLog(ADCMModel):
     action = models.ForeignKey(Action, on_delete=models.SET_NULL, null=True, default=None)
     pid = models.PositiveIntegerField(blank=True, default=0)
     selector = models.JSONField(default=dict)
-    status = models.CharField(max_length=16, choices=JobStatus.choices)
+    status = models.CharField(max_length=1000, choices=JobStatus.choices)
     config = models.JSONField(null=True, default=None)
     attr = models.JSONField(default=dict)
     hostcomponentmap = models.JSONField(null=True, default=None)
@@ -1553,7 +1551,7 @@ class JobLog(ADCMModel):
     pid = models.PositiveIntegerField(blank=True, default=0)
     selector = models.JSONField(default=dict)
     log_files = models.JSONField(default=list)
-    status = models.CharField(max_length=16, choices=JobStatus.choices)
+    status = models.CharField(max_length=1000, choices=JobStatus.choices)
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField(db_index=True)
 
@@ -1615,8 +1613,8 @@ class LogStorage(ADCMModel):
     job = models.ForeignKey(JobLog, on_delete=models.CASCADE)
     name = models.TextField(default="")
     body = models.TextField(blank=True, null=True)
-    type = models.CharField(max_length=16, choices=LOG_TYPE)
-    format = models.CharField(max_length=16, choices=FORMAT_TYPE)
+    type = models.CharField(max_length=1000, choices=LOG_TYPE)
+    format = models.CharField(max_length=1000, choices=FORMAT_TYPE)
 
     class Meta:
         constraints = [
@@ -1628,26 +1626,26 @@ class LogStorage(ADCMModel):
 
 
 class StagePrototype(ADCMModel):
-    type = models.CharField(max_length=16, choices=ObjectType.choices)
+    type = models.CharField(max_length=1000, choices=ObjectType.choices)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
-    name = models.CharField(max_length=256)
-    path = models.CharField(max_length=160, default="")
+    name = models.CharField(max_length=1000)
+    path = models.CharField(max_length=1000, default="")
     display_name = models.CharField(max_length=1000, blank=True)
-    version = models.CharField(max_length=80)
-    edition = models.CharField(max_length=80, default="community")
-    license = models.CharField(max_length=16, choices=LICENSE_STATE, default="absent")
-    license_path = models.CharField(max_length=160, default=None, null=True)
-    license_hash = models.CharField(max_length=64, default=None, null=True)
+    version = models.CharField(max_length=1000)
+    edition = models.CharField(max_length=1000, default="community")
+    license = models.CharField(max_length=1000, choices=LICENSE_STATE, default="absent")
+    license_path = models.CharField(max_length=1000, default=None, null=True)
+    license_hash = models.CharField(max_length=1000, default=None, null=True)
     required = models.BooleanField(default=False)
     shared = models.BooleanField(default=False)
     constraint = models.JSONField(default=get_default_constraint)
     requires = models.JSONField(default=list)
     bound_to = models.JSONField(default=dict)
-    adcm_min_version = models.CharField(max_length=80, default=None, null=True)
+    adcm_min_version = models.CharField(max_length=1000, default=None, null=True)
     description = models.TextField(blank=True)
-    monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default="active")
+    monitoring = models.CharField(max_length=1000, choices=MONITORING_TYPE, default="active")
     config_group_customization = models.BooleanField(default=False)
-    venv = models.CharField(default="default", max_length=160, blank=False)
+    venv = models.CharField(default="default", max_length=1000, blank=False)
     allow_maintenance_mode = models.BooleanField(default=False)
 
     __error_code__ = "PROTOTYPE_NOT_FOUND"
@@ -1660,15 +1658,15 @@ class StagePrototype(ADCMModel):
 
 
 class StageUpgrade(ADCMModel):
-    name = models.CharField(max_length=160, blank=True)
+    name = models.CharField(max_length=1000, blank=True)
     description = models.TextField(blank=True)
-    min_version = models.CharField(max_length=80)
-    max_version = models.CharField(max_length=80)
+    min_version = models.CharField(max_length=1000)
+    max_version = models.CharField(max_length=1000)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
     from_edition = models.JSONField(default=get_default_from_edition)
     state_available = models.JSONField(default=list)
-    state_on_success = models.CharField(max_length=64, blank=True)
+    state_on_success = models.CharField(max_length=1000, blank=True)
     action = models.OneToOneField("StageAction", on_delete=models.CASCADE, null=True)
 
 
@@ -1683,11 +1681,11 @@ class StageSubAction(AbstractSubAction):
 class StagePrototypeConfig(ADCMModel):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
     action = models.ForeignKey(StageAction, on_delete=models.CASCADE, null=True, default=None)
-    name = models.CharField(max_length=256)
-    subname = models.CharField(max_length=256, blank=True)
+    name = models.CharField(max_length=1000)
+    subname = models.CharField(max_length=1000, blank=True)
     default = models.TextField(blank=True)
-    type = models.CharField(max_length=16, choices=CONFIG_FIELD_TYPE)
-    display_name = models.CharField(max_length=256, blank=True)
+    type = models.CharField(max_length=1000, choices=CONFIG_FIELD_TYPE)
+    display_name = models.CharField(max_length=1000, blank=True)
     description = models.TextField(blank=True)
     limits = models.JSONField(default=dict)
     ui_options = models.JSONField(blank=True, default=dict)
@@ -1700,7 +1698,7 @@ class StagePrototypeConfig(ADCMModel):
 
 class StagePrototypeExport(ADCMModel):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=160)
+    name = models.CharField(max_length=1000)
 
     class Meta:
         unique_together = (("prototype", "name"),)
@@ -1708,9 +1706,9 @@ class StagePrototypeExport(ADCMModel):
 
 class StagePrototypeImport(ADCMModel):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=160)
-    min_version = models.CharField(max_length=80)
-    max_version = models.CharField(max_length=80)
+    name = models.CharField(max_length=1000)
+    min_version = models.CharField(max_length=1000)
+    max_version = models.CharField(max_length=1000)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
     default = models.JSONField(null=True, default=None)
@@ -1719,10 +1717,6 @@ class StagePrototypeImport(ADCMModel):
 
     class Meta:
         unique_together = (("prototype", "name"),)
-
-
-class DummyData(ADCMModel):
-    date = models.DateTimeField(auto_now=True)
 
 
 class MessageTemplate(ADCMModel):
@@ -1748,7 +1742,7 @@ class MessageTemplate(ADCMModel):
     TODO: separate JSON processing logic from model
     """
 
-    name = models.CharField(max_length=160, unique=True)
+    name = models.CharField(max_length=1000, unique=True)
     template = models.JSONField()
 
     class KnownNames(Enum):
@@ -1877,14 +1871,14 @@ class ConcernItem(ADCMModel):
     `related_objects` are back-refs from affected `ADCMEntities.concerns`
     """
 
-    type = models.CharField(max_length=8, choices=ConcernType.choices, default=ConcernType.Lock)
-    name = models.CharField(max_length=160, null=True, unique=True)
+    type = models.CharField(max_length=1000, choices=ConcernType.choices, default=ConcernType.Lock)
+    name = models.CharField(max_length=1000, null=True, unique=True)
     reason = models.JSONField(default=dict)
     blocking = models.BooleanField(default=True)
     owner_id = models.PositiveIntegerField(null=True)
     owner_type = models.ForeignKey(ContentType, null=True, on_delete=models.CASCADE)
     owner = GenericForeignKey("owner_type", "owner_id")
-    cause = models.CharField(max_length=16, null=True, choices=ConcernCause.choices)
+    cause = models.CharField(max_length=1000, null=True, choices=ConcernCause.choices)
 
     @property
     def related_objects(self) -> Iterable[ADCMEntity]:

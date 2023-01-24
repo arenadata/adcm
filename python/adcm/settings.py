@@ -140,15 +140,40 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "cm.errors.custom_drf_exception_handler",
 }
 
-DATABASES = {
-    "default": {
+POSTGRES_ADCM_PASS = os.getenv("POSTGRES_ADCM_PASS")
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
+
+if all((POSTGRES_ADCM_PASS, DB_NAME, DB_USER, DB_HOST, DB_PORT)):
+    DB_DEFAULT = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": DB_NAME,
+        "USER": DB_USER,
+        "PASSWORD": POSTGRES_ADCM_PASS,
+        "HOST": DB_HOST,
+        "PORT": DB_PORT,
+    }
+elif POSTGRES_ADCM_PASS:
+    DB_DEFAULT = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "adcm",
+        "USER": "adcm",
+        "PASSWORD": POSTGRES_ADCM_PASS,
+        "HOST": "db",
+        "PORT": 5432,
+    }
+else:
+    DB_DEFAULT = {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "data/var/cluster.db",
         "OPTIONS": {
             "timeout": 20,
         },
-    },
-}
+    }
+
+DATABASES = {"default": DB_DEFAULT}
 
 AUTH_PASSWORD_VALIDATORS = [
     {

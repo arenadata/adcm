@@ -28,7 +28,6 @@ from cm.models import (
     Cluster,
     ClusterObject,
     ConfigLog,
-    DummyData,
     GroupConfig,
     Host,
     HostProvider,
@@ -177,7 +176,6 @@ class Command(BaseCommand):
                 make_audit_log("config", AuditLogOperationResult.Success, "launched")
 
             with transaction.atomic():
-                DummyData.objects.filter(id=1).update(date=timezone.now())
                 ConfigLog.objects.filter(id__in=target_configlog_ids).delete()
                 ObjectConfig.objects.filter(id__in=target_objectconfig_ids).delete()
                 if target_configlog_ids or target_objectconfig_ids:
@@ -233,8 +231,8 @@ class Command(BaseCommand):
                 if target_tasklogs:
                     is_deleted = True
                     with transaction.atomic():
-                        DummyData.objects.filter(id=1).update(date=timezone.now())
                         target_tasklogs.delete()
+
                         # valid as long as `on_delete=models.SET_NULL` in JobLog.task field
                         JobLog.objects.filter(task__isnull=True).delete()
 

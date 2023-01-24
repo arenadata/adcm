@@ -218,7 +218,7 @@ class TestBundle(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse("config-log-list"),
-            data={"obj_ref": cluster.pk, "config": json.dumps(config_log.config)},
+            data={"obj_ref": cluster.config.pk, "config": json.dumps(config_log.config)},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -244,7 +244,7 @@ class TestBundle(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse("config-log-list"),
-            data={"obj_ref": cluster.pk, "config": json.dumps(config_log.config)},
+            data={"obj_ref": cluster.config.pk, "config": json.dumps(config_log.config)},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)

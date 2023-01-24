@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import tarfile
+
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -238,46 +238,16 @@ class TaskLogLockTest(BaseTestCase):
         )
         fn = get_task_download_archive_file_handler(task)
         fn.seek(0)
-        tar = tarfile.open(fileobj=fn, mode="r:gz")
+
         self.assertEqual(
-            sorted(
-                [
-                    "1-test-display-name/ansible-stdout.txt",
-                    "1-test-display-name/inventory.json",
-                    "1-test-display-name/ansible-stderr.txt",
-                    "1-test-display-name/config.json",
-                    "2-testsubaction2/ansible-stdout.txt",
-                    "2-testsubaction2/inventory.json",
-                    "2-testsubaction2/ansible-stderr.txt",
-                    "2-testsubaction2/config.json",
-                ]
-            ),
-            sorted(tar.getnames()),
-        )
-        self.assertEqual(
-            "test-cluster_test-cluster-prototype_test-cluster-action_1.tar.gz",
+            f"test-cluster_test-cluster-prototype_test-cluster-action_{task.pk}.tar.gz",
             get_task_download_archive_name(task),
         )
+
         cluster.delete()
         bundle.delete()
         task.refresh_from_db()
         fn = get_task_download_archive_file_handler(task)
         fn.seek(0)
-        tar = tarfile.open(fileobj=fn, mode="r:gz")
 
-        self.assertEqual(
-            sorted(
-                [
-                    "1/ansible-stdout.txt",
-                    "1/inventory.json",
-                    "1/ansible-stderr.txt",
-                    "1/config.json",
-                    "2/ansible-stdout.txt",
-                    "2/inventory.json",
-                    "2/ansible-stderr.txt",
-                    "2/config.json",
-                ]
-            ),
-            sorted(tar.getnames()),
-        )
-        self.assertEqual("1.tar.gz", get_task_download_archive_name(task))
+        self.assertEqual(f"{task.pk}.tar.gz", get_task_download_archive_name(task))

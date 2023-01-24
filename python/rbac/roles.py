@@ -15,14 +15,12 @@
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from django.utils import timezone
 from guardian.models import GroupObjectPermission, UserObjectPermission
 
 from cm.errors import raise_adcm_ex
 from cm.models import (
     Action,
     ClusterObject,
-    DummyData,
     GroupConfig,
     Host,
     HostComponent,
@@ -83,10 +81,10 @@ class ModelRole(AbstractRole):
 
 def assign_user_or_group_perm(user, group, policy, perm, obj):
     with transaction.atomic():
-        DummyData.objects.filter(id=1).update(date=timezone.now())
         if user is not None:
             uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
             policy.user_object_perm.add(uop)
+
         if group is not None:
             gop = GroupObjectPermission.objects.assign_perm(perm, group, obj)
             policy.group_object_perm.add(gop)
