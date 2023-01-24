@@ -64,7 +64,7 @@ class User(AuthUser):
         self.is_active = False
         self.save()
 
-    type = models.CharField(max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local)
+    type = models.CharField(max_length=1000, choices=OriginType.choices, null=False, default=OriginType.Local)
 
     @property
     def name(self):
@@ -77,12 +77,12 @@ class Group(AuthGroup):
     Original Group model extended with description field
     """
 
-    description = models.CharField(max_length=255, null=True)
+    description = models.CharField(max_length=1000, null=True)
     built_in = models.BooleanField(default=False, null=False)
-    type = models.CharField(max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local)
+    type = models.CharField(max_length=1000, choices=OriginType.choices, null=False, default=OriginType.Local)
     # works as `name` field because `name` field now contains name and type
     # to bypass unique constraint on `AuthGroup` base table
-    display_name = models.CharField(max_length=150, null=True)
+    display_name = models.CharField(max_length=1000, null=True)
 
     class Meta:
         constraints = [
@@ -124,12 +124,12 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
     display_name = models.CharField(max_length=1000, null=False, default="")
     child = models.ManyToManyField("self", symmetrical=False, blank=True)
     permissions = models.ManyToManyField(Permission, blank=True)
-    module_name = models.CharField(max_length=32)
-    class_name = models.CharField(max_length=32)
+    module_name = models.CharField(max_length=1000)
+    class_name = models.CharField(max_length=1000)
     init_params = models.JSONField(default=dict)
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE, null=True, default=None)
     built_in = models.BooleanField(default=True, null=False)
-    type = models.CharField(max_length=32, choices=RoleTypes.choices, null=False, default=RoleTypes.role)
+    type = models.CharField(max_length=1000, choices=RoleTypes.choices, null=False, default=RoleTypes.role)
     category = models.ManyToManyField(ProductCategory)
     any_category = models.BooleanField(default=False)
     parametrized_by_type = models.JSONField(default=list, null=False, validators=[validate_object_type])
@@ -220,7 +220,7 @@ class PolicyPermission(models.Model):
 class Policy(models.Model):
     """Policy connect role, users and (maybe) objects"""
 
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=1000, unique=True)
     description = models.TextField(blank=True)
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True)
     object = models.ManyToManyField(PolicyObject, blank=True)
