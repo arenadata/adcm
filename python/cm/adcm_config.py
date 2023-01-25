@@ -514,6 +514,10 @@ def process_secret_params(spec, conf):
 
 def process_secretmap(spec: dict, conf: dict) -> dict:
     for key in conf:
+        if "type" not in spec[key]:
+            for _ in conf:
+                process_secretmap(spec[key], conf[key])
+
         if spec[key].get("type") != "secretmap":
             continue
 
