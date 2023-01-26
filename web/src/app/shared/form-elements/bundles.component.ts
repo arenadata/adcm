@@ -13,7 +13,7 @@ import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angu
 import { FormControl } from '@angular/forms';
 import { Prototype, StackBase } from '@app/core/types';
 import { of } from 'rxjs';
-import { filter, map, switchMap } from 'rxjs/operators';
+import {filter, map, switchMap, tap} from 'rxjs/operators';
 import { EventHelper } from '@adwp-ui/widgets';
 
 import { AddService } from '../add-component/add.service';
@@ -61,6 +61,7 @@ export class BundlesComponent extends InputComponent implements OnInit {
   page = 1;
   limit = 50;
   disabledVersion = true;
+  elementName = null;
 
   @Output() prototypeChanged = new EventEmitter();
 
@@ -78,11 +79,12 @@ export class BundlesComponent extends InputComponent implements OnInit {
       .get('display_name')
       .valueChanges.pipe(
         this.takeUntil(),
-        switchMap((value) => (value ? this.service.getPrototype(this.typeName, { page: 0, limit: 500, ordering: '-version', display_name: value }) : of([])))
+        tap((elementName) => this.elementName = elementName),
+        switchMap((elementName) => (elementName ? this.service.getPrototype(this.typeName, { page: 0, limit: 500, ordering: '-version', display_name: elementName }) : of([])))
       )
-      .subscribe((a) => {
-        this.versions = a;
-        this.selectOne(a, 'bundle_id');
+      .subscribe((elements) => {
+        this.versions = elements.filter((element) => element.display_name === this.elementName);
+        this.selectOne(elements, 'bundle_id');
         this.loadedBundle = null;
       });
 
@@ -93,8 +95,8 @@ export class BundlesComponent extends InputComponent implements OnInit {
         this.takeUntil(),
         filter((a) => a)
       )
-      .subscribe((a) => {
-        const prototype = this.versions.find((b) => b.bundle_id === +a);
+      .subscribe((id) => {
+        const prototype = this.versions.find((b) => b.bundle_id === +id);
         this.service.currentPrototype = prototype;
         this.prototypeChanged.emit(prototype);
         this.form.get('prototype_id').setValue(this.service.currentPrototype.id);
@@ -112,9 +114,9 @@ export class BundlesComponent extends InputComponent implements OnInit {
   getBundles() {
     const offset = (this.page - 1) * this.limit;
     const params = { fields: 'display_name', distinct: 1, ordering: 'display_name', limit: this.limit, offset };
-    this.service.getPrototype(this.typeName, params).subscribe((a) => {
-      this.bundles = [...this.bundles, ...a];
-      this.selectOne(a, 'display_name');
+    this.service.getPrototype(this.typeName, params).subscribe((bundles) => {
+      this.bundles = [...new Map([...this.bundles, ...bundles].map((item) => [item["display_name"], item])).values()];
+      this.selectOne(bundles, 'display_name');
     });
   }
 
