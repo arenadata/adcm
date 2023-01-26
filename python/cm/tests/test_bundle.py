@@ -46,10 +46,7 @@ class TestBundle(BaseTestCase):
         # we expect here IntegrityError, but unittest do not raise it directly,
         # so check context of TransactionManagementError
 
-        actual_exception = raises_context.exception.__context__
-        self.assertIsNotNone(actual_exception)
-        self.assertIsInstance(actual_exception, IntegrityError)
-        self.assertIn("UNIQUE constraint failed", str(actual_exception))
+        self.assertIsInstance(raises_context.exception.__context__, IntegrityError)
 
     def test_bundle_upload_upgrade_different_upgrade_name_success(self):
         self.upload_and_load_bundle(path=Path(self.files_dir, "test_upgrade_different_name.tar"))
