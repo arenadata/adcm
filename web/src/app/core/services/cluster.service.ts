@@ -140,8 +140,8 @@ export class ClusterService {
     );
   }
 
-  addServices(output: { prototype_id: number }[]) {
-    return forkJoin(output.map((o) => this.api.post<Service>(this.Cluster.service, o)));
+  addServices(output: { prototype_id: number }) {
+    return this.api.post<Service>(this.Cluster.service, output);
   }
 
   getHosts(p: ParamMap) {
