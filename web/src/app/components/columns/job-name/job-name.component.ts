@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { AdwpCellComponent, ILinkColumn } from '@adwp-ui/widgets';
+import { AdwpCellComponent, ILinkColumn } from '@app/adwp';
 
 import { Job } from '@app/core/types';
 

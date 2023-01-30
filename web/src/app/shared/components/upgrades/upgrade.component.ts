@@ -14,7 +14,7 @@ import { ApiService } from '../../../core/api';
 import { EmmitRow, IActionParameter, IUIOptions } from '../../../core/types';
 import { Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import { EventHelper } from '@adwp-ui/widgets';
+import { EventHelper } from '@app/adwp';
 import { IIssues } from '../../../models/issue';
 import { IssueHelper } from '../../../helpers/issue-helper';
 import { IConfig } from "../../configuration/types";

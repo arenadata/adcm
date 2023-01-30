@@ -1,5 +1,5 @@
 import { Directive } from '@angular/core';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 
 import { PopoverInput } from '../directives/popover.directive';
 

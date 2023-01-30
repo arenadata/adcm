@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { BaseFormDirective } from '../../../../shared/add-component';
 import { FormGroup } from '@angular/forms';
-import { ADWP_DEFAULT_MATCHER, AdwpIdentityMatcher, AdwpMatcher } from '@adwp-ui/widgets';
+import { ADWP_DEFAULT_MATCHER, AdwpIdentityMatcher, AdwpMatcher } from '@app/adwp';
 import { RbacRoleModel } from '../../../../models/rbac/rbac-role.model';
 
 @Component({

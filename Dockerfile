@@ -8,6 +8,9 @@ RUN apk update && \
         bash \
         openssl \
         libc6-compat \
+        libffi-dev \
+        libxml2-dev \
+        libxslt-dev \
         openldap-dev \
         git \
         runit \

@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Observable } from 'rxjs';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 
 import { AdcmTypedEntity } from '@app/models/entity';
 import { EmmitRow, IAction } from '@app/core/types';

@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { AdwpIdentityMatcher, AdwpStringHandler } from '@adwp-ui/widgets';
+import { AdwpIdentityMatcher, AdwpStringHandler } from '@app/adwp';
 import { IRbacObjectCandidateServiceModel } from '../../../../../../models/rbac/rbac-object-candidate';
 import { ParametrizedByDirective } from '../../directives/parametrized-by.directive';
 

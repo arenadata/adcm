@@ -1,0 +1,6 @@
+<p class="controls">
+  <button mat-raised-button color="primary" (click)="oncancel()">Cancel</button>
+  <span class="example-spacer"></span>
+  <button #btn mat-raised-button [disabled]="disabled" [hidden]="hiddenSaveButton" color="accent" (click)="onsave()"
+    (focus)="(!disabled)">{{ title }}</button>
+</p>

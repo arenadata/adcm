@@ -12,7 +12,7 @@
 import { Directive, Inject } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 
 import { ADD_SERVICE_PROVIDER, IAddService } from '@app/shared/add-component/add-service-model';
 

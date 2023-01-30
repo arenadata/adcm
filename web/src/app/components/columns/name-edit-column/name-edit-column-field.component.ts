@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, OnInit } from '@angular/core';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 import { FormControl } from "@angular/forms";
 import { debounceTime } from "rxjs/operators";
 import { editColumnValues } from "@app/components/columns/name-edit-column/name-edit-column.component";

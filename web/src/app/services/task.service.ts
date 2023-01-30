@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { filter } from 'rxjs/operators';
 import { Observable } from 'rxjs';
-import { IListResult } from '@adwp-ui/widgets';
+import { IListResult } from '@app/adwp';
 
 import { EventMessage, selectMessage, SocketState } from '@app/core/store';
 import { EventableService, EventFilter } from '@app/models/eventable-service';

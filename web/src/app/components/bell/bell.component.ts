@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, ElementRef, Renderer2, ViewChild } from '@angular/core';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 import { BehaviorSubject, combineLatest, interval, Observable, zip } from 'rxjs';
 import { filter, map, mergeMap, take, takeWhile } from 'rxjs/operators';
 

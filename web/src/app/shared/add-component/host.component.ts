@@ -13,7 +13,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
-import { EventHelper } from '@adwp-ui/widgets';
+import { EventHelper } from '@app/adwp';
 
 import { openClose } from '@app/core/animations';
 import { clearEmptyField, Host, Provider } from '@app/core/types';

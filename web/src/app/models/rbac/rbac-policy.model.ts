@@ -1,4 +1,4 @@
-import { Entity } from '@adwp-ui/widgets';
+import { Entity } from '@app/adwp';
 import { RbacRoleModel } from './rbac-role.model';
 import { RbacUserModel } from './rbac-user.model';
 import { RbacGroupModel } from './rbac-group.model';

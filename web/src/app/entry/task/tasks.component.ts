@@ -13,7 +13,7 @@ import { Component, OnInit, ComponentRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { filter, tap } from 'rxjs/operators';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { BaseDirective, IColumns, IListResult, InstanceTakenFunc, Paging } from '@adwp-ui/widgets';
+import { BaseDirective, IColumns, IListResult, InstanceTakenFunc, Paging } from '@app/adwp';
 import { MatButtonToggleChange } from '@angular/material/button-toggle';
 
 import { DateHelper } from '@app/helpers/date-helper';

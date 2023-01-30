@@ -11,7 +11,7 @@
 // limitations under the License.
 
 import { Component } from '@angular/core';
-import { IColumns } from '@adwp-ui/widgets';
+import { IColumns } from '@app/adwp';
 
 import { ICluster } from '@app/models/cluster';
 import { TypeName } from '@app/core/types';

@@ -1,5 +1,5 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { AdwpCellComponent, ILinkColumn, EventHelper } from '@adwp-ui/widgets';
+import { AdwpCellComponent, ILinkColumn, EventHelper } from '@app/adwp';
 
 import { IHost } from '@app/models/host';
 import { UniversalAdcmEventData } from '@app/models/universal-adcm-event-data';

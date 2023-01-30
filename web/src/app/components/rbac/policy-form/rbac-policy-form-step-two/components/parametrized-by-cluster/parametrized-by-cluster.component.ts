@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { adwpDefaultProp, AdwpStringHandler } from '@adwp-ui/widgets';
+import { adwpDefaultProp, AdwpStringHandler } from '@app/adwp';
 import {
   IRbacObjectCandidateClusterModel,
   IRbacObjectCandidateModel

@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { IColumns, AdwpComponentHolder } from '@adwp-ui/widgets';
+import { IColumns, AdwpComponentHolder } from '@app/adwp';
 import { BehaviorSubject } from 'rxjs';
 
 import { Job, Task } from '@app/core/types';
