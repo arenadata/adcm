@@ -14,6 +14,7 @@
 
 import importlib
 import re
+from typing import Dict
 
 from django.contrib.auth.models import Group as AuthGroup
 from django.contrib.auth.models import Permission
@@ -28,7 +29,7 @@ from guardian.models import GroupObjectPermission, UserObjectPermission
 from rest_framework.exceptions import ValidationError
 
 from cm.errors import raise_adcm_ex
-from cm.models import Bundle, HostComponent, ProductCategory
+from cm.models import ADCMEntity, Bundle, HostComponent, ProductCategory
 
 
 class ObjectType(models.TextChoices):
@@ -289,9 +290,10 @@ class Policy(models.Model):
             self.role.apply(self, None, group=group)
 
 
-def get_objects_for_policy(obj):
+def get_objects_for_policy(obj: ADCMEntity) -> Dict[ADCMEntity, ContentType]:
     obj_type_map = {}
     obj_type = obj.prototype.type
+
     if obj_type == "component":
         object_list = [obj, obj.service, obj.cluster]
     elif obj_type == "service":
@@ -299,6 +301,7 @@ def get_objects_for_policy(obj):
     elif obj_type == "host":
         if obj.cluster:
             object_list = [obj, obj.provider, obj.cluster]
+
             for hc in HostComponent.objects.filter(cluster=obj.cluster, host=obj):
                 object_list.append(hc.service)
                 object_list.append(hc.component)
@@ -306,8 +309,10 @@ def get_objects_for_policy(obj):
             object_list = [obj, obj.provider]
     else:
         object_list = [obj]
+
     for policy_object in object_list:
         obj_type_map[policy_object] = ContentType.objects.get_for_model(policy_object)
+
     return obj_type_map
 
 

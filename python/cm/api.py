@@ -59,6 +59,7 @@ from cm.models import (
 )
 from cm.status_api import api_request, post_event
 from rbac.models import re_apply_object_policy
+from rbac.roles import apply_policy_for_new_config
 
 
 def check_license(proto: Prototype) -> None:
@@ -545,26 +546,26 @@ def update_obj_config(obj_conf: ObjectConfig, conf: dict, attr: dict, desc: str 
         current_attr=old_conf.attr,
     )
     with transaction.atomic():
-        cl = save_obj_config(obj_conf=obj_conf, conf=new_conf, attr=attr, desc=desc)
-        update_hierarchy_issues(obj)
-        re_apply_object_policy(obj)
+        config_log = save_obj_config(obj_conf=obj_conf, conf=new_conf, attr=attr, desc=desc)
+        update_hierarchy_issues(obj=obj)
+        apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
     if group is not None:
-        post_event("change_config", "group-config", group.pk, "version", str(cl.pk))
+        post_event("change_config", "group-config", group.pk, "version", str(config_log.pk))
     else:
-        post_event("change_config", proto.type, obj.pk, "version", str(cl.pk))
+        post_event("change_config", proto.type, obj.pk, "version", str(config_log.pk))
 
-    return cl
+    return config_log
 
 
-def set_object_config(obj: ADCMEntity, config: dict):
+def set_object_config(obj: ADCMEntity, config: dict) -> ConfigLog:
     old_conf = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
     new_conf = check_and_process_json_config(proto=obj.prototype, obj=obj, new_config=config, new_attr=old_conf.attr)
 
     with transaction.atomic():
         config_log = save_obj_config(obj_conf=obj.config, conf=new_conf, attr=old_conf.attr, desc="ansible update")
-        update_hierarchy_issues(obj)
-        re_apply_object_policy(obj)
+        update_hierarchy_issues(obj=obj)
+        apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
     post_event("change_config", obj.prototype.type, obj.pk, "version", str(config_log.pk))
     return config_log
