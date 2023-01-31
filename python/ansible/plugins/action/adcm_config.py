@@ -126,21 +126,21 @@ class ActionModule(ContextActionModule):
 
     def _get_config(self):
         config = {}
-        key = self._task.args.get("key")
-        value = self._task.args.get("value")
+        is_key = "key" in self._task.args
+        is_value = "value" in self._task.args
         is_params = "parameters" in self._task.args
 
-        if (key or value) and is_params:
+        if (is_key or is_value) and is_params:
             raise AnsibleError("'Parameters' must not be use with 'key'/'value'")
 
-        if not ((key is not None and value is not None) or is_params):
+        if not ((is_key and is_value) or is_params):
             raise AnsibleError("'key'/'value' or 'parameters' arguments are mandatory")
 
         if is_params:
             for item in self._task.args["parameters"]:
                 config[item["key"]] = item["value"]
         else:
-            config[key] = value
+            config[self._task.args.get("key")] = self._task.args.get("value")
 
         return config
 
