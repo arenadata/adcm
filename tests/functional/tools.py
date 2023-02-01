@@ -36,7 +36,8 @@ from adcm_client.objects import (
     Task,
     User,
 )
-from adcm_pytest_plugin.docker_utils import ADCM, get_file_from_container
+from adcm_pytest_plugin.docker.adcm import ADCM
+from adcm_pytest_plugin.docker.utils import get_file_from_container
 from adcm_pytest_plugin.utils import (
     allure_reporter,
     catch_failed,

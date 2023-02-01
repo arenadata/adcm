@@ -24,7 +24,6 @@ from tests.api.testdata.generators import (
     get_negative_data_for_patch_body_check,
     get_positive_data_for_patch_body_check,
 )
-from tests.api.utils.api_objects import ADCMTestApiWrapper
 from tests.api.utils.methods import Methods
 from tests.api.utils.types import get_fields
 
@@ -35,12 +34,12 @@ pytestmark = [
 
 @allure.title("Prepare patch body data")
 @pytest.fixture()
-def prepare_patch_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
+def prepare_patch_body_data(request, adcm_api):
     """
     Fixture for preparing test data for PATCH request, depending on generated test datasets
     """
     test_data_list: List[TestDataWithPreparedBody] = request.param
-    dbfiller = DbFiller(adcm=adcm_api_fs)
+    dbfiller = DbFiller(adcm=adcm_api)
     valid_data = dbfiller.generate_valid_request_data(
         endpoint=test_data_list[0].test_data.request.endpoint, method=Methods.PATCH
     )
@@ -63,7 +62,7 @@ def prepare_patch_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
         test_data.request.object_id = valid_data["object_id"]
         final_test_data_list.append(TestDataWithPreparedBody(test_data, prepared_field_values))
 
-    return adcm_api_fs, final_test_data_list
+    return adcm_api, final_test_data_list
 
 
 @pytest.mark.parametrize("prepare_patch_body_data", get_positive_data_for_patch_body_check(), indirect=True)

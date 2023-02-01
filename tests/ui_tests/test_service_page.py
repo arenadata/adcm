@@ -247,7 +247,9 @@ class TestServiceConfigPage:
             bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_DESCRIPTION_FIELDS)
             cluster = bundle.cluster_create(name=CLUSTER_NAME)
             service = cluster.service_add(name=SERVICE_NAME)
-        service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+        service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open(
+            close_popup=True
+        )
         service_config_page.config.fill_config_fields_with_test_values()
         service_config_page.config.set_description(params["config_name_new"])
         service_config_page.config.save_config()

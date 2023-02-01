@@ -28,8 +28,7 @@ def old_adcm_images():
     return parametrized_by_adcm_version(adcm_min_version="2019.10.08")[0]
 
 
-@pytest.mark.parametrize("image", old_adcm_images(), ids=repr)
-@pytest.mark.usefixtures("image")
+@pytest.mark.parametrize("image", old_adcm_images(), ids=repr, indirect=True)
 def test_actions(sdk_client_fs: ADCMClient):
     """
     Tests that action works on latest adcm client and old adcm versions

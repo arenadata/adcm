@@ -14,7 +14,8 @@
 
 import allure
 import pytest
-from adcm_pytest_plugin.common import add_dummy_objects_to_adcm
+
+# from adcm_pytest_plugin.common import add_dummy_objects_to_adcm
 from tests.ui_tests.app.page.admin.page import AdminIntroPage, AdminSettingsPage
 from tests.ui_tests.app.page.bundle_list.page import BundleListPage
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
@@ -106,7 +107,7 @@ class TestHeader:
     @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2054")
     def test_check_back_button_in_browser_for_header_links(self, app_fs, sdk_client_fs):
         """Test browser back button after following header links"""
-        add_dummy_objects_to_adcm(sdk_client_fs)
+        # TODO fix add_dummy_objects_to_adcm(sdk_client_fs)
         with allure.step("Check back button for cluster page header link"):
             intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
             intro_page.header.click_clusters_tab()

@@ -23,7 +23,6 @@ from adcm_pytest_plugin.steps.actions import (
     run_provider_action_and_assert_result,
     run_service_action_and_assert_result,
 )
-from tests.conftest import include_dummy_data
 from tests.functional.plugin_utils import (
     TestImmediateChange,
     build_objects_checker,
@@ -85,7 +84,6 @@ def two_providers(sdk_client_fs: ADCMClient) -> Tuple[Provider, Provider]:
     return create_two_providers(sdk_client_fs, __file__, "provider")
 
 
-@include_dummy_data
 @pytest.mark.parametrize(
     ('change_action_name', 'object_to_be_changed', 'action_owner'),
     generate_cluster_success_params(action_prefix='change', id_template='change_{}_config'),
@@ -111,7 +109,6 @@ def test_cluster_related_objects(
     )
 
 
-@include_dummy_data
 @pytest.mark.parametrize(
     ('change_action_name', 'object_to_be_changed', 'action_owner'),
     generate_provider_success_params(action_prefix='change', id_template='change_{}_config'),
@@ -137,7 +134,6 @@ def test_provider_related_objects(
     )
 
 
-@include_dummy_data
 def test_host_from_provider(two_providers: Tuple[Provider, Provider], sdk_client_fs: ADCMClient):
     """Change host config from provider"""
     provider = two_providers[0]
@@ -231,7 +227,6 @@ class TestImmediateConfigChange(TestImmediateChange):
 
     _file = __file__
 
-    @include_dummy_data
     @allure.issue(url='https://arenadata.atlassian.net/browse/ADCM-2116')
     def test_immediate_config_change(
         self,

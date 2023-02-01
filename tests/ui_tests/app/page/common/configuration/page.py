@@ -11,9 +11,10 @@
 # limitations under the License.
 
 """Config page PageObjects classes"""
+import json
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Collection, List, Optional, Union
+from typing import Callable, Collection, List, Optional, TypeVar, Union
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -31,6 +32,8 @@ from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMe
 from tests.ui_tests.core.checks import check_element_is_hidden, check_element_is_visible
 
 # pylint: disable=too-many-public-methods
+
+T = TypeVar("T")
 
 
 @dataclass
@@ -545,11 +548,11 @@ class CommonConfigMenuObj(BasePageObject):
         return [h.text for h in self.find_children(row, CommonConfigMenu.ConfigRow.history)]
 
     @allure.step("Wait row with history value {value}")
-    def wait_history_row_with_value(self, row: WebElement, value: str):
+    def wait_history_row_with_value(self, row: WebElement, value: T, value_converter: Callable[[str], T] = lambda x: x):
         """Wait for value in History row"""
 
         def _assert_value():
-            assert self.get_history_in_row(row)[0] == value, "History row should contain old value"
+            assert value_converter(self.get_history_in_row(row)[0]) == value, "History row should contain old value"
 
         wait_until_step_succeeds(_assert_value, timeout=4, period=0.5)
 
@@ -675,11 +678,19 @@ class CommonConfigMenuObj(BasePageObject):
                 '[{"code":1,"country":"Test1"},{"code":2,"country":"Test2"}]',
             )
         with allure.step("Check history value in map type"):
-            self.wait_history_row_with_value(self.get_config_row("map"), '{"age":"24","name":"Joe","sex":"m"}')
+            self.wait_history_row_with_value(
+                self.get_config_row("map"),
+                {"age": "24", "name": "Joe", "sex": "m"},
+                value_converter=json.loads,
+            )
         with allure.step("Change value in secrettext type"):
             self.wait_history_row_with_value(self.get_config_row("secrettext"), '****')
         with allure.step("Change value in json type"):
-            self.wait_history_row_with_value(self.get_config_row("json"), '{"age":"24","name":"Joe","sex":"m"}')
+            self.wait_history_row_with_value(
+                self.get_config_row("json"),
+                {"age": "24", "name": "Joe", "sex": "m"},
+                value_converter=json.loads,
+            )
 
     def get_config_title(self):
         return self.find_element(ObjectPageLocators.title).text

@@ -17,7 +17,7 @@ from typing import Callable, List
 
 # there's a local import, but it's not cyclic really
 from tests.api.utils.data_synchronization import (  # pylint: disable=cyclic-import
-    sync_child_roles_hierarchy,
+    sync_child_roles_hierarchy_and_unique_name,
     sync_object_and_role,
 )
 from tests.api.utils.tools import PARAMETRIZED_BY_LIST
@@ -138,7 +138,7 @@ class GroupConfigFields(BaseClass):
         required=True,
         postable=True,
     )
-    name = Field(name="name", f_type=String(max_length=30), required=True, postable=True, changeable=True)
+    name = Field(name="name", f_type=String(max_length=1000), required=True, postable=True, changeable=True)
     description = Field(name="description", f_type=Text(), postable=True, changeable=True, default_value="")
     config = Field(
         name="config",
@@ -299,7 +299,7 @@ class RbacGroupFields(BaseClass):
     user = Field(
         name="user", f_type=ForeignKeyM2M(fk_link=RbacUserFields), postable=True, changeable=True, default_value=[]
     )
-    name = Field(name="name", f_type=String(max_length=150), required=True, postable=True, changeable=True)
+    name = Field(name="name", f_type=String(max_length=100), required=True, postable=True, changeable=True)
     description = Field(name="description", f_type=Text(), postable=True, changeable=True, default_value="")
     url = Field(name="url", f_type=String(), default_value=AUTO_VALUE)
     built_in = Field(name="built_in", f_type=Boolean(), default_value=AUTO_VALUE)
@@ -317,7 +317,7 @@ class RbacSimpleRoleFields(BaseClass):
     Used for Role creation only
     """
 
-    dependable_fields_sync = sync_child_roles_hierarchy
+    dependable_fields_sync = sync_child_roles_hierarchy_and_unique_name
 
     id = Field(name="id", f_type=PositiveInt(), default_value=AUTO_VALUE)
     # default_value="auto" because we can't change name after it's set

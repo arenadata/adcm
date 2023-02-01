@@ -19,7 +19,7 @@ import pytest
 import requests
 from adcm_client.audit import ObjectType
 from adcm_client.objects import ADCMClient, Group, User
-from adcm_pytest_plugin.docker_utils import ADCM
+from adcm_pytest_plugin.docker.adcm import ADCM
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from docker.models.containers import Container
 from tests.functional.audit.conftest import make_auth_header

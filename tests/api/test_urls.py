@@ -30,7 +30,7 @@ pytestmark = [
 
 @allure.title("Prepare data for urls tests")
 @pytest.fixture(params=get_data_for_urls_check())
-def prepare_data(request, adcm_api_fs):
+def prepare_data(request, adcm_api):
     """
     Generate request body here since it depends on actual ADCM instance
     and can't be determined when generating
@@ -39,7 +39,7 @@ def prepare_data(request, adcm_api_fs):
     final_test_data: List[TestData] = []
     for td_with_url in test_data_list:
         test_data, path = td_with_url.test_data, td_with_url.request_path
-        request_data = DbFiller(adcm=adcm_api_fs).generate_valid_request_data(
+        request_data = DbFiller(adcm=adcm_api).generate_valid_request_data(
             endpoint=test_data.request.endpoint, method=test_data.request.method
         )
 
@@ -47,7 +47,7 @@ def prepare_data(request, adcm_api_fs):
         test_data.request.object_id = request_data.get("object_id")
         test_data.request.endpoint.path = path
         final_test_data.append(test_data)
-    return adcm_api_fs, final_test_data
+    return adcm_api, final_test_data
 
 
 def test_urls(prepare_data):

@@ -17,7 +17,7 @@
 import random
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Collection, Iterable, List, Tuple, Union
+from typing import Collection, Iterable, List, Tuple, Union
 
 import allure
 import pytest
@@ -36,7 +36,8 @@ from adcm_client.objects import (
     Upgrade,
 )
 from adcm_pytest_plugin import params
-from adcm_pytest_plugin.docker_utils import ADCM
+from adcm_pytest_plugin.docker.adcm import ADCM
+from adcm_pytest_plugin.params import ADCMVersionParam
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
@@ -69,7 +70,7 @@ def upgrade_target(cmd_opts) -> Tuple[str, str]:
     return tuple(cmd_opts.adcm_image.split(":", maxsplit=2))  # type: ignore
 
 
-def old_adcm_images() -> Tuple[List[Tuple[str, str]], Any]:
+def old_adcm_images() -> List[ADCMVersionParam]:
     """A list of old ADCM images"""
     return parametrized_by_adcm_version(adcm_min_version="2019.10.08")[0]
 
@@ -117,7 +118,7 @@ def _check_encryption(obj: Union[Cluster, Service]) -> None:
 @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
 @pytest.mark.parametrize("image", old_adcm_images(), ids=repr, indirect=True)
 def test_upgrade_adcm(
-    adcm_fs: ADCM,
+    launcher,
     sdk_client_fs: ADCMClient,
     adcm_api_credentials: dict,
     adcm_image_tags: Tuple[str, str],
@@ -127,7 +128,7 @@ def test_upgrade_adcm(
     host = _create_host(sdk_client_fs)
     cluster.host_add(host)
 
-    upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, adcm_image_tags)
+    upgrade_adcm_version(launcher, sdk_client_fs, adcm_api_credentials, adcm_image_tags)
 
     _check_that_cluster_exists(sdk_client_fs, cluster)
     _check_that_host_exists(cluster, host)
@@ -136,7 +137,7 @@ def test_upgrade_adcm(
 @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
 @pytest.mark.parametrize("image", old_adcm_images(), ids=repr, indirect=True)
 def test_pass_in_config_encryption_after_upgrade(
-    adcm_fs: ADCM,
+    launcher,
     sdk_client_fs: ADCMClient,
     adcm_api_credentials: dict,
     adcm_image_tags: Tuple[str, str],
@@ -149,7 +150,7 @@ def test_pass_in_config_encryption_after_upgrade(
     cluster.config_set_diff(config_diff)
     service.config_set_diff(config_diff)
 
-    upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, adcm_image_tags)
+    upgrade_adcm_version(launcher, sdk_client_fs, adcm_api_credentials, adcm_image_tags)
 
     _check_encryption(cluster)
     _check_encryption(service)
@@ -158,7 +159,7 @@ def test_pass_in_config_encryption_after_upgrade(
 @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
 @pytest.mark.parametrize("image", [["hub.arenadata.io/adcm/adcm", "2021.06.17.06"]], ids=repr, indirect=True)
 def test_actions_availability_after_upgrade(
-    adcm_fs: ADCM,
+    launcher,
     sdk_client_fs: ADCMClient,
     adcm_api_credentials: dict,
     upgrade_target: Tuple[str, str],
@@ -168,7 +169,7 @@ def test_actions_availability_after_upgrade(
 
     _assert_available_actions(cluster)
 
-    upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
+    upgrade_adcm_version(launcher, sdk_client_fs, adcm_api_credentials, upgrade_target)
 
     _assert_available_actions(cluster)
 
@@ -197,7 +198,7 @@ class TestConfigGroupAttrFormatUpgrade:
     @pytest.mark.parametrize("image", [LAST_OLD_ATTR_ADCM_VERSION], ids=repr, indirect=True)
     def test_upgrade_to_new_config_groups_attr_format_unchecked_config(
         self,
-        adcm_fs: ADCM,
+        launcher,
         sdk_client_fs: ADCMClient,
         adcm_api_credentials: dict,
         upgrade_target: Tuple[str, str],
@@ -213,7 +214,7 @@ class TestConfigGroupAttrFormatUpgrade:
 
         self._check_config_groups_attr_are_different_before_upgrade(objects, old_attrs, new_attrs)
 
-        upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
+        upgrade_adcm_version(launcher, sdk_client_fs, adcm_api_credentials, upgrade_target)
 
         for obj in (*objects, *config_groups):
             obj.reread()
@@ -224,7 +225,7 @@ class TestConfigGroupAttrFormatUpgrade:
     @pytest.mark.parametrize("image", [LAST_OLD_ATTR_ADCM_VERSION], ids=repr, indirect=True)
     def test_upgrade_to_new_config_groups_attr_format_checked_config(
         self,
-        adcm_fs: ADCM,
+        launcher,
         sdk_client_fs: ADCMClient,
         adcm_api_credentials: dict,
         upgrade_target: Tuple[str, str],
@@ -242,7 +243,7 @@ class TestConfigGroupAttrFormatUpgrade:
 
         self._check_config_groups_attr_are_different_before_upgrade(objects, old_attrs, new_attrs)
 
-        upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
+        upgrade_adcm_version(launcher, sdk_client_fs, adcm_api_credentials, upgrade_target)
 
         for obj in (*objects, *config_groups):
             obj.reread()
@@ -390,13 +391,13 @@ class TestUpgradeFilledADCM:
     # Test itself
 
     @params.including_https
-    @pytest.mark.skip(reason='https://arenadata.atlassian.net/browse/ADCM-2659')  # remove it after the new release
     @pytest.mark.full()
     @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
     @pytest.mark.parametrize("image", [previous_adcm_version_tag()], indirect=True)
     def test_upgrade_dirty_adcm(
         self,
         adcm_fs: ADCM,
+        launcher,
         sdk_client_fs: ADCMClient,
         adcm_api_credentials: dict,
         upgrade_target: Tuple[str, str],
@@ -411,7 +412,7 @@ class TestUpgradeFilledADCM:
         with allure.step('Upgrade ADCM and expect all objects to be same'), objects_are_not_changed(
             sdk_client_fs
         ), self.check_job_related_objects_are_not_changed(sdk_client_fs):
-            upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
+            upgrade_adcm_version(launcher, sdk_client_fs, adcm_api_credentials, upgrade_target)
         self.run_actions_after_upgrade(
             dirty_adcm['complex']['clusters']['all_services'],
             dirty_adcm['complex']['clusters']['config_history'],
@@ -439,7 +440,7 @@ class TestUpgradeFilledADCM:
             name_composer=lambda obj: f"Job with id {obj.id}",
         )
         jobs: List[Job] = get_objects_via_pagination(adcm_client.job_list)
-        frozen_objects = {job.job_id: extract_job_info(job) for job in jobs}
+        frozen_objects = {job.id: extract_job_info(job) for job in jobs}
 
         yield
 

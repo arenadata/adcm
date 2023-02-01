@@ -12,13 +12,12 @@
 
 """UI tests for /provider page"""
 
-import os
 
 import allure
 import pytest
 from _pytest.fixtures import SubRequest
 from adcm_client.objects import ADCMClient, Bundle, Provider
-from adcm_pytest_plugin import utils
+from adcm_pytest_plugin.utils import get_data_dir
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
@@ -46,13 +45,13 @@ PROVIDER_NAME = 'test_provider'
 @allure.title("Upload provider bundle")
 def bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
     """Upload provider bundle"""
-    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
+    return sdk_client_fs.upload_from_fs(get_data_dir(__file__, request.param))
 
 
 @pytest.fixture(params=["cluster_community"])
 def cluster(request: SubRequest, sdk_client_fs: ADCMClient):
     """Create community edition cluster"""
-    bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, request.param))
     return bundle.cluster_create(name="test cluster")
 
 
@@ -73,7 +72,7 @@ class TestProviderListPage:
     @pytest.mark.include_firefox()
     @pytest.mark.parametrize(
         "bundle_archive",
-        [pytest.param(utils.get_data_dir(__file__, "provider"), id="provider")],
+        [pytest.param(get_data_dir(__file__, "provider"), id="provider")],
         indirect=True,
     )
     def test_create_provider_on_provider_list_page(self, app_fs, bundle_archive):
@@ -101,7 +100,7 @@ class TestProviderListPage:
     @pytest.mark.include_firefox()
     @pytest.mark.parametrize(
         "bundle_archive",
-        [pytest.param(utils.get_data_dir(__file__, "provider"), id="provider")],
+        [pytest.param(get_data_dir(__file__, "provider"), id="provider")],
         indirect=True,
     )
     def test_create_custom_provider_on_provider_list_page(self, app_fs, bundle_archive):
@@ -229,9 +228,7 @@ class TestProviderMainPage:
         """Test provider upgrade from toolbar"""
         params = {"state": "upgradated"}
         with allure.step("Create provider to export"):
-            provider_export = sdk_client_fs.upload_from_fs(
-                os.path.join(utils.get_data_dir(__file__), "upgradable_provider")
-            )
+            provider_export = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "upgradable_provider"))
             provider_export.provider_create("upgradable_provider")
         main_page = ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).open()
         main_page.toolbar.run_upgrade(PROVIDER_NAME, PROVIDER_NAME)
