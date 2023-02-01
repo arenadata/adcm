@@ -41,7 +41,6 @@ def fix_default_json_fields_prototypeconfig(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0058_encrypt_passwords'),
     ]

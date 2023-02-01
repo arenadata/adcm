@@ -645,7 +645,7 @@ def check_hc(cluster, hc_in):
 
 
 def check_maintenance_mode(cluster, host_comp_list):
-    for (service, host, comp) in host_comp_list:
+    for service, host, comp in host_comp_list:
         try:
             HostComponent.objects.get(cluster=cluster, service=service, host=host, component=comp)
         except HostComponent.DoesNotExist:
@@ -655,7 +655,7 @@ def check_maintenance_mode(cluster, host_comp_list):
 
 def still_existed_hc(cluster, host_comp_list):
     result = []
-    for (service, host, comp) in host_comp_list:
+    for service, host, comp in host_comp_list:
         try:
             existed_hc = HostComponent.objects.get(cluster=cluster, service=service, host=host, component=comp)
             result.append(existed_hc)

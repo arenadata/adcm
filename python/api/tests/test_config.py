@@ -246,7 +246,6 @@ class TestConfigSecretmapAPI(BaseTestCase):
         self.assertEqual(config_log.config["secretmap"], self.config_log.config["secretmap"])
 
     def test_post_null_secretmap_success(self):
-
         response: Response = self.client.post(
             path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
             params={"view": "interface"},

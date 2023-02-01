@@ -1383,7 +1383,6 @@ class TestClusterImportPage:
 
 
 class TestClusterRenaming:
-
     SPECIAL_CHARS = (".", "-", "_")
     DISALLOWED_AT_START_END = (*SPECIAL_CHARS, " ")
     EXPECTED_ERROR = "Please enter a valid name"

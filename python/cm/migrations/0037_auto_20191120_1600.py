@@ -55,7 +55,6 @@ def fix_job(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0036_auto_20191111_1109'),
     ]

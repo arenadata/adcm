@@ -50,7 +50,6 @@ def prepare_post_body_data(request, adcm_api):
         for field in get_fields(test_data.request.endpoint.data_class):
             if field.name in prepared_field_values:
                 if not prepared_field_values[field.name].drop_key:
-
                     valid_field_value = None
                     if field.name in test_data.request.data:
                         valid_field_value = test_data.request.data[field.name]

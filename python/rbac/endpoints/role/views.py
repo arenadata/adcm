@@ -75,7 +75,6 @@ class RoleViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-
             role = role_create(**serializer.validated_data)
 
             return Response(self.get_serializer(role).data, status=HTTP_201_CREATED)
@@ -93,7 +92,6 @@ class RoleViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
         serializer = self.get_serializer(data=request.data, partial=partial)
 
         if serializer.is_valid(raise_exception=True):
-
             role = role_update(instance, partial, **serializer.validated_data)
 
             return Response(self.get_serializer(role).data, status=HTTP_200_OK)

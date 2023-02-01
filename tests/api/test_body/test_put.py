@@ -51,7 +51,6 @@ def prepare_put_body_data(request, adcm_api):
         for field in get_fields(test_data.request.endpoint.data_class):
             if field.name in prepared_field_values:
                 if not prepared_field_values[field.name].drop_key:
-
                     if prepared_field_values[field.name].unchanged_value is False:
                         current_field_value = full_item[field.name]
                         changed_field_value = changed_fields.get(field.name, None)

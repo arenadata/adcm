@@ -343,7 +343,6 @@ class RoleRow(AutoChildElement):
 
 
 class AdminRolesPage(GeneralAdminPage, ObjectRowMixin):
-
     ROW_CLASS = RoleRow
     MENU_SUFFIX = "roles"
     MAIN_ELEMENTS = [
@@ -620,7 +619,6 @@ class OperationRowInfo:
 
 
 class OperationsAuditPage(GeneralAuditPage):
-
     MENU_SUFFIX = "audit/operations"
     FILTER_LOCATORS = OperationsAuditLocators.Filter
     MAIN_ELEMENTS = (OperationsAuditLocators.Filter.button,)
@@ -663,7 +661,6 @@ class LoginRowInfo:
 
 
 class LoginAuditPage(GeneralAuditPage):
-
     MENU_SUFFIX = "audit/logins"
     MAIN_ELEMENTS = (LoginAuditLocators.Filter.button,)
     FILTER_LOCATORS = LoginAuditLocators.Filter

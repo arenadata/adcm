@@ -24,7 +24,6 @@ def fix_joblog(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0067_tasklog_object_type'),
     ]

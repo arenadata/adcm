@@ -23,7 +23,6 @@ def fix_button(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0034_auto_20191029_1041'),
     ]

@@ -16,7 +16,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0099_alter_adcm_concerns_alter_cluster_concerns_and_more'),
     ]

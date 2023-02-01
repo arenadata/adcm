@@ -48,7 +48,6 @@ def remove_default_policy(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('rbac', '0001_initial'),
     ]

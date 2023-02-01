@@ -118,11 +118,10 @@ def run_ambari_command(folder, script, command, command_id):
     log.info('%s run %s', command_id, command)
 
     with open_file(LOG_DIR, 'out', command_id) as out_file, open_file(LOG_DIR, 'err', command_id) as err_file:
-
         pipe = cook_command_pipe(hook_dir, (base_dir, py_script, command))
         log.debug('%s %s pipe: %s', command_id, command, pipe)
 
-        for (base, py_script, comm) in pipe:
+        for base, py_script, comm in pipe:
             res = run_python_script(base, py_script, comm, json_config, out_file, err_file)
             if res != 0:
                 break

@@ -17,7 +17,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0012_auto_20181226_0926'),
     ]

@@ -167,7 +167,6 @@ def check_mm_is(maintenance_mode: str, *adcm_object: Host | Service | Component)
     with allure.step(
         f'Check that "maintenance_mode" is equal to "{maintenance_mode}" ' f'on objects: {representation}'
     ):
-
         for obj in adcm_object:
             obj.reread()
         obj_in_wrong_mode = tuple(obj for obj in adcm_object if obj.maintenance_mode != maintenance_mode)

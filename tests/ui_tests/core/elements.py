@@ -63,7 +63,6 @@ class DialogLocatorsLike(Protocol):
 
 
 class AutoChildDialog(AutoChildElement):
-
     Locators: DialogLocatorsLike
 
     @classmethod

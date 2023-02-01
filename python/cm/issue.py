@@ -219,7 +219,7 @@ def check_component_constraint(cluster, service_prototype, hc_in, old_bundle=Non
 
     def check(comp, const):
         count = 0
-        for (_, _, c) in hc_in:
+        for _, _, c in hc_in:
             if comp.name == c.prototype.name:
                 count += 1
 

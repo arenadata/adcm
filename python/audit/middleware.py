@@ -46,13 +46,11 @@ class AuditLoginMiddleware:
         cef_logger(audit_instance=auditsession, signature_id=resolve(request_path).route)
 
     def __call__(self, request):
-
         if request.method == "POST" and request.path in {
             "/api/v1/rbac/token/",
             "/api/v1/token/",
             "/api/v1/auth/login/",
         }:
-
             try:
                 username = json.loads(request.body.decode(settings.ENCODING_UTF_8)).get("username")
             except JSONDecodeError:

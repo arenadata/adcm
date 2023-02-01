@@ -615,7 +615,6 @@ class TestHostStatusPage:
 
 
 class TestHostRenaming:
-
     SPECIAL_CHARS = (".", "-", "_")
     DISALLOWED_AT_START = (".", "-")
     EXPECTED_ERROR = "Please enter a valid name"

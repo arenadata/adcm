@@ -28,7 +28,6 @@ class ADCMViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
     lookup_url_kwarg = "adcm_pk"
 
     def get_serializer_class(self):
-
         if self.is_for_ui():
             return ADCMUISerializer
 

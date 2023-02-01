@@ -35,7 +35,6 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
     ordering_fields = ('id',)
 
     def get_serializer_class(self):
-
         if self.is_for_ui():
             return UIConfigLogSerializer
 
