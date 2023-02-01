@@ -64,16 +64,16 @@ class AuditSessionLoginResult(models.TextChoices):
 
 class AuditObject(models.Model):
     object_id = models.PositiveIntegerField()
-    object_name = models.CharField(max_length=1000)
-    object_type = models.CharField(max_length=1000, choices=AuditObjectType.choices)
+    object_name = models.CharField(max_length=2000)
+    object_type = models.CharField(max_length=2000, choices=AuditObjectType.choices)
     is_deleted = models.BooleanField(default=False)
 
 
 class AuditLog(models.Model):
     audit_object = models.ForeignKey(AuditObject, on_delete=models.CASCADE, null=True)
-    operation_name = models.CharField(max_length=1000)
-    operation_type = models.CharField(max_length=1000, choices=AuditLogOperationType.choices)
-    operation_result = models.CharField(max_length=1000, choices=AuditLogOperationResult.choices)
+    operation_name = models.CharField(max_length=2000)
+    operation_type = models.CharField(max_length=2000, choices=AuditLogOperationType.choices)
+    operation_result = models.CharField(max_length=2000, choices=AuditLogOperationResult.choices)
     operation_time = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(DjangoUser, on_delete=models.CASCADE, null=True)
     object_changes = models.JSONField(default=dict)
@@ -81,7 +81,7 @@ class AuditLog(models.Model):
 
 class AuditSession(models.Model):
     user = models.ForeignKey(DjangoUser, on_delete=models.CASCADE, null=True)
-    login_result = models.CharField(max_length=1000, choices=AuditSessionLoginResult.choices)
+    login_result = models.CharField(max_length=2000, choices=AuditSessionLoginResult.choices)
     login_time = models.DateTimeField(auto_now_add=True)
     login_details = models.JSONField(default=dict, null=True)
 

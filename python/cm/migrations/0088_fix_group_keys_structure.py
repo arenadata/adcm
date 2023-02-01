@@ -120,7 +120,6 @@ def fix_group_keys_structure(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0087_maintenance_mode'),
     ]

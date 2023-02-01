@@ -96,7 +96,6 @@ def check_audit_cef_logs(client: ADCMClient, adcm_container: Container):
                     ("severity", expected_severity),
                     ("extension", extension),
                 ):
-
                     if getattr(corresponding_cef_log, param) != expected:
                         _attach_api_log(log)
                         _attach_cef_logs(cef_records)

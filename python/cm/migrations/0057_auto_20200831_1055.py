@@ -88,7 +88,6 @@ def fix_default_json_fields_tasklog(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0056_auto_20200714_0741'),
     ]

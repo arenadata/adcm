@@ -34,7 +34,6 @@ def migrate_bundle_license_reverse(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0096_auto_20221101_1010'),
     ]

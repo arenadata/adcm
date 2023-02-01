@@ -124,7 +124,6 @@ def change_host_mm(admin_client: ADCMClient, user_client: ADCMClient, host: Host
     ]
 
     for url in url_list:
-
         body = {"maintenance_mode": True}
         with allure.step(f'Deny update host via POST {url} with body: {body}'):
             check_failed(requests.post(url, headers=make_auth_header(admin_client)), 400)

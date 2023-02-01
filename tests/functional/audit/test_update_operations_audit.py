@@ -315,7 +315,6 @@ def _check_object_config_restore(
         ):
             with allure.step(f"Run config restore that will have result {result.value}"):
                 with allure.step("object config history"):
-
                     url = get_plain_object_url(client, object_with_config, get_restore_suffix())
                     check_response(restore_config_from_url(url, get_config(), headers=credentials))
                 if not isinstance(object_with_config, (Service, Component, Host)):

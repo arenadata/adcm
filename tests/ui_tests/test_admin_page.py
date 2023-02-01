@@ -411,7 +411,6 @@ class TestAdminUsersPage:
             self.check_user_is_listed_on_page(users_page, username)
 
         with allure.step('Check that changing ldap user is prohibited'):
-
             dialog: UpdateUserDialog = users_page.get_row(username_is(username)).open_update_dialog()
             element_names = ("username", "password", "password_confirm", "first_name", "last_name", "email")
             for name in element_names:

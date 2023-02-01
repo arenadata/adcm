@@ -84,7 +84,6 @@ def fix_grouplog(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0065_auto_20210220_0902'),
     ]

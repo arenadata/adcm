@@ -19,7 +19,6 @@ from django.utils.timezone import utc
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0013_auto_20190116_1143'),
     ]

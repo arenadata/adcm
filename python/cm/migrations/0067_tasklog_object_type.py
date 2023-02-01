@@ -76,7 +76,6 @@ def fix_tasklog(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('contenttypes', '0002_remove_content_type_name'),
         ('cm', '0066_auto_20210427_0853'),

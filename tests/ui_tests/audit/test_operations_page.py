@@ -216,7 +216,7 @@ def _check_object_name_filter(client: ADCMClient, page: OperationsAuditPage):
     component_full_name = f"{component.cluster().name}/{client.service(id=component.service_id).name}/{component.name}"
     filter_input = add_filter(page=page, filter_menu_name="Object name")
 
-    for (value_to_type, filter_) in (
+    for value_to_type, filter_ in (
         (provider_name, lambda rec: rec.object_name == provider_name),
         (component_full_name, lambda rec: rec.object_name == component_full_name),
     ):
@@ -234,7 +234,7 @@ def _check_object_name_filter(client: ADCMClient, page: OperationsAuditPage):
 def _check_object_type_filter(client: ADCMClient, page: OperationsAuditPage):
     filter_input = add_filter(page=page, filter_menu_name="Object type")
 
-    for (value_to_pick, filter_) in (
+    for value_to_pick, filter_ in (
         ("Host", lambda rec: rec.object_type == ObjectType.HOST),
         ("Policy", lambda rec: rec.object_type == ObjectType.POLICY),
     ):

@@ -543,7 +543,6 @@ class TestChangeGroupsConfig:
                 )
 
     def _check_error_about_group_keys(self, group: GroupConfig, config_before: dict):
-
         for param in config_before.keys():
             with allure.step(f"Assert that can't change '{param}' group_keys parameter"):
                 invalid_config = {

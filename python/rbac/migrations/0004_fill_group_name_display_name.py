@@ -24,7 +24,6 @@ def fill_name_display_name(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('rbac', '0003_user_group_origin_type'),
     ]

@@ -36,7 +36,6 @@ def migrate_host_maintenance_mode_reverse(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0095_JobStatus'),
     ]

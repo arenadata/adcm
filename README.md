@@ -86,7 +86,7 @@ After this you will see invocation of black and pylint on every commit.
 
 ## Link ADWP_UI packages
 
-If you need to debug packages from ADWP_UI, you should do next:
+If you need to debug packages from ADWP_UI, you should do:
 
 In ADWP_UI repository:
 ```sh

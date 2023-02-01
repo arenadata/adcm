@@ -16,7 +16,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('rbac', '0005_rbac_group_unique_display_name_type_constraint'),
     ]

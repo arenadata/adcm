@@ -19,7 +19,6 @@ def make_all_superusers(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0053_auto_20200415_1247'),
     ]

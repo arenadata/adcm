@@ -33,7 +33,6 @@ def _get_host_action_context(apps, obj, task):
     context = {"cluster": {"id": cluster.pk, "name": cluster.name}}
 
     if task.action.prototype.type == "service":
-
         try:
             service_prototype = Prototype.objects.get(
                 type=task.action.prototype.type,
@@ -49,7 +48,6 @@ def _get_host_action_context(apps, obj, task):
             context["service"] = {"id": service.pk, "name": service.prototype.display_name}
 
     elif task.action.prototype.type == "component":
-
         try:
             service_prototype = Prototype.objects.get(
                 type=task.action.prototype.parent.type,
@@ -115,11 +113,9 @@ def get_selector(apps, schema_editor):
     }
 
     for task in TaskLog.objects.all():
-
         if task.selector:
             selector = _fix_selector(task.selector, _models)
         else:
-
             if not task.object_type:
                 continue
 

@@ -41,7 +41,6 @@ def update_status_user(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [

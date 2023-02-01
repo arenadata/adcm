@@ -63,7 +63,6 @@ from cm.logger import logger
 
 
 class ActionModule(ActionBase):
-
     TRANSFERS_FILES = False
     _VALID_ARGS = frozenset(('operations',))
     _VALID_SUB_ARGS = frozenset(('action', 'service', 'component', 'host'))

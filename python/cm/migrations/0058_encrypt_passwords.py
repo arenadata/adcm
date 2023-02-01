@@ -77,7 +77,6 @@ def encrypt_passwords(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0057_auto_20200831_1055'),
     ]

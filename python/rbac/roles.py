@@ -210,7 +210,6 @@ def re_apply_policy_for_jobs(action_object, task):
 
     for obj, content_type in obj_type_map.items():
         for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=content_type):
-
             for user in policy.user.all():
                 try:
                     user_obj_perm = UserObjectPermission.objects.get(
@@ -249,7 +248,6 @@ def apply_policy_for_new_config(config_object: ADCMEntity, config_log: ConfigLog
 
     for obj, content_type in obj_type_map.items():
         for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=content_type):
-
             for user in policy.user.all():
                 try:
                     user_obj_perm = UserObjectPermission.objects.get(
@@ -296,7 +294,6 @@ class ConfigRole(AbstractRole):
             config_groups = GroupConfig.objects.filter(object_type=object_type, object_id=obj.id)
 
             for perm in role.get_permissions():
-
                 if perm.content_type.model == "objectconfig":
                     assign_user_or_group_perm(user=user, group=group, policy=policy, perm=perm, obj=obj.config)
                     for cg in config_groups:
