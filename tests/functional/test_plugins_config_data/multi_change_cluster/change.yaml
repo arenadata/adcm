@@ -1,0 +1,97 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+---
+- hosts: localhost
+  gather_facts: false
+  connection: local
+  tasks:
+    - name: "Change plain"
+      tags: ["simple"]
+      adcm_config:
+        type: "{{ job.config.object_type }}"
+        parameters:
+          - key: "string"
+            value: "changed_string"
+          - key: "integer"
+            value: 101
+          - key: "float"
+            value: 1.01
+          - key: "list"
+            value:
+              - "third"
+              - "fourth"
+          - key: "map"
+            value:
+              key3: "value3"
+              key4: "value4"
+          - key: "option"
+            value: "443"
+          - key: "json"
+            value:
+              "y": "aml"
+          - key: "file"
+            value: "changed"
+          - key: "structure"
+            value:
+              - country: Greece
+                code: 30
+              - country: Spain
+                code: 12
+          - key: "password"
+            value: "changed_password"
+          - key: "secrettext"
+            value: "changed_secrettext"
+          - key: "secretfile"
+            value: "changed secret"
+          - key: "secretmap"
+            value:
+              "sec": "ret"
+              "up": "dated"
+    - name: "Change group"
+      tags: ["group"]
+      adcm_config:
+        type: "{{ job.config.object_type }}"
+        parameters:
+          - key: "group/string"
+            value: "changed_string_group"
+          - key: "group/integer"
+            value: 202
+          - key: "group/float"
+            value: 2.02
+          - key: "group/list"
+            value:
+              - "fifth"
+          - key: "group/map"
+            value:
+              key6: "value6"
+              key5: "value5"
+          - key: "group/option"
+            value: "322"
+          - key: "group/json"
+            value:
+              "i": "ni"
+              "fi": "le"
+          - key: "group/file"
+            value: "group changed"
+          - key: "group/structure"
+            value:
+              - code: 9
+                country: UK
+          - key: "group/password"
+            value: "changed_password_group"
+          - key: "group/secrettext"
+            value: "changed_secrettext_group"
+          - key: "group/secretfile"
+            value: "changed secret group"
+          - key: "group/secretmap"
+            value:
+              "val": "ue"
