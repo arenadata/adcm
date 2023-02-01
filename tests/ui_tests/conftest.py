@@ -26,20 +26,11 @@ from _pytest.fixtures import SubRequest
 from adcm_client.objects import ADCMClient
 from adcm_client.wrappers.docker import ADCM
 from selenium.common.exceptions import WebDriverException
-from tests.conftest import CLEAN_ADCM_PARAM
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.login.page import LoginPage
 
 SELENOID_DOWNLOADS_PATH = '/home/selenium/Downloads'
-
-
-def pytest_generate_tests(metafunc):
-    """
-    Parametrize for running tests on clean ADCM only
-    """
-    if "additional_adcm_init_config" in metafunc.fixturenames:
-        metafunc.parametrize("additional_adcm_init_config", [CLEAN_ADCM_PARAM], scope="session")
 
 
 @pytest.fixture(scope="session")

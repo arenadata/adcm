@@ -23,7 +23,6 @@ from adcm_pytest_plugin.steps.actions import (
     run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import get_data_dir
-from tests.conftest import include_dummy_data
 from tests.functional.test_actions import (
     FIRST_COMPONENT,
     FIRST_SERVICE,
@@ -90,7 +89,6 @@ def provider(sdk_client_fs) -> Provider:
 class TestClusterActionsOnHost:
     """Tests for cluster actions on host"""
 
-    @include_dummy_data
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
     def test_availability(self, cluster: Cluster, provider: Provider, action_name):
         """
@@ -104,7 +102,6 @@ class TestClusterActionsOnHost:
         action_in_object_is_absent(action_name, cluster)
         run_host_action_and_assert_result(host1, action_name, status="success")
 
-    @include_dummy_data
     def test_availability_at_state(self, cluster: Cluster, provider: Provider):
         """
         Test that cluster host action is available on specify cluster state
@@ -116,7 +113,6 @@ class TestClusterActionsOnHost:
         action_in_object_is_present(ACTION_ON_HOST_STATE_REQUIRED, host)
         run_host_action_and_assert_result(host, ACTION_ON_HOST_STATE_REQUIRED)
 
-    @include_dummy_data
     def test_availability_at_host_state(self, cluster: Cluster, provider: Provider):
         """
         Test that cluster host action isn't available on specify host state
@@ -188,7 +184,6 @@ class TestServiceActionOnHost:
         run_host_action_and_assert_result(host_with_two_components, action_name)
         run_host_action_and_assert_result(host_with_different_services, action_name)
 
-    @include_dummy_data
     def test_availability_at_state(self, cluster_with_service: Cluster, provider: Provider):
         """
         Test that service host action is available on specify service state
@@ -288,7 +283,6 @@ class TestComponentActionOnHost:
         run_host_action_and_assert_result(host_single_component, action_name)
         run_host_action_and_assert_result(host_two_components, action_name)
 
-    @include_dummy_data
     def test_availability_at_state(self, cluster_with_components: Cluster, provider: Provider):
         """
         Test that component host action is available on specify service state
@@ -337,7 +331,6 @@ class TestComponentActionOnHost:
         run_host_action_and_assert_result(second_host, action_name, status="success")
 
 
-@include_dummy_data
 def test_target_group_in_inventory(cluster_with_target_group_action: Cluster, provider: Provider, sdk_client_fs):
     """
     Test that target group action has inventory_hostname info

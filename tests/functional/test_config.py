@@ -26,7 +26,6 @@ from adcm_client.base import ActionHasIssues
 from adcm_client.objects import ADCMClient, Cluster, Host, Provider, Service
 from adcm_pytest_plugin.utils import fixture_parametrized_by_data_subdirs, get_data_dir
 from coreapi.exceptions import ErrorMessage
-from tests.conftest import include_dummy_data
 from tests.functional.plugin_utils import AnyADCMObject
 from tests.library.errorcodes import CONFIG_KEY_ERROR, CONFIG_NOT_FOUND, ADCMError
 
@@ -631,7 +630,6 @@ def r_wod_nv(sdk_client_fs: ADCMClient, request):
     return processing_data(sdk_client_fs, request, 'required_without_default_sent_null_value')
 
 
-@include_dummy_data
 def test_required_without_default_sent_correct_value(r_wod_cv):
     """
     A test for each type, provided that the parameter is required, and not contains a
@@ -649,7 +647,6 @@ def test_required_without_default_sent_correct_value(r_wod_cv):
     assert_config_type(*r_wod_cv, True, False, 'correct_value')
 
 
-@include_dummy_data
 def test_required_without_default_sent_empty_value(r_wod_ev):
     """
     A test for each type, provided that the parameter is required, and not contains a
@@ -667,7 +664,6 @@ def test_required_without_default_sent_empty_value(r_wod_ev):
     assert_config_type(*r_wod_ev, True, False, 'empty_value')
 
 
-@include_dummy_data
 def test_required_without_default_sent_null_value(r_wod_nv):
     """
     A test for each type, provided that the parameter is required, and not contains a

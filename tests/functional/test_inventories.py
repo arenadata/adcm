@@ -27,12 +27,11 @@ from adcm_client.objects import (
     Provider,
     Service,
 )
-from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
     run_component_action_and_assert_result,
 )
-from adcm_pytest_plugin.utils import get_data_dir
+from adcm_pytest_plugin.utils import catch_failed, get_data_dir
 from docker.models.containers import Container
 from tests.functional.tools import (
     BEFORE_UPGRADE_DEFAULT_STATE,
@@ -270,7 +269,7 @@ class TestStateBeforeUpgrade:
 
     def check_before_upgrade_state_equal_to(self, expected_state: Optional[str], inventory: dict):
         """Check that `state` key in inventory dictionary is equal to expected"""
-        with utils.catch_failed(KeyError, "Structure of inventory.json file is unexpected"):
+        with catch_failed(KeyError, "Structure of inventory.json file is unexpected"):
             actual_state = inventory["all"]["children"]["CLUSTER"]["vars"]["cluster"]["before_upgrade"]["state"]
         assert (
             actual_state == expected_state

@@ -16,7 +16,42 @@ import random
 from copy import deepcopy
 
 # pylint: disable=import-outside-toplevel
-from typing import Tuple
+from typing import Callable, Tuple
+
+from adcm_pytest_plugin.utils import random_string
+from tests.library.predicates import PredicateOfOne, display_name_key_is, name_key_is
+
+
+def _regenerate_name(adcm, old_name: str, retrieve_builder) -> str:
+    from tests.api.testdata.getters import get_endpoint_data
+    from tests.api.utils.endpoints import Endpoints
+
+    half_length = len(old_name) // 2
+    new_name = f"{old_name[:half_length]}{random_string(half_length)}"
+
+    same_named_role = next(
+        filter(retrieve_builder(new_name), get_endpoint_data(adcm, endpoint=Endpoints.RbacAnyRole)), None
+    )
+
+    if same_named_role is None:
+        return new_name
+
+    return _regenerate_name(adcm, new_name, retrieve_builder=retrieve_builder)
+
+
+def _rename_if_not_unique(adcm, fields: dict, key: str, retrieve_builder: Callable[[str], PredicateOfOne]):
+    from tests.api.testdata.getters import get_endpoint_data
+    from tests.api.utils.endpoints import Endpoints
+
+    same_named_role = next(
+        filter(
+            retrieve_builder(fields[key]),
+            get_endpoint_data(adcm, endpoint=Endpoints.RbacAnyRole),
+        ),
+        None,
+    )
+    if same_named_role:
+        fields[key] = _regenerate_name(adcm, fields[key], retrieve_builder=retrieve_builder)
 
 
 def sync_object_and_role(adcm, fields: dict) -> dict:
@@ -47,10 +82,19 @@ def sync_object_and_role(adcm, fields: dict) -> dict:
     return new_fields
 
 
-def sync_child_roles_hierarchy(adcm, fields: dict):
-    """Child roles can be only in infrastructure or application hierarchy"""
+def sync_child_roles_hierarchy_and_unique_name(adcm, fields: dict):
+    """
+    Child roles can be only in infrastructure or application hierarchy.
+    Name should be unique.
+    """
     from tests.api.testdata.getters import get_endpoint_data
     from tests.api.utils.endpoints import Endpoints
+
+    if "display_name" in fields:
+        _rename_if_not_unique(adcm, fields, "display_name", retrieve_builder=display_name_key_is)
+
+    if "name" in fields:
+        _rename_if_not_unique(adcm, fields, "name", retrieve_builder=name_key_is)
 
     if "child" not in fields:
         return fields

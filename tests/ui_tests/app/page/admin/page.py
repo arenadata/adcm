@@ -334,7 +334,7 @@ class RoleRow(AutoChildElement):
 
     @property
     def permissions(self) -> list[str]:
-        return self.permissions_element.text.split(", ")
+        return sorted(self.permissions_element.text.split(", "))
 
     def __iter__(self):
         yield "name", self.name
@@ -399,17 +399,17 @@ class PolicyRow(AutoChildElement):
     @property
     def users(self) -> list[str]:
         # bool will filter out empty strings
-        return list(filter(bool, self.users_element.text.split(", ")))
+        return sorted(filter(bool, self.users_element.text.split(", ")))
 
     @property
     def groups(self) -> list[str]:
         # bool will filter out empty strings
-        return list(filter(bool, self.groups_element.text.split(", ")))
+        return sorted(filter(bool, self.groups_element.text.split(", ")))
 
     @property
     def objects(self) -> list[str]:
         # bool will filter out empty strings
-        return list(filter(bool, self.objects_element.text.split(", ")))
+        return sorted(filter(bool, self.objects_element.text.split(", ")))
 
     def __iter__(self):
         for field in ("name", "description", "role", "users", "groups", "objects"):

@@ -30,7 +30,7 @@ from adcm_client.objects import (
     Service,
     Task,
 )
-from adcm_pytest_plugin.steps.commands import logrotate
+from adcm_pytest_plugin.docker.commands import logrotate
 from adcm_pytest_plugin.utils import get_data_dir, random_string
 from docker.models.containers import Container
 from tests.library.assertions import does_not_intersect, is_superset_of
@@ -246,7 +246,7 @@ def test_remove_only_expired_config_logs(sdk_client_fs, adcm_fs, adcm_db, separa
     Test config rotation removes only old enough configs, but leaves not old enough intact.
     Plain "logrotate".
     """
-    five_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=5)
+    five_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=5) + datetime.timedelta(hours=1)
     ten_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=10)
     bonded_configs, not_bonded_configs = separated_configs
     very_old_configs = [c for i, c in enumerate(not_bonded_configs) if i % 2 == 0]

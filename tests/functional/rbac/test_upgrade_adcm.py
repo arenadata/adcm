@@ -18,7 +18,6 @@ from typing import Tuple
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Bundle
-from adcm_pytest_plugin.docker_utils import ADCM
 from adcm_pytest_plugin.utils import get_data_dir, random_string
 from tests.functional.rbac.action_role_utils import (
     check_cluster_actions_roles_are_created_correctly,
@@ -46,7 +45,7 @@ NEW_USER_CREDS = 'bestname', 'nevergonnabreakmedown'
     indirect=True,
 )
 def test_rbac_init_on_upgrade(
-    adcm_fs: ADCM,
+    launcher,
     sdk_client_fs: ADCMClient,
     adcm_api_credentials: dict,
     adcm_image_tags: Tuple[str, str],
@@ -55,7 +54,7 @@ def test_rbac_init_on_upgrade(
     Test that roles are created on bundles uploaded before an upgrade
     """
     bundles = upload_bundles(sdk_client_fs)
-    upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, adcm_image_tags)
+    upgrade_adcm_version(launcher, sdk_client_fs, adcm_api_credentials, adcm_image_tags)
     check_roles_are_created(sdk_client_fs, bundles)
 
 

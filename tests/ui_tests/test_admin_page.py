@@ -113,7 +113,7 @@ CUSTOM_POLICY = dict(
     name="Test policy name",
     description="Test policy description",
     role="ADCM User",
-    users=["admin", "status"],
+    users=sorted(("admin", "status")),
     groups=[],
     objects=[],
 )
@@ -512,7 +512,7 @@ class TestAdminRolesPage:
     custom_role = dict(
         name="Test_role_name",
         description="Test role description",
-        permissions=["Create provider", "Create cluster", "Create user", "Remove policy"],
+        permissions=sorted(("Create provider", "Create cluster", "Create user", "Remove policy")),
     )
 
     @pytest.mark.smoke()
@@ -614,59 +614,69 @@ class TestAdminRolesPage:
             dict(
                 name="ADCM User",
                 description="",
-                permissions=[
-                    "View any object configuration",
-                    "View any object import",
-                    "View any object host-components",
-                ],
+                permissions=sorted(
+                    (
+                        "View any object configuration",
+                        "View any object import",
+                        "View any object host-components",
+                    )
+                ),
             ),
             dict(
                 name="Service Administrator",
                 description="",
-                permissions=[
-                    "View host configurations",
-                    "Edit service configurations",
-                    "Edit component configurations",
-                    "View host-components",
-                ],
+                permissions=sorted(
+                    (
+                        "View host configurations",
+                        "Edit service configurations",
+                        "Edit component configurations",
+                        "View host-components",
+                    )
+                ),
             ),
             dict(
                 name="Cluster Administrator",
                 description="",
-                permissions=[
-                    "Create host",
-                    "Upload bundle",
-                    "Edit cluster configurations",
-                    "Edit host configurations",
-                    "Add service",
-                    "Remove service",
-                    "Remove hosts",
-                    "Map hosts",
-                    "Unmap hosts",
-                    "Edit host-components",
-                    "Upgrade cluster bundle",
-                    "Remove bundle",
-                    "Service Administrator",
-                ],
+                permissions=sorted(
+                    (
+                        "Create host",
+                        "Upload bundle",
+                        "Edit cluster configurations",
+                        "Edit host configurations",
+                        "Add service",
+                        "Remove service",
+                        "Remove hosts",
+                        "Map hosts",
+                        "Unmap hosts",
+                        "Edit host-components",
+                        "Upgrade cluster bundle",
+                        "Remove bundle",
+                        "Service Administrator",
+                    )
+                ),
             ),
             dict(
                 name="Provider Administrator",
                 description="",
-                permissions=[
-                    "Create host",
-                    "Upload bundle",
-                    "Edit provider configurations",
-                    "Edit host configurations",
-                    "Remove hosts",
-                    "Upgrade provider bundle",
-                    "Remove bundle",
-                ],
+                permissions=sorted(
+                    (
+                        "Create host",
+                        "Upload bundle",
+                        "Edit provider configurations",
+                        "Edit host configurations",
+                        "Remove hosts",
+                        "Upgrade provider bundle",
+                        "Remove bundle",
+                    )
+                ),
             ),
         ]
 
         roles = tuple(map(dict, page.get_rows()))
         for role in default_roles:
-            assert role in roles, f"Default role {role.name} is wrong or missing. Expected to find: {role} in {roles}"
+            assert (
+                role in roles
+            ), f"Default role {role['name']} is wrong or missing. Expected to find: {role} in {roles}"
 
 
 @pytest.mark.usefixtures("_login_to_adcm_over_api")
