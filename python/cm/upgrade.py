@@ -75,7 +75,7 @@ def switch_components(cluster: Cluster, co: ClusterObject, new_co_proto: Prototy
             sc.delete()
 
     for sc_proto in Prototype.objects.filter(parent=new_co_proto, type="component"):
-        kwargs = dict(cluster=cluster, service=co, prototype=sc_proto)
+        kwargs = {"cluster": cluster, "service": co, "prototype": sc_proto}
         if not ServiceComponent.objects.filter(**kwargs).exists():
             sc = ServiceComponent.objects.create(**kwargs)
             make_object_config(sc, sc_proto)

@@ -12,15 +12,17 @@
 
 """Config page PageObjects classes"""
 import json
+from abc import abstractmethod
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Callable, Collection, List, Optional, TypeVar, Union
+from itertools import zip_longest
+from typing import Callable, Collection, List, Optional, Type, TypeVar, Union
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.remote.webdriver import WebElement
+from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.common_locators import (
     CommonLocators,
@@ -30,10 +32,11 @@ from tests.ui_tests.app.page.common.common_locators import (
 from tests.ui_tests.app.page.common.configuration.fields import ConfigFieldsManipulator
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.core.checks import check_element_is_hidden, check_element_is_visible
-
-# pylint: disable=too-many-public-methods
+from tests.ui_tests.core.elements import Button
+from tests.ui_tests.core.interactors import Interactor
 
 T = TypeVar("T")
+DEFAULT_TIMEOUT = 1
 
 
 @dataclass
@@ -44,7 +47,160 @@ class ConfigRowInfo:
     value: str
 
 
-class CommonConfigMenuObj(BasePageObject):
+class GeneralRow:
+    name: str
+
+    def __init__(self, element: WebElement, driver: WebDriver):
+        self._view = Interactor(driver=driver, default_timeout=DEFAULT_TIMEOUT)
+        self.element = element
+        self.driver = driver
+
+    @classmethod
+    def from_(cls, row: "GeneralRow"):
+        return cls(element=row.element, driver=row._view._driver)  # pylint: disable=protected-access
+
+
+class SimpleRow(GeneralRow):
+    @property
+    def name(self) -> str:
+        return self.element.text.split(":")[0]
+
+    @abstractmethod
+    def fill(self, value):
+        pass
+
+    @abstractmethod
+    def clear(self):
+        pass
+
+
+class StringInput(GeneralRow):
+    def __init__(self, element: WebElement, driver: WebDriver):
+        super().__init__(element, driver)
+        self._input = self._view.find_child(self.element, CommonConfigMenu.ConfigRow.input)
+
+    @property
+    def read_only(self) -> bool:
+        return "read-only" in str(self.element.get_attribute("class"))
+
+    def fill(self, value: str) -> None:
+        self._input.click()
+        self._input.send_keys(value)
+
+    def clear(self):
+        self._input.clear()
+
+    def get_value(self) -> str:
+        return self._input.get_property("value")
+
+
+class PasswordInput(GeneralRow):
+    def __init__(self, element: WebElement, driver: WebDriver):
+        super().__init__(element, driver)
+        self._clear = self._view.find_child(self.element, CommonConfigMenu.ConfigRow.clear_btn)
+
+    def fill(self, value: str, *, confirm: str | None = ""):
+        self._view.find_child(self.element, CommonConfigMenu.ConfigRow.password).click()
+        self._view.find_child(self.element, CommonConfigMenu.ConfigRow.password).send_keys(value)
+
+        if confirm is not None:
+            confirm_ = confirm or value
+            self._view.find_child(self.element, CommonConfigMenu.ConfigRow.confirm_password).click()
+            self._view.find_child(self.element, CommonConfigMenu.ConfigRow.confirm_password).send_keys(confirm_)
+
+    def clear(self):
+        self._clear.click()
+
+    def get_value(self):
+        return self._view.find_child(self.element, CommonConfigMenu.ConfigRow.password).get_attribute('value')
+
+    @property
+    def read_only(self):
+        return "read-only" in str(self.element.get_attribute("class"))
+
+
+class SecretmapInput(GeneralRow):
+    def __init__(self, element: WebElement, driver: WebDriver):
+        super().__init__(element, driver)
+        self._add = self._view.find_child(self.element, CommonConfigMenu.ConfigRow.add_item_btn)
+        self._clear = self._view.find_child(self.element, CommonConfigMenu.ConfigRow.clear_btn)
+
+    @property
+    def read_only(self):
+        return "read-only" in str(self.element.get_attribute("class"))
+
+    def get_value(self) -> dict:
+        keys = [
+            key.get_attribute("value")
+            for key in self._view.find_children(self.element, CommonConfigMenu.ConfigRow.map_input_key)
+        ]
+        values = [
+            val.get_attribute("value")
+            for val in self._view.find_children(self.element, CommonConfigMenu.ConfigRow.map_input_value)
+        ]
+        return dict(zip_longest(keys, values))
+
+    def add_item(self):
+        self._add.click()
+
+    def fill(self, value: dict) -> None:
+        """Method to fill secretmap field"""
+        for key, val in value.items():
+            self._view.find_children(self.element, CommonConfigMenu.ConfigRow.map_input_key)[-1].click()
+            self._view.find_children(self.element, CommonConfigMenu.ConfigRow.map_input_key)[-1].send_keys(key)
+            self._view.find_children(self.element, CommonConfigMenu.ConfigRow.map_input_value)[-1].click()
+            self._view.find_children(self.element, CommonConfigMenu.ConfigRow.map_input_value)[-1].send_keys(val)
+
+    def clear(self):
+        """Method to clear all secret map item"""
+        self._clear.click()
+
+    def delete(self, key: str):
+        """Method to delete one secret map item"""
+        for item in self._view.find_children(self.element, CommonConfigMenu.ConfigRow.map_input_key):
+            if item.get_attribute("value") == key:
+                self._view.find_child(item, CommonConfigMenu.ConfigRow.clear_btn).click()
+        raise ValueError("Can not find element with key ")
+
+
+class SecrettextInput(GeneralRow):
+    def __init__(self, element: WebElement, driver: WebDriver):
+        super().__init__(element, driver)
+        self._input = self._view.find_child(self.element, CommonConfigMenu.ConfigRow.input)
+
+    @property
+    def read_only(self):
+        return "read-only" in str(self.element.get_attribute("class"))
+
+    def fill(self, value: str) -> None:
+        self._view.find_child(self.element, CommonConfigMenu.ConfigRow.input).click()
+        self._view.find_child(self.element, CommonConfigMenu.ConfigRow.input).send_keys(value)
+
+    def clear(self):
+        """Method to clear all secret map item"""
+        self._view.find_child(self.element, CommonConfigMenu.ConfigRow.input).click()
+
+    def get_value(self) -> str:
+        return self._input.get_property("value")
+
+
+class GroupRow(GeneralRow):
+    @property
+    def name(self) -> str:
+        return self.element.text.split("\n")[0]
+
+    def get_rows(self) -> list:
+        elements = []
+        for element in self._view.find_children(self.element, CommonConfigMenu.config_row):
+            elements.append(SimpleRow(element=element, driver=self.driver))
+        return elements
+
+    def get_row(self, name: str, like: Type[T] = StringInput) -> T:
+        rows = [row for row in self.get_rows() if row.name == name]
+        return like.from_(rows[0])
+
+
+class CommonConfigMenuObj(BasePageObject):  # pylint: disable=too-many-public-methods
     """Class for working with configuration menu"""
 
     def __init__(self, driver, base_url, config_class_locators=CommonConfigMenu):
@@ -55,6 +211,24 @@ class CommonConfigMenuObj(BasePageObject):
     @property
     def rows_amount(self) -> int:
         return len(self.get_all_config_rows())
+
+    def get_rows(self, *, timeout: int = 3) -> list[SimpleRow | GroupRow]:
+        elements = []
+        for element in self.find_elements_or_empty(CommonConfigMenu.config_row_first_layer, timeout=timeout):
+            base_class = GroupRow if element.tag_name == "app-group-fields" else SimpleRow
+            elements.append(base_class(element=element, driver=self.driver))
+        return elements
+
+    def get_row(self, name: str, like: Type[T] = StringInput) -> T:
+        rows = [row for row in self.get_rows() if row.name == name]
+        return like.from_(rows[0])
+
+    def get_save_button(self, timeout: int = DEFAULT_TIMEOUT, like: Type[T] = Button) -> T:
+        try:
+            save_button = self.find_element(self.locators.save_btn, timeout=timeout)
+        except TimeoutException as e:
+            raise AssertionError("Save button on page was not found") from e
+        return like(save_button, self.locators)
 
     def get_all_config_rows(self, *, displayed_only: bool = True, timeout: int = 5) -> List[WebElement]:
         """Return all config field rows"""

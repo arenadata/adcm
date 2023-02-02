@@ -92,6 +92,20 @@ def _build_input(locator: Locator) -> property:
 # !===== Element Wrappers =====!
 
 
+class Element:
+    def __init__(self, element: WebElement, interactor: Interactor):
+        self.element = element
+        self._view = interactor
+
+
+class Button(Element):
+    def click(self):
+        self.element.click()
+
+    def is_disabled(self):
+        return self.element.get_attribute("disabled") == "true"
+
+
 class Input:
     def __init__(self, element: WebElement, interactor: Interactor):
         self.element = element

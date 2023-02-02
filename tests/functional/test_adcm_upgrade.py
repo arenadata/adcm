@@ -146,7 +146,7 @@ def test_pass_in_config_encryption_after_upgrade(
     cluster = _create_cluster(sdk_client_fs, "cluster_with_pass_verify")
     service = cluster.service_add(name="PassCheckerService")
 
-    config_diff = dict(password="q1w2e3r4")
+    config_diff = {"password": 'q1w2e3r4'}
     cluster.config_set_diff(config_diff)
     service.config_set_diff(config_diff)
 

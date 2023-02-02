@@ -188,8 +188,8 @@ def _test_object_changes(page: OperationsAuditPage):
     changes_dialog = page.open_changes_dialog(page.table.get_row(0))
 
     changes: list[dict] = list(map(dict, changes_dialog.get_rows()))
-    name_change = dict(attribute="Last name", old_value="Bebe", new_value="Bobo")
-    email_change = dict(attribute="Email", old_value="", new_value="not@ex.ist")
+    name_change = {"attribute": "Last name", "old_value": "Bebe", "new_value": "Bobo"}
+    email_change = {"attribute": "Email", "old_value": "", "new_value": "not@ex.ist"}
     assert any(change == name_change for change in changes), f"Not found change: {name_change}\nFound: {changes}"
     assert any(change == email_change for change in changes), f"Not found change: {email_change}\nFound: {changes}"
 
