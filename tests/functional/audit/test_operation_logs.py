@@ -55,7 +55,7 @@ def dummy_host(generic_provider) -> Host:
 @pytest.fixture()
 def new_user_and_client(sdk_client_fs) -> Tuple[User, ADCMClient]:
     """Create new user and login under it"""
-    credentials = dict(username=CONTEXT["simple_user"], password="n2ohvzikj(#*Fhxznc")
+    credentials = {"username": CONTEXT["simple_user"], "password": "n2ohvzikj(#*Fhxznc"}
     user = sdk_client_fs.user_create(**credentials)
     return user, ADCMClient(url=sdk_client_fs.url, user=credentials["username"], password=credentials["password"])
 

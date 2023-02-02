@@ -36,19 +36,19 @@ class Command(BaseCommand):
     archive_base_dir = "/adcm/data/audit/"
     archive_tmp_dir = "/adcm/data/audit/tmp"
     archive_name = "audit_archive.tar.gz"
-    tarfile_cfg = dict(
-        read=dict(
-            name=os.path.join(archive_base_dir, archive_name),
-            mode="r:gz",
-            encoding=settings.ENCODING_UTF_8,
-        ),
-        write=dict(
-            name=os.path.join(archive_base_dir, archive_name),
-            mode="w:gz",
-            encoding=settings.ENCODING_UTF_8,
-            compresslevel=9,
-        ),
-    )
+    tarfile_cfg = {
+        "read": {
+            "name": os.path.join(archive_base_dir, archive_name),
+            "mode": "r:gz",
+            "encoding": settings.ENCODING_UTF_8,
+        },
+        "write": {
+            "name": os.path.join(archive_base_dir, archive_name),
+            "mode": "w:gz",
+            "encoding": settings.ENCODING_UTF_8,
+            "compresslevel": 9,
+        },
+    }
 
     archive_model_postfix_map = {
         AuditLog: "operations",

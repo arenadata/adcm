@@ -109,14 +109,14 @@ def create_cluster_with_component(
 
 
 CUSTOM_ROLE_NAME = "Test_Role"
-CUSTOM_POLICY = dict(
-    name="Test policy name",
-    description="Test policy description",
-    role="ADCM User",
-    users=sorted(("admin", "status")),
-    groups=[],
-    objects=[],
-)
+CUSTOM_POLICY = {
+    "name": "Test policy name",
+    "description": "Test policy description",
+    "role": "ADCM User",
+    "users": sorted(("admin", "status")),
+    "groups": [],
+    "objects": [],
+}
 ACTION_HINT = "The Action is not available. You need to fill in the LDAP integration settings."
 
 
@@ -508,11 +508,11 @@ class TestAdminUsersPage:
 class TestAdminRolesPage:
     """Tests for the /admin/roles"""
 
-    custom_role = dict(
-        name="Test_role_name",
-        description="Test role description",
-        permissions=sorted(("Create provider", "Create cluster", "Create user", "Remove policy")),
-    )
+    custom_role = {
+        "name": "Test_role_name",
+        "description": "Test role description",
+        "permissions": sorted(("Create provider", "Create cluster", "Create user", "Remove policy")),
+    }
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -610,21 +610,17 @@ class TestAdminRolesPage:
     @allure.step("Check all default roles are presented")
     def check_default_roles(self, page: AdminRolesPage):
         default_roles = [
-            dict(
-                name="ADCM User",
-                description="",
-                permissions=sorted(
-                    (
-                        "View any object configuration",
-                        "View any object import",
-                        "View any object host-components",
-                    )
+            {
+                "name": "ADCM User",
+                "description": "",
+                "permissions": sorted(
+                    ("View any object configuration", "View any object import", "View any object host-components")
                 ),
-            ),
-            dict(
-                name="Service Administrator",
-                description="",
-                permissions=sorted(
+            },
+            {
+                "name": "Service Administrator",
+                "description": "",
+                "permissions": sorted(
                     (
                         "View host configurations",
                         "Edit service configurations",
@@ -632,11 +628,11 @@ class TestAdminRolesPage:
                         "View host-components",
                     )
                 ),
-            ),
-            dict(
-                name="Cluster Administrator",
-                description="",
-                permissions=sorted(
+            },
+            {
+                "name": "Cluster Administrator",
+                "description": "",
+                "permissions": sorted(
                     (
                         "Create host",
                         "Upload bundle",
@@ -653,11 +649,11 @@ class TestAdminRolesPage:
                         "Service Administrator",
                     )
                 ),
-            ),
-            dict(
-                name="Provider Administrator",
-                description="",
-                permissions=sorted(
+            },
+            {
+                "name": "Provider Administrator",
+                "description": "",
+                "permissions": sorted(
                     (
                         "Create host",
                         "Upload bundle",
@@ -668,7 +664,7 @@ class TestAdminRolesPage:
                         "Remove bundle",
                     )
                 ),
-            ),
+            },
         ]
 
         roles = tuple(map(dict, page.get_rows()))
@@ -682,7 +678,7 @@ class TestAdminRolesPage:
 class TestAdminGroupsPage:
     """Tests for the /admin/groups"""
 
-    custom_group = dict(name="Test_group", description="Test description", users="admin")
+    custom_group = {"name": "Test_group", "description": "Test description", "users": "admin"}
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -719,14 +715,11 @@ class TestAdminGroupsPage:
         current_groups = tuple(map(dict, groups_page.get_rows()))
         with allure.step("Check that there are 1 custom group and 1 ldap"):
             assert len(current_groups) == 2, "There should be 2 group on the page"
-            assert (
-                dict(
-                    name="Test_group",
-                    description="Test description",
-                    users=ldap_user_in_group["name"],
-                )
-                in current_groups
-            ), "Created group should be on the page"
+            assert {
+                "name": "Test_group",
+                "description": "Test description",
+                "users": ldap_user_in_group["name"],
+            } in current_groups, "Created group should be on the page"
 
     @pytest.mark.full()
     def test_check_pagination_groups_list_page(self, app_fs):

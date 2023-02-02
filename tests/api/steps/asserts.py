@@ -108,7 +108,7 @@ def body_should_be(response: Response, expected_body: ExpectedBody):
 def _clean_values(to_clean: dict):
     """Make lists and dicts cleaner to compare"""
     # it's an awful way to do it, but otherwise we should ignore all lists
-    dict_to_clean = dict(**to_clean)
+    dict_to_clean = {**to_clean}
     for key, value in dict_to_clean.items():
         if isinstance(value, list) and len(value) > 0:
             if isinstance(value[0], dict):

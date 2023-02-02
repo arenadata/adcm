@@ -74,8 +74,8 @@ def cluster_and_multi_states_plus_states_checker(sdk_client_fs: ADCMClient, requ
     expected = cluster.name.replace(' ', '_')
     check_objects_state_changed = build_objects_checker(
         field_name='Multi states and states',
-        changed=dict(state=expected, multi_states=[expected]),
-        extractor=lambda obj: dict(state=obj.state, multi_states=sorted(obj.multi_state)),
+        changed={"state": expected, "multi_states": [expected]},
+        extractor=lambda obj: {"state": obj.state, "multi_states": sorted(obj.multi_state)},
     )
     return cluster, check_objects_state_changed
 
@@ -264,8 +264,8 @@ def provider_and_multi_states_plus_states_checker(sdk_client_fs: ADCMClient, req
     provider.host_create(fqdn=f"{cleaned_name}-second".replace("_", "-"))
     check_objects_state_changed = build_objects_checker(
         field_name='Multi states and states',
-        changed=dict(state=bundle.name, multi_states=[bundle.name]),
-        extractor=lambda obj: dict(state=obj.state, multi_states=sorted(obj.multi_state)),
+        changed={"state": bundle.name, "multi_states": [bundle.name]},
+        extractor=lambda obj: {"state": obj.state, "multi_states": sorted(obj.multi_state)},
     )
     return provider, check_objects_state_changed
 

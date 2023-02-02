@@ -28,8 +28,8 @@ from adcm_pytest_plugin.utils import get_data_dir
 
 pytestmark = allure.link(url="https://arenadata.atlassian.net/browse/ADCM-2580", name="Test cases")
 
-DEFAULT_ANSIBLE_VER = dict(major=2, minor=8)
-ANSIBLE_9 = dict(major=2, minor=9)
+DEFAULT_ANSIBLE_VER = {"major": 2, "minor": 8}
+ANSIBLE_9 = {"major": 2, "minor": 9}
 
 
 def _prepare_cluster(client: ADCMClient, name):

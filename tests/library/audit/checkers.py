@@ -101,10 +101,9 @@ class AuditLogChecker:
                         attachment_type=allure.attachment_type.JSON,
                     )
                 raise
-            else:
-                last_processed_operation = expected_operation
-                # last_found_ind can't be "correctly" calculated for "one of should match"
-                last_found_ind = total_amount - len(suitable_records) - 1
+            last_processed_operation = expected_operation
+            # last_found_ind can't be "correctly" calculated for "one of should match"
+            last_found_ind = total_amount - len(suitable_records) - 1
 
     def set_user_map(
         self,
