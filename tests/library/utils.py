@@ -15,10 +15,11 @@
 import json
 import random
 import time
-from typing import Callable, Iterable, Tuple, TypeVar
+from typing import Callable, Iterable, TypeVar
 
 import requests
 from adcm_client.objects import Cluster, Component, Host, Provider, Service, Task
+from adcm_pytest_plugin.params import ADCMVersionParam
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 
 T = TypeVar("T")
@@ -187,7 +188,7 @@ def get_json_or_text(response: requests.Response):
         return response.text
 
 
-def previous_adcm_version_tag() -> Tuple[str, str]:
+def previous_adcm_version_tag() -> ADCMVersionParam:
     """Get tag of previous ADCM version"""
     return parametrized_by_adcm_version(adcm_min_version="2021.03.10")[0][-1]
 

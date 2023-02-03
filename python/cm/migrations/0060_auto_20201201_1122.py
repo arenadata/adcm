@@ -49,7 +49,6 @@ def fix_service_component(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0059_auto_20200904_0910'),
     ]

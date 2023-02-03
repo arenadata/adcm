@@ -23,7 +23,8 @@ import allure
 import pytest
 import yaml
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Component, Host, Service
-from adcm_pytest_plugin.docker_utils import ADCM, get_file_from_container
+from adcm_pytest_plugin.docker.adcm import ADCM
+from adcm_pytest_plugin.docker.utils import get_file_from_container
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
     wait_for_task_and_assert_result,

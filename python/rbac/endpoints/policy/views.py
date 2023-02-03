@@ -54,7 +54,6 @@ class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-m
 
         serializer = self.get_serializer(policy, data=request.data, partial=partial)
         if serializer.is_valid(raise_exception=True):
-
             policy = policy_update(policy, **serializer.validated_data)
 
             return Response(data=self.get_serializer(policy).data)

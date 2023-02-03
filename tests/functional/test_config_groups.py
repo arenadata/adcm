@@ -39,7 +39,6 @@ from adcm_pytest_plugin.steps.actions import (
 from adcm_pytest_plugin.utils import get_data_dir
 from coreapi.exceptions import ErrorMessage
 from docker.models.containers import Container
-from tests.conftest import include_dummy_data
 from tests.library.errorcodes import (
     ATTRIBUTE_ERROR,
     GROUP_CONFIG_CHANGE_UNSELECTED_FIELD,
@@ -197,7 +196,6 @@ def _create_group_and_add_host(
 class TestGroupsIntersection:
     """Tests for config groups intersections"""
 
-    @include_dummy_data
     def test_that_groups_not_allowed_to_intersect_in_cluster(self, cluster_with_two_hosts_on_it):
         """Test that groups are not allowed to intersect in cluster"""
 
@@ -208,7 +206,6 @@ class TestGroupsIntersection:
             _assert_that_host_add_is_unavailable(cluster_group_2, test_host_1)
             _assert_host_candidate_equal_expected(cluster_group_2.host_candidate(), [SECOND_HOST])
 
-    @include_dummy_data
     def test_that_groups_not_allowed_to_intersect_in_provider(self, create_two_hosts, provider):
         """Test that groups are not allowed to intersect in provider"""
 
@@ -219,7 +216,6 @@ class TestGroupsIntersection:
             _assert_that_host_add_is_unavailable(provider_group_2, test_host_1)
             _assert_host_candidate_equal_expected(provider_group_2.host_candidate(), [SECOND_HOST])
 
-    @include_dummy_data
     def test_that_groups_not_allowed_to_intersect_in_service(self, cluster_with_components):
         """Test that groups are not allowed to intersect in service"""
 
@@ -230,7 +226,6 @@ class TestGroupsIntersection:
             _assert_that_host_add_is_unavailable(service_group_2, test_host_1)
             _assert_host_candidate_equal_expected(service_group_2.host_candidate(), [SECOND_HOST])
 
-    @include_dummy_data
     def test_that_groups_not_allowed_to_intersect_in_component(self, cluster_with_components):
         """Test that groups are not allowed to intersect"""
 
@@ -247,7 +242,6 @@ class TestGroupsIntersection:
 class TestIncorrectHostInGroups:
     """Test for incorrect hosts in group caused errors like GROUP_CONFIG_HOST_ERROR or GROUP_CONFIG_HOST_EXISTS"""
 
-    @include_dummy_data
     def test_add_incorrect_host_to_provider_group(self, provider_bundle, provider):
         """Test exception rise when we try to add incorrect host to provider group"""
         with allure.step("Create host from first provider"):
@@ -265,7 +259,6 @@ class TestIncorrectHostInGroups:
             _assert_that_host_exists(provider_group, correct_host)
             _assert_host_candidate_equal_expected(provider_group.host_candidate(), [])
 
-    @include_dummy_data
     def test_add_incorrect_host_to_service_group(self, cluster_with_components_on_first_host):
         """Test exception rise when we try to add incorrect host to service group"""
 
@@ -280,7 +273,6 @@ class TestIncorrectHostInGroups:
             _assert_that_host_exists(service_group, test_host_1)
             _assert_host_candidate_equal_expected(service_group.host_candidate(), [])
 
-    @include_dummy_data
     def test_add_incorrect_host_to_cluster_group(self, cluster_bundle, cluster, create_two_hosts):
         """Test exception rise when we try to add incorrect host to cluster group"""
 
@@ -300,7 +292,6 @@ class TestIncorrectHostInGroups:
             _assert_that_host_exists(cluster_group, test_host_1)
             _assert_host_candidate_equal_expected(cluster_group.host_candidate(), [])
 
-    @include_dummy_data
     def test_add_incorrect_host_to_component_group(self, cluster_with_components_on_first_host):
         """Test exception rise when we try to add incorrect host to component group"""
 
@@ -552,7 +543,6 @@ class TestChangeGroupsConfig:
                 )
 
     def _check_error_about_group_keys(self, group: GroupConfig, config_before: dict):
-
         for param in config_before.keys():
             with allure.step(f"Assert that can't change '{param}' group_keys parameter"):
                 invalid_config = {
@@ -579,7 +569,6 @@ class TestChangeGroupsConfig:
         """Cluster bundle fixture"""
         return sdk_client_fs.upload_from_fs(request.param)
 
-    @include_dummy_data
     def test_change_group_in_cluster(self, cluster_bundle, cluster_with_two_hosts_on_it):
         """Test that groups in cluster are allowed change"""
 
@@ -630,7 +619,6 @@ class TestChangeGroupsConfig:
                     run_cluster_action_and_assert_result(cluster, action=ACTION_NAME, config=config_updated)
                     run_cluster_action_and_assert_result(cluster, action=ACTION_MULTIJOB_NAME, config=config_updated)
 
-    @include_dummy_data
     @pytest.mark.full()
     def test_change_group_in_service(self, cluster_bundle, cluster_with_components):
         """Test that groups in service are allowed change"""
@@ -682,7 +670,6 @@ class TestChangeGroupsConfig:
                     run_service_action_and_assert_result(service, action=ACTION_NAME, config=config_updated)
                     run_service_action_and_assert_result(service, action=ACTION_MULTIJOB_NAME, config=config_updated)
 
-    @include_dummy_data
     @pytest.mark.full()  # pylint: disable-next=too-many-locals
     def test_change_group_in_component(self, cluster_bundle, cluster_with_components):
         """Test that groups in component are allowed change"""
@@ -739,7 +726,6 @@ class TestChangeGroupsConfig:
                         component, action=ACTION_MULTIJOB_NAME, config=config_updated
                     )
 
-    @include_dummy_data
     @pytest.mark.full()
     @pytest.mark.parametrize(
         "provider_bundle",

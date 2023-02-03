@@ -22,7 +22,6 @@ from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import get_data_dir
 from jsonschema import validate
-from tests.conftest import include_dummy_data
 
 # pylint: disable=redefined-outer-name
 
@@ -75,7 +74,6 @@ class TestHost:
         with allure.step("Match prototype with schema"):
             assert validate(host_prototype, schema) is None
 
-    @include_dummy_data
     def test_get_host_list(self, sdk_client_fs: ADCMClient, provider: Provider):
         """
         Create multiple hosts and check that all hosts was created

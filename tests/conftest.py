@@ -27,13 +27,15 @@ import websockets.client
 import yaml
 from _pytest.python import Function, FunctionDefinition, Module
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Provider, User
+from adcm_pytest_plugin.docker.adcm import ADCM
+from adcm_pytest_plugin.docker.launchers import ADCMWithPostgresLauncher
 from adcm_pytest_plugin.utils import random_string
 from allure_commons.model2 import Parameter, TestResult
 from allure_pytest.listener import AllureListener
 from docker.utils import parse_repository_tag
 from tests.library.adcm_websockets import ADCMWebsocket
 from tests.library.api.client import APIClient
-from tests.library.db import QueryExecutioner
+from tests.library.db import PostgreSQLQueryExecutioner, QueryExecutioner
 from tests.library.ldap_interactions import (
     LDAPEntityManager,
     LDAPTestConfig,
@@ -68,14 +70,6 @@ DUMMY_ACTION = {
         'states': {'available': 'any'},
     }
 }
-
-CLEAN_ADCM_PARAM = pytest.param({}, id="clean_adcm")
-DUMMY_DATA_PARAM = pytest.param({"fill_dummy_data": True}, id="adcm_with_dummy_data")
-DUMMY_DATA_FULL_PARAM = pytest.param({"fill_dummy_data": True}, id="adcm_with_dummy_data", marks=[pytest.mark.full])
-
-include_dummy_data = pytest.mark.parametrize(
-    "additional_adcm_init_config", [CLEAN_ADCM_PARAM, DUMMY_DATA_FULL_PARAM], scope="session"
-)
 
 CHROME_PARAM = pytest.param("Chrome")
 FIREFOX_PARAM = pytest.param("Firefox", marks=[pytest.mark.full])
@@ -327,8 +321,11 @@ async def adcm_ws(sdk_client_fs, adcm_fs) -> ADCMWebsocket:
 
 
 @pytest.fixture()
-def adcm_db(adcm_fs) -> QueryExecutioner:
+def adcm_db(launcher, adcm_fs: ADCM) -> QueryExecutioner | PostgreSQLQueryExecutioner:
     """Initialized QueryExecutioner for a function scoped ADCM"""
+    if isinstance(launcher, ADCMWithPostgresLauncher):
+        return PostgreSQLQueryExecutioner(launcher.postgres.container)
+
     return QueryExecutioner(adcm_fs.container)
 
 

@@ -62,7 +62,6 @@ from cm.logger import logger
 
 
 class ActionModule(ActionBase):
-
     TRANSFERS_FILES = False
     _VALID_ARGS = frozenset(('fqdn', 'host_id'))
 

@@ -32,7 +32,6 @@ def update_adcm_config_settings(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0085_add_action_to_upgrade'),
     ]

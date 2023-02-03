@@ -122,7 +122,6 @@ def get_object_id_from_context(task_vars, id_type, *context_type, err_msg=None):
 
 
 class ContextActionModule(ActionBase):
-
     TRANSFERS_FILES = False
     _VALID_ARGS = None
     _MANDATORY_ARGS = None

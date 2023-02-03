@@ -104,7 +104,7 @@ def represent_ordereddict(dumper, data):
 
         value.append((node_key, node_value))
 
-    return yaml.nodes.MappingNode(u'tag:yaml.org,2002:map', value)
+    return yaml.nodes.MappingNode("tag:yaml.org,2002:map", value)
 
 
 def represent_none(self, _):
@@ -338,7 +338,6 @@ SENT_TEST_VALUE = {
 
 
 def action_generate(name, entity, config_type, is_required, is_default, sent_value_type):
-
     if entity == 'service':
         that = [f'services.{entity}_{name}.config.{config_type} == test_value']
     elif entity == 'host':
@@ -396,7 +395,6 @@ def run():  # pylint: disable=too-many-locals
         name = f'{config_type}_{required_name}_{default_name}_sent_{sent_value_type}'
 
         for entity in ['cluster', 'provider']:
-
             path = f'{required_name}/{default_name}/sent_{sent_value_type}/{config_type}/{entity}/'
             os.makedirs(os.path.join(os.getcwd(), path), exist_ok=True)
 

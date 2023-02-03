@@ -237,21 +237,24 @@ def upgrade_adcm(adcm, bundle):
     return adcm
 
 
-def process_bundle(path, bundle_hash):
+def process_bundle(path, bundle_hash) -> None:
     obj_list = {}
     for conf_path, conf_file, conf_type in cm.stack.get_config_files(path, bundle_hash):
         conf = cm.stack.read_definition(conf_file, conf_type)
-        if conf:
-            cm.stack.save_definition(conf_path, conf_file, conf, obj_list, bundle_hash)
+        if not conf:
+            continue
+
+        adcm_min_version = [item["adcm_min_version"] for item in conf if item.get("adcm_min_version")]
+        if adcm_min_version and rpm.compare_versions(adcm_min_version[0], settings.ADCM_VERSION) > 0:
+            err("BUNDLE_VERSION_ERROR", f"This bundle required ADCM version equal to {adcm_min_version} or newer.")
+
+        cm.stack.save_definition(conf_path, conf_file, conf, obj_list, bundle_hash)
 
 
 def check_stage():
-    def count(model):
+    for model in STAGE:
         if model.objects.all().count():
             err("BUNDLE_ERROR", f"Stage is not empty {model}")
-
-    for model in STAGE:
-        count(model)
 
 
 def copy_obj(orig, clone, fields):
@@ -881,15 +884,8 @@ def check_services():
         s[p.name] = p.version
 
 
-def check_adcm_version(bundle):
-    if not bundle.adcm_min_version:
-        return
-    if rpm.compare_versions(bundle.adcm_min_version, settings.ADCM_VERSION) > 0:
-        msg = "This bundle required ADCM version equal to {} or newer."
-        err("BUNDLE_VERSION_ERROR", msg.format(bundle.adcm_min_version))
-
-
 def get_stage_bundle(bundle_file):
+    bundle = None
     clusters = StagePrototype.objects.filter(type="cluster")
     providers = StagePrototype.objects.filter(type="provider")
     if clusters:
@@ -921,5 +917,5 @@ def get_stage_bundle(bundle_file):
     else:
         msg = 'There isn\'t any cluster or host provider definition in bundle "{}"'
         err("BUNDLE_ERROR", msg.format(bundle_file))
-    check_adcm_version(bundle)
+
     return bundle

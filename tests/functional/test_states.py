@@ -27,7 +27,6 @@ from adcm_pytest_plugin.steps.actions import (
     run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import fixture_parametrized_by_data_subdirs
-from tests.conftest import include_dummy_data
 from tests.functional.plugin_utils import build_objects_checker
 
 ACTION_NAME = 'state_changing_action'
@@ -75,8 +74,8 @@ def cluster_and_multi_states_plus_states_checker(sdk_client_fs: ADCMClient, requ
     expected = cluster.name.replace(' ', '_')
     check_objects_state_changed = build_objects_checker(
         field_name='Multi states and states',
-        changed=dict(state=expected, multi_states=[expected]),
-        extractor=lambda obj: dict(state=obj.state, multi_states=sorted(obj.multi_state)),
+        changed={"state": expected, "multi_states": [expected]},
+        extractor=lambda obj: {"state": obj.state, "multi_states": sorted(obj.multi_state)},
     )
     return cluster, check_objects_state_changed
 
@@ -84,7 +83,6 @@ def cluster_and_multi_states_plus_states_checker(sdk_client_fs: ADCMClient, requ
 class TestClusterRelatedObjects:
     """Tests for cluster-related objects states"""
 
-    @include_dummy_data
     def test_cluster_state_after_action(self, sdk_client_fs: ADCMClient, cluster_and_states_checker):
         """Test cluster state after action"""
         cluster_obj, check_objects_state_changed = cluster_and_states_checker
@@ -98,7 +96,6 @@ class TestClusterRelatedObjects:
                 status="success" if "fail" not in cluster_obj.name else "failed",
             )
 
-    @include_dummy_data
     def test_service_state_after_action(self, sdk_client_fs: ADCMClient, cluster_and_states_checker):
         """Test service state after action"""
         cluster_obj, check_objects_state_changed = cluster_and_states_checker
@@ -113,7 +110,6 @@ class TestClusterRelatedObjects:
                 status="success" if "fail" not in cluster_obj.name else "failed",
             )
 
-    @include_dummy_data
     def test_component_state_after_action(self, sdk_client_fs: ADCMClient, cluster_and_states_checker):
         """Test component state after action"""
         cluster_obj, check_objects_state_changed = cluster_and_states_checker
@@ -128,7 +124,6 @@ class TestClusterRelatedObjects:
                 status="success" if "fail" not in cluster_obj.name else "failed",
             )
 
-    @include_dummy_data
     def test_cluster_multi_state_after_action(self, sdk_client_fs: ADCMClient, cluster_and_multi_states_checker):
         """
         Test cluster and multi states after action
@@ -145,7 +140,6 @@ class TestClusterRelatedObjects:
                 status="success" if "fail" not in object_to_be_changed.name else "failed",
             )
 
-    @include_dummy_data
     def test_service_multi_state_after_action(self, sdk_client_fs: ADCMClient, cluster_and_multi_states_checker):
         """
         Test service and multi states after action
@@ -164,7 +158,6 @@ class TestClusterRelatedObjects:
                 status="success" if "fail" not in cluster_obj.name else "failed",
             )
 
-    @include_dummy_data
     def test_component_multi_state_after_action(self, sdk_client_fs: ADCMClient, cluster_and_multi_states_checker):
         """
         Test components and multi states after action
@@ -271,8 +264,8 @@ def provider_and_multi_states_plus_states_checker(sdk_client_fs: ADCMClient, req
     provider.host_create(fqdn=f"{cleaned_name}-second".replace("_", "-"))
     check_objects_state_changed = build_objects_checker(
         field_name='Multi states and states',
-        changed=dict(state=bundle.name, multi_states=[bundle.name]),
-        extractor=lambda obj: dict(state=obj.state, multi_states=sorted(obj.multi_state)),
+        changed={"state": bundle.name, "multi_states": [bundle.name]},
+        extractor=lambda obj: {"state": obj.state, "multi_states": sorted(obj.multi_state)},
     )
     return provider, check_objects_state_changed
 
@@ -297,7 +290,6 @@ def provider_and_multi_states_checker(sdk_client_fs: ADCMClient, request) -> Tup
 class TestProviderRelatedObjects:
     """Tests for provider-related objects states"""
 
-    @include_dummy_data
     def test_provider_state_after_action(self, sdk_client_fs: ADCMClient, provider_and_states_checker):
         """Test provider state after action"""
         provider_obj, check_objects_state_changed = provider_and_states_checker
@@ -311,7 +303,6 @@ class TestProviderRelatedObjects:
                 status="success" if "fail" not in provider_obj.name else "failed",
             )
 
-    @include_dummy_data
     def test_host_state_after_action(self, sdk_client_fs: ADCMClient, provider_and_states_checker):
         """Test host state after action"""
         provider_obj, check_objects_state_changed = provider_and_states_checker
@@ -325,7 +316,6 @@ class TestProviderRelatedObjects:
                 status="success" if "fail" not in provider_obj.name else "failed",
             )
 
-    @include_dummy_data
     def test_provider_multi_state_after_action(self, sdk_client_fs: ADCMClient, provider_and_multi_states_checker):
         """
         Test provider and multi states after action
@@ -343,7 +333,6 @@ class TestProviderRelatedObjects:
                 status="success" if "fail" not in provider_obj.name else "failed",
             )
 
-    @include_dummy_data
     def test_host_multi_state_after_action(self, sdk_client_fs: ADCMClient, provider_and_multi_states_checker):
         """
         Test host and multi states after action

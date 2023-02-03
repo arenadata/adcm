@@ -22,7 +22,6 @@ from adcm_client.objects import ADCMClient, Cluster, Host, Provider, Service
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import catch_failed
 from coreapi.exceptions import ErrorMessage
-from tests.conftest import include_dummy_data
 from tests.library.adcm_websockets import ADCMWebsocket, EventMessage
 
 # pylint: disable=redefined-outer-name
@@ -40,7 +39,6 @@ def provider(provider_bundle):
     return provider_bundle.provider_create(name='Test Provider')
 
 
-@include_dummy_data
 def test_action_should_not_be_run_while_cluster_has_an_issue(sdk_client_fs: ADCMClient):
     """Test action should not be run while cluster has an issue"""
     bundle_path = utils.get_data_dir(__file__, "cluster")
@@ -51,7 +49,6 @@ def test_action_should_not_be_run_while_cluster_has_an_issue(sdk_client_fs: ADCM
             cluster.action(name="install").run()
 
 
-@include_dummy_data
 def test_action_should_not_be_run_while_host_has_an_issue(sdk_client_fs: ADCMClient):
     """Test action should not be run while host has an issue"""
     bundle_path = utils.get_data_dir(__file__, "host")
@@ -63,7 +60,6 @@ def test_action_should_not_be_run_while_host_has_an_issue(sdk_client_fs: ADCMCli
             host.action(name="install").run()
 
 
-@include_dummy_data
 def test_action_should_not_be_run_while_hostprovider_has_an_issue(
     sdk_client_fs: ADCMClient,
 ):

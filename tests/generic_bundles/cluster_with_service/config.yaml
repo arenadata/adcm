@@ -1,0 +1,144 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- type: cluster
+  name: Pre-uploaded Dummy cluster
+  description: Taken from old plugin
+  version: 1.5
+  import:
+     Pre-uploaded Dummy cluster to import:
+          versions:
+             max: 3.0
+             min: 2.2
+  config:
+    - name: string
+      type: string
+      required: true
+      default: string
+  actions:
+    action_on_cluster:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
+      states:
+        available:
+          - created
+        on_success: installed
+
+- type: service
+  name: First service
+  version: 1.5
+  components:
+    first:
+      config:
+        - name: string
+          type: string
+          required: true
+          default: string
+      actions:
+        component_first_action:
+          type: job
+          script: dummy_action.yaml
+          script_type: ansible
+          states:
+              available:
+                - created
+              on_success: installed
+
+        action_on_host_state_installed:
+          type: job
+          script: dummy_action.yaml
+          script_type: ansible
+          host_action: true
+          states:
+            available:
+              - installed
+
+        action_on_host_multijob:
+          type: task
+          scripts:
+            - name: part1
+              script_type: ansible
+              script: dummy_action.yaml
+            - name: part2
+              script_type: ansible
+              script: dummy_action.yaml
+          states:
+            available:
+              - created
+
+    second:
+      config:
+        - name: string
+          type: string
+          required: true
+          default: string
+      actions:
+        switch_component_state:
+          type: job
+          script: dummy_action.yaml
+          script_type: ansible
+          states:
+            available:
+              - created
+            on_success: installed
+  actions:
+    action_on_host:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
+      host_action: true
+      states:
+          available:
+            - created
+
+    action_on_host_state_installed:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
+      host_action: true
+      states:
+          available:
+            - installed
+
+    action_on_host_multijob:
+      type: task
+      scripts:
+        - name: part1
+          script_type: ansible
+          script: dummy_action.yaml
+        - name: part2
+          script_type: ansible
+          script: dummy_action.yaml
+      host_action: true
+      states:
+        available:
+          - created
+
+- type: service
+  name: Second service
+  version: 1.5
+  config:
+    - name: string
+      type: string
+      required: false
+      default: string
+  actions:
+    job:
+      script: service_action.yaml
+      script_type: ansible
+      type: job
+      states:
+        available:
+          - created
+  components:
+    third:

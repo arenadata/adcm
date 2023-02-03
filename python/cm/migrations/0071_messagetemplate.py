@@ -34,7 +34,6 @@ def insert_message_templates(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0070_lock_refactoring'),
     ]

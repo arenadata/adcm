@@ -18,10 +18,10 @@ from typing import Tuple
 import allure
 import pytest
 from adcm_client.objects import ADCMClient
+from adcm_pytest_plugin.params import ADCMVersionParam
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
-from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.bundle_list.page import BundleListPage
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
@@ -31,7 +31,7 @@ from tests.ui_tests.app.page.profile.page import ProfilePage
 from tests.upgrade_utils import upgrade_adcm_version
 
 
-def old_adcm_image() -> Tuple[str, str]:
+def old_adcm_image() -> ADCMVersionParam:
     """Get previous ADCM version"""
     return parametrized_by_adcm_version(adcm_min_version="2021.03.10")[0][-1]
 
@@ -60,9 +60,10 @@ def open_different_tabs(page: AdminIntroPage):
 
 
 @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
-@pytest.mark.parametrize("image", [old_adcm_image()], ids=repr)
+@pytest.mark.parametrize("image", [old_adcm_image()], ids=repr, indirect=True)
 def test_upgrade_adcm(
-    app_fs: ADCMTest,
+    app_fs,
+    launcher,
     sdk_client_fs: ADCMClient,
     adcm_api_credentials: dict,
     adcm_image_tags: Tuple[str, str],
@@ -84,7 +85,7 @@ def test_upgrade_adcm(
     with allure.step('Start ADCM upgrade with client'):
         upgrade_thread = threading.Thread(
             target=upgrade_adcm_version,
-            args=(app_fs.adcm, sdk_client_fs, adcm_api_credentials, adcm_image_tags),
+            args=(launcher, sdk_client_fs, adcm_api_credentials, adcm_image_tags),
         )
         upgrade_thread.start()
     with allure.step('Check update popup messages are present'):

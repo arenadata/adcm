@@ -51,6 +51,7 @@ class CommonConfigMenu:
         'Config diff of option "{}" with "{}" in text',
     )
     config_row = BaseLocator(By.CSS_SELECTOR, "app-config-fields>*", "Configuration row")
+    config_row_first_layer = BaseLocator(By.CSS_SELECTOR, "app-config-fields:not(.in-group)>*", "Configuration row")
     text_row = BaseLocator(By.TAG_NAME, "app-fields-textbox", "Configuration textbox row")
     field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
     info_tooltip_icon = TemplateLocator(
@@ -87,6 +88,7 @@ class CommonConfigMenu:
         clear_btn = BaseLocator(By.CSS_SELECTOR, "button[mattooltip='Remove value']", "Clear button")
         group_chbx = BaseLocator(By.CSS_SELECTOR, ".group-checkbox mat-checkbox", "Group checkbox")
         checkbox = BaseLocator(By.CSS_SELECTOR, "app-fields-boolean mat-checkbox", "Checkbox")
+        clear_field = BaseLocator(By.XPATH, ".//button//mat-icon[text()='clear']", "Clear row button")
 
         # complex parameters
         add_item_btn = BaseLocator(

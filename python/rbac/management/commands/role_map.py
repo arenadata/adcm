@@ -30,7 +30,6 @@ def read_role(role: Role) -> dict:
 
 
 class Command(BaseCommand):
-
     help = "Return role map to json file"
 
     def add_arguments(self, parser):

@@ -514,6 +514,10 @@ def process_secret_params(spec, conf):
 
 def process_secretmap(spec: dict, conf: dict) -> dict:
     for key in conf:
+        if "type" not in spec[key]:
+            for _ in conf:
+                process_secretmap(spec[key], conf[key])
+
         if spec[key].get("type") != "secretmap":
             continue
 
@@ -685,7 +689,6 @@ def check_read_only(obj, spec, conf, old_conf):
 
     for s in spec:
         if config_is_ro(obj, s, spec[s].limits) and s in flat_conf:
-
             # this block is an attempt to fix sending read-only fields of list and map types
             # Since this did not help, I had to completely turn off the validation
             # of read-only fields

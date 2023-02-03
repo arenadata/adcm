@@ -951,7 +951,7 @@ class TestClusterConfigPage:
 
         cluster_config_page = ClusterConfigPage(
             app_fs.driver, app_fs.adcm.url, create_cluster_with_all_config_fields.id
-        ).open()
+        ).open(close_popup=True)
         cluster_config_page.config.fill_config_fields_with_test_values()
         cluster_config_page.config.set_description(params["config_name_new"])
         cluster_config_page.config.save_config()
@@ -1383,7 +1383,6 @@ class TestClusterImportPage:
 
 
 class TestClusterRenaming:
-
     SPECIAL_CHARS = (".", "-", "_")
     DISALLOWED_AT_START_END = (*SPECIAL_CHARS, " ")
     EXPECTED_ERROR = "Please enter a valid name"

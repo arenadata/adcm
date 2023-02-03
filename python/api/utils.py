@@ -73,9 +73,9 @@ def _update_mm_hierarchy_issues(obj: Host | ClusterObject | ServiceComponent) ->
     if isinstance(obj, Host):
         update_hierarchy_issues(obj.provider)
 
-    hosts = (host_component.host for host_component in HostComponent.objects.filter(cluster=obj.cluster))
-    for host in hosts:
-        update_hierarchy_issues(host.provider)
+    providers = {host_component.host.provider for host_component in HostComponent.objects.filter(cluster=obj.cluster)}
+    for provider in providers:
+        update_hierarchy_issues(provider)
 
     update_hierarchy_issues(obj.cluster)
     update_issue_after_deleting()

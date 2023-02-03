@@ -45,20 +45,28 @@ export class SecretTextComponent extends FieldDirective implements OnInit, OnCha
 
   onBlur(): void {
     this.control.setValue(this.dummyControl.value || this.value);
-    this.dummyControl.setValue(this.dummyControl.value ? this.dummy : '');
+    this.dummyControl.setValue(this.control.value ? this.dummy : null);
   }
 
   onFocus(): void {
     this.dummyControl.setValue(null);
+    if (this.field.required) this.control.setErrors({'required': this.field.required});
   }
 
   clear(): void {
     this.dummyControl.setValue(null);
   }
 
+  get isValid() {
+    if (this.field.read_only) return true;
+    this.dummyControl.markAsTouched();
+    const control = this.dummyControl;
+    return control.valid && (control.dirty || control.touched);
+  }
+
   private _initDummyControl(): void {
     this.dummyControl = new FormControl(
-      { value: this.control.value ? this.dummy : '', disabled: this.control.disabled },
+      { value: this.control.value ? this.dummy : null, disabled: this.control.disabled },
       Validators.compose(this.field.required ? [Validators.required] : [])
     );
     this.dummyControl.markAllAsTouched();

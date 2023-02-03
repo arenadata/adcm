@@ -35,7 +35,6 @@ def fix_groups(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0030_auto_20190820_1600'),
     ]

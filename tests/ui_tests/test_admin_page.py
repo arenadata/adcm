@@ -109,14 +109,14 @@ def create_cluster_with_component(
 
 
 CUSTOM_ROLE_NAME = "Test_Role"
-CUSTOM_POLICY = dict(
-    name="Test policy name",
-    description="Test policy description",
-    role="ADCM User",
-    users=["admin", "status"],
-    groups=[],
-    objects=[],
-)
+CUSTOM_POLICY = {
+    "name": "Test policy name",
+    "description": "Test policy description",
+    "role": "ADCM User",
+    "users": sorted(("admin", "status")),
+    "groups": [],
+    "objects": [],
+}
 ACTION_HINT = "The Action is not available. You need to fill in the LDAP integration settings."
 
 
@@ -411,7 +411,6 @@ class TestAdminUsersPage:
             self.check_user_is_listed_on_page(users_page, username)
 
         with allure.step('Check that changing ldap user is prohibited'):
-
             dialog: UpdateUserDialog = users_page.get_row(username_is(username)).open_update_dialog()
             element_names = ("username", "password", "password_confirm", "first_name", "last_name", "email")
             for name in element_names:
@@ -509,11 +508,11 @@ class TestAdminUsersPage:
 class TestAdminRolesPage:
     """Tests for the /admin/roles"""
 
-    custom_role = dict(
-        name="Test_role_name",
-        description="Test role description",
-        permissions=["Create provider", "Create cluster", "Create user", "Remove policy"],
-    )
+    custom_role = {
+        "name": "Test_role_name",
+        "description": "Test role description",
+        "permissions": sorted(("Create provider", "Create cluster", "Create user", "Remove policy")),
+    }
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -611,69 +610,75 @@ class TestAdminRolesPage:
     @allure.step("Check all default roles are presented")
     def check_default_roles(self, page: AdminRolesPage):
         default_roles = [
-            dict(
-                name="ADCM User",
-                description="",
-                permissions=[
-                    "View any object configuration",
-                    "View any object import",
-                    "View any object host-components",
-                ],
-            ),
-            dict(
-                name="Service Administrator",
-                description="",
-                permissions=[
-                    "View host configurations",
-                    "Edit service configurations",
-                    "Edit component configurations",
-                    "View host-components",
-                ],
-            ),
-            dict(
-                name="Cluster Administrator",
-                description="",
-                permissions=[
-                    "Create host",
-                    "Upload bundle",
-                    "Edit cluster configurations",
-                    "Edit host configurations",
-                    "Add service",
-                    "Remove service",
-                    "Remove hosts",
-                    "Map hosts",
-                    "Unmap hosts",
-                    "Edit host-components",
-                    "Upgrade cluster bundle",
-                    "Remove bundle",
-                    "Service Administrator",
-                ],
-            ),
-            dict(
-                name="Provider Administrator",
-                description="",
-                permissions=[
-                    "Create host",
-                    "Upload bundle",
-                    "Edit provider configurations",
-                    "Edit host configurations",
-                    "Remove hosts",
-                    "Upgrade provider bundle",
-                    "Remove bundle",
-                ],
-            ),
+            {
+                "name": "ADCM User",
+                "description": "",
+                "permissions": sorted(
+                    ("View any object configuration", "View any object import", "View any object host-components")
+                ),
+            },
+            {
+                "name": "Service Administrator",
+                "description": "",
+                "permissions": sorted(
+                    (
+                        "View host configurations",
+                        "Edit service configurations",
+                        "Edit component configurations",
+                        "View host-components",
+                    )
+                ),
+            },
+            {
+                "name": "Cluster Administrator",
+                "description": "",
+                "permissions": sorted(
+                    (
+                        "Create host",
+                        "Upload bundle",
+                        "Edit cluster configurations",
+                        "Edit host configurations",
+                        "Add service",
+                        "Remove service",
+                        "Remove hosts",
+                        "Map hosts",
+                        "Unmap hosts",
+                        "Edit host-components",
+                        "Upgrade cluster bundle",
+                        "Remove bundle",
+                        "Service Administrator",
+                    )
+                ),
+            },
+            {
+                "name": "Provider Administrator",
+                "description": "",
+                "permissions": sorted(
+                    (
+                        "Create host",
+                        "Upload bundle",
+                        "Edit provider configurations",
+                        "Edit host configurations",
+                        "Remove hosts",
+                        "Upgrade provider bundle",
+                        "Remove bundle",
+                    )
+                ),
+            },
         ]
 
         roles = tuple(map(dict, page.get_rows()))
         for role in default_roles:
-            assert role in roles, f"Default role {role.name} is wrong or missing. Expected to find: {role} in {roles}"
+            assert (
+                role in roles
+            ), f"Default role {role['name']} is wrong or missing. Expected to find: {role} in {roles}"
 
 
 @pytest.mark.usefixtures("_login_to_adcm_over_api")
 class TestAdminGroupsPage:
     """Tests for the /admin/groups"""
 
-    custom_group = dict(name="Test_group", description="Test description", users="admin")
+    custom_group = {"name": "Test_group", "description": "Test description", "users": "admin"}
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -710,14 +715,11 @@ class TestAdminGroupsPage:
         current_groups = tuple(map(dict, groups_page.get_rows()))
         with allure.step("Check that there are 1 custom group and 1 ldap"):
             assert len(current_groups) == 2, "There should be 2 group on the page"
-            assert (
-                dict(
-                    name="Test_group",
-                    description="Test description",
-                    users=ldap_user_in_group["name"],
-                )
-                in current_groups
-            ), "Created group should be on the page"
+            assert {
+                "name": "Test_group",
+                "description": "Test description",
+                "users": ldap_user_in_group["name"],
+            } in current_groups, "Created group should be on the page"
 
     @pytest.mark.full()
     def test_check_pagination_groups_list_page(self, app_fs):

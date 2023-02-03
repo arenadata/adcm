@@ -657,7 +657,7 @@ def save_prototype_config(
             err("INVALID_CONFIG_DEFINITION", msg.format(obj.type, obj, action, name, subname))
 
     if isinstance(conf_dict, dict):
-        for (name, conf) in conf_dict.items():
+        for name, conf in conf_dict.items():
             if "type" in conf:
                 validate_name(name, f"Config key \"{name}\" of {ref}")
                 cook_conf(proto, conf, name, "")
@@ -665,7 +665,7 @@ def save_prototype_config(
                 validate_name(name, f"Config group \"{name}\" of {ref}")
                 group_conf = {"type": "group", "required": False}
                 cook_conf(proto, group_conf, name, "")
-                for (subname, subconf) in conf.items():
+                for subname, subconf in conf.items():
                     err_msg = f"Config key \"{name}/{subname}\" of {ref}"
                     validate_name(name, err_msg)
                     validate_name(subname, err_msg)

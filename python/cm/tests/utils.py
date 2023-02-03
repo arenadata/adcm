@@ -247,13 +247,13 @@ def generate_hierarchy():
 
     gen_host_component(component, host)
 
-    return dict(
-        cluster=cluster,
-        service=service,
-        component=component,
-        provider=provider,
-        host=host,
-    )
+    return {
+        "cluster": cluster,
+        "service": service,
+        "component": component,
+        "provider": provider,
+        "host": host,
+    }
 
 
 def gen_config(config: dict = None, attr: dict = None) -> ObjectConfig:

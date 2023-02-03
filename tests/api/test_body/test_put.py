@@ -24,7 +24,6 @@ from tests.api.testdata.generators import (
     get_negative_data_for_put_body_check,
     get_positive_data_for_put_body_check,
 )
-from tests.api.utils.api_objects import ADCMTestApiWrapper
 from tests.api.utils.methods import Methods
 from tests.api.utils.types import get_fields
 
@@ -35,12 +34,12 @@ pytestmark = [
 
 @allure.title("Prepare put body data")
 @pytest.fixture()
-def prepare_put_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
+def prepare_put_body_data(request, adcm_api):
     """
     Fixture for preparing test data for PUT request, depending on generated test datasets
     """
     test_data_list: List[TestDataWithPreparedBody] = request.param
-    dbfiller = DbFiller(adcm=adcm_api_fs)
+    dbfiller = DbFiller(adcm=adcm_api)
     endpoint = test_data_list[0].test_data.request.endpoint
     valid_data = dbfiller.generate_valid_request_data(endpoint=endpoint, method=Methods.PUT)
     full_item = deepcopy(valid_data["full_item"])
@@ -52,7 +51,6 @@ def prepare_put_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
         for field in get_fields(test_data.request.endpoint.data_class):
             if field.name in prepared_field_values:
                 if not prepared_field_values[field.name].drop_key:
-
                     if prepared_field_values[field.name].unchanged_value is False:
                         current_field_value = full_item[field.name]
                         changed_field_value = changed_fields.get(field.name, None)
@@ -72,10 +70,10 @@ def prepare_put_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
 
         test_data.request.object_id = valid_data["object_id"]
         if getattr(endpoint.data_class, 'dependable_fields_sync', None):
-            test_data.request.data = endpoint.data_class.dependable_fields_sync(adcm_api_fs, test_data.request.data)
+            test_data.request.data = endpoint.data_class.dependable_fields_sync(adcm_api, test_data.request.data)
         final_test_data_list.append(TestDataWithPreparedBody(test_data, prepared_field_values))
 
-    return adcm_api_fs, final_test_data_list
+    return adcm_api, final_test_data_list
 
 
 @pytest.mark.parametrize("prepare_put_body_data", get_positive_data_for_put_body_check(), indirect=True)

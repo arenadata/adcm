@@ -570,7 +570,6 @@ def get_selector(obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostPr
 def prepare_context(
     action: Action, obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host
 ) -> dict:
-
     selector = get_selector(obj, action)
     context = {f"{k}_id": v["id"] for k, v in selector.items()}
     context["type"] = obj.prototype.type

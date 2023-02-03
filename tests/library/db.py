@@ -107,6 +107,28 @@ finally:
 
 
 @dataclass()
+class PostgreSQLQueryExecutioner:
+    # postgresql container
+    container: Container
+
+    def exec(self, query: Query) -> None:
+        statement = query.build()
+        self._should_be_success(
+            self.container.exec_run(
+                ["psql", "-U", "adcm", "--dbname", "adcm", "-c", statement.replace("\n", " ").replace('"', "'")]
+            )
+        )
+
+    def _should_be_success(self, exec_result: Tuple[int, bytes]):
+        exit_code, output = exec_result
+        if exit_code == 0:
+            return
+        raise ValueError(
+            f"Command execution on PostgreSQL container {self.container.name} failed:\nOutput: {output.decode('utf-8')}"
+        )
+
+
+@dataclass()
 class QueryExecutioner:
     """
     First version of Query executioner
@@ -116,7 +138,7 @@ class QueryExecutioner:
     Use with caution.
     """
 
-    adcm: Container
+    container: Container
 
     _template = STATEMENT_TEMPLATE
     _script_name = '/adcm/data/exec_query.py'
@@ -125,15 +147,15 @@ class QueryExecutioner:
         """Execute given query via script inside the ADCM container"""
         statement = query.build()
         script_text = self._template.format(statement=statement.replace('\n', '  ')).replace('"', '\\"')
-        self._should_be_success(self.adcm.exec_run(['sh', '-c', f'echo "{script_text}" > {self._script_name}']))
-        self._should_be_success(self.adcm.exec_run(['python3', self._script_name]))
+        self._should_be_success(self.container.exec_run(['sh', '-c', f'echo "{script_text}" > {self._script_name}']))
+        self._should_be_success(self.container.exec_run(['python3', self._script_name]))
 
     def _should_be_success(self, exec_result: Tuple[int, bytes]):
         exit_code, output = exec_result
         if exit_code == 0:
             return
         raise ValueError(
-            f'Command execution on ADCM container {self.adcm.name} failed:\n' f'Output: {output.decode("utf-8")}'
+            f'Command execution on ADCM container {self.container.name} failed:\nOutput: {output.decode("utf-8")}'
         )
 
 

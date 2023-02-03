@@ -13,8 +13,8 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatSelectionList, MatSelectionListChange } from '@angular/material/list';
 import { SelectOption } from '@app/core/types';
 import { Observable } from 'rxjs';
-
 import { BaseFormDirective } from './base-form.directive';
+import { take } from "rxjs/operators";
 
 @Component({
   selector: 'app-add-service',
@@ -55,7 +55,12 @@ export class ServiceComponent extends BaseFormDirective implements OnInit {
   }
 
   save() {
-    const result = this.listServices.selectedOptions.selected.filter(a => a.value).map(a => ({ prototype_id: +a.value.id }));
+    const result = this.listServices.selectedOptions.selected.filter(a => a.value).map(a => ({
+      prototype_id: +a.value.id,
+      service_name: a.value.name,
+      license: a.value.license,
+      license_url: a.value.license_url,
+    }));
     this.service
       .addService(result)
       .pipe(this.takeUntil())

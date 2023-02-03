@@ -41,6 +41,7 @@ from cm.models import (
     Upgrade,
 )
 from cm.status_api import post_event
+from rbac.models import re_apply_object_policy
 
 
 def switch_object(obj: Union[Host, ClusterObject], new_prototype: Prototype) -> None:
@@ -74,7 +75,7 @@ def switch_components(cluster: Cluster, co: ClusterObject, new_co_proto: Prototy
             sc.delete()
 
     for sc_proto in Prototype.objects.filter(parent=new_co_proto, type="component"):
-        kwargs = dict(cluster=cluster, service=co, prototype=sc_proto)
+        kwargs = {"cluster": cluster, "service": co, "prototype": sc_proto}
         if not ServiceComponent.objects.filter(**kwargs).exists():
             sc = ServiceComponent.objects.create(**kwargs)
             make_object_config(sc, sc_proto)
@@ -288,6 +289,20 @@ def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
         return res
 
 
+def re_apply_following_policies(obj: Cluster | HostProvider) -> None:
+    re_apply_object_policy(apply_object=obj)
+
+    if isinstance(obj, Cluster):
+        for service in ClusterObject.objects.filter(cluster=obj):
+            re_apply_object_policy(apply_object=service)
+            for component in ServiceComponent.objects.filter(cluster=obj, service=service):
+                re_apply_object_policy(apply_object=component)
+
+    elif isinstance(obj, HostProvider):
+        for host in Host.objects.filter(provider=obj):
+            re_apply_object_policy(apply_object=host)
+
+
 def update_components_after_bundle_switch(cluster, upgrade):
     if upgrade.action and upgrade.action.hostcomponentmap:
         logger.info("update component from %s after upgrade with hc_acl", cluster)
@@ -334,11 +349,12 @@ def do_upgrade(
         task_id = task.id
 
     obj.refresh_from_db()
+    re_apply_following_policies(obj=obj)
 
     return {"id": obj.id, "upgradable": bool(get_upgrade(obj)), "task_id": task_id}
 
 
-def bundle_switch(obj: Union[Cluster, HostProvider], upgrade: Upgrade):
+def bundle_switch(obj: Cluster | HostProvider, upgrade: Upgrade) -> None:
     new_proto = None
     old_proto = obj.prototype
     if old_proto.type == "cluster":

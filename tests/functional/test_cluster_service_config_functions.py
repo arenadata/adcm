@@ -21,8 +21,8 @@ import coreapi
 import pytest
 from adcm_client.base import BaseAPIObject
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Provider, Service
-from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
+from adcm_pytest_plugin.utils import ordered_dict_to_dict, random_string
 from jsonschema import validate
 
 # pylint: disable=redefined-outer-name
@@ -41,7 +41,7 @@ def cluster_bundle(sdk_client_fs: ADCMClient) -> Bundle:
 @pytest.fixture()
 def cluster(cluster_bundle: Bundle) -> Cluster:
     """Create cluster"""
-    return cluster_bundle.cluster_create(name=utils.random_string())
+    return cluster_bundle.cluster_create(name=random_string())
 
 
 @pytest.fixture()
@@ -60,7 +60,7 @@ def provider_bundle(sdk_client_fs: ADCMClient) -> Bundle:
 @pytest.fixture()
 def provider(provider_bundle: Bundle) -> Provider:
     """Create provider"""
-    return provider_bundle.provider_create(name=utils.random_string())
+    return provider_bundle.provider_create(name=random_string())
 
 
 def _get_prev_config(obj: BaseAPIObject, full=False):
@@ -320,7 +320,7 @@ class TestClusterConfig:
     def test_read_default_cluster_config(self, cluster: Cluster):
         """Validate default cluster config by schema"""
         config = cluster.config(full=True)
-        config_json = utils.ordered_dict_to_dict(config)
+        config_json = ordered_dict_to_dict(config)
         with allure.step("Load schema"):
             with open(SCHEMAS + "/config_item_schema.json", encoding='utf_8') as file:
                 schema = json.load(file)
@@ -336,10 +336,12 @@ class TestClusterConfig:
 
     def test_create_new_config_version_with_other_parameters(self, cluster: Cluster):
         """Test create new cluster config with many parameters"""
-        cfg = {"required": 99, "str-key": utils.random_string()}
-        expected = cluster.config_set(cfg)
+        cfg = {"required": 99, "str-key": random_string()}
+        expected = ordered_dict_to_dict(cluster.config())
+        expected.update(cfg)
+        cluster.config_set(cfg)
         with allure.step("Check new config"):
-            assert cluster.config() == expected
+            assert ordered_dict_to_dict(cluster.config()) == expected
 
     INVALID_CLUSTER_CONFIGS = [
         pytest.param(
@@ -409,7 +411,7 @@ class TestClusterConfig:
         """Another mysterious type checking test"""
         test_data = "lorem ipsum"
         with allure.step("Create config data"):
-            config_data = utils.ordered_dict_to_dict(cluster.config())
+            config_data = ordered_dict_to_dict(cluster.config())
             config_data["input_file"] = test_data
             config_data["required"] = 42
         with allure.step("Create config history"):

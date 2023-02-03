@@ -1,0 +1,213 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- type: cluster
+  version: 2.3
+  name: mutli_change_cluster
+
+  config: &config
+    - &string
+      name: string
+      type: string
+      default: default_string
+    - &integer
+      name: integer
+      type: integer
+      default: 42
+    - &float
+      name: float
+      type: float
+      default: 4.2
+    - &list
+      name: list
+      type: list
+      default:
+        - first
+        - second
+    - &map
+      name: map
+      type: map
+      default:
+        "fkey": "fval"
+        "skey": "sval"
+    - &option
+      name: option
+      type: option
+      option:
+        http: "80"
+        https: "443"
+        wow: "322"
+      default: "80"
+    - &json
+      name: json
+      type: json
+      default:
+        "g": "son"
+        "f": "ield"
+    - &file
+      name: file
+      type: file
+      default: ./file.txt
+    - &structure
+      name: structure
+      type: structure
+      yspec: ./schema.yaml
+      default:
+        - country: Greece
+          code: 30
+    - &password
+      name: password
+      type: password
+      default: default_password
+    - &secrettext
+      name: secrettext
+      type: secrettext
+      default: default_secrettext
+    - &secretfile
+      name: secretfile
+      type: secretfile
+      default: ./secret.txt
+    - &secretmap
+      name: secretmap
+      type: secretmap
+      default:
+        "sec": "ret"
+    - name: group
+      type: group
+      subs:
+        - <<: *string
+        - <<: *integer
+        - <<: *float
+        - <<: *password
+        - <<: *secrettext
+        - <<: *secretfile
+        - <<: *secretmap
+        - <<: *map
+        - <<: *list
+        - <<: *option
+        - <<: *json
+        - <<: *file
+        - <<: *structure
+
+  actions:
+    secrets_should_be_changed: &change
+      type: job
+      script_type: ansible
+      script: ./check_secrets_changed.yaml
+      config:
+        - name: object_type
+          type: string
+          default: "cluster"
+      states:
+        available: any
+      params:
+        ansible_tags: plain
+
+    secrets_in_group_should_be_changed:
+      <<: *change
+      script: ./check_secrets_changed.yaml
+      params:
+        ansible_tags: group
+
+    change_plain:
+      <<: *change
+      script: ./change.yaml
+      params:
+        ansible_tags: simple
+
+    change_group:
+      <<: *change
+      script: ./change.yaml
+      params:
+        ansible_tags: group
+
+- type: service
+  version: 12
+  name: first_service
+
+  config: *config
+
+  actions: &service_actions
+    secrets_should_be_changed: &service_change
+      <<: *change
+      script: ./check_secrets_changed.yaml
+      config:
+        - name: object_type
+          type: string
+          default: "service"
+      params:
+        ansible_tags: plain
+
+    secrets_in_group_should_be_changed:
+      <<: *service_change
+      script: ./check_secrets_changed.yaml
+      params:
+        ansible_tags: group
+
+    change_plain:
+      <<: *service_change
+      script: ./change.yaml
+      params:
+        ansible_tags: simple
+
+    change_group:
+      <<: *service_change
+      script: ./change.yaml
+      params:
+        ansible_tags: group
+
+  components: &components
+    first_component:
+      config: *config
+
+      actions: &actions
+        secrets_should_be_changed: &component_change
+          <<: *change
+          script: ./check_secrets_changed.yaml
+          config:
+            - name: object_type
+              type: string
+              default: "component"
+          params:
+            ansible_tags: plain
+
+        secrets_in_group_should_be_changed:
+          <<: *component_change
+          script: ./check_secrets_changed.yaml
+          params:
+            ansible_tags: group
+
+        change_plain:
+          <<: *component_change
+          script: ./change.yaml
+          params:
+            ansible_tags: simple
+
+        change_group:
+          <<: *component_change
+          script: ./change.yaml
+          params:
+            ansible_tags: group
+
+    second_component:
+      config: *config
+
+      actions: *actions
+
+- type: service
+  version: 3.4
+  name: second_service
+
+  config: *config
+  actions: *service_actions
+
+  components: *components

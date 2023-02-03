@@ -14,7 +14,7 @@ import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { convertToParamMap, Params } from '@angular/router';
 import { environment } from '@env/environment';
-import { forkJoin, Observable, of, throwError } from 'rxjs';
+import { combineLatest, forkJoin, Observable, of, throwError } from 'rxjs';
 import { catchError, concatAll, filter, map, switchMap } from 'rxjs/operators';
 
 import { StackInfo, StackService } from '@app/core/services';
@@ -25,6 +25,7 @@ import { DialogComponent } from '@app/shared/components/dialog.component';
 import { GenName } from './naming';
 import { MainService } from '@app/shared/configuration/main/main.service';
 import { FormModel, IAddService } from '@app/shared/add-component/add-service-model';
+import {ServiceService} from "@app/services/service.service";
 
 
 const fromBundle = () =>
@@ -83,6 +84,7 @@ export class AddService implements IAddService {
               private cluster: ClusterService,
               public dialog: MatDialog,
               private main: MainService,
+              private service: ServiceService,
   ) {}
 
   model(name: string) {
@@ -126,7 +128,10 @@ export class AddService implements IAddService {
                 .pipe(
                   filter((yes) => yes),
                   switchMap(() =>
-                    this.api.put(`${root.stack}bundle/${currentPrototype.bundle_id}/license/accept/`, {}).pipe(switchMap(() => this.api.post<T>(root[name], data)))
+                    this.api.put(`${root.stack}bundle/${currentPrototype.bundle_id}/license/accept/`, {})
+                      .pipe(
+                        switchMap(() => this.api.post<T>(root[name], data))
+                      )
                   )
                 )
             )
@@ -148,8 +153,15 @@ export class AddService implements IAddService {
     return forkJoin([...ids.map(id => this.cluster.addHost(id))]);
   }
 
-  addService(data: { prototype_id: number }[]) {
-    return this.cluster.addServices(data);
+  addService(data: { prototype_id: number, service_name?: string, license?: string, license_url?: string }[]) {
+    return combineLatest(data.map((o) => {
+      if (o.license_url && o.license === 'unaccepted') {
+        return this.service.acceptServiceLicense(o)
+          .pipe(
+            switchMap(() => this.cluster.addServices({prototype_id: o.prototype_id}))
+          )
+      } else return this.cluster.addServices({prototype_id: o.prototype_id});
+    }))
   }
 
   getListResults<T>(type: TypeName, param: Params = {}) {

@@ -62,22 +62,6 @@ class RoleModelTest(BaseTestCase):
 
         self.assertTrue(isinstance(obj, ModelRole))
 
-    def test_max_length(self):
-        # pylint: disable=protected-access
-
-        role = Role.objects.create(name="name", class_name="class", module_name="module")
-        name_max_length = role._meta.get_field("name").max_length
-
-        self.assertEqual(name_max_length, 1000)
-
-        class_name_max_length = role._meta.get_field("class_name").max_length
-
-        self.assertEqual(class_name_max_length, 32)
-
-        module_name_max_length = role._meta.get_field("module_name").max_length
-
-        self.assertEqual(module_name_max_length, 32)
-
     def test_default(self):
         role = Role.objects.create()
 

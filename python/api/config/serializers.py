@@ -11,7 +11,7 @@
 # limitations under the License.
 
 # pylint: disable=redefined-builtin
-
+from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (
     BooleanField,
@@ -75,7 +75,7 @@ class ObjectConfigRestoreSerializer(ConfigObjectConfigSerializer):
         )
 
 
-class ConfigHistorySerializer(ConfigObjectConfigSerializer):
+class ConfigHistorySerializer(FlexFieldsSerializerMixin, ConfigObjectConfigSerializer):
     url = ConfigVersionURL(read_only=True, view_name='config-history-version')
 
 

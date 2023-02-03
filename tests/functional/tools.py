@@ -14,9 +14,11 @@ Common functions and helpers for testing ADCM
 """
 import json
 from typing import Callable, Collection, Dict, Iterable, List, Optional, Tuple, Union
+from uuid import uuid4
 
 import allure
 import pytest
+from _pytest.fixtures import SubRequest
 from _pytest.outcomes import Failed
 from adcm_client.base import ObjectNotFound, PagingEnds
 from adcm_client.objects import (
@@ -34,8 +36,13 @@ from adcm_client.objects import (
     Task,
     User,
 )
-from adcm_pytest_plugin.docker_utils import ADCM, get_file_from_container
-from adcm_pytest_plugin.utils import catch_failed, wait_until_step_succeeds
+from adcm_pytest_plugin.docker.adcm import ADCM
+from adcm_pytest_plugin.docker.utils import get_file_from_container
+from adcm_pytest_plugin.utils import (
+    allure_reporter,
+    catch_failed,
+    wait_until_step_succeeds,
+)
 from coreapi.exceptions import ErrorMessage
 
 BEFORE_UPGRADE_DEFAULT_STATE = None
@@ -81,28 +88,34 @@ def wait_for_job_status(
 
 
 @allure.step("Check object state")
-def check_object_status(adcm_object: Cluster | Service | Component, expected_state: str) -> None:
+def check_object_state(adcm_object: Cluster | Service | Component, expected_state: str) -> None:
     adcm_object.reread()
     actual = adcm_object.state
     assert actual == expected_state, f"Expected object state {expected_state} Actual {actual}"
 
 
 @allure.step("Check object multi state")
-def check_object_multi_state(adcm_object: Cluster | Service | Component, expected_state: str) -> None:
+def check_object_multi_state(adcm_object: Cluster | Service | Component, expected_state: list) -> None:
     adcm_object.reread()
     assert (
         len(adcm_object.multi_state) > 0
     ), f"Expected object does not have multi state while expected state: {expected_state}"
-    actual = adcm_object.multi_state[0]
-    assert actual == expected_state, f"Expected object state {expected_state} Actual {actual}"
+    for actual, expected in zip(adcm_object.multi_state, expected_state):
+        assert actual == expected, f"Expected object multi state {actual} Actual object multi state{expected}"
 
 
-@allure.step("Check task status")
-def check_task_status(client: ADCMClient, task: Task, expected_status: str, wait_finished: bool = True) -> None:
-    if wait_finished:
-        wait_all_jobs_are_finished(client)
+@allure.step("Check jobs status")
+def check_jobs_status(task: Task, expected_job_status: dict) -> None:
     task.reread()
-    assert task.status == expected_status, f"Expected task status {expected_status} Actual status {task.status}"
+    actual_jobs_status = {job.display_name: job.status for job in task.job_list()}
+    assert len(actual_jobs_status) == len(expected_job_status), (
+        f"Incorrect number of jobs. Actual jobs are: {len(actual_jobs_status)},"
+        f" while expected jobs are: {len(expected_job_status)}"
+    )
+    assert actual_jobs_status == expected_job_status, (
+        "Expected jobs are not equal with actual"
+        f"\nExpected jobs: {expected_job_status}, actual jobs: {actual_jobs_status}"
+    )
 
 
 def get_objects_via_pagination(
@@ -176,11 +189,40 @@ def create_config_group_and_add_host(
         return group
 
 
-def get_inventory_file(adcm_fs: ADCM, task_id: int) -> dict:
+def get_inventory_file(adcm_fs: ADCM, job_id: int) -> dict:
     """Get inventory.json file from ADCM as dict"""
-    file = get_file_from_container(adcm_fs, f'/adcm/data/run/{task_id}/', 'inventory.json')
+    file = get_file_from_container(adcm_fs, f'/adcm/data/run/{job_id}/', 'inventory.json')
     content = file.read().decode('utf8')
     return json.loads(content)
+
+
+def compare_inventory_files(adcm: ADCM, path_to_expected: str, job_id: int, request) -> None:
+    """Method to compare inventory file on some job with etalon inventory file"""
+    inventory_def = get_inventory_file(adcm, job_id)
+    with allure.step("Get expected inventory file"):
+        with open(path_to_expected, encoding="utf-8") as template:
+            expected_def = json.load(template)
+    with allure.step("Compare actual and expected config"):
+        assert inventory_def == expected_def, (
+            "Content of file inventory.json doesn't match expected. See attachments for more info."
+            f"{attach_inventory_file(request, inventory_def, 'Actual content of inventory.json') or ''}"
+            f"{attach_inventory_file(request, expected_def, 'Expected content of inventory.json') or ''}"
+        )
+
+
+def attach_inventory_file(request: SubRequest, inventory_content: dict, name: str):
+    """Attach inventory file on top level of allure report"""
+    reporter = allure_reporter(request.config)
+    if not reporter:
+        return
+    test_result = reporter.get_test(uuid=None)
+    reporter.attach_data(
+        uuid=uuid4(),
+        body=inventory_content,
+        name=name,
+        attachment_type=allure.attachment_type.JSON,
+        parent_uuid=test_result.uuid,
+    )
 
 
 # !===== HC ACL builder =====!

@@ -18,7 +18,6 @@ import cm.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('cm', '0080_subaction_multi_states'),
     ]
