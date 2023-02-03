@@ -27,6 +27,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
+from tests.ui_tests.app.page.common.breadcrumbs import Breadcrumbs
 from tests.ui_tests.app.page.common.common_locators import (
     CommonLocators,
     ObjectPageLocators,
@@ -79,6 +80,10 @@ class BasePageObject(Interactor):
         self.header = Header(self.driver, self.default_loc_timeout)
         self.footer = Footer(self.driver, self.default_loc_timeout)
         allure.dynamic.label("page_url", path_template)
+
+    @classmethod
+    def from_page(cls, page: "BasePageObject", *args, **kwargs):
+        return cls(page.driver, page.base_url, *args, **kwargs)
 
     def open(self, timeout: int | None = None, *, close_popup: bool = False):
         url = self.base_url + self.path
@@ -133,6 +138,8 @@ class BasePageObject(Interactor):
         with allure.step(f'Wait page {page_name} is opened'):
             wait_until_step_succeeds(_assert_page_is_opened, period=0.5, timeout=timeout)
             self.wait_element_hide(CommonToolbarLocators.progress_bar, timeout=60)
+
+        return self
 
     @allure.step('Wait Config has been loaded after authentication')
     def wait_config_loaded(self):
@@ -433,6 +440,9 @@ class Header(Interactor):  # pylint: disable=too-many-public-methods
         if not self.is_element_displayed(AuthorizedHeaderLocators.JobPopup.block):
             self.find_and_click(AuthorizedHeaderLocators.jobs)
         assert not self.is_element_displayed(AuthorizedHeaderLocators.JobPopup.acknowledge_btn)
+
+    def get_breadcrumbs(self) -> Breadcrumbs:
+        return Breadcrumbs.at_current_page(self)
 
 
 class Footer(Interactor):

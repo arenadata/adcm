@@ -68,7 +68,7 @@ class Interactor:
             else self.find_element(element, timeout=timeout or self._timeout)
         )
 
-    def is_child_displayed(self, parent: WebElement, child: BaseLocator, timeout: int | None = None) -> bool:
+    def is_child_displayed(self, parent: WebElement, child: BaseLocator, timeout: int | float | None = None) -> bool:
         return self._is_displayed(lambda: self.find_child(parent, child, timeout=timeout or self._timeout))
 
     def find_and_click(self, locator: BaseLocator, is_js: bool = False, timeout: int | None = None) -> None:

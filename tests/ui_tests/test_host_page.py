@@ -15,13 +15,12 @@
 """UI tests for /host page"""
 
 import os
-from typing import Tuple
 
 import allure
 import pytest
 from _pytest.fixtures import SubRequest
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider
-from adcm_pytest_plugin import utils
+from adcm_pytest_plugin.utils import get_data_dir
 from selenium.common import StaleElementReferenceException
 from tests.library.retry import RetryFromCheckpoint, Step
 from tests.library.status import ADCMObjectStatusChanger
@@ -72,12 +71,12 @@ ADVANCED_FIELD_NAME = 'Advanced option'
 @allure.title("Upload provider bundle")
 def provider_bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
     """Upload provider bundle"""
-    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
+    return sdk_client_fs.upload_from_fs(os.path.join(get_data_dir(__file__), request.param))
 
 
 @allure.title("Create provider")
 @pytest.fixture()
-def upload_and_create_provider(provider_bundle) -> Tuple[Bundle, Provider]:
+def upload_and_create_provider(provider_bundle) -> tuple[Bundle, Provider]:
     """Create provider"""
     provider = provider_bundle.provider_create(PROVIDER_NAME)
     return provider_bundle, provider
@@ -85,7 +84,7 @@ def upload_and_create_provider(provider_bundle) -> Tuple[Bundle, Provider]:
 
 @pytest.fixture()
 @allure.title("Create host")
-def create_host(upload_and_create_provider: Tuple[Bundle, Provider]):
+def create_host(upload_and_create_provider: tuple[Bundle, Provider]):
     """Create default host using API"""
     provider = upload_and_create_provider[1]
     return provider.host_create(HOST_FQDN)
@@ -93,7 +92,7 @@ def create_host(upload_and_create_provider: Tuple[Bundle, Provider]):
 
 @pytest.fixture()
 @allure.title("Create many hosts")
-def _create_many_hosts(request, upload_and_create_provider):
+def _create_many_hosts(request, upload_and_create_provider: tuple[Bundle, Provider]):
     """Pass amount in param"""
     provider = upload_and_create_provider[1]
     for i in range(request.param):
@@ -102,8 +101,7 @@ def _create_many_hosts(request, upload_and_create_provider):
 
 @pytest.fixture()
 def create_bonded_host(
-    upload_and_create_cluster: Tuple[Bundle, Cluster],
-    upload_and_create_provider: Tuple[Bundle, Provider],
+    upload_and_create_cluster: tuple[Bundle, Cluster], upload_and_create_provider: tuple[Bundle, Provider]
 ):
     """Create host bonded to cluster"""
     provider = upload_and_create_provider[1]
@@ -117,12 +115,12 @@ def create_bonded_host(
 @allure.title("Upload cluster bundle")
 def cluster_bundle(sdk_client_fs: ADCMClient) -> Bundle:
     """Upload cluster bundle"""
-    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "cluster"))
+    return sdk_client_fs.upload_from_fs(os.path.join(get_data_dir(__file__), "cluster"))
 
 
 @pytest.fixture()
 @allure.title("Create cluster")
-def upload_and_create_cluster(cluster_bundle: Bundle) -> Tuple[Bundle, Cluster]:
+def upload_and_create_cluster(cluster_bundle: Bundle) -> tuple[Bundle, Cluster]:
     """Create cluster"""
     cluster = cluster_bundle.cluster_prototype().cluster_create(CLUSTER_NAME)
     return cluster_bundle, cluster
@@ -174,7 +172,7 @@ class TestHostListPage:
     @pytest.mark.include_firefox()
     @pytest.mark.parametrize(
         "bundle_archive",
-        [utils.get_data_dir(__file__, "provider")],
+        [get_data_dir(__file__, "provider")],
         indirect=True,
         ids=['provider_bundle'],
     )
@@ -311,7 +309,7 @@ class TestHostListPage:
     @pytest.mark.include_firefox()
     @pytest.mark.parametrize('menu', ['main', 'config', 'status'])
     @pytest.mark.usefixtures('create_host')
-    def test_open_menu(self, upload_and_create_provider: Tuple[Bundle, Provider], page: HostListPage, menu: str):
+    def test_open_menu(self, upload_and_create_provider: tuple[Bundle, Provider], page: HostListPage, menu: str):
         """Open detailed host page and open menu from side navigation"""
 
         _, provider = upload_and_create_provider

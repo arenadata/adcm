@@ -1,0 +1,11 @@
+- type: cluster
+  name: cluster_to_import
+  version: 1.1
+
+  config:
+    - name: you_will_see_me_soon
+      type: string
+      default: hohohaha
+
+  export:
+    - you_will_see_me_soon

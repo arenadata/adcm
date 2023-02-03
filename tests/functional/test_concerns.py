@@ -19,8 +19,7 @@ import coreapi
 import pytest
 from adcm_client.base import ActionHasIssues
 from adcm_client.objects import ADCMClient, Cluster, Host, Provider, Service
-from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.utils import catch_failed
+from adcm_pytest_plugin.utils import catch_failed, get_data_dir, random_string
 from coreapi.exceptions import ErrorMessage
 from tests.library.adcm_websockets import ADCMWebsocket, EventMessage
 
@@ -30,7 +29,7 @@ from tests.library.adcm_websockets import ADCMWebsocket, EventMessage
 @pytest.fixture()
 def provider_bundle(sdk_client_fs):
     """Get provider without concerns bundle"""
-    return sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, 'provider_wo_concern'))
+    return sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'provider_wo_concern'))
 
 
 @pytest.fixture()
@@ -41,9 +40,9 @@ def provider(provider_bundle):
 
 def test_action_should_not_be_run_while_cluster_has_an_issue(sdk_client_fs: ADCMClient):
     """Test action should not be run while cluster has an issue"""
-    bundle_path = utils.get_data_dir(__file__, "cluster")
+    bundle_path = get_data_dir(__file__, "cluster")
     bundle = sdk_client_fs.upload_from_fs(bundle_path)
-    cluster = bundle.cluster_create(name=utils.random_string())
+    cluster = bundle.cluster_create(name=random_string())
     with allure.step(f"Run action with error for cluster {cluster.name}"):
         with pytest.raises(ActionHasIssues):
             cluster.action(name="install").run()
@@ -51,22 +50,20 @@ def test_action_should_not_be_run_while_cluster_has_an_issue(sdk_client_fs: ADCM
 
 def test_action_should_not_be_run_while_host_has_an_issue(sdk_client_fs: ADCMClient):
     """Test action should not be run while host has an issue"""
-    bundle_path = utils.get_data_dir(__file__, "host")
+    bundle_path = get_data_dir(__file__, "host")
     bundle = sdk_client_fs.upload_from_fs(bundle_path)
-    provider = bundle.provider_create(name=utils.random_string())
-    host = provider.host_create(fqdn=utils.random_string())
+    provider = bundle.provider_create(name=random_string())
+    host = provider.host_create(fqdn=random_string())
     with allure.step(f"Run action with error for host {host.fqdn}"):
         with pytest.raises(ActionHasIssues):
             host.action(name="install").run()
 
 
-def test_action_should_not_be_run_while_hostprovider_has_an_issue(
-    sdk_client_fs: ADCMClient,
-):
+def test_action_should_not_be_run_while_hostprovider_has_an_issue(sdk_client_fs: ADCMClient):
     """Test action should not be run while hostprovider has an issue"""
-    bundle_path = utils.get_data_dir(__file__, "provider")
+    bundle_path = get_data_dir(__file__, "provider")
     bundle = sdk_client_fs.upload_from_fs(bundle_path)
-    provider = bundle.provider_create(name=utils.random_string())
+    provider = bundle.provider_create(name=random_string())
     with allure.step(f"Run action with error for provider {provider.name}"):
         with pytest.raises(ActionHasIssues):
             provider.action(name="install").run()
@@ -75,10 +72,10 @@ def test_action_should_not_be_run_while_hostprovider_has_an_issue(
 def test_when_cluster_has_issue_then_upgrade_locked(sdk_client_fs: ADCMClient):
     """Test upgrade should not be run while cluster has an issue"""
     with allure.step("Create cluster and upload new one bundle"):
-        old_bundle_path = utils.get_data_dir(__file__, "cluster")
-        new_bundle_path = utils.get_data_dir(__file__, "upgrade", "cluster")
+        old_bundle_path = get_data_dir(__file__, "cluster")
+        new_bundle_path = get_data_dir(__file__, "upgrade", "cluster")
         old_bundle = sdk_client_fs.upload_from_fs(old_bundle_path)
-        cluster = old_bundle.cluster_create(name=utils.random_string())
+        cluster = old_bundle.cluster_create(name=random_string())
         sdk_client_fs.upload_from_fs(new_bundle_path)
     with allure.step("Check upgrade isn't listed when concern is presented"):
         assert len(cluster.upgrade_list()) == 0, "No upgrade should be available with concern"
@@ -92,10 +89,10 @@ def test_when_cluster_has_issue_then_upgrade_locked(sdk_client_fs: ADCMClient):
 def test_when_hostprovider_has_issue_then_upgrade_locked(sdk_client_fs: ADCMClient):
     """Test upgrade should not be run while hostprovider has an issue"""
     with allure.step("Create hostprovider"):
-        old_bundle_path = utils.get_data_dir(__file__, "provider")
-        new_bundle_path = utils.get_data_dir(__file__, "upgrade", "provider")
+        old_bundle_path = get_data_dir(__file__, "provider")
+        new_bundle_path = get_data_dir(__file__, "upgrade", "provider")
         old_bundle = sdk_client_fs.upload_from_fs(old_bundle_path)
-        provider = old_bundle.provider_create(name=utils.random_string())
+        provider = old_bundle.provider_create(name=random_string())
         sdk_client_fs.upload_from_fs(new_bundle_path)
     with allure.step("Check upgrade isn't listed when concern is presented"):
         assert len(provider.upgrade_list()) == 0, "No upgrade should be available with concern"
@@ -107,14 +104,12 @@ def test_when_hostprovider_has_issue_then_upgrade_locked(sdk_client_fs: ADCMClie
 
 
 @allure.link("https://jira.arenadata.io/browse/ADCM-487")
-def test_when_component_has_no_constraint_then_cluster_doesnt_have_issues(
-    sdk_client_fs: ADCMClient,
-):
+def test_when_component_has_no_constraint_then_cluster_doesnt_have_issues(sdk_client_fs: ADCMClient):
     """Test no cluster issues if no constraints on components"""
     with allure.step("Create cluster (component has no constraint)"):
-        bundle_path = utils.get_data_dir(__file__, "cluster_component_hasnt_constraint")
+        bundle_path = get_data_dir(__file__, "cluster_component_hasnt_constraint")
         bundle = sdk_client_fs.upload_from_fs(bundle_path)
-        cluster = bundle.cluster_create(name=utils.random_string())
+        cluster = bundle.cluster_create(name=random_string())
     cluster.service_add()
     with allure.step("Run action: lock cluster"):
         cluster.action(name="lock-cluster").run().try_wait()
@@ -127,7 +122,7 @@ def test_when_component_has_no_constraint_then_cluster_doesnt_have_issues(
 def test_concerns_are_deleted_with_cluster_deletion(sdk_client_fs: ADCMClient, provider: Provider):
     """Tests concerns are deleted from all related objects when the cluster is deleted"""
     with allure.step('Upload bundles and create cluster'):
-        cluster_bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, 'cluster'))
+        cluster_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
         cluster = cluster_bundle.cluster_create(name='Test Cluster')
     _, host_1, host_2 = _add_services_and_map_hosts_to_it(cluster, provider)
     with allure.step('Check there is a concern on one of the hosts'):
@@ -148,10 +143,10 @@ def test_host_concerns_stays_after_cluster_deletion(bundle_name: str, sdk_client
     concerns_from_provider_objects = 1
     concerns_from_cluster_objects = 3
     with allure.step('Upload provider bundle'):
-        provider_bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, bundle_name))
+        provider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, bundle_name))
         provider = provider_bundle.provider_create(name='Test Provider')
     with allure.step('Upload bundles and create cluster'):
-        cluster_bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, 'cluster'))
+        cluster_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
         cluster = cluster_bundle.cluster_create(name='Test Cluster')
     _, host_1, host_2 = _add_services_and_map_hosts_to_it(cluster, provider)
     with allure.step('Check there are correct amount of concerns before cluster is deleted'):
@@ -166,7 +161,7 @@ def test_host_concerns_stays_after_cluster_deletion(bundle_name: str, sdk_client
 def test_only_service_concerns_are_deleted_after_it(sdk_client_fs: ADCMClient):
     """Test amount of concerns before/after the service with concerns is deleted from the cluster"""
     with allure.step('Upload bundles and create cluster'):
-        cluster_bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, 'cluster'))
+        cluster_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
         cluster = cluster_bundle.cluster_create(name='Test Cluster')
         service = cluster.service_add(name='service_1')
     with allure.step('Check there are correct amount of concerns before service is deleted'):
@@ -204,7 +199,7 @@ class TestProviderIndependence:
         self, bundle_name: str, client: ADCMClient, adcm_ws: ADCMWebsocket
     ) -> Provider:
         with allure.step(f'Upload provider bundle {bundle_name} and check creation event'):
-            provider_bundle = client.upload_from_fs(utils.get_data_dir(__file__, bundle_name))
+            provider_bundle = client.upload_from_fs(get_data_dir(__file__, bundle_name))
             await adcm_ws.check_next_message_is(1, event='create', type='bundle', id=provider_bundle.id)
         with allure.step('Create provider and check it has no concerns'):
             provider = provider_bundle.provider_create('Provider without concerns')
@@ -226,7 +221,7 @@ class TestProviderIndependence:
         self, bundle_name: str, service_name: str, client: ADCMClient, adcm_ws: ADCMWebsocket
     ) -> Cluster:
         with allure.step(f'Upload cluster bundle {bundle_name} and check creation event'):
-            cluster_bundle = client.upload_from_fs(utils.get_data_dir(__file__, bundle_name))
+            cluster_bundle = client.upload_from_fs(get_data_dir(__file__, bundle_name))
             await adcm_ws.check_next_message_is(event='create', type='bundle', id=cluster_bundle.id)
         with allure.step(f'Create cluster, add service {service_name} and check creation messages'):
             cluster = cluster_bundle.cluster_create('Cluster without concerns')

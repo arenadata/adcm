@@ -20,6 +20,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webdriver import WebElement
 from tests.ui_tests.app.page.cluster_list.locators import ClusterListLocators
 from tests.ui_tests.app.page.common.base_page import BasePageObject
+from tests.ui_tests.app.page.common.concerns import ConcernPopover
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs.create_host_locators import (
@@ -139,10 +140,20 @@ class ClusterListPage(BasePageObject):  # pylint: disable=too-many-public-method
     @allure.step("Get row by cluster name '{cluster_name}'")
     def get_row_by_cluster_name(self, cluster_name: str) -> WebElement:
         """Get Cluster row by cluster name"""
-        rows = self.table.get_all_rows()
-        for row in rows:
-            if self.find_child(row, self.table.locators.ClusterRow.name).text == cluster_name:
-                return row
+        name_locator = self.table.locators.ClusterRow.name
+        suitable_row = next(
+            filter(
+                # if there's an "edit" icon, it's "text" will be a part of "cluster's name text", separated by "\n"
+                # and since cluster can't have "\n" in name, we consider everything before a cluster's name
+                lambda row: self.find_child(row, name_locator).text.split("\n", maxsplit=1)[0] == cluster_name,
+                self.table.get_all_rows(),
+            ),
+            None,
+        )
+
+        if suitable_row:
+            return suitable_row
+
         raise AssertionError(f"Cluster '{cluster_name}' not found in table rows")
 
     @allure.step("Click on config button from the row")
@@ -234,3 +245,11 @@ class ClusterListPage(BasePageObject):  # pylint: disable=too-many-public-method
                 issue.click()
                 return
         raise AssertionError(f"Issue name '{concern_object_name}' not found in row issues")
+
+    @allure.step("Hover concern button in row")
+    def hover_concern_button(self, row: WebElement) -> ConcernPopover:
+        self.hover_element(self.find_child(row, self.table.locators.ClusterRow.actions))
+        return ConcernPopover.wait_opened(self)
+
+    def hover_name(self, row: WebElement):
+        self.hover_element(self.find_child(row, self.table.locators.ClusterRow.name))

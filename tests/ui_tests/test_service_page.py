@@ -27,7 +27,7 @@ from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import ClusterServicesPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
-from tests.ui_tests.app.page.common.import_page.page import ImportItemInfo
+from tests.ui_tests.app.page.common.import_page.page import ImportInfo
 from tests.ui_tests.app.page.common.status.page import (
     NEGATIVE_COLOR,
     SUCCESS_COLOR,
@@ -623,9 +623,9 @@ class TestServiceImportPage:
             )
             cluster_import.service_add(name=params["import_service_name"])
         service_import_page = ServiceImportPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
-        import_item = service_import_page.get_import_items()[0]
+        import_item = service_import_page.get_imports()[0]
         with allure.step("Check import on import page"):
-            assert service_import_page.get_import_item_info(import_item) == ImportItemInfo(
+            assert service_import_page.get_import_info(import_item) == ImportInfo(
                 'Pre-uploaded Dummy service to import', 'Pre-uploaded Dummy service to import 2.5'
             ), "Text in import item changed"
         service_import_page.close_info_popup()
