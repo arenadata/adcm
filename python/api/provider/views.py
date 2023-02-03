@@ -53,7 +53,7 @@ class ProviderList(PermissionListMixin, PaginatedView):
     serializer_class_ui = ProviderUISerializer
     serializer_class_post = ProviderDetailSerializer
     filterset_fields = ("name", "prototype_id")
-    ordering_fields = ("name", "state", "prototype__display_name", "prototype__version_order")
+    ordering_fields = ("id", "name", "state", "prototype__display_name", "prototype__version_order")
     permission_required = ["cm.view_hostprovider"]
 
     @audit

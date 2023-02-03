@@ -94,7 +94,7 @@ class ClusterList(PermissionListMixin, PaginatedView):
     serializer_class_ui = ClusterUISerializer
     serializer_class_post = ClusterDetailSerializer
     filterset_fields = ("name", "prototype_id")
-    ordering_fields = ("name", "state", "prototype__display_name", "prototype__version_order")
+    ordering_fields = ("id", "name", "state", "prototype__display_name", "prototype__version_order")
     permission_required = [VIEW_CLUSTER_PERM]
 
     @audit
