@@ -1,12 +1,12 @@
-/conf/ @aas @k.shestakov @d.skrynnik-arenadata.io @tsd
-/go/ @aas @aer @d.skrynnik-arenadata.io
-/os/ @aas @k.shestakov @d.skrynnik-arenadata.io @tsd
-/python/ @ass @k.shestakov @d.skrynnik-arenadata.io @tsd
-/spec/ @ass @ke
-/tests/ @ass @aer @v.chudasov
+/conf/ @aas @k.shestakov @d.skrynnik @tsd
+/go/ @aas @aer @d.skrynnik
+/os/ @aas @k.shestakov @d.skrynnik @tsd
+/python/ @aas @k.shestakov @d.skrynnik @tsd
+/spec/ @aas @ke
+/tests/ @aas @aer @v.chudasov
 /web/ @v.remizov @d.bardin @k.fedorenko
-.dockerignor @aas @k.shestakov
-.gitignore @ass @k.shestakov
+.dockerignore @aas @k.shestakov
+.gitignore @aas @k.shestakov
 .gitlab-ci.yaml @aas @k.shestakov
 .pre-commit-config.yaml @aas @k.shestakov
 CODEOWNERS @aas @v.remizov
@@ -20,8 +20,8 @@ license_checker.py @aas @k.shestakov
 Makefile @aas @k.shestakov @aer
 pyproject.toml @aas @k.shestakov @aer
 pytest.sh @aas @k.shestakov @aer @v.chudasov
-README.md @aas @k.shestakov @aer @v.chudasov @d.skrynnik-arenadata.io @tsd @ke @k.fedorenko
-requirements.txt @ass @k.shestakov
+README.md @aas @k.shestakov @aer @v.chudasov @d.skrynnik @tsd @ke @k.fedorenko
+requirements.txt @aas @k.shestakov
 requirements-test.txt @aas @k.shestakov @aer @v.chudasov
 requirements-venv-2.9.txt @aas @k.shestakov
 requirements-venv-default.txt @aas @k.shestakov
