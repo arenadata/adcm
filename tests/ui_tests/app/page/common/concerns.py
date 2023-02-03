@@ -5,7 +5,7 @@ import allure
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from tests.library.utils import name_of
-from tests.ui_tests.core.elements import Link, ListOfElements, as_element
+from tests.ui_tests.core.elements import Button, Link, ListOfElements, as_element
 from tests.ui_tests.core.interactors import Interactor
 from tests.ui_tests.core.locators import Locator, autoname
 
@@ -80,3 +80,9 @@ class ConcernPopover:
 
     def get_concern_links(self) -> tuple[str, ...]:
         return tuple(concern.links[0].element.get_attribute("href") for concern in self.concerns)
+
+
+class ConcernMark(Button):
+    def hover(self) -> ConcernPopover:
+        super().hover()
+        return ConcernPopover.wait_opened(self._view)

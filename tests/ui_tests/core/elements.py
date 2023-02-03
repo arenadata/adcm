@@ -120,7 +120,7 @@ class Input(Element):
 
 
 class Button(Element):
-    def hover(self) -> None:
+    def hover(self) -> Any:
         self._view.hover_element(self.element)
 
     def click(self):
