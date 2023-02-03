@@ -1,0 +1,108 @@
+- type: cluster
+  version: 2.3
+  name: cluster_with_concerns
+  display_name: I Have concerns
+
+  import:
+    cluster_to_import:
+      required: true
+
+    not_exist:
+      default:
+        - grouped_stuff
+
+  config:
+    - name: name_of_something
+      display_name: Name of some string
+      type: string
+
+    - name: grouped_stuff
+      type: group
+      subs:
+        - name: value_of_metric
+          display_name: Some Metric
+          type: integer
+
+  actions:
+    just_wait:
+      type: job
+      script_type: ansible
+      script: ./actions.yaml
+      params:
+        ansible_tags: wait
+      states:
+        available: any
+
+    wait_on_second:
+      type: task
+      states:
+        available: any
+      scripts:
+        - name: First step
+          script_type: ansible
+          script: ./actions.yaml
+          params:
+            ansible_tags: success
+        - name: Second step
+          script_type: ansible
+          script: ./actions.yaml
+          params:
+            ansible_tags: fail, wait
+
+- type: service
+  version: 3.4
+  name: service_with_concerns
+  display_name: Experience Problems With Concerns
+
+  config:
+    - name: beautiful_list
+      type: list
+      default:
+        - "item 1"
+        - "item 2"
+
+    - name: mad_numbers
+      type: float
+      
+  components:
+    component_concern:
+      display_name: Small But Tragic
+
+      config:
+        - name: single
+          type: string
+          default: kokoko
+
+        - name: group_of_stuff
+          display_name: Fistful of stuff
+          type: group
+          subs:
+            - name: param_1
+              type: integer
+            - name: param_2
+              type: string
+
+- type: service
+  version: 1.2
+  required: true
+  name: very_important_service
+  display_name: Just add me already
+
+  config:
+    - name: just_a_group
+      type: group
+      subs:
+        - name: also_required
+          display_name: I'm also required, you know?
+          type: string
+
+- type: service
+  version: 2.2
+  name: with_constrainted_component
+  display_name: Wohoo Problems Incoming
+
+  components:
+    with_constraint:
+      display_name: "Yes I have a constraint"
+
+      constraint: [1]

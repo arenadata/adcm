@@ -53,6 +53,7 @@ from tests.ui_tests.app.page.common.host_components.locators import (
 from tests.ui_tests.app.page.common.host_components.page import HostComponentsPage
 from tests.ui_tests.app.page.common.import_page.locators import ImportLocators
 from tests.ui_tests.app.page.common.import_page.page import ImportPage
+from tests.ui_tests.app.page.common.left_menu import LeftMenu
 from tests.ui_tests.app.page.common.status.page import StatusPage
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
@@ -91,6 +92,9 @@ class CommonClusterPage(BasePageObject):  # pylint: disable=too-many-instance-at
         self.toolbar = CommonToolbar(self.driver, self.base_url)
         self.table = CommonTableObj(driver=self.driver)
         self.group_config = GroupConfigList(self.driver, self.base_url)
+
+    def get_menu(self) -> LeftMenu:
+        return LeftMenu.at_current_page(self)
 
     def open_main_tab(self):
         """Open Main tab by menu click"""
@@ -518,8 +522,6 @@ class ClusterComponentsPage(CommonClusterPage, HostComponentsPage):
         HostComponentsLocators.save_btn,
         HostComponentsLocators.components_title,
         HostComponentsLocators.hosts_title,
-        HostComponentsLocators.service_page_link,
-        HostComponentsLocators.hosts_page_link,
     ]
 
 

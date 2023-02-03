@@ -37,7 +37,7 @@ from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
 from tests.ui_tests.app.page.common.host_components.page import ComponentsHostRowInfo
-from tests.ui_tests.app.page.common.import_page.page import ImportItemInfo
+from tests.ui_tests.app.page.common.import_page.page import ImportInfo
 from tests.ui_tests.app.page.common.status.page import (
     NEGATIVE_COLOR,
     SUCCESS_COLOR,
@@ -292,7 +292,7 @@ class TestClusterListPage:
         import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, cluster.id)
         import_page.wait_page_is_opened()
         with allure.step("Check import on import page"):
-            assert len(import_page.get_import_items()) == 1, "Cluster import page should contain 1 import"
+            assert len(import_page.get_imports()) == 1, "Cluster import page should contain 1 import"
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -543,7 +543,7 @@ class TestClusterServicePage:
         import_page = ServiceImportPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id)
         import_page.wait_page_is_opened()
         with allure.step("Check import on import page"):
-            assert len(import_page.get_import_items()) == 1, "Service import page should contain 1 import"
+            assert len(import_page.get_imports()) == 1, "Service import page should contain 1 import"
         import_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
     def test_check_service_list_page_open_service_config(self, app_fs, create_community_cluster_with_service):
@@ -1356,9 +1356,9 @@ class TestClusterImportPage:
         params = {"message": "Successfully saved"}
         cluster, _, _, _ = create_import_cluster_with_service
         import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
-        import_item = import_page.get_import_items()[0]
+        import_item = import_page.get_imports()[0]
         with allure.step("Check import on import page"):
-            assert import_page.get_import_item_info(import_item) == ImportItemInfo(
+            assert import_page.get_import_info(import_item) == ImportInfo(
                 'Pre-uploaded Dummy cluster to import', 'Pre-uploaded Dummy cluster to import 2.5'
             ), "Text in import item changed"
         import_page.close_info_popup()

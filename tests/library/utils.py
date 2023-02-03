@@ -15,6 +15,7 @@
 import json
 import random
 import time
+from operator import attrgetter
 from typing import Callable, Iterable, TypeVar
 
 import requests
@@ -23,6 +24,8 @@ from adcm_pytest_plugin.params import ADCMVersionParam
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 
 T = TypeVar("T")
+
+name_of = attrgetter("name")
 
 
 class ConfigError(Exception):

@@ -20,7 +20,7 @@ from typing import Tuple
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Cluster, Host, Service
-from adcm_pytest_plugin import utils
+from adcm_pytest_plugin.utils import get_data_dir
 from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
@@ -76,7 +76,7 @@ def create_cluster_with_hostcomponents(
     """Create cluster with component"""
 
     cluster, service = create_cluster_with_service
-    provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), PROVIDER_BUNDLE))
+    provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(get_data_dir(__file__), PROVIDER_BUNDLE))
     provider = provider_bundle.provider_create(PROVIDER_NAME)
     host = provider.host_create(HOST_NAME)
     cluster.host_add(host)
@@ -87,7 +87,7 @@ def create_cluster_with_hostcomponents(
 # !===== Tests =====!
 
 
-@pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
+@pytest.mark.parametrize("bundle_archive", [get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
 class TestComponentMainPage:
     """Tests for the /cluster/{}/service/{}/component/{}/ page"""
 
@@ -146,7 +146,7 @@ class TestComponentMainPage:
 class TestComponentConfigPage:
     """Tests for the /cluster/{}/service/{}/component/{}/config page"""
 
-    @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
+    @pytest.mark.parametrize("bundle_archive", [get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
     def test_open_by_tab_config_component_page(self, app_fs, create_cluster_with_service):
         """Test open /cluster/{}/service/{}/component/{}/config from left menu"""
 
@@ -159,7 +159,7 @@ class TestComponentConfigPage:
         component_config_page.check_all_elements()
         component_config_page.check_component_toolbar(CLUSTER_NAME, SERVICE_NAME, FIRST_COMPONENT_NAME)
 
-    @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
+    @pytest.mark.parametrize("bundle_archive", [get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
     def test_filter_config_on_component_config_page(self, app_fs, create_cluster_with_service):
         """Test config filtration on /cluster/{}/service/{}/component/{}/config page"""
 
@@ -188,7 +188,7 @@ class TestComponentConfigPage:
 
     @pytest.mark.parametrize(
         "bundle_archive",
-        [utils.get_data_dir(__file__, COMPONENT_WITH_DESCRIPTION_FIELDS)],
+        [get_data_dir(__file__, COMPONENT_WITH_DESCRIPTION_FIELDS)],
         indirect=True,
     )
     def test_save_custom_config_on_component_config_page(
@@ -212,7 +212,7 @@ class TestComponentConfigPage:
         component_config_page.config.compare_versions(params["config_name_old"])
         component_config_page.config.check_config_fields_history_with_test_values()
 
-    @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
+    @pytest.mark.parametrize("bundle_archive", [get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
     def test_reset_config_in_row_on_component_config_page(self, app_fs, create_cluster_with_service):
         """Test config reset on /cluster/{}/service/{}/component/{}/config page"""
 
@@ -243,7 +243,7 @@ class TestComponentConfigPage:
 
     @pytest.mark.parametrize(
         "bundle_archive",
-        [utils.get_data_dir(__file__, COMPONENT_WITH_REQUIRED_FIELDS)],
+        [get_data_dir(__file__, COMPONENT_WITH_REQUIRED_FIELDS)],
         indirect=True,
     )
     def test_field_validation_on_component_config_page(
@@ -274,7 +274,7 @@ class TestComponentConfigPage:
 
     @pytest.mark.parametrize(
         "bundle_archive",
-        [utils.get_data_dir(__file__, COMPONENT_WITH_DEFAULT_FIELDS)],
+        [get_data_dir(__file__, COMPONENT_WITH_DEFAULT_FIELDS)],
         indirect=True,
     )
     def test_field_validation_on_component_config_page_with_default_value(
@@ -301,7 +301,7 @@ class TestComponentConfigPage:
 
     @pytest.mark.parametrize(
         "bundle_archive",
-        [utils.get_data_dir(__file__, COMPONENT_WITH_DESCRIPTION_FIELDS)],
+        [get_data_dir(__file__, COMPONENT_WITH_DESCRIPTION_FIELDS)],
         indirect=True,
     )
     def test_field_tooltips_on_component_config_page(self, app_fs, create_cluster_with_service, create_bundle_archives):
@@ -316,7 +316,7 @@ class TestComponentConfigPage:
             component_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
 
-@pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
+@pytest.mark.parametrize("bundle_archive", [get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
 class TestComponentGroupConfigPage:
     """Tests for the /cluster/{}/service/{}/component/{}/group_config page"""
 
@@ -368,7 +368,7 @@ class TestComponentGroupConfigPage:
         check_pagination(group_conf_page.table, expected_on_second=1)
 
 
-@pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
+@pytest.mark.parametrize("bundle_archive", [get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
 class TestComponentStatusPage:
     """Tests for the /cluster/{}/service/{}/component/{}/status page"""
 
