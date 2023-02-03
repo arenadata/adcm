@@ -128,11 +128,11 @@ def tuples_are_equal(actual: tuple[T], expected: tuple[T], message: str = "") ->
 
     per_item_comparison = "\n".join(
         [
-            f"At position {i}\nActual: {actual_}\nExpected: {expected_}"
+            f"At position {i}\n{actual_} -- actual\n{expected_} -- expected"
             for i, (actual_, expected_) in enumerate(zip_longest(actual, expected))
         ]
     )
-    allure.attach(pformat(per_item_comparison), name="Elements comparison", attachment_type=allure.attachment_type.TEXT)
+    allure.attach(per_item_comparison, name="Elements comparison", attachment_type=allure.attachment_type.TEXT)
 
     raise AssertionError("\n".join((composed_message, "Check attachments for more details")))
 

@@ -26,9 +26,9 @@ from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.cluster.page import ClusterConfigPage
 from tests.ui_tests.app.page.common.configuration.page import (
     GroupRow,
-    PasswordInput,
-    SecretmapInput,
-    SecrettextInput,
+    PasswordRow,
+    SecretMapRow,
+    SecretTextRow,
 )
 from tests.ui_tests.app.page.component.page import ComponentConfigPage
 from tests.ui_tests.app.page.service.page import ServiceConfigPage
@@ -106,14 +106,14 @@ class TestSecretMap:
     def _check_group_rows_read_only(config_page: ClusterConfigPage | ServiceConfigPage | ComponentConfigPage):
         groups = config_page.config.get_row(name="group", like=GroupRow)
         assert groups.get_row(
-            name="secretmap", like=SecretmapInput
+            name="secretmap", like=SecretMapRow
         ).read_only, "Group element secretmap must be read_only"
-        assert groups.get_row(name="password", like=PasswordInput).read_only, "Group element password must be read_only"
+        assert groups.get_row(name="password", like=PasswordRow).read_only, "Group element password must be read_only"
         assert groups.get_row(
-            name="secrettext", like=SecrettextInput
+            name="secrettext", like=SecretTextRow
         ).read_only, "Group element secrettext must be read_only"
         assert groups.get_row(
-            name="secretfile", like=SecrettextInput
+            name="secretfile", like=SecretTextRow
         ).read_only, "Group element secretfile must be read_only"
 
     @pytest.mark.parametrize("obj_to_pick", [Cluster, Service, Component])
@@ -124,17 +124,17 @@ class TestSecretMap:
         config_page = self._open_object_page(obj_to_pick, cluster, service, component)
 
         with allure.step("Change config via ui"):
-            secretmap_row = config_page.config.get_row(name="secretmap", like=SecretmapInput)
+            secretmap_row = config_page.config.get_row(name="secretmap", like=SecretMapRow)
             secretmap_row.add_item()
             secretmap_row.fill({"first_key": "first_value"})
 
-            password_row = config_page.config.get_row(name="password", like=PasswordInput)
+            password_row = config_page.config.get_row(name="password", like=PasswordRow)
             password_row.fill(value="first_pswd")
 
-            secrettext_row = config_page.config.get_row(name="secrettext", like=SecrettextInput)
+            secrettext_row = config_page.config.get_row(name="secrettext", like=SecretTextRow)
             secrettext_row.fill("first text")
 
-            secretfile_row = config_page.config.get_row(name="secretfile", like=SecrettextInput)
+            secretfile_row = config_page.config.get_row(name="secretfile", like=SecretTextRow)
             secretfile_row.fill("content")
 
             save_button = config_page.config.get_save_button()
@@ -152,7 +152,7 @@ class TestSecretMap:
             self._run_object_action(obj_to_pick, "check_after_1", cluster, service, component)
 
         with allure.step("Change secret rows in config via ui"):
-            secretmap_row = config_page.config.get_row(name="secretmap", like=SecretmapInput)
+            secretmap_row = config_page.config.get_row(name="secretmap", like=SecretMapRow)
             secretmap_row.clear()
             secretmap_row.add_item()
             secretmap_row.fill({"first_key": "second_value"})
@@ -208,20 +208,20 @@ class TestSecretMap:
             self._run_object_action(obj_to_pick, "check_after_1", cluster, service, component)
 
         with allure.step("Change secret rows in config via ui"):
-            secretmap_row = config_page.config.get_row(name="secretmap", like=SecretmapInput)
+            secretmap_row = config_page.config.get_row(name="secretmap", like=SecretMapRow)
             secretmap_row.clear()
             secretmap_row.add_item()
             secretmap_row.fill({"first_key": "second_value"})
 
-            password_row = config_page.config.get_row(name="password", like=PasswordInput)
+            password_row = config_page.config.get_row(name="password", like=PasswordRow)
             password_row.clear()
             password_row.fill(value="second_pswd")
 
-            secrettext_row = config_page.config.get_row(name="secrettext", like=SecrettextInput)
+            secrettext_row = config_page.config.get_row(name="secrettext", like=SecretTextRow)
             secrettext_row.clear()
             secrettext_row.fill("second text")
 
-            secretfile_row = config_page.config.get_row(name="secretfile", like=SecrettextInput)
+            secretfile_row = config_page.config.get_row(name="secretfile", like=SecretTextRow)
             secretfile_row.clear()
             secretfile_row.fill("Changed content")
 

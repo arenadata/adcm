@@ -1,6 +1,7 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from tests.library.utils import name_of
+from tests.ui_tests.app.page.common.concerns import ConcernMark
 from tests.ui_tests.core.elements import (
     Button,
     Element,
@@ -53,10 +54,12 @@ class Crumb(Element):
 
         return Button(element=self._view.find_child(self.element, self.Locators.actions_button), interactor=self._view)
 
-    def get_concern_mark(self) -> Button:
+    def get_concern_mark(self) -> ConcernMark:
         assert self.has_concern_mark(), f"Concern mark isn't presented on crumb {self.name}"
 
-        return Button(element=self._view.find_child(self.element, self.Locators.concern_mark), interactor=self._view)
+        return ConcernMark(
+            element=self._view.find_child(self.element, self.Locators.concern_mark), interactor=self._view
+        )
 
     def get_upgrade_button(self) -> Button:
         assert self.has_upgrade_button(), f"Upgrade button isn't presented on crumb {self.name}"

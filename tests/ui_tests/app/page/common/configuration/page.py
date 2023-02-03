@@ -16,11 +16,22 @@ from abc import abstractmethod
 from contextlib import contextmanager
 from dataclasses import dataclass
 from itertools import zip_longest
-from typing import Callable, Collection, List, Optional, Type, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Collection,
+    List,
+    NamedTuple,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from tests.ui_tests.app.page.common.base_page import BasePageObject
@@ -34,6 +45,7 @@ from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMe
 from tests.ui_tests.core.checks import check_element_is_hidden, check_element_is_visible
 from tests.ui_tests.core.elements import Button
 from tests.ui_tests.core.interactors import Interactor
+from tests.ui_tests.core.locators import Locator, autoname
 
 T = TypeVar("T")
 DEFAULT_TIMEOUT = 1
@@ -47,6 +59,17 @@ class ConfigRowInfo:
     value: str
 
 
+class RowInfo(NamedTuple):
+    name: str
+    value: Any
+
+
+class RowLocators:
+    input = Locator(
+        By.CSS_SELECTOR, '*:not([style="display: none;"])>mat-form-field input,textarea', name="Default input"
+    )
+
+
 class GeneralRow:
     name: str
 
@@ -56,7 +79,7 @@ class GeneralRow:
         self.driver = driver
 
     @classmethod
-    def from_(cls, row: "GeneralRow"):
+    def from_row(cls, row: "GeneralRow"):
         return cls(element=row.element, driver=row._view._driver)  # pylint: disable=protected-access
 
 
@@ -73,8 +96,15 @@ class SimpleRow(GeneralRow):
     def clear(self):
         pass
 
+    @abstractmethod
+    def get_value(self):
+        pass
 
-class StringInput(GeneralRow):
+    def get_row_parts(self) -> list[WebElement]:
+        return self._view.find_children(self.element, Locator(By.CSS_SELECTOR, "app-field>div>*"))
+
+
+class StringRow(SimpleRow):
     def __init__(self, element: WebElement, driver: WebDriver):
         super().__init__(element, driver)
         self._input = self._view.find_child(self.element, CommonConfigMenu.ConfigRow.input)
@@ -94,7 +124,7 @@ class StringInput(GeneralRow):
         return self._input.get_property("value")
 
 
-class PasswordInput(GeneralRow):
+class PasswordRow(SimpleRow):
     def __init__(self, element: WebElement, driver: WebDriver):
         super().__init__(element, driver)
         self._clear = self._view.find_child(self.element, CommonConfigMenu.ConfigRow.clear_btn)
@@ -119,7 +149,7 @@ class PasswordInput(GeneralRow):
         return "read-only" in str(self.element.get_attribute("class"))
 
 
-class SecretmapInput(GeneralRow):
+class SecretMapRow(SimpleRow):
     def __init__(self, element: WebElement, driver: WebDriver):
         super().__init__(element, driver)
         self._add = self._view.find_child(self.element, CommonConfigMenu.ConfigRow.add_item_btn)
@@ -163,7 +193,7 @@ class SecretmapInput(GeneralRow):
         raise ValueError("Can not find element with key ")
 
 
-class SecrettextInput(GeneralRow):
+class SecretTextRow(SimpleRow):
     def __init__(self, element: WebElement, driver: WebDriver):
         super().__init__(element, driver)
         self._input = self._view.find_child(self.element, CommonConfigMenu.ConfigRow.input)
@@ -184,6 +214,41 @@ class SecrettextInput(GeneralRow):
         return self._input.get_property("value")
 
 
+class BooleanRow(SimpleRow):
+    @autoname
+    class Locators:
+        input = Locator(By.TAG_NAME, "input")
+
+    def fill(self, value: bool) -> None:
+        if value:
+            self.toggle()
+        else:
+            self.untoggle()
+
+    def clear(self):
+        raise NotImplementedError
+
+    def toggle(self):
+        assert not self.get_value()
+        self._view.find_child(self.element, self.Locators.input).click()
+
+    def untoggle(self):
+        assert self.get_value()
+        self._view.find_child(self.element, self.Locators.input).click()
+
+    def get_value(self) -> bool | None:
+        raw_value = self._view.find_child(self.element, self.Locators.input).get_attribute("aria-checked")
+        match raw_value:
+            case "true":
+                return True
+            case "false":
+                return False
+            case "mixed":
+                return None
+            case _:
+                raise RuntimeError(f"Can't convert value to boolean: {raw_value}")
+
+
 class GroupRow(GeneralRow):
     @property
     def name(self) -> str:
@@ -195,9 +260,44 @@ class GroupRow(GeneralRow):
             elements.append(SimpleRow(element=element, driver=self.driver))
         return elements
 
-    def get_row(self, name: str, like: Type[T] = StringInput) -> T:
+    def get_row(self, name: str, like: Type[T] = StringRow) -> T:
         rows = [row for row in self.get_rows() if row.name == name]
-        return like.from_(rows[0])
+        return like.from_row(rows[0])
+
+
+def detect_row_type(row: SimpleRow) -> SimpleRow | StringRow | BooleanRow:
+    input_element = next(
+        filter(lambda web_element: web_element.tag_name.startswith("app-fields-"), row.get_row_parts()), None
+    )
+    if not input_element:
+        return row
+
+    _, _, row_type = input_element.tag_name.split("-", maxsplit=2)
+    match row_type:
+        case "boolean":
+            return BooleanRow.from_row(row)
+        case "textbox":
+            # for now, I can't detect the exact type of row when it's textbox
+            # it can be integer/float/line input
+            return StringRow.from_row(row)
+        case _:
+            return row
+
+
+def get_row_values(
+    rows: list[SimpleRow | GroupRow], convert_child: Callable[[RowInfo], T] = lambda row: row
+) -> list[T]:
+    return [
+        convert_child(
+            RowInfo(
+                row.name,
+                detect_row_type(row).get_value()
+                if isinstance(row, SimpleRow)
+                else get_row_values(row.get_rows(), convert_child=convert_child),
+            )
+        )
+        for row in rows
+    ]
 
 
 class CommonConfigMenuObj(BasePageObject):  # pylint: disable=too-many-public-methods
@@ -219,9 +319,9 @@ class CommonConfigMenuObj(BasePageObject):  # pylint: disable=too-many-public-me
             elements.append(base_class(element=element, driver=self.driver))
         return elements
 
-    def get_row(self, name: str, like: Type[T] = StringInput) -> T:
+    def get_row(self, name: str, like: Type[T] = StringRow) -> T:
         rows = [row for row in self.get_rows() if row.name == name]
-        return like.from_(rows[0])
+        return like.from_row(rows[0])
 
     def get_save_button(self, timeout: int = DEFAULT_TIMEOUT, like: Type[T] = Button) -> T:
         try:
