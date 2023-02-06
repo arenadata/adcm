@@ -19,23 +19,23 @@ import cm.models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0102_auto_20230119_0755'),
+        ("cm", "0102_auto_20230119_0755"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='clusterobject',
-            name='before_upgrade',
+            model_name="clusterobject",
+            name="before_upgrade",
             field=models.JSONField(default=cm.models.get_default_before_upgrade),
         ),
         migrations.AddField(
-            model_name='host',
-            name='before_upgrade',
+            model_name="host",
+            name="before_upgrade",
             field=models.JSONField(default=cm.models.get_default_before_upgrade),
         ),
         migrations.AddField(
-            model_name='servicecomponent',
-            name='before_upgrade',
+            model_name="servicecomponent",
+            name="before_upgrade",
             field=models.JSONField(default=cm.models.get_default_before_upgrade),
         ),
     ]

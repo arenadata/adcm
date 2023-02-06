@@ -123,9 +123,9 @@ class UploadBundleView(CreateModelMixin, GenericUIViewSet):
         if not serializer.is_valid():
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
-        fd = request.data["file"]
-        with open(Path(settings.DOWNLOAD_DIR, fd.name), "wb+") as f:
-            for chunk in fd.chunks():
+        file_data = request.data["file"]
+        with open(Path(settings.DOWNLOAD_DIR, file_data.name), "wb+") as f:
+            for chunk in file_data.chunks():
                 f.write(chunk)
 
         return Response(status=HTTP_201_CREATED)

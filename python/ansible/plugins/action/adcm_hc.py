@@ -15,7 +15,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-__metaclass__ = type
+__metaclass__ = type  # pylint: disable=invalid-name
 
 ANSIBLE_METADATA = {"metadata_version": "1.1", "supported_by": "Arenadata"}
 
@@ -72,22 +72,22 @@ class ActionModule(ActionBase):
         msg = "You can modify hc only in cluster, service or component context"
         cluster_id = get_object_id_from_context(task_vars, "cluster_id", "cluster", "service", "component", err_msg=msg)
         job_id = task_vars["job"]["id"]
-        ops = self._task.args["operations"]
+        operations = self._task.args["operations"]
 
-        logger.info("ansible module adcm_hc: cluster #%s, ops: %s", cluster_id, ops)
+        logger.info("ansible module adcm_hc: cluster #%s, ops: %s", cluster_id, operations)
 
-        if not isinstance(ops, list):
-            raise AnsibleError(f"Operations should be an array: {ops}")
+        if not isinstance(operations, list):
+            raise AnsibleError(f"Operations should be an array: {operations}")
 
-        for op in ops:
-            if not isinstance(op, dict):
-                raise AnsibleError(f"Operation items should be a dictionary: {op}")
-            args = frozenset(op.keys())
+        for operation in operations:
+            if not isinstance(operation, dict):
+                raise AnsibleError(f"Operation items should be a dictionary: {operation}")
+            args = frozenset(operation.keys())
             if args.difference(self._VALID_SUB_ARGS):
-                raise AnsibleError(f"Invalid operation arguments: {op}")
+                raise AnsibleError(f"Invalid operation arguments: {operation}")
 
         try:
-            change_hc(job_id, cluster_id, ops)
+            change_hc(job_id, cluster_id, operations)
         except AdcmEx as e:
             raise AnsibleError(e.code + ": " + e.msg) from e
 

@@ -304,26 +304,26 @@ class HostComponentSaveSerializer(EmptySerializer):
     hc = JSONField()
 
     @staticmethod
-    def validate_hc(hc):
-        if not hc:
+    def validate_hc(hostcomponent):
+        if not hostcomponent:
             raise AdcmEx("INVALID_INPUT", "hc field is required")
 
-        if not isinstance(hc, list):
+        if not isinstance(hostcomponent, list):
             raise AdcmEx("INVALID_INPUT", "hc field should be a list")
 
-        for item in hc:
+        for item in hostcomponent:
             for key in ("component_id", "host_id", "service_id"):
                 if key not in item:
                     msg = '"{}" sub-field is required'
 
                     raise AdcmEx("INVALID_INPUT", msg.format(key))
 
-        return hc
+        return hostcomponent
 
     def create(self, validated_data):
-        hc = validated_data.get("hc")
+        hostcomponent = validated_data.get("hc")
 
-        return add_hc(self.context.get("cluster"), hc)
+        return add_hc(self.context.get("cluster"), hostcomponent)
 
 
 class HCComponentSerializer(ComponentShortSerializer):
@@ -353,11 +353,11 @@ class HCComponentSerializer(ComponentShortSerializer):
         comp_list = {}
 
         def process_requires(req_list):
-            for c in req_list:
+            for require in req_list:
                 _comp = Prototype.obj.get(
                     type="component",
-                    name=c["component"],
-                    parent__name=c["service"],
+                    name=require["component"],
+                    parent__name=require["service"],
                     parent__bundle_id=obj.prototype.bundle_id,
                 )
                 if _comp == obj.prototype:

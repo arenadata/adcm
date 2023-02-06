@@ -139,7 +139,7 @@ class TestComponentAPI(BaseTestCase):
         self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
         self.assertEqual(self.component.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
-            action=action, obj=self.component, conf={}, attr={}, hc=[], hosts=[], verbose=False
+            action=action, obj=self.component, conf={}, attr={}, hostcomponent=[], hosts=[], verbose=False
         )
 
     def test_change_maintenance_mode_on_from_on_with_action_fail(self):
@@ -193,7 +193,7 @@ class TestComponentAPI(BaseTestCase):
         self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
         self.assertEqual(self.component.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
-            action=action, obj=self.component, conf={}, attr={}, hc=[], hosts=[], verbose=False
+            action=action, obj=self.component, conf={}, attr={}, hostcomponent=[], hosts=[], verbose=False
         )
 
     def test_change_maintenance_mode_off_to_off_with_action_fail(self):

@@ -157,7 +157,7 @@ class ServiceDetailView(PermissionListMixin, DetailView):
                 obj=instance,
                 conf={},
                 attr={},
-                hc=[],
+                hostcomponent=[],
                 hosts=[],
                 verbose=False,
             )

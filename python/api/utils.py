@@ -60,7 +60,7 @@ def _change_mm_via_action(
             obj=obj,
             conf={},
             attr={},
-            hc=[],
+            hostcomponent=[],
             hosts=[],
             verbose=False,
         )
@@ -101,11 +101,11 @@ def get_object_for_user(user, perms, klass, **kwargs):
 
 def check_obj(model, req, error=None):
     if isinstance(req, dict):
-        kw = req
+        kwargs = req
     else:
-        kw = {"id": req}
+        kwargs = {"id": req}
 
-    return model.obj.get(**kw)
+    return model.obj.get(**kwargs)
 
 
 def hlink(view, lookup, lookup_url):

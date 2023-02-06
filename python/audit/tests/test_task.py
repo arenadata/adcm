@@ -62,7 +62,7 @@ class TestTaskAudit(BaseTestCase):
             self.assertFalse(obj)
 
         self.assertEqual(log.operation_name, operation_name)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
@@ -77,7 +77,7 @@ class TestTaskAudit(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Task cancelled",
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
             obj=self.adcm,
         )
@@ -94,7 +94,7 @@ class TestTaskAudit(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Task cancelled",
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
             obj=self.adcm,
         )
@@ -108,7 +108,7 @@ class TestTaskAudit(BaseTestCase):
         self.check_log(
             log=log,
             operation_name=self.task_restarted_str,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
             obj=self.adcm,
         )
@@ -125,7 +125,7 @@ class TestTaskAudit(BaseTestCase):
         self.check_log(
             log=log,
             operation_name=self.task_restarted_str,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
             obj=self.adcm,
         )
@@ -143,7 +143,7 @@ class TestTaskAudit(BaseTestCase):
         self.check_log(
             log=log,
             operation_name=self.task_restarted_str,
-            operation_result=AuditLogOperationResult.Fail,
+            operation_result=AuditLogOperationResult.FAIL,
             user=self.test_user,
             obj=None,
         )

@@ -891,8 +891,8 @@ class TestConstraintsChangeAfterUpgrade:
 
     @allure.step("Check HC is the same as it was before the upgrade")
     def _check_hc_stays_the_same_after_upgrade(self, cluster):
-        hc = cluster.hostcomponent()
-        assert len(hc) == 1, f"Only one entry should be in HC map: {hc}"
+        hostcomponent = cluster.hostcomponent()
+        assert len(hostcomponent) == 1, f"Only one entry should be in HC map: {hostcomponent}"
         assert all(
-            hc[0][id_key] for id_key in ("host_id", "service_id", "component_id")
-        ), f"Host, service and component id should be 1 in HC entry. Actual HC: {hc}"
+            hostcomponent[0][id_key] for id_key in ("host_id", "service_id", "component_id")
+        ), f"Host, service and component id should be 1 in HC entry. Actual HC: {hostcomponent}"

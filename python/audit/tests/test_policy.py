@@ -68,7 +68,7 @@ class TestPolicyAudit(BaseTestCase):
         if obj:
             self.assertEqual(log.audit_object.object_id, obj.pk)
             self.assertEqual(log.audit_object.object_name, obj.name)
-            self.assertEqual(log.audit_object.object_type, AuditObjectType.Policy)
+            self.assertEqual(log.audit_object.object_type, AuditObjectType.POLICY)
             self.assertFalse(log.audit_object.is_deleted)
         else:
             self.assertFalse(log.audit_object)
@@ -98,7 +98,7 @@ class TestPolicyAudit(BaseTestCase):
             log=log,
             obj=obj,
             operation_name=self.policy_updated_str,
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
             operation_result=operation_result,
             user=user,
             object_changes=object_changes,
@@ -123,8 +123,8 @@ class TestPolicyAudit(BaseTestCase):
             log=log,
             obj=policy,
             operation_name="Policy created",
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.CREATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -148,8 +148,8 @@ class TestPolicyAudit(BaseTestCase):
             log=log,
             obj=None,
             operation_name="Policy created",
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.CREATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -165,8 +165,8 @@ class TestPolicyAudit(BaseTestCase):
             log=log,
             obj=self.policy,
             operation_name="Policy deleted",
-            operation_type=AuditLogOperationType.Delete,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.DELETE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -184,8 +184,8 @@ class TestPolicyAudit(BaseTestCase):
             log=log,
             obj=self.policy,
             operation_name="Policy deleted",
-            operation_type=AuditLogOperationType.Delete,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.DELETE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -209,7 +209,7 @@ class TestPolicyAudit(BaseTestCase):
         self.check_log_update(
             log=log,
             obj=self.policy,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
             object_changes={
                 "current": {
@@ -253,7 +253,7 @@ class TestPolicyAudit(BaseTestCase):
         self.check_log_update(
             log=log,
             obj=self.policy,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -279,7 +279,7 @@ class TestPolicyAudit(BaseTestCase):
         self.check_log_update(
             log=log,
             obj=self.policy,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
             object_changes={
                 "current": {
@@ -327,7 +327,7 @@ class TestPolicyAudit(BaseTestCase):
         self.check_log_update(
             log=log,
             obj=self.policy,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -351,6 +351,6 @@ class TestPolicyAudit(BaseTestCase):
         self.check_log_update(
             log=log,
             obj=self.policy,
-            operation_result=AuditLogOperationResult.Fail,
+            operation_result=AuditLogOperationResult.FAIL,
             user=self.test_user,
         )

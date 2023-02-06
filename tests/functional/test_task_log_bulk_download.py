@@ -12,6 +12,8 @@
 
 """Tests on downloading all job logs in task as one archive"""
 
+# pylint: disable=redefined-outer-name,no-name-in-module
+
 import re
 import tarfile
 from operator import methodcaller
@@ -42,8 +44,6 @@ from tests.functional.tools import (
 )
 from tests.library.assertions import sets_are_equal
 from tests.library.utils import build_full_archive_name
-
-# pylint: disable=redefined-outer-name
 
 CLUSTER_NAME = "Cluster Name"
 PROVIDER_NAME = "Provider Name"

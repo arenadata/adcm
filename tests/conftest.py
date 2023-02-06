@@ -43,7 +43,7 @@ from tests.library.ldap_interactions import (
 )
 from tests.library.utils import ConfigError
 
-pytest_plugins = "adcm_pytest_plugin"
+pytest_plugins = "adcm_pytest_plugin"  # pylint: disable=invalid-name
 
 # We have a number of calls from functional or ui_tests to cm module,
 # so we need a way to extend PYTHONPATH at test time.

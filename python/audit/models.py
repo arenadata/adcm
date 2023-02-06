@@ -29,37 +29,37 @@ from rbac.models import Group, Policy, Role, User
 
 
 class AuditObjectType(models.TextChoices):
-    Prototype = "prototype", "prototype"
-    Cluster = "cluster", "cluster"
-    Service = "service", "service"
-    Component = "component", "component"
-    Host = "host", "host"
-    Provider = "provider", "provider"
-    Bundle = "bundle", "bundle"
+    PROTOTYPE = "prototype", "prototype"
+    CLUSTER = "cluster", "cluster"
+    SERVICE = "service", "service"
+    COMPONENT = "component", "component"
+    HOST = "host", "host"
+    PROVIDER = "provider", "provider"
+    BUNDLE = "bundle", "bundle"
     ADCM = "adcm", "adcm"
-    User = "user", "user"
-    Group = "group", "group"
-    Role = "role", "role"
-    Policy = "policy", "policy"
+    USER = "user", "user"
+    GROUP = "group", "group"
+    ROLE = "role", "role"
+    POLICY = "policy", "policy"
 
 
 class AuditLogOperationType(models.TextChoices):
-    Create = "create", "create"
-    Update = "update", "update"
-    Delete = "delete", "delete"
+    CREATE = "create", "create"
+    UPDATE = "update", "update"
+    DELETE = "delete", "delete"
 
 
 class AuditLogOperationResult(models.TextChoices):
-    Success = "success", "success"
-    Fail = "fail", "fail"
-    Denied = "denied", "denied"
+    SUCCESS = "success", "success"
+    FAIL = "fail", "fail"
+    DENIED = "denied", "denied"
 
 
 class AuditSessionLoginResult(models.TextChoices):
-    Success = "success", "success"
-    WrongPassword = "wrong password", "wrong password"
-    AccountDisabled = "account disabled", "account disabled"
-    UserNotFound = "user not found", "user not found"
+    SUCCESS = "success", "success"
+    WRONG_PASSWORD = "wrong password", "wrong password"
+    ACCOUNT_DISABLED = "account disabled", "account disabled"
+    USER_NOT_FOUND = "user not found", "user not found"
 
 
 class AuditObject(models.Model):
@@ -93,18 +93,18 @@ class AuditOperation:
 
 
 MODEL_TO_AUDIT_OBJECT_TYPE_MAP = {
-    Cluster: AuditObjectType.Cluster,
-    ClusterObject: AuditObjectType.Service,
-    ServiceComponent: AuditObjectType.Component,
-    Host: AuditObjectType.Host,
-    HostProvider: AuditObjectType.Provider,
-    Bundle: AuditObjectType.Bundle,
+    Cluster: AuditObjectType.CLUSTER,
+    ClusterObject: AuditObjectType.SERVICE,
+    ServiceComponent: AuditObjectType.COMPONENT,
+    Host: AuditObjectType.HOST,
+    HostProvider: AuditObjectType.PROVIDER,
+    Bundle: AuditObjectType.BUNDLE,
     ADCM: AuditObjectType.ADCM,
-    User: AuditObjectType.User,
-    Group: AuditObjectType.Group,
-    Role: AuditObjectType.Role,
-    Policy: AuditObjectType.Policy,
-    Prototype: AuditObjectType.Prototype,
+    User: AuditObjectType.USER,
+    Group: AuditObjectType.GROUP,
+    Role: AuditObjectType.ROLE,
+    Policy: AuditObjectType.POLICY,
+    Prototype: AuditObjectType.PROTOTYPE,
 }
 
 AUDIT_OBJECT_TYPE_TO_MODEL_MAP = {v: k for k, v in MODEL_TO_AUDIT_OBJECT_TYPE_MAP.items()}

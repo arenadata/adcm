@@ -60,10 +60,11 @@ class ObjectConfigUpdateSerializer(ConfigObjectConfigSerializer):
         conf = validated_data.get("config")
         attr = validated_data.get("attr", {})
         desc = validated_data.get("description", "")
-        cl = update_obj_config(instance.obj_ref, conf, attr, desc)
+        config_log = update_obj_config(instance.obj_ref, conf, attr, desc)
         if validated_data.get("ui"):
-            cl.config = ui_config(validated_data.get("obj"), cl)
-        return cl
+            config_log.config = ui_config(validated_data.get("obj"), config_log)
+
+        return config_log
 
 
 class ObjectConfigRestoreSerializer(ConfigObjectConfigSerializer):

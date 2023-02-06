@@ -27,7 +27,7 @@ def adcm_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | None]
         case (["adcm", adcm_pk, "config", "history"] | ["adcm", adcm_pk, "config", "history", _, "restore"]):
             audit_operation, audit_object = obj_pk_case(
                 obj_type=AuditObjectType.ADCM,
-                operation_type=AuditLogOperationType.Update,
+                operation_type=AuditLogOperationType.UPDATE,
                 obj_pk=adcm_pk,
                 operation_aux_str="configuration ",
             )

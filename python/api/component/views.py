@@ -40,11 +40,13 @@ from rbac.viewsets import DjangoOnlyObjectPermissions
 def get_component_queryset(queryset, user, kwargs):
     if "cluster_id" in kwargs:
         cluster = get_object_for_user(user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"])
-        co = get_object_for_user(user, "cm.view_clusterobject", ClusterObject, cluster=cluster, id=kwargs["service_id"])
-        queryset = queryset.filter(cluster=cluster, service=co)
+        service = get_object_for_user(
+            user, "cm.view_clusterobject", ClusterObject, cluster=cluster, id=kwargs["service_id"]
+        )
+        queryset = queryset.filter(cluster=cluster, service=service)
     elif "service_id" in kwargs:
-        co = get_object_for_user(user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
-        queryset = queryset.filter(service=co)
+        service = get_object_for_user(user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
+        queryset = queryset.filter(service=service)
 
     return queryset
 

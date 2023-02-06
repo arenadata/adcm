@@ -37,7 +37,7 @@ def service_case(  # pylint: disable=too-many-branches
         case ["service"]:
             audit_operation = AuditOperation(
                 name="service added",
-                operation_type=AuditLogOperationType.Update,
+                operation_type=AuditLogOperationType.UPDATE,
             )
 
             cluster_pk = None
@@ -55,7 +55,7 @@ def service_case(  # pylint: disable=too-many-branches
                 audit_object = get_or_create_audit_obj(
                     object_id=cluster_pk,
                     object_name=cluster.name,
-                    object_type=AuditObjectType.Cluster,
+                    object_type=AuditObjectType.CLUSTER,
                 )
             else:
                 audit_object = None
@@ -65,12 +65,12 @@ def service_case(  # pylint: disable=too-many-branches
             if view.request.method == "DELETE":
                 audit_operation = AuditOperation(
                     name="service removed",
-                    operation_type=AuditLogOperationType.Update,
+                    operation_type=AuditLogOperationType.UPDATE,
                 )
             else:
                 audit_operation = AuditOperation(
-                    name=f"{AuditObjectType.Service.capitalize()} {AuditLogOperationType.Update}d",
-                    operation_type=AuditLogOperationType.Update,
+                    name=f"{AuditObjectType.SERVICE.capitalize()} {AuditLogOperationType.UPDATE}d",
+                    operation_type=AuditLogOperationType.UPDATE,
                 )
 
             if deleted_obj and "maintenance-mode" not in path:
@@ -78,15 +78,15 @@ def service_case(  # pylint: disable=too-many-branches
                 audit_object = get_or_create_audit_obj(
                     object_id=deleted_obj.cluster.pk,
                     object_name=deleted_obj.cluster.name,
-                    object_type=AuditObjectType.Cluster,
+                    object_type=AuditObjectType.CLUSTER,
                 )
             else:
                 obj = ClusterObject.objects.filter(pk=service_pk).first()
                 if obj:
                     audit_object = get_or_create_audit_obj(
                         object_id=service_pk,
-                        object_name=get_obj_name(obj=obj, obj_type=AuditObjectType.Service),
-                        object_type=AuditObjectType.Service,
+                        object_name=get_obj_name(obj=obj, obj_type=AuditObjectType.SERVICE),
+                        object_type=AuditObjectType.SERVICE,
                     )
                 else:
                     audit_object = None
@@ -95,15 +95,15 @@ def service_case(  # pylint: disable=too-many-branches
             obj = ClusterObject.objects.get(pk=service_pk)
             cluster_name, service_name = get_export_cluster_and_service_names(response, view)
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Service.capitalize()} "
+                name=f"{AuditObjectType.SERVICE.capitalize()} "
                 f"bound to {make_export_name(cluster_name, service_name)}".strip(),
-                operation_type=AuditLogOperationType.Update,
+                operation_type=AuditLogOperationType.UPDATE,
             )
 
             audit_object = get_or_create_audit_obj(
                 object_id=service_pk,
-                object_name=get_obj_name(obj=obj, obj_type=AuditObjectType.Service),
-                object_type=AuditObjectType.Service,
+                object_name=get_obj_name(obj=obj, obj_type=AuditObjectType.SERVICE),
+                object_type=AuditObjectType.SERVICE,
             )
 
         case ["service", service_pk, "bind", _]:
@@ -118,13 +118,13 @@ def service_case(  # pylint: disable=too-many-branches
 
             audit_operation = AuditOperation(
                 name=f"{make_export_name(cluster_name, service_name)} unbound".strip(),
-                operation_type=AuditLogOperationType.Update,
+                operation_type=AuditLogOperationType.UPDATE,
             )
 
             audit_object = get_or_create_audit_obj(
                 object_id=service_pk,
-                object_name=get_obj_name(obj=obj, obj_type=AuditObjectType.Service),
-                object_type=AuditObjectType.Service,
+                object_name=get_obj_name(obj=obj, obj_type=AuditObjectType.SERVICE),
+                object_type=AuditObjectType.SERVICE,
             )
 
     return audit_operation, audit_object

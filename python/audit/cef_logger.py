@@ -59,7 +59,7 @@ def cef_logger(
         if not empty_resource and audit_instance.audit_object:
             extension["resource"] = audit_instance.audit_object.object_name
         extension["result"] = audit_instance.operation_result
-        if audit_instance.operation_result == AuditLogOperationResult.Denied:
+        if audit_instance.operation_result == AuditLogOperationResult.DENIED:
             severity = 3
         extension["timestamp"] = str(audit_instance.operation_time)
 

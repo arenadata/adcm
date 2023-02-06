@@ -119,7 +119,7 @@ class TestActionAudit(BaseTestCase):
             self.assertFalse(log.audit_object)
 
         self.assertEqual(log.operation_name, operation_name)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
 
@@ -140,7 +140,7 @@ class TestActionAudit(BaseTestCase):
             obj_name=self.adcm_name,
             obj_type=AuditObjectType.ADCM,
             operation_name=f"{self.action.display_name} action launched",
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -155,7 +155,7 @@ class TestActionAudit(BaseTestCase):
             obj_name=self.adcm_name,
             obj_type=AuditObjectType.ADCM,
             operation_name=f"{self.action.display_name} action launched",
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.test_user,
         )
 
@@ -170,7 +170,7 @@ class TestActionAudit(BaseTestCase):
             obj_name=self.adcm_name,
             obj_type=AuditObjectType.ADCM,
             operation_name=f"{self.action.display_name} action completed",
-            operation_result=AuditLogOperationResult.Fail,
+            operation_result=AuditLogOperationResult.FAIL,
         )
 
     def test_component_launch(self):
@@ -193,10 +193,10 @@ class TestActionAudit(BaseTestCase):
         self.check_obj_updated(
             log=log,
             obj_pk=component.pk,
-            obj_type=AuditObjectType.Component,
+            obj_type=AuditObjectType.COMPONENT,
             obj_name=f"{cluster.name}/{service.display_name}/{component.display_name}",
             operation_name=f"{self.action.display_name} action launched",
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -224,10 +224,10 @@ class TestActionAudit(BaseTestCase):
         self.check_obj_updated(
             log=log,
             obj_pk=component.pk,
-            obj_type=AuditObjectType.Component,
+            obj_type=AuditObjectType.COMPONENT,
             obj_name=f"{cluster.name}/{service.display_name}/{component.display_name}",
             operation_name=f"{self.action.display_name} action launched",
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -291,4 +291,4 @@ class TestActionAudit(BaseTestCase):
                 log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
                 self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-                self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
+                self.assertEqual(log.operation_result, AuditLogOperationResult.DENIED)

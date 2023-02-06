@@ -28,18 +28,18 @@ class AuditLoginMiddleware:
     def _audit(request_path: str, user: User | AnonymousUser | None = None, username: str = None):
         """Authentication audit"""
         if user is not None and user.is_authenticated:
-            result = AuditSessionLoginResult.Success
+            result = AuditSessionLoginResult.SUCCESS
             details = {"username": user.username}
         else:
             details = {"username": username}
             try:
                 user = User.objects.get(username=username)
                 if not user.is_active:
-                    result = AuditSessionLoginResult.AccountDisabled
+                    result = AuditSessionLoginResult.ACCOUNT_DISABLED
                 else:
-                    result = AuditSessionLoginResult.WrongPassword
+                    result = AuditSessionLoginResult.WRONG_PASSWORD
             except User.DoesNotExist:
-                result = AuditSessionLoginResult.UserNotFound
+                result = AuditSessionLoginResult.USER_NOT_FOUND
                 user = None
 
         auditsession = AuditSession.objects.create(user=user, login_result=result, login_details=details)

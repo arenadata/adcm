@@ -251,8 +251,9 @@ class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
         config = validated_data.get("config")
         attr = validated_data.get("attr", {})
         description = validated_data.get("description", "")
-        cl = update_obj_config(object_config, config, attr, description)
-        return cl
+        config_log = update_obj_config(object_config, config, attr, description)
+
+        return config_log
 
 
 class UIGroupConfigConfigLogSerializer(GroupConfigConfigLogSerializer):
