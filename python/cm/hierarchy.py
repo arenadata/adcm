@@ -25,7 +25,7 @@ from cm.models import (
 class HierarchyError(Exception):
     def __init__(self, *args, **kwargs):
         super().__init__(*args)
-        self.msg = kwargs.get('msg') or args[0] if args else 'Hierarchy build error'
+        self.msg = kwargs.get("msg") or args[0] if args else "Hierarchy build error"
 
 
 class Node:
@@ -34,41 +34,41 @@ class Node:
     Each node has zero to many parents and zero to many children
     """
 
-    order = ('root', 'cluster', 'service', 'component', 'host', 'provider')
+    order = ("root", "cluster", "service", "component", "host", "provider")
 
     def __init__(self, value: Optional[ADCMEntity]):
         self.children = set()
         if value is None:  # tree virtual root
             self.id = 0
-            self.type = 'root'
+            self.type = "root"
             self.value = None
             self.parents = tuple()
         else:
-            if not hasattr(value, 'prototype'):
-                raise HierarchyError(f'Type <{type(value)}> is not part of hierarchy')
+            if not hasattr(value, "prototype"):
+                raise HierarchyError(f"Type <{type(value)}> is not part of hierarchy")
             self.id = value.pk
             self.type = value.prototype.type
             self.value = value
             self.parents = set()
 
-    def add_child(self, child: 'Node') -> None:
+    def add_child(self, child: "Node") -> None:
         if child in self.parents or child == self:
             raise HierarchyError("Hierarchy should not have cycles")
         self.children.add(child)
 
-    def add_parent(self, parent: 'Node') -> None:
+    def add_parent(self, parent: "Node") -> None:
         if parent in self.children or parent == self:
             raise HierarchyError("Hierarchy should not have cycles")
         self.parents.add(parent)
 
-    def get_parents(self) -> Set['Node']:
+    def get_parents(self) -> Set["Node"]:
         """Get own parents and all its ancestors"""
         result = set(self.parents)
         for parent in self.parents:
             result.update(parent.get_parents())
         return result
 
-    def get_children(self) -> Set['Node']:
+    def get_children(self) -> Set["Node"]:
         """Get own children and all its descendants"""
         result = set(self.children)
         for child in self.children:
@@ -79,7 +79,7 @@ class Node:
     def get_obj_key(obj: ADCMEntity) -> Tuple[str, int]:
         """Make simple unique key for caching in tree"""
         if obj is None:
-            return 'root', 0
+            return "root", 0
         return obj.prototype.type, obj.pk
 
     @property
@@ -118,16 +118,16 @@ class Tree:
 
     def _build_tree_down(self, node: Node) -> None:
         children_values = []
-        if node.type == 'root':
+        if node.type == "root":
             children_values = [n.value for n in node.children]
 
-        if node.type == 'cluster':
+        if node.type == "cluster":
             children_values = ClusterObject.objects.filter(cluster=node.value).all()
 
-        elif node.type == 'service':
+        elif node.type == "service":
             children_values = ServiceComponent.objects.filter(cluster=node.value.cluster, service=node.value).all()
 
-        elif node.type == 'component':
+        elif node.type == "component":
             children_values = [
                 c.host
                 for c in HostComponent.objects.filter(
@@ -135,14 +135,14 @@ class Tree:
                     service=node.value.service,
                     component=node.value,
                 )
-                .select_related('host')
+                .select_related("host")
                 .all()
             ]
 
-        elif node.type == 'host':
+        elif node.type == "host":
             children_values = []
 
-        elif node.type == 'provider':
+        elif node.type == "provider":
             children_values = Host.objects.filter(provider=node.value)
 
         for value in children_values:
@@ -153,27 +153,27 @@ class Tree:
 
     def _build_tree_up(self, node: Node) -> None:
         parent_values = []
-        if node.type == 'cluster':
+        if node.type == "cluster":
             parent_values = [None]
-        elif node.type == 'service':
+        elif node.type == "service":
             if node.value.maintenance_mode == MaintenanceMode.OFF:
                 parent_values = [node.value.cluster]
             else:
                 parent_values = []
-        elif node.type == 'component':
+        elif node.type == "component":
             if node.value.maintenance_mode == MaintenanceMode.OFF:
                 parent_values = [node.value.service]
             else:
                 parent_values = []
-        elif node.type == 'host':
+        elif node.type == "host":
             parent_values = [
                 hc.component
                 for hc in HostComponent.objects.filter(host=node.value)
                 .exclude(host__maintenance_mode=MaintenanceMode.ON)
-                .select_related('component')
+                .select_related("component")
                 .all()
             ]
-        elif node.type == 'provider':
+        elif node.type == "provider":
             parent_values = Host.objects.filter(provider=node.value).all()
 
         for value in parent_values:
@@ -189,7 +189,7 @@ class Tree:
         if cached:
             return cached
         else:
-            raise HierarchyError(f'Object {key} is not part of tree')
+            raise HierarchyError(f"Object {key} is not part of tree")
 
     def get_directly_affected(self, node: Node) -> Set[Node]:
         """Collect directly affected nodes for issues re-calc"""
@@ -203,7 +203,7 @@ class Tree:
         """Collect directly affected nodes and propagate effect back through affected hosts"""
         directly_affected = self.get_directly_affected(node)
         indirectly_affected = set()
-        for host_node in filter(lambda x: x.type == 'host', directly_affected):
+        for host_node in filter(lambda x: x.type == "host", directly_affected):
             indirectly_affected.update(host_node.get_parents())
         result = indirectly_affected.union(directly_affected)
         result.discard(self.root)

@@ -34,7 +34,7 @@ def test_actions(sdk_client_fs: ADCMClient):
     Tests that action works on latest adcm client and old adcm versions
     """
     cluster_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster"))
-    provider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'provider'))
+    provider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider"))
     cluster = cluster_bundle.cluster_prototype().cluster_create(name="Some cluster")
     service = cluster.service_add(name="dummy")
     provider = provider_bundle.provider_create("provider_with_actions")

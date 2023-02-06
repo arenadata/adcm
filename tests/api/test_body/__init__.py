@@ -38,7 +38,7 @@ def _test_patch_put_body_positive(prepare_body_data: Tuple):
     for test_data_with_prepared_body in test_data_list:
         test_data, _ = test_data_with_prepared_body
         test_data.response.body = generate_body_for_checks(test_data_with_prepared_body)
-        with allure.step(f'Assert - {test_data.description}'):
+        with allure.step(f"Assert - {test_data.description}"):
             adcm.exec_request(request=test_data.request, expected_response=test_data.response)
 
 

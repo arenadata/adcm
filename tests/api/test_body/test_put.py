@@ -69,7 +69,7 @@ def prepare_put_body_data(request, adcm_api):
                     test_data.request.data[field.name] = changed_fields[field.name]
 
         test_data.request.object_id = valid_data["object_id"]
-        if getattr(endpoint.data_class, 'dependable_fields_sync', None):
+        if getattr(endpoint.data_class, "dependable_fields_sync", None):
             test_data.request.data = endpoint.data_class.dependable_fields_sync(adcm_api, test_data.request.data)
         final_test_data_list.append(TestDataWithPreparedBody(test_data, prepared_field_values))
 
@@ -95,5 +95,5 @@ def test_put_body_negative(prepare_put_body_data, flexible_assert_step):
     adcm, test_data_list = prepare_put_body_data
     for test_data_with_prepared_values in test_data_list:
         test_data, _ = test_data_with_prepared_values
-        with flexible_assert_step(title=f'Assert - {test_data.description}'):
+        with flexible_assert_step(title=f"Assert - {test_data.description}"):
             adcm.exec_request(request=test_data.request, expected_response=test_data.response)

@@ -357,16 +357,16 @@ def make_audit_log(operation_type, result, operation_status):
     operation_type_map = {
         "task": {
             "type": AuditLogOperationType.Delete,
-            "name": "\"Task log cleanup on schedule\" job",
+            "name": '"Task log cleanup on schedule" job',
         },
         "config": {
             "type": AuditLogOperationType.Delete,
-            "name": "\"Objects configurations cleanup on schedule\" job",
+            "name": '"Objects configurations cleanup on schedule" job',
         },
-        "sync": {"type": AuditLogOperationType.Update, "name": "\"User sync on schedule\" job"},
+        "sync": {"type": AuditLogOperationType.Update, "name": '"User sync on schedule" job'},
         "audit": {
             "type": AuditLogOperationType.Delete,
-            "name": "\"Audit log cleanup/archiving on schedule\" job",
+            "name": '"Audit log cleanup/archiving on schedule" job',
         },
     }
     operation_name = operation_type_map[operation_type]["name"] + " " + operation_status

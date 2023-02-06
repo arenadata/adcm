@@ -30,51 +30,51 @@ from tests.functional.maintenance_mode.conftest import (
 from tests.functional.tools import get_object_represent
 from tests.library.assertions import sets_are_equal
 
-DUMMY_ACTION_DEFINITION = DUMMY_ACTION['dummy_action']
+DUMMY_ACTION_DEFINITION = DUMMY_ACTION["dummy_action"]
 
-ALLOWED_ACTION = {'allowed_action': {**DUMMY_ACTION_DEFINITION, 'allow_in_maintenance_mode': True}}
-TWO_DUMMY_ACTIONS = {'first_action': {**DUMMY_ACTION_DEFINITION}, 'second_action': {**DUMMY_ACTION_DEFINITION}}
+ALLOWED_ACTION = {"allowed_action": {**DUMMY_ACTION_DEFINITION, "allow_in_maintenance_mode": True}}
+TWO_DUMMY_ACTIONS = {"first_action": {**DUMMY_ACTION_DEFINITION}, "second_action": {**DUMMY_ACTION_DEFINITION}}
 DUMMY_ACTIONS_WITH_ALLOWED = {**TWO_DUMMY_ACTIONS, **ALLOWED_ACTION}
 
 UPGRADE = {
-    'upgrade': [
+    "upgrade": [
         {
-            'name': 'An ice upgrade',
-            'versions': {'min': 0.2, 'max': 2},
-            'states': {'available': 'any', 'on_success': 'cool'},
+            "name": "An ice upgrade",
+            "versions": {"min": 0.2, "max": 2},
+            "states": {"available": "any", "on_success": "cool"},
         }
     ]
 }
 
 OLD_BUNDLE = [
-    {'type': 'cluster', 'name': 'just_cluster', 'version': 1, 'actions': {**TWO_DUMMY_ACTIONS}},
+    {"type": "cluster", "name": "just_cluster", "version": 1, "actions": {**TWO_DUMMY_ACTIONS}},
     {
-        'type': 'service',
-        'name': 'just_service',
-        'version': 1.1,
-        'actions': {**TWO_DUMMY_ACTIONS},
-        'components': {'just_component': {'actions': {**TWO_DUMMY_ACTIONS}}},
+        "type": "service",
+        "name": "just_service",
+        "version": 1.1,
+        "actions": {**TWO_DUMMY_ACTIONS},
+        "components": {"just_component": {"actions": {**TWO_DUMMY_ACTIONS}}},
     },
 ]
 
-NEW_BUNDLE = [{**OLD_BUNDLE[0], 'version': 2, **UPGRADE}, {**OLD_BUNDLE[1], 'version': 1.2}]
+NEW_BUNDLE = [{**OLD_BUNDLE[0], "version": 2, **UPGRADE}, {**OLD_BUNDLE[1], "version": 1.2}]
 
 
 @pytest.mark.parametrize(
-    'create_bundle_archives',
+    "create_bundle_archives",
     [
         [
             OLD_BUNDLE,
             [
                 {
                     **NEW_BUNDLE[0],
-                    'allow_maintenance_mode': True,
-                    'actions': {**DUMMY_ACTIONS_WITH_ALLOWED},
+                    "allow_maintenance_mode": True,
+                    "actions": {**DUMMY_ACTIONS_WITH_ALLOWED},
                 },
                 {
                     **NEW_BUNDLE[1],
-                    'actions': {**DUMMY_ACTIONS_WITH_ALLOWED},
-                    'components': {'just_component': {'actions': {**DUMMY_ACTIONS_WITH_ALLOWED}}},
+                    "actions": {**DUMMY_ACTIONS_WITH_ALLOWED},
+                    "components": {"just_component": {"actions": {**DUMMY_ACTIONS_WITH_ALLOWED}}},
                 },
             ],
         ]
@@ -90,8 +90,8 @@ def test_allow_mm_after_upgrade(api_client, sdk_client_fs, create_bundle_archive
     hosts_in_cluster = hosts[:3]
     free_hosts = hosts[3:]
     old_bundle, *_ = [sdk_client_fs.upload_from_fs(bundle) for bundle in create_bundle_archives]
-    old_cluster = old_bundle.cluster_create('Cluster to Upgrade')
-    service = old_cluster.service_add(name='just_service')
+    old_cluster = old_bundle.cluster_create("Cluster to Upgrade")
+    service = old_cluster.service_add(name="just_service")
     component = service.component()
 
     add_hosts_to_cluster(old_cluster, hosts_in_cluster)
@@ -113,8 +113,8 @@ def test_allow_mm_after_upgrade(api_client, sdk_client_fs, create_bundle_archive
 
 
 @pytest.mark.parametrize(
-    'create_bundle_archives',
-    [[OLD_BUNDLE, [{**NEW_BUNDLE[0], 'allow_maintenance_mode': False}, {**NEW_BUNDLE[1]}]]],
+    "create_bundle_archives",
+    [[OLD_BUNDLE, [{**NEW_BUNDLE[0], "allow_maintenance_mode": False}, {**NEW_BUNDLE[1]}]]],
     indirect=True,
 )
 def test_upgrade_to_mm_false(sdk_client_fs, create_bundle_archives, hosts):
@@ -122,8 +122,8 @@ def test_upgrade_to_mm_false(sdk_client_fs, create_bundle_archives, hosts):
     Test upgrade from version without `allow_maintenance_mode` to `allow_maintenance_mode: false`
     """
     old_bundle, *_ = [sdk_client_fs.upload_from_fs(bundle) for bundle in create_bundle_archives]
-    old_cluster = old_bundle.cluster_create('Cluster to Upgrade')
-    service = old_cluster.service_add(name='just_service')
+    old_cluster = old_bundle.cluster_create("Cluster to Upgrade")
+    service = old_cluster.service_add(name="just_service")
     component = service.component()
     cluster_hosts = [old_cluster.host_add(host) for host in hosts]
     old_cluster.hostcomponent_set(*[(h, component) for h in cluster_hosts])
@@ -139,11 +139,11 @@ def test_upgrade_to_mm_false(sdk_client_fs, create_bundle_archives, hosts):
 
 
 @pytest.mark.parametrize(
-    'create_bundle_archives',
+    "create_bundle_archives",
     [
         [
-            [{**OLD_BUNDLE[0], 'allow_maintenance_mode': True}, {**OLD_BUNDLE[1]}],
-            [{**NEW_BUNDLE[0], 'allow_maintenance_mode': False}, {**NEW_BUNDLE[1]}],
+            [{**OLD_BUNDLE[0], "allow_maintenance_mode": True}, {**OLD_BUNDLE[1]}],
+            [{**NEW_BUNDLE[0], "allow_maintenance_mode": False}, {**NEW_BUNDLE[1]}],
         ]
     ],
     indirect=True,
@@ -153,9 +153,9 @@ def test_upgrade_from_true_to_false_mm(api_client, sdk_client_fs, create_bundle_
     Test upgrade from version with `allow_maintenance_mode: true` to `allow_maintenance_mode: false`
     """
     old_bundle, *_ = [sdk_client_fs.upload_from_fs(bundle) for bundle in create_bundle_archives]
-    old_cluster = old_bundle.cluster_create('Cluster to Upgrade')
+    old_cluster = old_bundle.cluster_create("Cluster to Upgrade")
     cluster_hosts = [old_cluster.host_add(host) for host in hosts]
-    service = old_cluster.service_add(name='just_service')
+    service = old_cluster.service_add(name="just_service")
     component = service.component()
     old_cluster.hostcomponent_set(*[(h, component) for h in cluster_hosts])
 
@@ -171,16 +171,16 @@ def test_upgrade_from_true_to_false_mm(api_client, sdk_client_fs, create_bundle_
 
 
 @pytest.mark.parametrize(
-    'create_bundle_archives',
+    "create_bundle_archives",
     [
         [
             [
                 {
                     **OLD_BUNDLE[0],
-                    'allow_maintenance_mode': True,
-                    'actions': {
-                        'disabled_at_first': {**DUMMY_ACTION_DEFINITION, 'allow_in_maintenance_mode': False},
-                        'enabled_at_first': {**DUMMY_ACTION_DEFINITION, 'allow_in_maintenance_mode': True},
+                    "allow_maintenance_mode": True,
+                    "actions": {
+                        "disabled_at_first": {**DUMMY_ACTION_DEFINITION, "allow_in_maintenance_mode": False},
+                        "enabled_at_first": {**DUMMY_ACTION_DEFINITION, "allow_in_maintenance_mode": True},
                     },
                 },
                 {**OLD_BUNDLE[1]},
@@ -188,10 +188,10 @@ def test_upgrade_from_true_to_false_mm(api_client, sdk_client_fs, create_bundle_
             [
                 {
                     **NEW_BUNDLE[0],
-                    'allow_maintenance_mode': True,
-                    'actions': {
-                        'disabled_at_first': {**DUMMY_ACTION_DEFINITION, 'allow_in_maintenance_mode': True},
-                        'enabled_at_first': {**DUMMY_ACTION_DEFINITION, 'allow_in_maintenance_mode': False},
+                    "allow_maintenance_mode": True,
+                    "actions": {
+                        "disabled_at_first": {**DUMMY_ACTION_DEFINITION, "allow_in_maintenance_mode": True},
+                        "enabled_at_first": {**DUMMY_ACTION_DEFINITION, "allow_in_maintenance_mode": False},
                     },
                 },
                 {**NEW_BUNDLE[1]},
@@ -205,27 +205,27 @@ def test_allowed_actions_changed(api_client, sdk_client_fs, create_bundle_archiv
     Test upgrade when allowed/disallowed in MM actions changed
     """
     old_bundle, *_ = [sdk_client_fs.upload_from_fs(bundle) for bundle in create_bundle_archives]
-    old_cluster = old_bundle.cluster_create('Cluster with allowed actions changed')
+    old_cluster = old_bundle.cluster_create("Cluster with allowed actions changed")
 
     add_hosts_to_cluster(old_cluster, hosts)
-    old_cluster.hostcomponent_set((hosts[0], old_cluster.service_add(name='just_service').component()))
+    old_cluster.hostcomponent_set((hosts[0], old_cluster.service_add(name="just_service").component()))
     turn_mm_on(api_client, hosts[0])
 
-    check_actions_are_disabled_correctly({'enabled_at_first'}, {'disabled_at_first'}, old_cluster)
+    check_actions_are_disabled_correctly({"enabled_at_first"}, {"disabled_at_first"}, old_cluster)
 
     task = old_cluster.upgrade().do()
     if task:
         task.wait()
 
-    check_actions_are_disabled_correctly({'disabled_at_first'}, {'enabled_at_first'}, old_cluster)
+    check_actions_are_disabled_correctly({"disabled_at_first"}, {"enabled_at_first"}, old_cluster)
 
 
-@allure.step('Check correct actions are enabled/disabled due to host in MM')
+@allure.step("Check correct actions are enabled/disabled due to host in MM")
 def check_actions_are_disabled_correctly(enabled_actions: Set[str], disabled_actions: Set[str], *objects):
     """Check that actions are disabled correctly based on their names"""
     for adcm_object in objects:
         object_represent = get_object_represent(adcm_object)
         enabled = get_enabled_actions_names(adcm_object)
-        sets_are_equal(enabled, enabled_actions, f'Not all actions are enabled on {object_represent}')
+        sets_are_equal(enabled, enabled_actions, f"Not all actions are enabled on {object_represent}")
         disabled = get_disabled_actions_names(adcm_object)
-        sets_are_equal(disabled, disabled_actions, f'Not all actions are disabled on {object_represent}')
+        sets_are_equal(disabled, disabled_actions, f"Not all actions are disabled on {object_represent}")

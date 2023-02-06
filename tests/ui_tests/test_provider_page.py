@@ -35,7 +35,7 @@ from tests.ui_tests.utils import create_few_groups
 
 
 pytestmark = pytest.mark.usefixtures("_login_to_adcm_over_api")
-PROVIDER_NAME = 'test_provider'
+PROVIDER_NAME = "test_provider"
 
 
 # !===== Fixtures =====!
@@ -90,10 +90,10 @@ class TestProviderListPage:
             assert len(rows) == 1, "There should be 1 row with providers"
             uploaded_provider = provider_page.get_provider_info_from_row(rows[0])
             assert (
-                provider_params['bundle'] == uploaded_provider.bundle
+                provider_params["bundle"] == uploaded_provider.bundle
             ), f"Provider bundle should be {provider_params['bundle']} and not {uploaded_provider.bundle}"
             assert (
-                provider_params['state'] == uploaded_provider.state
+                provider_params["state"] == uploaded_provider.state
             ), f"Provider state should be {provider_params['state']} and not {uploaded_provider.state}"
 
     @pytest.mark.smoke()
@@ -115,17 +115,17 @@ class TestProviderListPage:
         with provider_page.table.wait_rows_change():
             provider_page.create_provider(
                 bundle=bundle_archive,
-                name=provider_params['name'],
-                description=provider_params['description'],
+                name=provider_params["name"],
+                description=provider_params["description"],
             )
         with allure.step("Check uploaded provider"):
             rows = provider_page.table.get_all_rows()
             uploaded_provider = provider_page.get_provider_info_from_row(rows[0])
             assert (
-                provider_params['bundle'] == uploaded_provider.bundle
+                provider_params["bundle"] == uploaded_provider.bundle
             ), f"Provider bundle should be {provider_params['bundle']} and not {uploaded_provider.bundle}"
             assert (
-                provider_params['name'] == uploaded_provider.name
+                provider_params["name"] == uploaded_provider.name
             ), f"Provider name should be {provider_params['name']} and not {uploaded_provider.name}"
 
     def test_check_provider_list_page_pagination(self, bundle, app_fs):
@@ -248,7 +248,7 @@ class TestProviderMainPage:
         cluster.host_add(host)
         cluster.hostcomponent_set((host, service.component()))
         host_page = HostMainPage(app_fs.driver, app_fs.adcm.url, host.host_id).open()
-        host_page.toolbar.check_warn_button(tab_name="first", expected_warn_text=['first has an issue with its config'])
+        host_page.toolbar.check_warn_button(tab_name="first", expected_warn_text=["first has an issue with its config"])
         provider_page = ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).open()
         provider_page.toolbar.check_no_warn_button(tab_name=upload_and_create_test_provider.name)
 
@@ -337,23 +337,23 @@ class TestProviderConfigPage:
     def test_field_validation_on_provider_config_page(self, app_fs, bundle, upload_and_create_test_provider):
         """Test config field validation on provider config page"""
         params = {
-            'pass_name': 'Test password',
-            'req_name': 'Test Required item',
-            'not_req_name': 'Test item',
-            'wrong_value': 'test',
+            "pass_name": "Test password",
+            "req_name": "Test Required item",
+            "not_req_name": "Test item",
+            "wrong_value": "test",
         }
         provider_config_page = ProviderConfigPage(
             app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
         ).open()
-        provider_config_page.config.check_password_confirm_required(params['pass_name'])
-        provider_config_page.config.check_field_is_required(params['req_name'])
+        provider_config_page.config.check_password_confirm_required(params["pass_name"])
+        provider_config_page.config.check_field_is_required(params["req_name"])
         config_row = provider_config_page.config.get_all_config_rows()[0]
-        provider_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params['wrong_value']])
-        provider_config_page.config.check_field_is_invalid_error(params['not_req_name'])
+        provider_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params["wrong_value"]])
+        provider_config_page.config.check_field_is_invalid_error(params["not_req_name"])
         provider_config_page.config.check_config_warn_icon_on_left_menu()
         provider_config_page.toolbar.check_warn_button(
             tab_name="test_provider",
-            expected_warn_text=['test_provider has an issue with its config'],
+            expected_warn_text=["test_provider has an issue with its config"],
         )
 
     @pytest.mark.parametrize("bundle", ["provider_default_fields"], indirect=True)
@@ -362,15 +362,15 @@ class TestProviderConfigPage:
     ):
         """Test config field validation on provider config page"""
 
-        params = {'field_name': 'string', 'new_value': 'test', "config_name": "test_name"}
+        params = {"field_name": "string", "new_value": "test", "config_name": "test_name"}
 
         provider_config_page = ProviderConfigPage(
             app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
         ).open()
-        provider_config_page.config.clear_field_by_keys(params['field_name'])
-        provider_config_page.config.check_field_is_required(params['field_name'])
+        provider_config_page.config.clear_field_by_keys(params["field_name"])
+        provider_config_page.config.check_field_is_required(params["field_name"])
         provider_config_page.config.type_in_field_with_few_inputs(
-            row=provider_config_page.config.get_all_config_rows()[0], values=[params['new_value']]
+            row=provider_config_page.config.get_all_config_rows()[0], values=[params["new_value"]]
         )
         provider_config_page.config.save_config()
         provider_config_page.config.assert_input_value_is(
@@ -402,20 +402,20 @@ class TestProviderGroupConfigPage:
         """Test create group config on /provider/{}/group_config page"""
 
         params = {
-            'name': 'Test name',
-            'description': 'Test description',
+            "name": "Test name",
+            "description": "Test description",
         }
 
         provider_group_conf_page = ProviderGroupConfigPage(
             app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
         ).open()
         with provider_group_conf_page.group_config.wait_rows_change(expected_rows_amount=1):
-            provider_group_conf_page.group_config.create_group(name=params['name'], description=params['description'])
+            provider_group_conf_page.group_config.create_group(name=params["name"], description=params["description"])
         group_row = provider_group_conf_page.group_config.get_all_config_rows()[0]
         with allure.step("Check created row in provider"):
             group_info = provider_group_conf_page.group_config.get_config_row_info(group_row)
             assert group_info == GroupConfigRowInfo(
-                name=params['name'], description=params['description']
+                name=params["name"], description=params["description"]
             ), "Row value differs in provider groups"
         with provider_group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
             provider_group_conf_page.group_config.delete_row(group_row)

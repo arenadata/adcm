@@ -42,8 +42,8 @@ ACTION_MAP = {
 def cluster(sdk_client_fs: ADCMClient) -> Cluster:
     """Create cluster"""
     uploaded_bundle = sdk_client_fs.upload_from_fs(plugin_utils.get_data_dir(__file__, "cluster"))
-    cluster = uploaded_bundle.cluster_create('test cluster')
-    cluster.service_add(name='test_service')
+    cluster = uploaded_bundle.cluster_create("test cluster")
+    cluster.service_add(name="test_service")
     return cluster
 
 
@@ -51,8 +51,8 @@ def cluster(sdk_client_fs: ADCMClient) -> Cluster:
 def provider(sdk_client_fs: ADCMClient) -> Provider:
     """Create provider"""
     uploaded_bundle = sdk_client_fs.upload_from_fs(plugin_utils.get_data_dir(__file__, "provider"))
-    provider = uploaded_bundle.provider_create('test_cluster')
-    provider.host_create(fqdn='test-host')
+    provider = uploaded_bundle.provider_create("test_cluster")
+    provider.host_create(fqdn="test-host")
     return provider
 
 
@@ -65,10 +65,10 @@ def test_config_not_presented(cluster: Cluster, provider: Provider, sdk_client_f
     component = (service := cluster.service()).component()
     host = provider.host()
     for obj in (cluster, service, component, provider, host):
-        with allure.step(f'Check no config with action on {obj.__class__.__name__}'):
-            with allure.step('Run action without config and expect it to fail with ansible error'):
+        with allure.step(f"Check no config with action on {obj.__class__.__name__}"):
+            with allure.step("Run action without config and expect it to fail with ansible error"):
                 try:
-                    ACTION_MAP[obj.__class__](obj, 'no_config', 'failed', config={'some_param': "1"})
+                    ACTION_MAP[obj.__class__](obj, "no_config", "failed", config={"some_param": "1"})
                 except ErrorMessage as e:
                     CONFIG_VALUE_ERROR.equal(e)
                 else:
@@ -89,7 +89,7 @@ def test_incorrect_config(cluster: Cluster, provider: Provider, sdk_client_fs: A
         with allure.step(f'Check "incorrect" config with action on {obj.__class__.__name__}'):
             with allure.step('Run action with "incorrect" config and expect ADCM response with non 500 status code'):
                 try:
-                    ACTION_MAP[obj.__class__](obj, 'with_config', 'failed', config={'no_such_param': "1"})
+                    ACTION_MAP[obj.__class__](obj, "with_config", "failed", config={"no_such_param": "1"})
                 except ErrorMessage as e:
                     CONFIG_KEY_ERROR.equal(e)
                 else:
@@ -107,12 +107,12 @@ def test_pass_no_config(cluster: Cluster, provider: Provider, sdk_client_fs: ADC
     component = (service := cluster.service()).component()
     host = provider.host()
     for obj in (cluster, service, component, provider, host):
-        with allure.step(f'Check run action that require config with on {obj.__class__.__name__}'):
+        with allure.step(f"Check run action that require config with on {obj.__class__.__name__}"):
             with allure.step(
-                'Run action that require config without config and expect ADCM to response with non 500 status code'
+                "Run action that require config without config and expect ADCM to response with non 500 status code"
             ):
                 try:
-                    ACTION_MAP[obj.__class__](obj, 'with_config', 'failed')
+                    ACTION_MAP[obj.__class__](obj, "with_config", "failed")
                 except ErrorMessage as e:
                     CONFIG_VALUE_ERROR.equal(e)
                 else:
@@ -125,4 +125,4 @@ def _check_job_count_equal_to(count: int, adcm_client: ADCMClient):
     """Check that job count is equal to expected"""
     assert (
         job_count := len(adcm_client.job_list())
-    ) == count, f'Amount of jobs expected is {count}, but {job_count} was found'
+    ) == count, f"Amount of jobs expected is {count}, but {job_count} was found"

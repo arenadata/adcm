@@ -17,43 +17,43 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0018_auto_20190220_1101'),
+        ("cm", "0018_auto_20190220_1101"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='component',
-            name='monitoring',
+            model_name="component",
+            name="monitoring",
             field=models.CharField(
-                choices=[('active', 'active'), ('passive', 'passive')],
-                default='active',
+                choices=[("active", "active"), ("passive", "passive")],
+                default="active",
                 max_length=16,
             ),
         ),
         migrations.AddField(
-            model_name='prototype',
-            name='monitoring',
+            model_name="prototype",
+            name="monitoring",
             field=models.CharField(
-                choices=[('active', 'active'), ('passive', 'passive')],
-                default='active',
+                choices=[("active", "active"), ("passive", "passive")],
+                default="active",
                 max_length=16,
             ),
         ),
         migrations.AddField(
-            model_name='stagecomponent',
-            name='monitoring',
+            model_name="stagecomponent",
+            name="monitoring",
             field=models.CharField(
-                choices=[('active', 'active'), ('passive', 'passive')],
-                default='active',
+                choices=[("active", "active"), ("passive", "passive")],
+                default="active",
                 max_length=16,
             ),
         ),
         migrations.AddField(
-            model_name='stageprototype',
-            name='monitoring',
+            model_name="stageprototype",
+            name="monitoring",
             field=models.CharField(
-                choices=[('active', 'active'), ('passive', 'passive')],
-                default='active',
+                choices=[("active", "active"), ("passive", "passive")],
+                default="active",
                 max_length=16,
             ),
         ),

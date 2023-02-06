@@ -74,7 +74,7 @@ class GeneralAdminPage(BasePageObject):
 
     def __init__(self, driver, base_url):
         if self.MENU_SUFFIX is None:
-            raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
+            raise AttributeError("You should explicitly set MENU_SUFFIX in class definition")
         super().__init__(driver, base_url, "/admin/" + self.MENU_SUFFIX)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.table = CommonTableObj(driver=self.driver)
@@ -85,14 +85,14 @@ class GeneralAdminPage(BasePageObject):
         """Assert presence of the MAIN_ELEMENTS"""
 
         if len(self.MAIN_ELEMENTS) == 0:
-            raise AttributeError('MAIN_ELEMENTS should contain at least 1 element')
+            raise AttributeError("MAIN_ELEMENTS should contain at least 1 element")
         check_elements_are_displayed(self, self.MAIN_ELEMENTS)
 
     @allure.step("Check admin toolbar")
     def check_admin_toolbar(self):
         check_elements_are_displayed(self, [CommonToolbarLocators.admin_link])
 
-    @allure.step('Open Admin Intro page by left menu item click')
+    @allure.step("Open Admin Intro page by left menu item click")
     def open_intro_menu(self) -> "AdminIntroPage":
         """Open Admin Intro page by menu object click"""
 
@@ -101,7 +101,7 @@ class GeneralAdminPage(BasePageObject):
         page.wait_page_is_opened()
         return page
 
-    @allure.step('Open Admin Settings page by left menu item click')
+    @allure.step("Open Admin Settings page by left menu item click")
     def open_settings_menu(self) -> "AdminSettingsPage":
         """Open Admin Settings page by menu object click"""
 
@@ -110,7 +110,7 @@ class GeneralAdminPage(BasePageObject):
         page.wait_page_is_opened()
         return page
 
-    @allure.step('Open Admin Users page by left menu item click')
+    @allure.step("Open Admin Users page by left menu item click")
     def open_users_menu(self) -> "AdminUsersPage":
         """Open Admin Users page by menu object click"""
 
@@ -119,7 +119,7 @@ class GeneralAdminPage(BasePageObject):
         page.wait_page_is_opened()
         return page
 
-    @allure.step('Open Admin groups page by left menu item click')
+    @allure.step("Open Admin groups page by left menu item click")
     def open_groups_menu(self) -> "AdminGroupsPage":
         """Open Admin groups page by menu object click"""
 
@@ -128,7 +128,7 @@ class GeneralAdminPage(BasePageObject):
         page.wait_page_is_opened()
         return page
 
-    @allure.step('Open Admin Roles page by left menu item click')
+    @allure.step("Open Admin Roles page by left menu item click")
     def open_roles_menu(self) -> "AdminRolesPage":
         """Open Admin Roles page by menu object click"""
 
@@ -137,7 +137,7 @@ class GeneralAdminPage(BasePageObject):
         page.wait_page_is_opened()
         return page
 
-    @allure.step('Open Admin policies page by left menu item click')
+    @allure.step("Open Admin policies page by left menu item click")
     def open_policies_menu(self) -> "AdminPoliciesPage":
         """Open Admin policies page by menu object click"""
 
@@ -157,7 +157,7 @@ class GeneralAdminPage(BasePageObject):
 class AdminIntroPage(GeneralAdminPage):
     """Admin Intro Page class"""
 
-    MENU_SUFFIX = 'intro'
+    MENU_SUFFIX = "intro"
     MAIN_ELEMENTS = [
         AdminIntroLocators.intro_title,
         AdminIntroLocators.intro_text,
@@ -168,7 +168,7 @@ class AdminIntroPage(GeneralAdminPage):
 class AdminSettingsPage(GeneralAdminPage):
     """Admin Settings Page class"""
 
-    MENU_SUFFIX = 'settings'
+    MENU_SUFFIX = "settings"
     MAIN_ELEMENTS = [
         AdminSettingsLocators.save_btn,
         AdminSettingsLocators.search_input,
@@ -231,7 +231,7 @@ class AdminUsersPage(GeneralAdminPage, ObjectRowMixin):
         dialog.email_input.fill(email)
         dialog.add()
 
-    @allure.step('Delete selected users')
+    @allure.step("Delete selected users")
     def delete_selected_users(self):
         self.find_and_click(AdminUsersLocators.delete_users, timeout=1)
         dialog = DeleteDialog.wait_opened(self.driver)
@@ -305,7 +305,7 @@ class AdminGroupsPage(GeneralAdminPage, ObjectRowMixin):
         self.find_and_click(CommonAdminPagesLocators.create_btn)
         return AddGroupDialog.wait_opened(driver=self.driver)
 
-    @allure.step('Create custom group {name}')
+    @allure.step("Create custom group {name}")
     def create_custom_group(self, name: str, description: str, users: list[str]):
         dialog = self.open_add_group_dialog()
         dialog.name_input.fill(name)
@@ -448,13 +448,13 @@ class AdminPoliciesPage(GeneralAdminPage, ObjectRowMixin):
             else:
                 raise AssertionError(f"There are no item {item} in select popup")
 
-    @allure.step('Fill third step in new policy')
+    @allure.step("Fill third step in new policy")
     def fill_third_step_in_policy_popup(self):
         self.wait_element_visible(AdminPoliciesLocators.save_update_btn)
         self.find_and_click(AdminPoliciesLocators.save_update_btn)
         self.wait_element_hide(AdminPoliciesLocators.AddPolicyPopup.block)
 
-    @allure.step('Create new policy')
+    @allure.step("Create new policy")
     def create_policy(
         self,
         policy_name: str,

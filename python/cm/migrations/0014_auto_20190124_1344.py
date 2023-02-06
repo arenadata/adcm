@@ -20,39 +20,39 @@ from django.utils.timezone import utc
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0013_auto_20190116_1143'),
+        ("cm", "0013_auto_20190116_1143"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='joblog',
-            name='date',
+            model_name="joblog",
+            name="date",
         ),
         migrations.RemoveField(
-            model_name='tasklog',
-            name='date',
+            model_name="tasklog",
+            name="date",
         ),
         migrations.AddField(
-            model_name='joblog',
-            name='finish_date',
+            model_name="joblog",
+            name="finish_date",
             field=models.DateTimeField(default=datetime.datetime(2018, 1, 1, 12, 0, 0, 100500, tzinfo=utc)),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='joblog',
-            name='start_date',
+            model_name="joblog",
+            name="start_date",
             field=models.DateTimeField(default=datetime.datetime(2018, 1, 1, 12, 0, 0, 100500, tzinfo=utc)),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='tasklog',
-            name='finish_date',
+            model_name="tasklog",
+            name="finish_date",
             field=models.DateTimeField(default=datetime.datetime(2018, 1, 1, 12, 0, 0, 100500, tzinfo=utc)),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='tasklog',
-            name='start_date',
+            model_name="tasklog",
+            name="start_date",
             field=models.DateTimeField(default=datetime.datetime(2018, 1, 1, 12, 0, 0, 100500, tzinfo=utc)),
             preserve_default=False,
         ),

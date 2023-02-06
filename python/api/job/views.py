@@ -126,7 +126,7 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
                 log_storages = LogStorage.objects.filter(job=job, type__in={"stdout", "stderr"})
                 for log_storage in log_storages:
                     tarinfo = tarfile.TarInfo(
-                        f'{f"{job.pk}-{dir_name_suffix}".strip("-")}' f'/{log_storage.name}-{log_storage.type}.txt'
+                        f'{f"{job.pk}-{dir_name_suffix}".strip("-")}' f"/{log_storage.name}-{log_storage.type}.txt"
                     )
                     body = io.BytesIO(bytes(log_storage.body, settings.ENCODING_UTF_8))
                     tarinfo.size = body.getbuffer().nbytes

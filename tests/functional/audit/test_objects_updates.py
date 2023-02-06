@@ -396,7 +396,7 @@ class TestObjectUpdates:
     new_user_creds: dict
     admin_creds: dict
 
-    pytestmark = [pytest.mark.usefixtures('_init')]
+    pytestmark = [pytest.mark.usefixtures("_init")]
 
     @pytest.fixture()
     def _init(self, sdk_client_fs, unauthorized_creds) -> None:
@@ -438,19 +438,19 @@ class TestObjectUpdates:
         audit_log_checker.check(sdk_client_fs.audit_operation_list())
 
     def _update_cluster_object(self, cluster: Cluster, new_name: str, method: str):
-        url = f'{self.client.url}/api/v1/cluster/{cluster.id}/'
-        with allure.step(f'Deny updating cluster {method.upper()} {url}'):
+        url = f"{self.client.url}/api/v1/cluster/{cluster.id}/"
+        with allure.step(f"Deny updating cluster {method.upper()} {url}"):
             check_failed(getattr(requests, method)(url, headers=self.new_user_creds), exact_code=403)
         body = {"name": new_name, "description": f"Changed to {new_name}"}
-        with allure.step(f'Update cluster via {method.upper()} {url} with body: {body}'):
+        with allure.step(f"Update cluster via {method.upper()} {url} with body: {body}"):
             check_succeed(getattr(requests, method)(url, json=body, headers=self.admin_creds))
         body = {"name": "____"}
-        with allure.step(f'Fail updating cluster via {method.upper()} {url} with body: {body}'):
+        with allure.step(f"Fail updating cluster via {method.upper()} {url} with body: {body}"):
             check_failed(getattr(requests, method)(url, json=body, headers=self.admin_creds), exact_code=400)
 
     def _update_host_object(self, host: Host, new_fqdn: str, method: str):
-        url = f'{self.client.url}/api/v1/host/{host.id}/'
-        with allure.step(f'Deny updating host {method.upper()} {url}'):
+        url = f"{self.client.url}/api/v1/host/{host.id}/"
+        with allure.step(f"Deny updating host {method.upper()} {url}"):
             check_failed(getattr(requests, method)(url, headers=self.new_user_creds), exact_code=403)
         body = {
             "fqdn": new_fqdn,
@@ -464,17 +464,17 @@ class TestObjectUpdates:
                 else {}
             ),
         }
-        with allure.step(f'Update host via {method.upper()} {url} with body: {body}'):
+        with allure.step(f"Update host via {method.upper()} {url} with body: {body}"):
             check_succeed(getattr(requests, method)(url, json=body, headers=self.admin_creds))
-        with allure.step(f'Fail updating host via {method.upper()} {url} with body: {body}'):
+        with allure.step(f"Fail updating host via {method.upper()} {url} with body: {body}"):
             check_failed(
                 getattr(requests, method)(url, json={**body, "provider_id": False}, headers=self.admin_creds),
                 exact_code=400,
             )
 
     def _update_host_in_cluster(self, host: Host, method: str):
-        url = f'{self.client.url}/api/v1/cluster/{host.cluster_id}/host/{host.id}/'
-        with allure.step(f'Deny updating host {method.upper()} {url}'):
+        url = f"{self.client.url}/api/v1/cluster/{host.cluster_id}/host/{host.id}/"
+        with allure.step(f"Deny updating host {method.upper()} {url}"):
             check_failed(getattr(requests, method)(url, headers=self.new_user_creds), exact_code=403)
         body = {
             "fqdn": host.fqdn,
@@ -489,8 +489,8 @@ class TestObjectUpdates:
                 else {}
             ),
         }
-        with allure.step(f'Update host via {method.upper()} {url} with body: {body}'):
+        with allure.step(f"Update host via {method.upper()} {url} with body: {body}"):
             check_succeed(getattr(requests, method)(url, json=body, headers=self.admin_creds))
         body = {**body, "fqdn": "hehehee"}
-        with allure.step(f'Fail updating host via {method.upper()} {url} with body: {body}'):
+        with allure.step(f"Fail updating host via {method.upper()} {url} with body: {body}"):
             check_failed(getattr(requests, method)(url, json=body, headers=self.admin_creds), exact_code=409)

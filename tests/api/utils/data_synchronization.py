@@ -59,23 +59,23 @@ def sync_object_and_role(adcm, fields: dict) -> dict:
     from tests.api.testdata.getters import get_endpoint_data
     from tests.api.utils.endpoints import Endpoints
 
-    if 'role' not in fields or 'object' not in fields:
+    if "role" not in fields or "object" not in fields:
         return fields
 
     new_fields = deepcopy(fields)
-    role_id = new_fields['role']['id']
-    role = next(filter(lambda r: r['id'] == role_id, get_endpoint_data(adcm, Endpoints.RbacAnyRole)), None)
+    role_id = new_fields["role"]["id"]
+    role = next(filter(lambda r: r["id"] == role_id, get_endpoint_data(adcm, Endpoints.RbacAnyRole)), None)
     if role is None:
         return new_fields
 
-    new_fields['object'] = []
-    for object_type in role['parametrized_by_type']:
+    new_fields["object"] = []
+    for object_type in role["parametrized_by_type"]:
         role_object = random.choice(get_endpoint_data(adcm=adcm, endpoint=Endpoints[object_type.capitalize()]))
         new_fields["object"].append(
             {
-                'id': role_object["id"],
-                'name': role_object.get("name", role_object.get("fqdn")),
-                'type': object_type,
+                "id": role_object["id"],
+                "name": role_object.get("name", role_object.get("fqdn")),
+                "type": object_type,
             }
         )
 

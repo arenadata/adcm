@@ -17,26 +17,26 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0019_auto_20190314_1321'),
+        ("cm", "0019_auto_20190314_1321"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='action',
-            name='required_hostcomponentmap',
+            model_name="action",
+            name="required_hostcomponentmap",
         ),
         migrations.RemoveField(
-            model_name='stageaction',
-            name='required_hostcomponentmap',
+            model_name="stageaction",
+            name="required_hostcomponentmap",
         ),
         migrations.AddField(
-            model_name='action',
-            name='hostcomponentmap',
+            model_name="action",
+            name="hostcomponentmap",
             field=models.TextField(blank=True),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='hostcomponentmap',
+            model_name="stageaction",
+            name="hostcomponentmap",
             field=models.TextField(blank=True),
         ),
     ]

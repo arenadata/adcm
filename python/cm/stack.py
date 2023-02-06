@@ -68,7 +68,7 @@ def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm_=False
 
     check_object_definition(fname, conf, def_type, obj_list)
     obj = save_prototype(path, conf, def_type, bundle_hash)
-    logger.info("Save definition of %s \"%s\" %s to stage", def_type, conf["name"], conf["version"])
+    logger.info('Save definition of %s "%s" %s to stage', def_type, conf["name"], conf["version"])
     obj_list[cook_obj_id(conf)] = fname
 
     return obj
@@ -119,7 +119,7 @@ def get_config_files(path, bundle_hash):
                 conf_list.append((path, root + "/" + conf_file, conf_type))
                 break
     if not conf_list:
-        err("STACK_LOAD_ERROR", f"no config files in stack directory \"{path}\"")
+        err("STACK_LOAD_ERROR", f'no config files in stack directory "{path}"')
     return conf_list
 
 
@@ -132,9 +132,9 @@ def check_adcm_config(conf_file):
         with open(conf_file, encoding=settings.ENCODING_UTF_8) as fd:
             data = cm.checker.round_trip_load(fd, version="1.1", allow_duplicate_keys=True)
     except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
-        err("STACK_LOAD_ERROR", f"YAML decode \"{conf_file}\" error: {e}")
+        err("STACK_LOAD_ERROR", f'YAML decode "{conf_file}" error: {e}')
     except ruyaml.error.ReusedAnchorWarning as e:
-        err("STACK_LOAD_ERROR", f"YAML decode \"{conf_file}\" error: {e}")
+        err("STACK_LOAD_ERROR", f'YAML decode "{conf_file}" error: {e}')
     except ruyaml.constructor.DuplicateKeyError as e:
         msg = f"{e.context}\n{e.context_mark}\n{e.problem}\n{e.problem_mark}"
         err("STACK_LOAD_ERROR", f"Duplicate Keys error: {msg}")
@@ -150,16 +150,16 @@ def check_adcm_config(conf_file):
                 if "Input data for" in ee.message:
                     continue
                 args += f"line {ee.line}: {ee}\n"
-        err("INVALID_OBJECT_DEFINITION", f"\"{conf_file}\" line {e.line} error: {e}", args)
+        err("INVALID_OBJECT_DEFINITION", f'"{conf_file}" line {e.line} error: {e}', args)
         return {}
 
 
 def read_definition(conf_file, conf_type):
     if os.path.isfile(conf_file):
         conf = check_adcm_config(conf_file)
-        logger.info("Read config file: \"%s\"", conf_file)
+        logger.info('Read config file: "%s"', conf_file)
         return conf
-    logger.warning("Can not open config file: \"%s\"", conf_file)
+    logger.warning('Can not open config file: "%s"', conf_file)
     return {}
 
 
@@ -229,7 +229,7 @@ def check_component_constraint(proto, name, conf):
     if "constraint" not in conf:
         return
     if len(conf["constraint"]) > 2:
-        msg = "constraint of component \"{}\" in {} should have only 1 or 2 elements"
+        msg = 'constraint of component "{}" in {} should have only 1 or 2 elements'
         err("INVALID_COMPONENT_DEFINITION", msg.format(name, proto_ref(proto)))
 
 
@@ -239,7 +239,7 @@ def save_components(proto, conf, bundle_hash):
         return
     for comp_name in conf["components"]:
         cc = conf["components"][comp_name]
-        validate_name(comp_name, f"Component name \"{comp_name}\" of {ref}")
+        validate_name(comp_name, f'Component name "{comp_name}" of {ref}')
         component = StagePrototype(
             type="component",
             parent=proto,
@@ -279,13 +279,13 @@ def check_upgrade_scripts(proto, conf, label):
             if action["script_type"] == "internal":
                 count += 1
                 if count > 1:
-                    msg = "Script with script_type \"internal\" must be unique in {} of {}"
+                    msg = 'Script with script_type "internal" must be unique in {} of {}'
                     err("INVALID_UPGRADE_DEFINITION", msg.format(label, ref))
                 if action["script"] != "bundle_switch":
-                    msg = "Script with script_type \"internal\" should be marked as \"bundle_switch\" in {} of {}"
+                    msg = 'Script with script_type "internal" should be marked as "bundle_switch" in {} of {}'
                     err("INVALID_UPGRADE_DEFINITION", msg.format(label, ref))
         if count == 0:
-            msg = "Scripts block in {} of {} must contain exact one block with script \"bundle_switch\""
+            msg = 'Scripts block in {} of {} must contain exact one block with script "bundle_switch"'
             err("INVALID_UPGRADE_DEFINITION", msg.format(label, ref))
     else:
         if "masking" in conf or "on_success" in conf or "on_fail" in conf:
@@ -295,7 +295,7 @@ def check_upgrade_scripts(proto, conf, label):
 
 def check_versions(proto, conf, label):
     ref = proto_ref(proto)
-    msg = "{} has no mandatory \"versions\" key ({})"
+    msg = '{} has no mandatory "versions" key ({})'
     if "min" in conf["versions"] and "min_strict" in conf["versions"]:
         msg = "min and min_strict can not be used simultaneously in versions of {} ({})"
         err("INVALID_VERSION_DEFINITION", msg.format(label, ref))
@@ -385,7 +385,7 @@ def check_default_import(proto, conf):
     groups = get_config_groups(proto)
     for key in conf["default"]:
         if key not in groups:
-            msg = "No import default group \"{}\" in config ({})"
+            msg = 'No import default group "{}" in config ({})'
             err("INVALID_OBJECT_DEFINITION", msg.format(key, ref))
 
 
@@ -400,7 +400,7 @@ def save_import(proto, conf):
         check_default_import(proto, conf["import"][key])
         si = StagePrototypeImport(prototype=proto, name=key)
         if "versions" in conf["import"][key]:
-            check_versions(proto, conf["import"][key], f"import \"{key}\"")
+            check_versions(proto, conf["import"][key], f'import "{key}"')
             set_version(si, conf["import"][key])
             if si.min_version and si.max_version:
                 if rpm.compare_versions(str(si.min_version), str(si.max_version)) > 0:
@@ -509,7 +509,7 @@ def save_action(proto, ac, bundle_hash, action_name):
         if STATES in ac:
             err(
                 "INVALID_OBJECT_DEFINITION",
-                f"Action {action_name} uses both mutual excluding states \"states\" and \"masking\"",
+                f'Action {action_name} uses both mutual excluding states "states" and "masking"',
             )
 
         action.state_available = _deep_get(ac, MASKING, STATE, AVAILABLE, default=ANY)
@@ -527,7 +527,7 @@ def save_action(proto, ac, bundle_hash, action_name):
         if ON_SUCCESS in ac or ON_FAIL in ac:
             err(
                 "INVALID_OBJECT_DEFINITION",
-                f"Action {action_name} uses \"on_success/on_fail\" states without \"masking\"",
+                f'Action {action_name} uses "on_success/on_fail" states without "masking"',
             )
 
         action.state_available = _deep_get(ac, STATES, AVAILABLE, default=[])
@@ -548,7 +548,7 @@ def save_action(proto, ac, bundle_hash, action_name):
 
 
 def check_action(proto, action):
-    err_msg = f"Action name \"{action}\" of {proto.type} \"{proto.name}\" {proto.version}"
+    err_msg = f'Action name "{action}" of {proto.type} "{proto.name}" {proto.version}'
     validate_name(action, err_msg)
 
 
@@ -618,8 +618,8 @@ def save_prototype_config(
                     opt["active"] = conf["active"]
 
         if "read_only" in conf and "writable" in conf:
-            key_ref = f"(config key \"{name}/{subname}\" of {ref})"
-            msg = "can not have \"read_only\" and \"writable\" simultaneously {}"
+            key_ref = f'(config key "{name}/{subname}" of {ref})'
+            msg = 'can not have "read_only" and "writable" simultaneously {}'
             err("INVALID_CONFIG_DEFINITION", msg.format(key_ref))
 
         for label in ("read_only", "writable"):
@@ -659,26 +659,26 @@ def save_prototype_config(
     if isinstance(conf_dict, dict):
         for name, conf in conf_dict.items():
             if "type" in conf:
-                validate_name(name, f"Config key \"{name}\" of {ref}")
+                validate_name(name, f'Config key "{name}" of {ref}')
                 cook_conf(proto, conf, name, "")
             else:
-                validate_name(name, f"Config group \"{name}\" of {ref}")
+                validate_name(name, f'Config group "{name}" of {ref}')
                 group_conf = {"type": "group", "required": False}
                 cook_conf(proto, group_conf, name, "")
                 for subname, subconf in conf.items():
-                    err_msg = f"Config key \"{name}/{subname}\" of {ref}"
+                    err_msg = f'Config key "{name}/{subname}" of {ref}'
                     validate_name(name, err_msg)
                     validate_name(subname, err_msg)
                     cook_conf(proto, subconf, name, subname)
     elif isinstance(conf_dict, list):
         for conf in conf_dict:
             name = conf["name"]
-            validate_name(name, f"Config key \"{name}\" of {ref}")
+            validate_name(name, f'Config key "{name}" of {ref}')
             cook_conf(proto, conf, name, "")
             if is_group(conf):
                 for subconf in conf["subs"]:
                     subname = subconf["name"]
-                    err_msg = f"Config key \"{name}/{subname}\" of {ref}"
+                    err_msg = f'Config key "{name}/{subname}" of {ref}'
                     validate_name(name, err_msg)
                     validate_name(subname, err_msg)
                     cook_conf(proto, subconf, name, subname)

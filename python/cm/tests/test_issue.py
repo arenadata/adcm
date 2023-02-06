@@ -40,7 +40,7 @@ class CreateIssueTest(BaseTestCase):
         super().setUp()
 
         self.hierarchy = generate_hierarchy()
-        self.cluster = self.hierarchy['cluster']
+        self.cluster = self.hierarchy["cluster"]
         self.tree = Tree(self.cluster)
 
     def test_new_issue(self):
@@ -91,7 +91,7 @@ class CreateIssueTest(BaseTestCase):
             self.assertEqual(len(concerns), 2)
             self.assertSetEqual({own_issue_1.pk, own_issue_2.pk}, concerns)
 
-    @patch('cm.issue._issue_check_map', mock_issue_check_map)
+    @patch("cm.issue._issue_check_map", mock_issue_check_map)
     def test_inherit_on_creation(self):
         """Test if new object in hierarchy inherits existing issues"""
 
@@ -113,7 +113,7 @@ class RemoveIssueTest(BaseTestCase):
         super().setUp()
 
         self.hierarchy = generate_hierarchy()
-        self.cluster = self.hierarchy['cluster']
+        self.cluster = self.hierarchy["cluster"]
         self.tree = Tree(self.cluster)
 
     def test_no_issue(self):

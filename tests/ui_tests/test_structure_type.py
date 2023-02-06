@@ -51,7 +51,7 @@ class TestServiceConfigSave:
     CHANGE_STRUCTURE_CODE = 12
     CHANGE_STRUCTURE_COUNTRY = "test-country"
     STRUCTURE_MAP = {"test-country": "12", "test-country-0": "12", "test-country-1": "13", "test-country-2": "14"}
-    STRUCTURE_LIST = {'12': 'test-country', 'test-country-0': '12', 'test-country-1': '13', 'test-country-2': '14'}
+    STRUCTURE_LIST = {"12": "test-country", "test-country-0": "12", "test-country-1": "13", "test-country-2": "14"}
 
     @allure.step("Save config and check popup")
     def _save_config_and_refresh(self, config):

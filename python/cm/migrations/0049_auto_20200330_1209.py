@@ -17,13 +17,13 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0048_auto_20200228_1032'),
+        ("cm", "0048_auto_20200228_1032"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='joblog',
-            name='finish_date',
+            model_name="joblog",
+            name="finish_date",
             field=models.DateTimeField(db_index=True),
         ),
     ]

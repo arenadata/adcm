@@ -18,18 +18,18 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0012_auto_20181226_0926'),
+        ("cm", "0012_auto_20181226_0926"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='clusterbind',
-            name='service',
+            model_name="clusterbind",
+            name="service",
             field=models.ForeignKey(
                 default=None,
                 null=True,
                 on_delete=django.db.models.deletion.CASCADE,
-                to='cm.ClusterObject',
+                to="cm.ClusterObject",
             ),
         ),
     ]

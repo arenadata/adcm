@@ -101,37 +101,37 @@ def get_children_business_roles(role: Role) -> List[str]:
     return result
 
 
-@pytest.mark.usefixtures('prepare_objects')
+@pytest.mark.usefixtures("prepare_objects")
 def test_default_role(clients):
     """
     Check that newly created user has role "ADCM User"
     """
     user_client = clients.user
-    assert user_client.bundle_list(), 'Default user should see bundles in bundle list'
+    assert user_client.bundle_list(), "Default user should see bundles in bundle list"
     with catch_failed(
-        (AccessIsDenied, NoSuchEndpointOrAccessIsDenied), 'Default user should be able to view ADCM objects'
+        (AccessIsDenied, NoSuchEndpointOrAccessIsDenied), "Default user should be able to view ADCM objects"
     ):
         user_client.adcm()
-    for object_type in ('cluster', 'service', 'component', 'provider', 'host'):
+    for object_type in ("cluster", "service", "component", "provider", "host"):
         assert (
-            len(getattr(user_client, f'{object_type}_list')()) == 0
-        ), f'List of {object_type} should be empty to default user'
+            len(getattr(user_client, f"{object_type}_list")()) == 0
+        ), f"List of {object_type} should be empty to default user"
 
 
 def test_composition(sdk_client_fs: ADCMClient):
     """Check that default roles have all required permissions"""
     for default_role, expected_children in (
-        ('Cluster Administrator', CLUSTER_ADMIN_ROLES),
-        ('Service Administrator', SERVICE_ADMIN_ROLES),
-        ('Provider Administrator', PROVIDER_ADMIN_ROLES),
-        ('ADCM User', ADCM_USER_ROLES),
+        ("Cluster Administrator", CLUSTER_ADMIN_ROLES),
+        ("Service Administrator", SERVICE_ADMIN_ROLES),
+        ("Provider Administrator", PROVIDER_ADMIN_ROLES),
+        ("ADCM User", ADCM_USER_ROLES),
     ):
         with allure.step(f'Check rules for role "{default_role}"'):
             children_roles = set(get_children_business_roles(sdk_client_fs.role(name=default_role)))
             is_superset_of(
                 children_roles,
                 expected_children,
-                'Some of expected roles were not found.\nCheck attachment for more details.',
+                "Some of expected roles were not found.\nCheck attachment for more details.",
             )
 
 

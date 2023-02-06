@@ -17,8 +17,8 @@ from django.db import migrations, models
 
 
 def fix_tasklog(apps, schema_editor):
-    TaskLog = apps.get_model('cm', 'TaskLog')
-    Action = apps.get_model('cm', 'Action')
+    TaskLog = apps.get_model("cm", "TaskLog")
+    Action = apps.get_model("cm", "Action")
     for task in TaskLog.objects.all():
         if task.old_action_id:
             try:
@@ -32,10 +32,10 @@ def fix_tasklog(apps, schema_editor):
 
 
 def fix_joblog(apps, schema_editor):
-    JobLog = apps.get_model('cm', 'JobLog')
-    TaskLog = apps.get_model('cm', 'TaskLog')
-    Action = apps.get_model('cm', 'Action')
-    SubAction = apps.get_model('cm', 'SubAction')
+    JobLog = apps.get_model("cm", "JobLog")
+    TaskLog = apps.get_model("cm", "TaskLog")
+    Action = apps.get_model("cm", "Action")
+    SubAction = apps.get_model("cm", "SubAction")
     for job in JobLog.objects.all():
         if job.old_action_id:
             try:
@@ -58,8 +58,8 @@ def fix_joblog(apps, schema_editor):
 
 
 def fix_checklog(apps, schema_editor):
-    JobLog = apps.get_model('cm', 'JobLog')
-    CheckLog = apps.get_model('cm', 'CheckLog')
+    JobLog = apps.get_model("cm", "JobLog")
+    CheckLog = apps.get_model("cm", "CheckLog")
     for cl in CheckLog.objects.all():
         if cl.old_job_id:
             try:
@@ -71,8 +71,8 @@ def fix_checklog(apps, schema_editor):
 
 
 def fix_grouplog(apps, schema_editor):
-    JobLog = apps.get_model('cm', 'JobLog')
-    GroupCheckLog = apps.get_model('cm', 'GroupCheckLog')
+    JobLog = apps.get_model("cm", "JobLog")
+    GroupCheckLog = apps.get_model("cm", "GroupCheckLog")
     for cl in GroupCheckLog.objects.all():
         if cl.old_job_id:
             try:
@@ -85,141 +85,141 @@ def fix_grouplog(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0065_auto_20210220_0902'),
+        ("cm", "0065_auto_20210220_0902"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='joblog',
-            old_name='action_id',
-            new_name='old_action_id',
+            model_name="joblog",
+            old_name="action_id",
+            new_name="old_action_id",
         ),
         migrations.AlterField(
-            model_name='joblog',
-            name='old_action_id',
+            model_name="joblog",
+            name="old_action_id",
             field=models.PositiveIntegerField(default=0),
         ),
         migrations.RenameField(
-            model_name='joblog',
-            old_name='sub_action_id',
-            new_name='old_sub_action_id',
+            model_name="joblog",
+            old_name="sub_action_id",
+            new_name="old_sub_action_id",
         ),
         migrations.RenameField(
-            model_name='joblog',
-            old_name='task_id',
-            new_name='old_task_id',
+            model_name="joblog",
+            old_name="task_id",
+            new_name="old_task_id",
         ),
         migrations.RenameField(
-            model_name='tasklog',
-            old_name='action_id',
-            new_name='old_action_id',
+            model_name="tasklog",
+            old_name="action_id",
+            new_name="old_action_id",
         ),
         migrations.AlterField(
-            model_name='tasklog',
-            name='old_action_id',
+            model_name="tasklog",
+            name="old_action_id",
             field=models.PositiveIntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='joblog',
-            name='action',
+            model_name="joblog",
+            name="action",
             field=models.ForeignKey(
                 default=None,
                 null=True,
                 on_delete=django.db.models.deletion.SET_NULL,
-                to='cm.action',
+                to="cm.action",
             ),
         ),
         migrations.AddField(
-            model_name='joblog',
-            name='sub_action',
+            model_name="joblog",
+            name="sub_action",
             field=models.ForeignKey(
                 default=None,
                 null=True,
                 on_delete=django.db.models.deletion.SET_NULL,
-                to='cm.subaction',
+                to="cm.subaction",
             ),
         ),
         migrations.AddField(
-            model_name='joblog',
-            name='task',
+            model_name="joblog",
+            name="task",
             field=models.ForeignKey(
                 default=None,
                 null=True,
                 on_delete=django.db.models.deletion.SET_NULL,
-                to='cm.tasklog',
+                to="cm.tasklog",
             ),
         ),
         migrations.AddField(
-            model_name='tasklog',
-            name='action',
+            model_name="tasklog",
+            name="action",
             field=models.ForeignKey(
-                default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.action'
+                default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to="cm.action"
             ),
         ),
         migrations.RemoveConstraint(
-            model_name='groupchecklog',
-            name='unique_group_job',
+            model_name="groupchecklog",
+            name="unique_group_job",
         ),
         migrations.RenameField(
-            model_name='checklog',
-            old_name='job_id',
-            new_name='old_job_id',
+            model_name="checklog",
+            old_name="job_id",
+            new_name="old_job_id",
         ),
         migrations.RenameField(
-            model_name='groupchecklog',
-            old_name='job_id',
-            new_name='old_job_id',
+            model_name="groupchecklog",
+            old_name="job_id",
+            new_name="old_job_id",
         ),
         migrations.AddField(
-            model_name='checklog',
-            name='job',
+            model_name="checklog",
+            name="job",
             field=models.ForeignKey(
                 default=None,
                 null=True,
                 on_delete=django.db.models.deletion.SET_NULL,
-                to='cm.joblog',
+                to="cm.joblog",
             ),
         ),
         migrations.AddField(
-            model_name='groupchecklog',
-            name='job',
+            model_name="groupchecklog",
+            name="job",
             field=models.ForeignKey(
                 default=None,
                 null=True,
                 on_delete=django.db.models.deletion.SET_NULL,
-                to='cm.joblog',
+                to="cm.joblog",
             ),
         ),
         migrations.AddConstraint(
-            model_name='groupchecklog',
-            constraint=models.UniqueConstraint(fields=('job', 'title'), name='unique_group_job'),
+            model_name="groupchecklog",
+            constraint=models.UniqueConstraint(fields=("job", "title"), name="unique_group_job"),
         ),
         migrations.RunPython(fix_tasklog),
         migrations.RunPython(fix_joblog),
         migrations.RunPython(fix_checklog),
         migrations.RunPython(fix_grouplog),
         migrations.RemoveField(
-            model_name='checklog',
-            name='old_job_id',
+            model_name="checklog",
+            name="old_job_id",
         ),
         migrations.RemoveField(
-            model_name='groupchecklog',
-            name='old_job_id',
+            model_name="groupchecklog",
+            name="old_job_id",
         ),
         migrations.RemoveField(
-            model_name='joblog',
-            name='old_action_id',
+            model_name="joblog",
+            name="old_action_id",
         ),
         migrations.RemoveField(
-            model_name='joblog',
-            name='old_sub_action_id',
+            model_name="joblog",
+            name="old_sub_action_id",
         ),
         migrations.RemoveField(
-            model_name='joblog',
-            name='old_task_id',
+            model_name="joblog",
+            name="old_task_id",
         ),
         migrations.RemoveField(
-            model_name='tasklog',
-            name='old_action_id',
+            model_name="tasklog",
+            name="old_action_id",
         ),
     ]

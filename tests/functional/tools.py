@@ -131,12 +131,12 @@ def get_objects_via_pagination(
             # then request of new objects raises PagingEnds
             return []
 
-    pagination = {'offset': 0, 'limit': pagination_step}
+    pagination = {"offset": 0, "limit": pagination_step}
     objects = []
     while objects_on_next_page := ignore_paging_ends(pagination):
         objects.extend(objects_on_next_page)
-        pagination['offset'] += pagination_step
-        pagination['limit'] += pagination_step
+        pagination["offset"] += pagination_step
+        pagination["limit"] += pagination_step
     return objects
 
 
@@ -191,8 +191,8 @@ def create_config_group_and_add_host(
 
 def get_inventory_file(adcm_fs: ADCM, job_id: int) -> dict:
     """Get inventory.json file from ADCM as dict"""
-    file = get_file_from_container(adcm_fs, f'/adcm/data/run/{job_id}/', 'inventory.json')
-    content = file.read().decode('utf8')
+    file = get_file_from_container(adcm_fs, f"/adcm/data/run/{job_id}/", "inventory.json")
+    content = file.read().decode("utf8")
     return json.loads(content)
 
 
@@ -238,17 +238,17 @@ def build_hc_for_hc_acl_action(
     Build a `hc` argument for a `hc_acl` action run based on cluster's hostcomponent and add/remove "directives".
     Result contains only unique entries (because of the HC nature).
     """
-    hostcomponent = {(hc['service_id'], hc['component_id'], hc['host_id']) for hc in cluster.hostcomponent()}
+    hostcomponent = {(hc["service_id"], hc["component_id"], hc["host_id"]) for hc in cluster.hostcomponent()}
     to_remove = {(component.service_id, component.id, from_host.id) for component, from_host in remove}
     hostcomponent.difference_update(to_remove)
     to_add = {(component.service_id, component.id, to_host.id) for component, to_host in add}
     return [
         *[
-            {'service_id': service_id, 'component_id': component_id, 'host_id': host_id}
+            {"service_id": service_id, "component_id": component_id, "host_id": host_id}
             for service_id, component_id, host_id in (hostcomponent | to_add)
         ],
         *[
-            {'component_prototype_id': component_proto_id, 'host_id': host.id}
+            {"component_prototype_id": component_proto_id, "host_id": host.id}
             for component_proto_id, host in add_new_bundle_components
         ],
     ]

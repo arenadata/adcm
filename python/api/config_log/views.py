@@ -30,9 +30,9 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
     queryset = ConfigLog.objects.all()
     serializer_class = ConfigLogSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
-    permission_required = ['cm.view_configlog']
-    filterset_fields = ('id', 'obj_ref')
-    ordering_fields = ('id',)
+    permission_required = ["cm.view_configlog"]
+    filterset_fields = ("id", "obj_ref")
+    ordering_fields = ("id",)
 
     def get_serializer_class(self):
         if self.is_for_ui():
@@ -41,7 +41,7 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
         return super().get_serializer_class()
 
     def get_queryset(self, *args, **kwargs):
-        if self.request.user.has_perm('cm.view_settings_of_adcm'):
+        if self.request.user.has_perm("cm.view_settings_of_adcm"):
             return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
         else:
             return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
@@ -52,9 +52,9 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
         serializer.is_valid(raise_exception=True)
 
         # check custom permissions
-        obj = serializer.validated_data['obj_ref'].object
+        obj = serializer.validated_data["obj_ref"].object
         object_type = ContentType.objects.get_for_model(obj).model
-        check_config_perm(request.user, 'change', object_type, obj)
+        check_config_perm(request.user, "change", object_type, obj)
 
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)

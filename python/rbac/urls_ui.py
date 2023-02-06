@@ -17,6 +17,6 @@ from django.urls import include, path
 from rbac.endpoints_ui.root import RBACUIRoot
 
 urlpatterns = [
-    path('', RBACUIRoot.as_view(), name='root'),
-    path('role/', include('rbac.endpoints_ui.role.urls')),
+    path("", RBACUIRoot.as_view(), name="root"),
+    path("role/", include("rbac.endpoints_ui.role.urls")),
 ]

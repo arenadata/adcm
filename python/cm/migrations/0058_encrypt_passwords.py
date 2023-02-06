@@ -19,14 +19,14 @@ from cm.adcm_config import ansible_encrypt_and_format, obj_to_dict
 
 def get_prototype_config(proto, PrototypeConfig):
     spec = {}
-    flist = ('default', 'required', 'type', 'limits')
+    flist = ("default", "required", "type", "limits")
 
-    for c in PrototypeConfig.objects.filter(prototype=proto, action=None, type='group').order_by('id'):
+    for c in PrototypeConfig.objects.filter(prototype=proto, action=None, type="group").order_by("id"):
         spec[c.name] = {}
 
-    for c in PrototypeConfig.objects.filter(prototype=proto, action=None).order_by('id'):
-        if c.subname == '':
-            if c.type != 'group':
+    for c in PrototypeConfig.objects.filter(prototype=proto, action=None).order_by("id"):
+        if c.subname == "":
+            if c.type != "group":
                 spec[c.name] = obj_to_dict(c, flist)
         else:
             spec[c.name][c.subname] = obj_to_dict(c, flist)
@@ -35,15 +35,15 @@ def get_prototype_config(proto, PrototypeConfig):
 
 def process_password(spec, conf):
     def update_password(passwd):
-        if '$ANSIBLE_VAULT;' in passwd:
+        if "$ANSIBLE_VAULT;" in passwd:
             return passwd
         return ansible_encrypt_and_format(passwd)
 
     for key in conf:
         if key not in spec:
             continue
-        if 'type' in spec[key]:
-            if spec[key]['type'] == 'password' and conf[key]:
+        if "type" in spec[key]:
+            if spec[key]["type"] == "password" and conf[key]:
                 conf[key] = update_password(conf[key])
         else:
             if not conf[key]:
@@ -51,7 +51,7 @@ def process_password(spec, conf):
             for subkey in conf[key]:
                 if subkey not in spec[key]:
                     continue
-                if spec[key][subkey]['type'] == 'password' and conf[key][subkey]:
+                if spec[key][subkey]["type"] == "password" and conf[key][subkey]:
                     conf[key][subkey] = update_password(conf[key][subkey])
     return conf
 
@@ -68,17 +68,17 @@ def process_objects(obj, ConfigLog, PrototypeConfig):
 
 
 def encrypt_passwords(apps, schema_editor):
-    ConfigLog = apps.get_model('cm', 'ConfigLog')
-    PrototypeConfig = apps.get_model('cm', 'PrototypeConfig')
-    for model_name in 'Cluster', 'ClusterObject', 'HostProvider', 'Host', 'ADCM':
-        Model = apps.get_model('cm', model_name)
+    ConfigLog = apps.get_model("cm", "ConfigLog")
+    PrototypeConfig = apps.get_model("cm", "PrototypeConfig")
+    for model_name in "Cluster", "ClusterObject", "HostProvider", "Host", "ADCM":
+        Model = apps.get_model("cm", model_name)
         for obj in Model.objects.filter(config__isnull=False):
             process_objects(obj, ConfigLog, PrototypeConfig)
 
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0057_auto_20200831_1055'),
+        ("cm", "0057_auto_20200831_1055"),
     ]
 
     operations = [

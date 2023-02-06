@@ -17,9 +17,9 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metadata_version': '1.1', 'supported_by': 'Arenadata'}
+ANSIBLE_METADATA = {"metadata_version": "1.1", "supported_by": "Arenadata"}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: adcm_remove_host_from_cluster
 short_description: remove host from cluster
@@ -35,17 +35,17 @@ options:
     description:
       - Host ID of added host
     required: yes/no
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
  - name: remove host from cluster
    adcm_remove_host_from_cluster:
      fqdn: my.host.org
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 result:
-'''
+"""
 
 import sys
 
@@ -53,7 +53,7 @@ from ansible.errors import AnsibleError
 
 from ansible.plugins.action import ActionBase
 
-sys.path.append('/adcm/python')
+sys.path.append("/adcm/python")
 import adcm.init_django  # pylint: disable=unused-import
 import cm.api
 from cm.ansible_plugin import get_object_id_from_context
@@ -63,16 +63,16 @@ from cm.logger import logger
 
 class ActionModule(ActionBase):
     TRANSFERS_FILES = False
-    _VALID_ARGS = frozenset(('fqdn', 'host_id'))
+    _VALID_ARGS = frozenset(("fqdn", "host_id"))
 
     def run(self, tmp=None, task_vars=None):
         super().run(tmp, task_vars)
-        msg = 'You can remove host only in cluster or service context'
-        cluster_id = get_object_id_from_context(task_vars, 'cluster_id', 'cluster', 'service', err_msg=msg)
-        fqdn = self._task.args.get('fqdn', None)
-        host_id = self._task.args.get('host_id', None)
+        msg = "You can remove host only in cluster or service context"
+        cluster_id = get_object_id_from_context(task_vars, "cluster_id", "cluster", "service", err_msg=msg)
+        fqdn = self._task.args.get("fqdn", None)
+        host_id = self._task.args.get("host_id", None)
 
-        logger.info('ansible module: cluster_id %s, fqdn %s, host_id: %s', cluster_id, fqdn, host_id)
+        logger.info("ansible module: cluster_id %s, fqdn %s, host_id: %s", cluster_id, fqdn, host_id)
         try:
             cm.api.remove_host_from_cluster_by_pk(cluster_id, fqdn, host_id)
         except AdcmEx as e:

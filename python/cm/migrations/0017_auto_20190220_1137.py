@@ -17,12 +17,12 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0016_auto_20190218_1214'),
+        ("cm", "0016_auto_20190218_1214"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='stageprototype',
-            unique_together={('type', 'name', 'version')},
+            name="stageprototype",
+            unique_together={("type", "name", "version")},
         ),
     ]

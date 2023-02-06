@@ -58,8 +58,8 @@ class NamedOperation(NamedTuple):
         """Create `operation_name` from template string based on type and parameters (from "how" section)"""
         if object_type not in self.allowed_types:
             raise ValueError(
-                f'Operation {self.name} can not be performed on {object_type}.\n'
-                'Please check definition of an operation.'
+                f"Operation {self.name} can not be performed on {object_type}.\n"
+                "Please check definition of an operation."
             )
         try:
             type_ = object_type.value.capitalize() if object_type != ObjectType.ADCM else object_type.value.upper()
@@ -68,7 +68,7 @@ class NamedOperation(NamedTuple):
             raise KeyError(
                 f'It looks like you missed some keys required to format "{self.naming_template}" string\n'
                 'Most likely you should add those keys to audit log operation "how" section\n'
-                f'Original error: {e}'
+                f"Original error: {e}"
             ) from e
 
 
@@ -86,28 +86,28 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
     named_operation.name: named_operation
     for named_operation in (
         # bundle
-        NamedOperation('load', 'Bundle loaded', (ObjectType.BUNDLE,)),
-        NamedOperation('upload', 'Bundle uploaded', (ObjectType.BUNDLE,)),
-        NamedOperation('accept-license', 'Bundle license accepted', (ObjectType.BUNDLE,)),
-        NamedOperation('change-description', 'Bundle updated', (ObjectType.BUNDLE,)),
+        NamedOperation("load", "Bundle loaded", (ObjectType.BUNDLE,)),
+        NamedOperation("upload", "Bundle uploaded", (ObjectType.BUNDLE,)),
+        NamedOperation("accept-license", "Bundle license accepted", (ObjectType.BUNDLE,)),
+        NamedOperation("change-description", "Bundle updated", (ObjectType.BUNDLE,)),
         # cluster
-        NamedOperation('add-service', '{name} service added', (ObjectType.CLUSTER,)),
-        NamedOperation('remove-service', '{name} service removed', (ObjectType.CLUSTER,)),
+        NamedOperation("add-service", "{name} service added", (ObjectType.CLUSTER,)),
+        NamedOperation("remove-service", "{name} service removed", (ObjectType.CLUSTER,)),
         # there should be an object cleanup for this case
-        NamedOperation('remove-not-existing-service', 'service removed', (ObjectType.CLUSTER,)),
-        NamedOperation('add-host', '{name} host added', (ObjectType.CLUSTER,)),
-        NamedOperation('remove-host', '{name} host removed', (ObjectType.CLUSTER,)),
-        NamedOperation('set-hostcomponent', 'Host-Component map updated', (ObjectType.CLUSTER,)),
+        NamedOperation("remove-not-existing-service", "service removed", (ObjectType.CLUSTER,)),
+        NamedOperation("add-host", "{name} host added", (ObjectType.CLUSTER,)),
+        NamedOperation("remove-host", "{name} host removed", (ObjectType.CLUSTER,)),
+        NamedOperation("set-hostcomponent", "Host-Component map updated", (ObjectType.CLUSTER,)),
         # configs
         NamedOperation(
-            'set-config',  # restore is the same
-            '{type_} configuration updated',
+            "set-config",  # restore is the same
+            "{type_} configuration updated",
             _OBJECTS_WITH_ACTIONS_AND_CONFIGS,
         ),
         # RBAC and "renamable" objects
         NamedOperation(
-            'change-properties',
-            '{type_} updated',
+            "change-properties",
+            "{type_} updated",
             (
                 ObjectType.USER,
                 ObjectType.GROUP,
@@ -120,68 +120,68 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
             ),
         ),
         # Imports / Binds
-        NamedOperation('change-imports', '{type_} import updated', (ObjectType.CLUSTER, ObjectType.SERVICE)),
+        NamedOperation("change-imports", "{type_} import updated", (ObjectType.CLUSTER, ObjectType.SERVICE)),
         # ! note that name in (un-)bind operations is like "<Export cluster name>/<Export service display name>"
-        NamedOperation('bind', '{type_} bound to {name}', (ObjectType.CLUSTER, ObjectType.SERVICE)),
-        NamedOperation('unbind', '{name} unbound', (ObjectType.CLUSTER, ObjectType.SERVICE)),
+        NamedOperation("bind", "{type_} bound to {name}", (ObjectType.CLUSTER, ObjectType.SERVICE)),
+        NamedOperation("unbind", "{name} unbound", (ObjectType.CLUSTER, ObjectType.SERVICE)),
         # Actions
-        NamedOperation('launch-action', '{name} action launched', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
-        NamedOperation('complete-action', '{name} action completed', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+        NamedOperation("launch-action", "{name} action launched", _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+        NamedOperation("complete-action", "{name} action completed", _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         # Tasks
-        NamedOperation('cancel-task', '{name} cancelled', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
-        NamedOperation('restart-task', '{name} restarted', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+        NamedOperation("cancel-task", "{name} cancelled", _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+        NamedOperation("restart-task", "{name} restarted", _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         # object will be nullified
-        NamedOperation('restart-not-existing-task', '{name} restarted', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+        NamedOperation("restart-not-existing-task", "{name} restarted", _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         # Background tasks
-        NamedOperation('launch-background-task', '"{name}" job launched', (ObjectType.ADCM,)),
-        NamedOperation('complete-background-task', '"{name}" job completed', (ObjectType.ADCM,)),
+        NamedOperation("launch-background-task", '"{name}" job launched', (ObjectType.ADCM,)),
+        NamedOperation("complete-background-task", '"{name}" job completed', (ObjectType.ADCM,)),
         # Group config
         NamedOperation(
-            'add-host-to-group-config',
-            '{host} host added to {name} configuration group',
+            "add-host-to-group-config",
+            "{host} host added to {name} configuration group",
             _OBJECTS_WITH_CONFIG_GROUPS,
         ),
         NamedOperation(
-            'remove-host-from-group-config',
-            '{host} host removed from {name} configuration group',
+            "remove-host-from-group-config",
+            "{host} host removed from {name} configuration group",
             _OBJECTS_WITH_CONFIG_GROUPS,
         ),
         NamedOperation(
-            'update-group-config',
-            '{name} configuration group updated',
+            "update-group-config",
+            "{name} configuration group updated",
             _OBJECTS_WITH_CONFIG_GROUPS,
         ),
         NamedOperation(
-            'delete-group-config',
-            '{name} configuration group deleted',
+            "delete-group-config",
+            "{name} configuration group deleted",
             _OBJECTS_WITH_CONFIG_GROUPS,
         ),
         # Upgrades
-        NamedOperation('do-upgrade', 'Upgraded to {name}', (ObjectType.CLUSTER, ObjectType.PROVIDER)),
-        NamedOperation('launch-upgrade', '{name} upgrade launched', (ObjectType.CLUSTER, ObjectType.PROVIDER)),
+        NamedOperation("do-upgrade", "Upgraded to {name}", (ObjectType.CLUSTER, ObjectType.PROVIDER)),
+        NamedOperation("launch-upgrade", "{name} upgrade launched", (ObjectType.CLUSTER, ObjectType.PROVIDER)),
         NamedOperation(
-            'complete-upgrade',
-            '{name} upgrade completed',
+            "complete-upgrade",
+            "{name} upgrade completed",
             (ObjectType.CLUSTER, ObjectType.PROVIDER),
         ),
     )
 }
 
 _failed_denied_config_group_creation = NamedOperation(
-    'create-group-config',
-    'configuration group created',
+    "create-group-config",
+    "configuration group created",
     (ObjectType.CLUSTER, ObjectType.SERVICE, ObjectType.COMPONENT),
 )
 _NAMED_OPERATIONS.update(
     {
         # Group config
-        (OperationResult.SUCCESS, 'create-group-config'): NamedOperation(
-            'create-group-config',
-            '{name} configuration group created',
+        (OperationResult.SUCCESS, "create-group-config"): NamedOperation(
+            "create-group-config",
+            "{name} configuration group created",
             (ObjectType.CLUSTER, ObjectType.SERVICE, ObjectType.COMPONENT),
         ),
-        (OperationResult.FAIL, 'create-group-config'): _failed_denied_config_group_creation,
-        (OperationResult.DENIED, 'create-group-config'): _failed_denied_config_group_creation,
+        (OperationResult.FAIL, "create-group-config"): _failed_denied_config_group_creation,
+        (OperationResult.DENIED, "create-group-config"): _failed_denied_config_group_creation,
     }
 )
 
@@ -193,7 +193,7 @@ class Operation:
     Should be used mostly to compare API operation objects with it.
     """
 
-    EXCLUDED_FROM_COMPARISON: ClassVar = ('username', 'code')
+    EXCLUDED_FROM_COMPARISON: ClassVar = ("username", "code")
 
     # main info
     user_id: Optional[int]
@@ -210,7 +210,7 @@ class Operation:
     username: Optional[str] = field(default=None, compare=False)
     # used for operation name building
     # the value from "how" section of operation description in scenario
-    code: Dict[Literal['operation', 'name'], str] = field(default_factory=dict, compare=False, repr=False)
+    code: Dict[Literal["operation", "name"], str] = field(default_factory=dict, compare=False, repr=False)
 
     def __post_init__(self):
         self.operation_name = self._detect_operation_name()
@@ -237,30 +237,30 @@ class Operation:
             and not self.code
         ):
             # code may be important for stuff like group config creation
-            return f'{self.object_type.value.capitalize()} {self.operation_type.value.lower()}d'
+            return f"{self.object_type.value.capitalize()} {self.operation_type.value.lower()}d"
 
         if self.object_type in _simple_update_types and self.operation_type == OperationType.UPDATE:
-            return f'{self.object_type.value.capitalize()} updated'
+            return f"{self.object_type.value.capitalize()} updated"
 
         # special case, no need for "how" section here, I think
         if self.object_type == ObjectType.BUNDLE and self.operation_type == OperationType.DELETE:
-            return 'Bundle deleted'
+            return "Bundle deleted"
 
-        if not self.code or 'operation' not in self.code:
+        if not self.code or "operation" not in self.code:
             raise KeyError(
                 'There should be "how" section specifying operation for audit record described as\n'
                 f'"{self.operation_type.value} {self.object_type.value} {self.object_name}"'
             )
 
-        operation = self.code['operation']
+        operation = self.code["operation"]
         named_operation = _NAMED_OPERATIONS.get(operation, None)
         if named_operation is None:
             named_operation = _NAMED_OPERATIONS.get((self.operation_result, operation), None)
         if not named_operation:
             raise KeyError(
-                f'Incorrect operation name: {operation}.\n'
-                'If operation name is correct, add it to `_NAMED_OPERATIONS`\n'
-                'Registered names: '
+                f"Incorrect operation name: {operation}.\n"
+                "If operation name is correct, add it to `_NAMED_OPERATIONS`\n"
+                "Registered names: "
                 ", ".join(k if isinstance(k, str) else str(k) for k in _NAMED_OPERATIONS.keys())
             )
 
@@ -279,14 +279,14 @@ class Operation:
             )
             # some operations don't have object, like Bundle upload,
             # because no ADCM object is created on this operation
-            or (self.operation_name == _NAMED_OPERATIONS['upload'].naming_template)
+            or (self.operation_name == _NAMED_OPERATIONS["upload"].naming_template)
             or (
-                self.code.get('operation')
+                self.code.get("operation")
                 in {
-                    'launch-background-task',
-                    'complete-background-task',
-                    'remove-not-existing-service',
-                    'restart-not-existing-task',
+                    "launch-background-task",
+                    "complete-background-task",
+                    "remove-not-existing-service",
+                    "restart-not-existing-task",
                 }
             )
         ):
@@ -302,7 +302,7 @@ class Operation:
         making it clearly "None" in scenario will make us "consider" nullable users in both parser and converter.
         """
         if self.operation_type == OperationType.UPDATE and (
-            self.code.get('operation') in {'complete-action', 'complete-upgrade'}
+            self.code.get("operation") in {"complete-action", "complete-upgrade"}
         ):
             self.user_id = None
             self.username = None
@@ -317,30 +317,30 @@ def convert_to_operations(
     """Convert parsed from file audit operations to Operation objects"""
     required_users = {
         default_username,
-        *[op['username'] for op in raw_operations if 'username' in op],
+        *[op["username"] for op in raw_operations if "username" in op],
     }
     _check_all_users_are_presented(required_users, username_id_map)
     operations = []
     for data in raw_operations:
         operation_data = {**data}
-        username = operation_data.pop('username', default_username)
-        result = OperationResult(operation_data.pop('result', default_result))
+        username = operation_data.pop("username", default_username)
+        result = OperationResult(operation_data.pop("result", default_result))
         # there should be at least one
         type_ = next(filter(is_name_of_operation_type, data.keys()))
         operation_info = data[type_]
         operation_type = OperationType(type_)
-        object_ = operation_info['what']
-        object_type = ObjectType(object_['type'])
+        object_ = operation_info["what"]
+        object_type = ObjectType(object_["type"])
         operations.append(
             Operation(
                 user_id=username_id_map[username],
                 operation_type=operation_type,
                 operation_result=result,
-                object_changes=operation_info.get('changes', {}),
+                object_changes=operation_info.get("changes", {}),
                 object_type=object_type,
-                object_name=object_.get('name', None),
+                object_name=object_.get("name", None),
                 username=username,
-                code=_unwrap_how(operation_info.get('how', {})),
+                code=_unwrap_how(operation_info.get("how", {})),
             )
         )
     return operations
@@ -359,12 +359,12 @@ def _check_all_users_are_presented(usernames, username_id_map):
     if registered_users.issuperset(usernames):
         return
     raise RuntimeError(
-        'Not all users are presented in users map, so their ids cannot be figured out from username.\n',
-        'You should try to use `set_user_map` method.\n' f'Missing usernames: {usernames.difference(registered_users)}',
+        "Not all users are presented in users map, so their ids cannot be figured out from username.\n",
+        "You should try to use `set_user_map` method.\n" f"Missing usernames: {usernames.difference(registered_users)}",
     )
 
 
 def _unwrap_how(how: Union[dict, str]) -> dict:
     if isinstance(how, dict):
         return how
-    return {'operation': how}
+    return {"operation": how}

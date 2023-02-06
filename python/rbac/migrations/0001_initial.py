@@ -20,21 +20,21 @@ import rbac.models
 
 
 def upgrade_users(apps, schema_editor):
-    query = '''
+    query = """
             INSERT INTO "rbac_user" ("user_ptr_id", "profile", "built_in")
             SELECT au.id, coalesce(up.profile, '{}'), FALSE 
                 FROM "auth_user" au
                 LEFT JOIN "rbac_user" ru ON ru.user_ptr_id = au.id
                 LEFT JOIN "cm_userprofile" up ON au.username = up.login
                 WHERE ru.user_ptr_id IS NULL
-        '''
+        """
     with connection.cursor() as cursor:
         cursor.execute(query)
 
 
 def update_status_user(apps, schema_editor):
-    User = apps.get_model('rbac', 'User')
-    status_user = User.objects.filter(username='status').first()
+    User = apps.get_model("rbac", "User")
+    status_user = User.objects.filter(username="status").first()
     if status_user:
         status_user.built_in = True
         status_user.save()
@@ -44,216 +44,216 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('contenttypes', '0002_remove_content_type_name'),
-        ('cm', '0083_add_product_category'),
-        ('auth', '0012_alter_user_first_name_max_length'),
-        ('guardian', '0002_generic_permissions_index'),
+        ("contenttypes", "0002_remove_content_type_name"),
+        ("cm", "0083_add_product_category"),
+        ("auth", "0012_alter_user_first_name_max_length"),
+        ("guardian", "0002_generic_permissions_index"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Group',
+            name="Group",
             fields=[
                 (
-                    'group_ptr',
+                    "group_ptr",
                     models.OneToOneField(
                         auto_created=True,
                         on_delete=django.db.models.deletion.CASCADE,
                         parent_link=True,
                         primary_key=True,
                         serialize=False,
-                        to='auth.group',
+                        to="auth.group",
                     ),
                 ),
-                ('description', models.CharField(max_length=255, null=True)),
-                ('built_in', models.BooleanField(default=False)),
+                ("description", models.CharField(max_length=255, null=True)),
+                ("built_in", models.BooleanField(default=False)),
             ],
-            bases=('auth.group',),
+            bases=("auth.group",),
             managers=[
-                ('objects', django.contrib.auth.models.GroupManager()),
+                ("objects", django.contrib.auth.models.GroupManager()),
             ],
         ),
         migrations.CreateModel(
-            name='RoleMigration',
+            name="RoleMigration",
             fields=[
-                ('version', models.PositiveIntegerField(primary_key=True, serialize=False)),
-                ('date', models.DateTimeField(auto_now=True)),
+                ("version", models.PositiveIntegerField(primary_key=True, serialize=False)),
+                ("date", models.DateTimeField(auto_now=True)),
             ],
         ),
         migrations.CreateModel(
-            name='User',
+            name="User",
             fields=[
                 (
-                    'user_ptr',
+                    "user_ptr",
                     models.OneToOneField(
                         auto_created=True,
                         on_delete=django.db.models.deletion.CASCADE,
                         parent_link=True,
                         primary_key=True,
                         serialize=False,
-                        to='auth.user',
+                        to="auth.user",
                     ),
                 ),
-                ('profile', models.JSONField(default=str)),
-                ('built_in', models.BooleanField(default=False)),
+                ("profile", models.JSONField(default=str)),
+                ("built_in", models.BooleanField(default=False)),
             ],
             options={
-                'verbose_name': 'user',
-                'verbose_name_plural': 'users',
-                'abstract': False,
+                "verbose_name": "user",
+                "verbose_name_plural": "users",
+                "abstract": False,
             },
-            bases=('auth.user',),
+            bases=("auth.user",),
             managers=[
-                ('objects', django.contrib.auth.models.UserManager()),
+                ("objects", django.contrib.auth.models.UserManager()),
             ],
         ),
         migrations.RunPython(upgrade_users),
         migrations.RunPython(update_status_user),
         migrations.CreateModel(
-            name='Role',
+            name="Role",
             fields=[
                 (
-                    'id',
-                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
-                ('name', models.CharField(max_length=160)),
-                ('description', models.TextField(blank=True)),
-                ('display_name', models.CharField(default='', max_length=160)),
-                ('module_name', models.CharField(max_length=32)),
-                ('class_name', models.CharField(max_length=32)),
-                ('init_params', models.JSONField(default=dict)),
-                ('built_in', models.BooleanField(default=True)),
+                ("name", models.CharField(max_length=160)),
+                ("description", models.TextField(blank=True)),
+                ("display_name", models.CharField(default="", max_length=160)),
+                ("module_name", models.CharField(max_length=32)),
+                ("class_name", models.CharField(max_length=32)),
+                ("init_params", models.JSONField(default=dict)),
+                ("built_in", models.BooleanField(default=True)),
                 (
-                    'type',
+                    "type",
                     models.CharField(
-                        choices=[('business', 'business'), ('role', 'role'), ('hidden', 'hidden')],
-                        default='role',
+                        choices=[("business", "business"), ("role", "role"), ("hidden", "hidden")],
+                        default="role",
                         max_length=32,
                     ),
                 ),
-                ('any_category', models.BooleanField(default=False)),
+                ("any_category", models.BooleanField(default=False)),
                 (
-                    'parametrized_by_type',
+                    "parametrized_by_type",
                     models.JSONField(default=list, validators=[rbac.models.validate_object_type]),
                 ),
                 (
-                    'bundle',
+                    "bundle",
                     models.ForeignKey(
                         default=None,
                         null=True,
                         on_delete=django.db.models.deletion.CASCADE,
-                        to='cm.bundle',
+                        to="cm.bundle",
                     ),
                 ),
-                ('category', models.ManyToManyField(to='cm.ProductCategory')),
-                ('child', models.ManyToManyField(blank=True, to='rbac.Role')),
-                ('permissions', models.ManyToManyField(blank=True, to='auth.Permission')),
+                ("category", models.ManyToManyField(to="cm.ProductCategory")),
+                ("child", models.ManyToManyField(blank=True, to="rbac.Role")),
+                ("permissions", models.ManyToManyField(blank=True, to="auth.Permission")),
             ],
         ),
         migrations.CreateModel(
-            name='PolicyPermission',
+            name="PolicyPermission",
             fields=[
                 (
-                    'id',
-                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
                 (
-                    'group',
+                    "group",
                     models.ForeignKey(
                         default=None,
                         null=True,
                         on_delete=django.db.models.deletion.CASCADE,
-                        to='rbac.group',
+                        to="rbac.group",
                     ),
                 ),
                 (
-                    'permission',
+                    "permission",
                     models.ForeignKey(
                         default=None,
                         null=True,
                         on_delete=django.db.models.deletion.CASCADE,
-                        to='auth.permission',
+                        to="auth.permission",
                     ),
                 ),
                 (
-                    'user',
+                    "user",
                     models.ForeignKey(
                         default=None,
                         null=True,
                         on_delete=django.db.models.deletion.CASCADE,
-                        to='rbac.user',
+                        to="rbac.user",
                     ),
-                ),
-            ],
-        ),
-        migrations.CreateModel(
-            name='PolicyObject',
-            fields=[
-                (
-                    'id',
-                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
-                ),
-                ('object_id', models.PositiveIntegerField()),
-                (
-                    'content_type',
-                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype'),
                 ),
             ],
         ),
         migrations.CreateModel(
-            name='Policy',
+            name="PolicyObject",
             fields=[
                 (
-                    'id',
-                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
-                ('name', models.CharField(max_length=255, unique=True)),
-                ('description', models.TextField(blank=True)),
-                ('built_in', models.BooleanField(default=True)),
-                ('group', models.ManyToManyField(blank=True, to='rbac.Group')),
+                ("object_id", models.PositiveIntegerField()),
                 (
-                    'group_object_perm',
-                    models.ManyToManyField(blank=True, to='guardian.GroupObjectPermission'),
+                    "content_type",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="contenttypes.contenttype"),
                 ),
-                ('model_perm', models.ManyToManyField(blank=True, to='rbac.PolicyPermission')),
-                ('object', models.ManyToManyField(blank=True, to='rbac.PolicyObject')),
+            ],
+        ),
+        migrations.CreateModel(
+            name="Policy",
+            fields=[
                 (
-                    'role',
-                    models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='rbac.role'),
+                    "id",
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
-                ('user', models.ManyToManyField(blank=True, to='rbac.User')),
+                ("name", models.CharField(max_length=255, unique=True)),
+                ("description", models.TextField(blank=True)),
+                ("built_in", models.BooleanField(default=True)),
+                ("group", models.ManyToManyField(blank=True, to="rbac.Group")),
                 (
-                    'user_object_perm',
-                    models.ManyToManyField(blank=True, to='guardian.UserObjectPermission'),
+                    "group_object_perm",
+                    models.ManyToManyField(blank=True, to="guardian.GroupObjectPermission"),
+                ),
+                ("model_perm", models.ManyToManyField(blank=True, to="rbac.PolicyPermission")),
+                ("object", models.ManyToManyField(blank=True, to="rbac.PolicyObject")),
+                (
+                    "role",
+                    models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to="rbac.role"),
+                ),
+                ("user", models.ManyToManyField(blank=True, to="rbac.User")),
+                (
+                    "user_object_perm",
+                    models.ManyToManyField(blank=True, to="guardian.UserObjectPermission"),
                 ),
             ],
         ),
         migrations.AddIndex(
-            model_name='role',
-            index=models.Index(fields=['name', 'display_name'], name='rbac_role_name_b010fa_idx'),
+            model_name="role",
+            index=models.Index(fields=["name", "display_name"], name="rbac_role_name_b010fa_idx"),
         ),
         migrations.RunSQL(
-            '''
+            """
             CREATE INDEX auth_user_name_b010fa_idx
             ON auth_user (username, first_name, last_name, email);
-        '''
+        """
         ),
         migrations.RunSQL(
-            '''
+            """
             CREATE INDEX auth_group_name_b010fa_idx
             ON auth_group (name);
-        '''
+        """
         ),
         migrations.AddConstraint(
-            model_name='role',
-            constraint=models.UniqueConstraint(fields=('name', 'built_in'), name='unique_name'),
+            model_name="role",
+            constraint=models.UniqueConstraint(fields=("name", "built_in"), name="unique_name"),
         ),
         migrations.AddConstraint(
-            model_name='role',
-            constraint=models.UniqueConstraint(fields=('display_name', 'built_in'), name='unique_display_name'),
+            model_name="role",
+            constraint=models.UniqueConstraint(fields=("display_name", "built_in"), name="unique_display_name"),
         ),
         migrations.AddConstraint(
-            model_name='policyobject',
-            constraint=models.UniqueConstraint(fields=('content_type', 'object_id'), name='unique_policy_object'),
+            model_name="policyobject",
+            constraint=models.UniqueConstraint(fields=("content_type", "object_id"), name="unique_policy_object"),
         ),
     ]

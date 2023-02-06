@@ -17,52 +17,52 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('rbac', '0006_auto_20220928_0455'),
+        ("rbac", "0006_auto_20220928_0455"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='group',
-            name='description',
+            model_name="group",
+            name="description",
             field=models.CharField(max_length=1000, null=True),
         ),
         migrations.AlterField(
-            model_name='group',
-            name='display_name',
+            model_name="group",
+            name="display_name",
             field=models.CharField(max_length=1000, null=True),
         ),
         migrations.AlterField(
-            model_name='group',
-            name='type',
-            field=models.CharField(choices=[('local', 'local'), ('ldap', 'ldap')], default='local', max_length=1000),
+            model_name="group",
+            name="type",
+            field=models.CharField(choices=[("local", "local"), ("ldap", "ldap")], default="local", max_length=1000),
         ),
         migrations.AlterField(
-            model_name='policy',
-            name='name',
+            model_name="policy",
+            name="name",
             field=models.CharField(max_length=1000, unique=True),
         ),
         migrations.AlterField(
-            model_name='role',
-            name='class_name',
+            model_name="role",
+            name="class_name",
             field=models.CharField(max_length=1000),
         ),
         migrations.AlterField(
-            model_name='role',
-            name='module_name',
+            model_name="role",
+            name="module_name",
             field=models.CharField(max_length=1000),
         ),
         migrations.AlterField(
-            model_name='role',
-            name='type',
+            model_name="role",
+            name="type",
             field=models.CharField(
-                choices=[('business', 'business'), ('role', 'role'), ('hidden', 'hidden')],
-                default='role',
+                choices=[("business", "business"), ("role", "role"), ("hidden", "hidden")],
+                default="role",
                 max_length=1000,
             ),
         ),
         migrations.AlterField(
-            model_name='user',
-            name='type',
-            field=models.CharField(choices=[('local', 'local'), ('ldap', 'ldap')], default='local', max_length=1000),
+            model_name="user",
+            name="type",
+            field=models.CharField(choices=[("local", "local"), ("ldap", "ldap")], default="local", max_length=1000),
         ),
     ]

@@ -15,38 +15,38 @@
 from django.db import migrations, models
 
 FIELDS = [
-    ('string', 'string'),
-    ('text', 'text'),
-    ('password', 'password'),
-    ('secrettext', 'secrettext'),
-    ('json', 'json'),
-    ('integer', 'integer'),
-    ('float', 'float'),
-    ('option', 'option'),
-    ('variant', 'variant'),
-    ('boolean', 'boolean'),
-    ('file', 'file'),
-    ('list', 'list'),
-    ('map', 'map'),
-    ('structure', 'structure'),
-    ('group', 'group'),
+    ("string", "string"),
+    ("text", "text"),
+    ("password", "password"),
+    ("secrettext", "secrettext"),
+    ("json", "json"),
+    ("integer", "integer"),
+    ("float", "float"),
+    ("option", "option"),
+    ("variant", "variant"),
+    ("boolean", "boolean"),
+    ("file", "file"),
+    ("list", "list"),
+    ("map", "map"),
+    ("structure", "structure"),
+    ("group", "group"),
 ]
 
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0063_tasklog_verbose'),
+        ("cm", "0063_tasklog_verbose"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='prototypeconfig',
-            name='type',
+            model_name="prototypeconfig",
+            name="type",
             field=models.CharField(choices=FIELDS, max_length=16),
         ),
         migrations.AlterField(
-            model_name='stageprototypeconfig',
-            name='type',
+            model_name="stageprototypeconfig",
+            name="type",
             field=models.CharField(choices=FIELDS, max_length=16),
         ),
     ]

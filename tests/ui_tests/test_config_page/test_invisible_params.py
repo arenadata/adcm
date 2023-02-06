@@ -67,8 +67,8 @@ def test_group_configs_fields_invisible_true(sdk_client_fs: ADCMClient, app_fs):
     cluster_config_page.wait_page_is_opened()
     cluster_config_page.config.check_no_rows_or_groups_on_page()
     cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
-    with allure.step('Check that save button is disabled'):
-        assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
+    with allure.step("Check that save button is disabled"):
+        assert cluster_config_page.config.is_save_btn_disabled(), "Save button should be disabled"
 
 
 @pytest.mark.full()
@@ -103,5 +103,5 @@ def test_configs_fields_invisible_true(sdk_client_fs: ADCMClient, app_fs):
     _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
     cluster_config_page.config.check_no_rows_or_groups_on_page()
     cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
-    with allure.step('Check that save button is disabled'):
-        assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
+    with allure.step("Check that save button is disabled"):
+        assert cluster_config_page.config.is_save_btn_disabled(), "Save button should be disabled"

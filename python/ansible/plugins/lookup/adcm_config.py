@@ -25,7 +25,7 @@ except ImportError:
 
     display = Display()
 
-sys.path.append('/adcm/python')
+sys.path.append("/adcm/python")
 import adcm.init_django  # pylint: disable=unused-import
 from cm.ansible_plugin import (
     set_cluster_config,
@@ -71,42 +71,42 @@ RETURN = """
 
 class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):  # pylint: disable=too-many-branches
-        logger.debug('run %s %s', terms, kwargs)
+        logger.debug("run %s %s", terms, kwargs)
         ret = []
 
         if len(terms) < 3:
-            msg = 'not enough arguments to set config ({} of 3)'
+            msg = "not enough arguments to set config ({} of 3)"
             raise AnsibleError(msg.format(len(terms)))
 
         conf = {terms[1]: terms[2]}
 
-        if terms[0] == 'service':
-            if 'cluster' not in variables:
-                raise AnsibleError('there is no cluster in hostvars')
-            cluster = variables['cluster']
-            if 'service_name' in kwargs:
-                res = set_service_config_by_name(cluster['id'], kwargs['service_name'], conf)
-            elif 'job' in variables and 'service_id' in variables['job']:
-                res = set_service_config(cluster['id'], variables['job']['service_id'], conf)
+        if terms[0] == "service":
+            if "cluster" not in variables:
+                raise AnsibleError("there is no cluster in hostvars")
+            cluster = variables["cluster"]
+            if "service_name" in kwargs:
+                res = set_service_config_by_name(cluster["id"], kwargs["service_name"], conf)
+            elif "job" in variables and "service_id" in variables["job"]:
+                res = set_service_config(cluster["id"], variables["job"]["service_id"], conf)
             else:
-                msg = 'no service_id in job or service_name and service_version in params'
+                msg = "no service_id in job or service_name and service_version in params"
                 raise AnsibleError(msg)
-        elif terms[0] == 'cluster':
-            if 'cluster' not in variables:
-                raise AnsibleError('there is no cluster in hostvars')
-            cluster = variables['cluster']
-            res = set_cluster_config(cluster['id'], conf)
-        elif terms[0] == 'provider':
-            if 'provider' not in variables:
-                raise AnsibleError('there is no host provider in hostvars')
-            provider = variables['provider']
-            res = set_provider_config(provider['id'], conf)
-        elif terms[0] == 'host':
-            if 'adcm_hostid' not in variables:
-                raise AnsibleError('there is no adcm_hostid in hostvars')
-            res = set_host_config(variables['adcm_hostid'], conf)
+        elif terms[0] == "cluster":
+            if "cluster" not in variables:
+                raise AnsibleError("there is no cluster in hostvars")
+            cluster = variables["cluster"]
+            res = set_cluster_config(cluster["id"], conf)
+        elif terms[0] == "provider":
+            if "provider" not in variables:
+                raise AnsibleError("there is no host provider in hostvars")
+            provider = variables["provider"]
+            res = set_provider_config(provider["id"], conf)
+        elif terms[0] == "host":
+            if "adcm_hostid" not in variables:
+                raise AnsibleError("there is no adcm_hostid in hostvars")
+            res = set_host_config(variables["adcm_hostid"], conf)
         else:
-            raise AnsibleError(f'unknown object type: {terms[0]}')
+            raise AnsibleError(f"unknown object type: {terms[0]}")
 
         ret.append(res)
         return ret

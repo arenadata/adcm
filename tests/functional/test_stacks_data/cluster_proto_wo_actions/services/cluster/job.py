@@ -18,35 +18,35 @@ from cm.models import Action, Prototype
 def task_generator(action, selector):
     logger.debug("call task_generator: %s", action)
     try:
-        service = Prototype.objects.get(type='service', name='ZOOKEEPER', version='1.2')
+        service = Prototype.objects.get(type="service", name="ZOOKEEPER", version="1.2")
     except Prototype.DoesNotExist:
-        raise AdcmEx('TASK_GENERATOR_ERROR', 'service ZOOKEEPER not found') from None
+        raise AdcmEx("TASK_GENERATOR_ERROR", "service ZOOKEEPER not found") from None
 
     try:
-        stop = Action.objects.get(context='service', context_id=service.id, name='stop')
+        stop = Action.objects.get(context="service", context_id=service.id, name="stop")
     except Prototype.DoesNotExist:
-        raise AdcmEx('TASK_GENERATOR_ERROR', 'action stop of service ZOOKEEPER not found') from None
+        raise AdcmEx("TASK_GENERATOR_ERROR", "action stop of service ZOOKEEPER not found") from None
 
     try:
-        start = Action.objects.get(context='service', context_id=service.id, name='start')
+        start = Action.objects.get(context="service", context_id=service.id, name="start")
     except Prototype.DoesNotExist:
-        raise AdcmEx('TASK_GENERATOR_ERROR', 'action start of service ZOOKEEPER not found') from None
+        raise AdcmEx("TASK_GENERATOR_ERROR", "action start of service ZOOKEEPER not found") from None
 
     return (
-        {'action': stop, 'selector': selector},
-        {'action': start, 'selector': selector},
+        {"action": stop, "selector": selector},
+        {"action": start, "selector": selector},
     )
 
 
 def task_get(action, selector):
     logger.debug("call task: %s", action)
     try:
-        service = Prototype.objects.get(type='service', name='Simple_service')
+        service = Prototype.objects.get(type="service", name="Simple_service")
     except Prototype.DoesNotExist:
-        raise AdcmEx('TASK_GET_ERR', 'my error description') from None
+        raise AdcmEx("TASK_GET_ERR", "my error description") from None
     try:
-        stop = Action.object.get(context='service', context_id=service.id, name='stop')
+        stop = Action.object.get(context="service", context_id=service.id, name="stop")
     except Prototype.DoesNotExist:
-        raise AdcmEx('TASK_GENERATOR_ERROR', 'action stop in service Simple_service not found') from None
+        raise AdcmEx("TASK_GENERATOR_ERROR", "action stop in service Simple_service not found") from None
 
-    return {'action': stop, 'selector': selector}
+    return {"action": stop, "selector": selector}

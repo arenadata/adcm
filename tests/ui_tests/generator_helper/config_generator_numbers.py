@@ -14,15 +14,15 @@
 import os
 
 integers = [
-    (0, 0, 0, 'nulls'),
-    (-10, 5, 0, 'positive_and_negative'),
+    (0, 0, 0, "nulls"),
+    (-10, 5, 0, "positive_and_negative"),
     (0, 10, 10, "positive_and_null"),
     (-10, -1, -2, "negative"),
     (1, 10, 5, "positive"),
 ]
 floats = [
-    (0.0, 0.0, 0.0, 'nulls'),
-    (-10.5, 0.2, 0.1, 'positive_and_negative'),
+    (0.0, 0.0, 0.0, "nulls"),
+    (-10.5, 0.2, 0.1, "positive_and_negative"),
     (0, 10.5, 2.5, "positive_and_null"),
     (-10.3, -1.4444, -2.234, "negative"),
     (1.1, 20.2, 5.5, "positive"),
@@ -55,11 +55,11 @@ integer_template = """
 for fl in floats:
     d_name = f"bundles/{f'float-{fl[3]}'}"
     os.makedirs(d_name)
-    with open(f"{d_name}/config.yaml", "w+", encoding='utf_8') as f:
+    with open(f"{d_name}/config.yaml", "w+", encoding="utf_8") as f:
         f.write(float_template.format(fl[0], fl[1], fl[2]))
 
 for i in integers:
     d_name = f"bundles/{f'integer-{i[3]}'}"
     os.makedirs(d_name)
-    with open(f"{d_name}/config.yaml", "w+", encoding='utf_8') as f:
+    with open(f"{d_name}/config.yaml", "w+", encoding="utf_8") as f:
         f.write(integer_template.format(i[0], i[1], i[2]))

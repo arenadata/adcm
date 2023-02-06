@@ -57,12 +57,12 @@ def test_state_calculation_mode_service(api_client, cluster_with_mm, hosts):
     )
 
     check_mm_is(MM_IS_OFF, first_service, second_service, first_component, second_component)
-    with allure.step('Check service action maintenance mode set maintenance mode to CHANGING value'):
+    with allure.step("Check service action maintenance mode set maintenance mode to CHANGING value"):
         _status_changing(api_client, second_service, MM_IS_ON)
         check_mm_is(MM_IS_CHANGING, second_service)
         check_mm_is(MM_IS_OFF, first_service, first_component, second_component)
 
-    with allure.step('Check CHANGING mode on service does not change other objects on service'):
+    with allure.step("Check CHANGING mode on service does not change other objects on service"):
         _status_changing(api_client, first_service, MM_IS_ON)
         check_mm_is(MM_IS_CHANGING, first_service, second_service)
         check_mm_is(MM_IS_OFF, first_component, second_component)
@@ -80,12 +80,12 @@ def test_state_calculation_mode_component(api_client, cluster_with_mm, hosts):
     )
 
     check_mm_is(MM_IS_OFF, first_service, second_service, first_component, second_component)
-    with allure.step('Check component action maintenance mode set maintenance mode to CHANGING value'):
+    with allure.step("Check component action maintenance mode set maintenance mode to CHANGING value"):
         _status_changing(api_client, first_component, MM_IS_ON)
         check_mm_is(MM_IS_CHANGING, first_component)
         check_mm_is(MM_IS_OFF, first_service, second_service, second_component)
 
-    with allure.step('Check CHANGING mode on component does not change other objects in cluster'):
+    with allure.step("Check CHANGING mode on component does not change other objects in cluster"):
         _status_changing(api_client, second_component, MM_IS_ON)
         check_mm_is(MM_IS_CHANGING, first_component, second_component)
         check_mm_is(MM_IS_OFF, first_service, second_service)

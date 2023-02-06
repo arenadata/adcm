@@ -17,18 +17,18 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0028_auto_20190813_1005'),
+        ("cm", "0028_auto_20190813_1005"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='prototypeimport',
-            name='multibind',
+            model_name="prototypeimport",
+            name="multibind",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='stageprototypeimport',
-            name='multibind',
+            model_name="stageprototypeimport",
+            name="multibind",
             field=models.BooleanField(default=False),
         ),
     ]

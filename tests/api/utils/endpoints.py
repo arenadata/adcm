@@ -133,7 +133,7 @@ class Endpoints(Enum):
     @property
     def endpoint_id(self) -> str:
         """Get endpoint identifier based on path and (if required) Data Class name"""
-        path_id = self.endpoint.path.replace('/', '_')
+        path_id = self.endpoint.path.replace("/", "_")
         if sum(1 for e in Endpoints if e.path == self.endpoint.path) > 1:
             return f"{path_id}_{self.endpoint.get_data_class_pretty_name()}"
         return path_id
@@ -271,7 +271,7 @@ class Endpoints(Enum):
             Methods.DELETE,
         ],
         # deletion doesn't work here
-        filter_predicate=lambda i: not i['built_in'],
+        filter_predicate=lambda i: not i["built_in"],
         data_class=RbacUserFields,
         spec_link="",
     )

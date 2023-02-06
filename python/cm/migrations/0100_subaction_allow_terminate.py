@@ -17,18 +17,18 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0099_alter_adcm_concerns_alter_cluster_concerns_and_more'),
+        ("cm", "0099_alter_adcm_concerns_alter_cluster_concerns_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='stagesubaction',
-            name='allow_to_terminate',
+            model_name="stagesubaction",
+            name="allow_to_terminate",
             field=models.BooleanField(default=None, null=True),
         ),
         migrations.AddField(
-            model_name='subaction',
-            name='allow_to_terminate',
+            model_name="subaction",
+            name="allow_to_terminate",
             field=models.BooleanField(default=None, null=True),
         ),
     ]

@@ -407,10 +407,10 @@ class TestAdminUsersPage:
         username = ldap_user_in_group["name"]
 
         users_page.header.wait_success_job_amount(1)
-        with allure.step(f'Check user {username} is listed in users list'):
+        with allure.step(f"Check user {username} is listed in users list"):
             self.check_user_is_listed_on_page(users_page, username)
 
-        with allure.step('Check that changing ldap user is prohibited'):
+        with allure.step("Check that changing ldap user is prohibited"):
             dialog: UpdateUserDialog = users_page.get_row(username_is(username)).open_update_dialog()
             element_names = ("username", "password", "password_confirm", "first_name", "last_name", "email")
             for name in element_names:
@@ -501,7 +501,7 @@ class TestAdminUsersPage:
             ], "Not all active ldap users are visible"
 
     def check_user_is_listed_on_page(self, users_page: AdminUsersPage, username: str) -> None:
-        assert username in users_page.get_all_user_names(), f'User {username} was not created'
+        assert username in users_page.get_all_user_names(), f"User {username} was not created"
 
 
 @pytest.mark.usefixtures("_login_to_adcm_over_api")

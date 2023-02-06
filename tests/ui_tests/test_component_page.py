@@ -47,9 +47,9 @@ COMPONENT_WITH_DESCRIPTION_FIELDS = "component_with_all_config_params"
 COMPONENT_WITH_DEFAULT_FIELDS = "component_with_default_string"
 CLUSTER_NAME = "Test cluster"
 SERVICE_NAME = "test_service"
-PROVIDER_NAME = 'test_provider'
-PROVIDER_BUNDLE = 'provider'
-HOST_NAME = 'test-host'
+PROVIDER_NAME = "test_provider"
+PROVIDER_BUNDLE = "provider"
+HOST_NAME = "test-host"
 FIRST_COMPONENT_NAME = "first"
 SECOND_COMPONENT_NAME = "second"
 
@@ -251,25 +251,25 @@ class TestComponentConfigPage:
     ):
         """Test config fields validation on /cluster/{}/service/{}/component/{}/config page"""
         params = {
-            'pass_name': 'Important password',
-            'req_name': 'Required item',
-            'not_req_name': 'Just item',
-            'wrong_value': 'test',
+            "pass_name": "Important password",
+            "req_name": "Required item",
+            "not_req_name": "Just item",
+            "wrong_value": "test",
         }
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_config_page = ComponentConfigPage(
             app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
         ).open()
-        component_config_page.config.check_password_confirm_required(params['pass_name'])
-        component_config_page.config.check_field_is_required(params['req_name'])
+        component_config_page.config.check_password_confirm_required(params["pass_name"])
+        component_config_page.config.check_field_is_required(params["req_name"])
         config_row = component_config_page.config.get_all_config_rows()[0]
-        component_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params['wrong_value']])
-        component_config_page.config.check_field_is_invalid_error(params['not_req_name'])
+        component_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params["wrong_value"]])
+        component_config_page.config.check_field_is_invalid_error(params["not_req_name"])
         component_config_page.config.check_config_warn_icon_on_left_menu()
         component_config_page.toolbar.check_warn_button(
             tab_name=FIRST_COMPONENT_NAME,
-            expected_warn_text=[f'{FIRST_COMPONENT_NAME} has an issue with its config'],
+            expected_warn_text=[f"{FIRST_COMPONENT_NAME} has an issue with its config"],
         )
 
     @pytest.mark.parametrize(
@@ -282,17 +282,17 @@ class TestComponentConfigPage:
     ):
         """Test config fields validation on /cluster/{}/service/{}/component/{}/config page"""
 
-        params = {'field_name': 'string', 'new_value': 'test', "config_name": "test_name"}
+        params = {"field_name": "string", "new_value": "test", "config_name": "test_name"}
 
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_config_page = ComponentConfigPage(
             app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
         ).open()
-        component_config_page.config.clear_field_by_keys(params['field_name'])
-        component_config_page.config.check_field_is_required(params['field_name'])
+        component_config_page.config.clear_field_by_keys(params["field_name"])
+        component_config_page.config.check_field_is_required(params["field_name"])
         component_config_page.config.type_in_field_with_few_inputs(
-            row=component_config_page.config.get_all_config_rows()[0], values=[params['new_value']]
+            row=component_config_page.config.get_all_config_rows()[0], values=[params["new_value"]]
         )
         component_config_page.config.save_config()
         component_config_page.config.assert_input_value_is(
@@ -336,8 +336,8 @@ class TestComponentGroupConfigPage:
         """Test create group config on /cluster/{}/service/{}/component/{}/group_config"""
 
         params = {
-            'name': 'Test name',
-            'description': 'Test description',
+            "name": "Test name",
+            "description": "Test description",
         }
 
         cluster, service = create_cluster_with_service
@@ -346,12 +346,12 @@ class TestComponentGroupConfigPage:
             app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
         ).open()
         with component_group_conf_page.group_config.wait_rows_change(expected_rows_amount=1):
-            component_group_conf_page.group_config.create_group(name=params['name'], description=params['description'])
+            component_group_conf_page.group_config.create_group(name=params["name"], description=params["description"])
         group_row = component_group_conf_page.group_config.get_all_config_rows()[0]
         with allure.step("Check created row in component"):
             group_info = component_group_conf_page.group_config.get_config_row_info(group_row)
             assert group_info == GroupConfigRowInfo(
-                name=params['name'], description=params['description']
+                name=params["name"], description=params["description"]
             ), "Row value differs in component groups"
         with component_group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
             component_group_conf_page.group_config.delete_row(group_row)
@@ -390,22 +390,22 @@ class TestComponentStatusPage:
         success_status = [
             StatusRowInfo(
                 icon_status=True,
-                group_name='first',
-                state='successful 1/1',
+                group_name="first",
+                state="successful 1/1",
                 state_color=SUCCESS_COLOR,
                 link=None,
             ),
-            StatusRowInfo(icon_status=True, group_name=None, state=None, state_color=None, link='test-host'),
+            StatusRowInfo(icon_status=True, group_name=None, state=None, state_color=None, link="test-host"),
         ]
         negative_status = [
             StatusRowInfo(
                 icon_status=False,
-                group_name='first',
-                state='successful 0/1',
+                group_name="first",
+                state="successful 0/1",
                 state_color=NEGATIVE_COLOR,
                 link=None,
             ),
-            StatusRowInfo(icon_status=False, group_name=None, state=None, state_color=None, link='test-host'),
+            StatusRowInfo(icon_status=False, group_name=None, state=None, state_color=None, link="test-host"),
         ]
 
         cluster, service, host = create_cluster_with_hostcomponents

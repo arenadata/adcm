@@ -99,6 +99,9 @@ BASE_GROUP_NAME_PATTERN = re.compile(rf'(?P<base_name>.*?)(?: \[(?:{"|".join(Ori
 
 @receiver(pre_save, sender=Group)
 def handle_name_type_display_name(sender, instance, **kwargs):
+    if kwargs["raw"]:
+        return
+
     match = BASE_GROUP_NAME_PATTERN.match(instance.name)
     if match and match.group("base_name"):
         instance.name = f"{match.group('base_name')} [{instance.type}]"
@@ -165,13 +168,13 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
             self.__obj__ = self.get_role_obj()
         return self.__obj__.filter()
 
-    def apply(self, policy: 'Policy', user: User, group: Group, obj=None):
+    def apply(self, policy: "Policy", user: User, group: Group, obj=None):
         """apply policy to user and/or group"""
         if self.__obj__ is None:
             self.__obj__ = self.get_role_obj()
         return self.__obj__.apply(policy, self, user, group, obj)
 
-    def get_permissions(self, role: 'Role' = None):
+    def get_permissions(self, role: "Role" = None):
         """Recursively get permissions of role and all her children"""
         if role is None:
             role = self

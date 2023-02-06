@@ -473,7 +473,7 @@ def add_service_to_cluster(cluster, proto):
         if cluster.prototype.bundle != proto.bundle:
             raise_adcm_ex(
                 "SERVICE_CONFLICT",
-                f'{proto_ref(proto)} does not belong to bundle '
+                f"{proto_ref(proto)} does not belong to bundle "
                 f'"{cluster.prototype.bundle.name}" {cluster.prototype.version}',
             )
 
@@ -905,8 +905,8 @@ def multi_bind(cluster, service, bind_list):
             raise_adcm_ex(
                 "BIND_ERROR",
                 f'Import "{export_obj.prototype.name}" of { proto_ref(pi.prototype)} '
-                f'versions ({pi.min_version}, {pi.max_version}) does not match export '
-                f'version: {export_obj.prototype.version} ({obj_ref(export_obj)})',
+                f"versions ({pi.min_version}, {pi.max_version}) does not match export "
+                f"version: {export_obj.prototype.version} ({obj_ref(export_obj)})",
             )
 
         cbind = ClusterBind(

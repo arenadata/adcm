@@ -17,38 +17,38 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0098_auto_20221115_1255'),
+        ("cm", "0098_auto_20221115_1255"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='adcm',
-            name='concerns',
-            field=models.ManyToManyField(blank=True, related_name='%(class)s_entities', to='cm.concernitem'),
+            model_name="adcm",
+            name="concerns",
+            field=models.ManyToManyField(blank=True, related_name="%(class)s_entities", to="cm.concernitem"),
         ),
         migrations.AlterField(
-            model_name='cluster',
-            name='concerns',
-            field=models.ManyToManyField(blank=True, related_name='%(class)s_entities', to='cm.concernitem'),
+            model_name="cluster",
+            name="concerns",
+            field=models.ManyToManyField(blank=True, related_name="%(class)s_entities", to="cm.concernitem"),
         ),
         migrations.AlterField(
-            model_name='clusterobject',
-            name='concerns',
-            field=models.ManyToManyField(blank=True, related_name='%(class)s_entities', to='cm.concernitem'),
+            model_name="clusterobject",
+            name="concerns",
+            field=models.ManyToManyField(blank=True, related_name="%(class)s_entities", to="cm.concernitem"),
         ),
         migrations.AlterField(
-            model_name='host',
-            name='concerns',
-            field=models.ManyToManyField(blank=True, related_name='%(class)s_entities', to='cm.concernitem'),
+            model_name="host",
+            name="concerns",
+            field=models.ManyToManyField(blank=True, related_name="%(class)s_entities", to="cm.concernitem"),
         ),
         migrations.AlterField(
-            model_name='hostprovider',
-            name='concerns',
-            field=models.ManyToManyField(blank=True, related_name='%(class)s_entities', to='cm.concernitem'),
+            model_name="hostprovider",
+            name="concerns",
+            field=models.ManyToManyField(blank=True, related_name="%(class)s_entities", to="cm.concernitem"),
         ),
         migrations.AlterField(
-            model_name='servicecomponent',
-            name='concerns',
-            field=models.ManyToManyField(blank=True, related_name='%(class)s_entities', to='cm.concernitem'),
+            model_name="servicecomponent",
+            name="concerns",
+            field=models.ManyToManyField(blank=True, related_name="%(class)s_entities", to="cm.concernitem"),
         ),
     ]

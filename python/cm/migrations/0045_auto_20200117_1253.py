@@ -17,18 +17,18 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0044_auto_20200115_1058'),
+        ("cm", "0044_auto_20200115_1058"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='DummyData',
+            name="DummyData",
             fields=[
                 (
-                    'id',
-                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
-                ('date', models.DateTimeField(auto_now=True)),
+                ("date", models.DateTimeField(auto_now=True)),
             ],
         ),
     ]

@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import sys
 
-sys.path.append('/adcm/python')
+sys.path.append("/adcm/python")
 import adcm.init_django  # pylint: disable=unused-import
 from cm.ansible_plugin import (
     ContextActionModule,
@@ -30,10 +30,9 @@ from cm.ansible_plugin import (
     set_service_state_by_name,
 )
 
+ANSIBLE_METADATA = {"metadata_version": "1.1", "supported_by": "Arenadata"}
 
-ANSIBLE_METADATA = {'metadata_version': '1.1', 'supported_by': 'Arenadata'}
-
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: adcm_state
 short_description: Change state of object
@@ -63,9 +62,9 @@ options:
 
 notes:
   - If type is 'service', there is no needs to specify service_name
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - adcm_state:
     type: "cluster"
     state: "statey"
@@ -74,86 +73,86 @@ EXAMPLES = r'''
     type: "service"
     service_name: "First"
     state: "bimba!"
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 state:
   returned: success
   type: str
   example: "operational"
-'''
+"""
 
 
 class ActionModule(ContextActionModule):
     TRANSFERS_FILES = False
-    _VALID_ARGS = frozenset(('type', 'service_name', 'component_name', 'state', 'host_id'))
-    _MANDATORY_ARGS = ('type', 'state')
+    _VALID_ARGS = frozenset(("type", "service_name", "component_name", "state", "host_id"))
+    _MANDATORY_ARGS = ("type", "state")
 
     def _do_cluster(self, task_vars, context):
-        res = self._wrap_call(set_cluster_state, context['cluster_id'], self._task.args["state"])
-        res['state'] = self._task.args["state"]
+        res = self._wrap_call(set_cluster_state, context["cluster_id"], self._task.args["state"])
+        res["state"] = self._task.args["state"]
         return res
 
     def _do_service_by_name(self, task_vars, context):
         res = self._wrap_call(
             set_service_state_by_name,
-            context['cluster_id'],
+            context["cluster_id"],
             self._task.args["service_name"],
             self._task.args["state"],
         )
-        res['state'] = self._task.args["state"]
+        res["state"] = self._task.args["state"]
         return res
 
     def _do_service(self, task_vars, context):
         res = self._wrap_call(
             set_service_state,
-            context['cluster_id'],
-            context['service_id'],
+            context["cluster_id"],
+            context["service_id"],
             self._task.args["state"],
         )
-        res['state'] = self._task.args["state"]
+        res["state"] = self._task.args["state"]
         return res
 
     def _do_host(self, task_vars, context):
         res = self._wrap_call(
             set_host_state,
-            context['host_id'],
+            context["host_id"],
             self._task.args["state"],
         )
-        res['state'] = self._task.args["state"]
+        res["state"] = self._task.args["state"]
         return res
 
     def _do_host_from_provider(self, task_vars, context):
         res = self._wrap_call(
             set_host_state,
-            self._task.args['host_id'],
+            self._task.args["host_id"],
             self._task.args["state"],
         )
-        res['state'] = self._task.args["state"]
+        res["state"] = self._task.args["state"]
         return res
 
     def _do_provider(self, task_vars, context):
-        res = self._wrap_call(set_provider_state, context['provider_id'], self._task.args["state"])
-        res['state'] = self._task.args["state"]
+        res = self._wrap_call(set_provider_state, context["provider_id"], self._task.args["state"])
+        res["state"] = self._task.args["state"]
         return res
 
     def _do_component_by_name(self, task_vars, context):
         res = self._wrap_call(
             set_component_state_by_name,
-            context['cluster_id'],
-            context['service_id'],
-            self._task.args['component_name'],
-            self._task.args.get('service_name', None),
-            self._task.args['state'],
+            context["cluster_id"],
+            context["service_id"],
+            self._task.args["component_name"],
+            self._task.args.get("service_name", None),
+            self._task.args["state"],
         )
-        res['state'] = self._task.args['state']
+        res["state"] = self._task.args["state"]
         return res
 
     def _do_component(self, task_vars, context):
         res = self._wrap_call(
             set_component_state,
-            context['component_id'],
-            self._task.args['state'],
+            context["component_id"],
+            self._task.args["state"],
         )
-        res['state'] = self._task.args['state']
+        res["state"] = self._task.args["state"]
         return res

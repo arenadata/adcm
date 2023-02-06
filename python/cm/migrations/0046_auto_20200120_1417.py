@@ -17,28 +17,28 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0045_auto_20200117_1253'),
+        ("cm", "0045_auto_20200117_1253"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='prototypeimport',
-            name='max_strict',
+            model_name="prototypeimport",
+            name="max_strict",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='prototypeimport',
-            name='min_strict',
+            model_name="prototypeimport",
+            name="min_strict",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='stageprototypeimport',
-            name='max_strict',
+            model_name="stageprototypeimport",
+            name="max_strict",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='stageprototypeimport',
-            name='min_strict',
+            model_name="stageprototypeimport",
+            name="min_strict",
             field=models.BooleanField(default=False),
         ),
     ]

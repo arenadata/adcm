@@ -84,9 +84,9 @@ class RoleType(Enum):
     Possible values of "type" field in Role object
     """
 
-    HIDDEN = 'hidden'
-    BUSINESS = 'business'
-    ROLE = 'role'
+    HIDDEN = "hidden"
+    BUSINESS = "business"
+    ROLE = "role"
 
 
 class RbacRoles(Enum):
@@ -258,12 +258,12 @@ class BusinessRoles(Enum):
     @staticmethod
     def view_config_of(adcm_object) -> RbacRoles:
         """Get view config role by object's class name"""
-        return BusinessRoles[f'View{adcm_object.__class__.__name__}Configurations']
+        return BusinessRoles[f"View{adcm_object.__class__.__name__}Configurations"]
 
     @staticmethod
     def edit_config_of(adcm_object) -> RbacRoles:
         """Get edit config role by object's class name"""
-        return BusinessRoles[f'Edit{adcm_object.__class__.__name__}Configurations']
+        return BusinessRoles[f"Edit{adcm_object.__class__.__name__}Configurations"]
 
 
 CLUSTER_VIEW_CONFIG_ROLES = (
@@ -399,7 +399,7 @@ def as_user_objects(user_sdk: ADCMClient, *objects: AnyADCMObject) -> Tuple[AnyA
     api = user_sdk._api  # pylint: disable=protected-access
     objects_repr = ", ".join(get_object_represent(obj) for obj in objects)
     username = user_sdk.me().username
-    with allure.step(f'Get object from perspective of {username}: {objects_repr}'):
+    with allure.step(f"Get object from perspective of {username}: {objects_repr}"):
         with catch_failed(ObjectNotFound, f"Failed to get one of following objects for {username}: {objects_repr}"):
             return tuple((get_as_client_object(api, obj) for obj in objects))
 
@@ -469,7 +469,7 @@ def is_allowed(
         if isinstance(base_object, ADCMClient):
             is_superuser = base_object.me().is_superuser
         else:
-            is_superuser = base_object._client.rbac.me.read()['is_superuser']  # pylint: disable=protected-access
+            is_superuser = base_object._client.rbac.me.read()["is_superuser"]  # pylint: disable=protected-access
         if is_superuser:
             raise ValueError(
                 "Object that is passed to `is_allowed` method should be an object representative "

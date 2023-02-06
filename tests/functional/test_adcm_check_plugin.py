@@ -338,22 +338,22 @@ class TestDatabaseIsMalformed:
     @pytest.fixture()
     def cluster(self, sdk_client_fs) -> Cluster:
         """Create cluster"""
-        bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, 'parallel', 'cluster'))
-        return bundle.cluster_create('Test Cluster')
+        bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "parallel", "cluster"))
+        return bundle.cluster_create("Test Cluster")
 
     @pytest.fixture()
     def hosts(self, sdk_client_fs, cluster) -> [Host]:
         """Create and return 50 hosts bonded to a cluster"""
-        bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, 'parallel', 'provider'))
-        provider = bundle.provider_create('Test Provider')
-        return [cluster.host_add(provider.host_create(fqdn=f'test-host-{i}')) for i in range(50)]
+        bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "parallel", "provider"))
+        provider = bundle.provider_create("Test Provider")
+        return [cluster.host_add(provider.host_create(fqdn=f"test-host-{i}")) for i in range(50)]
 
-    @allure.issue(name='Database is malformed', url='https://arenadata.atlassian.net/browse/ADCM-2169')
+    @allure.issue(name="Database is malformed", url="https://arenadata.atlassian.net/browse/ADCM-2169")
     @pytest.mark.full()
-    @pytest.mark.usefixtures('hosts')
+    @pytest.mark.usefixtures("hosts")
     def test_multiple_parallel_check_run(self, cluster):
         """
         Run cluster action adcm_check change on 50 hosts
         """
         for _ in range(5):
-            run_cluster_action_and_assert_result(cluster, 'check')
+            run_cluster_action_and_assert_result(cluster, "check")

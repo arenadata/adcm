@@ -19,18 +19,18 @@ import cm.models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0080_subaction_multi_states'),
+        ("cm", "0080_subaction_multi_states"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='cluster',
-            name='before_upgrade',
+            model_name="cluster",
+            name="before_upgrade",
             field=models.JSONField(default=cm.models.get_default_before_upgrade),
         ),
         migrations.AddField(
-            model_name='hostprovider',
-            name='before_upgrade',
+            model_name="hostprovider",
+            name="before_upgrade",
             field=models.JSONField(default=cm.models.get_default_before_upgrade),
         ),
     ]

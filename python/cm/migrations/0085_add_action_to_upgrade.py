@@ -18,18 +18,18 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0084_ansible_venv'),
+        ("cm", "0084_ansible_venv"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='stageupgrade',
-            name='action',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.stageaction'),
+            model_name="stageupgrade",
+            name="action",
+            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to="cm.stageaction"),
         ),
         migrations.AddField(
-            model_name='upgrade',
-            name='action',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.action'),
+            model_name="upgrade",
+            name="action",
+            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to="cm.action"),
         ),
     ]

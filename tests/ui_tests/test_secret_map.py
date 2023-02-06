@@ -96,7 +96,7 @@ class TestSecretMap:
         with allure.step("Checks config filled by action"):
             obj_page.driver.refresh()
             obj_page.config.assert_map_value_is(
-                expected_value={'key_secret': PARAMS["expected_value"]}, display_name=ROW_NAME
+                expected_value={"key_secret": PARAMS["expected_value"]}, display_name=ROW_NAME
             )
         with allure.step("Add second secret map using config form"):
             row = obj_page.config.get_config_row(ROW_NAME)
@@ -126,6 +126,6 @@ class TestSecretMap:
 def _fill_secret_map_by_config(page: ClusterConfigPage, values: list) -> None:
     config_row = page.config.get_config_row(ROW_NAME)
     page.config.click_add_item_btn_in_row(config_row)
-    assert page.config.is_save_btn_disabled(), 'Save button should be disabled'
+    assert page.config.is_save_btn_disabled(), "Save button should be disabled"
     page.config.type_in_field_with_few_inputs(row=config_row, values=values, clear=True)
     page.config.save_config()

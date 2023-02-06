@@ -18,38 +18,38 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0021_auto_20190607_1027'),
+        ("cm", "0021_auto_20190607_1027"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='prototype',
-            name='shared',
+            model_name="prototype",
+            name="shared",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='stageprototype',
-            name='shared',
+            model_name="stageprototype",
+            name="shared",
             field=models.BooleanField(default=False),
         ),
         migrations.AlterField(
-            model_name='clusterbind',
-            name='source_cluster',
+            model_name="clusterbind",
+            name="source_cluster",
             field=models.ForeignKey(
                 on_delete=django.db.models.deletion.CASCADE,
-                related_name='source_cluster',
-                to='cm.Cluster',
+                related_name="source_cluster",
+                to="cm.Cluster",
             ),
         ),
         migrations.AlterField(
-            model_name='clusterbind',
-            name='source_service',
+            model_name="clusterbind",
+            name="source_service",
             field=models.ForeignKey(
                 default=None,
                 null=True,
                 on_delete=django.db.models.deletion.CASCADE,
-                related_name='source_service',
-                to='cm.ClusterObject',
+                related_name="source_service",
+                to="cm.ClusterObject",
             ),
         ),
     ]

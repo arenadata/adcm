@@ -75,7 +75,7 @@ def test_post_body_positive(prepare_post_body_data):
     for test_data_with_prepared_values in test_data_list:
         test_data, _ = test_data_with_prepared_values
         test_data.response.body = generate_body_for_checks(test_data_with_prepared_values)
-        with allure.step(f'Assert - {test_data.description}'):
+        with allure.step(f"Assert - {test_data.description}"):
             adcm.exec_request(request=test_data.request, expected_response=test_data.response)
 
 
@@ -89,5 +89,5 @@ def test_post_body_negative(prepare_post_body_data, flexible_assert_step):
     adcm, test_data_list = prepare_post_body_data
     for test_data_with_prepared_values in test_data_list:
         test_data, _ = test_data_with_prepared_values
-        with flexible_assert_step(title=f'Assert - {test_data.description}'):
+        with flexible_assert_step(title=f"Assert - {test_data.description}"):
             adcm.exec_request(request=test_data.request, expected_response=test_data.response)
