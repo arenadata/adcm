@@ -173,7 +173,7 @@ class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Generi
         check_custom_perm(request.user, "change", JobLog, job_pk)
 
         event = Event()
-        event.set_job_status(job.pk, JobStatus.ABORTED.value)
+        event.set_job_status(job=job, status=JobStatus.ABORTED.value)
         job.cancel(event)
 
         return Response(status=HTTP_200_OK)

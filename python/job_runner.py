@@ -90,10 +90,9 @@ def post_log(job_id, log_type, log_name):
     l1 = LogStorage.objects.filter(job__id=job_id, type=log_type, name=log_name).first()
     if l1:
         post_event(
-            "add_job_log",
-            "job",
-            job_id,
-            {
+            event="add_job_log",
+            obj=l1.job,
+            details={
                 "id": l1.id,
                 "type": l1.type,
                 "name": l1.name,

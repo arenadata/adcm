@@ -142,7 +142,7 @@ class TestJob(BaseTestCase):
 
         self.assertEqual(job.status, status)
         self.assertEqual(job.pid, pid)
-        event.set_job_status.assert_called_once_with(job.id, status)
+        event.set_job_status.assert_called_once_with(job=job, status=status)
 
     def test_set_task_status(self):
         event = Mock()
@@ -154,7 +154,7 @@ class TestJob(BaseTestCase):
         set_task_status(task, JobStatus.RUNNING, event)
 
         self.assertEqual(task.status, JobStatus.RUNNING)
-        event.set_task_status.assert_called_once_with(task.id, JobStatus.RUNNING)
+        event.set_task_status.assert_called_once_with(task=task, status=JobStatus.RUNNING)
 
     def test_get_state_single_job(self):
         bundle = gen_bundle()

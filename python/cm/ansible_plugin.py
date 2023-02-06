@@ -525,10 +525,9 @@ def log_check(job_id: int, group_data: dict, check_data: dict) -> CheckLog:
     ls, _ = LogStorage.objects.get_or_create(job=job, name="ansible", type="check", format="json")
 
     post_event(
-        "add_job_log",
-        "job",
-        job_id,
-        {
+        event="add_job_log",
+        obj=job,
+        details={
             "id": ls.pk,
             "type": ls.type,
             "name": ls.name,

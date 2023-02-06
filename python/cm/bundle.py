@@ -21,7 +21,6 @@ from django.db import IntegrityError, transaction
 from version_utils import rpm
 
 import cm.stack
-import cm.status_api
 from cm.adcm_config import init_object_config, proto_ref, switch_config
 from cm.errors import raise_adcm_ex as err
 from cm.logger import logger
@@ -46,6 +45,7 @@ from cm.models import (
     SubAction,
     Upgrade,
 )
+from cm.status_api import post_event
 from rbac.models import Role
 from rbac.upgrade.role import prepare_action_roles
 
@@ -79,8 +79,8 @@ def load_bundle(bundle_file):
         clear_stage()
         ProductCategory.re_collect()
         bundle.refresh_from_db()
-        prepare_action_roles(bundle)
-        cm.status_api.post_event("create", "bundle", bundle.id)
+        prepare_action_roles(bundle=bundle)
+        post_event(event="create", obj=bundle)
         return bundle
     except:
         clear_stage()
@@ -866,13 +866,12 @@ def delete_bundle(bundle):
                 bundle.name,
                 bundle.version,
             )
-    bundle_id = bundle.id
+    post_event(event="delete", obj=bundle)
     bundle.delete()
     for role in Role.objects.filter(class_name="ParentRole"):
         if not role.child.all():
             role.delete()
     ProductCategory.re_collect()
-    cm.status_api.post_event("delete", "bundle", bundle_id)
 
 
 def check_services():
