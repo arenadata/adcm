@@ -60,7 +60,7 @@ class CommonToolbar(BasePageObject):
         self.wait_element_visible(CommonToolbarLocators.admin_link)
         self.find_and_click(CommonToolbarLocators.adcm_action_btn)
         is_active = (
-            self.wait_element_visible(CommonToolbarLocators.Popup.item(action_name)).get_attribute('disabled') == "true"
+            self.wait_element_visible(CommonToolbarLocators.Popup.item(action_name)).get_attribute("disabled") == "true"
         )
         self.find_and_click(CommonToolbarLocators.adcm_action_btn, is_js=True)
         return is_active
@@ -131,7 +131,7 @@ class CommonToolbar(BasePageObject):
             .replace("sync_problem", "")
             .replace("priority_hight", "")
         )
-        tab_names_expected = 'apps / ' + ' / '.join(tab_names_upper)
+        tab_names_expected = "apps / " + " / ".join(tab_names_upper)
         assert (
             tab_names_actual == tab_names_expected
         ), f'Expected tab names: "{tab_names_expected}", but was "{tab_names_actual}'

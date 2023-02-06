@@ -16,15 +16,15 @@ from django.db import migrations
 
 
 def fix_button(apps, schema_editor):
-    Action = apps.get_model('cm', 'Action')
-    for action in Action.objects.filter(button='0'):
+    Action = apps.get_model("cm", "Action")
+    for action in Action.objects.filter(button="0"):
         action.button = None
         action.save()
 
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0034_auto_20191029_1041'),
+        ("cm", "0034_auto_20191029_1041"),
     ]
 
     operations = [

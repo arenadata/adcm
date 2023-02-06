@@ -33,7 +33,7 @@ class ApiTests(BaseTestCase):
             password=self.test_user_password,
             is_superuser=True,
         )
-        self.client = Client(HTTP_USER_AGENT='Mozilla/5.0')
+        self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
         self.login()
 
         init()

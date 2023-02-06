@@ -322,7 +322,7 @@ class TestClusterConfig:
         config = cluster.config(full=True)
         config_json = ordered_dict_to_dict(config)
         with allure.step("Load schema"):
-            with open(SCHEMAS + "/config_item_schema.json", encoding='utf_8') as file:
+            with open(SCHEMAS + "/config_item_schema.json", encoding="utf_8") as file:
                 schema = json.load(file)
         with allure.step("Check schema"):
             assert validate(config_json, schema) is None

@@ -18,7 +18,7 @@ from coreapi.exceptions import ErrorMessage
 from tests.conftest import DUMMY_ACTION, DUMMY_CLUSTER_BUNDLE
 from tests.library.errorcodes import INVALID_OBJECT_DEFINITION
 
-ALLOW_IN_MM_ACTION = {'actions': {'some_action': {**DUMMY_ACTION, 'allow_in_maintenance_mode': True}}}
+ALLOW_IN_MM_ACTION = {"actions": {"some_action": {**DUMMY_ACTION, "allow_in_maintenance_mode": True}}}
 
 
 def _make_dummy_cluster_bundle(cluster_extra: dict, *services: dict):
@@ -29,24 +29,24 @@ def _make_dummy_provider_bundle(provider_extra: dict = None, host_extra: dict = 
     provider_extra = provider_extra if provider_extra else {}
     host_extra = host_extra if host_extra else {}
     return [
-        {'type': 'provider', 'version': 2.1, 'name': 'test_provider', **provider_extra},
-        {'type': 'host', 'version': 2.3, 'name': 'test_host', **host_extra},
+        {"type": "provider", "version": 2.1, "name": "test_provider", **provider_extra},
+        {"type": "host", "version": 2.3, "name": "test_host", **host_extra},
     ]
 
 
 @pytest.mark.parametrize(
-    'create_bundle_archives',
+    "create_bundle_archives",
     [
         [_make_dummy_cluster_bundle(ALLOW_IN_MM_ACTION)],
-        [_make_dummy_cluster_bundle({**ALLOW_IN_MM_ACTION, 'allow_maintenance_mode': False})],
-        [_make_dummy_provider_bundle({'allow_maintenance_mode': False})],
-        [_make_dummy_provider_bundle({}, {'allow_maintenance_mode': False})],
+        [_make_dummy_cluster_bundle({**ALLOW_IN_MM_ACTION, "allow_maintenance_mode": False})],
+        [_make_dummy_provider_bundle({"allow_maintenance_mode": False})],
+        [_make_dummy_provider_bundle({}, {"allow_maintenance_mode": False})],
     ],
     ids=[
-        'cluster_mm_absent_action_mm_false',
-        'cluster_mm_false_action_mm_true',
-        'provider_mm_false',
-        'host_mm_false',
+        "cluster_mm_absent_action_mm_false",
+        "cluster_mm_false_action_mm_true",
+        "provider_mm_false",
+        "host_mm_false",
     ],
     indirect=True,
 )
@@ -54,7 +54,7 @@ def test_bundle_validation_upload(sdk_client_fs, create_bundle_archives):
     """
     Test uploading bundles with invalid MM directives
     """
-    with allure.step('Upload bundle and expect upload to fail'):
+    with allure.step("Upload bundle and expect upload to fail"):
         bundle_path, *_ = create_bundle_archives
         with pytest.raises(ErrorMessage) as e:
             sdk_client_fs.upload_from_fs(bundle_path)

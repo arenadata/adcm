@@ -17,8 +17,8 @@ from django.db import migrations
 
 
 def migrate_logrotate_config(apps, schema_editor):
-    ADCM = apps.get_model('cm', 'ADCM')
-    ConfigLog = apps.get_model('cm', 'ConfigLog')
+    ADCM = apps.get_model("cm", "ADCM")
+    ConfigLog = apps.get_model("cm", "ConfigLog")
 
     try:
         adcm_object = ADCM.objects.get(id=1)
@@ -29,7 +29,7 @@ def migrate_logrotate_config(apps, schema_editor):
     adcm_configlog = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
 
     # pylint: disable=simplifiable-if-statement
-    if adcm_configlog.config.get('logrotate', {}).get('nginx_server', False):
+    if adcm_configlog.config.get("logrotate", {}).get("nginx_server", False):
         active_value = True
     else:
         active_value = False
@@ -40,7 +40,7 @@ def migrate_logrotate_config(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0090_rm_background_tasks_app'),
+        ("cm", "0090_rm_background_tasks_app"),
     ]
 
     operations = [

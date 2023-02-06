@@ -17,12 +17,12 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('rbac', '0004_fill_group_name_display_name'),
+        ("rbac", "0004_fill_group_name_display_name"),
     ]
 
     operations = [
         migrations.AddConstraint(
-            model_name='group',
-            constraint=models.UniqueConstraint(fields=('display_name', 'type'), name='unique_display_name_type'),
+            model_name="group",
+            constraint=models.UniqueConstraint(fields=("display_name", "type"), name="unique_display_name_type"),
         ),
     ]

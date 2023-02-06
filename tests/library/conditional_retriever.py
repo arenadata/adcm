@@ -31,7 +31,7 @@ from typing import (
 
 import allure
 
-_Result = TypeVar('_Result')
+_Result = TypeVar("_Result")
 
 
 class DataSource(NamedTuple):
@@ -55,7 +55,7 @@ class DataSource(NamedTuple):
 # to auto-register silencers look into `__init_subclass__`,
 # but for now I don't see another silencer than this one
 class _ExceptionSilencer:
-    __slots__ = ('_type', '_failures')
+    __slots__ = ("_type", "_failures")
 
     _failures: List[Tuple[str, str]]
 
@@ -96,7 +96,7 @@ class FromOneOf:
 
     def __init__(self, data_sources: Collection[DataSource], ignore=Exception):
         if len(data_sources) < 2:
-            raise ValueError('There should be at least 2 data sources')
+            raise ValueError("There should be at least 2 data sources")
         self._sources = tuple(data_sources)
         self._check_ignore_value_is_correct(ignore)
         self._silencer = _ExceptionSilencer(ignore)
@@ -106,10 +106,10 @@ class FromOneOf:
             result, ok = self._silencer.get(source)
             if ok:
                 return result
-        with allure.step('Attach failures'):
+        with allure.step("Attach failures"):
             for source_name, failure in self._silencer.failures:
-                allure.attach(failure, name=f'Failure from source: {source_name}')
-        raise AssertionError('None of the sources returned valuable result')
+                allure.attach(failure, name=f"Failure from source: {source_name}")
+        raise AssertionError("None of the sources returned valuable result")
 
     def _check_ignore_value_is_correct(self, ignore):
         if isinstance(ignore, type) and issubclass(ignore, BaseException):
@@ -117,5 +117,5 @@ class FromOneOf:
         if isinstance(ignore, tuple) and all(issubclass(i, BaseException) for i in ignore):
             return
         raise ValueError(
-            'Sorry, but only Exceptions can be ignored with `FromOneOf`.\nFeel free to create your own Silencer.'
+            "Sorry, but only Exceptions can be ignored with `FromOneOf`.\nFeel free to create your own Silencer."
         )

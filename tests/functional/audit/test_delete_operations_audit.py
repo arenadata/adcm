@@ -112,7 +112,7 @@ def _grant_view_config_permissions_on_adcm_objects(sdk_client_fs, adcm_objects, 
     )
 
 
-@pytest.mark.parametrize('parse_with_context', ['delete_objects.yaml'], indirect=True)
+@pytest.mark.parametrize("parse_with_context", ["delete_objects.yaml"], indirect=True)
 @pytest.mark.usefixtures("_grant_view_config_permissions_on_adcm_objects")  # pylint: disable-next=too-many-locals
 def test_delete(
     parse_with_context,

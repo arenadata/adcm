@@ -15,4 +15,4 @@ from cm.logger import logger
 def task_generator(action):
     logger.debug("call task_generator: %s", action)
 
-    return {'action'}
+    return {"action"}

@@ -51,9 +51,9 @@ def create_model_serializer_class(name: str, model: Type[Model], meta_fields: Tu
     :param fields: Overridden fields in serializer class
     :return: Serializer class inherited from ModelSerializer
     """
-    meta_class = type('Meta', (), {'model': model, 'fields': meta_fields})
+    meta_class = type("Meta", (), {"model": model, "fields": meta_fields})
     _bases = (serializers.ModelSerializer,)
-    _dict = {'Meta': meta_class}
+    _dict = {"Meta": meta_class}
 
     if fields is not None:
         _dict.update(fields)

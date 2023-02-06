@@ -15,6 +15,6 @@ from django.urls import path
 from api.concern.views import ConcernItemDetail, ConcernItemList
 
 urlpatterns = [
-    path('', ConcernItemList.as_view(), name='concern'),
-    path('<int:concern_id>/', ConcernItemDetail.as_view(), name='concern-details'),
+    path("", ConcernItemList.as_view(), name="concern"),
+    path("<int:concern_id>/", ConcernItemDetail.as_view(), name="concern-details"),
 ]

@@ -17,13 +17,13 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0051_auto_20200403_0825'),
+        ("cm", "0051_auto_20200403_0825"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='tasklog',
-            name='attr',
+            model_name="tasklog",
+            name="attr",
             field=models.TextField(null=True),
         ),
     ]

@@ -15,6 +15,6 @@ from rest_framework.routers import DefaultRouter
 from api.config_log.views import ConfigLogViewSet
 
 router = DefaultRouter()
-router.register(r'', ConfigLogViewSet, basename='config-log')
+router.register(r"", ConfigLogViewSet, basename="config-log")
 
 urlpatterns = router.urls

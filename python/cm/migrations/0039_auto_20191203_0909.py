@@ -17,18 +17,18 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0038_auto_20191119_1200'),
+        ("cm", "0038_auto_20191119_1200"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='prototype',
-            name='path',
-            field=models.CharField(default='', max_length=160),
+            model_name="prototype",
+            name="path",
+            field=models.CharField(default="", max_length=160),
         ),
         migrations.AddField(
-            model_name='stageprototype',
-            name='path',
-            field=models.CharField(default='', max_length=160),
+            model_name="stageprototype",
+            name="path",
+            field=models.CharField(default="", max_length=160),
         ),
     ]

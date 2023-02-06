@@ -21,10 +21,10 @@ from coreapi.exceptions import ErrorMessage
 
 # pylint: disable=redefined-outer-name
 
-USERNAME = 'new_user'
-PASSWORD = 'strongpassword'
+USERNAME = "new_user"
+PASSWORD = "strongpassword"
 
-HTTP_401_MESSAGE = '401 Unauthorized'
+HTTP_401_MESSAGE = "401 Unauthorized"
 
 # !===== FIXTURES =====!
 
@@ -62,8 +62,8 @@ def test_change_password(new_user: User, sdk_client_fs: ADCMClient):
     """Check password checks works as expected"""
     admin_client = sdk_client_fs
     adcm_url = sdk_client_fs.url
-    new_client_password = USERNAME + '-hehe'
-    new_password_from_admin = 'LAKJF02fj0kdjD)f'
+    new_client_password = USERNAME + "-hehe"
+    new_password_from_admin = "LAKJF02fj0kdjD)f"
     with allure.step("Login as user and change password own password"):
         user_client = login_as_user(adcm_url, USERNAME, PASSWORD)
         _check_basic_actions_are_available(user_client)
@@ -84,19 +84,19 @@ def test_change_password(new_user: User, sdk_client_fs: ADCMClient):
 def test_delete_built_in_user(sdk_client_fs: ADCMClient):
     """Test that deletion of built-in users is forbidden"""
     for built_in_user in sdk_client_fs.user_list(built_in=True):
-        with allure.step(f'Try to delete built-in user {built_in_user}'):
+        with allure.step(f"Try to delete built-in user {built_in_user}"):
             try:
                 built_in_user.delete()
             except MethodNotAllowed:
                 ...
             else:
-                raise AssertionError(f'Built-in user {built_in_user.username} should not be allowed to be deleted')
+                raise AssertionError(f"Built-in user {built_in_user.username} should not be allowed to be deleted")
 
 
 # !===== STEPS =====!
 
 
-@allure.step('Create user {username} with password {password} and check it is created')
+@allure.step("Create user {username} with password {password} and check it is created")
 def create_new_user(client: ADCMClient, username: str = USERNAME, password: str = PASSWORD) -> User:
     """Create new user, run checks that it's created"""
     new_user = client.user_create(username=username, password=password)
@@ -107,16 +107,16 @@ def create_new_user(client: ADCMClient, username: str = USERNAME, password: str 
     return new_user
 
 
-@allure.step('Login as user {username} with password {password}')
+@allure.step("Login as user {username} with password {password}")
 def login_as_user(url: str, username: str, password: str) -> ADCMClient:
     """Login as given user into ADCM instance"""
     try:
         return ADCMClient(url=url, user=username, password=password)
     except ADCMApiError as e:
-        raise AssertionError('Login failed') from e
+        raise AssertionError("Login failed") from e
 
 
-@allure.step('Check that user {username} does exist')
+@allure.step("Check that user {username} does exist")
 def check_user_exists(client: ADCMClient, username: str):
     """Check that username is presented in list of users"""
     presented_usernames = {user.username for user in client.user_list()}
@@ -126,7 +126,7 @@ def check_user_exists(client: ADCMClient, username: str):
     )
 
 
-@allure.step('Check that user {username} is deactivated')
+@allure.step("Check that user {username} is deactivated")
 def check_user_is_deactivated(client: ADCMClient, username: str):
     """Check that username isn't presented in list of user"""
     presented_usernames = {user.username for user in client.user_list()}
@@ -146,31 +146,31 @@ def _get_user_by_username(client: ADCMClient, username: str) -> User:
     return user
 
 
-@allure.step('Check authorized client can get cluster list')
+@allure.step("Check authorized client can get cluster list")
 def _check_basic_actions_are_available(client: ADCMClient):
     """Check if basic actions are available for provided ADCM client"""
     try:
         client.cluster_list()
     except NoSuchEndpointOrAccessIsDenied as e:
-        raise AssertionError('Call to get cluster list should be available for any user') from e
+        raise AssertionError("Call to get cluster list should be available for any user") from e
 
 
-@allure.step('Check ADCM client has no access to ADCM')
+@allure.step("Check ADCM client has no access to ADCM")
 def _check_client_is_unauthorized(client: ADCMClient):
     """Check that ADCM client can't perform basic actions, because session is out"""
     with pytest.raises(ErrorMessage) as e:
         client.cluster_list()
     assert (
         error_message := e.value.error.title
-    ) == HTTP_401_MESSAGE, f'HTTP error should be {HTTP_401_MESSAGE}, not {error_message}'
+    ) == HTTP_401_MESSAGE, f"HTTP error should be {HTTP_401_MESSAGE}, not {error_message}"
 
 
-@allure.step('Check login to ADCM fails with username {username} and password {password}')
+@allure.step("Check login to ADCM fails with username {username} and password {password}")
 def _check_login_failed(url: str, username: str, password: str) -> None:
     """Check that login to ADCM client fails with wrong credentials"""
-    failed_auth_error_args = ('AUTH_ERROR', 'Wrong user or password')
+    failed_auth_error_args = ("AUTH_ERROR", "Wrong user or password")
     with pytest.raises(ADCMApiError) as e:
         ADCMClient(url=url, user=username, password=password)
     assert (
         e.value.args == failed_auth_error_args
-    ), f'Expected error message is {e.value}, but {failed_auth_error_args} was expected'
+    ), f"Expected error message is {e.value}, but {failed_auth_error_args} was expected"

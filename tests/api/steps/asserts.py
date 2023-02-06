@@ -70,12 +70,12 @@ def body_should_be(response: Response, expected_body: ExpectedBody):
 
             allure.attach(
                 json.dumps(expected_values, indent=2),
-                name='Expected fields values',
+                name="Expected fields values",
                 attachment_type=allure.attachment_type.JSON,
             )
             allure.attach(
                 json.dumps(actual_values or actual_body, indent=2),
-                name='Actual fields values',
+                name="Actual fields values",
                 attachment_type=allure.attachment_type.JSON,
             )
             try:
@@ -88,12 +88,12 @@ def body_should_be(response: Response, expected_body: ExpectedBody):
             actual_values = {key: value for key, value in actual_body.items() if key in unexpected_values}
             allure.attach(
                 json.dumps(unexpected_values, indent=2, cls=NotEqual.Encoder),
-                name='Unexpected fields values',
+                name="Unexpected fields values",
                 attachment_type=allure.attachment_type.JSON,
             )
             allure.attach(
                 json.dumps(actual_values or actual_body, indent=2),
-                name='Actual fields values',
+                name="Actual fields values",
                 attachment_type=allure.attachment_type.JSON,
             )
             try:

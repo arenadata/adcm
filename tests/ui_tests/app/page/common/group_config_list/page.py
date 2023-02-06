@@ -59,7 +59,7 @@ class GroupConfigList(BasePageObject):
             description=self.find_child(row, GroupConfigListLocators.GroupConfigRow.description).text,
         )
 
-    @allure.step('Create new group config {name}')
+    @allure.step("Create new group config {name}")
     def create_group(self, name: str, description: str):
         """Create new group config"""
 

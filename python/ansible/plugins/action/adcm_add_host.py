@@ -55,10 +55,10 @@ from ansible.errors import AnsibleError
 
 from ansible.plugins.action import ActionBase
 
-sys.path.append('/adcm/python')
+sys.path.append("/adcm/python")
 import adcm.init_django  # pylint: disable=unused-import
-from cm.api import add_host
 from cm.ansible_plugin import get_object_id_from_context
+from cm.api import add_host
 from cm.errors import AdcmEx
 from cm.logger import logger
 from cm.models import HostProvider, Prototype

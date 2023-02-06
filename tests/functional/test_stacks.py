@@ -34,7 +34,7 @@ def test_service_wo_name(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check error: no name in service definition"):
-        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, "There is no required key \"name\" in map.")
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'There is no required key "name" in map.')
 
 
 def test_service_wo_version(sdk_client_fs: ADCMClient):
@@ -52,7 +52,7 @@ def test_service_wo_actions(sdk_client_fs: ADCMClient):
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Get service without actions"):
         service_prototype = sdk_client_fs.service_prototype()._data  # pylint: disable=protected-access
-        with open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8') as file:
+        with open(SCHEMAS + "/stack_list_item_schema.json", encoding="utf_8") as file:
             schema = json.load(file)
     with allure.step("Check service"):
         assert validate(service_prototype, schema) is None
@@ -64,7 +64,7 @@ def test_cluster_proto_wo_actions(sdk_client_fs: ADCMClient):
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Get cluster without actions"):
         cluster_prototype = sdk_client_fs.cluster_prototype()._data  # pylint: disable=protected-access
-        with open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8') as file:
+        with open(SCHEMAS + "/stack_list_item_schema.json", encoding="utf_8") as file:
             schema = json.load(file)
     with allure.step("Check cluster"):
         assert validate(cluster_prototype, schema) is None
@@ -76,7 +76,7 @@ def test_host_proto_wo_actions(sdk_client_fs: ADCMClient):
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Get host without actions"):
         host_prototype = sdk_client_fs.host_prototype()._data  # pylint: disable=protected-access
-        with open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8') as file:
+        with open(SCHEMAS + "/stack_list_item_schema.json", encoding="utf_8") as file:
             schema = json.load(file)
     with allure.step("Check host prototype"):
         assert validate(host_prototype, schema) is None
@@ -88,7 +88,7 @@ def test_service_wo_type(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check error: No type in object definition"):
-        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, "There is no key \"type\" in map.")
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'There is no key "type" in map.')
 
 
 def test_service_unknown_type(sdk_client_fs: ADCMClient):
@@ -97,7 +97,7 @@ def test_service_unknown_type(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check error: Unknown type"):
-        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, "Value \"unknown\" is not allowed")
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'Value "unknown" is not allowed')
 
 
 def test_stack_hasnt_script_mandatory_key(sdk_client_fs: ADCMClient):

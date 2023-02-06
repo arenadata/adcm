@@ -97,7 +97,7 @@ class ADCMTestApiWrapper:
         if "{id}" in method.url_template:
             if object_id is None:
                 raise ValueError("Request template requires 'id', but 'request.object_id' is None")
-            real_id = object_id if isinstance(object_id, int) else object_id['id']
+            real_id = object_id if isinstance(object_id, int) else object_id["id"]
             url = method.url_template.format(name=endpoint.path, id=real_id)
         else:
             url = method.url_template.format(name=endpoint.path)

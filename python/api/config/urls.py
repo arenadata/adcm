@@ -20,19 +20,19 @@ from api.config.views import (
 )
 
 urlpatterns = [
-    path('', ConfigView.as_view(), name='object-config'),
-    path('history/', ConfigHistoryView.as_view(), name='config-history'),
-    path('history/<int:version>/', ConfigVersionView.as_view(), name='config-history-version'),
+    path("", ConfigView.as_view(), name="object-config"),
+    path("history/", ConfigHistoryView.as_view(), name="config-history"),
+    path("history/<int:version>/", ConfigVersionView.as_view(), name="config-history-version"),
     path(
-        'history/<int:version>/restore/',
+        "history/<int:version>/restore/",
         ConfigHistoryRestoreView.as_view(),
-        name='config-history-version-restore',
+        name="config-history-version-restore",
     ),
     path(
-        'previous/',
+        "previous/",
         ConfigVersionView.as_view(),
-        {'version': 'previous'},
-        name='config-previous',
+        {"version": "previous"},
+        name="config-previous",
     ),
-    path('current/', ConfigVersionView.as_view(), {'version': 'current'}, name='config-current'),
+    path("current/", ConfigVersionView.as_view(), {"version": "current"}, name="config-current"),
 ]

@@ -16,22 +16,22 @@ from django.db import migrations
 
 
 def fill_display_name(apps, model):
-    Model = apps.get_model('cm', model)
-    for mod in Model.objects.filter(display_name=''):
+    Model = apps.get_model("cm", model)
+    for mod in Model.objects.filter(display_name=""):
         mod.display_name = mod.name
         mod.save()
 
 
 def fix_display_name(apps, schema_editor):
-    fill_display_name(apps, 'Action')
-    fill_display_name(apps, 'Component')
-    fill_display_name(apps, 'Prototype')
-    fill_display_name(apps, 'PrototypeConfig')
+    fill_display_name(apps, "Action")
+    fill_display_name(apps, "Component")
+    fill_display_name(apps, "Prototype")
+    fill_display_name(apps, "PrototypeConfig")
 
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0023_auto_20190624_1441'),
+        ("cm", "0023_auto_20190624_1441"),
     ]
 
     operations = [

@@ -17,23 +17,23 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0005_auto_20180928_0945'),
+        ("cm", "0005_auto_20180928_0945"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='action',
-            name='required_hostcomponentmap',
+            model_name="action",
+            name="required_hostcomponentmap",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='required_hostcomponentmap',
+            model_name="stageaction",
+            name="required_hostcomponentmap",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='tasklog',
-            name='hostcomponentmap',
+            model_name="tasklog",
+            name="hostcomponentmap",
             field=models.TextField(null=True),
         ),
     ]

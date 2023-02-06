@@ -34,7 +34,7 @@ from cm.ansible_plugin import (
 )
 
 ANSIBLE_METADATA = {"metadata_version": "1.1", "supported_by": "Arenadata"}
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: adcm_config
 short_description: Change values in config in runtime
@@ -73,8 +73,8 @@ options:
 
 notes:
   - If type is 'service', there is no needs to specify service_name
-'''
-EXAMPLES = r'''
+"""
+EXAMPLES = r"""
 - adcm_config:
     type: "service"
     service_name: "First"
@@ -100,12 +100,12 @@ EXAMPLES = r'''
           key2: value2
       - key: "some_string"
         value: "string"
-'''
-RETURN = r'''
+"""
+RETURN = r"""
 value:
   returned: success
   type: complex
-'''
+"""
 
 
 class ActionModule(ContextActionModule):

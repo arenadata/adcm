@@ -26,7 +26,7 @@ class Command(BaseCommand):
         manage.py upgraderole
     """
 
-    help = 'Upgrade roles'
+    help = "Upgrade roles"
 
     def handle(self, *args, **options):
         """Handler method"""

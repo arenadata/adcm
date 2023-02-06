@@ -30,8 +30,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 from tests.ui_tests.app.app import ADCMTest
 
-ValueType = TypeVar('ValueType')
-FuncType = TypeVar('FuncType')
+ValueType = TypeVar("ValueType")
+FuncType = TypeVar("FuncType")
 
 
 def _prepare_cluster(sdk_client: ADCMClient, path) -> Cluster:
@@ -41,7 +41,7 @@ def _prepare_cluster(sdk_client: ADCMClient, path) -> Cluster:
     return cluster
 
 
-@allure.step('Wait for a new window after action')
+@allure.step("Wait for a new window after action")
 @contextmanager
 def wait_for_new_window(driver: WebDriver, wait_time: int = 10):
     """Wait a new window is opened after some action"""
@@ -53,7 +53,7 @@ def wait_for_new_window(driver: WebDriver, wait_time: int = 10):
     driver.switch_to.window(tabs[len(tabs) - 1])
 
 
-@allure.step('Close current tab')
+@allure.step("Close current tab")
 def close_current_tab(driver: WebDriver):
     """Close current tab and switch to first tab"""
 
@@ -71,7 +71,7 @@ def check_rows_amount(page, expected_amount: int, table_page_num: int):
     """
     assert (
         row_count := page.locators.row_count
-    ) == expected_amount, f'Page #{table_page_num} should contain {expected_amount}, not {row_count}'
+    ) == expected_amount, f"Page #{table_page_num} should contain {expected_amount}, not {row_count}"
 
 
 def ignore_flaky_errors(func: Callable):
@@ -84,7 +84,7 @@ def ignore_flaky_errors(func: Callable):
         try:
             func(*args, **kwargs)
         except (StaleElementReferenceException, NoSuchElementException) as e:
-            raise AssertionError(f'Got a flaky error: {e}') from e
+            raise AssertionError(f"Got a flaky error: {e}") from e
 
     return wrapped
 
@@ -99,12 +99,12 @@ def is_equal(first_value: ValueType, second_value: ValueType) -> bool:
 
 def is_empty(first_value: ValueType) -> bool:
     """Check if first value is empty (=='')"""
-    return first_value == ''
+    return first_value == ""
 
 
 def is_not_empty(first_value: ValueType) -> bool:
     """Check if first value is not empty (!='')"""
-    return first_value != ''
+    return first_value != ""
 
 
 def wait_and_assert_ui_info(
@@ -154,9 +154,9 @@ def wait_and_assert_ui_info(
                 # expected callable with 1 argument like 'is_empty', etc.
                 compare_func = value
                 assert compare_func(actual_value), (
-                    f'{human_key_names[key]} in {ui_info_classname} '
+                    f"{human_key_names[key]} in {ui_info_classname} "
                     f'failed to pass check "{compare_func.__name__}", '
-                    f'actual value is {actual_value}'
+                    f"actual value is {actual_value}"
                 )
                 return
             if isinstance(value, tuple):
@@ -165,10 +165,10 @@ def wait_and_assert_ui_info(
                 expected_value = value
                 compare_func = is_equal
             assert compare_func(actual_value, expected_value), (
-                f'{human_key_names[key]} in {ui_info_classname} ' f'should be {expected_value}, not {actual_value}'
+                f"{human_key_names[key]} in {ui_info_classname} " f"should be {expected_value}, not {actual_value}"
             )
 
-    with allure.step('Check information is correct on UI'):
+    with allure.step("Check information is correct on UI"):
         wait_until_step_succeeds(_check_info_from_ui, timeout=timeout, period=period)
 
 
@@ -202,7 +202,7 @@ def assert_enough_rows(required_row_num: int, row_count: int):
     ), f"Table has only {row_count} rows when row #{required_row_num} was requested"
 
 
-@allure.step('Wait file {filename} was downloaded to {dirname} or directly to selenium')
+@allure.step("Wait file {filename} was downloaded to {dirname} or directly to selenium")
 def wait_file_is_presented(
     filename: str,
     app_fs: ADCMTest,
@@ -211,20 +211,20 @@ def wait_file_is_presented(
     period: Union[int, float] = 1,
 ):
     """Checks if file is presented in directory"""
-    if app_fs.selenoid['host']:
+    if app_fs.selenoid["host"]:
         dir_url = f'http://{app_fs.selenoid["host"]}:{app_fs.selenoid["port"]}/download/{app_fs.driver.session_id}'
-        file_url = f'{dir_url}/{filename}'
+        file_url = f"{dir_url}/{filename}"
 
         def _check_file_is_presented():
             response = requests.get(file_url)
             assert (
                 response.status_code < 400
-            ), f'Request for file ended with {response.status_code}, file request text: {response.text}.'
+            ), f"Request for file ended with {response.status_code}, file request text: {response.text}."
 
     else:
 
         def _check_file_is_presented():
-            assert filename in os.listdir(dirname), f'File {filename} not found in {dirname}'
+            assert filename in os.listdir(dirname), f"File {filename} not found in {dirname}"
 
     wait_until_step_succeeds(_check_file_is_presented, timeout=timeout, period=period)
 

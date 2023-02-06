@@ -85,9 +85,9 @@ def _job_case(job_pk: str, action: str) -> tuple[AuditOperation, AuditObject | N
 
     if job:
         if job.sub_action:
-            operation_name = f"Job \"{job.sub_action.display_name}\""
+            operation_name = f'Job "{job.sub_action.display_name}"'
         if job.action and operation_name is not None:
-            operation_name = f"{operation_name} of action \"{job.action.display_name}\""
+            operation_name = f'{operation_name} of action "{job.action.display_name}"'
 
     if operation_name is None:
         operation_name = "Job"

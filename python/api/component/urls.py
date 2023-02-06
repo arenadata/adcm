@@ -21,20 +21,20 @@ from api.component.views import (
 )
 
 urlpatterns = [
-    path('', ComponentListView.as_view(), name='component'),
+    path("", ComponentListView.as_view(), name="component"),
     path(
-        '<int:component_id>/',
+        "<int:component_id>/",
         include(
             [
-                path('', ComponentDetailView.as_view(), name='component-details'),
+                path("", ComponentDetailView.as_view(), name="component-details"),
                 path(
                     "maintenance-mode/",
                     ComponentMaintenanceModeView.as_view(),
                     name="component-maintenance-mode",
                 ),
-                path('config/', include('api.config.urls'), {'object_type': 'component'}),
-                path('action/', include('api.action.urls'), {'object_type': 'component'}),
-                path('status/', StatusList.as_view(), name='component-status'),
+                path("config/", include("api.config.urls"), {"object_type": "component"}),
+                path("action/", include("api.action.urls"), {"object_type": "component"}),
+                path("status/", StatusList.as_view(), name="component-status"),
             ]
         ),
     ),

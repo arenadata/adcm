@@ -43,7 +43,7 @@ from cm.models import ConfigLog, GroupConfig, Host, ObjectConfig
 
 def has_config_perm(user, action_type, obj):
     model = type(obj).__name__.lower()
-    if user.has_perm(f'cm.{action_type}_config_of_{model}', obj):
+    if user.has_perm(f"cm.{action_type}_config_of_{model}", obj):
         return True
 
     return False
@@ -55,17 +55,17 @@ def check_config_perm(user, action_type, obj):
 
 
 class GroupConfigFilterSet(FilterSet):
-    object_type = CharFilter(field_name='object_type', label='object_type', method='filter_object_type')
+    object_type = CharFilter(field_name="object_type", label="object_type", method="filter_object_type")
 
     @staticmethod
     def filter_object_type(queryset, name, value):
         value = revert_model_name(value)
-        object_type = ContentType.objects.get(app_label='cm', model=value)
+        object_type = ContentType.objects.get(app_label="cm", model=value)
         return queryset.filter(**{name: object_type})
 
     class Meta:
         model = GroupConfig
-        fields = ('object_id', 'object_type')
+        fields = ("object_id", "object_type")
 
 
 class GroupConfigHostViewSet(
@@ -80,8 +80,8 @@ class GroupConfigHostViewSet(
     queryset = Host.objects.all()
     serializer_class = GroupConfigHostSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
-    permission_required = ['view_host']
-    lookup_url_kwarg = 'host_id'
+    permission_required = ["view_host"]
+    lookup_url_kwarg = "host_id"
 
     @audit
     def create(self, request, *args, **kwargs):
@@ -89,7 +89,7 @@ class GroupConfigHostViewSet(
 
     @audit
     def destroy(self, request, *args, **kwargs):
-        group_config = GroupConfig.obj.get(id=self.kwargs.get('parent_lookup_group_config'))
+        group_config = GroupConfig.obj.get(id=self.kwargs.get("parent_lookup_group_config"))
         host = self.get_object()
         group_config.hosts.remove(host)
 
@@ -97,13 +97,13 @@ class GroupConfigHostViewSet(
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        if hasattr(context['view'], 'response'):
+        if hasattr(context["view"], "response"):
             return context
 
-        group_config_id = self.kwargs.get('parent_lookup_group_config')
+        group_config_id = self.kwargs.get("parent_lookup_group_config")
         if group_config_id is not None:
             group_config = GroupConfig.obj.get(id=group_config_id)
-            context.update({'group_config': group_config})
+            context.update({"group_config": group_config})
 
         return context
 
@@ -113,11 +113,11 @@ class GroupConfigHostCandidateViewSet(
 ):  # pylint: disable=too-many-ancestors
     serializer_class = GroupConfigHostCandidateSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
-    lookup_url_kwarg = 'host_id'
-    permission_required = ['cm.view_host']
+    lookup_url_kwarg = "host_id"
+    permission_required = ["cm.view_host"]
 
     def get_queryset(self, *args, **kwargs):
-        group_config_id = self.kwargs.get('parent_lookup_group_config')
+        group_config_id = self.kwargs.get("parent_lookup_group_config")
         if group_config_id is None:
             return Host.objects.none()
 
@@ -127,13 +127,13 @@ class GroupConfigHostCandidateViewSet(
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        if hasattr(context['view'], 'response'):
+        if hasattr(context["view"], "response"):
             return context
 
-        group_config_id = self.kwargs.get('parent_lookup_group_config')
+        group_config_id = self.kwargs.get("parent_lookup_group_config")
         if group_config_id is not None:
             group_config = GroupConfig.obj.get(id=group_config_id)
-            context.update({'group_config': group_config})
+            context.update({"group_config": group_config})
 
         return context
 
@@ -144,23 +144,23 @@ class GroupConfigConfigViewSet(
     queryset = ObjectConfig.objects.all()
     serializer_class = GroupConfigConfigSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
-    permission_required = ['view_objectconfig']
+    permission_required = ["view_objectconfig"]
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        if hasattr(context['view'], 'response'):
+        if hasattr(context["view"], "response"):
             return context
 
-        group_config_id = self.kwargs.get('parent_lookup_group_config')
+        group_config_id = self.kwargs.get("parent_lookup_group_config")
         if group_config_id is not None:
             group_config = GroupConfig.obj.get(id=group_config_id)
-            context.update({'group_config': group_config})
-            context.update({'obj_ref__group_config': group_config})
+            context.update({"group_config": group_config})
+            context.update({"obj_ref__group_config": group_config})
 
-        obj_ref_id = self.kwargs.get('pk')
+        obj_ref_id = self.kwargs.get("pk")
         if obj_ref_id is not None:
             obj_ref = ObjectConfig.obj.get(id=obj_ref_id)
-            context.update({'obj_ref': obj_ref})
+            context.update({"obj_ref": obj_ref})
 
         return context
 
@@ -175,9 +175,9 @@ class GroupConfigConfigLogViewSet(
 ):  # pylint: disable=too-many-ancestors
     serializer_class = GroupConfigConfigLogSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
-    permission_required = ['view_configlog']
-    filterset_fields = ('id',)
-    ordering_fields = ('id',)
+    permission_required = ["view_configlog"]
+    filterset_fields = ("id",)
+    ordering_fields = ("id",)
 
     def get_serializer_class(self):
         if self.is_for_ui():
@@ -186,25 +186,25 @@ class GroupConfigConfigLogViewSet(
 
     def get_queryset(self, *args, **kwargs):
         kwargs = {
-            'obj_ref__group_config': self.kwargs.get('parent_lookup_obj_ref__group_config'),
-            'obj_ref': self.kwargs.get('parent_lookup_obj_ref'),
+            "obj_ref__group_config": self.kwargs.get("parent_lookup_obj_ref__group_config"),
+            "obj_ref": self.kwargs.get("parent_lookup_obj_ref"),
         }
-        return ConfigLog.objects.filter(**kwargs).order_by('-id')
+        return ConfigLog.objects.filter(**kwargs).order_by("-id")
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        if hasattr(context['view'], 'response'):
+        if hasattr(context["view"], "response"):
             return context
 
-        group_config_id = self.kwargs.get('parent_lookup_obj_ref__group_config')
+        group_config_id = self.kwargs.get("parent_lookup_obj_ref__group_config")
         if group_config_id is not None:
             group_config = GroupConfig.obj.get(id=group_config_id)
-            context.update({'obj_ref__group_config': group_config})
+            context.update({"obj_ref__group_config": group_config})
 
-        obj_ref_id = self.kwargs.get('parent_lookup_obj_ref')
+        obj_ref_id = self.kwargs.get("parent_lookup_obj_ref")
         if obj_ref_id is not None:
             obj_ref = ObjectConfig.obj.get(id=obj_ref_id)
-            context.update({'obj_ref': obj_ref})
+            context.update({"obj_ref": obj_ref})
 
         context["ui"] = self.is_for_ui()
 
@@ -220,7 +220,7 @@ class GroupConfigViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):
     serializer_class = GroupConfigSerializer
     filterset_class = GroupConfigFilterSet
     permission_classes = (DjangoObjectPermissionsAudit,)
-    permission_required = ['cm.view_groupconfig']
+    permission_required = ["cm.view_groupconfig"]
 
     @audit
     def create(self, request, *args, **kwargs):
@@ -228,11 +228,11 @@ class GroupConfigViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):
         try:
             serializer.is_valid(raise_exception=True)
         except ValidationError as e:
-            raise AdcmEx('GROUP_CONFIG_DATA_ERROR') from e
+            raise AdcmEx("GROUP_CONFIG_DATA_ERROR") from e
 
-        model = serializer.validated_data['object_type'].model_class()
-        obj = model.obj.get(id=serializer.validated_data['object_id'])
-        check_config_perm(self.request.user, 'change', obj)
+        model = serializer.validated_data["object_type"].model_class()
+        obj = model.obj.get(id=serializer.validated_data["object_id"])
+        check_config_perm(self.request.user, "change", obj)
 
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
@@ -241,16 +241,16 @@ class GroupConfigViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):
 
     @audit
     def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
+        partial = kwargs.pop("partial", False)
         instance = self.get_object()
 
-        check_config_perm(self.request.user, 'change', instance.object)
+        check_config_perm(self.request.user, "change", instance.object)
 
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-        if getattr(instance, '_prefetched_objects_cache', None):
+        if getattr(instance, "_prefetched_objects_cache", None):
             # If 'prefetch_related' has been applied to a queryset, we need to
             # forcibly invalidate the prefetch cache on the instance.
             # pylint: disable=protected-access
@@ -261,18 +261,18 @@ class GroupConfigViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):
     @audit
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        check_config_perm(self.request.user, 'change', instance.object)
+        check_config_perm(self.request.user, "change", instance.object)
         self.perform_destroy(instance)
 
         return Response(status=HTTP_204_NO_CONTENT)
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        if hasattr(context['view'], 'response'):
+        if hasattr(context["view"], "response"):
             return context
 
         if self.kwargs:
             group_config = self.get_object()
-            context.update({'group_config': group_config})
+            context.update({"group_config": group_config})
 
         return context

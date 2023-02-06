@@ -24,17 +24,17 @@ from tests.functional.rbac.conftest import RbacRoles
 from tests.library.assertions import sets_are_equal
 from tests.library.utils import lower_class_name
 
-ACTION_NAME = 'no_config'
+ACTION_NAME = "no_config"
 
-CONFIG_EP = 'config'
-CONFIG_LOG_EP = 'config-log'
-GROUP_CONFIG_EP = 'group-config'
+CONFIG_EP = "config"
+CONFIG_LOG_EP = "config-log"
+GROUP_CONFIG_EP = "group-config"
 
 
 @pytest.fixture()
 def _prepare_configs(prepare_objects, second_objects) -> None:
     """Change configs, crete group configs and change them"""
-    changed_config = {'boolean': False}
+    changed_config = {"boolean": False}
     for first_object, second_object in zip(prepare_objects, second_objects):
         first_object.config_set_diff(changed_config)
         second_object.config_set_diff(changed_config)
@@ -43,7 +43,7 @@ def _prepare_configs(prepare_objects, second_objects) -> None:
             _prepare_group_config(second_object)
 
 
-@pytest.mark.usefixtures('_prepare_configs')
+@pytest.mark.usefixtures("_prepare_configs")
 def test_flat_endpoints(user, clients, prepare_objects, second_objects):
     """
     Test "flat" endpoints:
@@ -65,7 +65,7 @@ def test_flat_endpoints(user, clients, prepare_objects, second_objects):
     ]
 
     clients.admin.policy_create(
-        name=f'Service administrator of {service.name}',
+        name=f"Service administrator of {service.name}",
         role=clients.admin.role(name=RbacRoles.ServiceAdministrator.value),
         objects=[service],
         user=[user],
@@ -74,11 +74,11 @@ def test_flat_endpoints(user, clients, prepare_objects, second_objects):
 
     _run_actions(prepare_objects, second_objects)
 
-    with allure.step('Check flat endpoints from the Admin perspective'):
+    with allure.step("Check flat endpoints from the Admin perspective"):
         check_jobs_and_tasks(clients.admin, prepare_objects + second_objects)
         check_configs(clients.admin, all_objects)
 
-    with allure.step('Check flat endpoints from the User perspective'):
+    with allure.step("Check flat endpoints from the User perspective"):
         # action was executed only on one component
         check_jobs_and_tasks(clients.user, (service, component))
         check_configs(clients.user, (service, *service.component_list()))
@@ -96,7 +96,7 @@ def check_jobs_and_tasks(client: ADCMClient, objects):
         expected_jobs = set()
         for task in itertools.chain.from_iterable([obj.action(name=ACTION_NAME).task_list() for obj in objects]):
             expected_jobs |= {job.id for job in task.job_list()}
-        actual_jobs: set = {job['id'] for job in _query_flat_endpoint(client, job_flat_endpoint)}
+        actual_jobs: set = {job["id"] for job in _query_flat_endpoint(client, job_flat_endpoint)}
         sets_are_equal(
             actual_jobs,
             expected_jobs,
@@ -106,7 +106,7 @@ def check_jobs_and_tasks(client: ADCMClient, objects):
     with allure.step(f'Check tasks at "{task_flat_endpoint}/" endpoint based on object_id and action_id'):
         expected_tasks: set = {(obj.id, obj.action(name=ACTION_NAME).id) for obj in objects}
         actual_tasks: set = {
-            (task['object_id'], task['action_id']) for task in _query_flat_endpoint(client, task_flat_endpoint)
+            (task["object_id"], task["action_id"]) for task in _query_flat_endpoint(client, task_flat_endpoint)
         }
         sets_are_equal(
             actual_tasks,
@@ -134,7 +134,7 @@ def _check_group_config_endpoint(client, objects):
         (lower_class_name(obj), obj.id, obj.group_config()[0].config_id) for obj in objects_with_group_config
     }
     actual_group_configs = {
-        (group_config['object_type'], group_config['object_id'], group_config['config_id'])
+        (group_config["object_type"], group_config["object_id"], group_config["config_id"])
         for group_config in _query_flat_endpoint(client, GROUP_CONFIG_EP)
     }
     sets_are_equal(
@@ -148,14 +148,14 @@ def _check_group_config_endpoint(client, objects):
 @allure.step(f'Check config logs at "{CONFIG_LOG_EP}/" endpoint based on config_id')
 def _check_config_logs_endpoint(client, objects, objects_with_group_config):
     expected_config_logs = {
-        config['id'] for config in itertools.chain.from_iterable([obj.config_history(full=True) for obj in objects])
+        config["id"] for config in itertools.chain.from_iterable([obj.config_history(full=True) for obj in objects])
     } | {
-        config_log['id']
+        config_log["id"]
         for config_log in itertools.chain.from_iterable(
             _get_history_of_group_config(client, obj.group_config()[0]) for obj in objects_with_group_config
         )
     }
-    actual_config_logs = {config['id'] for config in _query_flat_endpoint(client, CONFIG_LOG_EP)}
+    actual_config_logs = {config["id"] for config in _query_flat_endpoint(client, CONFIG_LOG_EP)}
     sets_are_equal(
         actual_config_logs,
         expected_config_logs,
@@ -168,11 +168,11 @@ def _check_config_logs_endpoint(client, objects, objects_with_group_config):
 def _check_configs_endpoint(client, expected_config_logs):
     # at this point we sure that we see only the things we are allowed to see
     expected_configs = {
-        config['obj_ref']
+        config["obj_ref"]
         for config in _query_flat_endpoint(client, CONFIG_LOG_EP)
-        if config['id'] in expected_config_logs
+        if config["id"] in expected_config_logs
     }
-    actual_configs = {config['id'] for config in _query_flat_endpoint(client, CONFIG_EP)}
+    actual_configs = {config["id"] for config in _query_flat_endpoint(client, CONFIG_EP)}
     sets_are_equal(
         actual_configs,
         expected_configs,
@@ -180,7 +180,7 @@ def _check_configs_endpoint(client, expected_config_logs):
     )
 
 
-@allure.step('Run action on all objects')
+@allure.step("Run action on all objects")
 def _run_actions(first_objects, second_objects):
     for first, second in zip(first_objects, second_objects):
         task = first.action(name=ACTION_NAME).run()
@@ -190,26 +190,26 @@ def _run_actions(first_objects, second_objects):
 
 def _query_flat_endpoint(client: ADCMClient, endpoint: str):
     response = requests.get(
-        f'{client.url}/api/v1/{endpoint}/', headers={'Authorization': f'Token {client.api_token()}'}
+        f"{client.url}/api/v1/{endpoint}/", headers={"Authorization": f"Token {client.api_token()}"}
     )
     response.raise_for_status()
     data = response.json()
     if isinstance(data, list):
         return data
-    return data['results']
+    return data["results"]
 
 
 def _prepare_group_config(adcm_object: Cluster):
-    group = adcm_object.group_config_create(f'{adcm_object.name} group {random_string(4)}')
+    group = adcm_object.group_config_create(f"{adcm_object.name} group {random_string(4)}")
     group.config_set_diff(
         {
-            'config': {'boolean': True},
-            'attr': {'group_keys': {'boolean': True}, 'custom_group_keys': {'boolean': True}},
+            "config": {"boolean": True},
+            "attr": {"group_keys": {"boolean": True}, "custom_group_keys": {"boolean": True}},
         }
     )
 
 
 def _get_history_of_group_config(client, group_config):
-    config_id = group_config.config(full=True)['url'].split('/')[-4]
-    result = _query_flat_endpoint(client, f'group-config/{group_config.id}/config/{config_id}/config-log/')
+    config_id = group_config.config(full=True)["url"].split("/")[-4]
+    result = _query_flat_endpoint(client, f"group-config/{group_config.id}/config/{config_id}/config-log/")
     return result

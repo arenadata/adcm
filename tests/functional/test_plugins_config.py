@@ -55,7 +55,7 @@ INITIAL_CONFIG = {
     "file": "yyyy\nyyyy\n",
     "string": "zzz",
     "json": [{"x": "y"}, {"y": "z"}],
-    'dummy': 'donthurtme',
+    "dummy": "donthurtme",
     "map": {"one": "two", "two": "three"},
     "list": ["one", "two", "three"],
 }
@@ -66,7 +66,7 @@ CHANGED_CONFIG = {
     "file": "new new new\nyyyy\n",
     "string": "double new",
     "json": [{"x": "new"}, {"y": "z"}],
-    'dummy': 'donthurtme',
+    "dummy": "donthurtme",
     "map": {"one": "two", "two": "new"},
     "list": ["one", "new", "three"],
 }
@@ -74,7 +74,7 @@ CONFIG_KEYS = set(CHANGED_CONFIG.keys())
 
 
 check_config_changed = build_objects_checker(
-    field_name='Config',
+    field_name="Config",
     changed=CHANGED_CONFIG,
     extractor=get_config,
 )
@@ -83,7 +83,7 @@ check_config_changed = build_objects_checker(
 @pytest.fixture()
 def two_clusters(request, sdk_client_fs: ADCMClient) -> Tuple[Cluster, Cluster]:
     """Get two clusters with both services"""
-    bundle_dir = "cluster" if not hasattr(request, 'param') else request.param
+    bundle_dir = "cluster" if not hasattr(request, "param") else request.param
     return create_two_clusters(sdk_client_fs, __file__, bundle_dir)
 
 
@@ -94,8 +94,8 @@ def two_providers(sdk_client_fs: ADCMClient) -> Tuple[Provider, Provider]:
 
 
 @pytest.mark.parametrize(
-    ('change_action_name', 'object_to_be_changed', 'action_owner'),
-    generate_cluster_success_params(action_prefix='change', id_template='change_{}_config'),
+    ("change_action_name", "object_to_be_changed", "action_owner"),
+    generate_cluster_success_params(action_prefix="change", id_template="change_{}_config"),
 )
 @pytest.mark.usefixtures("two_clusters")
 def test_cluster_related_objects(
@@ -119,8 +119,8 @@ def test_cluster_related_objects(
 
 
 @pytest.mark.parametrize(
-    ('change_action_name', 'object_to_be_changed', 'action_owner'),
-    generate_provider_success_params(action_prefix='change', id_template='change_{}_config'),
+    ("change_action_name", "object_to_be_changed", "action_owner"),
+    generate_provider_success_params(action_prefix="change", id_template="change_{}_config"),
 )
 @pytest.mark.usefixtures("two_providers")
 def test_provider_related_objects(
@@ -150,9 +150,9 @@ def test_host_from_provider(two_providers: Tuple[Provider, Provider], sdk_client
     provider_name = compose_name(provider)
     host_name = compose_name(host)
     with check_config_changed(sdk_client_fs, {host}), allure.step(
-        f'Set config of {host_name} with action from {provider_name}'
+        f"Set config of {host_name} with action from {provider_name}"
     ):
-        run_provider_action_and_assert_result(provider, 'change_host_from_provider', config={'host_id': host.id})
+        run_provider_action_and_assert_result(provider, "change_host_from_provider", config={"host_id": host.id})
 
 
 def test_multijob(
@@ -169,12 +169,12 @@ def test_multijob(
         affected_objects.add(obj)
         object_name = compose_name(obj)
         with check_config_changed(sdk_client_fs, affected_objects), allure.step(
-            f'Change {object_name} state with multijob action'
+            f"Change {object_name} state with multijob action"
         ):
-            run_successful_task(obj.action(name=f'change_{classname}_multijob'), object_name)
+            run_successful_task(obj.action(name=f"change_{classname}_multijob"), object_name)
 
 
-@pytest.mark.usefixtures('two_clusters', 'two_providers')
+@pytest.mark.usefixtures("two_clusters", "two_providers")
 def test_forbidden_actions(sdk_client_fs: ADCMClient):
     """
     Check that forbidden caller-context combinations fail as actions
@@ -183,24 +183,24 @@ def test_forbidden_actions(sdk_client_fs: ADCMClient):
     name = "first"
     with allure.step(f'Check forbidden from cluster "{name}" context actions'):
         cluster = sdk_client_fs.cluster(name=name)
-        for forbidden_action in ('change_service', 'change_component'):
+        for forbidden_action in ("change_service", "change_component"):
             with check_config_changed(sdk_client_fs):
-                run_cluster_action_and_assert_result(cluster, forbidden_action, status='failed')
+                run_cluster_action_and_assert_result(cluster, forbidden_action, status="failed")
     with allure.step(f'Check forbidden from service "{name}" context actions'):
         service = cluster.service(name=name)
         with check_config_changed(sdk_client_fs):
-            run_service_action_and_assert_result(service, 'change_component', status='failed')
+            run_service_action_and_assert_result(service, "change_component", status="failed")
     with allure.step(f'Check forbidden from provider "{name}" context actions'):
         provider = sdk_client_fs.provider(name=name)
         with check_config_changed(sdk_client_fs):
-            run_provider_action_and_assert_result(provider, 'change_host', status='failed')
+            run_provider_action_and_assert_result(provider, "change_host", status="failed")
         first_host, second_host, *_ = provider.host_list()
         with check_config_changed(sdk_client_fs):
             run_host_action_and_assert_result(
                 first_host,
-                'change_host_from_provider',
-                status='failed',
-                config={'host_id': second_host.id},
+                "change_host_from_provider",
+                status="failed",
+                config={"host_id": second_host.id},
             )
 
 
@@ -214,10 +214,10 @@ def test_from_host_actions(
     affected_objects = set()
     check_config_changed_local = build_objects_checker(
         extractor=get_config,
-        changed={**INITIAL_CONFIG, 'int': CHANGED_CONFIG['int']},
-        field_name='Config',
+        changed={**INITIAL_CONFIG, "int": CHANGED_CONFIG["int"]},
+        field_name="Config",
     )
-    with allure.step('Bind component to host'):
+    with allure.step("Bind component to host"):
         component = (service := (cluster := two_clusters[0]).service(name=name)).component(name=name)
         host = two_providers[0].host_list()[0]
         cluster.host_add(host)
@@ -226,9 +226,9 @@ def test_from_host_actions(
         affected_objects.add(obj)
         classname = obj.__class__.__name__.lower()
         with check_config_changed_local(sdk_client_fs, affected_objects), allure.step(
-            f'Check change {compose_name(obj)} config from host action'
+            f"Check change {compose_name(obj)} config from host action"
         ):
-            run_host_action_and_assert_result(host, f'change_{classname}_host')
+            run_host_action_and_assert_result(host, f"change_{classname}_host")
 
 
 class TestChangeMultipleParams:
@@ -343,7 +343,7 @@ class TestImmediateConfigChange(TestImmediateChange):
 
     _file = __file__
 
-    @allure.issue(url='https://arenadata.atlassian.net/browse/ADCM-2116')
+    @allure.issue(url="https://arenadata.atlassian.net/browse/ADCM-2116")
     def test_immediate_config_change(
         self,
         provider_host: Tuple[Provider, Host],
@@ -366,6 +366,6 @@ def _test_successful_config_change(
     action_owner_object = get_object_func(sdk_client_fs, *action_owner)
     action_owner_name = compose_name(action_owner_object)
     with check_config_changed(sdk_client_fs, {object_to_be_changed}), allure.step(
-        f'Change config of {changed_object_name} with action from {action_owner_name}'
+        f"Change config of {changed_object_name} with action from {action_owner_name}"
     ):
         run_successful_task(action_owner_object.action(name=action_name), action_owner_name)

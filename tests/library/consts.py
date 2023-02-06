@@ -17,22 +17,22 @@ from enum import Enum
 class States:
     """Possible states dataclass"""
 
-    failed = 'failed'
-    success = 'success'
+    failed = "failed"
+    success = "success"
 
 
 class MessageStates:
     """Possible states messages dataclass"""
 
-    fail_msg = 'fail_msg'
-    success_msg = 'success_msg'
+    fail_msg = "fail_msg"
+    success_msg = "success_msg"
 
 
 class HTTPMethod(Enum):
     """HTTP methods"""
 
-    GET = 'get'
-    POST = 'post'
-    PUT = 'put'
-    PATCH = 'patch'
-    DELETE = 'delete'
+    GET = "get"
+    POST = "post"
+    PUT = "put"
+    PATCH = "patch"
+    DELETE = "delete"

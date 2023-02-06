@@ -65,7 +65,7 @@ class DataError(Exception):
 
 def check_type(data, data_type, path, rule=None, parent=None):
     if not isinstance(data, data_type):
-        msg = f'Object should be a {str(data_type)}'
+        msg = f"Object should be a {str(data_type)}"
         if path:
             last = path[-1]
             msg = f'{last[0]} "{last[1]}" should be a {str(data_type)}'
@@ -80,7 +80,7 @@ def check_match_type(match, data, data_type, path, rule, parent=None):
 
 def match_none(data, rules, rule, path, parent=None, is_service=False):
     if data is not None:
-        msg = 'Object should be empty'
+        msg = "Object should be empty"
         if path:
             last = path[-1]
             msg = f'{last[0]} "{last[1]}" should be empty'
@@ -92,20 +92,20 @@ def match_any(data, rules, rule, path, parent=None, is_service=False):
 
 
 def match_list(data, rules, rule, path, parent=None, is_service=False):
-    check_match_type('match_list', data, list, path, rule, parent)
+    check_match_type("match_list", data, list, path, rule, parent)
     for i, v in enumerate(data):
-        process_rule(v, rules, rules[rule]['item'], path + [('Value of list index', i)], parent, is_service)
+        process_rule(v, rules, rules[rule]["item"], path + [("Value of list index", i)], parent, is_service)
     return True
 
 
 def match_dict(data, rules, rule, path, parent=None, is_service=False):
-    check_match_type('match_dict', data, dict, path, rule, parent)
+    check_match_type("match_dict", data, dict, path, rule, parent)
 
     if is_service is False:
         is_service = data.get("type") == "service"
 
-    if 'required_items' in rules[rule]:
-        for i in rules[rule]['required_items']:
+    if "required_items" in rules[rule]:
+        for i in rules[rule]["required_items"]:
             if i not in data:
                 if is_service and i == "service":
                     continue
@@ -113,11 +113,11 @@ def match_dict(data, rules, rule, path, parent=None, is_service=False):
                 raise FormatError(path, f'There is no required key "{i}" in map.', data, rule)
 
     for k in data:
-        new_path = path + [('Value of map key', k)]
-        if 'items' in rules[rule] and k in rules[rule]['items']:
-            process_rule(data[k], rules, rules[rule]['items'][k], new_path, data, is_service)
-        elif 'default_item' in rules[rule]:
-            process_rule(data[k], rules, rules[rule]['default_item'], new_path, data, is_service)
+        new_path = path + [("Value of map key", k)]
+        if "items" in rules[rule] and k in rules[rule]["items"]:
+            process_rule(data[k], rules, rules[rule]["items"][k], new_path, data, is_service)
+        elif "default_item" in rules[rule]:
+            process_rule(data[k], rules, rules[rule]["default_item"], new_path, data, is_service)
         else:
             msg = f'Map key "{k}" is not allowed here (rule "{rule}")'
 
@@ -125,16 +125,16 @@ def match_dict(data, rules, rule, path, parent=None, is_service=False):
 
 
 def match_dict_key_selection(data, rules, rule, path, parent=None, is_service=False):
-    check_match_type('dict_key_selection', data, dict, path, rule, parent)
-    key = rules[rule]['selector']
+    check_match_type("dict_key_selection", data, dict, path, rule, parent)
+    key = rules[rule]["selector"]
     if key not in data:
         msg = f'There is no key "{key}" in map.'
         raise FormatError(path, msg, data, rule, parent)
     value = data[key]
-    if value in rules[rule]['variants']:
-        process_rule(data, rules, rules[rule]['variants'][value], path, parent, is_service)
-    elif 'default_variant' in rule:
-        process_rule(data, rules, rules[rule]['default_variant'], path, parent, is_service)
+    if value in rules[rule]["variants"]:
+        process_rule(data, rules, rules[rule]["variants"][value], path, parent, is_service)
+    elif "default_variant" in rule:
+        process_rule(data, rules, rules[rule]["default_variant"], path, parent, is_service)
     else:
         msg = f'Value "{value}" is not allowed for map key "{key}".'
         raise FormatError(path, msg, data, rule, parent)
@@ -143,21 +143,21 @@ def match_dict_key_selection(data, rules, rule, path, parent=None, is_service=Fa
 def match_one_of(data, rules, rule, path, parent=None, is_service=False):
     errors = []
     sub_errors = []
-    for obj in rules[rule]['variants']:
+    for obj in rules[rule]["variants"]:
         try:
             process_rule(data, rules, obj, path, parent, is_service)
         except FormatError as e:
             if e.errors:
                 sub_errors += e.errors
             errors.append(e)
-    if len(errors) == len(rules[rule]['variants']):
+    if len(errors) == len(rules[rule]["variants"]):
         errors += sub_errors
         msg = f'None of the variants for rule "{rule}" match'
         raise FormatError(path, msg, data, rule, parent, caused_by=errors)
 
 
 def match_set(data, rules, rule, path, parent=None, is_service=False):
-    if data not in rules[rule]['variants']:
+    if data not in rules[rule]["variants"]:
         msg = f'Value "{data}" not in set {rules[rule]["variants"]}'
         raise FormatError(path, msg, data, rule, parent=parent)
 
@@ -170,28 +170,28 @@ def match_simple_type(obj_type):
 
 
 MATCH = {
-    'list': match_list,
-    'dict': match_dict,
-    'one_of': match_one_of,
-    'dict_key_selection': match_dict_key_selection,
-    'set': match_set,
-    'string': match_simple_type(str),
-    'bool': match_simple_type(bool),
-    'int': match_simple_type(int),
-    'float': match_simple_type(float),
-    'none': match_none,
-    'any': match_any,
+    "list": match_list,
+    "dict": match_dict,
+    "one_of": match_one_of,
+    "dict_key_selection": match_dict_key_selection,
+    "set": match_set,
+    "string": match_simple_type(str),
+    "bool": match_simple_type(bool),
+    "int": match_simple_type(int),
+    "float": match_simple_type(float),
+    "none": match_none,
+    "any": match_any,
 }
 
 
 def check_rule(rules):
     if not isinstance(rules, dict):
-        return False, 'YSpec should be a map'
-    if 'root' not in rules:
+        return False, "YSpec should be a map"
+    if "root" not in rules:
         return False, 'YSpec should has "root" key'
-    if 'match' not in rules['root']:
+    if "match" not in rules["root"]:
         return False, 'YSpec should has "match" subkey of "root" key'
-    return True, ''
+    return True, ""
 
 
 def process_rule(data, rules, name, path=None, parent=None, is_service=False):
@@ -200,9 +200,9 @@ def process_rule(data, rules, name, path=None, parent=None, is_service=False):
     if name not in rules:
         raise SchemaError(f"There is no rule {name} in schema.")
     rule = rules[name]
-    if 'match' not in rule:
+    if "match" not in rule:
         raise SchemaError(f"There is no mandatory match attr in rule {rule} in schema.")
-    match = rule['match']
+    match = rule["match"]
     if match not in MATCH:
         raise SchemaError(f"Unknown match {match} from schema. Impossible to handle that.")
 
@@ -214,4 +214,4 @@ def check(data, rules):
         raise DataError("You should use ruyaml.round_trip_load() to parse data yaml")
     if not isinstance(rules, ruyaml.comments.CommentedBase):
         raise SchemaError("You should use ruyaml.round_trip_load() to parse schema yaml")
-    process_rule(data, rules, 'root')
+    process_rule(data, rules, "root")

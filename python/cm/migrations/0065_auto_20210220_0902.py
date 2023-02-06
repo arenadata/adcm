@@ -17,18 +17,18 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0064_auto_20210210_1532'),
+        ("cm", "0064_auto_20210210_1532"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='action',
-            name='host_action',
+            model_name="action",
+            name="host_action",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='host_action',
+            model_name="stageaction",
+            name="host_action",
             field=models.BooleanField(default=False),
         ),
     ]

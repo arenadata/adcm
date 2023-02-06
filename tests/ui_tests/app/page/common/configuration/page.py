@@ -142,7 +142,7 @@ class PasswordRow(SimpleRow):
         self._clear.click()
 
     def get_value(self):
-        return self._view.find_child(self.element, CommonConfigMenu.ConfigRow.password).get_attribute('value')
+        return self._view.find_child(self.element, CommonConfigMenu.ConfigRow.password).get_attribute("value")
 
     @property
     def read_only(self):
@@ -357,7 +357,7 @@ class CommonConfigMenuObj(BasePageObject):  # pylint: disable=too-many-public-me
     def get_config_row(self, display_name: str) -> WebElement:
         """Return config field row with provided display name"""
 
-        row_name = f'{display_name}:' if not display_name.endswith(':') else display_name
+        row_name = f"{display_name}:" if not display_name.endswith(":") else display_name
         for row in self.get_all_config_rows():
             if self.find_child(row, CommonConfigMenu.ConfigRow.name).text == row_name:
                 return row
@@ -378,7 +378,7 @@ class CommonConfigMenuObj(BasePageObject):  # pylint: disable=too-many-public-me
         self.find_and_click(self.locators.save_btn)
         self.wait_element_hide(self.locators.loading_text, timeout=load_timeout)
 
-    @allure.step('Setting configuration description to {description}')
+    @allure.step("Setting configuration description to {description}")
     def set_description(self, description: str) -> str:
         """Clear description field, set new value and get previous description"""
 
@@ -390,7 +390,7 @@ class CommonConfigMenuObj(BasePageObject):  # pylint: disable=too-many-public-me
     def compare_versions(self, compare_with: str, base_compare_version: Optional[str] = None):
         """Click on history button and select compare to config option by its description"""
 
-        base_version = f'"{base_compare_version}"' if base_compare_version else 'current'
+        base_version = f'"{base_compare_version}"' if base_compare_version else "current"
         with allure.step(f"Compare {base_version} configuration with {compare_with}"):
             self.find_and_click(self.locators.history_btn)
             if base_compare_version:
@@ -667,7 +667,7 @@ class CommonConfigMenuObj(BasePageObject):  # pylint: disable=too-many-public-me
         """
         Assert that message "Field [{name}] is required!" is presented
         """
-        message = f'Field [{name}] is required!'
+        message = f"Field [{name}] is required!"
         check_element_is_visible(self, self.locators.field_error(message))
 
     @allure.step("Check {name} invalid error is presented")
@@ -904,7 +904,7 @@ class CommonConfigMenuObj(BasePageObject):  # pylint: disable=too-many-public-me
         with allure.step("Change value in secrettext type"):
             self.type_in_field_with_few_inputs(row="secrettext", values=[row_value_new], clear=True)
         with allure.step("Change value in json type"):
-            self.type_in_field_with_few_inputs(row="json", values=['{}'], clear=True)
+            self.type_in_field_with_few_inputs(row="json", values=["{}"], clear=True)
 
     @staticmethod
     def is_element_read_only(row: WebElement) -> bool:
@@ -958,7 +958,7 @@ class CommonConfigMenuObj(BasePageObject):  # pylint: disable=too-many-public-me
                 value_converter=json.loads,
             )
         with allure.step("Change value in secrettext type"):
-            self.wait_history_row_with_value(self.get_config_row("secrettext"), '****')
+            self.wait_history_row_with_value(self.get_config_row("secrettext"), "****")
         with allure.step("Change value in json type"):
             self.wait_history_row_with_value(
                 self.get_config_row("json"),

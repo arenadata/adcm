@@ -32,7 +32,7 @@ def _configure_adcm(sdk_client_fs, ad_config, ldap_basic_ous):
     """Configure LDAP settings in ADCM and turn off LDAP sync"""
     _, users_ou = ldap_basic_ous
     configure_adcm_for_ldap(sdk_client_fs, ad_config, False, None, users_ou, None)
-    sdk_client_fs.adcm().config_set_diff({'ldap_integration': {'sync_interval': 0}})
+    sdk_client_fs.adcm().config_set_diff({"ldap_integration": {"sync_interval": 0}})
 
 
 @pytest.mark.usefixtures("_configure_adcm", "another_ldap_group")

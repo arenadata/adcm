@@ -30,26 +30,26 @@ from adcm_pytest_plugin.utils import catch_failed, get_data_dir
 from tests.functional.tools import AnyADCMObject, get_object_represent
 from tests.library.assertions import dicts_are_equal, sets_are_equal
 
-CLUSTER_NAME = 'test cluster to export'
-PROVIDER_NAME = 'test_provider_to_export'
-DEFAULT_CONFIG_SERVICE = 'service_with_defaults'
-CHANGED_CONFIG_SERVICE = 'service_with_changed_config'
+CLUSTER_NAME = "test cluster to export"
+PROVIDER_NAME = "test_provider_to_export"
+DEFAULT_CONFIG_SERVICE = "service_with_defaults"
+CHANGED_CONFIG_SERVICE = "service_with_changed_config"
 
-SECRET_FIELDS = ('password', 'secrettext')
+SECRET_FIELDS = ("password", "secrettext")
 CHANGED_CONFIG = {
-    'string': 'customstringval',
-    'text': 'custom\ntextval',
-    'secrettext': 'secret\ntextval2',
-    'boolean': True,
-    'integer': 42,
-    'float': 5.3,
-    'password': 'cleverpass',
-    'variant': 'pa',
-    'option': 443,
-    'list': ['pa', 'ram'],
-    'map': {'name': 'noname'},
-    'json': {'whole': {'another': 0, 'story': 1}},
-    'file': 'new\nfile\ncontent\n',
+    "string": "customstringval",
+    "text": "custom\ntextval",
+    "secrettext": "secret\ntextval2",
+    "boolean": True,
+    "integer": 42,
+    "float": 5.3,
+    "password": "cleverpass",
+    "variant": "pa",
+    "option": 443,
+    "list": ["pa", "ram"],
+    "map": {"name": "noname"},
+    "json": {"whole": {"another": 0, "story": 1}},
+    "file": "new\nfile\ncontent\n",
 }
 
 
@@ -75,21 +75,21 @@ def _upload_bundle_to_both_adcm(bundle_archives, sdk_client_fs, second_adcm_sdk)
 
     sdk_client_fs.upload_from_fs(provider_tar).provider_create(PROVIDER_NAME)
 
-    cluster_from_second_adcm = second_adcm_sdk.upload_from_fs(cluster_tar).cluster_create('Whoops Cluster')
+    cluster_from_second_adcm = second_adcm_sdk.upload_from_fs(cluster_tar).cluster_create("Whoops Cluster")
     cluster_from_second_adcm.service_add(name=DEFAULT_CONFIG_SERVICE)
     cluster_from_second_adcm.service_add(name=CHANGED_CONFIG_SERVICE)
-    provider_from_second_adcm = second_adcm_sdk.upload_from_fs(provider_tar).provider_create('Whoops Provider')
+    provider_from_second_adcm = second_adcm_sdk.upload_from_fs(provider_tar).provider_create("Whoops Provider")
     for i in range(7):
-        provider_from_second_adcm.host_create(f'second-adcm-host-{i}')
+        provider_from_second_adcm.host_create(f"second-adcm-host-{i}")
 
 
 @pytest.skip(reason="https://tracker.yandex.ru/ADCM-3519")
 @pytest.mark.parametrize(
-    'bundle_archives',
-    [(get_data_dir(__file__, 'cluster'), get_data_dir(__file__, 'provider'))],
+    "bundle_archives",
+    [(get_data_dir(__file__, "cluster"), get_data_dir(__file__, "provider"))],
     indirect=True,
 )
-@pytest.mark.usefixtures('_upload_bundle_to_both_adcm')
+@pytest.mark.usefixtures("_upload_bundle_to_both_adcm")
 def test_export_cluster_from_another_adcm(adcm_fs, extra_adcm_fs, sdk_client_fs, second_adcm_sdk):
     """
     Test basic scenario export of a cluster from one ADCM to another
@@ -107,13 +107,13 @@ def test_export_cluster_from_another_adcm(adcm_fs, extra_adcm_fs, sdk_client_fs,
     check_hc_map(hc_map, imported_cluster)
 
 
-@allure.step('Import cluster from one ADCM to another')
+@allure.step("Import cluster from one ADCM to another")
 def import_cluster_to_second_adcm(
     cluster_id: int, export_from_adcm: ADCM, import_to_adcm: ADCM, second_adcm_sdk: ADCMClient
 ) -> Tuple[Cluster, Provider]:
     """Import cluster from one ADCM to another and return cluster and provider from "new" ADCM"""
-    password = 'unbreakablepassword'
-    path_to_dump = '/adcm/data/cluster_dump'
+    password = "unbreakablepassword"
+    path_to_dump = "/adcm/data/cluster_dump"
     dump_cluster(export_from_adcm, cluster_id, path_to_dump, password)
     with allure.step('Copy file with cluster dump to "target" ADCM'):
         copy_file_to_container(export_from_adcm.container, import_to_adcm.container, path_to_dump, path_to_dump)
@@ -125,7 +125,7 @@ def import_cluster_to_second_adcm(
         return second_adcm_sdk.cluster(name=CLUSTER_NAME), second_adcm_sdk.provider(name=PROVIDER_NAME)
 
 
-@allure.step('Create hosts and set HC to 1 host to 1 component, left 1 host in cluster unbind')
+@allure.step("Create hosts and set HC to 1 host to 1 component, left 1 host in cluster unbind")
 def set_hc_map(cluster: Cluster, provider: Provider):
     """
     * Create hosts for cluster and one free host
@@ -133,26 +133,26 @@ def set_hc_map(cluster: Cluster, provider: Provider):
     * Map one component to one host and another one to another host
     * Return cleared HC map
     """
-    hosts = [cluster.host_add(provider.host_create(f'host-{i}')) for i in range(3)]
+    hosts = [cluster.host_add(provider.host_create(f"host-{i}")) for i in range(3)]
     host_1, host_2, *_ = hosts
-    provider.host_create('free-host')
+    provider.host_create("free-host")
     component_1, component_2, *_ = [s.component() for s in cluster.service_list()]
     return _clear_hc_map(cluster.hostcomponent_set((host_1, component_1), (host_2, component_2)))
 
 
-@allure.step('Check HC and hosts bond to the cluster')
+@allure.step("Check HC and hosts bond to the cluster")
 def check_hc_map(expected_hc_map: dict, cluster: Cluster):
     """Check hostcomponent map is correct after the import and all hosts that should be in cluster are still there"""
     actual_hc_map = _clear_hc_map(cluster.hostcomponent())
-    sets_are_equal(actual_hc_map, expected_hc_map, 'Hostcomponent is incorrect after the import')
+    sets_are_equal(actual_hc_map, expected_hc_map, "Hostcomponent is incorrect after the import")
     sets_are_equal(
         {h.fqdn for h in cluster.host_list()},
-        {f'host-{i}' for i in range(3)},
-        'List of hosts in the cluster is incorrect',
+        {f"host-{i}" for i in range(3)},
+        "List of hosts in the cluster is incorrect",
     )
 
 
-@allure.step('Change configurations of the cluster, 1 service and a component on it')
+@allure.step("Change configurations of the cluster, 1 service and a component on it")
 def change_configurations(cluster: Cluster) -> dict:
     """Change config of a cluster, one of its services and this service's component"""
     old_config = dict(cluster.config())
@@ -176,10 +176,10 @@ def check_configurations(cluster: Cluster, default_config: dict):
         service.component(),
     )
 
-    with allure.step('Check that one of services and its component have default config'):
+    with allure.step("Check that one of services and its component have default config"):
         _check_configs_in_objects(default_config_wo_secrets, objects_with_default_config)
 
-    with allure.step('Check that cluster, one of services and its component have changed config'):
+    with allure.step("Check that cluster, one of services and its component have changed config"):
         _check_configs_in_objects(changed_config_wo_secrets, objects_with_changed_config)
 
     _check_secrets(cluster)
@@ -191,7 +191,7 @@ def _check_configs_in_objects(expected_config: dict, objects: Iterable[AnyADCMOb
         dicts_are_equal(
             actual_config,
             expected_config,
-            f'Config of {get_object_represent(adcm_object)} is incorrect.\nCheck attachments for more details.',
+            f"Config of {get_object_represent(adcm_object)} is incorrect.\nCheck attachments for more details.",
         )
 
 
@@ -199,10 +199,10 @@ def _get_config_wo_secret_fields(config: dict) -> dict:
     return {key: value for key, value in config.items() if key not in SECRET_FIELDS}
 
 
-@allure.step('Check secrets in config (password and secrettext) by action')
+@allure.step("Check secrets in config (password and secrettext) by action")
 def _check_secrets(cluster):
-    run_cluster_action_and_assert_result(cluster, 'check_secrets')
+    run_cluster_action_and_assert_result(cluster, "check_secrets")
 
 
 def _clear_hc_map(raw_hc) -> Set[str]:
-    return {(hc['host'], hc['service_name'], hc['component']) for hc in raw_hc}
+    return {(hc["host"], hc["service_name"], hc["component"]) for hc in raw_hc}

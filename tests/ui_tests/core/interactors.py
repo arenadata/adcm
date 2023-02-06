@@ -143,14 +143,14 @@ class Interactor:
 
         wait_until_step_succeeds(_assert_attribute_value, period=0.5, timeout=timeout)
 
-    @allure.step('Scroll to element')
+    @allure.step("Scroll to element")
     def scroll_to(self, locator: BaseLocator | WebElement) -> WebElement:
         """Scroll to element"""
         element = locator if isinstance(locator, WebElement) else self.find_element(locator)
         # Hack for firefox because of move_to_element does not scroll to the element
         # https://github.com/mozilla/geckodriver/issues/776
-        if self._driver.capabilities['browserName'] == 'firefox':
-            self._driver.execute_script('arguments[0].scrollIntoView(true)', element)
+        if self._driver.capabilities["browserName"] == "firefox":
+            self._driver.execute_script("arguments[0].scrollIntoView(true)", element)
         action = ActionChains(self._driver)
         action.move_to_element(element).perform()
         return element
@@ -181,20 +181,20 @@ class Interactor:
             input_element = self.find_element(element, timeout) if isinstance(element, BaseLocator) else element
             input_element.click()
             input_element.send_keys(text)
-            assert (actual_value := input_element.get_property('value')) == text, (
-                f'Value of input {element.name if isinstance(element, BaseLocator) else element.text} '
+            assert (actual_value := input_element.get_property("value")) == text, (
+                f"Value of input {element.name if isinstance(element, BaseLocator) else element.text} "
                 f'expected to be "{text}", but "{actual_value}" was found'
             )
 
         wait_until_step_succeeds(_send_keys_and_check, period=0.5, timeout=1.5)
 
-    @allure.step('Clear element')
+    @allure.step("Clear element")
     def clear_by_keys(self, element: BaseLocator | WebElement) -> None:
         """Clears element value by keyboard."""
 
         def _clear():
             locator_before = element if isinstance(element, WebElement) else self.find_element(element)
-            actual_value = locator_before.get_property('value')
+            actual_value = locator_before.get_property("value")
             for _ in range(len(actual_value)):
                 locator_before.send_keys(Keys.BACKSPACE)
             locator_before.send_keys(Keys.BACK_SPACE)

@@ -17,28 +17,28 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0079_concernitem_cause'),
+        ("cm", "0079_concernitem_cause"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='stagesubaction',
-            name='multi_state_on_fail_set',
+            model_name="stagesubaction",
+            name="multi_state_on_fail_set",
             field=models.JSONField(default=list),
         ),
         migrations.AddField(
-            model_name='stagesubaction',
-            name='multi_state_on_fail_unset',
+            model_name="stagesubaction",
+            name="multi_state_on_fail_unset",
             field=models.JSONField(default=list),
         ),
         migrations.AddField(
-            model_name='subaction',
-            name='multi_state_on_fail_set',
+            model_name="subaction",
+            name="multi_state_on_fail_set",
             field=models.JSONField(default=list),
         ),
         migrations.AddField(
-            model_name='subaction',
-            name='multi_state_on_fail_unset',
+            model_name="subaction",
+            name="multi_state_on_fail_unset",
             field=models.JSONField(default=list),
         ),
     ]

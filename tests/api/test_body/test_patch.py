@@ -84,5 +84,5 @@ def test_patch_body_negative(prepare_patch_body_data, flexible_assert_step):
     adcm, test_data_list = prepare_patch_body_data
     for test_data_with_prepared_body in test_data_list:
         test_data, _ = test_data_with_prepared_body
-        with flexible_assert_step(title=f'Assert - {test_data.description}'):
+        with flexible_assert_step(title=f"Assert - {test_data.description}"):
             adcm.exec_request(request=test_data.request, expected_response=test_data.response)

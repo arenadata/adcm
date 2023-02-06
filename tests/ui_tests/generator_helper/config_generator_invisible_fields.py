@@ -17,20 +17,20 @@ DATA = [
     ("invisible", "true", "advanced", "true"),
     ("invisible", "false", "advanced", "false"),
     ("invisible", "false", "advanced", "true"),
-    ('invisible', "true", "advanced", "false"),
+    ("invisible", "true", "advanced", "false"),
 ]
 TYPES = (
     "string",
     "password",
     "integer",
     "text",
-    'boolean',
-    'float',
-    'option',
-    'list',
-    'map',
-    'json',
-    'file',
+    "boolean",
+    "float",
+    "option",
+    "list",
+    "map",
+    "json",
+    "file",
 )
 template_textboxes = """
 - type: cluster
@@ -311,13 +311,13 @@ TEMPLATES = {
     "password": template_password,
     "integer": template_numbers,
     "text": template_text,
-    'boolean': template_boolean,
-    'float': template_numbers,
-    'option': template_option,
-    'list': template_list,
-    'map': template_map,
-    'json': template_json,
-    'file': template_file,
+    "boolean": template_boolean,
+    "float": template_numbers,
+    "option": template_option,
+    "list": template_list,
+    "map": template_map,
+    "json": template_json,
+    "file": template_file,
 }
 INSTALL = """
 ---
@@ -340,8 +340,8 @@ for t in TYPES:
         d_name = f"{config[0]}_{config[1]}_{config[2]}_{config[3]}/{t}"
         os.makedirs(d_name)
         os.makedirs(f"{config[0]}_{config[1]}_{config[2]}_{config[3]}/{t}/ansible")
-        tmpl = ''
-        with open(f"{d_name}/config.yaml", "w+", encoding='utf_8') as f:
+        tmpl = ""
+        with open(f"{d_name}/config.yaml", "w+", encoding="utf_8") as f:
             f.write(TEMPLATES[t].format(config[0], config[1], config[2], config[3], t))
-        with open(f"{d_name}/ansible/install.yaml", "w+", encoding='utf_8') as f:
+        with open(f"{d_name}/ansible/install.yaml", "w+", encoding="utf_8") as f:
             f.write(INSTALL)

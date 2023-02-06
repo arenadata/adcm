@@ -44,7 +44,7 @@ class ProviderPageMixin(BasePageObject):
 
     def __init__(self, driver, base_url, provider_id: int):
         if self.MENU_SUFFIX is None:
-            raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
+            raise AttributeError("You should explicitly set MENU_SUFFIX in class definition")
         super().__init__(driver, base_url, "/provider/{provider_id}/" + self.MENU_SUFFIX, provider_id=provider_id)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.provider_id = provider_id
@@ -84,7 +84,7 @@ class ProviderPageMixin(BasePageObject):
 class ProviderMainPage(ProviderPageMixin, BaseDetailedPage):
     """Provider page Main menu"""
 
-    MENU_SUFFIX = 'main'
+    MENU_SUFFIX = "main"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -95,7 +95,7 @@ class ProviderMainPage(ProviderPageMixin, BaseDetailedPage):
 class ProviderConfigPage(ProviderPageMixin):
     """Provider page Config menu"""
 
-    MENU_SUFFIX = 'config'
+    MENU_SUFFIX = "config"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -111,7 +111,7 @@ class ProviderConfigPage(ProviderPageMixin):
 class ProviderGroupConfigPage(ProviderPageMixin):
     """Provider page group config menu"""
 
-    MENU_SUFFIX = 'group_config'
+    MENU_SUFFIX = "group_config"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,

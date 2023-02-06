@@ -16,12 +16,12 @@ from django.db import migrations
 
 data = [
     {
-        'name': 'locked by running job on target',
-        'template': {
-            'message': 'Object was locked by running job ${job} on ${target}',
-            'placeholder': {
-                'job': {'type': 'job'},
-                'target': {'type': 'adcm_entity'},
+        "name": "locked by running job on target",
+        "template": {
+            "message": "Object was locked by running job ${job} on ${target}",
+            "placeholder": {
+                "job": {"type": "job"},
+                "target": {"type": "adcm_entity"},
             },
         },
     },
@@ -29,14 +29,14 @@ data = [
 
 
 def update_message_templates(apps, schema_editor):
-    MessageTemplate = apps.get_model('cm', 'MessageTemplate')
+    MessageTemplate = apps.get_model("cm", "MessageTemplate")
     MessageTemplate.objects.bulk_create([MessageTemplate(**kwargs) for kwargs in data])
-    MessageTemplate.objects.filter(name='locked by action on target').delete()
+    MessageTemplate.objects.filter(name="locked by action on target").delete()
 
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0076_auto_20211013_1250'),
+        ("cm", "0076_auto_20211013_1250"),
     ]
 
     operations = [

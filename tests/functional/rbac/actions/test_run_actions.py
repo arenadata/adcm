@@ -36,11 +36,11 @@ from tests.functional.rbac.conftest import (
 )
 from tests.functional.tools import AnyADCMObject, get_object_represent
 
-DO_NOTHING_ACTION = 'Do nothing'
+DO_NOTHING_ACTION = "Do nothing"
 
-CONFIG_FIELD_TO_CHANGE = 'longstring'
-ACTION_CONFIG_ARGUMENT = 'valofarg'
-CHANGE_ACTION_NAME_TEMPLATE = 'Change {object_type} Configuration'
+CONFIG_FIELD_TO_CHANGE = "longstring"
+ACTION_CONFIG_ARGUMENT = "valofarg"
+CHANGE_ACTION_NAME_TEMPLATE = "Change {object_type} Configuration"
 
 
 def _do_nothing_action_not_presented(obj):
@@ -59,8 +59,8 @@ def test_cluster_basic(clients, user, actions_cluster, simple_cluster):
       - deleting policy actually removes right to run action.
     """
     cluster = actions_cluster
-    service = cluster.service(name='actions_service')
-    component = service.component(name='simple_component')
+    service = cluster.service(name="actions_service")
+    component = service.component(name="simple_component")
     all_objects = *get_all_cluster_tree_plain(actions_cluster), *get_all_cluster_tree_plain(simple_cluster)
 
     for adcm_object in (cluster, service, component):
@@ -99,7 +99,7 @@ def _test_basic_action_run_permissions(adcm_object, admin_sdk, user_sdk, user, a
         ):
             is_denied(obj, action_business_role(obj, DO_NOTHING_ACTION), client=user_sdk)
 
-    with allure.step('Check permission withdrawn'):
+    with allure.step("Check permission withdrawn"):
         delete_policy(policy)
         is_denied(adcm_object, business_role, client=user_sdk)
 
@@ -115,8 +115,8 @@ def test_config_change_via_plugin(clients, user, actions_cluster, actions_provid
     Config change action has its own config.
     """
     cluster = actions_cluster
-    service = actions_cluster.service(name='config_changing_service')
-    component = service.component(name='config_changing_component')
+    service = actions_cluster.service(name="config_changing_service")
+    component = service.component(name="config_changing_component")
 
     provider, host = actions_provider, actions_provider.host()
 
@@ -165,46 +165,46 @@ def _test_config_change(
 
         for admin_object, business_role in object_role_map:
             config_field_value = admin_object.config()[CONFIG_FIELD_TO_CHANGE]
-            new_value = f'{config_field_value}_{admin_object.__class__.__name__}'
-            with allure.step(f'Try to change {get_object_represent(admin_object)} from {owner_object_represent}'):
+            new_value = f"{config_field_value}_{admin_object.__class__.__name__}"
+            with allure.step(f"Try to change {get_object_represent(admin_object)} from {owner_object_represent}"):
                 task = is_allowed(user_object, business_role, config={ACTION_CONFIG_ARGUMENT: new_value})
-                assert task.wait() == 'success', 'Action should succeeded'
+                assert task.wait() == "success", "Action should succeeded"
                 assert (
                     admin_object.config()[CONFIG_FIELD_TO_CHANGE] == new_value
                 ), f"Config of object {get_object_represent(admin_object)} should've been changed"
 
-    with allure.step('Delete policy and check actions are denied and config stays the same'):
+    with allure.step("Delete policy and check actions are denied and config stays the same"):
         delete_policy(policy)
         for admin_object, business_role in object_role_map:
-            with allure.step(f'Try to change {get_object_represent(admin_object)} from {owner_object_represent}'):
+            with allure.step(f"Try to change {get_object_represent(admin_object)} from {owner_object_represent}"):
                 config_val_before = admin_object.config()[CONFIG_FIELD_TO_CHANGE]
                 is_denied(
                     action_owner_object,
                     business_role,
-                    data={'config': {ACTION_CONFIG_ARGUMENT: "This you seen't"}},
+                    data={"config": {ACTION_CONFIG_ARGUMENT: "This you seen't"}},
                     client=user_client,
                 )
                 config_val_after = admin_object.config()[CONFIG_FIELD_TO_CHANGE]
                 assert (
                     config_val_before == config_val_after
-                ), f'Config value should stay the same for object {get_object_represent(admin_object)}'
+                ), f"Config value should stay the same for object {get_object_represent(admin_object)}"
 
 
 @pytest.mark.extra_rbac()
 def test_host_actions(clients, actions_cluster, actions_cluster_bundle, actions_provider, user):
     """Test permissions on host actions"""
-    host_action_template = '{object_type} ready for host'
-    service_name, component_name = 'actions_service', 'single_component'
+    host_action_template = "{object_type} ready for host"
+    service_name, component_name = "actions_service", "single_component"
 
     actions_service = actions_cluster.service(name=service_name)
     single_component = actions_service.component(name=component_name)
 
-    second_cluster = actions_cluster_bundle.cluster_create(name='Test Second Cluster')
+    second_cluster = actions_cluster_bundle.cluster_create(name="Test Second Cluster")
     second_cluster.service_add(name=service_name)
 
-    with allure.step('Add hosts to clusters'):
+    with allure.step("Add hosts to clusters"):
         first_host = actions_provider.host()
-        second_host = actions_provider.host_create(fqdn='test-new-host')
+        second_host = actions_provider.host_create(fqdn="test-new-host")
         for cluster, host in ((actions_cluster, first_host), (second_cluster, second_host)):
             cluster.host_add(host)
             service = cluster.service(name=service_name)
@@ -213,7 +213,7 @@ def test_host_actions(clients, actions_cluster, actions_cluster_bundle, actions_
 
     cluster, *_ = cluster_objects = actions_cluster, actions_service, single_component
 
-    with allure.step('Grant permission to run host actions on cluster, service and component'):
+    with allure.step("Grant permission to run host actions on cluster, service and component"):
         business_roles = [
             action_business_role(
                 obj,
@@ -231,12 +231,12 @@ def test_host_actions(clients, actions_cluster, actions_cluster_bundle, actions_
 
         host, *_ = as_user_objects(clients.user, first_host)
 
-    with allure.step('Run host actions from cluster, service and component on host in and out of cluster'):
+    with allure.step("Run host actions from cluster, service and component on host in and out of cluster"):
         for role in business_roles:
             is_allowed(host, role).wait()
             is_denied(second_host, role, client=clients.user)
 
-    with allure.step('Check policy deletion leads to denial of host action execution'):
+    with allure.step("Check policy deletion leads to denial of host action execution"):
         delete_policy(policy)
         for role in business_roles:
             is_denied(first_host, role, client=clients.user)
@@ -271,19 +271,19 @@ class TestPluginsPermissions:
     rather than permissions to run actions
     """
 
-    NEW_HOST = 'new-host'
+    NEW_HOST = "new-host"
 
     @pytest.fixture()
     def cluster(self, sdk_client_fs):
         """Create cluster"""
         bundle = sdk_client_fs.upload_from_fs(os.path.join(DATA_DIR, "plugins", "cluster"))
-        return bundle.cluster_create(name='test cluster')
+        return bundle.cluster_create(name="test cluster")
 
     @pytest.fixture()
     def provider(self, sdk_client_fs):
         """Create provider"""
         bundle = sdk_client_fs.upload_from_fs(os.path.join(DATA_DIR, "plugins", "provider"))
-        return bundle.provider_create(name='test provider')
+        return bundle.provider_create(name="test provider")
 
     @pytest.mark.full()
     def test_run_plugins(self, clients, cluster, provider, user):
@@ -297,57 +297,57 @@ class TestPluginsPermissions:
     def check_run_provider_based_plugins(self, clients, provider: Provider, user):
         """Check add_host and remove_host permissions"""
         admin: ADCMClient = clients.admin
-        with allure.step('Check add host on provider'):
-            with self._with_policy(admin, 'add_host', provider, user) as business_role:
+        with allure.step("Check add host on provider"):
+            with self._with_policy(admin, "add_host", provider, user) as business_role:
                 user_provider, *_ = as_user_objects(clients.user, provider)
                 self._is_allowed(user_provider, business_role)
                 assert self.NEW_HOST in {
                     h.fqdn for h in provider.host_list()
-                }, f'{self.NEW_HOST} should be among existing hosts'
+                }, f"{self.NEW_HOST} should be among existing hosts"
                 host = admin.host(fqdn=self.NEW_HOST)
-        with allure.step('Check remove host on host'):
-            with self._with_policy(admin, 'remove_host', host, user) as business_role:
+        with allure.step("Check remove host on host"):
+            with self._with_policy(admin, "remove_host", host, user) as business_role:
                 user_host, *_ = as_user_objects(clients.user, host)
                 self._is_allowed(user_host, business_role)
                 assert self.NEW_HOST not in {
                     h.fqdn for h in provider.host_list()
-                }, f'{self.NEW_HOST} should not be among existing hosts'
+                }, f"{self.NEW_HOST} should not be among existing hosts"
 
     def check_run_cluster_based_plugins(self, clients, cluster, provider, user):
         """Check adcm_add_host_to_cluster, adcm_remove_host_from_cluster and adcm_hc plugins"""
         admin = clients.admin
         host = provider.host_create(fqdn=self.NEW_HOST)
-        with allure.step('Check adcm_add_host_to_cluster'):
-            with self._with_policy(admin, 'add_host', cluster, user) as business_role:
+        with allure.step("Check adcm_add_host_to_cluster"):
+            with self._with_policy(admin, "add_host", cluster, user) as business_role:
                 user_cluster, *_ = as_user_objects(clients.user, cluster)
                 self._is_allowed(user_cluster, business_role)
                 assert host.fqdn in {
                     h.fqdn for h in cluster.host_list()
-                }, f'Host {host.fqdn} should be added to cluster'
-        with allure.step('Check adcm_remove_host_from_cluster'):
-            with self._with_policy(admin, 'remove_host', cluster, user) as business_role:
+                }, f"Host {host.fqdn} should be added to cluster"
+        with allure.step("Check adcm_remove_host_from_cluster"):
+            with self._with_policy(admin, "remove_host", cluster, user) as business_role:
                 self._is_allowed(user_cluster, business_role)
                 assert host.fqdn not in {
                     h.fqdn for h in cluster.host_list()
-                }, f'Host {host.fqdn} should be removed from cluster'
+                }, f"Host {host.fqdn} should be removed from cluster"
         self._check_hostcomponent_change(clients, cluster, provider, user)
 
-    @allure.step('Check HC map change')
+    @allure.step("Check HC map change")
     def _check_hostcomponent_change(self, clients, cluster, provider, user):
         """Check hostcomponent change plugin"""
         admin = clients.admin
-        first, second = provider.host_create('first-host'), provider.host_create('second-host')
+        first, second = provider.host_create("first-host"), provider.host_create("second-host")
         cluster.host_add(first)
         cluster.host_add(second)
-        service = cluster.service_add(name='test_service')
+        service = cluster.service_add(name="test_service")
         component = service.component()
         cluster.hostcomponent_set((first, component))
         expected_hc_map = ((second.id, component.id),)
-        with self._with_policy(admin, 'change_hc_map', cluster, user) as business_role:
+        with self._with_policy(admin, "change_hc_map", cluster, user) as business_role:
             user_cluster, *_ = as_user_objects(clients.user, cluster)
             self._is_allowed(user_cluster, business_role)
-            hc_map = tuple((hc['host_id'], hc['component_id']) for hc in cluster.hostcomponent())
-            assert hc_map == expected_hc_map, f'HC map should be {expected_hc_map}, not {hc_map}'
+            hc_map = tuple((hc["host_id"], hc["component_id"]) for hc in cluster.hostcomponent())
+            assert hc_map == expected_hc_map, f"HC map should be {expected_hc_map}, not {hc_map}"
 
     @contextmanager
     def _with_policy(self, admin_client, action_name: str, adcm_object, user) -> BusinessRole:
@@ -359,7 +359,7 @@ class TestPluginsPermissions:
 
     def _is_allowed(self, adcm_object, business_role):
         """Check if action run is allowed and it succeeds"""
-        assert is_allowed(adcm_object, business_role).wait() == 'success', 'Action should succeed'
+        assert is_allowed(adcm_object, business_role).wait() == "success", "Action should succeed"
 
 
 # !===== Steps and checks =====!

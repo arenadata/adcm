@@ -19,18 +19,18 @@ import cm.models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0075_actions_multistate'),
+        ("cm", "0075_actions_multistate"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='action',
-            name='multi_state_available',
+            model_name="action",
+            name="multi_state_available",
             field=models.JSONField(default=cm.models.get_any),
         ),
         migrations.AlterField(
-            model_name='stageaction',
-            name='multi_state_available',
+            model_name="stageaction",
+            name="multi_state_available",
             field=models.JSONField(default=cm.models.get_any),
         ),
     ]

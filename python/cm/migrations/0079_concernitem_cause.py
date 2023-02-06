@@ -18,38 +18,38 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('contenttypes', '0002_remove_content_type_name'),
-        ('cm', '0078_alter_groupconfig_name'),
+        ("contenttypes", "0002_remove_content_type_name"),
+        ("cm", "0078_alter_groupconfig_name"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='concernitem',
-            name='cause',
+            model_name="concernitem",
+            name="cause",
             field=models.CharField(
                 choices=[
-                    ('config', 'config'),
-                    ('job', 'job'),
-                    ('host-component', 'host-component'),
-                    ('import', 'import'),
-                    ('service', 'service'),
+                    ("config", "config"),
+                    ("job", "job"),
+                    ("host-component", "host-component"),
+                    ("import", "import"),
+                    ("service", "service"),
                 ],
                 max_length=16,
                 null=True,
             ),
         ),
         migrations.AddField(
-            model_name='concernitem',
-            name='owner_id',
+            model_name="concernitem",
+            name="owner_id",
             field=models.PositiveIntegerField(null=True),
         ),
         migrations.AddField(
-            model_name='concernitem',
-            name='owner_type',
+            model_name="concernitem",
+            name="owner_type",
             field=models.ForeignKey(
                 null=True,
                 on_delete=django.db.models.deletion.CASCADE,
-                to='contenttypes.contenttype',
+                to="contenttypes.contenttype",
             ),
         ),
     ]

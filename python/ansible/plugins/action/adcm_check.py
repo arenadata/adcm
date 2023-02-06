@@ -17,9 +17,9 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metadata_version': '1.1', 'supported_by': 'Arenadata'}
+ANSIBLE_METADATA = {"metadata_version": "1.1", "supported_by": "Arenadata"}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: adcm_check
 short_description: add entity to log storage in json format
@@ -65,9 +65,9 @@ options:
       - Description of fail check or fail results of check
     required:
       - yes, if no 'msg' field
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: ADCM Check
   adcm_check:
     title: "Check"
@@ -89,18 +89,18 @@ EXAMPLES = r'''
     title: "Check"
     msg: "This is message"
     result: yes
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 result:
   check: JSON log of all checks for this ADCM job
-'''
+"""
 
 import sys
 
 from ansible.plugins.action import ActionBase
 
-sys.path.append('/adcm/python')
+sys.path.append("/adcm/python")
 import adcm.init_django  # pylint: disable=unused-import
 from cm.ansible_plugin import log_check
 from cm.errors import AdcmEx
@@ -111,27 +111,27 @@ class ActionModule(ActionBase):
     TRANSFERS_FILES = False
     _VALID_ARGS = frozenset(
         (
-            'title',
-            'result',
-            'msg',
-            'fail_msg',
-            'success_msg',
-            'group_title',
-            'group_success_msg',
-            'group_fail_msg',
+            "title",
+            "result",
+            "msg",
+            "fail_msg",
+            "success_msg",
+            "group_title",
+            "group_success_msg",
+            "group_fail_msg",
         )
     )
 
     def run(self, tmp=None, task_vars=None):
         super().run(tmp, task_vars)
         job_id = None
-        if task_vars is not None and 'job' in task_vars or 'id' in task_vars['job']:
-            job_id = task_vars['job']['id']
+        if task_vars is not None and "job" in task_vars or "id" in task_vars["job"]:
+            job_id = task_vars["job"]["id"]
 
-        old_optional_condition = 'msg' in self._task.args
-        new_optional_condition = 'fail_msg' in self._task.args and 'success_msg' in self._task.args
+        old_optional_condition = "msg" in self._task.args
+        new_optional_condition = "fail_msg" in self._task.args and "success_msg" in self._task.args
         optional_condition = old_optional_condition or new_optional_condition
-        required_condition = 'title' in self._task.args and 'result' in self._task.args and optional_condition
+        required_condition = "title" in self._task.args and "result" in self._task.args and optional_condition
 
         if not required_condition:
             return {
@@ -139,33 +139,33 @@ class ActionModule(ActionBase):
                 "msg": ("title, result and msg, fail_msg or success" "_msg are mandatory args of adcm_check"),
             }
 
-        title = self._task.args['title']
-        result = self._task.args['result']
-        msg = self._task.args.get('msg', '')
-        fail_msg = self._task.args.get('fail_msg', '')
-        success_msg = self._task.args.get('success_msg', '')
+        title = self._task.args["title"]
+        result = self._task.args["result"]
+        msg = self._task.args.get("msg", "")
+        fail_msg = self._task.args.get("fail_msg", "")
+        success_msg = self._task.args.get("success_msg", "")
 
-        group_title = self._task.args.get('group_title', '')
-        group_fail_msg = self._task.args.get('group_fail_msg', '')
-        group_success_msg = self._task.args.get('group_success_msg', '')
+        group_title = self._task.args.get("group_title", "")
+        group_fail_msg = self._task.args.get("group_fail_msg", "")
+        group_success_msg = self._task.args.get("group_success_msg", "")
 
         if result:
             msg = success_msg if success_msg else msg
         else:
             msg = fail_msg if fail_msg else msg
 
-        group = {'title': group_title, 'success_msg': group_success_msg, 'fail_msg': group_fail_msg}
+        group = {"title": group_title, "success_msg": group_success_msg, "fail_msg": group_fail_msg}
 
         check = {
-            'title': title,
-            'result': result,
-            'message': msg,
+            "title": title,
+            "result": result,
+            "message": msg,
         }
 
         logger.debug(
-            'ansible adcm_check: %s, %s',
-            ', '.join([f'{k}: {v}' for k, v in group.items() if v]),
-            ', '.join([f'{k}: {v}' for k, v in check.items() if v]),
+            "ansible adcm_check: %s, %s",
+            ", ".join([f"{k}: {v}" for k, v in group.items() if v]),
+            ", ".join([f"{k}: {v}" for k, v in check.items() if v]),
         )
 
         try:

@@ -16,27 +16,27 @@ from django.db import migrations
 
 
 def add_group(apps, proto):
-    PrototypeConfig = apps.get_model('cm', 'PrototypeConfig')
-    if PrototypeConfig.objects.filter(prototype=proto, type='group'):
+    PrototypeConfig = apps.get_model("cm", "PrototypeConfig")
+    if PrototypeConfig.objects.filter(prototype=proto, type="group"):
         return
     group = {}
-    for pc in PrototypeConfig.objects.filter(prototype=proto).exclude(subname=''):
+    for pc in PrototypeConfig.objects.filter(prototype=proto).exclude(subname=""):
         group[pc.name] = True
 
     for name in group:
-        pc = PrototypeConfig(prototype=proto, name=name, display_name=name, type='group', limits='{}')
+        pc = PrototypeConfig(prototype=proto, name=name, display_name=name, type="group", limits="{}")
         pc.save()
 
 
 def fix_groups(apps, schema_editor):
-    Prototype = apps.get_model('cm', 'Prototype')
+    Prototype = apps.get_model("cm", "Prototype")
     for p in Prototype.objects.all():
         add_group(apps, p)
 
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0030_auto_20190820_1600'),
+        ("cm", "0030_auto_20190820_1600"),
     ]
 
     operations = [

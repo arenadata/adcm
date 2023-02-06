@@ -19,26 +19,26 @@ from cm.models import ConfigLog
 
 
 class ConfigLogSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='config-log-detail')
+    url = serializers.HyperlinkedIdentityField(view_name="config-log-detail")
 
     class Meta:
         model = ConfigLog
-        fields = ('id', 'date', 'obj_ref', 'description', 'config', 'attr', 'url')
-        extra_kwargs = {'config': {'required': True}}
+        fields = ("id", "date", "obj_ref", "description", "config", "attr", "url")
+        extra_kwargs = {"config": {"required": True}}
 
     @atomic
     def create(self, validated_data):
-        object_config = validated_data.get('obj_ref')
-        config = validated_data.get('config')
-        attr = validated_data.get('attr', {})
-        description = validated_data.get('description', '')
+        object_config = validated_data.get("obj_ref")
+        config = validated_data.get("config")
+        attr = validated_data.get("attr", {})
+        description = validated_data.get("description", "")
         cl = update_obj_config(object_config, config, attr, description)
         return cl
 
 
 class UIConfigLogSerializer(ConfigLogSerializer):
-    config = UIConfigField(source='*')
+    config = UIConfigField(source="*")
 
     class Meta:
         model = ConfigLog
-        fields = ('id', 'date', 'obj_ref', 'description', 'config', 'attr', 'url')
+        fields = ("id", "date", "obj_ref", "description", "config", "attr", "url")

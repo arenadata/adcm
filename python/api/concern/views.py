@@ -24,12 +24,12 @@ from cm import models
 from cm.errors import AdcmEx
 
 OBJECT_TYPES = {
-    'adcm': 'adcm',
-    'cluster': 'cluster',
-    'service': 'clusterobject',
-    'component': 'servicecomponent',
-    'provider': 'hostprovider',
-    'host': 'host',
+    "adcm": "adcm",
+    "cluster": "cluster",
+    "service": "clusterobject",
+    "component": "servicecomponent",
+    "provider": "hostprovider",
+    "host": "host",
 }
 CHOICES = list(zip(OBJECT_TYPES, OBJECT_TYPES))
 
@@ -37,24 +37,24 @@ CHOICES = list(zip(OBJECT_TYPES, OBJECT_TYPES))
 class ConcernFilter(drf_filters.FilterSet):
     type = drf_filters.ChoiceFilter(choices=models.ConcernType.choices)
     cause = drf_filters.ChoiceFilter(choices=models.ConcernCause.choices)
-    object_id = drf_filters.NumberFilter(label='Related object ID', method='_pass')
-    object_type = drf_filters.ChoiceFilter(label='Related object type', choices=CHOICES, method='_filter_by_object')
-    owner_type = drf_filters.ChoiceFilter(choices=CHOICES, method='_filter_by_owner_type')
+    object_id = drf_filters.NumberFilter(label="Related object ID", method="_pass")
+    object_type = drf_filters.ChoiceFilter(label="Related object type", choices=CHOICES, method="_filter_by_object")
+    owner_type = drf_filters.ChoiceFilter(choices=CHOICES, method="_filter_by_owner_type")
 
     class Meta:
         model = models.ConcernItem
         fields = [
-            'name',
-            'type',
-            'cause',
-            'object_type',
-            'object_id',
-            'owner_type',
-            'owner_id',
+            "name",
+            "type",
+            "cause",
+            "object_type",
+            "object_id",
+            "owner_type",
+            "owner_id",
         ]
 
     def _filter_by_owner_type(self, queryset, name, value: str):
-        owner_type = ContentType.objects.get(app_label='cm', model=OBJECT_TYPES[value])
+        owner_type = ContentType.objects.get(app_label="cm", model=OBJECT_TYPES[value])
         return queryset.filter(owner_type=owner_type)
 
     def _pass(self, queryset, name, value):
@@ -62,19 +62,19 @@ class ConcernFilter(drf_filters.FilterSet):
         return queryset
 
     def _filter_by_object(self, queryset, name, value):
-        object_id = self.request.query_params.get('object_id')
-        filters = {f'{OBJECT_TYPES[value]}_entities__id': object_id}
+        object_id = self.request.query_params.get("object_id")
+        filters = {f"{OBJECT_TYPES[value]}_entities__id": object_id}
         return queryset.filter(**filters)
 
     def is_valid(self):
-        object_type = self.request.query_params.get('object_type')
-        object_id = self.request.query_params.get('object_id')
+        object_type = self.request.query_params.get("object_type")
+        object_id = self.request.query_params.get("object_id")
         both_present = all((object_id, object_type))
         none_present = not any((object_id, object_type))
         if not (both_present or none_present):
             raise AdcmEx(
-                'BAD_QUERY_PARAMS',
-                msg='Both object_type and object_id params are expected or none of them',
+                "BAD_QUERY_PARAMS",
+                msg="Both object_type and object_id params are expected or none of them",
             )
 
         return super().is_valid()
@@ -91,7 +91,7 @@ class ConcernItemList(PaginatedView):
     serializer_class_ui = ConcernItemUISerializer
     permission_classes = (IsAuthenticated,)
     filterset_class = ConcernFilter
-    ordering_fields = ('name',)
+    ordering_fields = ("name",)
 
 
 class ConcernItemDetail(DetailView):
@@ -103,6 +103,6 @@ class ConcernItemDetail(DetailView):
     queryset = models.ConcernItem.objects.all()
     serializer_class = ConcernItemDetailSerializer
     permission_classes = (IsAuthenticated,)
-    lookup_field = 'id'
-    lookup_url_kwarg = 'concern_id'
-    error_code = 'CONCERNITEM_NOT_FOUND'
+    lookup_field = "id"
+    lookup_url_kwarg = "concern_id"
+    error_code = "CONCERNITEM_NOT_FOUND"

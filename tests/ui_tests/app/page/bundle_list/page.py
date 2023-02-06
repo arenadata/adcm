@@ -40,7 +40,7 @@ class BundleListPage(BasePageObject):
         super().__init__(driver, base_url, "/bundle")
         self.table = CommonTableObj(driver=self.driver, locators_class=BundleListLocators.Table)
 
-    @allure.step('Get bundle information from row #{row_num}')
+    @allure.step("Get bundle information from row #{row_num}")
     def get_bundle_info(self, row_num: int = 0) -> BundleInfo:
         """Get information about bundle from row"""
         row = self.table.get_row(row_num)
@@ -52,17 +52,17 @@ class BundleListPage(BasePageObject):
             description=self.find_child(row, row_elements.description).text,
         )
 
-    @allure.step('Upload bundle from {bundle_path}')
+    @allure.step("Upload bundle from {bundle_path}")
     def upload_bundle(self, bundle_path: str):
         """Upload bundle with 'Upload bundles' button"""
         self.find_element(BundleListLocators.Toolbar.upload_btn).send_keys(bundle_path)
 
-    @allure.step('Upload bundles from {bundle_paths}')
+    @allure.step("Upload bundles from {bundle_paths}")
     def upload_bundles(self, bundle_paths: list):
         """Upload multiple bundles at once with 'Upload bundles' button"""
         self.find_element(BundleListLocators.Toolbar.upload_btn).send_keys("\n".join(bundle_paths))
 
-    @allure.step('Remove bundle')
+    @allure.step("Remove bundle")
     def delete_bundle(self, row_num: int = 0):
         """Remove bundle by clicking on trash icon in row"""
         row = self.table.get_row(row_num)
@@ -71,7 +71,7 @@ class BundleListPage(BasePageObject):
         self.find_and_click(DeleteDialogLocators.yes)
         self.wait_element_hide(DeleteDialogLocators.body)
 
-    @allure.step('Accept licence agreement')
+    @allure.step("Accept licence agreement")
     def accept_licence(self, row_num: int = 0):
         """Accept license"""
         row = self.table.get_row(row_num)
@@ -81,7 +81,7 @@ class BundleListPage(BasePageObject):
         self.find_and_click(BundleListLocators.LicensePopup.agree_btn)
         self.wait_element_hide(BundleListLocators.LicensePopup.block)
 
-    @allure.step('Click bundle name in row')
+    @allure.step("Click bundle name in row")
     def click_bundle_in_row(self, row: WebElement):
         """Click on bundle name"""
         bundle_name = self.find_child(row, BundleListLocators.Table.Row.name)
@@ -92,6 +92,6 @@ class BundleListPage(BasePageObject):
         """Click on home button (a.k.a. "apps") in toolbar to open into page"""
         self.find_and_click(BundleListLocators.Toolbar.apps_btn)
 
-    @allure.step('Check bundle is visible')
+    @allure.step("Check bundle is visible")
     def check_at_least_one_bundle_is_presented(self):
         check_element_is_visible(self, BundleListLocators.Table.row)

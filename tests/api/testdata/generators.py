@@ -540,12 +540,12 @@ def _prepare_test_data_with_all_fields(
 def _step_description(test_set: dict):
     first_item = next(iter(test_set.values()))
     if first_item.generated_value is True:
-        return "Generated value: " + ', '.join(test_set.keys())
+        return "Generated value: " + ", ".join(test_set.keys())
     if first_item.unchanged_value is True:
-        return "Unchanged value: " + ', '.join(test_set.keys())
+        return "Unchanged value: " + ", ".join(test_set.keys())
     if first_item.drop_key is True:
-        return "Missing in request: " + ', '.join(test_set.keys())
-    return "Special values: " + ', '.join(test_set.keys())
+        return "Missing in request: " + ", ".join(test_set.keys())
+    return "Special values: " + ", ".join(test_set.keys())
 
 
 def _prepare_test_data_with_one_by_one_fields(
@@ -566,7 +566,7 @@ def _prepare_test_data_with_one_by_one_fields(
                 test_data=TestData(
                     request=request,
                     response=response,
-                    description=f'{param_name}: {param_value.error_messages}',
+                    description=f"{param_name}: {param_value.error_messages}",
                 ),
                 test_body=request_data,
             )

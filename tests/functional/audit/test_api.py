@@ -186,20 +186,20 @@ class TestAuditLoginAPI:
     @pytest.fixture()
     def failed_logins(self, sdk_client_fs, users) -> Tuple[dict, dict]:
         """Create required users and make failed logins"""
-        user_does_not_exist = {'username': NOT_EXISTING_USER, 'password': 'klfjwoevzlxm02()#U)F('}
-        deactivated_user = {'username': 'ohno', 'password': 'imdonneeeee'}
+        user_does_not_exist = {"username": NOT_EXISTING_USER, "password": "klfjwoevzlxm02()#U)F("}
+        deactivated_user = {"username": "ohno", "password": "imdonneeeee"}
         user = sdk_client_fs.user_create(**deactivated_user)
         user.update(is_active=False)
         self._login(sdk_client_fs, **deactivated_user)
         for creds in users:
-            self._login(sdk_client_fs, **{**creds, 'password': 'it is jut wrong'})
+            self._login(sdk_client_fs, **{**creds, "password": "it is jut wrong"})
         self._login(sdk_client_fs, **user_does_not_exist)
         return deactivated_user, user_does_not_exist
 
     @pytest.mark.usefixtures("_successful_logins", "failed_logins")
     def test_audit_login_api_filtering(self, sdk_client_fs, users):
         """Test audit log list filtering: by operation result and username"""
-        self._check_login_list_filtering(sdk_client_fs, 'login_result', LoginResult)
+        self._check_login_list_filtering(sdk_client_fs, "login_result", LoginResult)
         self._check_login_list_filtering(
             sdk_client_fs,
             "username",

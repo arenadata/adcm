@@ -16,8 +16,8 @@ from django.db import migrations
 
 
 def fix_display_name(apps, schema_editor):
-    Model = apps.get_model('cm', 'PrototypeConfig')
-    for mod in Model.objects.exclude(display_name='').exclude(subname=''):
+    Model = apps.get_model("cm", "PrototypeConfig")
+    for mod in Model.objects.exclude(display_name="").exclude(subname=""):
         if mod.display_name == mod.name:
             mod.display_name = mod.subname
             mod.save()
@@ -25,7 +25,7 @@ def fix_display_name(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0029_auto_20190814_1306'),
+        ("cm", "0029_auto_20190814_1306"),
     ]
 
     operations = [

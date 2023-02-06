@@ -35,21 +35,21 @@ def remove_permissions(policy, policy_model):
 
 
 def remove_default_policy(apps, schema_editor):
-    Policy = apps.get_model('rbac', 'Policy')
-    policy = Policy.objects.filter(name='default', built_in=True).first()
+    Policy = apps.get_model("rbac", "Policy")
+    policy = Policy.objects.filter(name="default", built_in=True).first()
     if policy:
         # Default django model delete() method is used here,
         # so Policy.remove_permissions() was copied as-is
         remove_permissions(policy, Policy)
         policy.delete()
 
-    Role = apps.get_model('rbac', 'Role')
-    Role.objects.filter(name='Base role', type='hidden').delete()
+    Role = apps.get_model("rbac", "Role")
+    Role.objects.filter(name="Base role", type="hidden").delete()
 
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('rbac', '0001_initial'),
+        ("rbac", "0001_initial"),
     ]
 
     operations = [

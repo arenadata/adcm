@@ -94,7 +94,7 @@ class ActionModule(ActionBase):
         obj_value = "ON" if self._task.args["value"] else "OFF"
         obj_pk = get_object_id_from_context(
             task_vars,
-            f'{obj_type}_id',
+            f"{obj_type}_id",
             context_type,
             err_msg=f'You can change "{obj_type}" maintenance mode only in {context_type} context',
         )

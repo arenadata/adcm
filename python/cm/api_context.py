@@ -40,19 +40,19 @@ class _Context:
 
     def get_job_data(self):
         env = os.environ
-        ansible_config = env.get('ANSIBLE_CONFIG')
+        ansible_config = env.get("ANSIBLE_CONFIG")
         if not ansible_config:
             return
 
         job_id = Path(ansible_config).parent.name
         try:
-            self.job = models.JobLog.objects.select_related('task', 'task__lock').get(id=int(job_id))
+            self.job = models.JobLog.objects.select_related("task", "task__lock").get(id=int(job_id))
         except (ValueError, models.ObjectDoesNotExist):
             return
 
-        self.task = getattr(self.job, 'task', None)
-        self.lock = getattr(self.task, 'lock', None)
-        msg = f'API context was initialized with {self.job}, {self.task}, {self.lock}'
+        self.task = getattr(self.job, "task", None)
+        self.lock = getattr(self.task, "lock", None)
+        msg = f"API context was initialized with {self.job}, {self.task}, {self.lock}"
         logger.debug(msg)
 
 

@@ -17,14 +17,14 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0052_tasklog_attr'),
+        ("cm", "0052_tasklog_attr"),
     ]
 
     operations = [
         migrations.AddConstraint(
-            model_name='logstorage',
+            model_name="logstorage",
             constraint=models.UniqueConstraint(
-                condition=models.Q(type='check'), fields=('job',), name='unique_check_job'
+                condition=models.Q(type="check"), fields=("job",), name="unique_check_job"
             ),
         ),
     ]

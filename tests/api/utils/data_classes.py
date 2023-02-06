@@ -145,7 +145,7 @@ class GroupConfigFields(BaseClass):
         f_type=ForeignKey(fk_link=ObjectConfigFields),
         default_value=AUTO_VALUE,
     )
-    config_id = Field(name='config_id', f_type=PositiveInt(), default_value=AUTO_VALUE, nullable=True)
+    config_id = Field(name="config_id", f_type=PositiveInt(), default_value=AUTO_VALUE, nullable=True)
     host_candidate = Field(
         # Link to host candidates url for this object. Auto-filled when group-config object creates
         # Candidates list depends on ADCM object for which group-config was created.
@@ -283,7 +283,7 @@ class RbacUserFields(BaseClass):
     url = Field(name="url", f_type=String(), default_value=AUTO_VALUE)
     built_in = Field(name="built_in", f_type=Boolean(), default_value=AUTO_VALUE)
     type = Field(name="type", f_type=String(max_length=16), default_value=AUTO_VALUE)
-    is_active = Field(name='is_active', f_type=Boolean(), default_value=True)
+    is_active = Field(name="is_active", f_type=Boolean(), default_value=True)
 
 
 class RbacGroupFields(BaseClass):
@@ -336,7 +336,7 @@ class RbacSimpleRoleFields(BaseClass):
     built_in = Field(name="built_in", f_type=Boolean(), default_value=False)
     # type is actually changeable=True and postable=True, but now it's only value
     # (since it's shouldn't be 'hidden' or 'business') is 'role', so we can't actually change it
-    type = Field(name="type", f_type=String(), default_value='role')
+    type = Field(name="type", f_type=String(), default_value="role")
     # category is a list of FK to a "ProductCategory" that is hard to get from API
     category = Field(name="category", f_type=ListOf(SmallIntegerID(max_value=2)), default_value=[])
     parametrized_by_type = Field(
@@ -369,7 +369,7 @@ class RbacBuiltInRoleFields(BaseClass):
         name="parametrized_by_type", f_type=ListOf(Enum(PARAMETRIZED_BY_LIST)), default_value=AUTO_VALUE
     )
     built_in = Field(name="built_in", f_type=Boolean(), default_value=True)
-    type = Field(name="type", f_type=Enum(['role', 'business', 'hidden']), default_value='role')
+    type = Field(name="type", f_type=Enum(["role", "business", "hidden"]), default_value="role")
     child = Field(name="child", f_type=EmptyList(), default_value=[])
     url = Field(name="url", f_type=String(), default_value=AUTO_VALUE)
     any_category = Field(name="any_category", f_type=Boolean(), default_value=False)
@@ -393,7 +393,7 @@ class RbacNotBuiltInPolicyFields(BaseClass):
 
     id = Field(name="id", f_type=PositiveInt(), default_value=AUTO_VALUE)
     name = Field(name="name", f_type=String(max_length=160), postable=True, required=True, changeable=True)
-    description = Field(name="description", f_type=Text(), default_value='', postable=True, changeable=True)
+    description = Field(name="description", f_type=Text(), default_value="", postable=True, changeable=True)
     role = Field(
         name="role", f_type=ObjectForeignKey(RbacSimpleRoleFields), required=True, postable=True, changeable=True
     )
@@ -435,7 +435,7 @@ class RbacBuiltInPolicyFields(BaseClass):
 
     id = Field(name="id", f_type=PositiveInt(), default_value=AUTO_VALUE)
     name = Field(name="name", f_type=String(max_length=160), required=True, postable=True, changeable=True)
-    description = Field(name="description", f_type=Text(), default_value='', postable=True, changeable=True)
+    description = Field(name="description", f_type=Text(), default_value="", postable=True, changeable=True)
     role = Field(name="role", f_type=ObjectForeignKey(RbacSimpleRoleFields), required=True, postable=True)
     built_in = Field(name="built_in", f_type=Boolean(), default_value=True)
     # actually this field isn't required when role isn't parametrized

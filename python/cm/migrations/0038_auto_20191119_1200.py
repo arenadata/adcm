@@ -17,23 +17,23 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0037_auto_20191120_1600'),
+        ("cm", "0037_auto_20191120_1600"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='adcm',
-            name='issue',
-            field=models.TextField(blank=True, default='{}'),
+            model_name="adcm",
+            name="issue",
+            field=models.TextField(blank=True, default="{}"),
         ),
         migrations.AddField(
-            model_name='adcm',
-            name='stack',
+            model_name="adcm",
+            name="stack",
             field=models.TextField(blank=True),
         ),
         migrations.AddField(
-            model_name='adcm',
-            name='state',
-            field=models.CharField(default='created', max_length=64),
+            model_name="adcm",
+            name="state",
+            field=models.CharField(default="created", max_length=64),
         ),
     ]

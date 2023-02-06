@@ -17,13 +17,13 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0062_auto_20201225_0949'),
+        ("cm", "0062_auto_20201225_0949"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='tasklog',
-            name='verbose',
+            model_name="tasklog",
+            name="verbose",
             field=models.BooleanField(default=False),
         ),
     ]

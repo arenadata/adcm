@@ -107,7 +107,7 @@ class ADCMTest:
                 {"download.default_directory": str(downloads_directory)},
             )
         else:
-            if not self.selenoid['host']:
+            if not self.selenoid["host"]:
                 # do not use default download directory
                 self.opts.set_preference("browser.download.folderList", 2)
                 self.opts.set_preference("browser.download.dir", str(downloads_directory))

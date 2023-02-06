@@ -17,9 +17,9 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metadata_version': '1.0', 'supported_by': 'Arenadata'}
+ANSIBLE_METADATA = {"metadata_version": "1.0", "supported_by": "Arenadata"}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 short_description: add entry to log storage
 description:
     - The C(adcm_custom_log) module is intended to log result of some checks to structured JSON or
@@ -43,9 +43,9 @@ options:
     description:
      - Text for log
     required: yes, if field 'path' is none
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
  - name: custom log
    adcm_custom_log:
      name: custom
@@ -57,10 +57,10 @@ EXAMPLES = r'''
      name: custom
      format: txt
      content: It is text
-'''
+"""
 
-RETURN = r'''
-'''
+RETURN = r"""
+"""
 
 import base64
 import sys
