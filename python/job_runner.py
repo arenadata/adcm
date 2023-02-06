@@ -30,7 +30,7 @@ from cm.errors import AdcmEx
 from cm.logger import logger
 from cm.models import JobLog, JobStatus, LogStorage, Prototype, ServiceComponent
 from cm.status_api import Event, post_event
-from cm.upgrade import bundle_switch
+from cm.upgrade import bundle_revert, bundle_switch
 
 
 def open_file(root, tag, job_id):
@@ -168,8 +168,14 @@ def run_upgrade(job):
     out_file, err_file = process_err_out_file(job.id, "internal")
     try:
         with transaction.atomic():
-            bundle_switch(job.task.task_object, job.action.upgrade)
-            switch_hc(job.task, job.action)
+            script = job.sub_action.script if job.sub_action else job.action.script
+
+            if script == "bundle_switch":
+                bundle_switch(obj=job.task.task_object, upgrade=job.action.upgrade)
+            elif script == "bundle_revert":
+                bundle_revert(obj=job.task.task_object)
+
+            switch_hc(task=job.task, action=job.action)
     except AdcmEx as e:
         err_file.write(e.msg)
         cm.job.set_job_status(job.id, JobStatus.FAILED, event)
