@@ -790,6 +790,7 @@ action_script_type:
   match: set
   variants:
     - ansible
+    - internal
     - python
 
 action_states_dict:

@@ -16,11 +16,19 @@ from typing import List, Tuple, Union
 from django.db import transaction
 from version_utils import rpm
 
-from cm.adcm_config import make_object_config, obj_ref, proto_ref, switch_config
+from cm.adcm_config import (
+    init_object_config,
+    make_object_config,
+    obj_ref,
+    proto_ref,
+    save_obj_config,
+    switch_config,
+)
 from cm.api import (
     add_components_to_service,
     add_service_to_cluster,
     check_license,
+    save_hc,
     version_in,
 )
 from cm.errors import raise_adcm_ex
@@ -28,9 +36,12 @@ from cm.issue import update_hierarchy_issues
 from cm.job import start_task
 from cm.logger import logger
 from cm.models import (
+    ADCMEntity,
+    Bundle,
     Cluster,
     ClusterBind,
     ClusterObject,
+    ConfigLog,
     Host,
     HostComponent,
     HostProvider,
@@ -44,12 +55,12 @@ from cm.status_api import post_event
 from rbac.models import re_apply_object_policy
 
 
-def switch_object(obj: Union[Host, ClusterObject], new_prototype: Prototype) -> None:
-    logger.info("upgrade switch from %s to %s", proto_ref(obj.prototype), proto_ref(new_prototype))
+def switch_object(obj: Host | ClusterObject, new_prototype: Prototype) -> None:
+    logger.info("upgrade switch from %s to %s", proto_ref(proto=obj.prototype), proto_ref(proto=new_prototype))
     old_prototype = obj.prototype
     obj.prototype = new_prototype
-    obj.save()
-    switch_config(obj, new_prototype, old_prototype)
+    obj.save(update_fields=["prototype"])
+    switch_config(obj=obj, new_proto=new_prototype, old_proto=old_prototype)
 
 
 def switch_services(upgrade: Upgrade, cluster: Cluster) -> None:
@@ -66,19 +77,19 @@ def switch_services(upgrade: Upgrade, cluster: Cluster) -> None:
     switch_hc(cluster, upgrade)
 
 
-def switch_components(cluster: Cluster, co: ClusterObject, new_co_proto: Prototype) -> None:
-    for sc in ServiceComponent.objects.filter(cluster=cluster, service=co):
+def switch_components(cluster: Cluster, service: ClusterObject, new_co_proto: Prototype) -> None:
+    for comp in ServiceComponent.objects.filter(cluster=cluster, service=service):
         try:
-            new_sc_prototype = Prototype.objects.get(parent=new_co_proto, type="component", name=sc.prototype.name)
-            switch_object(sc, new_sc_prototype)
+            new_comp_prototype = Prototype.objects.get(parent=new_co_proto, type="component", name=comp.prototype.name)
+            switch_object(obj=comp, new_prototype=new_comp_prototype)
         except Prototype.DoesNotExist:
-            sc.delete()
+            comp.delete()
 
-    for sc_proto in Prototype.objects.filter(parent=new_co_proto, type="component"):
-        kwargs = {"cluster": cluster, "service": co, "prototype": sc_proto}
+    for comp_proto in Prototype.objects.filter(parent=new_co_proto, type="component"):
+        kwargs = {"cluster": cluster, "service": service, "prototype": comp_proto}
         if not ServiceComponent.objects.filter(**kwargs).exists():
-            sc = ServiceComponent.objects.create(**kwargs)
-            make_object_config(sc, sc_proto)
+            comp = ServiceComponent.objects.create(**kwargs)
+            make_object_config(obj=comp, prototype=comp_proto)
 
 
 def switch_hosts(upgrade: Upgrade, provider: HostProvider) -> None:
@@ -303,7 +314,7 @@ def re_apply_following_policies(obj: Cluster | HostProvider) -> None:
             re_apply_object_policy(apply_object=host)
 
 
-def update_components_after_bundle_switch(cluster, upgrade):
+def update_components_after_bundle_switch(cluster: Cluster, upgrade: Upgrade) -> None:
     if upgrade.action and upgrade.action.hostcomponentmap:
         logger.info("update component from %s after upgrade with hc_acl", cluster)
         for hc_acl in upgrade.action.hostcomponentmap:
@@ -316,36 +327,147 @@ def update_components_after_bundle_switch(cluster, upgrade):
             try:
                 service = ClusterObject.objects.get(cluster=cluster, prototype=proto_service)
                 if not ServiceComponent.objects.filter(cluster=cluster, service=service).exists():
-                    add_components_to_service(cluster, service)
+                    add_components_to_service(cluster=cluster, service=service)
             except ClusterObject.DoesNotExist:
-                add_service_to_cluster(cluster, proto_service)
+                add_service_to_cluster(cluster=cluster, proto=proto_service)
+
+
+def revert_object(obj: ADCMEntity, old_proto: Prototype) -> None:
+    if obj.prototype == old_proto:
+        return
+
+    obj.prototype = old_proto
+
+    if "config" in obj.before_upgrade:
+        config_log = ConfigLog.objects.get(id=obj.before_upgrade["config"])
+        obj.config.current = 0
+        save_obj_config(obj_conf=obj.config, conf=config_log.config, attr=config_log.attr, desc="revert_upgrade")
+
+    obj.state = obj.before_upgrade["state"]
+    obj.before_upgrade = {"state": None}
+    obj.save(update_fields=["prototype", "before_upgrade", "state"])
+
+
+def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-many-locals
+    upgraded_bundle = obj.prototype.bundle
+    old_bundle = Bundle.objects.get(pk=obj.before_upgrade["bundle_id"])
+    old_proto = Prototype.objects.filter(bundle=old_bundle, name=old_bundle.name).first()
+    before_upgrade_hc = obj.before_upgrade.get("hc")
+    services = obj.before_upgrade.get("services")
+
+    revert_object(obj=obj, old_proto=old_proto)
+
+    if isinstance(obj, Cluster):
+        for service_proto in Prototype.objects.filter(bundle=old_bundle, type="service"):
+            service = ClusterObject.objects.filter(cluster=obj, prototype__name=service_proto.name).first()
+            if not service:
+                continue
+
+            revert_object(obj=service, old_proto=service_proto)
+            for component_proto in Prototype.objects.filter(bundle=old_bundle, parent=service_proto, type="component"):
+                comp = ServiceComponent.objects.filter(
+                    cluster=obj, service=service, prototype__name=component_proto.name
+                ).first()
+
+                if comp:
+                    revert_object(obj=comp, old_proto=component_proto)
+                else:
+                    component = ServiceComponent.objects.create(cluster=obj, service=service, prototype=component_proto)
+                    obj_conf = init_object_config(proto=component_proto, obj=component)
+                    component.config = obj_conf
+                    component.save(update_fields=["config"])
+
+        ClusterObject.objects.filter(cluster=obj, prototype__bundle=upgraded_bundle).delete()
+        ServiceComponent.objects.filter(cluster=obj, prototype__bundle=upgraded_bundle).delete()
+
+        for service in services:
+            proto = Prototype.objects.get(bundle=old_bundle, name=service, type="service")
+            try:
+                ClusterObject.objects.get(prototype=proto)
+            except ClusterObject.DoesNotExist:
+                add_service_to_cluster(cluster=obj, proto=proto)
+
+        host_comp_list = []
+        for hc in before_upgrade_hc:
+            host = Host.objects.get(fqdn=hc["host"], cluster=obj)
+            service = ClusterObject.objects.get(prototype__name=hc["service"], cluster=obj)
+            comp = ServiceComponent.objects.get(prototype__name=hc["component"], cluster=obj, service=service)
+            host_comp_list.append((service, host, comp))
+
+        save_hc(cluster=obj, host_comp_list=host_comp_list)
+
+    if isinstance(obj, HostProvider):
+        for host in Host.objects.filter(provider=obj):
+            old_host_proto = Prototype.objects.get(bundle=old_bundle, type="host", name=host.prototype.name)
+            revert_object(obj=host, old_proto=old_host_proto)
+
+
+def set_before_upgrade(obj: ADCMEntity) -> None:
+    obj.before_upgrade["state"] = obj.state
+    if obj.config:
+        obj.before_upgrade["config"] = obj.config.current
+
+    if isinstance(obj, Cluster):
+        hc_map = []
+        for hc in HostComponent.objects.filter(cluster=obj):
+            hc_map.append(
+                {
+                    "service": hc.service.name,
+                    "component": hc.component.name,
+                    "host": hc.host.name,
+                }
+            )
+
+        obj.before_upgrade["hc"] = hc_map
+        obj.before_upgrade["services"] = [
+            service.prototype.name for service in ClusterObject.objects.filter(cluster=obj)
+        ]
+
+    obj.save(update_fields=["before_upgrade"])
+
+
+def update_before_upgrade(obj: Cluster | HostProvider) -> None:
+    set_before_upgrade(obj=obj)
+
+    if isinstance(obj, Cluster):
+        for service in ClusterObject.objects.filter(cluster=obj):
+            set_before_upgrade(obj=service)
+            for component in ServiceComponent.objects.filter(service=service, cluster=obj):
+                set_before_upgrade(obj=component)
+
+    if isinstance(obj, HostProvider):
+        for host in Host.objects.filter(provider=obj):
+            set_before_upgrade(obj=host)
 
 
 def do_upgrade(
-    obj: Union[Cluster, HostProvider],
+    obj: Cluster | HostProvider,
     upgrade: Upgrade,
     config: dict,
     attr: dict,
     hc: list,
 ) -> dict:
     old_proto = obj.prototype
-    check_license(obj.prototype)
+    check_license(proto=obj.prototype)
     upgrade_proto = Prototype.objects.filter(bundle=upgrade.bundle, name=upgrade.bundle.name).first()
-    check_license(upgrade_proto)
-    ok, msg = check_upgrade(obj, upgrade)
+    check_license(proto=upgrade_proto)
+    ok, msg = check_upgrade(obj=obj, upgrade=upgrade)
     if not ok:
         return raise_adcm_ex("UPGRADE_ERROR", msg)
     logger.info("upgrade %s version %s (upgrade #%s)", obj_ref(obj), old_proto.version, upgrade.id)
 
     task_id = None
+
+    obj.before_upgrade["bundle_id"] = old_proto.bundle.id
+    update_before_upgrade(obj=obj)
+
     if not upgrade.action:
-        bundle_switch(obj, upgrade)
+        bundle_switch(obj=obj, upgrade=upgrade)
         if upgrade.state_on_success:
-            obj.before_upgrade["state"] = obj.state
             obj.state = upgrade.state_on_success
             obj.save()
     else:
-        task = start_task(upgrade.action, obj, config, attr, hc, [], False)
+        task = start_task(action=upgrade.action, obj=obj, conf=config, attr=attr, hc=hc, hosts=[], verbose=False)
         task_id = task.id
 
     obj.refresh_from_db()

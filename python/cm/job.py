@@ -15,7 +15,7 @@ import json
 import subprocess
 from configparser import ConfigParser
 from pathlib import Path
-from typing import Any, Hashable, List, Optional, Tuple, Union
+from typing import Any, Hashable, List, Optional, Tuple
 
 from django.conf import settings
 from django.db import transaction
@@ -812,21 +812,12 @@ def restore_hc(task: TaskLog, action: Action, status: str):
     save_hc(cluster, host_comp_list)
 
 
-def set_before_upgrade_state(action: Action, obj: Union[Cluster, HostProvider]) -> None:
-    if action.upgrade is not None:
-        obj.before_upgrade["state"] = obj.state
-        obj.save()
-
-
 def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
     action = task.action
     obj = task.task_object
     state, multi_state_set, multi_state_unset = get_state(action, job, status)
 
     with transaction.atomic():
-        if hasattr(action, "upgrade"):
-            set_before_upgrade_state(action, obj)
-
         set_action_state(action, task, obj, state, multi_state_set, multi_state_unset)
         restore_hc(task, action, status)
         task.unlock_affected()

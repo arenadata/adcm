@@ -37,7 +37,7 @@ from cm.models import (
     Upgrade,
 )
 from cm.tests.utils import gen_cluster
-from cm.upgrade import check_upgrade, do_upgrade, switch_components
+from cm.upgrade import bundle_revert, check_upgrade, do_upgrade, switch_components
 
 
 def cook_cluster_bundle(ver):
@@ -559,3 +559,109 @@ class TestUpgrade(BaseTestCase):
 
         self.assertEqual(host_1.id, host_2.id)
         self.assertEqual(host_2.prototype.id, new_proto.id)
+
+
+class TestRevertUpgrade(BaseTestCase):
+    def test_simple_revert_upgrade(self):  # pylint: disable=too-many-locals
+        bundle1 = cook_cluster_bundle(ver="1.0")
+        bundle2 = cook_cluster_bundle(ver="2.0")
+        service1_proto1 = Prototype.objects.get(bundle=bundle1, type="service", name="hadoop")
+        service1_proto2 = Prototype.objects.get(bundle=bundle2, type="service", name="hadoop")
+
+        service2_proto1 = Prototype.objects.get(bundle=bundle1, type="service", name="hive")
+        service2_proto2 = Prototype.objects.get(bundle=bundle2, type="service", name="hive")
+
+        component11_proto1 = Prototype.objects.get(
+            bundle=bundle1, type="component", name="server", parent=service1_proto1
+        )
+        component11_proto2 = Prototype.objects.get(
+            bundle=bundle2, type="component", name="server", parent=service1_proto2
+        )
+
+        component12_proto1 = Prototype.objects.get(
+            bundle=bundle1, type="component", name="node", parent=service1_proto1
+        )
+        component12_proto2 = Prototype.objects.get(
+            bundle=bundle2, type="component", name="node", parent=service1_proto2
+        )
+
+        component21_proto1 = Prototype.objects.get(
+            bundle=bundle1, type="component", name="server", parent=service2_proto1
+        )
+        component21_proto2 = Prototype.objects.get(
+            bundle=bundle2, type="component", name="server", parent=service2_proto2
+        )
+
+        cluster = cook_cluster(bundle=bundle1, name="Test0")
+        upgrade = cook_upgrade(bundle=bundle2)
+
+        service_1 = ClusterObject.objects.get(cluster=cluster, prototype__name="hadoop")
+        service_2 = ClusterObject.objects.get(cluster=cluster, prototype__name="hive")
+        comp_11 = ServiceComponent.objects.get(cluster=cluster, service=service_1, prototype__name="server")
+        comp_12 = ServiceComponent.objects.get(cluster=cluster, service=service_1, prototype__name="node")
+        comp_21 = ServiceComponent.objects.get(cluster=cluster, service=service_2, prototype__name="server")
+
+        self.assertEqual(service_1.prototype, service1_proto1)
+        self.assertEqual(service_2.prototype, service2_proto1)
+        self.assertEqual(comp_11.prototype, component11_proto1)
+        self.assertEqual(comp_12.prototype, component12_proto1)
+        self.assertEqual(comp_21.prototype, component21_proto1)
+
+        do_upgrade(obj=cluster, upgrade=upgrade, config={}, attr={}, hc=[])
+
+        service_1.refresh_from_db()
+        service_2.refresh_from_db()
+        comp_11.refresh_from_db()
+        comp_12.refresh_from_db()
+        comp_21.refresh_from_db()
+
+        self.assertEqual(service_1.prototype, service1_proto2)
+        self.assertEqual(service_2.prototype, service2_proto2)
+        self.assertEqual(comp_11.prototype, component11_proto2)
+        self.assertEqual(comp_12.prototype, component12_proto2)
+        self.assertEqual(comp_21.prototype, component21_proto2)
+
+        bundle_revert(obj=cluster)
+
+        service_1.refresh_from_db()
+        service_2.refresh_from_db()
+        comp_11.refresh_from_db()
+        comp_12.refresh_from_db()
+        comp_21.refresh_from_db()
+
+        self.assertEqual(service_1.prototype, service1_proto1)
+        self.assertEqual(service_2.prototype, service2_proto1)
+        self.assertEqual(comp_11.prototype, component11_proto1)
+        self.assertEqual(comp_12.prototype, component12_proto1)
+        self.assertEqual(comp_21.prototype, component21_proto1)
+
+    def test_provider_revert(self):
+        bundle1 = cook_provider_bundle(ver="1.0")
+        bundle2 = cook_provider_bundle(ver="2.0")
+        provider = cook_provider(bundle=bundle1, name="DF01")
+        upgrade = cook_upgrade(bundle=bundle2)
+
+        host = Host.objects.get(provider=provider, fqdn="server01.inter.net")
+        host_proto1 = Prototype.objects.get(type="host", name="DfHost", bundle=bundle1)
+        host_proto2 = Prototype.objects.get(type="host", name="DfHost", bundle=bundle2)
+        provider_proto1 = Prototype.objects.get(type="provider", bundle=bundle1)
+        provider_proto2 = Prototype.objects.get(type="provider", bundle=bundle2)
+
+        self.assertEqual(host.prototype, host_proto1)
+        self.assertEqual(provider.prototype, provider_proto1)
+
+        do_upgrade(obj=provider, upgrade=upgrade, config={}, attr={}, hc=[])
+
+        provider.refresh_from_db()
+        host.refresh_from_db()
+
+        self.assertEqual(host.prototype, host_proto2)
+        self.assertEqual(provider.prototype, provider_proto2)
+
+        bundle_revert(obj=provider)
+
+        provider.refresh_from_db()
+        host.refresh_from_db()
+
+        self.assertEqual(host.prototype, host_proto1)
+        self.assertEqual(provider.prototype, provider_proto1)

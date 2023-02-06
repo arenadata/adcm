@@ -426,23 +426,27 @@ def delete_cluster(cluster, cancel_tasks=True):
     load_service_map()
 
 
-def remove_host_from_cluster(host):
+def remove_host_from_cluster(host: Host) -> Host:
     cluster = host.cluster
     hc = HostComponent.objects.filter(cluster=cluster, host=host)
     if hc:
-        return raise_adcm_ex("HOST_CONFLICT", f"Host #{host.pk} has component(s)")
+        return raise_adcm_ex(code="HOST_CONFLICT", msg=f"Host #{host.pk} has component(s)")
+
+    if cluster.state == "upgrading":
+        return raise_adcm_ex(code="HOST_CONFLICT", msg="It is forbidden to delete host from cluster in upgrade mode")
 
     with transaction.atomic():
         host.maintenance_mode = MaintenanceMode.OFF
         host.cluster = None
         host.save()
+
         for group in cluster.group_config.all():
             group.hosts.remove(host)
-            update_hierarchy_issues(host)
+            update_hierarchy_issues(obj=host)
 
         host.remove_from_concerns(ctx.lock)
-        update_hierarchy_issues(cluster)
-        re_apply_object_policy(cluster)
+        update_hierarchy_issues(obj=cluster)
+        re_apply_object_policy(apply_object=cluster)
 
     ctx.event.send_state()
     post_event("remove", "host", host.pk, "cluster", str(cluster.pk))

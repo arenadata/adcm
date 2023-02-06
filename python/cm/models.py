@@ -660,6 +660,7 @@ class Host(ADCMEntity):
         choices=MaintenanceMode.choices,
         default=MaintenanceMode.OFF,
     )
+    before_upgrade = models.JSONField(default=get_default_before_upgrade)
 
     __error_code__ = "HOST_NOT_FOUND"
 
@@ -714,6 +715,7 @@ class ClusterObject(ADCMEntity):
         choices=MaintenanceMode.choices,
         default=MaintenanceMode.OFF,
     )
+    before_upgrade = models.JSONField(default=get_default_before_upgrade)
 
     __error_code__ = "CLUSTER_SERVICE_NOT_FOUND"
 
@@ -811,6 +813,7 @@ class ServiceComponent(ADCMEntity):
         choices=MaintenanceMode.choices,
         default=MaintenanceMode.OFF,
     )
+    before_upgrade = models.JSONField(default=get_default_before_upgrade)
 
     __error_code__ = "COMPONENT_NOT_FOUND"
 

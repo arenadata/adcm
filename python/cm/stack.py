@@ -279,18 +279,26 @@ def check_upgrade_scripts(proto, conf, label):
             if action["script_type"] == "internal":
                 count += 1
                 if count > 1:
-                    msg = 'Script with script_type "internal" must be unique in {} of {}'
-                    err("INVALID_UPGRADE_DEFINITION", msg.format(label, ref))
-                if action["script"] != "bundle_switch":
-                    msg = 'Script with script_type "internal" should be marked as "bundle_switch" in {} of {}'
-                    err("INVALID_UPGRADE_DEFINITION", msg.format(label, ref))
+                    err(
+                        "INVALID_UPGRADE_DEFINITION",
+                        f'Script with script_type "internal" must be unique in {label} of {ref}',
+                    )
+
+                if action["script"] not in {"bundle_switch", "bundle_revert"}:
+                    msg = (
+                        f'Script with script_type "internal" should be marked as'
+                        f' "bundle_switch" or "bundle_revert" in {label} of {ref}'
+                    )
+                    err("INVALID_UPGRADE_DEFINITION", msg)
+
         if count == 0:
-            msg = 'Scripts block in {} of {} must contain exact one block with script "bundle_switch"'
-            err("INVALID_UPGRADE_DEFINITION", msg.format(label, ref))
+            msg = f'Scripts block in {label} of {ref} must contain exact one block with script "bundle_switch"'
+            err("INVALID_UPGRADE_DEFINITION", msg)
+
     else:
         if "masking" in conf or "on_success" in conf or "on_fail" in conf:
-            msg = "{} of {} couldn't contain `masking`, `on_success` or `on_fail` without `scripts` block"
-            err("INVALID_UPGRADE_DEFINITION", msg.format(label, ref))
+            msg = f"{label} of {ref} couldn't contain `masking`, `on_success` or `on_fail` without `scripts` block"
+            err("INVALID_UPGRADE_DEFINITION", msg)
 
 
 def check_versions(proto, conf, label):

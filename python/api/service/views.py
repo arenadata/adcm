@@ -131,6 +131,10 @@ class ServiceDetailView(PermissionListMixin, DetailView):
             if host_components_exists:
                 raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} has component(s) on host(s)")
 
+        cluster = instance.cluster
+        if cluster.state == "upgrading" and instance.prototype.name in cluster.before_upgrade["services"]:
+            return raise_adcm_ex(code="SERVICE_CONFLICT", msg="It is forbidden to delete service in upgrade mode")
+
         if ClusterBind.objects.filter(source_service=instance).exists():
             raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} has exports(s)")
 
