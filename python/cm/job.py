@@ -892,10 +892,9 @@ def log_custom(job_id, name, log_format, body):
     job = JobLog.obj.get(id=job_id)
     l1 = LogStorage.objects.create(job=job, name=name, type="custom", format=log_format, body=body)
     post_event(
-        "add_job_log",
-        "job",
-        job_id,
-        {
+        event="add_job_log",
+        obj=job,
+        details={
             "id": l1.pk,
             "type": l1.type,
             "name": l1.name,
@@ -959,12 +958,13 @@ def set_task_status(task: TaskLog, status: str, event):
     task.status = status
     task.finish_date = timezone.now()
     task.save()
-    event.set_task_status(task.pk, status)
+    event.set_task_status(task=task, status=status)
 
 
 def set_job_status(job_id: int, status: str, event, pid: int = 0):
-    JobLog.objects.filter(id=job_id).update(status=status, pid=pid, finish_date=timezone.now())
-    event.set_job_status(job_id, status)
+    job_query = JobLog.objects.filter(id=job_id)
+    job_query.update(status=status, pid=pid, finish_date=timezone.now())
+    event.set_job_status(job=job_query.first(), status=status)
 
 
 def abort_all(event):

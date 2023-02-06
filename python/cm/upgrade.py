@@ -381,4 +381,4 @@ def bundle_switch(obj: Cluster | HostProvider, upgrade: Upgrade) -> None:
             update_components_after_bundle_switch(obj, upgrade)
 
     logger.info("upgrade %s OK to version %s", obj_ref(obj), obj.prototype.version)
-    post_event("upgrade", obj.prototype.type, obj.id, "version", str(obj.prototype.version))
+    post_event(event="upgrade", obj=obj, details={"type": "version", "value": str(obj.prototype.version)})

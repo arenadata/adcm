@@ -461,7 +461,7 @@ class ADCMEntity(ADCMModel):
         self.state = state or self.state
         self.save()
         if event:
-            event.set_object_state(self.prototype.type, self.id, state)
+            event.set_object_state(obj=self, state=state)
         logger.info('set %s state to "%s"', self, state)
 
     def get_id_chain(self) -> dict:
@@ -490,8 +490,9 @@ class ADCMEntity(ADCMModel):
 
         self._multi_state.update({multi_state: 1})
         self.save()
+
         if event:
-            event.change_object_multi_state(self.prototype.type, self.id, multi_state)
+            event.change_object_multi_state(obj=self, multi_state=multi_state)
         logger.info('add "%s" to "%s" multi_state', multi_state, self)
 
     def unset_multi_state(self, multi_state: str, event=None) -> None:
@@ -501,8 +502,9 @@ class ADCMEntity(ADCMModel):
 
         del self._multi_state[multi_state]
         self.save()
+
         if event:
-            event.change_object_multi_state(self.prototype.type, self.id, multi_state)
+            event.change_object_multi_state(obj=self, multi_state=multi_state)
         logger.info('remove "%s" from "%s" multi_state', multi_state, self)
 
     def has_multi_state_intersection(self, multi_states: List[str]) -> bool:

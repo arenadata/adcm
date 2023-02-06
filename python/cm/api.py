@@ -186,7 +186,7 @@ def add_cluster(proto, name, desc=""):
         cluster.save()
         update_hierarchy_issues(cluster)
 
-    post_event("create", "cluster", cluster.pk)
+    post_event(event="create", obj=cluster)
     load_service_map()
     logger.info("cluster #%s %s is added", cluster.pk, cluster.name)
 
@@ -215,7 +215,7 @@ def add_host(proto, provider, fqdn, desc=""):
         re_apply_object_policy(provider)
 
     ctx.event.send_state()
-    post_event("create", "host", host.pk, "provider", str(provider.pk))
+    post_event(event="create", obj=host, details={"type": "provider", "value": str(provider.pk)})
     load_service_map()
     logger.info("host #%s %s is added", host.pk, host.fqdn)
 
@@ -236,7 +236,7 @@ def add_host_provider(proto, name, desc=""):
         update_hierarchy_issues(provider)
 
     ctx.event.send_state()
-    post_event("create", "provider", provider.pk)
+    post_event(event="create", obj=provider)
     logger.info("host provider #%s %s is added", provider.pk, provider.name)
 
     return provider
@@ -259,8 +259,8 @@ def delete_host_provider(provider, cancel_tasks=True):
         cancel_locking_tasks(provider, obj_deletion=True)
 
     provider_pk = provider.pk
+    post_event(event="delete", obj=provider)
     provider.delete()
-    post_event("delete", "provider", provider_pk)
     logger.info("host provider #%s is deleted", provider_pk)
 
 
@@ -278,7 +278,7 @@ def add_host_to_cluster(cluster, host):
         update_hierarchy_issues(host)
         re_apply_object_policy(cluster)
 
-    post_event("add", "host", host.pk, "cluster", str(cluster.pk))
+    post_event(event="add", obj=host, details={"type": "cluster", "value": str(cluster.pk)})
     load_service_map()
     logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)
 
@@ -328,14 +328,14 @@ def remove_host_from_cluster_by_pk(cluster_pk, fqdn, host_pk):
 def delete_host(host, cancel_tasks=True):
     cluster = host.cluster
     if cluster:
-        raise_adcm_ex("HOST_CONFLICT", f'Host #{host.pk} "{host.fqdn}" belong to {obj_ref(cluster)}')
+        raise_adcm_ex(code="HOST_CONFLICT", msg=f'Host #{host.pk} "{host.fqdn}" belong to {obj_ref(cluster)}')
 
     if cancel_tasks:
-        cancel_locking_tasks(host, obj_deletion=True)
+        cancel_locking_tasks(obj=host, obj_deletion=True)
 
     host_pk = host.pk
+    post_event(event="delete", obj=host)
     host.delete()
-    post_event("delete", "host", host_pk)
     load_service_map()
     update_issue_after_deleting()
     logger.info("host #%s is deleted", host_pk)
@@ -397,11 +397,11 @@ def delete_service_by_name(service_name, cluster_pk):
 
 def delete_service(service: ClusterObject) -> None:
     service_pk = service.pk
+    post_event(event="delete", obj=service)
     service.delete()
     update_issue_after_deleting()
     update_hierarchy_issues(service.cluster)
     re_apply_object_policy(service.cluster)
-    post_event("delete", "service", service_pk)
     load_service_map()
     logger.info("service #%s is deleted", service_pk)
 
@@ -420,9 +420,9 @@ def delete_cluster(cluster, cancel_tasks=True):
         MaintenanceMode.OFF,
         ", ".join(host_pks),
     )
+    post_event(event="delete", obj=cluster)
     cluster.delete()
     update_issue_after_deleting()
-    post_event("delete", "cluster", cluster_pk)
     load_service_map()
 
 
@@ -445,7 +445,7 @@ def remove_host_from_cluster(host):
         re_apply_object_policy(cluster)
 
     ctx.event.send_state()
-    post_event("remove", "host", host.pk, "cluster", str(cluster.pk))
+    post_event(event="remove", obj=host, details={"type": "cluster", "value": str(cluster.pk)})
     load_service_map()
 
     return host
@@ -455,13 +455,11 @@ def unbind(cbind):
     import_obj = get_bind_obj(cbind.cluster, cbind.service)
     export_obj = get_bind_obj(cbind.source_cluster, cbind.source_service)
     check_import_default(import_obj, export_obj)
-    cbind_pk = cbind.pk
-    cbind_cluster_pk = cbind.cluster.pk
+
     with transaction.atomic():
+        post_event(event="delete", obj=cbind, details={"type": "cluster", "value": str(cbind.cluster.pk)})
         cbind.delete()
         update_hierarchy_issues(cbind.cluster)
-
-    post_event("delete", "bind", cbind_pk, "cluster", str(cbind_cluster_pk))
 
 
 def add_service_to_cluster(cluster, proto):
@@ -478,19 +476,21 @@ def add_service_to_cluster(cluster, proto):
             )
 
     with transaction.atomic():
-        cs = ClusterObject.objects.create(cluster=cluster, prototype=proto)
-        obj_conf = init_object_config(proto, cs)
-        cs.config = obj_conf
-        cs.save()
-        add_components_to_service(cluster, cs)
-        update_hierarchy_issues(cs)
-        re_apply_object_policy(cluster)
+        service = ClusterObject.objects.create(cluster=cluster, prototype=proto)
+        obj_conf = init_object_config(proto=proto, obj=service)
+        service.config = obj_conf
+        service.save(update_fields=["config"])
+        add_components_to_service(cluster=cluster, service=service)
+        update_hierarchy_issues(obj=service)
+        re_apply_object_policy(apply_object=cluster)
 
-    post_event("add", "service", cs.pk, "cluster", str(cluster.pk))
+    post_event(event="add", obj=service, details={"type": "cluster", "value": str(cluster.pk)})
     load_service_map()
-    logger.info("service #%s %s is added to cluster #%s %s", cs.pk, cs.prototype.name, cluster.pk, cluster.name)
+    logger.info(
+        "service #%s %s is added to cluster #%s %s", service.pk, service.prototype.name, cluster.pk, cluster.name
+    )
 
-    return cs
+    return service
 
 
 def add_components_to_service(cluster, service):
@@ -551,9 +551,9 @@ def update_obj_config(obj_conf: ObjectConfig, conf: dict, attr: dict, desc: str 
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
     if group is not None:
-        post_event("change_config", "group-config", group.pk, "version", str(config_log.pk))
+        post_event(event="change_config", obj=group, details={"type": "version", "value": str(config_log.pk)})
     else:
-        post_event("change_config", proto.type, obj.pk, "version", str(config_log.pk))
+        post_event(event="change_config", obj=obj, details={"type": "version", "value": str(config_log.pk)})
 
     return config_log
 
@@ -567,7 +567,7 @@ def set_object_config(obj: ADCMEntity, config: dict) -> ConfigLog:
         update_hierarchy_issues(obj=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
-    post_event("change_config", obj.prototype.type, obj.pk, "version", str(config_log.pk))
+    post_event(event="change_config", obj=obj, details={"type": "version", "value": str(config_log.pk)})
     return config_log
 
 
@@ -705,7 +705,7 @@ def save_hc(cluster, host_comp_list):
         result.append(hc)
 
     ctx.event.send_state()
-    post_event("change_hostcomponentmap", "cluster", cluster.pk)
+    post_event(event="change_hostcomponentmap", obj=cluster)
     update_hierarchy_issues(cluster)
     for provider in [host.provider for host in Host.objects.filter(cluster=cluster)]:
         update_hierarchy_issues(provider)

@@ -95,9 +95,8 @@ def get_names(sender, **kwargs):
     return name, sender.__module__, kwargs["instance"]
 
 
-def _post_event(action, module, name, obj_pk):
-    """Wrapper for post_event to run in on_commit hook"""
-    transaction.on_commit(lambda: post_event(action, name, obj_pk, {"module": module}))
+def _post_event(action: str, module: str, obj) -> None:
+    transaction.on_commit(lambda: post_event(event=action, obj=obj, details={"module": module}))
 
 
 @receiver(post_save, sender=User)
@@ -111,12 +110,13 @@ def model_change(sender, **kwargs):
     if "filter_out" in kwargs:
         if kwargs["filter_out"](module, name, obj):
             return
+
     action = "update"
-    if "created" in kwargs and kwargs["created"]:
+    if kwargs.get("created"):
         action = "create"
-    args = (action, module, name, obj.pk)
-    logger.info("%s %s %s #%s", *args)
-    _post_event(*args)
+
+    logger.info("%s %s %s #%s", action, module, name, obj.pk)
+    _post_event(action=action, module=module, obj=obj)
 
 
 @receiver(post_delete, sender=User)
@@ -127,13 +127,14 @@ def model_change(sender, **kwargs):
 def model_delete(sender, **kwargs):
     """post_delete handler"""
     name, module, obj = get_names(sender, **kwargs)
+
     if "filter_out" in kwargs:
         if kwargs["filter_out"](module, name, obj):
             return
+
     action = "delete"
-    args = (action, module, name, obj.pk)
-    logger.info("%s %s %s #%s", *args)
-    _post_event(*args)
+    logger.info("%s %s %s #%s", action, module, name, obj.pk)
+    _post_event(action=action, module=module, obj=obj)
 
 
 @receiver(m2m_changed, sender=GroupConfig)
@@ -148,12 +149,13 @@ def m2m_change(sender, **kwargs):
     if "filter_out" in kwargs:
         if kwargs["filter_out"](module, name, obj):
             return
+
     if kwargs["action"] == "post_add":
         action = "add"
     elif kwargs["action"] == "post_remove":
         action = "delete"
     else:
         return
-    args = (action, module, name, obj.pk)
-    logger.info("%s %s %s #%s", *args)
-    _post_event(*args)
+
+    logger.info("%s %s %s #%s", action, module, name, obj.pk)
+    _post_event(action=action, module=module, obj=obj)

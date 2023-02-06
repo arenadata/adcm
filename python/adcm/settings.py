@@ -22,6 +22,7 @@ from cm.utils import dict_json_get_or_create, get_adcm_token
 
 ENCODING_UTF_8 = "utf-8"
 
+API_URL = "http://localhost:8020/api/v1"
 BASE_DIR = os.getenv("ADCM_BASE_DIR")
 if BASE_DIR:
     BASE_DIR = Path(BASE_DIR)
@@ -307,3 +308,8 @@ ADCM_SERVICE_ACTION_NAMES_SET = {
     ADCM_DELETE_SERVICE_ACTION_NAME,
 }
 ADCM_MM_ACTION_FORBIDDEN_PROPS_SET = {"config", "hc_acl", "ui_options"}
+
+EMPTY_REQUEST_STATUS_CODE = 32
+VALUE_ERROR_STATUS_CODE = 8
+EMPTY_STATUS_STATUS_CODE = 4
+STATUS_REQUEST_TIMEOUT = 0.01

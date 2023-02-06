@@ -869,7 +869,7 @@ class TestAPI2(BaseTestCase):
 
         self.assertListEqual(hc_list, [HostComponent.objects.first()])
 
-        mock_post_event.assert_called_once_with("change_hostcomponentmap", "cluster", self.cluster.id)
+        mock_post_event.assert_called_once_with(event="change_hostcomponentmap", obj=self.cluster)
         mock_update_issues.assert_called()
         mock_load_service_map.assert_called_once()
 
