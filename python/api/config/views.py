@@ -39,10 +39,11 @@ def get_config_version(queryset, objconf, version):
     else:
         ver = version
     try:
-        cl = queryset.get(obj_ref=objconf, id=ver)
+        config_log = queryset.get(obj_ref=objconf, id=ver)
     except ConfigLog.DoesNotExist:
         raise AdcmEx("CONFIG_NOT_FOUND") from None
-    return cl
+
+    return config_log
 
 
 def type_to_model(object_type):
@@ -58,8 +59,9 @@ def type_to_model(object_type):
 def get_obj(object_type, object_id):
     model = get_model_by_type(object_type)
     obj = model.obj.get(id=object_id)
-    oc = check_obj(ObjectConfig, {type_to_model(object_type): obj}, "CONFIG_NOT_FOUND")
-    return obj, oc
+    object_config = check_obj(ObjectConfig, {type_to_model(object_type): obj}, "CONFIG_NOT_FOUND")
+
+    return obj, object_config
 
 
 def get_object_type_id_version(**kwargs):
@@ -114,21 +116,24 @@ class ConfigHistoryView(PermissionListMixin, GenericUIView):
 
     def get(self, request, *args, **kwargs):
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
-        obj, oc = get_obj(object_type, object_id)
-        cl = self.get_queryset().filter(obj_ref=oc).order_by("-id")
-        serializer = self.get_serializer(cl, many=True, context={"request": request, "object": obj})
+        obj, object_config = get_obj(object_type, object_id)
+        config_log = self.get_queryset().filter(obj_ref=object_config).order_by("-id")
+        serializer = self.get_serializer(config_log, many=True, context={"request": request, "object": obj})
+
         return Response(serializer.data)
 
     @audit
     def post(self, request, *args, **kwargs):
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
-        obj, oc = get_obj(object_type, object_id)
+        obj, object_config = get_obj(object_type, object_id)
         check_config_perm(request.user, "change", object_type, obj)
         try:
-            cl = self.get_queryset().get(obj_ref=oc, id=oc.current)
+            config_log = self.get_queryset().get(obj_ref=object_config, id=object_config.current)
         except ConfigLog.DoesNotExist:
             raise AdcmEx("CONFIG_NOT_FOUND") from None
-        serializer = self.get_serializer(cl, data=request.data)
+
+        serializer = self.get_serializer(config_log, data=request.data)
+
         return create(serializer, ui=self._is_for_ui(), obj=obj)
 
 
@@ -146,11 +151,13 @@ class ConfigVersionView(PermissionListMixin, GenericUIView):
 
     def get(self, request, *args, **kwargs):
         object_type, object_id, version = get_object_type_id_version(**kwargs)
-        obj, oc = get_obj(object_type, object_id)
-        cl = get_config_version(self.get_queryset(), oc, version)
+        obj, object_config = get_obj(object_type, object_id)
+        config_log = get_config_version(self.get_queryset(), object_config, version)
         if self._is_for_ui():
-            cl.config = ui_config(obj, cl)
-        serializer = self.get_serializer(cl)
+            config_log.config = ui_config(obj, config_log)
+
+        serializer = self.get_serializer(config_log)
+
         return Response(serializer.data)
 
 
@@ -169,8 +176,9 @@ class ConfigHistoryRestoreView(PermissionListMixin, GenericUIView):
     @audit
     def patch(self, request, *args, **kwargs):
         object_type, object_id, version = get_object_type_id_version(**kwargs)
-        obj, oc = get_obj(object_type, object_id)
+        obj, object_config = get_obj(object_type, object_id)
         check_config_perm(request.user, "change", object_type, obj)
-        cl = get_config_version(self.get_queryset(), oc, version)
-        serializer = self.get_serializer(cl, data=request.data)
+        config_log = get_config_version(self.get_queryset(), object_config, version)
+        serializer = self.get_serializer(config_log, data=request.data)
+
         return update(serializer)

@@ -45,13 +45,13 @@ class TestAuditViews(BaseTestCase):
         self.audit_object_first = AuditObject.objects.create(
             object_id=0,
             object_name=self.object_name_first,
-            object_type=AuditObjectType.Cluster,
+            object_type=AuditObjectType.CLUSTER,
             is_deleted=False,
         )
         self.audit_object_second = AuditObject.objects.create(
             object_id=1,
             object_name=self.object_name_second,
-            object_type=AuditObjectType.Component,
+            object_type=AuditObjectType.COMPONENT,
             is_deleted=True,
         )
 
@@ -68,8 +68,8 @@ class TestAuditViews(BaseTestCase):
         self.audit_log_first = AuditLog.objects.create(
             audit_object=self.audit_object_first,
             operation_name=self.operation_name_first,
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.CREATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
             object_changes=self.object_changes_first,
         )
@@ -79,8 +79,8 @@ class TestAuditViews(BaseTestCase):
         self.audit_log_second = AuditLog.objects.create(
             audit_object=self.audit_object_second,
             operation_name=self.operation_name_second,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Fail,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.FAIL,
             user=self.no_rights_user,
             object_changes=self.object_changes_second,
         )
@@ -93,12 +93,12 @@ class TestAuditViews(BaseTestCase):
 
         self.audit_session_first = AuditSession.objects.create(
             user=self.test_user,
-            login_result=AuditSessionLoginResult.Success,
+            login_result=AuditSessionLoginResult.SUCCESS,
             login_details=self.login_details_first,
         )
         self.audit_session_second = AuditSession.objects.create(
             user=self.no_rights_user,
-            login_result=AuditSessionLoginResult.WrongPassword,
+            login_result=AuditSessionLoginResult.WRONG_PASSWORD,
             login_details=self.login_details_second,
         )
         AuditSession.objects.filter(pk=self.audit_session_second.pk).update(

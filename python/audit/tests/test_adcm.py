@@ -69,7 +69,7 @@ class TestADCMAudit(BaseTestCase):
             self.assertFalse(log.audit_object)
 
         self.assertEqual(log.operation_name, operation_name)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
 
@@ -90,7 +90,7 @@ class TestADCMAudit(BaseTestCase):
         self.check_adcm_updated(
             log=log,
             operation_name=self.adcm_conf_updated_str,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -109,7 +109,7 @@ class TestADCMAudit(BaseTestCase):
         self.check_adcm_updated(
             log=new_log,
             operation_name=self.adcm_conf_updated_str,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -127,6 +127,6 @@ class TestADCMAudit(BaseTestCase):
         self.check_adcm_updated(
             log=log,
             operation_name=self.adcm_conf_updated_str,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )

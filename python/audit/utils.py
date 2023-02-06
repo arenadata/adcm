@@ -315,11 +315,11 @@ def audit(func):
                 object_changes = {}
 
             if is_success(status_code):
-                operation_result = AuditLogOperationResult.Success
+                operation_result = AuditLogOperationResult.SUCCESS
             elif status_code == HTTP_403_FORBIDDEN:
-                operation_result = AuditLogOperationResult.Denied
+                operation_result = AuditLogOperationResult.DENIED
             else:
-                operation_result = AuditLogOperationResult.Fail
+                operation_result = AuditLogOperationResult.FAIL
 
             if isinstance(view.request.user, DjangoUser):
                 user = view.request.user
@@ -356,16 +356,16 @@ def mark_deleted_audit_object(instance, object_type: str):
 def make_audit_log(operation_type, result, operation_status):
     operation_type_map = {
         "task": {
-            "type": AuditLogOperationType.Delete,
+            "type": AuditLogOperationType.DELETE,
             "name": '"Task log cleanup on schedule" job',
         },
         "config": {
-            "type": AuditLogOperationType.Delete,
+            "type": AuditLogOperationType.DELETE,
             "name": '"Objects configurations cleanup on schedule" job',
         },
-        "sync": {"type": AuditLogOperationType.Update, "name": '"User sync on schedule" job'},
+        "sync": {"type": AuditLogOperationType.UPDATE, "name": '"User sync on schedule" job'},
         "audit": {
-            "type": AuditLogOperationType.Delete,
+            "type": AuditLogOperationType.DELETE,
             "name": '"Audit log cleanup/archiving on schedule" job',
         },
     }

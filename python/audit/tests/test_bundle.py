@@ -49,7 +49,7 @@ class TestBundleAudit(BaseTestCase):
     def check_log_upload(self, log: AuditLog, operation_result: AuditLogOperationResult, user: User) -> None:
         self.assertFalse(log.audit_object)
         self.assertEqual(log.operation_name, "Bundle uploaded")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
@@ -58,7 +58,7 @@ class TestBundleAudit(BaseTestCase):
     def check_log_load_no_obj(self, log: AuditLog, operation_result: AuditLogOperationResult, user: User) -> None:
         self.assertFalse(log.audit_object)
         self.assertEqual(log.operation_name, "Bundle loaded")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
@@ -67,11 +67,11 @@ class TestBundleAudit(BaseTestCase):
     def check_log_denied(self, log: AuditLog, operation_name: str, operation_type: AuditLogOperationType) -> None:
         self.assertEqual(log.audit_object.object_id, self.bundle.pk)
         self.assertEqual(log.audit_object.object_name, self.bundle.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Bundle)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.BUNDLE)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, operation_name)
         self.assertEqual(log.operation_type, operation_type)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.DENIED)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.no_rights_user.pk)
         self.assertEqual(log.object_changes, {})
@@ -79,10 +79,10 @@ class TestBundleAudit(BaseTestCase):
     def check_prototype_licence(self, log: AuditLog, operation_result: AuditLogOperationResult, user: User):
         self.assertEqual(log.audit_object.object_id, self.prototype.pk)
         self.assertEqual(log.audit_object.object_name, self.prototype.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Prototype)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.PROTOTYPE)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, "Cluster license accepted")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
@@ -91,10 +91,10 @@ class TestBundleAudit(BaseTestCase):
     def check_log_deleted(self, log: AuditLog, operation_result: AuditLogOperationResult):
         self.assertEqual(log.audit_object.object_id, self.bundle.pk)
         self.assertEqual(log.audit_object.object_name, self.bundle.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Bundle)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.BUNDLE)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, "Bundle deleted")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Delete)
+        self.assertEqual(log.operation_type, AuditLogOperationType.DELETE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.test_user.pk)
@@ -107,11 +107,11 @@ class TestBundleAudit(BaseTestCase):
 
         self.assertEqual(log.audit_object.object_id, bundle.pk)
         self.assertEqual(log.audit_object.object_name, "hc_acl_in_service_noname")
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Bundle)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.BUNDLE)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, "Bundle loaded")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.SUCCESS)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.test_user.pk)
         self.assertEqual(log.object_changes, {})
@@ -123,7 +123,7 @@ class TestBundleAudit(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.first()
 
-        self.check_log_upload(log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user)
+        self.check_log_upload(log=log, operation_result=AuditLogOperationResult.SUCCESS, user=self.test_user)
 
         Path(settings.DOWNLOAD_DIR, self.test_bundle_filename).unlink()
 
@@ -136,7 +136,7 @@ class TestBundleAudit(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.first()
 
-        self.check_log_upload(log=log, operation_result=AuditLogOperationResult.Fail, user=self.test_user)
+        self.check_log_upload(log=log, operation_result=AuditLogOperationResult.FAIL, user=self.test_user)
 
     def test_upload_denied(self):
         with open(self.test_bundle_path, encoding=settings.ENCODING_UTF_8) as f:
@@ -149,7 +149,7 @@ class TestBundleAudit(BaseTestCase):
         log: AuditLog = AuditLog.objects.first()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_log_upload(log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user)
+        self.check_log_upload(log=log, operation_result=AuditLogOperationResult.DENIED, user=self.no_rights_user)
 
     def test_load(self):
         self.upload_bundle_and_check()
@@ -160,7 +160,7 @@ class TestBundleAudit(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_log_load_no_obj(log=log, operation_result=AuditLogOperationResult.Fail, user=self.test_user)
+        self.check_log_load_no_obj(log=log, operation_result=AuditLogOperationResult.FAIL, user=self.test_user)
 
     def test_load_failed(self):
         self.client.post(
@@ -170,7 +170,7 @@ class TestBundleAudit(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_log_load_no_obj(log=log, operation_result=AuditLogOperationResult.Fail, user=self.test_user)
+        self.check_log_load_no_obj(log=log, operation_result=AuditLogOperationResult.FAIL, user=self.test_user)
 
         response: Response = self.client.post(
             path=reverse("load-bundle"),
@@ -180,7 +180,7 @@ class TestBundleAudit(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.check_log_load_no_obj(log=log, operation_result=AuditLogOperationResult.Fail, user=self.test_user)
+        self.check_log_load_no_obj(log=log, operation_result=AuditLogOperationResult.FAIL, user=self.test_user)
 
     def test_load_denied(self):
         self.upload_bundle(path=self.test_bundle_path)
@@ -194,7 +194,7 @@ class TestBundleAudit(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_log_load_no_obj(log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user)
+        self.check_log_load_no_obj(log=log, operation_result=AuditLogOperationResult.DENIED, user=self.no_rights_user)
 
     def test_load_and_delete(self):
         bundle = self.upload_bundle_and_check()
@@ -214,11 +214,11 @@ class TestBundleAudit(BaseTestCase):
 
         self.assertEqual(log.audit_object.object_id, self.bundle.pk)
         self.assertEqual(log.audit_object.object_name, self.bundle.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Bundle)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.BUNDLE)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, "Bundle updated")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.SUCCESS)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.test_user.pk)
         self.assertEqual(log.object_changes, {})
@@ -232,7 +232,7 @@ class TestBundleAudit(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_log_denied(log=log, operation_name="Bundle updated", operation_type=AuditLogOperationType.Update)
+        self.check_log_denied(log=log, operation_name="Bundle updated", operation_type=AuditLogOperationType.UPDATE)
 
     def test_license_accepted(self):
         self.client.put(path=reverse("accept-license", kwargs={"bundle_pk": self.bundle.pk}))
@@ -241,11 +241,11 @@ class TestBundleAudit(BaseTestCase):
 
         self.assertEqual(log.audit_object.object_id, self.bundle.pk)
         self.assertEqual(log.audit_object.object_name, self.bundle.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Bundle)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.BUNDLE)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, "Bundle license accepted")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.SUCCESS)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.test_user.pk)
         self.assertEqual(log.object_changes, {})
@@ -260,14 +260,14 @@ class TestBundleAudit(BaseTestCase):
         self.check_log_denied(
             log=log,
             operation_name="Bundle license accepted",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_prototype_license_accepted(self):
         self.client.put(path=reverse("accept-license", kwargs={"prototype_pk": self.prototype.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-        self.check_prototype_licence(log, AuditLogOperationResult.Success, self.test_user)
+        self.check_prototype_licence(log, AuditLogOperationResult.SUCCESS, self.test_user)
 
     def test_prototype_license_accepted_denied(self):
         with self.no_rights_user_logged_in:
@@ -278,7 +278,7 @@ class TestBundleAudit(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_prototype_licence(log, AuditLogOperationResult.Denied, self.no_rights_user)
+        self.check_prototype_licence(log, AuditLogOperationResult.DENIED, self.no_rights_user)
 
     def test_delete(self):
         with patch("api.stack.views.delete_bundle"):
@@ -286,7 +286,7 @@ class TestBundleAudit(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_log_deleted(log=log, operation_result=AuditLogOperationResult.Success)
+        self.check_log_deleted(log=log, operation_result=AuditLogOperationResult.SUCCESS)
 
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
@@ -295,7 +295,7 @@ class TestBundleAudit(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_log_denied(log=log, operation_name="Bundle deleted", operation_type=AuditLogOperationType.Delete)
+        self.check_log_denied(log=log, operation_name="Bundle deleted", operation_type=AuditLogOperationType.DELETE)
 
     def test_delete_failed(self):
         Cluster.objects.create(
@@ -306,4 +306,4 @@ class TestBundleAudit(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_log_deleted(log=log, operation_result=AuditLogOperationResult.Fail)
+        self.check_log_deleted(log=log, operation_result=AuditLogOperationResult.FAIL)

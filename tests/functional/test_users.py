@@ -59,7 +59,7 @@ def created_ldap_user(ldap_ad, ldap_basic_ous) -> Tuple[DN, Username]:
     """Create LDAP user in AD and return its DN and username"""
     username = "ldap_user"
     _, users_ou = ldap_basic_ous
-    dn = ldap_ad.create_user(username, username, users_ou)
+    dn = ldap_ad.create_user(username, username, users_ou)  # pylint: disable=invalid-name
     return dn, username
 
 

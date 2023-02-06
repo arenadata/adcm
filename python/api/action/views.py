@@ -62,12 +62,12 @@ class ActionList(PermissionListMixin, GenericUIView):
 
     def _get_actions_for_host(self, host: Host) -> set:
         actions = set(filter_actions(host, self.filter_queryset(self.get_queryset().filter(prototype=host.prototype))))
-        hcs = HostComponent.objects.filter(host_id=host.id)
-        if hcs:
-            for hc in hcs:
-                cluster, _ = get_obj(object_type="cluster", cluster_id=hc.cluster_id)
-                service, _ = get_obj(object_type="service", service_id=hc.service_id)
-                component, _ = get_obj(object_type="component", component_id=hc.component_id)
+        hostcomponents = HostComponent.objects.filter(host_id=host.id)
+        if hostcomponents:
+            for hostcomponent in hostcomponents:
+                cluster, _ = get_obj(object_type="cluster", cluster_id=hostcomponent.cluster_id)
+                service, _ = get_obj(object_type="service", service_id=hostcomponent.service_id)
+                component, _ = get_obj(object_type="component", component_id=hostcomponent.component_id)
                 for connect_obj in [cluster, service, component]:
                     actions.update(
                         filter_actions(
@@ -127,8 +127,10 @@ class ActionDetail(PermissionListMixin, GenericUIView):
     def get(self, request, *args, **kwargs):
         object_type, object_id, action_id = get_object_type_id(**kwargs)
         model = get_model_by_type(object_type)
-        ct = ContentType.objects.get_for_model(model)
-        obj = get_object_for_user(request.user, f"{ct.app_label}.view_{ct.model}", model, id=object_id)
+        content_type = ContentType.objects.get_for_model(model)
+        obj = get_object_for_user(
+            request.user, f"{content_type.app_label}.view_{content_type.model}", model, id=object_id
+        )
         # TODO: we can access not only the actions of this object
         action = get_object_for_user(
             request.user,
@@ -167,8 +169,10 @@ class RunTask(GenericUIView):
     def post(self, request, *args, **kwargs):
         object_type, object_id, action_id = get_object_type_id(**kwargs)
         model = get_model_by_type(object_type)
-        ct = ContentType.objects.get_for_model(model)
-        obj = get_object_for_user(request.user, f"{ct.app_label}.view_{ct.model}", model, id=object_id)
+        content_type = ContentType.objects.get_for_model(model)
+        obj = get_object_for_user(
+            request.user, f"{content_type.app_label}.view_{content_type.model}", model, id=object_id
+        )
         action = get_object_for_user(request.user, VIEW_ACTION_PERM, Action, id=action_id)
         if reason := action.get_start_impossible_reason(obj):
             raise AdcmEx("ACTION_ERROR", msg=reason)

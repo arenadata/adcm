@@ -34,8 +34,8 @@ def config_case(
     match path:
         case ["config-log"]:
             audit_operation = AuditOperation(
-                name=f"configuration {AuditLogOperationType.Update}d",
-                operation_type=AuditLogOperationType.Update,
+                name=f"configuration {AuditLogOperationType.UPDATE}d",
+                operation_type=AuditLogOperationType.UPDATE,
             )
 
             config = None
@@ -65,8 +65,8 @@ def config_case(
 
         case ["group-config", group_config_pk, "config", _, "config-log"]:
             audit_operation = AuditOperation(
-                name=f"configuration group {AuditLogOperationType.Update}d",
-                operation_type=AuditLogOperationType.Update,
+                name=f"configuration group {AuditLogOperationType.UPDATE}d",
+                operation_type=AuditLogOperationType.UPDATE,
             )
 
             config = None
@@ -100,11 +100,11 @@ def config_case(
 
         case ["group-config"]:
             if view.action == "create":
-                operation_type = AuditLogOperationType.Create
+                operation_type = AuditLogOperationType.CREATE
             elif view.action in {"update", "partial_update"}:
-                operation_type = AuditLogOperationType.Update
+                operation_type = AuditLogOperationType.UPDATE
             else:
-                operation_type = AuditLogOperationType.Delete
+                operation_type = AuditLogOperationType.DELETE
 
             audit_operation = AuditOperation(
                 name=f"configuration group {operation_type}d",
@@ -130,9 +130,9 @@ def config_case(
 
         case ["group-config", group_config_pk]:
             if view.action in {"update", "partial_update"}:
-                operation_type = AuditLogOperationType.Update
+                operation_type = AuditLogOperationType.UPDATE
             else:
-                operation_type = AuditLogOperationType.Delete
+                operation_type = AuditLogOperationType.DELETE
 
             audit_operation = AuditOperation(
                 name=f"configuration group {operation_type}d",
@@ -163,7 +163,7 @@ def config_case(
             config_group = GroupConfig.objects.get(pk=config_group_pk)
             audit_operation = AuditOperation(
                 name=f"host added to {config_group.name} configuration group",
-                operation_type=AuditLogOperationType.Update,
+                operation_type=AuditLogOperationType.UPDATE,
             )
             object_type = get_obj_type(config_group.object_type.name)
             object_name = get_obj_name(obj=config_group.object, obj_type=object_type)
@@ -189,7 +189,7 @@ def config_case(
             obj = Host.objects.get(pk=host_pk)
             audit_operation = AuditOperation(
                 name=f"{obj.name} host removed from {config_group.name} configuration group",
-                operation_type=AuditLogOperationType.Update,
+                operation_type=AuditLogOperationType.UPDATE,
             )
             object_type = get_obj_type(config_group.object_type.name)
             object_name = get_obj_name(obj=config_group.object, obj_type=object_type)

@@ -15,7 +15,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-__metaclass__ = type
+__metaclass__ = type  # pylint: disable=invalid-name
 
 ANSIBLE_METADATA = {"metadata_version": "1.1", "supported_by": "Arenadata"}
 

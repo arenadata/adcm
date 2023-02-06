@@ -83,29 +83,29 @@ def cluster_case(
     match path:
         case ["cluster"]:
             audit_operation, audit_object = response_case(
-                obj_type=AuditObjectType.Cluster,
-                operation_type=AuditLogOperationType.Create,
+                obj_type=AuditObjectType.CLUSTER,
+                operation_type=AuditLogOperationType.CREATE,
                 response=response,
             )
 
         case ["cluster", cluster_pk]:
             if view.request.method == "DELETE":
                 deleted_obj: Cluster
-                operation_type = AuditLogOperationType.Delete
+                operation_type = AuditLogOperationType.DELETE
                 obj = deleted_obj
             else:
-                operation_type = AuditLogOperationType.Update
+                operation_type = AuditLogOperationType.UPDATE
                 obj = Cluster.objects.filter(pk=cluster_pk).first()
 
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Cluster.capitalize()} {operation_type}d",
+                name=f"{AuditObjectType.CLUSTER.capitalize()} {operation_type}d",
                 operation_type=operation_type,
             )
             if obj:
                 audit_object = get_or_create_audit_obj(
                     object_id=cluster_pk,
                     object_name=obj.name,
-                    object_type=AuditObjectType.Cluster,
+                    object_type=AuditObjectType.CLUSTER,
                 )
             else:
                 audit_object = None
@@ -122,13 +122,13 @@ def cluster_case(
 
             audit_operation = AuditOperation(
                 name=f"{host_fqdn} host added".strip(),
-                operation_type=AuditLogOperationType.Update,
+                operation_type=AuditLogOperationType.UPDATE,
             )
             obj = Cluster.objects.get(pk=cluster_pk)
             audit_object = get_or_create_audit_obj(
                 object_id=cluster_pk,
                 object_name=obj.name,
-                object_type=AuditObjectType.Cluster,
+                object_type=AuditObjectType.CLUSTER,
             )
 
         case ["cluster", cluster_pk, "host", host_pk] | [
@@ -151,41 +151,41 @@ def cluster_case(
                     audit_object = get_or_create_audit_obj(
                         object_id=cluster_pk,
                         object_name=obj.name,
-                        object_type=AuditObjectType.Cluster,
+                        object_type=AuditObjectType.CLUSTER,
                     )
                 else:
                     audit_object = None
             else:
                 obj = Host.objects.filter(pk=host_pk).first()
-                name = f"{AuditObjectType.Host.capitalize()} updated"
+                name = f"{AuditObjectType.HOST.capitalize()} updated"
                 if obj:
                     audit_object = get_or_create_audit_obj(
                         object_id=host_pk,
                         object_name=obj.name,
-                        object_type=AuditObjectType.Host,
+                        object_type=AuditObjectType.HOST,
                     )
 
             audit_operation = AuditOperation(
                 name=name,
-                operation_type=AuditLogOperationType.Update,
+                operation_type=AuditLogOperationType.UPDATE,
             )
 
         case ["cluster", cluster_pk, "hostcomponent"]:
             audit_operation = AuditOperation(
                 name="Host-Component map updated",
-                operation_type=AuditLogOperationType.Update,
+                operation_type=AuditLogOperationType.UPDATE,
             )
             obj = Cluster.objects.get(pk=cluster_pk)
             audit_object = get_or_create_audit_obj(
                 object_id=cluster_pk,
                 object_name=obj.name,
-                object_type=AuditObjectType.Cluster,
+                object_type=AuditObjectType.CLUSTER,
             )
 
         case ["cluster", cluster_pk, "import"]:
             audit_operation, audit_object = obj_pk_case(
-                obj_type=AuditObjectType.Cluster,
-                operation_type=AuditLogOperationType.Update,
+                obj_type=AuditObjectType.CLUSTER,
+                operation_type=AuditLogOperationType.UPDATE,
                 obj_pk=cluster_pk,
                 operation_aux_str="import ",
             )
@@ -193,7 +193,7 @@ def cluster_case(
         case ["cluster", cluster_pk, "service"]:
             audit_operation = AuditOperation(
                 name="service added",
-                operation_type=AuditLogOperationType.Update,
+                operation_type=AuditLogOperationType.UPDATE,
             )
 
             service_display_name = None
@@ -212,13 +212,13 @@ def cluster_case(
             audit_object = get_or_create_audit_obj(
                 object_id=cluster_pk,
                 object_name=obj.name,
-                object_type=AuditObjectType.Cluster,
+                object_type=AuditObjectType.CLUSTER,
             )
 
         case ["cluster", cluster_pk, "service", service_pk]:
             audit_operation = AuditOperation(
                 name="service removed",
-                operation_type=AuditLogOperationType.Update,
+                operation_type=AuditLogOperationType.UPDATE,
             )
 
             service_display_name = None
@@ -238,21 +238,21 @@ def cluster_case(
             audit_object = get_or_create_audit_obj(
                 object_id=cluster_pk,
                 object_name=obj.name,
-                object_type=AuditObjectType.Cluster,
+                object_type=AuditObjectType.CLUSTER,
             )
 
         case ["cluster", _, "service", service_pk, "bind"]:
             service = ClusterObject.objects.get(pk=service_pk)
             cluster_name, service_name = get_export_cluster_and_service_names(response, view)
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Service.capitalize()} bound to "
+                name=f"{AuditObjectType.SERVICE.capitalize()} bound to "
                 f"{make_export_name(cluster_name, service_name)}".strip(),
-                operation_type=AuditLogOperationType.Update,
+                operation_type=AuditLogOperationType.UPDATE,
             )
             audit_object = get_or_create_audit_obj(
                 object_id=service_pk,
-                object_name=get_obj_name(obj=service, obj_type=AuditObjectType.Service),
-                object_type=AuditObjectType.Service,
+                object_name=get_obj_name(obj=service, obj_type=AuditObjectType.SERVICE),
+                object_type=AuditObjectType.SERVICE,
             )
 
         case ["cluster", _, "service", service_pk, "bind", _]:
@@ -266,12 +266,12 @@ def cluster_case(
 
             audit_operation = AuditOperation(
                 name=f"{make_export_name(cluster_name, service_name)} unbound".strip(),
-                operation_type=AuditLogOperationType.Update,
+                operation_type=AuditLogOperationType.UPDATE,
             )
             audit_object = get_or_create_audit_obj(
                 object_id=service_pk,
-                object_name=get_obj_name(obj=service, obj_type=AuditObjectType.Service),
-                object_type=AuditObjectType.Service,
+                object_name=get_obj_name(obj=service, obj_type=AuditObjectType.SERVICE),
+                object_type=AuditObjectType.SERVICE,
             )
 
         case (
@@ -281,24 +281,24 @@ def cluster_case(
             | ["service", service_pk, "config", "history", _, "restore"]
         ):
             audit_operation, audit_object = obj_pk_case(
-                obj_type=AuditObjectType.Service,
-                operation_type=AuditLogOperationType.Update,
+                obj_type=AuditObjectType.SERVICE,
+                operation_type=AuditLogOperationType.UPDATE,
                 obj_pk=service_pk,
                 operation_aux_str=CONFIGURATION_STR,
             )
 
         case (["cluster", _, "service", service_pk, "import"] | ["service", service_pk, "import"]):
             audit_operation, audit_object = obj_pk_case(
-                obj_type=AuditObjectType.Service,
-                operation_type=AuditLogOperationType.Update,
+                obj_type=AuditObjectType.SERVICE,
+                operation_type=AuditLogOperationType.UPDATE,
                 obj_pk=service_pk,
                 operation_aux_str="import ",
             )
 
         case ["cluster", _, "service", service_pk, "maintenance-mode"]:
             audit_operation, audit_object = obj_pk_case(
-                obj_type=AuditObjectType.Service,
-                operation_type=AuditLogOperationType.Update,
+                obj_type=AuditObjectType.SERVICE,
+                operation_type=AuditLogOperationType.UPDATE,
                 obj_pk=service_pk,
             )
 
@@ -322,8 +322,8 @@ def cluster_case(
             | ["component", component_pk, "config", "history", _, "restore"]
         ):
             audit_operation, audit_object = obj_pk_case(
-                obj_type=AuditObjectType.Component,
-                operation_type=AuditLogOperationType.Update,
+                obj_type=AuditObjectType.COMPONENT,
+                operation_type=AuditLogOperationType.UPDATE,
                 obj_pk=component_pk,
                 operation_aux_str=CONFIGURATION_STR,
             )
@@ -333,14 +333,14 @@ def cluster_case(
             cluster_name, service_name = get_export_cluster_and_service_names(response, view)
 
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Cluster.capitalize()} bound to "
+                name=f"{AuditObjectType.CLUSTER.capitalize()} bound to "
                 f"{make_export_name(cluster_name, service_name)}".strip(),
-                operation_type=AuditLogOperationType.Update,
+                operation_type=AuditLogOperationType.UPDATE,
             )
             audit_object = get_or_create_audit_obj(
                 object_id=cluster_pk,
                 object_name=obj.name,
-                object_type=AuditObjectType.Cluster,
+                object_type=AuditObjectType.CLUSTER,
             )
 
         case ["cluster", cluster_pk, "bind", _]:
@@ -355,21 +355,21 @@ def cluster_case(
 
             audit_operation = AuditOperation(
                 name=f"{make_export_name(cluster_name, service_name)} unbound".strip(),
-                operation_type=AuditLogOperationType.Update,
+                operation_type=AuditLogOperationType.UPDATE,
             )
 
             audit_object = get_or_create_audit_obj(
                 object_id=cluster_pk,
                 object_name=obj.name,
-                object_type=AuditObjectType.Cluster,
+                object_type=AuditObjectType.CLUSTER,
             )
 
         case (
             ["cluster", cluster_pk, "config", "history"] | ["cluster", cluster_pk, "config", "history", _, "restore"]
         ):
             audit_operation, audit_object = obj_pk_case(
-                obj_type=AuditObjectType.Cluster,
-                operation_type=AuditLogOperationType.Update,
+                obj_type=AuditObjectType.CLUSTER,
+                operation_type=AuditLogOperationType.UPDATE,
                 obj_pk=cluster_pk,
                 operation_aux_str=CONFIGURATION_STR,
             )
@@ -383,8 +383,8 @@ def cluster_case(
             | ["host", host_pk, "config", "history", _, "restore"]
         ):
             audit_operation, audit_object = obj_pk_case(
-                obj_type=AuditObjectType.Host,
-                operation_type=AuditLogOperationType.Update,
+                obj_type=AuditObjectType.HOST,
+                operation_type=AuditLogOperationType.UPDATE,
                 obj_pk=host_pk,
                 operation_aux_str=CONFIGURATION_STR,
             )
@@ -396,8 +396,8 @@ def cluster_case(
             | ["service", _, "component", component_pk, "maintenance-mode"]
         ):
             audit_operation, audit_object = obj_pk_case(
-                obj_type=AuditObjectType.Component,
-                operation_type=AuditLogOperationType.Update,
+                obj_type=AuditObjectType.COMPONENT,
+                operation_type=AuditLogOperationType.UPDATE,
                 obj_pk=component_pk,
             )
 

@@ -90,7 +90,7 @@ def start_task(
     obj: ADCMEntity,
     conf: dict,
     attr: dict,
-    hc: List[HostComponent],
+    hostcomponent: List[HostComponent],
     hosts: List[Host],
     verbose: bool,
 ) -> TaskLog:
@@ -98,7 +98,7 @@ def start_task(
         msg = f'unknown type "{action.type}" for action {action} on {obj}'
         raise_adcm_ex("WRONG_ACTION_TYPE", msg)
 
-    task = prepare_task(action, obj, conf, attr, hc, hosts, verbose)
+    task = prepare_task(action, obj, conf, attr, hostcomponent, hosts, verbose)
     ctx.event.send_state()
     run_task(task, ctx.event)
     ctx.event.send_state()
@@ -137,7 +137,7 @@ def prepare_task(
     obj: ADCMEntity,
     conf: dict,
     attr: dict,
-    hc: List[HostComponent],
+    hostcomponent: List[HostComponent],
     hosts: List[Host],
     verbose: bool,
 ) -> TaskLog:  # pylint: disable=too-many-locals
@@ -149,7 +149,7 @@ def prepare_task(
 
     check_action_hosts(action, obj, cluster, hosts)
     old_hc = get_hc(cluster)
-    host_map, post_upgrade_hc = check_hostcomponentmap(cluster, action, hc)
+    host_map, post_upgrade_hc = check_hostcomponentmap(cluster, action, hostcomponent)
 
     if hasattr(action, "upgrade") and not action.hostcomponentmap:
         check_constraints_for_upgrade(cluster, action.upgrade, get_actual_hc(cluster))
@@ -284,9 +284,9 @@ def cook_delta(  # pylint: disable=too-many-branches
 
     if old is None:
         old = {}
-        for hc in HostComponent.objects.filter(cluster=cluster):
-            key = cook_comp_key(hc.service.prototype.name, hc.component.prototype.name)
-            add_to_dict(old, key, hc.host.fqdn, hc.host)
+        for hostcomponent in HostComponent.objects.filter(cluster=cluster):
+            key = cook_comp_key(hostcomponent.service.prototype.name, hostcomponent.component.prototype.name)
+            add_to_dict(old, key, hostcomponent.host.fqdn, hostcomponent.host)
 
     delta = {"add": {}, "remove": {}}
     for key, value in new.items():
@@ -475,24 +475,24 @@ def get_adcm_config():
 
 def get_actual_hc(cluster: Cluster):
     new_hc = []
-    for hc in HostComponent.objects.filter(cluster=cluster):
-        new_hc.append((hc.service, hc.host, hc.component))
+    for hostcomponent in HostComponent.objects.filter(cluster=cluster):
+        new_hc.append((hostcomponent.service, hostcomponent.host, hostcomponent.component))
     return new_hc
 
 
-def get_old_hc(saved_hc: List[dict]):
-    if not saved_hc:
+def get_old_hc(saved_hostcomponent: List[dict]):
+    if not saved_hostcomponent:
         return {}
 
-    old_hc = {}
-    for hc in saved_hc:
-        service = ClusterObject.objects.get(id=hc["service_id"])
-        comp = ServiceComponent.objects.get(id=hc["component_id"])
-        host = Host.objects.get(id=hc["host_id"])
+    old_hostcomponent = {}
+    for hostcomponent in saved_hostcomponent:
+        service = ClusterObject.objects.get(id=hostcomponent["service_id"])
+        comp = ServiceComponent.objects.get(id=hostcomponent["component_id"])
+        host = Host.objects.get(id=hostcomponent["host_id"])
         key = cook_comp_key(service.prototype.name, comp.prototype.name)
-        add_to_dict(old_hc, key, host.fqdn, host)
+        add_to_dict(old_hostcomponent, key, host.fqdn, host)
 
-    return old_hc
+    return old_hostcomponent
 
 
 def re_prepare_job(task: TaskLog, job: JobLog):
@@ -667,9 +667,9 @@ def prepare_job_config(
     if conf:
         job_conf["job"]["config"] = conf
 
-    fd = open(Path(settings.RUN_DIR, f"{job_id}", "config.json"), "w", encoding=settings.ENCODING_UTF_8)
-    json.dump(job_conf, fd, indent=3, sort_keys=True)
-    fd.close()
+    file_descriptor = open(Path(settings.RUN_DIR, f"{job_id}", "config.json"), "w", encoding=settings.ENCODING_UTF_8)
+    json.dump(job_conf, file_descriptor, indent=3, sort_keys=True)
+    file_descriptor.close()
 
 
 def create_task(
@@ -677,7 +677,7 @@ def create_task(
     obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
     conf: dict,
     attr: dict,
-    hc: List[HostComponent],
+    hostcomponent: List[HostComponent],
     hosts: List[Host],
     verbose: bool,
     post_upgrade_hc: List[dict],
@@ -687,7 +687,7 @@ def create_task(
         task_object=obj,
         config=conf,
         attr=attr,
-        hostcomponentmap=hc,
+        hostcomponentmap=hostcomponent,
         hosts=hosts,
         post_upgrade_hc_map=post_upgrade_hc,
         verbose=verbose,
@@ -802,10 +802,10 @@ def restore_hc(task: TaskLog, action: Action, status: str):
         return
 
     host_comp_list = []
-    for hc in task.hostcomponentmap:
-        host = Host.objects.get(id=hc["host_id"])
-        service = ClusterObject.objects.get(id=hc["service_id"], cluster=cluster)
-        comp = ServiceComponent.objects.get(id=hc["component_id"], cluster=cluster, service=service)
+    for hostcomponent in task.hostcomponentmap:
+        host = Host.objects.get(id=hostcomponent["host_id"])
+        service = ClusterObject.objects.get(id=hostcomponent["service_id"], cluster=cluster)
+        comp = ServiceComponent.objects.get(id=hostcomponent["component_id"], cluster=cluster, service=service)
         host_comp_list.append((service, host, comp))
 
     logger.warning("task #%s is failed, restore old hc", task.pk)
@@ -854,14 +854,14 @@ def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
         object_type=obj_type,
     )
     if status == "success":
-        operation_result = AuditLogOperationResult.Success
+        operation_result = AuditLogOperationResult.SUCCESS
     else:
-        operation_result = AuditLogOperationResult.Fail
+        operation_result = AuditLogOperationResult.FAIL
 
     audit_log = AuditLog.objects.create(
         audit_object=audit_object,
         operation_name=operation_name,
-        operation_type=AuditLogOperationType.Update,
+        operation_type=AuditLogOperationType.UPDATE,
         operation_result=operation_result,
         object_changes={},
     )
@@ -881,15 +881,15 @@ def cook_log_name(tag, level, ext="txt"):
 
 def log_custom(job_id, name, log_format, body):
     job = JobLog.obj.get(id=job_id)
-    l1 = LogStorage.objects.create(job=job, name=name, type="custom", format=log_format, body=body)
+    log_storage = LogStorage.objects.create(job=job, name=name, type="custom", format=log_format, body=body)
     post_event(
         event="add_job_log",
         obj=job,
         details={
-            "id": l1.pk,
-            "type": l1.type,
-            "name": l1.name,
-            "format": l1.format,
+            "id": log_storage.pk,
+            "type": log_storage.type,
+            "name": log_storage.name,
+            "format": log_storage.format,
         },
     )
 
@@ -920,8 +920,8 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
         "callback_whitelist": "profile_tasks",
     }
     adcm_object = ADCM.objects.get(id=1)
-    cl = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
-    adcm_conf = cl.config
+    config_log = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
+    adcm_conf = config_log.config
     mitogen = adcm_conf["ansible_settings"]["mitogen"]
 
     if mitogen:

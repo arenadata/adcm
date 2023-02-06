@@ -103,8 +103,8 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
     else:
         task_dir_name_suffix = None
 
-    fh = io.BytesIO()
-    with tarfile.open(fileobj=fh, mode="w:gz") as tar_file:
+    file_handler = io.BytesIO()
+    with tarfile.open(fileobj=file_handler, mode="w:gz") as tar_file:
         for job in jobs:
             if task_dir_name_suffix is None:
                 dir_name_suffix = ""
@@ -132,7 +132,7 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
                     tarinfo.size = body.getbuffer().nbytes
                     tar_file.addfile(tarinfo=tarinfo, fileobj=body)
 
-    return fh
+    return file_handler
 
 
 #  pylint:disable-next=too-many-ancestors

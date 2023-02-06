@@ -132,7 +132,7 @@ class TestServiceAPI(BaseTestCase):
         self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
-            action=action, obj=self.service, conf={}, attr={}, hc=[], hosts=[], verbose=False
+            action=action, obj=self.service, conf={}, attr={}, hostcomponent=[], hosts=[], verbose=False
         )
 
     def test_change_maintenance_mode_on_from_on_with_action_fail(self):
@@ -189,7 +189,7 @@ class TestServiceAPI(BaseTestCase):
         self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
-            action=action, obj=self.service, conf={}, attr={}, hc=[], hosts=[], verbose=False
+            action=action, obj=self.service, conf={}, attr={}, hostcomponent=[], hosts=[], verbose=False
         )
 
     def test_change_maintenance_mode_off_to_off_with_action_fail(self):
@@ -272,7 +272,7 @@ class TestServiceAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         start_task_mock.assert_called_once_with(
-            action=action, obj=self.service, conf={}, attr={}, hc=[], hosts=[], verbose=False
+            action=action, obj=self.service, conf={}, attr={}, hostcomponent=[], hosts=[], verbose=False
         )
 
     def test_delete_with_action_not_created_state(self):
@@ -287,7 +287,7 @@ class TestServiceAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         start_task_mock.assert_called_once_with(
-            action=action, obj=self.service, conf={}, attr={}, hc=[], hosts=[], verbose=False
+            action=action, obj=self.service, conf={}, attr={}, hostcomponent=[], hosts=[], verbose=False
         )
 
     def test_delete_service_with_requires_fail(self):
