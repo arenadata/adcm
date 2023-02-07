@@ -67,7 +67,7 @@ class RoleViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
         queryset = get_objects_for_user(**self.get_get_objects_for_user_kwargs(Role.objects.all()))
         if is_expanded(self.request, "child"):
             return queryset.prefetch_related(
-                Prefetch("child", queryset=queryset.exclude(type=RoleTypes.hidden)),
+                Prefetch("child", queryset=queryset.exclude(type=RoleTypes.HIDDEN)),
             )
         return queryset
 

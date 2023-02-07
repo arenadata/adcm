@@ -40,9 +40,10 @@ def open_file(root, tag, job_id):
 
 
 def read_config(job_id):
-    fd = open(f"{settings.RUN_DIR}/{job_id}/config.json", encoding=settings.ENCODING_UTF_8)
-    conf = json.load(fd)
-    fd.close()
+    file_descriptor = open(f"{settings.RUN_DIR}/{job_id}/config.json", encoding=settings.ENCODING_UTF_8)
+    conf = json.load(file_descriptor)
+    file_descriptor.close()
+
     return conf
 
 
@@ -87,16 +88,16 @@ def env_configuration(job_config):
 
 
 def post_log(job_id, log_type, log_name):
-    l1 = LogStorage.objects.filter(job__id=job_id, type=log_type, name=log_name).first()
-    if l1:
+    log_storage = LogStorage.objects.filter(job__id=job_id, type=log_type, name=log_name).first()
+    if log_storage:
         post_event(
             event="add_job_log",
-            obj=l1.job,
+            obj=log_storage.job,
             details={
-                "id": l1.id,
-                "type": l1.type,
-                "name": l1.name,
-                "format": l1.format,
+                "id": log_storage.id,
+                "type": log_storage.type,
+                "name": log_storage.name,
+                "format": log_storage.format,
             },
         )
 
@@ -201,21 +202,25 @@ def run_python(job):
 def switch_hc(task, action):
     if task.task_object.prototype.type != "cluster":
         return
+
     cluster = task.task_object
     old_hc = get_hc(cluster)
     new_hc = []
-    for hc in [*task.post_upgrade_hc_map, *old_hc]:
-        if hc not in new_hc:
-            new_hc.append(hc)
+    for hostcomponent in [*task.post_upgrade_hc_map, *old_hc]:
+        if hostcomponent not in new_hc:
+            new_hc.append(hostcomponent)
+
     task.hostcomponentmap = old_hc
     task.post_upgrade_hc_map = None
     task.save()
-    for hc in new_hc:
-        if "component_prototype_id" in hc:
-            proto = Prototype.objects.get(type="component", id=hc.pop("component_prototype_id"))
+
+    for hostcomponent in new_hc:
+        if "component_prototype_id" in hostcomponent:
+            proto = Prototype.objects.get(type="component", id=hostcomponent.pop("component_prototype_id"))
             comp = ServiceComponent.objects.get(cluster=cluster, prototype=proto)
-            hc["component_id"] = comp.id
-            hc["service_id"] = comp.service.id
+            hostcomponent["component_id"] = comp.id
+            hostcomponent["service_id"] = comp.service.id
+
     host_map, _ = cm.job.check_hostcomponentmap(cluster, action, new_hc)
     if host_map is not None:
         save_hc(cluster, host_map)
@@ -233,7 +238,7 @@ def main(job_id):
         run_ansible(job_id)
 
 
-def do():
+def do_job():
     if len(sys.argv) < 2:
         print(f"\nUsage:\n{os.path.basename(sys.argv[0])} job_id\n")
         sys.exit(4)
@@ -242,4 +247,4 @@ def do():
 
 
 if __name__ == "__main__":
-    do()
+    do_job()

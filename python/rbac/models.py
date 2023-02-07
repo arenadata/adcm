@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""RBAC models"""
-
 import importlib
 import re
 from typing import Dict
@@ -33,22 +31,23 @@ from cm.models import ADCMEntity, Bundle, HostComponent, ProductCategory
 
 
 class ObjectType(models.TextChoices):
-    cluster = "cluster", "cluster"
-    service = "service", "service"
-    component = "component", "component"
-    provider = "provider", "provider"
-    host = "host", "host"
+    CLUSTER = "cluster", "cluster"
+    SERVICE = "service", "service"
+    COMPONENT = "component", "component"
+    PROVIDER = "provider", "provider"
+    HOST = "host", "host"
 
 
 def validate_object_type(value):
     if not isinstance(value, list):
         raise ValidationError("Not a valid list.")
+
     if not all((v in ObjectType.values for v in value)):
         raise ValidationError("Not a valid object type.")
 
 
 class OriginType(models.TextChoices):
-    Local = "local", "local"
+    LOCAL = "local", "local"
     LDAP = "ldap", "ldap"
 
 
@@ -65,7 +64,7 @@ class User(AuthUser):
         self.is_active = False
         self.save()
 
-    type = models.CharField(max_length=1000, choices=OriginType.choices, null=False, default=OriginType.Local)
+    type = models.CharField(max_length=1000, choices=OriginType.choices, null=False, default=OriginType.LOCAL)
 
     @property
     def name(self):
@@ -80,7 +79,7 @@ class Group(AuthGroup):
 
     description = models.CharField(max_length=1000, null=True)
     built_in = models.BooleanField(default=False, null=False)
-    type = models.CharField(max_length=1000, choices=OriginType.choices, null=False, default=OriginType.Local)
+    type = models.CharField(max_length=1000, choices=OriginType.choices, null=False, default=OriginType.LOCAL)
     # works as `name` field because `name` field now contains name and type
     # to bypass unique constraint on `AuthGroup` base table
     display_name = models.CharField(max_length=1000, null=True)
@@ -111,9 +110,9 @@ def handle_name_type_display_name(sender, instance, **kwargs):
 
 
 class RoleTypes(models.TextChoices):
-    business = "business", "business"
-    role = "role", "role"
-    hidden = "hidden", "hidden"
+    BUSINESS = "business", "business"
+    ROLE = "role", "role"
+    HIDDEN = "hidden", "hidden"
 
 
 class Role(models.Model):  # pylint: disable=too-many-instance-attributes
@@ -133,7 +132,7 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
     init_params = models.JSONField(default=dict)
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE, null=True, default=None)
     built_in = models.BooleanField(default=True, null=False)
-    type = models.CharField(max_length=1000, choices=RoleTypes.choices, null=False, default=RoleTypes.role)
+    type = models.CharField(max_length=1000, choices=RoleTypes.choices, null=False, default=RoleTypes.ROLE)
     category = models.ManyToManyField(ProductCategory)
     any_category = models.BooleanField(default=False)
     parametrized_by_type = models.JSONField(default=list, null=False, validators=[validate_object_type])
@@ -150,10 +149,12 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
 
     def get_role_obj(self):
         """Returns object with related role based on classes from roles.py"""
+
         try:
             role_module = importlib.import_module(self.module_name)
         except ModuleNotFoundError:
             raise_adcm_ex("ROLE_MODULE_ERROR", f'No module named "{self.module_name}"')
+
         try:
             role_class = getattr(role_module, self.class_name)
         except AttributeError:
@@ -164,18 +165,23 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
 
     def filter(self):
         """filter out objects suitable for role"""
+
         if self.__obj__ is None:
             self.__obj__ = self.get_role_obj()
+
         return self.__obj__.filter()
 
     def apply(self, policy: "Policy", user: User, group: Group, obj=None):
         """apply policy to user and/or group"""
+
         if self.__obj__ is None:
             self.__obj__ = self.get_role_obj()
+
         return self.__obj__.apply(policy, self, user, group, obj)
 
     def get_permissions(self, role: "Role" = None):
         """Recursively get permissions of role and all her children"""
+
         if role is None:
             role = self
 
@@ -192,6 +198,7 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
             params=[role.id],
         )
         perm_list = list(Permission.objects.filter(role__in=role_list).distinct())
+
         return perm_list
 
 
@@ -237,15 +244,15 @@ class Policy(models.Model):
 
     def remove_permissions(self):
         with atomic():
-            for pp in self.model_perm.all():
-                if pp.policy_set.count() <= 1:
-                    if pp.user:
-                        pp.user.user_permissions.remove(pp.permission)
+            for policy_permission in self.model_perm.all():
+                if policy_permission.policy_set.count() <= 1:
+                    if policy_permission.user:
+                        policy_permission.user.user_permissions.remove(policy_permission.permission)
 
-                    if pp.group:
-                        pp.group.permissions.remove(pp.permission)
+                    if policy_permission.group:
+                        policy_permission.group.permissions.remove(policy_permission.permission)
 
-                pp.policy_set.remove(self)
+                policy_permission.policy_set.remove(self)
 
             for uop in self.user_object_perm.all():
                 if uop.policy_set.count() <= 1:
@@ -256,16 +263,19 @@ class Policy(models.Model):
                     gop.delete()
 
     def add_object(self, obj):
-        po = PolicyObject(object=obj)
-        po.save()
-        self.object.add(po)
+        policy_object = PolicyObject(object=obj)
+        policy_object.save()
+
+        self.object.add(policy_object)
 
     def get_objects(self, param_obj=None):
         if param_obj is not None:
             return [param_obj]
+
         obj_list = []
         for obj in self.object.all():
             obj_list.append(obj.object)
+
         return obj_list
 
     def filter(self):
@@ -273,22 +283,23 @@ class Policy(models.Model):
 
     def delete(self, using=None, keep_parents=False):
         self.remove_permissions()
+
         return super().delete(using, keep_parents)
 
     @atomic
     def apply_without_deletion(self):
-        """This function apply role over"""
         for user in self.user.all():
             self.role.apply(self, user, None)
+
         for group in self.group.all():
             self.role.apply(self, None, group=group)
 
     @atomic
     def apply(self):
-        """This function apply role over"""
         self.remove_permissions()
         for user in self.user.all():
             self.role.apply(self, user, None)
+
         for group in self.group.all():
             self.role.apply(self, None, group=group)
 
@@ -305,9 +316,9 @@ def get_objects_for_policy(obj: ADCMEntity) -> Dict[ADCMEntity, ContentType]:
         if obj.cluster:
             object_list = [obj, obj.provider, obj.cluster]
 
-            for hc in HostComponent.objects.filter(cluster=obj.cluster, host=obj):
-                object_list.append(hc.service)
-                object_list.append(hc.component)
+            for hostcomponent in HostComponent.objects.filter(cluster=obj.cluster, host=obj):
+                object_list.append(hostcomponent.service)
+                object_list.append(hostcomponent.component)
         else:
             object_list = [obj, obj.provider]
     else:
@@ -323,9 +334,10 @@ def re_apply_object_policy(apply_object):
     """
     This function search for polices linked with specified object and re apply them
     """
+
     obj_type_map = get_objects_for_policy(apply_object)
-    for obj, ct in obj_type_map.items():
-        for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=ct):
+    for obj, content_type in obj_type_map.items():
+        for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=content_type):
             policy.apply()
 
 
@@ -333,5 +345,6 @@ def re_apply_all_polices():
     """
     This function re apply all polices
     """
+
     for policy in Policy.objects.all():
         policy.apply()

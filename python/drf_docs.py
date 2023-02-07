@@ -30,27 +30,29 @@ def fix_ordering(field, view):
 
 
 def drf_docs():
-    for p in api.urls.urlpatterns:
-        if not p.callback:
+    for pattern in api.urls.urlpatterns:
+        if not pattern.callback:
             continue
-        if not hasattr(p.callback, "view_class"):
-            continue
-
-        order = filtr = None
-        if hasattr(p.callback.view_class, "ordering_fields"):
-            order = p.callback.view_class.ordering_fields
-        if hasattr(p.callback.view_class, "filterset_fields"):
-            filtr = p.callback.view_class.filterset_fields
-
-        if not (order or filtr):
+        if not hasattr(pattern.callback, "view_class"):
             continue
 
-        print(f"{p.pattern}")
+        order = filters = None
+        if hasattr(pattern.callback.view_class, "ordering_fields"):
+            order = pattern.callback.view_class.ordering_fields
+
+        if hasattr(pattern.callback.view_class, "filterset_fields"):
+            filters = pattern.callback.view_class.filterset_fields
+
+        if not (order or filters):
+            continue
+
+        print(f"{pattern.pattern}")
         if order:
-            data = [fix_ordering(o, p.callback.view_class) for o in order]
+            data = [fix_ordering(o, pattern.callback.view_class) for o in order]
             print(f"	ORDERING:  {data}")
-        if filtr:
-            data = [fix_ordering(f, p.callback.view_class) for f in filtr]
+
+        if filters:
+            data = [fix_ordering(f, pattern.callback.view_class) for f in filters]
             print(f"	FILTERING: {data}")
 
 

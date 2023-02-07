@@ -46,7 +46,7 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
     @action(methods=["get"], detail=True)
     def object_candidate(self, request, **kwargs):
         role = self.get_object()
-        if role.type != models.RoleTypes.role:
+        if role.type != models.RoleTypes.ROLE:
             return Response({"cluster": [], "provider": [], "service": [], "host": []})
 
         clusters = []
@@ -54,7 +54,7 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
         services = []
         hosts = []
 
-        if models.ObjectType.cluster.value in role.parametrized_by_type:
+        if models.ObjectType.CLUSTER.value in role.parametrized_by_type:
             for cluster in cm_models.Cluster.objects.all():
                 clusters.append(
                     {
@@ -64,7 +64,7 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
                     }
                 )
 
-        if models.ObjectType.provider.value in role.parametrized_by_type:
+        if models.ObjectType.PROVIDER.value in role.parametrized_by_type:
             for provider in cm_models.HostProvider.objects.all():
                 providers.append(
                     {
@@ -74,7 +74,7 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
                     }
                 )
 
-        if models.ObjectType.host.value in role.parametrized_by_type:
+        if models.ObjectType.HOST.value in role.parametrized_by_type:
             for host in cm_models.Host.objects.all():
                 hosts.append(
                     {
@@ -85,8 +85,8 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
                 )
 
         if (
-            models.ObjectType.service.value in role.parametrized_by_type
-            or models.ObjectType.component.value in role.parametrized_by_type
+            models.ObjectType.SERVICE.value in role.parametrized_by_type
+            or models.ObjectType.COMPONENT.value in role.parametrized_by_type
         ):
             _services = defaultdict(list)
             for service in cm_models.ClusterObject.objects.all():

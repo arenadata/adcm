@@ -252,7 +252,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "sample_bundle_1.0_community_cluster_Sample Cluster_cluster_action",
                 "display_name": "sample_bundle_1.0_community_cluster_Sample Cluster_cluster_action",
                 "bundle": self.bundle_1,
-                "type": RoleTypes.hidden,
+                "type": RoleTypes.HIDDEN,
                 "module_name": "rbac.roles",
                 "class_name": "ActionRole",
                 "init_params": {
@@ -271,7 +271,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "sample_bundle_1.0_community_service_Service 1_service_1_action",
                 "display_name": "sample_bundle_1.0_community_service_Service 1_service_1_action",
                 "bundle": self.bundle_1,
-                "type": RoleTypes.hidden,
+                "type": RoleTypes.HIDDEN,
                 "module_name": "rbac.roles",
                 "class_name": "ActionRole",
                 "init_params": {
@@ -296,7 +296,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                     "component_Component 1 from Service 1_component_1_1_action"
                 ),
                 "bundle": self.bundle_1,
-                "type": RoleTypes.hidden,
+                "type": RoleTypes.HIDDEN,
                 "module_name": "rbac.roles",
                 "class_name": "ActionRole",
                 "init_params": {
@@ -321,7 +321,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                     "component_Component 2 from Service 1_component_2_1_action"
                 ),
                 "bundle": self.bundle_1,
-                "type": RoleTypes.hidden,
+                "type": RoleTypes.HIDDEN,
                 "module_name": "rbac.roles",
                 "class_name": "ActionRole",
                 "init_params": {
@@ -340,7 +340,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "sample_bundle_1.0_community_service_Service 2_service_2_action",
                 "display_name": "sample_bundle_1.0_community_service_Service 2_service_2_action",
                 "bundle": self.bundle_1,
-                "type": RoleTypes.hidden,
+                "type": RoleTypes.HIDDEN,
                 "module_name": "rbac.roles",
                 "class_name": "ActionRole",
                 "init_params": {
@@ -365,7 +365,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                     "component_Component 1 from Service 2_component_1_2_action"
                 ),
                 "bundle": self.bundle_1,
-                "type": RoleTypes.hidden,
+                "type": RoleTypes.HIDDEN,
                 "module_name": "rbac.roles",
                 "class_name": "ActionRole",
                 "init_params": {
@@ -390,7 +390,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                     "component_Component 2 from Service 2_component_2_2_action"
                 ),
                 "bundle": self.bundle_1,
-                "type": RoleTypes.hidden,
+                "type": RoleTypes.HIDDEN,
                 "module_name": "rbac.roles",
                 "class_name": "ActionRole",
                 "init_params": {
@@ -410,7 +410,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "Cluster Action: Cluster Action",
                 "display_name": "Cluster Action: Cluster Action",
                 "description": "Cluster Action: Cluster Action",
-                "type": RoleTypes.business,
+                "type": RoleTypes.BUSINESS,
                 "module_name": "rbac.roles",
                 "class_name": "ParentRole",
                 "parametrized_by_type": ["cluster"],
@@ -419,7 +419,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "Service Action: Service 1 Action",
                 "display_name": "Service Action: Service 1 Action",
                 "description": "Service Action: Service 1 Action",
-                "type": RoleTypes.business,
+                "type": RoleTypes.BUSINESS,
                 "module_name": "rbac.roles",
                 "class_name": "ParentRole",
                 "parametrized_by_type": ["service"],
@@ -428,7 +428,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "Component Action: Component 1 from Service 1 Action",
                 "display_name": "Component Action: Component 1 from Service 1 Action",
                 "description": "Component Action: Component 1 from Service 1 Action",
-                "type": RoleTypes.business,
+                "type": RoleTypes.BUSINESS,
                 "module_name": "rbac.roles",
                 "class_name": "ParentRole",
                 "parametrized_by_type": ["service", "component"],
@@ -437,7 +437,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "Component Action: Component 2 from Service 1 Action",
                 "display_name": "Component Action: Component 2 from Service 1 Action",
                 "description": "Component Action: Component 2 from Service 1 Action",
-                "type": RoleTypes.business,
+                "type": RoleTypes.BUSINESS,
                 "module_name": "rbac.roles",
                 "class_name": "ParentRole",
                 "parametrized_by_type": ["service", "component"],
@@ -446,7 +446,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "Service Action: Service 2 Action",
                 "display_name": "Service Action: Service 2 Action",
                 "description": "Service Action: Service 2 Action",
-                "type": RoleTypes.business,
+                "type": RoleTypes.BUSINESS,
                 "module_name": "rbac.roles",
                 "class_name": "ParentRole",
                 "parametrized_by_type": ["service"],
@@ -455,7 +455,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "Component Action: Component 1 from Service 2 Action",
                 "display_name": "Component Action: Component 1 from Service 2 Action",
                 "description": "Component Action: Component 1 from Service 2 Action",
-                "type": RoleTypes.business,
+                "type": RoleTypes.BUSINESS,
                 "module_name": "rbac.roles",
                 "class_name": "ParentRole",
                 "parametrized_by_type": ["service", "component"],
@@ -464,7 +464,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "Component Action: Component 2 from Service 2 Action",
                 "display_name": "Component Action: Component 2 from Service 2 Action",
                 "description": "Component Action: Component 2 from Service 2 Action",
-                "type": RoleTypes.business,
+                "type": RoleTypes.BUSINESS,
                 "module_name": "rbac.roles",
                 "class_name": "ParentRole",
                 "parametrized_by_type": ["service", "component"],
@@ -536,10 +536,10 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
             )
 
             role = Role.objects.filter(**role_data).first()
-            if role == RoleTypes.business:
+            if role == RoleTypes.BUSINESS:
                 self.assertEqual(role.child.count(), 1, "Role cannot have more than one child.")
 
-            if role == RoleTypes.hidden:
+            if role == RoleTypes.HIDDEN:
                 self.assertFalse(role.child.exists(), "Role cannot have children.")
 
         ca_role = Role.objects.get(name="Cluster Administrator")
@@ -575,9 +575,9 @@ class TestMMRoles(RBACBaseTestCase):
         self.cluster = Cluster.objects.create(name="testcluster", prototype=self.clp)
         self.provider = HostProvider.objects.create(
             name="test_provider",
-            prototype=self.pp,
+            prototype=self.provider_prototype,
         )
-        self.host = Host.objects.create(fqdn="testhost", prototype=self.hp)
+        self.host = Host.objects.create(fqdn="testhost", prototype=self.host_prototype)
         add_host_to_cluster(self.cluster, self.host)
         self.service = ClusterObject.objects.create(cluster=self.cluster, prototype=self.sp_1)
         self.component = ServiceComponent.objects.create(

@@ -34,7 +34,7 @@ class TestRoleAudit(BaseTestCase):
         self.child = Role.objects.create(
             name="test_child_role",
             display_name="test_child_role",
-            type=RoleTypes.business,
+            type=RoleTypes.BUSINESS,
         )
         self.role = Role.objects.create(name="test_role_2", built_in=False)
         self.list_name = "rbac:role-list"

@@ -326,7 +326,7 @@ class HostComponentList(GenericUIView):
         hostcomponent = self.get_queryset().prefetch_related("service", "component", "host").filter(cluster=cluster)
         if self._is_for_ui():
             ui_hc = HostComponent()
-            ui_hc.hc = hostcomponent
+            setattr(ui_hc, "hc", hostcomponent)  # because pylint disable invalid-name not working here somehow
             serializer = self.get_serializer(ui_hc, context={"request": request, "cluster": cluster})
         else:
             serializer = self.get_serializer(hostcomponent, many=True)

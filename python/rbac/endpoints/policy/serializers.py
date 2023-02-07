@@ -132,7 +132,7 @@ class PolicySerializer(FlexFieldsSerializerMixin, ModelSerializer):
 
     @staticmethod
     def validate_role(role):
-        if role.type != RoleTypes.role:
+        if role.type != RoleTypes.ROLE:
             raise ValidationError(f'Role with type "{role.type}" could not be used in policy')
 
         return role

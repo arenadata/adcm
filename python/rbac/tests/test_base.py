@@ -104,10 +104,12 @@ class RBACBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-attri
             parent=self.sp_2,
         )
         self.bundle_2 = Bundle.objects.create(name="provider_bundle", version="1.0")
-        self.pp = Prototype.objects.create(
+        self.provider_prototype = Prototype.objects.create(
             bundle=self.bundle_2, type="provider", name="provider", allow_maintenance_mode=True
         )
-        self.hp = Prototype.objects.create(bundle=self.bundle_2, type="host", name="host", allow_maintenance_mode=True)
+        self.host_prototype = Prototype.objects.create(
+            bundle=self.bundle_2, type="host", name="host", allow_maintenance_mode=True
+        )
 
     def create_permissions(self):
         self.add_host_perm = cook_perm("add", "host")
