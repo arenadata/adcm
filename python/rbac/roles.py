@@ -69,16 +69,16 @@ class ModelRole(AbstractRole):
     """This Role apply Django model level permissions"""
 
     def apply(self, policy: Policy, role: Role, user: User, group: Group, param_obj=None):
-        """Apply Role to User and/or Group"""
         for perm in role.get_permissions():
             if group is not None:
                 group.permissions.add(perm)
-                pp, _ = PolicyPermission.objects.get_or_create(group=group, permission=perm)
-                policy.model_perm.add(pp)
+                policy_permission, _ = PolicyPermission.objects.get_or_create(group=group, permission=perm)
+                policy.model_perm.add(policy_permission)
+
             if user is not None:
                 user.user_permissions.add(perm)
-                pp, _ = PolicyPermission.objects.get_or_create(user=user, permission=perm)
-                policy.model_perm.add(pp)
+                policy_permission, _ = PolicyPermission.objects.get_or_create(user=user, permission=perm)
+                policy.model_perm.add(policy_permission)
 
 
 def assign_user_or_group_perm(user: User | None, group: Group | None, policy: Policy, perm: Permission, obj) -> None:
@@ -118,11 +118,11 @@ def get_host_objects(obj):
         for host in Host.obj.filter(cluster=obj):
             host_list.append(host)
     elif object_type == "service":
-        for hc in HostComponent.obj.filter(cluster=obj.cluster, service=obj):
-            host_list.append(hc.host)
+        for hostcomponent in HostComponent.obj.filter(cluster=obj.cluster, service=obj):
+            host_list.append(hostcomponent.host)
     elif object_type == "component":
-        for hc in HostComponent.obj.filter(cluster=obj.cluster, service=obj.service, component=obj):
-            host_list.append(hc.host)
+        for hostcomponent in HostComponent.obj.filter(cluster=obj.cluster, service=obj.service, component=obj):
+            host_list.append(hostcomponent.host)
     elif object_type == "provider":
         for host in Host.obj.filter(provider=obj):
             host_list.append(host)
@@ -199,7 +199,7 @@ def re_apply_policy_for_jobs(action_object, task):
         name=f"View role for task {task.id}",
         display_name=f"View role for task {task.id}",
         description="View tasklog object with following joblog and logstorage",
-        type=RoleTypes.hidden,
+        type=RoleTypes.HIDDEN,
         module_name="rbac.roles",
         class_name="TaskRole",
         init_params={
@@ -296,19 +296,21 @@ class ConfigRole(AbstractRole):
             for perm in role.get_permissions():
                 if perm.content_type.model == "objectconfig":
                     assign_user_or_group_perm(user=user, group=group, policy=policy, perm=perm, obj=obj.config)
-                    for cg in config_groups:
-                        assign_user_or_group_perm(user=user, group=group, policy=policy, perm=perm, obj=cg.config)
+                    for config_group in config_groups:
+                        assign_user_or_group_perm(
+                            user=user, group=group, policy=policy, perm=perm, obj=config_group.config
+                        )
 
                 if perm.content_type.model == "configlog":
                     for config in obj.config.configlog_set.all():
                         assign_user_or_group_perm(user=user, group=group, policy=policy, perm=perm, obj=config)
-                    for cg in config_groups:
-                        for config in cg.config.configlog_set.all():
+                    for config_group in config_groups:
+                        for config in config_group.config.configlog_set.all():
                             assign_user_or_group_perm(user=user, group=group, policy=policy, perm=perm, obj=config)
 
                 if perm.content_type.model == "groupconfig":
-                    for cg in config_groups:
-                        assign_user_or_group_perm(user=user, group=group, policy=policy, perm=perm, obj=cg)
+                    for config_group in config_groups:
+                        assign_user_or_group_perm(user=user, group=group, policy=policy, perm=perm, obj=config_group)
 
 
 class ParentRole(AbstractRole):
@@ -329,7 +331,6 @@ class ParentRole(AbstractRole):
     def apply(
         self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None
     ):  # pylint: disable=too-many-branches, too-many-nested-blocks
-        """Apply Role to User and/or Group"""
         for child_role in role.child.filter(class_name__in=("ModelRole", "ParentRole")):
             child_role.apply(policy=policy, user=user, group=group, obj=param_obj)
 
@@ -350,32 +351,35 @@ class ParentRole(AbstractRole):
                         if "component" in parametrized_by:
                             for comp in ServiceComponent.obj.filter(service=service):
                                 self.find_and_apply(obj=comp, policy=policy, role=role, user=user, group=group)
+
                 if "host" in parametrized_by:
                     for host in Host.obj.filter(cluster=obj):
                         self.find_and_apply(obj=host, policy=policy, role=role, user=user, group=group)
-
             elif obj.prototype.type == "service":
                 if "component" in parametrized_by:
                     for comp in ServiceComponent.obj.filter(service=obj):
                         self.find_and_apply(obj=comp, policy=policy, role=role, user=user, group=group)
+
                 if "host" in parametrized_by:
-                    for hc in HostComponent.obj.filter(cluster=obj.cluster, service=obj):
-                        self.find_and_apply(obj=hc.host, policy=policy, role=role, user=user, group=group)
+                    for hostcomponent in HostComponent.obj.filter(cluster=obj.cluster, service=obj):
+                        self.find_and_apply(obj=hostcomponent.host, policy=policy, role=role, user=user, group=group)
+
                 assign_user_or_group_perm(
                     user=user, group=group, policy=policy, perm=view_cluster_perm, obj=obj.cluster
                 )
-
             elif obj.prototype.type == "component":
                 if "host" in parametrized_by:
-                    for hc in HostComponent.obj.filter(cluster=obj.cluster, service=obj.service, component=obj):
-                        self.find_and_apply(obj=hc.host, policy=policy, role=role, user=user, group=group)
+                    for hostcomponent in HostComponent.obj.filter(
+                        cluster=obj.cluster, service=obj.service, component=obj
+                    ):
+                        self.find_and_apply(obj=hostcomponent.host, policy=policy, role=role, user=user, group=group)
+
                 assign_user_or_group_perm(
                     user=user, group=group, policy=policy, perm=view_cluster_perm, obj=obj.cluster
                 )
                 assign_user_or_group_perm(
                     user=user, group=group, policy=policy, perm=view_service_perm, obj=obj.service
                 )
-
             elif obj.prototype.type == "provider":
                 if "host" in parametrized_by:
                     for host in Host.obj.filter(provider=obj):

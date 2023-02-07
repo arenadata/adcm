@@ -89,13 +89,15 @@ def run_job(task_id, job_id, err_file):
 
 def set_log_body(job):
     name = job.sub_action.script_type if job.sub_action else job.action.script_type
-    log_storage = LogStorage.objects.filter(job=job, name=name, type__in=["stdout", "stderr"])
-    for ls in log_storage:
-        file_path = settings.RUN_DIR / f"{ls.job.id}" / f"{ls.name}-{ls.type}.{ls.format}"
+    log_storages = LogStorage.objects.filter(job=job, name=name, type__in=["stdout", "stderr"])
+    for log_storage in log_storages:
+        file_path = (
+            settings.RUN_DIR / f"{log_storage.job.id}" / f"{log_storage.name}-{log_storage.type}.{log_storage.format}"
+        )
         with open(file_path, "r", encoding=settings.ENCODING_UTF_8) as f:
             body = f.read()
 
-        LogStorage.objects.filter(job=job, name=ls.name, type=ls.type).update(body=body)
+        LogStorage.objects.filter(job=job, name=log_storage.name, type=log_storage.type).update(body=body)
 
 
 def run_task(task_id, args=None):
@@ -165,8 +167,9 @@ def run_task(task_id, args=None):
     logger.info("finish task #%s, ret %s", task_id, res)
 
 
-def do():
+def do_task():
     global TASK_ID
+
     if len(sys.argv) < 2:
         print(f"\nUsage:\n{os.path.basename(sys.argv[0])} task_id [restart]\n")
         sys.exit(4)
@@ -179,4 +182,4 @@ def do():
 
 
 if __name__ == "__main__":
-    do()
+    do_task()

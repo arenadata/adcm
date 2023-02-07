@@ -33,7 +33,7 @@ def check_role_child(child: List[Role], partial=False):
         if not item.built_in:
             errors = {"child": ["Only built-in roles allowed to be included as children."]}
             raise ValidationError(errors)
-        if item.type != RoleTypes.business:
+        if item.type != RoleTypes.BUSINESS:
             errors = {"child": ["Only business roles allowed to be included as children."]}
             raise ValidationError(errors)
         param_set.update(item.parametrized_by_type)
@@ -43,7 +43,7 @@ def check_role_child(child: List[Role], partial=False):
 
 
 @atomic
-def role_create(built_in=False, type_of_role=RoleTypes.role, **kwargs) -> Role:
+def role_create(built_in=False, type_of_role=RoleTypes.ROLE, **kwargs) -> Role:
     """Creating Role object"""
     child = kwargs.pop("child", [])
     parametrized_by = check_role_child(child)

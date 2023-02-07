@@ -25,62 +25,62 @@ class GroupTestCase(BaseTestCase):
 
     def test_group_creation_deletion(self):
         for create_args, expected in self.data:
-            g = Group.objects.create(**create_args)
-            g_pk = g.pk
-            base_g_pk = g.group_ptr_id
+            group = Group.objects.create(**create_args)
+            group_pk = group.pk
+            base_group_pk = group.group_ptr_id
 
-            self.assertTrue(int(base_g_pk))
+            self.assertTrue(int(base_group_pk))
 
             for attr, expected_value in expected.items():
-                actual_value = getattr(g, attr)
+                actual_value = getattr(group, attr)
                 self.assertEqual(
                     actual_value,
                     expected_value,
-                    f"{g}: wrong {attr} (`{actual_value}`," f" expected: `{expected_value}`)",
+                    f"{group}: wrong {attr} (`{actual_value}`," f" expected: `{expected_value}`)",
                 )
 
-            g.delete()
+            group.delete()
 
-            self.assertFalse(Group.objects.filter(pk=g_pk).first())
-            self.assertFalse(AuthGroup.objects.filter(pk=base_g_pk).first())
+            self.assertFalse(Group.objects.filter(pk=group_pk).first())
+            self.assertFalse(AuthGroup.objects.filter(pk=base_group_pk).first())
 
     def test_group_name_type_mutation(self):
         """test for pre_save signal"""
-        g = Group.objects.create(name="test_group_name")
-        ag = AuthGroup.objects.get(pk=g.group_ptr_id)
+        group = Group.objects.create(name="test_group_name")
+        auth_group = AuthGroup.objects.get(pk=group.group_ptr_id)
 
         name = "another_test_group_name"
-        g.name = name
-        g.save()
+        group.name = name
+        group.save()
 
-        g.refresh_from_db()
-        ag.refresh_from_db()
+        group.refresh_from_db()
+        auth_group.refresh_from_db()
 
-        self.assertEqual(g.type, OriginType.Local.value)
-        self.assertEqual(g.name, ag.name, f"{name} [{OriginType.Local.value}]")
-        self.assertEqual(g.display_name, name)
+        self.assertEqual(group.type, OriginType.LOCAL.value)
+        self.assertEqual(group.name, auth_group.name, f"{name} [{OriginType.LOCAL.value}]")
+        self.assertEqual(group.display_name, name)
 
-        g.type = OriginType.LDAP
-        g.save()
+        group.type = OriginType.LDAP
+        group.save()
 
-        g.refresh_from_db()
-        ag.refresh_from_db()
+        group.refresh_from_db()
+        auth_group.refresh_from_db()
 
-        self.assertEqual(g.type, OriginType.LDAP.value)
-        self.assertEqual(g.name, ag.name, f"{name} [{OriginType.LDAP.value}]")
-        self.assertEqual(g.display_name, name)
+        self.assertEqual(group.type, OriginType.LDAP.value)
+        self.assertEqual(group.name, auth_group.name, f"{name} [{OriginType.LDAP.value}]")
+        self.assertEqual(group.display_name, name)
 
     data = [
         (
             {
                 "name": "test_group_name",
                 "description": "test_group_description",
-                "type": OriginType.Local,
+                "type": OriginType.LOCAL,
             },
             {
-                "name": f"test_group_name [{OriginType.Local.value}]",
+                "name": f"test_group_name [{OriginType.LOCAL.value}]",
                 "description": "test_group_description",
-                "type": OriginType.Local,
+                "type": OriginType.LOCAL,
                 "display_name": "test_group_name",
             },
         ),
@@ -89,9 +89,9 @@ class GroupTestCase(BaseTestCase):
                 "name": "test_group_name_2",
             },
             {
-                "name": f"test_group_name_2 [{OriginType.Local.value}]",
+                "name": f"test_group_name_2 [{OriginType.LOCAL.value}]",
                 "description": None,
-                "type": OriginType.Local,
+                "type": OriginType.LOCAL,
                 "display_name": "test_group_name_2",
             },
         ),

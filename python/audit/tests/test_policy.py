@@ -41,7 +41,7 @@ class TestPolicyAudit(BaseTestCase):
         self.role = Role.objects.create(
             name="test_role",
             display_name="test_role",
-            type=RoleTypes.role,
+            type=RoleTypes.ROLE,
             parametrized_by_type=["cluster", "provider"],
             module_name="rbac.roles",
             class_name="ObjectRole",

@@ -228,7 +228,7 @@ class CustomLDAPBackend(LDAPBackend):
         groups = []
         with suppress(User.DoesNotExist):
             user = User.objects.get(username__iexact=username, type=OriginType.LDAP)
-            groups = [g.group for g in user.groups.all() if g.group.type == OriginType.Local]
+            groups = [g.group for g in user.groups.all() if g.group.type == OriginType.LOCAL]
         return groups
 
     def get_user_model(self) -> Type[User]:
@@ -263,12 +263,12 @@ class CustomLDAPBackend(LDAPBackend):
                 raise RuntimeError(err_msg)
 
             for ldap_group_name in ldap_group_names:
-                g, _ = Group.objects.get_or_create(name=ldap_group_name, type=OriginType.LDAP)
-                g.user_set.add(user)
+                group, _ = Group.objects.get_or_create(name=ldap_group_name, type=OriginType.LDAP)
+                group.user_set.add(user)
             return
 
         ldap_groups = list(zip(user.ldap_user.group_names, user.ldap_user.group_dns))
-        # ladp-backend managed auth_groups
+        # ldap-backend managed auth_groups
         for group in user.groups.filter(name__in=[i[0] for i in ldap_groups]):
             ldap_group_dn = self._get_ldap_group_dn(group.name, ldap_groups)
             rbac_group = self._get_rbac_group(group, ldap_group_dn)
@@ -276,8 +276,8 @@ class CustomLDAPBackend(LDAPBackend):
             rbac_group.user_set.add(user)
             if group.user_set.count() == 0:
                 group.delete()
-        for g in additional_groups:
-            g.user_set.add(user)
+        for group in additional_groups:
+            group.user_set.add(user)
 
     def _check_user(self, ldap_user: _LDAPUser) -> bool:
         user_dn = ldap_user.dn
@@ -285,7 +285,7 @@ class CustomLDAPBackend(LDAPBackend):
             return False
         username = ldap_user._username  # pylint: disable=protected-access
 
-        if User.objects.filter(username__iexact=username, type=OriginType.Local).exists():
+        if User.objects.filter(username__iexact=username, type=OriginType.LOCAL).exists():
             logger.exception("usernames collision: `%s`", username)
             return False
 
