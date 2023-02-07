@@ -127,14 +127,15 @@ def create_group(group, ex_hosts_list, obj):
     hosts = []
     for host in group.pop("hosts"):
         hosts.append(ex_hosts_list[host])
-    gc = GroupConfig.objects.create(
+    group_config = GroupConfig.objects.create(
         object_id=obj.id,
         config=config,
         object_type=ContentType.objects.get(model=model_name),
         **group,
     )
-    gc.hosts.set(hosts)
-    return ex_object_id, gc
+    group_config.hosts.set(hosts)
+
+    return ex_object_id, group_config
 
 
 def switch_encoding(msg):

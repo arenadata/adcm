@@ -49,7 +49,7 @@ class TestJobAPI(BaseTestCase):
         self.action = Action.objects.create(
             display_name="test_adcm_action",
             prototype=self.adcm_prototype,
-            type=ActionType.Job,
+            type=ActionType.JOB,
             state_available="any",
         )
         self.task = TaskLog.objects.create(

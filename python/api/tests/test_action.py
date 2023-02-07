@@ -46,7 +46,7 @@ class TestActionAPI(BaseTestCase):
         self.action = Action.objects.create(
             display_name="test_adcm_action",
             prototype=self.adcm_prototype,
-            type=ActionType.Job,
+            type=ActionType.JOB,
             state_available="any",
         )
 
@@ -65,7 +65,7 @@ class TestActionAPI(BaseTestCase):
         action = Action.objects.create(
             name=settings.ADCM_TURN_ON_MM_ACTION_NAME,
             prototype=self.adcm_prototype,
-            type=ActionType.Job,
+            type=ActionType.JOB,
             state_available="any",
         )
 

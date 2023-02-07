@@ -25,10 +25,10 @@ class MessageTemplateTest(BaseTestCase):
         gen_adcm()
 
     def test_unknown_message(self):
-        with self.assertRaises(AdcmEx) as ex:
+        with self.assertRaises(AdcmEx) as e:
             MessageTemplate.get_message_from_template("unknown")
 
-        self.assertEqual(ex.exception.args[0], "NO_MODEL_ERROR_CODE")
+        self.assertEqual(e.exception.args[0], "NO_MODEL_ERROR_CODE")
 
     def test_bad_template__no_placeholder(self):
         tpl = MessageTemplate.obj.create(
@@ -37,22 +37,22 @@ class MessageTemplateTest(BaseTestCase):
                 "message": "Some message",
             },
         )
-        with self.assertRaises(AdcmEx) as ex:
+        with self.assertRaises(AdcmEx) as e:
             MessageTemplate.get_message_from_template(tpl.name)
 
-        self.assertIn("KeyError", ex.exception.msg)
-        self.assertIn("placeholder", ex.exception.msg)
+        self.assertIn("KeyError", e.exception.msg)
+        self.assertIn("placeholder", e.exception.msg)
 
     def test_bad_template__no_type(self):
         tpl = MessageTemplate.obj.create(
             name=uuid4().hex,
             template={"message": "Some message ${data}", "placeholder": {"data": {}}},
         )
-        with self.assertRaises(AdcmEx) as ex:
+        with self.assertRaises(AdcmEx) as e:
             MessageTemplate.get_message_from_template(tpl.name)
 
-        self.assertIn("KeyError", ex.exception.msg)
-        self.assertIn("type", ex.exception.msg)
+        self.assertIn("KeyError", e.exception.msg)
+        self.assertIn("type", e.exception.msg)
 
     def test_bad_template__unknown_type(self):
         tpl = MessageTemplate.obj.create(
@@ -62,25 +62,25 @@ class MessageTemplateTest(BaseTestCase):
                 "placeholder": {"data": {"type": "foobar"}},
             },
         )
-        with self.assertRaises(AdcmEx) as ex:
+        with self.assertRaises(AdcmEx) as e:
             MessageTemplate.get_message_from_template(tpl.name)
 
-        self.assertIn("KeyError", ex.exception.msg)
-        self.assertIn("foobar", ex.exception.msg)
+        self.assertIn("KeyError", e.exception.msg)
+        self.assertIn("foobar", e.exception.msg)
 
     def test_bad_template__bad_placeholder(self):
         tpl = MessageTemplate.obj.create(
             name=uuid4().hex, template={"message": "Some message ${cluster}", "placeholder": []}
         )
-        with self.assertRaises(AdcmEx) as ex:
+        with self.assertRaises(AdcmEx) as e:
             MessageTemplate.get_message_from_template(tpl.name)
 
-        self.assertIn("AttributeError", ex.exception.msg)
-        self.assertIn("list", ex.exception.msg)
+        self.assertIn("AttributeError", e.exception.msg)
+        self.assertIn("list", e.exception.msg)
 
     def test_bad_template__bad_args(self):
-        name = MessageTemplate.KnownNames.LockedByJob.value
-        with self.assertRaises(AdcmEx) as ex:
+        name = MessageTemplate.KnownNames.LOCKED_BY_JOB.value
+        with self.assertRaises(AdcmEx) as e:
             MessageTemplate.get_message_from_template(name)
 
-        self.assertIn("AssertionError", ex.exception.msg)
+        self.assertIn("AssertionError", e.exception.msg)

@@ -37,7 +37,7 @@ class TestClusterAPI(BaseTestCase):
             max_version=3,
             action=Action.objects.create(
                 prototype=self.cluster_prototype,
-                type=ActionType.Job,
+                type=ActionType.JOB,
                 state_available="any",
             ),
         )

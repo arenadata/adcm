@@ -387,12 +387,12 @@ class TestJob(BaseTestCase):
             ),
         ]
 
-        for sa, script, test_path in data:
+        for data_sub_action, script, test_path in data:
             with self.subTest(sub_action=sub_action, script=script):
                 action.script = script
                 action.save()
 
-                path = cook_script(action, sa)
+                path = cook_script(action, data_sub_action)
 
             self.assertEqual(path, test_path)
             mock_get_bundle_root.assert_called_once_with(action)
@@ -426,8 +426,8 @@ class TestJob(BaseTestCase):
         adcm_action = Action.objects.create(prototype=proto3)
         adcm = ADCM.objects.create(prototype=proto3)
 
-        fd = Mock()
-        mock_open.return_value = fd
+        file_mock = Mock()
+        mock_open.return_value = file_mock
         mock_get_adcm_config.return_value = {}
         mock_prepare_context.return_value = {"type": "cluster", "cluster_id": 1}
         mock_get_bundle_root.return_value = str(settings.BUNDLE_DIR)
@@ -511,7 +511,7 @@ class TestJob(BaseTestCase):
                     "w",
                     encoding=settings.ENCODING_UTF_8,
                 )
-                mock_dump.assert_called_with(job_config, fd, indent=3, sort_keys=True)
+                mock_dump.assert_called_with(job_config, file_mock, indent=3, sort_keys=True)
                 mock_get_adcm_config.assert_called()
                 mock_prepare_context.assert_called_with(action, obj)
                 mock_get_bundle_root.assert_called_with(action)

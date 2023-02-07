@@ -32,11 +32,11 @@ from cm.tests.test_upgrade import (
 
 class TestHC(BaseTestCase):
     def test_action_hc_simple(self):  # pylint: disable=too-many-locals
-        b1 = cook_cluster_bundle("1.0")
-        cluster = cook_cluster(b1, "Test1")
-        b2 = cook_provider_bundle("1.0")
-        provider = cook_provider(b2, "DF01")
-        h1 = Host.objects.get(provider=provider, fqdn="server01.inter.net")
+        bundle_1 = cook_cluster_bundle("1.0")
+        cluster = cook_cluster(bundle_1, "Test1")
+        bundle_2 = cook_provider_bundle("1.0")
+        provider = cook_provider(bundle_2, "DF01")
+        host_1 = Host.objects.get(provider=provider, fqdn="server01.inter.net")
         action = Action(name="run")
         hc_list, _ = check_hostcomponentmap(cluster, action, [])
 
@@ -51,12 +51,12 @@ class TestHC(BaseTestCase):
             self.assertEqual(e.code, "TASK_ERROR")
             self.assertEqual(e.msg, "hc is required")
 
-        co = ClusterObject.objects.get(cluster=cluster, prototype__name="hadoop")
-        sc1 = ServiceComponent.objects.get(cluster=cluster, service=co, prototype__name="server")
+        service = ClusterObject.objects.get(cluster=cluster, prototype__name="hadoop")
+        sc1 = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name="server")
         try:
             action = Action(name="run", hostcomponentmap="qwe")
-            hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": 500}]
-            hc_list, _ = check_hostcomponentmap(cluster, action, hc)
+            hostcomponent = [{"service_id": service.id, "component_id": sc1.id, "host_id": 500}]
+            hc_list, _ = check_hostcomponentmap(cluster, action, hostcomponent)
 
             self.assertNotEqual(hc_list, None)
         except AdcmEx as e:
@@ -64,18 +64,18 @@ class TestHC(BaseTestCase):
 
         try:
             action = Action(name="run", hostcomponentmap="qwe")
-            hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": h1.id}]
-            hc_list, _ = check_hostcomponentmap(cluster, action, hc)
+            hostcomponent = [{"service_id": service.id, "component_id": sc1.id, "host_id": host_1.id}]
+            hc_list, _ = check_hostcomponentmap(cluster, action, hostcomponent)
 
             self.assertNotEqual(hc_list, None)
         except AdcmEx as e:
             self.assertEqual(e.code, "FOREIGN_HOST")
 
-        add_host_to_cluster(cluster, h1)
+        add_host_to_cluster(cluster, host_1)
         try:
             action = Action(name="run", hostcomponentmap="qwe")
-            hc = [{"service_id": 500, "component_id": sc1.id, "host_id": h1.id}]
-            hc_list, _ = check_hostcomponentmap(cluster, action, hc)
+            hostcomponent = [{"service_id": 500, "component_id": sc1.id, "host_id": host_1.id}]
+            hc_list, _ = check_hostcomponentmap(cluster, action, hostcomponent)
 
             self.assertNotEqual(hc_list, None)
         except AdcmEx as e:
@@ -83,32 +83,32 @@ class TestHC(BaseTestCase):
 
         try:
             action = Action(name="run", hostcomponentmap="qwe")
-            hc = [{"service_id": co.id, "component_id": 500, "host_id": h1.id}]
-            hc_list, _ = check_hostcomponentmap(cluster, action, hc)
+            hostcomponent = [{"service_id": service.id, "component_id": 500, "host_id": host_1.id}]
+            hc_list, _ = check_hostcomponentmap(cluster, action, hostcomponent)
 
             self.assertNotEqual(hc_list, None)
         except AdcmEx as e:
             self.assertEqual(e.code, "COMPONENT_NOT_FOUND")
 
     def test_action_hc(self):  # pylint: disable=too-many-locals
-        b1 = cook_cluster_bundle("1.0")
-        cluster = cook_cluster(b1, "Test1")
-        b2 = cook_provider_bundle("1.0")
-        provider = cook_provider(b2, "DF01")
+        bundle_1 = cook_cluster_bundle("1.0")
+        cluster = cook_cluster(bundle_1, "Test1")
+        bundle_2 = cook_provider_bundle("1.0")
+        provider = cook_provider(bundle_2, "DF01")
 
-        h1 = Host.objects.get(provider=provider, fqdn="server01.inter.net")
-        h2 = Host.objects.get(provider=provider, fqdn="server02.inter.net")
-        co = ClusterObject.objects.get(cluster=cluster, prototype__name="hadoop")
-        sc1 = ServiceComponent.objects.get(cluster=cluster, service=co, prototype__name="server")
+        host_1 = Host.objects.get(provider=provider, fqdn="server01.inter.net")
+        host_2 = Host.objects.get(provider=provider, fqdn="server02.inter.net")
+        service = ClusterObject.objects.get(cluster=cluster, prototype__name="hadoop")
+        sc1 = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name="server")
 
-        add_host_to_cluster(cluster, h1)
-        add_host_to_cluster(cluster, h2)
+        add_host_to_cluster(cluster, host_1)
+        add_host_to_cluster(cluster, host_2)
 
         try:
             act_hc = [{"service": "hadoop", "component": "server", "action": "delete"}]
             action = Action(name="run", hostcomponentmap=act_hc)
-            hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": h1.id}]
-            hc_list, _ = check_hostcomponentmap(cluster, action, hc)
+            hostcomponent = [{"service_id": service.id, "component_id": sc1.id, "host_id": host_1.id}]
+            hc_list, _ = check_hostcomponentmap(cluster, action, hostcomponent)
 
             self.assertNotEqual(hc_list, None)
         except AdcmEx as e:
@@ -117,21 +117,21 @@ class TestHC(BaseTestCase):
 
         act_hc = [{"service": "hadoop", "component": "server", "action": "add"}]
         action = Action(name="run", hostcomponentmap=act_hc)
-        hc = [
-            {"service_id": co.id, "component_id": sc1.id, "host_id": h1.id},
-            {"service_id": co.id, "component_id": sc1.id, "host_id": h2.id},
+        hostcomponent = [
+            {"service_id": service.id, "component_id": sc1.id, "host_id": host_1.id},
+            {"service_id": service.id, "component_id": sc1.id, "host_id": host_2.id},
         ]
-        hc_list, _ = check_hostcomponentmap(cluster, action, hc)
+        hc_list, _ = check_hostcomponentmap(cluster, action, hostcomponent)
 
         self.assertNotEqual(hc_list, None)
 
         save_hc(cluster, hc_list)
         act_hc = [{"service": "hadoop", "component": "server", "action": "remove"}]
         action = Action(name="run", hostcomponentmap=act_hc)
-        hc = [
-            {"service_id": co.id, "component_id": sc1.id, "host_id": h2.id},
+        hostcomponent = [
+            {"service_id": service.id, "component_id": sc1.id, "host_id": host_2.id},
         ]
-        hc_list, _ = check_hostcomponentmap(cluster, action, hc)
+        hc_list, _ = check_hostcomponentmap(cluster, action, hostcomponent)
 
         self.assertNotEqual(hc_list, None)
 

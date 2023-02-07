@@ -89,8 +89,8 @@ def get_import(cluster: Cluster) -> dict:  # pylint: disable=too-many-branches
 
         conf_ref = obj.config
         export_proto = obj.prototype
-        cl = ConfigLog.objects.get(obj_ref=conf_ref, id=conf_ref.current)
-        conf = process_config_and_attr(obj=obj, conf=cl.config, attr=cl.attr)
+        config_log = ConfigLog.objects.get(obj_ref=conf_ref, id=conf_ref.current)
+        conf = process_config_and_attr(obj=obj, conf=config_log.config, attr=config_log.attr)
 
         if bind.service:
             proto = bind.service.prototype
@@ -120,8 +120,10 @@ def get_import(cluster: Cluster) -> dict:  # pylint: disable=too-many-branches
 def get_obj_config(obj) -> dict:
     if obj.config is None:
         return {}
-    cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-    return process_config_and_attr(obj=obj, conf=cl.config, attr=cl.attr)
+
+    config_log = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
+
+    return process_config_and_attr(obj=obj, conf=config_log.config, attr=config_log.attr)
 
 
 def get_cluster_variables(cluster: Cluster, cluster_config: dict = None) -> dict:
@@ -246,31 +248,35 @@ def get_provider_config(provider_id) -> dict:
 
 def get_host_groups(cluster: Cluster, delta: dict, action_host: Host | None = None) -> dict:
     groups = {}
-    all_hosts = HostComponent.objects.filter(cluster=cluster)
-    for hc in all_hosts:
-        if action_host and hc.host.id not in action_host:
+    host_components = HostComponent.objects.filter(cluster=cluster)
+    for hostcomponent in host_components:
+        if action_host and hostcomponent.host.id not in action_host:
             continue
 
         key_object_pairs: tuple[tuple[str, ClusterObject | ServiceComponent]] = (
-            (f"{hc.service.prototype.name}.{hc.component.prototype.name}", hc.component),
-            (f"{hc.service.prototype.name}", hc.service),
+            (
+                f"{hostcomponent.service.prototype.name}.{hostcomponent.component.prototype.name}",
+                hostcomponent.component,
+            ),
+            (f"{hostcomponent.service.prototype.name}", hostcomponent.service),
         )
 
         for key, adcm_object in key_object_pairs:
-            if hc.host.maintenance_mode == MaintenanceMode.ON:
+            if hostcomponent.host.maintenance_mode == MaintenanceMode.ON:
                 key = f"{key}.{MAINTENANCE_MODE}"
 
             if key not in groups:
                 groups[key] = {"hosts": {}}
 
-            groups[key]["hosts"][hc.host.fqdn] = get_obj_config(hc.host)
-            groups[key]["hosts"][hc.host.fqdn].update(get_host_vars(hc.host, adcm_object))
+            groups[key]["hosts"][hostcomponent.host.fqdn] = get_obj_config(hostcomponent.host)
+            groups[key]["hosts"][hostcomponent.host.fqdn].update(get_host_vars(hostcomponent.host, adcm_object))
 
     for htype in delta:
         for key in delta[htype]:
             lkey = f"{key}.{htype}"
             if lkey not in groups:
                 groups[lkey] = {"hosts": {}}
+
             for fqdn in delta[htype][key]:
                 host = delta[htype][key][fqdn]
                 # TODO: What is `delta`? Need calculate delta for group_config?
@@ -325,18 +331,21 @@ def get_target_host(host_id):
 
 def prepare_job_inventory(obj, job_id, action, delta, action_host=None):
     logger.info("prepare inventory for job #%s, object: %s", job_id, obj)
-    fd = open(settings.RUN_DIR / f"{job_id}/inventory.json", "w", encoding=settings.ENCODING_UTF_8)
+    file_descriptor = open(settings.RUN_DIR / f"{job_id}/inventory.json", "w", encoding=settings.ENCODING_UTF_8)
     inv = {"all": {"children": {}}}
     cluster = get_object_cluster(obj)
     if cluster:
         inv["all"]["children"].update(get_cluster_hosts(cluster, action_host))
         inv["all"]["children"].update(get_host_groups(cluster, delta, action_host))
+
     if obj.prototype.type == "host":
         inv["all"]["children"].update(get_host(obj.id))
         if action.host_action:
             inv["all"]["children"].update(get_target_host(obj.id))
+
     if obj.prototype.type == "provider":
         inv["all"]["children"].update(get_provider_hosts(obj, action_host))
         inv["all"]["vars"] = get_provider_config(obj.id)
-    json.dump(inv, fd, indent=3)
-    fd.close()
+
+    json.dump(inv, file_descriptor, indent=3)
+    file_descriptor.close()

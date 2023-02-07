@@ -87,7 +87,7 @@ class TestHostAPI(BaseTestCase):
         action = Action.objects.create(
             prototype=self.host.cluster.prototype,
             name=settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME,
-            type=ActionType.Job,
+            type=ActionType.JOB,
             state_available="any",
         )
 

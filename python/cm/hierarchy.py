@@ -25,6 +25,7 @@ from cm.models import (
 class HierarchyError(Exception):
     def __init__(self, *args, **kwargs):
         super().__init__(*args)
+
         self.msg = kwargs.get("msg") or args[0] if args else "Hierarchy build error"
 
 
@@ -39,14 +40,15 @@ class Node:
     def __init__(self, value: Optional[ADCMEntity]):
         self.children = set()
         if value is None:  # tree virtual root
-            self.id = 0
+            self.node_id = 0
             self.type = "root"
             self.value = None
             self.parents = tuple()
         else:
             if not hasattr(value, "prototype"):
                 raise HierarchyError(f"Type <{type(value)}> is not part of hierarchy")
-            self.id = value.pk
+
+            self.node_id = value.pk
             self.type = value.prototype.type
             self.value = value
             self.parents = set()
@@ -54,38 +56,47 @@ class Node:
     def add_child(self, child: "Node") -> None:
         if child in self.parents or child == self:
             raise HierarchyError("Hierarchy should not have cycles")
+
         self.children.add(child)
 
     def add_parent(self, parent: "Node") -> None:
         if parent in self.children or parent == self:
             raise HierarchyError("Hierarchy should not have cycles")
+
         self.parents.add(parent)
 
     def get_parents(self) -> Set["Node"]:
         """Get own parents and all its ancestors"""
+
         result = set(self.parents)
         for parent in self.parents:
             result.update(parent.get_parents())
+
         return result
 
     def get_children(self) -> Set["Node"]:
         """Get own children and all its descendants"""
+
         result = set(self.children)
         for child in self.children:
             result.update(child.get_children())
+
         return result
 
     @staticmethod
     def get_obj_key(obj: ADCMEntity) -> Tuple[str, int]:
         """Make simple unique key for caching in tree"""
+
         if obj is None:
             return "root", 0
+
         return obj.prototype.type, obj.pk
 
     @property
     def key(self) -> Tuple[str, int]:
         """Simple key unique in tree"""
-        return self.type, self.id
+
+        return self.type, self.node_id
 
     def __hash__(self):
         return hash(self.key)
@@ -114,6 +125,7 @@ class Tree:
         else:
             node = Node(value=obj)
             self._nodes[node.key] = node
+
             return node
 
     def _build_tree_down(self, node: Node) -> None:
@@ -123,10 +135,8 @@ class Tree:
 
         if node.type == "cluster":
             children_values = ClusterObject.objects.filter(cluster=node.value).all()
-
         elif node.type == "service":
             children_values = ServiceComponent.objects.filter(cluster=node.value.cluster, service=node.value).all()
-
         elif node.type == "component":
             children_values = [
                 c.host
@@ -138,10 +148,8 @@ class Tree:
                 .select_related("host")
                 .all()
             ]
-
         elif node.type == "host":
             children_values = []
-
         elif node.type == "provider":
             children_values = Host.objects.filter(provider=node.value)
 
@@ -184,6 +192,7 @@ class Tree:
 
     def get_node(self, obj: ADCMEntity) -> Node:
         """Get tree node by its object"""
+
         key = Node.get_obj_key(obj)
         cached = self._nodes.get(key)
         if cached:
@@ -193,18 +202,23 @@ class Tree:
 
     def get_directly_affected(self, node: Node) -> Set[Node]:
         """Collect directly affected nodes for issues re-calc"""
+
         result = {node}
         result.update(node.get_parents())
         result.update(node.get_children())
         result.discard(self.root)
+
         return result
 
     def get_all_affected(self, node: Node) -> Set[Node]:
         """Collect directly affected nodes and propagate effect back through affected hosts"""
+
         directly_affected = self.get_directly_affected(node)
         indirectly_affected = set()
         for host_node in filter(lambda x: x.type == "host", directly_affected):
             indirectly_affected.update(host_node.get_parents())
+
         result = indirectly_affected.union(directly_affected)
         result.discard(self.root)
+
         return result

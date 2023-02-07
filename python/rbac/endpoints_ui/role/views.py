@@ -59,7 +59,7 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
                 clusters.append(
                     {
                         "name": cluster.display_name,
-                        "type": cm_models.ObjectType.Cluster,
+                        "type": cm_models.ObjectType.CLUSTER,
                         "id": cluster.id,
                     }
                 )
@@ -69,7 +69,7 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
                 providers.append(
                     {
                         "name": provider.display_name,
-                        "type": cm_models.ObjectType.Provider,
+                        "type": cm_models.ObjectType.PROVIDER,
                         "id": provider.id,
                     }
                 )
@@ -79,7 +79,7 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
                 hosts.append(
                     {
                         "name": host.display_name,
-                        "type": cm_models.ObjectType.Host,
+                        "type": cm_models.ObjectType.HOST,
                         "id": host.id,
                     }
                 )

@@ -57,6 +57,6 @@ class _Context:
 
 
 # initialized on first import
-ctx = None
-if not ctx:
-    ctx = _Context()
+CTX = None
+if not CTX:
+    CTX = _Context()

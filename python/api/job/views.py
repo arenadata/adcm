@@ -96,7 +96,7 @@ def get_task_download_archive_name(task: TaskLog) -> str:
 def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
     jobs = JobLog.objects.filter(task=task)
 
-    if task.action and task.action.type == ActionType.Job:
+    if task.action and task.action.type == ActionType.JOB:
         task_dir_name_suffix = str_remove_non_alnum(value=task.action.display_name) or str_remove_non_alnum(
             value=task.action.name
         )

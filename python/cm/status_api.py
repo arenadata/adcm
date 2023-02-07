@@ -192,8 +192,10 @@ def get_host_status(host: Host) -> int:
     return get_status(obj=host, url=f"/host/{host.id}/")
 
 
-def get_hc_status(hc: HostComponent) -> int:
-    return get_status(obj=hc.component, url=f"/host/{hc.host_id}/component/{hc.component_id}/")
+def get_hc_status(hostcomponent: HostComponent) -> int:
+    return get_status(
+        obj=hostcomponent.component, url=f"/host/{hostcomponent.host_id}/component/{hostcomponent.component_id}/"
+    )
 
 
 def get_host_comp_status(host: Host, component: ServiceComponent) -> int:
@@ -226,12 +228,12 @@ def make_ui_single_host_status(host: Host) -> dict:
 
 def make_ui_component_status(component: ServiceComponent, host_components: Iterable[HostComponent]) -> dict:
     host_list = []
-    for hc in host_components:
+    for hostcomponent in host_components:
         host_list.append(
             {
-                "id": hc.host.id,
-                "name": hc.host.fqdn,
-                "status": get_host_comp_status(host=hc.host, component=hc.component),
+                "id": hostcomponent.host.id,
+                "name": hostcomponent.host.fqdn,
+                "status": get_host_comp_status(host=hostcomponent.host, component=hostcomponent.component),
             }
         )
 
@@ -245,8 +247,8 @@ def make_ui_component_status(component: ServiceComponent, host_components: Itera
 
 def make_ui_service_status(service: ClusterObject, host_components: Iterable[HostComponent]) -> dict:
     component_hc_map = defaultdict(list)
-    for hc in host_components:
-        component_hc_map[hc.component].append(hc)
+    for hostcomponent in host_components:
+        component_hc_map[hostcomponent.component].append(hostcomponent)
 
     comp_list = []
     for component, hc_list in component_hc_map.items():
@@ -263,8 +265,8 @@ def make_ui_service_status(service: ClusterObject, host_components: Iterable[Hos
 
 def make_ui_cluster_status(cluster: Cluster, host_components: Iterable[HostComponent]) -> dict:
     service_hc_map = defaultdict(list)
-    for hc in host_components:
-        service_hc_map[hc.service].append(hc)
+    for hostcomponent in host_components:
+        service_hc_map[hostcomponent.service].append(hostcomponent)
 
     service_list = []
     for service, hc_list in service_hc_map.items():
@@ -275,6 +277,7 @@ def make_ui_cluster_status(cluster: Cluster, host_components: Iterable[HostCompo
         host_list.append(make_ui_single_host_status(host=host))
 
     cluster_map = get_object_map(obj=cluster, url_type="cluster")
+
     return {
         "name": cluster.name,
         "status": 32 if cluster_map is None else cluster_map.get("status", 0),
@@ -288,13 +291,13 @@ def make_ui_cluster_status(cluster: Cluster, host_components: Iterable[HostCompo
 def make_ui_host_status(host: Host, host_components: Iterable[HostComponent]) -> dict:
     comp_list = []
 
-    for hc in host_components:
+    for hostcomponent in host_components:
         comp_list.append(
             {
-                "id": hc.component.id,
-                "name": hc.component.display_name,
-                "status": get_component_status(component=hc.component),
-                "service_id": hc.service.id,
+                "id": hostcomponent.component.id,
+                "name": hostcomponent.component.display_name,
+                "status": get_component_status(component=hostcomponent.component),
+                "service_id": hostcomponent.service.id,
             }
         )
 

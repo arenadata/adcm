@@ -12,7 +12,7 @@
 
 """Tests on downloading all job logs in task as one archive"""
 
-# pylint: disable=redefined-outer-name,no-name-in-module
+# pylint: disable=redefined-outer-name
 
 import re
 import tarfile
