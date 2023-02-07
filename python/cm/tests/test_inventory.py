@@ -198,8 +198,8 @@ class TestInventory(BaseTestCase):
         action = Action.objects.create(prototype=self.cluster_pt)
         job = JobLog.objects.create(action=action, start_date=timezone.now(), finish_date=timezone.now())
 
-        fd = Mock()
-        mock_open.return_value = fd
+        file_mock = Mock()
+        mock_open.return_value = file_mock
         cluster_inv = {
             "all": {
                 "children": {
@@ -291,7 +291,7 @@ class TestInventory(BaseTestCase):
         for obj, inv in data:
             with self.subTest(obj=obj, inv=inv):
                 prepare_job_inventory(obj, job.id, action, [])
-                mock_dump.assert_called_once_with(inv, fd, indent=3)
+                mock_dump.assert_called_once_with(inv, file_mock, indent=3)
                 mock_dump.reset_mock()
 
     def test_host_vars(self):

@@ -29,14 +29,14 @@ class ADCMEntityConcernTest(BaseTestCase):
                 self.assertFalse(item, "No locks expected")
 
     def test_is_locked__true(self):
-        lock = gen_concern_item(ConcernType.Lock)
+        lock = gen_concern_item(ConcernType.LOCK)
         for obj in self.hierarchy.values():
             obj.add_to_concerns(lock)
 
             self.assertTrue(obj.locked)
 
     def test_is_locked__deleted(self):
-        lock = gen_concern_item(ConcernType.Lock)
+        lock = gen_concern_item(ConcernType.LOCK)
         for obj in self.hierarchy.values():
             obj.add_to_concerns(lock)
 
@@ -52,14 +52,14 @@ class ADCMEntityConcernTest(BaseTestCase):
             self.assertFalse(obj.locked)
 
     def test_add_to_concern__deleted(self):
-        lock = ConcernItem(type=ConcernType.Lock, name=None, reason="unsaved")
+        lock = ConcernItem(type=ConcernType.LOCK, name=None, reason="unsaved")
         for obj in self.hierarchy.values():
             obj.add_to_concerns(lock)
 
             self.assertFalse(obj.locked)
 
     def test_add_to_concern(self):
-        lock = gen_concern_item(ConcernType.Lock)
+        lock = gen_concern_item(ConcernType.LOCK)
         for obj in self.hierarchy.values():
             obj.add_to_concerns(lock)
 
@@ -72,7 +72,7 @@ class ADCMEntityConcernTest(BaseTestCase):
 
     def test_remove_from_concern__none(self):
         nolock = None
-        lock = gen_concern_item(ConcernType.Lock)
+        lock = gen_concern_item(ConcernType.LOCK)
         for obj in self.hierarchy.values():
             obj.add_to_concerns(lock)
             obj.remove_from_concerns(nolock)
@@ -80,8 +80,8 @@ class ADCMEntityConcernTest(BaseTestCase):
             self.assertTrue(obj.locked)
 
     def test_remove_from_concern__deleted(self):
-        nolock = ConcernItem(type=ConcernType.Lock, name=None, reason="unsaved")
-        lock = gen_concern_item(ConcernType.Lock)
+        nolock = ConcernItem(type=ConcernType.LOCK, name=None, reason="unsaved")
+        lock = gen_concern_item(ConcernType.LOCK)
         for obj in self.hierarchy.values():
             obj.add_to_concerns(lock)
             obj.remove_from_concerns(nolock)
@@ -91,14 +91,16 @@ class ADCMEntityConcernTest(BaseTestCase):
     def test_get_own_issue__empty(self):
         cluster = self.hierarchy["cluster"]
 
-        self.assertIsNone(cluster.get_own_issue(ConcernCause.Config))
+        self.assertIsNone(cluster.get_own_issue(ConcernCause.CONFIG))
 
     def test_get_own_issue__others(self):
         cluster = self.hierarchy["cluster"]
         service = self.hierarchy["service"]
-        reason = MessageTemplate.get_message_from_template(MessageTemplate.KnownNames.ConfigIssue.value, source=cluster)
-        issue_type = ConcernCause.Config
-        issue = ConcernItem.objects.create(type=ConcernType.Issue, reason=reason, owner=cluster, cause=issue_type)
+        reason = MessageTemplate.get_message_from_template(
+            MessageTemplate.KnownNames.CONFIG_ISSUE.value, source=cluster
+        )
+        issue_type = ConcernCause.CONFIG
+        issue = ConcernItem.objects.create(type=ConcernType.ISSUE, reason=reason, owner=cluster, cause=issue_type)
         cluster.add_to_concerns(issue)
         service.add_to_concerns(issue)
 
@@ -106,9 +108,11 @@ class ADCMEntityConcernTest(BaseTestCase):
 
     def test_get_own_issue__exists(self):
         cluster = self.hierarchy["cluster"]
-        reason = MessageTemplate.get_message_from_template(MessageTemplate.KnownNames.ConfigIssue.value, source=cluster)
-        issue_type = ConcernCause.Config
-        issue = ConcernItem.objects.create(type=ConcernType.Issue, reason=reason, owner=cluster, cause=issue_type)
+        reason = MessageTemplate.get_message_from_template(
+            MessageTemplate.KnownNames.CONFIG_ISSUE.value, source=cluster
+        )
+        issue_type = ConcernCause.CONFIG
+        issue = ConcernItem.objects.create(type=ConcernType.ISSUE, reason=reason, owner=cluster, cause=issue_type)
         cluster.add_to_concerns(issue)
 
         self.assertIsNotNone(cluster.get_own_issue(issue_type))

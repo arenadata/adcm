@@ -45,20 +45,20 @@ from rbac.upgrade.role import init_roles, prepare_action_roles
 
 class RoleModelTest(BaseTestCase):
     def test_role_class(self):
-        r = Role(module_name="qwe")
+        role = Role(module_name="qwe")
         with self.assertRaises(AdcmEx) as context:
-            r.get_role_obj()
+            role.get_role_obj()
 
         self.assertEqual(context.exception.code, "ROLE_MODULE_ERROR")
 
-        r = Role(module_name="rbac", class_name="qwe")
+        role = Role(module_name="rbac", class_name="qwe")
         with self.assertRaises(AdcmEx) as context:
-            r.get_role_obj()
+            role.get_role_obj()
 
         self.assertEqual(context.exception.code, "ROLE_CLASS_ERROR")
 
-        r = Role(module_name="rbac.roles", class_name="ModelRole")
-        obj = r.get_role_obj()
+        role = Role(module_name="rbac.roles", class_name="ModelRole")
+        obj = role.get_role_obj()
 
         self.assertTrue(isinstance(obj, ModelRole))
 
@@ -76,7 +76,7 @@ class RoleModelTest(BaseTestCase):
         self.assertEqual(role.parametrized_by_type, [])
 
     def test_object_filter(self):
-        r = Role(
+        role = Role(
             name="view",
             module_name="rbac.roles",
             class_name="ObjectRole",
@@ -86,46 +86,48 @@ class RoleModelTest(BaseTestCase):
                 "filter": {"name": "Hadoop"},
             },
         )
-        r.save()
+        role.save()
 
-        b1 = Bundle(name="Hadoop", version="1.0")
-        b1.save()
-        b2 = Bundle(name="Zookeper", version="1.0")
-        b2.save()
-        b3 = Bundle(name="Hadoop", version="2.0")
-        b3.save()
+        bundle_1 = Bundle(name="Hadoop", version="1.0")
+        bundle_1.save()
 
-        self.assertEqual([b1, b3], list(r.filter()))
+        bundle_2 = Bundle(name="Zookeper", version="1.0")
+        bundle_2.save()
+
+        bundle_3 = Bundle(name="Hadoop", version="2.0")
+        bundle_3.save()
+
+        self.assertEqual([bundle_1, bundle_3], list(role.filter()))
 
     def test_object_filter_error(self):
-        r1 = Role(
+        role_1 = Role(
             name="view",
             display_name="view",
             module_name="rbac.roles",
             class_name="ObjectRole",
             init_params={"app_name": "cm", "model": "qwe"},
         )
-        r1.save()
+        role_1.save()
         with self.assertRaises(AdcmEx) as e:
-            r1.filter()
+            role_1.filter()
 
         self.assertEqual(e.exception.code, "ROLE_FILTER_ERROR")
 
-        r2 = Role(
+        role_2 = Role(
             name="add",
             display_name="add",
             module_name="rbac.roles",
             class_name="ObjectRole",
             init_params={"app_name": "qwe", "model": "qwe"},
         )
-        r2.save()
+        role_2.save()
         with self.assertRaises(AdcmEx) as e:
-            r1.filter()
+            role_1.filter()
 
         self.assertEqual(e.exception.code, "ROLE_FILTER_ERROR")
 
     def test_object_complex_filter(self):
-        r = Role(
+        role = Role(
             name="view",
             module_name="rbac.roles",
             class_name="ObjectRole",
@@ -140,18 +142,21 @@ class RoleModelTest(BaseTestCase):
                 },
             },
         )
-        r.save()
+        role.save()
 
-        b1 = Bundle(name="Hadoop", version="1.0")
-        b1.save()
-        p1 = Prototype(bundle=b1, type="cluster", name="Kafka", version="1.0")
-        p1.save()
-        a1 = Action(prototype=p1, name="start")
-        a1.save()
-        a2 = Action(prototype=p1, name="stop")
-        a2.save()
+        bundle_1 = Bundle(name="Hadoop", version="1.0")
+        bundle_1.save()
 
-        self.assertEqual([a1], list(r.filter()))
+        cluster_prototype = Prototype(bundle=bundle_1, type="cluster", name="Kafka", version="1.0")
+        cluster_prototype.save()
+
+        action_1 = Action(prototype=cluster_prototype, name="start")
+        action_1.save()
+
+        action_2 = Action(prototype=cluster_prototype, name="stop")
+        action_2.save()
+
+        self.assertEqual([action_1], list(role.filter()))
 
 
 class RoleFunctionalTestRBAC(RBACBaseTestCase):
@@ -178,7 +183,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
 
         self.cluster_action = Action.objects.create(
             name="cluster_action",
-            type=ActionType.Job,
+            type=ActionType.JOB,
             script="./action.yaml",
             script_type="ansible",
             state_available="any",
@@ -187,7 +192,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         )
         self.service1_action = Action.objects.create(
             name="service_1_action",
-            type=ActionType.Job,
+            type=ActionType.JOB,
             script="./action.yaml",
             script_type="ansible",
             state_available="any",
@@ -196,7 +201,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         )
         self.component11_action = Action.objects.create(
             name="component_1_1_action",
-            type=ActionType.Job,
+            type=ActionType.JOB,
             script="./action.yaml",
             script_type="ansible",
             state_available="any",
@@ -205,7 +210,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         )
         self.component21_action = Action.objects.create(
             name="component_2_1_action",
-            type=ActionType.Job,
+            type=ActionType.JOB,
             script="./action.yaml",
             script_type="ansible",
             state_available="any",
@@ -214,7 +219,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         )
         self.service2_action = Action.objects.create(
             name="service_2_action",
-            type=ActionType.Job,
+            type=ActionType.JOB,
             script="./action.yaml",
             script_type="ansible",
             state_available="any",
@@ -223,7 +228,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         )
         self.component12_action = Action.objects.create(
             name="component_1_2_action",
-            type=ActionType.Job,
+            type=ActionType.JOB,
             script="./action.yaml",
             script_type="ansible",
             state_available="any",
@@ -232,7 +237,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         )
         self.component22_action = Action.objects.create(
             name="component_2_2_action",
-            type=ActionType.Job,
+            type=ActionType.JOB,
             script="./action.yaml",
             script_type="ansible",
             state_available="any",

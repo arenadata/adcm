@@ -41,32 +41,38 @@ from cm.upgrade import bundle_revert, check_upgrade, do_upgrade, switch_componen
 
 
 def cook_cluster_bundle(ver):
-    b = Bundle.objects.create(name="ADH", version=ver)
-    b.save()
-    Prototype.objects.create(type="cluster", name="ADH", version=ver, bundle=b)
-    sp2 = Prototype.objects.create(type="service", name="hive", bundle=b)
-    Prototype.objects.create(parent=sp2, type="component", name="server", bundle=b)
-    sp1 = Prototype.objects.create(type="service", name="hadoop", version=ver, bundle=b)
-    Prototype.objects.create(parent=sp1, type="component", name="server", bundle=b)
-    Prototype.objects.create(parent=sp1, type="component", name="node", bundle=b)
+    bundle = Bundle.objects.create(name="ADH", version=ver)
+    bundle.save()
 
-    return b
+    Prototype.objects.create(type="cluster", name="ADH", version=ver, bundle=bundle)
+    sp2 = Prototype.objects.create(type="service", name="hive", bundle=bundle)
+
+    Prototype.objects.create(parent=sp2, type="component", name="server", bundle=bundle)
+    sp1 = Prototype.objects.create(type="service", name="hadoop", version=ver, bundle=bundle)
+
+    Prototype.objects.create(parent=sp1, type="component", name="server", bundle=bundle)
+    Prototype.objects.create(parent=sp1, type="component", name="node", bundle=bundle)
+
+    return bundle
 
 
 def cook_provider_bundle(ver):
-    b = Bundle.objects.create(name="DF", version=ver)
-    b.save()
-    Prototype.objects.create(type="provider", name="DF", version=ver, bundle=b)
-    Prototype.objects.create(type="host", name="DfHost", version=ver, bundle=b)
+    bundle = Bundle.objects.create(name="DF", version=ver)
+    bundle.save()
 
-    return b
+    Prototype.objects.create(type="provider", name="DF", version=ver, bundle=bundle)
+    Prototype.objects.create(type="host", name="DfHost", version=ver, bundle=bundle)
+
+    return bundle
 
 
 def cook_cluster(bundle, name):
-    cp = Prototype.objects.get(type="cluster", bundle=bundle)
-    cluster = add_cluster(cp, name)
+    cluster_prototype = Prototype.objects.get(type="cluster", bundle=bundle)
+    cluster = add_cluster(cluster_prototype, name)
+
     sp2 = Prototype.objects.get(type="service", name="hive", bundle=bundle)
     add_service_to_cluster(cluster, sp2)
+
     sp1 = Prototype.objects.get(type="service", name="hadoop", bundle=bundle)
     add_service_to_cluster(cluster, sp1)
 
@@ -74,8 +80,8 @@ def cook_cluster(bundle, name):
 
 
 def cook_provider(bundle, name):
-    pp = Prototype.objects.get(type="provider", bundle=bundle)
-    provider = add_host_provider(pp, name)
+    provider_prototype = Prototype.objects.get(type="provider", bundle=bundle)
+    provider = add_host_provider(provider_prototype, name)
     host_proto = Prototype.objects.get(bundle=provider.prototype.bundle, type="host")
     add_host(host_proto, provider, "server02.inter.net")
     add_host(host_proto, provider, "server01.inter.net")
@@ -89,11 +95,11 @@ def cook_upgrade(bundle):
 
 def get_config(obj):
     attr = {}
-    cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-    if cl.attr:
-        attr = cl.attr
+    config_log = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
+    if config_log.attr:
+        attr = config_log.attr
 
-    return cl.config, attr
+    return config_log.config, attr
 
 
 class TestUpgradeVersion(BaseTestCase):
@@ -114,9 +120,9 @@ class TestUpgradeVersion(BaseTestCase):
         )
 
     def check_upgrade(self, obj, upgrade, result):
-        ok, msg = check_upgrade(obj, upgrade)
+        success, msg = check_upgrade(obj, upgrade)
 
-        self.assertEqual(ok, result, f"check_upgrade msg: {msg or None}")
+        self.assertEqual(success, result, f"check_upgrade msg: {msg or None}")
 
     def test_version(self):
         self.obj.prototype.version = "1.5"
@@ -158,7 +164,7 @@ class TestUpgradeVersion(BaseTestCase):
         self.check_upgrade(self.obj, self.upgrade, True)
 
     def test_issue(self):
-        create_issue(self.obj, ConcernCause.Config)
+        create_issue(self.obj, ConcernCause.CONFIG)
 
         self.check_upgrade(self.obj, self.upgrade, False)
 
@@ -402,22 +408,22 @@ class TestConfigUpgrade(BaseTestCase):
 
 class TestUpgrade(BaseTestCase):
     def test_upgrade_with_license(self):
-        b1 = cook_cluster_bundle("1.0")
-        b2 = cook_cluster_bundle("2.0")
-        cluster = cook_cluster(b1, "Test1")
-        upgrade = cook_upgrade(b2)
+        bundle_1 = cook_cluster_bundle("1.0")
+        bundle_2 = cook_cluster_bundle("2.0")
+        cluster = cook_cluster(bundle_1, "Test1")
+        upgrade = cook_upgrade(bundle_2)
 
         license_hash_1 = "36e8d9f836e8ddc797f6e1b39bc856da8ab14da201258125175f5b9180f69304"
         license_hash_2 = "9dbd1b5494fd6040863339dece1306358d4f0f16f8246086b05c2f32886ae5ef"
-        old_proto = Prototype.objects.get(type="service", name="hadoop", bundle=b1)
+        old_proto = Prototype.objects.get(type="service", name="hadoop", bundle=bundle_1)
         old_proto.license = "unaccepted"
         old_proto.license_hash = license_hash_1
         old_proto.save(update_fields=["license", "license_hash"])
         with self.assertRaisesRegex(AdcmEx, 'License for prototype "hadoop" service 1.0 is not accepted'):
             do_upgrade(cluster, upgrade, {}, {}, [])
 
-        old_proto = Prototype.objects.get(type="service", name="hadoop", bundle=b1)
-        new_proto = Prototype.objects.get(type="service", name="hadoop", bundle=b2)
+        old_proto = Prototype.objects.get(type="service", name="hadoop", bundle=bundle_1)
+        new_proto = Prototype.objects.get(type="service", name="hadoop", bundle=bundle_2)
         old_proto.license = "accepted"
         new_proto.license = "unaccepted"
         new_proto.license_hash = license_hash_2
@@ -607,7 +613,7 @@ class TestRevertUpgrade(BaseTestCase):
         self.assertEqual(comp_12.prototype, component12_proto1)
         self.assertEqual(comp_21.prototype, component21_proto1)
 
-        do_upgrade(obj=cluster, upgrade=upgrade, config={}, attr={}, hc=[])
+        do_upgrade(obj=cluster, upgrade=upgrade, config={}, attr={}, hostcomponent=[])
 
         service_1.refresh_from_db()
         service_2.refresh_from_db()
@@ -650,7 +656,7 @@ class TestRevertUpgrade(BaseTestCase):
         self.assertEqual(host.prototype, host_proto1)
         self.assertEqual(provider.prototype, provider_proto1)
 
-        do_upgrade(obj=provider, upgrade=upgrade, config={}, attr={}, hc=[])
+        do_upgrade(obj=provider, upgrade=upgrade, config={}, attr={}, hostcomponent=[])
 
         provider.refresh_from_db()
         host.refresh_from_db()

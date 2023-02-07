@@ -54,7 +54,7 @@ class TaskLogLockTest(BaseTestCase):
         cluster = gen_cluster()
         task = gen_task_log(cluster)
         gen_job_log(task)
-        task.lock = gen_concern_item(ConcernType.Lock)
+        task.lock = gen_concern_item(ConcernType.LOCK)
         task.save()
         task.lock_affected([cluster])
 
@@ -236,8 +236,8 @@ class TaskLogLockTest(BaseTestCase):
             finish_date=datetime.now(tz=ZoneInfo("UTC")),
             sub_action=SubAction.objects.create(name="test_subaction_2", action=action),
         )
-        fn = get_task_download_archive_file_handler(task)
-        fn.seek(0)
+        file_handler = get_task_download_archive_file_handler(task)
+        file_handler.seek(0)
 
         self.assertEqual(
             f"test-cluster_test-cluster-prototype_test-cluster-action_{task.pk}.tar.gz",
@@ -247,7 +247,7 @@ class TaskLogLockTest(BaseTestCase):
         cluster.delete()
         bundle.delete()
         task.refresh_from_db()
-        fn = get_task_download_archive_file_handler(task)
-        fn.seek(0)
+        file_handler = get_task_download_archive_file_handler(task)
+        file_handler.seek(0)
 
         self.assertEqual(f"{task.pk}.tar.gz", get_task_download_archive_name(task))

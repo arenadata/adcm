@@ -873,7 +873,7 @@ class TestAPI2(BaseTestCase):
         mock_update_issues.assert_called()
         mock_load_service_map.assert_called_once()
 
-    @patch("cm.api.ctx")
+    @patch("cm.api.CTX")
     @patch("cm.api.load_service_map")
     @patch("cm.api.update_hierarchy_issues")
     def test_save_hc__big_update__locked_hierarchy(self, mock_issue, mock_load, ctx):

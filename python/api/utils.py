@@ -141,7 +141,7 @@ def update(serializer, **kwargs):
 
 def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
     """Filter out actions that are not allowed to run on object at that moment"""
-    if obj.concerns.filter(type=ConcernType.Lock).exists():
+    if obj.concerns.filter(type=ConcernType.LOCK).exists():
         return []
 
     allowed = []

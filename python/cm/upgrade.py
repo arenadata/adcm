@@ -179,16 +179,16 @@ def check_upgrade_import(
             msg = "Upgrade does not have new version of {} required for import"
             return False, msg.format(proto_ref(import_obj.prototype))
         try:
-            pi = PrototypeImport.objects.get(prototype=proto, name=export.prototype.name)
-            if not version_in(export.prototype.version, pi):
+            prototype_import = PrototypeImport.objects.get(prototype=proto, name=export.prototype.name)
+            if not version_in(export.prototype.version, prototype_import):
                 msg = 'Import "{}" of {} versions ({}, {}) does not match export version: {} ({})'
                 return (
                     False,
                     msg.format(
                         export.prototype.name,
                         proto_ref(proto),
-                        pi.min_version,
-                        pi.max_version,
+                        prototype_import.min_version,
+                        prototype_import.max_version,
                         export.prototype.version,
                         obj_ref(export),
                     ),
@@ -205,12 +205,14 @@ def check_upgrade_import(
             return False, msg.format(proto_ref(export.prototype))
 
         import_obj = get_import(cbind)
-        pi = PrototypeImport.objects.get(prototype=import_obj.prototype, name=export.prototype.name)
-        if not version_in(proto.version, pi):
+        prototype_import = PrototypeImport.objects.get(prototype=import_obj.prototype, name=export.prototype.name)
+        if not version_in(proto.version, prototype_import):
             msg = "Export of {} does not match import versions: ({}, {}) ({})"
             return (
                 False,
-                msg.format(proto_ref(proto), pi.min_version, pi.max_version, obj_ref(import_obj)),
+                msg.format(
+                    proto_ref(proto), prototype_import.min_version, prototype_import.max_version, obj_ref(import_obj)
+                ),
             )
 
     return True, ""
@@ -229,8 +231,8 @@ def check_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> Tuple[
         check_upgrade_import,
     ]
     for func in check_list:
-        ok, msg = func(obj, upgrade)
-        if not ok:
+        success, msg = func(obj, upgrade)
+        if not success:
             return False, msg
 
     return True, ""
@@ -252,15 +254,15 @@ def switch_hc(obj: Cluster, upgrade: Upgrade) -> None:
     if obj.prototype.type != "cluster":
         return
 
-    for hc in HostComponent.objects.filter(cluster=obj):
-        service_proto = find_service(hc.service, upgrade.bundle)
+    for hostcomponent in HostComponent.objects.filter(cluster=obj):
+        service_proto = find_service(hostcomponent.service, upgrade.bundle)
         if not service_proto:
-            hc.delete()
+            hostcomponent.delete()
 
             continue
 
-        if not find_component(hc.component, service_proto):
-            hc.delete()
+        if not find_component(hostcomponent.component, service_proto):
+            hostcomponent.delete()
 
             continue
 
@@ -274,16 +276,16 @@ def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
 
     res = []
     for upg in Upgrade.objects.filter(bundle__name=obj.prototype.bundle.name):
-        ok, _msg = check_upgrade_version(obj, upg)
-        if not ok:
+        success, _msg = check_upgrade_version(obj, upg)
+        if not success:
             continue
 
-        ok, _msg = check_upgrade_edition(obj, upg)
-        if not ok:
+        success, _msg = check_upgrade_edition(obj, upg)
+        if not success:
             continue
 
-        ok, _msg = check_upgrade_state(obj, upg)
-        upg.upgradable = bool(ok)
+        success, _msg = check_upgrade_state(obj, upg)
+        upg.upgradable = bool(success)
         upgrade_proto = Prototype.objects.filter(bundle=upg.bundle, name=upg.bundle.name).first()
         upg.license = upgrade_proto.license
         if upg.upgradable:
@@ -388,10 +390,12 @@ def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-m
                 add_service_to_cluster(cluster=obj, proto=proto)
 
         host_comp_list = []
-        for hc in before_upgrade_hc:
-            host = Host.objects.get(fqdn=hc["host"], cluster=obj)
-            service = ClusterObject.objects.get(prototype__name=hc["service"], cluster=obj)
-            comp = ServiceComponent.objects.get(prototype__name=hc["component"], cluster=obj, service=service)
+        for hostcomponent in before_upgrade_hc:
+            host = Host.objects.get(fqdn=hostcomponent["host"], cluster=obj)
+            service = ClusterObject.objects.get(prototype__name=hostcomponent["service"], cluster=obj)
+            comp = ServiceComponent.objects.get(
+                prototype__name=hostcomponent["component"], cluster=obj, service=service
+            )
             host_comp_list.append((service, host, comp))
 
         save_hc(cluster=obj, host_comp_list=host_comp_list)
@@ -409,12 +413,12 @@ def set_before_upgrade(obj: ADCMEntity) -> None:
 
     if isinstance(obj, Cluster):
         hc_map = []
-        for hc in HostComponent.objects.filter(cluster=obj):
+        for hostcomponent in HostComponent.objects.filter(cluster=obj):
             hc_map.append(
                 {
-                    "service": hc.service.name,
-                    "component": hc.component.name,
-                    "host": hc.host.name,
+                    "service": hostcomponent.service.name,
+                    "component": hostcomponent.component.name,
+                    "host": hostcomponent.host.name,
                 }
             )
 
@@ -445,14 +449,14 @@ def do_upgrade(
     upgrade: Upgrade,
     config: dict,
     attr: dict,
-    hc: list,
+    hostcomponent: list,
 ) -> dict:
     old_proto = obj.prototype
     check_license(proto=obj.prototype)
     upgrade_proto = Prototype.objects.filter(bundle=upgrade.bundle, name=upgrade.bundle.name).first()
     check_license(proto=upgrade_proto)
-    ok, msg = check_upgrade(obj=obj, upgrade=upgrade)
-    if not ok:
+    success, msg = check_upgrade(obj=obj, upgrade=upgrade)
+    if not success:
         return raise_adcm_ex("UPGRADE_ERROR", msg)
     logger.info("upgrade %s version %s (upgrade #%s)", obj_ref(obj), old_proto.version, upgrade.id)
 
@@ -467,7 +471,9 @@ def do_upgrade(
             obj.state = upgrade.state_on_success
             obj.save()
     else:
-        task = start_task(action=upgrade.action, obj=obj, conf=config, attr=attr, hc=hc, hosts=[], verbose=False)
+        task = start_task(
+            action=upgrade.action, obj=obj, conf=config, attr=attr, hostcomponent=hostcomponent, hosts=[], verbose=False
+        )
         task_id = task.id
 
     obj.refresh_from_db()

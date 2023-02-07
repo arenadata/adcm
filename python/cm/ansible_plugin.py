@@ -25,7 +25,7 @@ from ansible.plugins.action import ActionBase
 from django.conf import settings
 
 from cm.api import add_hc, get_hc, set_object_config
-from cm.api_context import ctx
+from cm.api_context import CTX
 from cm.errors import AdcmEx
 from cm.errors import raise_adcm_ex as err
 from cm.models import (
@@ -80,16 +80,13 @@ MSG_NO_MULTI_STATE_TO_DELETE = (
 
 
 def job_lock(job_id):
-    fd = open(settings.RUN_DIR / f"{job_id}/config.json", "r", encoding=settings.ENCODING_UTF_8)
+    file_descriptor = open(settings.RUN_DIR / f"{job_id}/config.json", "r", encoding=settings.ENCODING_UTF_8)
     try:
-        fcntl.flock(fd.fileno(), fcntl.LOCK_EX)  # pylint: disable=I1101
-        return fd
+        fcntl.flock(file_descriptor.fileno(), fcntl.LOCK_EX)  # pylint: disable=I1101
+
+        return file_descriptor
     except IOError as e:
         return err("LOCK_ERROR", e)
-
-
-def job_unlock(fd):
-    fd.close()
 
 
 def check_context_type(task_vars, *context_type, err_msg=None):
@@ -172,7 +169,7 @@ class ContextActionModule(ActionBase):
         self._check_mandatory()
         obj_type = self._task.args["type"]
         job_id = task_vars["job"]["id"]
-        lock = job_lock(job_id)
+        file_descriptor = job_lock(job_id)
 
         if obj_type == "cluster":
             check_context_type(task_vars, "cluster", "service", "component")
@@ -226,7 +223,8 @@ class ContextActionModule(ActionBase):
             raise AnsibleError(MSG_NO_ROUTE)
 
         result = super().run(tmp, task_vars)
-        job_unlock(lock)
+        file_descriptor.close()
+
         return merge_hash(result, res)
 
 
@@ -252,8 +250,8 @@ def get_service_by_name(cluster_id, service_name):
 
 
 def _set_object_state(obj: ADCMEntity, state: str) -> ADCMEntity:
-    obj.set_state(state, ctx.event)
-    ctx.event.send_state()
+    obj.set_state(state, CTX.event)
+    CTX.event.send_state()
     return obj
 
 
@@ -293,8 +291,8 @@ def set_service_state(cluster_id, service_id, state):
 
 
 def _set_object_multi_state(obj: ADCMEntity, multi_state: str) -> ADCMEntity:
-    obj.set_multi_state(multi_state, ctx.event)
-    ctx.event.send_state()
+    obj.set_multi_state(multi_state, CTX.event)
+    CTX.event.send_state()
     return obj
 
 
@@ -337,40 +335,40 @@ def change_hc(job_id, cluster_id, operations):  # pylint: disable=too-many-branc
     """
     For use in ansible plugin adcm_hc
     """
-    lock = job_lock(job_id)
+    file_descriptor = job_lock(job_id)
     job = JobLog.objects.get(id=job_id)
     action = Action.objects.get(id=job.action_id)
     if action.hostcomponentmap:
         err("ACTION_ERROR", "You can not change hc in plugin for action with hc_acl")
 
     cluster = Cluster.obj.get(id=cluster_id)
-    hc = get_hc(cluster)
-    for op in operations:
-        service = ClusterObject.obj.get(cluster=cluster, prototype__name=op["service"])
-        component = ServiceComponent.obj.get(cluster=cluster, service=service, prototype__name=op["component"])
-        host = Host.obj.get(cluster=cluster, fqdn=op["host"])
+    hostcomponent = get_hc(cluster)
+    for operation in operations:
+        service = ClusterObject.obj.get(cluster=cluster, prototype__name=operation["service"])
+        component = ServiceComponent.obj.get(cluster=cluster, service=service, prototype__name=operation["component"])
+        host = Host.obj.get(cluster=cluster, fqdn=operation["host"])
         item = {
             "host_id": host.id,
             "service_id": service.id,
             "component_id": component.id,
         }
-        if op["action"] == "add":
-            if item not in hc:
-                hc.append(item)
+        if operation["action"] == "add":
+            if item not in hostcomponent:
+                hostcomponent.append(item)
             else:
                 msg = 'There is already component "{}" on host "{}"'
                 err("COMPONENT_CONFLICT", msg.format(component.prototype.name, host.fqdn))
-        elif op["action"] == "remove":
-            if item in hc:
-                hc.remove(item)
+        elif operation["action"] == "remove":
+            if item in hostcomponent:
+                hostcomponent.remove(item)
             else:
                 msg = 'There is no component "{}" on host "{}"'
                 err("COMPONENT_CONFLICT", msg.format(component.prototype.name, host.fqdn))
         else:
-            err("INVALID_INPUT", f'unknown hc action "{op["action"]}"')
+            err("INVALID_INPUT", f'unknown hc action "{operation["action"]}"')
 
-    add_hc(cluster, hc)
-    job_unlock(lock)
+    add_hc(cluster, hostcomponent)
+    file_descriptor.close()
 
 
 def update_config(obj: ADCMEntity, conf: dict) -> dict | int | str:
@@ -448,8 +446,8 @@ def check_missing_ok(obj: ADCMEntity, multi_state: str, missing_ok):
 
 def _unset_object_multi_state(obj: ADCMEntity, multi_state: str, missing_ok) -> ADCMEntity:
     check_missing_ok(obj, multi_state, missing_ok)
-    obj.unset_multi_state(multi_state, ctx.event)
-    ctx.event.send_state()
+    obj.unset_multi_state(multi_state, CTX.event)
+    CTX.event.send_state()
     return obj
 
 
@@ -503,7 +501,7 @@ def log_group_check(group: GroupCheckLog, fail_msg: str, success_msg: str):
 
 
 def log_check(job_id: int, group_data: dict, check_data: dict) -> CheckLog:
-    lock = job_lock(job_id)
+    file_descriptor = job_lock(job_id)
     job = JobLog.obj.get(id=job_id)
     if job.status != JobStatus.RUNNING:
         err("JOB_NOT_FOUND", f'job #{job.pk} has status "{job.status}", not "running"')
@@ -516,36 +514,39 @@ def log_check(job_id: int, group_data: dict, check_data: dict) -> CheckLog:
         group = None
 
     check_data.update({"job": job, "group": group})
-    cl = CheckLog.objects.create(**check_data)
+    check_log = CheckLog.objects.create(**check_data)
 
     if group is not None:
         group_data.update({"group": group})
         log_group_check(**group_data)
 
-    ls, _ = LogStorage.objects.get_or_create(job=job, name="ansible", type="check", format="json")
+    log_storage, _ = LogStorage.objects.get_or_create(job=job, name="ansible", type="check", format="json")
 
     post_event(
         event="add_job_log",
         obj=job,
         details={
-            "id": ls.pk,
-            "type": ls.type,
-            "name": ls.name,
-            "format": ls.format,
+            "id": log_storage.pk,
+            "type": log_storage.type,
+            "name": log_storage.name,
+            "format": log_storage.format,
         },
     )
-    job_unlock(lock)
-    return cl
+    file_descriptor.close()
+
+    return check_log
 
 
 def get_check_log(job_id: int):
     data = []
     group_subs = defaultdict(list)
 
-    for cl in CheckLog.objects.filter(job_id=job_id):
-        group = cl.group
+    for check_log in CheckLog.objects.filter(job_id=job_id):
+        group = check_log.group
         if group is None:
-            data.append({"title": cl.title, "type": "check", "message": cl.message, "result": cl.result})
+            data.append(
+                {"title": check_log.title, "type": "check", "message": check_log.message, "result": check_log.result}
+            )
         else:
             if group not in group_subs:
                 data.append(
@@ -557,7 +558,9 @@ def get_check_log(job_id: int):
                         "content": group_subs[group],
                     }
                 )
-            group_subs[group].append({"title": cl.title, "type": "check", "message": cl.message, "result": cl.result})
+            group_subs[group].append(
+                {"title": check_log.title, "type": "check", "message": check_log.message, "result": check_log.result}
+            )
     return data
 
 

@@ -45,7 +45,7 @@ from cm.api import (
     make_host_comp_list,
     save_hc,
 )
-from cm.api_context import ctx
+from cm.api_context import CTX
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.hierarchy import Tree
 from cm.inventory import get_obj_config, prepare_job_inventory, process_config_and_attr
@@ -99,9 +99,9 @@ def start_task(
         raise_adcm_ex("WRONG_ACTION_TYPE", msg)
 
     task = prepare_task(action, obj, conf, attr, hostcomponent, hosts, verbose)
-    ctx.event.send_state()
-    run_task(task, ctx.event)
-    ctx.event.send_state()
+    CTX.event.send_state()
+    run_task(task, CTX.event)
+    CTX.event.send_state()
 
     return task
 
@@ -177,17 +177,17 @@ def restart_task(task: TaskLog):
     if task.status in (JobStatus.CREATED, JobStatus.RUNNING):
         raise_adcm_ex("TASK_ERROR", f"task #{task.pk} is running")
     elif task.status == JobStatus.SUCCESS:
-        run_task(task, ctx.event)
-        ctx.event.send_state()
+        run_task(task, CTX.event)
+        CTX.event.send_state()
     elif task.status in (JobStatus.FAILED, JobStatus.ABORTED):
-        run_task(task, ctx.event, "restart")
-        ctx.event.send_state()
+        run_task(task, CTX.event, "restart")
+        CTX.event.send_state()
     else:
         raise_adcm_ex("TASK_ERROR", f"task #{task.pk} has unexpected status: {task.status}")
 
 
 def cancel_task(task: TaskLog):
-    task.cancel(ctx.event)
+    task.cancel(CTX.event)
 
 
 def get_host_object(action: Action, cluster: Cluster) -> Optional[ADCMEntity]:
@@ -208,12 +208,12 @@ def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster
     else:
         obj = task_object
 
-    if obj.concerns.filter(type=ConcernType.Lock).exists():
+    if obj.concerns.filter(type=ConcernType.LOCK).exists():
         raise_adcm_ex("LOCK_ERROR", f"object {obj} is locked")
 
     if (
         action.name not in settings.ADCM_SERVICE_ACTION_NAMES_SET
-        and obj.concerns.filter(type=ConcernType.Issue).exists()
+        and obj.concerns.filter(type=ConcernType.ISSUE).exists()
     ):
         raise_adcm_ex("ISSUE_INTEGRITY_ERROR", f"object {obj} has issues")
 
@@ -327,10 +327,10 @@ def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict])
     for host_comp in new_hc:
         if not hasattr(action, "upgrade"):
             host = Host.obj.get(id=host_comp.get("host_id", 0))
-            if host.concerns.filter(type=ConcernType.Lock).exists():
+            if host.concerns.filter(type=ConcernType.LOCK).exists():
                 raise_adcm_ex("LOCK_ERROR", f"object {host} is locked")
 
-            if host.concerns.filter(type=ConcernType.Issue).exists():
+            if host.concerns.filter(type=ConcernType.ISSUE).exists():
                 raise_adcm_ex("ISSUE_INTEGRITY_ERROR", f"object {host} has issues")
 
     post_upgrade_hc, clear_hc = check_upgrade_hc(action, new_hc)
@@ -538,28 +538,28 @@ def prepare_job(
 def get_selector(obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host, action: Action) -> dict:
     selector = {obj.prototype.type: {"id": obj.pk, "name": obj.display_name}}
 
-    if obj.prototype.type == ObjectType.Service:
-        selector[ObjectType.Cluster] = {"id": obj.cluster.pk, "name": obj.cluster.display_name}
-    elif obj.prototype.type == ObjectType.Component:
-        selector[ObjectType.Service] = {"id": obj.service.pk, "name": obj.service.display_name}
-        selector[ObjectType.Cluster] = {"id": obj.cluster.pk, "name": obj.cluster.display_name}
-    elif obj.prototype.type == ObjectType.Host:
+    if obj.prototype.type == ObjectType.SERVICE:
+        selector[ObjectType.CLUSTER] = {"id": obj.cluster.pk, "name": obj.cluster.display_name}
+    elif obj.prototype.type == ObjectType.COMPONENT:
+        selector[ObjectType.SERVICE] = {"id": obj.service.pk, "name": obj.service.display_name}
+        selector[ObjectType.CLUSTER] = {"id": obj.cluster.pk, "name": obj.cluster.display_name}
+    elif obj.prototype.type == ObjectType.HOST:
         if action.host_action:
             cluster = obj.cluster
-            selector[ObjectType.Cluster] = {"id": cluster.pk, "name": cluster.display_name}
-            if action.prototype.type == ObjectType.Service:
+            selector[ObjectType.CLUSTER] = {"id": cluster.pk, "name": cluster.display_name}
+            if action.prototype.type == ObjectType.SERVICE:
                 service = ClusterObject.objects.get(prototype=action.prototype, cluster=cluster)
-                selector[ObjectType.Service] = {"id": service.pk, "name": service.display_name}
-            elif action.prototype.type == ObjectType.Component:
+                selector[ObjectType.SERVICE] = {"id": service.pk, "name": service.display_name}
+            elif action.prototype.type == ObjectType.COMPONENT:
                 service = ClusterObject.objects.get(prototype=action.prototype.parent, cluster=cluster)
-                selector[ObjectType.Service] = {"id": service.pk, "name": service.display_name}
+                selector[ObjectType.SERVICE] = {"id": service.pk, "name": service.display_name}
                 component = ServiceComponent.objects.get(prototype=action.prototype, cluster=cluster, service=service)
-                selector[ObjectType.Component] = {
+                selector[ObjectType.COMPONENT] = {
                     "id": component.pk,
                     "name": component.display_name,
                 }
         else:
-            selector[ObjectType.Provider] = {
+            selector[ObjectType.PROVIDER] = {
                 "id": obj.provider.pk,
                 "name": obj.provider.display_name,
             }
@@ -574,7 +574,7 @@ def prepare_context(
     context = {f"{k}_id": v["id"] for k, v in selector.items()}
     context["type"] = obj.prototype.type
 
-    if obj.prototype.type == ObjectType.Host and action.host_action:
+    if obj.prototype.type == ObjectType.HOST and action.host_action:
         context["type"] = action.prototype.type
 
     return context
@@ -696,9 +696,9 @@ def create_task(
         status=JobStatus.CREATED,
         selector=get_selector(obj, action),
     )
-    set_task_status(task, JobStatus.CREATED, ctx.event)
+    set_task_status(task, JobStatus.CREATED, CTX.event)
 
-    if action.type == ActionType.Job.value:
+    if action.type == ActionType.JOB.value:
         sub_actions = [None]
     else:
         sub_actions = SubAction.objects.filter(action=action).all()
@@ -717,7 +717,7 @@ def create_task(
         log_type = sub_action.script_type if sub_action else action.script_type
         LogStorage.objects.create(job=job, name=log_type, type="stdout", format="txt")
         LogStorage.objects.create(job=job, name=log_type, type="stderr", format="txt")
-        set_job_status(job.pk, JobStatus.CREATED, ctx.event)
+        set_job_status(job.pk, JobStatus.CREATED, CTX.event)
         Path(settings.RUN_DIR, f"{job.pk}", "tmp").mkdir(parents=True, exist_ok=True)
 
     tree = Tree(obj)
@@ -779,13 +779,13 @@ def set_action_state(
     )
 
     if state:
-        obj.set_state(state, ctx.event)
+        obj.set_state(state, CTX.event)
 
     for m_state in multi_state_set or []:
-        obj.set_multi_state(m_state, ctx.event)
+        obj.set_multi_state(m_state, CTX.event)
 
     for m_state in multi_state_unset or []:
-        obj.unset_multi_state(m_state, ctx.event)
+        obj.unset_multi_state(m_state, CTX.event)
 
 
 def restore_hc(task: TaskLog, action: Action, status: str):
@@ -821,7 +821,7 @@ def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
         set_action_state(action, task, obj, state, multi_state_set, multi_state_unset)
         restore_hc(task, action, status)
         task.unlock_affected()
-        set_task_status(task, status, ctx.event)
+        set_task_status(task, status, CTX.event)
         update_hierarchy_issues(obj)
 
     upgrade = Upgrade.objects.filter(action=action).first()
@@ -867,7 +867,7 @@ def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
     )
     cef_logger(audit_instance=audit_log, signature_id="Action completion")
 
-    ctx.event.send_state()
+    CTX.event.send_state()
     try:
         load_mm_objects()
     except Exception as e:  # pylint: disable=broad-except
@@ -964,7 +964,7 @@ def abort_all(event):
         task.unlock_affected()
     for job in JobLog.objects.filter(status=JobStatus.RUNNING):
         set_job_status(job.pk, JobStatus.ABORTED, event)
-    ctx.event.send_state()
+    CTX.event.send_state()
 
 
 def getattr_first(attr: str, *objects: Any, default: Any = None) -> Any:

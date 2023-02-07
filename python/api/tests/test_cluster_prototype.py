@@ -43,7 +43,7 @@ class TestClusterPrototypeAPI(BaseTestCase):
         self.action = Action.objects.create(
             display_name="test_adcm_action",
             prototype=self.prototype_1,
-            type=ActionType.Job,
+            type=ActionType.JOB,
             state_available="any",
         )
 

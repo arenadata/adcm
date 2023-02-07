@@ -93,8 +93,9 @@ def match_any(data, rules, rule, path, parent=None, is_service=False):
 
 def match_list(data, rules, rule, path, parent=None, is_service=False):
     check_match_type("match_list", data, list, path, rule, parent)
-    for i, v in enumerate(data):
-        process_rule(v, rules, rules[rule]["item"], path + [("Value of list index", i)], parent, is_service)
+    for i, item in enumerate(data):
+        process_rule(item, rules, rules[rule]["item"], path + [("Value of list index", i)], parent, is_service)
+
     return True
 
 
@@ -112,14 +113,14 @@ def match_dict(data, rules, rule, path, parent=None, is_service=False):
 
                 raise FormatError(path, f'There is no required key "{i}" in map.', data, rule)
 
-    for k in data:
-        new_path = path + [("Value of map key", k)]
-        if "items" in rules[rule] and k in rules[rule]["items"]:
-            process_rule(data[k], rules, rules[rule]["items"][k], new_path, data, is_service)
+    for key in data:
+        new_path = path + [("Value of map key", key)]
+        if "items" in rules[rule] and key in rules[rule]["items"]:
+            process_rule(data[key], rules, rules[rule]["items"][key], new_path, data, is_service)
         elif "default_item" in rules[rule]:
-            process_rule(data[k], rules, rules[rule]["default_item"], new_path, data, is_service)
+            process_rule(data[key], rules, rules[rule]["default_item"], new_path, data, is_service)
         else:
-            msg = f'Map key "{k}" is not allowed here (rule "{rule}")'
+            msg = f'Map key "{key}" is not allowed here (rule "{rule}")'
 
             raise FormatError(path, msg, data, rule)
 
@@ -197,11 +198,14 @@ def check_rule(rules):
 def process_rule(data, rules, name, path=None, parent=None, is_service=False):
     if path is None:
         path = []
+
     if name not in rules:
         raise SchemaError(f"There is no rule {name} in schema.")
+
     rule = rules[name]
     if "match" not in rule:
         raise SchemaError(f"There is no mandatory match attr in rule {rule} in schema.")
+
     match = rule["match"]
     if match not in MATCH:
         raise SchemaError(f"Unknown match {match} from schema. Impossible to handle that.")
