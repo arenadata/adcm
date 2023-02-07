@@ -133,7 +133,7 @@ def load_service_map():
         "service": services,
         "host": hosts,
     }
-    api_request("post", "/servicemap/", data)
+    api_request(method="post", url="servicemap/", data=data)
     load_mm_objects()
 
 
@@ -161,7 +161,7 @@ def load_mm_objects():
         "components": list(component_ids),
         "hosts": host_ids,
     }
-    return api_request("post", "/object/mm/", data)
+    return api_request(method="post", url="object/mm/", data=data)
 
 
 def update_mm_objects(func):

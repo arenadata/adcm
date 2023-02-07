@@ -116,7 +116,7 @@ def post_event(event: str, obj, details: dict = None) -> Response | None:
     }
 
     logger.debug("post_event %s", data)
-    return api_request(method="post", url="/event/", data=data)
+    return api_request(method="post", url="event/", data=data)
 
 
 def set_job_status(job: JobLog, status: str) -> Response | None:
@@ -208,9 +208,9 @@ def get_component_status(component: ServiceComponent) -> int:
 
 def get_object_map(obj: ADCMEntity, url_type: str) -> dict | None:
     if url_type == "service":
-        response = api_request(method="get", url=f"/cluster/{obj.cluster.id}/service/{obj.id}/?view=interface")
+        response = api_request(method="get", url=f"cluster/{obj.cluster.id}/service/{obj.id}/?view=interface")
     else:
-        response = api_request(method="get", url=f"/{url_type}/{obj.id}/?view=interface")
+        response = api_request(method="get", url=f"{url_type}/{obj.id}/?view=interface")
 
     if response is None:
         return None
