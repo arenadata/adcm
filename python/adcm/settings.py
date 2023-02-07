@@ -22,7 +22,7 @@ from cm.utils import dict_json_get_or_create, get_adcm_token
 
 ENCODING_UTF_8 = "utf-8"
 
-API_URL = "http://localhost:8020/api/v1"
+API_URL = "http://localhost:8020/api/v1/"
 BASE_DIR = os.getenv("ADCM_BASE_DIR")
 if BASE_DIR:
     BASE_DIR = Path(BASE_DIR)
