@@ -223,7 +223,7 @@ class DbFiller:
         self, object_type: Literal["cluster", "service", "component", "provider", "host"]
     ) -> int:
         """Get random created object by given type"""
-        return random.choice(get_endpoint_data(adcm=self.adcm, endpoint=Endpoints[object_type.capitalize()]))["id"]
+        return random.choice(get_endpoint_data(adcm=self.adcm, endpoint=Endpoints[object_type.upper()]))["id"]
 
     def _prepare_data_for_object_creation(self, endpoint: Endpoints = None, force=False):
         data = {}
@@ -361,7 +361,7 @@ class DbFiller:
         ! This method isn't universal, it was originally made for resolving generic keys for "object" in RBAC Policy !
         ! api_wrapper is instance of tests.api.utils.api_objects.ADCMTestApiWrapper !
         """
-        endpoint = Endpoints[key_type.lower().capitalize()]
+        endpoint = Endpoints[key_type.lower().upper()]
         new_item = next(filter(lambda x: x["id"] != prev_id, get_endpoint_data(api_wrapper, endpoint)), None)
         if new_item is None:
             raise ValueError(f"Failed to find new generic foreign key id for type {key_type}")
