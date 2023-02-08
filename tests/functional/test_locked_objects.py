@@ -430,9 +430,7 @@ def test_expand_on_clean_locked_host(
     with allure.step(f"Run {obj_for_action.__class__.__name__} action: expand on clean locked host"):
         with catch_failed(Failed, "Expand action should throw an API error as Host is locked"):
             with pytest.raises(ErrorMessage, match="is locked"):
-                obj_for_action.action(
-                    name=expand_action,
-                ).run(
+                obj_for_action.action(name=expand_action,).run(
                     hc=[
                         {
                             "host_id": host1.host_id,
@@ -583,9 +581,7 @@ def _test_expand_object_action(
         (host1, first_service_component),
     )
     with allure.step(f"Run {obj_for_action.__class__.__name__} action: expand component from host"):
-        obj_for_action.action(
-            name=action_name,
-        ).run(
+        obj_for_action.action(name=action_name,).run(
             hc=[
                 {
                     "host_id": host1.host_id,
@@ -615,9 +611,7 @@ def _test_shrink_object_action(
     host1, host2 = hosts
     first_service_component, second_service_component = _cluster_with_components(cluster, hosts)
     with allure.step(f"Run {obj_for_action.__class__.__name__} action: shrink component from host"):
-        obj_for_action.action(
-            name=action_name,
-        ).run(
+        obj_for_action.action(name=action_name,).run(
             hc=[
                 {
                     "host_id": host1.host_id,
