@@ -139,16 +139,16 @@ def gen_object(prop=None):
             return _gen_any_obj()
         return {key: gen_string() for key in prop.get("additionalProperties", {})}
 
-    for k in prop[prop_key].keys():
-        json_prop = prop[prop_key][k]
+    for _prop in prop[prop_key].keys():
+        json_prop = prop[prop_key][_prop]
 
-        if _should_include(k, required):
-            output[k] = _get_generator(json_prop)
+        if _should_include(_prop, required):
+            output[_prop] = _get_generator(json_prop)
 
-        if k == "duration":
+        if _prop == "duration":
             msg = "Set 'duration' property to 2 sec in fake generated data by JSON schema"
             with allure.step(msg):
-                output[k] = 2
+                output[_prop] = 2
 
     return output
 

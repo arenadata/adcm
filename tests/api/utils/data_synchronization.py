@@ -30,7 +30,7 @@ def _regenerate_name(adcm, old_name: str, retrieve_builder) -> str:
     new_name = f"{old_name[:half_length]}{random_string(half_length)}"
 
     same_named_role = next(
-        filter(retrieve_builder(new_name), get_endpoint_data(adcm, endpoint=Endpoints.RbacAnyRole)), None
+        filter(retrieve_builder(new_name), get_endpoint_data(adcm, endpoint=Endpoints.RBAC_ANY_ROLE)), None
     )
 
     if same_named_role is None:
@@ -46,7 +46,7 @@ def _rename_if_not_unique(adcm, fields: dict, key: str, retrieve_builder: Callab
     same_named_role = next(
         filter(
             retrieve_builder(fields[key]),
-            get_endpoint_data(adcm, endpoint=Endpoints.RbacAnyRole),
+            get_endpoint_data(adcm, endpoint=Endpoints.RBAC_ANY_ROLE),
         ),
         None,
     )
@@ -64,7 +64,7 @@ def sync_object_and_role(adcm, fields: dict) -> dict:
 
     new_fields = deepcopy(fields)
     role_id = new_fields["role"]["id"]
-    role = next(filter(lambda r: r["id"] == role_id, get_endpoint_data(adcm, Endpoints.RbacAnyRole)), None)
+    role = next(filter(lambda r: r["id"] == role_id, get_endpoint_data(adcm, Endpoints.RBAC_ANY_ROLE)), None)
     if role is None:
         return new_fields
 
@@ -111,7 +111,7 @@ def sync_child_roles_hierarchy_and_unique_name(adcm, fields: dict):
         types = _role_by_id(all_roles, role["id"])["parametrized_by_type"]
         return all(role_type in allowed_parametrization for role_type in types)
 
-    all_roles = get_endpoint_data(adcm, endpoint=Endpoints.RbacBusinessRole)
+    all_roles = get_endpoint_data(adcm, endpoint=Endpoints.RBAC_BUSINESS_ROLE)
     for role in child_list:
         role_obj = _role_by_id(all_roles, role["id"])
         if parametrization := role_obj["parametrized_by_type"]:
