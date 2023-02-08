@@ -18,14 +18,13 @@ from pathlib import Path
 from shutil import rmtree
 from tarfile import TarFile
 
+from audit.models import AuditLog, AuditLogOperationResult, AuditObject, AuditSession
+from audit.utils import make_audit_log
+from cm.adcm_config import get_adcm_config
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.models import Count, Q
 from django.utils import timezone
-
-from audit.models import AuditLog, AuditLogOperationResult, AuditObject, AuditSession
-from audit.utils import make_audit_log
-from cm.adcm_config import get_adcm_config
 
 logger = logging.getLogger("background_tasks")
 

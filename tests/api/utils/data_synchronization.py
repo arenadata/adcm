@@ -19,6 +19,7 @@ from copy import deepcopy
 from typing import Callable, Tuple
 
 from adcm_pytest_plugin.utils import random_string
+
 from tests.library.predicates import PredicateOfOne, display_name_key_is, name_key_is
 
 

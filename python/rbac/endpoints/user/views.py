@@ -10,14 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from audit.utils import audit
+from cm.errors import raise_adcm_ex
 from guardian.mixins import PermissionListMixin
+from rbac import models
+from rbac.endpoints.user.serializers import UserSerializer
 from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import DjangoModelPermissionsAudit
-from audit.utils import audit
-from cm.errors import raise_adcm_ex
-from rbac import models
-from rbac.endpoints.user.serializers import UserSerializer
 
 
 class UserViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors

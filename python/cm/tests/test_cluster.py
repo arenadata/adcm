@@ -11,12 +11,12 @@
 # limitations under the License.
 import string
 
+from cm.models import Bundle, Cluster, Prototype
 from django.urls import reverse
+from init_db import init
 from rest_framework import status
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.models import Bundle, Cluster, Prototype
-from init_db import init
 
 
 class TestCluster(BaseTestCase):

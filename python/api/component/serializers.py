@@ -12,6 +12,14 @@
 
 # pylint: disable=redefined-builtin
 
+from api.action.serializers import ActionShort
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
+from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
+from api.serializers import StringListSerializer
+from api.utils import CommonAPIURL, ObjectURL, filter_actions
+from cm.adcm_config import get_main_info
+from cm.models import Action, MaintenanceMode, ServiceComponent
+from cm.status_api import get_component_status
 from rest_framework.serializers import (
     BooleanField,
     CharField,
@@ -24,14 +32,6 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
-from api.action.serializers import ActionShort
-from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
-from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
-from api.serializers import StringListSerializer
-from api.utils import CommonAPIURL, ObjectURL, filter_actions
-from cm.adcm_config import get_main_info
-from cm.models import Action, MaintenanceMode, ServiceComponent
-from cm.status_api import get_component_status
 
 
 class ComponentSerializer(EmptySerializer):

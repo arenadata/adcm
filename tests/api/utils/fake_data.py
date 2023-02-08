@@ -19,6 +19,7 @@ from random import choice, randint
 import allure
 from genson import SchemaBuilder
 from rstr.xeger import Xeger
+
 from tests.api.utils.tools import random_string
 
 
@@ -49,9 +50,10 @@ def gen_string(prop=None):
     pattern = prop.get("pattern", None)
     if pattern:
         if min_length or max_length:
-            # TODO implement pattern with min/max length
             raise NotImplementedError
+
         return Xeger().xeger(pattern)
+
     return random_string(strlen=randint(min_length, max_length))
 
 

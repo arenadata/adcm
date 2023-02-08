@@ -1,5 +1,6 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+
 from tests.ui_tests.core.elements import Element, as_element
 from tests.ui_tests.core.interactors import Interactor
 from tests.ui_tests.core.locators import Locator, autoname

@@ -12,6 +12,7 @@ from selenium.webdriver import ActionChains, Keys
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
+
 from tests.ui_tests.core.locators import BaseLocator
 
 

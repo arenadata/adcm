@@ -21,6 +21,7 @@ from adcm_pytest_plugin.steps.actions import (
     run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import get_data_dir
+
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.cluster.page import ClusterConfigPage
 from tests.ui_tests.app.page.component.page import ComponentConfigPage

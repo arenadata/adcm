@@ -20,6 +20,7 @@ from adcm_client.objects import ADCMClient, Bundle, Cluster, Service
 from adcm_pytest_plugin.docker.adcm import ADCM
 from adcm_pytest_plugin.utils import catch_failed, get_data_dir
 from coreapi.exceptions import ErrorMessage
+
 from tests.functional.tools import BEFORE_UPGRADE_DEFAULT_STATE, get_object_represent
 
 

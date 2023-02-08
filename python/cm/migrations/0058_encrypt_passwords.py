@@ -12,9 +12,8 @@
 
 import json
 
-from django.db import migrations
-
 from cm.adcm_config import ansible_encrypt_and_format, obj_to_dict
+from django.db import migrations
 
 
 def get_prototype_config(proto, PrototypeConfig):

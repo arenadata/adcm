@@ -1,5 +1,6 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+
 from tests.library.utils import name_of
 from tests.ui_tests.app.page.common.concerns import ConcernMark
 from tests.ui_tests.core.elements import (

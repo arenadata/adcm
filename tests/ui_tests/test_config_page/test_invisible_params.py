@@ -15,6 +15,7 @@
 import allure
 import pytest
 from adcm_client.objects import ADCMClient
+
 from tests.ui_tests.app.page.cluster.page import ClusterGroupConfigConfig
 from tests.ui_tests.generator_helper import (
     TYPES,

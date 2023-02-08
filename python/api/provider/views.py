@@ -10,10 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from guardian.mixins import PermissionListMixin
-from rest_framework import permissions, status
-from rest_framework.response import Response
-
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.provider.serializers import (
     DoProviderUpgradeSerializer,
@@ -36,7 +32,10 @@ from cm.api import delete_host_provider
 from cm.issue import update_hierarchy_issues
 from cm.models import HostProvider, Upgrade
 from cm.upgrade import get_upgrade
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
+from rest_framework import permissions, status
+from rest_framework.response import Response
 
 
 class ProviderList(PermissionListMixin, PaginatedView):

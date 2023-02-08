@@ -12,13 +12,13 @@
 
 import json
 
+from audit.models import AuditObject, AuditObjectType
+from cm.models import Bundle, Prototype, PrototypeConfig
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from adcm.tests.base import BaseTestCase
-from audit.models import AuditObject, AuditObjectType
-from cm.models import Bundle, Prototype, PrototypeConfig
 
 
 class TestAuditObjects(BaseTestCase):

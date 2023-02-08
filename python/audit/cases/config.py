@@ -9,15 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from audit.cases.common import get_obj_name, get_or_create_audit_obj
+from audit.models import AuditLogOperationType, AuditObject, AuditOperation
+from cm.models import GroupConfig, Host, ObjectConfig
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Model
 from django.views import View
 from rest_framework.response import Response
 
 from adcm.utils import get_obj_type
-from audit.cases.common import get_obj_name, get_or_create_audit_obj
-from audit.models import AuditLogOperationType, AuditObject, AuditOperation
-from cm.models import GroupConfig, Host, ObjectConfig
 
 
 # pylint: disable-next=too-many-locals,too-many-branches,too-many-statements

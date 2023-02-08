@@ -19,6 +19,7 @@ from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
+
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.core.interactors import Interactor

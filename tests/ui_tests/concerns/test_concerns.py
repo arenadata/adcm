@@ -15,6 +15,7 @@ from typing import Iterable
 import allure
 import pytest
 from adcm_client.objects import Cluster, Component, Service
+
 from tests.library.assertions import sets_are_equal
 from tests.ui_tests.app.page.cluster.page import (
     ClusterComponentsPage,

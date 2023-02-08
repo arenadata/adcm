@@ -52,12 +52,14 @@ def assert_events(websocket_connection, *expected_events):
             data = json.loads(websocket_connection.recv())
             for event in expected_list:
                 if event == data:
-                    # FIXME: modified-iterating-list
                     expected_list.remove(event)
+
                     continue
+
             count = count + 1
     except websocket.WebSocketTimeoutException:
         pass
+
     assert not expected_list
 
 

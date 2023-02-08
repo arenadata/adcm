@@ -15,10 +15,9 @@ import logging
 from collections import OrderedDict
 from typing import Tuple, Union
 
-from django.conf import settings
-
 from audit.apps import AuditConfig
 from audit.models import AuditLog, AuditLogOperationResult, AuditSession
+from django.conf import settings
 
 audit_logger = logging.getLogger(AuditConfig.name)
 

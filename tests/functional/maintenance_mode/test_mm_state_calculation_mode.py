@@ -15,6 +15,7 @@ Test designed to check MM state calculation logic for services/components
 """
 
 import allure
+
 from tests.functional.maintenance_mode.conftest import (
     ANOTHER_SERVICE_NAME,
     DEFAULT_SERVICE_NAME,

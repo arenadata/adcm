@@ -12,27 +12,6 @@
 
 from pathlib import Path
 
-from django.conf import settings
-from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework.authentication import SessionAuthentication, TokenAuthentication
-from rest_framework.decorators import action
-from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
-from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.reverse import reverse
-from rest_framework.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_204_NO_CONTENT,
-    HTTP_400_BAD_REQUEST,
-    HTTP_405_METHOD_NOT_ALLOWED,
-)
-from rest_framework.viewsets import ModelViewSet
-
-from adcm.permissions import DjangoObjectPermissionsAudit, IsAuthenticatedAudit
 from api.action.serializers import StackActionSerializer
 from api.base_view import GenericUIViewSet, ModelPermOrReadOnlyForAuth
 from api.stack.serializers import (
@@ -68,6 +47,27 @@ from cm.models import (
     PrototypeImport,
     Upgrade,
 )
+from django.conf import settings
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
+from rest_framework.decorators import action
+from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
+from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_405_METHOD_NOT_ALLOWED,
+)
+from rest_framework.viewsets import ModelViewSet
+
+from adcm.permissions import DjangoObjectPermissionsAudit, IsAuthenticatedAudit
 
 
 @csrf_exempt

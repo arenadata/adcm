@@ -10,13 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.contrib.contenttypes.models import ContentType
-
-from adcm.tests.base import BaseTestCase
 from cm.adcm_config import check_value_unselected_field
 from cm.errors import AdcmEx
 from cm.models import GroupConfig
 from cm.tests.utils import gen_cluster, gen_config, gen_prototype_config
+from django.contrib.contenttypes.models import ContentType
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestUnselectedFields(BaseTestCase):

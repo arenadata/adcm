@@ -10,8 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# pylint: disable=unused-import
+# pylint: disable=wrong-import-order
 
 import json
 import os
@@ -22,7 +21,7 @@ from pathlib import Path
 from django.conf import settings
 from django.db import transaction
 
-import adcm.init_django
+import adcm.init_django  # pylint: disable=unused-import
 import cm.job
 from cm.ansible_plugin import finish_check
 from cm.api import get_hc, save_hc

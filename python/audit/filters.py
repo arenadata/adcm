@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from audit.models import AuditLog, AuditObjectType, AuditSession
 from django_filters.rest_framework import (
     CharFilter,
     ChoiceFilter,
@@ -17,8 +18,6 @@ from django_filters.rest_framework import (
     FilterSet,
     IsoDateTimeFromToRangeFilter,
 )
-
-from audit.models import AuditLog, AuditObjectType, AuditSession
 
 
 class AuditLogListFilter(FilterSet):

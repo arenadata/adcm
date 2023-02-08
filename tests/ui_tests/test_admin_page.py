@@ -23,6 +23,7 @@ import pytest
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider, Service
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import get_data_dir, random_string
+
 from tests.library.assertions import is_in_collection, is_superset_of
 from tests.library.predicates import name_is, username_is
 from tests.library.retry import should_become_truth
@@ -347,10 +348,10 @@ class TestAdminUsersPage:
 
     def test_delete_user(self, users_page: AdminUsersPage):
         """Create new user, delete it and check current user can't be deleted"""
+
         username = "testuser"
         current_user = "admin"
 
-        # TODO rework, it makes no sense
         with allure.step("Check user can't delete itself"):
             assert not users_page.get_row(
                 username_is(current_user)

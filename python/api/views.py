@@ -10,13 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.stack import NAME_REGEX
 from django.conf import settings
 from rest_framework import permissions, routers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from adcm.utils import has_google_oauth, has_yandex_oauth
-from cm.stack import NAME_REGEX
 
 
 class APIRoot(routers.APIRootView):

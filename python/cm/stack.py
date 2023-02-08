@@ -19,15 +19,10 @@ import warnings
 from copy import deepcopy
 from typing import Any
 
+import cm.checker
 import ruyaml
 import yaml
 import yspec.checker
-from django.conf import settings
-from django.db import IntegrityError
-from rest_framework import status
-from version_utils import rpm
-
-import cm.checker
 from cm.adcm_config import (
     check_config_type,
     proto_ref,
@@ -45,6 +40,10 @@ from cm.models import (
     StageSubAction,
     StageUpgrade,
 )
+from django.conf import settings
+from django.db import IntegrityError
+from rest_framework import status
+from version_utils import rpm
 
 NAME_REGEX = r"[0-9a-zA-Z_\.-]+"
 

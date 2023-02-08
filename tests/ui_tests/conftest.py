@@ -26,6 +26,7 @@ from _pytest.fixtures import SubRequest
 from adcm_client.objects import ADCMClient
 from adcm_client.wrappers.docker import ADCM
 from selenium.common.exceptions import WebDriverException
+
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.login.page import LoginPage

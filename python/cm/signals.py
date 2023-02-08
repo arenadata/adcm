@@ -11,10 +11,6 @@
 # limitations under the License.
 
 import casestyle
-from django.db import transaction
-from django.db.models.signals import m2m_changed, post_delete, post_save, pre_save
-from django.dispatch import receiver
-
 from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP, AuditObject
 from audit.utils import mark_deleted_audit_object
 from cm.logger import logger
@@ -31,6 +27,9 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.status_api import post_event
+from django.db import transaction
+from django.db.models.signals import m2m_changed, post_delete, post_save, pre_save
+from django.dispatch import receiver
 from rbac.models import Group, Policy, Role, User
 
 

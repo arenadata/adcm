@@ -16,6 +16,7 @@ import allure
 import pytest
 from adcm_client.objects import ADCMClient, Cluster, Service
 from adcm_pytest_plugin.utils import get_data_dir
+
 from tests.library.retry import should_become_truth
 from tests.ui_tests.app.page.cluster.page import ClusterGroupConfigConfig
 from tests.ui_tests.app.page.service.page import ServiceConfigPage

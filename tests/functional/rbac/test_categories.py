@@ -19,6 +19,7 @@ from urllib import parse
 import allure
 import requests
 from adcm_client.objects import ADCMClient
+
 from tests.functional.rbac.conftest import (
     DATA_DIR,
     RoleShortInfo,

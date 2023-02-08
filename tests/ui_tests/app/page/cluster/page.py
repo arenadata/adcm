@@ -19,6 +19,7 @@ from typing import List, Optional
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebElement
+
 from tests.ui_tests.app.page.cluster.elements import ComponentRow, ServiceRow
 from tests.ui_tests.app.page.cluster.locators import (
     ClusterHostLocators,

@@ -11,11 +11,11 @@
 # limitations under the License.
 
 from django.urls import reverse
+from rbac.models import OriginType
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
 from adcm.tests.base import BaseTestCase
-from rbac.models import OriginType
 
 
 class UserTestCase(BaseTestCase):

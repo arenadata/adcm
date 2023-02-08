@@ -10,10 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.contrib.contenttypes.models import ContentType
-from django_filters import rest_framework as drf_filters
-from rest_framework.permissions import IsAuthenticated
-
 from api.base_view import DetailView, PaginatedView
 from api.concern.serializers import (
     ConcernItemDetailSerializer,
@@ -22,6 +18,9 @@ from api.concern.serializers import (
 )
 from cm import models
 from cm.errors import AdcmEx
+from django.contrib.contenttypes.models import ContentType
+from django_filters import rest_framework as drf_filters
+from rest_framework.permissions import IsAuthenticated
 
 OBJECT_TYPES = {
     "adcm": "adcm",

@@ -10,12 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from guardian.mixins import PermissionListMixin
-from rest_framework import permissions
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
-
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.component.serializers import (
     ComponentChangeMaintenanceModeSerializer,
@@ -34,7 +28,12 @@ from audit.utils import audit
 from cm.api import update_mm_objects
 from cm.models import Cluster, ClusterObject, HostComponent, ServiceComponent
 from cm.status_api import make_ui_component_status
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
+from rest_framework import permissions
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
 
 
 def get_component_queryset(queryset, user, kwargs):

@@ -3,7 +3,6 @@ line-length = 120
 
 [tool.isort]
 profile = "black"
-src_paths = ["python"]
 skip_glob = ["python/ansible/plugins"]
 skip = ["python/init_db.py", "python/task_runner.py", "python/backupdb.py", "python/job_runner.py",
     "python/drf_docs.py"]
@@ -12,9 +11,8 @@ skip = ["python/init_db.py", "python/task_runner.py", "python/backupdb.py", "pyt
 ignore = ["migrations"]
 
 [tool.pylint."messages control"]
-disable = ["abstract-method", "consider-using-with", "fixme", "import-error", "missing-docstring",
-    "missing-timeout", "no-else-return", "no-member", "too-few-public-methods", "too-many-arguments", "unused-argument",
-    "wrong-import-order"]
+disable = ["abstract-method", "consider-using-with", "import-error", "missing-docstring", "missing-timeout",
+    "no-else-return", "no-member", "too-few-public-methods", "too-many-arguments", "unused-argument"]
 good-names = ["db", "e", "f", "i", "pk"]
 
 [tool.pylint.format]

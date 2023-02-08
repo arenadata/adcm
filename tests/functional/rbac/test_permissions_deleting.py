@@ -14,6 +14,7 @@
 
 import allure
 from adcm_client.objects import ADCMClient
+
 from tests.functional.rbac.conftest import (
     CLUSTER_VIEW_CONFIG_ROLES,
     BusinessRoles,

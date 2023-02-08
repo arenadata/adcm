@@ -28,6 +28,7 @@ from selenium.common.exceptions import (
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
+
 from tests.ui_tests.app.app import ADCMTest
 
 T = TypeVar("T")

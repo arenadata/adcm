@@ -14,12 +14,11 @@
 
 import django.contrib.auth
 import rest_framework.authtoken.serializers
+from cm.errors import raise_adcm_ex
 from rest_framework import authentication, permissions
 from rest_framework.authtoken.models import Token
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-
-from cm.errors import raise_adcm_ex
 
 
 class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):

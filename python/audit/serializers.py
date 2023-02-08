@@ -11,13 +11,12 @@
 # limitations under the License.
 
 
+from audit.models import AuditLog, AuditSession
 from rest_framework.serializers import (
     CharField,
     HyperlinkedModelSerializer,
     IntegerField,
 )
-
-from audit.models import AuditLog, AuditSession
 
 
 class AuditLogSerializer(HyperlinkedModelSerializer):

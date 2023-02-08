@@ -15,18 +15,6 @@ import re
 import tarfile
 from pathlib import Path
 
-from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-from django.http import HttpResponse
-from guardian.mixins import PermissionListMixin
-from rest_framework.decorators import action
-from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
-from rest_framework.permissions import DjangoModelPermissions
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
-
-from adcm.utils import str_remove_non_alnum
 from api.base_view import GenericUIViewSet
 from api.job.serializers import (
     JobRetrieveSerializer,
@@ -41,7 +29,19 @@ from audit.utils import audit
 from cm.job import cancel_task, restart_task
 from cm.models import ActionType, JobLog, JobStatus, LogStorage, TaskLog
 from cm.status_api import Event
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.http import HttpResponse
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
+from rest_framework.decorators import action
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import DjangoModelPermissions
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
+
+from adcm.utils import str_remove_non_alnum
 
 VIEW_TASKLOG_PERMISSION = "cm.view_tasklog"
 VIEW_JOBLOG_PERMISSION = "cm.view_joblog"

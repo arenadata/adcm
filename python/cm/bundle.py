@@ -16,10 +16,6 @@ import shutil
 import tarfile
 from pathlib import Path
 
-from django.conf import settings
-from django.db import IntegrityError, transaction
-from version_utils import rpm
-
 import cm.stack
 from cm.adcm_config import init_object_config, proto_ref, switch_config
 from cm.errors import raise_adcm_ex as err
@@ -46,8 +42,11 @@ from cm.models import (
     Upgrade,
 )
 from cm.status_api import post_event
+from django.conf import settings
+from django.db import IntegrityError, transaction
 from rbac.models import Role
 from rbac.upgrade.role import prepare_action_roles
+from version_utils import rpm
 
 STAGE = (
     StagePrototype,

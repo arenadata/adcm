@@ -10,11 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import include, path, register_converter
-from rest_framework.schemas import get_schema_view
-
 from api import docs, views
+from django.urls import include, path, register_converter
 from rbac.endpoints import token
+from rest_framework.schemas import get_schema_view
 
 register_converter(views.NameConverter, "name")
 schema_view = get_schema_view(title="ArenaData Chapel API", patterns=[path("api/v1/", include("api.urls"))])

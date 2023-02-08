@@ -22,6 +22,7 @@ from adcm_pytest_plugin.params import ADCMVersionParam
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
+
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.bundle_list.page import BundleListPage
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage

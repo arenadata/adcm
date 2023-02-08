@@ -9,10 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from django.db.models import Model
-from django.views import View
-from rest_framework.response import Response
-
 from audit.cases.cluster import get_export_cluster_and_service_names, make_export_name
 from audit.cases.common import get_obj_name, get_or_create_audit_obj, get_service_name
 from audit.models import (
@@ -22,6 +18,9 @@ from audit.models import (
     AuditOperation,
 )
 from cm.models import Cluster, ClusterBind, ClusterObject
+from django.db.models import Model
+from django.views import View
+from rest_framework.response import Response
 
 
 def service_case(  # pylint: disable=too-many-branches

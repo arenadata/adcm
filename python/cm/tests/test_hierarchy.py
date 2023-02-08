@@ -13,7 +13,6 @@
 import time
 from unittest import skip
 
-from adcm.tests.base import BaseTestCase
 from cm.hierarchy import HierarchyError, Tree
 from cm.tests.utils import (
     gen_bundle,
@@ -25,6 +24,8 @@ from cm.tests.utils import (
     gen_provider,
     gen_service,
 )
+
+from adcm.tests.base import BaseTestCase
 
 
 def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements

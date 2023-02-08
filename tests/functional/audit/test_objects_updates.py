@@ -18,6 +18,7 @@ import allure
 import pytest
 import requests
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host
+
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,

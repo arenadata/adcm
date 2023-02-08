@@ -12,16 +12,6 @@
 
 from itertools import chain
 
-from guardian.mixins import PermissionListMixin
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_204_NO_CONTENT,
-    HTTP_400_BAD_REQUEST,
-)
-
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.cluster.serializers import (
     BindSerializer,
@@ -67,7 +57,16 @@ from cm.models import (
 )
 from cm.status_api import make_ui_cluster_status
 from cm.upgrade import do_upgrade, get_upgrade
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+)
 
 VIEW_CLUSTER_PERM = "cm.view_cluster"
 

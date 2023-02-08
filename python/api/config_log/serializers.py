@@ -10,12 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db.transaction import atomic
-from rest_framework import serializers
-
 from api.serializers import UIConfigField
 from cm.api import update_obj_config
 from cm.models import ConfigLog
+from django.db.transaction import atomic
+from rest_framework import serializers
 
 
 class ConfigLogSerializer(serializers.ModelSerializer):

@@ -13,13 +13,12 @@
 import logging
 from datetime import timedelta
 
-from django.core.management.base import BaseCommand
-from django.utils import timezone
-
 from audit.models import AuditLogOperationResult
 from audit.utils import make_audit_log
 from cm.job import start_task
 from cm.models import ADCM, Action, ConfigLog, JobStatus, TaskLog
+from django.core.management.base import BaseCommand
+from django.utils import timezone
 
 logger = logging.getLogger("background_tasks")
 

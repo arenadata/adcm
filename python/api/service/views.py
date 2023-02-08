@@ -10,13 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf import settings
-from guardian.mixins import PermissionListMixin
-from rest_framework import permissions
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
-
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.cluster.serializers import BindSerializer
 from api.service.serializers import (
@@ -61,7 +54,13 @@ from cm.models import (
     TaskLog,
 )
 from cm.status_api import make_ui_service_status
+from django.conf import settings
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
+from rest_framework import permissions
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
 
 
 class ServiceListView(PermissionListMixin, PaginatedView):

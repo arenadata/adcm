@@ -10,6 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api.config.serializers import ConfigSerializerUI
+from api.utils import get_api_url_kwargs
+from cm.adcm_config import get_action_variant, get_prototype_config
+from cm.models import Action, PrototypeConfig, SubAction
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (
     BooleanField,
@@ -22,10 +26,6 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
-from api.config.serializers import ConfigSerializerUI
-from api.utils import get_api_url_kwargs
-from cm.adcm_config import get_action_variant, get_prototype_config
-from cm.models import Action, PrototypeConfig, SubAction
 
 
 class ActionJobSerializer(HyperlinkedModelSerializer):

@@ -15,6 +15,7 @@
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Cluster, Component, Service
+
 from tests.functional.maintenance_mode.conftest import (
     ANOTHER_SERVICE_NAME,
     BUNDLES_DIR,

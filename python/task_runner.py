@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=unused-import,useless-return,protected-access,bare-except,global-statement
+# pylint: disable=wrong-import-order,wrong-import-position
 
 import os
 import signal
@@ -23,7 +23,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
-import adcm.init_django
+import adcm.init_django  # pylint: disable=unused-import
 from cm.errors import AdcmEx
 from cm.job import finish_task, re_prepare_job
 from cm.logger import logger
@@ -62,7 +62,7 @@ def terminate_task(signum, frame):
         logger.warning("no jobs running for task #%s", TASK_ID)
         finish_task(task, None, JobStatus.ABORTED)
 
-    os._exit(signum)
+    sys.exit(signum)
 
 
 signal.signal(signal.SIGTERM, terminate_task)
@@ -168,7 +168,7 @@ def run_task(task_id, args=None):
 
 
 def do_task():
-    global TASK_ID
+    global TASK_ID  # pylint: disable=global-statement
 
     if len(sys.argv) < 2:
         print(f"\nUsage:\n{os.path.basename(sys.argv[0])} task_id [restart]\n")

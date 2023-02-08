@@ -20,6 +20,7 @@ import allure
 import attr
 import pytest
 from _pytest.mark.structures import ParameterSet
+
 from tests.api.utils.api_objects import ExpectedBody, ExpectedResponse, Request
 from tests.api.utils.endpoints import Endpoints
 from tests.api.utils.methods import Methods

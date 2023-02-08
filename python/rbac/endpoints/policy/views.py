@@ -10,7 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from audit.utils import audit
 from guardian.mixins import PermissionListMixin
+from rbac.endpoints.policy.serializers import PolicySerializer
+from rbac.models import Policy
+from rbac.services.policy import policy_create, policy_update
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_201_CREATED,
@@ -20,10 +24,6 @@ from rest_framework.status import (
 from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import DjangoModelPermissionsAudit
-from audit.utils import audit
-from rbac.endpoints.policy.serializers import PolicySerializer
-from rbac.models import Policy
-from rbac.services.policy import policy_create, policy_update
 
 
 class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors

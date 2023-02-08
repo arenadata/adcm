@@ -5,6 +5,7 @@ from typing import Any, Callable, Iterable, Protocol, Type, TypeVar
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
+
 from tests.library.predicates import name_is
 from tests.ui_tests.core.interactors import Interactor
 from tests.ui_tests.core.locators import BaseLocator, Descriptor, Locator

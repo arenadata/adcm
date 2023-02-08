@@ -13,6 +13,7 @@
 """Admin page locators"""
 
 from selenium.webdriver.common.by import By
+
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.core.locators import (
     BaseLocator,

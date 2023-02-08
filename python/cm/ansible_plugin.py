@@ -22,8 +22,6 @@ from ansible.utils.vars import merge_hash
 from ansible.plugins.action import ActionBase
 
 # isort: on
-from django.conf import settings
-
 from cm.api import add_hc, get_hc, set_object_config
 from cm.api_context import CTX
 from cm.errors import AdcmEx
@@ -45,6 +43,7 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.status_api import post_event
+from django.conf import settings
 
 MSG_NO_CONFIG = (
     "There are no job related vars in inventory. It's mandatory for that module to have some"

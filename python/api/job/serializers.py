@@ -13,6 +13,12 @@
 import json
 from pathlib import Path
 
+from api.action.serializers import ActionJobSerializer
+from api.concern.serializers import ConcernItemSerializer
+from cm.ansible_plugin import get_check_log
+from cm.errors import AdcmEx
+from cm.job import start_task
+from cm.models import JobLog, JobStatus, LogStorage, TaskLog
 from django.conf import settings
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (
@@ -21,13 +27,6 @@ from rest_framework.serializers import (
     JSONField,
     SerializerMethodField,
 )
-
-from api.action.serializers import ActionJobSerializer
-from api.concern.serializers import ConcernItemSerializer
-from cm.ansible_plugin import get_check_log
-from cm.errors import AdcmEx
-from cm.job import start_task
-from cm.models import JobLog, JobStatus, LogStorage, TaskLog
 
 
 class JobShortSerializer(HyperlinkedModelSerializer):
