@@ -13,12 +13,6 @@
 
 from datetime import datetime
 
-from django.contrib.contenttypes.models import ContentType
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -26,7 +20,13 @@ from audit.models import (
     AuditObjectType,
 )
 from cm.models import ADCM, Action, Bundle, ConfigLog, ObjectConfig, Prototype, TaskLog
+from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse
 from rbac.models import User
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestADCMAudit(BaseTestCase):
@@ -69,7 +69,7 @@ class TestADCMAudit(BaseTestCase):
             self.assertFalse(log.audit_object)
 
         self.assertEqual(log.operation_name, operation_name)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
 
@@ -90,7 +90,7 @@ class TestADCMAudit(BaseTestCase):
         self.check_adcm_updated(
             log=log,
             operation_name=self.adcm_conf_updated_str,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -109,7 +109,7 @@ class TestADCMAudit(BaseTestCase):
         self.check_adcm_updated(
             log=new_log,
             operation_name=self.adcm_conf_updated_str,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -127,6 +127,6 @@ class TestADCMAudit(BaseTestCase):
         self.check_adcm_updated(
             log=log,
             operation_name=self.adcm_conf_updated_str,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )

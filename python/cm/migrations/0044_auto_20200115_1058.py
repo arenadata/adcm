@@ -16,20 +16,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0043_auto_20200109_1600'),
+        ("cm", "0043_auto_20200109_1600"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='action',
-            name='allow_to_terminate',
+            model_name="action",
+            name="allow_to_terminate",
             field=models.BooleanField(default=True),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='allow_to_terminate',
+            model_name="stageaction",
+            name="allow_to_terminate",
             field=models.BooleanField(default=True),
         ),
     ]

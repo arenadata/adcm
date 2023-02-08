@@ -16,20 +16,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0054_social_superuser'),
+        ("cm", "0054_social_superuser"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='component',
-            name='requires',
+            model_name="component",
+            name="requires",
             field=models.TextField(blank=True),
         ),
         migrations.AddField(
-            model_name='stagecomponent',
-            name='requires',
+            model_name="stagecomponent",
+            name="requires",
             field=models.TextField(blank=True),
         ),
     ]

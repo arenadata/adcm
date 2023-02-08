@@ -10,29 +10,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path
-
 from api.config.views import (
     ConfigHistoryRestoreView,
     ConfigHistoryView,
     ConfigVersionView,
     ConfigView,
 )
+from django.urls import path
 
 urlpatterns = [
-    path('', ConfigView.as_view(), name='object-config'),
-    path('history/', ConfigHistoryView.as_view(), name='config-history'),
-    path('history/<int:version>/', ConfigVersionView.as_view(), name='config-history-version'),
+    path("", ConfigView.as_view(), name="object-config"),
+    path("history/", ConfigHistoryView.as_view(), name="config-history"),
+    path("history/<int:version>/", ConfigVersionView.as_view(), name="config-history-version"),
     path(
-        'history/<int:version>/restore/',
+        "history/<int:version>/restore/",
         ConfigHistoryRestoreView.as_view(),
-        name='config-history-version-restore',
+        name="config-history-version-restore",
     ),
     path(
-        'previous/',
+        "previous/",
         ConfigVersionView.as_view(),
-        {'version': 'previous'},
-        name='config-previous',
+        {"version": "previous"},
+        name="config-previous",
     ),
-    path('current/', ConfigVersionView.as_view(), {'version': 'current'}, name='config-current'),
+    path("current/", ConfigVersionView.as_view(), {"version": "current"}, name="config-current"),
 ]

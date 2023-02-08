@@ -18,16 +18,17 @@ import coreapi
 import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import get_data_dir
+
 from tests.library import errorcodes as err
 
 
 @pytest.fixture()
 def cluster_host_service(sdk_client_fs: ADCMClient):
     """Create cluster, host and service"""
-    hostprovider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
+    hostprovider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
     provider = hostprovider_bundle.provider_create("test")
     host = provider.host_create("test-host")
-    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_bundle'))
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_bundle"))
     cluster = bundle.cluster_create("test")
     service = cluster.service_add(name="zookeeper")
     cluster.host_add(host)
@@ -40,7 +41,7 @@ def test_delete_host_with_components(cluster_host_service):
     """If host has NO component, than we can simple remove it from cluster."""
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         cluster_host_service[0].host_delete(cluster_host_service[1])
-    with allure.step('Check host conflict'):
+    with allure.step("Check host conflict"):
         err.HOST_CONFLICT.equal(e)
 
 
@@ -49,5 +50,5 @@ def test_delete_service_with_components(cluster_host_service):
     service = cluster_host_service[2]
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         service.delete()
-    with allure.step('Check service conflict'):
+    with allure.step("Check service conflict"):
         err.SERVICE_CONFLICT.equal(e)

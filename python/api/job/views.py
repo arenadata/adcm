@@ -15,18 +15,6 @@ import re
 import tarfile
 from pathlib import Path
 
-from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-from django.http import HttpResponse
-from guardian.mixins import PermissionListMixin
-from rest_framework.decorators import action
-from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
-from rest_framework.permissions import DjangoModelPermissions
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
-
-from adcm.utils import str_remove_non_alnum
 from api.base_view import GenericUIViewSet
 from api.job.serializers import (
     JobRetrieveSerializer,
@@ -41,7 +29,19 @@ from audit.utils import audit
 from cm.job import cancel_task, restart_task
 from cm.models import ActionType, JobLog, JobStatus, LogStorage, TaskLog
 from cm.status_api import Event
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.http import HttpResponse
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
+from rest_framework.decorators import action
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import DjangoModelPermissions
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
+
+from adcm.utils import str_remove_non_alnum
 
 VIEW_TASKLOG_PERMISSION = "cm.view_tasklog"
 VIEW_JOBLOG_PERMISSION = "cm.view_joblog"
@@ -96,15 +96,15 @@ def get_task_download_archive_name(task: TaskLog) -> str:
 def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
     jobs = JobLog.objects.filter(task=task)
 
-    if task.action and task.action.type == ActionType.Job:
+    if task.action and task.action.type == ActionType.JOB:
         task_dir_name_suffix = str_remove_non_alnum(value=task.action.display_name) or str_remove_non_alnum(
             value=task.action.name
         )
     else:
         task_dir_name_suffix = None
 
-    fh = io.BytesIO()
-    with tarfile.open(fileobj=fh, mode="w:gz") as tar_file:
+    file_handler = io.BytesIO()
+    with tarfile.open(fileobj=file_handler, mode="w:gz") as tar_file:
         for job in jobs:
             if task_dir_name_suffix is None:
                 dir_name_suffix = ""
@@ -126,13 +126,13 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
                 log_storages = LogStorage.objects.filter(job=job, type__in={"stdout", "stderr"})
                 for log_storage in log_storages:
                     tarinfo = tarfile.TarInfo(
-                        f'{f"{job.pk}-{dir_name_suffix}".strip("-")}' f'/{log_storage.name}-{log_storage.type}.txt'
+                        f'{f"{job.pk}-{dir_name_suffix}".strip("-")}' f"/{log_storage.name}-{log_storage.type}.txt"
                     )
                     body = io.BytesIO(bytes(log_storage.body, settings.ENCODING_UTF_8))
                     tarinfo.size = body.getbuffer().nbytes
                     tar_file.addfile(tarinfo=tarinfo, fileobj=body)
 
-    return fh
+    return file_handler
 
 
 #  pylint:disable-next=too-many-ancestors
@@ -173,7 +173,7 @@ class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Generi
         check_custom_perm(request.user, "change", JobLog, job_pk)
 
         event = Event()
-        event.set_job_status(job.pk, JobStatus.ABORTED.value)
+        event.set_job_status(job=job, status=JobStatus.ABORTED.value)
         job.cancel(event)
 
         return Response(status=HTTP_200_OK)

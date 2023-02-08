@@ -16,35 +16,34 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0006_auto_20181009_1135'),
+        ("cm", "0006_auto_20181009_1135"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='cluster',
-            name='stack',
+            model_name="cluster",
+            name="stack",
             field=models.TextField(blank=True),
         ),
         migrations.AddField(
-            model_name='clusterobject',
-            name='stack',
+            model_name="clusterobject",
+            name="stack",
             field=models.TextField(blank=True),
         ),
         migrations.AddField(
-            model_name='host',
-            name='stack',
+            model_name="host",
+            name="stack",
             field=models.TextField(blank=True),
         ),
         migrations.AddField(
-            model_name='joblog',
-            name='pid',
+            model_name="joblog",
+            name="pid",
             field=models.PositiveIntegerField(blank=True, default=0),
         ),
         migrations.AddField(
-            model_name='tasklog',
-            name='pid',
+            model_name="tasklog",
+            name="pid",
             field=models.PositiveIntegerField(blank=True, default=0),
         ),
     ]

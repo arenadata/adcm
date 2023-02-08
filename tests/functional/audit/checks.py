@@ -64,7 +64,7 @@ def check_audit_cef_logs(client: ADCMClient, adcm_container: Container):
     cef_records: Tuple[CEFRecord, ...] = tuple(
         map(
             lambda r: CEFRecord(*r.split("|")),
-            filter(lambda log_operation: 'CEF' in log_operation, logfile_content.split("\n")),
+            filter(lambda log_operation: "CEF" in log_operation, logfile_content.split("\n")),
         )
     )
     with allure.step("Check all logs have correct CEF version, vendor, product name and version"):
@@ -96,7 +96,6 @@ def check_audit_cef_logs(client: ADCMClient, adcm_container: Container):
                     ("severity", expected_severity),
                     ("extension", extension),
                 ):
-
                     if getattr(corresponding_cef_log, param) != expected:
                         _attach_api_log(log)
                         _attach_cef_logs(cef_records)
@@ -117,12 +116,12 @@ def _extract_basic_info(client: ADCMClient, log: Union[AuditOperation, AuditLogi
             " ".join(
                 f'{k}="{v}"'
                 for k, v in {
-                    'actor': username,
-                    'act': log.operation_type.value,
-                    'operation': name,
-                    'resource': log.object_name,
-                    'result': result,
-                    'timestamp': time,
+                    "actor": username,
+                    "act": log.operation_type.value,
+                    "operation": name,
+                    "resource": log.object_name,
+                    "result": result,
+                    "timestamp": time,
                 }.items()
                 if v is not None
             ),
@@ -136,8 +135,8 @@ def _extract_basic_info(client: ADCMClient, log: Union[AuditOperation, AuditLogi
 
 
 def _format_time(time: datetime):
-    t = time.strftime(DATETIME_FMT)
-    return f'{t[:-2]}:{t[-2:]}'
+    time_str = time.strftime(DATETIME_FMT)
+    return f"{time_str[:-2]}:{time_str[-2:]}"
 
 
 def _attach_cef_logs(cef_logs: Collection[CEFRecord]) -> None:

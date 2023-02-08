@@ -16,25 +16,24 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0081_auto_20220114_1246'),
+        ("cm", "0081_auto_20220114_1246"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='role',
-            name='group',
+            model_name="role",
+            name="group",
         ),
         migrations.RemoveField(
-            model_name='role',
-            name='permissions',
+            model_name="role",
+            name="permissions",
         ),
         migrations.RemoveField(
-            model_name='role',
-            name='user',
+            model_name="role",
+            name="user",
         ),
         migrations.DeleteModel(
-            name='Role',
+            name="Role",
         ),
     ]

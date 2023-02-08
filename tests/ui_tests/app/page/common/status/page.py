@@ -17,12 +17,13 @@ from typing import Optional
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebElement
+
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.status.locators import StatusLocators
 from tests.ui_tests.core.locators import BaseLocator
 
-SUCCESS_COLOR = '0, 230, 118'
-NEGATIVE_COLOR = '255, 152, 0'
+SUCCESS_COLOR = "0, 230, 118"
+NEGATIVE_COLOR = "255, 152, 0"
 
 
 @dataclass
@@ -65,7 +66,7 @@ class StatusPage(BasePageObject):
                 group_name=get_child_text(row, row_elements.group_name),
                 state=get_child_text(row, row_elements.state),
                 state_color=self.find_child(row, row_elements.state)
-                .value_of_css_property('color')
+                .value_of_css_property("color")
                 .split("(")[1]
                 .split(", 1)")[0]
                 .split(")")[0]

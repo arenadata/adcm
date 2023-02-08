@@ -10,6 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api.action.serializers import StackActionDetailSerializer
+from api.config.serializers import ConfigSerializer
+from api.serializers import UpgradeSerializer
+from cm.models import Bundle, ClusterObject, Prototype
+from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.serializers import (
     BooleanField,
     CharField,
@@ -23,10 +28,6 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
-from api.action.serializers import StackActionDetailSerializer
-from api.config.serializers import ConfigSerializer
-from api.serializers import UpgradeSerializer
-from cm.models import Bundle, ClusterObject, Prototype
 
 
 class UploadBundleSerializer(EmptySerializer):
@@ -298,7 +299,7 @@ class ADCMPrototypeSerializer(PrototypeSerializer):
         read_only_fields = fields
 
 
-class ClusterPrototypeSerializer(PrototypeSerializer):
+class ClusterPrototypeSerializer(FlexFieldsSerializerMixin, PrototypeSerializer):
     url = HyperlinkedIdentityField(
         view_name="cluster-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
     )
@@ -328,7 +329,7 @@ class HostPrototypeSerializer(PrototypeSerializer):
         read_only_fields = fields
 
 
-class ProviderPrototypeSerializer(PrototypeSerializer):
+class ProviderPrototypeSerializer(FlexFieldsSerializerMixin, PrototypeSerializer):
     url = HyperlinkedIdentityField(
         view_name="provider-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
     )
@@ -342,7 +343,7 @@ class ProviderPrototypeSerializer(PrototypeSerializer):
         read_only_fields = fields
 
 
-class ProviderPrototypeDetailSerializer(ProviderPrototypeSerializer):
+class ProviderPrototypeDetailSerializer(ProviderPrototypeSerializer):  # pylint: disable=too-many-ancestors
     actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
     upgrade = UpgradeSerializer(many=True, read_only=True)
@@ -400,7 +401,7 @@ class ADCMPrototypeDetailSerializer(ADCMPrototypeSerializer):
         read_only_fields = fields
 
 
-class ClusterPrototypeDetailSerializer(ClusterPrototypeSerializer):
+class ClusterPrototypeDetailSerializer(ClusterPrototypeSerializer):  # pylint: disable=too-many-ancestors
     actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
     upgrade = UpgradeSerializer(many=True, read_only=True)

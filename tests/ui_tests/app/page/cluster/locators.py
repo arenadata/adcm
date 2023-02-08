@@ -13,6 +13,7 @@
 """Cluster page locators"""
 
 from selenium.webdriver.common.by import By
+
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 from tests.ui_tests.core.locators import BaseLocator
 

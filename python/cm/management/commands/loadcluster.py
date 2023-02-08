@@ -19,16 +19,6 @@ import sys
 from datetime import datetime
 
 from ansible.parsing.vault import VaultAES256, VaultSecret
-from cryptography.fernet import Fernet, InvalidToken
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-from django.core.management.base import BaseCommand
-from django.db.transaction import atomic
-from django.db.utils import IntegrityError
-
 from cm.adcm_config import save_file_type
 from cm.errors import AdcmEx
 from cm.models import (
@@ -45,6 +35,15 @@ from cm.models import (
     PrototypeConfig,
     ServiceComponent,
 )
+from cryptography.fernet import Fernet, InvalidToken
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.core.management.base import BaseCommand
+from django.db.transaction import atomic
+from django.db.utils import IntegrityError
 
 OLD_ADCM_PASSWORD = None
 
@@ -127,14 +126,15 @@ def create_group(group, ex_hosts_list, obj):
     hosts = []
     for host in group.pop("hosts"):
         hosts.append(ex_hosts_list[host])
-    gc = GroupConfig.objects.create(
+    group_config = GroupConfig.objects.create(
         object_id=obj.id,
         config=config,
         object_type=ContentType.objects.get(model=model_name),
         **group,
     )
-    gc.hosts.set(hosts)
-    return ex_object_id, gc
+    group_config.hosts.set(hosts)
+
+    return ex_object_id, group_config
 
 
 def switch_encoding(msg):

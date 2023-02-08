@@ -23,7 +23,7 @@ from jinja2 import Template
 
 def render(template_file_name, context):
     try:
-        with open(template_file_name, encoding='utf_8') as file:
+        with open(template_file_name, encoding="utf_8") as file:
             tmpl = Template(file.read())
     except FileNotFoundError:
         print(f"Can't open template file: '{template_file_name}'")
@@ -33,7 +33,7 @@ def render(template_file_name, context):
 
 def render_to_file(template_file_name, out_file_name, context):
     try:
-        with open(out_file_name, 'w', encoding='utf_8') as file:
+        with open(out_file_name, "w", encoding="utf_8") as file:
             file.write(render(template_file_name, context))
     except FileNotFoundError:
         print(f"Can't open output file: '{out_file_name}'")
@@ -42,7 +42,7 @@ def render_to_file(template_file_name, out_file_name, context):
 
 def read_json(json_file_name):
     try:
-        with open(json_file_name, encoding='utf_8') as file:
+        with open(json_file_name, encoding="utf_8") as file:
             config = json.load(file)
     except FileNotFoundError:
         print(f"Can't open json config file: '{json_file_name}'")
@@ -63,5 +63,5 @@ def main():
         template(sys.argv[1], sys.argv[2], sys.argv[3])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

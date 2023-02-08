@@ -13,13 +13,13 @@
 from pathlib import Path
 from unittest.mock import patch
 
+from cm.models import Bundle, Prototype
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
 
 from adcm.tests.base import BaseTestCase
-from cm.models import Bundle, Prototype
 
 
 class TestBundle(BaseTestCase):
@@ -231,36 +231,14 @@ class TestBundle(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-    def test_distinct(self):
-        self.upload_and_load_bundle(
-            path=Path(
-                settings.BASE_DIR,
-                "python/api/tests/files/bundle_cluster_requires.tar",
-            )
-        )
-        self.upload_and_load_bundle(
-            path=Path(
-                settings.BASE_DIR,
-                "python/api/tests/files/test_bundle_distinct_1.tar",
-            )
-        )
-        self.upload_and_load_bundle(
-            path=Path(
-                settings.BASE_DIR,
-                "python/api/tests/files/test_bundle_distinct_2.tar",
-            )
+    def test_adcm_min_version_success(self):
+        test_bundle_path = Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_min_adcm_version.tar")
+
+        self.upload_bundle(path=test_bundle_path)
+        response: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": test_bundle_path.name},
         )
 
-        response: Response = self.client.get(
-            reverse("cluster-prototype-list"),
-            {
-                "fields": "display_name",
-                "distinct": 1,
-                "ordering": "display_name",
-                "limit": 50,
-                "offset": 0,
-                "view": "interface",
-            },
-        )
-
-        self.assertEqual(response.data["count"], 2)
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "BUNDLE_VERSION_ERROR")

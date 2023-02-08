@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.models import Action, ActionType, Bundle, Prototype
 from django.urls import reverse
 from rest_framework.response import Response
 
 from adcm.tests.base import BaseTestCase
-from cm.models import Action, ActionType, Bundle, Prototype
 
 
 class TestClusterPrototypeAPI(BaseTestCase):
@@ -43,7 +43,7 @@ class TestClusterPrototypeAPI(BaseTestCase):
         self.action = Action.objects.create(
             display_name="test_adcm_action",
             prototype=self.prototype_1,
-            type=ActionType.Job,
+            type=ActionType.JOB,
             state_available="any",
         )
 
@@ -124,24 +124,3 @@ class TestClusterPrototypeAPI(BaseTestCase):
         )
 
         self.assertEqual(response.data["id"], self.prototype_2.pk)
-
-    def test_display_name_distinct_two_objs(self):
-        self.prototype_1.display_name = "test_prototype"
-        self.prototype_2.display_name = "test_prototype"
-        self.prototype_1.save(update_fields=["display_name"])
-        self.prototype_2.save(update_fields=["display_name"])
-
-        response: Response = self.client.get(
-            reverse("cluster-prototype-list"),
-            {"fields": "display_name", "distinct": 1},
-        )
-
-        self.assertEqual(len(response.data["results"]), 1)
-
-    def test_display_name_distinct_one_obj(self):
-        response: Response = self.client.get(
-            reverse("cluster-prototype-list"),
-            {"fields": "display_name", "distinct": 1},
-        )
-
-        self.assertEqual(len(response.data["results"]), 2)

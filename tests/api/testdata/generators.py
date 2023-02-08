@@ -20,6 +20,7 @@ import allure
 import attr
 import pytest
 from _pytest.mark.structures import ParameterSet
+
 from tests.api.utils.api_objects import ExpectedBody, ExpectedResponse, Request
 from tests.api.utils.endpoints import Endpoints
 from tests.api.utils.methods import Methods
@@ -480,7 +481,7 @@ def get_data_for_body_check(method: Methods, endpoints_with_test_sets: List[tupl
                     status_code = method.default_success_code
                 elif (
                     method in {Methods.PUT, Methods.PATCH}
-                    and endpoint == Endpoints.RbacUser
+                    and endpoint == Endpoints.RBAC_USER
                     and (
                         # If there's an attempt to change username, 409 will be the response
                         # if there's a drop - 400
@@ -540,12 +541,12 @@ def _prepare_test_data_with_all_fields(
 def _step_description(test_set: dict):
     first_item = next(iter(test_set.values()))
     if first_item.generated_value is True:
-        return "Generated value: " + ', '.join(test_set.keys())
+        return "Generated value: " + ", ".join(test_set.keys())
     if first_item.unchanged_value is True:
-        return "Unchanged value: " + ', '.join(test_set.keys())
+        return "Unchanged value: " + ", ".join(test_set.keys())
     if first_item.drop_key is True:
-        return "Missing in request: " + ', '.join(test_set.keys())
-    return "Special values: " + ', '.join(test_set.keys())
+        return "Missing in request: " + ", ".join(test_set.keys())
+    return "Special values: " + ", ".join(test_set.keys())
 
 
 def _prepare_test_data_with_one_by_one_fields(
@@ -566,7 +567,7 @@ def _prepare_test_data_with_one_by_one_fields(
                 test_data=TestData(
                     request=request,
                     response=response,
-                    description=f'{param_name}: {param_value.error_messages}',
+                    description=f"{param_name}: {param_value.error_messages}",
                 ),
                 test_body=request_data,
             )

@@ -15,6 +15,6 @@ from rest_framework.routers import DefaultRouter
 from .views import ObjectConfigViewSet
 
 router = DefaultRouter()
-router.register('', ObjectConfigViewSet, basename='config')
+router.register("", ObjectConfigViewSet, basename="config")
 
 urlpatterns = router.urls

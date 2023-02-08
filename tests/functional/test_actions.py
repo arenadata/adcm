@@ -25,7 +25,7 @@ from adcm_pytest_plugin.steps.actions import (
     run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import fixture_parametrized_by_data_subdirs
-from tests.conftest import include_dummy_data
+
 from tests.functional.tools import (
     AnyADCMObject,
     actions_in_objects_are_absent,
@@ -38,7 +38,6 @@ def check_verbosity(log, verbose_state):
     assert ("verbosity: 4" in log.content) is verbose_state
 
 
-@include_dummy_data
 @pytest.mark.parametrize("verbose_state", [True, False], ids=["verbose_state_true", "verbose_state_false"])
 def test_check_verbose_option_of_action_run(sdk_client_fs: ADCMClient, verbose_state):
     """Test action run with verbose switch"""
@@ -68,7 +67,7 @@ SWITCH_PROVIDER_STATE = "switch_provider_state"
 
 
 @allure.title("Create cluster")
-@fixture_parametrized_by_data_subdirs(__file__, 'cluster')
+@fixture_parametrized_by_data_subdirs(__file__, "cluster")
 def cluster(sdk_client_fs: ADCMClient, request) -> Cluster:
     """Create cluster"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
@@ -76,7 +75,7 @@ def cluster(sdk_client_fs: ADCMClient, request) -> Cluster:
 
 
 @allure.title("Create a cluster with service")
-@fixture_parametrized_by_data_subdirs(__file__, 'cluster_with_service')
+@fixture_parametrized_by_data_subdirs(__file__, "cluster_with_service")
 def cluster_with_service(sdk_client_fs: ADCMClient, request) -> Cluster:
     """Create cluster with service"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
@@ -85,7 +84,7 @@ def cluster_with_service(sdk_client_fs: ADCMClient, request) -> Cluster:
 
 
 @allure.title("Create a cluster with service and components")
-@fixture_parametrized_by_data_subdirs(__file__, 'cluster_with_components')
+@fixture_parametrized_by_data_subdirs(__file__, "cluster_with_components")
 def cluster_with_components(sdk_client_fs: ADCMClient, request) -> Cluster:
     """Create cluster with components"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
@@ -94,7 +93,7 @@ def cluster_with_components(sdk_client_fs: ADCMClient, request) -> Cluster:
 
 
 @allure.title("Create provider")
-@fixture_parametrized_by_data_subdirs(__file__, 'provider')
+@fixture_parametrized_by_data_subdirs(__file__, "provider")
 def provider(sdk_client_fs: ADCMClient, request) -> Provider:
     """Create provider"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
@@ -146,7 +145,6 @@ def test_component_action_availability_at_state(cluster_with_components: Cluster
     run_component_action_and_assert_result(component_1, ACTION_STATE_INSTALLED)
 
 
-@include_dummy_data
 def test_provider_action_availability_at_state(provider: Provider):
     """
     Test that provider action is available on specific provider state
@@ -157,7 +155,6 @@ def test_provider_action_availability_at_state(provider: Provider):
     run_provider_action_and_assert_result(provider, ACTION_STATE_INSTALLED)
 
 
-@include_dummy_data
 def test_host_action_availability_at_state(provider: Provider):
     """
     Test that host action is available on specific host state
@@ -240,7 +237,6 @@ def cluster_special(sdk_client_fs: ADCMClient) -> Cluster:
     return bundle.cluster_prototype().cluster_create(name="Cluster")
 
 
-@include_dummy_data
 def test_cluster_action_availability_at_state_new_dsl_special(cluster_special: Cluster):
     """
     Test that cluster host action is available on a specific cluster state (special availability cases)

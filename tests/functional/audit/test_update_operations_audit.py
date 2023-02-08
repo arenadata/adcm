@@ -34,6 +34,7 @@ from adcm_client.objects import (
     Service,
 )
 from adcm_pytest_plugin.utils import random_string
+
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,
@@ -81,9 +82,9 @@ def _grant_view_config_permissions_on_adcm_objects(sdk_client_fs, basic_objects,
     create_policy(
         sdk_client_fs,
         [
-            BR.ViewClusterConfigurations,
-            BR.ViewServiceConfigurations,
-            BR.ViewComponentConfigurations,
+            BR.VIEW_CLUSTER_CONFIGURATIONS,
+            BR.VIEW_SERVICE_CONFIGURATIONS,
+            BR.VIEW_COMPONENT_CONFIGURATIONS,
         ],
         [cluster, service, component],
         users=[user],
@@ -92,13 +93,13 @@ def _grant_view_config_permissions_on_adcm_objects(sdk_client_fs, basic_objects,
     )
     create_policy(
         sdk_client_fs,
-        [BR.ViewProviderConfigurations, BR.ViewHostConfigurations],
+        [BR.VIEW_PROVIDER_CONFIGURATIONS, BR.VIEW_HOST_CONFIGURATIONS],
         [provider, host],
         users=[user],
         groups=[],
         use_all_objects=True,
     )
-    create_policy(sdk_client_fs, BR.ViewADCMSettings, [sdk_client_fs.adcm()], users=[user], groups=[])
+    create_policy(sdk_client_fs, BR.VIEW_ADCM_SETTINGS, [sdk_client_fs.adcm()], users=[user], groups=[])
 
 
 @pytest.fixture()
@@ -315,7 +316,6 @@ def _check_object_config_restore(
         ):
             with allure.step(f"Run config restore that will have result {result.value}"):
                 with allure.step("object config history"):
-
                     url = get_plain_object_url(client, object_with_config, get_restore_suffix())
                     check_response(restore_config_from_url(url, get_config(), headers=credentials))
                 if not isinstance(object_with_config, (Service, Component, Host)):

@@ -14,4 +14,4 @@
 
 import pathlib
 
-BASE_BUNDLES_DIR = pathlib.Path(__file__).parent / 'bundles'
+BASE_BUNDLES_DIR = pathlib.Path(__file__).parent / "bundles"

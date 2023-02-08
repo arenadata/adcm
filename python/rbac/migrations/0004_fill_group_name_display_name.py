@@ -16,23 +16,22 @@ from django.db import migrations, models
 
 
 def fill_name_display_name(apps, schema_editor):
-    Group = apps.get_model('rbac', 'Group')
+    Group = apps.get_model("rbac", "Group")
     for g in Group.objects.all():
         g.display_name = g.name
-        g.name = f'{g.name} [{g.type}]'
+        g.name = f"{g.name} [{g.type}]"
         g.save()
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('rbac', '0003_user_group_origin_type'),
+        ("rbac", "0003_user_group_origin_type"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='group',
-            name='display_name',
+            model_name="group",
+            name="display_name",
             field=models.CharField(max_length=150, null=True),
         ),
         migrations.RunPython(fill_name_display_name),

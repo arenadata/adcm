@@ -16,29 +16,28 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('audit', '0001_initial'),
+        ("audit", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='auditobject',
-            name='object_type',
+            model_name="auditobject",
+            name="object_type",
             field=models.CharField(
                 choices=[
-                    ('prototype', 'prototype'),
-                    ('cluster', 'cluster'),
-                    ('service', 'service'),
-                    ('component', 'component'),
-                    ('host', 'host'),
-                    ('provider', 'provider'),
-                    ('bundle', 'bundle'),
-                    ('adcm', 'adcm'),
-                    ('user', 'user'),
-                    ('group', 'group'),
-                    ('role', 'role'),
-                    ('policy', 'policy'),
+                    ("prototype", "prototype"),
+                    ("cluster", "cluster"),
+                    ("service", "service"),
+                    ("component", "component"),
+                    ("host", "host"),
+                    ("provider", "provider"),
+                    ("bundle", "bundle"),
+                    ("adcm", "adcm"),
+                    ("user", "user"),
+                    ("group", "group"),
+                    ("role", "role"),
+                    ("policy", "policy"),
                 ],
                 max_length=16,
             ),

@@ -16,24 +16,24 @@ import os
 
 DATA = [
     (g_i, g_a, f_g, f_i, act)
-    for g_i in ['true', 'false']
-    for g_a in ['true', 'false']
-    for f_g in ['true', 'false']
-    for f_i in ['true', 'false']
-    for act in ['true', 'false']
+    for g_i in ["true", "false"]
+    for g_a in ["true", "false"]
+    for f_g in ["true", "false"]
+    for f_i in ["true", "false"]
+    for act in ["true", "false"]
 ]
 TYPES = (
     "string",
     "password",
     "integer",
     "text",
-    'boolean',
-    'float',
-    'option',
-    'list',
-    'map',
-    'json',
-    'file',
+    "boolean",
+    "float",
+    "option",
+    "list",
+    "map",
+    "json",
+    "file",
 )
 TEMPLATE_STRING = """
 - type: cluster
@@ -296,13 +296,13 @@ TEMPLATES = {
     "password": TEMPLATE_PASSWORD,
     "integer": TEMPLATE_NUMBERS,
     "text": TEMPLATE_TEXT,
-    'boolean': TEMPLATE_BOOLEAN,
-    'float': TEMPLATE_NUMBERS,
-    'option': TEMPLATE_OPTION,
-    'list': TEMPLATE_LIST,
-    'map': TEMPLATE_MAP,
-    'json': TEMPLATE_JSON,
-    'file': TEMPLATE_FILE,
+    "boolean": TEMPLATE_BOOLEAN,
+    "float": TEMPLATE_NUMBERS,
+    "option": TEMPLATE_OPTION,
+    "list": TEMPLATE_LIST,
+    "map": TEMPLATE_MAP,
+    "json": TEMPLATE_JSON,
+    "file": TEMPLATE_FILE,
 }
 
 
@@ -313,6 +313,6 @@ for t in TYPES:
             f"field_advanced_{config[2]}_invisible_{config[3]}_activated_{config[4]}/{t}"
         )
         os.makedirs(d_name)
-        tmpl = ''
-        with open(f"{d_name}/config.yaml", "w+", encoding='utf_8') as f:
+        tmpl = ""
+        with open(f"{d_name}/config.yaml", "w+", encoding="utf_8") as f:
             f.write(TEMPLATES[t].format(config[0], config[1], config[2], config[3], t, config[4]))

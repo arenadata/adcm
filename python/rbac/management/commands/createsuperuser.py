@@ -15,7 +15,6 @@
 from django.contrib.auth.management.commands.createsuperuser import (
     Command as AuthCommand,
 )
-
 from rbac.models import User
 
 

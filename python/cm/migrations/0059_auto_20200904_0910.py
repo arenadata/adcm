@@ -16,34 +16,33 @@ from django.db import migrations, models
 
 
 def fix_default_json_fields_action(apps, schema_editor):
-    Action = apps.get_model('cm', 'Action')
-    Action.objects.filter(ui_options__exact='').update(ui_options='{}')
-    Action.objects.filter(ui_options__exact=None).update(ui_options='{}')
+    Action = apps.get_model("cm", "Action")
+    Action.objects.filter(ui_options__exact="").update(ui_options="{}")
+    Action.objects.filter(ui_options__exact=None).update(ui_options="{}")
 
 
 def fix_default_json_fields_tasklog(apps, schema_editor):
-    TaskLog = apps.get_model('cm', 'TaskLog')
-    TaskLog.objects.filter(attr__exact='').update(attr='{}')
-    TaskLog.objects.filter(attr__exact=None).update(attr='{}')
+    TaskLog = apps.get_model("cm", "TaskLog")
+    TaskLog.objects.filter(attr__exact="").update(attr="{}")
+    TaskLog.objects.filter(attr__exact=None).update(attr="{}")
 
 
 def fix_default_json_fields_configlog(apps, schema_editor):
-    ConfigLog = apps.get_model('cm', 'ConfigLog')
-    ConfigLog.objects.filter(attr__exact='').update(attr='{}')
-    ConfigLog.objects.filter(attr__exact=None).update(attr='{}')
-    ConfigLog.objects.filter(config__exact='').update(config='{}')
+    ConfigLog = apps.get_model("cm", "ConfigLog")
+    ConfigLog.objects.filter(attr__exact="").update(attr="{}")
+    ConfigLog.objects.filter(attr__exact=None).update(attr="{}")
+    ConfigLog.objects.filter(config__exact="").update(config="{}")
 
 
 def fix_default_json_fields_prototypeconfig(apps, schema_editor):
-    PrototypeConfig = apps.get_model('cm', 'PrototypeConfig')
-    PrototypeConfig.objects.filter(limits__exact='').update(limits='{}')
-    PrototypeConfig.objects.filter(ui_options__exact='').update(ui_options='{}')
+    PrototypeConfig = apps.get_model("cm", "PrototypeConfig")
+    PrototypeConfig.objects.filter(limits__exact="").update(limits="{}")
+    PrototypeConfig.objects.filter(ui_options__exact="").update(ui_options="{}")
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0058_encrypt_passwords'),
+        ("cm", "0058_encrypt_passwords"),
     ]
 
     operations = [
@@ -52,48 +51,48 @@ class Migration(migrations.Migration):
         migrations.RunPython(fix_default_json_fields_configlog),
         migrations.RunPython(fix_default_json_fields_prototypeconfig),
         migrations.AlterField(
-            model_name='action',
-            name='ui_options',
+            model_name="action",
+            name="ui_options",
             field=models.JSONField(default=dict),
         ),
         migrations.AlterField(
-            model_name='configlog',
-            name='attr',
+            model_name="configlog",
+            name="attr",
             field=models.JSONField(default=dict),
         ),
         migrations.AlterField(
-            model_name='configlog',
-            name='config',
+            model_name="configlog",
+            name="config",
             field=models.JSONField(default=dict),
         ),
         migrations.AlterField(
-            model_name='prototypeconfig',
-            name='limits',
+            model_name="prototypeconfig",
+            name="limits",
             field=models.JSONField(default=dict),
         ),
         migrations.AlterField(
-            model_name='prototypeconfig',
-            name='ui_options',
+            model_name="prototypeconfig",
+            name="ui_options",
             field=models.JSONField(blank=True, default=dict),
         ),
         migrations.AlterField(
-            model_name='stageaction',
-            name='ui_options',
+            model_name="stageaction",
+            name="ui_options",
             field=models.JSONField(default=dict),
         ),
         migrations.AlterField(
-            model_name='stageprototypeconfig',
-            name='limits',
+            model_name="stageprototypeconfig",
+            name="limits",
             field=models.JSONField(default=dict),
         ),
         migrations.AlterField(
-            model_name='stageprototypeconfig',
-            name='ui_options',
+            model_name="stageprototypeconfig",
+            name="ui_options",
             field=models.JSONField(blank=True, default=dict),
         ),
         migrations.AlterField(
-            model_name='tasklog',
-            name='attr',
+            model_name="tasklog",
+            name="attr",
             field=models.JSONField(default=dict),
         ),
     ]

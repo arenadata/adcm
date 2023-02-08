@@ -16,6 +16,7 @@ import allure
 import pytest
 from adcm_client.objects import ADCMClient, Cluster, Service
 from adcm_pytest_plugin.utils import get_data_dir
+
 from tests.library.retry import should_become_truth
 from tests.ui_tests.app.page.cluster.page import ClusterGroupConfigConfig
 from tests.ui_tests.app.page.service.page import ServiceConfigPage
@@ -51,7 +52,7 @@ class TestServiceConfigSave:
     CHANGE_STRUCTURE_CODE = 12
     CHANGE_STRUCTURE_COUNTRY = "test-country"
     STRUCTURE_MAP = {"test-country": "12", "test-country-0": "12", "test-country-1": "13", "test-country-2": "14"}
-    STRUCTURE_LIST = {'12': 'test-country', 'test-country-0': '12', 'test-country-1': '13', 'test-country-2': '14'}
+    STRUCTURE_LIST = {"12": "test-country", "test-country-0": "12", "test-country-1": "13", "test-country-2": "14"}
 
     @allure.step("Save config and check popup")
     def _save_config_and_refresh(self, config):

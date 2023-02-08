@@ -1,6 +1,7 @@
 from operator import attrgetter
 
 from selenium.webdriver.common.by import By
+
 from tests.library.predicates import name_is
 from tests.library.utils import get_or_raise
 from tests.ui_tests.app.page.common.dialogs.locators import Dialog

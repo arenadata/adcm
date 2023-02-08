@@ -54,6 +54,7 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
   failedCount = new BehaviorSubject<number>(0);
 
   bellGradient = '';
+  currentTaskId: number;
 
   isAnimationRunning = new BehaviorSubject<boolean>(false);
   animationElem = new BehaviorSubject<Element>(null);
@@ -128,7 +129,11 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
   }
 
   getChangeTaskObservable(): Observable<EventMessage> {
-    return this.taskService.events({ events: ['change_job_status'] }).pipe(this.takeUntil());
+    return this.taskService.events({ events: ['change_job_status'] }, 'task').pipe(this.takeUntil());
+  }
+
+  getChangeJobObservable(): Observable<EventMessage> {
+    return this.taskService.events({ events: ['change_job_status'] }, 'job').pipe(this.takeUntil());
   }
 
   decRunningCount() {
@@ -144,9 +149,21 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
     this.tasks.next(tasks);
   }
 
-  listenToJobs() {
+  updateJob(updatedJobId: number, status: JobStatus) {
+    const tasks: TaskRaw[] = this.tasks.value.slice();
+    const taskIndex = tasks.findIndex((task) => task.id === this.currentTaskId);
+
+    if (taskIndex < 0) return;
+
+    const updatedJobIndex = tasks[taskIndex].jobs.findIndex((job) => job.id === updatedJobId);
+    tasks[taskIndex].jobs[updatedJobIndex].status = status;
+    this.tasks.next(tasks);
+  }
+
+  listenToTasks() {
     this.getChangeTaskObservable().subscribe((event) => {
       const status = event.object.details.value;
+      this.currentTaskId = event.object.id;
       if (status === 'running') {
         this.runningCount.next(this.runningCount.value + 1);
         this.afterCountChanged();
@@ -159,6 +176,12 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
         this.decRunningCount();
         this.afterCountChanged();
       }
+    });
+
+    this.getChangeJobObservable().subscribe((event) => {
+      const jobStatus = event.object.details.value;
+      const jobId = event.object.id;
+      this.updateJob(jobId, jobStatus);
     });
 
     this.getChangeTaskObservable().pipe(
@@ -235,7 +258,7 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
           this.failedCount.next(stats.failed);
           this.afterCountChanged(!!(stats.running || stats.success || stats.failed));
           this.tasks.next(tasks);
-          this.listenToJobs();
+          this.listenToTasks();
         });
     });
 

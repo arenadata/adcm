@@ -12,12 +12,11 @@
 import json
 from json.decoder import JSONDecodeError
 
+from audit.cef_logger import cef_logger
+from audit.models import AuditSession, AuditSessionLoginResult
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.urls import resolve
-
-from audit.cef_logger import cef_logger
-from audit.models import AuditSession, AuditSessionLoginResult
 
 
 class AuditLoginMiddleware:
@@ -28,31 +27,29 @@ class AuditLoginMiddleware:
     def _audit(request_path: str, user: User | AnonymousUser | None = None, username: str = None):
         """Authentication audit"""
         if user is not None and user.is_authenticated:
-            result = AuditSessionLoginResult.Success
+            result = AuditSessionLoginResult.SUCCESS
             details = {"username": user.username}
         else:
             details = {"username": username}
             try:
                 user = User.objects.get(username=username)
                 if not user.is_active:
-                    result = AuditSessionLoginResult.AccountDisabled
+                    result = AuditSessionLoginResult.ACCOUNT_DISABLED
                 else:
-                    result = AuditSessionLoginResult.WrongPassword
+                    result = AuditSessionLoginResult.WRONG_PASSWORD
             except User.DoesNotExist:
-                result = AuditSessionLoginResult.UserNotFound
+                result = AuditSessionLoginResult.USER_NOT_FOUND
                 user = None
 
         auditsession = AuditSession.objects.create(user=user, login_result=result, login_details=details)
         cef_logger(audit_instance=auditsession, signature_id=resolve(request_path).route)
 
     def __call__(self, request):
-
         if request.method == "POST" and request.path in {
             "/api/v1/rbac/token/",
             "/api/v1/token/",
             "/api/v1/auth/login/",
         }:
-
             try:
                 username = json.loads(request.body.decode(settings.ENCODING_UTF_8)).get("username")
             except JSONDecodeError:

@@ -12,12 +12,12 @@
 
 from datetime import timedelta
 
+from audit.models import AuditLog, AuditSession
+from cm.models import ADCM, Bundle, Prototype
 from django.urls import reverse
 from rest_framework.response import Response
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from audit.models import AuditLog, AuditSession
-from cm.models import ADCM, Bundle, Prototype
 
 
 class TestAuditAPI(BaseTestCase):

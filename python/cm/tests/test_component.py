@@ -10,9 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import reverse
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.models import (
     Bundle,
     Cluster,
@@ -23,6 +20,9 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from django.urls import reverse
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestComponent(BaseTestCase):

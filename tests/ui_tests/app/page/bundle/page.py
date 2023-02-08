@@ -13,6 +13,7 @@
 """Bundle page PageObjects classes"""
 
 import allure
+
 from tests.ui_tests.app.page.bundle.locators import (
     BundleLocators,
     BundleMainMenuLocators,
@@ -37,13 +38,13 @@ class BundlePage(BasePageObject):
         self.toolbar = CommonToolbar(self.driver, self.base_url)
 
     @allure.step('Click on the "Main" menu item')
-    def open_main_menu(self) -> 'BundlePage':
+    def open_main_menu(self) -> "BundlePage":
         """Click on the 'Main' menu item"""
         self.find_and_click(BundleLocators.MenuNavigation.main)
         self.wait_page_is_opened()
         return self
 
-    @allure.step('Check all fields are presented on Main page')
+    @allure.step("Check all fields are presented on Main page")
     def check_all_main_menu_fields_are_presented(self):
         """Check all fields on main menu page are presented"""
         check_elements_are_displayed(

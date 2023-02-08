@@ -20,7 +20,7 @@ import pytest
 from adcm_client.objects import GroupConfig
 from adcm_pytest_plugin.utils import get_data_dir, ordered_dict_to_dict
 from allure_commons.types import AttachmentType
-from tests.conftest import include_dummy_data
+
 from tests.functional.plugin_utils import AnyADCMObject
 
 ###############################
@@ -218,7 +218,6 @@ def _get_config_and_attr(obj: Union[GroupConfig, AnyADCMObject]):
 class TestUpgradeWithConfigs:
     """Tests for cluster and provider upgrades with ordinary configs"""
 
-    @include_dummy_data
     @pytest.mark.parametrize(
         ("bundle_name", "update_func"),
         [
@@ -282,7 +281,6 @@ class TestUpgradeWithConfigs:
                 obj=component,
             )
 
-    @include_dummy_data
     @pytest.mark.parametrize(
         ("bundle_name", "update_func"),
         [
@@ -358,7 +356,6 @@ class TestUpgradeWithConfigs:
 class TestUpgradeWithGroupConfigs:
     """Tests for cluster and provider upgrades with group configs"""
 
-    @include_dummy_data
     @pytest.mark.parametrize(
         ("bundle_name", "update_func"),
         [
@@ -433,7 +430,6 @@ class TestUpgradeWithGroupConfigs:
                 group_config=component_group_config,
             )
 
-    @include_dummy_data
     @pytest.mark.parametrize(
         ("bundle_name", "update_func"),
         [

@@ -12,6 +12,8 @@
 
 """Tests on downloading all job logs in task as one archive"""
 
+# pylint: disable=redefined-outer-name
+
 import re
 import tarfile
 from operator import methodcaller
@@ -31,9 +33,10 @@ from adcm_client.objects import (
     Service,
     Task,
 )
-from adcm_pytest_plugin.docker_utils import ADCM as ADCMTest
+from adcm_pytest_plugin.docker.adcm import ADCM as ADCMTest
 from adcm_pytest_plugin.utils import get_data_dir
 from docker.models.containers import Container
+
 from tests.functional.ldap_auth.utils import TEST_CONNECTION_ACTION
 from tests.functional.tools import (
     AnyADCMObject,
@@ -42,8 +45,6 @@ from tests.functional.tools import (
 )
 from tests.library.assertions import sets_are_equal
 from tests.library.utils import build_full_archive_name
-
-# pylint: disable=redefined-outer-name
 
 CLUSTER_NAME = "Cluster Name"
 PROVIDER_NAME = "Provider Name"

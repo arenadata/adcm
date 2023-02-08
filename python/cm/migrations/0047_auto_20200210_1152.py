@@ -16,25 +16,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0046_auto_20200120_1417'),
+        ("cm", "0046_auto_20200120_1417"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='action',
-            name='partial_execution',
+            model_name="action",
+            name="partial_execution",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='partial_execution',
+            model_name="stageaction",
+            name="partial_execution",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='tasklog',
-            name='hosts',
+            model_name="tasklog",
+            name="hosts",
             field=models.TextField(null=True),
         ),
     ]

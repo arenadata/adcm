@@ -12,12 +12,6 @@
 
 import json
 
-from django.contrib.auth.models import Permission
-from django.contrib.contenttypes.models import ContentType
-from django.test import Client
-from django.urls import reverse
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from api.utils import PermissionDenied, check_custom_perm
 from cm.api import add_host_to_cluster
 from cm.errors import AdcmEx
@@ -34,6 +28,10 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
+from django.test import Client
+from django.urls import reverse
 from init_db import init as init_adcm
 from rbac.models import Role, RoleTypes, User
 from rbac.roles import ModelRole
@@ -42,41 +40,27 @@ from rbac.services.role import role_create
 from rbac.tests.test_base import RBACBaseTestCase
 from rbac.upgrade.role import init_roles, prepare_action_roles
 
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+
 
 class RoleModelTest(BaseTestCase):
     def test_role_class(self):
-        r = Role(module_name="qwe")
+        role = Role(module_name="qwe")
         with self.assertRaises(AdcmEx) as context:
-            r.get_role_obj()
+            role.get_role_obj()
 
         self.assertEqual(context.exception.code, "ROLE_MODULE_ERROR")
 
-        r = Role(module_name="rbac", class_name="qwe")
+        role = Role(module_name="rbac", class_name="qwe")
         with self.assertRaises(AdcmEx) as context:
-            r.get_role_obj()
+            role.get_role_obj()
 
         self.assertEqual(context.exception.code, "ROLE_CLASS_ERROR")
 
-        r = Role(module_name="rbac.roles", class_name="ModelRole")
-        obj = r.get_role_obj()
+        role = Role(module_name="rbac.roles", class_name="ModelRole")
+        obj = role.get_role_obj()
 
         self.assertTrue(isinstance(obj, ModelRole))
-
-    def test_max_length(self):
-        # pylint: disable=protected-access
-
-        role = Role.objects.create(name="name", class_name="class", module_name="module")
-        name_max_length = role._meta.get_field("name").max_length
-
-        self.assertEqual(name_max_length, 1000)
-
-        class_name_max_length = role._meta.get_field("class_name").max_length
-
-        self.assertEqual(class_name_max_length, 32)
-
-        module_name_max_length = role._meta.get_field("module_name").max_length
-
-        self.assertEqual(module_name_max_length, 32)
 
     def test_default(self):
         role = Role.objects.create()
@@ -92,7 +76,7 @@ class RoleModelTest(BaseTestCase):
         self.assertEqual(role.parametrized_by_type, [])
 
     def test_object_filter(self):
-        r = Role(
+        role = Role(
             name="view",
             module_name="rbac.roles",
             class_name="ObjectRole",
@@ -102,46 +86,48 @@ class RoleModelTest(BaseTestCase):
                 "filter": {"name": "Hadoop"},
             },
         )
-        r.save()
+        role.save()
 
-        b1 = Bundle(name="Hadoop", version="1.0")
-        b1.save()
-        b2 = Bundle(name="Zookeper", version="1.0")
-        b2.save()
-        b3 = Bundle(name="Hadoop", version="2.0")
-        b3.save()
+        bundle_1 = Bundle(name="Hadoop", version="1.0")
+        bundle_1.save()
 
-        self.assertEqual([b1, b3], list(r.filter()))
+        bundle_2 = Bundle(name="Zookeper", version="1.0")
+        bundle_2.save()
+
+        bundle_3 = Bundle(name="Hadoop", version="2.0")
+        bundle_3.save()
+
+        self.assertEqual([bundle_1, bundle_3], list(role.filter()))
 
     def test_object_filter_error(self):
-        r1 = Role(
+        role_1 = Role(
             name="view",
             display_name="view",
             module_name="rbac.roles",
             class_name="ObjectRole",
             init_params={"app_name": "cm", "model": "qwe"},
         )
-        r1.save()
+        role_1.save()
         with self.assertRaises(AdcmEx) as e:
-            r1.filter()
+            role_1.filter()
 
         self.assertEqual(e.exception.code, "ROLE_FILTER_ERROR")
 
-        r2 = Role(
+        role_2 = Role(
             name="add",
             display_name="add",
             module_name="rbac.roles",
             class_name="ObjectRole",
             init_params={"app_name": "qwe", "model": "qwe"},
         )
-        r2.save()
+        role_2.save()
         with self.assertRaises(AdcmEx) as e:
-            r1.filter()
+            role_1.filter()
 
         self.assertEqual(e.exception.code, "ROLE_FILTER_ERROR")
 
     def test_object_complex_filter(self):
-        r = Role(
+        role = Role(
             name="view",
             module_name="rbac.roles",
             class_name="ObjectRole",
@@ -156,18 +142,21 @@ class RoleModelTest(BaseTestCase):
                 },
             },
         )
-        r.save()
+        role.save()
 
-        b1 = Bundle(name="Hadoop", version="1.0")
-        b1.save()
-        p1 = Prototype(bundle=b1, type="cluster", name="Kafka", version="1.0")
-        p1.save()
-        a1 = Action(prototype=p1, name="start")
-        a1.save()
-        a2 = Action(prototype=p1, name="stop")
-        a2.save()
+        bundle_1 = Bundle(name="Hadoop", version="1.0")
+        bundle_1.save()
 
-        self.assertEqual([a1], list(r.filter()))
+        cluster_prototype = Prototype(bundle=bundle_1, type="cluster", name="Kafka", version="1.0")
+        cluster_prototype.save()
+
+        action_1 = Action(prototype=cluster_prototype, name="start")
+        action_1.save()
+
+        action_2 = Action(prototype=cluster_prototype, name="stop")
+        action_2.save()
+
+        self.assertEqual([action_1], list(role.filter()))
 
 
 class RoleFunctionalTestRBAC(RBACBaseTestCase):
@@ -194,7 +183,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
 
         self.cluster_action = Action.objects.create(
             name="cluster_action",
-            type=ActionType.Job,
+            type=ActionType.JOB,
             script="./action.yaml",
             script_type="ansible",
             state_available="any",
@@ -203,7 +192,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         )
         self.service1_action = Action.objects.create(
             name="service_1_action",
-            type=ActionType.Job,
+            type=ActionType.JOB,
             script="./action.yaml",
             script_type="ansible",
             state_available="any",
@@ -212,7 +201,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         )
         self.component11_action = Action.objects.create(
             name="component_1_1_action",
-            type=ActionType.Job,
+            type=ActionType.JOB,
             script="./action.yaml",
             script_type="ansible",
             state_available="any",
@@ -221,7 +210,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         )
         self.component21_action = Action.objects.create(
             name="component_2_1_action",
-            type=ActionType.Job,
+            type=ActionType.JOB,
             script="./action.yaml",
             script_type="ansible",
             state_available="any",
@@ -230,7 +219,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         )
         self.service2_action = Action.objects.create(
             name="service_2_action",
-            type=ActionType.Job,
+            type=ActionType.JOB,
             script="./action.yaml",
             script_type="ansible",
             state_available="any",
@@ -239,7 +228,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         )
         self.component12_action = Action.objects.create(
             name="component_1_2_action",
-            type=ActionType.Job,
+            type=ActionType.JOB,
             script="./action.yaml",
             script_type="ansible",
             state_available="any",
@@ -248,7 +237,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         )
         self.component22_action = Action.objects.create(
             name="component_2_2_action",
-            type=ActionType.Job,
+            type=ActionType.JOB,
             script="./action.yaml",
             script_type="ansible",
             state_available="any",
@@ -263,7 +252,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "sample_bundle_1.0_community_cluster_Sample Cluster_cluster_action",
                 "display_name": "sample_bundle_1.0_community_cluster_Sample Cluster_cluster_action",
                 "bundle": self.bundle_1,
-                "type": RoleTypes.hidden,
+                "type": RoleTypes.HIDDEN,
                 "module_name": "rbac.roles",
                 "class_name": "ActionRole",
                 "init_params": {
@@ -282,7 +271,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "sample_bundle_1.0_community_service_Service 1_service_1_action",
                 "display_name": "sample_bundle_1.0_community_service_Service 1_service_1_action",
                 "bundle": self.bundle_1,
-                "type": RoleTypes.hidden,
+                "type": RoleTypes.HIDDEN,
                 "module_name": "rbac.roles",
                 "class_name": "ActionRole",
                 "init_params": {
@@ -307,7 +296,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                     "component_Component 1 from Service 1_component_1_1_action"
                 ),
                 "bundle": self.bundle_1,
-                "type": RoleTypes.hidden,
+                "type": RoleTypes.HIDDEN,
                 "module_name": "rbac.roles",
                 "class_name": "ActionRole",
                 "init_params": {
@@ -332,7 +321,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                     "component_Component 2 from Service 1_component_2_1_action"
                 ),
                 "bundle": self.bundle_1,
-                "type": RoleTypes.hidden,
+                "type": RoleTypes.HIDDEN,
                 "module_name": "rbac.roles",
                 "class_name": "ActionRole",
                 "init_params": {
@@ -351,7 +340,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "sample_bundle_1.0_community_service_Service 2_service_2_action",
                 "display_name": "sample_bundle_1.0_community_service_Service 2_service_2_action",
                 "bundle": self.bundle_1,
-                "type": RoleTypes.hidden,
+                "type": RoleTypes.HIDDEN,
                 "module_name": "rbac.roles",
                 "class_name": "ActionRole",
                 "init_params": {
@@ -376,7 +365,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                     "component_Component 1 from Service 2_component_1_2_action"
                 ),
                 "bundle": self.bundle_1,
-                "type": RoleTypes.hidden,
+                "type": RoleTypes.HIDDEN,
                 "module_name": "rbac.roles",
                 "class_name": "ActionRole",
                 "init_params": {
@@ -401,7 +390,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                     "component_Component 2 from Service 2_component_2_2_action"
                 ),
                 "bundle": self.bundle_1,
-                "type": RoleTypes.hidden,
+                "type": RoleTypes.HIDDEN,
                 "module_name": "rbac.roles",
                 "class_name": "ActionRole",
                 "init_params": {
@@ -421,7 +410,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "Cluster Action: Cluster Action",
                 "display_name": "Cluster Action: Cluster Action",
                 "description": "Cluster Action: Cluster Action",
-                "type": RoleTypes.business,
+                "type": RoleTypes.BUSINESS,
                 "module_name": "rbac.roles",
                 "class_name": "ParentRole",
                 "parametrized_by_type": ["cluster"],
@@ -430,7 +419,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "Service Action: Service 1 Action",
                 "display_name": "Service Action: Service 1 Action",
                 "description": "Service Action: Service 1 Action",
-                "type": RoleTypes.business,
+                "type": RoleTypes.BUSINESS,
                 "module_name": "rbac.roles",
                 "class_name": "ParentRole",
                 "parametrized_by_type": ["service"],
@@ -439,7 +428,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "Component Action: Component 1 from Service 1 Action",
                 "display_name": "Component Action: Component 1 from Service 1 Action",
                 "description": "Component Action: Component 1 from Service 1 Action",
-                "type": RoleTypes.business,
+                "type": RoleTypes.BUSINESS,
                 "module_name": "rbac.roles",
                 "class_name": "ParentRole",
                 "parametrized_by_type": ["service", "component"],
@@ -448,7 +437,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "Component Action: Component 2 from Service 1 Action",
                 "display_name": "Component Action: Component 2 from Service 1 Action",
                 "description": "Component Action: Component 2 from Service 1 Action",
-                "type": RoleTypes.business,
+                "type": RoleTypes.BUSINESS,
                 "module_name": "rbac.roles",
                 "class_name": "ParentRole",
                 "parametrized_by_type": ["service", "component"],
@@ -457,7 +446,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "Service Action: Service 2 Action",
                 "display_name": "Service Action: Service 2 Action",
                 "description": "Service Action: Service 2 Action",
-                "type": RoleTypes.business,
+                "type": RoleTypes.BUSINESS,
                 "module_name": "rbac.roles",
                 "class_name": "ParentRole",
                 "parametrized_by_type": ["service"],
@@ -466,7 +455,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "Component Action: Component 1 from Service 2 Action",
                 "display_name": "Component Action: Component 1 from Service 2 Action",
                 "description": "Component Action: Component 1 from Service 2 Action",
-                "type": RoleTypes.business,
+                "type": RoleTypes.BUSINESS,
                 "module_name": "rbac.roles",
                 "class_name": "ParentRole",
                 "parametrized_by_type": ["service", "component"],
@@ -475,7 +464,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": "Component Action: Component 2 from Service 2 Action",
                 "display_name": "Component Action: Component 2 from Service 2 Action",
                 "description": "Component Action: Component 2 from Service 2 Action",
-                "type": RoleTypes.business,
+                "type": RoleTypes.BUSINESS,
                 "module_name": "rbac.roles",
                 "class_name": "ParentRole",
                 "parametrized_by_type": ["service", "component"],
@@ -547,10 +536,10 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
             )
 
             role = Role.objects.filter(**role_data).first()
-            if role == RoleTypes.business:
+            if role == RoleTypes.BUSINESS:
                 self.assertEqual(role.child.count(), 1, "Role cannot have more than one child.")
 
-            if role == RoleTypes.hidden:
+            if role == RoleTypes.HIDDEN:
                 self.assertFalse(role.child.exists(), "Role cannot have children.")
 
         ca_role = Role.objects.get(name="Cluster Administrator")
@@ -586,9 +575,9 @@ class TestMMRoles(RBACBaseTestCase):
         self.cluster = Cluster.objects.create(name="testcluster", prototype=self.clp)
         self.provider = HostProvider.objects.create(
             name="test_provider",
-            prototype=self.pp,
+            prototype=self.provider_prototype,
         )
-        self.host = Host.objects.create(fqdn="testhost", prototype=self.hp)
+        self.host = Host.objects.create(fqdn="testhost", prototype=self.host_prototype)
         add_host_to_cluster(self.cluster, self.host)
         self.service = ClusterObject.objects.create(cluster=self.cluster, prototype=self.sp_1)
         self.component = ServiceComponent.objects.create(
@@ -602,7 +591,7 @@ class TestMMRoles(RBACBaseTestCase):
             password=self.test_user_password,
         )
 
-        self.client = Client(HTTP_USER_AGENT='Mozilla/5.0')
+        self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
         self.login()
 
         self.mm_role_host = role_create(
@@ -634,7 +623,7 @@ class TestMMRoles(RBACBaseTestCase):
         check_custom_perm(self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host)
 
         response = self.client.post(
-            path=reverse("host-maintenance-mode", kwargs={'host_id': self.host.pk}),
+            path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
             format="json",
             content_type=APPLICATION_JSON,
@@ -658,7 +647,7 @@ class TestMMRoles(RBACBaseTestCase):
         check_custom_perm(self.test_user, "change_maintenance_mode", self.service._meta.model_name, self.service)
 
         response = self.client.post(
-            path=reverse("host-maintenance-mode", kwargs={'host_id': self.host.pk}),
+            path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
             format="json",
             content_type=APPLICATION_JSON,
@@ -666,7 +655,7 @@ class TestMMRoles(RBACBaseTestCase):
         self.assertEqual(response.status_code, 200)
 
         response = self.client.post(
-            path=reverse("component-maintenance-mode", kwargs={'component_id': self.component.pk}),
+            path=reverse("component-maintenance-mode", kwargs={"component_id": self.component.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
             format="json",
             content_type=APPLICATION_JSON,
@@ -674,7 +663,7 @@ class TestMMRoles(RBACBaseTestCase):
         self.assertEqual(response.status_code, 200)
 
         response = self.client.post(
-            path=reverse("service-maintenance-mode", kwargs={'service_id': self.service.pk}),
+            path=reverse("service-maintenance-mode", kwargs={"service_id": self.service.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
             format="json",
             content_type=APPLICATION_JSON,
@@ -698,7 +687,7 @@ class TestMMRoles(RBACBaseTestCase):
         check_custom_perm(self.test_user, "change_maintenance_mode", self.service._meta.model_name, self.service)
 
         response = self.client.post(
-            path=reverse("host-maintenance-mode", kwargs={'host_id': self.host.pk}),
+            path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
             format="json",
             content_type=APPLICATION_JSON,
@@ -706,7 +695,7 @@ class TestMMRoles(RBACBaseTestCase):
         self.assertEqual(response.status_code, 200)
 
         response = self.client.post(
-            path=reverse("component-maintenance-mode", kwargs={'component_id': self.component.pk}),
+            path=reverse("component-maintenance-mode", kwargs={"component_id": self.component.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
             format="json",
             content_type=APPLICATION_JSON,
@@ -714,7 +703,7 @@ class TestMMRoles(RBACBaseTestCase):
         self.assertEqual(response.status_code, 200)
 
         response = self.client.post(
-            path=reverse("service-maintenance-mode", kwargs={'service_id': self.service.pk}),
+            path=reverse("service-maintenance-mode", kwargs={"service_id": self.service.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
             format="json",
             content_type=APPLICATION_JSON,

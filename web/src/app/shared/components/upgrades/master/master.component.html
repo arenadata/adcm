@@ -28,7 +28,7 @@
   </div>
 
   <mat-horizontal-stepper #stepper linear *ngIf="show === 'stepper'">
-    <mat-step [stepControl]="wcs.fields.form">
+    <mat-step [stepControl]="wcs?.fields?.form">
       <ng-template matStepLabel>Configuration</ng-template>
       <app-upgrade-master-config [upgrade]="upgrade" #wcs></app-upgrade-master-config>
       <div class="controls-container" [class.margin]="needMargin()">

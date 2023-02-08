@@ -17,34 +17,35 @@ import coreapi
 import pytest
 from adcm_client.packer.bundle_build import build
 from adcm_pytest_plugin import utils
+
 from tests.library.errorcodes import BUNDLE_ERROR, INVALID_OBJECT_DEFINITION
 
 testcases = ["cluster", "host"]
 
 
-@pytest.mark.parametrize('testcase', testcases)
+@pytest.mark.parametrize("testcase", testcases)
 def test_handle_unknown_words_in_bundle(sdk_client_fs, testcase):
     """Test bundle with unspecified words should not be uploaded"""
-    with allure.step('Try to upload bundle with unknown words'):
-        dir_name = 'unknown_words_in_' + testcase
+    with allure.step("Try to upload bundle with unknown words"):
+        dir_name = "unknown_words_in_" + testcase
         bundledir = utils.get_data_dir(__file__, dir_name)
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             sdk_client_fs.upload_from_fs(bundledir)
-    with allure.step('Check error: Not allowed key'):
+    with allure.step("Check error: Not allowed key"):
         INVALID_OBJECT_DEFINITION.equal(e, 'Map key "confi" is not allowed here')
 
 
 def test_shouldnt_load_same_bundle_twice(sdk_client_fs):
     """Test bundle should not be uploaded twice"""
-    with allure.step('Build bundle'):
-        bundledir = utils.get_data_dir(__file__, 'bundle_directory_exist')
+    with allure.step("Build bundle"):
+        bundledir = utils.get_data_dir(__file__, "bundle_directory_exist")
         for path, steram in build(repopath=bundledir).items():
-            with open(path, 'wb') as file:
+            with open(path, "wb") as file:
                 file.write(steram.read())
                 bundle_tar_path = path
-    with allure.step('Try to upload same bundle twice'):
+    with allure.step("Try to upload same bundle twice"):
         sdk_client_fs.upload_from_fs(bundle_tar_path)
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             sdk_client_fs.upload_from_fs(bundle_tar_path)
-    with allure.step('Check error: bundle directory already exists'):
-        BUNDLE_ERROR.equal(e, 'already exists')
+    with allure.step("Check error: bundle directory already exists"):
+        BUNDLE_ERROR.equal(e, "already exists")

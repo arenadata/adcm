@@ -12,11 +12,10 @@
 
 """User view sets"""
 
-from rest_framework import serializers
-from rest_framework.generics import RetrieveUpdateAPIView
-
 from rbac import models
 from rbac.services import user as user_services
+from rest_framework import serializers
+from rest_framework.generics import RetrieveUpdateAPIView
 
 
 class PasswordField(serializers.CharField):
@@ -39,12 +38,12 @@ class MeUserSerializer(serializers.Serializer):
     email = serializers.CharField(read_only=True)
     is_superuser = serializers.BooleanField(read_only=True)
     password = PasswordField(trim_whitespace=False)
-    profile = serializers.JSONField(required=False, default='')
+    profile = serializers.JSONField(required=False, default="")
     type = serializers.CharField(read_only=True)
     is_active = serializers.BooleanField(read_only=True)
 
     def update(self, instance, validated_data):
-        context_user = self.context['request'].user
+        context_user = self.context["request"].user
         return user_services.update(instance, context_user, partial=True, **validated_data)
 
 

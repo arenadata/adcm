@@ -11,10 +11,6 @@
 # limitations under the License.
 
 import casestyle
-from django.db import transaction
-from django.db.models.signals import m2m_changed, post_delete, post_save, pre_save
-from django.dispatch import receiver
-
 from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP, AuditObject
 from audit.utils import mark_deleted_audit_object
 from cm.logger import logger
@@ -31,6 +27,9 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.status_api import post_event
+from django.db import transaction
+from django.db.models.signals import m2m_changed, post_delete, post_save, pre_save
+from django.dispatch import receiver
 from rbac.models import Group, Policy, Role, User
 
 
@@ -88,16 +87,15 @@ def rename_audit_object_host(sender, instance, **kwargs) -> None:
 
 def get_names(sender, **kwargs):
     """getting model name, module name and object"""
-    if hasattr(sender, 'get_endpoint'):
+    if hasattr(sender, "get_endpoint"):
         name = sender.get_endpoint()
     else:
         name = casestyle.kebabcase(sender.__name__)
-    return name, sender.__module__, kwargs['instance']
+    return name, sender.__module__, kwargs["instance"]
 
 
-def _post_event(action, module, name, obj_pk):
-    """Wrapper for post_event to run in on_commit hook"""
-    transaction.on_commit(lambda: post_event(action, name, obj_pk, {'module': module}))
+def _post_event(action: str, module: str, obj) -> None:
+    transaction.on_commit(lambda: post_event(event=action, obj=obj, details={"module": module}))
 
 
 @receiver(post_save, sender=User)
@@ -108,15 +106,16 @@ def _post_event(action, module, name, obj_pk):
 def model_change(sender, **kwargs):
     """post_save handler"""
     name, module, obj = get_names(sender, **kwargs)
-    if 'filter_out' in kwargs:
-        if kwargs['filter_out'](module, name, obj):
+    if "filter_out" in kwargs:
+        if kwargs["filter_out"](module, name, obj):
             return
-    action = 'update'
-    if 'created' in kwargs and kwargs['created']:
-        action = 'create'
-    args = (action, module, name, obj.pk)
-    logger.info('%s %s %s #%s', *args)
-    _post_event(*args)
+
+    action = "update"
+    if kwargs.get("created"):
+        action = "create"
+
+    logger.info("%s %s %s #%s", action, module, name, obj.pk)
+    _post_event(action=action, module=module, obj=obj)
 
 
 @receiver(post_delete, sender=User)
@@ -127,13 +126,14 @@ def model_change(sender, **kwargs):
 def model_delete(sender, **kwargs):
     """post_delete handler"""
     name, module, obj = get_names(sender, **kwargs)
-    if 'filter_out' in kwargs:
-        if kwargs['filter_out'](module, name, obj):
+
+    if "filter_out" in kwargs:
+        if kwargs["filter_out"](module, name, obj):
             return
-    action = 'delete'
-    args = (action, module, name, obj.pk)
-    logger.info('%s %s %s #%s', *args)
-    _post_event(*args)
+
+    action = "delete"
+    logger.info("%s %s %s #%s", action, module, name, obj.pk)
+    _post_event(action=action, module=module, obj=obj)
 
 
 @receiver(m2m_changed, sender=GroupConfig)
@@ -145,15 +145,16 @@ def model_delete(sender, **kwargs):
 def m2m_change(sender, **kwargs):
     """m2m_changed handler"""
     name, module, obj = get_names(sender, **kwargs)
-    if 'filter_out' in kwargs:
-        if kwargs['filter_out'](module, name, obj):
+    if "filter_out" in kwargs:
+        if kwargs["filter_out"](module, name, obj):
             return
-    if kwargs['action'] == 'post_add':
-        action = 'add'
-    elif kwargs['action'] == 'post_remove':
-        action = 'delete'
+
+    if kwargs["action"] == "post_add":
+        action = "add"
+    elif kwargs["action"] == "post_remove":
+        action = "delete"
     else:
         return
-    args = (action, module, name, obj.pk)
-    logger.info('%s %s %s #%s', *args)
-    _post_event(*args)
+
+    logger.info("%s %s %s #%s", action, module, name, obj.pk)
+    _post_event(action=action, module=module, obj=obj)

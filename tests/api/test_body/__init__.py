@@ -16,6 +16,7 @@ from typing import Tuple
 
 import allure
 import pytest
+
 from tests.api.steps.asserts import ExpectedBody
 from tests.api.testdata.generators import TestDataWithPreparedBody
 from tests.api.utils.data_classes import AUTO_VALUE
@@ -38,7 +39,7 @@ def _test_patch_put_body_positive(prepare_body_data: Tuple):
     for test_data_with_prepared_body in test_data_list:
         test_data, _ = test_data_with_prepared_body
         test_data.response.body = generate_body_for_checks(test_data_with_prepared_body)
-        with allure.step(f'Assert - {test_data.description}'):
+        with allure.step(f"Assert - {test_data.description}"):
             adcm.exec_request(request=test_data.request, expected_response=test_data.response)
 
 
@@ -51,15 +52,17 @@ def generate_body_for_checks(test_data: TestDataWithPreparedBody):
     for field in get_fields(test_data.request.endpoint.data_class):
         body.fields[field.name] = not_set
         if is_fk_field(field):
-            # TODO add fk field check
             continue
+
         if field.default_value == AUTO_VALUE:
             continue
+
         if test_data.request.method == Methods.POST:
             continue
+
         if isinstance(body.fields[field.name], list):
-            # TODO implement list checks with sorting
             continue
+
         if (
             test_data.request.method == Methods.PATCH
             and not field.changeable
@@ -71,4 +74,5 @@ def generate_body_for_checks(test_data: TestDataWithPreparedBody):
             body.fields[field.name] = field.f_type.placeholder
         elif expected_field_value := test_data.request.data.get(field.name):
             body.fields[field.name] = expected_field_value
+
     return body

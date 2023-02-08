@@ -17,6 +17,7 @@ from typing import Callable, Iterable, Tuple
 import allure
 import pytest
 from adcm_client.objects import Cluster
+
 from tests.functional.rbac.action_role_utils import (
     action_business_role,
     create_action_policy,
@@ -85,7 +86,7 @@ class TestClusterAdminRoleDoNotBreakParametrization:
 
         clients.admin.policy_create(
             name="Cluster Admin for First Cluster",
-            role=clients.admin.role(display_name=RbacRoles.ClusterAdministrator.value),
+            role=clients.admin.role(display_name=RbacRoles.CLUSTER_ADMINISTRATOR.value),
             objects=[first_cluster_admin],
             user=[user],
         )
@@ -168,7 +169,7 @@ class TestClusterAdminRoleDoNotBreakParametrization:
 
         clients.admin.policy_create(
             name="Service Admin for First Cluster",
-            role=clients.admin.role(display_name=RbacRoles.ServiceAdministrator.value),
+            role=clients.admin.role(display_name=RbacRoles.SERVICE_ADMINISTRATOR.value),
             objects=[first_service],
             user=[user],
         )

@@ -18,7 +18,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -27,59 +26,59 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='AuditObject',
+            name="AuditObject",
             fields=[
                 (
-                    'id',
-                    models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
-                ('object_id', models.PositiveIntegerField()),
-                ('object_name', models.CharField(max_length=253)),
+                ("object_id", models.PositiveIntegerField()),
+                ("object_name", models.CharField(max_length=253)),
                 (
-                    'object_type',
+                    "object_type",
                     models.CharField(
                         choices=[
-                            ('cluster', 'cluster'),
-                            ('service', 'service'),
-                            ('component', 'component'),
-                            ('host', 'host'),
-                            ('provider', 'provider'),
-                            ('bundle', 'bundle'),
-                            ('adcm', 'adcm'),
-                            ('user', 'user'),
-                            ('group', 'group'),
-                            ('role', 'role'),
-                            ('policy', 'policy'),
+                            ("cluster", "cluster"),
+                            ("service", "service"),
+                            ("component", "component"),
+                            ("host", "host"),
+                            ("provider", "provider"),
+                            ("bundle", "bundle"),
+                            ("adcm", "adcm"),
+                            ("user", "user"),
+                            ("group", "group"),
+                            ("role", "role"),
+                            ("policy", "policy"),
                         ],
                         max_length=16,
                     ),
                 ),
-                ('is_deleted', models.BooleanField(default=False)),
+                ("is_deleted", models.BooleanField(default=False)),
             ],
         ),
         migrations.CreateModel(
-            name='AuditSession',
+            name="AuditSession",
             fields=[
                 (
-                    'id',
-                    models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
                 (
-                    'login_result',
+                    "login_result",
                     models.CharField(
                         choices=[
-                            ('success', 'success'),
-                            ('wrong password', 'wrong password'),
-                            ('account disabled', 'account disabled'),
-                            ('user not found', 'user not found'),
+                            ("success", "success"),
+                            ("wrong password", "wrong password"),
+                            ("account disabled", "account disabled"),
+                            ("user not found", "user not found"),
                         ],
                         max_length=64,
                     ),
                 ),
-                ('login_time', models.DateTimeField(auto_now_add=True)),
-                ('login_details', models.JSONField(default=dict, null=True)),
+                ("login_time", models.DateTimeField(auto_now_add=True)),
+                ("login_details", models.JSONField(default=dict, null=True)),
                 (
-                    'user',
+                    "user",
                     models.ForeignKey(
                         null=True,
                         on_delete=django.db.models.deletion.CASCADE,
@@ -89,39 +88,39 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='AuditLog',
+            name="AuditLog",
             fields=[
                 (
-                    'id',
-                    models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
-                ('operation_name', models.CharField(max_length=160)),
+                ("operation_name", models.CharField(max_length=160)),
                 (
-                    'operation_type',
+                    "operation_type",
                     models.CharField(
-                        choices=[('create', 'create'), ('update', 'update'), ('delete', 'delete')],
+                        choices=[("create", "create"), ("update", "update"), ("delete", "delete")],
                         max_length=16,
                     ),
                 ),
                 (
-                    'operation_result',
+                    "operation_result",
                     models.CharField(
-                        choices=[('success', 'success'), ('fail', 'fail'), ('denied', 'denied')],
+                        choices=[("success", "success"), ("fail", "fail"), ("denied", "denied")],
                         max_length=16,
                     ),
                 ),
-                ('operation_time', models.DateTimeField(auto_now_add=True)),
-                ('object_changes', models.JSONField(default=dict)),
+                ("operation_time", models.DateTimeField(auto_now_add=True)),
+                ("object_changes", models.JSONField(default=dict)),
                 (
-                    'audit_object',
+                    "audit_object",
                     models.ForeignKey(
                         null=True,
                         on_delete=django.db.models.deletion.CASCADE,
-                        to='audit.auditobject',
+                        to="audit.auditobject",
                     ),
                 ),
                 (
-                    'user',
+                    "user",
                     models.ForeignKey(
                         null=True,
                         on_delete=django.db.models.deletion.CASCADE,

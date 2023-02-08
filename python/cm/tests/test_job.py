@@ -15,13 +15,6 @@ from signal import SIGTERM
 from unittest.mock import Mock, patch
 from urllib.parse import urljoin
 
-from django.conf import settings
-from django.urls import reverse
-from django.utils import timezone
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.api import add_cluster, add_service_to_cluster
 from cm.job import (
     check_cluster,
@@ -62,8 +55,15 @@ from cm.tests.utils import (
     gen_prototype,
     gen_task_log,
 )
+from django.conf import settings
+from django.urls import reverse
+from django.utils import timezone
 from init_db import init
 from rbac.upgrade.role import init_roles
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestJob(BaseTestCase):
@@ -142,7 +142,7 @@ class TestJob(BaseTestCase):
 
         self.assertEqual(job.status, status)
         self.assertEqual(job.pid, pid)
-        event.set_job_status.assert_called_once_with(job.id, status)
+        event.set_job_status.assert_called_once_with(job=job, status=status)
 
     def test_set_task_status(self):
         event = Mock()
@@ -154,7 +154,7 @@ class TestJob(BaseTestCase):
         set_task_status(task, JobStatus.RUNNING, event)
 
         self.assertEqual(task.status, JobStatus.RUNNING)
-        event.set_task_status.assert_called_once_with(task.id, JobStatus.RUNNING)
+        event.set_task_status.assert_called_once_with(task=task, status=JobStatus.RUNNING)
 
     def test_get_state_single_job(self):
         bundle = gen_bundle()
@@ -387,12 +387,12 @@ class TestJob(BaseTestCase):
             ),
         ]
 
-        for sa, script, test_path in data:
+        for data_sub_action, script, test_path in data:
             with self.subTest(sub_action=sub_action, script=script):
                 action.script = script
                 action.save()
 
-                path = cook_script(action, sa)
+                path = cook_script(action, data_sub_action)
 
             self.assertEqual(path, test_path)
             mock_get_bundle_root.assert_called_once_with(action)
@@ -426,8 +426,8 @@ class TestJob(BaseTestCase):
         adcm_action = Action.objects.create(prototype=proto3)
         adcm = ADCM.objects.create(prototype=proto3)
 
-        fd = Mock()
-        mock_open.return_value = fd
+        file_mock = Mock()
+        mock_open.return_value = file_mock
         mock_get_adcm_config.return_value = {}
         mock_prepare_context.return_value = {"type": "cluster", "cluster_id": 1}
         mock_get_bundle_root.return_value = str(settings.BUNDLE_DIR)
@@ -511,7 +511,7 @@ class TestJob(BaseTestCase):
                     "w",
                     encoding=settings.ENCODING_UTF_8,
                 )
-                mock_dump.assert_called_with(job_config, fd, indent=3, sort_keys=True)
+                mock_dump.assert_called_with(job_config, file_mock, indent=3, sort_keys=True)
                 mock_get_adcm_config.assert_called()
                 mock_prepare_context.assert_called_with(action, obj)
                 mock_get_bundle_root.assert_called_with(action)

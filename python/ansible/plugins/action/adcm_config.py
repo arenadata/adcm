@@ -9,12 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# pylint: disable=wrong-import-position, import-error
+# pylint: disable=wrong-import-order,wrong-import-position
 
 from __future__ import absolute_import, division, print_function
 
-__metaclass__ = type
+__metaclass__ = type  # pylint: disable=invalid-name
 
 import sys
 
@@ -34,12 +33,12 @@ from cm.ansible_plugin import (
 )
 
 ANSIBLE_METADATA = {"metadata_version": "1.1", "supported_by": "Arenadata"}
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: adcm_config
 short_description: Change values in config in runtime
 description:
-  - This is special ADCM only module which is useful for setting of specified config key for various ADCM objects.
+  - This is special ADCM only module which is useful for setting of specified config key or set of config keys for various ADCM objects.
   - There is support of cluster, service, host and providers config.
   - This one is allowed to be used in various execution contexts.
 options:
@@ -53,13 +52,18 @@ options:
     description: type of object which should be changed
 
   - option-name: key
-    required: true
+    required: false
     type: string
     description: name of key which should be set
 
   - option-name: value
-    required: true
+    required: false
     description: value which should be set
+
+  - option-name: parameters
+    required: false
+    type: list
+    description: list of keys and values which should be set
 
   - option-name: service_name
     required: false
@@ -68,8 +72,8 @@ options:
 
 notes:
   - If type is 'service', there is no needs to specify service_name
-'''
-EXAMPLES = r'''
+"""
+EXAMPLES = r"""
 - adcm_config:
     type: "service"
     service_name: "First"
@@ -83,12 +87,24 @@ EXAMPLES = r'''
     value:
       key1: value1
       key2: value2
-'''
-RETURN = r'''
+
+- adcm_config:
+    type: "host"
+    parameters:
+      - key: "some_group/some_string"
+        value: "string"
+      - key: "some_map"
+        value:
+          key1: value1
+          key2: value2
+      - key: "some_string"
+        value: "string"
+"""
+RETURN = r"""
 value:
   returned: success
   type: complex
-'''
+"""
 
 
 class ActionModule(ContextActionModule):
@@ -109,21 +125,21 @@ class ActionModule(ContextActionModule):
 
     def _get_config(self):
         config = {}
-        key = self._task.args.get("key")
-        value = self._task.args.get("value")
+        is_key = "key" in self._task.args
+        is_value = "value" in self._task.args
         is_params = "parameters" in self._task.args
 
-        if (key or value) and is_params:
+        if (is_key or is_value) and is_params:
             raise AnsibleError("'Parameters' must not be use with 'key'/'value'")
 
-        if not ((key and value) or is_params):
+        if not ((is_key and is_value) or is_params):
             raise AnsibleError("'key'/'value' or 'parameters' arguments are mandatory")
 
         if is_params:
             for item in self._task.args["parameters"]:
                 config[item["key"]] = item["value"]
         else:
-            config[key] = value
+            config[self._task.args.get("key")] = self._task.args.get("value")
 
         return config
 

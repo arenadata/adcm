@@ -13,18 +13,6 @@
 from datetime import datetime
 from pathlib import Path
 
-from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_400_BAD_REQUEST,
-    HTTP_403_FORBIDDEN,
-)
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -42,7 +30,19 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse
 from rbac.models import User
+from rest_framework.response import Response
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+)
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestGroupConfigAudit(BaseTestCase):
@@ -161,9 +161,9 @@ class TestGroupConfigAudit(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=f"{self.group_config.name} configuration group updated",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
             operation_result=operation_result,
             user=user,
         )
@@ -172,7 +172,7 @@ class TestGroupConfigAudit(BaseTestCase):
         self.create_group_config(
             name=self.name,
             object_id=self.cluster.pk,
-            object_type=AuditObjectType.Cluster,
+            object_type=AuditObjectType.CLUSTER,
             config_id=self.config.pk,
         )
 
@@ -182,10 +182,10 @@ class TestGroupConfigAudit(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=self.created_operation_name,
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.CREATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -194,7 +194,7 @@ class TestGroupConfigAudit(BaseTestCase):
             path=reverse("group-config-list"),
             data={
                 "name": self.name,
-                "object_type": AuditObjectType.Cluster,
+                "object_type": AuditObjectType.CLUSTER,
                 "config_id": self.config.pk,
             },
         )
@@ -205,8 +205,8 @@ class TestGroupConfigAudit(BaseTestCase):
         self.check_log_no_obj(
             log=log,
             operation_name=self.conf_group_created_str,
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Fail,
+            operation_type=AuditLogOperationType.CREATE,
+            operation_result=AuditLogOperationResult.FAIL,
             user=self.test_user,
         )
 
@@ -215,7 +215,7 @@ class TestGroupConfigAudit(BaseTestCase):
             response: Response = self.create_group_config(
                 name=self.name,
                 object_id=self.cluster.pk,
-                object_type=AuditObjectType.Cluster,
+                object_type=AuditObjectType.CLUSTER,
                 config_id=self.config.pk,
             )
 
@@ -225,8 +225,8 @@ class TestGroupConfigAudit(BaseTestCase):
         self.check_log_no_obj(
             log=log,
             operation_name=self.conf_group_created_str,
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.CREATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -235,7 +235,7 @@ class TestGroupConfigAudit(BaseTestCase):
         self.create_group_config(
             name=self.name,
             object_id=service.pk,
-            object_type=AuditObjectType.Service,
+            object_type=AuditObjectType.SERVICE,
             config_id=self.config.pk,
         )
 
@@ -245,10 +245,10 @@ class TestGroupConfigAudit(BaseTestCase):
             log=log,
             obj=service,
             obj_name=f"{self.cluster.name}/{service.display_name}",
-            obj_type=AuditObjectType.Service,
+            obj_type=AuditObjectType.SERVICE,
             operation_name=self.created_operation_name,
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.CREATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -258,7 +258,7 @@ class TestGroupConfigAudit(BaseTestCase):
             response: Response = self.create_group_config(
                 name=self.name,
                 object_id=service.pk,
-                object_type=AuditObjectType.Service,
+                object_type=AuditObjectType.SERVICE,
                 config_id=self.config.pk,
             )
 
@@ -268,8 +268,8 @@ class TestGroupConfigAudit(BaseTestCase):
         self.check_log_no_obj(
             log=log,
             operation_name=self.conf_group_created_str,
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.CREATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -278,7 +278,7 @@ class TestGroupConfigAudit(BaseTestCase):
         self.create_group_config(
             name=self.name,
             object_id=component.pk,
-            object_type=AuditObjectType.Component,
+            object_type=AuditObjectType.COMPONENT,
             config_id=self.config.pk,
         )
 
@@ -288,10 +288,10 @@ class TestGroupConfigAudit(BaseTestCase):
             log=log,
             obj=component,
             obj_name=f"{self.cluster.name}/{component.service.display_name}" f"/{component.display_name}",
-            obj_type=AuditObjectType.Component,
+            obj_type=AuditObjectType.COMPONENT,
             operation_name=self.created_operation_name,
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.CREATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -301,7 +301,7 @@ class TestGroupConfigAudit(BaseTestCase):
             response: Response = self.create_group_config(
                 name=self.name,
                 object_id=component.pk,
-                object_type=AuditObjectType.Component,
+                object_type=AuditObjectType.COMPONENT,
                 config_id=self.config.pk,
             )
 
@@ -311,8 +311,8 @@ class TestGroupConfigAudit(BaseTestCase):
         self.check_log_no_obj(
             log=log,
             operation_name=self.conf_group_created_str,
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.CREATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -325,10 +325,10 @@ class TestGroupConfigAudit(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=f"{self.group_config.name} configuration group deleted",
-            operation_type=AuditLogOperationType.Delete,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.DELETE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -345,10 +345,10 @@ class TestGroupConfigAudit(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=f"{self.group_config.name} configuration group deleted",
-            operation_type=AuditLogOperationType.Delete,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.DELETE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -368,7 +368,7 @@ class TestGroupConfigAudit(BaseTestCase):
 
         self.check_log_updated(
             log=log,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -390,7 +390,7 @@ class TestGroupConfigAudit(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_updated(
             log=log,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -410,7 +410,7 @@ class TestGroupConfigAudit(BaseTestCase):
 
         self.check_log_updated(
             log=log,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -432,7 +432,7 @@ class TestGroupConfigAudit(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_updated(
             log=log,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -448,10 +448,10 @@ class TestGroupConfigAudit(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=f"{self.host.fqdn} host added to " f"{self.group_config.name} configuration group",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -465,10 +465,10 @@ class TestGroupConfigAudit(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=f"{self.host.fqdn} host removed from " f"{self.group_config.name} configuration group",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -486,10 +486,10 @@ class TestGroupConfigAudit(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=f"host added to {self.group_config.name} configuration group",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Fail,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.FAIL,
             user=self.test_user,
         )
 
@@ -507,10 +507,10 @@ class TestGroupConfigAudit(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=f"{self.host.fqdn} host added to " f"{self.group_config.name} configuration group",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -533,10 +533,10 @@ class TestGroupConfigAudit(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=f"{self.host.fqdn} host removed from " f"{self.group_config.name} configuration group",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -553,13 +553,13 @@ class TestGroupConfigOperationName(BaseTestCase):
     def check_log(self, log: AuditLog, operation_result: AuditLogOperationResult, user: User):
         self.assertEqual(log.audit_object.object_id, self.cluster.pk)
         self.assertEqual(log.audit_object.object_name, self.cluster.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.CLUSTER)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(
             log.operation_name,
-            f"{self.group_config.name} configuration group {AuditLogOperationType.Update}d",
+            f"{self.group_config.name} configuration group {AuditLogOperationType.UPDATE}d",
         )
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
@@ -630,7 +630,7 @@ class TestGroupConfigOperationName(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.check_log(log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user)
+        self.check_log(log=log, operation_result=AuditLogOperationResult.SUCCESS, user=self.test_user)
 
     def test_group_config_operation_name_denied(self):
         self.create_cluster_from_bundle()
@@ -650,7 +650,7 @@ class TestGroupConfigOperationName(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_log(log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user)
+        self.check_log(log=log, operation_result=AuditLogOperationResult.DENIED, user=self.no_rights_user)
 
     def test_group_config_operation_name_failed(self):
         self.create_cluster_from_bundle()
@@ -669,4 +669,4 @@ class TestGroupConfigOperationName(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.check_log(log=log, operation_result=AuditLogOperationResult.Fail, user=self.test_user)
+        self.check_log(log=log, operation_result=AuditLogOperationResult.FAIL, user=self.test_user)

@@ -244,12 +244,12 @@ class String(BaseType):
     def __init__(self, max_length=1024, special_chars=r"!@#$%^&*\/{}[]", **kwargs):
         super().__init__(**kwargs)
         self.max_length = max_length
-        self._sp_vals_positive = ['s', special_chars, random_string(max_length)]
+        self._sp_vals_positive = ["s", special_chars, random_string(max_length)]
 
         self._sp_vals_negative = [
             generate_json_from_schema(json_schema=None),
             PreparedFieldValue(
-                value='some\nstring',
+                value="some\nstring",
                 f_type=self,
                 error_messages=["New line symbols are not allowed"],
             ),
@@ -272,7 +272,7 @@ class Username(String):
         super().__init__(**kwargs)
         self._sp_vals_negative.append(
             PreparedFieldValue(
-                value='string with spaces',
+                value="string with spaces",
                 error_messages=["Space symbols are not allowed"],
             )
         )
@@ -390,12 +390,12 @@ class ForeignKey(BaseType):
             PreparedFieldValue(
                 100,
                 f_type=self,
-                error_messages=["Invalid pk \"100\" - object does not exist."],
+                error_messages=['Invalid pk "100" - object does not exist.'],
             ),
             PreparedFieldValue(
                 2**63,
                 f_type=self,
-                error_messages=[f"Invalid pk \"{2**63}\" - object does not exist."],
+                error_messages=[f'Invalid pk "{2**63}" - object does not exist.'],
             ),
         ]
 
@@ -411,14 +411,14 @@ class ObjectForeignKey(ForeignKey):
         super().__init__(fk_link=fk_link, **kwargs)
         self._sp_vals_negative = [
             PreparedFieldValue(
-                {'id': 1000},
+                {"id": 1000},
                 f_type=self,
-                error_messages={"id": ["Invalid pk \"1000\" - object does not exist."]},
+                error_messages={"id": ['Invalid pk "1000" - object does not exist.']},
             ),
             PreparedFieldValue(
-                {'id': 2**63},
+                {"id": 2**63},
                 f_type=self,
-                error_messages={"id": [f"Invalid pk \"{2**63}\" - object does not exist."]},
+                error_messages={"id": [f'Invalid pk "{2**63}" - object does not exist.']},
             ),
         ]
 
@@ -445,12 +445,12 @@ class ForeignKeyM2M(ForeignKey):
             PreparedFieldValue(
                 [{"id": 1000}],
                 f_type=self,
-                error_messages=[{"id": ["Invalid pk \"1000\" - object does not exist."]}],
+                error_messages=[{"id": ['Invalid pk "1000" - object does not exist.']}],
             ),
             PreparedFieldValue(
                 [{"id": 2**63}],
                 f_type=self,
-                error_messages=[{"id": [f"Invalid pk \"{2**63}\" - object does not exist."]}],
+                error_messages=[{"id": [f'Invalid pk "{2**63}" - object does not exist.']}],
             ),
         ]
 

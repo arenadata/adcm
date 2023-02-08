@@ -13,15 +13,15 @@
 import json
 
 from django.test import Client
+from init_db import init
+from rbac.models import Policy, Role, User
+from rbac.upgrade.role import init_roles
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from init_db import init
-from rbac.models import Policy, Role, User
-from rbac.upgrade.role import init_roles
 
 
 class ApiTests(BaseTestCase):
@@ -33,7 +33,7 @@ class ApiTests(BaseTestCase):
             password=self.test_user_password,
             is_superuser=True,
         )
-        self.client = Client(HTTP_USER_AGENT='Mozilla/5.0')
+        self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
         self.login()
 
         init()

@@ -28,8 +28,8 @@ from adcm_pytest_plugin.utils import get_data_dir
 
 pytestmark = allure.link(url="https://arenadata.atlassian.net/browse/ADCM-2580", name="Test cases")
 
-DEFAULT_ANSIBLE_VER = dict(major=2, minor=8)
-ANSIBLE_9 = dict(major=2, minor=9)
+DEFAULT_ANSIBLE_VER = {"major": 2, "minor": 8}
+ANSIBLE_9 = {"major": 2, "minor": 9}
 
 
 def _prepare_cluster(client: ADCMClient, name):
@@ -37,7 +37,7 @@ def _prepare_cluster(client: ADCMClient, name):
     Prepared cluster for test: create cluster, couple services and couple components.
     """
     cluster_bundle = client.upload_from_fs(get_data_dir(__file__) + "/cluster_" + name)
-    cluster = cluster_bundle.cluster_prototype().cluster_create(name.replace('_', ' '))
+    cluster = cluster_bundle.cluster_prototype().cluster_create(name.replace("_", " "))
     cluster.service_add(name=name)
     return cluster
 

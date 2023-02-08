@@ -15,10 +15,9 @@ import logging
 from collections import OrderedDict
 from typing import Tuple, Union
 
-from django.conf import settings
-
 from audit.apps import AuditConfig
 from audit.models import AuditLog, AuditLogOperationResult, AuditSession
+from django.conf import settings
 
 audit_logger = logging.getLogger(AuditConfig.name)
 
@@ -59,14 +58,14 @@ def cef_logger(
         if not empty_resource and audit_instance.audit_object:
             extension["resource"] = audit_instance.audit_object.object_name
         extension["result"] = audit_instance.operation_result
-        if audit_instance.operation_result == AuditLogOperationResult.Denied:
+        if audit_instance.operation_result == AuditLogOperationResult.DENIED:
             severity = 3
         extension["timestamp"] = str(audit_instance.operation_time)
 
     else:
         raise NotImplementedError
 
-    extension = " ".join([f"{k}=\"{v}\"" for k, v in extension.items() if v is not None])
+    extension = " ".join([f'{k}="{v}"' for k, v in extension.items() if v is not None])
 
     msg = (
         f"{CEFLogConstants.cef_version}|{CEFLogConstants.device_vendor}|"

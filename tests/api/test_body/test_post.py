@@ -18,6 +18,7 @@ from typing import List
 
 import allure
 import pytest
+
 from tests.api.test_body import generate_body_for_checks
 from tests.api.testdata.db_filler import DbFiller
 from tests.api.testdata.generators import (
@@ -25,7 +26,6 @@ from tests.api.testdata.generators import (
     get_negative_data_for_post_body_check,
     get_positive_data_for_post_body_check,
 )
-from tests.api.utils.api_objects import ADCMTestApiWrapper
 from tests.api.utils.methods import Methods
 from tests.api.utils.types import get_fields
 
@@ -36,12 +36,12 @@ pytestmark = [
 
 @allure.title("Prepare post body data")
 @pytest.fixture()
-def prepare_post_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
+def prepare_post_body_data(request, adcm_api):
     """
     Fixture for preparing test data for POST request, depending on generated test datasets
     """
     test_data_list: List[TestDataWithPreparedBody] = request.param
-    valid_request_data = DbFiller(adcm=adcm_api_fs).generate_valid_request_data(
+    valid_request_data = DbFiller(adcm=adcm_api).generate_valid_request_data(
         endpoint=test_data_list[0].test_data.request.endpoint, method=Methods.POST
     )
     final_test_data_list: List[TestDataWithPreparedBody] = []
@@ -51,7 +51,6 @@ def prepare_post_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
         for field in get_fields(test_data.request.endpoint.data_class):
             if field.name in prepared_field_values:
                 if not prepared_field_values[field.name].drop_key:
-
                     valid_field_value = None
                     if field.name in test_data.request.data:
                         valid_field_value = test_data.request.data[field.name]
@@ -64,7 +63,7 @@ def prepare_post_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
                         del test_data.request.data[field.name]
         final_test_data_list.append(TestDataWithPreparedBody(test_data, prepared_field_values))
 
-    return adcm_api_fs, final_test_data_list
+    return adcm_api, final_test_data_list
 
 
 @pytest.mark.parametrize("prepare_post_body_data", get_positive_data_for_post_body_check(), indirect=True)
@@ -77,7 +76,7 @@ def test_post_body_positive(prepare_post_body_data):
     for test_data_with_prepared_values in test_data_list:
         test_data, _ = test_data_with_prepared_values
         test_data.response.body = generate_body_for_checks(test_data_with_prepared_values)
-        with allure.step(f'Assert - {test_data.description}'):
+        with allure.step(f"Assert - {test_data.description}"):
             adcm.exec_request(request=test_data.request, expected_response=test_data.response)
 
 
@@ -91,5 +90,5 @@ def test_post_body_negative(prepare_post_body_data, flexible_assert_step):
     adcm, test_data_list = prepare_post_body_data
     for test_data_with_prepared_values in test_data_list:
         test_data, _ = test_data_with_prepared_values
-        with flexible_assert_step(title=f'Assert - {test_data.description}'):
+        with flexible_assert_step(title=f"Assert - {test_data.description}"):
             adcm.exec_request(request=test_data.request, expected_response=test_data.response)

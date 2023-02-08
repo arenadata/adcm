@@ -20,6 +20,7 @@ import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webdriver import WebElement
+
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.dialogs.locators import DeleteDialogLocators
 from tests.ui_tests.app.page.common.group_config_list.locators import (
@@ -59,7 +60,7 @@ class GroupConfigList(BasePageObject):
             description=self.find_child(row, GroupConfigListLocators.GroupConfigRow.description).text,
         )
 
-    @allure.step('Create new group config {name}')
+    @allure.step("Create new group config {name}")
     def create_group(self, name: str, description: str):
         """Create new group config"""
 

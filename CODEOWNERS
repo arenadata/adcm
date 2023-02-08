@@ -1,0 +1,27 @@
+/conf/ @aas @k.shestakov @d.skrynnik @tsd
+/go/ @aas @aer @d.skrynnik
+/os/ @aas @k.shestakov @d.skrynnik @tsd
+/python/ @aas @k.shestakov @d.skrynnik @tsd
+/spec/ @aas @ke
+/tests/ @aas @aer @v.chudasov
+/web/ @v.remizov @d.bardin @k.fedorenko
+.dockerignore @aas @k.shestakov
+.gitignore @aas @k.shestakov
+.gitlab-ci.yaml @aas @k.shestakov
+.pre-commit-config.yaml @aas @k.shestakov
+CODEOWNERS @aas @v.remizov
+config.json @aas @k.shestakov
+COPYRIGHT @aas @ke
+docker-compose.yml @aas @k.shestakov
+Dockerfile @aas @k.shestakov
+init-user-db.sh @aas @k.shestakov
+LICENSE @aas @ke
+license_checker.py @aas @k.shestakov
+Makefile @aas @k.shestakov @aer
+pyproject.toml @aas @k.shestakov @aer
+pytest.sh @aas @k.shestakov @aer @v.chudasov
+README.md @aas @k.shestakov @aer @v.chudasov @d.skrynnik @tsd @ke @k.fedorenko
+requirements.txt @aas @k.shestakov
+requirements-test.txt @aas @k.shestakov @aer @v.chudasov
+requirements-venv-2.9.txt @aas @k.shestakov
+requirements-venv-default.txt @aas @k.shestakov

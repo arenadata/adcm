@@ -14,22 +14,6 @@
 from unittest.mock import patch
 from uuid import uuid4
 
-from django.conf import settings
-from django.urls import reverse
-from django.utils import timezone
-from rest_framework.response import Response
-from rest_framework.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_204_NO_CONTENT,
-    HTTP_400_BAD_REQUEST,
-    HTTP_401_UNAUTHORIZED,
-    HTTP_404_NOT_FOUND,
-    HTTP_405_METHOD_NOT_ALLOWED,
-    HTTP_409_CONFLICT,
-)
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.api import save_hc
 from cm.hierarchy import Tree
 from cm.models import (
@@ -52,8 +36,24 @@ from cm.tests.utils import (
     gen_service,
     gen_task_log,
 )
+from django.conf import settings
+from django.urls import reverse
+from django.utils import timezone
 from init_db import init
 from rbac.upgrade.role import init_roles
+from rest_framework.response import Response
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_401_UNAUTHORIZED,
+    HTTP_404_NOT_FOUND,
+    HTTP_405_METHOD_NOT_ALLOWED,
+    HTTP_409_CONFLICT,
+)
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestAPI(BaseTestCase):
@@ -869,11 +869,11 @@ class TestAPI2(BaseTestCase):
 
         self.assertListEqual(hc_list, [HostComponent.objects.first()])
 
-        mock_post_event.assert_called_once_with("change_hostcomponentmap", "cluster", self.cluster.id)
+        mock_post_event.assert_called_once_with(event="change_hostcomponentmap", obj=self.cluster)
         mock_update_issues.assert_called()
         mock_load_service_map.assert_called_once()
 
-    @patch("cm.api.ctx")
+    @patch("cm.api.CTX")
     @patch("cm.api.load_service_map")
     @patch("cm.api.update_hierarchy_issues")
     def test_save_hc__big_update__locked_hierarchy(self, mock_issue, mock_load, ctx):

@@ -13,6 +13,7 @@
 """Common locators"""
 
 from selenium.webdriver.common.by import By
+
 from tests.ui_tests.core.locators import BaseLocator, Descriptor, Locator, autoname
 
 
@@ -21,7 +22,7 @@ class CommonLocators:
 
     socket = BaseLocator(By.CSS_SELECTOR, ".socket", "open socket marker")
     profile = BaseLocator(By.CSS_SELECTOR, ".profile", "profile load marker")
-    load_marker = BaseLocator(By.CSS_SELECTOR, '.load_complete', "page load marker")
+    load_marker = BaseLocator(By.CSS_SELECTOR, ".load_complete", "page load marker")
     mat_slide_toggle = BaseLocator(By.CSS_SELECTOR, "mat-slide-toggle", "toggle")
 
 

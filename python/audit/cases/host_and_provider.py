@@ -9,10 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from django.db.models import Model
-from django.views import View
-from rest_framework.response import Response
-
 from audit.cases.common import get_or_create_audit_obj, obj_pk_case, response_case
 from audit.models import (
     AuditLogOperationType,
@@ -21,6 +17,9 @@ from audit.models import (
     AuditOperation,
 )
 from cm.models import Host, HostProvider
+from django.db.models import Model
+from django.views import View
+from rest_framework.response import Response
 
 
 def host_and_provider_case(
@@ -40,13 +39,13 @@ def host_and_provider_case(
             | ["provider", _, "host", host_pk, "maintenance-mode"]
         ):
             if view.request.method == "DELETE":
-                operation_type = AuditLogOperationType.Delete
+                operation_type = AuditLogOperationType.DELETE
             else:
-                operation_type = AuditLogOperationType.Update
+                operation_type = AuditLogOperationType.UPDATE
 
             object_name = None
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Host.capitalize()} {operation_type}d",
+                name=f"{AuditObjectType.HOST.capitalize()} {operation_type}d",
                 operation_type=operation_type,
             )
             if isinstance(deleted_obj, Host):
@@ -60,35 +59,35 @@ def host_and_provider_case(
                 audit_object = get_or_create_audit_obj(
                     object_id=host_pk,
                     object_name=object_name,
-                    object_type=AuditObjectType.Host,
+                    object_type=AuditObjectType.HOST,
                 )
             else:
                 audit_object = None
 
         case ["host"] | ["provider", _, "host"]:
             audit_operation, audit_object = response_case(
-                obj_type=AuditObjectType.Host,
-                operation_type=AuditLogOperationType.Create,
+                obj_type=AuditObjectType.HOST,
+                operation_type=AuditLogOperationType.CREATE,
                 response=response,
             )
 
         case ["provider"]:
             audit_operation, audit_object = response_case(
-                obj_type=AuditObjectType.Provider,
-                operation_type=AuditLogOperationType.Create,
+                obj_type=AuditObjectType.PROVIDER,
+                operation_type=AuditLogOperationType.CREATE,
                 response=response,
             )
 
         case ["provider", provider_pk]:
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Provider.capitalize()} {AuditLogOperationType.Delete}d",
-                operation_type=AuditLogOperationType.Delete,
+                name=f"{AuditObjectType.PROVIDER.capitalize()} {AuditLogOperationType.DELETE}d",
+                operation_type=AuditLogOperationType.DELETE,
             )
             if isinstance(deleted_obj, HostProvider):
                 audit_object = get_or_create_audit_obj(
                     object_id=provider_pk,
                     object_name=deleted_obj.name,
-                    object_type=AuditObjectType.Provider,
+                    object_type=AuditObjectType.PROVIDER,
                 )
             else:
                 audit_object = None
@@ -98,8 +97,8 @@ def host_and_provider_case(
             | ["provider", provider_pk, "config", "history", _, "restore"]
         ):
             audit_operation, audit_object = obj_pk_case(
-                obj_type=AuditObjectType.Provider,
-                operation_type=AuditLogOperationType.Update,
+                obj_type=AuditObjectType.PROVIDER,
+                operation_type=AuditLogOperationType.UPDATE,
                 obj_pk=provider_pk,
                 operation_aux_str="configuration ",
             )

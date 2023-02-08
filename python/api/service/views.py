@@ -10,13 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf import settings
-from guardian.mixins import PermissionListMixin
-from rest_framework import permissions
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
-
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.cluster.serializers import BindSerializer
 from api.service.serializers import (
@@ -61,7 +54,13 @@ from cm.models import (
     TaskLog,
 )
 from cm.status_api import make_ui_service_status
+from django.conf import settings
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
+from rest_framework import permissions
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
 
 
 class ServiceListView(PermissionListMixin, PaginatedView):
@@ -131,6 +130,10 @@ class ServiceDetailView(PermissionListMixin, DetailView):
             if host_components_exists:
                 raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} has component(s) on host(s)")
 
+        cluster = instance.cluster
+        if cluster.state == "upgrading" and instance.prototype.name in cluster.before_upgrade["services"]:
+            return raise_adcm_ex(code="SERVICE_CONFLICT", msg="It is forbidden to delete service in upgrade mode")
+
         if ClusterBind.objects.filter(source_service=instance).exists():
             raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} has exports(s)")
 
@@ -153,7 +156,7 @@ class ServiceDetailView(PermissionListMixin, DetailView):
                 obj=instance,
                 conf={},
                 attr={},
-                hc=[],
+                hostcomponent=[],
                 hosts=[],
                 verbose=False,
             )

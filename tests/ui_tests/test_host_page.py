@@ -15,14 +15,14 @@
 """UI tests for /host page"""
 
 import os
-from typing import Tuple
 
 import allure
 import pytest
 from _pytest.fixtures import SubRequest
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider
-from adcm_pytest_plugin import utils
+from adcm_pytest_plugin.utils import get_data_dir
 from selenium.common import StaleElementReferenceException
+
 from tests.library.retry import RetryFromCheckpoint, Step
 from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.app import ADCMTest
@@ -50,19 +50,19 @@ from tests.ui_tests.core.checks import (
 from tests.ui_tests.utils import expect_rows_amount_change, wait_and_assert_ui_info
 
 # defaults
-HOST_FQDN = 'best-host'
-CLUSTER_NAME = 'Best Cluster Ever'
-PROVIDER_NAME = 'Black Mark'
+HOST_FQDN = "best-host"
+CLUSTER_NAME = "Best Cluster Ever"
+PROVIDER_NAME = "Black Mark"
 
-INIT_ACTION = 'Init'
+INIT_ACTION = "Init"
 REINIT_ACTION = "Reinit"
 
 # config fields
-REGULAR_FIELD_NAME = 'Just item'
-REQUIRED_FIELD_NAME = 'Required item'
-PASSWORD_FIELD_NAME = 'Important password'
-SECRETTEXT_FIELD_NAME = 'secrettext'
-ADVANCED_FIELD_NAME = 'Advanced option'
+REGULAR_FIELD_NAME = "Just item"
+REQUIRED_FIELD_NAME = "Required item"
+PASSWORD_FIELD_NAME = "Important password"
+SECRETTEXT_FIELD_NAME = "secrettext"
+ADVANCED_FIELD_NAME = "Advanced option"
 
 
 # !===== Fixtures =====!
@@ -72,12 +72,12 @@ ADVANCED_FIELD_NAME = 'Advanced option'
 @allure.title("Upload provider bundle")
 def provider_bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
     """Upload provider bundle"""
-    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
+    return sdk_client_fs.upload_from_fs(os.path.join(get_data_dir(__file__), request.param))
 
 
 @allure.title("Create provider")
 @pytest.fixture()
-def upload_and_create_provider(provider_bundle) -> Tuple[Bundle, Provider]:
+def upload_and_create_provider(provider_bundle) -> tuple[Bundle, Provider]:
     """Create provider"""
     provider = provider_bundle.provider_create(PROVIDER_NAME)
     return provider_bundle, provider
@@ -85,7 +85,7 @@ def upload_and_create_provider(provider_bundle) -> Tuple[Bundle, Provider]:
 
 @pytest.fixture()
 @allure.title("Create host")
-def create_host(upload_and_create_provider: Tuple[Bundle, Provider]):
+def create_host(upload_and_create_provider: tuple[Bundle, Provider]):
     """Create default host using API"""
     provider = upload_and_create_provider[1]
     return provider.host_create(HOST_FQDN)
@@ -93,17 +93,16 @@ def create_host(upload_and_create_provider: Tuple[Bundle, Provider]):
 
 @pytest.fixture()
 @allure.title("Create many hosts")
-def _create_many_hosts(request, upload_and_create_provider):
+def _create_many_hosts(request, upload_and_create_provider: tuple[Bundle, Provider]):
     """Pass amount in param"""
     provider = upload_and_create_provider[1]
     for i in range(request.param):
-        provider.host_create(f'no-fantasy-{i}')
+        provider.host_create(f"no-fantasy-{i}")
 
 
 @pytest.fixture()
 def create_bonded_host(
-    upload_and_create_cluster: Tuple[Bundle, Cluster],
-    upload_and_create_provider: Tuple[Bundle, Provider],
+    upload_and_create_cluster: tuple[Bundle, Cluster], upload_and_create_provider: tuple[Bundle, Provider]
 ):
     """Create host bonded to cluster"""
     provider = upload_and_create_provider[1]
@@ -117,12 +116,12 @@ def create_bonded_host(
 @allure.title("Upload cluster bundle")
 def cluster_bundle(sdk_client_fs: ADCMClient) -> Bundle:
     """Upload cluster bundle"""
-    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "cluster"))
+    return sdk_client_fs.upload_from_fs(os.path.join(get_data_dir(__file__), "cluster"))
 
 
 @pytest.fixture()
 @allure.title("Create cluster")
-def upload_and_create_cluster(cluster_bundle: Bundle) -> Tuple[Bundle, Cluster]:
+def upload_and_create_cluster(cluster_bundle: Bundle) -> tuple[Bundle, Cluster]:
     """Create cluster"""
     cluster = cluster_bundle.cluster_prototype().cluster_create(CLUSTER_NAME)
     return cluster_bundle, cluster
@@ -135,7 +134,7 @@ def page(app_fs: ADCMTest, _login_to_adcm_over_api) -> HostListPage:
     return HostListPage(app_fs.driver, app_fs.adcm.url).open(close_popup=True)
 
 
-@allure.step('Open host config menu from host list')
+@allure.step("Open host config menu from host list")
 def open_config(page) -> HostConfigPage:
     """'Open host config menu from host list'"""
     page.click_on_row_child(0, HostListLocators.HostTable.HostRow.config)
@@ -146,7 +145,7 @@ def _check_job_name(sdk: ADCMClient, action_display_name: str):
     """Check job with correct name is launched"""
     jobs_display_names = {job.display_name for job in sdk.job_list()}
     assert action_display_name in jobs_display_names, (
-        f'Action with name "{action_display_name}" was not ran. ' f'Job names found: {jobs_display_names}'
+        f'Action with name "{action_display_name}" was not ran. ' f"Job names found: {jobs_display_names}"
     )
 
 
@@ -157,7 +156,7 @@ def _check_menu(
 ):
     list_page.click_on_row_child(0, HostListLocators.HostTable.HostRow.fqdn)
     host_page = HostMainPage(list_page.driver, list_page.base_url, 1, None)
-    getattr(host_page, f'open_{menu_name}_tab')()
+    getattr(host_page, f"open_{menu_name}_tab")()
     host_page.check_fqdn_equal_to(HOST_FQDN)
     bundle_label = host_page.get_bundle_label()
     # Test Host is name of host in config.yaml
@@ -174,21 +173,21 @@ class TestHostListPage:
     @pytest.mark.include_firefox()
     @pytest.mark.parametrize(
         "bundle_archive",
-        [utils.get_data_dir(__file__, "provider")],
+        [get_data_dir(__file__, "provider")],
         indirect=True,
-        ids=['provider_bundle'],
+        ids=["provider_bundle"],
     )
     def test_create_host_with_bundle_upload(self, page: HostListPage, bundle_archive: str):
         """Upload bundle and create host"""
 
-        host_fqdn = 'howdy-host-fqdn'
+        host_fqdn = "howdy-host-fqdn"
         creation_dialog = page.open_host_creation_popup()
         new_provider_name = creation_dialog.create_provider_and_host(bundle_archive, host_fqdn)
         expected_values = {
-            'fqdn': host_fqdn,
-            'provider': new_provider_name,
-            'cluster': None,
-            'state': 'created',
+            "fqdn": host_fqdn,
+            "provider": new_provider_name,
+            "cluster": None,
+            "state": "created",
         }
         wait_and_assert_ui_info(
             expected_values,
@@ -201,12 +200,12 @@ class TestHostListPage:
     def test_create_bonded_to_cluster_host(self, page: HostListPage):
         """Create host bonded to cluster"""
 
-        host_fqdn = 'cluster-host'
+        host_fqdn = "cluster-host"
         expected_values = {
-            'fqdn': host_fqdn,
-            'provider': PROVIDER_NAME,
-            'cluster': CLUSTER_NAME,
-            'state': 'created',
+            "fqdn": host_fqdn,
+            "provider": PROVIDER_NAME,
+            "cluster": CLUSTER_NAME,
+            "state": "created",
         }
         self._create_host_bonded_to_cluster(page, host_fqdn)
         wait_and_assert_ui_info(
@@ -242,10 +241,10 @@ class TestHostListPage:
         """Create host and go to cluster from host list"""
 
         expected_values = {
-            'fqdn': HOST_FQDN,
-            'provider': PROVIDER_NAME,
-            'cluster': None,
-            'state': 'created',
+            "fqdn": HOST_FQDN,
+            "provider": PROVIDER_NAME,
+            "cluster": None,
+            "state": "created",
         }
         dialog = page.open_host_creation_popup()
         dialog.create_host(HOST_FQDN)
@@ -258,16 +257,16 @@ class TestHostListPage:
         page.assert_host_bonded_to_cluster(0, CLUSTER_NAME)
 
     @pytest.mark.parametrize(
-        ('row_child_name', 'menu_item_name'),
+        ("row_child_name", "menu_item_name"),
         [
             pytest.param(
-                'fqdn', 'main_tab', id='open_host_tab', marks=[pytest.mark.smoke, pytest.mark.include_firefox()]
+                "fqdn", "main_tab", id="open_host_tab", marks=[pytest.mark.smoke, pytest.mark.include_firefox()]
             ),
-            pytest.param('status', 'status_tab', id='open_status_tab'),
-            pytest.param('config', 'config_tab', id='open_config_tab'),
+            pytest.param("status", "status_tab", id="open_status_tab"),
+            pytest.param("config", "config_tab", id="open_config_tab"),
         ],
     )
-    @pytest.mark.usefixtures('create_host')
+    @pytest.mark.usefixtures("create_host")
     def test_open_host_from_host_list(self, page: HostListPage, row_child_name: str, menu_item_name: str):
         """Test open host page from host list"""
 
@@ -275,7 +274,7 @@ class TestHostListPage:
         menu_item_locator = getattr(HostLocators.MenuNavigation, menu_item_name)
         page.click_on_row_child(0, row_child)
         main_host_page = HostMainPage(page.driver, page.base_url, 1, None)
-        with allure.step('Check correct menu is opened'):
+        with allure.step("Check correct menu is opened"):
             main_host_page.check_fqdn_equal_to(HOST_FQDN)
             assert main_host_page.active_menu_is(menu_item_locator)
             main_host_page.check_host_toolbar(HOST_FQDN)
@@ -287,10 +286,10 @@ class TestHostListPage:
         """Create host and delete it"""
 
         expected_values = {
-            'fqdn': HOST_FQDN,
-            'provider': PROVIDER_NAME,
-            'cluster': None,
-            'state': 'created',
+            "fqdn": HOST_FQDN,
+            "provider": PROVIDER_NAME,
+            "cluster": None,
+            "state": "created",
         }
         wait_and_assert_ui_info(expected_values, page.get_host_info_from_row)
         page.delete_host(0)
@@ -309,9 +308,9 @@ class TestHostListPage:
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
-    @pytest.mark.parametrize('menu', ['main', 'config', 'status'])
-    @pytest.mark.usefixtures('create_host')
-    def test_open_menu(self, upload_and_create_provider: Tuple[Bundle, Provider], page: HostListPage, menu: str):
+    @pytest.mark.parametrize("menu", ["main", "config", "status"])
+    @pytest.mark.usefixtures("create_host")
+    def test_open_menu(self, upload_and_create_provider: tuple[Bundle, Provider], page: HostListPage, menu: str):
         """Open detailed host page and open menu from side navigation"""
 
         _, provider = upload_and_create_provider
@@ -319,13 +318,13 @@ class TestHostListPage:
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
-    @pytest.mark.usefixtures('create_host')
+    @pytest.mark.usefixtures("create_host")
     def test_run_action_on_new_host(self, page: HostListPage):
         """Create host and run action on it"""
 
-        page.assert_host_state(0, 'created')
+        page.assert_host_state(0, "created")
         page.run_action(0, INIT_ACTION)
-        page.assert_host_state(0, 'running')
+        page.assert_host_state(0, "running")
 
     @pytest.mark.smoke()
     def test_maintenance_mode_on_host_page(self, page: HostListPage, create_bonded_host):
@@ -374,7 +373,7 @@ class TestHostListPage:
             ], f"Action list with MM ON should be with action {REINIT_ACTION}"
 
 
-@pytest.mark.usefixtures('_login_to_adcm_over_api')
+@pytest.mark.usefixtures("_login_to_adcm_over_api")
 class TestHostMainPage:
     """Tests for the /host/{}/config page"""
 
@@ -424,27 +423,27 @@ class TestHostMainPage:
 class TestHostConfigPage:
     """Tests for the /host/{}/config page"""
 
-    @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
-    @pytest.mark.usefixtures('create_host')
+    @pytest.mark.parametrize("provider_bundle", ["provider_config"], indirect=True)
+    @pytest.mark.usefixtures("create_host")
     def test_filter_config(self, page: HostListPage):
         """Use filters on host configuration page"""
 
-        params = {'group': 'group_one', 'search_text': 'Adv'}
+        params = {"group": "group_one", "search_text": "Adv"}
         host_page = open_config(page)
         host_page.check_host_toolbar(HOST_FQDN)
         get_rows_func = host_page.config.get_all_config_rows
-        with allure.step('Check unfiltered configuration'):
+        with allure.step("Check unfiltered configuration"):
             host_page.config.check_config_fields_visibility(
                 {REGULAR_FIELD_NAME, REQUIRED_FIELD_NAME, PASSWORD_FIELD_NAME}, {ADVANCED_FIELD_NAME}
             )
-        with allure.step('Check group roll up'):
+        with allure.step("Check group roll up"):
             with expect_rows_amount_change(get_rows_func):
-                host_page.config.click_on_group(params['group'])
+                host_page.config.click_on_group(params["group"])
             host_page.config.check_config_fields_visibility(
                 {PASSWORD_FIELD_NAME}, {REGULAR_FIELD_NAME, REQUIRED_FIELD_NAME}
             )
             with expect_rows_amount_change(get_rows_func):
-                host_page.config.click_on_group(params['group'])
+                host_page.config.click_on_group(params["group"])
             host_page.config.check_config_fields_visibility({REGULAR_FIELD_NAME})
         with allure.step('Check configuration with "Advanced" turned on'):
             with expect_rows_amount_change(get_rows_func):
@@ -452,9 +451,9 @@ class TestHostConfigPage:
             host_page.config.check_config_fields_visibility(
                 {ADVANCED_FIELD_NAME, REGULAR_FIELD_NAME, REQUIRED_FIELD_NAME, PASSWORD_FIELD_NAME}
             )
-        with allure.step('Check search filtration'):
+        with allure.step("Check search filtration"):
             with expect_rows_amount_change(get_rows_func):
-                host_page.config.search(params['search_text'])
+                host_page.config.search(params["search_text"])
             host_page.config.check_config_fields_visibility(
                 {ADVANCED_FIELD_NAME}, {REGULAR_FIELD_NAME, REQUIRED_FIELD_NAME, PASSWORD_FIELD_NAME}
             )
@@ -464,8 +463,8 @@ class TestHostConfigPage:
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
-    @pytest.mark.parametrize('provider_bundle', ["host_with_all_config_params"], indirect=True)
-    @pytest.mark.usefixtures('create_host')
+    @pytest.mark.parametrize("provider_bundle", ["host_with_all_config_params"], indirect=True)
+    @pytest.mark.usefixtures("create_host")
     def test_custom_name_config(self, page: HostListPage):
         """Change configuration, save with custom name, compare changes"""
 
@@ -482,39 +481,39 @@ class TestHostConfigPage:
         host_page.config.compare_versions(params["config_name_old"])
         host_page.config.check_config_fields_history_with_test_values()
 
-    @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
-    @pytest.mark.usefixtures('create_host')
+    @pytest.mark.parametrize("provider_bundle", ["provider_config"], indirect=True)
+    @pytest.mark.usefixtures("create_host")
     def test_reset_configuration(self, page: HostListPage):
         """Change configuration, save, reset to defaults"""
         params = {
-            'password': 'pass',
-            'type_in_req_field': '42',
-            'init_value': '',
+            "password": "pass",
+            "type_in_req_field": "42",
+            "init_value": "",
         }
         host_page = open_config(page)
         host_page.config.type_in_field_with_few_inputs(
             row=host_page.config.get_config_row(PASSWORD_FIELD_NAME),
-            values=[params['password'], params['password']],
+            values=[params["password"], params["password"]],
             clear=True,
         )
         host_page.config.type_in_field_with_few_inputs(
-            row=host_page.config.get_config_row(REQUIRED_FIELD_NAME), values=[params['type_in_req_field']], clear=True
+            row=host_page.config.get_config_row(REQUIRED_FIELD_NAME), values=[params["type_in_req_field"]], clear=True
         )
         host_page.config.save_config()
         host_page.config.reset_to_default(host_page.config.get_config_row(REQUIRED_FIELD_NAME))
-        host_page.config.assert_input_value_is(params['init_value'], REQUIRED_FIELD_NAME)
+        host_page.config.assert_input_value_is(params["init_value"], REQUIRED_FIELD_NAME)
         host_page.config.clear_secret(host_page.config.get_config_row(PASSWORD_FIELD_NAME))
         host_page.config.assert_input_value_is(
-            params['init_value'],
+            params["init_value"],
             PASSWORD_FIELD_NAME,
             is_password=True,
         )
 
-    @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
-    @pytest.mark.usefixtures('create_host')
+    @pytest.mark.parametrize("provider_bundle", ["provider_config"], indirect=True)
+    @pytest.mark.usefixtures("create_host")
     def test_field_validation(self, page: HostListPage):
         """Inputs are validated correctly"""
-        wrong_value = 'etonechislo'
+        wrong_value = "etonechislo"
         host_page = open_config(page)
         regular_row = host_page.config.get_config_row(REGULAR_FIELD_NAME)
         host_page.config.check_password_confirm_required(PASSWORD_FIELD_NAME)
@@ -523,27 +522,27 @@ class TestHostConfigPage:
         host_page.config.check_field_is_invalid_error(REGULAR_FIELD_NAME)
         host_page.config.check_config_warn_icon_on_left_menu()
         host_page.toolbar.check_warn_button(
-            tab_name=HOST_FQDN, expected_warn_text=[f'{HOST_FQDN} has an issue with its config']
+            tab_name=HOST_FQDN, expected_warn_text=[f"{HOST_FQDN} has an issue with its config"]
         )
 
-    @pytest.mark.parametrize('provider_bundle', ["host_with_default_string"], indirect=True)
-    @pytest.mark.usefixtures('create_host')
+    @pytest.mark.parametrize("provider_bundle", ["host_with_default_string"], indirect=True)
+    @pytest.mark.usefixtures("create_host")
     def test_field_validation_on_host_config_page_with_default_value(self, page: HostListPage):
         """Test config fields validation on host config page"""
 
-        params = {'field_name': 'string', 'new_value': 'test', "config_name": "test_name"}
+        params = {"field_name": "string", "new_value": "test", "config_name": "test_name"}
 
         host_page = open_config(page)
-        host_page.config.clear_field_by_keys(params['field_name'])
-        host_page.config.check_field_is_required(params['field_name'])
+        host_page.config.clear_field_by_keys(params["field_name"])
+        host_page.config.check_field_is_required(params["field_name"])
         host_page.config.type_in_field_with_few_inputs(
-            row=host_page.config.get_all_config_rows()[0], values=[params['new_value']]
+            row=host_page.config.get_all_config_rows()[0], values=[params["new_value"]]
         )
         host_page.config.save_config()
         host_page.config.assert_input_value_is(expected_value=params["new_value"], display_name=params["field_name"])
 
-    @pytest.mark.parametrize('provider_bundle', ["host_with_all_config_params"], indirect=True)
-    @pytest.mark.usefixtures('create_host')
+    @pytest.mark.parametrize("provider_bundle", ["host_with_all_config_params"], indirect=True)
+    @pytest.mark.usefixtures("create_host")
     def test_field_tooltips_on_host_config_page(self, page: HostListPage):
         """Test config fields tooltips on host config page"""
 
@@ -552,7 +551,7 @@ class TestHostConfigPage:
             host_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
 
-@pytest.mark.usefixtures('_login_to_adcm_over_api')
+@pytest.mark.usefixtures("_login_to_adcm_over_api")
 class TestHostStatusPage:
     """Tests for the /host/{}/status page"""
 
@@ -569,21 +568,21 @@ class TestHostStatusPage:
 
         success_status = [
             StatusRowInfo(
-                icon_status=True, group_name='best-host', state='successful 1/1', state_color=SUCCESS_COLOR, link=None
+                icon_status=True, group_name="best-host", state="successful 1/1", state_color=SUCCESS_COLOR, link=None
             ),
-            StatusRowInfo(icon_status=True, group_name=None, state=None, state_color=None, link='first'),
+            StatusRowInfo(icon_status=True, group_name=None, state=None, state_color=None, link="first"),
         ]
         negative_status_component = [
             StatusRowInfo(
-                icon_status=True, group_name='best-host', state='successful 0/1', state_color=NEGATIVE_COLOR, link=None
+                icon_status=True, group_name="best-host", state="successful 0/1", state_color=NEGATIVE_COLOR, link=None
             ),
-            StatusRowInfo(icon_status=False, group_name=None, state=None, state_color=None, link='first'),
+            StatusRowInfo(icon_status=False, group_name=None, state=None, state_color=None, link="first"),
         ]
         negative_status_host = [
             StatusRowInfo(
-                icon_status=False, group_name='best-host', state='successful 0/1', state_color=NEGATIVE_COLOR, link=None
+                icon_status=False, group_name="best-host", state="successful 0/1", state_color=NEGATIVE_COLOR, link=None
             ),
-            StatusRowInfo(icon_status=False, group_name=None, state=None, state_color=None, link='first'),
+            StatusRowInfo(icon_status=False, group_name=None, state=None, state_color=None, link="first"),
         ]
 
         with allure.step("Create hostcomponent"):
@@ -615,7 +614,6 @@ class TestHostStatusPage:
 
 
 class TestHostRenaming:
-
     SPECIAL_CHARS = (".", "-", "_")
     DISALLOWED_AT_START = (".", "-")
     EXPECTED_ERROR = "Please enter a valid name"

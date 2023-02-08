@@ -1,0 +1,90 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- type: cluster
+  name: test_cluster
+  version: 1
+
+- type: service
+  name: first_service
+  version: 2
+
+  config:
+    - name: ketchup
+      type: boolean
+
+    - name: sandwich
+      type: group
+      subs:
+        - name: cheese
+          type: string
+          default: yesyesyes
+        - name: water
+          type: string
+          default: nonono
+
+    - name: plates
+      type: integer
+      default: 12
+
+  components:
+    first_component:
+      config:
+        - name: floor
+          type: integer
+          default: 3
+        - name: wall
+          type: float
+
+    second_component:
+      config:
+        - name: floor
+          type: integer
+          default: 8
+        - name: wall
+          type: float
+
+- type: service
+  name: second_service
+  version: 3
+
+  config:
+    - name: pilaf
+      type: string
+      default: delicious
+
+    - name: plates
+      type: string
+      default: one but big
+
+    - name: components
+      type: group
+      subs:
+        - name: rice
+          type: integer
+        - name: water
+          type: float
+        - name: and_more
+          type: string
+
+  components:
+    lonely:
+      config:
+        - name: just_me
+          display_name: Just Me
+          type: group
+          subs:
+            - name: maybe_string
+              type: string
+        - name: hey_there
+          type: string
+          default: general

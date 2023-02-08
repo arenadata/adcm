@@ -16,43 +16,42 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0035_auto_20191031_1600'),
+        ("cm", "0035_auto_20191031_1600"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='bundle',
-            name='license',
+            model_name="bundle",
+            name="license",
             field=models.CharField(
                 choices=[
-                    ('absent', 'absent'),
-                    ('accepted', 'accepted'),
-                    ('unaccepted', 'unaccepted'),
+                    ("absent", "absent"),
+                    ("accepted", "accepted"),
+                    ("unaccepted", "unaccepted"),
                 ],
-                default='absent',
+                default="absent",
                 max_length=16,
             ),
         ),
         migrations.AddField(
-            model_name='bundle',
-            name='license_hash',
+            model_name="bundle",
+            name="license_hash",
             field=models.CharField(default=None, max_length=64, null=True),
         ),
         migrations.AddField(
-            model_name='bundle',
-            name='license_path',
+            model_name="bundle",
+            name="license_path",
             field=models.CharField(default=None, max_length=160, null=True),
         ),
         migrations.AddField(
-            model_name='stageprototype',
-            name='license_hash',
+            model_name="stageprototype",
+            name="license_hash",
             field=models.CharField(default=None, max_length=64, null=True),
         ),
         migrations.AddField(
-            model_name='stageprototype',
-            name='license_path',
+            model_name="stageprototype",
+            name="license_path",
             field=models.CharField(default=None, max_length=160, null=True),
         ),
     ]

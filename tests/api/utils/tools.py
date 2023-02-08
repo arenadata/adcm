@@ -66,7 +66,7 @@ def random_string(strlen=10):
 
 def split_tag(image_name):
     """Split docker image by image name and tag"""
-    image = image_name.split(':', maxsplit=1)
+    image = image_name.split(":", maxsplit=1)
     if len(image) > 1:
         image_repo = image[0]
         image_tag = image[1]
@@ -101,7 +101,7 @@ def get_if_type(if_ip):
     Get interface type from /sys/class/net/{if_name}/type
     """
     if_name = get_if_name_by_ip(if_ip)
-    with open(f"/sys/class/net/{if_name}/type", "r", encoding='utf_8') as file:
+    with open(f"/sys/class/net/{if_name}/type", "r", encoding="utf_8") as file:
         return file.readline().strip()
 
 

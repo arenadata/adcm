@@ -13,13 +13,12 @@
 import logging
 from datetime import timedelta
 
-from django.core.management.base import BaseCommand
-from django.utils import timezone
-
 from audit.models import AuditLogOperationResult
 from audit.utils import make_audit_log
 from cm.job import start_task
 from cm.models import ADCM, Action, ConfigLog, JobStatus, TaskLog
+from django.core.management.base import BaseCommand
+from django.utils import timezone
 
 logger = logging.getLogger("background_tasks")
 
@@ -49,19 +48,19 @@ class Command(BaseCommand):
         ).last()
         if last_sync is None:
             logger.debug("First ldap sync launched in %s", timezone.now())
-            make_audit_log("sync", AuditLogOperationResult.Success, "launched")
+            make_audit_log("sync", AuditLogOperationResult.SUCCESS, "launched")
             task = start_task(action, adcm_object, {}, {}, [], [], False)
             if task:
-                make_audit_log("sync", AuditLogOperationResult.Success, "completed")
+                make_audit_log("sync", AuditLogOperationResult.SUCCESS, "completed")
             else:
-                make_audit_log("sync", AuditLogOperationResult.Fail, "completed")
+                make_audit_log("sync", AuditLogOperationResult.FAIL, "completed")
             return
         new_rotate_time = last_sync.finish_date + timedelta(minutes=period - 1)
         if new_rotate_time <= timezone.now():
             logger.debug("Ldap sync launched in %s", timezone.now())
-            make_audit_log("sync", AuditLogOperationResult.Success, "launched")
+            make_audit_log("sync", AuditLogOperationResult.SUCCESS, "launched")
             task = start_task(action, adcm_object, {}, {}, [], [], False)
             if task:
-                make_audit_log("sync", AuditLogOperationResult.Success, "completed")
+                make_audit_log("sync", AuditLogOperationResult.SUCCESS, "completed")
             else:
-                make_audit_log("sync", AuditLogOperationResult.Fail, "completed")
+                make_audit_log("sync", AuditLogOperationResult.FAIL, "completed")

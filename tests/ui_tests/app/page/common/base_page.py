@@ -27,6 +27,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
+
+from tests.ui_tests.app.page.common.breadcrumbs import Breadcrumbs
 from tests.ui_tests.app.page.common.common_locators import (
     CommonLocators,
     ObjectPageLocators,
@@ -80,6 +82,10 @@ class BasePageObject(Interactor):
         self.footer = Footer(self.driver, self.default_loc_timeout)
         allure.dynamic.label("page_url", path_template)
 
+    @classmethod
+    def from_page(cls, page: "BasePageObject", *args, **kwargs):
+        return cls(page.driver, page.base_url, *args, **kwargs)
+
     def open(self, timeout: int | None = None, *, close_popup: bool = False):
         url = self.base_url + self.path
 
@@ -89,9 +95,9 @@ class BasePageObject(Interactor):
 
             with allure.step(f"Open {url}"):
                 self.driver.get(url)
-                assert self.path in self.driver.current_url, (
-                    "Page URL didn't change. " f'Actual URL: {self.driver.current_url}. Expected URL: {url}.'
-                )
+                assert (
+                    self.path in self.driver.current_url
+                ), f"Page URL didn't change. Actual URL: {self.driver.current_url}. Expected URL: {url}."
 
         with allure.step(f"Open {self.__class__.__name__}"):
             wait_until_step_succeeds(_open_page, period=0.5, timeout=timeout or self.default_page_timeout)
@@ -127,14 +133,16 @@ class BasePageObject(Interactor):
         timeout = timeout or self.default_page_timeout
 
         def _assert_page_is_opened():
-            assert self.path in self.driver.current_url, f'Page is not opened at path {self.path} in {timeout}'
+            assert self.path in self.driver.current_url, f"Page is not opened at path {self.path} in {timeout}"
 
-        page_name = self.__class__.__name__.replace('Page', '')
-        with allure.step(f'Wait page {page_name} is opened'):
+        page_name = self.__class__.__name__.replace("Page", "")
+        with allure.step(f"Wait page {page_name} is opened"):
             wait_until_step_succeeds(_assert_page_is_opened, period=0.5, timeout=timeout)
             self.wait_element_hide(CommonToolbarLocators.progress_bar, timeout=60)
 
-    @allure.step('Wait Config has been loaded after authentication')
+        return self
+
+    @allure.step("Wait Config has been loaded after authentication")
     def wait_config_loaded(self):
         """
         Wait for hidden elements in DOM.
@@ -172,7 +180,7 @@ class Header(Interactor):  # pylint: disable=too-many-public-methods
     def popup_jobs_row_count(self):
         return len(self.get_job_rows_from_popup())
 
-    @allure.step('Check elements in header for authorized user')
+    @allure.step("Check elements in header for authorized user")
     def check_auth_page_elements(self):
         check_elements_are_displayed(
             self,
@@ -189,7 +197,7 @@ class Header(Interactor):  # pylint: disable=too-many-public-methods
             ],
         )
 
-    @allure.step('Check elements in header for unauthorized user')
+    @allure.step("Check elements in header for unauthorized user")
     def check_unauth_page_elements(self):
         """Check elements in header for unauthorized user"""
         self.wait_element_visible(CommonHeaderLocators.block)
@@ -244,7 +252,7 @@ class Header(Interactor):  # pylint: disable=too-many-public-methods
 
     @allure.step("Assert job popup is displayed")
     def check_job_popup(self):
-        assert self.is_element_displayed(AuthorizedHeaderLocators.job_popup), 'Job popup should be displayed'
+        assert self.is_element_displayed(AuthorizedHeaderLocators.job_popup), "Job popup should be displayed"
 
     @allure.step("Assert help popup elements are displayed")
     def check_help_popup(self):
@@ -338,13 +346,13 @@ class Header(Interactor):  # pylint: disable=too-many-public-methods
 
         wait_until_step_succeeds(_wait_job, period=1, timeout=70)
 
-    @allure.step('Open profile using account popup in header')
+    @allure.step("Open profile using account popup in header")
     def open_profile(self):
         """Open profile page"""
         self.click_account_button()
         self.click_profile_link_in_acc_popup()
 
-    @allure.step('Logout using account popup in header')
+    @allure.step("Logout using account popup in header")
     def logout(self):
         """Logout using account popup"""
         self.click_account_button()
@@ -362,7 +370,7 @@ class Header(Interactor):  # pylint: disable=too-many-public-methods
         self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
         return self.find_elements(AuthorizedHeaderLocators.JobPopup.job_row)
 
-    @allure.step('Click on task row {task_name}')
+    @allure.step("Click on task row {task_name}")
     def click_on_task_row_by_name(self, task_name: str):
         """Click on task row by name"""
         for task in self.find_elements(AuthorizedHeaderLocators.JobPopup.job_row):
@@ -378,13 +386,13 @@ class Header(Interactor):  # pylint: disable=too-many-public-methods
         def _popup_table_has_enough_rows():
             assert_enough_rows(row_num, self.popup_jobs_row_count)
 
-        with allure.step('Check popup table has enough rows'):
+        with allure.step("Check popup table has enough rows"):
             wait_until_step_succeeds(_popup_table_has_enough_rows, timeout=5, period=0.1)
         rows = self.get_job_rows_from_popup()
         assert_enough_rows(row_num, len(rows))
         return rows[row_num]
 
-    @allure.step('Click on all link in job popup')
+    @allure.step("Click on all link in job popup")
     def click_all_link_in_job_popup(self):
         """Click on all link in job popup"""
         self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
@@ -408,7 +416,7 @@ class Header(Interactor):  # pylint: disable=too-many-public-methods
         self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
         self.find_and_click(AuthorizedHeaderLocators.JobPopup.failed_jobs)
 
-    @allure.step('Click on acknowledge button in job popup')
+    @allure.step("Click on acknowledge button in job popup")
     def click_acknowledge_btn_in_job_popup(self):
         """Click on acknowledge button in job popup"""
         self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
@@ -433,6 +441,9 @@ class Header(Interactor):  # pylint: disable=too-many-public-methods
         if not self.is_element_displayed(AuthorizedHeaderLocators.JobPopup.block):
             self.find_and_click(AuthorizedHeaderLocators.jobs)
         assert not self.is_element_displayed(AuthorizedHeaderLocators.JobPopup.acknowledge_btn)
+
+    def get_breadcrumbs(self) -> Breadcrumbs:
+        return Breadcrumbs.at_current_page(self)
 
 
 class Footer(Interactor):

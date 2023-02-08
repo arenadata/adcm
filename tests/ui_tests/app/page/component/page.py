@@ -13,6 +13,7 @@
 """Component page PageObjects classes"""
 
 import allure
+
 from tests.ui_tests.app.page.common.base_page import BaseDetailedPage, BasePageObject
 from tests.ui_tests.app.page.common.common_locators import (
     ObjectPageLocators,
@@ -49,7 +50,7 @@ class ComponentPageMixin(BasePageObject):
 
     def __init__(self, driver, base_url, cluster_id: int, service_id: int, component_id: int):
         if self.MENU_SUFFIX is None:
-            raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
+            raise AttributeError("You should explicitly set MENU_SUFFIX in class definition")
         super().__init__(
             driver,
             base_url,
@@ -119,7 +120,7 @@ class ComponentPageMixin(BasePageObject):
 class ComponentMainPage(ComponentPageMixin, BaseDetailedPage):
     """Component page Main menu"""
 
-    MENU_SUFFIX = 'main'
+    MENU_SUFFIX = "main"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -130,7 +131,7 @@ class ComponentMainPage(ComponentPageMixin, BaseDetailedPage):
 class ComponentConfigPage(ComponentPageMixin):
     """Component page config menu"""
 
-    MENU_SUFFIX = 'config'
+    MENU_SUFFIX = "config"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -146,7 +147,7 @@ class ComponentConfigPage(ComponentPageMixin):
 class ComponentGroupConfigPage(ComponentPageMixin):
     """Component page group config menu"""
 
-    MENU_SUFFIX = 'group_config'
+    MENU_SUFFIX = "group_config"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -161,7 +162,7 @@ class ComponentGroupConfigPage(ComponentPageMixin):
 class ComponentStatusPage(ComponentPageMixin, StatusPage):
     """Component page config menu"""
 
-    MENU_SUFFIX = 'status'
+    MENU_SUFFIX = "status"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,

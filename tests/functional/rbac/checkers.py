@@ -35,6 +35,7 @@ from adcm_client.objects import (
     Service,
     User,
 )
+
 from tests.functional.tools import AnyADCMObject, AnyRBACObject
 from tests.library.consts import HTTPMethod
 
@@ -48,22 +49,22 @@ class ForbiddenCallChecker:
     interaction with an ADCM object is truly forbidden via direct calls to API
     """
 
-    _API_ROOT = '/api/v1/'
+    _API_ROOT = "/api/v1/"
 
     # this regex should match word characters between { and } that ends in "id"
-    _format_id_arg_regexp = re.compile(r'{(\w*id)}')
+    _format_id_arg_regexp = re.compile(r"{(\w*id)}")
     _method_map = {
-        ADCM: 'adcm/{id}/',
-        Bundle: 'stack/bundle/{id}/',
-        Cluster: 'cluster/{id}/',
-        Service: 'cluster/{cluster_id}/service/{id}/',
-        Component: 'cluster/{cluster_id}/service/{service_id}/component/{id}/',
-        Provider: 'provider/{id}/',
-        Host: 'provider/{provider_id}/host/{id}/',
-        User: 'rbac/user/{id}/',
-        Group: 'rbac/group/{id}/',
-        Role: 'rbac/role/{id}/',
-        Policy: 'rbac/policy/{id}/',
+        ADCM: "adcm/{id}/",
+        Bundle: "stack/bundle/{id}/",
+        Cluster: "cluster/{id}/",
+        Service: "cluster/{cluster_id}/service/{id}/",
+        Component: "cluster/{cluster_id}/service/{service_id}/component/{id}/",
+        Provider: "provider/{id}/",
+        Host: "provider/{provider_id}/host/{id}/",
+        User: "rbac/user/{id}/",
+        Group: "rbac/group/{id}/",
+        Role: "rbac/role/{id}/",
+        Policy: "rbac/policy/{id}/",
         # add new entries here (jobs, tasks)
     }
 
@@ -85,9 +86,9 @@ class ForbiddenCallChecker:
             # rework to switch maybe if you have time
             # and maybe add enum to list all possible cases not in string form
             special_cases = {
-                'create-from-bundle': self._build_create_from_bundle_resource_path,
-                'host-on-cluster': self._build_resource_path_for_host_on_cluster,
-                'upgrade': self._build_resource_path_for_upgrade,
+                "create-from-bundle": self._build_create_from_bundle_resource_path,
+                "host-on-cluster": self._build_resource_path_for_host_on_cluster,
+                "upgrade": self._build_resource_path_for_upgrade,
             }
             self._build_resource_path = special_cases[special_case]
         else:
@@ -97,7 +98,7 @@ class ForbiddenCallChecker:
         else:
             self.is_of_correct_type = lambda obj: obj.__class__ == object_type
         self.object_type = object_type
-        self.url_suffix = endpoint_suffix.lstrip('/')
+        self.url_suffix = endpoint_suffix.lstrip("/")
         self.method = method
 
     def __call__(self, client: ADCMClient, adcm_object: AnyADCMObject, *args, **kwargs):
@@ -111,24 +112,24 @@ class ForbiddenCallChecker:
         P.S. kwargs are passed to API call method
         """
         resource_path = self._build_resource_path(adcm_object)
-        path_without_base_url = f'{self._API_ROOT}{resource_path}'.replace('//', '/')
+        path_without_base_url = f"{self._API_ROOT}{resource_path}".replace("//", "/")
         url = parse.urljoin(client.url, path_without_base_url)
         call_api_method = getattr(requests, self.method.value)
-        with allure.step(f'Send {self.method.name} request to {path_without_base_url}'):
+        with allure.step(f"Send {self.method.name} request to {path_without_base_url}"):
             response: requests.Response = call_api_method(
                 url,
                 headers={
-                    'Authorization': f'Token {client.api_token()}',
-                    'Content-Type': 'application/json',
+                    "Authorization": f"Token {client.api_token()}",
+                    "Content-Type": "application/json",
                 },
                 **kwargs,
             )
         if (status_code := response.status_code) >= 500:
-            raise AssertionError(f'Unhandled exception on {self.method.name} call to {url} check logs')
+            raise AssertionError(f"Unhandled exception on {self.method.name} call to {url} check logs")
         # if request is forbidden or object is present (404 with "correct" URL)
         if status_code == 403 or (
             status_code == 404
-            and not (response.headers['Content-Type'] == 'text/html' and 'Not Found' in response.text)
+            and not (response.headers["Content-Type"] == "text/html" and "Not Found" in response.text)
         ):
             return
         try:
@@ -137,9 +138,9 @@ class ForbiddenCallChecker:
         except requests.exceptions.JSONDecodeError:
             body = response.text
             attachment_type = allure.attachment_type.HTML
-        allure.attach(name=f'Response on call to {url}', body=body, attachment_type=attachment_type)
+        allure.attach(name=f"Response on call to {url}", body=body, attachment_type=attachment_type)
         raise AssertionError(
-            f'Unexpected status code, call to {url} should be denied, but status code was {status_code}'
+            f"Unexpected status code, call to {url} should be denied, but status code was {status_code}"
         )
 
     def _build_default_resource_path(self, adcm_object: RoleTargetObject, **_) -> str:
@@ -150,13 +151,13 @@ class ForbiddenCallChecker:
             format_arg: getattr(adcm_object, format_arg)
             for format_arg in self._format_id_arg_regexp.findall(infix_template)
         }
-        return f'{infix_template.format(**template_format_arguments)}{self.url_suffix}/'
+        return f"{infix_template.format(**template_format_arguments)}{self.url_suffix}/"
 
     def _build_resource_path_for_host_on_cluster(self, adcm_object: Host, **_):
         """Build resource path string for host that belongs to a cluster"""
         if not isinstance(adcm_object, Host) or not adcm_object.cluster_id:
-            raise ValueError(f'Object {adcm_object} should be of type Host and be bond to a cluster')
-        return f'cluster/{adcm_object.cluster_id}/host/{adcm_object.id}/'
+            raise ValueError(f"Object {adcm_object} should be of type Host and be bond to a cluster")
+        return f"cluster/{adcm_object.cluster_id}/host/{adcm_object.id}/"
 
     def _build_resource_path_for_upgrade(self, adcm_object, **_):
         """Build resource path for an upgrade action assuming there's available upgrade with id=1"""
@@ -164,23 +165,23 @@ class ForbiddenCallChecker:
         # upgrade only for cluster, provider, so nothing but id matters
         object_suffix = self._method_map[adcm_object.__class__].format(id=adcm_object.id)
         # we assume that it's always the first
-        return f'{object_suffix}upgrade/1/do/'
+        return f"{object_suffix}upgrade/1/do/"
 
     def _build_create_from_bundle_resource_path(self, adcm_object, **_):
         """Build resource for creating entities from the bundle object"""
         self._raise_on_incorrect_type(adcm_object)
         try:
             adcm_object.cluster_prototype()
-            return 'cluster/'
+            return "cluster/"
         except ObjectNotFound:
-            return 'provider/'
+            return "provider/"
 
     def _raise_on_incorrect_type(self, adcm_object):
         """
         Raise ValueError if object type is incorrect, because it means that you've passed incorrect object to call
         """
         if not self.is_of_correct_type(adcm_object):
-            raise ValueError(f'Object {adcm_object} should be of type {self.object_type}')
+            raise ValueError(f"Object {adcm_object} should be of type {self.object_type}")
 
 
 def _deny_endpoint_call(endpoint: str, method: HTTPMethod):
@@ -190,22 +191,22 @@ def _deny_endpoint_call(endpoint: str, method: HTTPMethod):
 class Deny:
     """Description of possible "deny" checks"""
 
-    ViewConfigOf = _deny_endpoint_call('config/current', HTTPMethod.GET)
-    ChangeConfigOf = _deny_endpoint_call('config/history', HTTPMethod.POST)
-    AddServiceToCluster = ForbiddenCallChecker(Cluster, 'service', HTTPMethod.POST)
-    RemoveServiceFromCluster = ForbiddenCallChecker(Service, '', HTTPMethod.DELETE)
-    AddHostToCluster = ForbiddenCallChecker(Cluster, 'host', HTTPMethod.POST)
-    RemoveHostFromCluster = ForbiddenCallChecker(Host, '', HTTPMethod.DELETE, special_case='host-on-cluster')
-    Delete = _deny_endpoint_call('', HTTPMethod.DELETE)
-    ViewImportsOf = _deny_endpoint_call('import', HTTPMethod.GET)
-    ManageImportsOf = _deny_endpoint_call('bind', HTTPMethod.POST)
-    ViewHostComponentOf = _deny_endpoint_call('hostcomponent', HTTPMethod.GET)
-    EditHostComponentOf = _deny_endpoint_call('hostcomponent', HTTPMethod.POST)
+    ViewConfigOf = _deny_endpoint_call("config/current", HTTPMethod.GET)
+    ChangeConfigOf = _deny_endpoint_call("config/history", HTTPMethod.POST)
+    AddServiceToCluster = ForbiddenCallChecker(Cluster, "service", HTTPMethod.POST)
+    RemoveServiceFromCluster = ForbiddenCallChecker(Service, "", HTTPMethod.DELETE)
+    AddHostToCluster = ForbiddenCallChecker(Cluster, "host", HTTPMethod.POST)
+    RemoveHostFromCluster = ForbiddenCallChecker(Host, "", HTTPMethod.DELETE, special_case="host-on-cluster")
+    Delete = _deny_endpoint_call("", HTTPMethod.DELETE)
+    ViewImportsOf = _deny_endpoint_call("import", HTTPMethod.GET)
+    ManageImportsOf = _deny_endpoint_call("bind", HTTPMethod.POST)
+    ViewHostComponentOf = _deny_endpoint_call("hostcomponent", HTTPMethod.GET)
+    EditHostComponentOf = _deny_endpoint_call("hostcomponent", HTTPMethod.POST)
     # here we let special case to fully build suffix
-    CreateCluster = ForbiddenCallChecker(Bundle, '', HTTPMethod.POST, special_case='create-from-bundle')
-    CreateProvider = ForbiddenCallChecker(Bundle, '', HTTPMethod.POST, special_case='create-from-bundle')
-    CreateHost = ForbiddenCallChecker(Provider, 'host', HTTPMethod.POST)
-    UpgradeProvider = ForbiddenCallChecker(Provider, '', HTTPMethod.POST, special_case='upgrade')
-    UpgradeCluster = ForbiddenCallChecker(Cluster, '', HTTPMethod.POST, special_case='upgrade')
-    Change = _deny_endpoint_call('', HTTPMethod.PUT)  # change user, role, etc
-    PartialChange = _deny_endpoint_call('', HTTPMethod.PATCH)  # change host (for example)
+    CreateCluster = ForbiddenCallChecker(Bundle, "", HTTPMethod.POST, special_case="create-from-bundle")
+    CreateProvider = ForbiddenCallChecker(Bundle, "", HTTPMethod.POST, special_case="create-from-bundle")
+    CreateHost = ForbiddenCallChecker(Provider, "host", HTTPMethod.POST)
+    UpgradeProvider = ForbiddenCallChecker(Provider, "", HTTPMethod.POST, special_case="upgrade")
+    UpgradeCluster = ForbiddenCallChecker(Cluster, "", HTTPMethod.POST, special_case="upgrade")
+    Change = _deny_endpoint_call("", HTTPMethod.PUT)  # change user, role, etc
+    PartialChange = _deny_endpoint_call("", HTTPMethod.PATCH)  # change host (for example)

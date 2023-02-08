@@ -25,6 +25,8 @@ from enum import Enum
 from itertools import chain
 from typing import Dict, Iterable, List, Optional
 
+from cm.errors import AdcmEx
+from cm.logger import logger
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -32,9 +34,6 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
 from django.db.models.signals import m2m_changed, post_delete
 from django.dispatch import receiver
-
-from cm.errors import AdcmEx
-from cm.logger import logger
 
 
 def validate_line_break_character(value: str) -> None:
@@ -45,11 +44,11 @@ def validate_line_break_character(value: str) -> None:
 
 class ObjectType(models.TextChoices):
     ADCM = "adcm", "adcm"
-    Cluster = "cluster", "cluster"
-    Service = "service", "service"
-    Component = "component", "component"
-    Provider = "provider", "provider"
-    Host = "host", "host"
+    CLUSTER = "cluster", "cluster"
+    SERVICE = "service", "service"
+    COMPONENT = "component", "component"
+    PROVIDER = "provider", "provider"
+    HOST = "host", "host"
 
 
 class MaintenanceMode(models.TextChoices):
@@ -202,14 +201,14 @@ class ProductCategory(ADCMModel):
     def re_collect(cls) -> None:
         """Re-sync category list with installed bundles"""
         for bundle in Bundle.objects.filter(category=None).all():
-            prototype = Prototype.objects.filter(bundle=bundle, name=bundle.name, type=ObjectType.Cluster).first()
+            prototype = Prototype.objects.filter(bundle=bundle, name=bundle.name, type=ObjectType.CLUSTER).first()
             if prototype:
                 value = prototype.display_name or bundle.name
                 bundle.category, _ = cls.objects.get_or_create(value=value)
                 bundle.save()
         for category in cls.objects.all():
             if category.bundle_set.count() == 0:
-                category.delete()  # TODO: ensure that's enough
+                category.delete()
 
 
 def get_default_from_edition():
@@ -321,71 +320,71 @@ class ConfigLog(ADCMModel):
     def save(self, *args, **kwargs):  # pylint: disable=too-many-locals,too-many-statements
         """Saving config and updating config groups"""
 
-        def update_config(origin: dict, renovator: dict, group_keys: dict) -> None:
+        def update_config(origin: dict, renovator: dict, _group_keys: dict) -> None:
             """
             Updating the original config with a check for the presence of keys in the original
             """
-            for key, value in group_keys.items():
+            for key, value in _group_keys.items():
                 if key in renovator:
                     if isinstance(value, Mapping):
                         origin.setdefault(key, {})
-                        update_config(origin[key], renovator[key], group_keys[key]["fields"])
+                        update_config(origin[key], renovator[key], _group_keys[key]["fields"])
                     else:
                         if value:
                             origin[key] = renovator[key]
 
-        def update_attr(origin: dict, renovator: dict, group_keys: dict) -> None:
+        def update_attr(origin: dict, renovator: dict, _group_keys: dict) -> None:
             """
             Updating the original config with a check for the presence of keys in the original
             """
-            for key, value in group_keys.items():
+            for key, value in _group_keys.items():
                 if key in renovator and isinstance(value, Mapping):
                     if value["value"] is not None and value["value"]:
                         origin[key] = renovator[key]
 
-        def clean_attr(attrs: dict, spec: dict) -> None:
+        def clean_attr(attrs: dict, _spec: dict) -> None:
             """Clean attr after upgrade cluster"""
             extra_fields = []
 
             for key in attrs.keys():
                 if key not in ["group_keys", "custom_group_keys"]:
-                    if key not in spec:
+                    if key not in _spec:
                         extra_fields.append(key)
 
             for field in extra_fields:
                 attrs.pop(field)
 
-        def clean_group_keys(group_keys, spec):
+        def clean_group_keys(_group_keys, _spec):
             """Clean group_keys after update cluster"""
+
             correct_group_keys = {}
-            for field, info in spec.items():
+            for field, info in _spec.items():
                 if info["type"] == "group":
                     correct_group_keys[field] = {}
-                    correct_group_keys[field]["value"] = group_keys[field]["value"]
+                    correct_group_keys[field]["value"] = _group_keys[field]["value"]
                     correct_group_keys[field]["fields"] = {}
                     for key in info["fields"].keys():
-                        correct_group_keys[field]["fields"][key] = group_keys[field]["fields"][key]
+                        correct_group_keys[field]["fields"][key] = _group_keys[field]["fields"][key]
                 else:
-                    correct_group_keys[field] = group_keys[field]
+                    correct_group_keys[field] = _group_keys[field]
             return correct_group_keys
 
         obj = self.obj_ref.object
         if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
             # Sync group configs with object config
-            for cg in obj.group_config.all():
-                # TODO: We need refactoring for upgrade cluster
-                diff_config, diff_attr = cg.get_diff_config_attr()
+            for conf_group in obj.group_config.all():
+                diff_config, diff_attr = conf_group.get_diff_config_attr()
                 group_config = ConfigLog()
-                current_group_config = ConfigLog.objects.get(id=cg.config.current)
-                group_config.obj_ref = cg.config
+                current_group_config = ConfigLog.objects.get(id=conf_group.config.current)
+                group_config.obj_ref = conf_group.config
                 config = deepcopy(self.config)
                 current_group_keys = current_group_config.attr["group_keys"]
                 update_config(config, diff_config, current_group_keys)
                 group_config.config = config
                 attr = deepcopy(self.attr)
                 update_attr(attr, diff_attr, current_group_keys)
-                spec = cg.get_config_spec()
-                group_keys, custom_group_keys = cg.create_group_keys(spec)
+                spec = conf_group.get_config_spec()
+                group_keys, custom_group_keys = conf_group.create_group_keys(spec)
                 group_keys = deep_merge(group_keys, current_group_keys)
                 group_keys = clean_group_keys(group_keys, spec)
                 attr["group_keys"] = group_keys
@@ -395,10 +394,10 @@ class ConfigLog(ADCMModel):
                 group_config.attr = attr
                 group_config.description = current_group_config.description
                 group_config.save()
-                cg.config.previous = cg.config.current
-                cg.config.current = group_config.id
-                cg.config.save()
-                cg.preparing_file_type_field()
+                conf_group.config.previous = conf_group.config.current
+                conf_group.config.current = group_config.id
+                conf_group.config.save()
+                conf_group.preparing_file_type_field()
         if isinstance(obj, GroupConfig):
             # `custom_group_keys` read only field in attr,
             # needs to be replaced when creating an object with ORM
@@ -448,7 +447,7 @@ class ADCMEntity(ADCMModel):
     def get_own_issue(self, cause: "ConcernCause") -> Optional["ConcernItem"]:
         """Get object's issue of specified cause or None"""
         return self.concerns.filter(
-            type=ConcernType.Issue, owner_id=self.pk, owner_type=self.content_type, cause=cause
+            type=ConcernType.ISSUE, owner_id=self.pk, owner_type=self.content_type, cause=cause
         ).first()
 
     def __str__(self):
@@ -461,7 +460,7 @@ class ADCMEntity(ADCMModel):
         self.state = state or self.state
         self.save()
         if event:
-            event.set_object_state(self.prototype.type, self.id, state)
+            event.set_object_state(obj=self, state=state)
         logger.info('set %s state to "%s"', self, state)
 
     def get_id_chain(self) -> dict:
@@ -490,8 +489,9 @@ class ADCMEntity(ADCMModel):
 
         self._multi_state.update({multi_state: 1})
         self.save()
+
         if event:
-            event.change_object_multi_state(self.prototype.type, self.id, multi_state)
+            event.change_object_multi_state(obj=self, multi_state=multi_state)
         logger.info('add "%s" to "%s" multi_state', multi_state, self)
 
     def unset_multi_state(self, multi_state: str, event=None) -> None:
@@ -501,8 +501,9 @@ class ADCMEntity(ADCMModel):
 
         del self._multi_state[multi_state]
         self.save()
+
         if event:
-            event.change_object_multi_state(self.prototype.type, self.id, multi_state)
+            event.change_object_multi_state(obj=self, multi_state=multi_state)
         logger.info('remove "%s" from "%s" multi_state', multi_state, self)
 
     def has_multi_state_intersection(self, multi_states: List[str]) -> bool:
@@ -660,6 +661,7 @@ class Host(ADCMEntity):
         choices=MaintenanceMode.choices,
         default=MaintenanceMode.OFF,
     )
+    before_upgrade = models.JSONField(default=get_default_before_upgrade)
 
     __error_code__ = "HOST_NOT_FOUND"
 
@@ -714,6 +716,7 @@ class ClusterObject(ADCMEntity):
         choices=MaintenanceMode.choices,
         default=MaintenanceMode.OFF,
     )
+    before_upgrade = models.JSONField(default=get_default_before_upgrade)
 
     __error_code__ = "CLUSTER_SERVICE_NOT_FOUND"
 
@@ -768,12 +771,11 @@ class ClusterObject(ADCMEntity):
                 return MaintenanceMode.ON
 
             hosts_maintenance_modes = []
-            for service_component in service_components:
-                host_ids = HostComponent.objects.filter(
-                    component=service_component,
-                ).values_list("host_id", flat=True)
-                hosts_maintenance_modes.extend(Host.objects.get(pk=host_id).maintenance_mode for host_id in host_ids)
+            host_ids = HostComponent.objects.filter(service=self).values_list("host_id", flat=True)
 
+            hosts_maintenance_modes.extend(
+                Host.objects.filter(id__in=host_ids).values_list("maintenance_mode", flat=True)
+            )
             if hosts_maintenance_modes:
                 return (
                     MaintenanceMode.ON
@@ -812,6 +814,7 @@ class ServiceComponent(ADCMEntity):
         choices=MaintenanceMode.choices,
         default=MaintenanceMode.OFF,
     )
+    before_upgrade = models.JSONField(default=get_default_before_upgrade)
 
     __error_code__ = "COMPONENT_NOT_FOUND"
 
@@ -947,67 +950,90 @@ class GroupConfig(ADCMModel):
         Returns a map of fields that are included in a group,
         as well as a map of fields that cannot be included in a group
         """
+
         if group_keys is None:
             group_keys = {}
+
         if custom_group_keys is None:
             custom_group_keys = {}
-        for k, v in config_spec.items():
-            if v["type"] == "group":
+
+        for config_key, config_value in config_spec.items():
+            if config_value["type"] == "group":
                 value = None
-                if "activatable" in v["limits"]:
+
+                if "activatable" in config_value["limits"]:
                     value = False
-                group_keys.setdefault(k, {"value": value, "fields": {}})
-                custom_group_keys.setdefault(k, {"value": v["group_customization"], "fields": {}})
-                self.create_group_keys(v["fields"], group_keys[k]["fields"], custom_group_keys[k]["fields"])
+
+                group_keys.setdefault(config_key, {"value": value, "fields": {}})
+                custom_group_keys.setdefault(config_key, {"value": config_value["group_customization"], "fields": {}})
+                self.create_group_keys(
+                    config_value["fields"], group_keys[config_key]["fields"], custom_group_keys[config_key]["fields"]
+                )
             else:
-                group_keys[k] = False
-                custom_group_keys[k] = v["group_customization"]
+                group_keys[config_key] = False
+                custom_group_keys[config_key] = config_value["group_customization"]
+
         return group_keys, custom_group_keys
 
     def get_diff_config_attr(self):
-        def get_diff(config, attr, group_keys, diff_config=None, diff_attr=None):
+        def get_diff(_config, _attr, _group_keys, diff_config=None, diff_attr=None):
             if diff_config is None:
                 diff_config = {}
+
             if diff_attr is None:
                 diff_attr = {}
-            for k, v in group_keys.items():
-                if isinstance(v, Mapping):
-                    if v["value"] is not None and v["value"]:
-                        diff_attr[k] = attr[k]
-                    diff_config.setdefault(k, {})
-                    get_diff(config[k], attr, group_keys[k]["fields"], diff_config[k], diff_attr)
-                    if not diff_config[k]:
-                        diff_config.pop(k)
+
+            for group_key, group_value in _group_keys.items():
+                if isinstance(group_value, Mapping):
+                    if group_value["value"] is not None and group_value["value"]:
+                        diff_attr[group_key] = _attr[group_key]
+
+                    diff_config.setdefault(group_key, {})
+                    get_diff(
+                        _config[group_key], _attr, _group_keys[group_key]["fields"], diff_config[group_key], diff_attr
+                    )
+                    if not diff_config[group_key]:
+                        diff_config.pop(group_key)
                 else:
-                    if v:
-                        diff_config[k] = config[k]
+                    if group_value:
+                        diff_config[group_key] = _config[group_key]
+
             return diff_config, diff_attr
 
-        cl = ConfigLog.obj.get(id=self.config.current)
-        config = cl.config
-        attr = cl.attr
-        group_keys = cl.attr.get("group_keys", {})
+        config_log = ConfigLog.obj.get(id=self.config.current)
+        config = config_log.config
+        attr = config_log.attr
+        group_keys = config_log.attr.get("group_keys", {})
+
         return get_diff(config, attr, group_keys)
 
     def get_group_keys(self):
-        cl = ConfigLog.objects.get(id=self.config.current)
-        return cl.attr.get("group_keys", {})
+        config_log = ConfigLog.objects.get(id=self.config.current)
+
+        return config_log.attr.get("group_keys", {})
 
     def merge_config(self, object_config: dict, group_config: dict, group_keys: dict, config=None):
         """Merge object config with group config based group_keys"""
 
         if config is None:
             config = {}
-        for k, v in group_keys.items():
-            if isinstance(v, Mapping):
-                config.setdefault(k, {})
-                self.merge_config(object_config[k], group_config[k], group_keys[k]["fields"], config[k])
+
+        for group_key, group_value in group_keys.items():
+            if isinstance(group_value, Mapping):
+                config.setdefault(group_key, {})
+                self.merge_config(
+                    object_config[group_key],
+                    group_config[group_key],
+                    group_keys[group_key]["fields"],
+                    config[group_key],
+                )
             else:
-                if v and k in group_config:
-                    config[k] = group_config[k]
+                if group_value and group_key in group_config:
+                    config[group_key] = group_config[group_key]
                 else:
-                    if k in object_config:
-                        config[k] = object_config[k]
+                    if group_key in object_config:
+                        config[group_key] = object_config[group_key]
+
         return config
 
     @staticmethod
@@ -1017,18 +1043,21 @@ class GroupConfig(ADCMModel):
         if attr is None:
             attr = {}
 
-        for k, v in group_keys.items():
-            if isinstance(v, Mapping) and k in object_attr:
-                if v["value"]:
-                    attr[k] = group_attr[k]
+        for group_key, group_value in group_keys.items():
+            if isinstance(group_value, Mapping) and group_key in object_attr:
+                if group_value["value"]:
+                    attr[group_key] = group_attr[group_key]
                 else:
-                    attr[k] = object_attr[k]
+                    attr[group_key] = object_attr[group_key]
+
         return attr
 
     def get_config_attr(self):
         """Return attr for group config without group_keys and custom_group_keys params"""
-        cl = ConfigLog.obj.get(id=self.config.current)
-        attr = {k: v for k, v in cl.attr.items() if k not in ("group_keys", "custom_group_keys")}
+
+        config_log = ConfigLog.obj.get(id=self.config.current)
+        attr = {k: v for k, v in config_log.attr.items() if k not in ("group_keys", "custom_group_keys")}
+
         return attr
 
     def get_config_and_attr(self):
@@ -1044,10 +1073,12 @@ class GroupConfig(ADCMModel):
         config = self.merge_config(object_config, group_config, group_keys)
         attr = self.merge_attr(object_attr, group_attr, group_keys)
         self.preparing_file_type_field(config)
+
         return config, attr
 
     def host_candidate(self):
         """Returns candidate hosts valid to add to the group"""
+
         if isinstance(self.object, (Cluster, HostProvider)):
             hosts = self.object.host_set.all()
         elif isinstance(self.object, ClusterObject):
@@ -1056,10 +1087,12 @@ class GroupConfig(ADCMModel):
             hosts = Host.objects.filter(cluster=self.object.cluster, hostcomponent__component=self.object).distinct()
         else:
             raise AdcmEx("GROUP_CONFIG_TYPE_ERROR")
+
         return hosts.exclude(group_config__in=self.object.group_config.all())
 
     def check_host_candidate(self, host):
         """Checking host candidate for group"""
+
         if host not in self.host_candidate():
             raise AdcmEx("GROUP_CONFIG_HOST_ERROR")
 
@@ -1068,8 +1101,10 @@ class GroupConfig(ADCMModel):
 
         if self.config is None:
             return
+
         if config is None:
             config = ConfigLog.objects.get(id=self.config.current).config
+
         fields = PrototypeConfig.objects.filter(
             prototype=self.object.prototype, action__isnull=True, type="file"
         ).order_by("id")
@@ -1090,14 +1125,17 @@ class GroupConfig(ADCMModel):
                 value = config[field.name][field.subname]
             else:
                 value = config[field.name]
+
             if value is not None:
                 # See cm.adcm_config.py:313
                 if field.name == "ansible_ssh_private_key_file":
                     if value != "":
                         if value[-1] == "-":
                             value += "\n"
+
                 with open(filepath, "w", encoding=settings.ENCODING_UTF_8) as f:
                     f.write(value)
+
                 os.chmod(filepath, 0o0600)
             else:
                 if os.path.exists(filename):
@@ -1139,8 +1177,8 @@ def verify_host_candidate_for_group_config(sender, **kwargs):
 
 
 class ActionType(models.TextChoices):
-    Task = "task", "task"
-    Job = "job", "job"
+    TASK = "task", "task"
+    JOB = "job", "job"
 
 
 SCRIPT_TYPE = (
@@ -1151,6 +1189,7 @@ SCRIPT_TYPE = (
 
 def get_any():
     """Get `any` literal for JSON field default value"""
+
     return "any"
 
 
@@ -1481,17 +1520,17 @@ class TaskLog(ADCMModel):
             return
         first_job = JobLog.obj.filter(task=self).order_by("id").first()
         reason = MessageTemplate.get_message_from_template(
-            MessageTemplate.KnownNames.LockedByJob.value,
+            MessageTemplate.KnownNames.LOCKED_BY_JOB.value,
             job=first_job,
             target=self.task_object,
         )
         self.lock = ConcernItem.objects.create(
-            type=ConcernType.Lock.value,
+            type=ConcernType.LOCK.value,
             name=None,
             reason=reason,
             blocking=True,
             owner=self.task_object,
-            cause=ConcernCause.Job.value,
+            cause=ConcernCause.JOB.value,
         )
         self.save()
         for obj in objects:
@@ -1746,58 +1785,61 @@ class MessageTemplate(ADCMModel):
     template = models.JSONField()
 
     class KnownNames(Enum):
-        LockedByJob = "locked by running job on target"  # kwargs=(job, target)
-        ConfigIssue = "object config issue"  # kwargs=(source, )
-        RequiredServiceIssue = "required service issue"  # kwargs=(source, )
-        RequiredImportIssue = "required import issue"  # kwargs=(source, )
-        HostComponentIssue = "host component issue"  # kwargs=(source, )
+        LOCKED_BY_JOB = "locked by running job on target"  # kwargs=(job, target)
+        CONFIG_ISSUE = "object config issue"  # kwargs=(source, )
+        REQUIRED_SERVICE_ISSUE = "required service issue"  # kwargs=(source, )
+        REQUIRED_IMPORT_ISSUE = "required import issue"  # kwargs=(source, )
+        HOST_COMPONENT_ISSUE = "host component issue"  # kwargs=(source, )
 
     class PlaceHolderType(Enum):
-        Action = "action"
-        ADCMEntity = "adcm_entity"
+        ACTION = "action"
+        ADCM_ENTITY = "adcm_entity"
         ADCM = "adcm"
-        Cluster = "cluster"
-        Service = "service"
-        Component = "component"
-        Provider = "provider"
-        Host = "host"
-        Job = "job"
+        CLUSTER = "cluster"
+        SERVICE = "service"
+        COMPONENT = "component"
+        PROVIDER = "provider"
+        HOST = "host"
+        JOB = "job"
 
     @classmethod
     def get_message_from_template(cls, name: str, **kwargs) -> dict:
         """Find message template by its name and fill placeholders"""
+
         tpl = cls.obj.get(name=name).template
         filled_placeholders = {}
         try:
             for ph_name, ph_data in tpl["placeholder"].items():
                 filled_placeholders[ph_name] = cls._fill_placeholder(ph_name, ph_data, **kwargs)
-        except (KeyError, AttributeError, TypeError, AssertionError) as ex:
-            if isinstance(ex, KeyError):
-                msg = f'Message templating KeyError: "{ex.args[0]}" not found'
-            elif isinstance(ex, AttributeError):
-                msg = f'Message templating AttributeError: "{ex.args[0]}"'
-            elif isinstance(ex, TypeError):
-                msg = f'Message templating TypeError: "{ex.args[0]}"'
-            elif isinstance(ex, AssertionError):
+        except (KeyError, AttributeError, TypeError, AssertionError) as e:
+            if isinstance(e, KeyError):
+                msg = f'Message templating KeyError: "{e.args[0]}" not found'
+            elif isinstance(e, AttributeError):
+                msg = f'Message templating AttributeError: "{e.args[0]}"'
+            elif isinstance(e, TypeError):
+                msg = f'Message templating TypeError: "{e.args[0]}"'
+            elif isinstance(e, AssertionError):
                 msg = "Message templating AssertionError: expected kwarg were not found"
             else:
                 msg = None
-            raise AdcmEx("MESSAGE_TEMPLATING_ERROR", msg=msg) from ex
+            raise AdcmEx("MESSAGE_TEMPLATING_ERROR", msg=msg) from e
+
         tpl["placeholder"] = filled_placeholders
+
         return tpl
 
     @classmethod
     def _fill_placeholder(cls, ph_name: str, ph_data: dict, **ph_source_data) -> dict:
         type_map = {
-            cls.PlaceHolderType.Action.value: cls._action_placeholder,
-            cls.PlaceHolderType.ADCMEntity.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.ACTION.value: cls._action_placeholder,
+            cls.PlaceHolderType.ADCM_ENTITY.value: cls._adcm_entity_placeholder,
             cls.PlaceHolderType.ADCM.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.Cluster.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.Service.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.Component.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.Provider.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.Host.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.Job.value: cls._job_placeholder,
+            cls.PlaceHolderType.CLUSTER.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.SERVICE.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.COMPONENT.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.PROVIDER.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.HOST.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.JOB.value: cls._job_placeholder,
         }
         return type_map[ph_data["type"]](ph_name, **ph_source_data)
 
@@ -1811,7 +1853,7 @@ class MessageTemplate(ADCMModel):
         ids = target.get_id_chain()
         ids["action"] = action.pk
         return {
-            "type": cls.PlaceHolderType.Action.value,
+            "type": cls.PlaceHolderType.ACTION.value,
             "name": action.display_name,
             "ids": ids,
         }
@@ -1834,24 +1876,24 @@ class MessageTemplate(ADCMModel):
         action = job.sub_action or job.action
 
         return {
-            "type": cls.PlaceHolderType.Job.value,
+            "type": cls.PlaceHolderType.JOB.value,
             "name": action.display_name or action.name,
             "ids": job.id,
         }
 
 
 class ConcernType(models.TextChoices):
-    Lock = "lock", "lock"
-    Issue = "issue", "issue"
-    Flag = "flag", "flag"
+    LOCK = "lock", "lock"
+    ISSUE = "issue", "issue"
+    FLAG = "flag", "flag"
 
 
 class ConcernCause(models.TextChoices):
-    Config = "config", "config"
-    Job = "job", "job"
-    HostComponent = "host-component", "host-component"
-    Import = "import", "import"
-    Service = "service", "service"
+    CONFIG = "config", "config"
+    JOB = "job", "job"
+    HOSTCOMPONENT = "host-component", "host-component"
+    IMPORT = "import", "import"
+    SERVICE = "service", "service"
 
 
 class ConcernItem(ADCMModel):
@@ -1871,7 +1913,7 @@ class ConcernItem(ADCMModel):
     `related_objects` are back-refs from affected `ADCMEntities.concerns`
     """
 
-    type = models.CharField(max_length=1000, choices=ConcernType.choices, default=ConcernType.Lock)
+    type = models.CharField(max_length=1000, choices=ConcernType.choices, default=ConcernType.LOCK)
     name = models.CharField(max_length=1000, null=True, unique=True)
     reason = models.JSONField(default=dict)
     blocking = models.BooleanField(default=True)

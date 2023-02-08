@@ -12,16 +12,6 @@
 
 from itertools import chain
 
-from guardian.mixins import PermissionListMixin
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_204_NO_CONTENT,
-    HTTP_400_BAD_REQUEST,
-)
-
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.cluster.serializers import (
     BindSerializer,
@@ -67,7 +57,16 @@ from cm.models import (
 )
 from cm.status_api import make_ui_cluster_status
 from cm.upgrade import do_upgrade, get_upgrade
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+)
 
 VIEW_CLUSTER_PERM = "cm.view_cluster"
 
@@ -75,8 +74,8 @@ VIEW_CLUSTER_PERM = "cm.view_cluster"
 def get_obj_conf(cluster_id, service_id):
     cluster = check_obj(Cluster, cluster_id)
     if service_id:
-        co = check_obj(ClusterObject, {"cluster": cluster, "id": service_id})
-        obj = co
+        service = check_obj(ClusterObject, {"cluster": cluster, "id": service_id})
+        obj = service
     else:
         obj = cluster
 
@@ -289,10 +288,10 @@ class DoClusterUpgrade(GenericUIView):
         )
         config = serializer.validated_data.get("config", {})
         attr = serializer.validated_data.get("attr", {})
-        hc = serializer.validated_data.get("hc", [])
+        hostcomponent = serializer.validated_data.get("hc", [])
 
         return Response(
-            data=do_upgrade(cluster, upgrade, config, attr, hc),
+            data=do_upgrade(cluster, upgrade, config, attr, hostcomponent),
             status=HTTP_201_CREATED,
         )
 
@@ -323,13 +322,13 @@ class HostComponentList(GenericUIView):
     def get(self, request, *args, **kwargs):
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         check_custom_perm(request.user, "view_host_components_of", "cluster", cluster, "view_hostcomponent")
-        hc = self.get_queryset().prefetch_related("service", "component", "host").filter(cluster=cluster)
+        hostcomponent = self.get_queryset().prefetch_related("service", "component", "host").filter(cluster=cluster)
         if self._is_for_ui():
             ui_hc = HostComponent()
-            ui_hc.hc = hc
+            setattr(ui_hc, "hc", hostcomponent)  # because pylint disable invalid-name not working here somehow
             serializer = self.get_serializer(ui_hc, context={"request": request, "cluster": cluster})
         else:
-            serializer = self.get_serializer(hc, many=True)
+            serializer = self.get_serializer(hostcomponent, many=True)
 
         return Response(serializer.data)
 
