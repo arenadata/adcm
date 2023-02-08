@@ -104,7 +104,7 @@ class TestAuditLogsAPI:
         role = sdk_client_fs.role_create(
             "custom role",
             display_name="custom role",
-            child=[{"id": sdk_client_fs.role(name=BusinessRoles.ViewADCMConfigurations.value.role_name).id}],
+            child=[{"id": sdk_client_fs.role(name=BusinessRoles.VIEW_ADCM_CONFIGURATIONS.value.role_name).id}],
         )
         policy = sdk_client_fs.policy_create("custom policy", role=role, user=[user])
         user.update(first_name="first", last_name="second")

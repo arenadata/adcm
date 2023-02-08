@@ -58,15 +58,15 @@ def test_grant_policy_for_ldap_user(sdk_client_fs, cluster, ldap_user_in_group):
     user_client, user = _login_as_ldap_user_and_check_no_access(sdk_client_fs, username, password, cluster)
 
     with allure.step("Grant access for a cluster and check it is granted"):
-        policy = create_policy(sdk_client_fs, BusinessRoles.EditClusterConfigurations, [cluster], [user], [])
+        policy = create_policy(sdk_client_fs, BusinessRoles.EDIT_CLUSTER_CONFIGURATIONS, [cluster], [user], [])
         user_client.reread()
-        user_cluster = is_allowed(user_client, BusinessRoles.GetCluster, id=cluster.id)
-        is_allowed(user_cluster, BusinessRoles.EditClusterConfigurations)
+        user_cluster = is_allowed(user_client, BusinessRoles.GET_CLUSTER, id=cluster.id)
+        is_allowed(user_cluster, BusinessRoles.EDIT_CLUSTER_CONFIGURATIONS)
 
     with allure.step("Withdraw policy from LDAP user"):
         delete_policy(policy)
-        is_denied(user_client, BusinessRoles.GetCluster, id=cluster.id)
-        is_denied(user_cluster, BusinessRoles.EditClusterConfigurations, client=user_client)
+        is_denied(user_client, BusinessRoles.GET_CLUSTER, id=cluster.id)
+        is_denied(user_cluster, BusinessRoles.EDIT_CLUSTER_CONFIGURATIONS, client=user_client)
 
 
 # pylint: disable-next=unused-variable,too-many-locals
@@ -82,24 +82,24 @@ def test_grant_policy_for_ldap_group(sdk_client_fs, cluster, ldap_ad, ldap_basic
 
     with allure.step("Grant access to group from LDAP and check permissions of existing users"):
         group = get_ldap_group_from_adcm(sdk_client_fs, ldap_group["name"])
-        policy = create_policy(sdk_client_fs, BusinessRoles.EditClusterConfigurations, [cluster], [], [group])
+        policy = create_policy(sdk_client_fs, BusinessRoles.EDIT_CLUSTER_CONFIGURATIONS, [cluster], [], [group])
         user_client.reread()
-        user_cluster = is_allowed(user_client, BusinessRoles.GetCluster, id=cluster.id)
-        is_allowed(user_cluster, BusinessRoles.EditClusterConfigurations)
+        user_cluster = is_allowed(user_client, BusinessRoles.GET_CLUSTER, id=cluster.id)
+        is_allowed(user_cluster, BusinessRoles.EDIT_CLUSTER_CONFIGURATIONS)
 
     with allure.step("Create new LDAP user in group and check they will have permissions"):
         new_user_dn = ldap_ad.create_user(second_username, second_password, custom_base_dn=users_ou)
         ldap_ad.add_user_to_group(new_user_dn, ldap_group["dn"])
         second_user_client = ADCMClient(url=sdk_client_fs.url, user=second_username, password=second_password)
-        second_user_cluster = is_allowed(second_user_client, BusinessRoles.GetCluster, id=cluster.id)
-        is_allowed(second_user_cluster, BusinessRoles.EditClusterConfigurations)
+        second_user_cluster = is_allowed(second_user_client, BusinessRoles.GET_CLUSTER, id=cluster.id)
+        is_allowed(second_user_cluster, BusinessRoles.EDIT_CLUSTER_CONFIGURATIONS)
 
     with allure.step("Withdraw policy from LDAP group and check users have no permissions"):
         delete_policy(policy)
-        is_denied(user_client, BusinessRoles.GetCluster, id=cluster.id)
-        is_denied(user_cluster, BusinessRoles.EditClusterConfigurations, client=user_client)
-        is_denied(second_user_client, BusinessRoles.GetCluster, id=cluster.id)
-        is_denied(second_user_cluster, BusinessRoles.EditClusterConfigurations, client=second_user_client)
+        is_denied(user_client, BusinessRoles.GET_CLUSTER, id=cluster.id)
+        is_denied(user_cluster, BusinessRoles.EDIT_CLUSTER_CONFIGURATIONS, client=user_client)
+        is_denied(second_user_client, BusinessRoles.GET_CLUSTER, id=cluster.id)
+        is_denied(second_user_cluster, BusinessRoles.EDIT_CLUSTER_CONFIGURATIONS, client=second_user_client)
 
 
 def _login_as_ldap_user_and_check_no_access(client, username, password, cluster) -> Tuple[ADCMClient, User]:
@@ -109,6 +109,6 @@ def _login_as_ldap_user_and_check_no_access(client, username, password, cluster)
         user = get_ldap_user_from_adcm(client, username)
 
     with allure.step("Check no access"):
-        is_denied(user_sdk, BusinessRoles.GetCluster, id=cluster.id)
+        is_denied(user_sdk, BusinessRoles.GET_CLUSTER, id=cluster.id)
 
     return user_sdk, user

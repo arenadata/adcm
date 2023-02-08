@@ -135,8 +135,8 @@ def _extract_basic_info(client: ADCMClient, log: Union[AuditOperation, AuditLogi
 
 
 def _format_time(time: datetime):
-    t = time.strftime(DATETIME_FMT)
-    return f"{t[:-2]}:{t[-2:]}"
+    time_str = time.strftime(DATETIME_FMT)
+    return f"{time_str[:-2]}:{time_str[-2:]}"
 
 
 def _attach_cef_logs(cef_logs: Collection[CEFRecord]) -> None:

@@ -332,24 +332,24 @@ def check_statuses(
     are expected to have negative status
     otherwise the positive status is expected
     """
-    p = not_ if default_positive else truth
+    positive = not_ if default_positive else truth
 
     expected_statuses = {
         "name": statuses["name"],
-        "status": _expected_status(p(bool(cluster))),
+        "status": _expected_status(positive(bool(cluster))),
         "hosts": {
-            fqdn: {"status": _expected_status(p(fqdn in hosts))} for fqdn, host_dict in statuses["hosts"].items()
+            fqdn: {"status": _expected_status(positive(fqdn in hosts))} for fqdn, host_dict in statuses["hosts"].items()
         },
         "services": {
             service_name: {
-                "status": _expected_status(p(service_name in services)),
+                "status": _expected_status(positive(service_name in services)),
                 "components": {
                     component_name: {
-                        "status": _expected_status(p(f"{service_name}.{component_name}" in components)),
+                        "status": _expected_status(positive(f"{service_name}.{component_name}" in components)),
                         "hosts": {
                             fqdn: {
                                 "status": _expected_status(
-                                    p(f"{service_name}.{component_name}.{fqdn}" in components_on_hosts)
+                                    positive(f"{service_name}.{component_name}.{fqdn}" in components_on_hosts)
                                 )
                             }
                             for fqdn, host_dict in component_dict["hosts"].items()

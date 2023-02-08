@@ -210,7 +210,7 @@ def test_create_adcm_objects(audit_log_checker, post, new_user_client, sdk_clien
         check_failed(post(CreateOperation.HOST, **host_from_root_args), 409)
     with allure.step("Try to create hosts without permissions"):
         create_policy(  # need it to be able to create host from provider's context
-            sdk_client_fs, BusinessRoles.ViewProviderConfigurations, [provider], [new_user], []
+            sdk_client_fs, BusinessRoles.VIEW_PROVIDER_CONFIGURATIONS, [provider], [new_user], []
         )
         check_failed(
             post(

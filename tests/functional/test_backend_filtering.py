@@ -401,13 +401,13 @@ def test_filter(sdk_client: ADCMClient, tested_class, tested_list_class, search_
     with allure.step("Create a lot of objects in ADCM"):
         objects = tested_list_class(sdk_client._api, **search_args)
     with allure.step("Inspect first (and only) element of list"):
-        for k, v in expected_args.items():
-            assert getattr(objects[0], k) == v
+        for key, value in expected_args.items():
+            assert getattr(objects[0], key) == value
     with allure.step("Create single object over class call (like Cluster or Bundle) with tested filter as search args"):
         single_object = tested_class(sdk_client._api, **search_args)
     with allure.step("Check created object"):
-        for k, v in expected_args.items():
-            assert getattr(single_object, k) == v
+        for key, value in expected_args.items():
+            assert getattr(single_object, key) == value
 
 
 @pytest.fixture()
@@ -522,10 +522,10 @@ def test_actions_name_filter(
     with allure.step(f"Create {tested_parent_class} with a lot of actions"):
         actions = tested_parent_class.action_list(**search_args)
     with allure.step("Inspect first (and only) element of list"):
-        for k, v in expected_args.items():
-            assert getattr(actions[0], k) == v
+        for key, value in expected_args.items():
+            assert getattr(actions[0], key) == value
     with allure.step("Call action() with tested filter as search args"):
         action = tested_parent_class.action(**search_args)
     with allure.step("Check action name"):
-        for k, v in expected_args.items():
-            assert getattr(action, k) == v
+        for key, value in expected_args.items():
+            assert getattr(action, key) == value

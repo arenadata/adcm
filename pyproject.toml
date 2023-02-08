@@ -12,9 +12,10 @@ skip = ["python/init_db.py", "python/task_runner.py", "python/backupdb.py", "pyt
 ignore = ["migrations"]
 
 [tool.pylint."messages control"]
-disable = ["abstract-method", "consider-using-with", "fixme", "import-error", "invalid-name", "missing-docstring",
+disable = ["abstract-method", "consider-using-with", "fixme", "import-error", "missing-docstring",
     "missing-timeout", "no-else-return", "no-member", "too-few-public-methods", "too-many-arguments", "unused-argument",
     "wrong-import-order"]
+good-names = ["db", "e", "f", "i", "pk"]
 
 [tool.pylint.format]
 max-line-length = 120

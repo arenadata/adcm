@@ -76,7 +76,7 @@ class TestAccessToBasicObjects:
         not_viewable_objects = (component, provider, host) + second_objects
         cluster_and_service = (cluster, service)
 
-        for business_role in (BR.ViewServiceConfigurations, BR.EditServiceConfigurations, BR.ViewImports):
+        for business_role in (BR.VIEW_SERVICE_CONFIGURATIONS, BR.EDIT_SSERVICE_CONFIGURATIONS, BR.VIEW_IMPORTS):
             objects_to_check = ", ".join(map(lower_class_name, cluster_and_service))
             with allure.step(
                 f'Check that granting "{business_role.value.role_name}" role to service '
@@ -97,7 +97,7 @@ class TestAccessToBasicObjects:
         cluster, service, component, *provider_objects = prepare_objects
         cluster_objects = (cluster, service, component)
 
-        for business_role in (BR.ViewComponentConfigurations, BR.EditComponentConfigurations):
+        for business_role in (BR.VIEW_COMPONENT_CONFIGURATIONS, BR.EDIT_COMPONENT_CONFIGURATIONS):
             with allure.step(
                 f'Check that granting "{business_role.value.role_name}" role to component '
                 'gives access to "view" cluster'
@@ -125,7 +125,7 @@ class TestAccessToBasicObjects:
             check_objects_are_not_viewable(clients.user, [first_host, second_host])
 
         with allure.step('Create policy on cluster and check "view" permission exists on added host'):
-            policy = create_policy(clients.admin, BR.ViewHostComponents, [cluster], [user], [])
+            policy = create_policy(clients.admin, BR.VIEW_HOST_COMPONENTS, [cluster], [user], [])
             check_objects_are_viewable(clients.user, [first_host])
             check_objects_are_not_viewable(clients.user, [second_host])
 
@@ -149,7 +149,7 @@ class TestAccessToBasicObjects:
         """
         cluster, service, component, provider, host = prepare_objects
         check_objects_are_not_viewable(clients.user, prepare_objects + second_objects)
-        with granted_policy(clients.admin, BR.EditHostComponents, cluster, user):
+        with granted_policy(clients.admin, BR.EDIT_HOST_COMPONENTS, cluster, user):
             cluster.host_add(host)
             check_objects_are_viewable(clients.user, [cluster, service, component, host])
             check_objects_are_not_viewable(clients.user, [provider] + list(second_objects))
@@ -444,7 +444,7 @@ class TestAccessForJobsAndLogs:
         """
         cluster = cluster_for_upgrade
         with granted_policy(
-            clients.admin, clients.admin.role(name=RbacRoles.ClusterAdministrator.value), cluster, user
+            clients.admin, clients.admin.role(name=RbacRoles.CLUSTER_ADMINISTRATOR.value), cluster, user
         ):
             with allure.step("Run actions and check task objects are available"):
                 tasks = [_run_and_wait(cluster, action.display_name) for action in cluster.action_list()]
@@ -465,10 +465,10 @@ class TestAccessForJobsAndLogs:
         host = provider.host()
 
         with allure.step(
-            f"Check role {RbacRoles.ClusterAdministrator.value} grants access to task objects of "
+            f"Check role {RbacRoles.CLUSTER_ADMINISTRATOR.value} grants access to task objects of "
             "cluster, service, component and host"
         ):
-            role = clients.admin.role(name=RbacRoles.ClusterAdministrator.value)
+            role = clients.admin.role(name=RbacRoles.CLUSTER_ADMINISTRATOR.value)
             cluster.host_add(host)
             with granted_policy(clients.admin, role, cluster, user):
                 tasks = [_run_and_wait(obj, self.REGULAR_ACTION) for obj in (cluster, service, component, host)]
@@ -477,18 +477,18 @@ class TestAccessForJobsAndLogs:
             cluster.host_delete(host)
 
         with allure.step(
-            f"Check role {RbacRoles.ServiceAdministrator.value} grants access to task objects of service and component"
+            f"Check role {RbacRoles.SERVICE_ADMINISTRATOR.value} grants access to task objects of service and component"
         ):
-            role = clients.admin.role(name=RbacRoles.ServiceAdministrator.value)
+            role = clients.admin.role(name=RbacRoles.SERVICE_ADMINISTRATOR.value)
             with granted_policy(clients.admin, role, service, user):
                 tasks = [_run_and_wait(obj, self.REGULAR_ACTION) for obj in (service, component)]
                 self.check_access_granted_for_tasks(clients.user, tasks)
             self.check_no_access_granted_for_tasks(clients.user, tasks)
 
         with allure.step(
-            f"Check role {RbacRoles.ProviderAdministrator.value} grants access to task objects of provider and host"
+            f"Check role {RbacRoles.PROVIDER_ADMINISTRATOR.value} grants access to task objects of provider and host"
         ):
-            role = clients.admin.role(name=RbacRoles.ProviderAdministrator.value)
+            role = clients.admin.role(name=RbacRoles.PROVIDER_ADMINISTRATOR.value)
             with granted_policy(clients.admin, role, provider, user):
                 tasks = [_run_and_wait(obj, self.REGULAR_ACTION) for obj in (provider, host)]
                 self.check_access_granted_for_tasks(clients.user, tasks)

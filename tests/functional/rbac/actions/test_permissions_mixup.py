@@ -85,7 +85,7 @@ class TestClusterAdminRoleDoNotBreakParametrization:
 
         clients.admin.policy_create(
             name="Cluster Admin for First Cluster",
-            role=clients.admin.role(display_name=RbacRoles.ClusterAdministrator.value),
+            role=clients.admin.role(display_name=RbacRoles.CLUSTER_ADMINISTRATOR.value),
             objects=[first_cluster_admin],
             user=[user],
         )
@@ -168,7 +168,7 @@ class TestClusterAdminRoleDoNotBreakParametrization:
 
         clients.admin.policy_create(
             name="Service Admin for First Cluster",
-            role=clients.admin.role(display_name=RbacRoles.ServiceAdministrator.value),
+            role=clients.admin.role(display_name=RbacRoles.SERVICE_ADMINISTRATOR.value),
             objects=[first_service],
             user=[user],
         )

@@ -165,7 +165,7 @@ def test_negative_service_import(sdk_client_fs: ADCMClient, new_user_client, aud
     import_cluster, export_cluster = import_export_clusters
     import_service = import_cluster.service()
     new_user = sdk_client_fs.user(id=new_user_client.me().id)
-    create_policy(sdk_client_fs, [BusinessRoles.ViewServiceConfigurations], [import_service], [new_user], [])
+    create_policy(sdk_client_fs, [BusinessRoles.VIEW_SERVICE_CONFIGURATIONS], [import_service], [new_user], [])
 
     change_import_url(
         admin_client=sdk_client_fs,

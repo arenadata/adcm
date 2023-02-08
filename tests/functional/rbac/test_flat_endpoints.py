@@ -66,7 +66,7 @@ def test_flat_endpoints(user, clients, prepare_objects, second_objects):
 
     clients.admin.policy_create(
         name=f"Service administrator of {service.name}",
-        role=clients.admin.role(name=RbacRoles.ServiceAdministrator.value),
+        role=clients.admin.role(name=RbacRoles.SERVICE_ADMINISTRATOR.value),
         objects=[service],
         user=[user],
         group=[],

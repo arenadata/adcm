@@ -27,7 +27,7 @@ floats = [
     (-10.3, -1.4444, -2.234, "negative"),
     (1.1, 20.2, 5.5, "positive"),
 ]
-float_template = """
+FLOAT_TEMPLATE = """
 - type: cluster
   name: numbers_test
   version: 1
@@ -39,7 +39,7 @@ float_template = """
       max: {1}
       default: {2}
 """
-integer_template = """
+INTEGER_TEMPLATE = """
 - type: cluster
   name: numbers_test
   version: 1
@@ -56,10 +56,10 @@ for fl in floats:
     d_name = f"bundles/{f'float-{fl[3]}'}"
     os.makedirs(d_name)
     with open(f"{d_name}/config.yaml", "w+", encoding="utf_8") as f:
-        f.write(float_template.format(fl[0], fl[1], fl[2]))
+        f.write(FLOAT_TEMPLATE.format(fl[0], fl[1], fl[2]))
 
 for i in integers:
     d_name = f"bundles/{f'integer-{i[3]}'}"
     os.makedirs(d_name)
     with open(f"{d_name}/config.yaml", "w+", encoding="utf_8") as f:
-        f.write(integer_template.format(i[0], i[1], i[2]))
+        f.write(INTEGER_TEMPLATE.format(i[0], i[1], i[2]))
