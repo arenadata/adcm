@@ -103,8 +103,8 @@ class FromOneOf:
 
     def __call__(self) -> _Result:
         for source in self._sources:
-            result, ok = self._silencer.get(source)
-            if ok:
+            result, success = self._silencer.get(source)
+            if success:
                 return result
         with allure.step("Attach failures"):
             for source_name, failure in self._silencer.failures:

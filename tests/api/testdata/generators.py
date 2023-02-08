@@ -480,7 +480,7 @@ def get_data_for_body_check(method: Methods, endpoints_with_test_sets: List[tupl
                     status_code = method.default_success_code
                 elif (
                     method in {Methods.PUT, Methods.PATCH}
-                    and endpoint == Endpoints.RbacUser
+                    and endpoint == Endpoints.RBAC_USER
                     and (
                         # If there's an attempt to change username, 409 will be the response
                         # if there's a drop - 400
