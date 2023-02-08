@@ -20,11 +20,13 @@ class Concern:
         self._links = None
 
     @property
-    def links(self) -> tuple[Link, ...]:
+    def links(self) -> ListOfElements[Link]:
         if self._links:
             return self._links
 
-        self._links = tuple(map(as_element(Link, self._view), self._view.find_children(self.element, self._link)))
+        self._links = ListOfElements(
+            map(as_element(Link, self._view), self._view.find_children(self.element, self._link))
+        )
         return self._links
 
     def click(self) -> None:
