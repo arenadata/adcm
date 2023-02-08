@@ -146,7 +146,7 @@ def check_cluster_actions_roles_are_created_correctly(
         business_roles_ids = get_roles_ids_from_info(business)
         check_roles_are_added_to_rbac_roles(
             client,
-            rbac_roles=(RbacRoles.ClusterAdministrator,),
+            rbac_roles=(RbacRoles.CLUSTER_ADMINISTRATOR,),
             children_roles_ids=business_roles_ids,
         )
 
@@ -165,8 +165,8 @@ def check_service_and_components_roles_are_created_correctly(
     and the business role is assigned to correct default RBAC roles.
     """
     expected_parent_roles = (
-        RbacRoles.ClusterAdministrator,
-        RbacRoles.ServiceAdministrator,
+        RbacRoles.CLUSTER_ADMINISTRATOR,
+        RbacRoles.SERVICE_ADMINISTRATOR,
     )
 
     with allure.step(
@@ -205,8 +205,8 @@ def check_service_and_components_roles_are_created_correctly(
 def _check_components_roles_are_created_correctly(client, service, hidden_role_names, prefix_for_component: str):
     """Check that component action roles are created correctly"""
     expected_parent_roles = (
-        RbacRoles.ClusterAdministrator,
-        RbacRoles.ServiceAdministrator,
+        RbacRoles.CLUSTER_ADMINISTRATOR,
+        RbacRoles.SERVICE_ADMINISTRATOR,
     )
     component_business_roles = set()
 
@@ -250,7 +250,7 @@ def check_provider_based_object_action_roles_are_created_correctly(
 
     check_roles_are_not_added_to_rbac_roles(
         client,
-        (RbacRoles.ClusterAdministrator, RbacRoles.ServiceAdministrator, RbacRoles.ADCMUser),
+        (RbacRoles.CLUSTER_ADMINISTRATOR, RbacRoles.SERVICE_ADMINISTRATOR, RbacRoles.ADCM_USER),
         business,
     )
 

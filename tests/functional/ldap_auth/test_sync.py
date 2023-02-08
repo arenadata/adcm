@@ -55,7 +55,7 @@ def adcm_user_client(sdk_client_fs) -> ADCMClient:
     """Create simple user with ADCM User role"""
     username, password = "SimpleUser", "MegaPassword"
     user = sdk_client_fs.user_create(username, password)
-    sdk_client_fs.policy_create("Simple user", role=sdk_client_fs.role(name=RbacRoles.ADCMUser.value), user=[user])
+    sdk_client_fs.policy_create("Simple user", role=sdk_client_fs.role(name=RbacRoles.ADCM_USER.value), user=[user])
     return ADCMClient(url=sdk_client_fs.url, user=username, password=password)
 
 
@@ -67,7 +67,7 @@ def adcm_admin_client(sdk_client_fs) -> ADCMClient:
     role = sdk_client_fs.role_create(
         "ADCM admin role",
         display_name="ADCM admin role",
-        child=[{"id": sdk_client_fs.role(name=BusinessRoles.EditADCMSettings.value.role_name).id}],
+        child=[{"id": sdk_client_fs.role(name=BusinessRoles.EDIT_ADCM_SETTINGS.value.role_name).id}],
     )
     sdk_client_fs.policy_create("ADCM Admins", role=role, user=[user])
     return ADCMClient(url=sdk_client_fs.url, user=username, password=password)

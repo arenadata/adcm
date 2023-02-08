@@ -32,7 +32,7 @@ TYPES = (
     "json",
     "file",
 )
-template_textboxes = """
+TEMPLATE_TEXTBOXES = """
 - type: cluster
   name: {0}_{1}_{2}_{3}_{4}
   version: 1
@@ -59,7 +59,7 @@ template_textboxes = """
         on_fail: created
 """
 
-template_password = """
+TEMPLATE_PASSWORD = """
 - type: cluster
   name: {0}_{1}_{2}_{3}_{4}
   version: 1
@@ -86,7 +86,7 @@ template_password = """
         on_fail: created
 """
 
-template_text = """
+TEMPLATE_TEXT = """
 - type: cluster
   name: {0}_{1}_{2}_{3}_{4}
   version: 1
@@ -113,7 +113,7 @@ template_text = """
         on_fail: created
 """
 
-template_numbers = """
+TEMPLATE_NUMBERS = """
 - type: cluster
   name: {0}_{1}_{2}_{3}_{4}
   version: 1
@@ -140,7 +140,7 @@ template_numbers = """
         on_fail: created
 """
 
-template_boolean = """
+TEMPLATE_BOOLEAN = """
 - type: cluster
   name: {0}_{1}_{2}_{3}_{4}
   version: 1
@@ -167,7 +167,7 @@ template_boolean = """
         on_fail: created
 """
 
-template_file = """
+TEMPLATE_FILE = """
 - type: cluster
   name: {0}_{1}_{2}_{3}_{4}
   version: 1
@@ -193,7 +193,7 @@ template_file = """
         on_fail: created
 """
 
-template_json = """
+TEMPLATE_JSON = """
 - type: cluster
   name: {0}_{1}_{2}_{3}_{4}
   version: 1
@@ -219,7 +219,7 @@ template_json = """
         on_success: installed
         on_fail: created
 """
-template_map = """
+TEMPLATE_MAP = """
 - type: cluster
   name: {0}_{1}_{2}_{3}_{4}
   version: 1
@@ -249,7 +249,7 @@ template_map = """
         on_fail: created
 """
 
-template_list = """
+TEMPLATE_LIST = """
 - type: cluster
   name: {0}_{1}_{2}_{3}_{4}
   version: 1
@@ -279,7 +279,7 @@ template_list = """
         on_fail: created
 """
 
-template_option = """
+TEMPLATE_OPTION = """
 - type: cluster
   name: {0}_{1}_{2}_{3}_{4}
   version: 1
@@ -307,17 +307,17 @@ template_option = """
         on_fail: created
 """
 TEMPLATES = {
-    "string": template_textboxes,
-    "password": template_password,
-    "integer": template_numbers,
-    "text": template_text,
-    "boolean": template_boolean,
-    "float": template_numbers,
-    "option": template_option,
-    "list": template_list,
-    "map": template_map,
-    "json": template_json,
-    "file": template_file,
+    "string": TEMPLATE_TEXTBOXES,
+    "password": TEMPLATE_PASSWORD,
+    "integer": TEMPLATE_NUMBERS,
+    "text": TEMPLATE_TEXT,
+    "boolean": TEMPLATE_BOOLEAN,
+    "float": TEMPLATE_NUMBERS,
+    "option": TEMPLATE_OPTION,
+    "list": TEMPLATE_LIST,
+    "map": TEMPLATE_MAP,
+    "json": TEMPLATE_JSON,
+    "file": TEMPLATE_FILE,
 }
 INSTALL = """
 ---
@@ -340,7 +340,7 @@ for t in TYPES:
         d_name = f"{config[0]}_{config[1]}_{config[2]}_{config[3]}/{t}"
         os.makedirs(d_name)
         os.makedirs(f"{config[0]}_{config[1]}_{config[2]}_{config[3]}/{t}/ansible")
-        tmpl = ""
+        TMPL = ""
         with open(f"{d_name}/config.yaml", "w+", encoding="utf_8") as f:
             f.write(TEMPLATES[t].format(config[0], config[1], config[2], config[3], t))
         with open(f"{d_name}/ansible/install.yaml", "w+", encoding="utf_8") as f:

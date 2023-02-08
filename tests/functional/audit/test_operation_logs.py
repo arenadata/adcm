@@ -78,7 +78,7 @@ def test_simple_flow(sdk_client_fs, audit_log_checker, adb_bundle, dummy_host, n
     new_user, new_client = new_user_and_client
     create_policy(
         sdk_client_fs,
-        BusinessRoles.ViewClusterConfigurations,
+        BusinessRoles.VIEW_CLUSTER_CONFIGURATIONS,
         [cluster],
         users=[new_user],
         groups=[],

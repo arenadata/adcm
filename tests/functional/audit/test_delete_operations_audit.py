@@ -93,18 +93,18 @@ def _grant_view_config_permissions_on_adcm_objects(sdk_client_fs, adcm_objects, 
     create_policy(
         sdk_client_fs,
         [
-            BR.ViewClusterConfigurations,
-            BR.ViewServiceConfigurations,
-            BR.ViewComponentConfigurations,
+            BR.VIEW_CLUSTER_CONFIGURATIONS,
+            BR.VIEW_SERVICE_CONFIGURATIONS,
+            BR.VIEW_COMPONENT_CONFIGURATIONS,
         ],
-        [cluster, (s := cluster.service()), s.component()],
+        [cluster, (service := cluster.service()), service.component()],
         users=[user],
         groups=[],
         use_all_objects=True,
     )
     create_policy(
         sdk_client_fs,
-        [BR.ViewProviderConfigurations, BR.ViewHostConfigurations],
+        [BR.VIEW_PROVIDER_CONFIGURATIONS, BR.VIEW_HOST_CONFIGURATIONS],
         [provider, host_1, host_2],
         users=[user],
         groups=[],

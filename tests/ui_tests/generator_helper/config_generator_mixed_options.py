@@ -290,6 +290,6 @@ for t in TYPES:
             f"group_advanced_{config[0]}_invisible_{config[1]}_field_advanced_{config[2]}_invisible_{config[3]}/{t}"
         )
         os.makedirs(d_name)
-        tmpl = ""
+        TMPL = ""
         with open(f"{d_name}/config.yaml", "w+", encoding="utf_8") as f:
             f.write(TEMPLATES[t].format(config[0], config[1], config[2], config[3], t))

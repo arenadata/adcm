@@ -30,8 +30,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 from tests.ui_tests.app.app import ADCMTest
 
-ValueType = TypeVar("ValueType")
-FuncType = TypeVar("FuncType")
+T = TypeVar("T")
+F = TypeVar("F")
 
 
 def _prepare_cluster(sdk_client: ADCMClient, path) -> Cluster:
@@ -92,17 +92,17 @@ def ignore_flaky_errors(func: Callable):
 # !===== UI Information Comparator Function =====!
 
 
-def is_equal(first_value: ValueType, second_value: ValueType) -> bool:
+def is_equal(first_value: T, second_value: T) -> bool:
     """Check if two values are equal (==)"""
     return first_value == second_value
 
 
-def is_empty(first_value: ValueType) -> bool:
+def is_empty(first_value: T) -> bool:
     """Check if first value is empty (=='')"""
     return first_value == ""
 
 
-def is_not_empty(first_value: ValueType) -> bool:
+def is_not_empty(first_value: T) -> bool:
     """Check if first value is not empty (!='')"""
     return first_value != ""
 
@@ -111,11 +111,11 @@ def wait_and_assert_ui_info(
     expected_values: Dict[
         str,
         Union[
-            Union[ValueType, Callable[[ValueType], bool]],
-            Tuple[ValueType, Callable[[ValueType, ValueType], bool]],
+            Union[T, Callable[[T], bool]],
+            Tuple[T, Callable[[T, T], bool]],
         ],
     ],
-    get_info_func: Union[Callable[[Any], FuncType]],
+    get_info_func: Union[Callable[[Any], F]],
     get_info_kwargs: Optional[dict] = None,
     timeout: Union[int, float] = 5,
     period: Union[int, float] = 0.5,
@@ -144,7 +144,7 @@ def wait_and_assert_ui_info(
 
     @ignore_flaky_errors
     def _check_info_from_ui():
-        ui_info: FuncType = get_info_func(**get_info_kwargs)
+        ui_info: F = get_info_func(**get_info_kwargs)
         # to make assertion message more verbal
         ui_info_classname = ui_info.__class__.__name__
         for key, value in expected_values.items():

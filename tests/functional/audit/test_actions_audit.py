@@ -62,25 +62,25 @@ def provider(sdk_client_fs) -> Provider:
 @pytest.fixture()
 def _grant_view_on_cluster(cluster, build_policy):
     """Grant new user a permission to "view cluster" with permission to view config"""
-    build_policy(BR.ViewClusterConfigurations, cluster)
+    build_policy(BR.VIEW_CLUSTER_CONFIGURATIONS, cluster)
 
 
 @pytest.fixture()
 def _grant_view_on_component(cluster, build_policy):
     """Grant new user a permission to "view component" with permission to view config"""
-    build_policy(BR.ViewComponentConfigurations, cluster.service().component())
+    build_policy(BR.VIEW_COMPONENT_CONFIGURATIONS, cluster.service().component())
 
 
 @pytest.fixture()
 def _grant_view_on_provider(provider, build_policy):
     """Grant new user a permission to "view provider" with permission to view config"""
-    build_policy(BR.ViewProviderConfigurations, provider)
+    build_policy(BR.VIEW_PROVIDER_CONFIGURATIONS, provider)
 
 
 @pytest.fixture()
 def _grant_view_on_host(provider, build_policy):
     """Grant new user a permission to "view host" with permission to view config"""
-    build_policy(BR.ViewHostConfigurations, provider.host())
+    build_policy(BR.VIEW_HOST_CONFIGURATIONS, provider.host())
 
 
 class RunActionTestMixin:
@@ -308,7 +308,7 @@ class TestADCMActions:
     def test_adcm_actions(self, sdk_client_fs, audit_log_checker, new_user_client, build_policy):
         """Test audit of ADCM actions"""
         adcm = sdk_client_fs.adcm()
-        build_policy(BR.ViewADCMSettings, adcm)
+        build_policy(BR.VIEW_ADCM_SETTINGS, adcm)
         sync_action = adcm.action(name="test_ldap_connection")
         url = f"{sdk_client_fs.url}/api/v1/adcm/{adcm.id}/action/{sync_action.id}/run/"
         with allure.step("Run action and get denied"):
@@ -391,8 +391,8 @@ class TestTaskCancelRestart(RunActionTestMixin):
 
 @allure.step("Wait all tasks are finished")
 def _wait_all_finished(client):
-    for j in client.job_list():
-        j.task().wait()
+    for job in client.job_list():
+        job.task().wait()
 
 
 def _succeed_action_id(obj: AnyADCMObject) -> int:
