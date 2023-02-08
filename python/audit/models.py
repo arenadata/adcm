@@ -12,9 +12,6 @@
 
 from dataclasses import dataclass
 
-from django.contrib.auth.models import User as DjangoUser
-from django.db import models
-
 from cm.models import (
     ADCM,
     Bundle,
@@ -25,6 +22,8 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from django.contrib.auth.models import User as DjangoUser
+from django.db import models
 from rbac.models import Group, Policy, Role, User
 
 

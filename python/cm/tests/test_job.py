@@ -15,13 +15,6 @@ from signal import SIGTERM
 from unittest.mock import Mock, patch
 from urllib.parse import urljoin
 
-from django.conf import settings
-from django.urls import reverse
-from django.utils import timezone
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.api import add_cluster, add_service_to_cluster
 from cm.job import (
     check_cluster,
@@ -62,8 +55,15 @@ from cm.tests.utils import (
     gen_prototype,
     gen_task_log,
 )
+from django.conf import settings
+from django.urls import reverse
+from django.utils import timezone
 from init_db import init
 from rbac.upgrade.role import init_roles
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestJob(BaseTestCase):

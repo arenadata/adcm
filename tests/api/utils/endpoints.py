@@ -16,6 +16,7 @@ from enum import Enum
 from typing import Callable, List, Optional, Type
 
 import attr
+
 from tests.api.utils.data_classes import (
     BaseClass,
     ClusterFields,

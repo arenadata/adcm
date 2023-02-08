@@ -12,8 +12,9 @@
 
 from unittest.mock import Mock, call, patch
 
-from adcm.tests.base import BaseTestCase
 from cm.adcm_config import process_config
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestAdcmConfig(BaseTestCase):

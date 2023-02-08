@@ -13,6 +13,7 @@
 """Profile List page locators"""
 
 from selenium.webdriver.common.by import By
+
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.core.locators import BaseLocator
 

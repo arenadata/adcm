@@ -20,6 +20,7 @@ import requests
 from adcm_client.audit import AuditOperation, ObjectType, OperationResult, OperationType
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Job, Provider, Task
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
+
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,

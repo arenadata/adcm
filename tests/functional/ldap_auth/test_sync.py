@@ -22,6 +22,7 @@ from adcm_client.objects import ADCM, ADCMClient, Group, User
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import random_string, wait_until_step_succeeds
 from coreapi.exceptions import ErrorMessage
+
 from tests.functional.ldap_auth.utils import (
     DEFAULT_LOCAL_USERS,
     LDAP_ACTION_CAN_NOT_START_REASON,

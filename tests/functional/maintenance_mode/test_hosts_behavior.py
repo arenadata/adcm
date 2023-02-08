@@ -19,6 +19,7 @@ from typing import Iterable, Set, Tuple
 import allure
 import pytest
 from adcm_client.objects import Cluster, Component, Host
+
 from tests.functional.maintenance_mode.conftest import (
     ANOTHER_SERVICE_NAME,
     BUNDLES_DIR,

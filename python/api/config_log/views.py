@@ -10,6 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api.base_view import GenericUIViewSet
+from api.config.views import check_config_perm
+from api.config_log.serializers import ConfigLogSerializer, UIConfigLogSerializer
+from audit.utils import audit
+from cm.models import ConfigLog
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
 from rest_framework import status
@@ -17,11 +22,6 @@ from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveMode
 from rest_framework.response import Response
 
 from adcm.permissions import DjangoObjectPermissionsAudit
-from api.base_view import GenericUIViewSet
-from api.config.views import check_config_perm
-from api.config_log.serializers import ConfigLogSerializer, UIConfigLogSerializer
-from audit.utils import audit
-from cm.models import ConfigLog
 
 
 class ConfigLogViewSet(  # pylint: disable=too-many-ancestors

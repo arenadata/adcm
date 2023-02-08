@@ -19,6 +19,7 @@ import allure
 import pytest
 import requests
 from adcm_client.objects import ADCMClient, Group, Policy, Role, User
+
 from tests.functional.audit.conftest import (
     check_failed,
     check_succeed,

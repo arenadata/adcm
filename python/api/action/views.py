@@ -12,13 +12,6 @@
 
 from itertools import compress
 
-from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-from guardian.mixins import PermissionListMixin
-from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-
 from api.action.serializers import (
     ActionDetailSerializer,
     ActionSerializer,
@@ -30,14 +23,19 @@ from api.utils import AdcmFilterBackend, create, filter_actions, get_object_for_
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import Action, Host, HostComponent, TaskLog, get_model_by_type
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 VIEW_ACTION_PERM = "cm.view_action"
 
 
 def get_object_type_id(**kwargs):
     object_type = kwargs.get("object_type")
-    # TODO: this is a temporary patch for `action` endpoint
     object_id = kwargs.get(f"{object_type}_id") or kwargs.get(f"{object_type}_pk")
     action_id = kwargs.get("action_id", None)
 
@@ -131,7 +129,6 @@ class ActionDetail(PermissionListMixin, GenericUIView):
         obj = get_object_for_user(
             request.user, f"{content_type.app_label}.view_{content_type.model}", model, id=object_id
         )
-        # TODO: we can access not only the actions of this object
         action = get_object_for_user(
             request.user,
             VIEW_ACTION_PERM,

@@ -10,10 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api.utils import get_api_url_kwargs, hlink
 from rest_framework import serializers
 from rest_framework.reverse import reverse
-
-from api.utils import get_api_url_kwargs, hlink
 
 
 class ConcernItemSerializer(serializers.Serializer):

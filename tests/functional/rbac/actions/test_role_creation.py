@@ -13,6 +13,7 @@
 """Test policies, roles, permissions created after bundle upload"""
 
 import allure
+
 from tests.functional.rbac.action_role_utils import (
     check_cluster_actions_roles_are_created_correctly,
     check_provider_based_object_action_roles_are_created_correctly,

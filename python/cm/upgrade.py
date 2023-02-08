@@ -13,9 +13,6 @@
 import functools
 from typing import List, Tuple, Union
 
-from django.db import transaction
-from version_utils import rpm
-
 from cm.adcm_config import (
     init_object_config,
     make_object_config,
@@ -52,7 +49,9 @@ from cm.models import (
     Upgrade,
 )
 from cm.status_api import post_event
+from django.db import transaction
 from rbac.models import re_apply_object_policy
+from version_utils import rpm
 
 
 def switch_object(obj: Host | ClusterObject, new_prototype: Prototype) -> None:

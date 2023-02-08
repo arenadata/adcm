@@ -14,10 +14,9 @@
 
 from typing import List
 
+from cm.errors import raise_adcm_ex
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
-
-from cm.errors import raise_adcm_ex
 from rbac import models
 from rbac.utils import Empty, set_not_empty_attr
 

@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.tests.base import BaseTestCase
 from cm.models import ConcernCause, ConcernItem, ConcernType, MessageTemplate
 from cm.tests.utils import gen_concern_item, generate_hierarchy
+
+from adcm.tests.base import BaseTestCase
 
 
 class ADCMEntityConcernTest(BaseTestCase):

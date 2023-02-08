@@ -17,10 +17,6 @@ from configparser import ConfigParser
 from pathlib import Path
 from typing import Any, Hashable, List, Optional, Tuple
 
-from django.conf import settings
-from django.db import transaction
-from django.utils import timezone
-
 from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
 from audit.models import (
@@ -82,6 +78,9 @@ from cm.models import (
 )
 from cm.status_api import post_event
 from cm.variant import process_variant
+from django.conf import settings
+from django.db import transaction
+from django.utils import timezone
 from rbac.roles import re_apply_policy_for_jobs
 
 

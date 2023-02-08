@@ -10,12 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api.object_config.serializers import ObjectConfigSerializer
+from cm.models import ObjectConfig
 from guardian.mixins import PermissionListMixin
 from rest_framework.permissions import DjangoObjectPermissions
 from rest_framework.viewsets import ReadOnlyModelViewSet
-
-from api.object_config.serializers import ObjectConfigSerializer
-from cm.models import ObjectConfig
 
 
 class ObjectConfigViewSet(PermissionListMixin, ReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors

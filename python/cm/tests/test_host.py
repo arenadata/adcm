@@ -13,6 +13,7 @@
 import string
 from pathlib import Path
 
+from cm.models import Bundle, Cluster, Host, HostProvider, MaintenanceMode, Prototype
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
@@ -26,7 +27,6 @@ from rest_framework.status import (
 )
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.models import Bundle, Cluster, Host, HostProvider, MaintenanceMode, Prototype
 
 
 class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods

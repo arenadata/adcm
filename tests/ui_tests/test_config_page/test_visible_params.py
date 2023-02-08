@@ -20,6 +20,7 @@ from _pytest.fixtures import FixtureRequest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webelement import WebElement
+
 from tests.ui_tests.app.page.cluster.page import (
     ClusterConfigPage,
     ClusterGroupConfigConfig,

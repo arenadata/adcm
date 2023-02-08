@@ -29,6 +29,7 @@ from adcm_client.objects import (
     Role,
     User,
 )
+
 from tests.functional.audit.conftest import BUNDLES_DIR, NEW_USER
 from tests.functional.audit.conftest import CreateDeleteOperation as Delete
 from tests.functional.audit.conftest import check_failed, check_succeed

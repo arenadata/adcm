@@ -33,6 +33,7 @@ from adcm_pytest_plugin.steps.actions import (
 )
 from adcm_pytest_plugin.utils import catch_failed, get_data_dir
 from docker.models.containers import Container
+
 from tests.functional.tools import (
     BEFORE_UPGRADE_DEFAULT_STATE,
     compare_inventory_files,

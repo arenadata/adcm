@@ -25,6 +25,8 @@ from enum import Enum
 from itertools import chain
 from typing import Dict, Iterable, List, Optional
 
+from cm.errors import AdcmEx
+from cm.logger import logger
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -32,9 +34,6 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
 from django.db.models.signals import m2m_changed, post_delete
 from django.dispatch import receiver
-
-from cm.errors import AdcmEx
-from cm.logger import logger
 
 
 def validate_line_break_character(value: str) -> None:
@@ -209,7 +208,7 @@ class ProductCategory(ADCMModel):
                 bundle.save()
         for category in cls.objects.all():
             if category.bundle_set.count() == 0:
-                category.delete()  # TODO: ensure that's enough
+                category.delete()
 
 
 def get_default_from_edition():
@@ -374,7 +373,6 @@ class ConfigLog(ADCMModel):
         if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
             # Sync group configs with object config
             for conf_group in obj.group_config.all():
-                # TODO: We need refactoring for upgrade cluster
                 diff_config, diff_attr = conf_group.get_diff_config_attr()
                 group_config = ConfigLog()
                 current_group_config = ConfigLog.objects.get(id=conf_group.config.current)

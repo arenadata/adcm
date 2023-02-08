@@ -39,6 +39,7 @@ from adcm_pytest_plugin.steps.actions import (
 from adcm_pytest_plugin.utils import get_data_dir
 from coreapi.exceptions import ErrorMessage
 from docker.models.containers import Container
+
 from tests.library.errorcodes import (
     ATTRIBUTE_ERROR,
     GROUP_CONFIG_CHANGE_UNSELECTED_FIELD,

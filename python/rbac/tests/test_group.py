@@ -11,9 +11,9 @@
 # limitations under the License.
 
 from django.contrib.auth.models import Group as AuthGroup
+from rbac.models import Group, OriginType
 
 from adcm.tests.base import BaseTestCase
-from rbac.models import Group, OriginType
 
 
 class GroupTestCase(BaseTestCase):

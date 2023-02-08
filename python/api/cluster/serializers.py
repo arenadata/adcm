@@ -10,21 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf import settings
-from rest_framework.exceptions import ValidationError
-from rest_framework.serializers import (
-    BooleanField,
-    CharField,
-    HyperlinkedIdentityField,
-    IntegerField,
-    JSONField,
-    ModelSerializer,
-    Serializer,
-    SerializerMethodField,
-)
-from rest_framework.validators import UniqueValidator
-
-from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
 from api.component.serializers import ComponentShortSerializer
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
@@ -40,6 +25,21 @@ from cm.issue import update_hierarchy_issues
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 from cm.status_api import get_cluster_status, get_hc_status
 from cm.upgrade import get_upgrade
+from django.conf import settings
+from rest_framework.exceptions import ValidationError
+from rest_framework.serializers import (
+    BooleanField,
+    CharField,
+    HyperlinkedIdentityField,
+    IntegerField,
+    JSONField,
+    ModelSerializer,
+    Serializer,
+    SerializerMethodField,
+)
+from rest_framework.validators import UniqueValidator
+
+from adcm.serializers import EmptySerializer
 
 
 def get_cluster_id(obj):

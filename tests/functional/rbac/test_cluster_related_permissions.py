@@ -18,6 +18,7 @@ import itertools
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Policy
+
 from tests.functional.rbac.conftest import (
     CLUSTER_EDIT_CONFIG_ROLES,
     CLUSTER_VIEW_CONFIG_ROLES,

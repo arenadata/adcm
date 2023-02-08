@@ -12,9 +12,6 @@
 
 from unittest.mock import Mock, patch
 
-from django.utils import timezone
-
-from adcm.tests.base import BaseTestCase
 from cm.api import update_obj_config
 from cm.inventory import (
     get_cluster_config,
@@ -42,6 +39,9 @@ from cm.tests.utils import (
     gen_provider,
     gen_service,
 )
+from django.utils import timezone
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestInventory(BaseTestCase):

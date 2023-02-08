@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
-
 from api.adcm.serializers import (
     ADCMRetrieveSerializer,
     ADCMSerializer,
@@ -19,6 +17,7 @@ from api.adcm.serializers import (
 )
 from api.base_view import GenericUIViewSet
 from cm.models import ADCM
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 
 
 # pylint:disable-next=too-many-ancestors

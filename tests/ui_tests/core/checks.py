@@ -1,6 +1,7 @@
 import allure
 from selenium.common import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
+
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.core.locators import BaseLocator

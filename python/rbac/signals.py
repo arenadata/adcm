@@ -10,13 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db.models.signals import post_delete
-from django.dispatch import receiver
-from rest_framework.authtoken.models import Token
-
 from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP
 from audit.utils import mark_deleted_audit_object
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 from rbac.models import Group, Policy, Role, User
+from rest_framework.authtoken.models import Token
 
 
 @receiver(post_delete, sender=User)

@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rbac.models import Group, User
+from rbac.services import group as group_services
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.fields import BooleanField, CharField, IntegerField, RegexField
 from rest_framework.relations import HyperlinkedIdentityField
@@ -20,8 +22,6 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
-from rbac.models import Group, User
-from rbac.services import group as group_services
 
 
 class GroupUserSerializer(EmptySerializer):

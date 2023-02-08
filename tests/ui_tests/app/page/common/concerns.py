@@ -4,6 +4,7 @@ from typing import Generator
 import allure
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+
 from tests.library.utils import name_of
 from tests.ui_tests.core.elements import Button, Link, ListOfElements, as_element
 from tests.ui_tests.core.interactors import Interactor

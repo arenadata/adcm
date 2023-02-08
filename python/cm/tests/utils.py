@@ -12,9 +12,6 @@
 
 from uuid import uuid4
 
-from django.contrib.contenttypes.models import ContentType
-from django.utils import timezone
-
 from cm.errors import AdcmEx
 from cm.models import (
     ADCM,
@@ -36,6 +33,8 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone
 
 
 def gen_name(prefix: str):

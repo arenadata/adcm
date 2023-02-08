@@ -17,6 +17,7 @@ from typing import List
 
 import allure
 import pytest
+
 from tests.api.test_body import _test_patch_put_body_positive
 from tests.api.testdata.db_filler import DbFiller
 from tests.api.testdata.generators import (

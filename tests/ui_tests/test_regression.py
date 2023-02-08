@@ -23,6 +23,7 @@ from adcm_pytest_plugin.steps.actions import (
 )
 from adcm_pytest_plugin.utils import get_data_dir, wait_until_step_succeeds
 from coreapi.exceptions import ErrorMessage
+
 from tests.conftest import TEST_USER_CREDENTIALS
 from tests.functional.tools import AnyADCMObject, get_object_represent
 from tests.ui_tests.app.app import ADCMTest

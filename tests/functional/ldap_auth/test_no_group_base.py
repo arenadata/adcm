@@ -15,6 +15,7 @@
 import allure
 import pytest
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
+
 from tests.functional.ldap_auth.utils import (
     SYNC_ACTION_NAME,
     check_existing_groups,

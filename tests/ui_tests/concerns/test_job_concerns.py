@@ -13,6 +13,7 @@
 import allure
 import pytest
 from adcm_client.objects import Cluster
+
 from tests.library.retry import should_become_truth
 from tests.ui_tests.app.page.cluster.page import ClusterMainPage
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage

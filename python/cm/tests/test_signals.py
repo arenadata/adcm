@@ -12,12 +12,12 @@
 
 from unittest.mock import patch
 
+from cm.models import Bundle, Cluster, GroupConfig, Host, Prototype
 from django.contrib.contenttypes.models import ContentType
 from django.db.models.signals import m2m_changed, post_delete, post_save
+from rbac.models import User
 
 from adcm.tests.base import BaseTestCase
-from cm.models import Bundle, Cluster, GroupConfig, Host, Prototype
-from rbac.models import User
 
 
 class SignalsTest(BaseTestCase):

@@ -34,6 +34,7 @@ from adcm_client.objects import (
     Service,
 )
 from adcm_pytest_plugin.utils import random_string
+
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,

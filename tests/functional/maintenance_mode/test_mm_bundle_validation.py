@@ -15,6 +15,7 @@
 import allure
 import pytest
 from coreapi.exceptions import ErrorMessage
+
 from tests.conftest import DUMMY_ACTION, DUMMY_CLUSTER_BUNDLE
 from tests.library.errorcodes import INVALID_OBJECT_DEFINITION
 

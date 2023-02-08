@@ -12,21 +12,6 @@
 
 # pylint: disable=redefined-builtin
 
-from django.db.utils import IntegrityError
-from rest_framework.reverse import reverse
-from rest_framework.serializers import (
-    BooleanField,
-    CharField,
-    ChoiceField,
-    HyperlinkedIdentityField,
-    HyperlinkedRelatedField,
-    IntegerField,
-    JSONField,
-    ModelSerializer,
-    SerializerMethodField,
-)
-
-from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
 from api.cluster.serializers import BindSerializer
 from api.component.serializers import ComponentUISerializer
@@ -46,6 +31,21 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.status_api import get_service_status
+from django.db.utils import IntegrityError
+from rest_framework.reverse import reverse
+from rest_framework.serializers import (
+    BooleanField,
+    CharField,
+    ChoiceField,
+    HyperlinkedIdentityField,
+    HyperlinkedRelatedField,
+    IntegerField,
+    JSONField,
+    ModelSerializer,
+    SerializerMethodField,
+)
+
+from adcm.serializers import EmptySerializer
 
 
 class ServiceSerializer(EmptySerializer):

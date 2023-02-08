@@ -18,6 +18,7 @@ import pytest
 import requests
 from adcm_client.audit import AuditLogin, LoginResult
 from adcm_client.objects import ADCMClient
+
 from tests.library.assertions import are_equal, tuples_are_equal
 from tests.ui_tests.app.page.admin.page import LoginAuditPage, LoginRowInfo
 from tests.ui_tests.audit.utils import add_filter

@@ -16,11 +16,6 @@ from datetime import datetime, timedelta
 from enum import Enum
 from subprocess import STDOUT, CalledProcessError, check_output
 
-from django.conf import settings
-from django.core.management.base import BaseCommand
-from django.db import transaction
-from django.utils import timezone
-
 from audit.models import AuditLogOperationResult
 from audit.utils import make_audit_log
 from cm.models import (
@@ -36,6 +31,10 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from django.conf import settings
+from django.core.management.base import BaseCommand
+from django.db import transaction
+from django.utils import timezone
 
 logger = logging.getLogger("background_tasks")
 

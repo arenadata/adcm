@@ -10,13 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from guardian.mixins import PermissionListMixin
-from rest_framework import permissions
-from rest_framework.response import Response
-
 from api.base_view import GenericUIView
 from api.stats.serializers import StatsSerializer
 from cm.models import JobLog, JobStatus, TaskLog
+from guardian.mixins import PermissionListMixin
+from rest_framework import permissions
+from rest_framework.response import Response
 
 
 class JobStats(PermissionListMixin, GenericUIView):

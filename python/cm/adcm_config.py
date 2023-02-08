@@ -22,8 +22,6 @@ from typing import Any, Optional, Tuple
 import yspec.checker
 from ansible.errors import AnsibleError
 from ansible.parsing.vault import VaultAES256, VaultSecret
-from django.conf import settings
-
 from cm.errors import raise_adcm_ex
 from cm.logger import logger
 from cm.models import (
@@ -37,6 +35,7 @@ from cm.models import (
     PrototypeConfig,
 )
 from cm.variant import get_variant, process_variant
+from django.conf import settings
 
 SECURE_PARAM_TYPES = ("password", "secrettext")
 
@@ -384,7 +383,7 @@ def save_file_type(obj, key, subkey, value):
     # with private key files without \n at the end.
     # So when we create that key from playbook and save it in ADCM we get
     # "Load key : invalid format" on next connect to host.
-    # TODO: That should be fixed some way in bundles or in openssh.
+
     if key == "ansible_ssh_private_key_file":
         if value != "":
             if value[-1] == "-":

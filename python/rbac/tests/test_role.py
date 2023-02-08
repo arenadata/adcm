@@ -12,12 +12,6 @@
 
 import json
 
-from django.contrib.auth.models import Permission
-from django.contrib.contenttypes.models import ContentType
-from django.test import Client
-from django.urls import reverse
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from api.utils import PermissionDenied, check_custom_perm
 from cm.api import add_host_to_cluster
 from cm.errors import AdcmEx
@@ -34,6 +28,10 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
+from django.test import Client
+from django.urls import reverse
 from init_db import init as init_adcm
 from rbac.models import Role, RoleTypes, User
 from rbac.roles import ModelRole
@@ -41,6 +39,8 @@ from rbac.services.policy import policy_create
 from rbac.services.role import role_create
 from rbac.tests.test_base import RBACBaseTestCase
 from rbac.upgrade.role import init_roles, prepare_action_roles
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class RoleModelTest(BaseTestCase):

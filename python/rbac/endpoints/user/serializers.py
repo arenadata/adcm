@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rbac.models import Group, User
+from rbac.services import user as user_services
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.fields import (
     BooleanField,
@@ -27,8 +29,6 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
-from rbac.models import Group, User
-from rbac.services import user as user_services
 
 
 class PasswordField(CharField):

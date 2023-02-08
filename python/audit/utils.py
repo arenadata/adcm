@@ -13,21 +13,6 @@
 
 from functools import wraps
 
-from django.contrib.auth.models import User as DjangoUser
-from django.db.models import Model
-from django.http.response import Http404
-from django.urls import resolve
-from rest_framework.exceptions import PermissionDenied, ValidationError
-from rest_framework.generics import GenericAPIView
-from rest_framework.request import Request
-from rest_framework.status import (
-    HTTP_400_BAD_REQUEST,
-    HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
-    is_success,
-)
-from rest_framework.viewsets import ModelViewSet
-
 from api.cluster.serializers import ClusterAuditSerializer
 from api.component.serializers import ComponentAuditSerializer
 from api.host.serializers import HostAuditSerializer
@@ -52,11 +37,25 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from django.contrib.auth.models import User as DjangoUser
+from django.db.models import Model
+from django.http.response import Http404
+from django.urls import resolve
 from rbac.endpoints.group.serializers import GroupAuditSerializer
 from rbac.endpoints.policy.serializers import PolicyAuditSerializer
 from rbac.endpoints.role.serializers import RoleAuditSerializer
 from rbac.endpoints.user.serializers import UserAuditSerializer
 from rbac.models import Group, Policy, Role, User
+from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.generics import GenericAPIView
+from rest_framework.request import Request
+from rest_framework.status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    is_success,
+)
+from rest_framework.viewsets import ModelViewSet
 
 
 def _get_view_and_request(args) -> tuple[GenericAPIView, Request]:

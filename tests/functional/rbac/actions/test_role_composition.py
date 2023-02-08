@@ -17,6 +17,7 @@ import pytest
 from adcm_client.objects import ADCMClient, Role, User
 from adcm_pytest_plugin.utils import catch_failed, random_string
 from coreapi.exceptions import ErrorMessage
+
 from tests.functional.rbac.action_role_utils import (
     get_bundle_prefix_for_role_name,
     get_prototype_prefix_for_action_role,

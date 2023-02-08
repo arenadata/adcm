@@ -10,6 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api.action.serializers import ActionShort
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
+from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
+from api.serializers import DoUpgradeSerializer, StringListSerializer
+from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions
+from cm.adcm_config import get_main_info
+from cm.api import add_host_provider
+from cm.errors import AdcmEx
+from cm.models import Action, HostProvider, Prototype, Upgrade
+from cm.upgrade import do_upgrade, get_upgrade
 from django.db import IntegrityError
 from rest_framework.serializers import (
     BooleanField,
@@ -21,16 +31,6 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
-from api.action.serializers import ActionShort
-from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
-from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
-from api.serializers import DoUpgradeSerializer, StringListSerializer
-from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions
-from cm.adcm_config import get_main_info
-from cm.api import add_host_provider
-from cm.errors import AdcmEx
-from cm.models import Action, HostProvider, Prototype, Upgrade
-from cm.upgrade import do_upgrade, get_upgrade
 
 
 class ProviderSerializer(EmptySerializer):

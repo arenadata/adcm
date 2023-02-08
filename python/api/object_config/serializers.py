@@ -10,10 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.models import ConfigLog, ObjectConfig
 from rest_framework import serializers
 from rest_framework.reverse import reverse
-
-from cm.models import ConfigLog, ObjectConfig
 
 
 class VersionConfigLogURL(serializers.RelatedField):

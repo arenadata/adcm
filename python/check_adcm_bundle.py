@@ -17,9 +17,8 @@ import shutil
 import sys
 import tarfile
 
-from django.conf import settings
-
 from check_adcm_config import check_config
+from django.conf import settings
 
 TMP_DIR = "/tmp/adcm_bundle_tmp"
 

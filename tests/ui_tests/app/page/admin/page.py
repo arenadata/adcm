@@ -20,6 +20,7 @@ from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+
 from tests.library.predicates import name_is
 from tests.library.utils import get_or_raise
 from tests.ui_tests.app.page.admin.locators import (

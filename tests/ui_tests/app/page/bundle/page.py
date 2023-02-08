@@ -13,6 +13,7 @@
 """Bundle page PageObjects classes"""
 
 import allure
+
 from tests.ui_tests.app.page.bundle.locators import (
     BundleLocators,
     BundleMainMenuLocators,

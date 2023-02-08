@@ -10,9 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path
-
 from api.concern.views import ConcernItemDetail, ConcernItemList
+from django.urls import path
 
 urlpatterns = [
     path("", ConcernItemList.as_view(), name="concern"),

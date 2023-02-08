@@ -9,8 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from rest_framework.response import Response
-
 from audit.models import (
     AUDIT_OBJECT_TYPE_TO_MODEL_MAP,
     MODEL_TO_AUDIT_OBJECT_TYPE_MAP,
@@ -29,6 +27,7 @@ from cm.models import (
     TaskLog,
     Upgrade,
 )
+from rest_framework.response import Response
 
 
 def _get_audit_operation(

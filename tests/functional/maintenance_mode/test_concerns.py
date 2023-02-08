@@ -17,6 +17,7 @@ from typing import Tuple
 import allure
 import pytest
 from adcm_client.objects import Cluster, Host, Provider
+
 from tests.functional.maintenance_mode.conftest import (
     BUNDLES_DIR,
     turn_mm_off,
