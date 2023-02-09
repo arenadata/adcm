@@ -91,7 +91,7 @@ export class LogComponent extends BaseDirective implements OnInit {
   startListenSocket() {
     this.jobService.events().pipe(
       this.takeUntil(),
-      filter(event => event?.object?.id === this.job.id),
+      filter(event => event?.object?.id === this.job?.id),
     ).subscribe((event) => this.socketListener(event));
   }
 

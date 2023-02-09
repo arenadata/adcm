@@ -7,7 +7,7 @@ import { TaskRaw } from '@app/core/types';
 })
 export class BellTaskLinkPipe implements PipeTransform {
 
-  endStatuses = ['aborted', 'succeeded', 'failed'];
+  endStatuses = ['aborted', 'success', 'failed'];
 
   transform(task: TaskRaw): (string | number)[] {
     if (task?.jobs?.length > 0) {
@@ -22,12 +22,14 @@ export class BellTaskLinkPipe implements PipeTransform {
           return ['job', createdJob.id, 'main'];
         }
 
-        const finishedJob = task.jobs.reverse().find(job => this.endStatuses.includes(job.status));
+        const descOrderedJobs = task.jobs.slice().reverse();
+        const finishedJob = descOrderedJobs.find(job => this.endStatuses.includes(job.status));
         if (finishedJob) {
           return ['job', finishedJob.id, 'main'];
         }
       } else if (this.endStatuses.includes(task.status)) {
-        const finishedJob = task.jobs.reverse().find(job => this.endStatuses.includes(job.status));
+        const descOrderedJobs = task.jobs.slice().reverse();
+        const finishedJob = descOrderedJobs.find(job => this.endStatuses.includes(job.status));
         if (finishedJob) {
           return ['job', finishedJob.id, 'main'];
         }
