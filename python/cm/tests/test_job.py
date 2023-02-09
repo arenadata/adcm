@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=wrong-import-order
 
 from pathlib import Path
 from signal import SIGTERM
@@ -130,8 +131,13 @@ class TestJob(BaseTestCase):
     def test_set_job_status(self):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
-        action = Action.objects.create(prototype=prototype)
-        job = JobLog.objects.create(action=action, start_date=timezone.now(), finish_date=timezone.now())
+        action = Action.objects.create(prototype=prototype, name="action_name", display_name="Test Action")
+        cluster = gen_cluster(prototype=prototype)
+        task = TaskLog.objects.create(
+            task_object=cluster, action=action, object_id=1, start_date=timezone.now(), finish_date=timezone.now()
+        )
+        job = JobLog.objects.create(task=task, action=action, start_date=timezone.now(), finish_date=timezone.now())
+        task.lock_affected([cluster])
         status = JobStatus.RUNNING
         pid = 10
         event = Mock()
@@ -142,6 +148,7 @@ class TestJob(BaseTestCase):
 
         self.assertEqual(job.status, status)
         self.assertEqual(job.pid, pid)
+        self.assertEqual(task.lock.reason["placeholder"]["job"]["name"], action.display_name)
         event.set_job_status.assert_called_once_with(job=job, status=status)
 
     def test_set_task_status(self):

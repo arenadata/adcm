@@ -1519,23 +1519,20 @@ class TaskLog(ADCMModel):
     def lock_affected(self, objects: Iterable[ADCMEntity]) -> None:
         if self.lock:
             return
+
         first_job = JobLog.obj.filter(task=self).order_by("id").first()
-        reason = MessageTemplate.get_message_from_template(
-            MessageTemplate.KnownNames.LOCKED_BY_JOB.value,
-            job=first_job,
-            target=self.task_object,
-        )
         self.lock = ConcernItem.objects.create(
             type=ConcernType.LOCK.value,
             name=None,
-            reason=reason,
+            reason=first_job.cook_reason(),
             blocking=True,
             owner=self.task_object,
             cause=ConcernCause.JOB.value,
         )
         self.save()
+
         for obj in objects:
-            obj.add_to_concerns(self.lock)
+            obj.add_to_concerns(item=self.lock)
 
     def unlock_affected(self) -> None:
         if not self.lock:
@@ -1596,6 +1593,13 @@ class JobLog(ADCMModel):
     finish_date = models.DateTimeField(db_index=True)
 
     __error_code__ = "JOB_NOT_FOUND"
+
+    def cook_reason(self):
+        return MessageTemplate.get_message_from_template(
+            MessageTemplate.KnownNames.LOCKED_BY_JOB.value,
+            job=self,
+            target=self.task.task_object,
+        )
 
     def cancel(self, event_queue: "cm.status_api.Event" = None):
         if not self.sub_action.allowed_to_terminate:
