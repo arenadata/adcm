@@ -73,9 +73,9 @@ export class UpgradeComponent {
   EventHelper = EventHelper;
   list$: Observable<IUpgrade[]>;
   pRow: UpgradeItem = { upgradable: false, upgrade: '', issue: null };
-  type: string;
 
   @Input() xPosition = 'before';
+  @Input() type: string;
 
   @Input()
   set row(row: UpgradeItem) {
