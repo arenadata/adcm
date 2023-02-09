@@ -23,6 +23,7 @@ import pytest
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider, Service
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import get_data_dir, random_string
+
 from tests.library.assertions import is_in_collection, is_superset_of
 from tests.library.predicates import name_is, username_is
 from tests.library.retry import should_become_truth
@@ -109,14 +110,14 @@ def create_cluster_with_component(
 
 
 CUSTOM_ROLE_NAME = "Test_Role"
-CUSTOM_POLICY = dict(
-    name="Test policy name",
-    description="Test policy description",
-    role="ADCM User",
-    users=["admin", "status"],
-    groups=[],
-    objects=[],
-)
+CUSTOM_POLICY = {
+    "name": "Test policy name",
+    "description": "Test policy description",
+    "role": "ADCM User",
+    "users": sorted(("admin", "status")),
+    "groups": [],
+    "objects": [],
+}
 ACTION_HINT = "The Action is not available. You need to fill in the LDAP integration settings."
 
 
@@ -347,10 +348,10 @@ class TestAdminUsersPage:
 
     def test_delete_user(self, users_page: AdminUsersPage):
         """Create new user, delete it and check current user can't be deleted"""
+
         username = "testuser"
         current_user = "admin"
 
-        # TODO rework, it makes no sense
         with allure.step("Check user can't delete itself"):
             assert not users_page.get_row(
                 username_is(current_user)
@@ -407,11 +408,10 @@ class TestAdminUsersPage:
         username = ldap_user_in_group["name"]
 
         users_page.header.wait_success_job_amount(1)
-        with allure.step(f'Check user {username} is listed in users list'):
+        with allure.step(f"Check user {username} is listed in users list"):
             self.check_user_is_listed_on_page(users_page, username)
 
-        with allure.step('Check that changing ldap user is prohibited'):
-
+        with allure.step("Check that changing ldap user is prohibited"):
             dialog: UpdateUserDialog = users_page.get_row(username_is(username)).open_update_dialog()
             element_names = ("username", "password", "password_confirm", "first_name", "last_name", "email")
             for name in element_names:
@@ -440,7 +440,9 @@ class TestAdminUsersPage:
 
     @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
-    def test_add_ldap_group_to_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
+    def test_add_ldap_group_to_users(
+        self, user, users_page, sdk_client_fs, ldap_user_in_group
+    ):  # pylint: disable=unused-argument
         """Check that user can't add ldap group to usual user"""
         with allure.step("Wait ldap integration ends"):
             wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), "success")
@@ -466,7 +468,7 @@ class TestAdminUsersPage:
 
     @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
-    def test_filter_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
+    def test_filter_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):  # pylint: disable=unused-argument
         """Check that users can be filtered"""
 
         with allure.step("Wait ldap integration ends"):
@@ -502,18 +504,18 @@ class TestAdminUsersPage:
             ], "Not all active ldap users are visible"
 
     def check_user_is_listed_on_page(self, users_page: AdminUsersPage, username: str) -> None:
-        assert username in users_page.get_all_user_names(), f'User {username} was not created'
+        assert username in users_page.get_all_user_names(), f"User {username} was not created"
 
 
 @pytest.mark.usefixtures("_login_to_adcm_over_api")
 class TestAdminRolesPage:
     """Tests for the /admin/roles"""
 
-    custom_role = dict(
-        name="Test_role_name",
-        description="Test role description",
-        permissions=["Create provider", "Create cluster", "Create user", "Remove policy"],
-    )
+    custom_role = {
+        "name": "Test_role_name",
+        "description": "Test role description",
+        "permissions": sorted(("Create provider", "Create cluster", "Create user", "Remove policy")),
+    }
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -611,69 +613,75 @@ class TestAdminRolesPage:
     @allure.step("Check all default roles are presented")
     def check_default_roles(self, page: AdminRolesPage):
         default_roles = [
-            dict(
-                name="ADCM User",
-                description="",
-                permissions=[
-                    "View any object configuration",
-                    "View any object import",
-                    "View any object host-components",
-                ],
-            ),
-            dict(
-                name="Service Administrator",
-                description="",
-                permissions=[
-                    "View host configurations",
-                    "Edit service configurations",
-                    "Edit component configurations",
-                    "View host-components",
-                ],
-            ),
-            dict(
-                name="Cluster Administrator",
-                description="",
-                permissions=[
-                    "Create host",
-                    "Upload bundle",
-                    "Edit cluster configurations",
-                    "Edit host configurations",
-                    "Add service",
-                    "Remove service",
-                    "Remove hosts",
-                    "Map hosts",
-                    "Unmap hosts",
-                    "Edit host-components",
-                    "Upgrade cluster bundle",
-                    "Remove bundle",
-                    "Service Administrator",
-                ],
-            ),
-            dict(
-                name="Provider Administrator",
-                description="",
-                permissions=[
-                    "Create host",
-                    "Upload bundle",
-                    "Edit provider configurations",
-                    "Edit host configurations",
-                    "Remove hosts",
-                    "Upgrade provider bundle",
-                    "Remove bundle",
-                ],
-            ),
+            {
+                "name": "ADCM User",
+                "description": "",
+                "permissions": sorted(
+                    ("View any object configuration", "View any object import", "View any object host-components")
+                ),
+            },
+            {
+                "name": "Service Administrator",
+                "description": "",
+                "permissions": sorted(
+                    (
+                        "View host configurations",
+                        "Edit service configurations",
+                        "Edit component configurations",
+                        "View host-components",
+                    )
+                ),
+            },
+            {
+                "name": "Cluster Administrator",
+                "description": "",
+                "permissions": sorted(
+                    (
+                        "Create host",
+                        "Upload bundle",
+                        "Edit cluster configurations",
+                        "Edit host configurations",
+                        "Add service",
+                        "Remove service",
+                        "Remove hosts",
+                        "Map hosts",
+                        "Unmap hosts",
+                        "Edit host-components",
+                        "Upgrade cluster bundle",
+                        "Remove bundle",
+                        "Service Administrator",
+                    )
+                ),
+            },
+            {
+                "name": "Provider Administrator",
+                "description": "",
+                "permissions": sorted(
+                    (
+                        "Create host",
+                        "Upload bundle",
+                        "Edit provider configurations",
+                        "Edit host configurations",
+                        "Remove hosts",
+                        "Upgrade provider bundle",
+                        "Remove bundle",
+                    )
+                ),
+            },
         ]
 
         roles = tuple(map(dict, page.get_rows()))
         for role in default_roles:
-            assert role in roles, f"Default role {role.name} is wrong or missing. Expected to find: {role} in {roles}"
+            assert (
+                role in roles
+            ), f"Default role {role['name']} is wrong or missing. Expected to find: {role} in {roles}"
 
 
 @pytest.mark.usefixtures("_login_to_adcm_over_api")
 class TestAdminGroupsPage:
     """Tests for the /admin/groups"""
 
-    custom_group = dict(name="Test_group", description="Test description", users="admin")
+    custom_group = {"name": "Test_group", "description": "Test description", "users": "admin"}
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -710,14 +718,11 @@ class TestAdminGroupsPage:
         current_groups = tuple(map(dict, groups_page.get_rows()))
         with allure.step("Check that there are 1 custom group and 1 ldap"):
             assert len(current_groups) == 2, "There should be 2 group on the page"
-            assert (
-                dict(
-                    name="Test_group",
-                    description="Test description",
-                    users=ldap_user_in_group["name"],
-                )
-                in current_groups
-            ), "Created group should be on the page"
+            assert {
+                "name": "Test_group",
+                "description": "Test description",
+                "users": ldap_user_in_group["name"],
+            } in current_groups, "Created group should be on the page"
 
     @pytest.mark.full()
     def test_check_pagination_groups_list_page(self, app_fs):
@@ -747,7 +752,7 @@ class TestAdminGroupsPage:
 
     @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
-    def test_ldap_group_change_is_forbidden(self, app_fs, ldap_user_in_group):
+    def test_ldap_group_change_is_forbidden(self, app_fs, ldap_user_in_group):  # pylint: disable=unused-argument
         """Change ldap group"""
 
         params = {"group_name": "adcm_users"}

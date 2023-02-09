@@ -1,0 +1,157 @@
+- type: provider
+  version: 4.3
+  name: mutli_change_provider
+
+  config: &config
+    - &string
+      name: string
+      type: string
+      default: default_string
+    - &integer
+      name: integer
+      type: integer
+      default: 42
+    - &float
+      name: float
+      type: float
+      default: 4.2
+    - &list
+      name: list
+      type: list
+      default:
+        - first
+        - second
+    - &map
+      name: map
+      type: map
+      default:
+        "fkey": "fval"
+        "skey": "sval"
+    - &option
+      name: option
+      type: option
+      option:
+        http: "80"
+        https: "443"
+        wow: "322"
+      default: "80"
+    - &json
+      name: json
+      type: json
+      default:
+        "g": "son"
+        "f": "ield"
+    - &file
+      name: file
+      type: file
+      default: ./file.txt
+    - &structure
+      name: structure
+      type: structure
+      yspec: ./schema.yaml
+      default:
+        - country: Greece
+          code: 30
+    - &password
+      name: password
+      type: password
+      default: default_password
+    - &secrettext
+      name: secrettext
+      type: secrettext
+      default: default_secrettext
+    - &secretfile
+      name: secretfile
+      type: secretfile
+      default: ./secret.txt
+    - &secretmap
+      name: secretmap
+      type: secretmap
+      default:
+        "sec": "ret"
+    - name: group
+      type: group
+      subs:
+        - <<: *string
+        - <<: *integer
+        - <<: *float
+        - <<: *password
+        - <<: *secrettext
+        - <<: *secretfile
+        - <<: *secretmap
+        - <<: *map
+        - <<: *list
+        - <<: *option
+        - <<: *json
+        - <<: *file
+        - <<: *structure
+
+  actions:
+    secrets_should_be_changed: &change
+      type: job
+      script_type: ansible
+      script: ./check_secrets_changed.yaml
+      config:
+        - name: object_type
+          type: string
+          default: "provider"
+      states:
+        available: any
+      params:
+        ansible_tags: plain
+
+    secrets_in_group_should_be_changed:
+      <<: *change
+      script: ./check_secrets_changed.yaml
+      params:
+        ansible_tags: group
+
+    change_plain:
+      <<: *change
+      script: ./change.yaml
+      params:
+        ansible_tags: simple
+
+    change_group:
+      <<: *change
+      script: ./change.yaml
+      params:
+        ansible_tags: group
+
+- type: host
+  version: 3.4
+  name: test_host
+
+  config: *config
+
+  actions:
+    secrets_should_be_changed: &host_change
+      type: job
+      script_type: ansible
+      script: ./check_secrets_changed.yaml
+      config:
+        - name: object_type
+          type: string
+          default: "host"
+      states:
+        available: any
+      params:
+        ansible_tags: plain
+
+    secrets_in_group_should_be_changed:
+      <<: *host_change
+      script: ./check_secrets_changed.yaml
+      params:
+        ansible_tags: group
+
+    change_plain:
+      <<: *host_change
+      script: ./change.yaml
+      params:
+        ansible_tags: simple
+
+    change_group:
+      <<: *host_change
+      script: ./change.yaml
+      params:
+        ansible_tags: group

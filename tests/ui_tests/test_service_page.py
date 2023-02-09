@@ -20,6 +20,7 @@ import pytest
 from _pytest.fixtures import SubRequest
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Service
 from adcm_pytest_plugin import params, utils
+
 from tests.library.retry import should_become_truth
 from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.app import ADCMTest
@@ -27,7 +28,7 @@ from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import ClusterServicesPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
-from tests.ui_tests.app.page.common.import_page.page import ImportItemInfo
+from tests.ui_tests.app.page.common.import_page.page import ImportInfo
 from tests.ui_tests.app.page.common.status.page import (
     NEGATIVE_COLOR,
     SUCCESS_COLOR,
@@ -187,20 +188,20 @@ class TestServiceConfigPage:
     """Tests for the /cluster/{}/service/{}/config page"""
 
     INVISIBLE_GROUPS = [
-        'float_invisible',
-        'boolean_invisible',
-        'integer_invisible',
-        'password_invisible',
-        'string_invisible',
-        'list_invisible',
-        'file_invisible',
-        'option_invisible',
-        'text_invisible',
-        'group_invisible',
-        'structure_invisible',
-        'map_invisible',
-        'secrettext_invisible',
-        'json_invisible',
+        "float_invisible",
+        "boolean_invisible",
+        "integer_invisible",
+        "password_invisible",
+        "string_invisible",
+        "list_invisible",
+        "file_invisible",
+        "option_invisible",
+        "text_invisible",
+        "group_invisible",
+        "structure_invisible",
+        "map_invisible",
+        "secrettext_invisible",
+        "json_invisible",
     ]
 
     def test_open_service_config_page_by_tab(self, app_fs, create_cluster_with_service):
@@ -247,7 +248,9 @@ class TestServiceConfigPage:
             bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_DESCRIPTION_FIELDS)
             cluster = bundle.cluster_create(name=CLUSTER_NAME)
             service = cluster.service_add(name=SERVICE_NAME)
-        service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+        service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open(
+            close_popup=True
+        )
         service_config_page.config.fill_config_fields_with_test_values()
         service_config_page.config.set_description(params["config_name_new"])
         service_config_page.config.save_config()
@@ -304,7 +307,7 @@ class TestServiceConfigPage:
             assert not service_config_page.config.is_save_btn_disabled(), "Save button should be enabled"
         service_config_page.config.save_config()
         with allure.step("Check params"):
-            assert service.config() == OrderedDict([('password', None)]), "There should be empty password value"
+            assert service.config() == OrderedDict([("password", None)]), "There should be empty password value"
 
     def test_password_no_confirm_false_required_true_in_config_on_service_config_page(self, app_fs, sdk_client_fs):
         """Test password field on /cluster/{}/service/{}/config page"""
@@ -383,10 +386,10 @@ class TestServiceConfigPage:
         """Test config fields validation on /cluster/{}/service/{}/config page"""
 
         params = {
-            'pass_name': 'Important password',
-            'req_name': 'Required item',
-            'not_req_name': 'Just item',
-            'wrong_value': 'test',
+            "pass_name": "Important password",
+            "req_name": "Required item",
+            "not_req_name": "Just item",
+            "wrong_value": "test",
         }
 
         with allure.step("Create cluster and service"):
@@ -394,11 +397,11 @@ class TestServiceConfigPage:
             cluster = bundle.cluster_create(name=CLUSTER_NAME)
             service = cluster.service_add(name=SERVICE_NAME)
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
-        service_config_page.config.check_password_confirm_required(params['pass_name'])
-        service_config_page.config.check_field_is_required(params['req_name'])
+        service_config_page.config.check_password_confirm_required(params["pass_name"])
+        service_config_page.config.check_field_is_required(params["req_name"])
         config_row = service_config_page.config.get_all_config_rows()[0]
-        service_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params['wrong_value']])
-        service_config_page.config.check_field_is_invalid_error(params['not_req_name'])
+        service_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params["wrong_value"]])
+        service_config_page.config.check_field_is_invalid_error(params["not_req_name"])
         service_config_page.config.check_config_warn_icon_on_left_menu()
         with allure.step("Check save button is disabled"):
             assert service_config_page.config.is_save_btn_disabled(), "Save button should be disabled"
@@ -406,27 +409,27 @@ class TestServiceConfigPage:
         service_config_page.toolbar.check_warn_button(
             tab_name="test_service",
             expected_warn_text=[
-                'Test cluster has an issue with its config',
-                'test_service has an issue with its config',
+                "Test cluster has an issue with its config",
+                "test_service has an issue with its config",
             ],
         )
 
     def test_field_validation_on_service_config_page_with_default_value(self, app_fs, sdk_client_fs):
         """Test config fields validation on /cluster/{}/service/{}/config page"""
 
-        params = {'field_name': 'string', 'new_value': 'test', "config_name": "test_name"}
+        params = {"field_name": "string", "new_value": "test", "config_name": "test_name"}
 
         with allure.step("Create cluster and service"):
             bundle = cluster_bundle(sdk_client_fs, BUNDLE_DEFAULT_FIELDS)
             cluster = bundle.cluster_create(name=CLUSTER_NAME)
             service = cluster.service_add(name=SERVICE_NAME)
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
-        service_config_page.config.clear_field_by_keys(params['field_name'])
-        service_config_page.config.check_field_is_required(params['field_name'])
+        service_config_page.config.clear_field_by_keys(params["field_name"])
+        service_config_page.config.check_field_is_required(params["field_name"])
         with allure.step("Check save button is disabled"):
             assert service_config_page.config.is_save_btn_disabled(), "Save button should be disabled"
         service_config_page.config.type_in_field_with_few_inputs(
-            row=service_config_page.config.get_all_config_rows()[0], values=[params['new_value']]
+            row=service_config_page.config.get_all_config_rows()[0], values=[params["new_value"]]
         )
         service_config_page.config.save_config()
         service_config_page.config.assert_input_value_is(
@@ -457,29 +460,29 @@ class TestServiceConfigPage:
         """
 
         required_fields = {
-            'integer not default required:': (['2']),
-            'float not default required:': (['2.2']),
-            'string not default required:': (['Ein neuer Tag beginnt']),
-            'password not default required no confirm:': (['strongestpasswordever']),
-            'text not default required:': (['This is\nthe day']),
-            'file not default required:': (['My only\nfriend']),
-            'json not default required:': (['{"Where": "the long shadow falls"}']),
-            'list not default required:': (['Silencer']),
-            'map not default required:': (['Poccolus', 'Ragana', 'Poccolus', 'Ragana']),
+            "integer not default required:": (["2"]),
+            "float not default required:": (["2.2"]),
+            "string not default required:": (["Ein neuer Tag beginnt"]),
+            "password not default required no confirm:": (["strongestpasswordever"]),
+            "text not default required:": (["This is\nthe day"]),
+            "file not default required:": (["My only\nfriend"]),
+            "json not default required:": (['{"Where": "the long shadow falls"}']),
+            "list not default required:": (["Silencer"]),
+            "map not default required:": (["Poccolus", "Ragana", "Poccolus", "Ragana"]),
         }
         with allure.step("Create cluster and service"):
             bundle = cluster_bundle(sdk_client_fs, "config_hell_service")
             cluster = bundle.cluster_create(name=CLUSTER_NAME)
-            service = cluster.service_add(name='service_ui_config_hell')
+            service = cluster.service_add(name="service_ui_config_hell")
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
-        with allure.step('Check that config name in prototype is correct'):
-            assert service.display_name == 'New UI Config Hell'
-        with allure.step('Check that in UI we have full list of group display names from prototype'):
-            parameters_display_names = {config['display_name'] for config in service.prototype().config}
+        with allure.step("Check that config name in prototype is correct"):
+            assert service.display_name == "New UI Config Hell"
+        with allure.step("Check that in UI we have full list of group display names from prototype"):
+            parameters_display_names = {config["display_name"] for config in service.prototype().config}
             group_names = filter(
-                lambda name: 'group' in name
-                and ('invisible' not in name or 'not invisible' in name)
-                and ('advanced' not in name or 'not advanced' in name),
+                lambda name: "group" in name
+                and ("invisible" not in name or "not invisible" in name)
+                and ("advanced" not in name or "not advanced" in name),
                 parameters_display_names,
             )
             ui_display_names = service_config_page.config.get_all_config_rows_names()
@@ -488,16 +491,16 @@ class TestServiceConfigPage:
                 assert (
                     display_name in ui_display_names or display_name in config_group_names
                 ), f"Config named '{display_name}' should be presented in config"
-        with allure.step('Fill required fields'):
+        with allure.step("Fill required fields"):
             service_config_page.close_info_popup()
             for param_display_name, value in required_fields.items():
                 row = service_config_page.config.get_config_row(param_display_name)
                 service_config_page.config.type_in_field_with_few_inputs(row=row, values=value)
         service_config_page.config.save_config(load_timeout=40)
-        with allure.step('Ensure page is still opened'):
+        with allure.step("Ensure page is still opened"):
             service_config_page.wait_page_is_opened(timeout=15)
-        with allure.step('Check that popup is not presented on page'):
-            assert not service_config_page.is_popup_presented_on_page(), 'No popup should be shown after save'
+        with allure.step("Check that popup is not presented on page"):
+            assert not service_config_page.is_popup_presented_on_page(), "No popup should be shown after save"
 
 
 class TestServiceGroupConfigPage:
@@ -516,20 +519,20 @@ class TestServiceGroupConfigPage:
         """Test create group config on /cluster/{}/service/{}/group_config"""
 
         params = {
-            'name': 'Test name',
-            'description': 'Test description',
+            "name": "Test name",
+            "description": "Test description",
         }
 
         cluster, service = create_cluster_with_service
 
         service_group_conf_page = ServiceGroupConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         with service_group_conf_page.group_config.wait_rows_change(expected_rows_amount=1):
-            service_group_conf_page.group_config.create_group(name=params['name'], description=params['description'])
+            service_group_conf_page.group_config.create_group(name=params["name"], description=params["description"])
         group_row = service_group_conf_page.group_config.get_all_config_rows()[0]
         with allure.step("Check created row in service"):
             group_info = service_group_conf_page.group_config.get_config_row_info(group_row)
             assert group_info == GroupConfigRowInfo(
-                name=params['name'], description=params['description']
+                name=params["name"], description=params["description"]
             ), "Row value differs in service groups"
         with service_group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
             service_group_conf_page.group_config.delete_row(group_row)
@@ -560,17 +563,17 @@ class TestServiceStatusPage:
     ):
         """Changes status on /cluster/{}/service/{}/status page"""
 
-        successful = 'successful 1/1'
-        negative = 'successful 0/1'
+        successful = "successful 1/1"
+        negative = "successful 0/1"
         success_status = [
-            StatusRowInfo(True, 'test_service', successful, SUCCESS_COLOR, None),
-            StatusRowInfo(True, 'first', successful, SUCCESS_COLOR, None),
-            StatusRowInfo(True, None, None, None, 'test-host'),
+            StatusRowInfo(True, "test_service", successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, "first", successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, None, None, None, "test-host"),
         ]
         component_negative_status = [
-            StatusRowInfo(False, 'test_service', negative, NEGATIVE_COLOR, None),
-            StatusRowInfo(False, 'first', negative, NEGATIVE_COLOR, None),
-            StatusRowInfo(False, None, None, None, 'test-host'),
+            StatusRowInfo(False, "test_service", negative, NEGATIVE_COLOR, None),
+            StatusRowInfo(False, "first", negative, NEGATIVE_COLOR, None),
+            StatusRowInfo(False, None, None, None, "test-host"),
         ]
         cluster, service, host = create_community_cluster_with_host_and_service
         cluster_component = cluster.service(name=SERVICE_NAME).component(name=COMPONENT_NAME)
@@ -621,10 +624,10 @@ class TestServiceImportPage:
             )
             cluster_import.service_add(name=params["import_service_name"])
         service_import_page = ServiceImportPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
-        import_item = service_import_page.get_import_items()[0]
+        import_item = service_import_page.get_imports()[0]
         with allure.step("Check import on import page"):
-            assert service_import_page.get_import_item_info(import_item) == ImportItemInfo(
-                'Pre-uploaded Dummy service to import', 'Pre-uploaded Dummy service to import 2.5'
+            assert service_import_page.get_import_info(import_item) == ImportInfo(
+                "Pre-uploaded Dummy service to import", "Pre-uploaded Dummy service to import 2.5"
             ), "Text in import item changed"
         service_import_page.close_info_popup()
         service_import_page.click_checkbox_in_import_item(import_item)
@@ -647,7 +650,7 @@ class TestServiceImportPage:
         service_import_page.toolbar.check_warn_button(
             tab_name="test cluster",
             expected_warn_text=[
-                'Test cluster has an issue with required import',
-                'test_service has an issue with required import',
+                "Test cluster has an issue with required import",
+                "test_service has an issue with required import",
             ],
         )

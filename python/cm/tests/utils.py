@@ -12,9 +12,6 @@
 
 from uuid import uuid4
 
-from django.contrib.contenttypes.models import ContentType
-from django.utils import timezone
-
 from cm.errors import AdcmEx
 from cm.models import (
     ADCM,
@@ -36,6 +33,8 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone
 
 
 def gen_name(prefix: str):
@@ -247,26 +246,29 @@ def generate_hierarchy():
 
     gen_host_component(component, host)
 
-    return dict(
-        cluster=cluster,
-        service=service,
-        component=component,
-        provider=provider,
-        host=host,
-    )
+    return {
+        "cluster": cluster,
+        "service": service,
+        "component": component,
+        "provider": provider,
+        "host": host,
+    }
 
 
 def gen_config(config: dict = None, attr: dict = None) -> ObjectConfig:
     """Generate config, creating `ObjectConfig` object and `ConfigLog` object"""
+
     if config is None:
         config = {}
     if attr is None:
         attr = {}
-    oc = ObjectConfig.objects.create(current=0, previous=0)
-    cl = ConfigLog.objects.create(obj_ref=oc, description="init", config=config, attr=attr)
-    oc.current = cl.id
-    oc.save()
-    return oc
+
+    object_config = ObjectConfig.objects.create(current=0, previous=0)
+    config_log = ConfigLog.objects.create(obj_ref=object_config, description="init", config=config, attr=attr)
+    object_config.current = config_log.id
+    object_config.save()
+
+    return object_config
 
 
 def gen_group(name, object_id, model_name):

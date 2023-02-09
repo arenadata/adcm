@@ -10,20 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django_filters import rest_framework as drf_filters
-from guardian.mixins import PermissionListMixin
-from guardian.shortcuts import get_objects_for_user
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_204_NO_CONTENT,
-    HTTP_400_BAD_REQUEST,
-    HTTP_409_CONFLICT,
-)
-
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.host.serializers import (
     ClusterHostSerializer,
@@ -62,7 +48,20 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.status_api import make_ui_host_status
+from django_filters import rest_framework as drf_filters
+from guardian.mixins import PermissionListMixin
+from guardian.shortcuts import get_objects_for_user
 from rbac.viewsets import DjangoOnlyObjectPermissions
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_409_CONFLICT,
+)
 
 CLUSTER_VIEW = "cm.view_cluster"
 PROVIDER_VIEW = "cm.view_hostprovider"
@@ -157,7 +156,7 @@ class HostList(PermissionListMixin, PaginatedView):
         return get_objects_for_user(**self.get_get_objects_for_user_kwargs(queryset))
 
     @audit
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         serializer = self.serializer_class(
             data=request.data,
             context={
@@ -225,7 +224,7 @@ class HostDetail(PermissionListMixin, DetailView):
     lookup_url_kwarg = "host_id"
     error_code = "HOST_NOT_FOUND"
 
-    def _update_host_object(
+    def _update_host_object(  # pylint: disable=unused-argument
         self,
         request,
         *args,
@@ -262,7 +261,7 @@ class HostDetail(PermissionListMixin, DetailView):
         return get_objects_for_user(**self.get_get_objects_for_user_kwargs(queryset))
 
     @audit
-    def delete(self, request, *args, **kwargs):
+    def delete(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         host = self.get_object()
         if "cluster_id" in kwargs:
             cluster = get_object_for_user(request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"])
@@ -318,7 +317,7 @@ class StatusList(GenericUIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = HostStatusSerializer
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = None
         host = get_object_for_user(request.user, HOST_VIEW, Host, id=kwargs["host_id"])
         if "cluster_id" in kwargs:

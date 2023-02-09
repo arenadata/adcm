@@ -17,27 +17,26 @@ from django.db import migrations, models
 
 
 def fix_joblog(apps, schema_editor):
-    JobLog = apps.get_model('cm', 'JobLog')
-    LogStorage = apps.get_model('cm', 'LogStorage')
+    JobLog = apps.get_model("cm", "JobLog")
+    LogStorage = apps.get_model("cm", "LogStorage")
     LogStorage.objects.filter(job__task_id__isnull=True).delete()
     JobLog.objects.filter(task_id__isnull=True).delete()
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0067_tasklog_object_type'),
+        ("cm", "0067_tasklog_object_type"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='tasklog',
-            name='action',
+            model_name="tasklog",
+            name="action",
             field=models.ForeignKey(
                 default=None,
                 null=True,
                 on_delete=django.db.models.deletion.SET_NULL,
-                to='cm.action',
+                to="cm.action",
             ),
         ),
         migrations.RunPython(fix_joblog),

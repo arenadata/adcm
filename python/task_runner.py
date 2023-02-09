@@ -10,8 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# pylint: disable=unused-import,useless-return,protected-access,bare-except,global-statement
+# pylint: disable=wrong-import-order
 
 import os
 import signal
@@ -23,7 +22,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
-import adcm.init_django
+import adcm.init_django  # pylint: disable=unused-import
 from cm.errors import AdcmEx
 from cm.job import finish_task, re_prepare_job
 from cm.logger import logger
@@ -45,7 +44,7 @@ def terminate_job(task, jobs):
         finish_task(task, None, JobStatus.ABORTED)
 
 
-def terminate_task(signum, frame):
+def terminate_task(signum, frame):  # pylint: disable=unused-argument
     logger.info("cancel task #%s, signal: #%s", TASK_ID, signum)
     task = TaskLog.objects.get(id=TASK_ID)
     jobs = JobLog.objects.filter(task_id=TASK_ID)
@@ -62,7 +61,7 @@ def terminate_task(signum, frame):
         logger.warning("no jobs running for task #%s", TASK_ID)
         finish_task(task, None, JobStatus.ABORTED)
 
-    os._exit(signum)
+    sys.exit(signum)
 
 
 signal.signal(signal.SIGTERM, terminate_task)
@@ -89,13 +88,15 @@ def run_job(task_id, job_id, err_file):
 
 def set_log_body(job):
     name = job.sub_action.script_type if job.sub_action else job.action.script_type
-    log_storage = LogStorage.objects.filter(job=job, name=name, type__in=["stdout", "stderr"])
-    for ls in log_storage:
-        file_path = settings.RUN_DIR / f"{ls.job.id}" / f"{ls.name}-{ls.type}.{ls.format}"
+    log_storages = LogStorage.objects.filter(job=job, name=name, type__in=["stdout", "stderr"])
+    for log_storage in log_storages:
+        file_path = (
+            settings.RUN_DIR / f"{log_storage.job.id}" / f"{log_storage.name}-{log_storage.type}.{log_storage.format}"
+        )
         with open(file_path, "r", encoding=settings.ENCODING_UTF_8) as f:
             body = f.read()
 
-        LogStorage.objects.filter(job=job, name=ls.name, type=ls.type).update(body=body)
+        LogStorage.objects.filter(job=job, name=log_storage.name, type=log_storage.type).update(body=body)
 
 
 def run_task(task_id, args=None):
@@ -165,8 +166,9 @@ def run_task(task_id, args=None):
     logger.info("finish task #%s, ret %s", task_id, res)
 
 
-def do():
-    global TASK_ID
+def do_task():
+    global TASK_ID  # pylint: disable=global-statement
+
     if len(sys.argv) < 2:
         print(f"\nUsage:\n{os.path.basename(sys.argv[0])} task_id [restart]\n")
         sys.exit(4)
@@ -179,4 +181,4 @@ def do():
 
 
 if __name__ == "__main__":
-    do()
+    do_task()

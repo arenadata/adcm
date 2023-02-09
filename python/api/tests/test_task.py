@@ -14,12 +14,6 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
-from django.contrib.contenttypes.models import ContentType
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
-
-from adcm.tests.base import BaseTestCase
 from cm.models import (
     ADCM,
     Action,
@@ -30,6 +24,12 @@ from cm.models import (
     Prototype,
     TaskLog,
 )
+from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestTaskAPI(BaseTestCase):
@@ -49,7 +49,7 @@ class TestTaskAPI(BaseTestCase):
         self.action = Action.objects.create(
             display_name="test_adcm_action",
             prototype=self.adcm_prototype,
-            type=ActionType.Job,
+            type=ActionType.JOB,
             state_available="any",
         )
         adcm_object_type = ContentType.objects.get(app_label="cm", model="adcm")

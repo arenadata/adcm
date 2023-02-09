@@ -17,33 +17,32 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0050_role'),
+        ("cm", "0050_role"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='GroupCheckLog',
+            name="GroupCheckLog",
             fields=[
                 (
-                    'id',
-                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
-                ('job_id', models.PositiveIntegerField(default=0)),
-                ('title', models.TextField()),
-                ('message', models.TextField(blank=True, null=True)),
-                ('result', models.BooleanField(blank=True, null=True)),
+                ("job_id", models.PositiveIntegerField(default=0)),
+                ("title", models.TextField()),
+                ("message", models.TextField(blank=True, null=True)),
+                ("result", models.BooleanField(blank=True, null=True)),
             ],
         ),
         migrations.AddField(
-            model_name='checklog',
-            name='group',
+            model_name="checklog",
+            name="group",
             field=models.ForeignKey(
                 blank=True,
                 null=True,
                 on_delete=django.db.models.deletion.CASCADE,
-                to='cm.GroupCheckLog',
+                to="cm.GroupCheckLog",
             ),
         ),
     ]

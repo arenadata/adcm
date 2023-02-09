@@ -84,7 +84,7 @@ export class BundlesComponent extends InputComponent implements OnInit {
       )
       .subscribe((elements) => {
         this.versions = elements.filter((element) => element.display_name === this.elementName);
-        this.selectOne(elements, 'bundle_id');
+        this.selectOne(this.versions, 'bundle_id');
         this.loadedBundle = null;
       });
 

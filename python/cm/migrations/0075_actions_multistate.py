@@ -16,80 +16,79 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0074_auto_20210903_0957'),
+        ("cm", "0074_auto_20210903_0957"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='action',
-            name='multi_state_available',
-            field=models.JSONField(default='any'),
+            model_name="action",
+            name="multi_state_available",
+            field=models.JSONField(default="any"),
         ),
         migrations.AddField(
-            model_name='action',
-            name='multi_state_on_fail_set',
+            model_name="action",
+            name="multi_state_on_fail_set",
             field=models.JSONField(default=list),
         ),
         migrations.AddField(
-            model_name='action',
-            name='multi_state_on_fail_unset',
+            model_name="action",
+            name="multi_state_on_fail_unset",
             field=models.JSONField(default=list),
         ),
         migrations.AddField(
-            model_name='action',
-            name='multi_state_on_success_set',
+            model_name="action",
+            name="multi_state_on_success_set",
             field=models.JSONField(default=list),
         ),
         migrations.AddField(
-            model_name='action',
-            name='multi_state_on_success_unset',
+            model_name="action",
+            name="multi_state_on_success_unset",
             field=models.JSONField(default=list),
         ),
         migrations.AddField(
-            model_name='action',
-            name='multi_state_unavailable',
+            model_name="action",
+            name="multi_state_unavailable",
             field=models.JSONField(default=list),
         ),
         migrations.AddField(
-            model_name='action',
-            name='state_unavailable',
+            model_name="action",
+            name="state_unavailable",
             field=models.JSONField(default=list),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='multi_state_available',
-            field=models.JSONField(default='any'),
+            model_name="stageaction",
+            name="multi_state_available",
+            field=models.JSONField(default="any"),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='multi_state_on_fail_set',
+            model_name="stageaction",
+            name="multi_state_on_fail_set",
             field=models.JSONField(default=list),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='multi_state_on_fail_unset',
+            model_name="stageaction",
+            name="multi_state_on_fail_unset",
             field=models.JSONField(default=list),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='multi_state_on_success_set',
+            model_name="stageaction",
+            name="multi_state_on_success_set",
             field=models.JSONField(default=list),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='multi_state_on_success_unset',
+            model_name="stageaction",
+            name="multi_state_on_success_unset",
             field=models.JSONField(default=list),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='multi_state_unavailable',
+            model_name="stageaction",
+            name="multi_state_unavailable",
             field=models.JSONField(default=list),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='state_unavailable',
+            model_name="stageaction",
+            name="state_unavailable",
             field=models.JSONField(default=list),
         ),
     ]

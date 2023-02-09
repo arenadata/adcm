@@ -16,15 +16,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0088_fix_group_keys_structure'),
+        ("cm", "0088_fix_group_keys_structure"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='tasklog',
-            name='post_upgrade_hc_map',
+            model_name="tasklog",
+            name="post_upgrade_hc_map",
             field=models.JSONField(default=None, null=True),
         ),
     ]

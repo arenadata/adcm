@@ -16,7 +16,43 @@ import random
 from copy import deepcopy
 
 # pylint: disable=import-outside-toplevel
-from typing import Tuple
+from typing import Callable, Tuple
+
+from adcm_pytest_plugin.utils import random_string
+
+from tests.library.predicates import PredicateOfOne, display_name_key_is, name_key_is
+
+
+def _regenerate_name(adcm, old_name: str, retrieve_builder) -> str:
+    from tests.api.testdata.getters import get_endpoint_data
+    from tests.api.utils.endpoints import Endpoints
+
+    half_length = len(old_name) // 2
+    new_name = f"{old_name[:half_length]}{random_string(half_length)}"
+
+    same_named_role = next(
+        filter(retrieve_builder(new_name), get_endpoint_data(adcm, endpoint=Endpoints.RBAC_ANY_ROLE)), None
+    )
+
+    if same_named_role is None:
+        return new_name
+
+    return _regenerate_name(adcm, new_name, retrieve_builder=retrieve_builder)
+
+
+def _rename_if_not_unique(adcm, fields: dict, key: str, retrieve_builder: Callable[[str], PredicateOfOne]):
+    from tests.api.testdata.getters import get_endpoint_data
+    from tests.api.utils.endpoints import Endpoints
+
+    same_named_role = next(
+        filter(
+            retrieve_builder(fields[key]),
+            get_endpoint_data(adcm, endpoint=Endpoints.RBAC_ANY_ROLE),
+        ),
+        None,
+    )
+    if same_named_role:
+        fields[key] = _regenerate_name(adcm, fields[key], retrieve_builder=retrieve_builder)
 
 
 def sync_object_and_role(adcm, fields: dict) -> dict:
@@ -24,33 +60,42 @@ def sync_object_and_role(adcm, fields: dict) -> dict:
     from tests.api.testdata.getters import get_endpoint_data
     from tests.api.utils.endpoints import Endpoints
 
-    if 'role' not in fields or 'object' not in fields:
+    if "role" not in fields or "object" not in fields:
         return fields
 
     new_fields = deepcopy(fields)
-    role_id = new_fields['role']['id']
-    role = next(filter(lambda r: r['id'] == role_id, get_endpoint_data(adcm, Endpoints.RbacAnyRole)), None)
+    role_id = new_fields["role"]["id"]
+    role = next(filter(lambda r: r["id"] == role_id, get_endpoint_data(adcm, Endpoints.RBAC_ANY_ROLE)), None)
     if role is None:
         return new_fields
 
-    new_fields['object'] = []
-    for object_type in role['parametrized_by_type']:
-        role_object = random.choice(get_endpoint_data(adcm=adcm, endpoint=Endpoints[object_type.capitalize()]))
+    new_fields["object"] = []
+    for object_type in role["parametrized_by_type"]:
+        role_object = random.choice(get_endpoint_data(adcm=adcm, endpoint=Endpoints[object_type.upper()]))
         new_fields["object"].append(
             {
-                'id': role_object["id"],
-                'name': role_object.get("name", role_object.get("fqdn")),
-                'type': object_type,
+                "id": role_object["id"],
+                "name": role_object.get("name", role_object.get("fqdn")),
+                "type": object_type,
             }
         )
 
     return new_fields
 
 
-def sync_child_roles_hierarchy(adcm, fields: dict):
-    """Child roles can be only in infrastructure or application hierarchy"""
+def sync_child_roles_hierarchy_and_unique_name(adcm, fields: dict):
+    """
+    Child roles can be only in infrastructure or application hierarchy.
+    Name should be unique.
+    """
     from tests.api.testdata.getters import get_endpoint_data
     from tests.api.utils.endpoints import Endpoints
+
+    if "display_name" in fields:
+        _rename_if_not_unique(adcm, fields, "display_name", retrieve_builder=display_name_key_is)
+
+    if "name" in fields:
+        _rename_if_not_unique(adcm, fields, "name", retrieve_builder=name_key_is)
 
     if "child" not in fields:
         return fields
@@ -67,7 +112,7 @@ def sync_child_roles_hierarchy(adcm, fields: dict):
         types = _role_by_id(all_roles, role["id"])["parametrized_by_type"]
         return all(role_type in allowed_parametrization for role_type in types)
 
-    all_roles = get_endpoint_data(adcm, endpoint=Endpoints.RbacBusinessRole)
+    all_roles = get_endpoint_data(adcm, endpoint=Endpoints.RBAC_BUSINESS_ROLE)
     for role in child_list:
         role_obj = _role_by_id(all_roles, role["id"])
         if parametrization := role_obj["parametrized_by_type"]:

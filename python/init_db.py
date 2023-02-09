@@ -10,8 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# pylint: disable=unused-import
+# pylint: disable=wrong-import-order
 
 import json
 from itertools import chain
@@ -20,7 +19,7 @@ from typing import Optional, Tuple
 
 from django.conf import settings
 
-import adcm.init_django
+import adcm.init_django  # pylint: disable=unused-import
 from cm.bundle import load_adcm
 from cm.issue import update_hierarchy_issues
 from cm.job import abort_all
@@ -73,7 +72,7 @@ def clear_temp_tables():
 
 def drop_locks():
     """Drop orphaned locks"""
-    ConcernItem.objects.filter(type=ConcernType.Lock).delete()
+    ConcernItem.objects.filter(type=ConcernType.LOCK).delete()
 
 
 def recheck_issues():
@@ -81,7 +80,7 @@ def recheck_issues():
     Drop old issues and re-check from scratch
     Could slow down startup process
     """
-    ConcernItem.objects.filter(type=ConcernType.Issue).delete()
+    ConcernItem.objects.filter(type=ConcernType.ISSUE).delete()
     for model in chain([Cluster, HostProvider]):
         for obj in model.objects.all():
             update_hierarchy_issues(obj)

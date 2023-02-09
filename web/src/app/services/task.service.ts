@@ -29,12 +29,11 @@ export class TaskService extends EntityService<Task> implements EventableService
     return this.api.get(`${environment.apiRoot}task/`, params);
   }
 
-  events(eventFilter?: EventFilter): Observable<EventMessage> {
+  events(eventFilter?: EventFilter, objectType?: string): Observable<EventMessage> {
     return this.store.pipe(
       selectMessage,
-      filter(event => event?.object?.type === 'task'),
+      filter(event => event?.object?.type === objectType),
       filter(event => !eventFilter?.events || eventFilter.events.includes(event?.event)),
     );
   }
-
 }

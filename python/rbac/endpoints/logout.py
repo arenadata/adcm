@@ -23,11 +23,9 @@ class LogOutSerializer(serializers.Serializer):
 
 
 class LogOut(GenericAPIView):
-    """Logout view"""
-
     serializer_class = LogOutSerializer
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         """
         Logout user from Django session
         """

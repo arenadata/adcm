@@ -6,17 +6,22 @@ RUN apk update && \
         linux-headers && \
     apk add \
         bash \
-        openssl \
-        libc6-compat \
-        libffi-dev \
-        libxml2-dev \
-        libxslt-dev \
-        openldap-dev \
+        curl \
         git \
-        runit \
+        libc6-compat \
+        libffi \
+        libstdc++ \
+        libxslt \
+        logrotate \
+        musl-dev \
         nginx \
+        openldap-dev \
         openssh-client \
-        logrotate
+        openssh-keygen \
+        openssl \
+        rsync \
+        runit \
+        sshpass
 COPY requirements*.txt /adcm/
 RUN pip install --upgrade pip &&  \
     pip install --no-cache-dir -r /adcm/requirements-venv-default.txt && \

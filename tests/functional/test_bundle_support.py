@@ -19,11 +19,10 @@ from _pytest.outcomes import Failed
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import catch_failed, random_string
-from tests.conftest import include_dummy_data
+
 from tests.library import errorcodes as err
 
 
-@include_dummy_data
 @pytest.mark.parametrize(
     "bundle_archive",
     [
@@ -54,7 +53,6 @@ def test_bundle_cant_removed_when_some_object_associated_with(sdk_client_fs: ADC
         err.BUNDLE_CONFLICT.equal(e, "There is cluster", "of bundle ")
 
 
-@include_dummy_data
 def test_bundle_can_be_removed_when_no_object_associated_with(
     sdk_client_fs: ADCMClient,
 ):
@@ -205,7 +203,6 @@ invalid_dsl_cases = [
 ]
 
 
-@include_dummy_data
 @pytest.mark.parametrize(("entity", "case"), invalid_dsl_cases)
 def test_load_should_fail_on_wrong_dsl(sdk_client_fs: ADCMClient, entity, case):
     """Test bundle load should fail on wrong states dsl"""

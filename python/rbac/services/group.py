@@ -14,10 +14,9 @@
 
 from typing import List
 
+from cm.errors import raise_adcm_ex
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
-
-from cm.errors import raise_adcm_ex
 from rbac import models
 from rbac.utils import Empty, set_not_empty_attr
 
@@ -26,7 +25,7 @@ def _update_users(group: models.Group, users: [Empty, List[dict]]) -> None:
     if users is Empty:
         return
     if group.type == models.OriginType.LDAP:
-        raise_adcm_ex("GROUP_CONFLICT", msg="You can\'t change users in LDAP group")
+        raise_adcm_ex("GROUP_CONFLICT", msg="You can't change users in LDAP group")
     group_users = {u.id: u for u in group.user_set.all()}
     new_users = [u["id"] for u in users]
 

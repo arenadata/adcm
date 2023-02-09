@@ -16,9 +16,8 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0089_tasklog_post_upgrade_hc_map'),
+        ("cm", "0089_tasklog_post_upgrade_hc_map"),
     ]
 
     operations = [

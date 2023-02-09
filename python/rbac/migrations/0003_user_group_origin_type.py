@@ -16,20 +16,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('rbac', '0002_rm_default_policy'),
+        ("rbac", "0002_rm_default_policy"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='group',
-            name='type',
-            field=models.CharField(choices=[('local', 'local'), ('ldap', 'ldap')], default='local', max_length=16),
+            model_name="group",
+            name="type",
+            field=models.CharField(choices=[("local", "local"), ("ldap", "ldap")], default="local", max_length=16),
         ),
         migrations.AddField(
-            model_name='user',
-            name='type',
-            field=models.CharField(choices=[('local', 'local'), ('ldap', 'ldap')], default='local', max_length=16),
+            model_name="user",
+            name="type",
+            field=models.CharField(choices=[("local", "local"), ("ldap", "ldap")], default="local", max_length=16),
         ),
     ]

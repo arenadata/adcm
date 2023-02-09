@@ -13,13 +13,6 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from django.conf import settings
-from django.test import override_settings
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
-
-from adcm.tests.base import BaseTestCase
 from api.job.views import (
     get_task_download_archive_file_handler,
     get_task_download_archive_name,
@@ -42,6 +35,13 @@ from cm.tests.utils import (
     gen_job_log,
     gen_task_log,
 )
+from django.conf import settings
+from django.test import override_settings
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
+
+from adcm.tests.base import BaseTestCase
 
 
 class TaskLogLockTest(BaseTestCase):
@@ -54,7 +54,7 @@ class TaskLogLockTest(BaseTestCase):
         cluster = gen_cluster()
         task = gen_task_log(cluster)
         gen_job_log(task)
-        task.lock = gen_concern_item(ConcernType.Lock)
+        task.lock = gen_concern_item(ConcernType.LOCK)
         task.save()
         task.lock_affected([cluster])
 
@@ -236,8 +236,8 @@ class TaskLogLockTest(BaseTestCase):
             finish_date=datetime.now(tz=ZoneInfo("UTC")),
             sub_action=SubAction.objects.create(name="test_subaction_2", action=action),
         )
-        fn = get_task_download_archive_file_handler(task)
-        fn.seek(0)
+        file_handler = get_task_download_archive_file_handler(task)
+        file_handler.seek(0)
 
         self.assertEqual(
             f"test-cluster_test-cluster-prototype_test-cluster-action_{task.pk}.tar.gz",
@@ -247,7 +247,7 @@ class TaskLogLockTest(BaseTestCase):
         cluster.delete()
         bundle.delete()
         task.refresh_from_db()
-        fn = get_task_download_archive_file_handler(task)
-        fn.seek(0)
+        file_handler = get_task_download_archive_file_handler(task)
+        file_handler.seek(0)
 
         self.assertEqual(f"{task.pk}.tar.gz", get_task_download_archive_name(task))

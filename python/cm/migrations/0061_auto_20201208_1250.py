@@ -16,36 +16,35 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0060_auto_20201201_1122'),
+        ("cm", "0060_auto_20201201_1122"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='component',
+            name="component",
             unique_together=None,
         ),
         migrations.RemoveField(
-            model_name='component',
-            name='comp_prototype',
+            model_name="component",
+            name="comp_prototype",
         ),
         migrations.RemoveField(
-            model_name='component',
-            name='prototype',
+            model_name="component",
+            name="prototype",
         ),
         migrations.AlterUniqueTogether(
-            name='servicecomponent',
-            unique_together={('cluster', 'service', 'prototype')},
+            name="servicecomponent",
+            unique_together={("cluster", "service", "prototype")},
         ),
         migrations.DeleteModel(
-            name='StageComponent',
+            name="StageComponent",
         ),
         migrations.RemoveField(
-            model_name='servicecomponent',
-            name='component',
+            model_name="servicecomponent",
+            name="component",
         ),
         migrations.DeleteModel(
-            name='Component',
+            name="Component",
         ),
     ]

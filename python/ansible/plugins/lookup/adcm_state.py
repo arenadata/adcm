@@ -9,8 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-order,wrong-import-position
 
 
 from ansible.errors import AnsibleError
@@ -26,7 +25,7 @@ except ImportError:
 
 import sys
 
-sys.path.append('/adcm/python')
+sys.path.append("/adcm/python")
 import adcm.init_django  # pylint: disable=unused-import
 from cm.ansible_plugin import (
     set_cluster_state,
@@ -72,38 +71,38 @@ RETURN = """
 
 class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):  # pylint: disable=too-many-branches
-        logger.debug('run %s %s', terms, kwargs)
+        logger.debug("run %s %s", terms, kwargs)
         ret = []
         if len(terms) < 2:
-            msg = 'not enough arguments to set state ({} of 2)'
+            msg = "not enough arguments to set state ({} of 2)"
             raise AnsibleError(msg.format(len(terms)))
 
-        if terms[0] == 'service':
-            if 'cluster' not in variables:
-                raise AnsibleError('there is no cluster in hostvars')
-            cluster = variables['cluster']
-            if 'service_name' in kwargs:
-                res = set_service_state_by_name(cluster['id'], kwargs['service_name'], terms[1])
-            elif 'job' in variables and 'service_id' in variables['job']:
-                res = set_service_state(cluster['id'], variables['job']['service_id'], terms[1])
+        if terms[0] == "service":
+            if "cluster" not in variables:
+                raise AnsibleError("there is no cluster in hostvars")
+            cluster = variables["cluster"]
+            if "service_name" in kwargs:
+                res = set_service_state_by_name(cluster["id"], kwargs["service_name"], terms[1])
+            elif "job" in variables and "service_id" in variables["job"]:
+                res = set_service_state(cluster["id"], variables["job"]["service_id"], terms[1])
             else:
-                msg = 'no service_id in job or service_name in params'
+                msg = "no service_id in job or service_name in params"
                 raise AnsibleError(msg)
-        elif terms[0] == 'cluster':
-            if 'cluster' not in variables:
-                raise AnsibleError('there is no cluster in hostvars')
-            cluster = variables['cluster']
-            res = set_cluster_state(cluster['id'], terms[1])
-        elif terms[0] == 'provider':
-            if 'provider' not in variables:
-                raise AnsibleError('there is no provider in hostvars')
-            provider = variables['provider']
-            res = set_provider_state(provider['id'], terms[1])
-        elif terms[0] == 'host':
-            if 'adcm_hostid' not in variables:
-                raise AnsibleError('there is no adcm_hostid in hostvars')
-            res = set_host_state(variables['adcm_hostid'], terms[1])
+        elif terms[0] == "cluster":
+            if "cluster" not in variables:
+                raise AnsibleError("there is no cluster in hostvars")
+            cluster = variables["cluster"]
+            res = set_cluster_state(cluster["id"], terms[1])
+        elif terms[0] == "provider":
+            if "provider" not in variables:
+                raise AnsibleError("there is no provider in hostvars")
+            provider = variables["provider"]
+            res = set_provider_state(provider["id"], terms[1])
+        elif terms[0] == "host":
+            if "adcm_hostid" not in variables:
+                raise AnsibleError("there is no adcm_hostid in hostvars")
+            res = set_host_state(variables["adcm_hostid"], terms[1])
         else:
-            raise AnsibleError(f'unknown object type: {terms[0]}')
+            raise AnsibleError(f"unknown object type: {terms[0]}")
         ret.append(res)
         return ret

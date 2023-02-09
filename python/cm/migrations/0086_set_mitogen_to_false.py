@@ -16,13 +16,13 @@ from django.db import migrations
 
 
 def update_adcm_config_settings(apps, schema_editor):
-    ADCM = apps.get_model('cm', 'ADCM')
-    ConfigLog = apps.get_model('cm', 'ConfigLog')
+    ADCM = apps.get_model("cm", "ADCM")
+    ConfigLog = apps.get_model("cm", "ConfigLog")
     for adcm in ADCM.objects.all():
         cl = ConfigLog.objects.get(id=adcm.config.current)
         config = cl.config
-        if 'ansible_settings' in config and 'mitogen' in config['ansible_settings']:
-            config['ansible_settings']['mitogen'] = False
+        if "ansible_settings" in config and "mitogen" in config["ansible_settings"]:
+            config["ansible_settings"]["mitogen"] = False
             obj_conf = adcm.config
             config_log = ConfigLog(obj_ref=obj_conf, config=config, attr=cl.attr, description=cl.description)
             config_log.save()
@@ -32,9 +32,8 @@ def update_adcm_config_settings(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0085_add_action_to_upgrade'),
+        ("cm", "0085_add_action_to_upgrade"),
     ]
 
     operations = [

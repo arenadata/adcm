@@ -15,6 +15,7 @@
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Cluster, Provider
+
 from tests.functional.maintenance_mode.conftest import (
     BUNDLES_DIR,
     MM_IS_OFF,
@@ -155,7 +156,7 @@ def test_mm_concern_provider_host(api_client, provider_with_concern, cluster_wit
     first_component = first_service.component()
 
     provider = provider_with_concern
-    host_concern = provider.host_create('host-with-concerns')
+    host_concern = provider.host_create("host-with-concerns")
 
     add_hosts_to_cluster(cluster, (first_host, host_concern))
     cluster.hostcomponent_set(

@@ -14,25 +14,25 @@
 from django.apps import AppConfig
 
 WATCHED_CM_MODELS = (
-    'group-config',
-    'group-config-hosts',
-    'adcm-concerns',
-    'cluster-concerns',
-    'cluster-object-concerns',
-    'service-component-concerns',
-    'host-provider-concerns',
-    'host-concerns',
+    "group-config",
+    "group-config-hosts",
+    "adcm-concerns",
+    "cluster-concerns",
+    "cluster-object-concerns",
+    "service-component-concerns",
+    "host-provider-concerns",
+    "host-concerns",
 )
 WATCHED_RBAC_MODELS = (
-    'user',
-    'group',
-    'policy',
-    'role',
+    "user",
+    "group",
+    "policy",
+    "role",
 )
 
 
 class CmConfig(AppConfig):
-    name = 'cm'
+    name = "cm"
 
     def ready(self):
         # pylint: disable-next=import-outside-toplevel,unused-import

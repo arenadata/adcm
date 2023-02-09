@@ -19,9 +19,10 @@ import pytest
 import requests
 from adcm_client.audit import ObjectType
 from adcm_client.objects import ADCMClient, Group, User
-from adcm_pytest_plugin.docker_utils import ADCM
+from adcm_pytest_plugin.docker.adcm import ADCM
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from docker.models.containers import Container
+
 from tests.functional.audit.conftest import make_auth_header
 from tests.functional.ldap_auth.utils import (
     get_ldap_user_from_adcm,
@@ -59,7 +60,7 @@ def created_ldap_user(ldap_ad, ldap_basic_ous) -> Tuple[DN, Username]:
     """Create LDAP user in AD and return its DN and username"""
     username = "ldap_user"
     _, users_ou = ldap_basic_ous
-    dn = ldap_ad.create_user(username, username, users_ou)
+    dn = ldap_ad.create_user(username, username, users_ou)  # pylint: disable=invalid-name
     return dn, username
 
 

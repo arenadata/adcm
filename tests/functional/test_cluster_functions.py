@@ -20,7 +20,7 @@ import pytest
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import get_data_dir
-from tests.conftest import include_dummy_data
+
 from tests.library import errorcodes as err
 
 DEFAULT_CLUSTER_BUNDLE_PATH = get_data_dir(__file__, "cluster_simple")
@@ -172,7 +172,6 @@ class TestClusterService:
             assert actual.id == expected.id
             assert actual.name == expected.name
 
-    @include_dummy_data
     def test_get_cluster_service_list(self, sdk_client_fs: ADCMClient, cluster: Cluster):
         """Test cluster service list"""
         expected = []

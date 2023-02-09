@@ -20,5 +20,5 @@ class RBACUIRoot(routers.APIRootView):
 
     permission_classes = (permissions.AllowAny,)
     api_root_dict = {
-        'role': 'role-list',
+        "role": "role-list",
     }

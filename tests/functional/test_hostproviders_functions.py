@@ -21,7 +21,6 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
 from coreapi import exceptions
 from jsonschema import validate
-from tests.conftest import include_dummy_data
 
 # pylint: disable=protected-access
 from tests.library import errorcodes
@@ -30,7 +29,6 @@ BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
 SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
 
 
-@include_dummy_data
 def test_load_host_provider(sdk_client_fs: ADCMClient):
     """Test load hostprovider bundle"""
     sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
@@ -43,13 +41,12 @@ def test_validate_provider_prototype(sdk_client_fs: ADCMClient):
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
     with allure.step("Load provider prototype"):
         provider_prototype = bundle.provider_prototype()._data
-        with open(SCHEMAS + '/stack_list_item_schema.json', encoding='utf_8') as file:
+        with open(SCHEMAS + "/stack_list_item_schema.json", encoding="utf_8") as file:
             schema = json.load(file)
     with allure.step("Check provider prototype"):
         assert validate(provider_prototype, schema) is None
 
 
-@include_dummy_data
 def test_should_create_provider_wo_description(sdk_client_fs: ADCMClient):
     """Test create provider without description"""
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")

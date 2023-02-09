@@ -17,49 +17,48 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('contenttypes', '0002_remove_content_type_name'),
-        ('cm', '0068_alter_tasklog_action'),
+        ("contenttypes", "0002_remove_content_type_name"),
+        ("cm", "0068_alter_tasklog_action"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='GroupConfig',
+            name="GroupConfig",
             fields=[
                 (
-                    'id',
-                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
-                ('object_id', models.PositiveIntegerField()),
-                ('name', models.CharField(max_length=30)),
-                ('description', models.TextField(blank=True)),
+                ("object_id", models.PositiveIntegerField()),
+                ("name", models.CharField(max_length=30)),
+                ("description", models.TextField(blank=True)),
                 (
-                    'config',
+                    "config",
                     models.OneToOneField(
                         null=True,
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name='group_config',
-                        to='cm.objectconfig',
+                        related_name="group_config",
+                        to="cm.objectconfig",
                     ),
                 ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.AddField(
-            model_name='groupconfig',
-            name='hosts',
-            field=models.ManyToManyField(blank=True, to='cm.Host', related_name='group_config'),
+            model_name="groupconfig",
+            name="hosts",
+            field=models.ManyToManyField(blank=True, to="cm.Host", related_name="group_config"),
         ),
         migrations.AddField(
-            model_name='groupconfig',
-            name='object_type',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype'),
+            model_name="groupconfig",
+            name="object_type",
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="contenttypes.contenttype"),
         ),
         migrations.AlterUniqueTogether(
-            name='groupconfig',
-            unique_together={('object_id', 'name', 'object_type')},
+            name="groupconfig",
+            unique_together={("object_id", "name", "object_type")},
         ),
     ]

@@ -16,6 +16,7 @@ from dataclasses import dataclass
 
 import allure
 from selenium.webdriver.remote.webdriver import WebElement
+
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.dialogs.create_host import HostCreateDialog
 from tests.ui_tests.app.page.common.dialogs.create_host_locators import (

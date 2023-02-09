@@ -10,13 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf import settings
-from guardian.mixins import PermissionListMixin
-from rest_framework import permissions
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
-
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.cluster.serializers import BindSerializer
 from api.service.serializers import (
@@ -61,7 +54,13 @@ from cm.models import (
     TaskLog,
 )
 from cm.status_api import make_ui_service_status
+from django.conf import settings
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
+from rest_framework import permissions
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
 
 
 class ServiceListView(PermissionListMixin, PaginatedView):
@@ -82,7 +81,7 @@ class ServiceListView(PermissionListMixin, PaginatedView):
         return self.get_page(self.filter_queryset(queryset), request)
 
     @audit
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         serializer_class = self.serializer_class
         if "cluster_id" in kwargs:
             serializer_class = self.serializer_class_cluster
@@ -117,7 +116,7 @@ class ServiceDetailView(PermissionListMixin, DetailView):
         return queryset
 
     @audit
-    def delete(self, request, *args, **kwargs):
+    def delete(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         instance: ClusterObject = self.get_object()
         delete_action = Action.objects.filter(
             prototype=instance.prototype, name=settings.ADCM_DELETE_SERVICE_ACTION_NAME
@@ -130,6 +129,10 @@ class ServiceDetailView(PermissionListMixin, DetailView):
 
             if host_components_exists:
                 raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} has component(s) on host(s)")
+
+        cluster = instance.cluster
+        if cluster.state == "upgrading" and instance.prototype.name in cluster.before_upgrade["services"]:
+            return raise_adcm_ex(code="SERVICE_CONFLICT", msg="It is forbidden to delete service in upgrade mode")
 
         if ClusterBind.objects.filter(source_service=instance).exists():
             raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} has exports(s)")
@@ -153,7 +156,7 @@ class ServiceDetailView(PermissionListMixin, DetailView):
                 obj=instance,
                 conf={},
                 attr={},
-                hc=[],
+                hostcomponent=[],
                 hosts=[],
                 verbose=False,
             )
@@ -192,7 +195,7 @@ class ServiceImportView(GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     @staticmethod
-    def get(request, *args, **kwargs):
+    def get(request, *args, **kwargs):  # pylint: disable=unused-argument
         service = get_object_for_user(request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
         check_custom_perm(request.user, "view_import_of", "clusterobject", service, "view_clusterbind")
         cluster = service.cluster
@@ -219,7 +222,7 @@ class ServiceBindView(GenericUIView):
     serializer_class_post = ServiceBindPostSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         service = get_object_for_user(request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
         check_custom_perm(request.user, "view_import_of", "clusterobject", service, "view_clusterbind")
         binds = self.get_queryset().filter(service=service)
@@ -250,7 +253,7 @@ class ServiceBindDetailView(GenericUIView):
 
         return service, check_obj(ClusterBind, {"cluster": cluster, "id": bind_id})
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         service, bind = self.get_obj(kwargs, kwargs["bind_id"])
         check_custom_perm(request.user, "view_import_of", "clusterobject", service, "view_clusterbind")
         serializer = self.get_serializer(bind)
@@ -258,7 +261,7 @@ class ServiceBindDetailView(GenericUIView):
         return Response(serializer.data)
 
     @audit
-    def delete(self, request, *args, **kwargs):
+    def delete(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         service, bind = self.get_obj(kwargs, kwargs["bind_id"])
         check_custom_perm(request.user, "change_import_of", "clusterobject", service)
         unbind(bind)
@@ -271,7 +274,7 @@ class StatusList(GenericUIView):
     queryset = HostComponent.objects.all()
     serializer_class = ServiceStatusSerializer
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         service = get_object_for_user(request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
         if self._is_for_ui():
             host_components = self.get_queryset().filter(service=service)

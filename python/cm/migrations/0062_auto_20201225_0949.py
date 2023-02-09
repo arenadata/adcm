@@ -16,20 +16,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0061_auto_20201208_1250'),
+        ("cm", "0061_auto_20201208_1250"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='prototype',
-            name='bound_to',
+            model_name="prototype",
+            name="bound_to",
             field=models.JSONField(default=dict),
         ),
         migrations.AddField(
-            model_name='stageprototype',
-            name='bound_to',
+            model_name="stageprototype",
+            name="bound_to",
             field=models.JSONField(default=dict),
         ),
     ]

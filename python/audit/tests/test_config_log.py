@@ -12,12 +12,6 @@
 
 from datetime import datetime
 
-from django.contrib.contenttypes.models import ContentType
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_403_FORBIDDEN
-
-from adcm.tests.base import BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -25,7 +19,13 @@ from audit.models import (
     AuditObjectType,
 )
 from cm.models import Bundle, Cluster, ConfigLog, GroupConfig, ObjectConfig, Prototype
+from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse
 from rbac.models import User
+from rest_framework.response import Response
+from rest_framework.status import HTTP_403_FORBIDDEN
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestConfigLogAudit(BaseTestCase):
@@ -56,10 +56,10 @@ class TestConfigLogAudit(BaseTestCase):
     ) -> None:
         self.assertEqual(log.audit_object.object_id, self.cluster.pk)
         self.assertEqual(log.audit_object.object_name, self.cluster.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.CLUSTER)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, operation_name)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
@@ -76,7 +76,7 @@ class TestConfigLogAudit(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Cluster configuration updated",
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -93,7 +93,7 @@ class TestConfigLogAudit(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Cluster configuration updated",
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -108,7 +108,7 @@ class TestConfigLogAudit(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Cluster configuration group updated",
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -125,6 +125,6 @@ class TestConfigLogAudit(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Cluster configuration group updated",
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )

@@ -16,38 +16,38 @@ from django.db import migrations, models
 
 data = [
     {
-        'name': 'object config issue',
-        'template': {
-            'message': '${source} has an issue with its config',
-            'placeholder': {
-                'source': {'type': 'adcm_entity'},
+        "name": "object config issue",
+        "template": {
+            "message": "${source} has an issue with its config",
+            "placeholder": {
+                "source": {"type": "adcm_entity"},
             },
         },
     },
     {
-        'name': 'required service issue',
-        'template': {
-            'message': '${source} has an issue with required service',
-            'placeholder': {
-                'source': {'type': 'adcm_entity'},
+        "name": "required service issue",
+        "template": {
+            "message": "${source} has an issue with required service",
+            "placeholder": {
+                "source": {"type": "adcm_entity"},
             },
         },
     },
     {
-        'name': 'required import issue',
-        'template': {
-            'message': '${source} has an issue with required import',
-            'placeholder': {
-                'source': {'type': 'adcm_entity'},
+        "name": "required import issue",
+        "template": {
+            "message": "${source} has an issue with required import",
+            "placeholder": {
+                "source": {"type": "adcm_entity"},
             },
         },
     },
     {
-        'name': 'host component issue',
-        'template': {
-            'message': '${source} has an issue with host-component mapping',
-            'placeholder': {
-                'source': {'type': 'adcm_entity'},
+        "name": "host component issue",
+        "template": {
+            "message": "${source} has an issue with host-component mapping",
+            "placeholder": {
+                "source": {"type": "adcm_entity"},
             },
         },
     },
@@ -55,58 +55,57 @@ data = [
 
 
 def insert_message_templates(apps, schema_editor):
-    MessageTemplate = apps.get_model('cm', 'MessageTemplate')
+    MessageTemplate = apps.get_model("cm", "MessageTemplate")
     MessageTemplate.objects.bulk_create([MessageTemplate(**kwargs) for kwargs in data])
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0072_multi_state'),
+        ("cm", "0072_multi_state"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='adcm',
-            name='issue',
+            model_name="adcm",
+            name="issue",
         ),
         migrations.RemoveField(
-            model_name='cluster',
-            name='issue',
+            model_name="cluster",
+            name="issue",
         ),
         migrations.RemoveField(
-            model_name='clusterobject',
-            name='issue',
+            model_name="clusterobject",
+            name="issue",
         ),
         migrations.RemoveField(
-            model_name='host',
-            name='issue',
+            model_name="host",
+            name="issue",
         ),
         migrations.RemoveField(
-            model_name='hostprovider',
-            name='issue',
+            model_name="hostprovider",
+            name="issue",
         ),
         migrations.RemoveField(
-            model_name='servicecomponent',
-            name='issue',
+            model_name="servicecomponent",
+            name="issue",
         ),
         migrations.AddField(
-            model_name='concernitem',
-            name='blocking',
+            model_name="concernitem",
+            name="blocking",
             field=models.BooleanField(default=True),
         ),
         migrations.AddField(
-            model_name='concernitem',
-            name='type',
+            model_name="concernitem",
+            name="type",
             field=models.CharField(
-                choices=[('lock', 'lock'), ('issue', 'issue'), ('flag', 'flag')],
-                default='lock',
+                choices=[("lock", "lock"), ("issue", "issue"), ("flag", "flag")],
+                default="lock",
                 max_length=8,
             ),
         ),
         migrations.AlterField(
-            model_name='concernitem',
-            name='name',
+            model_name="concernitem",
+            name="name",
             field=models.CharField(max_length=160, null=True, unique=True),
         ),
         migrations.RunPython(insert_message_templates),

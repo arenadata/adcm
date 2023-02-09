@@ -10,11 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf import settings
-from django.urls import reverse
-from rest_framework.response import Response
-
-from adcm.tests.base import BaseTestCase
 from cm.models import (
     ADCM,
     Action,
@@ -24,6 +19,11 @@ from cm.models import (
     ObjectConfig,
     Prototype,
 )
+from django.conf import settings
+from django.urls import reverse
+from rest_framework.response import Response
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestActionAPI(BaseTestCase):
@@ -46,7 +46,7 @@ class TestActionAPI(BaseTestCase):
         self.action = Action.objects.create(
             display_name="test_adcm_action",
             prototype=self.adcm_prototype,
-            type=ActionType.Job,
+            type=ActionType.JOB,
             state_available="any",
         )
 
@@ -65,7 +65,7 @@ class TestActionAPI(BaseTestCase):
         action = Action.objects.create(
             name=settings.ADCM_TURN_ON_MM_ACTION_NAME,
             prototype=self.adcm_prototype,
-            type=ActionType.Job,
+            type=ActionType.JOB,
             state_available="any",
         )
 

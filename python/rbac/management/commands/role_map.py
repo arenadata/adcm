@@ -14,7 +14,6 @@ import json
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.models import Subquery
-
 from rbac.models import Role
 
 
@@ -30,7 +29,6 @@ def read_role(role: Role) -> dict:
 
 
 class Command(BaseCommand):
-
     help = "Return role map to json file"
 
     def add_arguments(self, parser):

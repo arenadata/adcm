@@ -17,57 +17,56 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0017_auto_20190220_1137'),
+        ("cm", "0017_auto_20190220_1137"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ADCM',
+            name="ADCM",
             fields=[
                 (
-                    'id',
-                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
-                ('name', models.CharField(choices=[('ADCM', 'ADCM')], max_length=16, unique=True)),
+                ("name", models.CharField(choices=[("ADCM", "ADCM")], max_length=16, unique=True)),
                 (
-                    'config',
-                    models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.ObjectConfig'),
+                    "config",
+                    models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to="cm.ObjectConfig"),
                 ),
             ],
         ),
         migrations.AlterField(
-            model_name='prototype',
-            name='type',
+            model_name="prototype",
+            name="type",
             field=models.CharField(
                 choices=[
-                    ('adcm', 'adcm'),
-                    ('service', 'service'),
-                    ('cluster', 'cluster'),
-                    ('host', 'host'),
-                    ('provider', 'provider'),
+                    ("adcm", "adcm"),
+                    ("service", "service"),
+                    ("cluster", "cluster"),
+                    ("host", "host"),
+                    ("provider", "provider"),
                 ],
                 max_length=16,
             ),
         ),
         migrations.AlterField(
-            model_name='stageprototype',
-            name='type',
+            model_name="stageprototype",
+            name="type",
             field=models.CharField(
                 choices=[
-                    ('adcm', 'adcm'),
-                    ('service', 'service'),
-                    ('cluster', 'cluster'),
-                    ('host', 'host'),
-                    ('provider', 'provider'),
+                    ("adcm", "adcm"),
+                    ("service", "service"),
+                    ("cluster", "cluster"),
+                    ("host", "host"),
+                    ("provider", "provider"),
                 ],
                 max_length=16,
             ),
         ),
         migrations.AddField(
-            model_name='adcm',
-            name='prototype',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Prototype'),
+            model_name="adcm",
+            name="prototype",
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="cm.Prototype"),
         ),
     ]

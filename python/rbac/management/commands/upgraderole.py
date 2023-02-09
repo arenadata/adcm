@@ -12,9 +12,8 @@
 
 """UpgradeRole command for Django manage.py"""
 
-from django.core.management.base import BaseCommand, CommandError
-
 from cm.errors import AdcmEx
+from django.core.management.base import BaseCommand, CommandError
 from rbac.upgrade.role import init_roles
 
 
@@ -26,7 +25,7 @@ class Command(BaseCommand):
         manage.py upgraderole
     """
 
-    help = 'Upgrade roles'
+    help = "Upgrade roles"
 
     def handle(self, *args, **options):
         """Handler method"""

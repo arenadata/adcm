@@ -16,30 +16,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0073_issues_refactoring'),
+        ("cm", "0073_issues_refactoring"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='prototype',
-            name='config_group_customization',
+            model_name="prototype",
+            name="config_group_customization",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='stageprototype',
-            name='config_group_customization',
+            model_name="stageprototype",
+            name="config_group_customization",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='prototypeconfig',
-            name='group_customization',
+            model_name="prototypeconfig",
+            name="group_customization",
             field=models.BooleanField(null=True),
         ),
         migrations.AddField(
-            model_name='stageprototypeconfig',
-            name='group_customization',
+            model_name="stageprototypeconfig",
+            name="group_customization",
             field=models.BooleanField(null=True),
         ),
     ]

@@ -24,6 +24,7 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.custom_types import SecureString
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from ldap.ldapobject import SimpleLDAPObject
+
 from tests.library.utils import ConfigError
 
 LDAP_PREFIX = "ldap://"
@@ -133,10 +134,10 @@ class LDAPEntityManager:
         self.activate_user(new_dn)
         return new_dn
 
-    def delete(self, dn: str) -> None:
+    def delete(self, ldap_dn: str) -> None:
         """Delete record from LDAP"""
-        self.conn.delete_s(dn)
-        self._created_records.remove(dn)
+        self.conn.delete_s(ldap_dn)
+        self._created_records.remove(ldap_dn)
 
     @allure.step("Activate user {user_dn}")
     def activate_user(self, user_dn: str, uac: bytes = _ACTIVE_USER_UAC) -> None:
@@ -195,8 +196,8 @@ class LDAPEntityManager:
             if len(entities) == 0:
                 break
             with allure.step(f"Clean other entities, round #{i}"):
-                for dn in entities:
-                    self.conn.delete_s(dn)
+                for ldap_dn in entities:
+                    self.conn.delete_s(ldap_dn)
         else:
             # error was leading to tests re-run that can make more "dead" objects
             warnings.warn(f"Not all entities in test OU were deleted: {entities}")

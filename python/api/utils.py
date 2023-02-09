@@ -12,6 +12,22 @@
 
 from typing import List
 
+from cm.api import load_mm_objects
+from cm.errors import AdcmEx
+from cm.issue import update_hierarchy_issues, update_issue_after_deleting
+from cm.job import start_task
+from cm.models import (
+    Action,
+    ADCMEntity,
+    ClusterObject,
+    ConcernType,
+    Host,
+    HostComponent,
+    MaintenanceMode,
+    Prototype,
+    PrototypeConfig,
+    ServiceComponent,
+)
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.http.request import QueryDict
@@ -29,23 +45,6 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from cm.api import load_mm_objects
-from cm.errors import AdcmEx
-from cm.issue import update_hierarchy_issues, update_issue_after_deleting
-from cm.job import start_task
-from cm.models import (
-    Action,
-    ADCMEntity,
-    ClusterObject,
-    ConcernType,
-    Host,
-    HostComponent,
-    MaintenanceMode,
-    Prototype,
-    PrototypeConfig,
-    ServiceComponent,
-)
-
 
 def _change_mm_via_action(
     prototype: Prototype,
@@ -60,7 +59,7 @@ def _change_mm_via_action(
             obj=obj,
             conf={},
             attr={},
-            hc=[],
+            hostcomponent=[],
             hosts=[],
             verbose=False,
         )
@@ -99,13 +98,13 @@ def get_object_for_user(user, perms, klass, **kwargs):
         raise AdcmEx(error_code) from None
 
 
-def check_obj(model, req, error=None):
+def check_obj(model, req, error=None):  # pylint: disable=unused-argument
     if isinstance(req, dict):
-        kw = req
+        kwargs = req
     else:
-        kw = {"id": req}
+        kwargs = {"id": req}
 
-    return model.obj.get(**kw)
+    return model.obj.get(**kwargs)
 
 
 def hlink(view, lookup, lookup_url):
@@ -141,7 +140,7 @@ def update(serializer, **kwargs):
 
 def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
     """Filter out actions that are not allowed to run on object at that moment"""
-    if obj.concerns.filter(type=ConcernType.Lock).exists():
+    if obj.concerns.filter(type=ConcernType.LOCK).exists():
         return []
 
     allowed = []
@@ -156,7 +155,7 @@ def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
 def get_api_url_kwargs(obj, request, no_obj_type=False):
     obj_type = obj.prototype.type
 
-    if obj_type == "adcm":  # TODO: this is a temporary patch for `config` endpoint
+    if obj_type == "adcm":
         kwargs = {"adcm_pk": obj.pk}
     else:
         kwargs = {f"{obj_type}_id": obj.id}
@@ -308,7 +307,7 @@ class ObjectURL(HyperlinkedIdentityField):
 
 
 class UrlField(HyperlinkedIdentityField):
-    def get_kwargs(self, obj):
+    def get_kwargs(self, obj):  # pylint: disable=unused-argument
         return {}
 
     def get_url(self, obj, view_name, request, _format):

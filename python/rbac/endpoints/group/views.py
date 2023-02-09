@@ -10,16 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from audit.utils import audit
+from cm.errors import raise_adcm_ex
 from django_filters.rest_framework import CharFilter, DjangoFilterBackend, FilterSet
 from guardian.mixins import PermissionListMixin
+from rbac.endpoints.group.serializers import GroupSerializer
+from rbac.models import Group
 from rest_framework.filters import OrderingFilter
 from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import DjangoModelPermissionsAudit
-from audit.utils import audit
-from cm.errors import raise_adcm_ex
-from rbac.endpoints.group.serializers import GroupSerializer
-from rbac.models import Group
 
 
 class GroupFilterSet(FilterSet):

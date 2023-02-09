@@ -13,12 +13,11 @@
 
 from typing import List
 
+from cm.errors import raise_adcm_ex
+from cm.models import ADCMEntity
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
 from django.db.transaction import atomic
-
-from cm.errors import raise_adcm_ex
-from cm.models import ADCMEntity
 from rbac.models import Group, Policy, PolicyObject, Role, User
 from rbac.utils import update_m2m_field
 

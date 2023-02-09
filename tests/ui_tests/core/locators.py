@@ -16,7 +16,7 @@ class Descriptor(Flag):
 
 @dataclass()
 class BaseLocator:
-    by: str
+    by: str  # pylint: disable=invalid-name
     value: str
     name: str
 

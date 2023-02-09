@@ -18,6 +18,7 @@ from typing import Dict
 
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebElement
+
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 
@@ -63,7 +64,7 @@ class ConfigFieldsManipulator(BasePageObject):
     def _get_first_empty_input(self, row: WebElement) -> WebElement:
         """Get first empty field (simple search for inputs/textareas in row)"""
         for item in self.find_children(row, CommonConfigMenu.ConfigRow.value, timeout=2):
-            if not item.get_attribute('value'):
+            if not item.get_attribute("value"):
                 return item
         raise ValueError('All items in row has "value" or no items are presented')
 
@@ -71,7 +72,7 @@ class ConfigFieldsManipulator(BasePageObject):
         """Search for first empty (by key) input element for map and return 'parent' map WebElement"""
         for item in self.find_children(row, CommonConfigMenu.ConfigRow.map_item, timeout=2):
             key_input = self.find_child(item, CommonConfigMenu.ConfigRow.map_input_key)
-            if not key_input.get_attribute('value'):
+            if not key_input.get_attribute("value"):
                 return item
         raise ValueError('All items in map has "value" in key input field or no items are presented')
 
@@ -85,6 +86,6 @@ class ConfigFieldsManipulator(BasePageObject):
         def check_new_item_appeared():
             assert (
                 len(self.find_children(row, CommonConfigMenu.ConfigRow.value, timeout=1)) > before
-            ), f'New item should appear in {row}, but there are still {before} rows'
+            ), f"New item should appear in {row}, but there are still {before} rows"
 
         wait_until_step_succeeds(check_new_item_appeared, timeout=10, period=1)

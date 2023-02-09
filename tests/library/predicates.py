@@ -32,6 +32,14 @@ def name_in(names: Collection[str]) -> PredicateOfOne:
     return lambda object_with_name: object_with_name.name in names
 
 
+def name_key_is(expected_name: str) -> PredicateOfOne:
+    return lambda object_with_name: object_with_name.get("name") == expected_name
+
+
+def display_name_key_is(expected_name: str) -> PredicateOfOne:
+    return lambda object_with_name: object_with_name.get("display_name") == expected_name
+
+
 def username_is(expected: str) -> PredicateOfOne:
     return lambda object_with_username: object_with_username.username == expected
 

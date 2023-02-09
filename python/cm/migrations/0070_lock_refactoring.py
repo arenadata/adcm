@@ -17,88 +17,87 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0069_auto_20210607_1125'),
+        ("cm", "0069_auto_20210607_1125"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ConcernItem',
+            name="ConcernItem",
             fields=[
                 (
-                    'id',
-                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
-                ('name', models.CharField(max_length=160, null=True)),
-                ('reason', models.JSONField(default=dict)),
+                ("name", models.CharField(max_length=160, null=True)),
+                ("reason", models.JSONField(default=dict)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.RemoveField(
-            model_name='adcm',
-            name='stack',
+            model_name="adcm",
+            name="stack",
         ),
         migrations.RemoveField(
-            model_name='cluster',
-            name='stack',
+            model_name="cluster",
+            name="stack",
         ),
         migrations.RemoveField(
-            model_name='clusterobject',
-            name='stack',
+            model_name="clusterobject",
+            name="stack",
         ),
         migrations.RemoveField(
-            model_name='host',
-            name='stack',
+            model_name="host",
+            name="stack",
         ),
         migrations.RemoveField(
-            model_name='hostprovider',
-            name='stack',
+            model_name="hostprovider",
+            name="stack",
         ),
         migrations.RemoveField(
-            model_name='servicecomponent',
-            name='stack',
+            model_name="servicecomponent",
+            name="stack",
         ),
         migrations.AddField(
-            model_name='adcm',
-            name='concerns',
-            field=models.ManyToManyField(blank=True, related_name='adcm_entities', to='cm.ConcernItem'),
+            model_name="adcm",
+            name="concerns",
+            field=models.ManyToManyField(blank=True, related_name="adcm_entities", to="cm.ConcernItem"),
         ),
         migrations.AddField(
-            model_name='cluster',
-            name='concerns',
-            field=models.ManyToManyField(blank=True, related_name='cluster_entities', to='cm.ConcernItem'),
+            model_name="cluster",
+            name="concerns",
+            field=models.ManyToManyField(blank=True, related_name="cluster_entities", to="cm.ConcernItem"),
         ),
         migrations.AddField(
-            model_name='clusterobject',
-            name='concerns',
-            field=models.ManyToManyField(blank=True, related_name='clusterobject_entities', to='cm.ConcernItem'),
+            model_name="clusterobject",
+            name="concerns",
+            field=models.ManyToManyField(blank=True, related_name="clusterobject_entities", to="cm.ConcernItem"),
         ),
         migrations.AddField(
-            model_name='host',
-            name='concerns',
-            field=models.ManyToManyField(blank=True, related_name='host_entities', to='cm.ConcernItem'),
+            model_name="host",
+            name="concerns",
+            field=models.ManyToManyField(blank=True, related_name="host_entities", to="cm.ConcernItem"),
         ),
         migrations.AddField(
-            model_name='hostprovider',
-            name='concerns',
-            field=models.ManyToManyField(blank=True, related_name='hostprovider_entities', to='cm.ConcernItem'),
+            model_name="hostprovider",
+            name="concerns",
+            field=models.ManyToManyField(blank=True, related_name="hostprovider_entities", to="cm.ConcernItem"),
         ),
         migrations.AddField(
-            model_name='servicecomponent',
-            name='concerns',
-            field=models.ManyToManyField(blank=True, related_name='servicecomponent_entities', to='cm.ConcernItem'),
+            model_name="servicecomponent",
+            name="concerns",
+            field=models.ManyToManyField(blank=True, related_name="servicecomponent_entities", to="cm.ConcernItem"),
         ),
         migrations.AddField(
-            model_name='tasklog',
-            name='lock',
+            model_name="tasklog",
+            name="lock",
             field=models.ForeignKey(
                 default=None,
                 null=True,
                 on_delete=django.db.models.deletion.SET_NULL,
-                to='cm.concernitem',
+                to="cm.concernitem",
             ),
         ),
     ]

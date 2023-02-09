@@ -21,8 +21,9 @@ from typing import Tuple
 import allure
 import pytest
 from adcm_client.objects import Cluster, Task
-from adcm_pytest_plugin.steps.commands import clearaudit, logrotate
+from adcm_pytest_plugin.docker.commands import clearaudit, logrotate
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
+
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     parametrize_audit_scenario_parsing,

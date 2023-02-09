@@ -16,39 +16,38 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0086_set_mitogen_to_false'),
+        ("cm", "0086_set_mitogen_to_false"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='host',
-            name='maintenance_mode',
+            model_name="host",
+            name="maintenance_mode",
             field=models.CharField(
-                choices=[('disabled', 'disabled'), ('on', 'on'), ('off', 'off')],
-                default='disabled',
+                choices=[("disabled", "disabled"), ("on", "on"), ("off", "off")],
+                default="disabled",
                 max_length=16,
             ),
         ),
         migrations.AddField(
-            model_name='action',
-            name='allow_in_maintenance_mode',
+            model_name="action",
+            name="allow_in_maintenance_mode",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='prototype',
-            name='allow_maintenance_mode',
+            model_name="prototype",
+            name="allow_maintenance_mode",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='allow_in_maintenance_mode',
+            model_name="stageaction",
+            name="allow_in_maintenance_mode",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='stageprototype',
-            name='allow_maintenance_mode',
+            model_name="stageprototype",
+            name="allow_maintenance_mode",
             field=models.BooleanField(default=False),
         ),
     ]

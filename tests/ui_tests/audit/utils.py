@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from selenium.webdriver.remote.webelement import WebElement
+
 from tests.ui_tests.app.page.admin.page import LoginAuditPage, OperationsAuditPage
 
 

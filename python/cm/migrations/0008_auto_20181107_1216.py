@@ -16,30 +16,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0007_auto_20181023_1048'),
+        ("cm", "0007_auto_20181023_1048"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='stageupgrade',
-            name='max_strict',
+            model_name="stageupgrade",
+            name="max_strict",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='stageupgrade',
-            name='min_strict',
+            model_name="stageupgrade",
+            name="min_strict",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='upgrade',
-            name='max_strict',
+            model_name="upgrade",
+            name="max_strict",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='upgrade',
-            name='min_strict',
+            model_name="upgrade",
+            name="min_strict",
             field=models.BooleanField(default=False),
         ),
     ]

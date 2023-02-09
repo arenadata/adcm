@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.models import Action, ActionType, Bundle, Prototype
 from django.urls import reverse
 from rest_framework.response import Response
 
 from adcm.tests.base import BaseTestCase
-from cm.models import Action, ActionType, Bundle, Prototype
 
 
 class TestServicePrototypeAPI(BaseTestCase):
@@ -41,7 +41,7 @@ class TestServicePrototypeAPI(BaseTestCase):
         self.action = Action.objects.create(
             display_name="test_adcm_action",
             prototype=self.prototype_1,
-            type=ActionType.Job,
+            type=ActionType.JOB,
             state_available="any",
         )
 

@@ -13,14 +13,14 @@
 from copy import deepcopy
 from pathlib import Path
 
+from cm.adcm_config import ansible_decrypt
+from cm.models import ConfigLog
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.adcm_config import ansible_decrypt
-from cm.models import ConfigLog
 
 
 class TestConfigPasswordAPI(BaseTestCase):
@@ -246,7 +246,6 @@ class TestConfigSecretmapAPI(BaseTestCase):
         self.assertEqual(config_log.config["secretmap"], self.config_log.config["secretmap"])
 
     def test_post_null_secretmap_success(self):
-
         response: Response = self.client.post(
             path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
             params={"view": "interface"},

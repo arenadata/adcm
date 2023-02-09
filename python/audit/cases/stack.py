@@ -9,9 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from django.db.models import Model
-from rest_framework.response import Response
-
 from audit.cases.common import get_or_create_audit_obj, obj_pk_case, response_case
 from audit.models import (
     AuditLogOperationType,
@@ -20,6 +17,8 @@ from audit.models import (
     AuditOperation,
 )
 from cm.models import Bundle, Prototype
+from django.db.models import Model
+from rest_framework.response import Response
 
 
 def stack_case(
@@ -33,15 +32,15 @@ def stack_case(
     match path:
         case ["stack", "upload"]:
             audit_operation, audit_object = response_case(
-                obj_type=AuditObjectType.Bundle,
-                operation_type=AuditLogOperationType.Create,
+                obj_type=AuditObjectType.BUNDLE,
+                operation_type=AuditLogOperationType.CREATE,
                 operation_aux_str="uploaded",
             )
 
         case ["stack", "load"]:
             audit_operation, audit_object = response_case(
-                obj_type=AuditObjectType.Bundle,
-                operation_type=AuditLogOperationType.Create,
+                obj_type=AuditObjectType.BUNDLE,
+                operation_type=AuditLogOperationType.CREATE,
                 response=response,
                 operation_aux_str="loaded",
             )
@@ -49,32 +48,32 @@ def stack_case(
         case ["stack", "bundle", bundle_pk]:
             deleted_obj: Bundle
             audit_operation, audit_object = obj_pk_case(
-                obj_type=AuditObjectType.Bundle,
-                operation_type=AuditLogOperationType.Delete,
+                obj_type=AuditObjectType.BUNDLE,
+                operation_type=AuditLogOperationType.DELETE,
                 obj_pk=bundle_pk,
                 obj_name=deleted_obj.name,
             )
 
         case ["stack", "bundle", bundle_pk, "update"]:
             audit_operation, audit_object = obj_pk_case(
-                obj_type=AuditObjectType.Bundle,
-                operation_type=AuditLogOperationType.Update,
+                obj_type=AuditObjectType.BUNDLE,
+                operation_type=AuditLogOperationType.UPDATE,
                 obj_pk=bundle_pk,
             )
         case ["stack", "bundle", bundle_pk, "license", "accept"]:
             audit_operation, audit_object = obj_pk_case(
-                obj_type=AuditObjectType.Bundle,
-                operation_type=AuditLogOperationType.Update,
+                obj_type=AuditObjectType.BUNDLE,
+                operation_type=AuditLogOperationType.UPDATE,
                 obj_pk=bundle_pk,
                 operation_aux_str="license accepted",
             )
         case ["stack", "prototype", prototype_pk, "license", "accept"]:
             prototype = Prototype.objects.get(pk=prototype_pk)
             audit_object = get_or_create_audit_obj(
-                object_id=prototype_pk, object_name=prototype.name, object_type=AuditObjectType.Prototype
+                object_id=prototype_pk, object_name=prototype.name, object_type=AuditObjectType.PROTOTYPE
             )
             audit_operation = AuditOperation(
-                name=f"{prototype.type.capitalize()} license accepted", operation_type=AuditLogOperationType.Update
+                name=f"{prototype.type.capitalize()} license accepted", operation_type=AuditLogOperationType.UPDATE
             )
 
     return audit_operation, audit_object

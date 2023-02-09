@@ -34,51 +34,50 @@ def migrate_bundle_license_reverse(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0096_auto_20221101_1010'),
+        ("cm", "0096_auto_20221101_1010"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='prototype',
-            name='license',
+            model_name="prototype",
+            name="license",
             field=models.CharField(
-                choices=[('absent', 'absent'), ('accepted', 'accepted'), ('unaccepted', 'unaccepted')],
-                default='absent',
+                choices=[("absent", "absent"), ("accepted", "accepted"), ("unaccepted", "unaccepted")],
+                default="absent",
                 max_length=16,
             ),
         ),
         migrations.AddField(
-            model_name='prototype',
-            name='license_hash',
+            model_name="prototype",
+            name="license_hash",
             field=models.CharField(default=None, max_length=64, null=True),
         ),
         migrations.AddField(
-            model_name='prototype',
-            name='license_path',
+            model_name="prototype",
+            name="license_path",
             field=models.CharField(default=None, max_length=160, null=True),
         ),
         migrations.AddField(
-            model_name='stageprototype',
-            name='license',
+            model_name="stageprototype",
+            name="license",
             field=models.CharField(
-                choices=[('absent', 'absent'), ('accepted', 'accepted'), ('unaccepted', 'unaccepted')],
-                default='absent',
+                choices=[("absent", "absent"), ("accepted", "accepted"), ("unaccepted", "unaccepted")],
+                default="absent",
                 max_length=16,
             ),
         ),
         migrations.RunPython(code=migrate_bundle_license, reverse_code=migrate_bundle_license_reverse),
         migrations.RemoveField(
-            model_name='bundle',
-            name='license',
+            model_name="bundle",
+            name="license",
         ),
         migrations.RemoveField(
-            model_name='bundle',
-            name='license_hash',
+            model_name="bundle",
+            name="license_hash",
         ),
         migrations.RemoveField(
-            model_name='bundle',
-            name='license_path',
+            model_name="bundle",
+            name="license_path",
         ),
     ]

@@ -18,11 +18,11 @@ from django.db import migrations, models
 
 def fill_category(apps, schema_editor):
     """Add category records and link them to bundles"""
-    Bundle = apps.get_model('cm', 'Bundle')
-    ProductCategory = apps.get_model('cm', 'ProductCategory')
-    Prototype = apps.get_model('cm', 'Prototype')
+    Bundle = apps.get_model("cm", "Bundle")
+    ProductCategory = apps.get_model("cm", "ProductCategory")
+    Prototype = apps.get_model("cm", "Prototype")
     for bundle in Bundle.objects.all():
-        prototype = Prototype.objects.filter(bundle=bundle, name=bundle.name, type='cluster').first()
+        prototype = Prototype.objects.filter(bundle=bundle, name=bundle.name, type="cluster").first()
         if prototype:  # skip non-product bundles
             value = prototype.display_name or bundle.name
             category, _ = ProductCategory.objects.get_or_create(value=value)
@@ -31,30 +31,29 @@ def fill_category(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0082_remove_role'),
+        ("cm", "0082_remove_role"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ProductCategory',
+            name="ProductCategory",
             fields=[
                 (
-                    'id',
-                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
-                ('value', models.CharField(max_length=160, unique=True)),
-                ('visible', models.BooleanField(default=True)),
+                ("value", models.CharField(max_length=160, unique=True)),
+                ("visible", models.BooleanField(default=True)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.AddField(
-            model_name='bundle',
-            name='category',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.RESTRICT, to='cm.productcategory'),
+            model_name="bundle",
+            name="category",
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.RESTRICT, to="cm.productcategory"),
         ),
         migrations.RunPython(fill_category),
     ]

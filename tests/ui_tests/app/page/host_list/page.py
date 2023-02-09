@@ -19,6 +19,7 @@ import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
+
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.dialogs.create_host import HostCreateDialog
 from tests.ui_tests.app.page.common.dialogs.create_host_locators import (
@@ -40,7 +41,7 @@ class HostRowInfo:
     """Information from host row about host"""
 
     # helper to check if any cluster is assigned
-    UNASSIGNED_CLUSTER_VALUE: ClassVar[str] = 'Assign to cluster'
+    UNASSIGNED_CLUSTER_VALUE: ClassVar[str] = "Assign to cluster"
     fqdn: str
     provider: str
     cluster: Optional[str]
@@ -54,7 +55,7 @@ class HostListPage(BasePageObject):  # pylint: disable=too-many-public-methods
         super().__init__(driver, base_url, "/host")
         self.table = CommonTableObj(driver=self.driver, locators_class=HostListLocators.HostTable)
 
-    @allure.step('Get host information from row #{row_num}')
+    @allure.step("Get host information from row #{row_num}")
     def get_host_row(self, row_num: int = 0) -> WebElement:
         """Get host information from row"""
 
@@ -66,7 +67,7 @@ class HostListPage(BasePageObject):  # pylint: disable=too-many-public-methods
         assert_enough_rows(row_num, len(rows))
         return rows[row_num]
 
-    @allure.step('Get host information from table row #{row_num}')
+    @allure.step("Get host information from table row #{row_num}")
     def get_host_info_from_row(self, row_num: int = 0) -> HostRowInfo:
         """Get host information from table row"""
         row = self.table.get_row(row_num)
@@ -79,7 +80,7 @@ class HostListPage(BasePageObject):  # pylint: disable=too-many-public-methods
             state=self.find_child(row, row_elements.state).text,
         )
 
-    @allure.step('Click on cell {child_locator} (row #{row_num})')
+    @allure.step("Click on cell {child_locator} (row #{row_num})")
     def click_on_row_child(self, row_num: int, child_locator: BaseLocator):
         """Click on row child"""
         row = self.table.get_row(row_num)
@@ -124,7 +125,7 @@ class HostListPage(BasePageObject):  # pylint: disable=too-many-public-methods
         self.find_and_click(ActionDialog.run)
         self.wait_element_hide(ActionDialog.body)
 
-    @allure.step('Delete host in row {host_row_num}')
+    @allure.step("Delete host in row {host_row_num}")
     def delete_host(self, host_row_num: int):
         """Delete host from table row"""
         self.click_on_row_child(host_row_num, HostListLocators.HostTable.HostRow.delete_btn)
@@ -140,7 +141,7 @@ class HostListPage(BasePageObject):  # pylint: disable=too-many-public-methods
         self.find_element(option, timeout=2).click()
         self.wait_element_hide(option)
 
-    @allure.step('Assert host in row {row_num} is assigned to cluster {cluster_name}')
+    @allure.step("Assert host in row {row_num} is assigned to cluster {cluster_name}")
     def assert_host_bonded_to_cluster(self, row_num: int, cluster_name: str):
         """Assert host in row is assigned to cluster"""
 
@@ -162,14 +163,14 @@ class HostListPage(BasePageObject):  # pylint: disable=too-many-public-methods
         host_row = self.table.get_row(row_num)
         wait_until_step_succeeds(_check_host_state, timeout=10, period=0.5, page=self, row=host_row)
 
-    @allure.step('Click on maintenance mode button in row {row_num}')
+    @allure.step("Click on maintenance mode button in row {row_num}")
     def click_on_maintenance_mode_btn(self, row_num: int):
         """Click maintenance mode in row"""
 
         row = self.table.get_row(row_num)
         self.find_child(row, HostListLocators.HostTable.HostRow.maintenance_mode_btn).click()
 
-    @allure.step('Assert maintenance mode state in row {row_num}')
+    @allure.step("Assert maintenance mode state in row {row_num}")
     def assert_maintenance_mode_state(self, row_num: int, is_mm_state_on: Optional[bool] = True):
         """
         Assert maintenance mode state in row
@@ -206,7 +207,7 @@ class HostListPage(BasePageObject):  # pylint: disable=too-many-public-methods
         host_row = self.table.get_row(row_num)
         wait_until_step_succeeds(_check_mm_state, timeout=4, period=0.5, page=self, row=host_row)
 
-    @allure.step('Open host creation popup')
+    @allure.step("Open host creation popup")
     def open_host_creation_popup(self) -> HostCreateDialog:
         """Open host creation popup"""
         self.find_and_click(HostListLocators.Tooltip.host_add_btn)

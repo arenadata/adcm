@@ -14,14 +14,13 @@ from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
 
+from cm.models import Bundle, Cluster, ConfigLog, Prototype
 from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
+from rbac.models import Role, User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
-
-from cm.models import Bundle, Cluster, ConfigLog, Prototype
-from rbac.models import Role, User
 
 APPLICATION_JSON = "application/json"
 

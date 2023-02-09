@@ -12,13 +12,13 @@
 
 import json
 
+from audit.models import AuditObject, AuditObjectType
+from cm.models import Bundle, Prototype, PrototypeConfig
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from adcm.tests.base import BaseTestCase
-from audit.models import AuditObject, AuditObjectType
-from cm.models import Bundle, Prototype, PrototypeConfig
 
 
 class TestAuditObjects(BaseTestCase):
@@ -90,7 +90,7 @@ class TestAuditObjects(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         cluster_id = response.data["id"]
-        filter_kwargs = dict(object_id=cluster_id, object_type=AuditObjectType.Cluster)
+        filter_kwargs = {"object_id": cluster_id, "object_type": AuditObjectType.CLUSTER}
         cluster_ao: AuditObject = AuditObject.objects.filter(**filter_kwargs).first()
 
         self.assertIsNotNone(cluster_ao)

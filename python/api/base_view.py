@@ -13,6 +13,9 @@
 # pylint: disable=not-callable, unused-import, too-many-locals
 
 import rest_framework.pagination
+from api.utils import AdcmFilterBackend, AdcmOrderingFilter, getlist_from_querydict
+from audit.utils import audit
+from cm.errors import AdcmEx
 from django.conf import settings
 from django.core.exceptions import FieldError, ObjectDoesNotExist
 from rest_framework import serializers
@@ -23,9 +26,6 @@ from rest_framework.utils.urls import replace_query_param
 from rest_framework.viewsets import ViewSetMixin
 
 from adcm.permissions import DjangoObjectPermissionsAudit
-from api.utils import AdcmFilterBackend, AdcmOrderingFilter, getlist_from_querydict
-from audit.utils import audit
-from cm.errors import AdcmEx
 
 
 class ModelPermOrReadOnlyForAuth(DjangoModelPermissions):
@@ -103,7 +103,7 @@ class PaginatedView(GenericUIView):
     def get_ordering(request, queryset, view):
         return AdcmOrderingFilter().get_ordering(request, queryset, view)
 
-    def is_paged(self, request):
+    def is_paged(self, request):  # pylint: disable=unused-argument
         limit = self.request.query_params.get("limit", False)
         offset = self.request.query_params.get("offset", False)
 
@@ -137,8 +137,10 @@ class PaginatedView(GenericUIView):
                     obj = obj.values(*fields)
 
             except (FieldError, ValueError):
-                qp = ",".join([f"{k}={v}" for k, v in request.query_params.items() if k in ["fields", "distinct"]])
-                msg = f"Bad query params: {qp}"
+                query_params = ",".join(
+                    [f"{k}={v}" for k, v in request.query_params.items() if k in ["fields", "distinct"]]
+                )
+                msg = f"Bad query params: {query_params}"
 
                 raise AdcmEx("BAD_QUERY_PARAMS", msg=msg) from None
 
@@ -161,7 +163,7 @@ class PaginatedView(GenericUIView):
 
         raise AdcmEx("TOO_LONG", msg=msg, args=self.get_paged_link())
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         obj = self.filter_queryset(self.get_queryset())
 
         return self.get_page(obj, request)
@@ -189,7 +191,7 @@ class DetailView(GenericUIView):
 
         return obj
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         obj = self.get_object()
         serializer = self.get_serializer(obj)
 

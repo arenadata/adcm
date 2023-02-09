@@ -13,11 +13,6 @@
 from datetime import datetime
 from unittest.mock import patch
 
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED, HTTP_403_FORBIDDEN
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -35,7 +30,12 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from django.urls import reverse
 from rbac.models import User
+from rest_framework.response import Response
+from rest_framework.status import HTTP_201_CREATED, HTTP_403_FORBIDDEN
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestComponentAudit(BaseTestCase):
@@ -73,7 +73,7 @@ class TestComponentAudit(BaseTestCase):
     def check_log(
         self,
         log: AuditLog,
-        operation_result: AuditLogOperationResult = AuditLogOperationResult.Success,
+        operation_result: AuditLogOperationResult = AuditLogOperationResult.SUCCESS,
         user: User | None = None,
         operation_name: str = "Component configuration updated",
         object_changes: dict | None = None,
@@ -89,10 +89,10 @@ class TestComponentAudit(BaseTestCase):
             log.audit_object.object_name,
             f"{self.cluster.name}/{self.service.display_name}/{self.component.display_name}",
         )
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Component)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.COMPONENT)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, operation_name)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertEqual(log.user.pk, user.pk)
         self.assertIsInstance(log.operation_time, datetime)
@@ -104,11 +104,11 @@ class TestComponentAudit(BaseTestCase):
             log.audit_object.object_name,
             f"{self.cluster.name}/{self.service.display_name}/{self.component.display_name}",
         )
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Component)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.COMPONENT)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, f"{self.action_display_name} action launched")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.SUCCESS)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.object_changes, {})
 
@@ -151,7 +151,7 @@ class TestComponentAudit(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -185,7 +185,7 @@ class TestComponentAudit(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -225,7 +225,7 @@ class TestComponentAudit(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -347,7 +347,7 @@ class TestComponentAudit(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Component updated",
-            operation_result=AuditLogOperationResult.Fail,
+            operation_result=AuditLogOperationResult.FAIL,
         )
 
     def test_change_maintenance_mode_denied(self):
@@ -362,6 +362,6 @@ class TestComponentAudit(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Component updated",
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )

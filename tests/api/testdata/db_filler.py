@@ -18,6 +18,7 @@ from copy import deepcopy
 from typing import Any, Dict, List, Literal
 
 import allure
+
 from tests.api.steps.common import assume_step
 from tests.api.testdata.getters import get_endpoint_data, get_object_data
 from tests.api.utils.api_objects import ADCMTestApiWrapper, ExpectedResponse, Request
@@ -69,7 +70,7 @@ class DbFiller:
         full_item = get_object_data(
             adcm=self.adcm,
             endpoint=endpoint,
-            object_id=self._get_or_create_data_for_endpoint(endpoint=endpoint)[0]['id'],
+            object_id=self._get_or_create_data_for_endpoint(endpoint=endpoint)[0]["id"],
         )
 
         if method in (Methods.GET, Methods.DELETE):
@@ -92,7 +93,7 @@ class DbFiller:
                     changed_fields[field.name] = self._generate_field_value(
                         field=field, old_value=full_item[field.name]
                     )
-            if getattr(endpoint.data_class, 'dependable_fields_sync', None):
+            if getattr(endpoint.data_class, "dependable_fields_sync", None):
                 changed_fields = endpoint.data_class.dependable_fields_sync(self.adcm, changed_fields)
             result = {
                 "full_item": full_item.copy(),
@@ -146,7 +147,7 @@ class DbFiller:
         for data_class in endpoint.data_class.implicitly_depends_on:
             self._get_or_create_data_for_endpoint(endpoint=Endpoints.get_by_data_class(data_class), force=force)
 
-        if getattr(endpoint.data_class, 'dependable_fields_sync', None):
+        if getattr(endpoint.data_class, "dependable_fields_sync", None):
             data = endpoint.data_class.dependable_fields_sync(self.adcm, data)
 
         if not prepare_data_only:
@@ -185,11 +186,11 @@ class DbFiller:
                     field=field.f_type.relates_on.field, force=force
                 )
 
-        if endpoint == Endpoints.GroupConfig:
+        if endpoint == Endpoints.GROUP_CONFIG:
             if field.name == "object_id":
                 field.f_type.fk_link = Endpoints.get_by_path(_data[related_field_name]).data_class
 
-        elif endpoint == Endpoints.ConfigLog:
+        elif endpoint == Endpoints.CONFIG_LOG:
             # Skip initial ADCM object because ADCM config object has validation rules
             if _data[related_field_name] == 1:
                 _data[related_field_name] = 2
@@ -201,10 +202,10 @@ class DbFiller:
                 ][-1]
                 field.f_type.schema = build_schema_by_json(current_config_log[field.name])
 
-        elif endpoint in (Endpoints.RbacNotBuiltInPolicy, Endpoints.RbacBuiltInPolicy):
+        elif endpoint in (Endpoints.RBAC_NOT_BUILTIN_POLICY, Endpoints.RBAC_BUILTIN_POLICY):
             if field.name == "object":
                 role_fk = _data[related_field_name]
-                role = get_object_data(adcm=self.adcm, endpoint=endpoint.RbacAnyRole, object_id=role_fk)
+                role = get_object_data(adcm=self.adcm, endpoint=endpoint.RBAC_ANY_ROLE, object_id=role_fk)
                 field.f_type.payload = [
                     {
                         "id": self._get_adcm_object_id_by_object_type(object_type),
@@ -223,7 +224,7 @@ class DbFiller:
         self, object_type: Literal["cluster", "service", "component", "provider", "host"]
     ) -> int:
         """Get random created object by given type"""
-        return random.choice(get_endpoint_data(adcm=self.adcm, endpoint=Endpoints[object_type.capitalize()]))["id"]
+        return random.choice(get_endpoint_data(adcm=self.adcm, endpoint=Endpoints[object_type.upper()]))["id"]
 
     def _prepare_data_for_object_creation(self, endpoint: Endpoints = None, force=False):
         data = {}
@@ -285,7 +286,7 @@ class DbFiller:
 
             if isinstance(field.f_type, ForeignKeyM2M):
                 keys = random.sample(fk_vals, random.randint(1, len(fk_vals)))
-                result = [{'id': el} for el in keys]
+                result = [{"id": el} for el in keys]
                 # we do not save values for M2M Fk to used keys due to the fact
                 # that we have no idea how to properly use it
                 self._available_fkeys[fk_class_name].update(keys)
@@ -293,7 +294,7 @@ class DbFiller:
                     self._add_child_fk_values_to_available_fkeys(fk_ids=keys, fk_data_class=field.f_type.fk_link)
             elif isinstance(field.f_type, ObjectForeignKey):
                 key = random.choice(list(fk_vals))
-                result = {'id': key}
+                result = {"id": key}
                 self._available_fkeys[fk_class_name].add(key)
                 if new_fk:
                     self._add_child_fk_values_to_available_fkeys(fk_ids=[key], fk_data_class=field.f_type.fk_link)
@@ -334,7 +335,7 @@ class DbFiller:
             raise ValueError("Field type is not ForeignKey")
         new_objects = get_endpoint_data(self.adcm, Endpoints.get_by_data_class(f_type.fk_link))
         if len(new_objects) == 1:
-            with assume_step(f'Data creation is not available for {f_type.fk_link}', exception=ValueError):
+            with assume_step(f"Data creation is not available for {f_type.fk_link}", exception=ValueError):
                 new_objects = self._get_or_create_data_for_endpoint(
                     endpoint=Endpoints.get_by_data_class(f_type.fk_link), force=True
                 )
@@ -349,8 +350,8 @@ class DbFiller:
         """Generate new value for generic foreign key list"""
         return [
             {
-                'id': self._get_new_id_by_type(generic_key['id'], generic_key['type'], self.adcm),
-                'type': generic_key['type'],
+                "id": self._get_new_id_by_type(generic_key["id"], generic_key["type"], self.adcm),
+                "type": generic_key["type"],
             }
             for generic_key in current_value
         ]
@@ -361,8 +362,8 @@ class DbFiller:
         ! This method isn't universal, it was originally made for resolving generic keys for "object" in RBAC Policy !
         ! api_wrapper is instance of tests.api.utils.api_objects.ADCMTestApiWrapper !
         """
-        endpoint = Endpoints[key_type.lower().capitalize()]
-        new_item = next(filter(lambda x: x['id'] != prev_id, get_endpoint_data(api_wrapper, endpoint)), None)
+        endpoint = Endpoints[key_type.lower().upper()]
+        new_item = next(filter(lambda x: x["id"] != prev_id, get_endpoint_data(api_wrapper, endpoint)), None)
         if new_item is None:
-            raise ValueError(f'Failed to find new generic foreign key id for type {key_type}')
-        return new_item['id']
+            raise ValueError(f"Failed to find new generic foreign key id for type {key_type}")
+        return new_item["id"]

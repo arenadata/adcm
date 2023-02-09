@@ -16,6 +16,7 @@ from typing import List
 
 import allure
 import pytest
+
 from tests.api.testdata.db_filler import DbFiller
 from tests.api.testdata.generators import TestData, get_data_for_methods_check
 
@@ -26,21 +27,21 @@ pytestmark = [
 
 @allure.title("Prepare data for methods tests")
 @pytest.fixture(params=get_data_for_methods_check())
-def prepare_data(request, adcm_api_fs):
+def prepare_data(request, adcm_api):
     """
     Generate request body here since it depends on actual ADCM instance
     and can't be determined when generating
     """
     test_data_list: List[TestData] = request.param
     for test_data in test_data_list:
-        request_data = DbFiller(adcm=adcm_api_fs).generate_valid_request_data(
+        request_data = DbFiller(adcm=adcm_api).generate_valid_request_data(
             endpoint=test_data.request.endpoint, method=test_data.request.method
         )
 
         test_data.request.data = request_data["data"]
         test_data.request.object_id = request_data.get("object_id")
 
-    return adcm_api_fs, test_data_list
+    return adcm_api, test_data_list
 
 
 def test_methods(prepare_data):

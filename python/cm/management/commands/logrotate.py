@@ -16,11 +16,6 @@ from datetime import datetime, timedelta
 from enum import Enum
 from subprocess import STDOUT, CalledProcessError, check_output
 
-from django.conf import settings
-from django.core.management.base import BaseCommand
-from django.db import transaction
-from django.utils import timezone
-
 from audit.models import AuditLogOperationResult
 from audit.utils import make_audit_log
 from cm.models import (
@@ -36,6 +31,10 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from django.conf import settings
+from django.core.management.base import BaseCommand
+from django.db import transaction
+from django.utils import timezone
 
 logger = logging.getLogger("background_tasks")
 
@@ -160,26 +159,28 @@ class Command(BaseCommand):
 
             exclude_pks = set()
             target_configlogs = ConfigLog.objects.filter(date__lte=threshold_date)
-            for cl in target_configlogs:
-                for cl_pk in (cl.obj_ref.current, cl.obj_ref.previous):
+            for config_log in target_configlogs:
+                for cl_pk in (config_log.obj_ref.current, config_log.obj_ref.previous):
                     exclude_pks.add(cl_pk)
-            for gc in GroupConfig.objects.all():
-                if gc.config:
-                    exclude_pks.add(gc.config.previous)
-                    exclude_pks.add(gc.config.current)
+
+            for group_config in GroupConfig.objects.all():
+                if group_config.config:
+                    exclude_pks.add(group_config.config.previous)
+                    exclude_pks.add(group_config.config.current)
+
             target_configlogs = target_configlogs.exclude(pk__in=exclude_pks)
             target_configlog_ids = set(i[0] for i in target_configlogs.values_list("id"))
             target_objectconfig_ids = set(
                 cl.obj_ref.id for cl in target_configlogs if not self.__has_related_records(cl.obj_ref)
             )
             if target_configlog_ids or target_objectconfig_ids:
-                make_audit_log("config", AuditLogOperationResult.Success, "launched")
+                make_audit_log("config", AuditLogOperationResult.SUCCESS, "launched")
 
             with transaction.atomic():
                 ConfigLog.objects.filter(id__in=target_configlog_ids).delete()
                 ObjectConfig.objects.filter(id__in=target_objectconfig_ids).delete()
                 if target_configlog_ids or target_objectconfig_ids:
-                    make_audit_log("config", AuditLogOperationResult.Success, "completed")
+                    make_audit_log("config", AuditLogOperationResult.SUCCESS, "completed")
 
             self.__log(
                 f"Deleted {len(target_configlog_ids)} ConfigLogs and " f"{len(target_objectconfig_ids)} ObjectConfigs",
@@ -187,7 +188,7 @@ class Command(BaseCommand):
             )
 
         except Exception as e:  # pylint: disable=broad-except
-            make_audit_log("config", AuditLogOperationResult.Fail, "completed")
+            make_audit_log("config", AuditLogOperationResult.FAIL, "completed")
             self.__log("Error in ConfigLog rotation", "warning")
             self.__log(e, "exception")
 
@@ -252,11 +253,11 @@ class Command(BaseCommand):
                         except FileNotFoundError:
                             pass
                 if is_deleted:
-                    make_audit_log("task", AuditLogOperationResult.Success, "launched")
-                    make_audit_log("task", AuditLogOperationResult.Success, "completed")
+                    make_audit_log("task", AuditLogOperationResult.SUCCESS, "launched")
+                    make_audit_log("task", AuditLogOperationResult.SUCCESS, "completed")
                 self.__log("fs JobLog rotated", "info")
         except Exception as e:  # pylint: disable=broad-except
-            make_audit_log("task", AuditLogOperationResult.Fail, "completed")
+            make_audit_log("task", AuditLogOperationResult.FAIL, "completed")
             self.__log("Error in JobLog rotation", "warning")
             self.__log(e, "exception")
 

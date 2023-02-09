@@ -22,30 +22,30 @@ def test_full_upgrade_hostprovider_first(sdk_client_fs: ADCMClient):
      and upgrade cluster and host with provider after that
     and check that all was upgraded.
     """
-    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
-    sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster'))
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster"))
+    sdk_client_fs.upload_from_fs(get_data_dir(__file__, "upgradable_cluster"))
     cluster = bundle.cluster_create("test")
     service = cluster.service_add(name="zookeeper")
-    comp = service.component(name='master')
-    hp_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-    sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider'))
+    comp = service.component(name="master")
+    hp_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
+    sdk_client_fs.upload_from_fs(get_data_dir(__file__, "upgradable_hostprovider"))
     hostprovider = hp_bundle.provider_create("test")
     host = hostprovider.host_create(fqdn="localhost")
     cluster.host_add(host)
     cluster.hostcomponent_set((host, comp))
-    upgr_hp = hostprovider.upgrade(name='upgrade to 2.0')
+    upgr_hp = hostprovider.upgrade(name="upgrade to 2.0")
     upgr_hp.do()
-    upgr_cl = cluster.upgrade(name='upgrade to 1.6')
+    upgr_cl = cluster.upgrade(name="upgrade to 1.6")
     upgr_cl.do()
     cluster.reread()
     service.reread()
     hostprovider.reread()
     host.reread()
-    with allure.step('Check cluster, service, hostprovider, host were upgraded'):
-        assert cluster.prototype().version == '1.6'
-        assert service.prototype().version == '3.4.11'
-        assert hostprovider.prototype().version == '2.0'
-        assert host.prototype().version == '00.10'
+    with allure.step("Check cluster, service, hostprovider, host were upgraded"):
+        assert cluster.prototype().version == "1.6"
+        assert service.prototype().version == "3.4.11"
+        assert hostprovider.prototype().version == "2.0"
+        assert host.prototype().version == "00.10"
 
 
 def test_full_upgrade_cluster_first(sdk_client_fs: ADCMClient):
@@ -53,27 +53,27 @@ def test_full_upgrade_cluster_first(sdk_client_fs: ADCMClient):
      and upgrade cluster and host with provider after that
     and check that all was upgraded.
     """
-    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
-    sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster'))
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster"))
+    sdk_client_fs.upload_from_fs(get_data_dir(__file__, "upgradable_cluster"))
     cluster = bundle.cluster_create("test")
     service = cluster.service_add(name="zookeeper")
-    comp = service.component(name='master')
-    hp_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
-    sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider'))
+    comp = service.component(name="master")
+    hp_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider"))
+    sdk_client_fs.upload_from_fs(get_data_dir(__file__, "upgradable_hostprovider"))
     hostprovider = hp_bundle.provider_create("test")
     host = hostprovider.host_create(fqdn="localhost")
     cluster.host_add(host)
     cluster.hostcomponent_set((host, comp))
-    upgr_cl = cluster.upgrade(name='upgrade to 1.6')
+    upgr_cl = cluster.upgrade(name="upgrade to 1.6")
     upgr_cl.do()
-    upgr_hp = hostprovider.upgrade(name='upgrade to 2.0')
+    upgr_hp = hostprovider.upgrade(name="upgrade to 2.0")
     upgr_hp.do()
     cluster.reread()
     service.reread()
     hostprovider.reread()
     host.reread()
-    with allure.step('Check cluster, service, hostprovider, host were upgraded'):
-        assert cluster.prototype().version == '1.6'
-        assert service.prototype().version == '3.4.11'
-        assert hostprovider.prototype().version == '2.0'
-        assert host.prototype().version == '00.10'
+    with allure.step("Check cluster, service, hostprovider, host were upgraded"):
+        assert cluster.prototype().version == "1.6"
+        assert service.prototype().version == "3.4.11"
+        assert hostprovider.prototype().version == "2.0"
+        assert host.prototype().version == "00.10"

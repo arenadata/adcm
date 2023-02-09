@@ -42,8 +42,8 @@ describe('Form control :: bundle component', () => {
     }).compileComponents();
   });
 
-  beforeEach(() => {
-    fixture = TestBed.createComponent(BundlesComponent);
+  beforeEach(async () => {
+    fixture = await TestBed.createComponent(BundlesComponent);
     component = fixture.componentInstance;
     component.form = new FormGroup({ prototype_id: new FormControl() });
     component.limit = 10;

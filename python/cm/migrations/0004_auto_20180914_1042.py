@@ -17,120 +17,119 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0003_auto_20180829_1020'),
+        ("cm", "0003_auto_20180829_1020"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ClusterBind',
+            name="ClusterBind",
             fields=[
                 (
-                    'id',
-                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
                 (
-                    'cluster',
-                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Cluster'),
+                    "cluster",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="cm.Cluster"),
                 ),
                 (
-                    'service',
+                    "service",
                     models.ForeignKey(
                         default=None,
                         null=True,
                         on_delete=django.db.models.deletion.CASCADE,
-                        to='cm.Prototype',
+                        to="cm.Prototype",
                     ),
                 ),
                 (
-                    'source',
+                    "source",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name='source',
-                        to='cm.Cluster',
+                        related_name="source",
+                        to="cm.Cluster",
                     ),
                 ),
             ],
         ),
         migrations.CreateModel(
-            name='PrototypeExport',
+            name="PrototypeExport",
             fields=[
                 (
-                    'id',
-                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
-                ('name', models.CharField(max_length=160)),
+                ("name", models.CharField(max_length=160)),
                 (
-                    'prototype',
-                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Prototype'),
+                    "prototype",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="cm.Prototype"),
                 ),
             ],
         ),
         migrations.CreateModel(
-            name='PrototypeImport',
+            name="PrototypeImport",
             fields=[
                 (
-                    'id',
-                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
-                ('name', models.CharField(max_length=160)),
-                ('min_version', models.CharField(max_length=80)),
-                ('max_version', models.CharField(max_length=80)),
+                ("name", models.CharField(max_length=160)),
+                ("min_version", models.CharField(max_length=80)),
+                ("max_version", models.CharField(max_length=80)),
                 (
-                    'prototype',
-                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Prototype'),
+                    "prototype",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="cm.Prototype"),
                 ),
             ],
         ),
         migrations.CreateModel(
-            name='StagePrototypeExport',
+            name="StagePrototypeExport",
             fields=[
                 (
-                    'id',
-                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
-                ('name', models.CharField(max_length=160)),
+                ("name", models.CharField(max_length=160)),
                 (
-                    'prototype',
-                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.StagePrototype'),
+                    "prototype",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="cm.StagePrototype"),
                 ),
             ],
         ),
         migrations.CreateModel(
-            name='StagePrototypeImport',
+            name="StagePrototypeImport",
             fields=[
                 (
-                    'id',
-                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
-                ('name', models.CharField(max_length=160)),
-                ('min_version', models.CharField(max_length=80)),
-                ('max_version', models.CharField(max_length=80)),
+                ("name", models.CharField(max_length=160)),
+                ("min_version", models.CharField(max_length=80)),
+                ("max_version", models.CharField(max_length=80)),
                 (
-                    'prototype',
-                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.StagePrototype'),
+                    "prototype",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="cm.StagePrototype"),
                 ),
             ],
         ),
         migrations.AlterUniqueTogether(
-            name='stageprototypeimport',
-            unique_together={('prototype', 'name')},
+            name="stageprototypeimport",
+            unique_together={("prototype", "name")},
         ),
         migrations.AlterUniqueTogether(
-            name='stageprototypeexport',
-            unique_together={('prototype', 'name')},
+            name="stageprototypeexport",
+            unique_together={("prototype", "name")},
         ),
         migrations.AlterUniqueTogether(
-            name='prototypeimport',
-            unique_together={('prototype', 'name')},
+            name="prototypeimport",
+            unique_together={("prototype", "name")},
         ),
         migrations.AlterUniqueTogether(
-            name='prototypeexport',
-            unique_together={('prototype', 'name')},
+            name="prototypeexport",
+            unique_together={("prototype", "name")},
         ),
         migrations.AlterUniqueTogether(
-            name='clusterbind',
-            unique_together={('cluster', 'source', 'service')},
+            name="clusterbind",
+            unique_together={("cluster", "source", "service")},
         ),
     ]

@@ -1,8 +1,12 @@
+from collections import UserList
 from operator import attrgetter
 from typing import Any, Callable, Iterable, Protocol, Type, TypeVar
 
+from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
+
+from tests.library.predicates import name_is
 from tests.ui_tests.core.interactors import Interactor
 from tests.ui_tests.core.locators import BaseLocator, Descriptor, Locator
 
@@ -12,7 +16,7 @@ class AutoChildElement:
     _element: WebElement
     _view: Interactor
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
         if not hasattr(cls, "Locators"):
             raise ValueError("Children locators should be available as 'Locators' in class")
 
@@ -63,7 +67,6 @@ class DialogLocatorsLike(Protocol):
 
 
 class AutoChildDialog(AutoChildElement):
-
     Locators: DialogLocatorsLike
 
     @classmethod
@@ -92,12 +95,20 @@ def _build_input(locator: Locator) -> property:
 
 # !===== Element Wrappers =====!
 
+T = TypeVar("T")
 
-class Input:
+
+def as_element(cls: Type[T], interactor: Interactor) -> Callable[[WebElement], T]:
+    return lambda element: cls(element=element, interactor=interactor)
+
+
+class Element:
     def __init__(self, element: WebElement, interactor: Interactor):
         self.element = element
         self._view = interactor
 
+
+class Input(Element):
     @property
     def value(self) -> str:
         return self.element.get_attribute("value")
@@ -109,9 +120,53 @@ class Input:
         self._view.clear_by_keys(self.element)
 
 
-# !===== Mixins =====!
+class Button(Element):
+    def hover(self) -> Any:
+        self._view.hover_element(self.element)
 
-T = TypeVar("T")
+    def click(self):
+        self.element.click()
+
+    def is_disabled(self):
+        return self.element.get_attribute("disabled") == "true"
+
+
+class Link(Element):
+    _default_locator = Locator(By.TAG_NAME, "a")
+
+    def __init__(self, element: WebElement, interactor: Interactor):
+        super().__init__(element=element, interactor=interactor)
+        self.name = self.element.text
+
+    @classmethod
+    def from_parent(cls, parent: WebElement, interactor: Interactor):
+        return cls(element=interactor.find_child(parent, cls._default_locator), interactor=interactor)
+
+    def click(self) -> None:
+        self.element.click()
+
+
+class ListOfElements(UserList):
+    data: list[T]
+
+    @property
+    def first(self) -> T:
+        assert self.data, "There should be at least one element"
+        return self.data[0]
+
+    @property
+    def last(self) -> T:
+        assert self.data, "There should be at least one element"
+        return self.data[-1]
+
+    def named(self, name: str) -> T:
+        assert self.data, "There should be at least one element"
+        suitable = next(filter(name_is(name), self.data), None)
+        assert suitable, f"No item named {name}"
+        return suitable
+
+
+# !===== Mixins =====!
 
 
 class TableLike(Protocol):

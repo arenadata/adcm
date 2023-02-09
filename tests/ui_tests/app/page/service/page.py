@@ -18,6 +18,7 @@ from contextlib import contextmanager
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebElement
+
 from tests.ui_tests.app.page.common.base_page import BaseDetailedPage, BasePageObject
 from tests.ui_tests.app.page.common.common_locators import (
     ObjectPageLocators,
@@ -53,11 +54,11 @@ class ServicePageMixin(BasePageObject):  # pylint: disable=too-many-instance-att
     table: CommonTableObj
     group_config = GroupConfigList
 
-    __ACTIVE_MENU_CLASS = 'active'
+    __ACTIVE_MENU_CLASS = "active"
 
     def __init__(self, driver, base_url, cluster_id: int, service_id: int):
         if self.MENU_SUFFIX is None:
-            raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
+            raise AttributeError("You should explicitly set MENU_SUFFIX in class definition")
         super().__init__(
             driver,
             base_url,
@@ -131,7 +132,7 @@ class ServicePageMixin(BasePageObject):  # pylint: disable=too-many-instance-att
 class ServiceMainPage(ServicePageMixin, BaseDetailedPage):
     """Service page Main menu"""
 
-    MENU_SUFFIX = 'main'
+    MENU_SUFFIX = "main"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -142,7 +143,7 @@ class ServiceMainPage(ServicePageMixin, BaseDetailedPage):
 class ServiceComponentPage(ServicePageMixin):
     """Service page component menu"""
 
-    MENU_SUFFIX = 'component'
+    MENU_SUFFIX = "component"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -185,7 +186,7 @@ class ServiceComponentPage(ServicePageMixin):
 class ServiceConfigPage(ServicePageMixin):
     """Service page Main menu"""
 
-    MENU_SUFFIX = 'config'
+    MENU_SUFFIX = "config"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -201,7 +202,7 @@ class ServiceConfigPage(ServicePageMixin):
 class ServiceGroupConfigPage(ServicePageMixin):
     """Service page GroupConfig menu"""
 
-    MENU_SUFFIX = 'group_config'
+    MENU_SUFFIX = "group_config"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -216,7 +217,7 @@ class ServiceGroupConfigPage(ServicePageMixin):
 class ServiceStatusPage(ServicePageMixin, StatusPage):
     """Service page GroupConfig menu"""
 
-    MENU_SUFFIX = 'status'
+    MENU_SUFFIX = "status"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -227,7 +228,7 @@ class ServiceStatusPage(ServicePageMixin, StatusPage):
 class ServiceImportPage(ServicePageMixin, ImportPage):
     """Service page Main menu"""
 
-    MENU_SUFFIX = 'import'
+    MENU_SUFFIX = "import"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,

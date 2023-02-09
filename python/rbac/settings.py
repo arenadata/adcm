@@ -34,9 +34,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 DEFAULTS = {
     # File with role specification
-    'ROLE_SPEC': os.path.join(BASE_DIR, 'upgrade', 'role_spec.yaml'),
+    "ROLE_SPEC": os.path.join(BASE_DIR, "upgrade", "role_spec.yaml"),
     # Schema for role specification file
-    'ROLE_SCHEMA': os.path.join(BASE_DIR, 'upgrade', 'role_schema.yaml'),
+    "ROLE_SCHEMA": os.path.join(BASE_DIR, "upgrade", "role_schema.yaml"),
 }
 
 
@@ -58,8 +58,8 @@ class APISettings:
 
     @property
     def user_settings(self):
-        if not hasattr(self, '_user_settings'):
-            self._user_settings = getattr(settings, 'ADWP_RBAC', {})
+        if not hasattr(self, "_user_settings"):
+            self._user_settings = getattr(settings, "ADWP_RBAC", {})
         return self._user_settings
 
     def __getattr__(self, attr):
@@ -82,16 +82,16 @@ class APISettings:
         for attr in self._cached_attrs:
             delattr(self, attr)
         self._cached_attrs.clear()
-        if hasattr(self, '_user_settings'):
-            delattr(self, '_user_settings')
+        if hasattr(self, "_user_settings"):
+            delattr(self, "_user_settings")
 
 
 api_settings = APISettings(None, DEFAULTS)
 
 
-def reload_api_settings(*args, **kwargs):
-    setting = kwargs['setting']
-    if setting == 'ADWP_RBAC':
+def reload_api_settings(*args, **kwargs):  # pylint: disable=unused-argument
+    setting = kwargs["setting"]
+    if setting == "ADWP_RBAC":
         api_settings.reload()
 
 

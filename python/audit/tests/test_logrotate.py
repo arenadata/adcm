@@ -11,10 +11,6 @@
 # limitations under the License.
 from datetime import datetime, timedelta
 
-from django.core.management import call_command
-from django.utils import timezone
-
-from adcm.tests.base import BaseTestCase
 from audit.models import AuditLog, AuditLogOperationResult, AuditLogOperationType
 from cm.models import (
     ADCM,
@@ -26,7 +22,11 @@ from cm.models import (
     Prototype,
     TaskLog,
 )
+from django.core.management import call_command
+from django.utils import timezone
 from rbac.models import User
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestLogrotate(BaseTestCase):
@@ -62,8 +62,8 @@ class TestLogrotate(BaseTestCase):
     def check_auditlog(self, log: AuditLog, name):
         self.assertIsNone(log.audit_object)
         self.assertEqual(log.operation_name, name)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Delete)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertEqual(log.operation_type, AuditLogOperationType.DELETE)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.SUCCESS)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.user.pk)
 

@@ -19,6 +19,7 @@ from typing import List, Optional
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebElement
+
 from tests.ui_tests.app.page.cluster.elements import ComponentRow, ServiceRow
 from tests.ui_tests.app.page.cluster.locators import (
     ClusterHostLocators,
@@ -53,6 +54,7 @@ from tests.ui_tests.app.page.common.host_components.locators import (
 from tests.ui_tests.app.page.common.host_components.page import HostComponentsPage
 from tests.ui_tests.app.page.common.import_page.locators import ImportLocators
 from tests.ui_tests.app.page.common.import_page.page import ImportPage
+from tests.ui_tests.app.page.common.left_menu import LeftMenu
 from tests.ui_tests.app.page.common.status.page import StatusPage
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
@@ -84,13 +86,16 @@ class CommonClusterPage(BasePageObject):  # pylint: disable=too-many-instance-at
 
     def __init__(self, driver, base_url, cluster_id: int, **kwargs):
         if self.MENU_SUFFIX is None:
-            raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
+            raise AttributeError("You should explicitly set MENU_SUFFIX in class definition")
         super().__init__(driver, base_url, "/cluster/{cluster_id}/" + self.MENU_SUFFIX, cluster_id=cluster_id, **kwargs)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.cluster_id = cluster_id
         self.toolbar = CommonToolbar(self.driver, self.base_url)
         self.table = CommonTableObj(driver=self.driver)
         self.group_config = GroupConfigList(self.driver, self.base_url)
+
+    def get_menu(self) -> LeftMenu:
+        return LeftMenu.at_current_page(self)
 
     def open_main_tab(self):
         """Open Main tab by menu click"""
@@ -168,7 +173,7 @@ class CommonClusterPage(BasePageObject):  # pylint: disable=too-many-instance-at
 class ClusterMainPage(CommonClusterPage, BaseDetailedPage):
     """Cluster page Main menu"""
 
-    MENU_SUFFIX = 'main'
+    MENU_SUFFIX = "main"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -180,7 +185,7 @@ class ClusterServicesPage(CommonClusterPage, ObjectRowMixin):
     """Cluster page services menu"""
 
     ROW_CLASS = ServiceRow
-    MENU_SUFFIX = 'service'
+    MENU_SUFFIX = "service"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -283,7 +288,7 @@ class ServiceComponentsPage(BasePageObject, ObjectRowMixin):
 class ClusterImportPage(CommonClusterPage, ImportPage):
     """Cluster page import menu"""
 
-    MENU_SUFFIX = 'import'
+    MENU_SUFFIX = "import"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -295,7 +300,7 @@ class ClusterImportPage(CommonClusterPage, ImportPage):
 class ClusterConfigPage(CommonClusterPage):
     """Cluster page config menu"""
 
-    MENU_SUFFIX = 'config'
+    MENU_SUFFIX = "config"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -307,7 +312,7 @@ class ClusterConfigPage(CommonClusterPage):
         CommonConfigMenu.history_btn,
     ]
 
-    @allure.step('Check that group field is visible = {is_group_visible} if group is active = {is_group_active}')
+    @allure.step("Check that group field is visible = {is_group_visible} if group is active = {is_group_active}")
     def check_groups(
         self,
         group_names: List[str],
@@ -330,7 +335,7 @@ class ClusterConfigPage(CommonClusterPage):
 class ClusterGroupConfigPage(CommonClusterPage):
     """Cluster page group config menu"""
 
-    MENU_SUFFIX = 'group_config'
+    MENU_SUFFIX = "group_config"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -345,7 +350,7 @@ class ClusterGroupConfigPage(CommonClusterPage):
 class ClusterHostPage(CommonClusterPage):
     """Cluster page host menu"""
 
-    MENU_SUFFIX = 'host'
+    MENU_SUFFIX = "host"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -462,14 +467,14 @@ class ClusterHostPage(CommonClusterPage):
     def check_cluster_hosts_toolbar(self, cluster_name: str, host_name: str):
         self.toolbar.check_toolbar_elements(["CLUSTERS", cluster_name, "HOSTS", host_name])
 
-    @allure.step('Click on maintenance mode button in row {row_num}')
+    @allure.step("Click on maintenance mode button in row {row_num}")
     def click_on_maintenance_mode_btn(self, row_num: int):
         """Click maintenance mode in row"""
 
         row = self.table.get_row(row_num)
         self.find_child(row, ClusterHostLocators.HostTable.HostRow.maintenance_mode_btn).click()
 
-    @allure.step('Assert maintenance mode state in row {row_num}')
+    @allure.step("Assert maintenance mode state in row {row_num}")
     def assert_maintenance_mode_state(self, row_num: int, is_mm_state_on: Optional[bool] = True):
         """
         Assert maintenance mode state in row
@@ -510,7 +515,7 @@ class ClusterHostPage(CommonClusterPage):
 class ClusterComponentsPage(CommonClusterPage, HostComponentsPage):
     """Cluster page components menu"""
 
-    MENU_SUFFIX = 'host_component'
+    MENU_SUFFIX = "host_component"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -518,15 +523,13 @@ class ClusterComponentsPage(CommonClusterPage, HostComponentsPage):
         HostComponentsLocators.save_btn,
         HostComponentsLocators.components_title,
         HostComponentsLocators.hosts_title,
-        HostComponentsLocators.service_page_link,
-        HostComponentsLocators.hosts_page_link,
     ]
 
 
 class ClusterStatusPage(CommonClusterPage, StatusPage):
     """Cluster page status menu"""
 
-    MENU_SUFFIX = 'status'
+    MENU_SUFFIX = "status"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -548,7 +551,7 @@ class ClusterGroupConfigPageMixin(BasePageObject):  # pylint: disable-next=too-m
 
     def __init__(self, driver, base_url, cluster_id: int, group_config_id: int):
         if self.MENU_SUFFIX is None:
-            raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
+            raise AttributeError("You should explicitly set MENU_SUFFIX in class definition")
         super().__init__(
             driver,
             base_url,
@@ -591,7 +594,7 @@ class ClusterGroupConfigPageMixin(BasePageObject):  # pylint: disable-next=too-m
 class ClusterGroupConfigHosts(ClusterGroupConfigPageMixin):
     """Cluster page status menu"""
 
-    MENU_SUFFIX = 'host'
+    MENU_SUFFIX = "host"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
@@ -602,7 +605,7 @@ class ClusterGroupConfigHosts(ClusterGroupConfigPageMixin):
 class ClusterGroupConfigConfig(ClusterGroupConfigPageMixin):
     """Cluster page status menu"""
 
-    MENU_SUFFIX = 'config'
+    MENU_SUFFIX = "config"
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,

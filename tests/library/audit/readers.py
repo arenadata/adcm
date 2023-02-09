@@ -27,14 +27,14 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 @dataclass(frozen=True)
 class _ProcessorConfig:
-    process_type: Literal['exact', 'sequence', 'presence'] = 'sequence'
-    start_from_first: Literal['record', 'matched'] = 'matched'
+    process_type: Literal["exact", "sequence", "presence"] = "sequence"
+    start_from_first: Literal["record", "matched"] = "matched"
 
 
 @dataclass(frozen=True)
 class _ResolveDefaults:
-    result: Literal['success', 'fail', 'denied'] = 'success'
-    username: str = 'admin'
+    result: Literal["success", "fail", "denied"] = "success"
+    username: str = "admin"
 
 
 class ParsedAuditLog(NamedTuple):
@@ -50,7 +50,7 @@ _TemplateContext = Optional[Dict[str, Union[str, int]]]
 
 @lru_cache
 def _get_schema() -> dict:
-    with (Path(__file__).parent / 'audit_log_schema.json').open() as schema:
+    with (Path(__file__).parent / "audit_log_schema.json").open() as schema:
         return json.load(schema)
 
 
@@ -81,9 +81,9 @@ class YAMLReader:
         context = context or {}
         data = self._read(filename, context)
         return ParsedAuditLog(
-            defaults=_ResolveDefaults(**data.get('defaults', {})),
-            operations=data.get('operations'),
-            settings=_ProcessorConfig(**{k.replace('-', '_'): v for k, v in data.get('settings', {}).items()}),
+            defaults=_ResolveDefaults(**data.get("defaults", {})),
+            operations=data.get("operations"),
+            settings=_ProcessorConfig(**{k.replace("-", "_"): v for k, v in data.get("settings", {}).items()}),
         )
 
     def _read(self, filename: str, context: Dict[str, Union[str, int]]) -> dict:
@@ -92,7 +92,7 @@ class YAMLReader:
         jsonschema.validate(data, _get_schema())
         allure.attach(
             json.dumps(data, indent=2),
-            name='Audit Log scenario',
+            name="Audit Log scenario",
             attachment_type=allure.attachment_type.JSON,
         )
         return data

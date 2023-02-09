@@ -13,21 +13,6 @@
 
 from functools import wraps
 
-from django.contrib.auth.models import User as DjangoUser
-from django.db.models import Model
-from django.http.response import Http404
-from django.urls import resolve
-from rest_framework.exceptions import PermissionDenied, ValidationError
-from rest_framework.generics import GenericAPIView
-from rest_framework.request import Request
-from rest_framework.status import (
-    HTTP_400_BAD_REQUEST,
-    HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
-    is_success,
-)
-from rest_framework.viewsets import ModelViewSet
-
 from api.cluster.serializers import ClusterAuditSerializer
 from api.component.serializers import ComponentAuditSerializer
 from api.host.serializers import HostAuditSerializer
@@ -52,11 +37,25 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from django.contrib.auth.models import User as DjangoUser
+from django.db.models import Model
+from django.http.response import Http404
+from django.urls import resolve
 from rbac.endpoints.group.serializers import GroupAuditSerializer
 from rbac.endpoints.policy.serializers import PolicyAuditSerializer
 from rbac.endpoints.role.serializers import RoleAuditSerializer
 from rbac.endpoints.user.serializers import UserAuditSerializer
 from rbac.models import Group, Policy, Role, User
+from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.generics import GenericAPIView
+from rest_framework.request import Request
+from rest_framework.status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    is_success,
+)
+from rest_framework.viewsets import ModelViewSet
 
 
 def _get_view_and_request(args) -> tuple[GenericAPIView, Request]:
@@ -315,11 +314,11 @@ def audit(func):
                 object_changes = {}
 
             if is_success(status_code):
-                operation_result = AuditLogOperationResult.Success
+                operation_result = AuditLogOperationResult.SUCCESS
             elif status_code == HTTP_403_FORBIDDEN:
-                operation_result = AuditLogOperationResult.Denied
+                operation_result = AuditLogOperationResult.DENIED
             else:
-                operation_result = AuditLogOperationResult.Fail
+                operation_result = AuditLogOperationResult.FAIL
 
             if isinstance(view.request.user, DjangoUser):
                 user = view.request.user
@@ -356,17 +355,17 @@ def mark_deleted_audit_object(instance, object_type: str):
 def make_audit_log(operation_type, result, operation_status):
     operation_type_map = {
         "task": {
-            "type": AuditLogOperationType.Delete,
-            "name": "\"Task log cleanup on schedule\" job",
+            "type": AuditLogOperationType.DELETE,
+            "name": '"Task log cleanup on schedule" job',
         },
         "config": {
-            "type": AuditLogOperationType.Delete,
-            "name": "\"Objects configurations cleanup on schedule\" job",
+            "type": AuditLogOperationType.DELETE,
+            "name": '"Objects configurations cleanup on schedule" job',
         },
-        "sync": {"type": AuditLogOperationType.Update, "name": "\"User sync on schedule\" job"},
+        "sync": {"type": AuditLogOperationType.UPDATE, "name": '"User sync on schedule" job'},
         "audit": {
-            "type": AuditLogOperationType.Delete,
-            "name": "\"Audit log cleanup/archiving on schedule\" job",
+            "type": AuditLogOperationType.DELETE,
+            "name": '"Audit log cleanup/archiving on schedule" job',
         },
     }
     operation_name = operation_type_map[operation_type]["name"] + " " + operation_status
