@@ -88,7 +88,7 @@ class ActionList(PermissionListMixin, GenericUIView):
 
         return actions
 
-    def get(self, request, *args, **kwargs):  # pylint: disable=too-many-locals
+    def get(self, request, *args, **kwargs):  # pylint: disable=too-many-locals,unused-argument
         if kwargs["object_type"] == "host":
             host, _ = get_obj(object_type="host", host_id=kwargs["host_id"])
             actions = self._get_actions_for_host(host)
@@ -122,7 +122,7 @@ class ActionDetail(PermissionListMixin, GenericUIView):
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = [VIEW_ACTION_PERM]
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, action_id = get_object_type_id(**kwargs)
         model = get_model_by_type(object_type)
         content_type = ContentType.objects.get_for_model(model)
@@ -163,7 +163,7 @@ class RunTask(GenericUIView):
             raise PermissionDenied()
 
     @audit
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, action_id = get_object_type_id(**kwargs)
         model = get_model_by_type(object_type)
         content_type = ContentType.objects.get_for_model(model)

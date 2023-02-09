@@ -62,7 +62,7 @@ class TestMainInfo:
         return provider
 
     @pytest.fixture()
-    def _login_as_custom_user(self, app_fs, user_sdk):
+    def _login_as_custom_user(self, app_fs, user_sdk):  # pylint: disable=unused-argument
         """Login as test user"""
         username, password = TEST_USER_CREDENTIALS
         login_over_api(app_fs, {"username": username, "password": password})

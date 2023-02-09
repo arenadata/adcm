@@ -10,8 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# pylint: disable=wrong-import-order,wrong-import-position
+# pylint: disable=wrong-import-order
 
 import os
 import signal
@@ -45,7 +44,7 @@ def terminate_job(task, jobs):
         finish_task(task, None, JobStatus.ABORTED)
 
 
-def terminate_task(signum, frame):
+def terminate_task(signum, frame):  # pylint: disable=unused-argument
     logger.info("cancel task #%s, signal: #%s", TASK_ID, signum)
     task = TaskLog.objects.get(id=TASK_ID)
     jobs = JobLog.objects.filter(task_id=TASK_ID)

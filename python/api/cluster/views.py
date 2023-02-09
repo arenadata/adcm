@@ -97,7 +97,7 @@ class ClusterList(PermissionListMixin, PaginatedView):
     permission_required = [VIEW_CLUSTER_PERM]
 
     @audit
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         serializer = self.get_serializer(data=request.data)
 
         return create(serializer)
@@ -116,21 +116,21 @@ class ClusterDetail(PermissionListMixin, DetailView):
     error_code = "CLUSTER_NOT_FOUND"
 
     @audit
-    def patch(self, request, *args, **kwargs):
+    def patch(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         obj = self.get_object()
         serializer = self.get_serializer(obj, data=request.data, partial=True)
 
         return update(serializer)
 
     @audit
-    def put(self, request, *args, **kwargs):
+    def put(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         obj = self.get_object()
         serializer = self.get_serializer(obj, data=request.data, partial=False)
 
         return update(serializer)
 
     @audit
-    def delete(self, request, *args, **kwargs):
+    def delete(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = self.get_object()
         delete_cluster(cluster)
 
@@ -142,7 +142,7 @@ class ClusterBundle(GenericUIView):
     serializer_class = ServicePrototypeSerializer
     serializer_class_ui = BundleServiceUIPrototypeSerializer
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         check_custom_perm(request.user, "add_service_to", "cluster", cluster)
         bundle = self.get_queryset().filter(bundle=cluster.prototype.bundle)
@@ -161,7 +161,7 @@ class ClusterImport(GenericUIView):
     permission_classes = (IsAuthenticated,)
 
     @staticmethod
-    def get(request, *args, **kwargs):
+    def get(request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         check_custom_perm(request.user, "view_import_of", "cluster", cluster, "view_clusterbind")
         res = get_import(cluster)
@@ -169,7 +169,7 @@ class ClusterImport(GenericUIView):
         return Response(res)
 
     @audit
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         check_custom_perm(request.user, "change_import_of", "cluster", cluster)
         serializer = self.get_serializer(data=request.data, context={"request": request, "cluster": cluster})
@@ -187,7 +187,7 @@ class ClusterBindList(GenericUIView):
     serializer_class_post = DoBindSerializer
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         check_custom_perm(request.user, "view_import_of", "cluster", cluster, "view_clusterbind")
         obj = self.get_queryset().filter(cluster=cluster, service=None)
@@ -196,7 +196,7 @@ class ClusterBindList(GenericUIView):
         return Response(serializer.data)
 
     @audit
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         check_custom_perm(request.user, "change_import_of", "cluster", cluster)
         serializer = self.get_serializer(data=request.data)
@@ -210,14 +210,14 @@ class ClusterBindDetail(GenericUIView):
     permission_classes = (IsAuthenticated,)
 
     @staticmethod
-    def get_obj(kwargs, bind_id):
+    def get_obj(kwargs, bind_id):  # pylint: disable=unused-argument
         bind = ClusterBind.objects.filter(pk=bind_id).first()
         if bind:
             return bind.source_service
 
         return None
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         bind = check_obj(ClusterBind, {"cluster": cluster, "id": kwargs["bind_id"]})
         check_custom_perm(request.user, "view_import_of", "cluster", cluster, "view_clusterbind")
@@ -226,7 +226,7 @@ class ClusterBindDetail(GenericUIView):
         return Response(serializer.data)
 
     @audit
-    def delete(self, request, *args, **kwargs):
+    def delete(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         bind = check_obj(ClusterBind, {"cluster": cluster, "id": kwargs["bind_id"]})
         check_custom_perm(request.user, "change_import_of", "cluster", cluster)
@@ -244,7 +244,7 @@ class ClusterUpgrade(GenericUIView):
         order = AdcmOrderingFilter()
         return order.get_ordering(self.request, self.get_queryset(), self)
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         check_custom_perm(request.user, "view_upgrade_of", "cluster", cluster)
         update_hierarchy_issues(cluster)
@@ -259,7 +259,7 @@ class ClusterUpgradeDetail(GenericUIView):
     serializer_class = ClusterUpgradeSerializer
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         check_custom_perm(request.user, "view_upgrade_of", "cluster", cluster)
         obj = check_obj(Upgrade, {"id": kwargs["upgrade_id"], "bundle__name": cluster.prototype.bundle.name})
@@ -274,7 +274,7 @@ class DoClusterUpgrade(GenericUIView):
     permission_classes = (IsAuthenticated,)
 
     @audit
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         check_custom_perm(request.user, "do_upgrade_of", "cluster", cluster)
         serializer = self.get_serializer(data=request.data)
@@ -301,7 +301,7 @@ class StatusList(GenericUIView):
     queryset = HostComponent.objects.all()
     serializer_class = ClusterStatusSerializer
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         host_components = self.get_queryset().filter(cluster=cluster)
         if self._is_for_ui():
@@ -319,7 +319,7 @@ class HostComponentList(GenericUIView):
     serializer_class_post = HostComponentSaveSerializer
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         check_custom_perm(request.user, "view_host_components_of", "cluster", cluster, "view_hostcomponent")
         hostcomponent = self.get_queryset().prefetch_related("service", "component", "host").filter(cluster=cluster)
@@ -333,7 +333,7 @@ class HostComponentList(GenericUIView):
         return Response(serializer.data)
 
     @audit
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         check_custom_perm(request.user, "edit_host_components_of", "cluster", cluster)
         serializer = self.get_serializer(
@@ -363,7 +363,7 @@ class HostComponentDetail(GenericUIView):
 
         return check_obj(HostComponent, {"id": hs_id, "cluster": cluster}, "HOSTSERVICE_NOT_FOUND")
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         obj = self.get_obj(kwargs["cluster_id"], kwargs["hs_id"])
         serializer = self.get_serializer(obj)
 

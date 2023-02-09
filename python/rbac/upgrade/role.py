@@ -63,7 +63,7 @@ def check_roles_child(data: dict):
                 find_role(child, data["roles"])
 
 
-def get_role_permissions(role: dict, data: dict) -> List[Permission]:
+def get_role_permissions(role: dict, data: dict) -> List[Permission]:  # pylint: disable=unused-argument
     """Retrieve all role's permissions"""
 
     all_perm = []

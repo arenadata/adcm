@@ -897,7 +897,7 @@ class ServiceComponent(ADCMEntity):
 
 
 @receiver(post_delete, sender=ServiceComponent)
-def auto_delete_config_with_servicecomponent(sender, instance, **kwargs):
+def auto_delete_config_with_servicecomponent(sender, instance, **kwargs):  # pylint: disable=unused-argument
     if instance.config is not None:
         instance.config.delete()
 
@@ -1164,8 +1164,9 @@ class GroupConfig(ADCMModel):
 
 
 @receiver(m2m_changed, sender=GroupConfig.hosts.through)
-def verify_host_candidate_for_group_config(sender, **kwargs):
+def verify_host_candidate_for_group_config(sender, **kwargs):  # pylint: disable=unused-argument
     """Checking host candidate for group config before add to group"""
+
     group_config = kwargs.get("instance")
     action = kwargs.get("action")
     host_ids = kwargs.get("pk_set")

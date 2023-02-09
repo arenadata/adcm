@@ -289,7 +289,7 @@ def user(sdk_client_fs) -> User:
 
 
 @pytest.fixture()
-def user_sdk(user, adcm_fs) -> ADCMClient:
+def user_sdk(user, adcm_fs) -> ADCMClient:  # pylint: disable=unused-argument
     """Returns ADCMClient object from adcm_client with testing user"""
     username, password = TEST_USER_CREDENTIALS
     return ADCMClient(url=adcm_fs.url, user=username, password=password)
@@ -336,7 +336,7 @@ def provider_bundle(sdk_client_fs) -> Bundle:
 
 
 @pytest.fixture()
-def prepare_objects(sdk_client_fs, cluster_bundle, provider_bundle):
+def prepare_objects(sdk_client_fs, cluster_bundle, provider_bundle):  # pylint: disable=unused-argument
     """
     Prepare adcm objects
     Created objects should be used as a `parametrized_by_type` values on policy with tested role

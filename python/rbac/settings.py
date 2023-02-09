@@ -89,7 +89,7 @@ class APISettings:
 api_settings = APISettings(None, DEFAULTS)
 
 
-def reload_api_settings(*args, **kwargs):
+def reload_api_settings(*args, **kwargs):  # pylint: disable=unused-argument
     setting = kwargs["setting"]
     if setting == "ADWP_RBAC":
         api_settings.reload()

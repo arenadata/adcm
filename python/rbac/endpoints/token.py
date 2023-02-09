@@ -45,7 +45,7 @@ class GetAuthToken(GenericAPIView):
     permission_classes = (permissions.AllowAny,)
     serializer_class = AuthSerializer
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         """
         Provide authentication token
 

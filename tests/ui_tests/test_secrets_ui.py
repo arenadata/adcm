@@ -72,7 +72,7 @@ class TestSecretMap:
     pytestmark = [pytest.mark.usefixtures("_init")]
 
     @pytest.fixture()
-    def _init(self, app_fs, secret_map_cluster_objects):
+    def _init(self, app_fs, secret_map_cluster_objects):  # pylint: disable=unused-argument
         self.client = app_fs
 
     @staticmethod
@@ -119,7 +119,9 @@ class TestSecretMap:
 
     @pytest.mark.parametrize("obj_to_pick", [Cluster, Service, Component])
     @pytest.mark.usefixtures("_login_to_adcm_over_api")
-    def test_secrets_ui(self, app_fs, secret_map_cluster_objects, generic_provider, obj_to_pick):
+    def test_secrets_ui(
+        self, app_fs, secret_map_cluster_objects, generic_provider, obj_to_pick
+    ):  # pylint: disable=unused-argument
         cluster, service, component = secret_map_cluster_objects
         cluster.host_add(generic_provider.host_create("testhost"))
         config_page = self._open_object_page(obj_to_pick, cluster, service, component)
@@ -188,7 +190,9 @@ class TestSecretMap:
 
     @pytest.mark.parametrize("obj_to_pick", [Cluster, Service, Component])
     @pytest.mark.usefixtures("_login_to_adcm_over_api")
-    def test_secrets_ui_default(self, app_fs, secret_map_default, generic_provider, obj_to_pick):
+    def test_secrets_ui_default(
+        self, app_fs, secret_map_default, generic_provider, obj_to_pick
+    ):  # pylint: disable=unused-argument
         cluster, service, component = secret_map_default
         cluster.host_add(generic_provider.host_create("testhost"))
 

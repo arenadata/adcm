@@ -41,7 +41,7 @@ from rbac.models import Group, Policy, Role, User
 @receiver(post_delete, sender=Bundle)
 @receiver(post_delete, sender=ADCM)
 @receiver(post_delete, sender=Prototype)
-def mark_deleted_audit_object_handler(sender, instance, **kwargs) -> None:
+def mark_deleted_audit_object_handler(sender, instance, **kwargs) -> None:  # pylint: disable=unused-argument
     mark_deleted_audit_object(instance=instance, object_type=MODEL_TO_AUDIT_OBJECT_TYPE_MAP[sender])
 
 

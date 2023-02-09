@@ -440,7 +440,9 @@ class TestAdminUsersPage:
 
     @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
-    def test_add_ldap_group_to_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
+    def test_add_ldap_group_to_users(
+        self, user, users_page, sdk_client_fs, ldap_user_in_group
+    ):  # pylint: disable=unused-argument
         """Check that user can't add ldap group to usual user"""
         with allure.step("Wait ldap integration ends"):
             wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), "success")
@@ -466,7 +468,7 @@ class TestAdminUsersPage:
 
     @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
-    def test_filter_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
+    def test_filter_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):  # pylint: disable=unused-argument
         """Check that users can be filtered"""
 
         with allure.step("Wait ldap integration ends"):
@@ -750,7 +752,7 @@ class TestAdminGroupsPage:
 
     @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
-    def test_ldap_group_change_is_forbidden(self, app_fs, ldap_user_in_group):
+    def test_ldap_group_change_is_forbidden(self, app_fs, ldap_user_in_group):  # pylint: disable=unused-argument
         """Change ldap group"""
 
         params = {"group_name": "adcm_users"}

@@ -289,12 +289,12 @@ class HostComponentUISerializer(EmptySerializer):
     host = SerializerMethodField()
     component = SerializerMethodField()
 
-    def get_host(self, obj):
+    def get_host(self, obj):  # pylint: disable=unused-argument
         hosts = Host.objects.filter(cluster=self.context.get("cluster"))
 
         return HostSerializer(hosts, many=True, context=self.context).data
 
-    def get_component(self, obj):
+    def get_component(self, obj):  # pylint: disable=unused-argument
         comps = ServiceComponent.objects.filter(cluster=self.context.get("cluster"))
 
         return HCComponentSerializer(comps, many=True, context=self.context).data
