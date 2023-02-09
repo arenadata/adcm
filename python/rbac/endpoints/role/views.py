@@ -10,10 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from audit.utils import audit
+from cm.models import ProductCategory
 from django.db.models import Prefetch, Q
 from django_filters import rest_framework as filters
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
+from rbac.endpoints.role.serializers import RoleSerializer
+from rbac.models import Role, RoleTypes
+from rbac.services.role import role_create, role_update
 from rest_flex_fields import is_expanded
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -26,11 +31,6 @@ from rest_framework.status import (
 from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import DjangoModelPermissionsAudit
-from audit.utils import audit
-from cm.models import ProductCategory
-from rbac.endpoints.role.serializers import RoleSerializer
-from rbac.models import Role, RoleTypes
-from rbac.services.role import role_create, role_update
 
 
 class _CategoryFilter(filters.CharFilter):
@@ -106,5 +106,5 @@ class RoleViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
         return super().destroy(request, *args, **kwargs)
 
     @action(methods=["get"], detail=False)
-    def category(self, request):
+    def category(self, request):  # pylint: disable=unused-argument
         return Response(sorted(b.value for b in ProductCategory.objects.all()))

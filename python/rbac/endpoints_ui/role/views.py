@@ -14,6 +14,9 @@
 
 from collections import defaultdict
 
+from api.base_view import GenericUIViewSet
+from cm import models as cm_models
+from rbac import models
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin
 from rest_framework.response import Response
@@ -26,9 +29,6 @@ from rest_framework.serializers import (
 )
 
 from adcm.permissions import DjangoObjectPermissionsAudit
-from api.base_view import GenericUIViewSet
-from cm import models as cm_models
-from rbac import models
 
 
 class RoleUISerializer(Serializer):
@@ -44,7 +44,7 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
     permission_classes = (DjangoObjectPermissionsAudit,)
 
     @action(methods=["get"], detail=True)
-    def object_candidate(self, request, **kwargs):
+    def object_candidate(self, request, **kwargs):  # pylint: disable=unused-argument
         role = self.get_object()
         if role.type != models.RoleTypes.ROLE:
             return Response({"cluster": [], "provider": [], "service": [], "host": []})

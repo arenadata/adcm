@@ -200,14 +200,17 @@ class Operation:
     operation_type: OperationType
     operation_name: str = field(init=False)
     operation_result: OperationResult
-    # TODO check if it's the final decision
     object_changes: Dict[str, dict]
+
     # may be or may not be based on operation type and result
     # but they should be passed directly, because it's an important part of the logic
+
     object_type: Optional[ObjectType]
     object_name: Optional[str]
+
     # not from API, but suitable for displaying what was expected
     username: Optional[str] = field(default=None, compare=False)
+
     # used for operation name building
     # the value from "how" section of operation description in scenario
     code: Dict[Literal["operation", "name"], str] = field(default_factory=dict, compare=False, repr=False)

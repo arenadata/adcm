@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
 from typing import Iterable
 
 import allure
 import pytest
 from adcm_client.objects import Cluster, Component, Service
+
 from tests.library.assertions import sets_are_equal
 from tests.ui_tests.app.page.cluster.page import (
     ClusterComponentsPage,
@@ -30,16 +30,7 @@ from tests.ui_tests.app.page.common.concerns import ConcernPopover
 from tests.ui_tests.app.page.common.left_menu import LeftMenu
 from tests.ui_tests.app.page.component.page import ComponentConfigPage
 from tests.ui_tests.app.page.service.page import ServiceConfigPage
-
-BUNDLES_DIR = Path(__file__).parent / "bundles"
-
-
-class Reason:
-    CONFIG = "its config"
-    IMPORT = "required import"
-    SERVICE = "required service"
-    HOST_COMPONENT = "host-component mapping"
-
+from tests.ui_tests.concerns.common import BUNDLES_DIR, Reason
 
 # pylint: disable=redefined-outer-name
 

@@ -22,6 +22,7 @@ import requests
 from adcm_client.audit import LoginResult, ObjectType, OperationResult, OperationType
 from adcm_client.objects import ADCMClient, Group, Policy, Role, User
 from coreapi.exceptions import ErrorMessage
+
 from tests.functional.audit.conftest import check_failed, make_auth_header
 from tests.functional.rbac.conftest import BusinessRoles
 from tests.library.assertions import sets_are_equal
@@ -104,7 +105,7 @@ class TestAuditLogsAPI:
         role = sdk_client_fs.role_create(
             "custom role",
             display_name="custom role",
-            child=[{"id": sdk_client_fs.role(name=BusinessRoles.ViewADCMConfigurations.value.role_name).id}],
+            child=[{"id": sdk_client_fs.role(name=BusinessRoles.VIEW_ADCM_CONFIGURATIONS.value.role_name).id}],
         )
         policy = sdk_client_fs.policy_create("custom policy", role=role, user=[user])
         user.update(first_name="first", last_name="second")

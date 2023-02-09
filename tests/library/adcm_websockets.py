@@ -20,8 +20,9 @@ from typing import Any, Collection, Dict, List, NamedTuple, Optional, Tuple
 
 import allure
 from adcm_pytest_plugin.utils import catch_failed
-from tests.library.types import WaitTimeout
 from websockets.legacy.client import WebSocketClientProtocol
+
+from tests.library.types import WaitTimeout
 
 WSMessageData = Dict[str, Any]
 MismatchReason = Optional[str]

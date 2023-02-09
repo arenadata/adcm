@@ -23,6 +23,7 @@ from adcm_pytest_plugin.steps.actions import (
     run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import get_data_dir
+
 from tests.functional.test_actions import (
     FIRST_COMPONENT,
     FIRST_SERVICE,

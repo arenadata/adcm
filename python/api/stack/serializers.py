@@ -10,6 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api.action.serializers import StackActionDetailSerializer
+from api.config.serializers import ConfigSerializer
+from api.serializers import UpgradeSerializer
+from cm.models import Bundle, ClusterObject, Prototype
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.serializers import (
     BooleanField,
@@ -24,10 +28,6 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
-from api.action.serializers import StackActionDetailSerializer
-from api.config.serializers import ConfigSerializer
-from api.serializers import UpgradeSerializer
-from cm.models import Bundle, ClusterObject, Prototype
 
 
 class UploadBundleSerializer(EmptySerializer):

@@ -13,6 +13,7 @@
 from typing import Literal
 
 from selenium.webdriver.common.by import By
+
 from tests.ui_tests.core.elements import AutoChildElement
 from tests.ui_tests.core.locators import Descriptor, Locator, autoname
 

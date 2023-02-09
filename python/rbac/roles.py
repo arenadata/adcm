@@ -12,11 +12,6 @@
 
 """RBAC Role classes"""
 
-from django.apps import apps
-from django.contrib.contenttypes.models import ContentType
-from django.db import transaction
-from guardian.models import GroupObjectPermission, UserObjectPermission
-
 from cm.errors import raise_adcm_ex
 from cm.models import (
     Action,
@@ -31,6 +26,10 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from django.apps import apps
+from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
+from guardian.models import GroupObjectPermission, UserObjectPermission
 from rbac.models import (
     Group,
     Permission,

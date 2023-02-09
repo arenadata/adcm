@@ -15,10 +15,6 @@
 import json
 from functools import wraps
 
-from django.core.exceptions import MultipleObjectsReturned
-from django.db import transaction
-from version_utils import rpm
-
 from cm.adcm_config import (
     check_and_process_json_config,
     init_object_config,
@@ -58,8 +54,11 @@ from cm.models import (
     TaskLog,
 )
 from cm.status_api import api_request, post_event
+from django.core.exceptions import MultipleObjectsReturned
+from django.db import transaction
 from rbac.models import re_apply_object_policy
 from rbac.roles import apply_policy_for_new_config
+from version_utils import rpm
 
 
 def check_license(proto: Prototype) -> None:

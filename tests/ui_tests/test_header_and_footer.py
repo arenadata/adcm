@@ -105,9 +105,11 @@ class TestHeader:
         LoginPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
 
     @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2054")
-    def test_check_back_button_in_browser_for_header_links(self, app_fs, sdk_client_fs):
+    def test_check_back_button_in_browser_for_header_links(
+        self, app_fs, sdk_client_fs
+    ):  # pylint: disable=unused-argument
         """Test browser back button after following header links"""
-        # TODO fix add_dummy_objects_to_adcm(sdk_client_fs)
+
         with allure.step("Check back button for cluster page header link"):
             intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
             intro_page.header.click_clusters_tab()
@@ -115,6 +117,7 @@ class TestHeader:
             cluster_page.wait_page_is_opened()
             cluster_page.click_back_button_in_browser()
             intro_page.wait_page_is_opened()
+
         with allure.step("Check back button for hostprovider page header link"):
             cluster_page.open()
             cluster_page.header.click_hostproviders_tab()
@@ -122,6 +125,7 @@ class TestHeader:
             hostprovider_page.wait_page_is_opened()
             hostprovider_page.click_back_button_in_browser()
             cluster_page.wait_page_is_opened()
+
         with allure.step("Check back button for hosts page header link"):
             hostprovider_page.open()
             hostprovider_page.header.click_hosts_tab()
@@ -129,6 +133,7 @@ class TestHeader:
             hosts_page.wait_page_is_opened()
             hosts_page.click_back_button_in_browser()
             hostprovider_page.wait_page_is_opened()
+
         with allure.step("Check back button for jobs page header link"):
             hosts_page.open()
             hosts_page.header.click_jobs_tab()
@@ -136,6 +141,7 @@ class TestHeader:
             jobs_page.wait_page_is_opened()
             jobs_page.click_back_button_in_browser()
             hosts_page.wait_page_is_opened()
+
         with allure.step("Check back button for bundles page header link"):
             jobs_page.open()
             jobs_page.header.click_bundles_tab()
@@ -146,8 +152,6 @@ class TestHeader:
 
 
 class TestFooter:
-    """UI Tests for footer"""
-
     def test_check_footer_for_authorised_user(self, app_fs):
         """Test footer for authorised user"""
         params = {"arenadata_url": "docs.arenadata.io/", "docs": "en/ADCM/current/release-notes/"}

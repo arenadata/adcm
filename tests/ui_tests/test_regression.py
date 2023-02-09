@@ -23,6 +23,7 @@ from adcm_pytest_plugin.steps.actions import (
 )
 from adcm_pytest_plugin.utils import get_data_dir, wait_until_step_succeeds
 from coreapi.exceptions import ErrorMessage
+
 from tests.conftest import TEST_USER_CREDENTIALS
 from tests.functional.tools import AnyADCMObject, get_object_represent
 from tests.ui_tests.app.app import ADCMTest
@@ -61,7 +62,7 @@ class TestMainInfo:
         return provider
 
     @pytest.fixture()
-    def _login_as_custom_user(self, app_fs, user_sdk):
+    def _login_as_custom_user(self, app_fs, user_sdk):  # pylint: disable=unused-argument
         """Login as test user"""
         username, password = TEST_USER_CREDENTIALS
         login_over_api(app_fs, {"username": username, "password": password})

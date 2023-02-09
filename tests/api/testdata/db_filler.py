@@ -18,6 +18,7 @@ from copy import deepcopy
 from typing import Any, Dict, List, Literal
 
 import allure
+
 from tests.api.steps.common import assume_step
 from tests.api.testdata.getters import get_endpoint_data, get_object_data
 from tests.api.utils.api_objects import ADCMTestApiWrapper, ExpectedResponse, Request
@@ -185,11 +186,11 @@ class DbFiller:
                     field=field.f_type.relates_on.field, force=force
                 )
 
-        if endpoint == Endpoints.GroupConfig:
+        if endpoint == Endpoints.GROUP_CONFIG:
             if field.name == "object_id":
                 field.f_type.fk_link = Endpoints.get_by_path(_data[related_field_name]).data_class
 
-        elif endpoint == Endpoints.ConfigLog:
+        elif endpoint == Endpoints.CONFIG_LOG:
             # Skip initial ADCM object because ADCM config object has validation rules
             if _data[related_field_name] == 1:
                 _data[related_field_name] = 2
@@ -201,10 +202,10 @@ class DbFiller:
                 ][-1]
                 field.f_type.schema = build_schema_by_json(current_config_log[field.name])
 
-        elif endpoint in (Endpoints.RbacNotBuiltInPolicy, Endpoints.RbacBuiltInPolicy):
+        elif endpoint in (Endpoints.RBAC_NOT_BUILTIN_POLICY, Endpoints.RBAC_BUILTIN_POLICY):
             if field.name == "object":
                 role_fk = _data[related_field_name]
-                role = get_object_data(adcm=self.adcm, endpoint=endpoint.RbacAnyRole, object_id=role_fk)
+                role = get_object_data(adcm=self.adcm, endpoint=endpoint.RBAC_ANY_ROLE, object_id=role_fk)
                 field.f_type.payload = [
                     {
                         "id": self._get_adcm_object_id_by_object_type(object_type),
@@ -223,7 +224,7 @@ class DbFiller:
         self, object_type: Literal["cluster", "service", "component", "provider", "host"]
     ) -> int:
         """Get random created object by given type"""
-        return random.choice(get_endpoint_data(adcm=self.adcm, endpoint=Endpoints[object_type.capitalize()]))["id"]
+        return random.choice(get_endpoint_data(adcm=self.adcm, endpoint=Endpoints[object_type.upper()]))["id"]
 
     def _prepare_data_for_object_creation(self, endpoint: Endpoints = None, force=False):
         data = {}
@@ -361,7 +362,7 @@ class DbFiller:
         ! This method isn't universal, it was originally made for resolving generic keys for "object" in RBAC Policy !
         ! api_wrapper is instance of tests.api.utils.api_objects.ADCMTestApiWrapper !
         """
-        endpoint = Endpoints[key_type.lower().capitalize()]
+        endpoint = Endpoints[key_type.lower().upper()]
         new_item = next(filter(lambda x: x["id"] != prev_id, get_endpoint_data(api_wrapper, endpoint)), None)
         if new_item is None:
             raise ValueError(f"Failed to find new generic foreign key id for type {key_type}")

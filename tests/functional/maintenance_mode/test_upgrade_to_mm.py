@@ -16,6 +16,7 @@ from typing import Set
 
 import allure
 import pytest
+
 from tests.conftest import DUMMY_ACTION
 from tests.functional.maintenance_mode.conftest import (
     MM_IS_OFF,

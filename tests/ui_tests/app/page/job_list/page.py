@@ -19,6 +19,7 @@ from typing import List, TypeVar, Union
 import allure
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
+
 from tests.library.conditional_retriever import DataSource, FromOneOf
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.header_locators import AuthorizedHeaderLocators

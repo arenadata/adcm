@@ -13,9 +13,6 @@
 import json
 from itertools import chain
 
-from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-
 from cm.adcm_config import get_prototype_config, process_config
 from cm.logger import logger
 from cm.models import (
@@ -35,6 +32,8 @@ from cm.models import (
     ServiceComponent,
     get_object_cluster,
 )
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 
 MAINTENANCE_MODE = "maintenance_mode"
 
@@ -279,7 +278,6 @@ def get_host_groups(cluster: Cluster, delta: dict, action_host: Host | None = No
 
             for fqdn in delta[htype][key]:
                 host = delta[htype][key][fqdn]
-                # TODO: What is `delta`? Need calculate delta for group_config?
                 if host.maintenance_mode != MaintenanceMode.ON:
                     groups[lkey]["hosts"][host.fqdn] = get_obj_config(host)
 

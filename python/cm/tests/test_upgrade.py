@@ -9,9 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=wrong-import-order
 
-
-from adcm.tests.base import BaseTestCase
 from cm.adcm_config import save_obj_config, switch_config
 from cm.api import (
     add_cluster,
@@ -38,6 +37,8 @@ from cm.models import (
 )
 from cm.tests.utils import gen_cluster
 from cm.upgrade import bundle_revert, check_upgrade, do_upgrade, switch_components
+
+from adcm.tests.base import BaseTestCase
 
 
 def cook_cluster_bundle(ver):

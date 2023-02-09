@@ -46,6 +46,7 @@ from adcm_pytest_plugin.steps.actions import (
     run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import catch_failed, get_data_dir, random_string
+
 from tests.functional.plugin_utils import (
     build_objects_checker,
     build_objects_comparator,
@@ -396,7 +397,7 @@ class TestUpgradeFilledADCM:
     @pytest.mark.parametrize("image", [previous_adcm_version_tag()], indirect=True)
     def test_upgrade_dirty_adcm(
         self,
-        adcm_fs: ADCM,
+        adcm_fs: ADCM,  # pylint: disable=unused-argument
         launcher,
         sdk_client_fs: ADCMClient,
         adcm_api_credentials: dict,

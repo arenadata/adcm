@@ -17,10 +17,6 @@ from configparser import ConfigParser
 from pathlib import Path
 from typing import Any, Hashable, List, Optional, Tuple
 
-from django.conf import settings
-from django.db import transaction
-from django.utils import timezone
-
 from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
 from audit.models import (
@@ -82,6 +78,9 @@ from cm.models import (
 )
 from cm.status_api import post_event
 from cm.variant import process_variant
+from django.conf import settings
+from django.db import transaction
+from django.utils import timezone
 from rbac.roles import re_apply_policy_for_jobs
 
 
@@ -955,7 +954,13 @@ def set_task_status(task: TaskLog, status: str, event):
 def set_job_status(job_id: int, status: str, event, pid: int = 0):
     job_query = JobLog.objects.filter(id=job_id)
     job_query.update(status=status, pid=pid, finish_date=timezone.now())
-    event.set_job_status(job=job_query.first(), status=status)
+    job = job_query.first()
+
+    if status == JobStatus.RUNNING:
+        job.task.lock.reason = job.cook_reason()
+        job.task.lock.save(update_fields=["reason"])
+
+    event.set_job_status(job=job, status=status)
 
 
 def abort_all(event):

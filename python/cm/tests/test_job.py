@@ -9,19 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=wrong-import-order
 
 from pathlib import Path
 from signal import SIGTERM
 from unittest.mock import Mock, patch
 from urllib.parse import urljoin
 
-from django.conf import settings
-from django.urls import reverse
-from django.utils import timezone
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.api import add_cluster, add_service_to_cluster
 from cm.job import (
     check_cluster,
@@ -62,8 +56,15 @@ from cm.tests.utils import (
     gen_prototype,
     gen_task_log,
 )
+from django.conf import settings
+from django.urls import reverse
+from django.utils import timezone
 from init_db import init
 from rbac.upgrade.role import init_roles
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestJob(BaseTestCase):
@@ -130,8 +131,13 @@ class TestJob(BaseTestCase):
     def test_set_job_status(self):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
-        action = Action.objects.create(prototype=prototype)
-        job = JobLog.objects.create(action=action, start_date=timezone.now(), finish_date=timezone.now())
+        action = Action.objects.create(prototype=prototype, name="action_name", display_name="Test Action")
+        cluster = gen_cluster(prototype=prototype)
+        task = TaskLog.objects.create(
+            task_object=cluster, action=action, object_id=1, start_date=timezone.now(), finish_date=timezone.now()
+        )
+        job = JobLog.objects.create(task=task, action=action, start_date=timezone.now(), finish_date=timezone.now())
+        task.lock_affected([cluster])
         status = JobStatus.RUNNING
         pid = 10
         event = Mock()
@@ -142,6 +148,7 @@ class TestJob(BaseTestCase):
 
         self.assertEqual(job.status, status)
         self.assertEqual(job.pid, pid)
+        self.assertEqual(task.lock.reason["placeholder"]["job"]["name"], action.display_name)
         event.set_job_status.assert_called_once_with(job=job, status=status)
 
     def test_set_task_status(self):

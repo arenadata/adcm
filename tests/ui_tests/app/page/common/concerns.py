@@ -4,6 +4,7 @@ from typing import Generator
 import allure
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+
 from tests.library.utils import name_of
 from tests.ui_tests.core.elements import Button, Link, ListOfElements, as_element
 from tests.ui_tests.core.interactors import Interactor
@@ -20,11 +21,13 @@ class Concern:
         self._links = None
 
     @property
-    def links(self) -> tuple[Link, ...]:
+    def links(self) -> ListOfElements[Link]:
         if self._links:
             return self._links
 
-        self._links = tuple(map(as_element(Link, self._view), self._view.find_children(self.element, self._link)))
+        self._links = ListOfElements(
+            map(as_element(Link, self._view), self._view.find_children(self.element, self._link))
+        )
         return self._links
 
     def click(self) -> None:

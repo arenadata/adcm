@@ -13,13 +13,6 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from django.conf import settings
-from django.test import override_settings
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
-
-from adcm.tests.base import BaseTestCase
 from api.job.views import (
     get_task_download_archive_file_handler,
     get_task_download_archive_name,
@@ -42,6 +35,13 @@ from cm.tests.utils import (
     gen_job_log,
     gen_task_log,
 )
+from django.conf import settings
+from django.test import override_settings
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
+
+from adcm.tests.base import BaseTestCase
 
 
 class TaskLogLockTest(BaseTestCase):

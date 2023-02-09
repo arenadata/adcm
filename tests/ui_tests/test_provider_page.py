@@ -18,6 +18,7 @@ import pytest
 from _pytest.fixtures import SubRequest
 from adcm_client.objects import ADCMClient, Bundle, Provider
 from adcm_pytest_plugin.utils import get_data_dir
+
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
@@ -240,7 +241,9 @@ class TestProviderMainPage:
             ), f"Provider state should be {params['state']}"
 
     @pytest.mark.parametrize("bundle", ["provider_with_host_with_issue"], indirect=True)
-    def test_provider_with_host_with_issues(self, app_fs, bundle, upload_and_create_test_provider, cluster):
+    def test_provider_with_host_with_issues(
+        self, app_fs, bundle, upload_and_create_test_provider, cluster
+    ):  # pylint: disable=unused-argument
         """Test that if host has issue then provider is not"""
 
         host = upload_and_create_test_provider.host_create(fqdn="first")
@@ -334,7 +337,9 @@ class TestProviderConfigPage:
         )
 
     @pytest.mark.parametrize("bundle", ["provider_required_fields"], indirect=True)
-    def test_field_validation_on_provider_config_page(self, app_fs, bundle, upload_and_create_test_provider):
+    def test_field_validation_on_provider_config_page(
+        self, app_fs, bundle, upload_and_create_test_provider
+    ):  # pylint: disable=unused-argument
         """Test config field validation on provider config page"""
         params = {
             "pass_name": "Test password",
@@ -358,7 +363,7 @@ class TestProviderConfigPage:
 
     @pytest.mark.parametrize("bundle", ["provider_default_fields"], indirect=True)
     def test_field_validation_on_provider_config_page_with_default_value(
-        self, app_fs, bundle, upload_and_create_test_provider
+        self, app_fs, bundle, upload_and_create_test_provider  # pylint: disable=unused-argument
     ):
         """Test config field validation on provider config page"""
 
@@ -378,7 +383,9 @@ class TestProviderConfigPage:
         )
 
     @pytest.mark.parametrize("bundle", ["provider_with_all_config_params"], indirect=True)
-    def test_field_tooltips_on_provider_config_page(self, app_fs, bundle, upload_and_create_test_provider):
+    def test_field_tooltips_on_provider_config_page(
+        self, app_fs, bundle, upload_and_create_test_provider
+    ):  # pylint: disable=unused-argument
         """Test config fields tooltips on provider config page"""
 
         provider_config_page = ProviderConfigPage(

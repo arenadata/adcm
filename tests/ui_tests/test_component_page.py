@@ -21,6 +21,7 @@ import allure
 import pytest
 from adcm_client.objects import ADCMClient, Cluster, Host, Service
 from adcm_pytest_plugin.utils import get_data_dir
+
 from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
@@ -192,7 +193,7 @@ class TestComponentConfigPage:
         indirect=True,
     )
     def test_save_custom_config_on_component_config_page(
-        self, app_fs, create_cluster_with_service, create_bundle_archives
+        self, app_fs, create_cluster_with_service, create_bundle_archives  # pylint: disable=unused-argument
     ):
         """Test config save on /cluster/{}/service/{}/component/{}/config page"""
 
@@ -247,7 +248,7 @@ class TestComponentConfigPage:
         indirect=True,
     )
     def test_field_validation_on_component_config_page(
-        self, app_fs, create_cluster_with_service, create_bundle_archives
+        self, app_fs, create_cluster_with_service, create_bundle_archives  # pylint: disable=unused-argument
     ):
         """Test config fields validation on /cluster/{}/service/{}/component/{}/config page"""
         params = {
@@ -278,7 +279,7 @@ class TestComponentConfigPage:
         indirect=True,
     )
     def test_field_validation_on_component_config_page_with_default_value(
-        self, app_fs, create_cluster_with_service, create_bundle_archives
+        self, app_fs, create_cluster_with_service, create_bundle_archives  # pylint: disable=unused-argument
     ):
         """Test config fields validation on /cluster/{}/service/{}/component/{}/config page"""
 
@@ -304,7 +305,9 @@ class TestComponentConfigPage:
         [get_data_dir(__file__, COMPONENT_WITH_DESCRIPTION_FIELDS)],
         indirect=True,
     )
-    def test_field_tooltips_on_component_config_page(self, app_fs, create_cluster_with_service, create_bundle_archives):
+    def test_field_tooltips_on_component_config_page(
+        self, app_fs, create_cluster_with_service, create_bundle_archives
+    ):  # pylint: disable=unused-argument
         """Test config fields tooltips on /cluster/{}/service/{}/component/{}/config page"""
 
         cluster, service = create_cluster_with_service
@@ -428,7 +431,7 @@ class TestComponentStatusPage:
             assert len(component_status_page.get_all_rows()) == 1, "Status rows should have been collapsed"
 
     def test_link_to_host_on_component_status_page(
-        self, app_fs, adcm_fs, sdk_client_fs, create_cluster_with_hostcomponents
+        self, app_fs, adcm_fs, sdk_client_fs, create_cluster_with_hostcomponents  # pylint: disable=unused-argument
     ):
         """Check that host link points to the host page"""
 

@@ -22,6 +22,7 @@ from _pytest.fixtures import SubRequest
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider
 from adcm_pytest_plugin.utils import get_data_dir
 from selenium.common import StaleElementReferenceException
+
 from tests.library.retry import RetryFromCheckpoint, Step
 from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.app import ADCMTest
@@ -296,7 +297,7 @@ class TestHostListPage:
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
-    def test_delete_bonded_host(self, page: HostListPage, create_bonded_host):
+    def test_delete_bonded_host(self, page: HostListPage, create_bonded_host):  # pylint: disable=unused-argument
         """Host shouldn't be deleted"""
 
         check_element_is_visible(page, HostListLocators.HostTable.row)
@@ -345,7 +346,9 @@ class TestHostListPage:
             page.assert_maintenance_mode_state(0, None)
 
     @pytest.mark.smoke()
-    def test_action_with_maintenance_mode_on_host_page(self, sdk_client_fs, page: HostListPage, create_bonded_host):
+    def test_action_with_maintenance_mode_on_host_page(
+        self, sdk_client_fs, page: HostListPage, create_bonded_host
+    ):  # pylint: disable=unused-argument
         """Test maintenance mode on host page"""
 
         with allure.step("Turn ON maintenance mode"):
@@ -618,7 +621,7 @@ class TestHostRenaming:
     EXPECTED_ERROR = "Please enter a valid name"
 
     @pytest.mark.usefixtures("_login_to_adcm_over_api")
-    def test_rename_host(self, sdk_client_fs, app_fs, create_host):
+    def test_rename_host(self, sdk_client_fs, app_fs, create_host):  # pylint: disable=unused-argument
         host = create_host
         page = HostListPage(app_fs.driver, app_fs.adcm.url).open()
         self._test_correct_name_can_be_set(host, page)

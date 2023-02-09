@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.models import Bundle, Prototype
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
+from rbac.models import Role
 
 from adcm.tests.base import BaseTestCase
-from cm.models import Bundle, Prototype
-from rbac.models import Role
 
 
 def cook_perm(codename, model, app="cm"):

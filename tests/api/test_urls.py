@@ -16,6 +16,7 @@ from typing import List
 
 import allure
 import pytest
+
 from tests.api.testdata.db_filler import DbFiller
 from tests.api.testdata.generators import (
     TestData,

@@ -23,6 +23,7 @@ import pytest
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider, Service
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import get_data_dir, random_string
+
 from tests.library.assertions import is_in_collection, is_superset_of
 from tests.library.predicates import name_is, username_is
 from tests.library.retry import should_become_truth
@@ -347,10 +348,10 @@ class TestAdminUsersPage:
 
     def test_delete_user(self, users_page: AdminUsersPage):
         """Create new user, delete it and check current user can't be deleted"""
+
         username = "testuser"
         current_user = "admin"
 
-        # TODO rework, it makes no sense
         with allure.step("Check user can't delete itself"):
             assert not users_page.get_row(
                 username_is(current_user)
@@ -439,7 +440,9 @@ class TestAdminUsersPage:
 
     @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
-    def test_add_ldap_group_to_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
+    def test_add_ldap_group_to_users(
+        self, user, users_page, sdk_client_fs, ldap_user_in_group
+    ):  # pylint: disable=unused-argument
         """Check that user can't add ldap group to usual user"""
         with allure.step("Wait ldap integration ends"):
             wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), "success")
@@ -465,7 +468,7 @@ class TestAdminUsersPage:
 
     @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
-    def test_filter_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
+    def test_filter_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):  # pylint: disable=unused-argument
         """Check that users can be filtered"""
 
         with allure.step("Wait ldap integration ends"):
@@ -749,7 +752,7 @@ class TestAdminGroupsPage:
 
     @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
-    def test_ldap_group_change_is_forbidden(self, app_fs, ldap_user_in_group):
+    def test_ldap_group_change_is_forbidden(self, app_fs, ldap_user_in_group):  # pylint: disable=unused-argument
         """Change ldap group"""
 
         params = {"group_name": "adcm_users"}

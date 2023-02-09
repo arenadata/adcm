@@ -20,6 +20,7 @@ from _pytest.fixtures import FixtureRequest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webelement import WebElement
+
 from tests.ui_tests.app.page.cluster.page import (
     ClusterConfigPage,
     ClusterGroupConfigConfig,
@@ -45,7 +46,8 @@ def skip_test_if_one_already_failed(request: FixtureRequest):
         return
 
     test_base_name = request.node.originalname
-    for item in filter(lambda i: i.originalname == test_base_name, request.session.items):
+    test_full_name = request.node.name
+    for item in filter(lambda i: i.originalname == test_base_name and i.name != test_full_name, request.session.items):
         if hasattr(item, "rep_call") and not item.rep_call.passed:
             pytest.skip(f"There's already one {test_base_name} failed")
             return

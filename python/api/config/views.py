@@ -10,11 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from guardian.mixins import PermissionListMixin
-from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-
 from api.base_view import GenericUIView
 from api.config.serializers import (
     ConfigHistorySerializer,
@@ -28,7 +23,11 @@ from audit.utils import audit
 from cm.adcm_config import ui_config
 from cm.errors import AdcmEx
 from cm.models import ConfigLog, ObjectConfig, get_model_by_type
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 
 def get_config_version(queryset, objconf, version):
@@ -66,9 +65,9 @@ def get_obj(object_type, object_id):
 
 def get_object_type_id_version(**kwargs):
     object_type = kwargs.get("object_type")
-    # TODO: this is a temporary patch for `config` endpoint
     object_id = kwargs.get(f"{object_type}_id") or kwargs.get(f"{object_type}_pk")
     version = kwargs.get("version")
+
     return object_type, object_id, version
 
 
@@ -94,11 +93,12 @@ class ConfigView(GenericUIView):
     serializer_class = HistoryCurrentPreviousConfigSerializer
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         model = get_model_by_type(object_type)
         obj = model.obj.get(id=object_id)
         serializer = self.get_serializer(obj)
+
         return Response(serializer.data)
 
 
@@ -114,7 +114,7 @@ class ConfigHistoryView(PermissionListMixin, GenericUIView):
         else:
             return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         obj, object_config = get_obj(object_type, object_id)
         config_log = self.get_queryset().filter(obj_ref=object_config).order_by("-id")
@@ -123,7 +123,7 @@ class ConfigHistoryView(PermissionListMixin, GenericUIView):
         return Response(serializer.data)
 
     @audit
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         obj, object_config = get_obj(object_type, object_id)
         check_config_perm(request.user, "change", object_type, obj)
@@ -149,7 +149,7 @@ class ConfigVersionView(PermissionListMixin, GenericUIView):
         else:
             return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, version = get_object_type_id_version(**kwargs)
         obj, object_config = get_obj(object_type, object_id)
         config_log = get_config_version(self.get_queryset(), object_config, version)
@@ -174,7 +174,7 @@ class ConfigHistoryRestoreView(PermissionListMixin, GenericUIView):
             return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
 
     @audit
-    def patch(self, request, *args, **kwargs):
+    def patch(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, version = get_object_type_id_version(**kwargs)
         obj, object_config = get_obj(object_type, object_id)
         check_config_perm(request.user, "change", object_type, obj)

@@ -30,6 +30,7 @@ from adcm_client.objects import (
 )
 from adcm_pytest_plugin.docker.adcm import ADCM
 from adcm_pytest_plugin.utils import get_or_add_service
+
 from tests.functional.maintenance_mode.conftest import (
     BUNDLES_DIR,
     DEFAULT_SERVICE_NAME,

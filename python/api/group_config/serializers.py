@@ -10,13 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
-from django.db.transaction import atomic
-from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import serializers
-from rest_framework.reverse import reverse
-
 from api.serializers import (
     MultiHyperlinkedIdentityField,
     MultiHyperlinkedRelatedField,
@@ -25,6 +18,12 @@ from api.serializers import (
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
 from cm.models import ConfigLog, GroupConfig, Host, ObjectConfig
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
+from django.db.transaction import atomic
+from rest_flex_fields.serializers import FlexFieldsSerializerMixin
+from rest_framework import serializers
+from rest_framework.reverse import reverse
 
 
 class HostFlexFieldsSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):

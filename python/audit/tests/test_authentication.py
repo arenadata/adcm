@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import reverse
-
-from adcm.tests.base import BaseTestCase
 from audit.models import AuditSession, AuditSessionLoginResult
 from cm.models import ADCM, Bundle, ConfigLog, ObjectConfig, Prototype
+from django.urls import reverse
 from rbac.models import User
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestAuthenticationAudit(BaseTestCase):

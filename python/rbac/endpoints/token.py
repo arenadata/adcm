@@ -14,12 +14,11 @@
 
 import django.contrib.auth
 import rest_framework.authtoken.serializers
+from cm.errors import raise_adcm_ex
 from rest_framework import authentication, permissions
 from rest_framework.authtoken.models import Token
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-
-from cm.errors import raise_adcm_ex
 
 
 class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
@@ -46,7 +45,7 @@ class GetAuthToken(GenericAPIView):
     permission_classes = (permissions.AllowAny,)
     serializer_class = AuthSerializer
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         """
         Provide authentication token
 

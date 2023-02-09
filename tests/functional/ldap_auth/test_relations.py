@@ -16,6 +16,7 @@ from typing import Collection, Tuple, Union
 import allure
 import pytest
 from adcm_client.objects import ADCMClient
+
 from tests.api.utils.tools import random_string
 from tests.functional.ldap_auth.utils import (
     get_ldap_group_from_adcm,

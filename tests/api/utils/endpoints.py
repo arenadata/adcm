@@ -16,6 +16,7 @@ from enum import Enum
 from typing import Callable, List, Optional, Type
 
 import attr
+
 from tests.api.utils.data_classes import (
     BaseClass,
     ClusterFields,
@@ -170,7 +171,7 @@ class Endpoints(Enum):
                     raise ValueError(f"Field {field_name} must be a Foreign Key field type") from AttributeError
         return None
 
-    Cluster = Endpoint(
+    CLUSTER = Endpoint(
         path="cluster",
         methods=[Methods.LIST, Methods.GET],
         data_class=ClusterFields,
@@ -178,7 +179,7 @@ class Endpoints(Enum):
         technical=True,
     )
 
-    Service = Endpoint(
+    SERVICE = Endpoint(
         path="service",
         methods=[Methods.LIST, Methods.GET],
         data_class=ServiceFields,
@@ -186,7 +187,7 @@ class Endpoints(Enum):
         technical=True,
     )
 
-    Component = Endpoint(
+    COMPONENT = Endpoint(
         path="component",
         methods=[Methods.LIST, Methods.GET],
         data_class=ComponentFields,
@@ -194,7 +195,7 @@ class Endpoints(Enum):
         technical=True,
     )
 
-    Provider = Endpoint(
+    PROVIDER = Endpoint(
         path="provider",
         methods=[Methods.LIST, Methods.GET],
         data_class=ProviderFields,
@@ -202,7 +203,7 @@ class Endpoints(Enum):
         technical=True,
     )
 
-    Host = Endpoint(
+    HOST = Endpoint(
         path="host",
         methods=[Methods.LIST, Methods.GET],
         data_class=HostFields,
@@ -210,21 +211,21 @@ class Endpoints(Enum):
         technical=True,
     )
 
-    ObjectConfig = Endpoint(
+    OBJECT_CONFIG = Endpoint(
         path="config",
         methods=[Methods.GET, Methods.LIST],
         data_class=ObjectConfigFields,
         spec_link="https://spec.adsw.io/adcm_core/objects.html#object-config",
     )
 
-    ConfigLog = Endpoint(
+    CONFIG_LOG = Endpoint(
         path="config-log",
         methods=[Methods.GET, Methods.LIST, Methods.POST],
         data_class=ConfigLogFields,
         spec_link="https://spec.adsw.io/adcm_core/objects.html#object-config",
     )
 
-    GroupConfig = Endpoint(
+    GROUP_CONFIG = Endpoint(
         path="group-config",
         methods=[
             Methods.GET,
@@ -238,8 +239,8 @@ class Endpoints(Enum):
         spec_link="https://spec.adsw.io/adcm_core/objects.html#group-config",
     )
 
-    GroupConfigHosts = Endpoint(
-        path=f"{GroupConfig.path}/{{id}}/host",
+    GROUP_CONFIG_HOSTS = Endpoint(
+        path=f"{GROUP_CONFIG.path}/{{id}}/host",
         methods=[
             Methods.GET,
             Methods.LIST,
@@ -250,8 +251,8 @@ class Endpoints(Enum):
         spec_link="https://spec.adsw.io/adcm_core/objects.html#group-config-hosts",
     )
 
-    GroupConfigHostCandidates = Endpoint(
-        path=f"{GroupConfig.path}/{{id}}/host-candidate",
+    GROUP_CONFIG_HOST_CANDIDATES = Endpoint(
+        path=f"{GROUP_CONFIG.path}/{{id}}/host-candidate",
         methods=[
             Methods.GET,
             Methods.LIST,
@@ -260,7 +261,7 @@ class Endpoints(Enum):
         spec_link="https://spec.adsw.io/adcm_core/objects.html",
     )
 
-    RbacUser = Endpoint(
+    RBAC_USER = Endpoint(
         path="rbac/user",
         methods=[
             Methods.GET,
@@ -276,7 +277,7 @@ class Endpoints(Enum):
         spec_link="",
     )
 
-    RbacGroup = Endpoint(
+    RBAC_GROUP = Endpoint(
         path="rbac/group",
         methods=[
             Methods.GET,
@@ -291,7 +292,7 @@ class Endpoints(Enum):
     )
 
     # Test logic for "not built_in" that can be created and have a child
-    RbacSimpleRole = Endpoint(
+    RBAC_SIMPLE_ROLE = Endpoint(
         path="rbac/role",
         methods=ALL,
         data_class=RbacSimpleRoleFields,
@@ -300,7 +301,7 @@ class Endpoints(Enum):
     )
 
     # Test logic for "built_in"
-    RbacBuiltInRole = Endpoint(
+    RBAC_BUILTIN_ROLE = Endpoint(
         path="rbac/role",
         methods=[Methods.GET, Methods.LIST, Methods.POST],
         data_class=RbacBuiltInRoleFields,
@@ -309,7 +310,7 @@ class Endpoints(Enum):
         technical=True,
     )
 
-    RbacBusinessRole = Endpoint(
+    RBAC_BUSINESS_ROLE = Endpoint(
         path="rbac/role",
         methods=[Methods.GET, Methods.LIST],
         data_class=RbacBusinessRoleFields,
@@ -319,7 +320,7 @@ class Endpoints(Enum):
     )
 
     # Workaround to get roles with 'role' type
-    RbacAnyRole = Endpoint(
+    RBAC_ANY_ROLE = Endpoint(
         path="rbac/role",
         methods=ALL,
         data_class=RbacSimpleRoleFields,
@@ -328,7 +329,7 @@ class Endpoints(Enum):
         filter_predicate=is_role_type,
     )
 
-    RbacNotBuiltInPolicy = Endpoint(
+    RBAC_NOT_BUILTIN_POLICY = Endpoint(
         path="rbac/policy",
         methods=ALL,
         data_class=RbacNotBuiltInPolicyFields,
@@ -336,7 +337,7 @@ class Endpoints(Enum):
         filter_predicate=is_not_built_in,
     )
 
-    RbacBuiltInPolicy = Endpoint(
+    RBAC_BUILTIN_POLICY = Endpoint(
         path="rbac/policy",
         methods=[Methods.GET, Methods.LIST, Methods.POST],
         data_class=RbacBuiltInPolicyFields,

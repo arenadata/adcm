@@ -17,13 +17,6 @@ import getpass
 import json
 import sys
 
-from cryptography.fernet import Fernet
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from django.conf import settings
-from django.core.management.base import BaseCommand
-
 from cm.models import (
     Bundle,
     Cluster,
@@ -37,6 +30,12 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cryptography.fernet import Fernet
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from django.conf import settings
+from django.core.management.base import BaseCommand
 
 
 def serialize_datetime_fields(obj, fields=None):

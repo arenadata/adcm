@@ -67,7 +67,7 @@ def variant_service_to_add(obj):
     return out
 
 
-def var_host_and(cluster, args):
+def var_host_and(cluster, args):  # pylint: disable=unused-argument
     if not isinstance(args, list):
         err("CONFIG_VARIANT_ERROR", 'arguments of "and" predicate should be a list')
 
@@ -77,7 +77,7 @@ def var_host_and(cluster, args):
     return sorted(list(set.intersection(*[set(a) for a in args])))
 
 
-def var_host_or(cluster, args):
+def var_host_or(cluster, args):  # pylint: disable=unused-argument
     if not isinstance(args, list):
         err("CONFIG_VARIANT_ERROR", 'arguments of "or" predicate should be a list')
 
@@ -122,7 +122,7 @@ def var_host_not_in_service(cluster, args):
     return out
 
 
-def var_host_in_cluster(cluster, args):
+def var_host_in_cluster(cluster, args):  # pylint: disable=unused-argument
     out = []
     for host in Host.objects.filter(cluster=cluster).order_by("fqdn"):
         out.append(host.fqdn)
@@ -155,7 +155,7 @@ def var_host_not_in_component(cluster, args):
     return out
 
 
-def var_host_in_hc(cluster, args):
+def var_host_in_hc(cluster, args):  # pylint: disable=unused-argument
     out = []
     for hostcomponent in HostComponent.objects.filter(cluster=cluster).order_by("host__fqdn"):
         out.append(hostcomponent.host.fqdn)
@@ -163,7 +163,7 @@ def var_host_in_hc(cluster, args):
     return out
 
 
-def var_host_not_in_hc(cluster, args):
+def var_host_not_in_hc(cluster, args):  # pylint: disable=unused-argument
     out = []
     for host in Host.objects.filter(cluster=cluster).order_by("fqdn"):
         if HostComponent.objects.filter(cluster=cluster, host=host):
@@ -174,7 +174,7 @@ def var_host_not_in_hc(cluster, args):
     return out
 
 
-def var_host_inline_list(cluster, args):
+def var_host_inline_list(cluster, args):  # pylint: disable=unused-argument
     return args["list"]
 
 

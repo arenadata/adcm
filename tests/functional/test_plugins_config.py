@@ -25,6 +25,7 @@ from adcm_pytest_plugin.steps.actions import (
     wait_for_task_and_assert_result,
 )
 from adcm_pytest_plugin.utils import get_data_dir, random_string
+
 from tests.functional.plugin_utils import (
     TestImmediateChange,
     build_objects_checker,

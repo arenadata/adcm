@@ -34,6 +34,7 @@ from adcm_client.objects import (
     Service,
 )
 from adcm_pytest_plugin.utils import random_string
+
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,
@@ -81,9 +82,9 @@ def _grant_view_config_permissions_on_adcm_objects(sdk_client_fs, basic_objects,
     create_policy(
         sdk_client_fs,
         [
-            BR.ViewClusterConfigurations,
-            BR.ViewServiceConfigurations,
-            BR.ViewComponentConfigurations,
+            BR.VIEW_CLUSTER_CONFIGURATIONS,
+            BR.VIEW_SERVICE_CONFIGURATIONS,
+            BR.VIEW_COMPONENT_CONFIGURATIONS,
         ],
         [cluster, service, component],
         users=[user],
@@ -92,13 +93,13 @@ def _grant_view_config_permissions_on_adcm_objects(sdk_client_fs, basic_objects,
     )
     create_policy(
         sdk_client_fs,
-        [BR.ViewProviderConfigurations, BR.ViewHostConfigurations],
+        [BR.VIEW_PROVIDER_CONFIGURATIONS, BR.VIEW_HOST_CONFIGURATIONS],
         [provider, host],
         users=[user],
         groups=[],
         use_all_objects=True,
     )
-    create_policy(sdk_client_fs, BR.ViewADCMSettings, [sdk_client_fs.adcm()], users=[user], groups=[])
+    create_policy(sdk_client_fs, BR.VIEW_ADCM_SETTINGS, [sdk_client_fs.adcm()], users=[user], groups=[])
 
 
 @pytest.fixture()

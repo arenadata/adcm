@@ -17,6 +17,7 @@ import coreapi
 import pytest
 from adcm_client.packer.bundle_build import build
 from adcm_pytest_plugin import utils
+
 from tests.library.errorcodes import BUNDLE_ERROR, INVALID_OBJECT_DEFINITION
 
 testcases = ["cluster", "host"]

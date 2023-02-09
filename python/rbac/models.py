@@ -14,6 +14,8 @@ import importlib
 import re
 from typing import Dict
 
+from cm.errors import raise_adcm_ex
+from cm.models import ADCMEntity, Bundle, HostComponent, ProductCategory
 from django.contrib.auth.models import Group as AuthGroup
 from django.contrib.auth.models import Permission
 from django.contrib.auth.models import User as AuthUser
@@ -25,9 +27,6 @@ from django.db.transaction import atomic
 from django.dispatch import receiver
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from rest_framework.exceptions import ValidationError
-
-from cm.errors import raise_adcm_ex
-from cm.models import ADCMEntity, Bundle, HostComponent, ProductCategory
 
 
 class ObjectType(models.TextChoices):
@@ -97,7 +96,7 @@ BASE_GROUP_NAME_PATTERN = re.compile(rf'(?P<base_name>.*?)(?: \[(?:{"|".join(Ori
 
 
 @receiver(pre_save, sender=Group)
-def handle_name_type_display_name(sender, instance, **kwargs):
+def handle_name_type_display_name(sender, instance, **kwargs):  # pylint: disable=unused-argument
     if kwargs["raw"]:
         return
 

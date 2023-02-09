@@ -19,6 +19,7 @@ import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
+
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.dialogs.create_host import HostCreateDialog
 from tests.ui_tests.app.page.common.dialogs.create_host_locators import (

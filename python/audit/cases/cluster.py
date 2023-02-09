@@ -10,10 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db.models import Model
-from rest_framework.generics import GenericAPIView
-from rest_framework.response import Response
-
 from audit.cases.common import (
     get_obj_name,
     get_or_create_audit_obj,
@@ -28,6 +24,9 @@ from audit.models import (
     AuditOperation,
 )
 from cm.models import Cluster, ClusterBind, ClusterObject, Host
+from django.db.models import Model
+from rest_framework.generics import GenericAPIView
+from rest_framework.response import Response
 
 CONFIGURATION_STR = "configuration "
 

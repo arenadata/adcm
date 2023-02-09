@@ -12,27 +12,6 @@
 
 from pathlib import Path
 
-from django.conf import settings
-from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework.authentication import SessionAuthentication, TokenAuthentication
-from rest_framework.decorators import action
-from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
-from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.reverse import reverse
-from rest_framework.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_204_NO_CONTENT,
-    HTTP_400_BAD_REQUEST,
-    HTTP_405_METHOD_NOT_ALLOWED,
-)
-from rest_framework.viewsets import ModelViewSet
-
-from adcm.permissions import DjangoObjectPermissionsAudit, IsAuthenticatedAudit
 from api.action.serializers import StackActionSerializer
 from api.base_view import GenericUIViewSet, ModelPermOrReadOnlyForAuth
 from api.stack.serializers import (
@@ -68,6 +47,27 @@ from cm.models import (
     PrototypeImport,
     Upgrade,
 )
+from django.conf import settings
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
+from rest_framework.decorators import action
+from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
+from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_405_METHOD_NOT_ALLOWED,
+)
+from rest_framework.viewsets import ModelViewSet
+
+from adcm.permissions import DjangoObjectPermissionsAudit, IsAuthenticatedAudit
 
 
 @csrf_exempt
@@ -177,7 +177,7 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
 
     @audit
     @action(methods=["put"], detail=True)
-    def update_bundle(self, request, *args, **kwargs) -> Response:
+    def update_bundle(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         bundle = check_obj(Bundle, kwargs["bundle_pk"], "BUNDLE_NOT_FOUND")
         update_bundle(bundle)
         serializer = self.get_serializer(bundle)
@@ -186,16 +186,17 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
 
     @staticmethod
     @action(methods=["get"], detail=True)
-    def license(request, *args, **kwargs) -> Response:
+    def license(request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         bundle = check_obj(Bundle, kwargs["bundle_pk"], "BUNDLE_NOT_FOUND")
         proto = Prototype.objects.filter(bundle=bundle, name=bundle.name).first()
         body = get_license(proto)
         url = reverse(viewname="accept-license", kwargs={"prototype_pk": proto.pk}, request=request)
+
         return Response({"license": proto.license, "accept": url, "text": body})
 
     @audit
     @action(methods=["put"], detail=True)
-    def accept_license(self, request: Request, *args, **kwargs) -> Response:
+    def accept_license(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         # self is necessary for audit
 
         bundle = check_obj(Bundle, kwargs["bundle_pk"], "BUNDLE_NOT_FOUND")
@@ -231,7 +232,7 @@ class PrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
 
     @staticmethod
     @action(methods=["get"], detail=True)
-    def license(request: Request, *args, **kwargs) -> Response:
+    def license(request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         prototype = check_obj(Prototype, kwargs["prototype_pk"], "PROTOTYPE_NOT_FOUND")
         body = get_license(prototype)
         url = reverse(viewname="accept-license", kwargs={"prototype_pk": prototype.pk}, request=request)
@@ -240,7 +241,7 @@ class PrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
 
     @audit
     @action(methods=["put"], detail=True)
-    def accept_license(self, request: Request, *args, **kwargs) -> Response:
+    def accept_license(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         # self is necessary for audit
 
         prototype = check_obj(Prototype, kwargs["prototype_pk"], "PROTOTYPE_NOT_FOUND")
@@ -289,7 +290,7 @@ class ServicePrototypeViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewS
         return Response(serializer.data)
 
     @action(methods=["get"], detail=True)
-    def actions(self, request: Request, prototype_pk: int) -> Response:
+    def actions(self, request: Request, prototype_pk: int) -> Response:  # pylint: disable=unused-argument
         return Response(
             StackActionSerializer(
                 Action.objects.filter(prototype__type="service", prototype_id=prototype_pk),

@@ -10,11 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf import settings
-from django.urls import reverse
-from rest_framework.response import Response
-
-from adcm.tests.base import BaseTestCase
 from cm.models import (
     ADCM,
     Action,
@@ -24,6 +19,11 @@ from cm.models import (
     ObjectConfig,
     Prototype,
 )
+from django.conf import settings
+from django.urls import reverse
+from rest_framework.response import Response
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestActionAPI(BaseTestCase):

@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 import allure
+
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators

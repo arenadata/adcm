@@ -11,6 +11,9 @@
 # limitations under the License.
 
 import jsonschema
+from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from rbac.models import Group, Policy, Role, RoleTypes, User
+from rbac.utils import BaseRelatedSerializer
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import (
@@ -23,9 +26,6 @@ from rest_framework.relations import HyperlinkedIdentityField, PrimaryKeyRelated
 from rest_framework.serializers import ModelSerializer
 
 from adcm.utils import get_obj_type
-from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
-from rbac.models import Group, Policy, Role, RoleTypes, User
-from rbac.utils import BaseRelatedSerializer
 
 
 class ObjectField(JSONField):

@@ -11,10 +11,6 @@
 # limitations under the License.
 from datetime import datetime, timedelta
 
-from django.core.management import call_command
-from django.utils import timezone
-
-from adcm.tests.base import BaseTestCase
 from audit.models import AuditLog, AuditLogOperationResult, AuditLogOperationType
 from cm.models import (
     ADCM,
@@ -26,7 +22,11 @@ from cm.models import (
     Prototype,
     TaskLog,
 )
+from django.core.management import call_command
+from django.utils import timezone
 from rbac.models import User
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestLogrotate(BaseTestCase):

@@ -19,6 +19,7 @@ from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider
 from adcm_pytest_plugin.params import including_https
 from adcm_pytest_plugin.utils import get_data_dir, parametrize_by_data_subdirs
 from selenium.common.exceptions import TimeoutException
+
 from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import (
@@ -162,7 +163,9 @@ def create_cluster_with_all_config_fields(sdk_client_fs: ADCMClient) -> Cluster:
 
 @pytest.fixture()
 @allure.title("Create community cluster and add host")
-def create_community_cluster_with_host(app_fs, sdk_client_fs: ADCMClient, upload_and_create_provider, create_host):
+def create_community_cluster_with_host(
+    app_fs, sdk_client_fs: ADCMClient, upload_and_create_provider, create_host
+):  # pylint: disable=unused-argument
     """Create community cluster and add host"""
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     cluster = bundle.cluster_create(name=CLUSTER_NAME)
@@ -1387,7 +1390,7 @@ class TestClusterRenaming:
     DISALLOWED_AT_START_END = (*SPECIAL_CHARS, " ")
     EXPECTED_ERROR = "Please enter a valid name"
 
-    def test_rename_cluster(self, sdk_client_fs, app_fs, create_community_cluster):
+    def test_rename_cluster(self, sdk_client_fs, app_fs, create_community_cluster):  # pylint: disable=unused-argument
         cluster = create_community_cluster
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         self._test_correct_name_can_be_set(cluster, cluster_page)

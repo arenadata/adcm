@@ -9,12 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=redefined-outer-name
 
-"""Tests for ADCM objects states and related stuff"""
-
-# todo add new DSL variant for job and multijob
-
-# pylint:disable=redefined-outer-name
 from typing import Callable, Tuple
 
 import allure
@@ -27,6 +23,7 @@ from adcm_pytest_plugin.steps.actions import (
     run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import fixture_parametrized_by_data_subdirs
+
 from tests.functional.plugin_utils import build_objects_checker
 
 ACTION_NAME = "state_changing_action"

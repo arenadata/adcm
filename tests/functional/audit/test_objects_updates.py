@@ -18,6 +18,7 @@ import allure
 import pytest
 import requests
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host
+
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,
@@ -65,7 +66,7 @@ def _grant_cluster_view_permissions(sdk_client_fs, import_export_clusters, new_u
     import_cluster, *_ = import_export_clusters
     create_policy(
         sdk_client_fs,
-        [BusinessRoles.ViewClusterConfigurations, BusinessRoles.ViewServiceConfigurations],
+        [BusinessRoles.VIEW_CLUSTER_CONFIGURATIONS, BusinessRoles.VIEW_SERVICE_CONFIGURATIONS],
         [import_cluster, import_cluster.service()],
         [sdk_client_fs.user(id=new_user_client.me().id)],
         [],
@@ -104,7 +105,7 @@ class TestClusterUpdates:
             check_failed(post(path, data, self.new_user_creds), exact_code=403)
         service = cluster.service()
         display_name = service.display_name
-        create_policy(self.client, [BusinessRoles.ViewServiceConfigurations], [service], [new_user], [])
+        create_policy(self.client, [BusinessRoles.VIEW_SERVICE_CONFIGURATIONS], [service], [new_user], [])
         with allure.step("Get denied trying to remove service"):
             check_failed(delete(path, service.id, headers=self.new_user_creds), exact_code=403)
         with allure.step("Remove service"):
@@ -146,11 +147,11 @@ class TestClusterUpdates:
         self._accept_license(bundle_with_license, import_bundle)
         cluster = bundle_with_license.cluster_create("Cluster")
         host = generic_provider.host_create("first")
-        create_policy(self.client, [BusinessRoles.ViewClusterConfigurations], [cluster], [new_user], [])
+        create_policy(self.client, [BusinessRoles.VIEW_CLUSTER_CONFIGURATIONS], [cluster], [new_user], [])
         self._add_service(cluster)
         create_policy(
             self.client,
-            [BusinessRoles.ViewServiceConfigurations],
+            [BusinessRoles.VIEW_SERVICE_CONFIGURATIONS],
             [cluster.service()],
             [new_user],
             [],
@@ -161,7 +162,7 @@ class TestClusterUpdates:
             service = cluster.service_add(name="service_name")
         create_policy(
             self.client,
-            [BusinessRoles.ViewComponentConfigurations],
+            [BusinessRoles.VIEW_COMPONENT_CONFIGURATIONS],
             [service.component()],
             [new_user],
             [],
@@ -170,7 +171,7 @@ class TestClusterUpdates:
         new_host = generic_provider.host_create("second")
         with allure.step("Add another host to a cluster"):
             cluster.host_add(new_host)
-        create_policy(self.client, [BusinessRoles.ViewHostConfigurations], [new_host], [new_user], [])
+        create_policy(self.client, [BusinessRoles.VIEW_HOST_CONFIGURATIONS], [new_host], [new_user], [])
         new_host.reread()
         self._remove_host(new_host)
         checker = AuditLogChecker(
@@ -423,11 +424,11 @@ class TestObjectUpdates:
 
         with allure.step("Create host and update it"):
             host = generic_provider.host_create(old_fqdn)
-            build_policy(BusinessRoles.ViewHostConfigurations, host)
+            build_policy(BusinessRoles.VIEW_HOST_CONFIGURATIONS, host)
             self._update_host_object(host, new_fqdn, method)
         with allure.step("Create cluster and update it"):
             cluster = bundle_with_license.cluster_create(old_cluster_name)
-            build_policy(BusinessRoles.ViewClusterConfigurations, cluster)
+            build_policy(BusinessRoles.VIEW_CLUSTER_CONFIGURATIONS, cluster)
             self._update_cluster_object(cluster, new_cluster_name, method)
         with allure.step("Add host to cluster and update host"):
             cluster.host_add(host)

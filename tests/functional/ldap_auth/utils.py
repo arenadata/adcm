@@ -17,6 +17,7 @@ from typing import Collection, Set
 import allure
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import ADCMClient, Group, User
+
 from tests.library.assertions import (
     expect_api_error,
     expect_no_api_error,

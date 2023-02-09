@@ -25,6 +25,8 @@ from enum import Enum
 from itertools import chain
 from typing import Dict, Iterable, List, Optional
 
+from cm.errors import AdcmEx
+from cm.logger import logger
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -32,9 +34,6 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
 from django.db.models.signals import m2m_changed, post_delete
 from django.dispatch import receiver
-
-from cm.errors import AdcmEx
-from cm.logger import logger
 
 
 def validate_line_break_character(value: str) -> None:
@@ -209,7 +208,7 @@ class ProductCategory(ADCMModel):
                 bundle.save()
         for category in cls.objects.all():
             if category.bundle_set.count() == 0:
-                category.delete()  # TODO: ensure that's enough
+                category.delete()
 
 
 def get_default_from_edition():
@@ -374,7 +373,6 @@ class ConfigLog(ADCMModel):
         if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
             # Sync group configs with object config
             for conf_group in obj.group_config.all():
-                # TODO: We need refactoring for upgrade cluster
                 diff_config, diff_attr = conf_group.get_diff_config_attr()
                 group_config = ConfigLog()
                 current_group_config = ConfigLog.objects.get(id=conf_group.config.current)
@@ -899,7 +897,7 @@ class ServiceComponent(ADCMEntity):
 
 
 @receiver(post_delete, sender=ServiceComponent)
-def auto_delete_config_with_servicecomponent(sender, instance, **kwargs):
+def auto_delete_config_with_servicecomponent(sender, instance, **kwargs):  # pylint: disable=unused-argument
     if instance.config is not None:
         instance.config.delete()
 
@@ -1166,8 +1164,9 @@ class GroupConfig(ADCMModel):
 
 
 @receiver(m2m_changed, sender=GroupConfig.hosts.through)
-def verify_host_candidate_for_group_config(sender, **kwargs):
+def verify_host_candidate_for_group_config(sender, **kwargs):  # pylint: disable=unused-argument
     """Checking host candidate for group config before add to group"""
+
     group_config = kwargs.get("instance")
     action = kwargs.get("action")
     host_ids = kwargs.get("pk_set")
@@ -1439,6 +1438,7 @@ class PrototypeConfig(ADCMModel):
     group_customization = models.BooleanField(null=True)
 
     class Meta:
+        ordering = ["id"]
         unique_together = (("prototype", "action", "name", "subname"),)
 
 
@@ -1520,23 +1520,20 @@ class TaskLog(ADCMModel):
     def lock_affected(self, objects: Iterable[ADCMEntity]) -> None:
         if self.lock:
             return
+
         first_job = JobLog.obj.filter(task=self).order_by("id").first()
-        reason = MessageTemplate.get_message_from_template(
-            MessageTemplate.KnownNames.LOCKED_BY_JOB.value,
-            job=first_job,
-            target=self.task_object,
-        )
         self.lock = ConcernItem.objects.create(
             type=ConcernType.LOCK.value,
             name=None,
-            reason=reason,
+            reason=first_job.cook_reason(),
             blocking=True,
             owner=self.task_object,
             cause=ConcernCause.JOB.value,
         )
         self.save()
+
         for obj in objects:
-            obj.add_to_concerns(self.lock)
+            obj.add_to_concerns(item=self.lock)
 
     def unlock_affected(self) -> None:
         if not self.lock:
@@ -1597,6 +1594,13 @@ class JobLog(ADCMModel):
     finish_date = models.DateTimeField(db_index=True)
 
     __error_code__ = "JOB_NOT_FOUND"
+
+    def cook_reason(self):
+        return MessageTemplate.get_message_from_template(
+            MessageTemplate.KnownNames.LOCKED_BY_JOB.value,
+            job=self,
+            target=self.task.task_object,
+        )
 
     def cancel(self, event_queue: "cm.status_api.Event" = None):
         if not self.sub_action.allowed_to_terminate:
@@ -1734,6 +1738,7 @@ class StagePrototypeConfig(ADCMModel):
     group_customization = models.BooleanField(null=True)
 
     class Meta:
+        ordering = ["id"]
         unique_together = (("prototype", "action", "name", "subname"),)
 
 

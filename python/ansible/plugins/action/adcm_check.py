@@ -10,8 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# pylint: disable=wrong-import-position, import-error, too-many-locals
+# pylint: disable=wrong-import-order,wrong-import-position
 
 from __future__ import absolute_import, division, print_function
 
@@ -122,7 +121,7 @@ class ActionModule(ActionBase):
         )
     )
 
-    def run(self, tmp=None, task_vars=None):
+    def run(self, tmp=None, task_vars=None):  # pylint: disable=too-many-locals
         super().run(tmp, task_vars)
         job_id = None
         if task_vars is not None and "job" in task_vars or "id" in task_vars["job"]:
@@ -136,7 +135,7 @@ class ActionModule(ActionBase):
         if not required_condition:
             return {
                 "failed": True,
-                "msg": ("title, result and msg, fail_msg or success" "_msg are mandatory args of adcm_check"),
+                "msg": "title, result and msg, fail_msg or success" "_msg are mandatory args of adcm_check",
             }
 
         title = self._task.args["title"]

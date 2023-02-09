@@ -11,9 +11,8 @@
 # limitations under the License.
 
 
-from django.urls import include, path
-
 from api.host.views import HostListCluster
+from django.urls import include, path
 
 urlpatterns = [
     path("", HostListCluster.as_view(), name="host"),

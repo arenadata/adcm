@@ -5,6 +5,7 @@ from typing import Any, Callable, Iterable, Protocol, Type, TypeVar
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
+
 from tests.library.predicates import name_is
 from tests.ui_tests.core.interactors import Interactor
 from tests.ui_tests.core.locators import BaseLocator, Descriptor, Locator
@@ -15,7 +16,7 @@ class AutoChildElement:
     _element: WebElement
     _view: Interactor
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
         if not hasattr(cls, "Locators"):
             raise ValueError("Children locators should be available as 'Locators' in class")
 

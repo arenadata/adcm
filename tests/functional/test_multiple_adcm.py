@@ -27,6 +27,7 @@ from adcm_pytest_plugin.docker.commands import dump_cluster, load_cluster
 from adcm_pytest_plugin.docker.utils import copy_file_to_container
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.utils import catch_failed, get_data_dir
+
 from tests.functional.tools import AnyADCMObject, get_object_represent
 from tests.library.assertions import dicts_are_equal, sets_are_equal
 

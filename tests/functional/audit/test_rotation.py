@@ -29,6 +29,7 @@ from adcm_pytest_plugin.docker.adcm import ADCM
 from adcm_pytest_plugin.docker.commands import clearaudit
 from adcm_pytest_plugin.docker.utils import get_file_from_container
 from adcm_pytest_plugin.utils import random_string
+
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     set_logins_date,

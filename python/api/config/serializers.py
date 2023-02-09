@@ -10,6 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api.utils import CommonAPIURL, get_api_url_kwargs
+from cm.adcm_config import (
+    get_default,
+    group_is_activatable,
+    restore_cluster_config,
+    ui_config,
+)
+from cm.api import update_obj_config
+
 # pylint: disable=redefined-builtin
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.reverse import reverse
@@ -24,14 +33,6 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
-from api.utils import CommonAPIURL, get_api_url_kwargs
-from cm.adcm_config import (
-    get_default,
-    group_is_activatable,
-    restore_cluster_config,
-    ui_config,
-)
-from cm.api import update_obj_config
 
 
 class ConfigVersionURL(HyperlinkedIdentityField):

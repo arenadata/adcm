@@ -17,14 +17,13 @@ from contextlib import contextmanager, suppress
 from typing import List, Optional, Tuple, Type
 
 import ldap
+from cm.adcm_config import ansible_decrypt
+from cm.logger import logger
+from cm.models import ADCM, ConfigLog
 from django.contrib.auth.models import Group as DjangoGroup
 from django.db.transaction import atomic
 from django_auth_ldap.backend import LDAPBackend, _LDAPUser
 from django_auth_ldap.config import LDAPSearch, MemberDNGroupType
-
-from cm.adcm_config import ansible_decrypt
-from cm.logger import logger
-from cm.models import ADCM, ConfigLog
 from rbac.models import Group, OriginType, User
 
 CERT_ENV_KEY = "LDAPTLS_CACERT"

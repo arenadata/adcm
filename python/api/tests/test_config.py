@@ -13,14 +13,14 @@
 from copy import deepcopy
 from pathlib import Path
 
+from cm.adcm_config import ansible_decrypt
+from cm.models import ConfigLog
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.adcm_config import ansible_decrypt
-from cm.models import ConfigLog
 
 
 class TestConfigPasswordAPI(BaseTestCase):

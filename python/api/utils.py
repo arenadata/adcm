@@ -12,23 +12,6 @@
 
 from typing import List
 
-from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
-from django.http.request import QueryDict
-from django_filters import rest_framework as drf_filters
-from guardian.shortcuts import get_objects_for_user
-from rest_framework.exceptions import PermissionDenied
-from rest_framework.filters import OrderingFilter
-from rest_framework.response import Response
-from rest_framework.reverse import reverse
-from rest_framework.serializers import HyperlinkedIdentityField, Serializer
-from rest_framework.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_400_BAD_REQUEST,
-    HTTP_409_CONFLICT,
-)
-
 from cm.api import load_mm_objects
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
@@ -44,6 +27,22 @@ from cm.models import (
     Prototype,
     PrototypeConfig,
     ServiceComponent,
+)
+from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
+from django.http.request import QueryDict
+from django_filters import rest_framework as drf_filters
+from guardian.shortcuts import get_objects_for_user
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.filters import OrderingFilter
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+from rest_framework.serializers import HyperlinkedIdentityField, Serializer
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_409_CONFLICT,
 )
 
 
@@ -99,7 +98,7 @@ def get_object_for_user(user, perms, klass, **kwargs):
         raise AdcmEx(error_code) from None
 
 
-def check_obj(model, req, error=None):
+def check_obj(model, req, error=None):  # pylint: disable=unused-argument
     if isinstance(req, dict):
         kwargs = req
     else:
@@ -156,7 +155,7 @@ def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
 def get_api_url_kwargs(obj, request, no_obj_type=False):
     obj_type = obj.prototype.type
 
-    if obj_type == "adcm":  # TODO: this is a temporary patch for `config` endpoint
+    if obj_type == "adcm":
         kwargs = {"adcm_pk": obj.pk}
     else:
         kwargs = {f"{obj_type}_id": obj.id}
@@ -308,7 +307,7 @@ class ObjectURL(HyperlinkedIdentityField):
 
 
 class UrlField(HyperlinkedIdentityField):
-    def get_kwargs(self, obj):
+    def get_kwargs(self, obj):  # pylint: disable=unused-argument
         return {}
 
     def get_url(self, obj, view_name, request, _format):

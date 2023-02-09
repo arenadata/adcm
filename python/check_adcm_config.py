@@ -10,16 +10,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=wrong-import-order
 
 import argparse
 import sys
 from pathlib import Path
 
+import cm.checker
 import ruyaml
 from django.conf import settings
 
 import adcm.init_django  # pylint: disable=unused-import
-import cm.checker
 
 
 def check_config(data_file, schema_file, print_ok=True):  # pylint: disable=too-many-return-statements

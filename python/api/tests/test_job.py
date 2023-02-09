@@ -15,13 +15,6 @@ from pathlib import Path
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
-from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED
-
-from adcm.tests.base import BaseTestCase
 from cm.models import (
     ADCM,
     Action,
@@ -32,8 +25,15 @@ from cm.models import (
     Prototype,
     TaskLog,
 )
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse
 from rbac.models import Policy, Role
 from rbac.upgrade.role import init_roles
+from rest_framework.response import Response
+from rest_framework.status import HTTP_201_CREATED
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestJobAPI(BaseTestCase):

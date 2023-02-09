@@ -17,6 +17,7 @@ from typing import Optional
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebElement
+
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.status.locators import StatusLocators
 from tests.ui_tests.core.locators import BaseLocator

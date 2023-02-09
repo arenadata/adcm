@@ -13,12 +13,6 @@
 from pathlib import Path
 from unittest.mock import patch
 
-from django.conf import settings
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
-
-from adcm.tests.base import BaseTestCase
 from cm.models import (
     Action,
     Bundle,
@@ -30,6 +24,12 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from django.conf import settings
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestComponentAPI(BaseTestCase):

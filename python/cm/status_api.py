@@ -16,10 +16,6 @@ from typing import Iterable
 from urllib.parse import urljoin
 
 import requests
-from django.conf import settings
-from requests import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
-
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
@@ -31,6 +27,9 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from django.conf import settings
+from requests import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 MODEL_OBJ_TYPE_MAP = {
     "ClusterObject": "service",

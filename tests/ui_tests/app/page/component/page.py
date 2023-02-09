@@ -13,6 +13,7 @@
 """Component page PageObjects classes"""
 
 import allure
+
 from tests.ui_tests.app.page.common.base_page import BaseDetailedPage, BasePageObject
 from tests.ui_tests.app.page.common.common_locators import (
     ObjectPageLocators,

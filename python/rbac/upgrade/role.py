@@ -13,14 +13,13 @@
 """Init or upgrade RBAC roles and permissions"""
 from typing import List
 
+import cm.checker
 import ruyaml
+from cm.errors import raise_adcm_ex
+from cm.models import Action, Bundle, Host, ProductCategory, get_model_by_type
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-
-import cm.checker
-from cm.errors import raise_adcm_ex
-from cm.models import Action, Bundle, Host, ProductCategory, get_model_by_type
 from rbac import log
 from rbac.models import Permission, Role, RoleMigration, RoleTypes, re_apply_all_polices
 from rbac.settings import api_settings
@@ -64,7 +63,7 @@ def check_roles_child(data: dict):
                 find_role(child, data["roles"])
 
 
-def get_role_permissions(role: dict, data: dict) -> List[Permission]:
+def get_role_permissions(role: dict, data: dict) -> List[Permission]:  # pylint: disable=unused-argument
     """Retrieve all role's permissions"""
 
     all_perm = []

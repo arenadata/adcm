@@ -12,13 +12,12 @@
 
 from typing import List
 
+from cm.errors import raise_adcm_ex
 from django.db import IntegrityError
 from django.db.transaction import atomic
-from rest_framework.exceptions import ValidationError
-
-from cm.errors import raise_adcm_ex
 from rbac.models import Role, RoleTypes
 from rbac.utils import update_m2m_field
+from rest_framework.exceptions import ValidationError
 
 
 def check_role_child(child: List[Role], partial=False):

@@ -13,12 +13,12 @@
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from cm.models import JobLog, LogStorage
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
 from adcm.tests.base import BaseTestCase
-from cm.models import JobLog, LogStorage
 
 
 class TestTaskAPI(BaseTestCase):

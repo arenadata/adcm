@@ -65,10 +65,11 @@ def provider(provider_bundle: Bundle) -> Provider:
 
 def _get_prev_config(obj: BaseAPIObject, full=False):
     """Copy of config() method"""
-    # TODO: Fix after https://arenadata.atlassian.net/browse/ADCM-1651
+
     history_entry = obj._subcall("config", "previous", "list")  # pylint: disable=protected-access
     if full:
         return history_entry
+
     return history_entry["config"]
 
 
