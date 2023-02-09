@@ -397,7 +397,7 @@ class TestUpgradeFilledADCM:
     @pytest.mark.parametrize("image", [previous_adcm_version_tag()], indirect=True)
     def test_upgrade_dirty_adcm(
         self,
-        adcm_fs: ADCM,
+        adcm_fs: ADCM,  # pylint: disable=unused-argument
         launcher,
         sdk_client_fs: ADCMClient,
         adcm_api_credentials: dict,

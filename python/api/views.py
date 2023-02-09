@@ -59,7 +59,7 @@ class ADCMInfo(APIView):
     permission_classes = (permissions.AllowAny,)
 
     @staticmethod
-    def get(request):
+    def get(request):  # pylint: disable=unused-argument
         return Response(
             {
                 "adcm_version": settings.ADCM_VERSION,

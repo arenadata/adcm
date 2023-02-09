@@ -119,8 +119,9 @@ def pytest_runtest_setup(item: Function):
 
 
 @pytest.hookimpl(trylast=True)
-def pytest_collection_modifyitems(session, config, items):
+def pytest_collection_modifyitems(session, config, items):  # pylint: disable=unused-argument
     """Run tests with id "adcm_with_dummy_data" after everything else"""
+
     items.sort(key=lambda x: "adcm_with_dummy_data" in x.name)
 
 
@@ -295,9 +296,11 @@ def user(sdk_client_fs) -> User:
 
 
 @pytest.fixture()
-def user_sdk(user, adcm_fs) -> ADCMClient:
+def user_sdk(user, adcm_fs) -> ADCMClient:  # pylint: disable=unused-argument
     """Returns ADCMClient object from adcm_client with testing user"""
+
     username, password = TEST_USER_CREDENTIALS
+
     return ADCMClient(url=adcm_fs.url, user=username, password=password)
 
 

@@ -158,12 +158,15 @@ def check_adcm_config(conf_file):
         return {}
 
 
-def read_definition(conf_file, conf_type):
+def read_definition(conf_file, conf_type):  # pylint: disable=unused-argument
     if os.path.isfile(conf_file):
         conf = check_adcm_config(conf_file)
         logger.info('Read config file: "%s"', conf_file)
+
         return conf
+
     logger.warning('Can not open config file: "%s"', conf_file)
+
     return {}
 
 
@@ -452,9 +455,10 @@ def save_import(proto, conf):
         stage_prototype_import.save()
 
 
-def check_action_hc(proto, conf, name):
+def check_action_hc(proto, conf, name):  # pylint: disable=unused-argument
     if "hc_acl" not in conf:
         return
+
     for idx, item in enumerate(conf["hc_acl"]):
         if "service" not in item:
             if proto.type == "service":
@@ -605,10 +609,11 @@ def check_action(proto, action):
 def is_group(conf):
     if conf["type"] == "group":
         return True
+
     return False
 
 
-def get_yspec(proto, ref, bundle_hash, conf, name, subname):
+def get_yspec(proto, ref, bundle_hash, conf, name, subname):  # pylint: disable=unused-argument
     schema = None
     yspec_body = read_bundle_file(proto, conf["yspec"], bundle_hash, f'yspec file of config key "{name}/{subname}":')
     try:
@@ -628,20 +633,23 @@ def save_prototype_config(
 ):  # pylint: disable=too-many-statements,too-many-locals
     if not in_dict(proto_conf, "config"):
         return
+
     conf_dict = proto_conf["config"]
     ref = proto_ref(proto)
 
-    def check_variant(conf, name, subname):
+    def check_variant(conf, name, subname):  # pylint: disable=unused-argument
         vtype = conf["source"]["type"]
         source = {"type": vtype, "args": None}
         if "strict" in conf["source"]:
             source["strict"] = conf["source"]["strict"]
         else:
             source["strict"] = True
+
         if vtype == "inline":
             source["value"] = conf["source"]["value"]
         elif vtype in ("config", "builtin"):
             source["name"] = conf["source"]["name"]
+
         if vtype == "builtin":
             if "args" in conf["source"]:
                 source["args"] = conf["source"]["args"]

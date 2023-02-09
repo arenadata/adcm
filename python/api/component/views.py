@@ -109,7 +109,7 @@ class StatusList(GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = ComponentStatusSerializer
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         queryset = get_component_queryset(ServiceComponent.objects.all(), request.user, kwargs)
         component = get_object_for_user(request.user, "cm.view_servicecomponent", queryset, id=kwargs["component_id"])
         if self._is_for_ui():

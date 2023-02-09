@@ -74,7 +74,7 @@ def fill_adcm(sdk_client_ss):
 
 @pytest.fixture()
 def adcm_api(
-    request, launcher, sdk_client_ss, fill_adcm  # pylint: disable=redefined-outer-name
+    request, launcher, sdk_client_ss, fill_adcm  # pylint: disable=redefined-outer-name,unused-argument
 ) -> Generator[ADCMTestApiWrapper, None, None]:
     """Runs ADCM container with previously initialized image.
     Returns authorized instance of ADCMTestApiWrapper object

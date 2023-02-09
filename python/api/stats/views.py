@@ -24,7 +24,7 @@ class JobStats(PermissionListMixin, GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
     permission_required = ["cm.view_joblog"]
 
-    def get(self, request, pk):
+    def get(self, request, pk):  # pylint: disable=unused-argument
         jobs = self.get_queryset().filter(id__gt=pk)
 
         return Response(
@@ -42,7 +42,7 @@ class TaskStats(PermissionListMixin, GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
     permission_required = ["cm.view_tasklog"]
 
-    def get(self, request, pk):
+    def get(self, request, pk):  # pylint: disable=unused-argument
         tasks = self.get_queryset().filter(id__gt=pk)
 
         return Response(

@@ -876,7 +876,7 @@ class TestAPI2(BaseTestCase):
     @patch("cm.api.CTX")
     @patch("cm.api.load_service_map")
     @patch("cm.api.update_hierarchy_issues")
-    def test_save_hc__big_update__locked_hierarchy(self, mock_issue, mock_load, ctx):
+    def test_save_hc__big_update__locked_hierarchy(self, mock_issue, mock_load, ctx):  # pylint: disable=unused-argument
         """
         Update bigger HC map - move `component_2` from `host_2` to `host_3`
         On locked hierarchy (from ansible task)
@@ -928,7 +928,7 @@ class TestAPI2(BaseTestCase):
 
     @patch("cm.api.load_service_map")
     @patch("cm.api.update_hierarchy_issues")
-    def test_save_hc__big_update__unlocked_hierarchy(self, mock_update, mock_load):
+    def test_save_hc__big_update__unlocked_hierarchy(self, mock_update, mock_load):  # pylint: disable=unused-argument
         """
         Update bigger HC map - move `component_2` from `host_2` to `host_3`
         On unlocked hierarchy (from API)

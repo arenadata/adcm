@@ -52,17 +52,18 @@ class ConcernFilter(drf_filters.FilterSet):
             "owner_id",
         ]
 
-    def _filter_by_owner_type(self, queryset, name, value: str):
+    def _filter_by_owner_type(self, queryset, name, value: str):  # pylint: disable=unused-argument
         owner_type = ContentType.objects.get(app_label="cm", model=OBJECT_TYPES[value])
         return queryset.filter(owner_type=owner_type)
 
-    def _pass(self, queryset, name, value):
+    def _pass(self, queryset, name, value):  # pylint: disable=unused-argument
         # do not pass to filter directly
         return queryset
 
-    def _filter_by_object(self, queryset, name, value):
+    def _filter_by_object(self, queryset, name, value):  # pylint: disable=unused-argument
         object_id = self.request.query_params.get("object_id")
         filters = {f"{OBJECT_TYPES[value]}_entities__id": object_id}
+
         return queryset.filter(**filters)
 
     def is_valid(self):

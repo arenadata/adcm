@@ -96,7 +96,7 @@ BASE_GROUP_NAME_PATTERN = re.compile(rf'(?P<base_name>.*?)(?: \[(?:{"|".join(Ori
 
 
 @receiver(pre_save, sender=Group)
-def handle_name_type_display_name(sender, instance, **kwargs):
+def handle_name_type_display_name(sender, instance, **kwargs):  # pylint: disable=unused-argument
     if kwargs["raw"]:
         return
 

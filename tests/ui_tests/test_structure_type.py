@@ -95,7 +95,7 @@ class TestServiceConfigSave:
         ), "All params should be present when 'Advanced' is enabled"
         config_page.config.click_on_advanced()
 
-    def test_config_save(self, app_fs, sdk_client_fs, create_cluster):
+    def test_config_save(self, app_fs, sdk_client_fs, create_cluster):  # pylint: disable=unused-argument
         """Test to check config save with default params"""
         with allure.step("Create cluster and service"):
             cluster = create_cluster
@@ -116,7 +116,7 @@ class TestServiceConfigSave:
             ).open()
             cluster_group_config_page.config.set_description(self.CONFIG_NAME_NEW)
 
-    def test_config_empty(self, app_fs, sdk_client_fs, create_cluster):
+    def test_config_empty(self, app_fs, sdk_client_fs, create_cluster):  # pylint: disable=unused-argument
         """Test to check config save with empty params"""
         with allure.step("Create cluster and service"):
             cluster = create_cluster
@@ -169,7 +169,7 @@ class TestServiceConfigSave:
                 expected_value=self.STRUCTURE_MAP, display_name=self.STRUCTURE_ROW_NAME
             )
 
-    def test_config_save_required(self, app_fs, sdk_client_fs, create_cluster):
+    def test_config_save_required(self, app_fs, sdk_client_fs, create_cluster):  # pylint: disable=unused-argument
         """Test to check config can not be saved when required params is empty"""
         with allure.step("Create cluster and service"):
             cluster = create_cluster
@@ -179,7 +179,7 @@ class TestServiceConfigSave:
             service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
             assert service_config_page.config.is_save_btn_disabled(), "Save button must be disabled"
 
-    def test_config_save_invisible(self, app_fs, sdk_client_fs, create_cluster):
+    def test_config_save_invisible(self, app_fs, sdk_client_fs, create_cluster):  # pylint: disable=unused-argument
         """Test to check config save with ui option invisible"""
         with allure.step("Create cluster and service"):
             cluster = create_cluster
@@ -206,7 +206,7 @@ class TestServiceConfigSave:
             cluster_group_config_page.config.save_config()
             should_become_truth(lambda: not cluster_group_config_page.is_popup_presented_on_page(timeout=1))
 
-    def test_config_save_advanced(self, app_fs, sdk_client_fs, create_cluster):
+    def test_config_save_advanced(self, app_fs, sdk_client_fs, create_cluster):  # pylint: disable=unused-argument
         """Test to check config save with ui option advanced"""
         with allure.step("Create cluster and service"):
             cluster = create_cluster
@@ -233,7 +233,7 @@ class TestServiceConfigSave:
             cluster_group_config_page.config.save_config()
             should_become_truth(lambda: not cluster_group_config_page.is_popup_presented_on_page(timeout=1))
 
-    def test_config_save_read_only(self, app_fs, sdk_client_fs, create_cluster):
+    def test_config_save_read_only(self, app_fs, sdk_client_fs, create_cluster):  # pylint: disable=unused-argument
         """Test to check config save with ui option advanced"""
         with allure.step("Create cluster and service"):
             cluster = create_cluster
@@ -277,7 +277,7 @@ class TestServiceConfigSave:
                 expected_value=self.STRING_ROW_NAME, display_name="string"
             )
 
-    def test_config_save_schema_dict(self, app_fs, sdk_client_fs, create_cluster):
+    def test_config_save_schema_dict(self, app_fs, sdk_client_fs, create_cluster):  # pylint: disable=unused-argument
         """Test to check config save"""
         with allure.step("Create cluster and service"):
             cluster = create_cluster
@@ -306,7 +306,7 @@ class TestServiceConfigSave:
                 expected_value=self.STRUCTURE_LIST, display_name=self.STRUCTURE_ROW_NAME
             )
 
-    def test_config_group(self, app_fs, sdk_client_fs, create_cluster):
+    def test_config_group(self, app_fs, sdk_client_fs, create_cluster):  # pylint: disable=unused-argument
         """Test to check config save"""
         with allure.step("Create cluster and service"):
             cluster = create_cluster

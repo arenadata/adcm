@@ -306,7 +306,12 @@ def test_unmap_hosts(user_policy: Policy, user_sdk: ADCMClient, is_denied_to_use
 @use_role(BR.UPGRADE_CLUSTER_BUNDLE)
 @pytest.mark.usefixtures("second_objects")
 def test_upgrade_application_bundle(
-    user_policy, user_sdk: ADCMClient, is_denied_to_user, prepare_objects, sdk_client_fs, user
+    user_policy,  # pylint: disable=unused-argument
+    user_sdk: ADCMClient,
+    is_denied_to_user,
+    prepare_objects,
+    sdk_client_fs,
+    user,
 ):
     """Test that Upgrade application bundle role is ok"""
     cluster_via_admin, *_, provider_via_admin, _ = prepare_objects
@@ -327,7 +332,12 @@ def test_upgrade_application_bundle(
 @use_role(BR.UPGRADE_PROVIDER_BUNDLE)
 @pytest.mark.usefixtures("second_objects")
 def test_upgrade_infrastructure_bundle(
-    user_policy, user_sdk: ADCMClient, is_denied_to_user, prepare_objects, sdk_client_fs, user
+    user_policy,  # pylint: disable=unused-argument
+    user_sdk: ADCMClient,
+    is_denied_to_user,
+    prepare_objects,
+    sdk_client_fs,
+    user,
 ):
     """Test that Upgrade infrastructure bundle role is ok"""
     cluster_via_admin, *_, provider_via_admin, _ = prepare_objects
@@ -383,7 +393,13 @@ def test_create_host(user_policy, user_sdk: ADCMClient, is_denied_to_user, prepa
 
 @use_role(BR.REMOVE_HOST_PROVIDER)
 def test_remove_provider(
-    user_policy, user_sdk: ADCMClient, is_denied_to_user, prepare_objects, second_objects, sdk_client_fs, user
+    user_policy,  # pylint: disable=unused-argument
+    user_sdk: ADCMClient,
+    is_denied_to_user,
+    prepare_objects,
+    second_objects,
+    sdk_client_fs,
+    user,
 ):
     """Test that Remove provider role is ok"""
     *_, provider_via_admin, host_via_admin = prepare_objects
@@ -406,7 +422,9 @@ def test_remove_provider(
 
 
 @use_role(BR.CREATE_CLUSTER)
-def test_create_cluster(user_policy, user_sdk: ADCMClient, is_denied_to_user, prepare_objects, second_objects):
+def test_create_cluster(
+    user_policy, user_sdk: ADCMClient, is_denied_to_user, prepare_objects, second_objects
+):  # pylint: disable=unused-argument
     """Test that Create cluster role is ok"""
     cluster, *_, provider, _ = prepare_objects
     cluster_bundle, *_ = as_user_objects(user_sdk, cluster.bundle())
@@ -421,7 +439,13 @@ def test_create_cluster(user_policy, user_sdk: ADCMClient, is_denied_to_user, pr
 
 @use_role(BR.REMOVE_CLUSTER)
 def test_remove_cluster(
-    user_policy, user_sdk: ADCMClient, is_denied_to_user, prepare_objects, second_objects, sdk_client_fs, user
+    user_policy,  # pylint: disable=unused-argument
+    user_sdk: ADCMClient,
+    is_denied_to_user,
+    prepare_objects,
+    second_objects,
+    sdk_client_fs,
+    user,
 ):
     """Test that Remove cluster role is ok"""
     admin_cluster, *_ = prepare_objects

@@ -44,7 +44,7 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
     permission_classes = (DjangoObjectPermissionsAudit,)
 
     @action(methods=["get"], detail=True)
-    def object_candidate(self, request, **kwargs):
+    def object_candidate(self, request, **kwargs):  # pylint: disable=unused-argument
         role = self.get_object()
         if role.type != models.RoleTypes.ROLE:
             return Response({"cluster": [], "provider": [], "service": [], "host": []})

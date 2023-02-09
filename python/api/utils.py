@@ -98,7 +98,7 @@ def get_object_for_user(user, perms, klass, **kwargs):
         raise AdcmEx(error_code) from None
 
 
-def check_obj(model, req, error=None):
+def check_obj(model, req, error=None):  # pylint: disable=unused-argument
     if isinstance(req, dict):
         kwargs = req
     else:
@@ -307,7 +307,7 @@ class ObjectURL(HyperlinkedIdentityField):
 
 
 class UrlField(HyperlinkedIdentityField):
-    def get_kwargs(self, obj):
+    def get_kwargs(self, obj):  # pylint: disable=unused-argument
         return {}
 
     def get_url(self, obj, view_name, request, _format):

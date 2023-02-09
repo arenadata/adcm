@@ -42,7 +42,7 @@ def inactive_user_credentials(sdk_client_fs: ADCMClient) -> tuple[str, str]:
 
 
 @pytest.fixture()
-def prepare_records(  # pylint: disable-next=redefined-outer-name
+def _prepare_records(  # pylint: disable-next=redefined-outer-name
     sdk_client_fs: ADCMClient, user_credentials: tuple[str, str], inactive_user_credentials: tuple[str, str]
 ) -> None:
     auth_url = f"{sdk_client_fs.url}/api/v1/token/"
@@ -58,7 +58,7 @@ def prepare_records(  # pylint: disable-next=redefined-outer-name
         requests.post(auth_url, json={"username": "wheres", "password": "theparty"})
 
 
-@pytest.mark.usefixtures("prepare_records", "_login_to_adcm_over_api")
+@pytest.mark.usefixtures("_prepare_records", "_login_to_adcm_over_api")
 def test_audit_login_page(app_fs, sdk_client_fs):
     page = LoginAuditPage(base_url=sdk_client_fs.url, driver=app_fs.driver).open()
     _test_unfiltered_paging(client=sdk_client_fs, page=page)

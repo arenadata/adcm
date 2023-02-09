@@ -16,7 +16,7 @@ class AutoChildElement:
     _element: WebElement
     _view: Interactor
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
         if not hasattr(cls, "Locators"):
             raise ValueError("Children locators should be available as 'Locators' in class")
 

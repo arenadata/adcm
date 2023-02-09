@@ -67,7 +67,9 @@ def long_action_components_page(app_fs, cluster, services) -> ServiceComponentsP
 
 
 @pytest.mark.usefixtures("_map_components_to_hosts")
-def test_switch_service_maintenance_mode(cluster, app_fs, services, cluster_services_page):
+def test_switch_service_maintenance_mode(
+    cluster, app_fs, services, cluster_services_page
+):  # pylint: disable=unused-argument
     no_action_service, short_action_service, long_action_service = services
 
     with allure.step("Open page with services and check MM is OFF"):
@@ -104,7 +106,9 @@ def test_switch_service_maintenance_mode(cluster, app_fs, services, cluster_serv
 
 
 @pytest.mark.usefixtures("_map_components_to_hosts")
-def test_switch_component_maintenance_mode(cluster, services, long_action_components_page, cluster_services_page):
+def test_switch_component_maintenance_mode(
+    cluster, services, long_action_components_page, cluster_services_page
+):  # pylint: disable=unused-argument
     *_, long_action_service = services
 
     with allure.step("Turn component's MM ON"):

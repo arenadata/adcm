@@ -11,6 +11,7 @@
 # limitations under the License.
 # pylint: disable=wrong-import-order,wrong-import-position
 
+
 from ansible.errors import AnsibleError
 
 from ansible.plugins.lookup import LookupBase
