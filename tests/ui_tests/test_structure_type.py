@@ -51,8 +51,18 @@ class TestServiceConfigSave:
     CONFIG_ADVANCED_PARAM_AMOUNT = 1
     CHANGE_STRUCTURE_CODE = 12
     CHANGE_STRUCTURE_COUNTRY = "test-country"
-    STRUCTURE_MAP = {"test-country": "12", "test-country-0": "12", "test-country-1": "13", "test-country-2": "14"}
-    STRUCTURE_LIST = {"12": "test-country", "test-country-0": "12", "test-country-1": "13", "test-country-2": "14"}
+    # because of "broken" ordering in structures and hacky methods we use, I found this a better patch
+    # in case anything goes back
+    STRUCTURE_MAP = {
+        v: k
+        for k, v in {
+            "test-country": "12",
+            "test-country-0": "12",
+            "test-country-1": "13",
+            "test-country-2": "14",
+        }.items()
+    }
+    STRUCTURE_LIST = STRUCTURE_MAP
 
     @allure.step("Save config and check popup")
     def _save_config_and_refresh(self, config):
@@ -123,7 +133,7 @@ class TestServiceConfigSave:
         with allure.step("Add params to empty config and save"):
             service_config_page.config.click_add_item_btn_in_row(self.STRUCTURE_ROW_NAME)
             service_config_page.config.type_in_field_with_few_inputs(
-                self.STRUCTURE_ROW_NAME, [self.CHANGE_STRUCTURE_COUNTRY, self.CHANGE_STRUCTURE_CODE], clear=False
+                self.STRUCTURE_ROW_NAME, [self.CHANGE_STRUCTURE_CODE, self.CHANGE_STRUCTURE_COUNTRY], clear=False
             )
             service_config_page.config.save_config()
 
@@ -133,18 +143,16 @@ class TestServiceConfigSave:
                 app_fs.driver, app_fs.adcm.url, cluster.id, service_group_config.id
             ).open()
             cluster_group_config_page.config.assert_map_value_is(
-                expected_value={self.CHANGE_STRUCTURE_COUNTRY: str(self.CHANGE_STRUCTURE_CODE)},
+                expected_value={str(self.CHANGE_STRUCTURE_CODE): self.CHANGE_STRUCTURE_COUNTRY},
                 display_name=self.STRUCTURE_ROW_NAME,
             )
 
         with allure.step("Add new params in service config"):
-            service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open(
-                close_popup=True
-            )
-            structure_params = [self.CHANGE_STRUCTURE_COUNTRY, self.CHANGE_STRUCTURE_CODE]
+            service_config_page.open(close_popup=True)
+            structure_params = [self.CHANGE_STRUCTURE_CODE, self.CHANGE_STRUCTURE_COUNTRY]
             for i in range(3):
                 service_config_page.config.click_add_item_btn_in_row(self.STRUCTURE_ROW_NAME)
-                structure_params.extend((f"{self.CHANGE_STRUCTURE_COUNTRY}-{i}", self.CHANGE_STRUCTURE_CODE + i))
+                structure_params.extend((self.CHANGE_STRUCTURE_CODE + i, f"{self.CHANGE_STRUCTURE_COUNTRY}-{i}"))
                 service_config_page.config.type_in_field_with_few_inputs(
                     self.STRUCTURE_ROW_NAME, structure_params, clear=True
                 )
@@ -156,9 +164,7 @@ class TestServiceConfigSave:
             )
 
         with allure.step("Check group config params from config after save"):
-            cluster_group_config_page = ClusterGroupConfigConfig(
-                app_fs.driver, app_fs.adcm.url, cluster.id, service_group_config.id
-            ).open()
+            cluster_group_config_page.open()
             cluster_group_config_page.config.assert_map_value_is(
                 expected_value=self.STRUCTURE_MAP, display_name=self.STRUCTURE_ROW_NAME
             )
@@ -289,7 +295,7 @@ class TestServiceConfigSave:
             structure_params = [self.CHANGE_STRUCTURE_CODE, self.CHANGE_STRUCTURE_COUNTRY]
             for i in range(3):
                 cluster_group_config_page.config.click_add_item_btn_in_row(self.STRUCTURE_ROW_NAME)
-                structure_params.extend((f"{self.CHANGE_STRUCTURE_COUNTRY}-{i}", self.CHANGE_STRUCTURE_CODE + i))
+                structure_params.extend((self.CHANGE_STRUCTURE_CODE + i, f"{self.CHANGE_STRUCTURE_COUNTRY}-{i}"))
             cluster_group_config_page.config.type_in_field_with_few_inputs(
                 self.STRUCTURE_ROW_NAME, structure_params, clear=True
             )
