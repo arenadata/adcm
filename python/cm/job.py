@@ -954,7 +954,13 @@ def set_task_status(task: TaskLog, status: str, event):
 def set_job_status(job_id: int, status: str, event, pid: int = 0):
     job_query = JobLog.objects.filter(id=job_id)
     job_query.update(status=status, pid=pid, finish_date=timezone.now())
-    event.set_job_status(job=job_query.first(), status=status)
+    job = job_query.first()
+
+    if status == JobStatus.RUNNING:
+        job.task.lock.reason = job.cook_reason()
+        job.task.lock.save(update_fields=["reason"])
+
+    event.set_job_status(job=job, status=status)
 
 
 def abort_all(event):
