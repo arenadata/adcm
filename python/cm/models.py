@@ -1397,6 +1397,7 @@ class PrototypeConfig(ADCMModel):
     group_customization = models.BooleanField(null=True)
 
     class Meta:
+        ordering = ["id"]
         unique_together = (("prototype", "action", "name", "subname"),)
 
 
@@ -1692,6 +1693,7 @@ class StagePrototypeConfig(ADCMModel):
     group_customization = models.BooleanField(null=True)
 
     class Meta:
+        ordering = ["id"]
         unique_together = (("prototype", "action", "name", "subname"),)
 
 
