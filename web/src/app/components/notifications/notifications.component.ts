@@ -34,7 +34,7 @@ export const ACKNOWLEDGE_EVENT = 'acknowledge';
             <mat-icon *ngSwitchCase="'aborted'" [ngClass]="task.status">block</mat-icon>
             <mat-icon *ngSwitchDefault [ngClass]="task.status">done_all</mat-icon>
           </ng-container>
-          <a [routerLink]="task | bellTaskLink">{{ task.action.display_name }}</a>
+          <a [routerLink]="task | bellTaskLink">{{ task?.action?.display_name }}</a>
         </div>
 
         <div class="footer">
