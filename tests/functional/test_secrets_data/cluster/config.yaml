@@ -24,12 +24,16 @@
     - &map
       name: secretmap
       type: secretmap
+    - &file
+      name: secretfile
+      type: secretfile
     - name: group
       type: group
       subs:
         - <<: *pass
         - <<: *text
         - <<: *map
+        - <<: *file
 
   actions:
     change_secrets:
@@ -43,6 +47,8 @@
           type: secrettext
         - name: new_secretmap
           type: secretmap
+        - name: new_secretfile
+          type: secretfile
       states:
         available: any
 
@@ -57,5 +63,7 @@
           type: secrettext
         - name: secretmap
           type: secretmap
+        - name: secretfile
+          type: secretfile
       states:
         available: any
