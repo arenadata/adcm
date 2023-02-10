@@ -329,7 +329,9 @@ def get_target_host(host_id):
 
 def prepare_job_inventory(obj, job_id, action, delta, action_host=None):
     logger.info("prepare inventory for job #%s, object: %s", job_id, obj)
-    file_descriptor = open(settings.RUN_DIR / f"{job_id}/inventory.json", "w", encoding=settings.ENCODING_UTF_8)
+    file_descriptor = open(  # pylint: disable=consider-using-with
+        settings.RUN_DIR / f"{job_id}/inventory.json", "w", encoding=settings.ENCODING_UTF_8
+    )
     inv = {"all": {"children": {}}}
     cluster = get_object_cluster(obj)
     if cluster:

@@ -34,12 +34,15 @@ from cm.upgrade import bundle_revert, bundle_switch
 
 def open_file(root, tag, job_id):
     fname = f"{root}/{job_id}/{tag}.txt"
-    f = open(fname, "w", encoding=settings.ENCODING_UTF_8)
+    f = open(fname, "w", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
+
     return f
 
 
 def read_config(job_id):
-    file_descriptor = open(f"{settings.RUN_DIR}/{job_id}/config.json", encoding=settings.ENCODING_UTF_8)
+    file_descriptor = open(  # pylint: disable=consider-using-with
+        f"{settings.RUN_DIR}/{job_id}/config.json", encoding=settings.ENCODING_UTF_8
+    )
     conf = json.load(file_descriptor)
     file_descriptor.close()
 
@@ -116,7 +119,9 @@ def process_err_out_file(job_id, job_type):
 def start_subprocess(job_id, cmd, conf, out_file, err_file):
     event = Event()
     logger.info("job run cmd: %s", " ".join(cmd))
-    proc = subprocess.Popen(cmd, env=env_configuration(conf), stdout=out_file, stderr=err_file)
+    proc = subprocess.Popen(  # pylint: disable=consider-using-with
+        cmd, env=env_configuration(conf), stdout=out_file, stderr=err_file
+    )
     JobLog.objects.filter(pk=job_id).update(pid=proc.pid)
     cm.job.set_job_status(job_id, JobStatus.RUNNING, event, proc.pid)
     event.send_state()

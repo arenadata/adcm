@@ -182,7 +182,7 @@ def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None) -> str | None
 
     file_descriptor = None
     try:
-        file_descriptor = open(path, "r", encoding=settings.ENCODING_UTF_8)
+        file_descriptor = open(path, "r", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
     except FileNotFoundError:
         raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'{pattern} "{path}" is not found ({ref})')
     except PermissionError:
@@ -389,7 +389,7 @@ def save_file_type(obj, key, subkey, value):
             if value[-1] == "-":
                 value += "\n"
 
-    file_descriptor = open(filename, "w", encoding=settings.ENCODING_UTF_8)
+    file_descriptor = open(filename, "w", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
     file_descriptor.write(value)
     file_descriptor.close()
     Path(filename).chmod(0o0600)

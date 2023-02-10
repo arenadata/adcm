@@ -78,7 +78,7 @@ def run_job(task_id, job_id, err_file):
     logger.info("task run job cmd: %s", " ".join(cmd))
 
     try:
-        proc = subprocess.Popen(cmd, stderr=err_file)
+        proc = subprocess.Popen(cmd, stderr=err_file)  # pylint: disable=consider-using-with
         res = proc.wait()
         return res
     except Exception:  # pylint: disable=broad-except
@@ -117,7 +117,9 @@ def run_task(task_id, args=None):
 
         return
 
-    err_file = open(settings.LOG_DIR / "job_runner.err", "a+", encoding=settings.ENCODING_UTF_8)
+    err_file = open(  # pylint: disable=consider-using-with
+        settings.LOG_DIR / "job_runner.err", "a+", encoding=settings.ENCODING_UTF_8
+    )
 
     logger.info("run task #%s", task_id)
 
