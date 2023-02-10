@@ -55,7 +55,7 @@ from version_utils import rpm
 
 
 def switch_object(obj: Host | ClusterObject, new_prototype: Prototype) -> None:
-    logger.info("upgrade switch from %s to %s", proto_ref(proto=obj.prototype), proto_ref(proto=new_prototype))
+    logger.info("upgrade switch from %s to %s", proto_ref(prototype=obj.prototype), proto_ref(prototype=new_prototype))
     old_prototype = obj.prototype
     obj.prototype = new_prototype
     obj.save(update_fields=["prototype"])

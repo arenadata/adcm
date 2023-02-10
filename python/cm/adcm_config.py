@@ -33,6 +33,7 @@ from cm.models import (
     ObjectConfig,
     Prototype,
     PrototypeConfig,
+    StagePrototype,
 )
 from cm.variant import get_variant, process_variant
 from django.conf import settings
@@ -40,8 +41,8 @@ from django.conf import settings
 SECURE_PARAM_TYPES = ("password", "secrettext")
 
 
-def proto_ref(proto):
-    return f'{proto.type} "{proto.name}" {proto.version}'
+def proto_ref(prototype: StagePrototype | Prototype) -> str:
+    return f'{prototype.type} "{prototype.name}" {prototype.version}'
 
 
 def obj_ref(obj):

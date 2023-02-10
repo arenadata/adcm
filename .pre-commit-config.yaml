@@ -16,7 +16,6 @@ repos:
       - id: isort
         args: [
           "--profile", "black",
-          "--src-path", "python",
           "--skip-glob", "python/ansible/plugins",
           "--skip", "python/init_db.py",
           "--skip", "python/task_runner.py",
