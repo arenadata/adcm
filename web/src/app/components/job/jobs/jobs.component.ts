@@ -80,11 +80,11 @@ export class JobsComponent<T extends Task> implements AdwpComponentHolder<Task> 
 
   sortJobs(jobs: Job[]) {
     if (this.sortDirection === 'ASC'){
-      return jobs.sort((cur: Job , next: Job) => new Date(cur.start_date).valueOf()  - new Date(next.start_date).valueOf())
+      return jobs.sort((cur: Job , next: Job) => cur.id  - next.id)
     }
 
     if (this.sortDirection === 'DESC'){
-      return jobs.sort((cur: Job , next: Job) => new Date(next.start_date).valueOf() - new Date(cur.start_date).valueOf())
+      return jobs.sort((cur: Job , next: Job) => next.id - cur.id)
     }
   }
 
