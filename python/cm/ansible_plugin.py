@@ -79,7 +79,9 @@ MSG_NO_MULTI_STATE_TO_DELETE = (
 
 
 def job_lock(job_id):
-    file_descriptor = open(settings.RUN_DIR / f"{job_id}/config.json", "r", encoding=settings.ENCODING_UTF_8)
+    file_descriptor = open(  # pylint: disable=consider-using-with
+        settings.RUN_DIR / f"{job_id}/config.json", "r", encoding=settings.ENCODING_UTF_8
+    )
     try:
         fcntl.flock(file_descriptor.fileno(), fcntl.LOCK_EX)  # pylint: disable=I1101
 

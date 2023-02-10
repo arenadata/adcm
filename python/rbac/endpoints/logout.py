@@ -10,24 +10,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Logout view and serializer"""
-
 import django.contrib.auth
-from rest_framework import serializers, status
+from rest_framework import status
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
+from adcm.serializers import EmptySerializer
 
-class LogOutSerializer(serializers.Serializer):
+
+class LogOutSerializer(EmptySerializer):
     """Logout serializer (because DRF need one)"""
 
 
 class LogOut(GenericAPIView):
     serializer_class = LogOutSerializer
 
-    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
-        """
-        Logout user from Django session
-        """
+    @staticmethod
+    def post(request, *args, **kwargs):  # pylint: disable=unused-argument
         django.contrib.auth.logout(request)
+
         return Response(status=status.HTTP_204_NO_CONTENT)

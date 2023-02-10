@@ -64,7 +64,7 @@ class Daemon:
             sys.exit(1)
 
         try:
-            pidfile = open(self.pidfile, "w+", encoding=settings.ENCODING_UTF_8)
+            pidfile = open(self.pidfile, "w+", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
         except IOError as e:
             sys.stderr.write(f"Can't open pid file {self.pidfile}\n")
             sys.stderr.write(f"{e.strerror}\n")
@@ -72,9 +72,9 @@ class Daemon:
 
         sys.stdout.flush()
         sys.stderr.flush()
-        stdin_file = open(self.stdin, "r", encoding=settings.ENCODING_UTF_8)
-        stdout_file = open(self.stdout, "a+", encoding=settings.ENCODING_UTF_8)
-        stderr_file = open(self.stderr, "w+", encoding=settings.ENCODING_UTF_8)
+        stdin_file = open(self.stdin, "r", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
+        stdout_file = open(self.stdout, "a+", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
+        stderr_file = open(self.stderr, "w+", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
         os.dup2(stdin_file.fileno(), sys.stdin.fileno())
         os.dup2(stdout_file.fileno(), sys.stdout.fileno())
         os.dup2(stderr_file.fileno(), sys.stderr.fileno())
@@ -88,7 +88,9 @@ class Daemon:
 
     def getpid(self):
         try:
-            file_handler = open(self.pidfile, "r", encoding=settings.ENCODING_UTF_8)
+            file_handler = open(  # pylint: disable=consider-using-with
+                self.pidfile, "r", encoding=settings.ENCODING_UTF_8
+            )
             try:
                 pid = int(file_handler.read().strip())
             except ValueError:
