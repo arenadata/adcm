@@ -16,6 +16,7 @@
 <ng-template #done>
   <mat-icon
     [class]="row.status"
+    [class.icon-locked]="row.status === 'running'"
     [matTooltip]="row.status"
   >
     {{ iconDisplay[row.status] }}

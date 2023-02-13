@@ -156,6 +156,9 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
     if (taskIndex < 0) return;
 
     const updatedJobIndex = tasks[taskIndex].jobs.findIndex((job) => job.id === updatedJobId);
+
+    if (updatedJobIndex < 0) return;
+
     tasks[taskIndex].jobs[updatedJobIndex].status = status;
     this.tasks.next(tasks);
   }
