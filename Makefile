@@ -24,10 +24,18 @@ build_base:
 
 build: describe buildss buildjs build_base
 
-unittests: buildss buildjs
-	DATA_DIR=$(CURDIR)/data DB_DIR=/var/adcm_db POSTGRES_ADCM_PASS="test_pass" POSTGRES_PASSWORD="test_pass" \
-	docker compose run --rm -e DJANGO_SETTINGS_MODULE=adcm.settings \
-	adcm sh -c "pip install --no-cache -r /adcm/requirements.txt && /adcm/python/manage.py test /adcm/python -v 2"
+unittests_sqlite: describe
+	docker run -i --rm -v $(CURDIR)/data:/adcm/data -e DJANGO_SETTINGS_MODULE=adcm.settings $(APP_IMAGE):$(APP_TAG) \
+	sh -c "pip install --no-cache -r /adcm/requirements.txt && /adcm/python/manage.py test /adcm/python -v 2"
+
+unittests_postgresql: describe
+	docker network create adcm
+	docker run -d -e POSTGRES_PASSWORD="postgres" --network=adcm --name postgres postgres:14
+	docker run -i --rm --network=adcm -v $(CURDIR)/data:/adcm/data -e DJANGO_SETTINGS_MODULE=adcm.settings \
+	-e DB_HOST="postgres" -e DB_PORT=5432 -e DB_NAME="postgres" -e DB_USER="postgres" -e DB_PASS="postgres" \
+	$(APP_IMAGE):$(APP_TAG) \
+	sh -c "pip install --no-cache -r /adcm/requirements.txt && /adcm/python/manage.py test /adcm/python -v 2"
+	docker stop postgres && docker rm postgres && docker network rm adcm
 
 pytest:
 	docker pull hub.adsw.io/library/functest:3.10.6.slim.buster-x64
