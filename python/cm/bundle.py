@@ -152,9 +152,11 @@ def untar(bundle_hash, bundle):
                     "but there is a dir on disk with this hash. Dir will be rewrited.",
                 )
             )
-    tar = tarfile.open(bundle)
+
+    tar = tarfile.open(bundle)  # pylint: disable=consider-using-with
     tar.extractall(path=path)
     tar.close()
+
     return path
 
 

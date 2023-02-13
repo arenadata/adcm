@@ -22,6 +22,7 @@ import { IIssues } from '@app/models/issue';
           <app-upgrade
             *ngIf="['cluster', 'provider'].includes(item?.entity?.typeName)"
             [row]="item?.entity"
+            [type]="item?.entity?.typeName"
             (refresh)="refresh.emit($event)"
           ></app-upgrade>
         </span>

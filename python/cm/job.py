@@ -666,7 +666,9 @@ def prepare_job_config(
     if conf:
         job_conf["job"]["config"] = conf
 
-    file_descriptor = open(Path(settings.RUN_DIR, f"{job_id}", "config.json"), "w", encoding=settings.ENCODING_UTF_8)
+    file_descriptor = open(  # pylint: disable=consider-using-with
+        Path(settings.RUN_DIR, f"{job_id}", "config.json"), "w", encoding=settings.ENCODING_UTF_8
+    )
     json.dump(job_conf, file_descriptor, indent=3, sort_keys=True)
     file_descriptor.close()
 
@@ -894,7 +896,9 @@ def log_custom(job_id, name, log_format, body):
 
 
 def run_task(task: TaskLog, event, args: str = ""):
-    err_file = open(Path(settings.LOG_DIR, "task_runner.err"), "a+", encoding=settings.ENCODING_UTF_8)
+    err_file = open(  # pylint: disable=consider-using-with
+        Path(settings.LOG_DIR, "task_runner.err"), "a+", encoding=settings.ENCODING_UTF_8
+    )
     cmd = [
         "/adcm/python/job_venv_wrapper.sh",
         task.action.venv,
@@ -903,7 +907,7 @@ def run_task(task: TaskLog, event, args: str = ""):
         args,
     ]
     logger.info("task run cmd: %s", " ".join(cmd))
-    proc = subprocess.Popen(
+    proc = subprocess.Popen(  # pylint: disable=consider-using-with
         cmd,
         stderr=err_file,
     )

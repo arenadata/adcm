@@ -109,13 +109,16 @@ export class ListFactory {
     };
   }
 
-  static updateColumn(): IComponentColumn<any> {
+  static updateColumn(objectType: string): IComponentColumn<any> {
     return {
       label: 'Upgrade',
       type: 'component',
       className: 'list-control',
       headerClassName: 'list-control',
       component: UpgradeComponent,
+      instanceTaken: (componentRef: ComponentRef<UpgradeComponent>) => {
+        componentRef.instance.type = objectType;
+      }
     };
   }
 

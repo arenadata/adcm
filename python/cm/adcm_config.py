@@ -133,10 +133,22 @@ def get_default(conf, proto=None):  # pylint: disable=too-many-branches
         if isinstance(conf.default, bool):
             value = conf.default
         else:
-            value = bool(conf.default.lower() in ("true", "yes"))
+            value = bool(conf.default.lower() in {"true", "yes"})
     elif conf.type == "option":
         if conf.default in conf.limits["option"]:
             value = conf.limits["option"][conf.default]
+
+        for option in conf.limits["option"].values():
+            if not isinstance(option, type(value)):
+                if isinstance(option, bool):
+                    value = bool(value)
+                elif isinstance(option, int):
+                    value = int(value)
+                elif isinstance(option, float):
+                    value = float(value)
+                elif isinstance(option, str):
+                    value = str(value)
+
     elif conf.type == "file":
         if proto:
             if conf.default:
@@ -182,7 +194,7 @@ def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None) -> str | None
 
     file_descriptor = None
     try:
-        file_descriptor = open(path, "r", encoding=settings.ENCODING_UTF_8)
+        file_descriptor = open(path, "r", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
     except FileNotFoundError:
         raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'{pattern} "{path}" is not found ({ref})')
     except PermissionError:
@@ -389,7 +401,7 @@ def save_file_type(obj, key, subkey, value):
             if value[-1] == "-":
                 value += "\n"
 
-    file_descriptor = open(filename, "w", encoding=settings.ENCODING_UTF_8)
+    file_descriptor = open(filename, "w", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
     file_descriptor.write(value)
     file_descriptor.close()
     Path(filename).chmod(0o0600)
@@ -1157,7 +1169,8 @@ def check_config_type(
     if spec["type"] == "option":
         option = spec["limits"]["option"]
         check = False
-        for _, _value in option.items():
+
+        for _value in option.values():
             if _value == value:
                 check = True
 

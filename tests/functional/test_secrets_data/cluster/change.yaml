@@ -28,6 +28,11 @@
         type: "cluster"
         key: "secretmap"
         value: "{{ job.config.new_secretmap }}"
+    - name: "Change secretfile"
+      adcm_config:
+        type: "cluster"
+        key: "secretfile"
+        value: "{{ job.config.new_secretfile }}"
     - name: "Change password in group"
       adcm_config:
         type: "cluster"
@@ -43,3 +48,8 @@
         type: "cluster"
         key: "group/secretmap"
         value: "{{ job.config.new_secretmap }}"
+    - name: "Change secretfile in group"
+      adcm_config:
+        type: "cluster"
+        key: "group/secretfile"
+        value: "{{ job.config.new_secretfile }}"

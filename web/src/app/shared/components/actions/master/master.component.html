@@ -40,7 +40,7 @@
       <ng-template matStepLabel>Host Components</ng-template>
       <app-service-host [tabIndex]="2" [cluster]="model.cluster" #hms [hideButton]="true"
         [actionParameters]="action.hostcomponentmap" [fixedButton]="false"></app-service-host>
-      <ng-container *ngTemplateOutlet="controls; context: { value: { config: wcs.fields, hostmap: hms } }">
+      <ng-container *ngTemplateOutlet="controls; context: { value: { config: wcs?.fields, hostmap: hms } }">
       </ng-container>
     </mat-step>
     <mat-step label="Done"></mat-step>

@@ -41,11 +41,12 @@ export class UpgradesDirective extends BaseDirective {
   @Input('appUpgrades') inputData: IUpgrade;
   @Input() clusterId: number;
   @Input() bundleId: number;
+  @Input() type: string;
   @Output() refresh: EventEmitter<EmmitRow> = new EventEmitter<EmmitRow>();
 
   hc: IRawHosComponent;
   needPrototype = false;
-  needLicenseAcceptance: [];
+  needLicenseAcceptance = [];
 
 
   constructor(private api: ApiService,
@@ -226,24 +227,25 @@ export class UpgradesDirective extends BaseDirective {
   checkServicesAndPrepare() {
     let oldVersionAcceptedServices;
 
-    if (!this.add.Cluster) {
-      this.getCluster().pipe(
-        tap((res: ICluster) => this.cluster.Cluster = res)
-      ).subscribe();
-    }
+    if (this.type === 'cluster') {
+      if (!this.add.Cluster) {
+        this.getCluster().pipe(
+          tap((res: ICluster) => this.cluster.Cluster = res)
+        ).subscribe();
+      }
 
       this.getClusterServices().subscribe(res => {
         oldVersionAcceptedServices = res.map(service => service.name);
 
         this.getPrototypeServices().subscribe(res => {
           this.needLicenseAcceptance = res.results
-              .filter((service) => service.bundle_id === this.inputData.bundle_id && oldVersionAcceptedServices.includes(service.name) && service.license === 'unaccepted')
-              .map((i) => ({
-                  prototype_id: i.id,
-                  service_name: i.name,
-                  license: i.license,
-                  license_url: i.license_url,
-              }));
+            .filter((service) => service.bundle_id === this.inputData.bundle_id && oldVersionAcceptedServices.includes(service.name) && service.license === 'unaccepted')
+            .map((i) => ({
+              prototype_id: i.id,
+              service_name: i.name,
+              license: i.license,
+              license_url: i.license_url,
+            }));
 
           if (this.hasHostComponent) {
             this.checkHostComponents();
@@ -252,6 +254,9 @@ export class UpgradesDirective extends BaseDirective {
           }
         })
       })
+    } else {
+      this.prepare();
+    }
   }
 
   checkHostComponents() {

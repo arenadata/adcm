@@ -24,9 +24,13 @@ import adcm.init_django  # pylint: disable=unused-import
 
 
 def check_config(data_file, schema_file, print_ok=True):  # pylint: disable=too-many-return-statements
-    rules = ruyaml.round_trip_load(open(schema_file, encoding=settings.ENCODING_UTF_8))
+    rules = ruyaml.round_trip_load(
+        open(schema_file, encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
+    )
     try:
-        data = ruyaml.round_trip_load(open(data_file, encoding=settings.ENCODING_UTF_8), version="1.1")
+        data = ruyaml.round_trip_load(
+            open(data_file, encoding=settings.ENCODING_UTF_8), version="1.1"  # pylint: disable=consider-using-with
+        )
     except FileNotFoundError as e:
         print(e)
 

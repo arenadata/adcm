@@ -26,7 +26,8 @@ TMP_DIR = "/tmp/adcm_bundle_tmp"
 def untar(bundle_file):
     if os.path.isdir(TMP_DIR):
         shutil.rmtree(TMP_DIR)
-    tar = tarfile.open(bundle_file)
+
+    tar = tarfile.open(bundle_file)  # pylint: disable=consider-using-with
     tar.extractall(path=TMP_DIR)
     tar.close()
 
