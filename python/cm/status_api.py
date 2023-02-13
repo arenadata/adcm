@@ -105,6 +105,10 @@ def post_event(event: str, obj, details: dict = None) -> Response | None:
 
     class_name = obj.__class__.__name__
     obj_type = MODEL_OBJ_TYPE_MAP.get(class_name, class_name.lower())
+
+    if details.get("model_name"):
+        obj_type = details.pop("model_name")
+
     data = {
         "event": event,
         "object": {
@@ -180,29 +184,29 @@ def get_status(obj: ADCMEntity, url: str) -> int:
 
 
 def get_cluster_status(cluster: Cluster) -> int:
-    return get_raw_status(url=f"/cluster/{cluster.id}/")
+    return get_raw_status(url=f"cluster/{cluster.id}/")
 
 
 def get_service_status(service: ClusterObject) -> int:
-    return get_status(obj=service, url=f"/cluster/{service.cluster.id}/service/{service.id}/")
+    return get_status(obj=service, url=f"cluster/{service.cluster.id}/service/{service.id}/")
 
 
 def get_host_status(host: Host) -> int:
-    return get_status(obj=host, url=f"/host/{host.id}/")
+    return get_status(obj=host, url=f"host/{host.id}/")
 
 
 def get_hc_status(hostcomponent: HostComponent) -> int:
     return get_status(
-        obj=hostcomponent.component, url=f"/host/{hostcomponent.host_id}/component/{hostcomponent.component_id}/"
+        obj=hostcomponent.component, url=f"host/{hostcomponent.host_id}/component/{hostcomponent.component_id}/"
     )
 
 
 def get_host_comp_status(host: Host, component: ServiceComponent) -> int:
-    return get_status(obj=component, url=f"/host/{host.id}/component/{component.id}/")
+    return get_status(obj=component, url=f"host/{host.id}/component/{component.id}/")
 
 
 def get_component_status(component: ServiceComponent) -> int:
-    return get_status(obj=component, url=f"/component/{component.id}/")
+    return get_status(obj=component, url=f"component/{component.id}/")
 
 
 def get_object_map(obj: ADCMEntity, url_type: str) -> dict | None:
