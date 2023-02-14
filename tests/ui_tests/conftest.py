@@ -148,6 +148,7 @@ def _attach_debug_info_on_ui_test_fail(request, web_driver):
 @allure.title("Attach ADCM data on failure")
 @pytest.fixture()
 def _attach_adcm_data_on_fail(request, launcher):
+    yield
     try:
         attach_adcm_data_dir(launcher, request)
 
