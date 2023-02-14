@@ -25,6 +25,11 @@ import requests
 from _pytest.fixtures import SubRequest
 from adcm_client.objects import ADCMClient
 from adcm_client.wrappers.docker import ADCM
+from adcm_pytest_plugin.docker.launchers import ADCMWithPostgresLauncher
+from adcm_pytest_plugin.docker.steps import (
+    attach_adcm_data_dir,
+    attach_postgres_data_dir,
+)
 from selenium.common.exceptions import WebDriverException
 
 from tests.ui_tests.app.app import ADCMTest
@@ -138,6 +143,19 @@ def _attach_debug_info_on_ui_test_fail(request, web_driver):
     except AttributeError:
         # rep_setup and rep_call attributes are generated in runtime and can be absent
         pass
+
+
+@allure.title("Attach ADCM data on failure")
+@pytest.fixture()
+def _attach_adcm_data_on_fail(request, launcher):
+    try:
+        attach_adcm_data_dir(launcher, request)
+
+        if isinstance(launcher, ADCMWithPostgresLauncher):
+            attach_postgres_data_dir(launcher, request)
+    except Exception as e:  # pylint: disable=broad-except
+        with allure.step(f"[ERROR] {e}"):
+            ...
 
 
 @pytest.fixture()
