@@ -16,7 +16,6 @@ from pathlib import Path
 from api.action.serializers import ActionJobSerializer
 from api.concern.serializers import ConcernItemSerializer
 from cm.ansible_plugin import get_check_log
-from cm.errors import AdcmEx
 from cm.job import start_task
 from cm.models import JobLog, JobStatus, LogStorage, TaskLog
 from django.conf import settings
@@ -279,10 +278,8 @@ class LogStorageRetrieveSerializer(HyperlinkedModelSerializer):
         try:
             with open(path_file, "r", encoding=settings.ENCODING_UTF_8) as f:
                 content = f.read()
-        except FileNotFoundError as e:
-            msg = f'File "{obj.name}-{obj.type}.{obj.format}" not found'
-
-            raise AdcmEx("LOG_NOT_FOUND", msg) from e
+        except FileNotFoundError:
+            content = ""
 
         return content
 
