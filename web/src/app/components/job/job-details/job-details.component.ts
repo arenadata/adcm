@@ -1,5 +1,5 @@
 import { Component, Injector } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { filter, switchMap } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
@@ -51,6 +51,7 @@ export class JobDetailsComponent extends DetailAbstractDirective<Job> {
   entityReceived(entity: Job) {
     super.entityReceived(entity);
 
+    this.currentName = entity.display_name;
     this.prepareMenuItems();
 
     if (this.jobEvents$) {
@@ -64,7 +65,10 @@ export class JobDetailsComponent extends DetailAbstractDirective<Job> {
       filter(event => event?.object?.id === this.entity.id),
       switchMap(() => this.subjectService.get(this.entity.id)),
     ).subscribe((resp) => {
+      const param = convertToParamMap({job: resp.id});
       this.entity = resp;
+
+      this.initContext(param);
       this.prepareMenuItems();
     });
   }
