@@ -1595,6 +1595,9 @@ class JobLog(ADCMModel):
 
     __error_code__ = "JOB_NOT_FOUND"
 
+    class Meta:
+        ordering = ["id"]
+
     def cook_reason(self):
         return MessageTemplate.get_message_from_template(
             MessageTemplate.KnownNames.LOCKED_BY_JOB.value,

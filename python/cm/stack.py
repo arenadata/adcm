@@ -45,7 +45,18 @@ from django.db import IntegrityError
 from rest_framework import status
 from version_utils import rpm
 
+ANY = "any"
+AVAILABLE = "available"
+MASKING = "masking"
+MULTI_STATE = "multi_state"
 NAME_REGEX = r"[0-9a-zA-Z_\.-]+"
+ON_FAIL = "on_fail"
+ON_SUCCESS = "on_success"
+SET = "set"
+STATE = "state"
+STATES = "states"
+UNAVAILABLE = "unavailable"
+UNSET = "unset"
 
 
 def save_definition(path, fname, conf, obj_list, bundle_hash, adcm_=False):
@@ -198,46 +209,47 @@ def process_config_group_customization(actual_config: dict, obj: StagePrototype)
             actual_config["config_group_customization"] = stage_prototype.config_group_customization
 
 
-def save_prototype(path, conf, def_type, bundle_hash):
-    proto = StagePrototype(name=conf["name"], type=def_type, path=path, version=conf["version"])
+def save_prototype(path: str, config: dict, type_prototype: str, bundle_hash: str) -> StagePrototype:
+    prototype = StagePrototype(name=config["name"], type=type_prototype, path=path, version=config["version"])
 
-    dict_to_obj(conf, "required", proto)
-    dict_to_obj(conf, "shared", proto)
-    dict_to_obj(conf, "monitoring", proto)
-    dict_to_obj(conf, "display_name", proto)
-    dict_to_obj(conf, "description", proto)
-    dict_to_obj(conf, "adcm_min_version", proto)
-    dict_to_obj(conf, "venv", proto)
-    dict_to_obj(conf, "edition", proto)
+    dict_to_obj(config, "required", prototype)
+    dict_to_obj(config, "shared", prototype)
+    dict_to_obj(config, "monitoring", prototype)
+    dict_to_obj(config, "display_name", prototype)
+    dict_to_obj(config, "description", prototype)
+    dict_to_obj(config, "adcm_min_version", prototype)
+    dict_to_obj(config, "venv", prototype)
+    dict_to_obj(config, "edition", prototype)
 
-    process_config_group_customization(conf, proto)
+    process_config_group_customization(config, prototype)
 
-    dict_to_obj(conf, "config_group_customization", proto)
-    dict_to_obj(conf, "allow_maintenance_mode", proto)
+    dict_to_obj(config, "config_group_customization", prototype)
+    dict_to_obj(config, "allow_maintenance_mode", prototype)
 
-    fix_display_name(conf, proto)
+    fix_display_name(config, prototype)
 
-    license_hash = get_license_hash(proto, conf, bundle_hash)
+    license_hash = get_license_hash(prototype, config, bundle_hash)
+
     if license_hash:
-        if def_type not in ["cluster", "service", "provider"]:
+        if type_prototype not in ["cluster", "service", "provider"]:
             err(
-                "INVALID_OBJECT_DEFINITION",
-                f"Invalid license definition in {proto_ref(proto)}."
-                f" License can be placed in cluster, service or provider",
+                code="INVALID_OBJECT_DEFINITION",
+                msg=f"Invalid license definition in {proto_ref(prototype)}. License can be placed in cluster, service or provider",
             )
 
-        proto.license_path = conf["license"]
-        proto.license_hash = license_hash
+        prototype.license_path = config["license"]
+        prototype.license_hash = license_hash
 
-    proto.save()
-    save_actions(proto, conf, bundle_hash)
-    save_upgrade(proto, conf, bundle_hash)
-    save_components(proto, conf, bundle_hash)
-    save_prototype_config(proto, conf, bundle_hash)
-    save_export(proto, conf)
-    save_import(proto, conf)
+    prototype.save()
 
-    return proto
+    save_actions(prototype=prototype, config=config, bundle_hash=bundle_hash)
+    save_upgrade(prototype=prototype, config=config, bundle_hash=bundle_hash)
+    save_components(prototype, config, bundle_hash)
+    save_prototype_config(prototype, config, bundle_hash)
+    save_export(prototype, config)
+    save_import(prototype, config)
+
+    return prototype
 
 
 def check_component_constraint(proto, name, conf):
@@ -252,6 +264,7 @@ def check_component_constraint(proto, name, conf):
 
 def save_components(proto, conf, bundle_hash):
     ref = proto_ref(proto)
+
     if not in_dict(conf, "components"):
         return
 
@@ -285,65 +298,80 @@ def save_components(proto, conf, bundle_hash):
 
         component.save()
 
-        save_actions(component, component_conf, bundle_hash)
+        save_actions(prototype=component, config=component_conf, bundle_hash=bundle_hash)
         save_prototype_config(component, component_conf, bundle_hash)
 
 
-def check_upgrade(proto, conf):
-    label = f"upgrade \"{conf['name']}\""
-    check_versions(proto, conf, label)
-    check_upgrade_scripts(proto, conf, label)
+def check_upgrade(prototype: StagePrototype, config: dict) -> None:
+    label = f'upgrade "{config["name"]}"'
+    check_versions(prototype=prototype, config=config, label=label)
+    check_upgrade_scripts(prototype=prototype, config=config, label=label)
 
 
-def check_upgrade_scripts(proto, conf, label):
-    ref = proto_ref(proto)
+def check_upgrade_scripts(prototype: StagePrototype, config: dict, label: str) -> None:
+    ref = proto_ref(prototype=prototype)
     count = 0
-    if "scripts" in conf:
-        for action in conf["scripts"]:
+
+    if "scripts" in config:
+        for action in config["scripts"]:
             if action["script_type"] == "internal":
                 count += 1
+
                 if count > 1:
                     err(
-                        "INVALID_UPGRADE_DEFINITION",
-                        f'Script with script_type "internal" must be unique in {label} of {ref}',
+                        code="INVALID_UPGRADE_DEFINITION",
+                        msg=f'Script with script_type "internal" must be unique in {label} of {ref}',
                     )
 
                 if action["script"] not in {"bundle_switch", "bundle_revert"}:
-                    msg = (
-                        f'Script with script_type "internal" should be marked as'
-                        f' "bundle_switch" or "bundle_revert" in {label} of {ref}'
+                    err(
+                        code="INVALID_UPGRADE_DEFINITION",
+                        msg=f'Script with script_type "internal" should be marked as "bundle_switch" or "bundle_revert" in {label} of {ref}',
                     )
-                    err("INVALID_UPGRADE_DEFINITION", msg)
 
         if count == 0:
-            msg = f'Scripts block in {label} of {ref} must contain exact one block with script "bundle_switch"'
-            err("INVALID_UPGRADE_DEFINITION", msg)
+            err(
+                code="INVALID_UPGRADE_DEFINITION",
+                msg=f'Scripts block in {label} of {ref} must contain exact one block with script "bundle_switch"',
+            )
 
     else:
-        if "masking" in conf or "on_success" in conf or "on_fail" in conf:
-            msg = f"{label} of {ref} couldn't contain `masking`, `on_success` or `on_fail` without `scripts` block"
-            err("INVALID_UPGRADE_DEFINITION", msg)
+        if "masking" in config or "on_success" in config or "on_fail" in config:
+            err(
+                code="INVALID_UPGRADE_DEFINITION",
+                msg=f"{label} of {ref} couldn't contain `masking`, `on_success` or `on_fail` without `scripts` block",
+            )
 
 
-def check_versions(proto, conf, label):
-    ref = proto_ref(proto)
-    msg = '{} has no mandatory "versions" key ({})'
-    if "min" in conf["versions"] and "min_strict" in conf["versions"]:
-        msg = "min and min_strict can not be used simultaneously in versions of {} ({})"
-        err("INVALID_VERSION_DEFINITION", msg.format(label, ref))
-    if "min" not in conf["versions"] and "min_strict" not in conf["versions"] and "import" not in label:
-        msg = "min or min_strict should be present in versions of {} ({})"
-        err("INVALID_VERSION_DEFINITION", msg.format(label, ref))
-    if "max" in conf["versions"] and "max_strict" in conf["versions"]:
-        msg = "max and max_strict can not be used simultaneously in versions of {} ({})"
-        err("INVALID_VERSION_DEFINITION", msg.format(label, ref))
-    if "max" not in conf["versions"] and "max_strict" not in conf["versions"] and "import" not in label:
-        msg = "max and max_strict should be present in versions of {} ({})"
-        err("INVALID_VERSION_DEFINITION", msg.format(label, ref))
+def check_versions(prototype: StagePrototype, config: str, label: str) -> None:
+    ref = proto_ref(prototype=prototype)
+
+    if "min" in config["versions"] and "min_strict" in config["versions"]:
+        err(
+            code="INVALID_VERSION_DEFINITION",
+            msg=f"min and min_strict can not be used simultaneously in versions of {label} ({ref})",
+        )
+
+    if "min" not in config["versions"] and "min_strict" not in config["versions"] and "import" not in label:
+        err(
+            code="INVALID_VERSION_DEFINITION", msg=f"min or min_strict should be present in versions of {label} ({ref})"
+        )
+
+    if "max" in config["versions"] and "max_strict" in config["versions"]:
+        err(
+            code="INVALID_VERSION_DEFINITION",
+            msg=f"max and max_strict can not be used simultaneously in versions of {label} ({ref})",
+        )
+
+    if "max" not in config["versions"] and "max_strict" not in config["versions"] and "import" not in label:
+        err(
+            code="INVALID_VERSION_DEFINITION",
+            msg=f"max and max_strict should be present in versions of {label} ({ref})",
+        )
+
     for name in ("min", "min_strict", "max", "max_strict"):
-        if name in conf["versions"] and not conf["versions"][name]:
-            msg = "{} versions of {} should be not null ({})"
-            err("INVALID_VERSION_DEFINITION", msg.format(name, label, ref))
+        if name in config["versions"] and not config["versions"][name]:
+            err(code="INVALID_VERSION_DEFINITION", msg=f"{name} versions of {label} should be not null ({ref})")
 
 
 def set_version(obj, conf):
@@ -362,25 +390,34 @@ def set_version(obj, conf):
         obj.max_strict = True
 
 
-def save_upgrade(proto, conf, bundle_hash):
-    if not in_dict(conf, "upgrade"):
+def save_upgrade(prototype: StagePrototype, config: dict, bundle_hash: str) -> None:
+    if not in_dict(config, "upgrade"):
         return
-    for item in conf["upgrade"]:
-        check_upgrade(proto, item)
-        upg = StageUpgrade(name=item["name"])
-        set_version(upg, item)
-        dict_to_obj(item, "description", upg)
+
+    for item in config["upgrade"]:
+        check_upgrade(prototype=prototype, config=item)
+        upgrade = StageUpgrade(name=item["name"])
+        set_version(upgrade, item)
+        dict_to_obj(item, "description", upgrade)
+
         if "states" in item:
-            dict_to_obj(item["states"], "available", upg)
+            dict_to_obj(item["states"], "available", upgrade)
+
             if "available" in item["states"]:
-                upg.state_available = item["states"]["available"]
+                upgrade.state_available = item["states"]["available"]
+
             if "on_success" in item["states"]:
-                upg.state_on_success = item["states"]["on_success"]
+                upgrade.state_on_success = item["states"]["on_success"]
+
         if in_dict(item, "from_edition"):
-            upg.from_edition = item["from_edition"]
+            upgrade.from_edition = item["from_edition"]
+
         if "scripts" in item:
-            upg.action = save_actions(proto, item, bundle_hash, upg)
-        upg.save()
+            upgrade.action = save_upgrade_action(
+                prototype=prototype, config=item, bundle_hash=bundle_hash, upgrade=upgrade
+            )
+
+        upgrade.save()
 
 
 def save_export(proto, conf):
@@ -490,102 +527,95 @@ def save_sub_actions(conf, action):
         sub_action.save()
 
 
-MASKING = "masking"
-STATES = "states"
-STATE = "state"
-MULTI_STATE = "multi_state"
-AVAILABLE = "available"
-UNAVAILABLE = "unavailable"
-ON_SUCCESS = "on_success"
-ON_FAIL = "on_fail"
-ANY = "any"
-SET = "set"
-UNSET = "unset"
-
-
-def save_actions(proto, conf, bundle_hash, upgrade: StageUpgrade | None = None):
-    if in_dict(conf, "versions"):
-        conf["type"] = "task"
-        upgrade_name = conf["name"]
-        conf["display_name"] = f"Upgrade: {upgrade_name}"
-        if upgrade is not None:
-            action_name = (
-                f"{proto.name}_{proto.version}_{proto.edition}_upgrade_{upgrade_name}_{upgrade.min_version}_strict_"
-                f"{upgrade.min_strict}-{upgrade.max_version}_strict_{upgrade.min_strict}_editions-"
-                f"{'_'.join(upgrade.from_edition)}_state_available-{'_'.join(upgrade.state_available)}_"
-                f"state_on_success-{upgrade.state_on_success}"
-            )
-        else:
-            action_name = f"{proto.name}_{proto.version}_{proto.edition}_upgrade_{upgrade_name}"
-
-        action_name = re.sub(r"\s+", "_", action_name).strip().lower()
-        action_name = re.sub(r"\(\)", "", action_name)
-        upgrade_action = save_action(proto, conf, bundle_hash, action_name)
-
-        return upgrade_action
-
-    if not in_dict(conf, "actions"):
+def save_upgrade_action(
+    prototype: StagePrototype, config: dict, bundle_hash: str, upgrade: StageUpgrade
+) -> None | StageAction:
+    if not in_dict(config, "versions"):
         return None
 
-    for action_name in sorted(conf["actions"]):
-        action_config = conf["actions"][action_name]
-        save_action(proto, action_config, bundle_hash, action_name)
+    config["type"] = "task"
+    config["display_name"] = f"Upgrade: {config['name']}"
 
-    return None
-
-
-def save_action(proto, action_config, bundle_hash, action_name):
-    check_action(proto, action_name)
-    action = StageAction(prototype=proto, name=action_name)
-    action.type = action_config["type"]
-    if action_config["type"] == "job":
-        action.script = action_config["script"]
-        action.script_type = action_config["script_type"]
-
-    dict_to_obj(action_config, "display_name", action)
-    dict_to_obj(action_config, "description", action)
-    dict_to_obj(action_config, "allow_to_terminate", action)
-    dict_to_obj(action_config, "partial_execution", action)
-    dict_to_obj(action_config, "host_action", action)
-    dict_to_obj(action_config, "ui_options", action)
-    dict_to_obj(action_config, "params", action)
-    dict_to_obj(action_config, "log_files", action)
-    dict_to_obj(action_config, "venv", action)
-    dict_to_obj(action_config, "allow_in_maintenance_mode", action)
-
-    fix_display_name(action_config, action)
-
-    check_action_hc(proto, action_config, action_name)
-    dict_to_obj(action_config, "hc_acl", action, "hostcomponentmap")
-    if MASKING in action_config:
-        if STATES in action_config:
-            err(
-                "INVALID_OBJECT_DEFINITION",
-                f'Action {action_name} uses both mutual excluding states "states" and "masking"',
-            )
-
-        action.state_available = _deep_get(action_config, MASKING, STATE, AVAILABLE, default=ANY)
-        action.state_unavailable = _deep_get(action_config, MASKING, STATE, UNAVAILABLE, default=[])
-        action.state_on_success = _deep_get(action_config, ON_SUCCESS, STATE, default="")
-        action.state_on_fail = _deep_get(action_config, ON_FAIL, STATE, default="")
-
-        action.multi_state_available = _deep_get(action_config, MASKING, MULTI_STATE, AVAILABLE, default=ANY)
-        action.multi_state_unavailable = _deep_get(action_config, MASKING, MULTI_STATE, UNAVAILABLE, default=[])
-        action.multi_state_on_success_set = _deep_get(action_config, ON_SUCCESS, MULTI_STATE, SET, default=[])
-        action.multi_state_on_success_unset = _deep_get(action_config, ON_SUCCESS, MULTI_STATE, UNSET, default=[])
-        action.multi_state_on_fail_set = _deep_get(action_config, ON_FAIL, MULTI_STATE, SET, default=[])
-        action.multi_state_on_fail_unset = _deep_get(action_config, ON_FAIL, MULTI_STATE, UNSET, default=[])
+    if upgrade is not None:
+        name = (
+            f"{prototype.name}_{prototype.version}_{prototype.edition}_upgrade_{config['name']}_{upgrade.min_version}_strict_"
+            f"{upgrade.min_strict}-{upgrade.max_version}_strict_{upgrade.min_strict}_editions-"
+            f"{'_'.join(upgrade.from_edition)}_state_available-{'_'.join(upgrade.state_available)}_"
+            f"state_on_success-{upgrade.state_on_success}"
+        )
     else:
-        if ON_SUCCESS in action_config or ON_FAIL in action_config:
+        name = f"{prototype.name}_{prototype.version}_{prototype.edition}_upgrade_{config['name']}"
+
+    name = re.sub(r"\s+", "_", name).strip().lower()
+    name = re.sub(r"[()]", "", name)
+
+    return save_action(prototype=prototype, config=config, bundle_hash=bundle_hash, name=name)
+
+
+def save_actions(prototype: StagePrototype, config: dict, bundle_hash: str) -> None:
+    if not in_dict(config, "actions"):
+        return
+
+    for name in sorted(config["actions"]):
+        save_action(prototype=prototype, config=config["actions"][name], bundle_hash=bundle_hash, name=name)
+
+
+def save_action(prototype: StagePrototype, config: dict, bundle_hash: str, name: str) -> StageAction:
+    validate_name(
+        name=name, error_message=f'Action name "{name}" of {prototype.type} "{prototype.name}" {prototype.version}'
+    )
+    action = StageAction(prototype=prototype, name=name)
+    action.type = config["type"]
+
+    if config["type"] == "job":
+        action.script = config["script"]
+        action.script_type = config["script_type"]
+
+    dict_to_obj(config, "display_name", action)
+    dict_to_obj(config, "description", action)
+    dict_to_obj(config, "allow_to_terminate", action)
+    dict_to_obj(config, "partial_execution", action)
+    dict_to_obj(config, "host_action", action)
+    dict_to_obj(config, "ui_options", action)
+    dict_to_obj(config, "params", action)
+    dict_to_obj(config, "log_files", action)
+    dict_to_obj(config, "venv", action)
+    dict_to_obj(config, "allow_in_maintenance_mode", action)
+
+    fix_display_name(config, action)
+
+    check_action_hc(prototype, config, name)
+    dict_to_obj(config, "hc_acl", action, "hostcomponentmap")
+
+    if MASKING in config:
+        if STATES in config:
             err(
-                "INVALID_OBJECT_DEFINITION",
-                f'Action {action_name} uses "on_success/on_fail" states without "masking"',
+                code="INVALID_OBJECT_DEFINITION",
+                msg=f'Action {name} uses both mutual excluding states "states" and "masking"',
             )
 
-        action.state_available = _deep_get(action_config, STATES, AVAILABLE, default=[])
+        action.state_available = _deep_get(config, MASKING, STATE, AVAILABLE, default=ANY)
+        action.state_unavailable = _deep_get(config, MASKING, STATE, UNAVAILABLE, default=[])
+        action.state_on_success = _deep_get(config, ON_SUCCESS, STATE, default="")
+        action.state_on_fail = _deep_get(config, ON_FAIL, STATE, default="")
+
+        action.multi_state_available = _deep_get(config, MASKING, MULTI_STATE, AVAILABLE, default=ANY)
+        action.multi_state_unavailable = _deep_get(config, MASKING, MULTI_STATE, UNAVAILABLE, default=[])
+        action.multi_state_on_success_set = _deep_get(config, ON_SUCCESS, MULTI_STATE, SET, default=[])
+        action.multi_state_on_success_unset = _deep_get(config, ON_SUCCESS, MULTI_STATE, UNSET, default=[])
+        action.multi_state_on_fail_set = _deep_get(config, ON_FAIL, MULTI_STATE, SET, default=[])
+        action.multi_state_on_fail_unset = _deep_get(config, ON_FAIL, MULTI_STATE, UNSET, default=[])
+    else:
+        if ON_SUCCESS in config or ON_FAIL in config:
+            err(
+                code="INVALID_OBJECT_DEFINITION",
+                msg=f'Action {name} uses "on_success/on_fail" states without "masking"',
+            )
+
+        action.state_available = _deep_get(config, STATES, AVAILABLE, default=[])
         action.state_unavailable = []
-        action.state_on_success = _deep_get(action_config, STATES, ON_SUCCESS, default="")
-        action.state_on_fail = _deep_get(action_config, STATES, ON_FAIL, default="")
+        action.state_on_success = _deep_get(config, STATES, ON_SUCCESS, default="")
+        action.state_on_fail = _deep_get(config, STATES, ON_FAIL, default="")
 
         action.multi_state_available = ANY
         action.multi_state_unavailable = []
@@ -595,15 +625,10 @@ def save_action(proto, action_config, bundle_hash, action_name):
         action.multi_state_on_fail_unset = []
 
     action.save()
-    save_sub_actions(action_config, action)
-    save_prototype_config(proto, action_config, bundle_hash, action)
+    save_sub_actions(config, action)
+    save_prototype_config(prototype, config, bundle_hash, action)
 
     return action
-
-
-def check_action(proto, action):
-    err_msg = f'Action name "{action}" of {proto.type} "{proto.name}" {proto.version}'
-    validate_name(action, err_msg)
 
 
 def is_group(conf):
@@ -746,16 +771,17 @@ def save_prototype_config(
                     cook_conf(proto, subconf, name, subname)
 
 
-def validate_name(value, err_msg):
-    if not isinstance(value, str):
-        err("WRONG_NAME", f"{err_msg} should be string")
+def validate_name(name: str, error_message: str) -> None:
+    if not isinstance(name, str):
+        err(code="WRONG_NAME", msg=f"{error_message} should be string")
 
-    regex = re.compile(NAME_REGEX)
-    msg = "{} is incorrect. Only latin characters, digits, dots (.), dashes (-), and underscores (_) are allowed."
-    if regex.fullmatch(value) is None:
-        err("WRONG_NAME", msg.format(err_msg))
+    regex = re.compile(pattern=NAME_REGEX)
 
-    return value
+    if regex.fullmatch(name) is None:
+        err(
+            code="WRONG_NAME",
+            msg=f"{error_message} is incorrect. Only latin characters, digits, dots (.), dashes (-), and underscores (_) are allowed.",
+        )
 
 
 def fix_display_name(conf, obj):

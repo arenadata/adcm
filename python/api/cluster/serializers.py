@@ -31,6 +31,7 @@ from rest_framework.serializers import (
     BooleanField,
     CharField,
     HyperlinkedIdentityField,
+    HyperlinkedRelatedField,
     IntegerField,
     JSONField,
     ModelSerializer,
@@ -116,10 +117,8 @@ class ClusterDetailSerializer(ClusterSerializer):
     upgrade = HyperlinkedIdentityField(view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id")
     imports = HyperlinkedIdentityField(view_name="cluster-import", lookup_field="id", lookup_url_kwarg="cluster_id")
     bind = HyperlinkedIdentityField(view_name="cluster-bind", lookup_field="id", lookup_url_kwarg="cluster_id")
-    prototype = HyperlinkedIdentityField(
-        view_name="cluster-prototype-detail",
-        lookup_field="pk",
-        lookup_url_kwarg="prototype_pk",
+    prototype = HyperlinkedRelatedField(
+        view_name="cluster-prototype-detail", read_only=True, lookup_url_kwarg="prototype_pk"
     )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)

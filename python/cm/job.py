@@ -721,10 +721,6 @@ def create_task(
         set_job_status(job.pk, JobStatus.CREATED, CTX.event)
         Path(settings.RUN_DIR, f"{job.pk}", "tmp").mkdir(parents=True, exist_ok=True)
 
-    tree = Tree(obj)
-    affected = (node.value for node in tree.get_all_affected(tree.built_from))
-    task.lock_affected(affected)
-
     return task
 
 
@@ -913,7 +909,11 @@ def run_task(task: TaskLog, event, args: str = ""):
     )
     logger.info("task run #%s, python process %s", task.pk, proc.pid)
 
-    set_task_status(task, JobStatus.RUNNING, event)
+    tree = Tree(obj=task.task_object)
+    affected_objs = (node.value for node in tree.get_all_affected(node=tree.built_from))
+    task.lock_affected(objects=affected_objs)
+
+    set_task_status(task=task, status=JobStatus.RUNNING, event=event)
 
 
 def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
@@ -961,8 +961,9 @@ def set_job_status(job_id: int, status: str, event, pid: int = 0):
     job = job_query.first()
 
     if status == JobStatus.RUNNING:
-        job.task.lock.reason = job.cook_reason()
-        job.task.lock.save(update_fields=["reason"])
+        if job.task.lock:
+            job.task.lock.reason = job.cook_reason()
+            job.task.lock.save(update_fields=["reason"])
 
     event.set_job_status(job=job, status=status)
 

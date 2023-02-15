@@ -94,8 +94,10 @@ def get_names(sender, **kwargs):
     return name, sender.__module__, kwargs["instance"]
 
 
-def _post_event(action: str, module: str, obj) -> None:
-    transaction.on_commit(lambda: post_event(event=action, obj=obj, details={"module": module}))
+def _post_event(action: str, module: str, obj, model_name: str | None = None) -> None:
+    transaction.on_commit(
+        lambda: post_event(event=action, obj=obj, details={"module": module, "model_name": model_name})
+    )
 
 
 @receiver(post_save, sender=User)
@@ -157,4 +159,4 @@ def m2m_change(sender, **kwargs):
         return
 
     logger.info("%s %s %s #%s", action, module, name, obj.pk)
-    _post_event(action=action, module=module, obj=obj)
+    _post_event(action=action, module=module, obj=obj, model_name=name)
