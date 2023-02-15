@@ -105,7 +105,7 @@ class TaskRetrieveSerializer(HyperlinkedModelSerializer):
             "cancel",
             "download",
         )
-        read_only_fields = ("object_id", "status", "start_date", "finish_date")
+        read_only_fields = ("object_id", "status", "start_date", "finish_date", "pid", "selector")
         extra_kwargs = {"url": {"lookup_url_kwarg": "task_pk"}}
 
     def get_action_url(self, obj: TaskLog) -> str | None:
