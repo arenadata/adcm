@@ -34,7 +34,11 @@ from rest_framework.mixins import (
     RetrieveModelMixin,
 )
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
+from rest_framework.status import (
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+)
 from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
@@ -85,7 +89,18 @@ class GroupConfigHostViewSet(
 
     @audit
     def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            group_config = GroupConfig.obj.get(id=self.kwargs.get("parent_lookup_group_config"))
+            host = serializer.validated_data["id"]
+            group_config.check_host_candidate(host=host)
+            group_config.hosts.add(host)
+            serializer = self.get_serializer(instance=host)
+
+            return Response(data=serializer.data, status=HTTP_201_CREATED)
+        else:
+            return Response(data=serializer.errors, status=HTTP_400_BAD_REQUEST)
 
     @audit
     def destroy(self, request, *args, **kwargs):
