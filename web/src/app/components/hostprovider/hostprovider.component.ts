@@ -50,7 +50,7 @@ export class HostproviderComponent extends ConcernListDirective<any> {
     ListFactory.bundleColumn(),
     ListFactory.stateColumn(),
     ListFactory.actionsButton(this),
-    ListFactory.updateColumn(),
+    ListFactory.updateColumn(this.type),
     ListFactory.configColumn(this),
     ListFactory.deleteColumn(this),
   ] as IColumns<any>;

@@ -33,6 +33,7 @@ from cm.models import (
     ObjectConfig,
     Prototype,
     PrototypeConfig,
+    StagePrototype,
 )
 from cm.variant import get_variant, process_variant
 from django.conf import settings
@@ -40,8 +41,8 @@ from django.conf import settings
 SECURE_PARAM_TYPES = ("password", "secrettext")
 
 
-def proto_ref(proto):
-    return f'{proto.type} "{proto.name}" {proto.version}'
+def proto_ref(prototype: StagePrototype | Prototype) -> str:
+    return f'{prototype.type} "{prototype.name}" {prototype.version}'
 
 
 def obj_ref(obj):
@@ -133,10 +134,22 @@ def get_default(conf, proto=None):  # pylint: disable=too-many-branches
         if isinstance(conf.default, bool):
             value = conf.default
         else:
-            value = bool(conf.default.lower() in ("true", "yes"))
+            value = bool(conf.default.lower() in {"true", "yes"})
     elif conf.type == "option":
         if conf.default in conf.limits["option"]:
             value = conf.limits["option"][conf.default]
+
+        for option in conf.limits["option"].values():
+            if not isinstance(option, type(value)):
+                if isinstance(option, bool):
+                    value = bool(value)
+                elif isinstance(option, int):
+                    value = int(value)
+                elif isinstance(option, float):
+                    value = float(value)
+                elif isinstance(option, str):
+                    value = str(value)
+
     elif conf.type == "file":
         if proto:
             if conf.default:
@@ -1157,7 +1170,8 @@ def check_config_type(
     if spec["type"] == "option":
         option = spec["limits"]["option"]
         check = False
-        for _, _value in option.items():
+
+        for _value in option.values():
             if _value == value:
                 check = True
 

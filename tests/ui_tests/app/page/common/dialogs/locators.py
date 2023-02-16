@@ -40,3 +40,20 @@ class OperationChangesDialogLocators(Dialog):
         attribute = BaseLocator(By.CSS_SELECTOR, "mat-cell:first-child", "Attribute value of changes row")
         old_value = BaseLocator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Old value of changes row")
         new_value = BaseLocator(By.CSS_SELECTOR, "mat-cell:last-child", "New value of changes row")
+
+
+class ServiceLicenseDialog:
+    """Services page licence popup elements locators"""
+
+    block = BaseLocator(
+        By.XPATH,
+        "//app-dialog[./h3[contains(text(), 'license')]]",
+        "block with license agreement",
+    )
+    agree_btn = BaseLocator(By.XPATH, "//button[./span[contains(text(), 'Yes')]]", "Agree button")
+    disagree_btn = BaseLocator(By.XPATH, "//button[./span[contains(text(), 'No')]]", "Disagree button")
+    license_text_field = BaseLocator(
+        By.XPATH,
+        "//mat-dialog-content[./pre[contains(text(), '')]]",
+        "license text",
+    )

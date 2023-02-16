@@ -42,7 +42,9 @@ from tests.ui_tests.app.page.common.dialogs.create_host_locators import (
 from tests.ui_tests.app.page.common.dialogs.locators import (
     ActionDialog,
     DeleteDialogLocators,
+    ServiceLicenseDialog,
 )
+from tests.ui_tests.app.page.common.dialogs.service_license import ServiceLicenseModal
 from tests.ui_tests.app.page.common.group_config.page import CommonGroupConfigMenu
 from tests.ui_tests.app.page.common.group_config_list.locators import (
     GroupConfigListLocators,
@@ -195,9 +197,23 @@ class ClusterServicesPage(CommonClusterPage, ObjectRowMixin):
         CommonTable.Pagination.previous_page,
     ]
 
-    def click_add_service_btn(self):
+    def click_add_service_button(self) -> None:
         """Click on Add service button"""
         self.find_and_click(ClusterServicesLocators.add_services_btn)
+        self.wait_element_visible(ClusterServicesLocators.AddServicePopup.block, timeout=3)
+
+    def click_add_service_in_dialog(self) -> None:
+        self.find_and_click(ClusterServicesLocators.AddServicePopup.create_btn)
+
+    def close_add_service_window(self) -> None:
+        """Close dialog window"""
+        self.find_and_click(ClusterServicesLocators.AddServicePopup.cancel_btn)
+
+    @allure.step("Get service license dialog")
+    def get_service_license_dialog(self) -> ServiceLicenseModal:
+        self.wait_element_visible(ServiceLicenseDialog.block)
+        license_dialog = self.find_element(ServiceLicenseDialog.block)
+        return ServiceLicenseModal(driver=self.driver, element=license_dialog)
 
     @allure.step("Add service {service_name} to cluster")
     def add_service_by_name(self, service_name: str):
@@ -210,6 +226,12 @@ class ClusterServicesPage(CommonClusterPage, ObjectRowMixin):
                 service_text.click()
         self.find_and_click(ClusterServicesLocators.AddServicePopup.create_btn)
         self.wait_element_hide(ClusterServicesLocators.AddServicePopup.block)
+
+    def find_service(self, service_name: str) -> WebElement:
+        for service in self.find_elements(ClusterServicesLocators.AddServicePopup.service_row):
+            if service_name == self.find_child(service, ClusterServicesLocators.AddServicePopup.ServiceRow.text).text:
+                return self.find_child(service, ClusterServicesLocators.AddServicePopup.ServiceRow.text)
+        raise ValueError(f"Service with name {service_name} not found")
 
     @allure.step("Click on service concern object name from the row")
     def click_on_concern_by_object_name(self, row: WebElement, concern_object_name: str):
