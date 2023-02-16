@@ -37,7 +37,7 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture(scope="session")
-def fill_adcm(sdk_client_ss):
+def fill_adcm(sdk_client_ss):  # pylint: disable=too-many-locals
     adcm_client = sdk_client_ss
     with allure.step("Create provider"):
         provider_bundle = adcm_client.upload_from_fs(GENERIC_BUNDLES_DIR / "simple_provider")
@@ -67,6 +67,9 @@ def fill_adcm(sdk_client_ss):
         )
     with allure.step("Add hosts to cluster and set hostcomponent map"):
         cluster.hostcomponent_set(*[(host, component) for host in hosts for component in components])
+    with allure.step("Create group configs"):
+        for adcm_object in (cluster, *cluster.service_list(), *components, provider):
+            adcm_object.group_config_create(f"group for {adcm_object.__class__.__name__}")
     with allure.step("Run task"):
         task = cluster.action(name="action_on_cluster").run()
         task.wait()

@@ -95,20 +95,20 @@ class TestReapplyTriggers:
 
         with allure.step("Check that edit service and cluster are forbidden for user"):
             is_denied_to_user(admin_cluster, BusinessRoles.ADD_SERVICE)
-            is_denied_to_user(admin_service, BusinessRoles.EDIT_SSERVICE_CONFIGURATIONS)
+            is_denied_to_user(admin_service, BusinessRoles.EDIT_SERVICE_CONFIGURATIONS)
 
         self.grant_role(clients.admin, user, RbacRoles.CLUSTER_ADMINISTRATOR, admin_cluster)
         clients.user.reread()
         cluster, service = as_user_objects(clients.user, admin_cluster, admin_service)
 
-        is_allowed(service, BusinessRoles.EDIT_SSERVICE_CONFIGURATIONS)
+        is_allowed(service, BusinessRoles.EDIT_SERVICE_CONFIGURATIONS)
         new_service = is_allowed(cluster, BusinessRoles.ADD_SERVICE)
         with new_client_instance(*TEST_USER_CREDENTIALS, url=clients.admin.url) as client:
             user_cluster, user_new_service = as_user_objects(client, cluster, new_service)
-            is_allowed(user_new_service, BusinessRoles.EDIT_SSERVICE_CONFIGURATIONS)
+            is_allowed(user_new_service, BusinessRoles.EDIT_SERVICE_CONFIGURATIONS)
             is_allowed(user_cluster, BusinessRoles.REMOVE_SERVICE, new_service)
 
-        is_allowed(service, BusinessRoles.EDIT_SSERVICE_CONFIGURATIONS)
+        is_allowed(service, BusinessRoles.EDIT_SERVICE_CONFIGURATIONS)
 
     # pylint: disable=too-many-locals
     def test_change_hostcomponent(self, clients, prepare_objects, user):
@@ -175,7 +175,7 @@ class TestReapplyTriggers:
 
         with allure.step("Check that edit cluster, service and component configurations are forbidden for user"):
             is_denied_to_user(admin_cluster, BusinessRoles.EDIT_CLUSTER_CONFIGURATIONS)
-            is_denied_to_user(admin_service, BusinessRoles.EDIT_SSERVICE_CONFIGURATIONS)
+            is_denied_to_user(admin_service, BusinessRoles.EDIT_SERVICE_CONFIGURATIONS)
             is_denied_to_user(admin_component, BusinessRoles.EDIT_COMPONENT_CONFIGURATIONS)
         with allure.step(f"Create user group with {user.username}"):
             test_group = clients.admin.group_create("Test_group", user=[{"id": user.id}])
@@ -193,25 +193,25 @@ class TestReapplyTriggers:
         )
         with allure.step("Check that edit cluster, service and component configurations are allowed for user"):
             is_allowed(user_cluster, BusinessRoles.EDIT_CLUSTER_CONFIGURATIONS)
-            is_allowed(user_service, BusinessRoles.EDIT_SSERVICE_CONFIGURATIONS)
+            is_allowed(user_service, BusinessRoles.EDIT_SERVICE_CONFIGURATIONS)
             is_allowed(user_component, BusinessRoles.EDIT_COMPONENT_CONFIGURATIONS)
         with allure.step("Change group: delete user"):
             test_group.update(user=[])
         with allure.step("Check that edit cluster, service and component configurations are forbidden for user"):
             is_denied_to_user(admin_cluster, BusinessRoles.EDIT_CLUSTER_CONFIGURATIONS)
-            is_denied_to_user(admin_service, BusinessRoles.EDIT_SSERVICE_CONFIGURATIONS)
+            is_denied_to_user(admin_service, BusinessRoles.EDIT_SERVICE_CONFIGURATIONS)
             is_denied_to_user(admin_component, BusinessRoles.EDIT_COMPONENT_CONFIGURATIONS)
         with allure.step("Change test policy: add user"):
             test_policy.update(user=[{"id": user.id}])
         with allure.step("Check that edit cluster, service and component configurations are allowed for user"):
             is_allowed(user_cluster, BusinessRoles.EDIT_CLUSTER_CONFIGURATIONS)
-            is_allowed(user_service, BusinessRoles.EDIT_SSERVICE_CONFIGURATIONS)
+            is_allowed(user_service, BusinessRoles.EDIT_SERVICE_CONFIGURATIONS)
             is_allowed(user_component, BusinessRoles.EDIT_COMPONENT_CONFIGURATIONS)
         with allure.step("Change test policy: delete user"):
             test_policy.update(user=[])
         with allure.step("Check that edit cluster, service and component configurations are forbidden for user"):
             is_denied_to_user(admin_cluster, BusinessRoles.EDIT_CLUSTER_CONFIGURATIONS)
-            is_denied_to_user(admin_service, BusinessRoles.EDIT_SSERVICE_CONFIGURATIONS)
+            is_denied_to_user(admin_service, BusinessRoles.EDIT_SERVICE_CONFIGURATIONS)
             is_denied_to_user(admin_component, BusinessRoles.EDIT_COMPONENT_CONFIGURATIONS)
 
     def test_add_remove_cluster_from_policy(self, clients, is_denied_to_user, prepare_objects, user):
@@ -255,7 +255,7 @@ class TestReapplyTriggers:
         """Test that policies are applied after service add/remove to the policy"""
 
         _, admin_service, *_ = prepare_objects
-        role_to_check = BusinessRoles.EDIT_SSERVICE_CONFIGURATIONS
+        role_to_check = BusinessRoles.EDIT_SERVICE_CONFIGURATIONS
         with allure.step("Create a cluster with two services"):
             cluster = upload_bundle(clients.admin, "cluster").cluster_create(name="Test Cluster 1")
             first_service = cluster.service_add(name="test_service")

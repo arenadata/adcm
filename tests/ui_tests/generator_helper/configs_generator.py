@@ -146,7 +146,7 @@ def generate_configs(
     config_dict["config"] = [field_config]
     config = [config_dict]
     expected_result = generate_config_expected_result(data)
-    return (config, expected_result)
+    return config, expected_result
 
 
 def prepare_config(config, *, enforce_file: bool = False):
