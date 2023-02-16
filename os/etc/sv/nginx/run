@@ -15,14 +15,16 @@
 
 waitforwsgi
 
-echo "Run Nginx ..."
+if [ -z "$MIGRATION_MODE" ] || [ "$MIGRATION_MODE" -ne 1 ]; then
+    echo "Run Nginx ..."
 
-exec 1>"${adcmlog}/nginx/service_nginx.out"
-exec 2>"${adcmlog}/nginx/service_nginx.err"
+    exec 1>"${adcmlog}/nginx/service_nginx.out"
+    exec 2>"${adcmlog}/nginx/service_nginx.err"
 
-mkdir -p /run/nginx
+    mkdir -p /run/nginx
 
-# Cleanup tmp dir during restart of nginx. That dir is for
-# uploading bundles cache.
-rm -rf /adcm/data/tmp/nginx_client_temp || true
-exec /usr/sbin/nginx -c /etc/nginx/nginx.conf  -g "daemon off;"
+    # Cleanup tmp dir during restart of nginx. That dir is for
+    # uploading bundles cache.
+    rm -rf /adcm/data/tmp/nginx_client_temp || true
+    exec /usr/sbin/nginx -c /etc/nginx/nginx.conf  -g "daemon off;"
+fi
