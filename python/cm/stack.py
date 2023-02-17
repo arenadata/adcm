@@ -262,10 +262,10 @@ def check_component_constraint(proto, name, conf):
         err("INVALID_COMPONENT_DEFINITION", msg.format(name, proto_ref(proto)))
 
 
-def save_components(proto, conf, bundle_hash):
-    ref = proto_ref(proto)
+def save_components(proto: StagePrototype, conf: dict, bundle_hash: str) -> None:
+    ref = proto_ref(prototype=proto)
 
-    if not in_dict(conf, "components"):
+    if not in_dict(dictionary=conf, key="components"):
         return
 
     for comp_name in conf["components"]:
@@ -343,7 +343,7 @@ def check_upgrade_scripts(prototype: StagePrototype, config: dict, label: str) -
             )
 
 
-def check_versions(prototype: StagePrototype, config: str, label: str) -> None:
+def check_versions(prototype: StagePrototype, config: dict, label: str) -> None:
     ref = proto_ref(prototype=prototype)
 
     if "min" in config["versions"] and "min_strict" in config["versions"]:
@@ -391,7 +391,7 @@ def set_version(obj, conf):
 
 
 def save_upgrade(prototype: StagePrototype, config: dict, bundle_hash: str) -> None:
-    if not in_dict(config, "upgrade"):
+    if not in_dict(dictionary=config, key="upgrade"):
         return
 
     for item in config["upgrade"]:
@@ -409,7 +409,7 @@ def save_upgrade(prototype: StagePrototype, config: dict, bundle_hash: str) -> N
             if "on_success" in item["states"]:
                 upgrade.state_on_success = item["states"]["on_success"]
 
-        if in_dict(item, "from_edition"):
+        if in_dict(dictionary=item, key="from_edition"):
             upgrade.from_edition = item["from_edition"]
 
         if "scripts" in item:
@@ -420,9 +420,9 @@ def save_upgrade(prototype: StagePrototype, config: dict, bundle_hash: str) -> N
         upgrade.save()
 
 
-def save_export(proto, conf):
-    ref = proto_ref(proto)
-    if not in_dict(conf, "export"):
+def save_export(proto: StagePrototype, conf: dict) -> None:
+    ref = proto_ref(prototype=proto)
+    if not in_dict(dictionary=conf, key="export"):
         return
 
     export = {}
@@ -460,9 +460,9 @@ def check_default_import(proto, conf):
             err("INVALID_OBJECT_DEFINITION", msg.format(key, ref))
 
 
-def save_import(proto, conf):
-    ref = proto_ref(proto)
-    if not in_dict(conf, "import"):
+def save_import(proto: StagePrototype, conf: dict) -> None:
+    ref = proto_ref(prototype=proto)
+    if not in_dict(dictionary=conf, key="import"):
         return
 
     for key in conf["import"]:
@@ -504,7 +504,7 @@ def check_action_hc(proto, conf, name):  # pylint: disable=unused-argument
 
 
 def save_sub_actions(conf, action):
-    if action.type != "task":
+    if action.type != settings.TASK_TYPE:
         return
     for sub in conf["scripts"]:
         sub_action = StageSubAction(
@@ -530,10 +530,10 @@ def save_sub_actions(conf, action):
 def save_upgrade_action(
     prototype: StagePrototype, config: dict, bundle_hash: str, upgrade: StageUpgrade
 ) -> None | StageAction:
-    if not in_dict(config, "versions"):
+    if not in_dict(dictionary=config, key="versions"):
         return None
 
-    config["type"] = "task"
+    config["type"] = settings.TASK_TYPE
     config["display_name"] = f"Upgrade: {config['name']}"
 
     if upgrade is not None:
@@ -552,12 +552,28 @@ def save_upgrade_action(
     return save_action(prototype=prototype, config=config, bundle_hash=bundle_hash, name=name)
 
 
+def check_internal_script(config: dict, name: str, ref: str) -> None:
+    if config["script_type"] == "internal" and config["script"] != "bundle_revert":
+        err(
+            code="INVALID_OBJECT_DEFINITION",
+            msg=f"Action {name} of {ref} uses script_type `internal` without `bundle_revert` script",
+        )
+
+
 def save_actions(prototype: StagePrototype, config: dict, bundle_hash: str) -> None:
-    if not in_dict(config, "actions"):
+    if not in_dict(dictionary=config, key="actions"):
         return
 
     for name in sorted(config["actions"]):
-        save_action(prototype=prototype, config=config["actions"][name], bundle_hash=bundle_hash, name=name)
+        action_config = config["actions"][name]
+
+        if action_config["type"] == settings.JOB_TYPE:
+            check_internal_script(config=action_config, name=name, ref=proto_ref(prototype=prototype))
+        else:
+            for subaction_config in action_config["scripts"]:
+                check_internal_script(config=subaction_config, name=name, ref=proto_ref(prototype=prototype))
+
+        save_action(prototype=prototype, config=action_config, bundle_hash=bundle_hash, name=name)
 
 
 def save_action(prototype: StagePrototype, config: dict, bundle_hash: str, name: str) -> StageAction:
@@ -567,7 +583,7 @@ def save_action(prototype: StagePrototype, config: dict, bundle_hash: str, name:
     action = StageAction(prototype=prototype, name=name)
     action.type = config["type"]
 
-    if config["type"] == "job":
+    if config["type"] == settings.JOB_TYPE:
         action.script = config["script"]
         action.script_type = config["script_type"]
 
@@ -654,9 +670,9 @@ def get_yspec(proto, ref, bundle_hash, conf, name, subname):  # pylint: disable=
 
 
 def save_prototype_config(
-    proto, proto_conf, bundle_hash, action=None
-):  # pylint: disable=too-many-statements,too-many-locals
-    if not in_dict(proto_conf, "config"):
+    proto: StagePrototype, proto_conf: dict, bundle_hash: str, action: StageAction | None = None
+) -> None:  # pylint: disable=too-many-statements,too-many-locals
+    if not in_dict(dictionary=proto_conf, key="config"):
         return
 
     conf_dict = proto_conf["config"]
