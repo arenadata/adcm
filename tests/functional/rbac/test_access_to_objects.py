@@ -77,7 +77,7 @@ class TestAccessToBasicObjects:
         not_viewable_objects = (component, provider, host) + second_objects
         cluster_and_service = (cluster, service)
 
-        for business_role in (BR.VIEW_SERVICE_CONFIGURATIONS, BR.EDIT_SSERVICE_CONFIGURATIONS, BR.VIEW_IMPORTS):
+        for business_role in (BR.VIEW_SERVICE_CONFIGURATIONS, BR.EDIT_SERVICE_CONFIGURATIONS, BR.VIEW_IMPORTS):
             objects_to_check = ", ".join(map(lower_class_name, cluster_and_service))
             with allure.step(
                 f'Check that granting "{business_role.value.role_name}" role to service '

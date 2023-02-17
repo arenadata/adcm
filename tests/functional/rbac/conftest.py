@@ -181,7 +181,7 @@ class BusinessRoles(Enum):
     EDIT_CLUSTER_CONFIGURATIONS = BusinessRole(
         "Edit cluster configurations", methodcaller("config_set_diff", {}), Deny.ChangeConfigOf(Cluster)
     )
-    EDIT_SSERVICE_CONFIGURATIONS = BusinessRole(
+    EDIT_SERVICE_CONFIGURATIONS = BusinessRole(
         "Edit service configurations", methodcaller("config_set_diff", {}), Deny.ChangeConfigOf(Service)
     )
     EDIT_COMPONENT_CONFIGURATIONS = BusinessRole(
@@ -259,12 +259,12 @@ class BusinessRoles(Enum):
     @staticmethod
     def view_config_of(adcm_object) -> RbacRoles:
         """Get view config role by object's class name"""
-        return BusinessRoles[f"View{adcm_object.__class__.__name__}Configurations"]
+        return BusinessRoles[f"VIEW_{adcm_object.__class__.__name__.upper()}_CONFIGURATIONS"]
 
     @staticmethod
     def edit_config_of(adcm_object) -> RbacRoles:
         """Get edit config role by object's class name"""
-        return BusinessRoles[f"Edit{adcm_object.__class__.__name__}Configurations"]
+        return BusinessRoles[f"EDIT_{adcm_object.__class__.__name__.upper()}_CONFIGURATIONS"]
 
 
 CLUSTER_VIEW_CONFIG_ROLES = (
@@ -274,7 +274,7 @@ CLUSTER_VIEW_CONFIG_ROLES = (
 )
 CLUSTER_EDIT_CONFIG_ROLES = (
     BusinessRoles.EDIT_CLUSTER_CONFIGURATIONS,
-    BusinessRoles.EDIT_SSERVICE_CONFIGURATIONS,
+    BusinessRoles.EDIT_SERVICE_CONFIGURATIONS,
     BusinessRoles.EDIT_COMPONENT_CONFIGURATIONS,
 )
 PROVIDER_VIEW_CONFIG_ROLES = (BusinessRoles.VIEW_PROVIDER_CONFIGURATIONS, BusinessRoles.VIEW_HOST_CONFIGURATIONS)
