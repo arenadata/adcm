@@ -142,8 +142,6 @@ class GroupConfigSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializ
 
 
 class GroupConfigHostSerializer(serializers.ModelSerializer):
-    """Serializer for hosts in group config"""
-
     id = serializers.PrimaryKeyRelatedField(queryset=Host.objects.all())
     url = MultiHyperlinkedIdentityField("group-config-host-detail", "parent_lookup_group_config", "host_id")
 
@@ -173,17 +171,6 @@ class GroupConfigHostSerializer(serializers.ModelSerializer):
             "bundle_id",
             "locked",
         )
-
-    def create(self, validated_data):
-        group_config = self.context.get("group_config")
-        host = validated_data["id"]
-        group_config.hosts.add(host)
-        return host
-
-    def validate_id(self, value):
-        if self.context["group_config"].hosts.filter(id=value.id):
-            raise AdcmEx("GROUP_CONFIG_HOST_EXISTS")
-        return value
 
 
 class GroupConfigHostCandidateSerializer(GroupConfigHostSerializer):

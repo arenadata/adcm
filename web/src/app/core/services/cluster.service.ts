@@ -96,9 +96,9 @@ export class ClusterService {
   getContext(param: ParamMap, service?: EntityService<any>): Observable<WorkerInstance> {
     this.store.dispatch(setPathOfRoute({ params: param }));
 
-    const typeName = EntityNames.find((a) => param.keys.some((b) => a === b));
-    const id = +param.get(typeName);
-    const cluster$ = param.has('cluster') ? this.api.getOne<ICluster>('cluster', +param.get('cluster')) : of(null);
+    const typeName = EntityNames.find((entity) => param.keys?.some((key) => entity === key));
+    const id = +param?.get(typeName);
+    const cluster$ = param.has('cluster') ? this.api.getOne<ICluster>('cluster', +param?.get('cluster')) : of(null);
     return cluster$
       .pipe(
         tap((cluster) => (this.Cluster = cluster)),

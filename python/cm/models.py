@@ -32,7 +32,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
-from django.db.models.signals import m2m_changed, post_delete
+from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
 
@@ -1091,7 +1091,8 @@ class GroupConfig(ADCMModel):
         return hosts.exclude(group_config__in=self.object.group_config.all())
 
     def check_host_candidate(self, host):
-        """Checking host candidate for group"""
+        if self.hosts.filter(pk=host.pk).exists():
+            raise AdcmEx("GROUP_CONFIG_HOST_EXISTS")
 
         if host not in self.host_candidate():
             raise AdcmEx("GROUP_CONFIG_HOST_ERROR")
@@ -1161,20 +1162,6 @@ class GroupConfig(ADCMModel):
                 self.config.save()
         super().save(*args, **kwargs)
         self.preparing_file_type_field()
-
-
-@receiver(m2m_changed, sender=GroupConfig.hosts.through)
-def verify_host_candidate_for_group_config(sender, **kwargs):  # pylint: disable=unused-argument
-    """Checking host candidate for group config before add to group"""
-
-    group_config = kwargs.get("instance")
-    action = kwargs.get("action")
-    host_ids = kwargs.get("pk_set")
-
-    if action == "pre_add":
-        for host_id in host_ids:
-            host = Host.objects.get(id=host_id)
-            group_config.check_host_candidate(host)
 
 
 class ActionType(models.TextChoices):

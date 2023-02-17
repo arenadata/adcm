@@ -106,7 +106,9 @@ def _post_event(action: str, module: str, obj, model_name: str | None = None) ->
 @receiver(post_save, sender=Role)
 @receiver(post_save, sender=GroupConfig)
 def model_change(sender, **kwargs):
-    """post_save handler"""
+    if kwargs["raw"]:
+        return
+
     name, module, obj = get_names(sender, **kwargs)
     if "filter_out" in kwargs:
         if kwargs["filter_out"](module, name, obj):
@@ -126,7 +128,6 @@ def model_change(sender, **kwargs):
 @receiver(post_delete, sender=Role)
 @receiver(post_delete, sender=GroupConfig)
 def model_delete(sender, **kwargs):
-    """post_delete handler"""
     name, module, obj = get_names(sender, **kwargs)
 
     if "filter_out" in kwargs:
@@ -145,7 +146,6 @@ def model_delete(sender, **kwargs):
 @receiver(m2m_changed, sender=User)
 @receiver(m2m_changed, sender=Group)
 def m2m_change(sender, **kwargs):
-    """m2m_changed handler"""
     name, module, obj = get_names(sender, **kwargs)
     if "filter_out" in kwargs:
         if kwargs["filter_out"](module, name, obj):

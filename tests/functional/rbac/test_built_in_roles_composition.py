@@ -46,7 +46,7 @@ SERVICE_ADMIN_ROLES = {
         BusinessRoles.GET_SERVICE,
         BusinessRoles.GET_COMPONENT,
         BusinessRoles.GET_HOST,
-        BusinessRoles.EDIT_SSERVICE_CONFIGURATIONS,
+        BusinessRoles.EDIT_SERVICE_CONFIGURATIONS,
         BusinessRoles.EDIT_COMPONENT_CONFIGURATIONS,
         BusinessRoles.VIEW_HOST_CONFIGURATIONS,
         BusinessRoles.MANAGE_SERVICE_IMPORTS,

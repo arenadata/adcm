@@ -126,7 +126,7 @@ class TestTwoUsers:
 
         with allure.step("Create policy assigned to both users"):
             policy = create_policy(
-                admin_client, BR.EDIT_SSERVICE_CONFIGURATIONS, [service], [first_user, second_user], []
+                admin_client, BR.EDIT_SERVICE_CONFIGURATIONS, [service], [first_user, second_user], []
             )
 
         with allure.step("Check that config of only one service can be edited by both users"):
@@ -161,7 +161,7 @@ class TestTwoUsers:
             second_group = admin_client.group_create("Second Group", user=[{"id": second_user.id}])
 
         with allure.step("Create two policies and assign separate group to each"):
-            create_policy(admin_client, BR.EDIT_SSERVICE_CONFIGURATIONS, [service], [], [first_group])
+            create_policy(admin_client, BR.EDIT_SERVICE_CONFIGURATIONS, [service], [], [first_group])
             create_policy(admin_client, BR.EDIT_CLUSTER_CONFIGURATIONS, [cluster], [], [second_group])
 
         with allure.step("Check that one user have access only to service config and another only to cluster config"):
@@ -194,7 +194,7 @@ class TestTwoUsers:
         admin_client, first_client, second_client = sdk_client_fs, user_sdk, second_user_sdk
 
         with allure.step("Create two policies and assign separate group to each"):
-            first_policy = create_policy(admin_client, BR.EDIT_SSERVICE_CONFIGURATIONS, [service], [first_user], [])
+            first_policy = create_policy(admin_client, BR.EDIT_SERVICE_CONFIGURATIONS, [service], [first_user], [])
             second_policy = create_policy(admin_client, BR.EDIT_CLUSTER_CONFIGURATIONS, [cluster], [second_user], [])
 
         with allure.step(
@@ -228,7 +228,7 @@ class TestTwoUsers:
         admin_client, first_client, second_client = sdk_client_fs, user_sdk, second_user_sdk
 
         with allure.step("Create policy assigned to one user"):
-            policy = create_policy(admin_client, BR.EDIT_SSERVICE_CONFIGURATIONS, [service], [first_user], [])
+            policy = create_policy(admin_client, BR.EDIT_SERVICE_CONFIGURATIONS, [service], [first_user], [])
 
         with allure.step("Check that user have access only to service config change"):
             self._edit_is_allowed_to(first_client, [service])
