@@ -113,7 +113,7 @@ def group_keys_to_flat(origin: dict, spec: dict):
     return result
 
 
-def get_default(conf, proto=None):  # pylint: disable=too-many-branches
+def get_default(conf: PrototypeConfig, proto: Prototype | None = None) -> Any:  # pylint: disable=too-many-branches
     value = conf.default
     if conf.default == "":
         value = None
@@ -125,7 +125,11 @@ def get_default(conf, proto=None):  # pylint: disable=too-many-branches
         if conf.default:
             value = ansible_encrypt_and_format(conf.default)
     elif type_is_complex(conf.type):
-        value = json.loads(conf.default)
+        if isinstance(conf.default, str):
+            conf.default = conf.default.replace("'", '"')
+            value = json.loads(s=conf.default)
+        else:
+            value = conf.default
     elif conf.type == "integer":
         value = int(conf.default)
     elif conf.type == "float":
@@ -153,12 +157,22 @@ def get_default(conf, proto=None):  # pylint: disable=too-many-branches
     elif conf.type == "file":
         if proto:
             if conf.default:
-                value = read_file_type(proto, conf.default, proto.bundle.hash, conf.name, conf.subname)
+                value = read_bundle_file(
+                    proto=proto,
+                    fname=conf.default,
+                    pattern=proto.bundle.hash,
+                    ref=f'config key "{conf.name}/{conf.subname}" default file',
+                )
     elif conf.type == "secretfile":
         if proto:
             if conf.default:
                 value = ansible_encrypt_and_format(
-                    read_file_type(proto, conf.default, proto.bundle.hash, conf.name, conf.subname)
+                    msg=read_bundle_file(
+                        proto=proto,
+                        fname=conf.default,
+                        pattern=proto.bundle.hash,
+                        ref=f'config key "{conf.name}/{conf.subname}" default file',
+                    )
                 )
 
     if conf.type == "secretmap" and conf.default:
@@ -172,28 +186,18 @@ def get_default(conf, proto=None):  # pylint: disable=too-many-branches
 
 
 def type_is_complex(conf_type):
-    if conf_type in ("json", "structure", "list", "map", "secretmap"):
+    if conf_type in settings.STACK_COMPLEX_FIELD_TYPES:
         return True
 
     return False
 
 
-def read_file_type(proto, default, bundle_hash, name, subname):
-    msg = f'config key "{name}/{subname}" default file'
-
-    return read_bundle_file(proto, default, bundle_hash, msg)
-
-
-def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None) -> str | None:
+def read_bundle_file(proto: Prototype, fname: str, pattern: str, ref=None) -> str | None:
     if not ref:
         ref = proto_ref(proto)
 
-    if fname[0:2] == "./":
-        path = Path(settings.BUNDLE_DIR, bundle_hash, proto.path, fname)
-    else:
-        path = Path(settings.BUNDLE_DIR, bundle_hash, fname)
-
     file_descriptor = None
+    path = Path(settings.BUNDLE_DIR, proto.path, fname)
     try:
         file_descriptor = open(path, "r", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
     except FileNotFoundError:
@@ -986,7 +990,8 @@ def sub_key_is_required(key: str, attr: dict, flat_spec: dict, spec: dict, obj: 
 def check_config_spec(
     proto: Prototype, obj: ADCMEntity | Action, spec: dict, flat_spec: dict, conf: dict, attr: dict = None
 ) -> None:
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches,too-many-statements
+
     ref = proto_ref(proto)
     if isinstance(conf, (float, int)):
         raise_adcm_ex(code="JSON_ERROR", msg="config should not be just one int or float")
@@ -1135,8 +1140,6 @@ def check_config_type(
         if default:
             if len(value) > 2048:
                 raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl1.format("is too long"))
-
-            read_file_type(proto, value, default, key, subkey)
 
     if spec["type"] == "structure":
         schema = spec["limits"]["yspec"]

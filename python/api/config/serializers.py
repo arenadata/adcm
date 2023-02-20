@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any
+
 from api.utils import CommonAPIURL, get_api_url_kwargs
 from cm.adcm_config import (
     get_default,
@@ -18,6 +20,7 @@ from cm.adcm_config import (
     ui_config,
 )
 from cm.api import update_obj_config
+from cm.models import PrototypeConfig
 
 # pylint: disable=redefined-builtin
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
@@ -84,7 +87,7 @@ class ConfigHistorySerializer(FlexFieldsSerializerMixin, ConfigObjectConfigSeria
 class ConfigSerializer(EmptySerializer):
     name = CharField()
     description = CharField(required=False)
-    display_name = CharField(required=False)
+    display_name = SerializerMethodField()
     subname = CharField()
     default = SerializerMethodField(method_name="get_default_field")
     value = SerializerMethodField()
@@ -94,10 +97,17 @@ class ConfigSerializer(EmptySerializer):
     required = BooleanField()
 
     @staticmethod
-    def get_default_field(obj):
+    def get_display_name(obj: PrototypeConfig) -> str:
+        if not obj.display_name:
+            return obj.name
+
+        return obj.display_name
+
+    @staticmethod
+    def get_default_field(obj: PrototypeConfig) -> Any:
         return get_default(obj)
 
-    def get_value(self, obj):  # pylint: disable=arguments-renamed
+    def get_value(self, obj: PrototypeConfig) -> Any:  # pylint: disable=arguments-renamed
         proto = self.context.get("prototype", None)
         return get_default(obj, proto)
 

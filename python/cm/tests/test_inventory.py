@@ -133,7 +133,7 @@ class TestInventory(BaseTestCase):
     def test_get_host_groups(self, mock_get_obj_config):
         mock_get_obj_config.return_value = {}
 
-        groups = get_host_groups(self.cluster, {})
+        groups = get_host_groups(cluster=self.cluster)
 
         self.assertDictEqual(groups, {})
         mock_get_obj_config.assert_not_called()
@@ -290,8 +290,8 @@ class TestInventory(BaseTestCase):
 
         for obj, inv in data:
             with self.subTest(obj=obj, inv=inv):
-                prepare_job_inventory(obj, job.id, action, [])
-                mock_dump.assert_called_once_with(inv, file_mock, indent=3)
+                prepare_job_inventory(obj=obj, job_id=job.id, action=action)
+                mock_dump.assert_called_once_with(obj=inv, fp=file_mock, indent=3)
                 mock_dump.reset_mock()
 
     def test_host_vars(self):

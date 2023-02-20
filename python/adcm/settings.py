@@ -299,6 +299,10 @@ ADCM_SERVICE_ACTION_NAMES_SET = {
 }
 ADCM_MM_ACTION_FORBIDDEN_PROPS_SET = {"config", "hc_acl", "ui_options"}
 
+STACK_COMPLEX_FIELD_TYPES = {"json", "structure", "list", "map", "secretmap"}
+STACK_NUMERIC_FIELD_TYPES = {"integer", "float"}
+TEMPLATE_CONFIG_DELETE_FIELDS = {"yspec", "option", "activatable", "active", "read_only", "writable", "subs"}
+
 EMPTY_REQUEST_STATUS_CODE = 32
 VALUE_ERROR_STATUS_CODE = 8
 EMPTY_STATUS_STATUS_CODE = 4
