@@ -38,19 +38,22 @@ from django.contrib.contenttypes.models import ContentType
 MAINTENANCE_MODE = "maintenance_mode"
 
 
-def process_config_and_attr(obj, conf, attr=None, spec=None):
+def process_config_and_attr(obj: ADCMEntity, conf: dict, attr: dict | None = None, spec: dict | None = None):
     if not spec:
         if isinstance(obj, GroupConfig):
             prototype = obj.object.prototype
         else:
             prototype = obj.prototype
-        spec, _, _, _ = get_prototype_config(prototype)
-    new_conf = process_config(obj, spec, conf)
+        spec, _, _, _ = get_prototype_config(proto=prototype)
+
+    new_config = process_config(obj=obj, spec=spec, old_conf=conf)
+
     if attr:
-        for key, val in attr.items():
-            if "active" in val and not val["active"]:
-                new_conf[key] = None
-    return new_conf
+        for key, value in attr.items():
+            if "active" in value and not value["active"]:
+                new_config[key] = None
+
+    return new_config
 
 
 def get_prototype_imports(obj: Cluster | ClusterObject, imports: dict) -> dict:
