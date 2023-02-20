@@ -343,10 +343,12 @@ def revert_object(obj: ADCMEntity, old_proto: Prototype) -> None:
         config_log = ConfigLog.objects.get(id=obj.before_upgrade["config"])
         obj.config.current = 0
         save_obj_config(obj_conf=obj.config, conf=config_log.config, attr=config_log.attr, desc="revert_upgrade")
+    else:
+        obj.config = None
 
     obj.state = obj.before_upgrade["state"]
     obj.before_upgrade = {"state": None}
-    obj.save(update_fields=["prototype", "before_upgrade", "state"])
+    obj.save()
 
 
 def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-many-locals

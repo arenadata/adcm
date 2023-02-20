@@ -554,7 +554,7 @@ def process_secretmap(spec: dict, conf: dict) -> dict:
     return conf
 
 
-def process_config(obj, spec, old_conf):  # pylint: disable=too-many-branches
+def process_config(obj: ADCMEntity, spec: dict, old_conf: dict) -> dict:  # pylint: disable=too-many-branches
     if not old_conf:
         return old_conf
 
