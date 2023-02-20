@@ -14,7 +14,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, TypeVar, Union
+from typing import TypeVar
 
 import allure
 from selenium.common.exceptions import TimeoutException
@@ -63,7 +63,7 @@ class SubTaskJobInfo:
     status: JobStatus
 
 
-TaskInfo = TypeVar("TaskInfo", bound=Union[PopupTaskInfo, TableTaskInfo])
+TaskInfo = TypeVar("TaskInfo", bound=PopupTaskInfo | TableTaskInfo)
 
 
 class JobListPage(BasePageObject):
@@ -124,7 +124,7 @@ class JobListPage(BasePageObject):
             status=self._get_status_from_class_string(self.find_child(job, popup_locators.JobRow.job_status)),
         )
 
-    def get_all_jobs_info(self) -> List[SubTaskJobInfo]:
+    def get_all_jobs_info(self) -> list[SubTaskJobInfo]:
         expand_task_locators = TaskListLocators.Table.ExpandedTask
         job_rows = self.find_elements(expand_task_locators.row)
         return [
@@ -222,7 +222,7 @@ class JobListPage(BasePageObject):
             if status.value in class_string:
                 return status
         raise KeyError(
-            "Job status not found in class string: %s" % str(class_string)  # pylint: disable=consider-using-f-string
+            "Job status not found in class string: %s" % str(class_string),  # pylint: disable=consider-using-f-string
         )
 
     def get_selected_filter(self):

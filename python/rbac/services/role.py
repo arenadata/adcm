@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List
 
 from cm.errors import raise_adcm_ex
 from django.db import IntegrityError
@@ -20,7 +19,7 @@ from rbac.utils import update_m2m_field
 from rest_framework.exceptions import ValidationError
 
 
-def check_role_child(child: List[Role], partial=False):
+def check_role_child(child: list[Role], partial=False):
     param_set = set()
     cluster_hierarchy = {"cluster", "service", "component"}
     provider_hierarchy = {"provider"}

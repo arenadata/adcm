@@ -119,7 +119,8 @@ class ServiceDetailView(PermissionListMixin, DetailView):
     def delete(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         instance: ClusterObject = self.get_object()
         delete_action = Action.objects.filter(
-            prototype=instance.prototype, name=settings.ADCM_DELETE_SERVICE_ACTION_NAME
+            prototype=instance.prototype,
+            name=settings.ADCM_DELETE_SERVICE_ACTION_NAME,
         ).first()
         host_components_exists = HostComponent.objects.filter(cluster=instance.cluster, service=instance).exists()
 
@@ -208,7 +209,8 @@ class ServiceImportView(GenericUIView):
         check_custom_perm(request.user, "change_import_of", "clusterobject", service)
         cluster = service.cluster
         serializer = self.get_serializer(
-            data=request.data, context={"request": request, "cluster": cluster, "service": service}
+            data=request.data,
+            context={"request": request, "cluster": cluster, "service": service},
         )
         if serializer.is_valid():
             return Response(serializer.create(serializer.validated_data), status=HTTP_200_OK)
@@ -247,7 +249,10 @@ class ServiceBindDetailView(GenericUIView):
 
     def get_obj(self, kwargs, bind_id):
         service = get_object_for_user(
-            self.request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"]
+            self.request.user,
+            "cm.view_clusterobject",
+            ClusterObject,
+            id=kwargs["service_id"],
         )
         cluster = service.cluster
 

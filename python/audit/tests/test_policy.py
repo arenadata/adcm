@@ -220,7 +220,7 @@ class TestPolicyAudit(BaseTestCase):
                             "id": self.cluster.pk,
                             "name": self.cluster_name,
                             "type": "cluster",
-                        }
+                        },
                     ],
                     "user": [self.test_user.username],
                 },

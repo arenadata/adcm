@@ -67,7 +67,8 @@ class TestAuditObjects(BaseTestCase):
 
     def test_cluster_flow(self):
         response: Response = self.client.post(
-            path=reverse("provider"), data={"prototype_id": self.provider_proto.id, "name": "Provider"}
+            path=reverse("provider"),
+            data={"prototype_id": self.provider_proto.id, "name": "Provider"},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -84,7 +85,8 @@ class TestAuditObjects(BaseTestCase):
         host_id = response.data["id"]
 
         response: Response = self.client.post(
-            path=reverse("cluster"), data={"prototype_id": self.cluster_proto.id, "name": "Cluster"}
+            path=reverse("cluster"),
+            data={"prototype_id": self.cluster_proto.id, "name": "Cluster"},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -106,7 +108,8 @@ class TestAuditObjects(BaseTestCase):
         service_id = response.data["id"]
 
         response: Response = self.client.post(
-            path=reverse("host", kwargs={"cluster_id": cluster_id}), data={"host_id": host_id}
+            path=reverse("host", kwargs={"cluster_id": cluster_id}),
+            data={"host_id": host_id},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -117,13 +120,13 @@ class TestAuditObjects(BaseTestCase):
         self.assertFalse(cluster_ao.is_deleted)
 
         response: Response = self.client.delete(
-            path=reverse("service-details", kwargs={"cluster_id": cluster_id, "service_id": service_id})
+            path=reverse("service-details", kwargs={"cluster_id": cluster_id, "service_id": service_id}),
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         response: Response = self.client.delete(
-            path=reverse("host-details", kwargs={"cluster_id": cluster_id, "host_id": host_id})
+            path=reverse("host-details", kwargs={"cluster_id": cluster_id, "host_id": host_id}),
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
@@ -145,7 +148,8 @@ class TestAuditObjects(BaseTestCase):
 
     def test_provider_flow(self):
         response: Response = self.client.post(
-            path=reverse("provider"), data={"prototype_id": self.provider_proto.id, "name": "Provider"}
+            path=reverse("provider"),
+            data={"prototype_id": self.provider_proto.id, "name": "Provider"},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)

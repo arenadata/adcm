@@ -22,8 +22,8 @@ def round_trip_load(stream, version=None, preserve_quotes=None, allow_duplicate_
     This is a replace for ruyaml.round_trip_load() function which can switch off
     duplicate YAML keys error
     """
-    Loader = ruyaml.RoundTripLoader
-    loader = Loader(stream, version, preserve_quotes=preserve_quotes)
+
+    loader = ruyaml.RoundTripLoader(stream, version, preserve_quotes=preserve_quotes)
     loader._constructor.allow_duplicate_keys = allow_duplicate_keys
     try:
         return loader._constructor.get_single_data()

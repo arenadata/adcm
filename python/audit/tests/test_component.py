@@ -244,7 +244,7 @@ class TestComponentAudit(BaseTestCase):
                         "component_id": self.component.pk,
                         "action_id": action.pk,
                     },
-                )
+                ),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -260,7 +260,7 @@ class TestComponentAudit(BaseTestCase):
                         "component_id": self.component.pk,
                         "action_id": action.pk,
                     },
-                )
+                ),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -277,7 +277,7 @@ class TestComponentAudit(BaseTestCase):
                         "component_id": self.component.pk,
                         "action_id": action.pk,
                     },
-                )
+                ),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

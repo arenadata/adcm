@@ -14,10 +14,11 @@
 
 import json
 import os
+from collections.abc import Callable
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Callable, Dict, Literal, NamedTuple, Optional, Union
+from typing import Literal, NamedTuple
 
 import allure
 import jsonschema
@@ -42,10 +43,10 @@ class ParsedAuditLog(NamedTuple):
 
     defaults: _ResolveDefaults
     settings: _ProcessorConfig
-    operations: Dict[str, dict]
+    operations: dict[str, dict]
 
 
-_TemplateContext = Optional[Dict[str, Union[str, int]]]
+_TemplateContext = dict[str, str | int] | None
 
 
 @lru_cache
@@ -64,7 +65,11 @@ class YAMLReader:
 
     def __init__(self, directory: os.PathLike):
         self._directory = directory
-        self._template_env = Environment(loader=FileSystemLoader(directory), undefined=StrictUndefined, autoescape=True)
+        self._template_env = Environment(
+            loader=FileSystemLoader(directory),
+            undefined=StrictUndefined,
+            autoescape=True,
+        )
 
     def prepare_parser_of(self, filename: str) -> Callable[[_TemplateContext], ParsedAuditLog]:
         """
@@ -86,7 +91,7 @@ class YAMLReader:
             settings=_ProcessorConfig(**{k.replace("-", "_"): v for k, v in data.get("settings", {}).items()}),
         )
 
-    def _read(self, filename: str, context: Dict[str, Union[str, int]]) -> dict:
+    def _read(self, filename: str, context: dict[str, str | int]) -> dict:
         rendered_file_content = self._template_env.get_template(filename).render(**context)
         data = yaml.safe_load(rendered_file_content)
         jsonschema.validate(data, _get_schema())

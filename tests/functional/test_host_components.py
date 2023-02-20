@@ -16,7 +16,7 @@
 
 import os
 from contextlib import nullcontext
-from typing import List, Literal
+from typing import Literal
 
 import allure
 import pytest
@@ -50,7 +50,7 @@ def _get_or_add_service(cluster, service_name):
         return cluster.service_add(name=service_name)
 
 
-def _get_cases_paths(path: str) -> List[ParameterSet]:
+def _get_cases_paths(path: str) -> list[ParameterSet]:
     """
     Get cases path for parametrize test
     """
@@ -64,7 +64,7 @@ def _get_cases_paths(path: str) -> List[ParameterSet]:
                     pytest.param(
                         os.path.join(case_dir, bundle_file),
                         id=f"{bundles_ids[i]}_{sub_path}_{bundle_file.strip('.yaml')}",
-                    )
+                    ),
                 )
     return params
 
@@ -137,7 +137,7 @@ def parametrize_by_constraint(case_type: Literal["positive", "negative"]):
 
 def _test_constraint(
     constraint: str,
-    hosts_amounts: List[int],
+    hosts_amounts: list[int],
     cluster_bundle: Bundle,
     provider: Provider,
     expectation_message: str,
@@ -172,7 +172,7 @@ def provider(sdk_client_fs) -> Provider:
 
 
 @parametrize_by_constraint("positive")
-def test_hostcomponent_constraints_positive(constraint: str, hosts_amounts: List[int], cluster_bundle, provider):
+def test_hostcomponent_constraints_positive(constraint: str, hosts_amounts: list[int], cluster_bundle, provider):
     """
     Tests for constraints on components (positive cases)
     """
@@ -180,7 +180,7 @@ def test_hostcomponent_constraints_positive(constraint: str, hosts_amounts: List
 
 
 @parametrize_by_constraint("negative")
-def test_hostcomponent_constraints_negative(constraint: str, hosts_amounts: List[int], cluster_bundle, provider):
+def test_hostcomponent_constraints_negative(constraint: str, hosts_amounts: list[int], cluster_bundle, provider):
     """
     Tests for constraints on components (negative cases)
     """
@@ -196,7 +196,7 @@ def test_hostcomponent_plus_constraint(cluster_bundle, provider):
     hosts = [cluster.host_add(provider.host_create(f"host-{i}")) for i in range(5)]
     not_all_hosts = hosts[:-1]
     with allure.step(
-        f"Try to set HC with component on {len(not_all_hosts)} of {len(hosts)} hosts and expect it to fail"
+        f"Try to set HC with component on {len(not_all_hosts)} of {len(hosts)} hosts and expect it to fail",
     ):
         with expect_hostcomponent_set_fail:
             cluster.hostcomponent_set(*[(h, component) for h in not_all_hosts])

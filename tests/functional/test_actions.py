@@ -175,13 +175,13 @@ def _assert_actions_state_created(obj: AnyADCMObject):
         [
             (ACTION_UNAVAILABLE, obj),
             (ACTION_STATE_INSTALLED, obj),
-        ]
+        ],
     )
     actions_in_objects_are_present(
         [
             (ACTION, obj),
             (ACTION_STATE_CREATED, obj),
-        ]
+        ],
     )
 
 
@@ -190,13 +190,13 @@ def _assert_actions_state_installed(obj: AnyADCMObject):
         [
             (ACTION_UNAVAILABLE, obj),
             (ACTION_STATE_CREATED, obj),
-        ]
+        ],
     )
     actions_in_objects_are_present(
         [
             (ACTION, obj),
             (ACTION_STATE_INSTALLED, obj),
-        ]
+        ],
     )
 
 

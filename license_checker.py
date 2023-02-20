@@ -112,7 +112,10 @@ def main():
 
     for folder in args.folders:
         number_of_fixed, number_of_skipped = check_and_fix_files(
-            number_of_fixed, number_of_skipped, args.fix, Path(folder)
+            number_of_fixed,
+            number_of_skipped,
+            args.fix,
+            Path(folder),
         )
 
     if number_of_fixed == number_of_skipped == 0:
@@ -120,7 +123,7 @@ def main():
         sys.exit(0)
 
     sys.stdout.write(
-        f"Updating licence skipped in {number_of_skipped} files." f" Licence was updated in {number_of_fixed} files \n"
+        f"Updating licence skipped in {number_of_skipped} files." f" Licence was updated in {number_of_fixed} files \n",
     )
 
     if args.fix:

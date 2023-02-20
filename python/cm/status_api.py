@@ -12,7 +12,7 @@
 
 import json
 from collections import defaultdict
-from typing import Iterable
+from collections.abc import Iterable
 from urllib.parse import urljoin
 
 import requests
@@ -197,7 +197,8 @@ def get_host_status(host: Host) -> int:
 
 def get_hc_status(hostcomponent: HostComponent) -> int:
     return get_status(
-        obj=hostcomponent.component, url=f"host/{hostcomponent.host_id}/component/{hostcomponent.component_id}/"
+        obj=hostcomponent.component,
+        url=f"host/{hostcomponent.host_id}/component/{hostcomponent.component_id}/",
     )
 
 
@@ -237,7 +238,7 @@ def make_ui_component_status(component: ServiceComponent, host_components: Itera
                 "id": hostcomponent.host.id,
                 "name": hostcomponent.host.fqdn,
                 "status": get_host_comp_status(host=hostcomponent.host, component=hostcomponent.component),
-            }
+            },
         )
 
     return {
@@ -301,7 +302,7 @@ def make_ui_host_status(host: Host, host_components: Iterable[HostComponent]) ->
                 "name": hostcomponent.component.display_name,
                 "status": get_component_status(component=hostcomponent.component),
                 "service_id": hostcomponent.service.id,
-            }
+            },
         )
 
     host_map = get_object_map(obj=host, url_type="host")

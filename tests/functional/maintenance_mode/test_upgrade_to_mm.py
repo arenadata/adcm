@@ -12,7 +12,6 @@
 
 """Test upgrade to bundle with MM directives"""
 
-from typing import Set
 
 import allure
 import pytest
@@ -43,8 +42,8 @@ UPGRADE = {
             "name": "An ice upgrade",
             "versions": {"min": 0.2, "max": 2},
             "states": {"available": "any", "on_success": "cool"},
-        }
-    ]
+        },
+    ],
 }
 
 OLD_BUNDLE = [
@@ -78,7 +77,7 @@ NEW_BUNDLE = [{**OLD_BUNDLE[0], "version": 2, **UPGRADE}, {**OLD_BUNDLE[1], "ver
                     "components": {"just_component": {"actions": {**DUMMY_ACTIONS_WITH_ALLOWED}}},
                 },
             ],
-        ]
+        ],
     ],
     indirect=True,
 )
@@ -90,7 +89,7 @@ def test_allow_mm_after_upgrade(api_client, sdk_client_fs, create_bundle_archive
     """
     hosts_in_cluster = hosts[:3]
     free_hosts = hosts[3:]
-    old_bundle, *_ = [sdk_client_fs.upload_from_fs(bundle) for bundle in create_bundle_archives]
+    old_bundle, *_ = (sdk_client_fs.upload_from_fs(bundle) for bundle in create_bundle_archives)
     old_cluster = old_bundle.cluster_create("Cluster to Upgrade")
     service = old_cluster.service_add(name="just_service")
     component = service.component()
@@ -106,10 +105,20 @@ def test_allow_mm_after_upgrade(api_client, sdk_client_fs, create_bundle_archive
     check_mm_is(MM_IS_OFF, *hosts_in_cluster)
     check_mm_availability(MM_NOT_ALLOWED, *free_hosts)
 
-    check_actions_are_disabled_correctly(set(DUMMY_ACTIONS_WITH_ALLOWED.keys()), set(), old_cluster, service, component)
+    check_actions_are_disabled_correctly(
+        set(DUMMY_ACTIONS_WITH_ALLOWED.keys()),
+        set(),
+        old_cluster,
+        service,
+        component,
+    )
     turn_mm_on(api_client, hosts_in_cluster[0])
     check_actions_are_disabled_correctly(
-        set(ALLOWED_ACTION.keys()), set(TWO_DUMMY_ACTIONS.keys()), old_cluster, service, component
+        set(ALLOWED_ACTION.keys()),
+        set(TWO_DUMMY_ACTIONS.keys()),
+        old_cluster,
+        service,
+        component,
     )
 
 
@@ -122,7 +131,7 @@ def test_upgrade_to_mm_false(sdk_client_fs, create_bundle_archives, hosts):
     """
     Test upgrade from version without `allow_maintenance_mode` to `allow_maintenance_mode: false`
     """
-    old_bundle, *_ = [sdk_client_fs.upload_from_fs(bundle) for bundle in create_bundle_archives]
+    old_bundle, *_ = (sdk_client_fs.upload_from_fs(bundle) for bundle in create_bundle_archives)
     old_cluster = old_bundle.cluster_create("Cluster to Upgrade")
     service = old_cluster.service_add(name="just_service")
     component = service.component()
@@ -145,7 +154,7 @@ def test_upgrade_to_mm_false(sdk_client_fs, create_bundle_archives, hosts):
         [
             [{**OLD_BUNDLE[0], "allow_maintenance_mode": True}, {**OLD_BUNDLE[1]}],
             [{**NEW_BUNDLE[0], "allow_maintenance_mode": False}, {**NEW_BUNDLE[1]}],
-        ]
+        ],
     ],
     indirect=True,
 )
@@ -153,7 +162,7 @@ def test_upgrade_from_true_to_false_mm(api_client, sdk_client_fs, create_bundle_
     """
     Test upgrade from version with `allow_maintenance_mode: true` to `allow_maintenance_mode: false`
     """
-    old_bundle, *_ = [sdk_client_fs.upload_from_fs(bundle) for bundle in create_bundle_archives]
+    old_bundle, *_ = (sdk_client_fs.upload_from_fs(bundle) for bundle in create_bundle_archives)
     old_cluster = old_bundle.cluster_create("Cluster to Upgrade")
     cluster_hosts = [old_cluster.host_add(host) for host in hosts]
     service = old_cluster.service_add(name="just_service")
@@ -197,7 +206,7 @@ def test_upgrade_from_true_to_false_mm(api_client, sdk_client_fs, create_bundle_
                 },
                 {**NEW_BUNDLE[1]},
             ],
-        ]
+        ],
     ],
     indirect=True,
 )
@@ -205,7 +214,7 @@ def test_allowed_actions_changed(api_client, sdk_client_fs, create_bundle_archiv
     """
     Test upgrade when allowed/disallowed in MM actions changed
     """
-    old_bundle, *_ = [sdk_client_fs.upload_from_fs(bundle) for bundle in create_bundle_archives]
+    old_bundle, *_ = (sdk_client_fs.upload_from_fs(bundle) for bundle in create_bundle_archives)
     old_cluster = old_bundle.cluster_create("Cluster with allowed actions changed")
 
     add_hosts_to_cluster(old_cluster, hosts)
@@ -222,7 +231,7 @@ def test_allowed_actions_changed(api_client, sdk_client_fs, create_bundle_archiv
 
 
 @allure.step("Check correct actions are enabled/disabled due to host in MM")
-def check_actions_are_disabled_correctly(enabled_actions: Set[str], disabled_actions: Set[str], *objects):
+def check_actions_are_disabled_correctly(enabled_actions: set[str], disabled_actions: set[str], *objects):
     """Check that actions are disabled correctly based on their names"""
     for adcm_object in objects:
         object_represent = get_object_represent(adcm_object)

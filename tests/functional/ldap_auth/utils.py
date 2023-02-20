@@ -12,7 +12,7 @@
 
 """Utilities for LDAP-related tests"""
 
-from typing import Collection, Set
+from collections.abc import Collection
 
 import allure
 from adcm_client.base import ObjectNotFound
@@ -73,7 +73,9 @@ def check_existing_users(
 
 @allure.step("Check groups existing in ADCM")
 def check_existing_groups(
-    client: ADCMClient, expected_ldap: Collection[str] = (), expected_local: Collection[str] = ()
+    client: ADCMClient,
+    expected_ldap: Collection[str] = (),
+    expected_local: Collection[str] = (),
 ):
     """Check that only provided groups exists (both ldap and local)"""
     expected_ldap = set(expected_ldap)
@@ -121,7 +123,7 @@ def check_users_in_group(group: Group, *users: User):
     )
 
 
-def get_usernames_in_group(group: Group) -> Set:
+def get_usernames_in_group(group: Group) -> set:
     """Method to get usernames from group"""
     group.reread()
     return {u.username for u in group.user_list()}

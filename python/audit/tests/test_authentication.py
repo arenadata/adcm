@@ -27,15 +27,23 @@ class TestAuthenticationAudit(BaseTestCase):
         prototype: Prototype = Prototype.objects.create(bundle=bundle, type="adcm")
         object_config: ObjectConfig = ObjectConfig.objects.create(current=0, previous=0)
         config_log = ConfigLog.objects.create(
-            obj_ref=object_config, config={}, attr={"ldap_integration": {"active": False}}
+            obj_ref=object_config,
+            config={},
+            attr={"ldap_integration": {"active": False}},
         )
         object_config.current = config_log.pk
         object_config.save(update_fields=["current"])
 
         ADCM.objects.create(prototype=prototype, config=object_config)
-        self.admin: User = User.objects.create_superuser(username="admin", email="admin@arenadata.io", password="admin")
+        self.admin: User = User.objects.create_superuser(
+            username="admin",
+            email="admin@arenadata.io",
+            password="admin",
+        )
         self.disabled_user: User = User.objects.create_user(
-            username="disabled_user", password="disabled_user", is_active=False
+            username="disabled_user",
+            password="disabled_user",
+            is_active=False,
         )
 
     def check_audit_session(self, user_id: int | None, login_result: AuditSessionLoginResult, username: str) -> None:

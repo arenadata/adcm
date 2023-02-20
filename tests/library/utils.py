@@ -15,8 +15,9 @@
 import json
 import random
 import time
+from collections.abc import Callable, Iterable
 from operator import attrgetter
-from typing import Callable, Iterable, TypeVar
+from typing import TypeVar
 
 import requests
 from adcm_client.objects import Cluster, Component, Host, Provider, Service, Task
@@ -32,7 +33,7 @@ class ConfigError(Exception):
     """Tests are configured incorrectly"""
 
 
-class RequestFailedException(Exception):
+class RequestFailedError(Exception):
     """Request to ADCM API has status code >= 400"""
 
 
@@ -225,13 +226,13 @@ def build_full_archive_name(
     """Build expected archive name for general object action's task (without extension)"""
     top_level_object = adcm_object if not isinstance(adcm_object, (Service, Component)) else adcm_object.cluster()
     return "_".join(
-        map(
-            lambda p: p.replace(" ", "-").replace("_", "").lower(),
-            (
+        (
+            p.replace(" ", "-").replace("_", "").lower()
+            for p in (
                 top_level_object.name,
                 adcm_object.prototype().display_name,
                 action_name_in_archive_name,
                 str(task.id),
-            ),
-        )
+            )
+        ),
     )

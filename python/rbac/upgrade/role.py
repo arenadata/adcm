@@ -11,7 +11,6 @@
 # limitations under the License.
 
 """Init or upgrade RBAC roles and permissions"""
-from typing import List
 
 import cm.checker
 import ruyaml
@@ -63,7 +62,7 @@ def check_roles_child(data: dict):
                 find_role(child, data["roles"])
 
 
-def get_role_permissions(role: dict, data: dict) -> List[Permission]:  # pylint: disable=unused-argument
+def get_role_permissions(role: dict, data: dict) -> list[Permission]:  # pylint: disable=unused-argument
     """Retrieve all role's permissions"""
 
     all_perm = []
@@ -228,11 +227,11 @@ def prepare_hidden_roles(bundle: Bundle):
             ct_host = ContentType.objects.get_for_model(Host)
             role.permissions.add(get_perm(ct_host, "view_host"))
             role.permissions.add(
-                get_perm(ct_host, f"run_action_{act.display_name}", f"Can run {act.display_name} actions")
+                get_perm(ct_host, f"run_action_{act.display_name}", f"Can run {act.display_name} actions"),
             )
         else:
             role.permissions.add(
-                get_perm(content_type, f"run_action_{act.display_name}", f"Can run {act.display_name} actions")
+                get_perm(content_type, f"run_action_{act.display_name}", f"Can run {act.display_name} actions"),
             )
 
     return hidden_roles

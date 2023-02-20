@@ -21,7 +21,7 @@ from pathlib import Path
 from django.conf import settings
 from django.db import transaction
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django  # pylint: disable=unused-import # noqa: F401
 import cm.job
 from cm.ansible_plugin import finish_check
 from cm.api import get_hc, save_hc
@@ -41,7 +41,8 @@ def open_file(root, tag, job_id):
 
 def read_config(job_id):
     file_descriptor = open(  # pylint: disable=consider-using-with
-        f"{settings.RUN_DIR}/{job_id}/config.json", encoding=settings.ENCODING_UTF_8
+        f"{settings.RUN_DIR}/{job_id}/config.json",
+        encoding=settings.ENCODING_UTF_8,
     )
     conf = json.load(file_descriptor)
     file_descriptor.close()
@@ -120,7 +121,10 @@ def start_subprocess(job_id, cmd, conf, out_file, err_file):
     event = Event()
     logger.info("job run cmd: %s", " ".join(cmd))
     proc = subprocess.Popen(  # pylint: disable=consider-using-with
-        cmd, env=env_configuration(conf), stdout=out_file, stderr=err_file
+        cmd,
+        env=env_configuration(conf),
+        stdout=out_file,
+        stderr=err_file,
     )
     JobLog.objects.filter(pk=job_id).update(pid=proc.pid)
     cm.job.set_job_status(job_id, JobStatus.RUNNING, event, proc.pid)

@@ -12,7 +12,6 @@
 
 """Test "generic" user manipulation scenarios"""
 
-from typing import Tuple
 
 import allure
 import pytest
@@ -56,7 +55,7 @@ def adcm_group(sdk_client_fs) -> Group:
 
 
 @pytest.fixture()
-def created_ldap_user(ldap_ad, ldap_basic_ous) -> Tuple[DN, Username]:
+def created_ldap_user(ldap_ad, ldap_basic_ous) -> tuple[DN, Username]:
     """Create LDAP user in AD and return its DN and username"""
     username = "ldap_user"
     _, users_ou = ldap_basic_ous
@@ -80,7 +79,7 @@ def test_users_deactivation(
     adcm_user: User,
     ldap_user: User,
     adcm_group: Group,
-    created_ldap_user: Tuple[DN, Username],
+    created_ldap_user: tuple[DN, Username],
     adcm_fs: ADCM,
     sdk_client_fs: ADCMClient,
     ldap_ad: LDAPEntityManager,
@@ -138,7 +137,7 @@ def _check_none_of_audit_objects_is_deleted(container: Container) -> None:
             "source /adcm/venv/default/bin/activate "
             "&& python3 adcm/python/manage.py shell -c "
             "'from audit.models import AuditObject; print(AuditObject.objects.filter(is_deleted=True).count())'",
-        ]
+        ],
     )
     assert exit_code == 0, "docker exec failed"
     output: bytes

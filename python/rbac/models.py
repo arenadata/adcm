@@ -12,7 +12,6 @@
 
 import importlib
 import re
-from typing import Dict
 
 from cm.errors import raise_adcm_ex
 from cm.models import ADCMEntity, Bundle, HostComponent, ProductCategory
@@ -41,7 +40,7 @@ def validate_object_type(value):
     if not isinstance(value, list):
         raise ValidationError("Not a valid list.")
 
-    if not all((v in ObjectType.values for v in value)):
+    if not all(v in ObjectType.values for v in value):
         raise ValidationError("Not a valid object type.")
 
 
@@ -303,7 +302,7 @@ class Policy(models.Model):
             self.role.apply(self, None, group=group)
 
 
-def get_objects_for_policy(obj: ADCMEntity) -> Dict[ADCMEntity, ContentType]:
+def get_objects_for_policy(obj: ADCMEntity) -> dict[ADCMEntity, ContentType]:
     obj_type_map = {}
     obj_type = obj.prototype.type
 

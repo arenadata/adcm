@@ -14,7 +14,6 @@
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import List, Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -42,7 +41,7 @@ class GroupConfigList(BasePageObject):
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url)
 
-    def get_all_config_rows(self) -> List[WebElement]:
+    def get_all_config_rows(self) -> list[WebElement]:
         """Return all group config rows"""
 
         try:
@@ -76,7 +75,7 @@ class GroupConfigList(BasePageObject):
         self.wait_element_hide(GroupConfigListLocators.CreateGroupPopup.block)
 
     @contextmanager
-    def wait_rows_change(self, expected_rows_amount: Optional[int] = None):
+    def wait_rows_change(self, expected_rows_amount: int | None = None):
         """Wait changing rows amount."""
 
         amount_before = len(self.get_all_config_rows())

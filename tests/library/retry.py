@@ -12,9 +12,10 @@
 
 """Utilities for retrying operations that require some context"""
 
+from collections.abc import Callable, Collection
 from dataclasses import dataclass, field
 from time import sleep
-from typing import Any, Callable, Collection
+from typing import Any
 
 import allure
 

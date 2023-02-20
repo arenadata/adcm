@@ -13,9 +13,6 @@
 """ADCM API POST body tests"""
 from copy import deepcopy
 
-# pylint: disable=redefined-outer-name
-from typing import List
-
 import allure
 import pytest
 
@@ -29,6 +26,9 @@ from tests.api.testdata.generators import (
 from tests.api.utils.methods import Methods
 from tests.api.utils.types import get_fields
 
+# pylint: disable=redefined-outer-name
+
+
 pytestmark = [
     allure.suite("POST"),
 ]
@@ -40,11 +40,12 @@ def prepare_post_body_data(request, adcm_api):
     """
     Fixture for preparing test data for POST request, depending on generated test datasets
     """
-    test_data_list: List[TestDataWithPreparedBody] = request.param
+    test_data_list: list[TestDataWithPreparedBody] = request.param
     valid_request_data = DbFiller(adcm=adcm_api).generate_valid_request_data(
-        endpoint=test_data_list[0].test_data.request.endpoint, method=Methods.POST
+        endpoint=test_data_list[0].test_data.request.endpoint,
+        method=Methods.POST,
     )
-    final_test_data_list: List[TestDataWithPreparedBody] = []
+    final_test_data_list: list[TestDataWithPreparedBody] = []
     for test_data_with_prepared_values in test_data_list:
         test_data, prepared_field_values = test_data_with_prepared_values
         test_data.request.data = deepcopy(valid_request_data["data"])
@@ -55,7 +56,7 @@ def prepare_post_body_data(request, adcm_api):
                     if field.name in test_data.request.data:
                         valid_field_value = test_data.request.data[field.name]
                     test_data.request.data[field.name] = prepared_field_values[field.name].return_value(
-                        valid_field_value
+                        valid_field_value,
                     )
 
                 else:

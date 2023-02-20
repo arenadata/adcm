@@ -72,10 +72,16 @@ def test_service_in_cluster_hierarchy(user, prepare_objects, sdk_client_fs, seco
     service_role = {"id": sdk_client_fs.role(name=BusinessRoles.REMOVE_SERVICE.value.role_name).id}
     cluster_role = {"id": sdk_client_fs.role(name=BusinessRoles.ADD_SERVICE.value.role_name).id}
     common_role = sdk_client_fs.role_create(
-        "Common role", display_name="Common role", child=[service_role, cluster_role]
+        "Common role",
+        display_name="Common role",
+        child=[service_role, cluster_role],
     )
     sdk_client_fs.policy_create(
-        name="Common policy", role=common_role, objects=[cluster_via_admin], user=[user], group=[]
+        name="Common policy",
+        role=common_role,
+        objects=[cluster_via_admin],
+        user=[user],
+        group=[],
     )
 
     username, password = TEST_USER_CREDENTIALS
@@ -120,7 +126,9 @@ def test_role_with_two_hierarchy_not_allowed(sdk_client_fs):
     Test that we can not create a new role with childs from different hierarchy
     """
     application_role = {"id": sdk_client_fs.role(name=BusinessRoles.VIEW_CLUSTER_CONFIGURATIONS.value.role_name).id}
-    infrastructure_role = {"id": sdk_client_fs.role(name=BusinessRoles.VIEW_PROVIDER_CONFIGURATIONS.value.role_name).id}
+    infrastructure_role = {
+        "id": sdk_client_fs.role(name=BusinessRoles.VIEW_PROVIDER_CONFIGURATIONS.value.role_name).id,
+    }
     generic_role = {"id": sdk_client_fs.role(name=BusinessRoles.VIEW_ADCM_SETTINGS.value.role_name).id}
     with allure.step("Assert that create role with different hierarchy is not possible"), pytest.raises(ErrorMessage):
         sdk_client_fs.role_create(

@@ -58,7 +58,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         try:
             self.__handle()
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except # noqa: BLE001
             make_audit_log("audit", AuditLogOperationResult.FAIL, "completed")
             self.__log(e, "exception")
 
@@ -178,7 +178,7 @@ class Command(BaseCommand):
     def __get_csv_header(self, path):
         header = None
         if Path(path).is_file():
-            with open(path, "rt", encoding=settings.ENCODING_UTF_8) as csv_file:
+            with open(path, encoding=settings.ENCODING_UTF_8) as csv_file:
                 header = csv_file.readline().strip().split(",")
         return header
 

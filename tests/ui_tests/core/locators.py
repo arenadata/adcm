@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from enum import Flag, auto
 from operator import methodcaller
-from typing import Type
 
 
 class Descriptor(Flag):
@@ -44,17 +43,17 @@ class TemplateLocator(Locator):
         return Locator(by=self.by, value=self.value.format(*args), name=self.name.format(*args), flags=self.flags)
 
 
-def autoname(cls: Type):
+def autoname(cls: type):
     class_prefix = (
         " ".join(
-            map(_into_words, filter(lambda name: name not in ("Locator", "Locators"), cls.__qualname__.split(".")))
+            map(_into_words, filter(lambda name: name not in ("Locator", "Locators"), cls.__qualname__.split("."))),
         )
         .strip()
         .capitalize()
     )
     unnamed = filter(
         lambda i: isinstance(i[1], Locator) and i[1].name == "",
-        map(lambda attr: (attr, getattr(cls, attr)), dir(cls)),
+        ((attr, getattr(cls, attr)) for attr in dir(cls)),
     )
     for attr, locator in unnamed:
         locator.name = f"{class_prefix} {attr.replace('_', ' ')}"

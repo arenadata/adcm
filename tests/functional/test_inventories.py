@@ -13,7 +13,6 @@
 """Tests for actions inventory"""
 
 import json
-from typing import Optional, Tuple
 
 import allure
 import pytest
@@ -107,7 +106,10 @@ def cluster_services_components(
 
 
 def test_two_services_with_components_config_inventory(
-    cluster_services_components, provider: Provider, adcm_fs: ADCM, request: SubRequest
+    cluster_services_components,
+    provider: Provider,
+    adcm_fs: ADCM,
+    request: SubRequest,
 ):
     """Assert inventory file contents for the cluster with two services and four components"""
     adcm_objects = list(cluster_services_components)
@@ -125,7 +127,10 @@ def test_two_services_with_components_config_inventory(
 
     with allure.step("Configure cluster"):
         cluster.hostcomponent_set(
-            (host, component1_s1), (host, component2_s1), (host, component1_s2), (host, component2_s2)
+            (host, component1_s1),
+            (host, component2_s1),
+            (host, component1_s2),
+            (host, component2_s2),
         )
 
     with allure.step("Create config group and set config"):
@@ -135,7 +140,7 @@ def test_two_services_with_components_config_inventory(
             )
             config_group = create_config_group_and_add_host("config group", obj, host)
             config_group.config_set(
-                {"config": {obj_float_name: CHANGE_FLOAT}, "attr": {"group_keys": {obj_float_name: True}}}
+                {"config": {obj_float_name: CHANGE_FLOAT}, "attr": {"group_keys": {obj_float_name: True}}},
             )
 
     with allure.step("Run action on component object"):
@@ -145,7 +150,10 @@ def test_two_services_with_components_config_inventory(
 
 
 def test_two_services_with_components_config_inventory_without_group(
-    cluster_services_components, provider: Provider, adcm_fs: ADCM, request: SubRequest
+    cluster_services_components,
+    provider: Provider,
+    adcm_fs: ADCM,
+    request: SubRequest,
 ):
     """Assert inventory file contents for the cluster with two services and four components"""
     adcm_objects = list(cluster_services_components)
@@ -163,7 +171,10 @@ def test_two_services_with_components_config_inventory_without_group(
 
     with allure.step("Configure cluster"):
         cluster.hostcomponent_set(
-            (host, component1_s1), (host, component2_s1), (host, component1_s2), (host, component2_s2)
+            (host, component1_s1),
+            (host, component2_s1),
+            (host, component1_s2),
+            (host, component2_s2),
         )
 
     with allure.step("Create config group and set config"):
@@ -173,19 +184,24 @@ def test_two_services_with_components_config_inventory_without_group(
             )
             config_group = create_config_group_and_add_host("config group", obj, host)
             config_group.config_set(
-                {"config": {obj_float_name: CHANGE_FLOAT}, "attr": {"group_keys": {obj_float_name: True}}}
+                {"config": {obj_float_name: CHANGE_FLOAT}, "attr": {"group_keys": {obj_float_name: True}}},
             )
 
     with allure.step("Run action on component object"):
         run_component_action_and_assert_result(component1_s1, CLUSTER_ACTION_NAME)
         path_to_expected_inventory = get_data_dir(
-            __file__, "check_bundle", "cluster-inventory-component-groupless.json"
+            __file__,
+            "check_bundle",
+            "cluster-inventory-component-groupless.json",
         )
         compare_inventory_files(adcm=adcm_fs, path_to_expected=path_to_expected_inventory, job_id=1, request=request)
 
 
 def test_three_hosts_config_inventory(
-    cluster_services_components, provider: Provider, adcm_fs: ADCM, request: SubRequest
+    cluster_services_components,
+    provider: Provider,
+    adcm_fs: ADCM,
+    request: SubRequest,
 ):
     host_2 = provider.host_create(fqdn="service-host")
     host_3 = provider.host_create(fqdn="component-host")
@@ -203,7 +219,10 @@ def test_three_hosts_config_inventory(
 
     with allure.step("Configure cluster"):
         cluster.hostcomponent_set(
-            (host_2, component1_s1), (host_3, component2_s1), (host_2, component1_s2), (host_3, component2_s2)
+            (host_2, component1_s1),
+            (host_3, component2_s1),
+            (host_2, component1_s2),
+            (host_3, component2_s2),
         )
 
     with allure.step("Create config group and set config"):
@@ -211,7 +230,7 @@ def test_three_hosts_config_inventory(
         cluster_group.host_add(host_2)
         cluster_group.host_add(host_3)
         cluster_group.config_set(
-            {"config": {"cluster_some_float": CHANGE_FLOAT}, "attr": {"group_keys": {"cluster_some_float": True}}}
+            {"config": {"cluster_some_float": CHANGE_FLOAT}, "attr": {"group_keys": {"cluster_some_float": True}}},
         )
         _create_group_add_host_set_config(adcm_object=service_1, host=host_2)
         _create_group_add_host_set_config(adcm_object=service_2, host=host_3)
@@ -259,7 +278,10 @@ class TestStateBeforeUpgrade:
         with allure.step("Check before_upgrade state before upgrade"):
             task = old_cluster.action(name="do_nothing").run()
             task.wait()
-            self.check_before_upgrade_state_equal_to(BEFORE_UPGRADE_DEFAULT_STATE, get_inventory_file(adcm_fs, task.id))
+            self.check_before_upgrade_state_equal_to(
+                BEFORE_UPGRADE_DEFAULT_STATE,
+                get_inventory_file(adcm_fs, task.id),
+            )
         with allure.step("Check before_upgrade state after upgrade"):
             state_before_upgrade = old_cluster.state
             old_cluster.upgrade().do()
@@ -268,7 +290,7 @@ class TestStateBeforeUpgrade:
             task.wait()
             self.check_before_upgrade_state_equal_to(state_before_upgrade, get_inventory_file(adcm_fs, task.id))
 
-    def check_before_upgrade_state_equal_to(self, expected_state: Optional[str], inventory: dict):
+    def check_before_upgrade_state_equal_to(self, expected_state: str | None, inventory: dict):
         """Check that `state` key in inventory dictionary is equal to expected"""
         with catch_failed(KeyError, "Structure of inventory.json file is unexpected"):
             actual_state = inventory["all"]["children"]["CLUSTER"]["vars"]["cluster"]["before_upgrade"]["state"]
@@ -281,12 +303,12 @@ class TestHostInMultipleConfigGroups:
     """Test inventory generation when one host belongs to more than on config group"""
 
     @pytest.fixture()
-    def hosts(self, provider) -> Tuple[Host, Host]:
+    def hosts(self, provider) -> tuple[Host, Host]:
         """Create 2 hosts"""
         return provider.host_create("host-1"), provider.host_create("host-2")
 
     @pytest.fixture()
-    def cluster_with_components(self, sdk_client_fs: ADCMClient) -> Tuple[Cluster, Service, Component, Component]:
+    def cluster_with_components(self, sdk_client_fs: ADCMClient) -> tuple[Cluster, Service, Component, Component]:
         """Create cluster, add service and return itself, service and components"""
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_with_components"))
         cluster = bundle.cluster_create("Test Cluster")
@@ -299,7 +321,7 @@ class TestHostInMultipleConfigGroups:
         )
 
     @pytest.fixture()
-    def second_service_with_components(self, cluster_with_components) -> Tuple[Service, Component, Component]:
+    def second_service_with_components(self, cluster_with_components) -> tuple[Service, Component, Component]:
         """Add second service to the cluster"""
         cluster, *_ = cluster_with_components
         service = cluster.service_add(name="second_service")
@@ -316,7 +338,11 @@ class TestHostInMultipleConfigGroups:
         for host in hosts:
             cluster.host_add(host)
         cluster.hostcomponent_set(
-            *[(host, component) for host in hosts for component in (component_1, component_2, component_3, component_4)]
+            *[
+                (host, component)
+                for host in hosts
+                for component in (component_1, component_2, component_3, component_4)
+            ],
         )
 
     @allure.issue(url="https://tracker.yandex.ru/ADCM-3153")
@@ -348,5 +374,5 @@ def _create_group_add_host_set_config(adcm_object: Service | Component, host: Ho
         {
             "config": {f"{adcm_object.display_name}_some_float": CHANGE_FLOAT},
             "attr": {"group_keys": {f"{adcm_object.display_name}_some_float": True}},
-        }
+        },
     )

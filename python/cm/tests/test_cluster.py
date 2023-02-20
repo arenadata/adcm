@@ -134,7 +134,9 @@ class TestCluster(BaseTestCase):
         with self.another_user_logged_in(username="admin", password="admin"):
             for method in ("patch", "put"):
                 response = getattr(self.client, method)(
-                    path=url, data={"name": valid_name}, content_type=APPLICATION_JSON
+                    path=url,
+                    data={"name": valid_name},
+                    content_type=APPLICATION_JSON,
                 )
                 self.assertEqual(response.status_code, status.HTTP_200_OK)
                 self.assertEqual(response.json()["name"], valid_name)
@@ -144,6 +146,8 @@ class TestCluster(BaseTestCase):
 
             for method in ("patch", "put"):
                 response = getattr(self.client, method)(
-                    path=url, data={"name": valid_name}, content_type=APPLICATION_JSON
+                    path=url,
+                    data={"name": valid_name},
+                    content_type=APPLICATION_JSON,
                 )
                 self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

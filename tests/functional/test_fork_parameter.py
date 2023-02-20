@@ -47,7 +47,9 @@ def test_custom_ansible_forks(sdk_client_fs, testing_cluster):
     sdk_client_fs.adcm().config_set_diff({"ansible_settings": {"forks": custom_forks_count}})
     run_cluster_action_and_assert_result(testing_cluster, "assert_fork", config={"fork_count": custom_forks_count})
     run_cluster_action_and_assert_result(
-        testing_cluster, "assert_fork_multijob", config={"fork_count": custom_forks_count}
+        testing_cluster,
+        "assert_fork_multijob",
+        config={"fork_count": custom_forks_count},
     )
 
 

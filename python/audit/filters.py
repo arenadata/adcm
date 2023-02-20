@@ -22,7 +22,9 @@ from django_filters.rest_framework import (
 
 class AuditLogListFilter(FilterSet):
     object_type = ChoiceFilter(
-        field_name="audit_object__object_type", choices=AuditObjectType.choices, label="Object type"
+        field_name="audit_object__object_type",
+        choices=AuditObjectType.choices,
+        label="Object type",
     )
     object_name = CharFilter(field_name="audit_object__object_name", label="Object name")
     operation_date = DateFilter(field_name="operation_time", lookup_expr="date", label="Operation date")

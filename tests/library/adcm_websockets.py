@@ -10,13 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Bricks to build tests against websockets (ADCM event signals)"""
-
 import asyncio
 import json
+from collections.abc import Collection
 from datetime import datetime
 from pprint import pformat
-from typing import Any, Collection, Dict, List, NamedTuple, Optional, Tuple
+from typing import Any, NamedTuple
+from zoneinfo import ZoneInfo
 
 import allure
 from adcm_pytest_plugin.utils import catch_failed
@@ -24,8 +24,8 @@ from websockets.legacy.client import WebSocketClientProtocol
 
 from tests.library.types import WaitTimeout
 
-WSMessageData = Dict[str, Any]
-MismatchReason = Optional[str]
+WSMessageData = dict[str, Any]
+MismatchReason = str | None
 
 
 class EventMessage(NamedTuple):
@@ -37,9 +37,9 @@ class EventMessage(NamedTuple):
     """
 
     event: str
-    object_fields: Dict[str, Any]
+    object_fields: dict[str, Any]
 
-    def match(self, message: WSMessageData) -> Tuple[bool, MismatchReason]:
+    def match(self, message: WSMessageData) -> tuple[bool, MismatchReason]:
         """
         Check that "event" and "object" fields match this object
         """
@@ -73,7 +73,7 @@ class ADCMWebsocket:
     _default_timeout: float
     # datetime here is the UTC date of **adding** message to this list
     # not when the message was invoked
-    _messages: List[Tuple[datetime, WSMessageData]]
+    _messages: list[tuple[datetime, WSMessageData]]
 
     def __init__(self, conn: WebSocketClientProtocol, timeout: WaitTimeout = 2):
         self._ws = conn
@@ -81,7 +81,7 @@ class ADCMWebsocket:
         self._messages = []
 
     @allure.step("Wait for message from websocket for {timeout} seconds")
-    async def get_message(self, timeout: Optional[WaitTimeout] = None) -> WSMessageData:
+    async def get_message(self, timeout: WaitTimeout | None = None) -> WSMessageData:
         """
         Get message from websocket if it already exists or will come during timeout period.
         Raised exceptions aren't handled.
@@ -90,7 +90,7 @@ class ADCMWebsocket:
         """
         timeout = timeout or self._default_timeout
         message = json.loads(await asyncio.wait_for(self._ws.recv(), timeout))
-        self._messages.append((datetime.utcnow(), message))
+        self._messages.append((datetime.now(tz=ZoneInfo("UTC")), message))
         return message
 
     @allure.step("Get up to {max_messages} messages")
@@ -99,7 +99,7 @@ class ADCMWebsocket:
         max_messages: int,
         single_msg_timeout: WaitTimeout = 1,
         break_on_first_fail: bool = True,
-    ) -> List[WSMessageData]:
+    ) -> list[WSMessageData]:
         """
         Get messages until `max_messages` is reached
         or retrieve message request timed out (if `break_on_first_fail` is `True`)
@@ -117,7 +117,7 @@ class ADCMWebsocket:
             return retrieved_messages
 
     @allure.step('Get all "waiting" WS messages')
-    async def get_waiting_messages(self) -> List[WSMessageData]:
+    async def get_waiting_messages(self) -> list[WSMessageData]:
         """
         Get all messages that currently can be received.
 
@@ -145,7 +145,7 @@ class ADCMWebsocket:
     def check_messages_are_presented(
         self,
         expected: Collection[EventMessage],
-        messages: Optional[Collection[WSMessageData]] = None,
+        messages: Collection[WSMessageData] | None = None,
         check_order: bool = False,
     ):
         """
@@ -173,9 +173,9 @@ class ADCMWebsocket:
     @allure.step("Check next incoming WS message")
     async def check_next_message_is(
         self,
-        timeout: Optional[WaitTimeout] = None,
-        expected: Optional[EventMessage] = None,
-        event: Optional[str] = None,
+        timeout: WaitTimeout | None = None,
+        expected: EventMessage | None = None,
+        event: str | None = None,
         **object_field,
     ) -> WSMessageData:
         """
@@ -190,9 +190,9 @@ class ADCMWebsocket:
     @allure.step("Check next incoming WS message")
     async def check_next_message_is_not(
         self,
-        timeout: Optional[WaitTimeout] = None,
-        wrong_message: Optional[EventMessage] = None,
-        event: Optional[str] = None,
+        timeout: WaitTimeout | None = None,
+        wrong_message: EventMessage | None = None,
+        event: str | None = None,
         **object_field,
     ) -> WSMessageData:
         """
@@ -208,8 +208,8 @@ class ADCMWebsocket:
     def check_message_is(
         self,
         message_object: WSMessageData,
-        expected: Optional[EventMessage] = None,
-        event: Optional[str] = None,
+        expected: EventMessage | None = None,
+        event: str | None = None,
         **object_field,
     ) -> WSMessageData:
         """
@@ -221,7 +221,7 @@ class ADCMWebsocket:
         if not isinstance(expected, EventMessage):
             if event is None:
                 raise ValueError(
-                    "Either provider `expected` as EventMessage instance or provide at least `event` as not None"
+                    "Either provider `expected` as EventMessage instance or provide at least `event` as not None",
                 )
             expected = EventMessage(event, object_fields=object_field)
 
@@ -245,8 +245,8 @@ class ADCMWebsocket:
     def check_message_is_not(
         self,
         message_object: WSMessageData,
-        wrong_message: Optional[EventMessage] = None,
-        event: Optional[str] = None,
+        wrong_message: EventMessage | None = None,
+        event: str | None = None,
         **object_field,
     ) -> WSMessageData:
         """
@@ -259,7 +259,7 @@ class ADCMWebsocket:
             if event is None:
                 raise ValueError(
                     "Either provider `wrong_message` as EventMessage instance "
-                    "or provide at least `event` as not None"
+                    "or provide at least `event` as not None",
                 )
             wrong_message = EventMessage(event=event, object_fields=object_field)
 
@@ -279,7 +279,7 @@ class ADCMWebsocket:
         )
         raise AssertionError("WS message should not match.\nCheck attachments for more details.")
 
-    def _check_messages_ordered_presence(self, expected: Tuple[EventMessage], messages: Tuple[WSMessageData]):
+    def _check_messages_ordered_presence(self, expected: tuple[EventMessage], messages: tuple[WSMessageData]):
         start_ind = 0
         for ind, expected_message in enumerate(expected):
             for i, presented_message in enumerate(messages[start_ind:]):
@@ -289,7 +289,7 @@ class ADCMWebsocket:
             else:
                 raise AssertionError(f"Message at #{ind} position was not found: {expected_message}")
 
-    def _check_messages_unordered_presence(self, expected: Tuple[EventMessage], messages: Tuple[WSMessageData]):
+    def _check_messages_unordered_presence(self, expected: tuple[EventMessage], messages: tuple[WSMessageData]):
         missing_messages = []
         for expected_message in expected:
             for presented_message in messages:
@@ -307,7 +307,7 @@ class ADCMWebsocket:
         allure.attach(pformat(messages), name="Searched messages", attachment_type=allure.attachment_type.TEXT)
         raise AssertionError("Some of the expected WS messages were missing, check attachments for more details")
 
-    async def _get_until_error(self, acc: List[WSMessageData]) -> List[WSMessageData]:
+    async def _get_until_error(self, acc: list[WSMessageData]) -> list[WSMessageData]:
         try:
             acc.append(await self.get_message(1))
         except asyncio.TimeoutError:

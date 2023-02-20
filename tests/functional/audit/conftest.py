@@ -13,11 +13,11 @@
 """conftest for audit tests"""
 
 from collections import OrderedDict
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Dict, List, Literal, NamedTuple, Optional
+from typing import Literal, NamedTuple
 from typing import OrderedDict as OrderedDictType
-from typing import Union
 
 import allure
 import pytest
@@ -72,7 +72,7 @@ def parsed_audit_log(request, audit_log_scenarios_reader) -> ParsedAuditLog:
     return audit_log_scenarios_reader.parse(request.param.filename, request.param.context)
 
 
-def parametrize_audit_scenario_parsing(scenario_name: str, context: Optional[dict] = None):
+def parametrize_audit_scenario_parsing(scenario_name: str, context: dict | None = None):
     """
     Helper to use as decorator to provide scenario name and context for parametrizing "parsed_audit_log"
     """
@@ -88,8 +88,9 @@ def audit_log_checker(parsed_audit_log) -> AuditLogChecker:
 
 @pytest.fixture()
 def build_policy(
-    sdk_client_fs, new_user_client
-) -> Callable[[BusinessRoles, Union[ClusterRelatedObject, ProviderRelatedObject, ADCM]], Policy]:
+    sdk_client_fs,
+    new_user_client,
+) -> Callable[[BusinessRoles, ClusterRelatedObject | ProviderRelatedObject | ADCM], Policy]:
     """Prepare "policy builder" that grants some permission to (already created) new user"""
     user_id = new_user_client.me().id
     return lambda role, obj: create_policy(sdk_client_fs, role, [obj], [sdk_client_fs.user(id=user_id)], [])
@@ -151,7 +152,7 @@ def rbac_create_data(sdk_client_fs) -> OrderedDictType[str, dict]:
                 "group": [],
                 "object": [],
             },
-        }
+        },
     )
 
 
@@ -174,7 +175,7 @@ def _prepare_settings(sdk_client_fs):
                     "sync_interval": 1,
                 },
             },
-        }
+        },
     )
 
 
@@ -192,9 +193,9 @@ def post(sdk_client_fs) -> Callable:
 
     def _post(
         path: str,
-        body: Optional[dict] = None,
-        headers: Optional[dict] = None,
-        path_fmt: Optional[dict] = None,
+        body: dict | None = None,
+        headers: dict | None = None,
+        path_fmt: dict | None = None,
         **kwargs,
     ):
         body = {} if body is None else body
@@ -219,8 +220,8 @@ def delete(sdk_client_fs) -> Callable:
     def _delete(
         path: str,
         *suffixes,
-        headers: Optional[dict] = None,
-        path_fmt: Optional[dict] = None,
+        headers: dict | None = None,
+        path_fmt: dict | None = None,
         **kwargs,
     ):
         headers = {**auth_header, **({} if headers is None else headers)}
@@ -243,7 +244,7 @@ def new_user_client(sdk_client_fs) -> ADCMClient:
 
 
 @pytest.fixture()
-def unauthorized_creds(new_user_client) -> Dict[Literal["Authorization"], str]:
+def unauthorized_creds(new_user_client) -> dict[Literal["Authorization"], str]:
     """Prepare authorization header for the new user (by default, no policies assigned)"""
     return make_auth_header(new_user_client)
 
@@ -260,7 +261,7 @@ def check_succeed(response: requests.Response) -> requests.Response:
     return response
 
 
-def check_failed(response: requests.Response, exact_code: Optional[int] = None) -> requests.Response:
+def check_failed(response: requests.Response, exact_code: int | None = None) -> requests.Response:
     """Check that request has failed"""
     with allure.step(f'Expecting request to fail with code {exact_code if exact_code else ">=400 and < 500"}'):
         assert response.status_code < 500, "Request should not failed with 500"
@@ -312,24 +313,24 @@ def format_date_for_db(date: datetime) -> str:
 def set_operations_date(
     adcm_db: QueryExecutioner,
     new_date: datetime,
-    operation_records: Union[AuditOperationList, List[AuditOperation]],
+    operation_records: AuditOperationList | list[AuditOperation],
 ):
     """Set date for given operation audit records directly in ADCM database"""
     adcm_db.exec(
         Query("audit_auditlog")
         .update([("operation_time", format_date_for_db(new_date))])
-        .where(id=tuple(map(lambda o: o.id, operation_records)))
+        .where(id=tuple(o.id for o in operation_records)),
     )
 
 
 def set_logins_date(
     adcm_db: QueryExecutioner,
     new_date: datetime,
-    login_records: Union[AuditLoginList, List[AuditLogin]],
+    login_records: AuditLoginList | list[AuditLogin],
 ):
     """Set date for given login audit records directly in ADCM database"""
     adcm_db.exec(
         Query("audit_auditsession")
         .update([("login_time", format_date_for_db(new_date))])
-        .where(id=tuple(map(lambda o: o.id, login_records)))
+        .where(id=tuple(o.id for o in login_records)),
     )

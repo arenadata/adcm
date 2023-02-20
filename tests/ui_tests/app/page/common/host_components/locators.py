@@ -24,14 +24,18 @@ class HostComponentsLocators:
     save_btn = BaseLocator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Save button")
 
     components_title = BaseLocator(
-        By.XPATH, "//h3[./span[contains(text(), 'Components')]]", "Title for Components block"
+        By.XPATH,
+        "//h3[./span[contains(text(), 'Components')]]",
+        "Title for Components block",
     )
     service_page_link = BaseLocator(By.CSS_SELECTOR, "mat-card-content a[href*='service']", "Link to service page")
 
     hosts_title = BaseLocator(By.XPATH, "//h3[./span[contains(text(), 'Hosts')]]", "Title for Hosts block")
     hosts_page_link = BaseLocator(By.CSS_SELECTOR, "mat-card-content a[href*='host']", "Link to hosts page")
     create_hosts_btn = BaseLocator(
-        By.CSS_SELECTOR, "app-service-host button[adcm_test='create-btn']", "Create hosts button"
+        By.CSS_SELECTOR,
+        "app-service-host button[adcm_test='create-btn']",
+        "Create hosts button",
     )
 
     host_row = BaseLocator(By.XPATH, "//div[./h3/span[contains(text(), 'Host')]]//app-much-2-many", "Host row")

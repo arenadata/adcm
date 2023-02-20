@@ -12,11 +12,10 @@
 
 """Popup page PageObjects classes"""
 
-from typing import Optional
 
 import allure
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait as WDW
+from selenium.webdriver.support import expected_conditions as EC  # noqa: N812
+from selenium.webdriver.support.ui import WebDriverWait as WDW  # noqa: N817
 
 from tests.ui_tests.app.page.common.dialogs.create_host_locators import (
     HostCreationLocators,
@@ -86,7 +85,7 @@ class HostCreateDialog(Interactor):
         ).click()
 
     @allure.step("Create new host")
-    def create_host(self, fqdn: str, cluster: Optional[str] = None):
+    def create_host(self, fqdn: str, cluster: str | None = None):
         """Create host in popup"""
         self.set_host_info(fqdn, cluster)
         self.create()
@@ -97,7 +96,7 @@ class HostCreateDialog(Interactor):
         self,
         bundle_path: str,
         fqdn: str,
-        cluster: Optional[str] = None,
+        cluster: str | None = None,
     ) -> str:
         """
         Open host creation popup

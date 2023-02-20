@@ -273,5 +273,7 @@ def gen_config(config: dict = None, attr: dict = None) -> ObjectConfig:
 
 def gen_group(name, object_id, model_name):
     return GroupConfig.objects.create(
-        object_id=object_id, object_type=ContentType.objects.get(model=model_name), name=name
+        object_id=object_id,
+        object_type=ContentType.objects.get(model=model_name),
+        name=name,
     )

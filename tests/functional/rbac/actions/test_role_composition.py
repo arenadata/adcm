@@ -50,7 +50,9 @@ def test_policy_created_only_on_child_of_composite_action_role(sdk_client_fs, si
     policy_creation_should_fail(sdk_client_fs, business_role, simple_cluster, user)
 
     custom_role = sdk_client_fs.role_create(
-        name=custom_role_name, display_name=custom_role_name, child=[{"id": business_role.id}]
+        name=custom_role_name,
+        display_name=custom_role_name,
+        child=[{"id": business_role.id}],
     )
     policy_creation_should_succeeded(sdk_client_fs, custom_role, simple_cluster, user)
 

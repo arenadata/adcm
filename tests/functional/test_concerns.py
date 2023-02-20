@@ -12,7 +12,6 @@
 
 """Tests for object issues"""
 import itertools
-from typing import Tuple
 
 import allure
 import coreapi
@@ -191,13 +190,19 @@ class TestProviderIndependence:
         provider = await self._create_provider_wo_concerns(provider_bundle, sdk_client_fs, adcm_ws)
         host = await self._create_host_and_check_provider(provider, adcm_ws)
         cluster = await self._create_cluster_with_concerns_and_add_service(
-            cluster_bundle, service_name, sdk_client_fs, adcm_ws
+            cluster_bundle,
+            service_name,
+            sdk_client_fs,
+            adcm_ws,
         )
         await self._add_host_to_cluster_and_check_concerns(cluster, host, adcm_ws)
         await self._set_hc_map_and_check_concerns(cluster, host, adcm_ws)
 
     async def _create_provider_wo_concerns(
-        self, bundle_name: str, client: ADCMClient, adcm_ws: ADCMWebsocket
+        self,
+        bundle_name: str,
+        client: ADCMClient,
+        adcm_ws: ADCMWebsocket,
     ) -> Provider:
         with allure.step(f"Upload provider bundle {bundle_name} and check creation event"):
             provider_bundle = client.upload_from_fs(get_data_dir(__file__, bundle_name))
@@ -219,7 +224,11 @@ class TestProviderIndependence:
         return host
 
     async def _create_cluster_with_concerns_and_add_service(
-        self, bundle_name: str, service_name: str, client: ADCMClient, adcm_ws: ADCMWebsocket
+        self,
+        bundle_name: str,
+        service_name: str,
+        client: ADCMClient,
+        adcm_ws: ADCMWebsocket,
     ) -> Cluster:
         with allure.step(f"Upload cluster bundle {bundle_name} and check creation event"):
             cluster_bundle = client.upload_from_fs(get_data_dir(__file__, bundle_name))
@@ -290,7 +299,7 @@ class TestProviderIndependence:
                                 "cluster-object-concerns",  # and from service
                                 "service-component-concerns",  # and from component
                             )
-                        )
+                        ),
                     ),
                 ),
                 messages,
@@ -323,9 +332,9 @@ def _check_concerns_amount(adcm_object, expected_amount):
 
 
 @allure.step("Add service, map host to it and add another service")
-def _add_services_and_map_hosts_to_it(cluster, provider) -> Tuple[Service, Host, Host]:
+def _add_services_and_map_hosts_to_it(cluster, provider) -> tuple[Service, Host, Host]:
     service_1 = cluster.service_add(name="service_1")
-    host_1, host_2 = [cluster.host_add(provider.host_create(f"test-host-{i}")) for i in range(2)]
+    host_1, host_2 = (cluster.host_add(provider.host_create(f"test-host-{i}")) for i in range(2))
     cluster.hostcomponent_set((host_1, service_1.component()))
     cluster.service_add(name="service_2")
     return service_1, host_1, host_2

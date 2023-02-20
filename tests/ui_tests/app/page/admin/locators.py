@@ -44,7 +44,9 @@ class FilterLocators:
     filter_dropdown_select = BaseLocator(By.CSS_SELECTOR, "app-filter mat-select", "Filter dropdown select")
     filter_dropdown_option = BaseLocator(By.CSS_SELECTOR, "div[role='listbox'] mat-option", "Filter dropdown option")
     filter_dropdown_remove = BaseLocator(
-        By.CSS_SELECTOR, "app-filter button[aria-label='Remove']", "Filter remove button"
+        By.CSS_SELECTOR,
+        "app-filter button[aria-label='Remove']",
+        "Filter remove button",
     )
 
 
@@ -70,7 +72,9 @@ class AdminUsersLocators(FilterLocators):
     filter_dropdown_select = BaseLocator(By.CSS_SELECTOR, "app-server-filter mat-select", "Filter dropdown select")
     filter_dropdown_option = BaseLocator(By.CSS_SELECTOR, "div[role='listbox'] mat-option", "Filter dropdown option")
     filter_dropdown_remove = BaseLocator(
-        By.CSS_SELECTOR, "app-server-filter button[aria-label='Remove']", "Filter remove button"
+        By.CSS_SELECTOR,
+        "app-server-filter button[aria-label='Remove']",
+        "Filter remove button",
     )
 
     class FilterPopup:
@@ -130,14 +134,20 @@ class AdminPoliciesLocators(CommonAdminPagesLocators):
                 "Back button from second step",
             )
             cluster_select = BaseLocator(
-                By.XPATH, "//div[./span//span[text()='Cluster']]//adwp-select", "select cluster"
+                By.XPATH,
+                "//div[./span//span[text()='Cluster']]//adwp-select",
+                "select cluster",
             )
             service_select = BaseLocator(
-                By.XPATH, "//div[./span//span[text()='Service']]//mat-select", "select service"
+                By.XPATH,
+                "//div[./span//span[text()='Service']]//mat-select",
+                "select service",
             )
             service_item = BaseLocator(By.CSS_SELECTOR, ".mat-select-panel mat-option", "select service item")
             provider_select = BaseLocator(
-                By.CSS_SELECTOR, "app-parametrized-by-provider adwp-select", "select provider"
+                By.CSS_SELECTOR,
+                "app-parametrized-by-provider adwp-select",
+                "select provider",
             )
             parent_select = BaseLocator(By.XPATH, "//div[./span//span[text()='Parent']]//adwp-select", "select parent")
             hosts_select = BaseLocator(By.CSS_SELECTOR, "app-parametrized-by-host mat-form-field", "select hosts")
@@ -178,13 +188,19 @@ class OperationsAuditLocators:
             username = BaseLocator(By.XPATH, ".//input[@data-placeholder='Username']", "Username filter item")
             object_name = BaseLocator(By.XPATH, ".//input[@data-placeholder='Object name']", "Object name filter item")
             object_type = BaseLocator(
-                By.XPATH, ".//mat-select[.//span[text()='Object type']]", "Object type filter item"
+                By.XPATH,
+                ".//mat-select[.//span[text()='Object type']]",
+                "Object type filter item",
             )
             operation_type = BaseLocator(
-                By.XPATH, ".//mat-select[.//span[text()='Operation type']]", "Operation type filter item"
+                By.XPATH,
+                ".//mat-select[.//span[text()='Operation type']]",
+                "Operation type filter item",
             )
             operation_result = BaseLocator(
-                By.XPATH, ".//mat-select[.//span[text()='Operation result']]", "Operation result filter item"
+                By.XPATH,
+                ".//mat-select[.//span[text()='Operation result']]",
+                "Operation result filter item",
             )
             operation_time = BaseLocator(By.TAG_NAME, "mat-date-range-input", "Operation time filter item")
 

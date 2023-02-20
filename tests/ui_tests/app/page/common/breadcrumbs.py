@@ -59,7 +59,8 @@ class Crumb(Element):
         assert self.has_concern_mark(), f"Concern mark isn't presented on crumb {self.name}"
 
         return ConcernMark(
-            element=self._view.find_child(self.element, self.Locators.concern_mark), interactor=self._view
+            element=self._view.find_child(self.element, self.Locators.concern_mark),
+            interactor=self._view,
         )
 
     def get_upgrade_button(self) -> Button:
@@ -98,7 +99,7 @@ class Breadcrumbs(Element):
             return self._crumbs
 
         self._crumbs = ListOfElements(
-            map(as_element(Crumb, self._view), self._view.find_children(self.element, self.Locators.crumb))
+            map(as_element(Crumb, self._view), self._view.find_children(self.element, self.Locators.crumb)),
         )
         return self._crumbs
 

@@ -48,7 +48,8 @@ def cluster_objects(sdk_client_fs) -> tuple[Cluster, Service, Service]:
 @allure.issue(url="https://tracker.yandex.ru/ADCM-3327")
 @pytest.mark.usefixtures("_login_to_adcm_over_ui")
 def test_config_renders_correctly_after_following_concern_links(  # pylint: disable=redefined-outer-name
-    app_fs, cluster_objects
+    app_fs,
+    cluster_objects,
 ):
     cluster, first_service, second_service = cluster_objects
     current_page = ClusterListPage(driver=app_fs.driver, base_url=app_fs.adcm.url).open(close_popup=True)
@@ -62,7 +63,9 @@ def test_config_renders_correctly_after_following_concern_links(  # pylint: disa
     check_displayed_config(current_page, SECOND_SERVICE)
 
     current_page = follow_config_concern_link(
-        current_page, second_service.display_name, second_service.component(name="lonely")
+        current_page,
+        second_service.display_name,
+        second_service.component(name="lonely"),
     )
     check_displayed_config(current_page, LONELY_COMPONENT)
 
@@ -82,7 +85,9 @@ def check_displayed_config(page, expected: tuple) -> None:
 
 
 def follow_config_concern_link(
-    page: BasePageObject, breadcrumb_name: str, object_with_concern: Service | Component
+    page: BasePageObject,
+    breadcrumb_name: str,
+    object_with_concern: Service | Component,
 ) -> ServiceConfigPage | ComponentConfigPage:
     with allure.step(f"Follow concern link of '{object_with_concern.display_name}' from '{breadcrumb_name}' '!' mark"):
         popover = page.header.get_breadcrumbs().crumbs.named(breadcrumb_name.upper()).get_concern_mark().hover()
@@ -90,7 +95,9 @@ def follow_config_concern_link(
 
         if isinstance(object_with_concern, Service):
             config_page = ServiceConfigPage.from_page(
-                page, cluster_id=object_with_concern.cluster_id, service_id=object_with_concern.id
+                page,
+                cluster_id=object_with_concern.cluster_id,
+                service_id=object_with_concern.id,
             )
         elif isinstance(object_with_concern, Component):
             config_page = ComponentConfigPage.from_page(

@@ -56,7 +56,7 @@ class LeftMenu(Element):
             return self._tabs
 
         self._tabs = tuple(
-            map(as_element(MenuTab, self._view), self._view.find_children(self.element, self.Locators.tab))
+            map(as_element(MenuTab, self._view), self._view.find_children(self.element, self.Locators.tab)),
         )
         return self._tabs
 

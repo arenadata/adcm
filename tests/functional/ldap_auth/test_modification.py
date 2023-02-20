@@ -12,7 +12,6 @@
 
 """Test modification of ldap-related entities"""
 
-from typing import Union
 
 import allure
 import pytest
@@ -119,7 +118,7 @@ def _sync_with_ldap(client: ADCMClient):
     wait_for_task_and_assert_result(client.adcm().action(name=SYNC_ACTION_NAME).run(), "success")
 
 
-def _check_change_is_forbidden(entity: Union[User, Group], attr: str):
+def _check_change_is_forbidden(entity: User | Group, attr: str):
     entity_class = entity.__class__.__name__
     with allure.step(f"Check that changing {attr} of {entity_class} is forbidden for LDAP {entity_class}"):
         err = USER_UPDATE_ERROR if isinstance(entity, User) else GROUP_UPDATE_ERROR

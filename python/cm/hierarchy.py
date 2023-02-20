@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, Set, Tuple
 
 from cm.models import (
     ADCMEntity,
@@ -37,13 +36,13 @@ class Node:
 
     order = ("root", "cluster", "service", "component", "host", "provider")
 
-    def __init__(self, value: Optional[ADCMEntity]):
+    def __init__(self, value: ADCMEntity | None):
         self.children = set()
         if value is None:  # tree virtual root
             self.node_id = 0
             self.type = "root"
             self.value = None
-            self.parents = tuple()
+            self.parents = ()
         else:
             if not hasattr(value, "prototype"):
                 raise HierarchyError(f"Type <{type(value)}> is not part of hierarchy")
@@ -65,7 +64,7 @@ class Node:
 
         self.parents.add(parent)
 
-    def get_parents(self) -> Set["Node"]:
+    def get_parents(self) -> set["Node"]:
         """Get own parents and all its ancestors"""
 
         result = set(self.parents)
@@ -74,7 +73,7 @@ class Node:
 
         return result
 
-    def get_children(self) -> Set["Node"]:
+    def get_children(self) -> set["Node"]:
         """Get own children and all its descendants"""
 
         result = set(self.children)
@@ -84,7 +83,7 @@ class Node:
         return result
 
     @staticmethod
-    def get_obj_key(obj: ADCMEntity) -> Tuple[str, int]:
+    def get_obj_key(obj: ADCMEntity) -> tuple[str, int]:
         """Make simple unique key for caching in tree"""
 
         if obj is None:
@@ -93,7 +92,7 @@ class Node:
         return obj.prototype.type, obj.pk
 
     @property
-    def key(self) -> Tuple[str, int]:
+    def key(self) -> tuple[str, int]:
         """Simple key unique in tree"""
 
         return self.type, self.node_id
@@ -200,7 +199,7 @@ class Tree:
         else:
             raise HierarchyError(f"Object {key} is not part of tree")
 
-    def get_directly_affected(self, node: Node) -> Set[Node]:
+    def get_directly_affected(self, node: Node) -> set[Node]:
         """Collect directly affected nodes for issues re-calc"""
 
         result = {node}
@@ -210,7 +209,7 @@ class Tree:
 
         return result
 
-    def get_all_affected(self, node: Node) -> Set[Node]:
+    def get_all_affected(self, node: Node) -> set[Node]:
         """Collect directly affected nodes and propagate effect back through affected hosts"""
 
         directly_affected = self.get_directly_affected(node)

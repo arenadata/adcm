@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from audit.models import (
     AuditLog,
@@ -22,7 +23,6 @@ from audit.models import (
     AuditSessionLoginResult,
 )
 from django.urls import reverse
-from django.utils import timezone as tz
 from init_db import init as init_adcm
 from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
@@ -74,7 +74,7 @@ class TestAuditViews(BaseTestCase):
             object_changes=self.object_changes_first,
         )
         AuditLog.objects.filter(pk=self.audit_log_first.pk).update(
-            operation_time=tz.make_aware(datetime.strptime(self.date_first, date_fmt))
+            operation_time=datetime.strptime(self.date_first, date_fmt).astimezone(tz=ZoneInfo("UTC")),
         )
         self.audit_log_second = AuditLog.objects.create(
             audit_object=self.audit_object_second,
@@ -85,7 +85,7 @@ class TestAuditViews(BaseTestCase):
             object_changes=self.object_changes_second,
         )
         AuditLog.objects.filter(pk=self.audit_log_second.pk).update(
-            operation_time=tz.make_aware(datetime.strptime(self.date_second, date_fmt))
+            operation_time=datetime.strptime(self.date_second, date_fmt).astimezone(tz=ZoneInfo("UTC")),
         )
 
         self.login_details_first = {"login": {"details": "first"}}
@@ -102,7 +102,7 @@ class TestAuditViews(BaseTestCase):
             login_details=self.login_details_second,
         )
         AuditSession.objects.filter(pk=self.audit_session_second.pk).update(
-            login_time=tz.make_aware(datetime.strptime(self.date_second, date_fmt))
+            login_time=datetime.strptime(self.date_second, date_fmt).astimezone(tz=ZoneInfo("UTC")),
         )
 
     def test_audit_operations_visibility_superuser(self):
@@ -121,14 +121,20 @@ class TestAuditViews(BaseTestCase):
 
     def test_audit_logins_visibility_superuser(self):
         with self.another_user_logged_in(username="admin", password="admin"):
-            response: Response = self.client.get(path=reverse("audit:auditsession-list"), content_type=APPLICATION_JSON)
+            response: Response = self.client.get(
+                path=reverse("audit:auditsession-list"),
+                content_type=APPLICATION_JSON,
+            )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertGreater(response.json()["count"], 2)
 
     def test_audit_logins_visibility_regular_user(self):
         with self.another_user_logged_in(username=self.no_rights_user_username, password=self.no_rights_user_password):
-            response: Response = self.client.get(path=reverse("audit:auditsession-list"), content_type=APPLICATION_JSON)
+            response: Response = self.client.get(
+                path=reverse("audit:auditsession-list"),
+                content_type=APPLICATION_JSON,
+            )
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.assertEqual(response.json()["code"], "AUDIT_LOGINS_FORBIDDEN")

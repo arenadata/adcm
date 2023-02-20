@@ -48,7 +48,11 @@ class TaskListLocators:
             status = BaseLocator(By.CSS_SELECTOR, "app-task-status-column *", "Status span in row")
 
             # when running (and cancel is allowed, then we should take another element to get status)
-            status_under_btn = BaseLocator(By.CSS_SELECTOR, "app-task-status-column button * mat-icon", "Status in row")
+            status_under_btn = BaseLocator(
+                By.CSS_SELECTOR,
+                "app-task-status-column button * mat-icon",
+                "Status in row",
+            )
 
             expand_task = BaseLocator(By.XPATH, ".//mat-icon[contains(text(), 'expand_more')]", "Expand task button")
 

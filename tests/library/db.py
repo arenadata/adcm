@@ -14,8 +14,8 @@
 
 
 import datetime
+from collections.abc import Callable, Collection
 from dataclasses import dataclass
-from typing import Callable, Collection, Optional, Tuple, Union
 
 from docker.models.containers import Container
 
@@ -32,7 +32,7 @@ class Query:
     table: str
     operation: str
 
-    _build_statement: Optional[Callable[[], str]]
+    _build_statement: Callable[[], str] | None
 
     def __init__(self, table: str):
         self.table = table
@@ -49,7 +49,7 @@ class Query:
             raise ValueError("Undefined type of a query")
         return self._build_statement()
 
-    def update(self, fields: Collection[Tuple[str, Union[int, str, datetime.datetime]]]) -> "Query":
+    def update(self, fields: Collection[tuple[str, int | str | datetime.datetime]]) -> "Query":
         """Prepare query to become an UPDATE operation"""
         self._build_statement = self._build_update
         self.operation = "UPDATE"
@@ -64,13 +64,13 @@ class Query:
             where_.append(
                 f'{self.table}.{field} in ({", ".join(map(str, value))})'
                 if isinstance(value, Collection)
-                else f"{self.table}.{field}={value}"
+                else f"{self.table}.{field}={value}",
             )
         joined_where = f" {concat_with} ".join(where_)
         self._where_clause = f"WHERE {joined_where}"
         return self
 
-    def _make_set_clause(self, fields: Collection[Tuple[str, Union[int, str, datetime.datetime]]]):
+    def _make_set_clause(self, fields: Collection[tuple[str, int | str | datetime.datetime]]):
         self._raise_if_already_set(self._set_clause, "SET")
         set_ = []
         for field, value in fields:
@@ -115,16 +115,17 @@ class PostgreSQLQueryExecutioner:
         statement = query.build()
         self._should_be_success(
             self.container.exec_run(
-                ["psql", "-U", "adcm", "--dbname", "adcm", "-c", statement.replace("\n", " ").replace('"', "'")]
-            )
+                ["psql", "-U", "adcm", "--dbname", "adcm", "-c", statement.replace("\n", " ").replace('"', "'")],
+            ),
         )
 
-    def _should_be_success(self, exec_result: Tuple[int, bytes]):
+    def _should_be_success(self, exec_result: tuple[int, bytes]):
         exit_code, output = exec_result
         if exit_code == 0:
             return
         raise ValueError(
-            f"Command execution on PostgreSQL container {self.container.name} failed:\nOutput: {output.decode('utf-8')}"
+            f"Command execution on PostgreSQL container "
+            f"{self.container.name} failed:\nOutput: {output.decode('utf-8')}",
         )
 
 
@@ -150,12 +151,12 @@ class QueryExecutioner:
         self._should_be_success(self.container.exec_run(["sh", "-c", f'echo "{script_text}" > {self._script_name}']))
         self._should_be_success(self.container.exec_run(["python3", self._script_name]))
 
-    def _should_be_success(self, exec_result: Tuple[int, bytes]):
+    def _should_be_success(self, exec_result: tuple[int, bytes]):
         exit_code, output = exec_result
         if exit_code == 0:
             return
         raise ValueError(
-            f'Command execution on ADCM container {self.container.name} failed:\nOutput: {output.decode("utf-8")}'
+            f'Command execution on ADCM container {self.container.name} failed:\nOutput: {output.decode("utf-8")}',
         )
 
 
@@ -199,5 +200,5 @@ def set_job_directories_date(container: Container, date: datetime.datetime, ids:
         if exit_code != 0:
             raise ValueError(
                 f"Failed to set modification date ('{strdate}') to job dir with id {id_}.\n'"
-                f"f'Output:\n{output.decode('utf-8')}"
+                f"f'Output:\n{output.decode('utf-8')}",
             )

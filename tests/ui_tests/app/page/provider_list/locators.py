@@ -32,13 +32,17 @@ class ProviderListLocators:
         block = BaseLocator(By.CSS_SELECTOR, "mat-dialog-container", "Popup block")
         bundle_select_btn = BaseLocator(By.CSS_SELECTOR, "mat-select[placeholder='Bundle']", "Select bundle")
         version_select_btn = BaseLocator(
-            By.CSS_SELECTOR, "mat-select[formcontrolname='bundle_id']", "Select bundle version"
+            By.CSS_SELECTOR,
+            "mat-select[formcontrolname='bundle_id']",
+            "Select bundle version",
         )
         select_option = BaseLocator(By.CSS_SELECTOR, "mat-option", "Select option")
 
         upload_bundle_btn = BaseLocator(By.CSS_SELECTOR, "input[value='upload_bundle_file']", "Upload bundle button")
         provider_name_input = BaseLocator(
-            By.CSS_SELECTOR, "input[data-placeholder='Hostprovider name']", "Provider name input"
+            By.CSS_SELECTOR,
+            "input[data-placeholder='Hostprovider name']",
+            "Provider name input",
         )
         description_input = BaseLocator(By.CSS_SELECTOR, "input[data-placeholder='Description']", "Description input")
 

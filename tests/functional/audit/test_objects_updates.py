@@ -12,7 +12,6 @@
 
 """Test audit of provider's objects and cluster objects' updates: imports, binds, etc."""
 
-from typing import Optional, Tuple
 
 import allure
 import pytest
@@ -50,7 +49,7 @@ def import_bundle(sdk_client_fs) -> Bundle:
 
 
 @pytest.fixture()
-def import_export_clusters(sdk_client_fs, import_bundle) -> Tuple[Cluster, Cluster]:
+def import_export_clusters(sdk_client_fs, import_bundle) -> tuple[Cluster, Cluster]:
     """Create clusters from import and export bundles and add services to them"""
     import_cluster = import_bundle.cluster_create("Import")
     import_cluster.service_add(name=IMPORT_SERVICE)
@@ -118,8 +117,8 @@ class TestClusterUpdates:
                     "cluster_name": cluster.name,
                     "service_display_name": display_name,
                     "username": NEW_USER["username"],
-                }
-            )
+                },
+            ),
         )
         checker.set_user_map(self.client)
         checker.check(self.client.audit_operation_list())
@@ -182,8 +181,8 @@ class TestClusterUpdates:
                     "host_1": host.fqdn,
                     "host_2": new_host.fqdn,
                     "username": NEW_USER["username"],
-                }
-            )
+                },
+            ),
         )
         checker.set_user_map(self.client)
         checker.check(self.client.audit_operation_list())
@@ -294,8 +293,8 @@ class TestImportAudit:
                     "cluster_import_success_msg": export_cluster.name,
                     "service_import_success_msg": f"{export_cluster.name}/{export_service_dn}",
                     "username": NEW_USER["username"],
-                }
-            )
+                },
+            ),
         )
         checker.set_user_map(self.client)
         checker.check(self.client.audit_operation_list())
@@ -310,7 +309,9 @@ class TestImportAudit:
         import_path = f"{base_url}/api/v1/cluster/{import_cluster.id}/service/{import_service.id}/import/"
         with allure.step("Update cluster/service imports"):
             data = {"bind": [{"import_id": cluster_import_id, "export_id": {"cluster_id": export_cluster.id}}]}
-            check_succeed(requests.post(f"{self.client.url}{cluster_import_path}", json=data, headers=self.admin_creds))
+            check_succeed(
+                requests.post(f"{self.client.url}{cluster_import_path}", json=data, headers=self.admin_creds),
+            )
             data = {
                 "bind": [
                     {
@@ -319,8 +320,8 @@ class TestImportAudit:
                             "cluster_id": export_cluster.id,
                             "service_id": export_service.id,
                         },
-                    }
-                ]
+                    },
+                ],
             }
             check_succeed(requests.post(import_path, json=data, headers=self.admin_creds))
         with allure.step("Fail to update cluster/service imports"):
@@ -375,9 +376,7 @@ class TestImportAudit:
             check_failed(unbind(f"{cluster_bind_url}411/", headers=self.admin_creds), exact_code=404)
             check_failed(unbind(f"{service_bind_url}411/", headers=self.admin_creds), exact_code=404)
 
-    def _bind(
-        self, url: str, cluster_id: Optional[int], service_id: Optional[int] = None, **kwargs
-    ) -> requests.Response:
+    def _bind(self, url: str, cluster_id: int | None, service_id: int | None = None, **kwargs) -> requests.Response:
         body = {
             **({"export_cluster_id": cluster_id} if cluster_id else {}),
             **({"export_service_id": service_id} if service_id else {}),

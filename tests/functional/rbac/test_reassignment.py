@@ -12,8 +12,8 @@
 
 """Test roles reassignment in various situations"""
 
+from collections.abc import Collection, Generator
 from contextlib import contextmanager
-from typing import Collection, Dict, Generator, List, Tuple
 
 import allure
 import pytest
@@ -148,7 +148,8 @@ class TestReapplyTriggers:
             _check_host_configs([], [host, admin_another_host])
 
         with allure.step(
-            f"Assign components of new_service on two hosts, and component of test_service on {admin_another_host.fqdn}"
+            f"Assign components of new_service on two hosts, "
+            f"and component of test_service on {admin_another_host.fqdn}",
         ):
             admin_cluster.hostcomponent_set(
                 (host, admin_new_service.component(name="test_component")),
@@ -189,7 +190,10 @@ class TestReapplyTriggers:
             )
             clients.user.reread()
         user_cluster, user_service, user_component = as_user_objects(
-            clients.user, admin_cluster, admin_service, admin_component
+            clients.user,
+            admin_cluster,
+            admin_service,
+            admin_component,
         )
         with allure.step("Check that edit cluster, service and component configurations are allowed for user"):
             is_allowed(user_cluster, BusinessRoles.EDIT_CLUSTER_CONFIGURATIONS)
@@ -238,14 +242,16 @@ class TestReapplyTriggers:
                 objects=[first_cluster],
             )
             clients.user.reread()
-        with allure.step(f"Check that {role_to_check.name} is allowed for user for first cluster and denied for other"):
+        with allure.step(
+            f"Check that {role_to_check.name} is allowed for user for first cluster and denied for other",
+        ):
             is_allowed(as_user_objects(clients.user, first_cluster)[0], role_to_check)
             is_denied_to_user(admin_cluster, role_to_check)
             is_denied_to_user(second_cluster, role_to_check)
         with allure.step("Change test policy: first cluster to second cluster"):
             test_policy.update(object=[{"id": second_cluster.id, "type": "cluster"}])
         with allure.step(
-            f"Check that {role_to_check.name} is allowed for user for second cluster and denied for other"
+            f"Check that {role_to_check.name} is allowed for user for second cluster and denied for other",
         ):
             is_allowed(as_user_objects(clients.user, second_cluster)[0], role_to_check)
             is_denied_to_user(admin_cluster, role_to_check)
@@ -275,14 +281,16 @@ class TestReapplyTriggers:
             )
             clients.user.reread()
 
-        with allure.step(f"Check that {role_to_check.name} is allowed for user for first service and denied for other"):
+        with allure.step(
+            f"Check that {role_to_check.name} is allowed for user for first service and denied for other",
+        ):
             is_allowed(as_user_objects(clients.user, first_service)[0], role_to_check)
             is_denied_to_user(admin_service, role_to_check)
             is_denied_to_user(second_service, role_to_check)
         with allure.step("Change test policy: first service to second service"):
             test_policy.update(object=[{"id": second_service.id, "type": "service"}])
         with allure.step(
-            f"Check that {role_to_check.name} is allowed for user for second service and denied for other"
+            f"Check that {role_to_check.name} is allowed for user for second service and denied for other",
         ):
             is_allowed(as_user_objects(clients.user, second_service)[0], role_to_check)
             is_denied_to_user(admin_service, role_to_check)
@@ -311,7 +319,7 @@ class TestReapplyTriggers:
             )
             clients.user.reread()
         with allure.step(
-            f"Check that {role_to_check.name} is allowed for user for first provider and denied for other"
+            f"Check that {role_to_check.name} is allowed for user for first provider and denied for other",
         ):
             is_allowed(as_user_objects(clients.user, first_provider)[0], role_to_check)
             is_denied_to_user(admin_provider, role_to_check)
@@ -319,7 +327,7 @@ class TestReapplyTriggers:
         with allure.step("Change test policy: first provider to second provider"):
             test_policy.update(object=[{"id": second_provider.id, "type": "provider"}])
         with allure.step(
-            f"Check that {role_to_check.name} is allowed for user for second provider and denied for other"
+            f"Check that {role_to_check.name} is allowed for user for second provider and denied for other",
         ):
             is_allowed(as_user_objects(clients.user, second_provider)[0], role_to_check)
             is_denied_to_user(admin_provider, role_to_check)
@@ -333,7 +341,7 @@ class TestMultiplePolicyReapply:
     """
 
     @pytest.fixture()
-    def objects(self, cluster_bundle, provider_bundle) -> Tuple[Cluster, Cluster, Service, Service, Provider]:
+    def objects(self, cluster_bundle, provider_bundle) -> tuple[Cluster, Cluster, Service, Service, Provider]:
         """Prepare various objects for multiple policies test"""
         first_cluster = cluster_bundle.cluster_create(name="Test Cluster 1")
         second_cluster = cluster_bundle.cluster_create(name="Test Cluster 2")
@@ -343,7 +351,7 @@ class TestMultiplePolicyReapply:
         return first_cluster, second_cluster, test_service, new_service, provider
 
     @pytest.fixture()
-    def admin_roles(self, sdk_client_fs) -> Tuple[Role, Role, Role]:
+    def admin_roles(self, sdk_client_fs) -> tuple[Role, Role, Role]:
         """
         Find and return roles (in order):
         - Cluster Administrator
@@ -363,7 +371,10 @@ class TestMultiplePolicyReapply:
         """
         first_cluster, second_cluster, test_service, new_service, provider = objects
         policies = self.grant_policies_to_user(
-            clients.admin, (first_cluster, test_service, provider), admin_roles, user
+            clients.admin,
+            (first_cluster, test_service, provider),
+            admin_roles,
+            user,
         )
         clients.user.reread()
         self.check_edit_is_allowed(clients.user, first_cluster, test_service, provider)
@@ -374,11 +385,14 @@ class TestMultiplePolicyReapply:
         self.check_edit_is_denied(clients.user, second_cluster, test_service)
 
     @allure.step("Grant policies on Cluster #1, service of Cluster #2 and Provider #1")
-    def grant_policies_to_user(self, admin_client, cluster_service_provider, admin_roles, user) -> List[Policy]:
+    def grant_policies_to_user(self, admin_client, cluster_service_provider, admin_roles, user) -> list[Policy]:
         """Grant policies to user (different policy for each role)"""
         return [
             admin_client.policy_create(
-                name=f"Policy on {get_object_represent(obj)}", role=role, objects=[obj], user=[user]
+                name=f"Policy on {get_object_represent(obj)}",
+                role=role,
+                objects=[obj],
+                user=[user],
             )
             for role, obj in zip(admin_roles, cluster_service_provider)
         ]
@@ -457,6 +471,6 @@ def check_role_with_parametrization(clients, user, cluster_bundle: Bundle, provi
     role.delete()
 
 
-def _form_children(admin_client: ADCMClient, *business_roles: BusinessRoles) -> List[Dict[str, int]]:
+def _form_children(admin_client: ADCMClient, *business_roles: BusinessRoles) -> list[dict[str, int]]:
     """Create list of children for role based on business roles"""
     return [{"id": admin_client.role(name=role.value.role_name).id} for role in business_roles]

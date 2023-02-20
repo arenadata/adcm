@@ -12,7 +12,6 @@
 
 """Test audit operation logs"""
 
-from typing import Tuple
 
 import allure
 import pytest
@@ -54,7 +53,7 @@ def dummy_host(generic_provider) -> Host:
 
 
 @pytest.fixture()
-def new_user_and_client(sdk_client_fs) -> Tuple[User, ADCMClient]:
+def new_user_and_client(sdk_client_fs) -> tuple[User, ADCMClient]:
     """Create new user and login under it"""
     credentials = {"username": CONTEXT["simple_user"], "password": "n2ohvzikj(#*Fhxznc"}
     user = sdk_client_fs.user_create(**credentials)
@@ -123,7 +122,7 @@ def test_no_audit_objects_duplication(adcm_fs, sdk_client_fs, adb_bundle, generi
         assert total_deleted == 5, "5 objects should be considered deleted"
         for object_type, expected_amount in (("cluster", 1), ("service", 2), ("component", 2)):
             actual_amount = int(
-                _exec_django_shell(container, template.format(f'is_deleted=True, object_type="{object_type}"'))
+                _exec_django_shell(container, template.format(f'is_deleted=True, object_type="{object_type}"')),
             )
             assert actual_amount == expected_amount, (
                 f"Unexpected amount of deleted audit objects of type {object_type}\n"
@@ -139,7 +138,7 @@ def _exec_django_shell(container: Container, statement: str) -> str:
                 "sh",
                 "-c",
                 ". /adcm/venv/default/bin/activate " f"&& python /adcm/python/manage.py shell -c '{script}'",
-            ]
+            ],
         )
         out = output.decode("utf-8").strip()
         assert exit_code == 0, f"docker exec failed: {out}"

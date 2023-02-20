@@ -12,7 +12,6 @@
 
 """Host page PageObjects classes"""
 
-from typing import Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -40,7 +39,7 @@ class HostPageMixin(BasePageObject):
     toolbar: CommonToolbar
     __ACTIVE_MENU_CLASS = "active"
 
-    def __init__(self, driver, base_url, host_id: int, cluster_id: Optional[int] = None):
+    def __init__(self, driver, base_url, host_id: int, cluster_id: int | None = None):
         if self.MENU_SUFFIX is None:
             raise AttributeError("You should explicitly set MENU_SUFFIX in class definition")
         super().__init__(

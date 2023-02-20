@@ -16,8 +16,8 @@ Test "scripts" section of bundle's "upgrade" section
 
 import json
 import os
+from collections.abc import Collection
 from pathlib import Path
-from typing import Collection, Optional, Set, Tuple
 
 import allure
 import pytest
@@ -64,7 +64,10 @@ UPGRADE_EXTRA_ARGS = {"upgrade_with_config": {"config": {"parampampam": "somestr
 
 
 create_cluster_from_old_bundle = pytest.mark.parametrize(
-    "old_cluster", [("successful", "old")], indirect=True, ids=["successful_old_bundle"]
+    "old_cluster",
+    [("successful", "old")],
+    indirect=True,
+    ids=["successful_old_bundle"],
 )
 
 
@@ -82,12 +85,12 @@ def old_cluster(request, sdk_client_fs) -> Cluster:
 
 
 @pytest.fixture()
-def two_hosts(sdk_client_fs, old_cluster) -> Tuple[Host, Host]:
+def two_hosts(sdk_client_fs, old_cluster) -> tuple[Host, Host]:
     """Two hosts created and added to an old cluster"""
     provider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider"))
     provider = provider_bundle.provider_create(name="Too Simple Provider")
     return old_cluster.host_add(provider.host_create("first-host")), old_cluster.host_add(
-        provider.host_create("second-host")
+        provider.host_create("second-host"),
     )
 
 
@@ -108,14 +111,18 @@ def check_prototype(cluster: Cluster, expected_prototype_id: int):
 
 
 def check_cluster_objects_configs_equal_bundle_default(
-    cluster: Cluster, bundle: Bundle, *, service_names: Tuple[str, ...] = (TEST_SERVICE_NAME,)
+    cluster: Cluster,
+    bundle: Bundle,
+    *,
+    service_names: tuple[str, ...] = (TEST_SERVICE_NAME,),
 ):
     """
     Check that configurations of cluster, its services and components
     are equal to configurations of newly created cluster from given bundle
     """
     with allure.step(
-        f"Check configuration of cluster {cluster.name} is equal to default configuration of cluster from {bundle.name}"
+        f"Check configuration of cluster {cluster.name} "
+        f"is equal to default configuration of cluster from {bundle.name}",
     ):
         actual_configs = _extract_configs(cluster)
         cluster_with_defaults = bundle.cluster_create(f"Cluster to take config from {random_string(4)}")
@@ -189,8 +196,8 @@ def _check_service_is_not_in_cluster(cluster: Cluster, service_name: str):
     ], f'Service "{service_name}" should not be presented in cluster "{cluster.name}"'
 
 
-def _get_hc_names(hc_map) -> Set[Tuple[str, str, str]]:
-    return set(map(lambda x: (x["host"], x["service_name"], x["component"]), hc_map))
+def _get_hc_names(hc_map) -> set[tuple[str, str, str]]:
+    return {(x["host"], x["service_name"], x["component"]) for x in hc_map}
 
 
 def _get_component_prototype_id(bundle, service_name, component_name) -> int:
@@ -227,7 +234,8 @@ class TestUpgradeActionSectionValidation:
         """Test that valid bundles with upgrade actions succeed to upload"""
         verbose_bundle_name = os.path.basename(path).replace("_", " ").capitalize()
         with allure.step(f'Upload bundle "{verbose_bundle_name}" and expect it to succeed'), catch_failed(
-            ErrorMessage, f'Bundle "{verbose_bundle_name}" should be uploaded successfully'
+            ErrorMessage,
+            f'Bundle "{verbose_bundle_name}" should be uploaded successfully',
         ):
             bundle = sdk_client_fs.upload_from_fs(path)
             bundle.delete()
@@ -279,7 +287,7 @@ class TestSuccessfulUpgrade:
                 filter(
                     lambda x: x.display_name == job_name,  # pylint: disable=cell-var-from-loop
                     sdk_client_fs.job_list(),
-                )
+                ),
             )
             assert expected_message in job.log().content, f'"{expected_message}" should be in log'
 
@@ -415,7 +423,7 @@ class FailedUploadMixin:
         return client.upload_from_fs(get_data_dir(__file__, *directories, name))
 
     @allure.step('Upgrade cluster and expect it to enter the "{state}" state')
-    def _upgrade_and_expect_state(self, cluster: Cluster, state: str, name: Optional[str] = None, **kwargs):
+    def _upgrade_and_expect_state(self, cluster: Cluster, state: str, name: str | None = None, **kwargs):
         """
         Upgrade cluster to a new version (expect upgrade to fail)
         and check if it's state is correct
@@ -432,7 +440,7 @@ class FailedUploadMixin:
         ) == state, f'"before_upgrade" should be {state}, not {actual_state}'
 
     @allure.step("Check list of available actions on cluster")
-    def _check_action_list(self, cluster: Cluster, action_names: Set[str]):
+    def _check_action_list(self, cluster: Cluster, action_names: set[str]):
         """Check that action list is equal to given one (by names)"""
         cluster.reread()
         presented_action_names = {a.name for a in cluster.action_list()}
@@ -651,7 +659,7 @@ class TestConstraintsChangeAfterUpgrade:
         return bool(request.param)
 
     @pytest.fixture()
-    def cluster_with_new_component(self, sdk_client_fs) -> Tuple[Cluster, Service, Component]:
+    def cluster_with_new_component(self, sdk_client_fs) -> tuple[Cluster, Service, Component]:
         """Upload bundles from data dir, create service from old bundle, add service to it"""
         old_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "constraints", "old"))
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, "constraints", "new"))
@@ -670,14 +678,20 @@ class TestConstraintsChangeAfterUpgrade:
                     "service": self.SERVICE_DESC["name"],
                     "component": self.COMPONENT_NAME,
                     "action": "add",
-                }
-            ]
+                },
+            ],
         }
 
     @pytest.fixture()
     def upload_bundles(
-        self, request, sdk_client_fs, tmpdir, with_hc_in_upgrade, hc_acl_block, dummy_action_content
-    ) -> Tuple[Bundle, Bundle]:
+        self,
+        request,
+        sdk_client_fs,
+        tmpdir,
+        with_hc_in_upgrade,
+        hc_acl_block,
+        dummy_action_content,
+    ) -> tuple[Bundle, Bundle]:
         """Upload bundles created dynamically based on the given constraints"""
         # request.param should be like ([0,1], ['+'])
         old_constraint, new_constraint = request.param
@@ -700,7 +714,7 @@ class TestConstraintsChangeAfterUpgrade:
                         {
                             **self.NO_HC_ACL_UPGRADE_SECTION,
                             **(hc_acl_block if with_hc_in_upgrade else {}),
-                        }
+                        },
                     ],
                 },
                 {
@@ -726,7 +740,7 @@ class TestConstraintsChangeAfterUpgrade:
 
     @allure.step("Create cluster from old bundle and add service")
     @pytest.fixture()
-    def cluster_with_component(self, upload_bundles) -> Tuple[Cluster, Component]:
+    def cluster_with_component(self, upload_bundles) -> tuple[Cluster, Component]:
         """Create cluster and add service"""
         old_bundle, _ = upload_bundles
         cluster = old_bundle.cluster_create("Cluster with constraints")
@@ -812,9 +826,9 @@ class TestConstraintsChangeAfterUpgrade:
                         "service": SERVICE_DESC["name"],
                         "component": COMPONENT_NAME,
                         "action": "remove",
-                    }
-                ]
-            }
+                    },
+                ],
+            },
         ],
     )
     @pytest.mark.parametrize(

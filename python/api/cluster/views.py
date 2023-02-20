@@ -148,7 +148,9 @@ class ClusterBundle(GenericUIView):
         bundle = self.get_queryset().filter(bundle=cluster.prototype.bundle)
         shared = self.get_queryset().filter(shared=True).exclude(bundle=cluster.prototype.bundle)
         serializer = self.get_serializer(
-            list(chain(bundle, shared)), many=True, context={"request": request, "cluster": cluster}
+            list(chain(bundle, shared)),
+            many=True,
+            context={"request": request, "cluster": cluster},
         )
 
         return Response(serializer.data)

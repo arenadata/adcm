@@ -16,8 +16,8 @@ import functools
 import hashlib
 import shutil
 import tarfile
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Type
 
 from cm.adcm_config import init_object_config, proto_ref, switch_config
 from cm.errors import raise_adcm_ex
@@ -161,7 +161,7 @@ def untar(bundle_hash: str, bundle: Path) -> Path:
                 (
                     f"There is no bundle with hash {bundle_hash} in DB, ",
                     "but there is a dir on disk with this hash. Dir will be overwritten.",
-                )
+                ),
             )
 
     tar = tarfile.open(bundle)  # pylint: disable=consider-using-with
@@ -395,9 +395,7 @@ def check_variant_host(args, ref):
             check_variant_host(i["args"], ref)
 
 
-def re_check_config():
-    # pylint: disable=too-many-branches
-
+def re_check_config():  # pylint: disable=too-many-branches # noqa: C901
     sp_service = None
     same_stage_prototype_config = None
 
@@ -538,7 +536,7 @@ def copy_stage_upgrade(stage_upgrades, bundle):
 
 def prepare_bulk(
     origin_objects: Iterable[StageAction] | Iterable[StagePrototypeImport],
-    target: Type[Action] | Type[PrototypeImport],
+    target: type[Action] | type[PrototypeImport],
     prototype: Prototype,
     fields: Iterable[str],
 ) -> list[Action] | list[PrototypeImport]:
@@ -660,7 +658,10 @@ def copy_stage_component(stage_components, stage_proto, prototype, bundle):
     for stage_prototype in StagePrototype.objects.filter(type="component", parent=stage_proto):
         proto = Prototype.objects.get(name=stage_prototype.name, type="component", parent=prototype, bundle=bundle)
         copy_stage_actions(stage_actions=StageAction.objects.filter(prototype=stage_prototype), prototype=proto)
-        copy_stage_config(stage_configs=StagePrototypeConfig.objects.filter(prototype=stage_prototype), prototype=proto)
+        copy_stage_config(
+            stage_configs=StagePrototypeConfig.objects.filter(prototype=stage_prototype),
+            prototype=proto,
+        )
 
 
 def copy_stage_import(stage_imports, prototype):
@@ -725,7 +726,10 @@ def copy_stage(bundle_hash, bundle_proto):
         bundle.save()
     except IntegrityError:
         shutil.rmtree(settings.BUNDLE_DIR / bundle.hash)
-        raise_adcm_ex(code="BUNDLE_ERROR", msg=f'Bundle "{bundle_proto.name}" {bundle_proto.version} already installed')
+        raise_adcm_ex(
+            code="BUNDLE_ERROR",
+            msg=f'Bundle "{bundle_proto.name}" {bundle_proto.version} already installed',
+        )
 
     stage_prototypes = StagePrototype.objects.exclude(type="component")
     copy_stage_prototype(stage_prototypes, bundle)
@@ -753,13 +757,16 @@ def copy_stage(bundle_hash, bundle_proto):
     return bundle
 
 
-def update_bundle_from_stage(
+def update_bundle_from_stage(  # noqa: C901
     bundle,
 ):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     for stage_prototype in StagePrototype.objects.all():
         try:
             prototype = Prototype.objects.get(
-                bundle=bundle, type=stage_prototype.type, name=stage_prototype.name, version=stage_prototype.version
+                bundle=bundle,
+                type=stage_prototype.type,
+                name=stage_prototype.name,
+                version=stage_prototype.version,
             )
             prototype.path = stage_prototype.path
             prototype.version = stage_prototype.version
@@ -907,6 +914,7 @@ def update_bundle_from_stage(
                 pconfig = copy_obj(stage_prototype_config, PrototypeConfig, ("name", "subname") + flist)
                 pconfig.action = act
                 pconfig.prototype = prototype
+
             pconfig.save()
 
         PrototypeExport.objects.filter(prototype=prototype).delete()
@@ -1056,7 +1064,6 @@ def get_stage_bundle(bundle_file):
                 msg=f'There isn\'t any host definition in host provider type bundle "{bundle_file}"',
             )
         bundle = providers[0]
-
     else:
         raise_adcm_ex(
             code="BUNDLE_ERROR",

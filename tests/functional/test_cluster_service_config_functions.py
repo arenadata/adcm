@@ -14,7 +14,7 @@
 
 import json
 import os
-from typing import Any, Tuple
+from typing import Any
 
 import allure
 import coreapi
@@ -45,7 +45,7 @@ def cluster(cluster_bundle: Bundle) -> Cluster:
 
 
 @pytest.fixture()
-def cluster_with_service(cluster: Cluster) -> Tuple[Cluster, Service]:
+def cluster_with_service(cluster: Cluster) -> tuple[Cluster, Service]:
     """Create cluster and service"""
     service = cluster.service_add()
     return cluster, service
@@ -80,7 +80,7 @@ def _get_config_history(obj: BaseAPIObject):
 class TestClusterServiceConfig:
     """Tests for service config"""
 
-    def test_create_cluster_service_config(self, cluster_with_service: Tuple[Cluster, Service]):
+    def test_create_cluster_service_config(self, cluster_with_service: tuple[Cluster, Service]):
         """Test service config"""
         cfg_json = {
             "ssh-key": "TItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAA",
@@ -226,7 +226,7 @@ class TestClusterServiceConfig:
         ),
         pytest.param(
             {"ssh-key": "TItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAA"},
-            (err.CONFIG_KEY_ERROR, str()),
+            (err.CONFIG_KEY_ERROR, ""),
             id="without_all_required_params",
         ),
         pytest.param(
@@ -277,9 +277,9 @@ class TestClusterServiceConfig:
     @pytest.mark.parametrize(("service_config", "expected_error"), INVALID_SERVICE_CONFIGS)
     def test_should_not_set_invalid_service_config(
         self,
-        cluster_with_service: Tuple[Cluster, Service],
+        cluster_with_service: tuple[Cluster, Service],
         service_config: Any,
-        expected_error: Tuple[err.ADCMError, str],
+        expected_error: tuple[err.ADCMError, str],
     ):
         """Test set invalid config for service"""
         _, cluster_svc = cluster_with_service
@@ -291,7 +291,7 @@ class TestClusterServiceConfig:
         with allure.step("Check error"):
             adcm_error.equal(e, expected_msg)
 
-    def test_should_throws_exception_when_havent_previous_config(self, cluster_with_service: Tuple[Cluster, Service]):
+    def test_should_throws_exception_when_havent_previous_config(self, cluster_with_service: tuple[Cluster, Service]):
         """Test error when no previous config is present"""
         _, service = cluster_with_service
         with allure.step("Try to get previous version of the service config"):
@@ -304,7 +304,7 @@ class TestClusterServiceConfig:
 class TestClusterServiceConfigHistory:
     """Tests for service config history"""
 
-    def test_get_config_from_nonexistent_cluster_service(self, cluster_with_service: Tuple[Cluster, Service]):
+    def test_get_config_from_nonexistent_cluster_service(self, cluster_with_service: tuple[Cluster, Service]):
         """Test get config for nonexistent cluster"""
         _, service = cluster_with_service
         with allure.step(f"Removing service id={service.id}"):
@@ -372,7 +372,7 @@ class TestClusterConfig:
         self,
         cluster: Cluster,
         cluster_config: Any,
-        expected_error: Tuple[err.ADCMError, str],
+        expected_error: tuple[err.ADCMError, str],
     ):
         """Invalid cluster config should not be set"""
         adcm_error, expected_msg = expected_error

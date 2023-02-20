@@ -29,7 +29,7 @@ from tests.library import errorcodes as err
         pytest.param(
             utils.get_data_dir(__file__, "bundle_wo_cluster_definition"),
             id="bundle_wo_cluster_definition",
-        )
+        ),
     ],
     indirect=True,
 )

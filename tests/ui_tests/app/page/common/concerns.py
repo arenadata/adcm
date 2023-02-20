@@ -1,5 +1,5 @@
+from collections.abc import Generator
 from operator import contains, eq
-from typing import Generator
 
 import allure
 from selenium.webdriver.common.by import By
@@ -26,7 +26,7 @@ class Concern:
             return self._links
 
         self._links = ListOfElements(
-            map(as_element(Link, self._view), self._view.find_children(self.element, self._link))
+            map(as_element(Link, self._view), self._view.find_children(self.element, self._link)),
         )
         return self._links
 
@@ -47,7 +47,7 @@ class ListOfConcerns(ListOfElements):
     def with_link(self, link_name: str, *, exact: bool = True) -> "ListOfConcerns":
         test_ = eq if exact else contains
         return ListOfConcerns(
-            filter(lambda concern: any(test_(link.name, link_name) for link in concern.links), self.data)
+            filter(lambda concern: any(test_(link.name, link_name) for link in concern.links), self.data),
         )
 
     def with_text(self, text: str, *, exact: bool = False) -> "ListOfConcerns":
@@ -77,7 +77,7 @@ class ConcernPopover:
             return self._concerns
 
         self._concerns = ListOfConcerns(
-            map(as_element(Concern, self._view), self._view.find_children(self.element, self.Locators.concern))
+            map(as_element(Concern, self._view), self._view.find_children(self.element, self.Locators.concern)),
         )
         return self._concerns
 

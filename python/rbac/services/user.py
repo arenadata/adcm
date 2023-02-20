@@ -12,7 +12,6 @@
 
 """Service functions for working with User model"""
 
-from typing import List
 
 from cm.errors import raise_adcm_ex
 from django.contrib.auth.hashers import make_password
@@ -40,7 +39,7 @@ def _set_password(user: models.User, value: str) -> None:
     _regenerate_token(user)
 
 
-def _update_groups(user: models.User, groups: [Empty, List[dict]]) -> None:
+def _update_groups(user: models.User, groups: [Empty, list[dict]]) -> None:
     if groups is Empty:
         return
 
@@ -97,7 +96,7 @@ def update(
         raise_adcm_ex("USER_CONFLICT", msg="Username could not be changed")
 
     args = (username, first_name, last_name, email, is_superuser, is_active)
-    if not partial and not all((arg is not Empty for arg in args)):
+    if not partial and not all(arg is not Empty for arg in args):
         raise_adcm_ex("USER_UPDATE_ERROR", msg="Full User update with partial argset is forbidden")
 
     user_exist = models.User.objects.filter(email=email).exists()

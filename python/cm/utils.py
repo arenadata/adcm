@@ -47,14 +47,19 @@ def get_attr(config: dict) -> dict:
     attr = {}
 
     if all(
-        ("activatable" in config["limits"], "active" in config["limits"], config["type"] == "group", config.get("name"))
+        (
+            "activatable" in config["limits"],
+            "active" in config["limits"],
+            config["type"] == "group",
+            config.get("name"),
+        ),
     ):
         attr[config["name"]] = config["limits"]
 
     return attr
 
 
-def _get_limits(config: dict, root_path: str) -> dict:
+def _get_limits(config: dict, root_path: str) -> dict:  # noqa: C901
     # pylint: disable=too-many-branches
     limits = {}
 
@@ -126,7 +131,7 @@ def normalize_config(config: dict, root_path: str, name: str = "", subname: str 
     if "subs" in config:
         for subconf in config["subs"]:
             config_list.extend(
-                normalize_config(config=subconf, root_path=root_path, name=name, subname=subconf["name"])
+                normalize_config(config=subconf, root_path=root_path, name=name, subname=subconf["name"]),
             )
 
     for field in settings.TEMPLATE_CONFIG_DELETE_FIELDS:

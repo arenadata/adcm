@@ -21,7 +21,6 @@ Implemented as singleton module, just `import ctx from cm.api_context` and use `
 
 import os
 from pathlib import Path
-from typing import Optional
 
 from cm import models
 from cm.logger import logger
@@ -33,9 +32,9 @@ class _Context:
 
     def __init__(self):
         self.event = Event()
-        self.task: Optional[models.TaskLog] = None
-        self.job: Optional[models.JobLog] = None
-        self.lock: Optional[models.ConcernItem] = None
+        self.task: models.TaskLog | None = None
+        self.job: models.JobLog | None = None
+        self.lock: models.ConcernItem | None = None
         self.get_job_data()
 
     def get_job_data(self):

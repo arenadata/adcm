@@ -13,7 +13,7 @@
 """Test correct appearance of password/secrettext fields in ADCM logs, job logs, inventory"""
 
 import json
-from typing import Iterator
+from collections.abc import Iterator
 
 import allure
 import pytest
@@ -192,7 +192,11 @@ def _set_cluster_secrets(cluster: Cluster, password: str, secrettext: str, secre
 
 
 def _run_change_config(
-    cluster: Cluster, new_password: str, new_secrettext: str, new_secretmap: dict, new_secretfile: str
+    cluster: Cluster,
+    new_password: str,
+    new_secrettext: str,
+    new_secretmap: dict,
+    new_secretfile: str,
 ):
     return run_cluster_action_and_assert_result(
         cluster,
