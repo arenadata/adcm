@@ -80,17 +80,18 @@ from cm.status_api import post_event
 from cm.variant import process_variant
 from django.conf import settings
 from django.db import transaction
+from django.db.models import JSONField
 from django.utils import timezone
 from rbac.roles import re_apply_policy_for_jobs
 
 
 def start_task(
     action: Action,
-    obj: ADCMEntity,
+    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
     conf: dict,
     attr: dict,
-    hostcomponent: List[HostComponent],
-    hosts: List[Host],
+    hostcomponent: list[dict],
+    hosts: list[Host],
     verbose: bool,
 ) -> TaskLog:
     if action.type not in ActionType.values:
@@ -133,11 +134,11 @@ def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster, hosts:
 
 def prepare_task(
     action: Action,
-    obj: ADCMEntity,
+    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
     conf: dict,
     attr: dict,
-    hostcomponent: List[HostComponent],
-    hosts: List[Host],
+    hostcomponent: list[dict],
+    hosts: list[Host],
     verbose: bool,
 ) -> TaskLog:  # pylint: disable=too-many-locals
     cluster = get_object_cluster(obj)
@@ -524,9 +525,9 @@ def prepare_job(
     sub_action: SubAction,
     job_id: int,
     obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
-    conf: dict,
+    conf: JSONField | None,
     delta: dict,
-    hosts: List[Host],
+    hosts: JSONField | None,
     verbose: bool,
 ):
     prepare_job_config(action, sub_action, job_id, obj, conf, verbose)
@@ -584,7 +585,7 @@ def prepare_job_config(
     sub_action: SubAction,
     job_id: int,
     obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
-    conf: dict,
+    conf: JSONField | None,
     verbose: bool,
 ):
     # pylint: disable=too-many-branches,too-many-statements

@@ -1216,6 +1216,7 @@ class AbstractAction(ADCMModel):
     partial_execution = models.BooleanField(default=False)
     host_action = models.BooleanField(default=False)
     allow_in_maintenance_mode = models.BooleanField(default=False)
+    config_jinja = models.CharField(max_length=1000, blank=True, null=True)
 
     _venv = models.CharField(default="default", db_column="venv", max_length=1000, blank=False)
 
@@ -1656,9 +1657,6 @@ class LogStorage(ADCMModel):
         constraints = [
             models.UniqueConstraint(fields=["job"], condition=models.Q(type="check"), name="unique_check_job")
         ]
-
-
-# Stage: Temporary tables to load bundle
 
 
 class StagePrototype(ADCMModel):

@@ -16,6 +16,8 @@ from itertools import chain
 from cm.adcm_config import get_prototype_config, process_config
 from cm.logger import logger
 from cm.models import (
+    ADCM,
+    Action,
     ADCMEntity,
     Cluster,
     ClusterBind,
@@ -44,6 +46,7 @@ def process_config_and_attr(obj: ADCMEntity, conf: dict, attr: dict | None = Non
             prototype = obj.object.prototype
         else:
             prototype = obj.prototype
+
         spec, _, _, _ = get_prototype_config(proto=prototype)
 
     new_config = process_config(obj=obj, spec=spec, old_conf=conf)
@@ -248,14 +251,17 @@ def get_provider_config(provider_id) -> dict:
     return {"provider": get_provider_variables(provider)}
 
 
-def get_host_groups(cluster: Cluster, delta: dict, action_host: Host | None = None) -> dict:
+def get_host_groups(cluster: Cluster, delta: dict | None = None, action_host: Host | None = None) -> dict:
+    if delta is None:
+        delta = {}
+
     groups = {}
     host_components = HostComponent.objects.filter(cluster=cluster)
     for hostcomponent in host_components:
         if action_host and hostcomponent.host.id not in action_host:
             continue
 
-        key_object_pairs: tuple[tuple[str, ClusterObject | ServiceComponent]] = (
+        key_object_pairs = (
             (
                 f"{hostcomponent.service.prototype.name}.{hostcomponent.component.prototype.name}",
                 hostcomponent.component,
@@ -330,25 +336,52 @@ def get_target_host(host_id):
     return groups
 
 
-def prepare_job_inventory(obj, job_id, action, delta, action_host=None):
-    logger.info("prepare inventory for job #%s, object: %s", job_id, obj)
-    file_descriptor = open(  # pylint: disable=consider-using-with
-        settings.RUN_DIR / f"{job_id}/inventory.json", "w", encoding=settings.ENCODING_UTF_8
-    )
-    inv = {"all": {"children": {}}}
+def get_inventory_data(
+    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
+    action: Action,
+    action_host: list[Host] | None = None,
+    delta: dict | None = None,
+) -> dict:
+    if delta is None:
+        delta = {}
+
+    inventory_data = {"all": {"children": {}}}
     cluster = get_object_cluster(obj)
+
     if cluster:
-        inv["all"]["children"].update(get_cluster_hosts(cluster, action_host))
-        inv["all"]["children"].update(get_host_groups(cluster, delta, action_host))
+        inventory_data["all"]["children"].update(get_cluster_hosts(cluster=cluster, action_host=action_host))
+        inventory_data["all"]["children"].update(get_host_groups(cluster=cluster, delta=delta, action_host=action_host))
 
     if obj.prototype.type == "host":
-        inv["all"]["children"].update(get_host(obj.id))
+        inventory_data["all"]["children"].update(get_host(host_id=obj.id))
+
         if action.host_action:
-            inv["all"]["children"].update(get_target_host(obj.id))
+            inventory_data["all"]["children"].update(get_target_host(host_id=obj.id))
 
     if obj.prototype.type == "provider":
-        inv["all"]["children"].update(get_provider_hosts(obj, action_host))
-        inv["all"]["vars"] = get_provider_config(obj.id)
+        inventory_data["all"]["children"].update(get_provider_hosts(provider=obj, action_host=action_host))
+        inventory_data["all"]["vars"] = get_provider_config(provider_id=obj.id)
 
-    json.dump(inv, file_descriptor, indent=3)
+    return inventory_data
+
+
+def prepare_job_inventory(
+    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
+    job_id: int,
+    action: Action,
+    delta: dict | None = None,
+    action_host: list[Host] | None = None,
+) -> None:
+    if delta is None:
+        delta = {}
+
+    logger.info("prepare inventory for job #%s, object: %s", job_id, obj)
+    # pylint: disable=consider-using-with
+    file_descriptor = open(
+        file=settings.RUN_DIR / f"{job_id}/inventory.json", mode="w", encoding=settings.ENCODING_UTF_8
+    )
+
+    inventory_data = get_inventory_data(obj=obj, action=action, action_host=action_host, delta=delta)
+
+    json.dump(obj=inventory_data, fp=file_descriptor, indent=3)
     file_descriptor.close()

@@ -508,9 +508,11 @@ def add_components_to_service(cluster, service):
 def get_license(proto: Prototype) -> str | None:
     if not proto.license_path:
         return None
+
     if not isinstance(proto, Prototype):
         raise_adcm_ex("LICENSE_ERROR")
-    return read_bundle_file(proto, proto.license_path, proto.bundle.hash, "license file")
+
+    return read_bundle_file(proto=proto, fname=proto.license_path, pattern="license file")
 
 
 def accept_license(proto: Prototype) -> None:
@@ -527,7 +529,7 @@ def update_obj_config(obj_conf: ObjectConfig, conf: dict, attr: dict, desc: str 
     if not isinstance(attr, dict):
         raise_adcm_ex("INVALID_CONFIG_UPDATE", "attr should be a map")
 
-    obj = obj_conf.object
+    obj: ADCMEntity = obj_conf.object
     if obj is None:
         raise_adcm_ex("INVALID_CONFIG_UPDATE", f'unknown object type "{obj_conf}"')
 
