@@ -13,7 +13,6 @@
 """The most basic PageObject classes"""
 
 from contextlib import contextmanager
-from typing import List
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -25,8 +24,8 @@ from selenium.common.exceptions import (
 )
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait as WDW
+from selenium.webdriver.support import expected_conditions as EC  # noqa: N812
+from selenium.webdriver.support.ui import WebDriverWait as WDW  # noqa: N817
 
 from tests.ui_tests.app.page.common.breadcrumbs import Breadcrumbs
 from tests.ui_tests.app.page.common.common_locators import (
@@ -69,7 +68,7 @@ class BasePageObject(Interactor):
         if any(str.isdigit(char) for char in path_template):
             raise ValueError(
                 f"Path template {path_template} should not contain any digits. "
-                "Please use template string and pass values as kwargs"
+                "Please use template string and pass values as kwargs",
             )
 
         super().__init__(driver=driver, default_timeout=default_loc_timeout)
@@ -103,7 +102,8 @@ class BasePageObject(Interactor):
             wait_until_step_succeeds(_open_page, period=0.5, timeout=timeout or self.default_page_timeout)
 
         if close_popup and self.is_element_displayed(
-            CommonPopupLocators.block_by_text("Connection established."), timeout=5
+            CommonPopupLocators.block_by_text("Connection established."),
+            timeout=5,
         ):
             connection_message = "Connection established."
             with allure.step(f"Close popup with '{connection_message}' message"):
@@ -365,7 +365,7 @@ class Header(Interactor):  # pylint: disable=too-many-public-methods
         yield
         self.hover_element(AuthorizedHeaderLocators.jobs)
 
-    def get_job_rows_from_popup(self) -> List[WebElement]:
+    def get_job_rows_from_popup(self) -> list[WebElement]:
         """Get job rows from *opened* popup"""
         self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
         return self.find_elements(AuthorizedHeaderLocators.JobPopup.job_row)

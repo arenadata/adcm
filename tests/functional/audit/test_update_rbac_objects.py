@@ -13,7 +13,7 @@
 """Tests on audit logs for UPDATE of RBAC objects"""
 
 from functools import partial
-from typing import Dict, Literal, Tuple, Union
+from typing import Literal
 
 import allure
 import pytest
@@ -25,18 +25,18 @@ from tests.functional.audit.conftest import (
     check_succeed,
     make_auth_header,
 )
-from tests.functional.rbac.conftest import BusinessRoles as BR
+from tests.functional.rbac.conftest import BusinessRoles as BR  # noqa: N817
 from tests.library.audit.checkers import AuditLogChecker
 
 # pylint: disable=redefined-outer-name
 
 
-RBACObject = Union[User, Group, Role, Policy]
+RBACObject = User | Group | Role | Policy
 ChangeMethod = Literal["PUT", "PATCH"]
 
 
 @pytest.fixture()
-def rbac_objects(sdk_client_fs, rbac_create_data) -> Tuple[User, Group, Role, Policy]:
+def rbac_objects(sdk_client_fs, rbac_create_data) -> tuple[User, Group, Role, Policy]:
     """Create RBAC objects"""
     data_for_objects = {**rbac_create_data}
     # they are empty
@@ -51,7 +51,7 @@ def rbac_objects(sdk_client_fs, rbac_create_data) -> Tuple[User, Group, Role, Po
 
 
 @pytest.fixture()
-def new_rbac_objects_info(sdk_client_fs) -> Dict[str, Dict[str, Dict]]:
+def new_rbac_objects_info(sdk_client_fs) -> dict[str, dict[str, dict]]:
     """Prepare "changes" for RBAC objects"""
     user = sdk_client_fs.user_create("justuser", "password")
     group = sdk_client_fs.group_create("justagroup")
@@ -200,13 +200,19 @@ def test_full_rbac_objects_update(http_method: str, parse_with_context, generic_
     check_succeed(change_rbac_object(sdk_client_fs, group, http_method, new_values["group"], headers=admin_creds))
     check_succeed(change_rbac_object(sdk_client_fs, role, http_method, new_values["role"], headers=admin_creds))
     check_succeed(change_rbac_object(sdk_client_fs, policy, http_method, new_values["policy"], headers=admin_creds))
-    AuditLogChecker(parse_with_context({"provider": {"id": generic_provider.id, "name": generic_provider.name}})).check(
-        sdk_client_fs.audit_operation_list()
+    AuditLogChecker(
+        parse_with_context({"provider": {"id": generic_provider.id, "name": generic_provider.name}}),
+    ).check(
+        sdk_client_fs.audit_operation_list(),
     )
 
 
 def change_rbac_object(
-    client: ADCMClient, rbac_object: RBACObject, method: ChangeMethod, data: dict, **call_kwargs
+    client: ADCMClient,
+    rbac_object: RBACObject,
+    method: ChangeMethod,
+    data: dict,
+    **call_kwargs,
 ) -> requests.Response:
     """
     Change RBAC object via API.

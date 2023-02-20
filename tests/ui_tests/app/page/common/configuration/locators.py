@@ -26,7 +26,9 @@ class CommonConfigMenu:
     advanced_label = BaseLocator(By.XPATH, "//mat-checkbox[.//span[text()='Advanced']]", "Advanced label")
     search_input = BaseLocator(By.CSS_SELECTOR, "#config_search_input", "Search input")
     search_input_clear_btn = BaseLocator(
-        By.CSS_SELECTOR, "app-search button[aria-label='Clear']", "Clear search input button"
+        By.CSS_SELECTOR,
+        "app-search button[aria-label='Clear']",
+        "Clear search input button",
     )
     description_input = BaseLocator(
         By.CSS_SELECTOR,
@@ -37,13 +39,19 @@ class CommonConfigMenu:
     history_btn = BaseLocator(By.XPATH, "//button[.//mat-icon[text()='history']]", "History button")
 
     compare_version_select = BaseLocator(
-        By.CSS_SELECTOR, "mat-select[placeholder='History']", "Base version to compare"
+        By.CSS_SELECTOR,
+        "mat-select[placeholder='History']",
+        "Base version to compare",
     )
     compare_to_select = BaseLocator(
-        By.CSS_SELECTOR, "mat-select[placeholder='Compare to']", "Compare to version select"
+        By.CSS_SELECTOR,
+        "mat-select[placeholder='Compare to']",
+        "Compare to version select",
     )
     config_version_option = TemplateLocator(
-        By.XPATH, "//mat-option//span[contains(text(), '{}')]", "Config version with text: {}"
+        By.XPATH,
+        "//mat-option//span[contains(text(), '{}')]",
+        "Config version with text: {}",
     )
     # use it to check config diff existence by finding text entry
     config_diff = TemplateLocator(

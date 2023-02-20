@@ -14,7 +14,7 @@
 Test hosts maintenance mode behaviour
 """
 
-from typing import Iterable, Set, Tuple
+from collections.abc import Iterable
 
 import allure
 import pytest
@@ -123,7 +123,9 @@ def test_mm_hosts_not_allowed_in_hc_map(api_client, cluster_with_mm, hosts):
     with allure.step("Try to set HC map with one of hosts in MM"):
         _expect_hc_set_to_fail(cluster, [(host_in_mm, first_component)], err_=INVALID_HC_HOST_IN_MM)
         _expect_hc_set_to_fail(
-            cluster, [(host_in_mm, first_component), (regular_host, first_component)], err_=INVALID_HC_HOST_IN_MM
+            cluster,
+            [(host_in_mm, first_component), (regular_host, first_component)],
+            err_=INVALID_HC_HOST_IN_MM,
         )
 
     with allure.step('Place component on "working" host'):
@@ -131,7 +133,9 @@ def test_mm_hosts_not_allowed_in_hc_map(api_client, cluster_with_mm, hosts):
 
     with allure.step("Try to set HC map with one of hosts in MM and check that hc-map hasn't changed"):
         _expect_hc_set_to_fail(
-            cluster, [(host_in_mm, first_component), (regular_host, first_component)], err_=INVALID_HC_HOST_IN_MM
+            cluster,
+            [(host_in_mm, first_component), (regular_host, first_component)],
+            err_=INVALID_HC_HOST_IN_MM,
         )
         cluster.reread()
         _check_hostcomponents_are_equal(cluster.hostcomponent(), hc_with_regular_host)
@@ -230,7 +234,9 @@ def test_host_actions_on_another_component_host(api_client, host_actions_cluster
     with allure.step("Check that correct actions are enabled/disabled on the host"):
         sets_are_equal(enabled_actions, expected_enabled, f"Incorrect actions are enabled on host {regular_host.fqdn}")
         sets_are_equal(
-            disabled_actions, expected_disabled, f"Incorrect actions are disabled on host {regular_host.fqdn}"
+            disabled_actions,
+            expected_disabled,
+            f"Incorrect actions are disabled on host {regular_host.fqdn}",
         )
 
 
@@ -287,11 +293,15 @@ def test_host_actions_with_mm(api_client, cluster_with_mm, hosts):
     expect_no_api_error("run allowed in MM action", host_in_mm.action(name=allowed_action).run).wait()
 
     expect_api_error(
-        "run not allowed in MM action", regular_host.action(name=not_allowed_action).run, err_=ACTION_ERROR
+        "run not allowed in MM action",
+        regular_host.action(name=not_allowed_action).run,
+        err_=ACTION_ERROR,
     )
     expect_api_error("run not allowed in MM action", host_in_mm.action(name=not_allowed_action).run, err_=ACTION_ERROR)
     expect_api_error(
-        "run not allowed in MM action of host", host_in_mm.action(name=default_action_of_host).run, err_=ACTION_ERROR
+        "run not allowed in MM action of host",
+        host_in_mm.action(name=default_action_of_host).run,
+        err_=ACTION_ERROR,
     )
     expect_no_api_error("run allowed in MM action", regular_host.action(name=allowed_action).run)
 
@@ -338,7 +348,9 @@ def test_hc_acl_action_with_mm(api_client, cluster_with_mm, hosts):
             "move component from MM host to regular one",
             service.action(name="change").run,
             hc=build_hc_for_hc_acl_action(
-                cluster_with_mm, [(first_component, mm_host_1)], [(first_component, regular_host_1)]
+                cluster_with_mm,
+                [(first_component, mm_host_1)],
+                [(first_component, regular_host_1)],
             ),
         )
 
@@ -441,11 +453,12 @@ def check_all_actions_are_enabled(*objects) -> None:
     for adcm_object in objects:
         disabled_actions_on_object = get_disabled_actions_names(adcm_object)
         is_empty(
-            disabled_actions_on_object, f"None of actions should be disabled on {get_object_represent(adcm_object)}"
+            disabled_actions_on_object,
+            f"None of actions should be disabled on {get_object_represent(adcm_object)}",
         )
 
 
-def check_visible_actions(adcm_object: AnyADCMObject, action_names: Set[str]) -> None:
+def check_visible_actions(adcm_object: AnyADCMObject, action_names: set[str]) -> None:
     """Check actions are presented in object's action list"""
     actual_names = {action.name for action in adcm_object.action_list()}
     object_represent = get_object_represent(adcm_object)
@@ -469,7 +482,9 @@ def check_state(host: Host, expected_state: str) -> None:
 
 
 def _expect_hc_set_to_fail(
-    cluster: Cluster, hostcomponent: Iterable[Tuple[Host, Component]], err_: ADCMError = MAINTENANCE_MODE_NOT_AVAILABLE
+    cluster: Cluster,
+    hostcomponent: Iterable[tuple[Host, Component]],
+    err_: ADCMError = MAINTENANCE_MODE_NOT_AVAILABLE,
 ) -> None:
     expect_api_error(
         "set hostcomponent with one of hosts in MM mode",

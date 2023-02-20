@@ -142,7 +142,8 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
 
         _, provider_proto = self.get_host_provider_proto_id()
         response: Response = self.client.post(
-            path=reverse("provider"), data={"name": "DF1", "prototype_id": provider_proto}
+            path=reverse("provider"),
+            data={"name": "DF1", "prototype_id": provider_proto},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -188,7 +189,8 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.json()["code"], "WRONG_NAME")
 
         response: Response = self.client.post(
-            host_url, {"fqdn": host, "prototype_id": host_proto, "provider_id": provider_id}
+            host_url,
+            {"fqdn": host, "prototype_id": host_proto, "provider_id": provider_id},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -215,7 +217,8 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         )
 
         response: Response = self.client.post(
-            host_url, {"fqdn": host, "prototype_id": host_proto, "provider_id": provider_id}
+            host_url,
+            {"fqdn": host, "prototype_id": host_proto, "provider_id": provider_id},
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)

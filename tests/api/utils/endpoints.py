@@ -12,8 +12,9 @@
 
 """ADCM Endpoints classes and methods"""
 
+from collections.abc import Callable
 from enum import Enum
-from typing import Callable, List, Optional, Type
+from typing import Optional
 
 import attr
 
@@ -73,11 +74,11 @@ class Endpoint:
     """
 
     path: str
-    methods: List[Methods]
-    data_class: Type[BaseClass]
+    methods: list[Methods]
+    data_class: type[BaseClass]
     spec_link: str
     technical: bool = False
-    filter_predicate: Optional[Callable[[dict], bool]] = None
+    filter_predicate: Callable[[dict], bool] | None = None
     _base_path = None
 
     def set_path(self, value):
@@ -140,7 +141,7 @@ class Endpoints(Enum):
         return path_id
 
     @classmethod
-    def get_by_data_class(cls, data_class: Type[BaseClass]) -> Optional["Endpoints"]:
+    def get_by_data_class(cls, data_class: type[BaseClass]) -> Optional["Endpoints"]:
         """Get endpoint instance by data class"""
         for endpoint in cls:
             if endpoint.data_class == data_class:

@@ -12,7 +12,7 @@
 
 """Tools for ADCM errors handling in tests"""
 
-from typing import Iterable, List
+from collections.abc import Iterable
 
 import pytest_check as check
 from adcm_client.wrappers.api import ADCMApiError
@@ -68,7 +68,7 @@ class ADCMError:
         code, *_ = e.args
         assert self.code == code, f"Error expected to be {self.code}, not {code}"
 
-    def _get_data_err_messages(self, error) -> List[str]:
+    def _get_data_err_messages(self, error) -> list[str]:
         """Extract all messages from _data attribute or an error if it is presented"""
         data = getattr(error, "_data", None)
         if data is None:

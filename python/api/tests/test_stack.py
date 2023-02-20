@@ -27,7 +27,7 @@ class TestPrototypeAPI(BaseTestCase):
             path=Path(
                 settings.BASE_DIR,
                 "python/api/tests/files/test_actions_data.tar",
-            )
+            ),
         )
         cluster_prototype = Prototype.objects.get(bundle=bundle, type="cluster")
 

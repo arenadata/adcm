@@ -145,9 +145,9 @@ def config_generate(name, entity, config_type, is_required, is_default):
                     "script_type": "ansible",
                     "type": "job",
                     "states": OrderedDict({"available": ["created"]}),
-                }
-            )
-        }
+                },
+            ),
+        },
     )
 
     body = OrderedDict({"name": name, "type": entity, "version": "1.0", "config": config, "actions": actions})
@@ -350,13 +350,18 @@ def action_generate(name, entity, config_type, is_required, is_default, sent_val
             {
                 "name": "Ansible | List all known variables and facts",
                 "debug": OrderedDict({"var": "hostvars[inventory_hostname]"}),
-            }
+            },
         ),
         OrderedDict({"name": "Assert config", "assert": OrderedDict({"that": that})}),
     ]
 
     sent_value, test_value = SENT_TEST_VALUE[config_type](
-        name, entity, config_type, is_required, is_default, sent_value_type
+        name,
+        entity,
+        config_type,
+        is_required,
+        is_default,
+        sent_value_type,
     )
 
     playbook_vars = {"sent_value": sent_value, "test_value": test_value}
@@ -369,8 +374,8 @@ def action_generate(name, entity, config_type, is_required, is_default, sent_val
                 "gather_facts": False,
                 "vars": playbook_vars,
                 "tasks": tasks,
-            }
-        )
+            },
+        ),
     ]
 
     return body
@@ -419,7 +424,12 @@ def run():  # pylint: disable=too-many-locals
             write_yaml(f"{path}{entity}_action.yaml", entity_action)
 
             additional_entity_action = action_generate(
-                name, additional_entity, config_type, is_required, is_default, sent_value_type
+                name,
+                additional_entity,
+                config_type,
+                is_required,
+                is_default,
+                sent_value_type,
             )
             write_yaml(f"{path}{additional_entity}_action.yaml", additional_entity_action)
 
@@ -436,11 +446,11 @@ def run():  # pylint: disable=too-many-locals
                             {
                                 "match": "dict",
                                 "items": OrderedDict({"country": "string", "code": "integer"}),
-                            }
+                            },
                         ),
                         "string": OrderedDict({"match": "string"}),
                         "integer": OrderedDict({"match": "int"}),
-                    }
+                    },
                 )
                 write_yaml(f"{path}schema.yaml", schema)
 

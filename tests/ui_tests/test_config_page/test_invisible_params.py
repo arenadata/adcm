@@ -63,7 +63,10 @@ def test_group_configs_fields_invisible_true(sdk_client_fs: ADCMClient, app_fs):
     cluster, _ = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
     cluster_group_config = cluster.group_config_create(name="Test group")
     cluster_config_page = ClusterGroupConfigConfig(
-        app_fs.driver, app_fs.adcm.url, cluster.id, cluster_group_config.id
+        app_fs.driver,
+        app_fs.adcm.url,
+        cluster.id,
+        cluster_group_config.id,
     ).open()
     cluster_config_page.wait_page_is_opened()
     cluster_config_page.config.check_no_rows_or_groups_on_page()

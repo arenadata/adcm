@@ -12,7 +12,6 @@
 
 """ADCM API methods checks"""
 # pylint: disable=redefined-outer-name
-from typing import List
 
 import allure
 import pytest
@@ -32,10 +31,11 @@ def prepare_data(request, adcm_api):
     Generate request body here since it depends on actual ADCM instance
     and can't be determined when generating
     """
-    test_data_list: List[TestData] = request.param
+    test_data_list: list[TestData] = request.param
     for test_data in test_data_list:
         request_data = DbFiller(adcm=adcm_api).generate_valid_request_data(
-            endpoint=test_data.request.endpoint, method=test_data.request.method
+            endpoint=test_data.request.endpoint,
+            method=test_data.request.method,
         )
 
         test_data.request.data = request_data["data"]

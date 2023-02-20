@@ -64,7 +64,8 @@ from version_utils import rpm
 def check_license(proto: Prototype) -> None:
     if proto.license == "unaccepted":
         raise_adcm_ex(
-            "LICENSE_ERROR", f'License for prototype "{proto.name}" {proto.type} {proto.version} is not accepted'
+            "LICENSE_ERROR",
+            f'License for prototype "{proto.name}" {proto.type} {proto.version} is not accepted',
         )
 
 
@@ -86,7 +87,7 @@ def version_in(version: str, ver: PrototypeImport) -> bool:
     return True
 
 
-def load_service_map():
+def load_service_map():  # noqa: C901
     comps = {}
     hosts = {}
     hc_map = {}
@@ -251,7 +252,8 @@ def delete_host_provider(provider, cancel_tasks=True):
     hosts = Host.objects.filter(provider=provider)
     if hosts:
         raise_adcm_ex(
-            "PROVIDER_CONFLICT", f'There is host #{hosts[0].pk} "{hosts[0].fqdn}" of host {obj_ref(provider)}'
+            "PROVIDER_CONFLICT",
+            f'There is host #{hosts[0].pk} "{hosts[0].fqdn}" of host {obj_ref(provider)}',
         )
 
     if cancel_tasks:
@@ -490,7 +492,11 @@ def add_service_to_cluster(cluster, proto):
     post_event(event="add", obj=service, details={"type": "cluster", "value": str(cluster.pk)})
     load_service_map()
     logger.info(
-        "service #%s %s is added to cluster #%s %s", service.pk, service.prototype.name, cluster.pk, cluster.name
+        "service #%s %s is added to cluster #%s %s",
+        service.pk,
+        service.prototype.name,
+        cluster.pk,
+        cluster.name,
     )
 
     return service
@@ -587,7 +593,7 @@ def get_hc(cluster):
                 "host_id": hostcomponent.host.pk,
                 "service_id": hostcomponent.service.pk,
                 "component_id": hostcomponent.component.pk,
-            }
+            },
         )
 
     return hc_map
@@ -687,7 +693,8 @@ def save_hc(cluster, host_comp_list):
     host_service_of_still_hc = {(hc.host, hc.service) for hc in still_hc}
     for removed_hc in set(hc_queryset) - set(still_hc):
         groupconfigs = GroupConfig.objects.filter(
-            object_type__model__in=["clusterobject", "servicecomponent"], hosts=removed_hc.host
+            object_type__model__in=["clusterobject", "servicecomponent"],
+            hosts=removed_hc.host,
         )
         for group_config in groupconfigs:
             if (group_config.object_type.model == "clusterobject") and (
@@ -746,7 +753,7 @@ def get_bind(cluster, service, source_cluster, source_service):
         return None
 
 
-def get_import(cluster, service=None):
+def get_import(cluster, service=None):  # noqa: C901
     def get_export(_cluster, _service, _pi):
         exports = []
         export_proto = {}
@@ -770,7 +777,7 @@ def get_import(cluster, service=None):
                             "id": {"cluster_id": cls.pk},
                             "binded": bool(bound),
                             "bind_id": getattr(bound, "id", None),
-                        }
+                        },
                     )
             elif prototype_export.prototype.type == "service":
                 for service in ClusterObject.objects.filter(prototype=prototype_export.prototype):
@@ -783,7 +790,7 @@ def get_import(cluster, service=None):
                             "id": {"cluster_id": service.cluster.pk, "service_id": service.pk},
                             "binded": bool(bound),
                             "bind_id": getattr(bound, "id", None),
-                        }
+                        },
                     )
             else:
                 raise_adcm_ex("BIND_ERROR", f"unexpected export type: {prototype_export.prototype.type}")
@@ -803,7 +810,7 @@ def get_import(cluster, service=None):
                 "required": prototype_import.required,
                 "multibind": prototype_import.multibind,
                 "exports": get_export(cluster, service, prototype_import),
-            }
+            },
         )
 
     return imports
@@ -859,7 +866,7 @@ def get_bind_obj(cluster, service):
     return obj
 
 
-def multi_bind(cluster, service, bind_list):
+def multi_bind(cluster, service, bind_list):  # noqa: C901
     # pylint: disable=too-many-locals,too-many-statements
 
     def get_prototype_import(import_pk, _import_obj):
@@ -874,7 +881,10 @@ def multi_bind(cluster, service, bind_list):
         if "service_id" in _b["export_id"]:
             _export_co = ClusterObject.obj.get(id=_b["export_id"]["service_id"])
             if _export_co.cluster != _export_cluster:
-                raise_adcm_ex("BIND_ERROR", f"export {obj_ref(_export_co)} is not belong to {obj_ref(_export_cluster)}")
+                raise_adcm_ex(
+                    "BIND_ERROR",
+                    f"export {obj_ref(_export_co)} is not belong to {obj_ref(_export_cluster)}",
+                )
 
         return _export_co
 
@@ -905,7 +915,8 @@ def multi_bind(cluster, service, bind_list):
 
         if prototype_import.name != export_obj.prototype.name:
             raise_adcm_ex(
-                "BIND_ERROR", f'Export {obj_ref(export_obj)} does not match import name "{prototype_import.name}"'
+                "BIND_ERROR",
+                f'Export {obj_ref(export_obj)} does not match import name "{prototype_import.name}"',
             )
 
         if not version_in(export_obj.prototype.version, prototype_import):
@@ -940,7 +951,11 @@ def multi_bind(cluster, service, bind_list):
 
             prototype_import, cluster_bind, export_obj = value
             check_multi_bind(
-                prototype_import, cluster, service, cluster_bind.source_cluster, cluster_bind.source_service
+                prototype_import,
+                cluster,
+                service,
+                cluster_bind.source_cluster,
+                cluster_bind.source_service,
             )
             cluster_bind.save()
             logger.info("bind %s to %s", obj_ref(export_obj), obj_ref(import_obj))
@@ -950,7 +965,7 @@ def multi_bind(cluster, service, bind_list):
     return get_import(cluster, service)
 
 
-def bind(cluster, service, export_cluster, export_service_pk):
+def bind(cluster, service, export_cluster, export_service_pk):  # noqa: C901
     # pylint: disable=too-many-branches
 
     """

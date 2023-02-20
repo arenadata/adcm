@@ -17,7 +17,7 @@
 import json
 import os
 import tempfile
-from typing import Generator
+from collections.abc import Generator
 
 import allure
 import pytest
@@ -154,7 +154,7 @@ def _attach_adcm_data_on_fail(request, launcher):
 
         if isinstance(launcher, ADCMWithPostgresLauncher):
             attach_postgres_data_dir(launcher, request)
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:  # pylint: disable=broad-except # noqa: BLE001
         with allure.step(f"[ERROR] {e}"):
             ...
 

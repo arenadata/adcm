@@ -12,7 +12,6 @@
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -31,10 +30,10 @@ class StatusRowInfo:
     """Information from status row"""
 
     icon_status: bool
-    group_name: Optional[str]
-    state: Optional[str]
-    state_color: Optional[str]
-    link: Optional[str]
+    group_name: str | None
+    state: str | None
+    state_color: str | None
+    link: str | None
 
 
 class StatusPage(BasePageObject):

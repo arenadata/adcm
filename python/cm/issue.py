@@ -33,7 +33,7 @@ from cm.models import (
 )
 
 
-def check_config(obj):  # pylint: disable=too-many-branches
+def check_config(obj):  # pylint: disable=too-many-branches # noqa: C901
     spec, _, _, _ = get_prototype_config(obj.prototype)
     conf, attr = get_obj_config(obj)
     for key, value in spec.items():  # pylint: disable=too-many-nested-blocks
@@ -115,7 +115,7 @@ def do_check_import(cluster, service=None):
     return res
 
 
-def check_hc(cluster):
+def check_hc(cluster):  # noqa: C901
     shc_list = []
     for hostcomponent in HostComponent.objects.filter(cluster=cluster):
         shc_list.append((hostcomponent.service, hostcomponent.host, hostcomponent.component))
@@ -202,7 +202,7 @@ def get_obj_config(obj):
     return config_log.config, attr
 
 
-def check_component_constraint(cluster, service_prototype, hc_in, old_bundle=None):
+def check_component_constraint(cluster, service_prototype, hc_in, old_bundle=None):  # noqa: C901
     ref = f"in host component list for {service_prototype.type} {service_prototype.name}"
     all_host = Host.objects.filter(cluster=cluster)
 
@@ -250,10 +250,15 @@ def check_component_constraint(cluster, service_prototype, hc_in, old_bundle=Non
         if old_bundle:
             try:
                 old_service_proto = Prototype.objects.get(
-                    name=service_prototype.name, type="service", bundle=old_bundle
+                    name=service_prototype.name,
+                    type="service",
+                    bundle=old_bundle,
                 )
                 Prototype.objects.get(
-                    parent=old_service_proto, bundle=old_bundle, type="component", name=component_prototype.name
+                    parent=old_service_proto,
+                    bundle=old_bundle,
+                    type="component",
+                    name=component_prototype.name,
                 )
             except Prototype.DoesNotExist:
                 continue
@@ -268,7 +273,7 @@ _issue_check_map = {
     ConcernCause.HOSTCOMPONENT: check_hc,
 }
 _prototype_issue_map = {
-    ObjectType.ADCM: tuple(),
+    ObjectType.ADCM: (),
     ObjectType.CLUSTER: (
         ConcernCause.CONFIG,
         ConcernCause.IMPORT,
@@ -298,7 +303,11 @@ def _create_concern_item(obj: ADCMEntity, issue_cause: ConcernCause) -> ConcernI
     reason = MessageTemplate.get_message_from_template(msg_name.value, source=obj)
     issue_name = _gen_issue_name(obj, issue_cause)
     issue = ConcernItem.objects.create(
-        type=ConcernType.ISSUE, name=issue_name, reason=reason, owner=obj, cause=issue_cause
+        type=ConcernType.ISSUE,
+        name=issue_name,
+        reason=reason,
+        owner=obj,
+        cause=issue_cause,
     )
     return issue
 

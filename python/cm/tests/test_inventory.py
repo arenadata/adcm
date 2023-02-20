@@ -82,7 +82,9 @@ class TestInventory(BaseTestCase):
         get_obj_config(self.cluster)
         config_log = ConfigLog.objects.get(id=self.cluster.config.current)
         mock_process_config_and_attr.assert_called_once_with(
-            obj=self.cluster, conf=config_log.config, attr=config_log.attr
+            obj=self.cluster,
+            conf=config_log.config,
+            attr=config_log.attr,
         )
 
     @patch("cm.inventory.get_import")
@@ -123,7 +125,7 @@ class TestInventory(BaseTestCase):
                 "state": "created",
                 "multi_state": [],
                 "before_upgrade": {"state": None},
-            }
+            },
         }
 
         self.assertDictEqual(config, test_config)
@@ -182,9 +184,9 @@ class TestInventory(BaseTestCase):
                         "state": "created",
                         "multi_state": [],
                         "before_upgrade": {"state": None},
-                    }
+                    },
                 },
-            }
+            },
         }
         self.assertDictEqual(groups, test_groups)
         mock_get_hosts.assert_called_once_with([self.host], self.host)
@@ -209,7 +211,7 @@ class TestInventory(BaseTestCase):
                                 "adcm_hostid": host2.pk,
                                 "state": "created",
                                 "multi_state": [],
-                            }
+                            },
                         },
                         "vars": {
                             "cluster": {
@@ -224,9 +226,9 @@ class TestInventory(BaseTestCase):
                             },
                             "services": {},
                         },
-                    }
-                }
-            }
+                    },
+                },
+            },
         }
         host_inv = {
             "all": {
@@ -237,7 +239,7 @@ class TestInventory(BaseTestCase):
                                 "adcm_hostid": self.host.pk,
                                 "state": "created",
                                 "multi_state": [],
-                            }
+                            },
                         },
                         "vars": {
                             "provider": {
@@ -248,11 +250,11 @@ class TestInventory(BaseTestCase):
                                 "state": "created",
                                 "multi_state": [],
                                 "before_upgrade": {"state": None},
-                            }
+                            },
                         },
-                    }
-                }
-            }
+                    },
+                },
+            },
         }
         provider_inv = {
             "all": {
@@ -265,8 +267,8 @@ class TestInventory(BaseTestCase):
                                 "multi_state": [],
                             },
                             "h2": {"adcm_hostid": host2.pk, "state": "created", "multi_state": []},
-                        }
-                    }
+                        },
+                    },
                 },
                 "vars": {
                     "provider": {
@@ -277,9 +279,9 @@ class TestInventory(BaseTestCase):
                         "state": "created",
                         "multi_state": [],
                         "before_upgrade": {"state": None},
-                    }
+                    },
                 },
-            }
+            },
         }
 
         data = [

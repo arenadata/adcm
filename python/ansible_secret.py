@@ -13,7 +13,7 @@
 
 from django.conf import settings
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django  # pylint: disable=unused-import # noqa: F401
 
 if __name__ == "__main__":
     print(settings.ANSIBLE_SECRET)

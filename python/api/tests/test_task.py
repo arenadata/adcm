@@ -203,7 +203,7 @@ class TestTaskAPI(BaseTestCase):
                 reverse(
                     "run-task",
                     kwargs={"cluster_id": self.cluster.pk, "action_id": self.action.pk},
-                )
+                ),
             )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)

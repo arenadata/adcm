@@ -50,7 +50,10 @@ def cook_service(cluster, name="UBER"):
 
 def cook_component(cluster, service, name):
     proto = Prototype.objects.create(
-        type="component", name=name, bundle=cluster.prototype.bundle, parent=service.prototype
+        type="component",
+        name=name,
+        bundle=cluster.prototype.bundle,
+        parent=service.prototype,
     )
 
     return ServiceComponent.objects.create(cluster=cluster, service=service, prototype=proto)

@@ -28,7 +28,7 @@ urlpatterns = [
                     HostMaintenanceModeView.as_view(),
                     name="host-maintenance-mode",
                 ),
-            ]
+            ],
         ),
     ),
 ]

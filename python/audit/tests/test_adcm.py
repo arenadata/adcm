@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from audit.models import (
     AuditLog,
@@ -37,7 +37,9 @@ class TestADCMAudit(BaseTestCase):
         self.prototype = Prototype.objects.create(bundle=bundle, type="adcm")
         config = ObjectConfig.objects.create(current=0, previous=0)
         self.config_log = ConfigLog.objects.create(
-            obj_ref=config, config="{}", attr={"ldap_integration": {"active": True}}
+            obj_ref=config,
+            config="{}",
+            attr={"ldap_integration": {"active": True}},
         )
         config.current = self.config_log.pk
         config.save(update_fields=["current"])
@@ -53,8 +55,8 @@ class TestADCMAudit(BaseTestCase):
         self.task = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=ContentType.objects.get(app_label="cm", model="adcm"),
-            start_date=datetime.now(),
-            finish_date=datetime.now(),
+            start_date=datetime.now(tz=ZoneInfo("UTC")),
+            finish_date=datetime.now(tz=ZoneInfo("UTC")),
             action=self.action,
         )
         self.adcm_conf_updated_str = "ADCM configuration updated"

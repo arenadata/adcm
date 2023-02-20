@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, Tuple
 
 from audit.cases.adcm import adcm_case
 from audit.cases.cluster import cluster_case
@@ -26,9 +25,11 @@ from django.views import View
 from rest_framework.response import Response
 
 
-def get_audit_operation_and_object(
-    view: View, response: Response, deleted_obj: Model
-) -> Tuple[Optional[AuditOperation], Optional[AuditObject], Optional[str]]:
+def get_audit_operation_and_object(  # noqa: C901
+    view: View,
+    response: Response,
+    deleted_obj: Model,
+) -> tuple[AuditOperation | None, AuditObject | None, str | None]:
     operation_name = None
     path = view.request.path.replace("/api/v1/", "")[:-1].split("/")
 

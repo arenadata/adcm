@@ -13,7 +13,7 @@
 """Endpoint data classes definition"""
 
 from abc import ABC
-from typing import Callable, List
+from collections.abc import Callable
 
 # there's a local import, but it's not cyclic really
 from tests.api.utils.data_synchronization import (  # pylint: disable=cyclic-import
@@ -53,12 +53,12 @@ class BaseClass(ABC):
     # List of BaseClass that are NOT included in POST method for current Class
     # but should exist before data preparation
     # and creation of current object
-    predefined_dependencies: List["BaseClass"] = []
+    predefined_dependencies: list["BaseClass"] = []
 
     # List of BaseClass that are NOT included in POST method for current Class
     # and should be generated implicitly after data preparation
     # and creation of current object
-    implicitly_depends_on: List["BaseClass"] = []
+    implicitly_depends_on: list["BaseClass"] = []
 
     # Synchronize data in result dict when API fields has complex dependencies
     # like foreign keys list depends on other field's value (and this value is also fk)
@@ -270,12 +270,25 @@ class RbacUserFields(BaseClass):
         default_value=AUTO_VALUE,
     )
     username = Field(
-        name="username", f_type=Username(max_length=150, special_chars="@.+-_"), required=True, postable=True
+        name="username",
+        f_type=Username(max_length=150, special_chars="@.+-_"),
+        required=True,
+        postable=True,
     )
     first_name = Field(
-        name="first_name", default_value="", f_type=String(max_length=150), postable=True, changeable=True
+        name="first_name",
+        default_value="",
+        f_type=String(max_length=150),
+        postable=True,
+        changeable=True,
     )
-    last_name = Field(name="last_name", default_value="", f_type=String(max_length=150), postable=True, changeable=True)
+    last_name = Field(
+        name="last_name",
+        default_value="",
+        f_type=String(max_length=150),
+        postable=True,
+        changeable=True,
+    )
     email = Field(name="email", default_value="", f_type=Email(), postable=True, changeable=True)
     password = Field(name="password", f_type=Password(), required=True, postable=True, changeable=True)
     is_superuser = Field(name="is_superuser", f_type=Boolean(), default_value=False, postable=True, changeable=True)
@@ -297,7 +310,11 @@ class RbacGroupFields(BaseClass):
         default_value=AUTO_VALUE,
     )
     user = Field(
-        name="user", f_type=ForeignKeyM2M(fk_link=RbacUserFields), postable=True, changeable=True, default_value=[]
+        name="user",
+        f_type=ForeignKeyM2M(fk_link=RbacUserFields),
+        postable=True,
+        changeable=True,
+        default_value=[],
     )
     name = Field(name="name", f_type=String(max_length=100), required=True, postable=True, changeable=True)
     description = Field(name="description", f_type=Text(), postable=True, changeable=True, default_value="")
@@ -307,7 +324,11 @@ class RbacGroupFields(BaseClass):
 
 
 RbacUserFields.group = Field(
-    name="group", f_type=ForeignKeyM2M(fk_link=RbacGroupFields), postable=True, changeable=True, default_value=[]
+    name="group",
+    f_type=ForeignKeyM2M(fk_link=RbacGroupFields),
+    postable=True,
+    changeable=True,
+    default_value=[],
 )
 
 
@@ -340,7 +361,9 @@ class RbacSimpleRoleFields(BaseClass):
     # category is a list of FK to a "ProductCategory" that is hard to get from API
     category = Field(name="category", f_type=ListOf(SmallIntegerID(max_value=2)), default_value=[])
     parametrized_by_type = Field(
-        name="parametrized_by_type", f_type=ListOf(Enum(PARAMETRIZED_BY_LIST)), default_value=AUTO_VALUE
+        name="parametrized_by_type",
+        f_type=ListOf(Enum(PARAMETRIZED_BY_LIST)),
+        default_value=AUTO_VALUE,
     )
 
     url = Field(name="url", f_type=String(), default_value=AUTO_VALUE)
@@ -366,7 +389,9 @@ class RbacBuiltInRoleFields(BaseClass):
 
     category = Field(name="category", f_type=ListOf(SmallIntegerID(max_value=1)), default_value=[])
     parametrized_by_type = Field(
-        name="parametrized_by_type", f_type=ListOf(Enum(PARAMETRIZED_BY_LIST)), default_value=AUTO_VALUE
+        name="parametrized_by_type",
+        f_type=ListOf(Enum(PARAMETRIZED_BY_LIST)),
+        default_value=AUTO_VALUE,
     )
     built_in = Field(name="built_in", f_type=Boolean(), default_value=True)
     type = Field(name="type", f_type=Enum(["role", "business", "hidden"]), default_value="role")
@@ -380,7 +405,11 @@ class RbacBusinessRoleFields(RbacBuiltInRoleFields):
 
 
 RbacSimpleRoleFields.child = Field(
-    name="child", f_type=ForeignKeyM2M(fk_link=RbacBusinessRoleFields), postable=True, changeable=True, required=True
+    name="child",
+    f_type=ForeignKeyM2M(fk_link=RbacBusinessRoleFields),
+    postable=True,
+    changeable=True,
+    required=True,
 )
 
 
@@ -395,7 +424,11 @@ class RbacNotBuiltInPolicyFields(BaseClass):
     name = Field(name="name", f_type=String(max_length=160), postable=True, required=True, changeable=True)
     description = Field(name="description", f_type=Text(), default_value="", postable=True, changeable=True)
     role = Field(
-        name="role", f_type=ObjectForeignKey(RbacSimpleRoleFields), required=True, postable=True, changeable=True
+        name="role",
+        f_type=ObjectForeignKey(RbacSimpleRoleFields),
+        required=True,
+        postable=True,
+        changeable=True,
     )
     built_in = Field(name="built_in", f_type=Boolean(), default_value=False)
     # actually this field isn't required when role isn't parametrized

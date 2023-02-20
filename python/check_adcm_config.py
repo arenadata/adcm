@@ -20,16 +20,17 @@ import cm.checker
 import ruyaml
 from django.conf import settings
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django  # pylint: disable=unused-import # noqa: F401
 
 
-def check_config(data_file, schema_file, print_ok=True):  # pylint: disable=too-many-return-statements
+def check_config(data_file, schema_file, print_ok=True):  # pylint: disable=too-many-return-statements # noqa: C901
     rules = ruyaml.round_trip_load(
-        open(schema_file, encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
+        open(schema_file, encoding=settings.ENCODING_UTF_8),  # pylint: disable=consider-using-with
     )
     try:
         data = ruyaml.round_trip_load(
-            open(data_file, encoding=settings.ENCODING_UTF_8), version="1.1"  # pylint: disable=consider-using-with
+            open(data_file, encoding=settings.ENCODING_UTF_8),  # pylint: disable=consider-using-with
+            version="1.1",
         )
     except FileNotFoundError as e:
         print(e)

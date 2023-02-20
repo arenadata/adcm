@@ -14,8 +14,8 @@
 
 import json
 import re
+from collections.abc import Callable, Collection
 from functools import partial
-from typing import Callable, Collection, Optional, Type, Union
 from urllib import parse
 
 import allure
@@ -39,8 +39,8 @@ from adcm_client.objects import (
 from tests.functional.tools import AnyADCMObject, AnyRBACObject
 from tests.library.consts import HTTPMethod
 
-RoleTargetObject = Union[AnyADCMObject, AnyRBACObject, Bundle, ADCM]
-RoleTargetType = Type[RoleTargetObject]
+RoleTargetObject = AnyADCMObject | AnyRBACObject | Bundle | ADCM
+RoleTargetType = type[RoleTargetObject]
 
 
 class ForbiddenCallChecker:
@@ -76,11 +76,11 @@ class ForbiddenCallChecker:
 
     def __init__(
         self,
-        object_type: Union[RoleTargetType, Collection[RoleTargetType]],
+        object_type: RoleTargetType | Collection[RoleTargetType],
         endpoint_suffix: str,
         method: HTTPMethod,
         *,
-        special_case: Optional[str] = None,
+        special_case: str | None = None,
     ):
         if special_case:
             # rework to switch maybe if you have time
@@ -140,7 +140,7 @@ class ForbiddenCallChecker:
             attachment_type = allure.attachment_type.HTML
         allure.attach(name=f"Response on call to {url}", body=body, attachment_type=attachment_type)
         raise AssertionError(
-            f"Unexpected status code, call to {url} should be denied, but status code was {status_code}"
+            f"Unexpected status code, call to {url} should be denied, but status code was {status_code}",
         )
 
     def _build_default_resource_path(self, adcm_object: RoleTargetObject, **_) -> str:

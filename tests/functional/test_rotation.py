@@ -9,14 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Test rotation of job logs and unattached configs"""
-
 # pylint: disable=redefined-outer-name
 
 import datetime
 import itertools
-from typing import Collection, List, Optional, Set, Tuple
+from collections.abc import Collection
+from zoneinfo import ZoneInfo
 
 import allure
 import pytest
@@ -47,7 +45,7 @@ MULTIJOB_ACTION = "multi"
 
 
 @pytest.fixture()
-def objects(sdk_client_fs) -> Tuple[Cluster, Service, Component, Provider, Host]:
+def objects(sdk_client_fs) -> tuple[Cluster, Service, Component, Provider, Host]:
     """Create all types of objects"""
     cluster_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster"))
     cluster = cluster_bundle.cluster_create("Test Cluster")
@@ -58,19 +56,19 @@ def objects(sdk_client_fs) -> Tuple[Cluster, Service, Component, Provider, Host]
 
 
 @pytest.fixture()
-def simple_tasks(objects) -> List[Task]:
+def simple_tasks(objects) -> list[Task]:
     """Spawn simple tasks (1 job per each) on each object"""
     return _run_action_on_all_objects(SIMPLE_ACTION, objects)
 
 
 @pytest.fixture()
-def multi_tasks(objects) -> List[Task]:
+def multi_tasks(objects) -> list[Task]:
     """Spawn multijobs on each object"""
     return _run_action_on_all_objects(MULTIJOB_ACTION, objects)
 
 
 @pytest.fixture()
-def config_objects(objects) -> Tuple[Tuple[int, ...], Tuple[int, ...]]:
+def config_objects(objects) -> tuple[tuple[int, ...], tuple[int, ...]]:
     """Spawn many configs on each object"""
     configs = [
         [obj.config_set_diff({"param": random_string(12)}) and obj.config(full=True)["id"] for _ in range(10)]
@@ -82,7 +80,7 @@ def config_objects(objects) -> Tuple[Tuple[int, ...], Tuple[int, ...]]:
 
 
 @pytest.fixture()
-def config_group_objects(objects) -> Tuple[Tuple[int, ...], Tuple[int, ...]]:
+def config_group_objects(objects) -> tuple[tuple[int, ...], tuple[int, ...]]:
     """Spawn many object configs on each object except Host"""
     configs = [
         [
@@ -101,7 +99,7 @@ def config_group_objects(objects) -> Tuple[Tuple[int, ...], Tuple[int, ...]]:
 
 
 @pytest.fixture()
-def separated_configs(config_objects, config_group_objects) -> Tuple[Tuple[int, ...], Tuple[int, ...]]:
+def separated_configs(config_objects, config_group_objects) -> tuple[tuple[int, ...], tuple[int, ...]]:
     """Return separately bonded and not bonded configs' and group configs' ids"""
     return (*config_objects[0], *config_group_objects[0]), (
         *config_objects[1],
@@ -124,7 +122,7 @@ def test_job_logs_cleanup(sdk_client_fs, adcm_fs, adcm_db, simple_tasks):
     when they're too old.
     Plain "logrotate".
     """
-    ten_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=10)
+    ten_days_ago = datetime.datetime.now(tz=ZoneInfo("UTC")) - datetime.timedelta(days=10)
     # since it's a simple jobs, task_id and job_id will be the same
     all_job_ids = [t.id for t in simple_tasks]
 
@@ -143,7 +141,7 @@ def test_jobs_cleanup_fs_only(sdk_client_fs, adcm_fs, adcm_db, simple_tasks):
     when remove from FS setting is != 0 and remove from DB == 0.
     Plain "logrotate".
     """
-    ten_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=10)
+    ten_days_ago = datetime.datetime.now(tz=ZoneInfo("UTC")) - datetime.timedelta(days=10)
     # since it's a simple jobs, task_id and job_id will be the same
     all_job_ids = [t.id for t in simple_tasks]
 
@@ -162,7 +160,7 @@ def test_jobs_cleanup_db_only(sdk_client_fs, adcm_fs, adcm_db, simple_tasks):
     when remove from FS setting is == 0 and remove from DB != 0.
     Plain "logrotate".
     """
-    ten_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=10)
+    ten_days_ago = datetime.datetime.now(tz=ZoneInfo("UTC")) - datetime.timedelta(days=10)
     # since it's a simple jobs, task_id and job_id will be the same
     all_job_ids = [t.id for t in simple_tasks]
 
@@ -180,8 +178,8 @@ def test_remove_only_expired_job_logs(sdk_client_fs, adcm_fs, adcm_db, simple_ta
     Test that only old enough tasks and jobs are removed.
     Plain "logrotate".
     """
-    five_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=5)
-    month_ago = datetime.datetime.utcnow() - datetime.timedelta(days=30)
+    five_days_ago = datetime.datetime.now(tz=ZoneInfo("UTC")) - datetime.timedelta(days=5)
+    month_ago = datetime.datetime.now(tz=ZoneInfo("UTC")) - datetime.timedelta(days=30)
     very_old_job_ids = [t.id for t in simple_tasks[:2]]
     not_so_old_job_ids = [t.id for t in simple_tasks[2:]]
 
@@ -205,8 +203,8 @@ def test_cleanup_multijobs(sdk_client_fs, adcm_fs, adcm_db, multi_tasks):
     Plain "logrotate".
     """
     # 5 and 7 picked to distinct threshold clearly
-    five_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=5)
-    seven_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=7)
+    five_days_ago = datetime.datetime.now(tz=ZoneInfo("UTC")) - datetime.timedelta(days=5)
+    seven_days_ago = datetime.datetime.now(tz=ZoneInfo("UTC")) - datetime.timedelta(days=7)
     two_day_task, *another_tasks = multi_tasks
     first_task_jobs_ids = first_job_id, *other_job_ids = [j.id for j in two_day_task.job_list()]
     another_tasks_job_ids = list(itertools.chain.from_iterable((t.id for t in t.job_list()) for t in another_tasks))
@@ -230,7 +228,7 @@ def test_config_rotation(sdk_client_fs, adcm_fs, adcm_db, separated_configs, obj
     Test config rotation.
     Plain "logrotate".
     """
-    ten_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=10)
+    ten_days_ago = datetime.datetime.now(tz=ZoneInfo("UTC")) - datetime.timedelta(days=10)
     all_configs, not_bonded_configs = separated_configs
 
     set_rotation_info_in_adcm_config(sdk_client_fs.adcm(), config_in_db=1)
@@ -247,8 +245,8 @@ def test_remove_only_expired_config_logs(sdk_client_fs, adcm_fs, adcm_db, separa
     Test config rotation removes only old enough configs, but leaves not old enough intact.
     Plain "logrotate".
     """
-    five_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=5) + datetime.timedelta(hours=1)
-    ten_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=10)
+    five_days_ago = datetime.datetime.now(tz=ZoneInfo("UTC")) - datetime.timedelta(days=5) + datetime.timedelta(hours=1)
+    ten_days_ago = datetime.datetime.now(tz=ZoneInfo("UTC")) - datetime.timedelta(days=10)
     bonded_configs, not_bonded_configs = separated_configs
     very_old_configs = [c for i, c in enumerate(not_bonded_configs) if i % 2 == 0]
     not_so_old_configs = [c for i, c in enumerate(not_bonded_configs) if i % 2 != 0]
@@ -267,7 +265,7 @@ def test_logrotate_command_target_job(sdk_client_fs, adcm_fs, adcm_db, simple_ta
     """
     Check that "logrotate --target job" deletes only configs, but not the jobs
     """
-    ten_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=10)
+    ten_days_ago = datetime.datetime.now(tz=ZoneInfo("UTC")) - datetime.timedelta(days=10)
     configs = [*separated_configs[0], *separated_configs[1]]
     job_ids = [t.id for t in simple_tasks]
 
@@ -288,7 +286,7 @@ def test_logrotate_command_target_config(sdk_client_fs, adcm_fs, adcm_db, simple
     """
     bonded_configs, not_bonded_configs = separated_configs
     job_ids = [t.id for t in simple_tasks]
-    ten_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=10)
+    ten_days_ago = datetime.datetime.now(tz=ZoneInfo("UTC")) - datetime.timedelta(days=10)
 
     set_rotation_info_in_adcm_config(sdk_client_fs.adcm(), 1, 1, 1)
     set_configs_date(adcm_db, ten_days_ago)
@@ -306,7 +304,7 @@ def test_old_adcm_config_removal(sdk_client_fs, adcm_fs, adcm_db):
     """
     Check that ADCM old config logs are removed with plain "logrotate" command
     """
-    ten_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=10)
+    ten_days_ago = datetime.datetime.now(tz=ZoneInfo("UTC")) - datetime.timedelta(days=10)
     adcm = sdk_client_fs.adcm()
 
     with allure.step("Create 10 ADCM configs"):
@@ -326,7 +324,7 @@ def test_only_finished_tasks_removed(sdk_client_fs, adcm_fs, adcm_db, objects):
     """
     Test that running objects aren't removed from DB
     """
-    ten_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=10)
+    ten_days_ago = datetime.datetime.now(tz=ZoneInfo("UTC")) - datetime.timedelta(days=10)
     cluster, *_ = objects
 
     with allure.step("Run long action"):
@@ -340,7 +338,7 @@ def test_only_finished_tasks_removed(sdk_client_fs, adcm_fs, adcm_db, objects):
 
     if long_task.status != "running":
         raise ValueError(
-            "Long action finished during logrotate OR right after it. Increase sleep time in sleep.yaml file"
+            "Long action finished during logrotate OR right after it. Increase sleep time in sleep.yaml file",
         )
 
     check_task_logs_are_presented_in_db(sdk_client_fs, task_ids)
@@ -354,9 +352,9 @@ def test_only_finished_tasks_removed(sdk_client_fs, adcm_fs, adcm_db, objects):
 
 def set_rotation_info_in_adcm_config(
     adcm: ADCM,
-    jobs_in_db: Optional[int] = None,
-    jobs_on_fs: Optional[int] = None,
-    config_in_db: Optional[int] = None,
+    jobs_in_db: int | None = None,
+    jobs_on_fs: int | None = None,
+    config_in_db: int | None = None,
 ) -> dict:
     """Update ADCM config with new jobs/config log rotation info"""
     # `is not None` because 0 is a legit value
@@ -470,24 +468,24 @@ def _check_config_groups_exists(objects):
 # !===== Utilities =====!
 
 
-def _get_ids_of_job_logs_on_fs(container: Container) -> Set[int]:
+def _get_ids_of_job_logs_on_fs(container: Container) -> set[int]:
     exit_code, output = container.exec_run(["ls", "/adcm/data/run/"])
     if exit_code != 0:
         raise ValueError(f"Command execution failed: {output}")
     return set(map(int, filter(lambda x: x.isnumeric(), output.decode("utf-8").strip().split("\n"))))
 
 
-def _retrieve_config_ids(client: ADCMClient) -> Set[int]:
+def _retrieve_config_ids(client: ADCMClient) -> set[int]:
     all_objects = list(
         itertools.chain.from_iterable(
             getattr(client, f"{type_name}_list")()
             for type_name in ("cluster", "service", "component", "provider", "host")
-        )
+        ),
     )
     all_objects += list(
         itertools.chain.from_iterable(
             obj.group_config() for obj in filter(lambda o: not isinstance(o, Host), all_objects)
-        )
+        ),
     )
     all_objects.append(client.adcm())
     return {c["id"] for c in itertools.chain.from_iterable(obj.config_history(full=True) for obj in all_objects)}
@@ -498,7 +496,7 @@ def _all_tasks_finished(tasks):
         task.wait()
 
 
-def _run_action_on_all_objects(action_name, objects) -> List[Task]:
+def _run_action_on_all_objects(action_name, objects) -> list[Task]:
     cluster, service, component, provider, host = objects
     tasks = [cluster.action(name=action_name).run(), provider.action(name=action_name).run()]
     _all_tasks_finished(tasks)

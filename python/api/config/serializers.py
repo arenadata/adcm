@@ -76,7 +76,9 @@ class ObjectConfigRestoreSerializer(ConfigObjectConfigSerializer):
 
     def update(self, instance, validated_data):
         return restore_cluster_config(
-            instance.obj_ref, instance.id, validated_data.get("description", instance.description)
+            instance.obj_ref,
+            instance.id,
+            validated_data.get("description", instance.description),
         )
 
 

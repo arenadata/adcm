@@ -98,7 +98,8 @@ class ADCMEntityConcernTest(BaseTestCase):
         cluster = self.hierarchy["cluster"]
         service = self.hierarchy["service"]
         reason = MessageTemplate.get_message_from_template(
-            MessageTemplate.KnownNames.CONFIG_ISSUE.value, source=cluster
+            MessageTemplate.KnownNames.CONFIG_ISSUE.value,
+            source=cluster,
         )
         issue_type = ConcernCause.CONFIG
         issue = ConcernItem.objects.create(type=ConcernType.ISSUE, reason=reason, owner=cluster, cause=issue_type)
@@ -110,7 +111,8 @@ class ADCMEntityConcernTest(BaseTestCase):
     def test_get_own_issue__exists(self):
         cluster = self.hierarchy["cluster"]
         reason = MessageTemplate.get_message_from_template(
-            MessageTemplate.KnownNames.CONFIG_ISSUE.value, source=cluster
+            MessageTemplate.KnownNames.CONFIG_ISSUE.value,
+            source=cluster,
         )
         issue_type = ConcernCause.CONFIG
         issue = ConcernItem.objects.create(type=ConcernType.ISSUE, reason=reason, owner=cluster, cause=issue_type)

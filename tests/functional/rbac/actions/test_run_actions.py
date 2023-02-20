@@ -17,7 +17,6 @@
 import itertools
 import os
 from contextlib import contextmanager
-from typing import Optional, Tuple, Union
 
 import allure
 import pytest
@@ -86,7 +85,7 @@ def test_provider_basic(clients, user, actions_provider, simple_provider):
 def _test_basic_action_run_permissions(adcm_object, admin_sdk, user_sdk, user, all_objects):
     """Check that granting and withdrawn of permission to run action works as expected"""
     with allure.step(
-        f'Check that granting policy allows to run action "{DO_NOTHING_ACTION}" on {get_object_represent(adcm_object)}'
+        f'Check that granting policy allows to run action "{DO_NOTHING_ACTION}" on {get_object_represent(adcm_object)}',
     ):
         business_role = action_business_role(adcm_object, DO_NOTHING_ACTION)
         policy = create_action_policy(admin_sdk, adcm_object, business_role, user=user)
@@ -137,7 +136,7 @@ def test_config_change_via_plugin(clients, user, actions_cluster, actions_provid
 
 def _test_config_change(
     action_owner_object: AnyADCMObject,
-    objects_to_change: Tuple[AnyADCMObject, ...],
+    objects_to_change: tuple[AnyADCMObject, ...],
     admin_client: ADCMClient,
     user_client: ADCMClient,
     user: User,
@@ -159,7 +158,7 @@ def _test_config_change(
     object_role_map = tuple(zip(objects_to_change, business_roles))
 
     with allure.step(
-        f'Apply policy on "{owner_object_represent}" and check config change is allowed without explicit permission'
+        f'Apply policy on "{owner_object_represent}" and check config change is allowed without explicit permission',
     ):
         policy = create_action_policy(admin_client, action_owner_object, *business_roles, user=user)
         user_object, *_ = as_user_objects(user_client, action_owner_object)
@@ -252,7 +251,8 @@ def test_action_on_host_available_with_cluster_parametrization(clients, actions_
     admin_cluster.host_add(admin_host)
 
     cluster_business_role, host_business_role = action_business_role(
-        admin_cluster, DO_NOTHING_ACTION
+        admin_cluster,
+        DO_NOTHING_ACTION,
     ), action_business_role(admin_host, DO_NOTHING_ACTION)
     policy = create_action_policy(clients.admin, admin_cluster, cluster_business_role, host_business_role, user=user)
 
@@ -371,7 +371,7 @@ def check_single_action_is_allowed_on_object(
     action_display_name: str,
     adcm_object: AnyADCMObject,
     user_sdk: ADCMClient,
-    business_role: Optional[BusinessRole] = None,
+    business_role: BusinessRole | None = None,
 ):
     """Check that only one action is allowed on object and the access to others is denied"""
     allowed_object, *_ = as_user_objects(user_sdk, adcm_object)
@@ -385,7 +385,7 @@ def check_single_action_is_allowed_on_object(
 # !===== Utilities =====!
 
 
-def get_all_cluster_tree_plain(cluster: Cluster) -> Tuple[Union[Cluster, Service, Component], ...]:
+def get_all_cluster_tree_plain(cluster: Cluster) -> tuple[Cluster | Service | Component, ...]:
     """Get all cluster related elements (services and component) as a plain structure"""
     services = cluster.service_list()
     components = tuple(itertools.chain(*[s.component_list() for s in services]))

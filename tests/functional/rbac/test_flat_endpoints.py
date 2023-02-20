@@ -129,7 +129,7 @@ def _check_group_config_endpoint(client, objects):
         filter(
             lambda x: not isinstance(x, Host) and not isinstance(x, ADCM) and x.group_config(),
             objects,
-        )
+        ),
     )
     expected_group_configs = {
         (lower_class_name(obj), obj.id, obj.group_config()[0].config_id) for obj in objects_with_group_config
@@ -191,7 +191,8 @@ def _run_actions(first_objects, second_objects):
 
 def _query_flat_endpoint(client: ADCMClient, endpoint: str):
     response = requests.get(
-        f"{client.url}/api/v1/{endpoint}/", headers={"Authorization": f"Token {client.api_token()}"}
+        f"{client.url}/api/v1/{endpoint}/",
+        headers={"Authorization": f"Token {client.api_token()}"},
     )
     response.raise_for_status()
     data = response.json()
@@ -206,7 +207,7 @@ def _prepare_group_config(adcm_object: Cluster):
         {
             "config": {"boolean": True},
             "attr": {"group_keys": {"boolean": True}, "custom_group_keys": {"boolean": True}},
-        }
+        },
     )
 
 

@@ -120,7 +120,7 @@ class GroupConfigTest(BaseTestCase):
                         "type": "string",
                         "group_customization": True,
                         "limits": {},
-                    }
+                    },
                 },
             },
             "activatable_group": {
@@ -132,7 +132,7 @@ class GroupConfigTest(BaseTestCase):
                         "type": "integer",
                         "group_customization": True,
                         "limits": {},
-                    }
+                    },
                 },
             },
         }
@@ -296,8 +296,8 @@ class GroupConfigTest(BaseTestCase):
                 "custom_group_keys": {
                     "group": {"value": False, "fields": {"string": False}},
                     "activatable_group": {"value": False, "fields": {"integer": False}},
-                }
-            }
+                },
+            },
         )
         cl_new = ConfigLog.objects.create(obj_ref=cl_current.obj_ref, config=cl_current.config, attr=attr)
 

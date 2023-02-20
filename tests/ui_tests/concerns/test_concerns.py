@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable
+from collections.abc import Iterable
 
 import allure
 import pytest
@@ -36,7 +36,8 @@ from tests.ui_tests.concerns.common import BUNDLES_DIR, Reason
 
 
 def _hover_concern_mark_of_last_breadcrumb(
-    page: BasePageObject, breadcrumbs: Breadcrumbs | None = None
+    page: BasePageObject,
+    breadcrumbs: Breadcrumbs | None = None,
 ) -> ConcernPopover:
     breadcrumbs_ = breadcrumbs or page.header.get_breadcrumbs()
     breadcrumbs_.crumbs.last.get_concern_mark().hover()
@@ -66,7 +67,9 @@ def test_non_action_cluster_concerns(clusters, cluster_list_page):
     cluster_list_page = import_cluster_and_check_concern_is_gone(import_page, cluster)
     service_with_component, required_service = add_services_and_check_concerns_changed(cluster_list_page, cluster)
     component_page, component = follow_service_and_component_concern_links(
-        cluster_list_page, service_with_component, required_service
+        cluster_list_page,
+        service_with_component,
+        required_service,
     )
     add_service_with_hc_constraint(component_page, component)
 
@@ -104,7 +107,8 @@ def open_service_concern_from_cluster_list(list_page, cluster) -> ClusterService
         for concern_reason in current_concerns:
             assert any(name.endswith(concern_reason) for name in popover.concerns.names)
         compare_breadcrumb_and_table_row_concerns(
-            from_breadcrumbs=popover.get_concern_links(), from_row=list_page_links
+            from_breadcrumbs=popover.get_concern_links(),
+            from_row=list_page_links,
         )
 
     return page
@@ -116,7 +120,8 @@ def open_config_and_import_concern_on_detail_page(detail_page, cluster) -> Clust
         popover = _hover_concern_mark_of_last_breadcrumb(page=detail_page)
         popover.concerns.with_text(Reason.CONFIG).first.click()
         config_page: ClusterConfigPage = ClusterConfigPage.from_page(
-            detail_page, cluster_id=cluster.id
+            detail_page,
+            cluster_id=cluster.id,
         ).wait_page_is_opened(timeout=2)
         config_page.check_all_elements()
 
@@ -131,7 +136,8 @@ def open_config_and_import_concern_on_detail_page(detail_page, cluster) -> Clust
         popover = _hover_concern_mark_of_last_breadcrumb(page=detail_page)
         popover.concerns.with_text(Reason.IMPORT).first.click()
         import_page: ClusterConfigPage = ClusterImportPage.from_page(
-            detail_page, cluster_id=cluster.id
+            detail_page,
+            cluster_id=cluster.id,
         ).wait_page_is_opened(timeout=2)
         import_page.check_all_elements()
 
@@ -175,7 +181,8 @@ def import_cluster_and_check_concern_is_gone(import_page, cluster) -> ClusterLis
         for concern_reason in current_concerns:
             assert any(name.endswith(concern_reason) for name in popover.concerns.names)
         compare_breadcrumb_and_table_row_concerns(
-            from_breadcrumbs=detail_page_links, from_row=popover.get_concern_links()
+            from_breadcrumbs=detail_page_links,
+            from_row=popover.get_concern_links(),
         )
 
     return list_page
@@ -210,7 +217,11 @@ def add_services_and_check_concerns_changed(list_page, cluster: Cluster) -> tupl
     return service, required_service
 
 
-def follow_service_and_component_concern_links(list_page: ClusterListPage, service: Service, required_service: Service):
+def follow_service_and_component_concern_links(
+    list_page: ClusterListPage,
+    service: Service,
+    required_service: Service,
+):
     cluster = service.cluster()
     component = service.component()
 
@@ -221,7 +232,9 @@ def follow_service_and_component_concern_links(list_page: ClusterListPage, servi
         popover.concerns.with_link(service.display_name).with_text(Reason.CONFIG).first.click()
 
         service_page = ServiceConfigPage.from_page(
-            list_page, cluster_id=cluster.id, service_id=service.id
+            list_page,
+            cluster_id=cluster.id,
+            service_id=service.id,
         ).wait_page_is_opened(timeout=2)
         service_page.check_all_elements()
 
@@ -245,7 +258,10 @@ def follow_service_and_component_concern_links(list_page: ClusterListPage, servi
         popover = _hover_concern_mark_of_last_breadcrumb(page=service_page)
         popover.concerns.with_link(component.display_name).first.click()
         component_page = ComponentConfigPage.from_page(
-            service_page, cluster_id=cluster.id, service_id=service.id, component_id=component.id
+            service_page,
+            cluster_id=cluster.id,
+            service_id=service.id,
+            component_id=component.id,
         ).wait_page_is_opened(timeout=2)
         component_page.check_all_elements()
 

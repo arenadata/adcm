@@ -79,7 +79,9 @@ class BundleSerializer(HyperlinkedModelSerializer):
 
 class PrototypeSerializer(HyperlinkedModelSerializer):
     license_url = HyperlinkedIdentityField(
-        view_name="prototype-license", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+        view_name="prototype-license",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
     bundle_edition = CharField(source="bundle.edition")
 
@@ -212,7 +214,9 @@ class ImportSerializer(EmptySerializer):
 
 class ComponentPrototypeSerializer(PrototypeSerializer):
     url = HyperlinkedIdentityField(
-        view_name="component-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+        view_name="component-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
 
     class Meta:
@@ -230,7 +234,9 @@ class ComponentPrototypeSerializer(PrototypeSerializer):
 
 class ServicePrototypeSerializer(PrototypeSerializer):
     url = HyperlinkedIdentityField(
-        view_name="service-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+        view_name="service-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
 
     class Meta:
@@ -287,7 +293,9 @@ class BundleServiceUIPrototypeSerializer(ServicePrototypeSerializer):
 
 class ADCMPrototypeSerializer(PrototypeSerializer):
     url = HyperlinkedIdentityField(
-        view_name="adcm-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+        view_name="adcm-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
 
     class Meta:
@@ -301,7 +309,9 @@ class ADCMPrototypeSerializer(PrototypeSerializer):
 
 class ClusterPrototypeSerializer(FlexFieldsSerializerMixin, PrototypeSerializer):
     url = HyperlinkedIdentityField(
-        view_name="cluster-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+        view_name="cluster-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
 
     class Meta:
@@ -316,7 +326,9 @@ class ClusterPrototypeSerializer(FlexFieldsSerializerMixin, PrototypeSerializer)
 class HostPrototypeSerializer(PrototypeSerializer):
     monitoring = CharField(read_only=True)
     url = HyperlinkedIdentityField(
-        view_name="host-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+        view_name="host-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
 
     class Meta:
@@ -331,7 +343,9 @@ class HostPrototypeSerializer(PrototypeSerializer):
 
 class ProviderPrototypeSerializer(FlexFieldsSerializerMixin, PrototypeSerializer):
     url = HyperlinkedIdentityField(
-        view_name="provider-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+        view_name="provider-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
 
     class Meta:

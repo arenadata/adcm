@@ -72,9 +72,9 @@ class ActionList(PermissionListMixin, GenericUIView):
                         filter_actions(
                             connect_obj,
                             self.filter_queryset(
-                                self.get_queryset().filter(prototype=connect_obj.prototype, host_action=True)
+                                self.get_queryset().filter(prototype=connect_obj.prototype, host_action=True),
                             ),
-                        )
+                        ),
                     )
         else:
             if host.cluster is not None:
@@ -82,9 +82,9 @@ class ActionList(PermissionListMixin, GenericUIView):
                     filter_actions(
                         host.cluster,
                         self.filter_queryset(
-                            self.get_queryset().filter(prototype=host.cluster.prototype, host_action=True)
+                            self.get_queryset().filter(prototype=host.cluster.prototype, host_action=True),
                         ),
-                    )
+                    ),
                 )
 
         return actions
@@ -110,7 +110,9 @@ class ActionList(PermissionListMixin, GenericUIView):
         actions = list(compress(actions, mask))
 
         serializer = self.get_serializer(
-            actions, many=True, context={"request": request, "objects": objects, "obj": obj}
+            actions,
+            many=True,
+            context={"request": request, "objects": objects, "obj": obj},
         )
 
         return Response(serializer.data)
@@ -128,7 +130,10 @@ class ActionDetail(PermissionListMixin, GenericUIView):
         model = get_model_by_type(object_type)
         content_type = ContentType.objects.get_for_model(model)
         obj = get_object_for_user(
-            request.user, f"{content_type.app_label}.view_{content_type.model}", model, id=object_id
+            request.user,
+            f"{content_type.app_label}.view_{content_type.model}",
+            model,
+            id=object_id,
         )
         action = get_object_for_user(
             request.user,
@@ -169,7 +174,10 @@ class RunTask(GenericUIView):
         model = get_model_by_type(object_type)
         content_type = ContentType.objects.get_for_model(model)
         obj = get_object_for_user(
-            request.user, f"{content_type.app_label}.view_{content_type.model}", model, id=object_id
+            request.user,
+            f"{content_type.app_label}.view_{content_type.model}",
+            model,
+            id=object_id,
         )
         action = get_object_for_user(request.user, VIEW_ACTION_PERM, Action, id=action_id)
         if reason := action.get_start_impossible_reason(obj):

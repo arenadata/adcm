@@ -47,14 +47,14 @@ VIEW_TASKLOG_PERMISSION = "cm.view_tasklog"
 VIEW_JOBLOG_PERMISSION = "cm.view_joblog"
 
 
-def get_task_download_archive_name(task: TaskLog) -> str:
+def get_task_download_archive_name(task: TaskLog) -> str:  # noqa: C901
     archive_name = f"{task.pk}.tar.gz"
 
     if not task.action:
         return archive_name
 
     action_display_name = str_remove_non_alnum(value=task.action.display_name) or str_remove_non_alnum(
-        value=task.action.name
+        value=task.action.name,
     )
     if action_display_name:
         archive_name = f"{action_display_name}_{archive_name}"
@@ -67,7 +67,7 @@ def get_task_download_archive_name(task: TaskLog) -> str:
         "host provider",
     }:
         action_prototype_display_name = str_remove_non_alnum(
-            value=task.action.prototype.display_name
+            value=task.action.prototype.display_name,
         ) or str_remove_non_alnum(value=task.action.prototype.name)
         if action_prototype_display_name:
             archive_name = f"{action_prototype_display_name}_{archive_name}"
@@ -98,7 +98,7 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
 
     if task.action and task.action.type == ActionType.JOB:
         task_dir_name_suffix = str_remove_non_alnum(value=task.action.display_name) or str_remove_non_alnum(
-            value=task.action.name
+            value=task.action.name,
         )
     else:
         task_dir_name_suffix = None
@@ -110,7 +110,7 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
                 dir_name_suffix = ""
                 if job.sub_action:
                     dir_name_suffix = str_remove_non_alnum(value=job.sub_action.display_name) or str_remove_non_alnum(
-                        value=job.sub_action.name
+                        value=job.sub_action.name,
                     )
             else:
                 dir_name_suffix = task_dir_name_suffix
@@ -126,7 +126,7 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
                 log_storages = LogStorage.objects.filter(job=job, type__in={"stdout", "stderr"})
                 for log_storage in log_storages:
                     tarinfo = tarfile.TarInfo(
-                        f'{f"{job.pk}-{dir_name_suffix}".strip("-")}' f"/{log_storage.name}-{log_storage.type}.txt"
+                        f'{f"{job.pk}-{dir_name_suffix}".strip("-")}' f"/{log_storage.name}-{log_storage.type}.txt",
                     )
                     body = io.BytesIO(bytes(log_storage.body, settings.ENCODING_UTF_8))
                     tarinfo.size = body.getbuffer().nbytes
@@ -281,7 +281,7 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
                 f"{log_storage.name}-{log_storage.type}.{log_storage.format}",
             )
             if Path.is_file(file_path):
-                with open(file_path, "r", encoding=settings.ENCODING_UTF_8) as f:
+                with open(file_path, encoding=settings.ENCODING_UTF_8) as f:
                     body = f.read()
                     length = len(body)
             else:

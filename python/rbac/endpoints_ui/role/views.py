@@ -43,7 +43,7 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
     permission_classes = (DjangoObjectPermissionsAudit,)
 
     @action(methods=["get"], detail=True)
-    def object_candidate(self, request, **kwargs):  # pylint: disable=unused-argument
+    def object_candidate(self, request, **kwargs):  # pylint: disable=unused-argument # noqa: C901
         role = self.get_object()
         if role.type != RoleTypes.ROLE:
             return Response({"cluster": [], "provider": [], "service": [], "host": []})
@@ -60,7 +60,7 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
                         "name": cluster.display_name,
                         "type": ObjectType.CLUSTER,
                         "id": cluster.id,
-                    }
+                    },
                 )
 
         if RBACObjectType.PROVIDER.value in role.parametrized_by_type:
@@ -70,7 +70,7 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
                         "name": provider.display_name,
                         "type": ObjectType.PROVIDER,
                         "id": provider.id,
-                    }
+                    },
                 )
 
         if RBACObjectType.HOST.value in role.parametrized_by_type:
@@ -80,7 +80,7 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
                         "name": host.display_name,
                         "type": ObjectType.HOST,
                         "id": host.id,
-                    }
+                    },
                 )
 
         if (
@@ -94,14 +94,14 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
                         "name": service.cluster.display_name,
                         "type": "service",
                         "id": service.id,
-                    }
+                    },
                 )
             for service_name, clusters_info in _services.items():
                 services.append(
                     {
                         "name": service_name,
                         "clusters": sorted(clusters_info, key=lambda x: x["name"]),
-                    }
+                    },
                 )
 
         return Response(
@@ -110,5 +110,5 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
                 "provider": sorted(providers, key=lambda x: x["name"]),
                 "service": sorted(services, key=lambda x: x["name"]),
                 "host": sorted(hosts, key=lambda x: x["name"]),
-            }
+            },
         )

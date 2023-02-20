@@ -45,13 +45,13 @@ urlpatterns = [
                                 ServiceBindDetailView.as_view(),
                                 name="service-bind-details",
                             ),
-                        ]
+                        ],
                     ),
                 ),
                 path("config/", include("api.config.urls"), {"object_type": "service"}),
                 path("action/", include("api.action.urls"), {"object_type": "service"}),
                 path("status/", StatusList.as_view(), name="service-status"),
-            ]
+            ],
         ),
     ),
 ]

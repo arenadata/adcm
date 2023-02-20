@@ -9,9 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=redefined-outer-name
 
 import datetime
-from typing import Callable, Collection
+from collections.abc import Callable, Collection
+from zoneinfo import ZoneInfo
 
 import allure
 import pytest
@@ -34,8 +36,6 @@ from tests.library.assertions import are_equal, tuples_are_equal
 from tests.ui_tests.app.page.admin.page import OperationRowInfo, OperationsAuditPage
 from tests.ui_tests.audit.utils import add_filter
 
-# pylint: disable=redefined-outer-name
-
 USER = {"username": "gegenaugh", "password": "awersomepass"}
 
 
@@ -46,7 +46,9 @@ def prepare_rbac_entries(sdk_client_fs) -> tuple[User, Group, Role, Policy]:
     group.add_user(user)
     user.update(email="not@ex.ist", last_name="Bobo")
     role = sdk_client_fs.role_create(
-        name="somerole", display_name="Some role", child=[{"id": sdk_client_fs.role(name="View policy").id}]
+        name="somerole",
+        display_name="Some role",
+        child=[{"id": sdk_client_fs.role(name="View policy").id}],
     )
     policy: Policy = sdk_client_fs.policy_create(name="policy_name", role=role, user=[user])
     policy.update(description="Hoho Haha")
@@ -76,7 +78,8 @@ def prepare_provider_objects(sdk_client_fs, generic_provider) -> tuple[Provider,
     user_client = ADCMClient(url=sdk_client_fs.url, user=USER["username"], password=USER["password"])
     # create denied record
     requests.delete(
-        f"{user_client.url}/api/v1/host/{host.id}/", headers={"Authorization": f"Token {user_client.api_token()}"}
+        f"{user_client.url}/api/v1/host/{host.id}/",
+        headers={"Authorization": f"Token {user_client.api_token()}"},
     )
     host.delete()
     return generic_provider, generic_provider.host_create("another-fqdn")
@@ -106,7 +109,9 @@ def _test_unfiltered_paging(client: ADCMClient, page: OperationsAuditPage):
         with allure.step(f"Check records on page #{page_num} ({per_page} per page)"):
             page.table.click_page_by_number(page_num)
             suitable_records = _get_filtered_audit_logs(
-                client=client, start_from=i * per_page, finish_at=i * per_page + per_page
+                client=client,
+                start_from=i * per_page,
+                finish_at=i * per_page + per_page,
             )
             are_equal(page.table.row_count, len(suitable_records), "Unexpected amount of rows")
             expected_records = _convert_to_expected_audit_row_record(client=client, records=suitable_records)
@@ -119,7 +124,8 @@ def _test_unfiltered_paging(client: ADCMClient, page: OperationsAuditPage):
         page.table.set_rows_per_page(per_page)
         are_equal(page.table.row_count, per_page, "Incorrect amount of records per page")
         expected_records = _convert_to_expected_audit_row_record(
-            client=client, records=_get_filtered_audit_logs(client=client, finish_at=per_page)
+            client=client,
+            records=_get_filtered_audit_logs(client=client, finish_at=per_page),
         )
         actual_records = page.get_info_from_all_rows()
         tuples_are_equal(actual_records, expected_records, "Unexpected records on page")
@@ -255,7 +261,8 @@ def _check_operation_type_filter(client: ADCMClient, page: OperationsAuditPage):
 
     page.pick_filter_value(filter_input=filter_input, value_to_pick="Update")
     suitable_records = _get_filtered_audit_logs(
-        client=client, filters=(lambda rec: rec.operation_type == OperationType.UPDATE,)
+        client=client,
+        filters=(lambda rec: rec.operation_type == OperationType.UPDATE,),
     )
     are_equal(actual=page.table.row_count, expected=len(suitable_records), message="Incorrect amount of records")
 
@@ -264,7 +271,9 @@ def _check_operation_type_filter(client: ADCMClient, page: OperationsAuditPage):
 
     page.pick_filter_value(filter_input=filter_input, value_to_pick="Update")
     suitable_records = _get_filtered_audit_logs(
-        client=client, finish_at=50, filters=(lambda rec: rec.operation_type == OperationType.UPDATE,)
+        client=client,
+        finish_at=50,
+        filters=(lambda rec: rec.operation_type == OperationType.UPDATE,),
     )
     are_equal(actual=page.table.row_count, expected=len(suitable_records), message="Incorrect amount of records")
 
@@ -294,7 +303,8 @@ def _check_records(client: ADCMClient, page: OperationsAuditPage, filters: list[
 
 
 def _convert_to_expected_audit_row_record(
-    client: ADCMClient, records: tuple[AuditOperation, ...]
+    client: ADCMClient,
+    records: tuple[AuditOperation, ...],
 ) -> tuple[OperationRowInfo, ...]:
     return tuple(
         OperationRowInfo(
@@ -304,8 +314,10 @@ def _convert_to_expected_audit_row_record(
             operation_type=rec.operation_type.value,
             operation_result=rec.operation_result.value,
             # e.g. Nov 8, 2022, 3:50:29 PM
-            operation_time=rec.operation_time.astimezone(datetime.datetime.now().astimezone().tzinfo).strftime(
-                "%b %-d, %Y, %-I:%M:%S %p"
+            operation_time=rec.operation_time.astimezone(
+                datetime.datetime.now(tz=ZoneInfo("UTC")).astimezone().tzinfo,
+            ).strftime(
+                "%b %-d, %Y, %-I:%M:%S %p",
             ),
             username=client.user(id=rec.user_id).username,
         )

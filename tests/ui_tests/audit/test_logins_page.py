@@ -11,7 +11,8 @@
 # limitations under the License.
 
 import datetime
-from typing import Callable, Collection
+from collections.abc import Callable, Collection
+from zoneinfo import ZoneInfo
 
 import allure
 import pytest
@@ -42,8 +43,10 @@ def inactive_user_credentials(sdk_client_fs: ADCMClient) -> tuple[str, str]:
 
 
 @pytest.fixture()
-def _prepare_records(  # pylint: disable-next=redefined-outer-name
-    sdk_client_fs: ADCMClient, user_credentials: tuple[str, str], inactive_user_credentials: tuple[str, str]
+def _prepare_records(
+    sdk_client_fs: ADCMClient,
+    user_credentials: tuple[str, str],  # pylint: disable=redefined-outer-name
+    inactive_user_credentials: tuple[str, str],  # pylint: disable=redefined-outer-name
 ) -> None:
     auth_url = f"{sdk_client_fs.url}/api/v1/token/"
     new_username, new_password = user_credentials
@@ -74,7 +77,9 @@ def _test_unfiltered_paging(client: ADCMClient, page: LoginAuditPage):
             page.table.click_page_by_number(page_num)
             are_equal(page.table.row_count, per_page, "Unexpected amount of rows")
             suitable_records = _get_filtered_audit_logs(
-                client=client, start_from=i * per_page, finish_at=i * per_page + per_page
+                client=client,
+                start_from=i * per_page,
+                finish_at=i * per_page + per_page,
             )
             expected_records = _convert_to_expected_audit_row_record(records=suitable_records)
             actual_records = page.get_info_from_all_rows()
@@ -86,7 +91,7 @@ def _test_unfiltered_paging(client: ADCMClient, page: LoginAuditPage):
         page.table.set_rows_per_page(per_page)
         are_equal(page.table.row_count, per_page, "Incorrect amount of records per page")
         expected_records = _convert_to_expected_audit_row_record(
-            records=_get_filtered_audit_logs(client=client, finish_at=per_page)
+            records=_get_filtered_audit_logs(client=client, finish_at=per_page),
         )
         actual_records = page.get_info_from_all_rows()
         tuples_are_equal(actual_records, expected_records, "Unexpected records on page")
@@ -183,8 +188,10 @@ def _convert_to_expected_audit_row_record(records: tuple[AuditLogin, ...]) -> tu
             login=rec.login_details["username"] if rec.login_details and "username" in rec.login_details else "",
             result=rec.login_result.value,
             # e.g. Nov 8, 2022, 3:50:29 PM
-            login_time=rec.login_time.astimezone(datetime.datetime.now().astimezone().tzinfo).strftime(
-                "%b %-d, %Y, %-I:%M:%S %p"
+            login_time=rec.login_time.astimezone(
+                datetime.datetime.now(tz=ZoneInfo("UTC")).astimezone().tzinfo,
+            ).strftime(
+                "%b %-d, %Y, %-I:%M:%S %p",
             ),
         )
         for rec in records

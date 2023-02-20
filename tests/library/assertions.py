@@ -13,9 +13,10 @@
 """Various "rich" checks for common assertions"""
 
 import json
+from collections.abc import Callable, Collection
 from itertools import zip_longest
 from pprint import pformat
-from typing import Callable, Collection, Optional, TypeVar, Union
+from typing import TypeVar
 
 import allure
 from adcm_client.wrappers.api import ADCMApiError
@@ -27,7 +28,7 @@ from tests.library.errorcodes import ADCMError
 T = TypeVar("T")
 
 
-def is_superset_of(first: set, second: set, assertion_message: Union[str, Callable], *args, **kwargs) -> None:
+def is_superset_of(first: set, second: set, assertion_message: str | Callable, *args, **kwargs) -> None:
     """
     Check if first argument (that should be of type "set") is a superset of second.
     """
@@ -43,7 +44,7 @@ def is_superset_of(first: set, second: set, assertion_message: Union[str, Callab
     raise AssertionError(message)
 
 
-def does_not_intersect(first: set, second: set, assertion_message: Union[str, Callable], *args, **kwargs) -> None:
+def does_not_intersect(first: set, second: set, assertion_message: str | Callable, *args, **kwargs) -> None:
     """
     Check if there's no intersection between first and second sets.
     """
@@ -57,7 +58,7 @@ def does_not_intersect(first: set, second: set, assertion_message: Union[str, Ca
     raise AssertionError(message)
 
 
-def is_in_collection(item: T, collection: Collection[T], extra_message: Union[str, Callable] = "", **kwargs) -> None:
+def is_in_collection(item: T, collection: Collection[T], extra_message: str | Callable = "", **kwargs) -> None:
     """
     Check if item is a part of collection.
     """
@@ -68,11 +69,11 @@ def is_in_collection(item: T, collection: Collection[T], extra_message: Union[st
     message = extra_message if not callable(extra_message) else extra_message(**kwargs)
     raise AssertionError(
         f"Item '{item}' wasn't found in collection, check attachment for more details."
-        + (f"Details: {message}" if message else "")
+        + (f"Details: {message}" if message else ""),
     )
 
 
-def is_not_in_collection(item: T, collection: Collection[T], extra_message: Union[str, Callable] = "", **kwargs):
+def is_not_in_collection(item: T, collection: Collection[T], extra_message: str | Callable = "", **kwargs):
     """
     Check if item is not a part of collection.
     """
@@ -83,11 +84,11 @@ def is_not_in_collection(item: T, collection: Collection[T], extra_message: Unio
     message = extra_message if not callable(extra_message) else extra_message(**kwargs)
     raise AssertionError(
         f"Item '{item}' was found in collection where it shouldn't be, check attachment for more details."
-        + (f"Details: {message}" if message else "")
+        + (f"Details: {message}" if message else ""),
     )
 
 
-def is_empty(collection: Collection, extra_message: Union[str, Callable] = "", **kwargs) -> None:
+def is_empty(collection: Collection, extra_message: str | Callable = "", **kwargs) -> None:
     """
     Check if collection is empty (len == 0)
     """
@@ -98,7 +99,7 @@ def is_empty(collection: Collection, extra_message: Union[str, Callable] = "", *
     message = extra_message if not callable(extra_message) else extra_message(**kwargs)
     raise AssertionError(
         "Collection should've been empty, check attachment for more details."
-        + (f"Details: {message}" if message else "")
+        + (f"Details: {message}" if message else ""),
     )
 
 
@@ -131,14 +132,14 @@ def tuples_are_equal(actual: tuple[T], expected: tuple[T], message: str = "") ->
         [
             f"At position {i}\n{actual_} -- actual\n{expected_} -- expected"
             for i, (actual_, expected_) in enumerate(zip_longest(actual, expected))
-        ]
+        ],
     )
     allure.attach(per_item_comparison, name="Elements comparison", attachment_type=allure.attachment_type.TEXT)
 
     raise AssertionError("\n".join((composed_message, "Check attachments for more details")))
 
 
-def sets_are_equal(actual: set, expected: set, message: Union[str, Callable] = "", **kwargs) -> None:
+def sets_are_equal(actual: set, expected: set, message: str | Callable = "", **kwargs) -> None:
     """
     Check if two sets are equal
     """
@@ -154,7 +155,7 @@ def sets_are_equal(actual: set, expected: set, message: Union[str, Callable] = "
     raise AssertionError(message)
 
 
-def dicts_are_equal(actual: dict, expected: dict, message: Union[str, Callable] = "", **kwargs) -> None:
+def dicts_are_equal(actual: dict, expected: dict, message: str | Callable = "", **kwargs) -> None:
     """
     Check that two dicts are equal (direct comparison with `==`)
     """
@@ -163,7 +164,9 @@ def dicts_are_equal(actual: dict, expected: dict, message: Union[str, Callable] 
 
     allure.attach(json.dumps(actual, indent=2), name="Actual dictionary", attachment_type=allure.attachment_type.JSON)
     allure.attach(
-        json.dumps(expected, indent=2), name="Expected dictionary", attachment_type=allure.attachment_type.JSON
+        json.dumps(expected, indent=2),
+        name="Expected dictionary",
+        attachment_type=allure.attachment_type.JSON,
     )
     message = message if not callable(message) else message(**kwargs)
     if not message:
@@ -171,7 +174,7 @@ def dicts_are_equal(actual: dict, expected: dict, message: Union[str, Callable] 
     raise AssertionError(message)
 
 
-def dicts_are_not_equal(first: dict, second: dict, message: Union[str, Callable] = "", **kwargs) -> None:
+def dicts_are_not_equal(first: dict, second: dict, message: str | Callable = "", **kwargs) -> None:
     """
     Check that two dicts aren't equal (direct comparison with `!=`)
     """
@@ -190,8 +193,8 @@ def expect_api_error(
     operation_name: str,
     operation: Callable,
     *args,
-    err_: Optional[ADCMError] = None,
-    err_args_: Optional[list] = None,
+    err_: ADCMError | None = None,
+    err_args_: list | None = None,
     **kwargs,
 ):
     """

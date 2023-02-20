@@ -23,6 +23,8 @@ class ProfileLocators:
     username = BaseLocator(By.XPATH, "//p[contains(text(), 'You are authorized as')]/b", "Authorized user name")
     password = BaseLocator(By.CSS_SELECTOR, "input[formcontrolname='password']", "New password input field")
     confirm_password = BaseLocator(
-        By.CSS_SELECTOR, "input[formcontrolname='cpassword']", "New password confirmation field"
+        By.CSS_SELECTOR,
+        "input[formcontrolname='cpassword']",
+        "New password confirmation field",
     )
     save_password_btn = BaseLocator(By.XPATH, "//button[./span[text()= 'Save']]", "Save password button")

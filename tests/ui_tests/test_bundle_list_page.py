@@ -13,7 +13,6 @@
 """UI tests for /bundle page"""
 
 import os
-from typing import List
 
 import allure
 import pytest
@@ -41,7 +40,7 @@ CLUSTER_EE_CONFIG = [
         "description": "enterprise description",
         "license": "license.txt",
         "edition": "enterprise",
-    }
+    },
 ]
 
 PROVIDER_CONFIG = [
@@ -99,23 +98,26 @@ def page(app_fs: ADCMTest, _login_to_adcm_over_api) -> BundleListPage:
 
 @allure.title("Upload bundles")
 @pytest.fixture()
-def upload_bundles(create_bundle_archives: List[str], sdk_client_fs: ADCMClient) -> List[Bundle]:
+def upload_bundles(create_bundle_archives: list[str], sdk_client_fs: ADCMClient) -> list[Bundle]:
     """Upload bundles to ADCM"""
     return [sdk_client_fs.upload_from_fs(path) for path in create_bundle_archives]
 
 
 @pytest.fixture()
-def _create_cluster(upload_bundles: List[Bundle]):
+def _create_cluster(upload_bundles: list[Bundle]):
     """Upload bundles and create cluster from first bundle"""
     upload_bundles[0].cluster_create("Best Cluster Ever")
 
 
 @pytest.mark.smoke()
 @pytest.mark.include_firefox()
-def test_ce_bundle_upload(create_bundle_archives: List[str], page: BundleListPage):
+def test_ce_bundle_upload(create_bundle_archives: list[str], page: BundleListPage):
     """Upload community bundle"""
     bundle_params = BundleInfo(
-        name="test_cluster", version="1.5", edition="community", description="community description"
+        name="test_cluster",
+        version="1.5",
+        edition="community",
+        description="community description",
     )
     page.upload_bundle(create_bundle_archives[0])
     bundle_info = page.get_bundle_info()
@@ -125,7 +127,7 @@ def test_ce_bundle_upload(create_bundle_archives: List[str], page: BundleListPag
 @pytest.mark.smoke()
 @pytest.mark.include_firefox()
 @pytest.mark.parametrize("create_bundle_archives", [([CLUSTER_EE_CONFIG], LICENSE_FP)], indirect=True)
-def test_ee_bundle_upload(create_bundle_archives: List[str], page: BundleListPage):
+def test_ee_bundle_upload(create_bundle_archives: list[str], page: BundleListPage):
     """Upload enterprise bundle and accept licence"""
     bundle_params = BundleInfo(
         name="test_cluster",
@@ -141,7 +143,7 @@ def test_ee_bundle_upload(create_bundle_archives: List[str], page: BundleListPag
 
 @pytest.mark.smoke()
 @pytest.mark.include_firefox()
-def test_delete_bundle(create_bundle_archives: List[str], page: BundleListPage):
+def test_delete_bundle(create_bundle_archives: list[str], page: BundleListPage):
     """Upload bundle and delete it"""
     with allure.step("Upload bundle"):
         page.upload_bundle(create_bundle_archives[0])
@@ -152,9 +154,11 @@ def test_delete_bundle(create_bundle_archives: List[str], page: BundleListPage):
 
 
 @pytest.mark.parametrize(
-    "create_bundle_archives", [([CLUSTER_CE_CONFIG, CLUSTER_EE_CONFIG], LICENSE_FP)], indirect=True
+    "create_bundle_archives",
+    [([CLUSTER_CE_CONFIG, CLUSTER_EE_CONFIG], LICENSE_FP)],
+    indirect=True,
 )
-def test_two_bundles(create_bundle_archives: List[str], page: BundleListPage):
+def test_two_bundles(create_bundle_archives: list[str], page: BundleListPage):
     """Upload two bundles"""
     with allure.step("Upload 1st bundle"), page.table.wait_rows_change():
         page.upload_bundle(create_bundle_archives[0])
@@ -168,9 +172,11 @@ def test_two_bundles(create_bundle_archives: List[str], page: BundleListPage):
 @allure.issue("https://arenadata.atlassian.net/browse/ADCM-2010")
 @pytest.mark.skip(reason="Not worked using selenoid https://github.com/aerokube/selenoid/issues/844")
 @pytest.mark.parametrize(
-    "create_bundle_archives", [([CLUSTER_CE_CONFIG, CLUSTER_EE_CONFIG], LICENSE_FP)], indirect=True
+    "create_bundle_archives",
+    [([CLUSTER_CE_CONFIG, CLUSTER_EE_CONFIG], LICENSE_FP)],
+    indirect=True,
 )
-def test_accept_license_with_two_bundles_upload_at_once(create_bundle_archives: List[str], page: BundleListPage):
+def test_accept_license_with_two_bundles_upload_at_once(create_bundle_archives: list[str], page: BundleListPage):
     """Upload two bundles and accept license"""
     with page.table.wait_rows_change():
         page.upload_bundles(create_bundle_archives)
@@ -181,7 +187,7 @@ def test_accept_license_with_two_bundles_upload_at_once(create_bundle_archives: 
 @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2385")
 @pytest.mark.smoke()
 @pytest.mark.include_firefox()
-def test_open_bundle_from_table(page: BundleListPage, upload_bundles: List[Bundle]):
+def test_open_bundle_from_table(page: BundleListPage, upload_bundles: list[Bundle]):
     """Test open bundle object page from list of bundles"""
     with allure.step("Open bundle object page from bundle list"):
         page.click_bundle_in_row(page.table.get_row())
@@ -194,7 +200,7 @@ def test_open_bundle_from_table(page: BundleListPage, upload_bundles: List[Bundl
 @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2385")
 @pytest.mark.smoke()
 @pytest.mark.include_firefox()
-def test_open_main_menu_on_bundle_page(page: BundleListPage, upload_bundles: List[Bundle]):
+def test_open_main_menu_on_bundle_page(page: BundleListPage, upload_bundles: list[Bundle]):
     """Open main menu on bundle detailed page"""
     with allure.step("Open bundle object page"):
         object_page = BundlePage(page.driver, page.base_url, upload_bundles[0].id)
@@ -229,7 +235,9 @@ def test_delete_bundle_with_created_cluster(page: BundleListPage):
     ids=["provider_bundle"],
 )
 def test_upload_provider_bundle_from_another_page(
-    page: BundleListPage, app_fs: ADCMTest, create_bundle_archives: List[str]
+    page: BundleListPage,
+    app_fs: ADCMTest,
+    create_bundle_archives: list[str],
 ):
     """
     Upload bundle from host list and check it is presented in table
@@ -253,11 +261,16 @@ def test_upload_provider_bundle_from_another_page(
     ids=["cluster_bundle"],
 )
 def test_upload_cluster_bundle_from_another_page(
-    page: BundleListPage, app_fs: ADCMTest, create_bundle_archives: List[str]
+    page: BundleListPage,
+    app_fs: ADCMTest,
+    create_bundle_archives: list[str],
 ):
     """Upload bundle from cluster list and check it is presented in table"""
     expected_info = BundleInfo(
-        name="test_cluster", version="1.5", edition="community", description="community description"
+        name="test_cluster",
+        version="1.5",
+        edition="community",
+        description="community description",
     )
     _check_bundle_list_is_empty(page)
     with allure.step("Create bundle from cluster creation popup"):

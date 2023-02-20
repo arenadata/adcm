@@ -37,7 +37,11 @@ class TestActionAPI(BaseTestCase):
         bundle = Bundle.objects.create()
 
         config = ObjectConfig.objects.create(current=0, previous=0)
-        config_log = ConfigLog.objects.create(obj_ref=config, config="{}", attr={"ldap_integration": {"active": False}})
+        config_log = ConfigLog.objects.create(
+            obj_ref=config,
+            config="{}",
+            attr={"ldap_integration": {"active": False}},
+        )
         config.current = config_log.pk
         config.save(update_fields=["current"])
 
@@ -142,7 +146,7 @@ class TestActionAPI(BaseTestCase):
             path=Path(
                 settings.BASE_DIR,
                 "python/api/tests/files/test_actions_data.tar",
-            )
+            ),
         )
 
         cluster_prototype = Prototype.objects.get(bundle=bundle, type="cluster")

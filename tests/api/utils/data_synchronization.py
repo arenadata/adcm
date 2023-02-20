@@ -13,10 +13,10 @@
 """Data class synchronization functions"""
 
 import random
-from copy import deepcopy
 
 # pylint: disable=import-outside-toplevel
-from typing import Callable, Tuple
+from collections.abc import Callable
+from copy import deepcopy
 
 from adcm_pytest_plugin.utils import random_string
 
@@ -31,7 +31,8 @@ def _regenerate_name(adcm, old_name: str, retrieve_builder) -> str:
     new_name = f"{old_name[:half_length]}{random_string(half_length)}"
 
     same_named_role = next(
-        filter(retrieve_builder(new_name), get_endpoint_data(adcm, endpoint=Endpoints.RBAC_ANY_ROLE)), None
+        filter(retrieve_builder(new_name), get_endpoint_data(adcm, endpoint=Endpoints.RBAC_ANY_ROLE)),
+        None,
     )
 
     if same_named_role is None:
@@ -77,7 +78,7 @@ def sync_object_and_role(adcm, fields: dict) -> dict:
                 "id": role_object["id"],
                 "name": role_object.get("name", role_object.get("fqdn")),
                 "type": object_type,
-            }
+            },
         )
 
     return new_fields
@@ -108,7 +109,7 @@ def sync_child_roles_hierarchy_and_unique_name(adcm, fields: dict):
     def _role_by_id(roles, role_id):
         return next(filter(lambda x: role_id == x["id"], roles))
 
-    def _has_correct_parametrization(role, allowed_parametrization: Tuple[str]):
+    def _has_correct_parametrization(role, allowed_parametrization: tuple[str]):
         types = _role_by_id(all_roles, role["id"])["parametrized_by_type"]
         return all(role_type in allowed_parametrization for role_type in types)
 

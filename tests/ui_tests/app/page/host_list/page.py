@@ -13,7 +13,7 @@
 """Host List page PageObjects classes"""
 
 from dataclasses import dataclass
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -44,7 +44,7 @@ class HostRowInfo:
     UNASSIGNED_CLUSTER_VALUE: ClassVar[str] = "Assign to cluster"
     fqdn: str
     provider: str
-    cluster: Optional[str]
+    cluster: str | None
     state: str
 
 
@@ -171,7 +171,7 @@ class HostListPage(BasePageObject):  # pylint: disable=too-many-public-methods
         self.find_child(row, HostListLocators.HostTable.HostRow.maintenance_mode_btn).click()
 
     @allure.step("Assert maintenance mode state in row {row_num}")
-    def assert_maintenance_mode_state(self, row_num: int, is_mm_state_on: Optional[bool] = True):
+    def assert_maintenance_mode_state(self, row_num: int, is_mm_state_on: bool | None = True):
         """
         Assert maintenance mode state in row
         :param row_num: number of the row with maintenance mode button
@@ -183,7 +183,7 @@ class HostListPage(BasePageObject):  # pylint: disable=too-many-public-methods
 
         def _check_mm_state(page: HostListPage, row: WebElement):
             button_state = page.find_child(row, HostListLocators.HostTable.HostRow.maintenance_mode_btn).get_attribute(
-                "class"
+                "class",
             )
             tooltips_info = [
                 t.get_property("innerHTML") for t in page.find_elements(HostListLocators.HostTable.tooltip_text)

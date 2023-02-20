@@ -231,7 +231,7 @@ def test_multiple_group_tasks(sdk_client_fs: ADCMClient):
             "Check log 3",
             "This is success message. Params: group_title, success_msg, fail_msg. result=yes",
             True,
-        )
+        ),
     ]
     bundle_dir = utils.get_data_dir(__file__, "multiple_tasks_groups")
     bundle = sdk_client_fs.upload_from_fs(bundle_dir)

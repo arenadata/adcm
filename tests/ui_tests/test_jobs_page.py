@@ -14,7 +14,6 @@
 
 import os
 from dataclasses import asdict
-from typing import List, Union
 
 import allure
 import pytest
@@ -116,7 +115,7 @@ def provider(provider_bundle: Bundle) -> Provider:
 
 @pytest.fixture()
 @allure.title("Create 11 hosts for 'parallel' actions execution")
-def created_hosts(provider: Provider) -> List[Host]:
+def created_hosts(provider: Provider) -> list[Host]:
     """Create 11 hosts for "parallel" actions execution"""
     return [provider.host_create(f"host-{i}") for i in range(11)]
 
@@ -387,7 +386,7 @@ class TestTaskPage:
                 == expected_component_state
             ), f"State of {component.name}  should be {expected_component_state}"
 
-    def test_filtering_and_pagination(self, created_hosts: List[Host], page: JobListPage):
+    def test_filtering_and_pagination(self, created_hosts: list[Host], page: JobListPage):
         """Check filtering and pagination"""
         params = {"success": 6, "failed": 5, "second_page": 1}
         _run_actions_on_hosts(created_hosts, params["success"], params["failed"])
@@ -608,7 +607,9 @@ class TestTaskHeaderPopup:
                 cluster.action(display_name=action_name).run()
             else:
                 run_cluster_action_and_assert_result(
-                    cluster, cluster.action(display_name=action_name).name, status=expected_status
+                    cluster,
+                    cluster.action(display_name=action_name).name,
+                    status=expected_status,
                 )
         cluster_page.header.click_job_block()
         assert (
@@ -696,7 +697,7 @@ class TestTaskHeaderPopup:
 # !==== HELPERS =====!
 
 
-def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Provider, Host], expected_link: str):
+def _test_run_action(page: JobListPage, action_owner: Cluster | Service | Provider | Host, expected_link: str):
     """
     Run the "Long" action
     Check popup info
@@ -710,7 +711,7 @@ def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Pr
         "invoker_objects": expected_link,
     }
     with allure.step(
-        f'Run action "{LONG_ACTION_DISPLAY_NAME}" on {action_owner.__class__}'
+        f'Run action "{LONG_ACTION_DISPLAY_NAME}" on {action_owner.__class__}',
     ), page.table.wait_rows_change():
         long_action = action_owner.action(display_name=LONG_ACTION_DISPLAY_NAME)
         long_action.run()
@@ -747,7 +748,7 @@ def _check_job_info_in_popup(page: JobListPage, expected_info: dict):
 
 
 @allure.step("Run {success} success and {failed} failed actions on hosts")
-def _run_actions_on_hosts(hosts: List[Host], success: int, failed: int):
+def _run_actions_on_hosts(hosts: list[Host], success: int, failed: int):
     """
     Run success and failed actions
     and then wait for all of them to be finished

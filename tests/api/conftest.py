@@ -11,8 +11,8 @@
 # limitations under the License.
 
 """ADCM API tests fixtures"""
+from collections.abc import Generator
 from itertools import chain
-from typing import Generator
 
 import allure
 import pytest
@@ -47,7 +47,7 @@ def fill_adcm(sdk_client_ss):  # pylint: disable=too-many-locals
     with allure.step("Create cluster for the further import and add hosts to it"):
         cluster_to_import_bundle = adcm_client.upload_from_fs(GENERIC_BUNDLES_DIR / "cluster_to_import")
         cluster_to_import = cluster_to_import_bundle.cluster_prototype().cluster_create(
-            name="Pre-uploaded cluster for the import"
+            name="Pre-uploaded cluster for the import",
         )
         for i in range(6):
             cluster_to_import.host_add(provider.host_create(fqdn=f"pre-uploaded-host-import-{i}"))
@@ -56,7 +56,7 @@ def fill_adcm(sdk_client_ss):  # pylint: disable=too-many-locals
         cluster = cluster_bundle.cluster_create(name="Pre-uploaded cluster with services")
         cluster.bind(cluster_to_import)
     with allure.step("Create hosts and add them to cluster"):
-        hosts = tuple((cluster.host_add(provider.host_create(fqdn=f"pre-uploaded-host-{i}")) for i in range(6)))
+        hosts = tuple(cluster.host_add(provider.host_create(fqdn=f"pre-uploaded-host-{i}")) for i in range(6))
     with allure.step("Add services"):
         service_first = cluster.service_add(name="First service")
         service_second = cluster.service_add(name="Second service")
@@ -77,7 +77,10 @@ def fill_adcm(sdk_client_ss):  # pylint: disable=too-many-locals
 
 @pytest.fixture()
 def adcm_api(
-    request, launcher, sdk_client_ss, fill_adcm  # pylint: disable=redefined-outer-name,unused-argument
+    request,
+    launcher,
+    sdk_client_ss,
+    fill_adcm,  # pylint: disable=redefined-outer-name,unused-argument
 ) -> Generator[ADCMTestApiWrapper, None, None]:
     """Runs ADCM container with previously initialized image.
     Returns authorized instance of ADCMTestApiWrapper object

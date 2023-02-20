@@ -71,16 +71,31 @@ UNSET = "unset"
 
 
 def save_definition(
-    path: Path, fname: Path, conf: dict | list, obj_list: dict, bundle_hash: str, adcm_: bool = False
+    path: Path,
+    fname: Path,
+    conf: dict | list,
+    obj_list: dict,
+    bundle_hash: str,
+    adcm_: bool = False,
 ) -> None:
     if isinstance(conf, dict):
         save_object_definition(
-            path=path, fname=fname, conf=conf, obj_list=obj_list, bundle_hash=bundle_hash, adcm_=adcm_
+            path=path,
+            fname=fname,
+            conf=conf,
+            obj_list=obj_list,
+            bundle_hash=bundle_hash,
+            adcm_=adcm_,
         )
     else:
         for obj_def in conf:
             save_object_definition(
-                path=path, fname=fname, conf=obj_def, obj_list=obj_list, bundle_hash=bundle_hash, adcm_=adcm_
+                path=path,
+                fname=fname,
+                conf=obj_def,
+                obj_list=obj_list,
+                bundle_hash=bundle_hash,
+                adcm_=adcm_,
             )
 
 
@@ -89,12 +104,18 @@ def cook_obj_id(conf):
 
 
 def save_object_definition(
-    path: Path, fname: Path, conf: dict, obj_list: dict, bundle_hash: str, adcm_: bool = False
+    path: Path,
+    fname: Path,
+    conf: dict,
+    obj_list: dict,
+    bundle_hash: str,
+    adcm_: bool = False,
 ) -> StagePrototype:
     def_type = conf["type"]
     if def_type == "adcm" and not adcm_:
         return raise_adcm_ex(
-            code="INVALID_OBJECT_DEFINITION", msg=f'Invalid type "{def_type}" in object definition: {fname}'
+            code="INVALID_OBJECT_DEFINITION",
+            msg=f'Invalid type "{def_type}" in object definition: {fname}',
         )
 
     check_object_definition(fname=fname, conf=conf, def_type=def_type, obj_list=obj_list, bundle_hash=bundle_hash)
@@ -123,11 +144,12 @@ def check_actions_definition(def_type: str, actions: dict, bundle_hash: str) -> 
                     msg=f'Action named "{action_name}" should have "host_action: true" property',
                 )
         if action_name in settings.ADCM_SERVICE_ACTION_NAMES_SET and set(action_data).intersection(
-            settings.ADCM_MM_ACTION_FORBIDDEN_PROPS_SET
+            settings.ADCM_MM_ACTION_FORBIDDEN_PROPS_SET,
         ):
             raise_adcm_ex(
                 code="INVALID_OBJECT_DEFINITION",
-                msg=f'Maintenance mode actions shouldn\'t have "{settings.ADCM_MM_ACTION_FORBIDDEN_PROPS_SET}" properties',
+                msg=f"Maintenance mode actions shouldn't have "
+                f'"{settings.ADCM_MM_ACTION_FORBIDDEN_PROPS_SET}" properties',
             )
 
         if action_data.get("config_jinja") and action_data.get("config"):
@@ -169,7 +191,7 @@ def get_config_files(path: Path) -> list[tuple[Path, Path]]:
     return conf_list
 
 
-def check_adcm_config(conf_file: Path) -> Any:
+def check_adcm_config(conf_file: Path) -> Any:  # noqa: C901
     warnings.simplefilter(action="error", category=ReusedAnchorWarning)
     schema_file = Path(settings.CODE_DIR, "cm", "adcm_schema.yaml")
 
@@ -267,7 +289,8 @@ def save_prototype(path: Path, conf: dict, def_type: str, bundle_hash: str) -> S
         if def_type not in {"cluster", "service", "provider"}:
             raise_adcm_ex(
                 code="INVALID_OBJECT_DEFINITION",
-                msg=f"Invalid license definition in {proto_ref(proto)}. License can be placed in cluster, service or provider",
+                msg=f"Invalid license definition in {proto_ref(proto)}. "
+                f"License can be placed in cluster, service or provider",
             )
 
         proto.license_path = conf["license"]
@@ -410,7 +433,8 @@ def check_versions(prototype: StagePrototype, config: dict, label: str) -> None:
     for name in ("min", "min_strict", "max", "max_strict"):
         if name in config["versions"] and not config["versions"][name]:
             raise_adcm_ex(
-                code="INVALID_VERSION_DEFINITION", msg=f"{name} versions of {label} should be not null ({ref})"
+                code="INVALID_VERSION_DEFINITION",
+                msg=f"{name} versions of {label} should be not null ({ref})",
             )
 
 
@@ -450,7 +474,10 @@ def save_upgrade(prototype: StagePrototype, config: dict, bundle_hash: str) -> N
             upgrade.from_edition = item["from_edition"]
         if "scripts" in item:
             upgrade.action = save_upgrade_action(
-                prototype=prototype, config=item, bundle_hash=bundle_hash, upgrade=upgrade
+                prototype=prototype,
+                config=item,
+                bundle_hash=bundle_hash,
+                upgrade=upgrade,
             )
 
         upgrade.save()
@@ -514,12 +541,14 @@ def save_import(proto: StagePrototype, conf: dict) -> None:
             if stage_prototype_import.min_version and stage_prototype_import.max_version:
                 if (
                     rpm.compare_versions(
-                        str(stage_prototype_import.min_version), str(stage_prototype_import.max_version)
+                        str(stage_prototype_import.min_version),
+                        str(stage_prototype_import.max_version),
                     )
                     > 0
                 ):
                     raise_adcm_ex(
-                        code="INVALID_VERSION_DEFINITION", msg="Min version should be less or equal max version"
+                        code="INVALID_VERSION_DEFINITION",
+                        msg="Min version should be less or equal max version",
                     )
 
         dict_to_obj(conf["import"][key], "required", stage_prototype_import)
@@ -546,7 +575,10 @@ def save_sub_actions(conf, action):
 
     for sub in conf["scripts"]:
         sub_action = StageSubAction(
-            action=action, script=sub["script"], script_type=sub["script_type"], name=sub["name"]
+            action=action,
+            script=sub["script"],
+            script_type=sub["script_type"],
+            name=sub["name"],
         )
         sub_action.display_name = sub["name"]
 
@@ -569,7 +601,10 @@ def save_sub_actions(conf, action):
 
 
 def save_upgrade_action(
-    prototype: StagePrototype, config: dict, bundle_hash: str, upgrade: StageUpgrade
+    prototype: StagePrototype,
+    config: dict,
+    bundle_hash: str,
+    upgrade: StageUpgrade,
 ) -> None | StageAction:
     if not in_dict(dictionary=config, key="versions"):
         return None
@@ -619,7 +654,8 @@ def save_actions(prototype: StagePrototype, config: dict, bundle_hash: str) -> N
 
 def save_action(proto: StagePrototype, config: dict, bundle_hash: str, action_name: str) -> StageAction:
     validate_name(
-        name=action_name, error_message=f'Action name "{action_name}" of {proto.type} "{proto.name}" {proto.version}'
+        name=action_name,
+        error_message=f'Action name "{action_name}" of {proto.type} "{proto.name}" {proto.version}',
     )
     action = StageAction(prototype=proto, name=action_name)
     action.type = config["type"]
@@ -691,13 +727,17 @@ def save_action(proto: StagePrototype, config: dict, bundle_hash: str, action_na
 def get_yspec(proto: StagePrototype | Prototype, bundle_hash: str, conf: dict, name: str, subname: str) -> Any:
     schema = None
     yspec_body = read_bundle_file(
-        proto=proto, fname=conf["yspec"], pattern=bundle_hash, ref=f'yspec file of config key "{name}/{subname}":'
+        proto=proto,
+        fname=conf["yspec"],
+        pattern=bundle_hash,
+        ref=f'yspec file of config key "{name}/{subname}":',
     )
     try:
         schema = yaml.safe_load(stream=yspec_body)
     except (YamlParserError, YamlScannerError) as e:
         raise_adcm_ex(
-            code="CONFIG_TYPE_ERROR", msg=f'yspec file of config key "{name}/{subname}" yaml decode error: {e}'
+            code="CONFIG_TYPE_ERROR",
+            msg=f'yspec file of config key "{name}/{subname}" yaml decode error: {e}',
         )
 
     success, error = yspec.checker.check_rule(rules=schema)
@@ -707,8 +747,11 @@ def get_yspec(proto: StagePrototype | Prototype, bundle_hash: str, conf: dict, n
     return schema
 
 
-def save_prototype_config(
-    proto: StagePrototype, proto_conf: dict, bundle_hash: str, action: StageAction | None = None
+def save_prototype_config(  # noqa: C901
+    proto: StagePrototype,
+    proto_conf: dict,
+    bundle_hash: str,
+    action: StageAction | None = None,
 ) -> None:  # pylint: disable=too-many-statements,too-many-locals
     if not in_dict(dictionary=proto_conf, key="config"):
         return
@@ -734,7 +777,7 @@ def save_prototype_config(
 
         return source
 
-    def process_limits(_conf: dict, _name: str, _subname: str) -> dict:
+    def process_limits(_conf: dict, _name: str, _subname: str) -> dict:  # noqa: C901
         opt = {}
         if _conf["type"] == "option":
             opt = {"option": _conf["option"]}
@@ -845,7 +888,8 @@ def validate_name(name: str, error_message: str) -> None:
     if regex.fullmatch(name) is None:
         raise_adcm_ex(
             code="WRONG_NAME",
-            msg=f"{error_message} is incorrect. Only latin characters, digits, dots (.), dashes (-), and underscores (_) are allowed.",
+            msg=f"{error_message} is incorrect. Only latin characters, digits, "
+            f"dots (.), dashes (-), and underscores (_) are allowed.",
         )
 
 

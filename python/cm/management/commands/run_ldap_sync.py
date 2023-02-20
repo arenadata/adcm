@@ -44,7 +44,8 @@ class Command(BaseCommand):
             logger.debug("Sync has already launched, we need to wait for the task end")
             return
         last_sync = TaskLog.objects.filter(
-            action__name="run_ldap_sync", status__in=[JobStatus.SUCCESS, JobStatus.FAILED]
+            action__name="run_ldap_sync",
+            status__in=[JobStatus.SUCCESS, JobStatus.FAILED],
         ).last()
         if last_sync is None:
             logger.debug("First ldap sync launched in %s", timezone.now())

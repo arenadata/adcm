@@ -15,11 +15,10 @@
 import json
 from itertools import chain
 from secrets import token_hex
-from typing import Optional, Tuple
 
 from django.conf import settings
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django  # pylint: disable=unused-import # noqa: F401
 from cm.bundle import load_adcm
 from cm.issue import update_hierarchy_issues
 from cm.job import abort_all
@@ -38,7 +37,7 @@ from rbac.models import User
 TOKEN_LENGTH = 20
 
 
-def prepare_secrets_json(status_user_username: str, status_user_password: Optional[str]) -> None:
+def prepare_secrets_json(status_user_username: str, status_user_password: str | None) -> None:
     # we need to know status user's password to write it to secrets.json [old implementation]
     if not settings.SECRETS_FILE.is_file() and status_user_username is not None:
         with open(settings.SECRETS_FILE, "w", encoding=settings.ENCODING_UTF_8) as f:
@@ -55,7 +54,7 @@ def prepare_secrets_json(status_user_username: str, status_user_password: Option
         logger.info("Secret file %s is not updated", settings.SECRETS_FILE)
 
 
-def create_status_user() -> Tuple[str, Optional[str]]:
+def create_status_user() -> tuple[str, str | None]:
     username = "status"
     if User.objects.filter(username=username).exists():
         return username, None

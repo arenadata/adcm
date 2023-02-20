@@ -13,7 +13,7 @@
 """Tests for cluster and provider configs after upgrade"""
 import json
 from collections import OrderedDict
-from typing import Callable, Tuple, Union
+from collections.abc import Callable
 
 import allure
 import pytest
@@ -29,8 +29,10 @@ from tests.functional.plugin_utils import AnyADCMObject
 
 
 def _update_config_and_attr_for_new_field_test(
-    config: OrderedDict, attr: OrderedDict, group_config=False
-) -> Tuple[dict, dict]:
+    config: OrderedDict,
+    attr: OrderedDict,
+    group_config=False,
+) -> tuple[dict, dict]:
     config["new_float"] = 0.3
     config["new_boolean"] = False
     config["new_integer"] = 34
@@ -85,8 +87,10 @@ def _update_config_and_attr_for_new_field_test(
 
 
 def _update_config_and_attr_for_new_default_value_test(
-    config: OrderedDict, attr: OrderedDict, group_config=False
-) -> Tuple[dict, dict]:
+    config: OrderedDict,
+    attr: OrderedDict,
+    group_config=False,
+) -> tuple[dict, dict]:
     config["float"] = 0.2
     config["boolean"] = False
     config["integer"] = 25
@@ -104,8 +108,10 @@ def _update_config_and_attr_for_new_default_value_test(
 
 
 def _update_config_and_attr_for_changed_types(
-    config: OrderedDict, attr: OrderedDict, group_config=False
-) -> Tuple[dict, dict]:
+    config: OrderedDict,
+    attr: OrderedDict,
+    group_config=False,
+) -> tuple[dict, dict]:
     config["boolean"] = 0.1
     config["float"] = True
     config["string"] = 16
@@ -134,8 +140,10 @@ def _update_config_and_attr_for_changed_types(
 
 
 def _update_config_and_attr_for_removed_field_test(
-    config: OrderedDict, attr: OrderedDict, group_config=False
-) -> Tuple[dict, dict]:
+    config: OrderedDict,
+    attr: OrderedDict,
+    group_config=False,
+) -> tuple[dict, dict]:
     _, _ = config, attr
     attr = {}
     config = {"float": 0.1}
@@ -145,8 +153,10 @@ def _update_config_and_attr_for_removed_field_test(
 
 
 def _update_config_and_attr_for_changed_group_customisation_test(
-    config: OrderedDict, attr: OrderedDict, group_config=False
-) -> Tuple[dict, dict]:
+    config: OrderedDict,
+    attr: OrderedDict,
+    group_config=False,
+) -> tuple[dict, dict]:
     if group_config:
         attr["custom_group_keys"]["boolean"] = False
         attr["custom_group_keys"]["password"] = False
@@ -180,7 +190,7 @@ def _assert_configs(obj_type: str, actual_config: OrderedDict, expected_config: 
         )
         raise AssertionError(
             f"Config of {obj_type} {'group config' if group_config else 'config'} "
-            "is not as expected. See attachments for details"
+            "is not as expected. See attachments for details",
         )
 
 
@@ -201,11 +211,11 @@ def _assert_attr(obj_type: str, actual_attr: OrderedDict, expected_attr: Ordered
         )
         raise AssertionError(
             f"Attr of {obj_type} {'group config' if group_config else 'config'} "
-            "is not as expected. See attachments for details"
+            "is not as expected. See attachments for details",
         )
 
 
-def _get_config_and_attr(obj: Union[GroupConfig, AnyADCMObject]):
+def _get_config_and_attr(obj: GroupConfig | AnyADCMObject):
     full_conf = obj.config(full=True)
     return full_conf["config"], full_conf["attr"]
 

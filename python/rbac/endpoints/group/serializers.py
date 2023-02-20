@@ -54,7 +54,7 @@ class ExpandedUserSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "group": (
                 "rbac.endpoints.group.views.GroupSerializer",
                 {"many": True, "source": "groups"},
-            )
+            ),
         }
 
 

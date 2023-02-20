@@ -96,7 +96,7 @@ def get_names(sender, **kwargs):
 
 def _post_event(action: str, module: str, obj, model_name: str | None = None) -> None:
     transaction.on_commit(
-        lambda: post_event(event=action, obj=obj, details={"module": module, "model_name": model_name})
+        lambda: post_event(event=action, obj=obj, details={"module": module, "model_name": model_name}),
     )
 
 

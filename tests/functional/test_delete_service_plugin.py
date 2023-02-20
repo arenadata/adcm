@@ -71,7 +71,7 @@ def test_delete_service_with_host(sdk_client_fs: ADCMClient):
     """Check that it is possible to delete service with host component binded to cluster
     And HC map is automatically updated after service deletion"""
     hostprovider_bundle = sdk_client_fs.upload_from_fs(
-        utils.get_data_dir(__file__, "cluster_service_hostcomponent", "hostprovider")
+        utils.get_data_dir(__file__, "cluster_service_hostcomponent", "hostprovider"),
     )
     provider = hostprovider_bundle.provider_create("test")
     host_1 = provider.host_create("test-host-1")

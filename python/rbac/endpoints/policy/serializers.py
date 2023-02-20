@@ -81,7 +81,7 @@ class ObjectField(JSONField):
                     "id": obj.object_id,
                     "type": obj.object.prototype.type,
                     "name": obj.object.display_name,
-                }
+                },
             )
 
         return super().to_representation(data)

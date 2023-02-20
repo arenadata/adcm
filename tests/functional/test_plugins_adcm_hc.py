@@ -12,7 +12,7 @@
 
 """Test plugin adcm_hc"""
 
-from typing import Callable, Tuple
+from collections.abc import Callable
 
 import allure
 import pytest
@@ -52,7 +52,7 @@ class TestPluginWorksFromAllADCMObjects:
     }
 
     @pytest.fixture()
-    def cluster_with_services(self, sdk_client_fs: ADCMClient) -> Tuple[Cluster, Service, Service]:
+    def cluster_with_services(self, sdk_client_fs: ADCMClient) -> tuple[Cluster, Service, Service]:
         """Return cluster and two services connected to cluster"""
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "clusters", "different_objects"))
         cluster = bundle.cluster_create(CLUSTER_NAME)
@@ -61,7 +61,7 @@ class TestPluginWorksFromAllADCMObjects:
         return cluster, test_service, another_service
 
     @pytest.fixture()
-    def provider_with_hosts(self, sdk_client_fs: ADCMClient) -> Tuple[Provider, Host, Host]:
+    def provider_with_hosts(self, sdk_client_fs: ADCMClient) -> tuple[Provider, Host, Host]:
         """Return provider and two hosts"""
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider"))
         provider = bundle.provider_create(PROVIDER_NAME)
@@ -134,7 +134,7 @@ class TestPluginCanBreakConstraints:
     """
 
     @pytest.fixture()
-    def cluster_with_service(self, sdk_client_fs: ADCMClient) -> Tuple[Cluster, Service]:
+    def cluster_with_service(self, sdk_client_fs: ADCMClient) -> tuple[Cluster, Service]:
         """Return cluster with service"""
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "clusters", "constraints"))
         cluster = bundle.cluster_create(CLUSTER_NAME)
@@ -142,11 +142,11 @@ class TestPluginCanBreakConstraints:
         return cluster, test_service
 
     @pytest.fixture()
-    def provider_with_hosts(self, sdk_client_fs: ADCMClient) -> Tuple[Provider, Host, Host, Host]:
+    def provider_with_hosts(self, sdk_client_fs: ADCMClient) -> tuple[Provider, Host, Host, Host]:
         """Return provider and three hosts"""
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider"))
         provider = bundle.provider_create(PROVIDER_NAME)
-        hosts = tuple((provider.host_create(f"{prefix}-host") for prefix in ("first", "second", "third")))
+        hosts = tuple(provider.host_create(f"{prefix}-host") for prefix in ("first", "second", "third"))
         return provider, *hosts
 
     @pytest.fixture()
@@ -163,7 +163,7 @@ class TestPluginCanBreakConstraints:
         )
 
     @pytest.mark.usefixtures("set_hc_map")
-    def test_correct_hc_change(self, cluster_with_service: Tuple[Cluster, Service]):
+    def test_correct_hc_change(self, cluster_with_service: tuple[Cluster, Service]):
         """
         Check that correct "break" of HC constraints works.
         Correct "break" is when constraints are satisfied after the action's end
@@ -173,7 +173,7 @@ class TestPluginCanBreakConstraints:
         run_cluster_action_and_assert_result(cluster, "correct_hc_map_change")
 
     @pytest.mark.usefixtures("set_hc_map")
-    def test_incorrect_hc_change(self, cluster_with_service: Tuple[Cluster, Service]):
+    def test_incorrect_hc_change(self, cluster_with_service: tuple[Cluster, Service]):
         """
         Check that incorrect "break" of HC constraints if forbidden.
         Incorrect "break" is when constraints are "broken" during action's execution

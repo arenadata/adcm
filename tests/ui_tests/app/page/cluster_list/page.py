@@ -12,7 +12,6 @@
 
 """Cluster List page PageObjects classes"""
 from contextlib import contextmanager
-from typing import Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -186,10 +185,10 @@ class ClusterListPage(BasePageObject):  # pylint: disable=too-many-public-method
         self,
         row: WebElement,
         upgrade_name: str,
-        config: Optional[dict] = None,
+        config: dict | None = None,
         hc_acl: bool = False,
         is_new_host: bool = False,
-        disclaimer_text: Optional[str] = None,
+        disclaimer_text: str | None = None,
     ):
         """
         Run upgrade for cluster from row
@@ -215,7 +214,8 @@ class ClusterListPage(BasePageObject):  # pylint: disable=too-many-public-method
             for key, value in config.items():
                 self.wait_element_visible(CommonConfigMenu.config_row)
                 self.config.type_in_field_with_few_inputs(
-                    row=self.config.get_config_row(display_name=key), values=[value]
+                    row=self.config.get_config_row(display_name=key),
+                    values=[value],
                 )
             if self.is_element_displayed(ActionDialog.next_btn):
                 self.find_and_click(ActionDialog.next_btn)

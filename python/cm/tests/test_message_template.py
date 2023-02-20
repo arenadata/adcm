@@ -71,7 +71,8 @@ class MessageTemplateTest(BaseTestCase):
 
     def test_bad_template__bad_placeholder(self):
         tpl = MessageTemplate.obj.create(
-            name=uuid4().hex, template={"message": "Some message ${cluster}", "placeholder": []}
+            name=uuid4().hex,
+            template={"message": "Some message ${cluster}", "placeholder": []},
         )
         with self.assertRaises(AdcmEx) as e:
             MessageTemplate.get_message_from_template(tpl.name)

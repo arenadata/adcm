@@ -13,7 +13,6 @@
 """Tests ADCM upgrade from last non-RBAC version to RBAC one"""
 
 import os
-from typing import Tuple
 
 import allure
 import pytest
@@ -49,7 +48,7 @@ def test_rbac_init_on_upgrade(
     launcher,
     sdk_client_fs: ADCMClient,
     adcm_api_credentials: dict,
-    adcm_image_tags: Tuple[str, str],
+    adcm_image_tags: tuple[str, str],
 ):
     """
     Test that roles are created on bundles uploaded before an upgrade
@@ -60,7 +59,7 @@ def test_rbac_init_on_upgrade(
 
 
 @allure.step("Upload bundles")
-def upload_bundles(client: ADCMClient) -> Tuple[Bundle, Bundle, Bundle, Bundle]:
+def upload_bundles(client: ADCMClient) -> tuple[Bundle, Bundle, Bundle, Bundle]:
     """Upload sample bundles"""
     cluster_bundles_dir = get_data_dir(__file__)
     return tuple(
@@ -75,7 +74,7 @@ def upload_bundles(client: ADCMClient) -> Tuple[Bundle, Bundle, Bundle, Bundle]:
 
 
 @allure.step("Check that roles are created correctly after ADCM upgrade")
-def check_roles_are_created(client, bundles: Tuple[Bundle, Bundle, Bundle, Bundle]):
+def check_roles_are_created(client, bundles: tuple[Bundle, Bundle, Bundle, Bundle]):
     """Check that roles for pre-uploaded bundles were created correctly"""
     hidden_role_names = {role.name for role in get_roles_of_type(RoleType.HIDDEN, client)}
 
@@ -98,13 +97,19 @@ def check_roles_are_created(client, bundles: Tuple[Bundle, Bundle, Bundle, Bundl
         for provider_bundle in (first_bundle, second_bundle):
             hidden_role_prefix = get_bundle_prefix_for_role_name(provider_bundle)
             check_provider_based_object_action_roles_are_created_correctly(
-                provider_bundle.provider_prototype(), client, hidden_role_names, hidden_role_prefix
+                provider_bundle.provider_prototype(),
+                client,
+                hidden_role_names,
+                hidden_role_prefix,
             )
 
             provider = provider_bundle.provider_create(f"Test Provider {random_string(4)}")
             host = provider.host_create(fqdn=f"test-host-{random_string(4)}")
             check_provider_based_object_action_roles_are_created_correctly(
-                host.prototype(), client, hidden_role_names, hidden_role_prefix
+                host.prototype(),
+                client,
+                hidden_role_names,
+                hidden_role_prefix,
             )
 
             check_roles_does_not_have_category(

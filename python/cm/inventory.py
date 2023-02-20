@@ -205,11 +205,13 @@ def get_host_vars(host: Host, obj: ADCMEntity) -> dict:
         variables.update({"services": {}})
         for service in ClusterObject.objects.filter(cluster=obj):
             variables["services"][service.prototype.name] = get_service_variables(
-                service=service, service_config=get_group_config(obj=service, host=host)
+                service=service,
+                service_config=get_group_config(obj=service, host=host),
             )
             for component in ServiceComponent.objects.filter(cluster=obj, service=service):
                 variables["services"][service.prototype.name][component.prototype.name] = get_component_variables(
-                    component=component, component_config=get_group_config(obj=component, host=host)
+                    component=component,
+                    component_config=get_group_config(obj=component, host=host),
                 )
 
     elif isinstance(obj, (ClusterObject, ServiceComponent)):
@@ -217,16 +219,18 @@ def get_host_vars(host: Host, obj: ADCMEntity) -> dict:
 
         for service in ClusterObject.objects.filter(cluster=obj.cluster):
             variables["services"][service.prototype.name] = get_service_variables(
-                service=service, service_config=get_group_config(obj=service, host=host)
+                service=service,
+                service_config=get_group_config(obj=service, host=host),
             )
             for component in ServiceComponent.objects.filter(cluster=obj.cluster, service=service):
                 variables["services"][service.prototype.name][component.prototype.name] = get_component_variables(
-                    component=component, component_config=get_group_config(obj=component, host=host)
+                    component=component,
+                    component_config=get_group_config(obj=component, host=host),
                 )
 
     else:  # HostProvider
         variables.update(
-            {"provider": get_provider_variables(provider=obj, provider_config=get_group_config(obj=obj, host=host))}
+            {"provider": get_provider_variables(provider=obj, provider_config=get_group_config(obj=obj, host=host))},
         )
 
     return variables
@@ -251,7 +255,11 @@ def get_provider_config(provider_id) -> dict:
     return {"provider": get_provider_variables(provider)}
 
 
-def get_host_groups(cluster: Cluster, delta: dict | None = None, action_host: Host | None = None) -> dict:
+def get_host_groups(  # noqa: C901
+    cluster: Cluster,
+    delta: dict | None = None,
+    action_host: Host | None = None,
+) -> dict:
     if delta is None:
         delta = {}
 
@@ -312,7 +320,7 @@ def get_cluster_hosts(cluster, action_host=None):
         "CLUSTER": {
             "hosts": get_hosts(Host.objects.filter(cluster=cluster), cluster, action_host),
             "vars": get_cluster_config(cluster),
-        }
+        },
     }
 
 
@@ -320,7 +328,7 @@ def get_provider_hosts(provider, action_host=None):
     return {
         "PROVIDER": {
             "hosts": get_hosts(Host.objects.filter(provider=provider), provider, action_host),
-        }
+        },
     }
 
 
@@ -350,7 +358,9 @@ def get_inventory_data(
 
     if cluster:
         inventory_data["all"]["children"].update(get_cluster_hosts(cluster=cluster, action_host=action_host))
-        inventory_data["all"]["children"].update(get_host_groups(cluster=cluster, delta=delta, action_host=action_host))
+        inventory_data["all"]["children"].update(
+            get_host_groups(cluster=cluster, delta=delta, action_host=action_host),
+        )
 
     if obj.prototype.type == "host":
         inventory_data["all"]["children"].update(get_host(host_id=obj.id))
@@ -378,7 +388,9 @@ def prepare_job_inventory(
     logger.info("prepare inventory for job #%s, object: %s", job_id, obj)
     # pylint: disable=consider-using-with
     file_descriptor = open(
-        file=settings.RUN_DIR / f"{job_id}/inventory.json", mode="w", encoding=settings.ENCODING_UTF_8
+        file=settings.RUN_DIR / f"{job_id}/inventory.json",
+        mode="w",
+        encoding=settings.ENCODING_UTF_8,
     )
 
     inventory_data = get_inventory_data(obj=obj, action=action, action_host=action_host, delta=delta)

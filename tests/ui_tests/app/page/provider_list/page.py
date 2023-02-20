@@ -14,7 +14,6 @@
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -49,7 +48,7 @@ class ProviderListPage(BasePageObject):
         self.table = CommonTableObj(driver=self.driver, locators_class=HostListLocators.HostTable)
 
     @allure.step("Create provider")
-    def create_provider(self, bundle: str, name: Optional[str] = None, description: Optional[str] = None):
+    def create_provider(self, bundle: str, name: str | None = None, description: str | None = None):
         """Create provider"""
         self.find_and_click(ProviderListLocators.Tooltip.add_btn)
         popup = ProviderListLocators.CreateProviderPopup
