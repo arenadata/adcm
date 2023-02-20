@@ -537,9 +537,9 @@ class Upgrade(ADCMModel):
     __error_code__ = "UPGRADE_NOT_FOUND"
 
     def allowed(self, obj: ADCMEntity) -> bool:
-        """Check if upgrade is allowed to be run on object"""
         if self.state_available:
             available = self.state_available
+
             if obj.state in available:
                 return True
             elif available == "any":
@@ -547,8 +547,9 @@ class Upgrade(ADCMModel):
             else:
                 return False
         else:
-            if hasattr(self, "action"):
-                return self.action.allowed(obj)
+            if self.action:
+                return self.action.allowed(obj=obj)
+
             return False
 
 
