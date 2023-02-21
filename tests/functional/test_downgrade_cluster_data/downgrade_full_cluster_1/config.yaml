@@ -1,0 +1,96 @@
+- type: cluster
+  version: &version 1.0
+  name: downgrade_cluster_full
+  config: &config
+    - name: string
+      type: string
+      required: false
+    - name: secretmap
+      type: secretmap
+      required: false
+      default: {'first_key': 'first_value'}
+    - name: password
+      type: password
+      required: false
+      default: "first_pswd"
+    - name: secrettext
+      type: secrettext
+      required: false
+      default: "first text"
+    - name: secretfile
+      type: secretfile
+      required: false
+      default: ./secretfile
+    - name: group
+      type: group
+      subs:
+        - name: secretmap
+          type: secretmap
+          read_only: any
+          default: { "default_group_key": "default_secret_value" }
+          group_customization: false
+        - name: password
+          type: password
+          read_only: any
+          default: "default_password"
+          group_customization: false
+        - name: secrettext
+          type: secrettext
+          read_only: any
+          default: "default secret text value"
+          group_customization: false
+        - name: secretfile
+          type: secretfile
+          read_only: any
+          default: ./secretfile
+          group_customization: false
+  actions:
+    install:
+      type: job
+      script: ./actions.yaml
+      script_type: ansible
+      states:
+        available: any
+        on_success: install
+    check_after_1: &action_1
+      type: job
+      script_type: ansible
+      script: ./check_after_1.yaml
+      states:
+        available: any
+      params:
+        ansible_tags: cluster_after_1
+    check_after_2: &action_2
+      type: job
+      script_type: ansible
+      script: ./check_after_2.yaml
+      states:
+        available: any
+      params:
+        ansible_tags: cluster_after_2
+
+- type: service
+  version: *version
+  name: service1
+  config: *config
+  actions:
+    check_after_1:
+      <<: *action_1
+      params:
+        ansible_tags: service_after_1
+    check_after_2:
+      <<: *action_2
+      params:
+        ansible_tags: service_after_2
+  components:
+    component11:
+      config: *config
+      actions:
+        check_after_1:
+          <<: *action_1
+          params:
+            ansible_tags: component_after_1
+        check_after_2:
+          <<: *action_2
+          params:
+            ansible_tags: component_after_2
