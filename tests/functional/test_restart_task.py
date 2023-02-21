@@ -27,8 +27,8 @@ from tests.functional.audit.conftest import (
     make_auth_header,
 )
 from tests.functional.tools import (
-    check_object_multi_state,
-    check_object_state,
+    compare_object_multi_state,
+    compare_object_state,
     wait_for_job_status,
 )
 from tests.library.predicates import display_name_is
@@ -301,8 +301,8 @@ class TestTaskCancelRestart:
             action = cluster.action(name=action_name)
             task = action.run()
             wait_for_task_and_assert_result(task=task, status=Status.FAILED)
-            check_object_state(adcm_object=cluster, expected_state=MultiState.FAILED)
-            check_object_multi_state(adcm_object=cluster, expected_state=[MultiState.FAILED])
+            compare_object_state(adcm_object=cluster, expected_state=MultiState.FAILED)
+            compare_object_multi_state(adcm_object=cluster, expected_state=[MultiState.FAILED])
 
         with allure.step("Restart finished task on cluster"):
             check_succeed(self._restart_task(task=task))
@@ -313,8 +313,8 @@ class TestTaskCancelRestart:
             wait_for_job_status(job)
             check_succeed(self._cancel_job(job))
             wait_for_task_and_assert_result(task=task, status=Status.SUCCESS)
-            check_object_state(adcm_object=cluster, expected_state=MultiState.SUCCESS)
-            check_object_multi_state(adcm_object=cluster, expected_state=[MultiState.FAILED])
+            compare_object_state(adcm_object=cluster, expected_state=MultiState.SUCCESS)
+            compare_object_multi_state(adcm_object=cluster, expected_state=[MultiState.FAILED])
 
     @allure.step("Restarting task")
     def _restart_task(self, task: Task):
