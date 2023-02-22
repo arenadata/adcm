@@ -41,8 +41,6 @@ SECRETS = [
     *NEW_SECRETTEXT.split("\n"),
     OLD_SECRETMAP["secret_map_key"],
     NEW_SECRETMAP["secret_map_key"],
-    OLD_SECRETFILE,
-    NEW_SECRETFILE,
 ]
 
 CHANGE_CONFIG_ACTION = "change_secrets"
@@ -129,11 +127,9 @@ def _check_secrets_in_config_encrypted(cluster: Cluster):
         config["password"],
         config["secrettext"],
         config["secretmap"]["secret_map_key"],
-        config["secretfile"],
         config["group"]["password"],
         config["group"]["secrettext"],
         config["group"]["secretmap"]["secret_map_key"],
-        config["group"]["secretfile"],
     )
     assert all(
         field.startswith("$ANSIBLE_VAULT") for field in secret_config_fields

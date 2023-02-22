@@ -441,18 +441,15 @@ def process_file_type(obj: Any, spec: dict, conf: dict):  # noqa: C901
                 save_file_type(obj, key, "", conf[key])
             elif spec[key]["type"] == "secretfile":
                 if conf[key] is not None:
+                    value = conf[key]
                     if conf[key].startswith(settings.ANSIBLE_VAULT_HEADER):
                         try:
-                            ansible_decrypt(msg=conf[key])
+                            value = ansible_decrypt(msg=value)
                         except AnsibleError:
                             raise_adcm_ex(
                                 code="CONFIG_VALUE_ERROR",
                                 msg=f"Secret value must not starts with {settings.ANSIBLE_VAULT_HEADER}",
                             )
-
-                        value = conf[key]
-                    else:
-                        value = ansible_encrypt_and_format(msg=conf[key])
                 else:
                     value = None
 
@@ -463,19 +460,16 @@ def process_file_type(obj: Any, spec: dict, conf: dict):  # noqa: C901
                 if spec[key][subkey]["type"] == "file":
                     save_file_type(obj, key, subkey, conf[key][subkey])
                 elif spec[key][subkey]["type"] == "secretfile":
+                    value = conf[key][subkey]
                     if conf[key][subkey] is not None:
                         if conf[key][subkey].startswith(settings.ANSIBLE_VAULT_HEADER):
                             try:
-                                ansible_decrypt(msg=conf[key])
+                                value = ansible_decrypt(msg=value)
                             except AnsibleError:
                                 raise_adcm_ex(
                                     code="CONFIG_VALUE_ERROR",
                                     msg=f"Secret value must not starts with {settings.ANSIBLE_VAULT_HEADER}",
                                 )
-
-                            value = conf[key][subkey]
-                        else:
-                            value = ansible_encrypt_and_format(msg=conf[key][subkey])
                     else:
                         value = None
 
