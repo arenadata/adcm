@@ -21,6 +21,5 @@ pytest-xdist
 python-ldap
 requests-toolbelt
 rstr
-ruff
 selenium
 websockets

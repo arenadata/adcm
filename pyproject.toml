@@ -20,12 +20,3 @@ max-line-length = 120
 
 [tool.pylint.similarities]
 min-similarity-lines = 30
-
-[tool.ruff]
-line-length = 120
-select = ["BLE", "COM", "C4", "C90", "DTZ", "F", "E", "N", "UP", "W", "YTT"]
-exclude = ["migrations", "python/audit/cases/adcm.py", "python/audit/cases/cluster.py", "python/audit/cases/common.py",
-    "python/audit/cases/config.py", "python/audit/cases/host_and_provider.py", "python/audit/cases/rbac.py",
-    "python/audit/cases/service.py", "python/audit/cases/stack.py",
-    "tests/ui_tests/app/page/common/configuration/page.py",
-    "tests/functional/maintenance_mode/test_inventory_modification.py"]
