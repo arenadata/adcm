@@ -78,6 +78,3 @@ lint:
 	python license_checker.py --folders python go
 	flake8 --max-line-length=120 tests/functional tests/ui_tests
 	pylint --rcfile pyproject.toml --recursive y python tests
-
-lint_ruff:
-	ruff license_checker.py python tests
