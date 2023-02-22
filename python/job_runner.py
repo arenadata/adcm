@@ -30,6 +30,7 @@ from cm.logger import logger
 from cm.models import JobLog, JobStatus, LogStorage, Prototype, ServiceComponent
 from cm.status_api import Event, post_event
 from cm.upgrade import bundle_revert, bundle_switch
+from cm.utils import get_env_with_venv_path
 
 
 def open_file(root, tag, job_id):
@@ -76,17 +77,19 @@ def set_ansible_config(env, job_id):
     return env
 
 
-def env_configuration(job_config):
+def get_configured_env(job_config: dict) -> dict:
     job_id = job_config["job"]["id"]
     stack_dir = job_config["env"]["stack_dir"]
     env = os.environ.copy()
-    env = set_pythonpath(env, stack_dir)
+    env = set_pythonpath(env=env, stack_dir=stack_dir)
+    env = get_env_with_venv_path(venv=JobLog.objects.get(id=job_id).action.venv, existing_env=env)
 
     # This condition is intended to support compatibility.
     # Since older bundle versions may contain their own ansible.cfg
     if not Path(stack_dir, "ansible.cfg").is_file():
-        env = set_ansible_config(env, job_id)
+        env = set_ansible_config(env=env, job_id=job_id)
         logger.info("set ansible config for job:%s", job_id)
+
     return env
 
 
@@ -122,11 +125,10 @@ def start_subprocess(job_id, cmd, conf, out_file, err_file):
     logger.info("job run cmd: %s", " ".join(cmd))
     proc = subprocess.Popen(  # pylint: disable=consider-using-with
         cmd,
-        env=env_configuration(conf),
+        env=get_configured_env(job_config=conf),
         stdout=out_file,
         stderr=err_file,
     )
-    JobLog.objects.filter(pk=job_id).update(pid=proc.pid)
     cm.job.set_job_status(job_id, JobStatus.RUNNING, event, proc.pid)
     event.send_state()
     logger.info("run job #%s, pid %s", job_id, proc.pid)
@@ -150,8 +152,6 @@ def run_ansible(job_id):
 
     os.chdir(conf["env"]["stack_dir"])
     cmd = [
-        "/adcm/python/job_venv_wrapper.sh",
-        get_venv(int(job_id)),
         "ansible-playbook",
         "--vault-password-file",
         f"{settings.CODE_DIR}/ansible_secret.py",

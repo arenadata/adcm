@@ -79,6 +79,7 @@ from cm.models import (
     get_object_cluster,
 )
 from cm.status_api import post_event
+from cm.utils import get_env_with_venv_path
 from cm.variant import process_variant
 from django.conf import settings
 from django.db import transaction
@@ -909,16 +910,13 @@ def run_task(task: TaskLog, event, args: str = ""):
         encoding=settings.ENCODING_UTF_8,
     )
     cmd = [
-        "/adcm/python/job_venv_wrapper.sh",
-        task.action.venv,
         str(Path(settings.CODE_DIR, "task_runner.py")),
         str(task.pk),
         args,
     ]
     logger.info("task run cmd: %s", " ".join(cmd))
     proc = subprocess.Popen(  # pylint: disable=consider-using-with
-        cmd,
-        stderr=err_file,
+        args=cmd, stderr=err_file, env=get_env_with_venv_path(venv=task.action.venv)
     )
     logger.info("task run #%s, python process %s", task.pk, proc.pid)
 

@@ -11,6 +11,7 @@
 # limitations under the License.
 
 import json
+import os
 from pathlib import Path
 from secrets import token_hex
 from typing import Any
@@ -139,3 +140,12 @@ def normalize_config(config: dict, root_path: str, name: str = "", subname: str 
             del config[field]
 
     return config_list
+
+
+def get_env_with_venv_path(venv: str, existing_env: dict | None = None) -> dict:
+    if existing_env is None:
+        existing_env = os.environ.copy()
+
+    existing_env["PATH"] = f"/adcm/venv/{venv}/bin:{existing_env['PATH']}"
+
+    return existing_env

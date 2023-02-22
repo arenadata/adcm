@@ -1574,7 +1574,7 @@ class TaskLog(ADCMModel):
             i += 1
         if i == 10:
             raise AdcmEx("NO_JOBS_RUNNING", "no jobs running")
-        self.unlock_affected()
+
         if event_queue:
             event_queue.send_state()
         try:

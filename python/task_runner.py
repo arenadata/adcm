@@ -27,6 +27,7 @@ from cm.errors import AdcmEx
 from cm.job import finish_task, re_prepare_job
 from cm.logger import logger
 from cm.models import JobLog, JobStatus, LogStorage, TaskLog
+from cm.utils import get_env_with_venv_path
 
 TASK_ID = 0
 
@@ -70,15 +71,16 @@ signal.signal(signal.SIGTERM, terminate_task)
 def run_job(task_id, job_id, err_file):
     logger.debug("task run job #%s of task #%s", job_id, task_id)
     cmd = [
-        "/adcm/python/job_venv_wrapper.sh",
-        TaskLog.objects.get(id=task_id).action.venv,
         str(settings.CODE_DIR / "job_runner.py"),
         str(job_id),
     ]
     logger.info("task run job cmd: %s", " ".join(cmd))
 
     try:
-        proc = subprocess.Popen(cmd, stderr=err_file)  # pylint: disable=consider-using-with
+        # pylint: disable=consider-using-with
+        proc = subprocess.Popen(
+            args=cmd, stderr=err_file, env=get_env_with_venv_path(venv=TaskLog.objects.get(id=task_id).action.venv)
+        )
         res = proc.wait()
         return res
     except Exception:  # pylint: disable=broad-except # noqa: BLE001
