@@ -12,7 +12,7 @@
 import { Component, OnInit, Type, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import { IColumns } from '@adwp-ui/widgets';
+import { IColumns } from '@app/adwp';
 import { Store } from '@ngrx/store';
 import { RbacUserModel } from '@app/models/rbac/rbac-user.model';
 import { ListService } from '@app/shared/components/list/list.service';

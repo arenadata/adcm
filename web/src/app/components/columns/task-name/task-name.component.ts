@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { AdwpCellComponent, ILinkColumn } from '@adwp-ui/widgets';
+import { AdwpCellComponent, ILinkColumn } from '@app/adwp';
 import { BehaviorSubject } from 'rxjs';
 
 import { Task } from '@app/core/types';

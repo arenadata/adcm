@@ -1,4 +1,4 @@
-import { IColumns } from '@adwp-ui/widgets';
+import { IColumns } from '@app/adwp';
 import { Component } from '@angular/core';
 
 import { TypeName } from '@app/core/types';

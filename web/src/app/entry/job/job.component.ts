@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 
 import { ClusterService } from '@app/core/services/cluster.service';
 

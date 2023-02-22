@@ -1,5 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
-import { Paging } from '@adwp-ui/widgets';
+import { Paging } from '@app/adwp';
 import { Sort } from '@angular/material/sort';
 import { ParamMap } from '@angular/router';
 import { Store } from '@ngrx/store';

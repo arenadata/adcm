@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { AdwpCellComponent } from '@adwp-ui/widgets';
+import { AdwpCellComponent } from '@app/adwp';
 import { filter, switchMap } from 'rxjs/operators';
 import { MatDialog } from '@angular/material/dialog';
 

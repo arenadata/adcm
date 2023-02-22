@@ -1,0 +1,14 @@
+<div class="row" [formGroup]="form">
+  <mat-form-field class="full-width">
+    <input [type]="type" matInput name="{{controlName}}" [placeholder]="label" formControlName="{{ controlName }}"
+           [required]="isRequired" />
+    <mat-error *ngIf="isError(controlName)">
+      <mat-error *ngIf="hasError(controlName, 'required')">{{ label }} is required.</mat-error>
+      <mat-error *ngIf="hasError(controlName, 'pattern')">{{ label }} is not correct.</mat-error>
+      <mat-error *ngIf="hasError(controlName, 'passwordsNotMatch')">{{ label }} is not match.</mat-error>
+      <mat-error *ngIf="hasError(controlName, 'email')">{{ label }} is not email.</mat-error>
+      <mat-error *ngIf="hasError(controlName, 'maxlength')">{{ label }} max length exceeded.</mat-error>
+      <mat-error *ngIf="hasError(controlName, 'minlength')">{{ label }} too short.</mat-error>
+    </mat-error>
+  </mat-form-field>
+</div>

@@ -1,4 +1,4 @@
-import { Entity } from '@adwp-ui/widgets';
+import { Entity } from '@app/adwp';
 
 export interface RbacPermissionModel extends Entity {
   id: number;

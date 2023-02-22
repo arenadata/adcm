@@ -1,4 +1,4 @@
-import { Entity } from '@adwp-ui/widgets';
+import { Entity } from '@app/adwp';
 
 export type RbacRoleParametrizedBy = 'cluster' | 'service' | 'component' | 'provider' | 'host';
 export type RbacRoleType = 'hidden' | 'business' | 'role';

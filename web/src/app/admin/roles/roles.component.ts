@@ -1,5 +1,5 @@
 import { Component, Type, ViewChild } from '@angular/core';
-import { IColumns } from '@adwp-ui/widgets';
+import { IColumns } from '@app/adwp';
 import { Store } from '@ngrx/store';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';

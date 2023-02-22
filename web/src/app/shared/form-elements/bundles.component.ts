@@ -14,7 +14,7 @@ import { FormControl } from '@angular/forms';
 import { Prototype, StackBase } from '@app/core/types';
 import { of } from 'rxjs';
 import {filter, map, switchMap, tap} from 'rxjs/operators';
-import { EventHelper } from '@adwp-ui/widgets';
+import { EventHelper } from '@app/adwp';
 
 import { AddService } from '../add-component/add.service';
 import { ButtonUploaderComponent } from './button-uploader.component';

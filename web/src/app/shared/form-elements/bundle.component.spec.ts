@@ -47,6 +47,7 @@ describe('Form control :: bundle component', () => {
     component = fixture.componentInstance;
     component.form = new FormGroup({ prototype_id: new FormControl() });
     component.limit = 10;
+    component.page = 1
   });
 
   it('Bundle component should created', () => {

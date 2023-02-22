@@ -16,7 +16,7 @@ import { BaseMapListDirective } from '@app/shared/form-elements/map.component';
 
 import { SchemeComponent } from '../scheme/scheme.component';
 import { IFieldOptions } from '../types';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 import { PasswordComponent } from "@app/shared/form-elements/password/password.component";
 import { SecretTextComponent } from "@app/shared/form-elements/secret-text/secret-text.component";
 import { SecretFileComponent } from "@app/shared/form-elements/secret-file/secret-file.component";

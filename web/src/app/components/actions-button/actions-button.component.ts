@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { BaseDirective, EventHelper } from '@adwp-ui/widgets';
+import { BaseDirective, EventHelper } from '@app/adwp';
 
 import { BaseEntity } from '@app/core/types';
 

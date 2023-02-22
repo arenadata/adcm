@@ -10,7 +10,7 @@ import {
   Type,
   HostListener, ElementRef, HostBinding,
 } from '@angular/core';
-import { EventHelper } from '@adwp-ui/widgets';
+import { EventHelper } from '@app/adwp';
 
 import { PopoverContentDirective, PopoverEventFunc } from '@app/abstract-directives/popover-content.directive';
 import { PopoverInput } from '@app/directives/popover.directive';

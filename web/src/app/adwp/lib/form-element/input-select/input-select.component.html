@@ -1,0 +1,20 @@
+<div class="row" [formGroup]="form">
+  <mat-form-field class="full-width">
+    <adwp-select formControlName="{{ controlName }}"
+                 [required]="isRequired"
+                 [options]="options"
+                 [multiple]="multiple"
+                 [handler]="handler"
+                 [comparator]="comparator"
+                 [placeholder]="label"
+                 [selectRowDisableCheck]="selectRowDisableCheck"
+                 (filter)="filter.emit($event)"
+    >
+    </adwp-select>
+    <mat-error *ngIf="isError(controlName)">
+      <mat-error *ngIf="hasError(controlName, 'required')">{{ label }} is required.</mat-error>
+      <mat-error *ngIf="hasError(controlName, 'pattern')">{{ label }} is not correct.</mat-error>
+    </mat-error>
+  </mat-form-field>
+
+</div>

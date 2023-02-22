@@ -5,7 +5,7 @@ import { RbacRoleService } from '@app/services/rbac-role.service';
 import { RbacFormDirective } from '@app/shared/add-component/rbac-form.directive';
 import { RbacRoleModel } from '@app/models/rbac/rbac-role.model';
 import { RbacPermissionFormComponent } from '../permission-form/rbac-permission-form.component';
-import { AdwpStringHandler } from '@adwp-ui/widgets';
+import { AdwpStringHandler } from '@app/adwp';
 import { MatChipInputEvent } from '@angular/material/chips';
 import { CustomValidators } from '../../../shared/validators/custom-validators';
 

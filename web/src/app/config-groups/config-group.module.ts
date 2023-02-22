@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ConfigGroupHostListComponent, ConfigGroupListComponent } from './pages';
-import { AdwpListModule } from '@adwp-ui/widgets';
+import { AdwpListModule } from '@app/adwp';
 import { AddConfigGroupComponent, AddHostToConfigGroupComponent } from './components';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatListModule } from '@angular/material/list';
