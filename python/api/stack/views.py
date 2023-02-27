@@ -151,7 +151,7 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
     queryset = Bundle.objects.all()
     serializer_class = BundleSerializer
     filterset_fields = ("name", "version")
-    ordering_fields = ("name", "version_order")
+    ordering_fields = ("id", "name", "version_order")
     lookup_url_kwarg = "bundle_pk"
 
     def get_permissions(self):
