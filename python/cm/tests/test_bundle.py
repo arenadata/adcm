@@ -31,7 +31,7 @@ from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
 
-from adcm.tests.base import BaseTestCase, APPLICATION_JSON
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestBundle(BaseTestCase):

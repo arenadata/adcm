@@ -70,7 +70,7 @@ class ServiceListView(PermissionListMixin, PaginatedView):
     serializer_class_ui = ServiceUISerializer
     serializer_class_cluster = ClusterServiceSerializer
     filterset_fields = ("cluster_id",)
-    ordering_fields = ("state", "prototype__display_name", "prototype__version_order")
+    ordering_fields = ("id", "state", "prototype__display_name", "prototype__version_order")
 
     def get(self, request, *args, **kwargs):
         queryset = self.get_queryset()
