@@ -1,4 +1,4 @@
-import { Entity } from '@adwp-ui/widgets';
+import { Entity } from '@app/adwp';
 import { RbacUserModel } from '@app/models/rbac/rbac-user.model';
 
 export interface RbacGroupModel extends Entity {

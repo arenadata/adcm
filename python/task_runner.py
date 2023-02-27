@@ -22,11 +22,12 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django  # pylint: disable=unused-import # noqa: F401
 from cm.errors import AdcmEx
 from cm.job import finish_task, re_prepare_job
 from cm.logger import logger
 from cm.models import JobLog, JobStatus, LogStorage, TaskLog
+from cm.utils import get_env_with_venv_path
 
 TASK_ID = 0
 
@@ -70,18 +71,19 @@ signal.signal(signal.SIGTERM, terminate_task)
 def run_job(task_id, job_id, err_file):
     logger.debug("task run job #%s of task #%s", job_id, task_id)
     cmd = [
-        "/adcm/python/job_venv_wrapper.sh",
-        TaskLog.objects.get(id=task_id).action.venv,
         str(settings.CODE_DIR / "job_runner.py"),
         str(job_id),
     ]
     logger.info("task run job cmd: %s", " ".join(cmd))
 
     try:
-        proc = subprocess.Popen(cmd, stderr=err_file)  # pylint: disable=consider-using-with
+        # pylint: disable=consider-using-with
+        proc = subprocess.Popen(
+            args=cmd, stderr=err_file, env=get_env_with_venv_path(venv=TaskLog.objects.get(id=task_id).action.venv)
+        )
         res = proc.wait()
         return res
-    except Exception:  # pylint: disable=broad-except
+    except Exception:  # pylint: disable=broad-except # noqa: BLE001
         logger.error("exception running job %s", job_id)
         return 1
 
@@ -93,13 +95,13 @@ def set_log_body(job):
         file_path = (
             settings.RUN_DIR / f"{log_storage.job.id}" / f"{log_storage.name}-{log_storage.type}.{log_storage.format}"
         )
-        with open(file_path, "r", encoding=settings.ENCODING_UTF_8) as f:
+        with open(file_path, encoding=settings.ENCODING_UTF_8) as f:
             body = f.read()
 
         LogStorage.objects.filter(job=job, name=log_storage.name, type=log_storage.type).update(body=body)
 
 
-def run_task(task_id, args=None):
+def run_task(task_id, args=None):  # noqa: C901
     logger.debug("task_runner.py called as: %s", sys.argv)
     try:
         task = TaskLog.objects.get(id=task_id)
@@ -118,7 +120,9 @@ def run_task(task_id, args=None):
         return
 
     err_file = open(  # pylint: disable=consider-using-with
-        settings.LOG_DIR / "job_runner.err", "a+", encoding=settings.ENCODING_UTF_8
+        settings.LOG_DIR / "job_runner.err",
+        "a+",
+        encoding=settings.ENCODING_UTF_8,
     )
 
     logger.info("run task #%s", task_id)

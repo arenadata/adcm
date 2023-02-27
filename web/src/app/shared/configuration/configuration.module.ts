@@ -29,7 +29,7 @@ import { HistoryComponent } from './tools/history.component';
 import { SearchComponent } from './tools/search.component';
 import { ToolsComponent } from './tools/tools.component';
 import { YspecService } from './yspec/yspec.service';
-import { AdwpListModule } from '@adwp-ui/widgets';
+import { AdwpListModule } from '@app/adwp';
 import { AddingModule } from '@app/shared/add-component/adding.module';
 import { ConfigService } from '@app/shared/configuration/services/config.service';
 import { ConfigGroupModule } from '@app/config-groups';

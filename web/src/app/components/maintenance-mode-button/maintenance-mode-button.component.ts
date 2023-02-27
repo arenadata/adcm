@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { AdwpCellComponent } from "@adwp-ui/widgets";
+import { AdwpCellComponent } from "@app/adwp";
 
 export enum StatusType {
   On = 'ON',

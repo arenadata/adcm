@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component } from '@angular/core';
-import { IColumns } from '@adwp-ui/widgets';
+import { IColumns } from '@app/adwp';
 
 import { TypeName } from '@app/core/types';
 import { ListFactory } from '@app/factories/list.factory';

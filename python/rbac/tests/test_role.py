@@ -559,7 +559,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "Service Action: Service 2 Action",
                 "Component Action: Component 1 from Service 2 Action",
                 "Component Action: Component 2 from Service 2 Action",
-            ]
+            ],
         ).count()
 
         self.assertEqual(sa_role_count, 6, "Roles missing from base roles")
@@ -581,7 +581,9 @@ class TestMMRoles(RBACBaseTestCase):
         add_host_to_cluster(self.cluster, self.host)
         self.service = ClusterObject.objects.create(cluster=self.cluster, prototype=self.sp_1)
         self.component = ServiceComponent.objects.create(
-            cluster=self.cluster, service=self.service, prototype=self.cop_11
+            cluster=self.cluster,
+            service=self.service,
+            prototype=self.cop_11,
         )
 
         self.test_user_username = "test_user"

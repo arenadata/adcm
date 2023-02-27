@@ -1,4 +1,4 @@
-import { IComponentColumn, IValueColumn, IButtonsColumn, ILinkColumn } from '@adwp-ui/widgets';
+import { IComponentColumn, IValueColumn, IButtonsColumn, ILinkColumn } from '@app/adwp';
 import { ComponentRef } from '@angular/core';
 
 import { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';

@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Checks and utilities for action roles"""
+from collections.abc import Iterable, Iterator
 from operator import itemgetter
-from typing import Iterable, Iterator, List, Optional, Set, Tuple, Union
 
 import allure
 from adcm_client.base import ObjectNotFound
@@ -49,7 +49,7 @@ def action_business_role(
     adcm_object: AnyADCMObject,
     action_display_name: str,
     *,
-    action_on_host: Optional[Host] = None,
+    action_on_host: Host | None = None,
     no_deny_checker: bool = False,
 ) -> BusinessRole:
     """Construct BusinessRole that allows to run action"""
@@ -71,7 +71,7 @@ def action_business_role(
 @allure.step("Create policy that allows to run action")
 def create_action_policy(
     client: ADCMClient,
-    adcm_object: Union[AnyADCMObject, List[AnyADCMObject]],
+    adcm_object: AnyADCMObject | list[AnyADCMObject],
     *business_roles: BusinessRole,
     user=None,
     group=None,
@@ -171,7 +171,7 @@ def check_service_and_components_roles_are_created_correctly(
     )
 
     with allure.step(
-        f'Check that all required roles are created for service "{service.display_name}" and its components'
+        f'Check that all required roles are created for service "{service.display_name}" and its components',
     ):
         service_proto = service.prototype()
         service_actions = service_proto.actions
@@ -201,7 +201,7 @@ def check_service_and_components_roles_are_created_correctly(
 
 @allure.step(
     'Check that "hidden" roles are created for each action in each component in service '
-    "and that they are correctly connected to corresponding business roles"
+    "and that they are correctly connected to corresponding business roles",
 )
 def _check_components_roles_are_created_correctly(client, service, hidden_role_names, prefix_for_component: str):
     """Check that component action roles are created correctly"""
@@ -221,19 +221,27 @@ def _check_components_roles_are_created_correctly(client, service, hidden_role_n
         is_superset_of(hidden_role_names, component_actions_role_names, "Not all roles were created")
 
         _, business = check_business_roles_children(
-            client, component_proto, component_actions, component_actions_role_names
+            client,
+            component_proto,
+            component_actions,
+            component_actions_role_names,
         )
         component_business_roles.update(business)
 
     check_roles_are_added_to_rbac_roles(
-        client, expected_parent_roles, get_roles_ids_from_info(component_business_roles)
+        client,
+        expected_parent_roles,
+        get_roles_ids_from_info(component_business_roles),
     )
 
     check_all_roles_have_category(service.cluster().prototype().display_name, component_business_roles)
 
 
 def check_provider_based_object_action_roles_are_created_correctly(
-    prototype: Prototype, client: ADCMClient, hidden_role_names, hidden_role_prefix: str
+    prototype: Prototype,
+    client: ADCMClient,
+    hidden_role_names,
+    hidden_role_prefix: str,
 ):
     """
     Check that all provider/host action roles have corresponding hidden roles,
@@ -258,8 +266,11 @@ def check_provider_based_object_action_roles_are_created_correctly(
 
 @allure.step('Check that "business" roles was created with all required children')
 def check_business_roles_children(
-    client: ADCMClient, prototype: Prototype, actions: List[dict], actions_role_names: List[str]
-) -> Tuple[Set[RoleShortInfo], Set[RoleShortInfo]]:
+    client: ADCMClient,
+    prototype: Prototype,
+    actions: list[dict],
+    actions_role_names: list[str],
+) -> tuple[set[RoleShortInfo], set[RoleShortInfo]]:
     """
     Checks that "action" business roles have all newly created roles as its children.
     :returns: hidden and business roles as ShortRoleInfo set
@@ -285,14 +296,16 @@ def check_business_roles_children(
 
 @allure.step("Check that business roles are applied correctly to RBAC default roles")
 def check_roles_are_added_to_rbac_roles(
-    client: ADCMClient, rbac_roles: Iterable[RbacRoles], children_roles_ids: Set[int]
+    client: ADCMClient,
+    rbac_roles: Iterable[RbacRoles],
+    children_roles_ids: set[int],
 ):
     """Check that all given RBAC default roles have all given roles as its children"""
     for rbac_role in rbac_roles:
         with allure.step(f'Check roles were added to role "{rbac_role.value}"'):
             role: Role = client.role(name=rbac_role.value)
             is_superset_of(
-                set(r.id for r in role.child_list()),
+                {r.id for r in role.child_list()},
                 children_roles_ids,
                 "One or more roles not found (by id) in the child list",
             )
@@ -300,14 +313,16 @@ def check_roles_are_added_to_rbac_roles(
 
 @allure.step("Check that business roles aren't applied to RBAC default roles")
 def check_roles_are_not_added_to_rbac_roles(
-    client: ADCMClient, rbac_roles: Iterable[RbacRoles], children_roles_ids: Set[int]
+    client: ADCMClient,
+    rbac_roles: Iterable[RbacRoles],
+    children_roles_ids: set[int],
 ):
     """Check that all given RBAC default roles doesn't have all given roles as its children"""
     for rbac_role in rbac_roles:
         with allure.step(f"Check roles weren't added to role '{rbac_role.value}'"):
             role: Role = client.role(name=rbac_role.value)
             does_not_intersect(
-                set(r.id for r in role.child_list()),
+                {r.id for r in role.child_list()},
                 children_roles_ids,
                 "One or more roles was found (by id) in the child list",
             )
@@ -342,11 +357,11 @@ def get_roles_of_type(role_type: RoleType, client: ADCMClient):
     return client.role_list(type=role_type.value, paging={"limit": 200})
 
 
-def get_actions_role_names(full_role_prefix: str, action_names: List[dict]) -> List[str]:
+def get_actions_role_names(full_role_prefix: str, action_names: list[dict]) -> list[str]:
     """full_role_prefix is prefix with "prototype" prefix and others (only without action name in it)"""
     return [f"{full_role_prefix}{name}" for name in key_values_from("name", action_names)]
 
 
-def get_roles_ids_from_info(roles_short_info: Iterable[RoleShortInfo]) -> Set[int]:
+def get_roles_ids_from_info(roles_short_info: Iterable[RoleShortInfo]) -> set[int]:
     """Extract values of "id" field from RoleShortInfo's to set of integers"""
     return {role.id for role in roles_short_info}

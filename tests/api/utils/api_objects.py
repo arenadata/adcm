@@ -12,7 +12,6 @@
 
 """Module contains api objects for executing and checking requests"""
 from dataclasses import dataclass, field
-from typing import Optional, Union
 from urllib.parse import urlencode
 
 import allure
@@ -30,7 +29,7 @@ class Request:
 
     method: Methods
     endpoint: Endpoints
-    object_id: Optional[int] = None
+    object_id: int | None = None
     url_params: dict = field(default_factory=dict)
     headers: dict = field(default_factory=dict)
     data: dict = field(default_factory=dict)
@@ -44,7 +43,7 @@ class ExpectedResponse:
     """
 
     status_code: int
-    body: Optional[ExpectedBody] = None
+    body: ExpectedBody | None = None
 
 
 class ADCMTestApiWrapper:
@@ -90,7 +89,7 @@ class ADCMTestApiWrapper:
 
         return response
 
-    def get_url_for_endpoint(self, endpoint: Endpoints, method: Methods, object_id: Union[int, dict]):
+    def get_url_for_endpoint(self, endpoint: Endpoints, method: Methods, object_id: int | dict):
         """
         Return direct link for endpoint object.
         object_id can be dict if it's complex "object" id like `{'id': 4, 'url': 'blahblah.com'}`

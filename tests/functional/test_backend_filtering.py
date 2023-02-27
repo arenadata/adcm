@@ -12,7 +12,6 @@
 
 """Tests for backend filtering"""
 
-from typing import List, Type, Union
 
 import allure
 import pytest
@@ -191,7 +190,7 @@ def one_host_provider_id_attr(one_host: Host):
         pytest.param(Job, id="Job"),
     ],
 )
-def test_coreapi_schema(sdk_client_fs: ADCMClient, tested_class: Type[BaseAPIObject]):
+def test_coreapi_schema(sdk_client_fs: ADCMClient, tested_class: type[BaseAPIObject]):
     """Test coreapi schema"""
 
     def _get_params(link):
@@ -403,7 +402,9 @@ def test_filter(sdk_client: ADCMClient, tested_class, tested_list_class, search_
     with allure.step("Inspect first (and only) element of list"):
         for key, value in expected_args.items():
             assert getattr(objects[0], key) == value
-    with allure.step("Create single object over class call (like Cluster or Bundle) with tested filter as search args"):
+    with allure.step(
+        "Create single object over class call (like Cluster or Bundle) with tested filter as search args",
+    ):
         single_object = tested_class(sdk_client._api, **search_args)
     with allure.step("Check created object"):
         for key, value in expected_args.items():
@@ -452,7 +453,7 @@ def hosts_with_actions(host_with_actions: Host, provider_with_actions: Provider)
 
 
 @pytest.fixture()
-def hosts_with_jobs(hosts_with_actions: List, host_ok_action: Action):
+def hosts_with_jobs(hosts_with_actions: list, host_ok_action: Action):
     """
     Run multiple actions on hosts. Return first host.
     """
@@ -509,7 +510,9 @@ def job_task_id_attr(host_ok_action: Action):
     ],
 )
 def test_actions_name_filter(
-    tested_parent_class: Union[Provider, Service, Cluster], search_args: dict, expected_args: dict
+    tested_parent_class: Provider | Service | Cluster,
+    search_args: dict,
+    expected_args: dict,
 ):
     """Scenario:
     * Create object with a lot of actions

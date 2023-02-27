@@ -12,7 +12,6 @@
 
 """API tests for request body validation"""
 
-from typing import Tuple
 
 import allure
 import pytest
@@ -30,7 +29,7 @@ pytestmark = [
 ]
 
 
-def _test_patch_put_body_positive(prepare_body_data: Tuple):
+def _test_patch_put_body_positive(prepare_body_data: tuple):
     """
     Common function for positive cases of PUT and PATCH request body testing
     Includes sets of correct field values - boundary values, nullable if possible.

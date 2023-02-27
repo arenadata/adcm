@@ -13,7 +13,6 @@
 """UI tests for /service page"""
 import os
 from collections import OrderedDict
-from typing import Tuple
 
 import allure
 import pytest
@@ -69,7 +68,7 @@ pytestmark = pytest.mark.usefixtures("_login_to_adcm_over_api")
 
 
 @pytest.fixture()
-def create_cluster_with_service(sdk_client_fs: ADCMClient) -> Tuple[Cluster, Service]:
+def create_cluster_with_service(sdk_client_fs: ADCMClient) -> tuple[Cluster, Service]:
     """Create community edition cluster and add service"""
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     cluster = bundle.cluster_create(name=CLUSTER_NAME)
@@ -85,8 +84,9 @@ def cluster_bundle(sdk_client_fs: ADCMClient, data_dir_name: str) -> Bundle:
 @pytest.fixture()
 @allure.title("Create community cluster with service and add host")
 def create_community_cluster_with_host_and_service(
-    sdk_client_fs: ADCMClient, create_host
-) -> Tuple[Cluster, Service, Host]:
+    sdk_client_fs: ADCMClient,
+    create_host,
+) -> tuple[Cluster, Service, Host]:
     """Create community cluster with service and add host"""
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     cluster = bundle.cluster_create(name=CLUSTER_NAME)
@@ -249,7 +249,7 @@ class TestServiceConfigPage:
             cluster = bundle.cluster_create(name=CLUSTER_NAME)
             service = cluster.service_add(name=SERVICE_NAME)
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open(
-            close_popup=True
+            close_popup=True,
         )
         service_config_page.config.fill_config_fields_with_test_values()
         service_config_page.config.set_description(params["config_name_new"])
@@ -366,7 +366,9 @@ class TestServiceConfigPage:
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         config_row = service_config_page.config.get_all_config_rows()[0]
         service_config_page.config.type_in_field_with_few_inputs(
-            row=config_row, values=[params["row_value_new"]], clear=True
+            row=config_row,
+            values=[params["row_value_new"]],
+            clear=True,
         )
         service_config_page.config.set_description(params["config_name"])
         service_config_page.config.save_config()
@@ -374,7 +376,8 @@ class TestServiceConfigPage:
         config_row = service_config_page.config.get_all_config_rows()[0]
         service_config_page.config.reset_to_default(row=config_row)
         service_config_page.config.assert_input_value_is(
-            expected_value=params["row_value_old"], display_name=params["row_name"]
+            expected_value=params["row_value_old"],
+            display_name=params["row_name"],
         )
         with allure.step("Check invisible params"):
             config = service.config()
@@ -429,11 +432,13 @@ class TestServiceConfigPage:
         with allure.step("Check save button is disabled"):
             assert service_config_page.config.is_save_btn_disabled(), "Save button should be disabled"
         service_config_page.config.type_in_field_with_few_inputs(
-            row=service_config_page.config.get_all_config_rows()[0], values=[params["new_value"]]
+            row=service_config_page.config.get_all_config_rows()[0],
+            values=[params["new_value"]],
         )
         service_config_page.config.save_config()
         service_config_page.config.assert_input_value_is(
-            expected_value=params["new_value"], display_name=params["field_name"]
+            expected_value=params["new_value"],
+            display_name=params["field_name"],
         )
 
     def test_field_tooltips_on_service_config_page(self, app_fs, sdk_client_fs):
@@ -532,7 +537,8 @@ class TestServiceGroupConfigPage:
         with allure.step("Check created row in service"):
             group_info = service_group_conf_page.group_config.get_config_row_info(group_row)
             assert group_info == GroupConfigRowInfo(
-                name=params["name"], description=params["description"]
+                name=params["name"],
+                description=params["description"],
             ), "Row value differs in service groups"
         with service_group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
             service_group_conf_page.group_config.delete_row(group_row)
@@ -559,7 +565,11 @@ class TestServiceStatusPage:
         service_status_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
     def test_status_on_service_status_page(
-        self, app_fs, adcm_fs, sdk_client_fs, create_community_cluster_with_host_and_service
+        self,
+        app_fs,
+        adcm_fs,
+        sdk_client_fs,
+        create_community_cluster_with_host_and_service,
     ):
         """Changes status on /cluster/{}/service/{}/status page"""
 
@@ -620,14 +630,15 @@ class TestServiceImportPage:
             service = cluster.service_add(name=SERVICE_NAME)
         with allure.step("Create cluster to import"):
             cluster_import = cluster_bundle(sdk_client_fs, BUNDLE_IMPORT).cluster_create(
-                name=params["import_cluster_name"]
+                name=params["import_cluster_name"],
             )
             cluster_import.service_add(name=params["import_service_name"])
         service_import_page = ServiceImportPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         import_item = service_import_page.get_imports()[0]
         with allure.step("Check import on import page"):
             assert service_import_page.get_import_info(import_item) == ImportInfo(
-                "Pre-uploaded Dummy service to import", "Pre-uploaded Dummy service to import 2.5"
+                "Pre-uploaded Dummy service to import",
+                "Pre-uploaded Dummy service to import 2.5",
             ), "Text in import item changed"
         service_import_page.close_info_popup()
         service_import_page.click_checkbox_in_import_item(import_item)
@@ -635,7 +646,7 @@ class TestServiceImportPage:
         with allure.step("Check that import is saved"):
             assert service_import_page.get_info_popup_text() == params["message"], "No message about success"
             assert service_import_page.is_chxb_in_item_checked(
-                import_item
+                import_item,
             ), "Checkbox with import should have been checked"
 
     def test_warning_on_service_import_page(self, app_fs, sdk_client_fs):

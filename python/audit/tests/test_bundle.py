@@ -272,7 +272,7 @@ class TestBundleAudit(BaseTestCase):
     def test_prototype_license_accepted_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.put(
-                path=reverse("accept-license", kwargs={"prototype_pk": self.prototype.pk})
+                path=reverse("accept-license", kwargs={"prototype_pk": self.prototype.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -290,7 +290,9 @@ class TestBundleAudit(BaseTestCase):
 
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
-            response: Response = self.client.delete(path=reverse("bundle-detail", kwargs={"bundle_pk": self.bundle.pk}))
+            response: Response = self.client.delete(
+                path=reverse("bundle-detail", kwargs={"bundle_pk": self.bundle.pk}),
+            )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 

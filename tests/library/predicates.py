@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Callable, Collection, TypeVar
+from collections.abc import Callable, Collection
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 PredicateOfOne = Callable[[T], bool]

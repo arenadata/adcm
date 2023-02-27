@@ -1,0 +1,78 @@
+- type: cluster
+  version: &version 1.0
+  name: downgrade_cluster
+  config: &config
+    - name: string
+      type: string
+      required: false
+    - name: boolean
+      type: boolean
+      required: false
+      default: true
+    - name: float
+      type: float
+      required: false
+      default: 1.0
+    - name: integer
+      type: integer
+      required: false
+      default: 16
+    - name: list
+      type: list
+      required: false
+      default:
+        - /dev/rdisk0s1
+        - /dev/rdisk0s2
+        - /dev/rdisk0s3
+    - name: map
+      type: map
+      required: false
+      default:
+        age: '24'
+        name: Joe
+        sex: m
+    - name: option
+      type: option
+      required: false
+      option:
+        DAILY: DAILY
+        WEEKLY: WEEKLY
+      default: DAILY
+    - name: structure
+      type: structure
+      required: false
+      yspec: ./schema.yaml
+      default:
+        - code: 30
+          country: Greece
+        - code: 33
+          country: France
+        - code: 34
+          country: Spain
+  actions:
+    install:
+      type: job
+      script: ./actions.yaml
+      script_type: ansible
+      states:
+        available: any
+        on_success: install
+
+- type: service
+  version: *version
+  name: service1
+  config: *config
+  components:
+    component11:
+      config: &emptyconf
+        - name: string
+          type: string
+          required: false
+- type: service
+  version: *version
+  name: service2
+  config: *emptyconf
+
+  components:
+    component21:
+      config: *config

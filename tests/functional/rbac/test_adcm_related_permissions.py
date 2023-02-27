@@ -280,7 +280,7 @@ def test_edit_policy(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMClien
     is_allowed(user_sdk, BusinessRoles.VIEW_POLICIES)
     is_denied(user_sdk, BusinessRoles.CREATE_POLICY, role=custom_role, user=[user])
     custom_policy = user_sdk.policy(
-        id=sdk_client_fs.policy_create(name="Test policy", objects=[], role=custom_role, user=[user]).id
+        id=sdk_client_fs.policy_create(name="Test policy", objects=[], role=custom_role, user=[user]).id,
     )
     is_allowed(custom_policy, BusinessRoles.EDIT_POLICY)
     is_denied(custom_policy, BusinessRoles.REMOVE_POLICY, client=user_sdk)
@@ -300,7 +300,7 @@ def test_remove_policy(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMCli
     is_allowed(user_sdk, BusinessRoles.VIEW_POLICIES)
     is_denied(user_sdk, BusinessRoles.CREATE_POLICY, role=custom_role, user=[user])
     custom_policy = user_sdk.policy(
-        id=sdk_client_fs.policy_create(name="Test policy", objects=[], role=custom_role, user=[user]).id
+        id=sdk_client_fs.policy_create(name="Test policy", objects=[], role=custom_role, user=[user]).id,
     )
     is_denied(custom_policy, BusinessRoles.EDIT_POLICY, client=user_sdk)
     is_allowed(custom_policy, BusinessRoles.REMOVE_POLICY)

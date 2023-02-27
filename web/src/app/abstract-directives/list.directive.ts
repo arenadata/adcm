@@ -6,7 +6,7 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort, Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
-import { BaseDirective, EventHelper } from '@adwp-ui/widgets';
+import { BaseDirective, EventHelper } from '@app/adwp';
 
 import { EmmitRow, TypeName } from '@app/core/types';
 import { BaseListDirective } from '@app/shared/components/list/base-list.directive';

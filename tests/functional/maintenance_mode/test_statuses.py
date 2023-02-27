@@ -14,8 +14,8 @@
 Test statuses aggregation when hosts are in MM
 """
 
+from collections.abc import Collection
 from operator import not_, truth
-from typing import Collection, Tuple
 
 import allure
 import pytest
@@ -51,7 +51,7 @@ def status_changer(sdk_client_fs, adcm_fs) -> ADCMObjectStatusChanger:
 
 
 @pytest.fixture()
-def deployed_component(cluster_with_mm, hosts) -> Tuple[Component, Component, Component, Component]:
+def deployed_component(cluster_with_mm, hosts) -> tuple[Component, Component, Component, Component]:
     """Add components on 3 hosts"""
     default_service = cluster_with_mm.service(name=DEFAULT_SERVICE_NAME)
     another_service = cluster_with_mm.service_add(name=ANOTHER_SERVICE_NAME)
@@ -76,7 +76,13 @@ class TestStatusAggregationWithMM:
     """Test status aggregation with hosts in MM"""
 
     def test_turn_mm_after_negative_status(
-        self, api_client, status_changer, sdk_client_fs, cluster_with_mm, deployed_component, hosts
+        self,
+        api_client,
+        status_changer,
+        sdk_client_fs,
+        cluster_with_mm,
+        deployed_component,
+        hosts,
     ):
         """
         Test status aggregation when components on hosts are turned "off" after MM turned "on" on host
@@ -116,7 +122,13 @@ class TestStatusAggregationWithMM:
         self._turn_off_component_not_on_mm_host(sdk_client_fs, status_changer, cluster, host_2, host_3)
 
     def test_turn_mm_before_negative_status(
-        self, api_client, status_changer, sdk_client_fs, cluster_with_mm, deployed_component, hosts
+        self,
+        api_client,
+        status_changer,
+        sdk_client_fs,
+        cluster_with_mm,
+        deployed_component,
+        hosts,
     ):
         """
         Test status aggregation when components on hosts are turned "off" before MM turned "on" on host
@@ -146,7 +158,13 @@ class TestStatusAggregationWithMM:
         self._turn_off_component_not_on_mm_host(sdk_client_fs, status_changer, cluster, host_2, host_3)
 
     def test_status_service_mm_changed(
-        self, api_client, status_changer, sdk_client_fs, cluster_with_mm, deployed_component, hosts
+        self,
+        api_client,
+        status_changer,
+        sdk_client_fs,
+        cluster_with_mm,
+        deployed_component,
+        hosts,
     ):
         cluster = cluster_with_mm
         service = cluster.service(name=DEFAULT_SERVICE_NAME)
@@ -194,7 +212,13 @@ class TestStatusAggregationWithMM:
 
     # pylint: disable=too-many-locals
     def test_status_component_mm_changed(
-        self, api_client, status_changer, sdk_client_fs, cluster_with_mm, deployed_component, hosts
+        self,
+        api_client,
+        status_changer,
+        sdk_client_fs,
+        cluster_with_mm,
+        deployed_component,
+        hosts,
     ):
         cluster = cluster_with_mm
         service = cluster.service(name=DEFAULT_SERVICE_NAME)
@@ -280,7 +304,7 @@ class TestStatusAggregationWithMM:
 
         with allure.step(
             f'Turn "off" component "{component_2.name}" on host {host_3.fqdn} '
-            "and expect it to affect aggregation statuses"
+            "and expect it to affect aggregation statuses",
         ):
             status_changer.set_component_negative_status((host_3, component_2))
             check_statuses(
@@ -350,8 +374,8 @@ def check_statuses(
                         "hosts": {
                             fqdn: {
                                 "status": _expected_status(
-                                    positive(f"{service_name}.{component_name}.{fqdn}" in components_on_hosts)
-                                )
+                                    positive(f"{service_name}.{component_name}.{fqdn}" in components_on_hosts),
+                                ),
                             }
                             for fqdn, host_dict in component_dict["hosts"].items()
                         },

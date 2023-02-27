@@ -2,7 +2,7 @@ import { Component, ComponentRef, forwardRef, OnInit } from '@angular/core';
 import { ADD_SERVICE_PROVIDER } from "@app/shared/add-component/add-service-model";
 import { RbacAuditOperationsService } from "@app/services/rbac-audit-operations.service";
 import { AuditOperationsChangesHistory } from "@app/models/rbac/rbac-audit-operations.model";
-import { IColumns } from "@adwp-ui/widgets";
+import { IColumns } from "@app/adwp";
 import { ListService } from "@app/shared/components/list/list.service";
 import { BehaviorSubject } from "rxjs";
 import { WrapperColumnComponent } from "@app/components/columns/wrapper-column/wrapper-column.component";

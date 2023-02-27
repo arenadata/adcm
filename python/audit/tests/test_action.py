@@ -13,6 +13,7 @@
 
 from datetime import datetime
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 from audit.models import (
     AuditLog,
@@ -52,7 +53,9 @@ class TestActionAudit(BaseTestCase):
         adcm_prototype = Prototype.objects.create(bundle=self.bundle, type="adcm")
         self.config = ObjectConfig.objects.create(current=0, previous=0)
         config_log = ConfigLog.objects.create(
-            obj_ref=self.config, config="{}", attr={"ldap_integration": {"active": True}}
+            obj_ref=self.config,
+            config="{}",
+            attr={"ldap_integration": {"active": True}},
         )
         self.config.current = config_log.pk
         self.config.save(update_fields=["current"])
@@ -68,8 +71,8 @@ class TestActionAudit(BaseTestCase):
         self.task = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=ContentType.objects.get(app_label="cm", model="adcm"),
-            start_date=datetime.now(),
-            finish_date=datetime.now(),
+            start_date=datetime.now(tz=ZoneInfo("UTC")),
+            finish_date=datetime.now(tz=ZoneInfo("UTC")),
             action=self.action,
         )
         self.action_create_view = "api.action.views.create"
@@ -185,7 +188,7 @@ class TestActionAudit(BaseTestCase):
                         "component_id": component.pk,
                         "action_id": self.action.pk,
                     },
-                )
+                ),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -215,7 +218,7 @@ class TestActionAudit(BaseTestCase):
                         "component_id": component.pk,
                         "action_id": self.action.pk,
                     },
-                )
+                ),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

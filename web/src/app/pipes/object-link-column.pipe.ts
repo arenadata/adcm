@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { ILinkColumn } from '@adwp-ui/widgets';
+import { ILinkColumn } from '@app/adwp';
 
 import { JobObject, Task } from '../core/types';
 import { ObjectsHelper } from '../helpers/objects-helper';

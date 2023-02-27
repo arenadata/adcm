@@ -12,7 +12,9 @@ class _Locators(Dialog):
     username = Locator(By.NAME, "username", Descriptor.TEXT | Descriptor.ELEMENT | Descriptor.INPUT)
     password = Locator(By.CSS_SELECTOR, "input[data-placeholder='Password']", Descriptor.INPUT | Descriptor.ELEMENT)
     password_confirm = Locator(
-        By.CSS_SELECTOR, "input[data-placeholder='Confirm password']", Descriptor.INPUT | Descriptor.ELEMENT
+        By.CSS_SELECTOR,
+        "input[data-placeholder='Confirm password']",
+        Descriptor.INPUT | Descriptor.ELEMENT,
     )
     first_name = Locator(By.NAME, "first_name", Descriptor.TEXT | Descriptor.ELEMENT | Descriptor.INPUT)
     last_name = Locator(By.NAME, "last_name", Descriptor.TEXT | Descriptor.ELEMENT | Descriptor.INPUT)
@@ -42,7 +44,7 @@ class UpdateUserDialog(AutoChildDialog):
                     lambda group: "disabled" in group.get_attribute("class"),
                     self._view.find_elements(self.Locators.group_item, timeout=1),
                 ),
-            )
+            ),
         )
         self.first_name_element.click()
         self._view.wait_element_hide(self.Locators.group_item, timeout=1.5)
@@ -52,7 +54,8 @@ class UpdateUserDialog(AutoChildDialog):
         self.groups_element.click()
         self._view.wait_element_visible(self.Locators.group_item, timeout=1.5)
         suitable_group = get_or_raise(
-            self._view.find_elements(self.Locators.group_item), lambda element: element.text == group
+            self._view.find_elements(self.Locators.group_item),
+            lambda element: element.text == group,
         )
         self._view.scroll_to(suitable_group)
         self._view.hover_element(suitable_group)

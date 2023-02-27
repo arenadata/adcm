@@ -12,7 +12,6 @@
 
 """Test complex scenarios with ADCM LDAP integration"""
 
-from typing import Set, Tuple
 
 import allure
 import pytest
@@ -40,7 +39,7 @@ pytestmark = [pytest.mark.ldap()]
 
 
 @pytest.fixture()
-def two_ldap_groups_with_users(ldap_ad, ldap_basic_ous) -> Tuple[GroupInfo, UserInfo, GroupInfo, UserInfo]:
+def two_ldap_groups_with_users(ldap_ad, ldap_basic_ous) -> tuple[GroupInfo, UserInfo, GroupInfo, UserInfo]:
     """Create two ldap users and groups with a user in each one"""
     groups_ou, users_ou = ldap_basic_ous
     group_1 = {"name": "group-with-users-1"}
@@ -57,7 +56,7 @@ def two_ldap_groups_with_users(ldap_ad, ldap_basic_ous) -> Tuple[GroupInfo, User
 
 
 @pytest.fixture()
-def two_ldap_users(ldap_ad, ldap_basic_ous) -> Tuple[UserInfo, UserInfo]:
+def two_ldap_users(ldap_ad, ldap_basic_ous) -> tuple[UserInfo, UserInfo]:
     """Create two ldap user that're not in any group"""
     _, users_ou = ldap_basic_ous
     user_1 = {"name": f"user-3-{random_string(4)}", "password": random_string(12)}
@@ -68,7 +67,7 @@ def two_ldap_users(ldap_ad, ldap_basic_ous) -> Tuple[UserInfo, UserInfo]:
 
 
 @pytest.fixture()
-def two_adcm_users(sdk_client_fs) -> Tuple[User, User]:
+def two_adcm_users(sdk_client_fs) -> tuple[User, User]:
     """Create two ADCM users"""
     return (
         sdk_client_fs.user_create("first-adcm-user", random_string(12)),
@@ -77,13 +76,14 @@ def two_adcm_users(sdk_client_fs) -> Tuple[User, User]:
 
 
 @pytest.fixture()
-def two_adcm_groups(sdk_client_fs) -> Tuple[Group, Group]:
+def two_adcm_groups(sdk_client_fs) -> tuple[Group, Group]:
     """Create two ADCM groups"""
     return sdk_client_fs.group_create("first-adcm-group"), sdk_client_fs.group_create("second-adcm-group")
 
 
 @pytest.mark.usefixtures(
-    "configure_adcm_ldap_ad", "two_ldap_users"
+    "configure_adcm_ldap_ad",
+    "two_ldap_users",
 )  # pylint: disable-next=too-many-locals,too-many-statements
 def test_users_in_groups_sync(
     sdk_client_fs,
@@ -197,6 +197,6 @@ def _check_users_in_group(group: Group, *users: User):
     assert {u.username for u in users} == _get_usernames_in_group(group), f"Incorrect user list in group {group.name}"
 
 
-def _get_usernames_in_group(group: Group) -> Set[str]:
+def _get_usernames_in_group(group: Group) -> set[str]:
     group.reread()
     return {u.username for u in group.user_list()}

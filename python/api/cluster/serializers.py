@@ -106,19 +106,25 @@ class ClusterDetailSerializer(ClusterSerializer):
     service = ObjectURL(view_name="service")
     host = ObjectURL(view_name="host")
     hostcomponent = HyperlinkedIdentityField(
-        view_name="host-component", lookup_field="id", lookup_url_kwarg="cluster_id"
+        view_name="host-component",
+        lookup_field="id",
+        lookup_url_kwarg="cluster_id",
     )
     status = SerializerMethodField()
     status_url = HyperlinkedIdentityField(view_name="cluster-status", lookup_field="id", lookup_url_kwarg="cluster_id")
     config = CommonAPIURL(view_name="object-config")
     serviceprototype = HyperlinkedIdentityField(
-        view_name="cluster-service-prototype", lookup_field="id", lookup_url_kwarg="cluster_id"
+        view_name="cluster-service-prototype",
+        lookup_field="id",
+        lookup_url_kwarg="cluster_id",
     )
     upgrade = HyperlinkedIdentityField(view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id")
     imports = HyperlinkedIdentityField(view_name="cluster-import", lookup_field="id", lookup_url_kwarg="cluster_id")
     bind = HyperlinkedIdentityField(view_name="cluster-bind", lookup_field="id", lookup_url_kwarg="cluster_id")
     prototype = HyperlinkedRelatedField(
-        view_name="cluster-prototype-detail", read_only=True, lookup_url_kwarg="prototype_pk"
+        view_name="cluster-prototype-detail",
+        read_only=True,
+        lookup_url_kwarg="prototype_pk",
     )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
@@ -345,7 +351,7 @@ class HCComponentSerializer(ComponentShortSerializer):
         return obj.service.prototype.display_name
 
     @staticmethod
-    def get_requires(obj):
+    def get_requires(obj):  # noqa: C901
         if not obj.prototype.requires:
             return None
 
@@ -384,7 +390,7 @@ class HCComponentSerializer(ComponentShortSerializer):
                         "prototype_id": comp.id,
                         "name": comp_name,
                         "display_name": comp.display_name,
-                    }
+                    },
                 )
 
             if not comp_out:
@@ -396,7 +402,7 @@ class HCComponentSerializer(ComponentShortSerializer):
                     "name": service_name,
                     "display_name": service.display_name,
                     "components": comp_out,
-                }
+                },
             )
 
         return out

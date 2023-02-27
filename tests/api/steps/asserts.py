@@ -14,7 +14,6 @@
 import json
 from dataclasses import dataclass, field
 from http import HTTPStatus
-from typing import Dict
 
 import allure
 from requests import Response
@@ -49,7 +48,7 @@ def body_should_be(response: Response, expected_body: ExpectedBody):
     expected_values = {
         key: value for key, value in expected_body.fields.items() if not isinstance(value, (NotSet, NotEqual))
     }
-    unexpected_values: Dict[str, NotEqual] = {
+    unexpected_values: dict[str, NotEqual] = {
         key: value for key, value in expected_body.fields.items() if isinstance(value, NotEqual)
     }
     with allure.step("Body should contains fields"):
@@ -117,7 +116,7 @@ def _clean_values(to_clean: dict):
                 # we suppose that all keys are the same
                 keys = list(value[0].keys())
                 keys.sort()
-                dict_to_clean[key] = set(tuple((k, d[k]) for k in keys) for d in dicts_in_list)
+                dict_to_clean[key] = {tuple((k, d[k]) for k in keys) for d in dicts_in_list}
             else:
                 value.sort()
         elif isinstance(value, dict):

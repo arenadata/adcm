@@ -13,7 +13,6 @@
 """Tools for ADCM UI over selenium interactions"""
 
 import os
-from typing import Optional, Union
 
 import allure
 from adcm_client.wrappers.docker import ADCM
@@ -27,7 +26,7 @@ class ADCMTest:
 
     __slots__ = ("opts", "capabilities", "driver", "ui", "adcm", "selenoid")
 
-    def __init__(self, browser="Chrome", downloads: Optional[Union[os.PathLike, str]] = None):
+    def __init__(self, browser="Chrome", downloads: os.PathLike | str | None = None):
         self.opts = FirefoxOptions() if browser == "Firefox" else ChromeOptions()
         self.opts.headless = os.getenv("UI_TEST_DEBUG") != "True"
         self.opts.add_argument("--no-sandbox")
@@ -98,7 +97,7 @@ class ADCMTest:
         """Destroy selenium driver"""
         self.driver.quit()
 
-    def _configure_downloads(self, browser: str, downloads_directory: Optional[Union[os.PathLike, str]]):
+    def _configure_downloads(self, browser: str, downloads_directory: os.PathLike | str | None):
         if downloads_directory is None:
             return
         if browser == "Chrome":

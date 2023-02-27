@@ -15,7 +15,6 @@
 """UI tests for /cluster page"""
 
 import os
-from typing import Tuple
 
 import allure
 import pytest
@@ -61,7 +60,7 @@ pytestmark = pytest.mark.usefixtures("_login_to_adcm_over_api")
 
 
 @pytest.fixture()
-def create_cluster_with_service(sdk_client_fs: ADCMClient, bundle_archive: str) -> Tuple[Cluster, Service]:
+def create_cluster_with_service(sdk_client_fs: ADCMClient, bundle_archive: str) -> tuple[Cluster, Service]:
     """Create cluster with service"""
 
     cluster_bundle = sdk_client_fs.upload_from_fs(bundle_archive)
@@ -72,8 +71,9 @@ def create_cluster_with_service(sdk_client_fs: ADCMClient, bundle_archive: str) 
 
 @pytest.fixture()
 def create_cluster_with_hostcomponents(
-    create_cluster_with_service: Tuple[Cluster, Service], sdk_client_fs: ADCMClient
-) -> Tuple[Cluster, Service, Host]:
+    create_cluster_with_service: tuple[Cluster, Service],
+    sdk_client_fs: ADCMClient,
+) -> tuple[Cluster, Service, Host]:
     """Create cluster with component"""
 
     cluster, service = create_cluster_with_service
@@ -100,7 +100,11 @@ class TestComponentMainPage:
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_config_page = ComponentConfigPage(
-            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            service.id,
+            component.id,
         ).open()
         component_main_page = component_config_page.open_main_tab()
         component_main_page.check_all_elements()
@@ -112,7 +116,11 @@ class TestComponentMainPage:
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_main_page = ComponentMainPage(
-            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            service.id,
+            component.id,
         ).open()
         component_main_page.toolbar.click_admin_link()
         AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
@@ -123,7 +131,11 @@ class TestComponentMainPage:
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_config_page = ComponentConfigPage(
-            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            service.id,
+            component.id,
         ).open()
         component_config_page.click_link_by_name(FIRST_COMPONENT_NAME)
         component_main_page = ComponentMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id)
@@ -136,7 +148,11 @@ class TestComponentMainPage:
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_main_page = ComponentMainPage(
-            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            service.id,
+            component.id,
         ).open()
         component_main_page.click_link_by_name("COMPONENTS")
         service_comp_page = ServiceComponentPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id)
@@ -154,7 +170,11 @@ class TestComponentConfigPage:
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_main_page = ComponentMainPage(
-            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            service.id,
+            component.id,
         ).open()
         component_config_page = component_main_page.open_config_tab()
         component_config_page.check_all_elements()
@@ -169,7 +189,11 @@ class TestComponentConfigPage:
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_config_page = ComponentConfigPage(
-            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            service.id,
+            component.id,
         ).open()
         with component_config_page.config.wait_rows_change():
             component_config_page.config.search(params["search_param"])
@@ -193,7 +217,10 @@ class TestComponentConfigPage:
         indirect=True,
     )
     def test_save_custom_config_on_component_config_page(
-        self, app_fs, create_cluster_with_service, create_bundle_archives  # pylint: disable=unused-argument
+        self,
+        app_fs,
+        create_cluster_with_service,
+        create_bundle_archives,  # pylint: disable=unused-argument
     ):
         """Test config save on /cluster/{}/service/{}/component/{}/config page"""
 
@@ -205,7 +232,11 @@ class TestComponentConfigPage:
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_config_page = ComponentConfigPage(
-            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            service.id,
+            component.id,
         ).open(close_popup=True)
         component_config_page.config.fill_config_fields_with_test_values()
         component_config_page.config.set_description(params["config_name_new"])
@@ -227,11 +258,17 @@ class TestComponentConfigPage:
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_config_page = ComponentConfigPage(
-            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            service.id,
+            component.id,
         ).open()
         config_row = component_config_page.config.get_all_config_rows()[0]
         component_config_page.config.type_in_field_with_few_inputs(
-            row=config_row, values=[params["row_value_new"]], clear=True
+            row=config_row,
+            values=[params["row_value_new"]],
+            clear=True,
         )
         component_config_page.config.set_description(params["config_name"])
         component_config_page.config.save_config()
@@ -239,7 +276,8 @@ class TestComponentConfigPage:
         config_row = component_config_page.config.get_all_config_rows()[0]
         component_config_page.config.reset_to_default(row=config_row)
         component_config_page.config.assert_input_value_is(
-            expected_value=params["row_value_old"], display_name=params["row_name"]
+            expected_value=params["row_value_old"],
+            display_name=params["row_name"],
         )
 
     @pytest.mark.parametrize(
@@ -248,7 +286,10 @@ class TestComponentConfigPage:
         indirect=True,
     )
     def test_field_validation_on_component_config_page(
-        self, app_fs, create_cluster_with_service, create_bundle_archives  # pylint: disable=unused-argument
+        self,
+        app_fs,
+        create_cluster_with_service,
+        create_bundle_archives,  # pylint: disable=unused-argument
     ):
         """Test config fields validation on /cluster/{}/service/{}/component/{}/config page"""
         params = {
@@ -260,7 +301,11 @@ class TestComponentConfigPage:
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_config_page = ComponentConfigPage(
-            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            service.id,
+            component.id,
         ).open()
         component_config_page.config.check_password_confirm_required(params["pass_name"])
         component_config_page.config.check_field_is_required(params["req_name"])
@@ -279,7 +324,10 @@ class TestComponentConfigPage:
         indirect=True,
     )
     def test_field_validation_on_component_config_page_with_default_value(
-        self, app_fs, create_cluster_with_service, create_bundle_archives  # pylint: disable=unused-argument
+        self,
+        app_fs,
+        create_cluster_with_service,
+        create_bundle_archives,  # pylint: disable=unused-argument
     ):
         """Test config fields validation on /cluster/{}/service/{}/component/{}/config page"""
 
@@ -288,16 +336,22 @@ class TestComponentConfigPage:
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_config_page = ComponentConfigPage(
-            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            service.id,
+            component.id,
         ).open()
         component_config_page.config.clear_field_by_keys(params["field_name"])
         component_config_page.config.check_field_is_required(params["field_name"])
         component_config_page.config.type_in_field_with_few_inputs(
-            row=component_config_page.config.get_all_config_rows()[0], values=[params["new_value"]]
+            row=component_config_page.config.get_all_config_rows()[0],
+            values=[params["new_value"]],
         )
         component_config_page.config.save_config()
         component_config_page.config.assert_input_value_is(
-            expected_value=params["new_value"], display_name=params["field_name"]
+            expected_value=params["new_value"],
+            display_name=params["field_name"],
         )
 
     @pytest.mark.parametrize(
@@ -306,14 +360,21 @@ class TestComponentConfigPage:
         indirect=True,
     )
     def test_field_tooltips_on_component_config_page(
-        self, app_fs, create_cluster_with_service, create_bundle_archives
+        self,
+        app_fs,
+        create_cluster_with_service,
+        create_bundle_archives,
     ):  # pylint: disable=unused-argument
         """Test config fields tooltips on /cluster/{}/service/{}/component/{}/config page"""
 
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_config_page = ComponentConfigPage(
-            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            service.id,
+            component.id,
         ).open()
         for item in CONFIG_ITEMS:
             component_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
@@ -329,7 +390,11 @@ class TestComponentGroupConfigPage:
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_main_page = ComponentMainPage(
-            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            service.id,
+            component.id,
         ).open()
         component_groupconf_page = component_main_page.open_group_config_tab()
         component_groupconf_page.check_all_elements()
@@ -346,7 +411,11 @@ class TestComponentGroupConfigPage:
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_group_conf_page = ComponentGroupConfigPage(
-            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            service.id,
+            component.id,
         ).open()
         with component_group_conf_page.group_config.wait_rows_change(expected_rows_amount=1):
             component_group_conf_page.group_config.create_group(name=params["name"], description=params["description"])
@@ -354,7 +423,8 @@ class TestComponentGroupConfigPage:
         with allure.step("Check created row in component"):
             group_info = component_group_conf_page.group_config.get_config_row_info(group_row)
             assert group_info == GroupConfigRowInfo(
-                name=params["name"], description=params["description"]
+                name=params["name"],
+                description=params["description"],
             ), "Row value differs in component groups"
         with component_group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
             component_group_conf_page.group_config.delete_row(group_row)
@@ -366,7 +436,11 @@ class TestComponentGroupConfigPage:
         component = service.component(name=FIRST_COMPONENT_NAME)
         create_few_groups(sdk_client_fs, component)
         group_conf_page = ComponentGroupConfigPage(
-            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            service.id,
+            component.id,
         ).open()
         check_pagination(group_conf_page.table, expected_on_second=1)
 
@@ -381,7 +455,11 @@ class TestComponentStatusPage:
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_config_page = ComponentConfigPage(
-            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            service.id,
+            component.id,
         ).open()
         component_status_page = component_config_page.open_status_tab()
         component_status_page.check_all_elements()
@@ -414,7 +492,11 @@ class TestComponentStatusPage:
         cluster, service, host = create_cluster_with_hostcomponents
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_status_page = ComponentStatusPage(
-            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            service.id,
+            component.id,
         ).open()
         status_changer = ADCMObjectStatusChanger(sdk_client_fs, adcm_fs)
         with allure.step("Check positive status on component"):
@@ -431,14 +513,22 @@ class TestComponentStatusPage:
             assert len(component_status_page.get_all_rows()) == 1, "Status rows should have been collapsed"
 
     def test_link_to_host_on_component_status_page(
-        self, app_fs, adcm_fs, sdk_client_fs, create_cluster_with_hostcomponents  # pylint: disable=unused-argument
+        self,
+        app_fs,
+        adcm_fs,  # pylint: disable=unused-argument
+        sdk_client_fs,  # pylint: disable=unused-argument
+        create_cluster_with_hostcomponents,
     ):
         """Check that host link points to the host page"""
 
         cluster, service, host = create_cluster_with_hostcomponents
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_status_page = ComponentStatusPage(
-            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            service.id,
+            component.id,
         ).open()
         component_status_page.click_host_by_name(host.fqdn)
         HostStatusPage(app_fs.driver, app_fs.adcm.url, host.id, None).wait_page_is_opened()

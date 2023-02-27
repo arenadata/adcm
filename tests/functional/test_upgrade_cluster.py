@@ -160,7 +160,7 @@ def test_upgrade_cluster_with_config_groups(sdk_client_fs):
                         "readonly-key": "value",
                     },
                 },
-            }
+            },
         )
         service.config_set(
             {
@@ -177,7 +177,7 @@ def test_upgrade_cluster_with_config_groups(sdk_client_fs):
                         "readonly-key": "value",
                     },
                 },
-            }
+            },
         )
 
 

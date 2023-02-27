@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from operator import methodcaller
-from typing import Callable
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -10,8 +10,8 @@ from selenium.common import (
 )
 from selenium.webdriver import ActionChains, Keys
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait as WDW
+from selenium.webdriver.support import expected_conditions as EC  # noqa: N812
+from selenium.webdriver.support.ui import WebDriverWait as WDW  # noqa: N817
 
 from tests.ui_tests.core.locators import BaseLocator
 
@@ -23,7 +23,7 @@ class Interactor:
 
     def hover_element(self, element: BaseLocator | WebElement):
         hover = ActionChains(self._driver).move_to_element(
-            element if isinstance(element, WebElement) else self.find_element(element)
+            element if isinstance(element, WebElement) else self.find_element(element),
         )
         hover.perform()
 
@@ -66,7 +66,7 @@ class Interactor:
         return self._is_displayed(
             lambda: element
             if isinstance(element, WebElement)
-            else self.find_element(element, timeout=timeout or self._timeout)
+            else self.find_element(element, timeout=timeout or self._timeout),
         )
 
     def is_child_displayed(self, parent: WebElement, child: BaseLocator, timeout: int | float | None = None) -> bool:
@@ -102,7 +102,8 @@ class Interactor:
 
         with allure.step(f"Wait '{name}' become visible"):
             return WDW(self._driver, timeout).until(
-                method=method, message=f"{name} hasn't become visible for {timeout} seconds"
+                method=method,
+                message=f"{name} hasn't become visible for {timeout} seconds",
             )
 
     def wait_element_hide(self, element: BaseLocator | WebElement, timeout: int | None = None) -> None:

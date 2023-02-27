@@ -13,7 +13,6 @@
 
 import logging
 from collections import OrderedDict
-from typing import Tuple, Union
 
 from audit.apps import AuditConfig
 from audit.models import AuditLog, AuditLogOperationResult, AuditSession
@@ -28,11 +27,11 @@ class CEFLogConstants:
     device_product: str = "Arenadata Cluster Manager"
     adcm_version: str = settings.ADCM_VERSION
     operation_name_session: str = "User logged"
-    extension_keys: Tuple[str] = ("actor", "act", "operation", "resource", "result", "timestamp")
+    extension_keys: tuple[str] = ("actor", "act", "operation", "resource", "result", "timestamp")
 
 
 def cef_logger(
-    audit_instance: Union[AuditLog, AuditSession],
+    audit_instance: AuditLog | AuditSession,
     signature_id: str,
     severity: int = 1,
     empty_resource: bool = False,

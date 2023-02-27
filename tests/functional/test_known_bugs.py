@@ -78,7 +78,7 @@ def test_missing_service_outside_config_group(cluster_with_services, provider):
     cluster = cluster_with_services
     first_service, second_service = cluster.service(name="first_service"), cluster.service(name="second_service")
     component_1, component_2 = first_service.component(), second_service.component()
-    host_1, host_2 = [cluster.host_add(provider.host_create(f"test-host-{i}")) for i in range(2)]
+    host_1, host_2 = (cluster.host_add(provider.host_create(f"test-host-{i}")) for i in range(2))
 
     cluster.hostcomponent_set((host_1, component_1), (host_1, component_2), (host_2, component_1))
     create_config_group_and_add_host("config-group", first_service, host_1)
@@ -90,8 +90,10 @@ def test_missing_service_outside_config_group(cluster_with_services, provider):
 
 def test_launch_action_with_activatable_config_group(sdk_client_fs):
     """Known bug caught when running action with at least one activatable group in action's config"""
-    cluster = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "activatable_group_in_action_config")).cluster_create(
-        "Test Cluster"
+    cluster = sdk_client_fs.upload_from_fs(
+        get_data_dir(__file__, "activatable_group_in_action_config"),
+    ).cluster_create(
+        "Test Cluster",
     )
     for param_1, param_2 in ((False, False), (True, False), (False, True)):
         with allure.step(f"Try to set active status of {param_1=} and {param_2=}"):

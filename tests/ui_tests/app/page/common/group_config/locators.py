@@ -25,5 +25,7 @@ class GroupConfigLocators:
     customization_chbx = BaseLocator(By.CSS_SELECTOR, "mat-checkbox", "Checkbox customization")
     input = BaseLocator(By.CSS_SELECTOR, '*:not([style="display: none;"])>mat-form-field input,textarea', "Row input")
     add_item_btn = BaseLocator(
-        By.XPATH, ".//button//mat-icon[text()='add_circle_outline']", "Add item to parameter button"
+        By.XPATH,
+        ".//button//mat-icon[text()='add_circle_outline']",
+        "Add item to parameter button",
     )

@@ -65,5 +65,5 @@ class ADCMInfo(APIView):
                 "adcm_version": settings.ADCM_VERSION,
                 "google_oauth": has_google_oauth(),
                 "yandex_oauth": has_yandex_oauth(),
-            }
+            },
         )

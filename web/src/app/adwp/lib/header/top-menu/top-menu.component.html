@@ -1,0 +1,20 @@
+<mat-toolbar class="row">
+  <a routerLink="/" class="col s12 l3">
+    <img [src]="logoPath" [alt]="appName" />
+  </a>
+
+  <mat-nav-list class="col s12 l6">
+    <a *ngFor="let item of items"
+       mat-list-item
+       class="top"
+       [routerLink]="item.link"
+       routerLinkActive="mat-warn">
+      <span>{{ item.label }}</span>
+    </a>
+  </mat-nav-list>
+
+  <span class="col s12 l3" [style.textAlign]="'right'">
+    <ng-content></ng-content>
+  </span>
+
+</mat-toolbar>

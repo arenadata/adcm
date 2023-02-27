@@ -13,7 +13,6 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 from unittest.mock import patch
 
 from audit.models import (
@@ -120,7 +119,7 @@ class TestClusterAudit(BaseTestCase):
         operation_name: str,
         operation_type: AuditLogOperationType,
         operation_result: AuditLogOperationResult = AuditLogOperationResult.SUCCESS,
-        user: Optional[User] = None,
+        user: User | None = None,
         object_changes: dict | None = None,
     ) -> None:
         if object_changes is None:
@@ -418,7 +417,9 @@ class TestClusterAudit(BaseTestCase):
             operation_type=AuditLogOperationType.DELETE,
         )
 
-        response: Response = self.client.delete(path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}))
+        response: Response = self.client.delete(
+            path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+        )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -437,7 +438,7 @@ class TestClusterAudit(BaseTestCase):
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
+                path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -453,7 +454,7 @@ class TestClusterAudit(BaseTestCase):
         self.add_no_rights_user_cluster_view_rights()
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
+                path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -862,8 +863,8 @@ class TestClusterAudit(BaseTestCase):
                         "component_id": self.get_sc().pk,
                         "host_id": self.host.pk,
                         "service_id": self.service.pk,
-                    }
-                ]
+                    },
+                ],
             },
             content_type=APPLICATION_JSON,
         )
@@ -892,8 +893,8 @@ class TestClusterAudit(BaseTestCase):
                             "component_id": self.get_sc().pk,
                             "host_id": self.host.pk,
                             "service_id": self.service.pk,
-                        }
-                    ]
+                        },
+                    ],
                 },
                 content_type=APPLICATION_JSON,
             )
@@ -1711,7 +1712,7 @@ class TestClusterAudit(BaseTestCase):
                 path=reverse(
                     "do-cluster-upgrade",
                     kwargs={"cluster_id": self.cluster.pk, "upgrade_id": upgrade.pk},
-                )
+                ),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -1738,7 +1739,7 @@ class TestClusterAudit(BaseTestCase):
                 path=reverse(
                     "do-cluster-upgrade",
                     kwargs={"cluster_id": self.cluster.pk, "upgrade_id": upgrade.pk},
-                )
+                ),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -1754,7 +1755,7 @@ class TestClusterAudit(BaseTestCase):
             path=reverse(
                 "do-cluster-upgrade",
                 kwargs={"cluster_id": self.cluster.pk, "upgrade_id": 1},
-            )
+            ),
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

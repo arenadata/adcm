@@ -10,7 +10,9 @@ class _Locators(Dialog):
     name = Locator(By.CSS_SELECTOR, "adwp-input[label='Group name'] input", Descriptor.TEXT | Descriptor.INPUT)
     description = Locator(By.CSS_SELECTOR, "adwp-input[label='Description'] input", Descriptor.TEXT | Descriptor.INPUT)
     users = Locator(
-        By.CSS_SELECTOR, "adwp-input-select[label='Select users'] adwp-select", Descriptor.TEXT | Descriptor.ELEMENT
+        By.CSS_SELECTOR,
+        "adwp-input-select[label='Select users'] adwp-select",
+        Descriptor.TEXT | Descriptor.ELEMENT,
     )
     user_item = Locator(By.CSS_SELECTOR, "adwp-selection-list mat-list-option", Descriptor.ELEMENT)
 

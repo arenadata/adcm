@@ -31,7 +31,7 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestHC(BaseTestCase):
-    def test_action_hc_simple(self):  # pylint: disable=too-many-locals
+    def test_action_hc_simple(self):  # pylint: disable=too-many-locals # noqa: C901
         bundle_1 = cook_cluster_bundle("1.0")
         cluster = cook_cluster(bundle_1, "Test1")
         bundle_2 = cook_provider_bundle("1.0")

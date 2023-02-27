@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Component, DoCheck, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { interval, Subscription } from 'rxjs';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 
 import { JobStatus } from '@app/core/types/task-job';
 

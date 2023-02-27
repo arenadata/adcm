@@ -51,7 +51,7 @@ class ConcernItemDetailSerializer(ConcernItemUISerializer):
                     "type": obj.prototype.type,
                     "id": obj.pk,
                     "url": reverse(view_name, kwargs=kwargs, request=request),
-                }
+                },
             )
         return result
 

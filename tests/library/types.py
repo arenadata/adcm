@@ -12,6 +12,5 @@
 
 """General types for adding typehints in tests"""
 
-from typing import Union
 
-WaitTimeout = Union[int, float]
+WaitTimeout = int | float

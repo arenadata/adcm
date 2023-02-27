@@ -12,18 +12,9 @@
 
 """Defines basic entities like Operation and NamedOperation to work with audit log scenarios"""
 
+from collections.abc import Collection
 from dataclasses import dataclass, field, fields
-from typing import (
-    ClassVar,
-    Collection,
-    Dict,
-    List,
-    Literal,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import ClassVar, Literal, NamedTuple
 
 from adcm_client.audit import AuditOperation, ObjectType, OperationResult, OperationType
 
@@ -59,7 +50,7 @@ class NamedOperation(NamedTuple):
         if object_type not in self.allowed_types:
             raise ValueError(
                 f"Operation {self.name} can not be performed on {object_type}.\n"
-                "Please check definition of an operation."
+                "Please check definition of an operation.",
             )
         try:
             type_ = object_type.value.capitalize() if object_type != ObjectType.ADCM else object_type.value.upper()
@@ -68,7 +59,7 @@ class NamedOperation(NamedTuple):
             raise KeyError(
                 f'It looks like you missed some keys required to format "{self.naming_template}" string\n'
                 'Most likely you should add those keys to audit log operation "how" section\n'
-                f"Original error: {e}"
+                f"Original error: {e}",
             ) from e
 
 
@@ -82,7 +73,7 @@ _OBJECTS_WITH_ACTIONS_AND_CONFIGS = (
     ObjectType.HOST,
 )
 
-_NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation] = {
+_NAMED_OPERATIONS: dict[str | tuple[OperationResult, str], NamedOperation] = {
     named_operation.name: named_operation
     for named_operation in (
         # bundle
@@ -182,7 +173,7 @@ _NAMED_OPERATIONS.update(
         ),
         (OperationResult.FAIL, "create-group-config"): _failed_denied_config_group_creation,
         (OperationResult.DENIED, "create-group-config"): _failed_denied_config_group_creation,
-    }
+    },
 )
 
 
@@ -196,24 +187,24 @@ class Operation:
     EXCLUDED_FROM_COMPARISON: ClassVar = ("username", "code")
 
     # main info
-    user_id: Optional[int]
+    user_id: int | None
     operation_type: OperationType
     operation_name: str = field(init=False)
     operation_result: OperationResult
-    object_changes: Dict[str, dict]
+    object_changes: dict[str, dict]
 
     # may be or may not be based on operation type and result
     # but they should be passed directly, because it's an important part of the logic
 
-    object_type: Optional[ObjectType]
-    object_name: Optional[str]
+    object_type: ObjectType | None
+    object_name: str | None
 
     # not from API, but suitable for displaying what was expected
-    username: Optional[str] = field(default=None, compare=False)
+    username: str | None = field(default=None, compare=False)
 
     # used for operation name building
     # the value from "how" section of operation description in scenario
-    code: Dict[Literal["operation", "name"], str] = field(default_factory=dict, compare=False, repr=False)
+    code: dict[Literal["operation", "name"], str] = field(default_factory=dict, compare=False, repr=False)
 
     def __post_init__(self):
         self.operation_name = self._detect_operation_name()
@@ -252,7 +243,7 @@ class Operation:
         if not self.code or "operation" not in self.code:
             raise KeyError(
                 'There should be "how" section specifying operation for audit record described as\n'
-                f'"{self.operation_type.value} {self.object_type.value} {self.object_name}"'
+                f'"{self.operation_type.value} {self.object_type.value} {self.object_name}"',
             )
 
         operation = self.code["operation"]
@@ -264,7 +255,7 @@ class Operation:
                 f"Incorrect operation name: {operation}.\n"
                 "If operation name is correct, add it to `_NAMED_OPERATIONS`\n"
                 "Registered names: "
-                ", ".join(k if isinstance(k, str) else str(k) for k in _NAMED_OPERATIONS.keys())
+                ", ".join(k if isinstance(k, str) else str(k) for k in _NAMED_OPERATIONS.keys()),
             )
 
         return named_operation.resolve(self.object_type, **self.code)
@@ -312,11 +303,11 @@ class Operation:
 
 
 def convert_to_operations(
-    raw_operations: List[dict],
+    raw_operations: list[dict],
     default_username: str,
     default_result: str,
-    username_id_map: Dict[str, int],
-) -> List[Operation]:
+    username_id_map: dict[str, int],
+) -> list[Operation]:
     """Convert parsed from file audit operations to Operation objects"""
     required_users = {
         default_username,
@@ -344,7 +335,7 @@ def convert_to_operations(
                 object_name=object_.get("name", None),
                 username=username,
                 code=_unwrap_how(operation_info.get("how", {})),
-            )
+            ),
         )
     return operations
 
@@ -367,7 +358,7 @@ def _check_all_users_are_presented(usernames, username_id_map):
     )
 
 
-def _unwrap_how(how: Union[dict, str]) -> dict:
+def _unwrap_how(how: dict | str) -> dict:
     if isinstance(how, dict):
         return how
     return {"operation": how}

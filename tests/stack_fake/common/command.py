@@ -46,7 +46,7 @@ def open_file(root, tag, command_id):
 
 def print_log(root, tag, command_id):
     fname = f"{root}/{command_id}-{tag}.txt"
-    with open(fname, "r", encoding="utf_8") as file:
+    with open(fname, encoding="utf_8") as file:
         flog = file.read()
         sys.stderr.write(flog)
 
@@ -75,8 +75,8 @@ def run_python_script(base_dir, py_script, command, json_config, out_file, err_f
             stderr=err_file,
             env=add_path(ROOT_DIR),
         )
-    except:  # pylint: disable=bare-except
-        log.error("exception runnung python script")
+    except Exception:  # pylint: disable=broad-except # noqa: BLE001
+        log.error("exception running python script")
         res = 42
 
     log.info("script %s ret: %s", py_script, res)
@@ -84,7 +84,7 @@ def run_python_script(base_dir, py_script, command, json_config, out_file, err_f
 
 
 def cook_hook(root, hook, command):
-    return (f"{root}/{hook}", f"{root}/{hook}/scripts/hook.py", command)
+    return f"{root}/{hook}", f"{root}/{hook}/scripts/hook.py", command
 
 
 def cook_command_pipe(hook_dir, command_tuple):
@@ -135,7 +135,7 @@ def print_usage():
     print(
         """
     command.py folder script.py commnad command_id
-    """
+    """,
     )
 
 

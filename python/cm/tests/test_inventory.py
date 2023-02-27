@@ -74,15 +74,17 @@ class TestInventory(BaseTestCase):
 
         self.assertDictEqual(conf, {"global": None})
 
-        mock_get_prototype_config.assert_called_once_with({})
-        mock_process_config.assert_called_once_with(obj_mock, {}, {})
+        mock_get_prototype_config.assert_called_once_with(proto={})
+        mock_process_config.assert_called_once_with(obj=obj_mock, spec={}, old_conf={})
 
     @patch("cm.inventory.process_config_and_attr")
     def test_get_obj_config(self, mock_process_config_and_attr):
         get_obj_config(self.cluster)
         config_log = ConfigLog.objects.get(id=self.cluster.config.current)
         mock_process_config_and_attr.assert_called_once_with(
-            obj=self.cluster, conf=config_log.config, attr=config_log.attr
+            obj=self.cluster,
+            conf=config_log.config,
+            attr=config_log.attr,
         )
 
     @patch("cm.inventory.get_import")
@@ -123,7 +125,7 @@ class TestInventory(BaseTestCase):
                 "state": "created",
                 "multi_state": [],
                 "before_upgrade": {"state": None},
-            }
+            },
         }
 
         self.assertDictEqual(config, test_config)
@@ -133,7 +135,7 @@ class TestInventory(BaseTestCase):
     def test_get_host_groups(self, mock_get_obj_config):
         mock_get_obj_config.return_value = {}
 
-        groups = get_host_groups(self.cluster, {})
+        groups = get_host_groups(cluster=self.cluster)
 
         self.assertDictEqual(groups, {})
         mock_get_obj_config.assert_not_called()
@@ -182,9 +184,9 @@ class TestInventory(BaseTestCase):
                         "state": "created",
                         "multi_state": [],
                         "before_upgrade": {"state": None},
-                    }
+                    },
                 },
-            }
+            },
         }
         self.assertDictEqual(groups, test_groups)
         mock_get_hosts.assert_called_once_with([self.host], self.host)
@@ -209,7 +211,7 @@ class TestInventory(BaseTestCase):
                                 "adcm_hostid": host2.pk,
                                 "state": "created",
                                 "multi_state": [],
-                            }
+                            },
                         },
                         "vars": {
                             "cluster": {
@@ -224,9 +226,9 @@ class TestInventory(BaseTestCase):
                             },
                             "services": {},
                         },
-                    }
-                }
-            }
+                    },
+                },
+            },
         }
         host_inv = {
             "all": {
@@ -237,7 +239,7 @@ class TestInventory(BaseTestCase):
                                 "adcm_hostid": self.host.pk,
                                 "state": "created",
                                 "multi_state": [],
-                            }
+                            },
                         },
                         "vars": {
                             "provider": {
@@ -248,11 +250,11 @@ class TestInventory(BaseTestCase):
                                 "state": "created",
                                 "multi_state": [],
                                 "before_upgrade": {"state": None},
-                            }
+                            },
                         },
-                    }
-                }
-            }
+                    },
+                },
+            },
         }
         provider_inv = {
             "all": {
@@ -265,8 +267,8 @@ class TestInventory(BaseTestCase):
                                 "multi_state": [],
                             },
                             "h2": {"adcm_hostid": host2.pk, "state": "created", "multi_state": []},
-                        }
-                    }
+                        },
+                    },
                 },
                 "vars": {
                     "provider": {
@@ -277,9 +279,9 @@ class TestInventory(BaseTestCase):
                         "state": "created",
                         "multi_state": [],
                         "before_upgrade": {"state": None},
-                    }
+                    },
                 },
-            }
+            },
         }
 
         data = [
@@ -290,8 +292,8 @@ class TestInventory(BaseTestCase):
 
         for obj, inv in data:
             with self.subTest(obj=obj, inv=inv):
-                prepare_job_inventory(obj, job.id, action, [])
-                mock_dump.assert_called_once_with(inv, file_mock, indent=3)
+                prepare_job_inventory(obj=obj, job_id=job.id, action=action)
+                mock_dump.assert_called_once_with(obj=inv, fp=file_mock, indent=3)
                 mock_dump.reset_mock()
 
     def test_host_vars(self):

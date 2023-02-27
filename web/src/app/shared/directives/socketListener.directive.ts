@@ -12,7 +12,7 @@
 import { Directive, Injectable, OnDestroy } from '@angular/core';
 import { select, Store } from '@ngrx/store';
 import { filter, tap } from 'rxjs/operators';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 
 import { EventMessage, getMessage, SocketState, clearMessages } from '@app/core/store';
 

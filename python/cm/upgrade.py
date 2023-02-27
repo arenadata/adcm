@@ -11,7 +11,6 @@
 # limitations under the License.
 
 import functools
-from typing import List, Tuple, Union
 
 from cm.adcm_config import (
     init_object_config,
@@ -97,7 +96,7 @@ def switch_hosts(upgrade: Upgrade, provider: HostProvider) -> None:
             switch_object(host, prototype)
 
 
-def check_upgrade_version(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> Tuple[bool, str]:
+def check_upgrade_version(obj: Cluster | HostProvider, upgrade: Upgrade) -> tuple[bool, str]:
     proto = obj.prototype
     if upgrade.min_strict:
         if rpm.compare_versions(proto.version, upgrade.min_version) <= 0:
@@ -124,7 +123,7 @@ def check_upgrade_version(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -
     return True, ""
 
 
-def check_upgrade_edition(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> Tuple[bool, str]:
+def check_upgrade_edition(obj: Cluster | HostProvider, upgrade: Upgrade) -> tuple[bool, str]:
     if not upgrade.from_edition:
         return True, ""
 
@@ -137,7 +136,7 @@ def check_upgrade_edition(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -
     return True, ""
 
 
-def check_upgrade_state(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> Tuple[bool, str]:
+def check_upgrade_state(obj: Cluster | HostProvider, upgrade: Upgrade) -> tuple[bool, str]:
     if obj.locked:
         return False, "object is locked"
 
@@ -147,9 +146,10 @@ def check_upgrade_state(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> 
         return False, "no available states"
 
 
-def check_upgrade_import(
-    obj: Union[Cluster, HostProvider], upgrade: Upgrade
-) -> Tuple[bool, str]:  # pylint: disable=too-many-branches
+def check_upgrade_import(  # noqa: C901
+    obj: Cluster | HostProvider,
+    upgrade: Upgrade,
+) -> tuple[bool, str]:  # pylint: disable=too-many-branches
     def get_export(_cbind):
         if _cbind.source_service:
             return _cbind.source_service
@@ -198,7 +198,11 @@ def check_upgrade_import(
     for cbind in ClusterBind.objects.filter(source_cluster=obj):
         export = get_export(cbind)
         try:
-            proto = Prototype.objects.get(bundle=upgrade.bundle, name=export.prototype.name, type=export.prototype.type)
+            proto = Prototype.objects.get(
+                bundle=upgrade.bundle,
+                name=export.prototype.name,
+                type=export.prototype.type,
+            )
         except Prototype.DoesNotExist:
             msg = "Upgrade does not have new version of {} required for export"
             return False, msg.format(proto_ref(export.prototype))
@@ -210,14 +214,17 @@ def check_upgrade_import(
             return (
                 False,
                 msg.format(
-                    proto_ref(proto), prototype_import.min_version, prototype_import.max_version, obj_ref(import_obj)
+                    proto_ref(proto),
+                    prototype_import.min_version,
+                    prototype_import.max_version,
+                    obj_ref(import_obj),
                 ),
             )
 
     return True, ""
 
 
-def check_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> Tuple[bool, str]:
+def check_upgrade(obj: Cluster | HostProvider, upgrade: Upgrade) -> tuple[bool, str]:
     if obj.locked:
         concerns = [i.name or "Action lock" for i in obj.concerns.all()]
 
@@ -237,7 +244,7 @@ def check_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> Tuple[
     return True, ""
 
 
-def switch_hc(obj: Cluster, upgrade: Upgrade) -> None:
+def switch_hc(obj: Cluster, upgrade: Upgrade) -> None:  # noqa: C901
     def find_service(service, bundle):
         try:
             return Prototype.objects.get(bundle=bundle, type="service", name=service.prototype.name)
@@ -266,7 +273,7 @@ def switch_hc(obj: Cluster, upgrade: Upgrade) -> None:
             continue
 
 
-def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
+def get_upgrade(obj: Cluster | HostProvider, order=None) -> list[Upgrade]:
     def rpm_cmp(obj1, obj2):
         return rpm.compare_versions(obj1.name, obj2.name)
 
@@ -320,7 +327,9 @@ def update_components_after_bundle_switch(cluster: Cluster, upgrade: Upgrade) ->
         logger.info("update component from %s after upgrade with hc_acl", cluster)
         for hc_acl in upgrade.action.hostcomponentmap:
             proto_service = Prototype.objects.filter(
-                type="service", bundle=upgrade.bundle, name=hc_acl["service"]
+                type="service",
+                bundle=upgrade.bundle,
+                name=hc_acl["service"],
             ).first()
             if not proto_service:
                 continue
@@ -343,13 +352,15 @@ def revert_object(obj: ADCMEntity, old_proto: Prototype) -> None:
         config_log = ConfigLog.objects.get(id=obj.before_upgrade["config"])
         obj.config.current = 0
         save_obj_config(obj_conf=obj.config, conf=config_log.config, attr=config_log.attr, desc="revert_upgrade")
+    else:
+        obj.config = None
 
     obj.state = obj.before_upgrade["state"]
     obj.before_upgrade = {"state": None}
-    obj.save(update_fields=["prototype", "before_upgrade", "state"])
+    obj.save()
 
 
-def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-many-locals
+def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-many-locals # noqa: C901
     upgraded_bundle = obj.prototype.bundle
     old_bundle = Bundle.objects.get(pk=obj.before_upgrade["bundle_id"])
     old_proto = Prototype.objects.filter(bundle=old_bundle, name=old_bundle.name).first()
@@ -367,13 +378,19 @@ def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-m
             revert_object(obj=service, old_proto=service_proto)
             for component_proto in Prototype.objects.filter(bundle=old_bundle, parent=service_proto, type="component"):
                 comp = ServiceComponent.objects.filter(
-                    cluster=obj, service=service, prototype__name=component_proto.name
+                    cluster=obj,
+                    service=service,
+                    prototype__name=component_proto.name,
                 ).first()
 
                 if comp:
                     revert_object(obj=comp, old_proto=component_proto)
                 else:
-                    component = ServiceComponent.objects.create(cluster=obj, service=service, prototype=component_proto)
+                    component = ServiceComponent.objects.create(
+                        cluster=obj,
+                        service=service,
+                        prototype=component_proto,
+                    )
                     obj_conf = init_object_config(proto=component_proto, obj=component)
                     component.config = obj_conf
                     component.save(update_fields=["config"])
@@ -393,7 +410,9 @@ def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-m
             host = Host.objects.get(fqdn=hostcomponent["host"], cluster=obj)
             service = ClusterObject.objects.get(prototype__name=hostcomponent["service"], cluster=obj)
             comp = ServiceComponent.objects.get(
-                prototype__name=hostcomponent["component"], cluster=obj, service=service
+                prototype__name=hostcomponent["component"],
+                cluster=obj,
+                service=service,
             )
             host_comp_list.append((service, host, comp))
 
@@ -418,7 +437,7 @@ def set_before_upgrade(obj: ADCMEntity) -> None:
                     "service": hostcomponent.service.name,
                     "component": hostcomponent.component.name,
                     "host": hostcomponent.host.name,
-                }
+                },
             )
 
         obj.before_upgrade["hc"] = hc_map
@@ -471,7 +490,13 @@ def do_upgrade(
             obj.save()
     else:
         task = start_task(
-            action=upgrade.action, obj=obj, conf=config, attr=attr, hostcomponent=hostcomponent, hosts=[], verbose=False
+            action=upgrade.action,
+            obj=obj,
+            conf=config,
+            attr=attr,
+            hostcomponent=hostcomponent,
+            hosts=[],
+            verbose=False,
         )
         task_id = task.id
 

@@ -78,7 +78,7 @@ class TestUnselectedFields(BaseTestCase):
                 "map": False,
                 "structure": False,
                 "json": False,
-            }
+            },
         }
         self.group_keys = self.new_attr.get("group_keys")
 

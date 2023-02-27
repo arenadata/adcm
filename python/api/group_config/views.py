@@ -124,7 +124,9 @@ class GroupConfigHostViewSet(
 
 
 class GroupConfigHostCandidateViewSet(
-    PermissionListMixin, NestedViewSetMixin, ReadOnlyModelViewSet
+    PermissionListMixin,
+    NestedViewSetMixin,
+    ReadOnlyModelViewSet,
 ):  # pylint: disable=too-many-ancestors
     serializer_class = GroupConfigHostCandidateSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
@@ -154,7 +156,10 @@ class GroupConfigHostCandidateViewSet(
 
 
 class GroupConfigConfigViewSet(
-    PermissionListMixin, NestedViewSetMixin, RetrieveModelMixin, GenericViewSet
+    PermissionListMixin,
+    NestedViewSetMixin,
+    RetrieveModelMixin,
+    GenericViewSet,
 ):  # pylint: disable=too-many-ancestors
     queryset = ObjectConfig.objects.all()
     serializer_class = GroupConfigConfigSerializer

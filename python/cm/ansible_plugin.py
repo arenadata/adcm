@@ -80,13 +80,14 @@ MSG_NO_MULTI_STATE_TO_DELETE = (
 
 def job_lock(job_id):
     file_descriptor = open(  # pylint: disable=consider-using-with
-        settings.RUN_DIR / f"{job_id}/config.json", "r", encoding=settings.ENCODING_UTF_8
+        settings.RUN_DIR / f"{job_id}/config.json",
+        encoding=settings.ENCODING_UTF_8,
     )
     try:
         fcntl.flock(file_descriptor.fileno(), fcntl.LOCK_EX)  # pylint: disable=I1101
 
         return file_descriptor
-    except IOError as e:
+    except OSError as e:
         return err("LOCK_ERROR", e)
 
 
@@ -166,7 +167,7 @@ class ContextActionModule(ActionBase):
     def _do_host_from_provider(self, task_vars, context):
         raise NotImplementedError
 
-    def run(self, tmp=None, task_vars=None):  # pylint: disable=too-many-branches
+    def run(self, tmp=None, task_vars=None):  # pylint: disable=too-many-branches # noqa: C901
         self._check_mandatory()
         obj_type = self._task.args["type"]
         job_id = task_vars["job"]["id"]
@@ -426,7 +427,11 @@ def set_service_config(cluster_id: int, service_id: int, config: dict):
 
 
 def set_component_config_by_name(
-    cluster_id: int, service_id: int, component_name: str, service_name: str, config: dict
+    cluster_id: int,
+    service_id: int,
+    component_name: str,
+    service_name: str,
+    config: dict,
 ):
     obj = get_component_by_name(cluster_id, service_id, component_name, service_name)
 
@@ -546,7 +551,7 @@ def get_check_log(job_id: int):
         group = check_log.group
         if group is None:
             data.append(
-                {"title": check_log.title, "type": "check", "message": check_log.message, "result": check_log.result}
+                {"title": check_log.title, "type": "check", "message": check_log.message, "result": check_log.result},
             )
         else:
             if group not in group_subs:
@@ -557,10 +562,10 @@ def get_check_log(job_id: int):
                         "message": group.message,
                         "result": group.result,
                         "content": group_subs[group],
-                    }
+                    },
                 )
             group_subs[group].append(
-                {"title": check_log.title, "type": "check", "message": check_log.message, "result": check_log.result}
+                {"title": check_log.title, "type": "check", "message": check_log.message, "result": check_log.result},
             )
     return data
 

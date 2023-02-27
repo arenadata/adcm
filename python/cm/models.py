@@ -14,16 +14,15 @@
 # too-many-instance-attributes
 # pylint could not understand that JSON fields are dicts
 
-from __future__ import unicode_literals
 
 import os.path
 import signal
 import time
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from copy import deepcopy
 from enum import Enum
 from itertools import chain
-from typing import Dict, Iterable, List, Optional
+from typing import Optional
 
 from cm.errors import AdcmEx
 from cm.logger import logger
@@ -317,7 +316,7 @@ class ConfigLog(ADCMModel):
     __error_code__ = "CONFIG_NOT_FOUND"
 
     @transaction.atomic()
-    def save(self, *args, **kwargs):  # pylint: disable=too-many-locals,too-many-statements
+    def save(self, *args, **kwargs):  # pylint: disable=too-many-locals,too-many-statements # noqa: C901
         """Saving config and updating config groups"""
 
         def update_config(origin: dict, renovator: dict, _group_keys: dict) -> None:
@@ -447,7 +446,10 @@ class ADCMEntity(ADCMModel):
     def get_own_issue(self, cause: "ConcernCause") -> Optional["ConcernItem"]:
         """Get object's issue of specified cause or None"""
         return self.concerns.filter(
-            type=ConcernType.ISSUE, owner_id=self.pk, owner_type=self.content_type, cause=cause
+            type=ConcernType.ISSUE,
+            owner_id=self.pk,
+            owner_type=self.content_type,
+            cause=cause,
         ).first()
 
     def __str__(self):
@@ -478,7 +480,7 @@ class ADCMEntity(ADCMModel):
         return ids
 
     @property
-    def multi_state(self) -> List[str]:
+    def multi_state(self) -> list[str]:
         """Easy to operate self._multi_state representation"""
         return sorted(self._multi_state.keys())
 
@@ -506,7 +508,7 @@ class ADCMEntity(ADCMModel):
             event.change_object_multi_state(obj=self, multi_state=multi_state)
         logger.info('remove "%s" from "%s" multi_state', multi_state, self)
 
-    def has_multi_state_intersection(self, multi_states: List[str]) -> bool:
+    def has_multi_state_intersection(self, multi_states: list[str]) -> bool:
         """Check if entity._multi_state has an intersection with list of multi_states"""
         return bool(set(self._multi_state).intersection(multi_states))
 
@@ -537,9 +539,9 @@ class Upgrade(ADCMModel):
     __error_code__ = "UPGRADE_NOT_FOUND"
 
     def allowed(self, obj: ADCMEntity) -> bool:
-        """Check if upgrade is allowed to be run on object"""
         if self.state_available:
             available = self.state_available
+
             if obj.state in available:
                 return True
             elif available == "any":
@@ -547,8 +549,9 @@ class Upgrade(ADCMModel):
             else:
                 return False
         else:
-            if hasattr(self, "action"):
-                return self.action.allowed(obj)
+            if self.action:
+                return self.action.allowed(obj=obj)
+
             return False
 
 
@@ -774,7 +777,7 @@ class ClusterObject(ADCMEntity):
             host_ids = HostComponent.objects.filter(service=self).values_list("host_id", flat=True)
 
             hosts_maintenance_modes.extend(
-                Host.objects.filter(id__in=host_ids).values_list("maintenance_mode", flat=True)
+                Host.objects.filter(id__in=host_ids).values_list("maintenance_mode", flat=True),
             )
             if hosts_maintenance_modes:
                 return (
@@ -922,7 +925,7 @@ class GroupConfig(ADCMModel):
         """Return spec for config"""
         spec = {}
         for field in PrototypeConfig.objects.filter(prototype=self.object.prototype, action__isnull=True).order_by(
-            "id"
+            "id",
         ):
             group_customization = field.group_customization
             if group_customization is None:
@@ -943,8 +946,8 @@ class GroupConfig(ADCMModel):
     def create_group_keys(
         self,
         config_spec: dict,
-        group_keys: Dict[str, bool] = None,
-        custom_group_keys: Dict[str, bool] = None,
+        group_keys: dict[str, bool] = None,
+        custom_group_keys: dict[str, bool] = None,
     ):
         """
         Returns a map of fields that are included in a group,
@@ -967,7 +970,9 @@ class GroupConfig(ADCMModel):
                 group_keys.setdefault(config_key, {"value": value, "fields": {}})
                 custom_group_keys.setdefault(config_key, {"value": config_value["group_customization"], "fields": {}})
                 self.create_group_keys(
-                    config_value["fields"], group_keys[config_key]["fields"], custom_group_keys[config_key]["fields"]
+                    config_value["fields"],
+                    group_keys[config_key]["fields"],
+                    custom_group_keys[config_key]["fields"],
                 )
             else:
                 group_keys[config_key] = False
@@ -990,7 +995,11 @@ class GroupConfig(ADCMModel):
 
                     diff_config.setdefault(group_key, {})
                     get_diff(
-                        _config[group_key], _attr, _group_keys[group_key]["fields"], diff_config[group_key], diff_attr
+                        _config[group_key],
+                        _attr,
+                        _group_keys[group_key]["fields"],
+                        diff_config[group_key],
+                        diff_attr,
                     )
                     if not diff_config[group_key]:
                         diff_config.pop(group_key)
@@ -1107,7 +1116,9 @@ class GroupConfig(ADCMModel):
             config = ConfigLog.objects.get(id=self.config.current).config
 
         fields = PrototypeConfig.objects.filter(
-            prototype=self.object.prototype, action__isnull=True, type="file"
+            prototype=self.object.prototype,
+            action__isnull=True,
+            type="file",
         ).order_by("id")
         for field in fields:
             filename = ".".join(
@@ -1118,7 +1129,7 @@ class GroupConfig(ADCMModel):
                     str(self.id),
                     field.name,
                     field.subname,
-                ]
+                ],
             )
             filepath = str(settings.FILE_DIR / filename)
 
@@ -1215,6 +1226,7 @@ class AbstractAction(ADCMModel):
     partial_execution = models.BooleanField(default=False)
     host_action = models.BooleanField(default=False)
     allow_in_maintenance_mode = models.BooleanField(default=False)
+    config_jinja = models.CharField(max_length=1000, blank=True, null=True)
 
     _venv = models.CharField(default="default", db_column="venv", max_length=1000, blank=False)
 
@@ -1278,7 +1290,7 @@ class Action(AbstractAction):
             return False
 
         if isinstance(self.multi_state_unavailable, list) and obj.has_multi_state_intersection(
-            self.multi_state_unavailable
+            self.multi_state_unavailable,
         ):
             return False
 
@@ -1292,13 +1304,13 @@ class Action(AbstractAction):
         if self.multi_state_available == "any":
             multi_state_allowed = True
         elif isinstance(self.multi_state_available, list) and obj.has_multi_state_intersection(
-            self.multi_state_available
+            self.multi_state_available,
         ):
             multi_state_allowed = True
 
         return state_allowed and multi_state_allowed
 
-    def get_start_impossible_reason(self, obj: ADCMEntity) -> None:
+    def get_start_impossible_reason(self, obj: ADCMEntity) -> None:  # noqa: C901
         # pylint: disable=too-many-branches
 
         start_impossible_reason = None
@@ -1319,7 +1331,9 @@ class Action(AbstractAction):
                     start_impossible_reason = SERVICE_IN_MM
 
                 if HostComponent.objects.filter(
-                    service=obj, cluster=obj.cluster, host__maintenance_mode=MaintenanceMode.ON
+                    service=obj,
+                    cluster=obj.cluster,
+                    host__maintenance_mode=MaintenanceMode.ON,
                 ).exists():
                     start_impossible_reason = MANY_HOSTS_IN_MM
         elif obj.prototype.type == "component":
@@ -1531,7 +1545,7 @@ class TaskLog(ADCMModel):
         self.save()
         lock.delete()
 
-    def cancel(self, event_queue: "cm.status_api.Event" = None, obj_deletion=False):
+    def cancel(self, event_queue: "cm.status_api.Event" = None, obj_deletion=False):  # noqa: F821
         """
         Cancel running task process
         task status will be updated in separate process of task runner
@@ -1560,7 +1574,7 @@ class TaskLog(ADCMModel):
             i += 1
         if i == 10:
             raise AdcmEx("NO_JOBS_RUNNING", "no jobs running")
-        self.unlock_affected()
+
         if event_queue:
             event_queue.send_state()
         try:
@@ -1592,7 +1606,7 @@ class JobLog(ADCMModel):
             target=self.task.task_object,
         )
 
-    def cancel(self, event_queue: "cm.status_api.Event" = None):
+    def cancel(self, event_queue: "cm.status_api.Event" = None):  # noqa: F821
         if not self.sub_action.allowed_to_terminate:
             event_queue.clear_state()
             raise AdcmEx("JOB_TERMINATION_ERROR", f"Job #{self.pk} can not be terminated")
@@ -1600,7 +1614,8 @@ class JobLog(ADCMModel):
         if self.status != JobStatus.RUNNING or self.pid == 0:
             event_queue.clear_state()
             raise AdcmEx(
-                "JOB_TERMINATION_ERROR", f"Can't terminate job #{self.pk}, pid: {self.pid} with status {self.status}"
+                "JOB_TERMINATION_ERROR",
+                f"Can't terminate job #{self.pk}, pid: {self.pid} with status {self.status}",
             )
         try:
             os.kill(self.pid, signal.SIGTERM)
@@ -1653,11 +1668,8 @@ class LogStorage(ADCMModel):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["job"], condition=models.Q(type="check"), name="unique_check_job")
+            models.UniqueConstraint(fields=["job"], condition=models.Q(type="check"), name="unique_check_job"),
         ]
-
-
-# Stage: Temporary tables to load bundle
 
 
 class StagePrototype(ADCMModel):

@@ -67,7 +67,8 @@ class UpgradeSerializer(EmptySerializer):
             obj = None
 
         action_conf = PrototypeConfig.objects.filter(
-            prototype=instance.action.prototype, action=instance.action
+            prototype=instance.action.prototype,
+            action=instance.action,
         ).order_by("id")
         *_, attr = get_prototype_config(instance.action.prototype, instance.action)
         if obj:

@@ -48,7 +48,8 @@ class TestAuditAPI(BaseTestCase):
 
     def test_filter_operations_operation_time(self):
         adcm = ADCM.objects.create(
-            prototype=Prototype.objects.create(bundle=Bundle.objects.create(), type="adcm"), name="ADCM"
+            prototype=Prototype.objects.create(bundle=Bundle.objects.create(), type="adcm"),
+            name="ADCM",
         )
         self.client.post(
             path=reverse("config-history", kwargs={"adcm_pk": adcm.pk}),

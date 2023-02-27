@@ -1,6 +1,6 @@
 import { Component, ComponentRef, Type, ViewChild } from '@angular/core';
 import { ADD_SERVICE_PROVIDER } from "../../shared/add-component/add-service-model";
-import { IColumns } from "@adwp-ui/widgets";
+import { IColumns } from "@app/adwp";
 import { TypeName } from "../../core/types";
 import { ListService } from "../../shared/components/list/list.service";
 import { Store } from "@ngrx/store";

@@ -14,7 +14,6 @@
 Test audit operations with "operation_type == DELETE"
 """
 
-from typing import Tuple
 
 import allure
 import pytest
@@ -33,7 +32,7 @@ from adcm_client.objects import (
 from tests.functional.audit.conftest import BUNDLES_DIR, NEW_USER
 from tests.functional.audit.conftest import CreateDeleteOperation as Delete
 from tests.functional.audit.conftest import check_failed, check_succeed
-from tests.functional.rbac.conftest import BusinessRoles as BR
+from tests.functional.rbac.conftest import BusinessRoles as BR  # noqa: N817
 from tests.functional.rbac.conftest import create_policy
 from tests.library.audit.checkers import AuditLogChecker
 
@@ -41,7 +40,7 @@ from tests.library.audit.checkers import AuditLogChecker
 
 
 @pytest.fixture()
-def bundles(sdk_client_fs) -> Tuple[Bundle, Bundle]:
+def bundles(sdk_client_fs) -> tuple[Bundle, Bundle]:
     """Upload two bundles: cluster and provider"""
     return (
         sdk_client_fs.upload_from_fs(BUNDLES_DIR / "create" / "cluster"),
@@ -50,7 +49,7 @@ def bundles(sdk_client_fs) -> Tuple[Bundle, Bundle]:
 
 
 @pytest.fixture()
-def adcm_objects(bundles) -> Tuple[Cluster, Provider, Host, Host]:
+def adcm_objects(bundles) -> tuple[Cluster, Provider, Host, Host]:
     """
     Create ADCM objects: cluster, provider, two hosts
     Add service to cluster
@@ -67,7 +66,7 @@ def adcm_objects(bundles) -> Tuple[Cluster, Provider, Host, Host]:
 
 
 @pytest.fixture()
-def rbac_objects(sdk_client_fs, rbac_create_data) -> Tuple[User, Group, Role, Policy]:
+def rbac_objects(sdk_client_fs, rbac_create_data) -> tuple[User, Group, Role, Policy]:
     """Create RBAC objects (user may be taken, if already created)"""
     policy_data = {**rbac_create_data["policy"]}
     try:

@@ -11,7 +11,6 @@
 # limitations under the License.
 
 """Test designed to check field secret map in config page"""
-from typing import Tuple, Type
 
 import allure
 import pytest
@@ -36,7 +35,7 @@ from tests.ui_tests.app.page.service.page import ServiceConfigPage
 
 
 @pytest.fixture(name="secret_map_cluster_objects")
-def prepared_cluster_objects(sdk_client_fs: ADCMClient) -> Tuple[Cluster, Service, Component]:
+def prepared_cluster_objects(sdk_client_fs: ADCMClient) -> tuple[Cluster, Service, Component]:
     """Upload cluster bundle and create cluster"""
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "secret"))
     cluster = bundle.cluster_create(name="secret_config")
@@ -77,7 +76,11 @@ class TestSecretMap:
 
     @staticmethod
     def _run_object_action(
-        adcm_object: Type[Cluster | Service | Component], action_name: str, cluster, service, component
+        adcm_object: type[Cluster | Service | Component],
+        action_name: str,
+        cluster,
+        service,
+        component,
     ):
         if adcm_object == Cluster:
             run_cluster_action_and_assert_result(cluster, action_name)
@@ -87,7 +90,11 @@ class TestSecretMap:
             run_component_action_and_assert_result(component, action_name)
 
     def _open_object_page(
-        self, adcm_object: Type[Cluster | Service | Component], cluster, service, component
+        self,
+        adcm_object: type[Cluster | Service | Component],
+        cluster,
+        service,
+        component,
     ) -> ClusterConfigPage | ServiceConfigPage | ComponentConfigPage:
         if adcm_object == Cluster:
             config_page = ClusterConfigPage(self.client.driver, self.client.adcm.url, cluster.id).open()
@@ -107,20 +114,27 @@ class TestSecretMap:
     def _check_group_rows_read_only(config_page: ClusterConfigPage | ServiceConfigPage | ComponentConfigPage):
         groups = config_page.config.get_row(name="group", like=GroupRow)
         assert groups.get_row(
-            name="secretmap", like=SecretMapRow
+            name="secretmap",
+            like=SecretMapRow,
         ).read_only, "Group element secretmap must be read_only"
         assert groups.get_row(name="password", like=PasswordRow).read_only, "Group element password must be read_only"
         assert groups.get_row(
-            name="secrettext", like=SecretTextRow
+            name="secrettext",
+            like=SecretTextRow,
         ).read_only, "Group element secrettext must be read_only"
         assert groups.get_row(
-            name="secretfile", like=SecretTextRow
+            name="secretfile",
+            like=SecretTextRow,
         ).read_only, "Group element secretfile must be read_only"
 
     @pytest.mark.parametrize("obj_to_pick", [Cluster, Service, Component])
     @pytest.mark.usefixtures("_login_to_adcm_over_api")
     def test_secrets_ui(
-        self, app_fs, secret_map_cluster_objects, generic_provider, obj_to_pick
+        self,
+        app_fs,
+        secret_map_cluster_objects,
+        generic_provider,
+        obj_to_pick,
     ):  # pylint: disable=unused-argument
         cluster, service, component = secret_map_cluster_objects
         cluster.host_add(generic_provider.host_create("testhost"))
@@ -176,7 +190,7 @@ class TestSecretMap:
 
         with allure.step("Check secrets values"):
             assert secretmap_row.get_value() == {
-                "first_key": "********"
+                "first_key": "********",
             }, f"Expected value was 'first_key': '********' but presented is {secretmap_row.get_value()}"
             assert (
                 password_row.get_value() == "second_pswd"
@@ -191,7 +205,11 @@ class TestSecretMap:
     @pytest.mark.parametrize("obj_to_pick", [Cluster, Service, Component])
     @pytest.mark.usefixtures("_login_to_adcm_over_api")
     def test_secrets_ui_default(
-        self, app_fs, secret_map_default, generic_provider, obj_to_pick
+        self,
+        app_fs,
+        secret_map_default,
+        generic_provider,
+        obj_to_pick,
     ):  # pylint: disable=unused-argument
         cluster, service, component = secret_map_default
         cluster.host_add(generic_provider.host_create("testhost"))
@@ -239,7 +257,7 @@ class TestSecretMap:
 
         with allure.step("Check secrets values"):
             assert secretmap_row.get_value() == {
-                "first_key": "********"
+                "first_key": "********",
             }, f"Expected value was 'first_key': '********' but presented is {secretmap_row.get_value()}"
             assert (
                 password_row.get_value() == "second_pswd"

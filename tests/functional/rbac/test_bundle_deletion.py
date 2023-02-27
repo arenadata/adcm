@@ -12,7 +12,7 @@
 
 """Test events concerning roles after bundle removal"""
 
-from typing import Iterable, Set
+from collections.abc import Iterable
 
 import allure
 import pytest
@@ -105,7 +105,7 @@ def check_categories_are_presented(client: ADCMClient, *categories: str):
                 lambda x: ACTION_BUSINESS_ROLE_INFIX in x.name,
                 get_roles_of_type(RoleType.BUSINESS, client),
             ),
-        )
+        ),
     )
     for category in categories:
         assert all(
@@ -148,19 +148,19 @@ def check_action_business_roles_have_hidden_roles(client: ADCMClient, bundles: I
             )
 
 
-def _get_children_names(role: Role) -> Set[str]:
+def _get_children_names(role: Role) -> set[str]:
     """Get names of children of a role"""
     return {r.name for r in role.child_list()}
 
 
-def _generate_cluster_hidden_action_role_names(bundles: Iterable[Bundle]) -> Set[str]:
+def _generate_cluster_hidden_action_role_names(bundles: Iterable[Bundle]) -> set[str]:
     return {
         f"{bundle.name}_{bundle.version}_{bundle.edition}_cluster_" f"{bundle.cluster_prototype().name}_{ACTION_NAME}"
         for bundle in bundles
     }
 
 
-def _generate_service_hidden_action_role_names(bundles: Iterable[Bundle]) -> Set[str]:
+def _generate_service_hidden_action_role_names(bundles: Iterable[Bundle]) -> set[str]:
     return {
         # it's always test_service
         f"{bundle.name}_{bundle.version}_{bundle.edition}_service_test_service_{ACTION_NAME}"
@@ -168,7 +168,7 @@ def _generate_service_hidden_action_role_names(bundles: Iterable[Bundle]) -> Set
     }
 
 
-def _generate_component_hidden_action_role_names(bundles: Iterable[Bundle]) -> Set[str]:
+def _generate_component_hidden_action_role_names(bundles: Iterable[Bundle]) -> set[str]:
     return {
         # it's always test_component
         f"{bundle.name}_{bundle.version}_{bundle.edition}_service_test_service_component_test_component_{ACTION_NAME}"

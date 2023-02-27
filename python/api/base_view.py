@@ -117,7 +117,7 @@ class PaginatedView(GenericUIView):
 
         return url
 
-    def get_page(self, obj, request, context=None):
+    def get_page(self, obj, request, context=None):  # noqa: C901
         if not context:
             context = {}
 
@@ -138,7 +138,7 @@ class PaginatedView(GenericUIView):
 
             except (FieldError, ValueError):
                 query_params = ",".join(
-                    [f"{k}={v}" for k, v in request.query_params.items() if k in ["fields", "distinct"]]
+                    [f"{k}={v}" for k, v in request.query_params.items() if k in ["fields", "distinct"]],
                 )
                 msg = f"Bad query params: {query_params}"
 

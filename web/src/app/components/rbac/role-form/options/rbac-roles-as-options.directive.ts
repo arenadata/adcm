@@ -1,5 +1,5 @@
 import { Directive, Inject, Input } from '@angular/core';
-import { AdwpHandler, AdwpStringHandler } from '@adwp-ui/widgets';
+import { AdwpHandler, AdwpStringHandler } from '@app/adwp';
 import { RbacRoleModel } from '../../../../models/rbac/rbac-role.model';
 import { Params } from '@angular/router';
 import { RbacOptionsDirective } from '../../../../abstract-directives/rbac-options.directive';

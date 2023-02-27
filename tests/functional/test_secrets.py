@@ -13,7 +13,7 @@
 """Test correct appearance of password/secrettext fields in ADCM logs, job logs, inventory"""
 
 import json
-from typing import Iterator
+from collections.abc import Iterator
 
 import allure
 import pytest
@@ -41,8 +41,6 @@ SECRETS = [
     *NEW_SECRETTEXT.split("\n"),
     OLD_SECRETMAP["secret_map_key"],
     NEW_SECRETMAP["secret_map_key"],
-    OLD_SECRETFILE,
-    NEW_SECRETFILE,
 ]
 
 CHANGE_CONFIG_ACTION = "change_secrets"
@@ -129,11 +127,9 @@ def _check_secrets_in_config_encrypted(cluster: Cluster):
         config["password"],
         config["secrettext"],
         config["secretmap"]["secret_map_key"],
-        config["secretfile"],
         config["group"]["password"],
         config["group"]["secrettext"],
         config["group"]["secretmap"]["secret_map_key"],
-        config["group"]["secretfile"],
     )
     assert all(
         field.startswith("$ANSIBLE_VAULT") for field in secret_config_fields
@@ -192,7 +188,11 @@ def _set_cluster_secrets(cluster: Cluster, password: str, secrettext: str, secre
 
 
 def _run_change_config(
-    cluster: Cluster, new_password: str, new_secrettext: str, new_secretmap: dict, new_secretfile: str
+    cluster: Cluster,
+    new_password: str,
+    new_secrettext: str,
+    new_secretmap: dict,
+    new_secretfile: str,
 ):
     return run_cluster_action_and_assert_result(
         cluster,

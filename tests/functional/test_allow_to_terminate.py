@@ -88,8 +88,8 @@ def test_terminate_action_with_hc_acl(cluster, generic_provider):
                     "host_id": host.id,
                     "service_id": component.service_id,
                     "component_id": component.id,
-                }
-            ]
+                },
+            ],
         )
         # action need time to "actually" launch
         wait_until_step_succeeds(

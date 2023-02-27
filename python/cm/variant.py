@@ -74,7 +74,7 @@ def var_host_and(cluster, args):  # pylint: disable=unused-argument
     if not args:
         return []
 
-    return sorted(list(set.intersection(*[set(a) for a in args])))
+    return sorted(set.intersection(*[set(a) for a in args]))
 
 
 def var_host_or(cluster, args):  # pylint: disable=unused-argument
@@ -84,7 +84,7 @@ def var_host_or(cluster, args):  # pylint: disable=unused-argument
     if not args:
         return []
 
-    return sorted(list(set.union(*[set(a) for a in args])))
+    return sorted(set.union(*[set(a) for a in args]))
 
 
 def var_host_get_service(cluster, args, func):
@@ -135,7 +135,7 @@ def var_host_in_component(cluster, args):
     service = var_host_get_service(cluster, args, "in_component")
     comp = var_host_get_component(cluster, args, service, "in_component")
     for hostcomponent in HostComponent.objects.filter(cluster=cluster, service=service, component=comp).order_by(
-        "host__fqdn"
+        "host__fqdn",
     ):
         out.append(hostcomponent.host.fqdn)
 
@@ -192,7 +192,7 @@ VARIANT_HOST_FUNC = {
 }
 
 
-def var_host_solver(cluster, func_map, args):
+def var_host_solver(cluster, func_map, args):  # noqa: C901
     def check_key(key, _args):
         if not isinstance(_args, dict):
             err("CONFIG_VARIANT_ERROR", "predicate item should be a map")
@@ -248,7 +248,7 @@ def variant_host(obj, args=None):
     return res
 
 
-def variant_host_in_cluster(obj, args=None):
+def variant_host_in_cluster(obj, args=None):  # noqa: C901
     out = []
     cluster = get_cluster(obj)
     if cluster is None:
@@ -262,12 +262,18 @@ def variant_host_in_cluster(obj, args=None):
 
         if "component" in args:
             try:
-                comp = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name=args["component"])
+                comp = ServiceComponent.objects.get(
+                    cluster=cluster,
+                    service=service,
+                    prototype__name=args["component"],
+                )
             except ServiceComponent.DoesNotExist:
                 return []
 
             for hostcomponent in HostComponent.objects.filter(
-                cluster=cluster, service=service, component=comp
+                cluster=cluster,
+                service=service,
+                component=comp,
             ).order_by("host__fqdn"):
                 out.append(hostcomponent.host.fqdn)
 

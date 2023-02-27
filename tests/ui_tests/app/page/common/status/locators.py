@@ -21,7 +21,9 @@ class StatusLocators:
     """Status page elements locators"""
 
     expand_collapse_btn = BaseLocator(
-        By.CSS_SELECTOR, "mat-card-content .mat-raised-button", "Expand/Collapse All button"
+        By.CSS_SELECTOR,
+        "mat-card-content .mat-raised-button",
+        "Expand/Collapse All button",
     )
     group_row = BaseLocator(By.CSS_SELECTOR, "mat-card-content mat-tree-node", "Status row")
 

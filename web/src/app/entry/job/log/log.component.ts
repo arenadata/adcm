@@ -13,7 +13,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { filter, switchMap } from 'rxjs/operators';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 
 import { ClusterService } from '@app/core/services/cluster.service';
 import { Job, JobStatus, LogFile } from '@app/core/types';

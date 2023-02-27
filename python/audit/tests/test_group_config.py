@@ -335,7 +335,7 @@ class TestGroupConfigAudit(BaseTestCase):
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse("group-config-detail", kwargs={"pk": self.group_config.pk})
+                path=reverse("group-config-detail", kwargs={"pk": self.group_config.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

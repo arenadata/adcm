@@ -14,7 +14,6 @@
 Test granting RBAC access to "users from LDAP"
 """
 
-from typing import Tuple
 
 import allure
 import pytest
@@ -103,7 +102,7 @@ def test_grant_policy_for_ldap_group(sdk_client_fs, cluster, ldap_ad, ldap_basic
         is_denied(second_user_cluster, BusinessRoles.EDIT_CLUSTER_CONFIGURATIONS, client=second_user_client)
 
 
-def _login_as_ldap_user_and_check_no_access(client, username, password, cluster) -> Tuple[ADCMClient, User]:
+def _login_as_ldap_user_and_check_no_access(client, username, password, cluster) -> tuple[ADCMClient, User]:
     """:returns: New ADCM Client connection (logged as new user) and user (from admin perspective)"""
     with allure.step("Login as LDAP user and check user is created"):
         user_sdk = ADCMClient(url=client.url, user=username, password=password)

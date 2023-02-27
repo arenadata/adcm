@@ -15,7 +15,7 @@
 import random
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Dict, List, Literal
+from typing import Any, Literal
 
 import allure
 
@@ -49,7 +49,7 @@ class DbFiller:
         self._endpoints_stack = []
 
     @allure.step("Generate valid request data")
-    def generate_valid_request_data(self, endpoint: Endpoints, method: Methods) -> dict:
+    def generate_valid_request_data(self, endpoint: Endpoints, method: Methods) -> dict:  # noqa: C901
         """
         Return valid request body and url params for endpoint and method combination
         """
@@ -81,7 +81,8 @@ class DbFiller:
             for field in get_fields(endpoint.data_class, predicate=lambda x: x.changeable):
                 if isinstance(field.f_type, ForeignKey):
                     fk_data = self._get_or_create_data_for_endpoint(
-                        endpoint=Endpoints.get_by_data_class(field.f_type.fk_link), force=True
+                        endpoint=Endpoints.get_by_data_class(field.f_type.fk_link),
+                        force=True,
                     )
                     if isinstance(field.f_type, ForeignKeyM2M):
                         changed_fields[field.name] = [{"id": el["id"]} for el in fk_data]
@@ -91,7 +92,8 @@ class DbFiller:
                         changed_fields[field.name] = fk_data[0]["id"]
                 elif field.name != "id":
                     changed_fields[field.name] = self._generate_field_value(
-                        field=field, old_value=full_item[field.name]
+                        field=field,
+                        old_value=full_item[field.name],
                     )
             if getattr(endpoint.data_class, "dependable_fields_sync", None):
                 changed_fields = endpoint.data_class.dependable_fields_sync(self.adcm, changed_fields)
@@ -135,7 +137,7 @@ class DbFiller:
             if current_ep_data := get_endpoint_data(adcm=self.adcm, endpoint=endpoint):
                 return current_ep_data
             raise ValueError(
-                f"Force data creation is not available for {endpoint.path} and there is no any existing data"
+                f"Force data creation is not available for {endpoint.path} and there is no any existing data",
             )
 
         if not force and (current_ep_data := get_endpoint_data(adcm=self.adcm, endpoint=endpoint)):
@@ -183,7 +185,8 @@ class DbFiller:
         if not field.f_type.relates_on.data_class:
             if related_field_name not in _data:
                 _data[related_field_name] = self._prepare_field_value_for_object_creation(
-                    field=field.f_type.relates_on.field, force=force
+                    field=field.f_type.relates_on.field,
+                    force=force,
                 )
 
         if endpoint == Endpoints.GROUP_CONFIG:
@@ -221,7 +224,8 @@ class DbFiller:
         return _data, field
 
     def _get_adcm_object_id_by_object_type(
-        self, object_type: Literal["cluster", "service", "component", "provider", "host"]
+        self,
+        object_type: Literal["cluster", "service", "component", "provider", "host"],
     ) -> int:
         """Get random created object by given type"""
         return random.choice(get_endpoint_data(adcm=self.adcm, endpoint=Endpoints[object_type.upper()]))["id"]
@@ -313,7 +317,8 @@ class DbFiller:
         """Add information about child FK values to metadata for further consistency"""
         for child_fk_field in get_fields(data_class=fk_data_class, predicate=is_fk_field):
             fk_field_name = get_field_name_by_fk_dataclass(
-                data_class=fk_data_class, fk_data_class=child_fk_field.f_type.fk_link
+                data_class=fk_data_class,
+                fk_data_class=child_fk_field.f_type.fk_link,
             )
             for fk_id in fk_ids:
                 fk_data = get_object_data(
@@ -323,7 +328,7 @@ class DbFiller:
                 )
                 if isinstance(child_fk_field.f_type, ForeignKeyM2M):
                     self._available_fkeys[child_fk_field.f_type.fk_link.__name__].update(
-                        [el["id"] for el in fk_data[fk_field_name]]
+                        [el["id"] for el in fk_data[fk_field_name]],
                     )
                 elif isinstance(child_fk_field.f_type, ForeignKey):
                     self._available_fkeys[child_fk_field.f_type.fk_link.__name__].add(fk_data[fk_field_name])
@@ -337,7 +342,8 @@ class DbFiller:
         if len(new_objects) == 1:
             with assume_step(f"Data creation is not available for {f_type.fk_link}", exception=ValueError):
                 new_objects = self._get_or_create_data_for_endpoint(
-                    endpoint=Endpoints.get_by_data_class(f_type.fk_link), force=True
+                    endpoint=Endpoints.get_by_data_class(f_type.fk_link),
+                    force=True,
                 )
         valid_new_objects = [obj for obj in new_objects if obj["id"] != current_field_value]
         if valid_new_objects:
@@ -346,7 +352,7 @@ class DbFiller:
             return 42
 
     @allure.step("Generate new value for generic foreign key list")
-    def generate_new_value_for_generic_foreign_key_list(self, current_value: List[Dict[str, Any]]):
+    def generate_new_value_for_generic_foreign_key_list(self, current_value: list[dict[str, Any]]):
         """Generate new value for generic foreign key list"""
         return [
             {

@@ -33,9 +33,13 @@ class JobPageLocators(ObjectPageLocators):
         # keep stdout(-err) prefix in naming
         stdout_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_1']", "Job stdout tab")
         stdout_download_btn = BaseLocator(
-            By.XPATH, "//a[.//span[text()='ansible [ stdout ]']]//button", "Download stdout button"
+            By.XPATH,
+            "//a[.//span[text()='ansible [ stdout ]']]//button",
+            "Download stdout button",
         )
         stderr_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_2']", "Job stderr tab")
         stderr_download_btn = BaseLocator(
-            By.XPATH, "//a[.//span[text()='ansible [ stderr ]']]//button", "Download stdout button"
+            By.XPATH,
+            "//a[.//span[text()='ansible [ stderr ]']]//button",
+            "Download stdout button",
         )

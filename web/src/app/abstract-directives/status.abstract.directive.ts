@@ -1,5 +1,5 @@
 import { Directive, OnInit, ViewChild } from '@angular/core';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 import { BehaviorSubject } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { ActivatedRoute, Params } from '@angular/router';

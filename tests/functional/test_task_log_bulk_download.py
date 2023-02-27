@@ -16,10 +16,11 @@
 
 import re
 import tarfile
+from collections.abc import Callable, Collection
 from operator import methodcaller
 from os import PathLike
 from pathlib import Path
-from typing import Callable, Collection, Dict, List, NamedTuple, Set, Union
+from typing import NamedTuple
 
 import allure
 import pytest
@@ -33,7 +34,7 @@ from adcm_client.objects import (
     Service,
     Task,
 )
-from adcm_pytest_plugin.docker.adcm import ADCM as ADCMTest
+from adcm_pytest_plugin.docker.adcm import ADCM as ADCMTest  # noqa: N811
 from adcm_pytest_plugin.utils import get_data_dir
 from docker.models.containers import Container
 
@@ -61,10 +62,10 @@ class TaskLogInfo(NamedTuple):
     action_in_archive_name: str
     # jobs' parts of directory in archive name
     # {job_id}-{job_archive_name}
-    jobs_in_archive: Set[str]
+    jobs_in_archive: set[str]
 
 
-ACTION_NAME_MAP: Dict[str, TaskLogInfo] = {
+ACTION_NAME_MAP: dict[str, TaskLogInfo] = {
     tli.action_name: tli
     for tli in (
         TaskLogInfo("without_display_name_simple", "withoutdisplaynamesimple", {"withoutdisplaynamesimple"}),
@@ -107,28 +108,28 @@ def build_host_archive_name(host: Host, task: Task, action_name_in_archive_name:
     return f"{cleaned_fqdn}_{action_name_in_archive_name}_{task.id}"
 
 
-def get_filenames_from_archive(archive: Path) -> List[str]:
+def get_filenames_from_archive(archive: Path) -> list[str]:
     """Extract names from an archive"""
     with tarfile.open(archive) as tar:
         return tar.getnames()
 
 
-def get_unique_directory_names(names_in_archive: Collection[str]) -> Set[str]:
+def get_unique_directory_names(names_in_archive: Collection[str]) -> set[str]:
     """Get unique names of directories extracted from archive names"""
     return {n.split("/", maxsplit=1)[0] for n in names_in_archive}
 
 
-def get_unique_directory_names_wo_job_id(names_in_archive: Collection[str]) -> Set[str]:
+def get_unique_directory_names_wo_job_id(names_in_archive: Collection[str]) -> set[str]:
     """Get unique names of directories extracted from archive names (task id is removed)"""
     return {n.split("-", maxsplit=1)[1] for n in get_unique_directory_names(names_in_archive)}
 
 
-def get_files_from_dir(dirname: str, names_in_archive: Collection[str]) -> Set[str]:
+def get_files_from_dir(dirname: str, names_in_archive: Collection[str]) -> set[str]:
     """Extract filenames that belong to a given directory"""
     return {dir_and_file[-1] for n in names_in_archive if dirname in (dir_and_file := n.rsplit("/", maxsplit=1))[0]}
 
 
-def _get_task_of(adcm_object: Union[ClusterRelatedObject, ProviderRelatedObject], client: ADCMClient) -> Task:
+def _get_task_of(adcm_object: ClusterRelatedObject | ProviderRelatedObject, client: ADCMClient) -> Task:
     object_type = adcm_object.__class__.__name__.lower()
     object_task = next(
         filter(
@@ -145,7 +146,7 @@ def _get_task_of(adcm_object: Union[ClusterRelatedObject, ProviderRelatedObject]
 # !===== Steps and Checks =====!
 
 
-def run_all_actions(adcm_object: AnyADCMObject) -> List[Task]:
+def run_all_actions(adcm_object: AnyADCMObject) -> list[Task]:
     """Run all actions on object"""
     tasks = []
     for action in adcm_object.action_list():
@@ -163,9 +164,9 @@ def check_archive_name(archive: Path, expected_name: str) -> None:
 
 
 def check_job_directories(
-    filenames: List[str],
-    jobs_in_archive: Set[str],
-    dir_name_extractor: Callable[[List[str]], Set[str]] = get_unique_directory_names_wo_job_id,
+    filenames: list[str],
+    jobs_in_archive: set[str],
+    dir_name_extractor: Callable[[list[str]], set[str]] = get_unique_directory_names_wo_job_id,
 ) -> None:
     """Check that archive contains directories of all jobs"""
     with allure.step("Check that archive contains directories of all jobs"):
@@ -177,7 +178,9 @@ def check_job_directories(
 
 
 def check_all_files_presented_in_all_directories(
-    filenames: List[str], jobs_in_archive: Set[str], expected_files: Set[str]
+    filenames: list[str],
+    jobs_in_archive: set[str],
+    expected_files: set[str],
 ) -> None:
     """
     Check that in each directory of an archive (job's directories) there are all required files (logs, configs, etc.)
@@ -191,7 +194,7 @@ def check_all_files_presented_in_all_directories(
             )
 
 
-def check_archive_naming(adcm_object, task: Task, expected_files: Set[str], name_builder: Callable, tmpdir: PathLike):
+def check_archive_naming(adcm_object, task: Task, expected_files: set[str], name_builder: Callable, tmpdir: PathLike):
     """Check archive name, names of jobs' directories in it and filenames in all directories"""
     with allure.step(f"Check task logs archive download from {adcm_object.__class__}'s action"):
         archive: Path = task.download_logs(tmpdir)
@@ -231,7 +234,7 @@ def cluster(request, sdk_client_fs) -> Cluster:
 def provider(request, sdk_client_fs) -> Provider:
     """Create provider"""
     return sdk_client_fs.upload_from_fs(get_data_dir(__file__, request.param, "provider")).provider_create(
-        PROVIDER_NAME
+        PROVIDER_NAME,
     )
 
 
@@ -267,9 +270,9 @@ class TestArchiveNaming:
             {
                 "attr": {"ldap_integration": {"active": True}},
                 "config": {
-                    "ldap_integration": {k: k for k in ("ldap_uri", "ldap_user", "ldap_password", "user_search_base")}
+                    "ldap_integration": {k: k for k in ("ldap_uri", "ldap_user", "ldap_password", "user_search_base")},
                 },
-            }
+            },
         )
         task = adcm.action(name=TEST_CONNECTION_ACTION).run()
         task.wait()
@@ -279,11 +282,15 @@ class TestArchiveNaming:
             filenames = get_filenames_from_archive(archive)
             check_job_directories(filenames, {clean_action_name})
             check_all_files_presented_in_all_directories(
-                filenames, {clean_action_name}, expected_files=FS_RUN_DIR_FILES_PY
+                filenames,
+                {clean_action_name},
+                expected_files=FS_RUN_DIR_FILES_PY,
             )
 
     def _test_archiving_general_object_task(
-        self, adcm_object: Union[Cluster, Service, Component, Provider], tmpdir: PathLike
+        self,
+        adcm_object: Cluster | Service | Component | Provider,
+        tmpdir: PathLike,
     ) -> None:
         with allure.step(f"Test {adcm_object.__class__.__name__}'s task archive naming"):
             for task in run_all_actions(adcm_object):
@@ -321,7 +328,7 @@ class TestArchiveNaming:
             client.provider(),
             client.host(),
         )
-        each_object_tasks: List[Task] = [_get_task_of(adcm_object, client) for adcm_object in objects]
+        each_object_tasks: list[Task] = [_get_task_of(adcm_object, client) for adcm_object in objects]
         with allure.step("Delete all bundles"):
             client.host().delete()
             client.provider().delete()

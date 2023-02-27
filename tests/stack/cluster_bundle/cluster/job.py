@@ -18,7 +18,12 @@ from cm.models import Action, Prototype
 def task_generator(action, selector):
     logger.debug("call task_generator: %s", action)
     try:
-        service = Prototype.objects.get(bundle=action.prototype.bundle, type="service", name="ZOOKEEPER", version="1.2")
+        service = Prototype.objects.get(
+            bundle=action.prototype.bundle,
+            type="service",
+            name="ZOOKEEPER",
+            version="1.2",
+        )
     except Prototype.DoesNotExist as e:
         raise AdcmEx("TASK_GENERATOR_ERROR", "service ZOOKEEPER not found") from e
 

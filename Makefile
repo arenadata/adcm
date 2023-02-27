@@ -70,3 +70,11 @@ pretty:
 	autoflake -r -i --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python tests
 	isort license_checker.py python tests
 	python license_checker.py --fix --folders python go
+
+lint:
+	black --check license_checker.py python tests
+	autoflake --check --quiet -r --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python tests
+	isort --check license_checker.py python tests
+	python license_checker.py --folders python go
+	flake8 --max-line-length=120 tests/functional tests/ui_tests
+	pylint --rcfile pyproject.toml --recursive y python tests

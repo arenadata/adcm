@@ -180,7 +180,7 @@ def test_upgrade_cluster_with_new_configuration_variables(sdk_client_fs: ADCMCli
     with allure.step("Create cluster for upgrade with exports and cluster with import new config vars"):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "upgrade_cluster_with_export"))
         bundle_import = sdk_client_fs.upload_from_fs(
-            get_data_dir(__file__, "upgradable_cluster_with_import_new_config_vars")
+            get_data_dir(__file__, "upgradable_cluster_with_import_new_config_vars"),
         )
         cluster = bundle.cluster_create("test")
         service = cluster.service_add(name="hadoop")

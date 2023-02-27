@@ -227,7 +227,12 @@ class TestImport(BaseTestCase):
         bundle_2, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
         proto3 = Prototype.objects.create(type="service", name="Graphana", bundle=bundle_2)
         service2 = add_service_to_cluster(cluster2, proto3)
-        ClusterBind.objects.create(cluster=cluster1, service=service1, source_cluster=cluster2, source_service=service2)
+        ClusterBind.objects.create(
+            cluster=cluster1,
+            service=service1,
+            source_cluster=cluster2,
+            source_service=service2,
+        )
 
         self.assertEqual(do_check_import(cluster1, service1), (True, "SERVICE_IMPORTED"))
 

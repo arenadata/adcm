@@ -27,7 +27,7 @@ from tests.library.errorcodes import SERVICE_CONFLICT, SERVICE_DELETE_ERROR
 @pytest.fixture()
 def cluster(sdk_client_fs) -> Cluster:
     return sdk_client_fs.upload_from_fs(get_data_dir(__file__, "with_action")).cluster_create(
-        "Cluster with service remove actions"
+        "Cluster with service remove actions",
     )
 
 
@@ -50,7 +50,7 @@ def test_delete_service(sdk_client_fs: ADCMClient):
 
 def test_forbid_service_deletion_no_action(sdk_client_fs: ADCMClient, generic_provider: Provider) -> None:
     cluster = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "forbidden_to_delete")).cluster_create(
-        "Cluster with forbidden to delete services"
+        "Cluster with forbidden to delete services",
     )
 
     with allure.step("Check service required for cluster can't be deleted"):
@@ -64,7 +64,7 @@ def test_forbid_service_deletion_no_action(sdk_client_fs: ADCMClient, generic_pr
 
     with allure.step("Check service that is imported can't be deleted"):
         importer: Cluster = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "with_import")).cluster_create(
-            "Importer Cluster"
+            "Importer Cluster",
         )
         importer.bind(service)
         expect_api_error("delete service with export", operation=service.delete, err_=SERVICE_CONFLICT)
@@ -100,7 +100,9 @@ def test_service_deletion_with_action(cluster: Cluster, sdk_client_fs: ADCMClien
         host = cluster.host_add(generic_provider.host_create("some-fqdn"))
         cluster.hostcomponent_set((host, service_with_component.component()), (host, dependent_service.component()))
         expect_api_error(
-            "delete service with 'requires' component", operation=service_with_component.delete, err_=SERVICE_CONFLICT
+            "delete service with 'requires' component",
+            operation=service_with_component.delete,
+            err_=SERVICE_CONFLICT,
         )
 
     with allure.step("Check that delete dependant service first is allowed"):
@@ -111,7 +113,7 @@ def test_service_deletion_with_action(cluster: Cluster, sdk_client_fs: ADCMClien
 
     with allure.step("Check that imported service can't be deleted even with action"):
         importer: Cluster = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "with_import")).cluster_create(
-            "Importer Cluster"
+            "Importer Cluster",
         )
         service = cluster.service_add(name="with_component")
         importer.bind(service)

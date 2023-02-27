@@ -11,7 +11,7 @@
 # limitations under the License.
 
 """Test relations between LDAP objects """
-from typing import Collection, Tuple, Union
+from collections.abc import Collection
 
 import allure
 import pytest
@@ -70,29 +70,29 @@ class TestLDAPEntitiesRelationsInADCM:
             self._check_user_is_in_group(sdk_client_fs, user_1, group_2)
             self._check_user_is_not_in_group(sdk_client_fs, user_2, group_2)
 
-    def _create_users(self, *user_names: str, randomize: bool = True) -> Tuple[dict, ...]:
+    def _create_users(self, *user_names: str, randomize: bool = True) -> tuple[dict, ...]:
         created = []
-        for name in user_names if not randomize else map(lambda name: f"{name}-{random_string(4)}", user_names):
+        for name in user_names if not randomize else (f"{name}-{random_string(4)}" for name in user_names):
             password = random_string(12)
             user_dn = self.ldap.create_user(name, password, custom_base_dn=self.users_ou_dn)
             created.append({"dn": user_dn, "name": name, "password": password})
         return tuple(created)
 
-    def _create_groups(self, *group_names: str) -> Tuple[dict, ...]:
+    def _create_groups(self, *group_names: str) -> tuple[dict, ...]:
         created = []
         for name in group_names:
             group_dn = self.ldap.create_group(name, custom_base_dn=self.groups_ou_dn)
             created.append({"dn": group_dn, "name": name})
         return tuple(created)
 
-    def _add_users_to_groups(self, *group_users: Tuple[dict, Collection[dict]]):
+    def _add_users_to_groups(self, *group_users: tuple[dict, Collection[dict]]):
         for group, users in group_users:
             with allure.step(f'Adding to group {group["name"]} users: {", ".join(u["name"] for u in users)}'):
                 for user in users:
                     self.ldap.add_user_to_group(user["dn"], group["dn"])
 
     @allure.step("Check that user {user} is in group {group}")
-    def _check_user_is_in_group(self, client: ADCMClient, user: Union[str, dict], group: Union[str, dict]):
+    def _check_user_is_in_group(self, client: ADCMClient, user: str | dict, group: str | dict):
         """Check if user is in group in ADCM"""
         adcm_user = get_ldap_user_from_adcm(client, user["name"] if isinstance(user, dict) else user)
         adcm_group = get_ldap_group_from_adcm(client, group["name"] if isinstance(group, dict) else group)
@@ -101,7 +101,7 @@ class TestLDAPEntitiesRelationsInADCM:
         ], f"User {adcm_user.username} not found in group {adcm_group.name}"
 
     @allure.step("Check that user {user} is not in group {group}")
-    def _check_user_is_not_in_group(self, client: ADCMClient, user: Union[str, dict], group: Union[str, dict]):
+    def _check_user_is_not_in_group(self, client: ADCMClient, user: str | dict, group: str | dict):
         adcm_user = get_ldap_user_from_adcm(client, user["name"] if isinstance(user, dict) else user)
         adcm_group = get_ldap_group_from_adcm(client, group["name"] if isinstance(group, dict) else group)
         assert adcm_user.id not in [

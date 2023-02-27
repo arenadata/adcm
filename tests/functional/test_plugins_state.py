@@ -13,7 +13,6 @@
 """Tests for adcm_state plugin"""
 
 # pylint:disable=redefined-outer-name
-from typing import Tuple
 
 import allure
 import pytest
@@ -48,13 +47,13 @@ check_objects_state_changed = build_objects_checker(
 
 
 @pytest.fixture()
-def two_providers(sdk_client_fs: ADCMClient) -> Tuple[Provider, Provider]:
+def two_providers(sdk_client_fs: ADCMClient) -> tuple[Provider, Provider]:
     """Get two providers with two hosts"""
     return create_two_providers(sdk_client_fs, __file__, "hostprovider")
 
 
 @pytest.fixture()
-def two_clusters(request, sdk_client_fs: ADCMClient) -> Tuple[Cluster, Cluster]:
+def two_clusters(request, sdk_client_fs: ADCMClient) -> tuple[Cluster, Cluster]:
     """Get two clusters with both services"""
     return create_two_clusters(
         sdk_client_fs,
@@ -73,8 +72,8 @@ def two_clusters(request, sdk_client_fs: ADCMClient) -> Tuple[Cluster, Cluster]:
 @pytest.mark.usefixtures("two_clusters")
 def test_cluster_related_objects(
     action_name: str,
-    object_to_be_changed: Tuple[str, ...],
-    action_owner: Tuple[str, ...],
+    object_to_be_changed: tuple[str, ...],
+    action_owner: tuple[str, ...],
     sdk_client_fs: ADCMClient,
 ):
     """
@@ -87,7 +86,7 @@ def test_cluster_related_objects(
     action_owner_object = get_cluster_related_object(sdk_client_fs, *action_owner)
     action_owner_name = compose_name(action_owner_object)
     with check_objects_state_changed(sdk_client_fs, {object_to_be_changed}), allure.step(
-        f"Set state of {changed_object_name} with action from {action_owner_name}"
+        f"Set state of {changed_object_name} with action from {action_owner_name}",
     ):
         run_successful_task(action_owner_object.action(name=action_name), action_owner_name)
 
@@ -99,8 +98,8 @@ def test_cluster_related_objects(
 @pytest.mark.usefixtures("two_providers")
 def test_provider_related_objects(
     action_name: str,
-    object_to_be_changed: Tuple[str, ...],
-    action_owner: Tuple[str, ...],
+    object_to_be_changed: tuple[str, ...],
+    action_owner: tuple[str, ...],
     sdk_client_fs: ADCMClient,
 ):
     """
@@ -113,19 +112,19 @@ def test_provider_related_objects(
     action_owner_object = get_provider_related_object(sdk_client_fs, *action_owner)
     action_owner_name = compose_name(action_owner_object)
     with check_objects_state_changed(sdk_client_fs, {object_to_be_changed}), allure.step(
-        f"Set state of {changed_object_name} with action from {action_owner_name}"
+        f"Set state of {changed_object_name} with action from {action_owner_name}",
     ):
         run_successful_task(action_owner_object.action(name=action_name), action_owner_name)
 
 
-def test_host_from_provider(two_providers: Tuple[Provider, Provider], sdk_client_fs: ADCMClient):
+def test_host_from_provider(two_providers: tuple[Provider, Provider], sdk_client_fs: ADCMClient):
     """Change host state from provider"""
     provider = two_providers[0]
     host = provider.host_list()[0]
     provider_name = compose_name(provider)
     host_name = compose_name(host)
     with check_objects_state_changed(sdk_client_fs, {host}), allure.step(
-        f"Set state of {host_name} with action from {provider_name}"
+        f"Set state of {host_name} with action from {provider_name}",
     ):
         run_provider_action_and_assert_result(provider, "set_host_from_provider", config={"host_id": host.id})
 
@@ -166,7 +165,7 @@ def test_forbidden_state_set_actions(sdk_client_fs: ADCMClient):
 
 
 @pytest.mark.parametrize("two_clusters", ["cluster_double_call"], indirect=True)
-def test_double_call_to_state_set(two_clusters: Tuple[Cluster, Cluster], sdk_client_fs: ADCMClient):
+def test_double_call_to_state_set(two_clusters: tuple[Cluster, Cluster], sdk_client_fs: ADCMClient):
     """Test that double call to plugin from two files doesn't fail"""
     cluster = two_clusters[0]
     run_cluster_action_and_assert_result(cluster, "double_call_two_playbooks")
@@ -175,8 +174,8 @@ def test_double_call_to_state_set(two_clusters: Tuple[Cluster, Cluster], sdk_cli
 
 
 def test_state_set_from_host_actions(
-    two_providers: Tuple[Provider, Provider],
-    two_clusters: Tuple[Cluster, Cluster],
+    two_providers: tuple[Provider, Provider],
+    two_clusters: tuple[Cluster, Cluster],
     sdk_client_fs: ADCMClient,
 ):
     """Test that host actions actually change state"""
@@ -191,7 +190,7 @@ def test_state_set_from_host_actions(
         classname = obj.__class__.__name__.lower()
         affected_objects.add(obj)
         with check_objects_state_changed(sdk_client_fs, affected_objects), allure.step(
-            f"Check change {compose_name(obj)} state from host action"
+            f"Check change {compose_name(obj)} state from host action",
         ):
             run_host_action_and_assert_result(host, f"set_{classname}_host_action")
 
@@ -204,8 +203,8 @@ class TestImmediateStateChange(TestImmediateChange):
     @allure.issue(url="https://arenadata.atlassian.net/browse/ADCM-2116")
     def test_immediate_state_change(
         self,
-        provider_host: Tuple[Provider, Host],
-        cluster_service_component: Tuple[Cluster, Service, Component],
+        provider_host: tuple[Provider, Host],
+        cluster_service_component: tuple[Cluster, Service, Component],
     ):
         """Test that state is changed right after adcm_state step in multijob action"""
         self.run_immediate_change_test(provider_host, cluster_service_component)

@@ -31,7 +31,7 @@ from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
 
-from adcm.tests.base import BaseTestCase
+from adcm.tests.base import BaseTestCase, APPLICATION_JSON
 
 
 class TestBundle(BaseTestCase):
@@ -85,9 +85,7 @@ class TestBundle(BaseTestCase):
         ) as f:
             secret_file_content = f.read()
 
-        self.assertIn(settings.ANSIBLE_VAULT_HEADER, secret_file_content)
-        self.assertIn(settings.ANSIBLE_VAULT_HEADER, config_log.config["secretfile"])
-        self.assertEqual(secret_file_bundle_content, ansible_decrypt(config_log.config["secretfile"]))
+        self.assertEqual(secret_file_bundle_content, secret_file_content)
 
         new_content = "new content"
         config_log.config["secretfile"] = "new content"
@@ -101,8 +99,47 @@ class TestBundle(BaseTestCase):
 
         new_config_log = ConfigLog.objects.filter(obj_ref=cluster.config).order_by("pk").last()
 
-        self.assertIn(settings.ANSIBLE_VAULT_HEADER, new_config_log.config["secretfile"])
-        self.assertEqual(new_content, ansible_decrypt(new_config_log.config["secretfile"]))
+        self.assertEqual(new_content, new_config_log.config["secretfile"])
+
+    def test_secretfile_update_config(self):
+        _, cluster, _ = self.upload_bundle_create_cluster_config_log(
+            bundle_path=Path(
+                settings.BASE_DIR,
+                "python/cm/tests/files/test_secretfile_update_config.tar",
+            ),
+        )
+
+        secretfile_bundle_content = "aaa"
+        response: Response = self.client.post(
+            path=reverse("config-history", kwargs={"cluster_id": cluster.pk}),
+            params={"view": "interface"},
+            data={
+                "config": {
+                    "password": "aaa",
+                    "secrettext": "aaa",
+                    "secretmap": {"aaa": "aaa"},
+                    "secretfile": secretfile_bundle_content,
+                    "group": {
+                        "password": "aaa",
+                        "secrettext": "aaa",
+                        "secretmap": {"aaa": "aaa"},
+                        "secretfile": "bbb",
+                    },
+                },
+                "attr": {},
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        with open(
+            Path(settings.FILE_DIR, f"cluster.{cluster.pk}.secretfile."),
+            encoding=settings.ENCODING_UTF_8,
+        ) as f:
+            secret_file_content = f.read()
+
+        self.assertEqual(secretfile_bundle_content, secret_file_content)
 
     def test_secretmap(self):
         _, cluster, config_log = self.upload_bundle_create_cluster_config_log(

@@ -12,7 +12,6 @@
 
 """Tests on known bugs that can't be categorised by any other attribute"""
 
-from typing import Type
 
 import allure
 import pytest
@@ -112,7 +111,7 @@ class TestMainInfo:
         adcm_objects = (cluster, service, component, provider, host)
 
         with allure.step(
-            "Check initial __main_info is correctly displayed in the description of detailed object pages"
+            "Check initial __main_info is correctly displayed in the description of detailed object pages",
         ):
             for page_type, adcm_object in zip(pages, adcm_objects):
                 self._check_detailed_page_main_info(app_fs, page_type, adcm_object, self._DESCRIPTION_BEFORE)
@@ -130,7 +129,7 @@ class TestMainInfo:
     def _check_detailed_page_main_info(
         self,
         app: ADCMTest,
-        page_type: Type[BaseDetailedPage],
+        page_type: type[BaseDetailedPage],
         adcm_object: AnyADCMObject,
         expected_text: str,
     ):
@@ -146,7 +145,10 @@ class TestMainInfo:
             )
 
     def _check_main_info_after_config_save(
-        self, app: ADCMTest, page_type: Type[BaseDetailedPage], adcm_object: AnyADCMObject
+        self,
+        app: ADCMTest,
+        page_type: type[BaseDetailedPage],
+        adcm_object: AnyADCMObject,
     ):
         """
         Check that detailed page contains the expected text from __main_info in description

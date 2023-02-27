@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
-import { AdwpCellComponent } from '@adwp-ui/widgets';
 import { filter, switchMap, tap } from 'rxjs/operators';
+import { AdwpCellComponent } from '@app/adwp';
 import { MatDialog } from '@angular/material/dialog';
 
 import { Task } from '@app/core/types';

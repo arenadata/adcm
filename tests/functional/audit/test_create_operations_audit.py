@@ -67,7 +67,7 @@ def new_user_client(sdk_client_fs) -> ADCMClient:
         [
             str(BUNDLES_DIR / "create" / bundle_dir)
             for bundle_dir in ("incorrect_cluster", "incorrect_provider", "cluster", "provider")
-        ]
+        ],
     ],
     indirect=True,
 )
@@ -75,7 +75,7 @@ def new_user_client(sdk_client_fs) -> ADCMClient:
 def test_bundle_upload_load(audit_log_checker, post, bundle_archives, sdk_client_fs, new_user_client):
     """Test audit logs for CREATE operations: stack/upload and stack/load"""
     incorrect_cluster_bundle, incorrect_provider_bundle, cluster_bundle, provider_bundle = tuple(
-        map(Path, bundle_archives)
+        map(Path, bundle_archives),
     )
     unauthorized_user_creds = make_auth_header(new_user_client)
     with allure.step("Upload and load incorrect bundles (as unauthorized and authorized user)"):
@@ -137,7 +137,7 @@ def test_rbac_create_operations(parse_with_context, rbac_create_data, post, sdk_
         user_info = rbac_create_data.pop("user")
         check_succeed(post(CreateOperation.USER, user_info))
         new_user_auth_header = make_auth_header(
-            ADCMClient(url=sdk_client_fs.url, user=user_info["username"], password=user_info["password"])
+            ADCMClient(url=sdk_client_fs.url, user=user_info["username"], password=user_info["password"]),
         )
         check_failed(post(CreateOperation.USER, user_info))
         check_failed(post(CreateOperation.USER, user_info, headers=new_user_auth_header), 403)
@@ -203,7 +203,7 @@ def test_create_adcm_objects(audit_log_checker, post, new_user_client, sdk_clien
                 "fqdn": "host-from-root",
                 "prototype_id": host_prototype_id,
                 "provider_id": provider.id,
-            }
+            },
         }
         check_succeed(post(CreateOperation.HOST, **host_from_root_args))
     with allure.step("Try to incorrectly create host from root and from provider"):
@@ -211,7 +211,11 @@ def test_create_adcm_objects(audit_log_checker, post, new_user_client, sdk_clien
         check_failed(post(CreateOperation.HOST, **host_from_root_args), 409)
     with allure.step("Try to create hosts without permissions"):
         create_policy(  # need it to be able to create host from provider's context
-            sdk_client_fs, BusinessRoles.VIEW_PROVIDER_CONFIGURATIONS, [provider], [new_user], []
+            sdk_client_fs,
+            BusinessRoles.VIEW_PROVIDER_CONFIGURATIONS,
+            [provider],
+            [new_user],
+            [],
         )
         check_failed(
             post(
@@ -224,7 +228,7 @@ def test_create_adcm_objects(audit_log_checker, post, new_user_client, sdk_clien
         check_failed(post(CreateOperation.HOST, **host_from_root_args, headers=new_user_creds), 403)
     with allure.step(
         "Create group config for cluster, service and component, "
-        "try to make their duplicates and create with wrong user"
+        "try to make their duplicates and create with wrong user",
     ):
         component = (service := (cluster := sdk_client_fs.cluster()).service_add(name="service")).component()
         for obj in (cluster, service, component):

@@ -9,16 +9,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Test audit logs rotation"""
+# pylint: disable=redefined-outer-name
 
 import csv
 import io
 import json
 import tarfile
+from collections.abc import Collection
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Collection, Dict, List, OrderedDict, Set, Union
+from typing import Any, OrderedDict
+from zoneinfo import ZoneInfo
 
 import allure
 import pytest
@@ -38,22 +39,18 @@ from tests.functional.audit.conftest import (
 from tests.library.assertions import sets_are_equal
 from tests.library.db import QueryExecutioner
 
-# pylint: disable=redefined-outer-name
-
-
 DATA_DIR = "/adcm/data"
 AUDIT_DIR = f"{DATA_DIR}/audit/"
 ARCHIVE_NAME = "audit_archive.tar.gz"
-
 DOOMED_CLUSTER_NAME = "Doomed Cluster"
-
-# !===== Fixtures =====!
 
 
 @pytest.fixture()
 def logins_to_be_archived(
-    sdk_client_fs: ADCMClient, adcm_db: QueryExecutioner, adcm_api_credentials: dict
-) -> List[AuditLogin]:
+    sdk_client_fs: ADCMClient,
+    adcm_db: QueryExecutioner,
+    adcm_api_credentials: dict,
+) -> list[AuditLogin]:
     """
     Create new user and make login attempts.
 
@@ -65,7 +62,7 @@ def logins_to_be_archived(
     }
     user_creds = {"username": "user1", "password": "password1password1"}
     not_existing_user = {"username": "user2", "password": "password1password1"}
-    existing_logs: Set[int] = {rec.id for rec in sdk_client_fs.audit_login_list()}
+    existing_logs: set[int] = {rec.id for rec in sdk_client_fs.audit_login_list()}
     with allure.step("Create one more user and try to login with different pairs"):
         sdk_client_fs.user_create(**user_creds)
         for _ in range(2):
@@ -80,7 +77,7 @@ def logins_to_be_archived(
                 except ADCMApiError:
                     # failed logins should be ignored
                     pass
-    new_date = datetime.utcnow() - timedelta(days=300)
+    new_date = datetime.now(tz=ZoneInfo("UTC")) - timedelta(days=300)
     with allure.step(f"Change date of operations on already deleted cluster to {new_date}"):
         new_logs = list(filter(lambda rec: rec.id not in existing_logs, sdk_client_fs.audit_login_list()))
         old_logs = new_logs[: len(new_logs) // 2]
@@ -91,7 +88,7 @@ def logins_to_be_archived(
 
 
 @pytest.fixture()
-def operation_to_be_archived(sdk_client_fs: ADCMClient, adcm_db: QueryExecutioner) -> List[AuditOperation]:
+def operation_to_be_archived(sdk_client_fs: ADCMClient, adcm_db: QueryExecutioner) -> list[AuditOperation]:
     """
     Create two clusters, work with them, then delete one.
     Then create-delete another one to create "deleted" audit object with existing audit records.
@@ -104,7 +101,8 @@ def operation_to_be_archived(sdk_client_fs: ADCMClient, adcm_db: QueryExecutione
         bundle = sdk_client_fs.upload_from_fs(BUNDLES_DIR / "adb")
         doomed_cluster = bundle.cluster_create(DOOMED_CLUSTER_NAME)
         create_operation = sdk_client_fs.audit_operation(
-            operation_type=OperationType.CREATE, object_name=doomed_cluster.name
+            operation_type=OperationType.CREATE,
+            object_name=doomed_cluster.name,
         )
         lucky_cluster = bundle.cluster_create("Lucky Cluster")
         for cluster in (doomed_cluster, lucky_cluster):
@@ -116,10 +114,10 @@ def operation_to_be_archived(sdk_client_fs: ADCMClient, adcm_db: QueryExecutione
         service = doomed_cluster.service_add(name="dummy")
         doomed_cluster.service_delete(service)
         doomed_cluster.delete()
-    new_date = datetime.utcnow() - timedelta(days=300)
+    new_date = datetime.now(tz=ZoneInfo("UTC")) - timedelta(days=300)
     bundle.cluster_create("temp cluster").delete()
     with allure.step(f"Change date of operations on already deleted cluster to {new_date}"):
-        doomed_cluster_operations: List[AuditOperation] = [
+        doomed_cluster_operations: list[AuditOperation] = [
             operation
             for operation in sdk_client_fs.audit_operation_list(object_type=ObjectType.CLUSTER)
             if operation.object_id == create_operation.object_id
@@ -130,9 +128,6 @@ def operation_to_be_archived(sdk_client_fs: ADCMClient, adcm_db: QueryExecutione
     return doomed_cluster_operations
 
 
-# !===== Tests =====!
-
-
 @pytest.mark.usefixtures("generic_provider")
 def test_cleanup_with_archiving(adcm_fs, sdk_client_fs, logins_to_be_archived, operation_to_be_archived):
     """
@@ -140,13 +135,13 @@ def test_cleanup_with_archiving(adcm_fs, sdk_client_fs, logins_to_be_archived, o
     """
     with allure.step("Configure ADCM to clean logs after 100 days"):
         sdk_client_fs.adcm().config_set_diff(
-            {"audit_data_retention": {"retention_period": 100, "data_archiving": True}}
+            {"audit_data_retention": {"retention_period": 100, "data_archiving": True}},
         )
     clearaudit(adcm_fs)
     archives = get_parsed_archive_files(adcm_fs)
     operations_expected_in_archive = tuple(map(AuditRecordConverter.to_archive_record, operation_to_be_archived))
     logins_expected_in_archive = tuple(map(AuditRecordConverter.to_archive_record, logins_to_be_archived))
-    today = datetime.utcnow().date().strftime("%Y-%m-%d")
+    today = datetime.now(tz=ZoneInfo("UTC")).date().strftime("%Y-%m-%d")
     operations_filename = f"audit_{today}_operations.csv"
     logins_filename = f"audit_{today}_logins.csv"
     objects_filename = f"audit_{today}_objects.csv"
@@ -177,7 +172,7 @@ def test_just_cleanup_audit_logs(adcm_fs, sdk_client_fs, logins_to_be_archived, 
     """
     with allure.step("Configure ADCM to clean logs after 100 days"):
         sdk_client_fs.adcm().config_set_diff(
-            {"audit_data_retention": {"retention_period": 100, "data_archiving": False}}
+            {"audit_data_retention": {"retention_period": 100, "data_archiving": False}},
         )
     operations_to_be_deleted = {o.id for o in operation_to_be_archived}
     operations_should_stay = {
@@ -194,7 +189,7 @@ def test_just_cleanup_audit_logs(adcm_fs, sdk_client_fs, logins_to_be_archived, 
     clearaudit(adcm_fs)
     with allure.step("Configure ADCM to archive audit logs"):
         sdk_client_fs.adcm().config_set_diff(
-            {"audit_data_retention": {"retention_period": 100, "data_archiving": True}}
+            {"audit_data_retention": {"retention_period": 100, "data_archiving": True}},
         )
     _check_archive_dir_does_not_exist(adcm_fs)  # because nothing to store
 
@@ -203,9 +198,10 @@ def test_just_cleanup_audit_logs(adcm_fs, sdk_client_fs, logins_to_be_archived, 
 
 
 def _check_all_archives_are_presented(
-    archive_names: Collection[str], suffixes: Collection[str] = ("operations", "logins", "objects")
+    archive_names: Collection[str],
+    suffixes: Collection[str] = ("operations", "logins", "objects"),
 ) -> None:
-    today = datetime.utcnow().date().strftime("%Y-%m-%d")
+    today = datetime.now(tz=ZoneInfo("UTC")).date().strftime("%Y-%m-%d")
     for suffix in suffixes:
         expected_filename = f"audit_{today}_{suffix}.csv"
         with allure.step(f"Check file {expected_filename} is in audit archive"):
@@ -213,9 +209,9 @@ def _check_all_archives_are_presented(
 
 
 def _check_records_are_correct(
-    archive_records: List[Dict[str, Any]],
-    expected_records: List[Dict[str, Any]],
-    expected_headers: Set[str],
+    archive_records: list[dict[str, Any]],
+    expected_records: list[dict[str, Any]],
+    expected_headers: set[str],
     exclude_from_comparison: Collection[str] = ("audit_object_id",),
 ) -> None:
     """Actual records shouldn't be empty"""
@@ -242,10 +238,12 @@ def _check_records_are_correct(
 
 @allure.step("Check old audit logs are removed")
 def _check_old_audit_logs_are_removed(
-    client: ADCMClient, old_operations: List[AuditOperation], old_logins: List[AuditLogin]
+    client: ADCMClient,
+    old_operations: list[AuditOperation],
+    old_logins: list[AuditLogin],
 ):
     def get_ids(recs):
-        return set(rec.id for rec in recs)
+        return {rec.id for rec in recs}
 
     existing_operation_logs = get_ids(client.audit_operation_list())
     deleted_operation_logs = get_ids(old_operations)
@@ -261,7 +259,7 @@ def _check_old_audit_logs_are_removed(
 
 
 @allure.step('Check that only "deleted" audit object without records is in objects file')
-def _check_audit_objects_records(records: List[Dict[str, Any]]):
+def _check_audit_objects_records(records: list[dict[str, Any]]):
     assert len(records) == 1, "There should be only 1 audit object in archive with deleted audit objects"
     object_record = records[0]
     assert (
@@ -305,22 +303,22 @@ class AuditRecordConverter:
     }
 
     @classmethod
-    def get_audit_operations_archive_headers(cls) -> Set[str]:
+    def get_audit_operations_archive_headers(cls) -> set[str]:
         """Get headers that should be presented in operations audit archive"""
         return set(cls._FIELDS[AuditOperation]) | {"audit_object_id"}
 
     @classmethod
-    def get_audit_logins_archive_headers(cls) -> Set[str]:
+    def get_audit_logins_archive_headers(cls) -> set[str]:
         """Get headers that should be presented in login audit archive"""
         return set(cls._FIELDS[AuditLogin])
 
     @classmethod
-    def get_audit_objects_archive_headers(cls) -> Set[str]:
+    def get_audit_objects_archive_headers(cls) -> set[str]:
         """Get headers that should be presented in audit objects archive"""
         return {"id", "object_id", "object_name", "object_type", "is_deleted"}
 
     @classmethod
-    def to_archive_record(cls, record: Union[AuditOperation, AuditLogin]) -> dict:
+    def to_archive_record(cls, record: AuditOperation | AuditLogin) -> dict:
         """Convert record to a dictionary in format how it should be extracted from audit records archive"""
         fields = cls._FIELDS.get(record.__class__, None)
         if fields is None:
@@ -328,7 +326,7 @@ class AuditRecordConverter:
         return {field: str(cls._convert(getattr(record, field))) for field in fields}
 
     @classmethod
-    def to_cef_record(cls, record: Union[AuditOperation, AuditLogin]) -> str:
+    def to_cef_record(cls, record: AuditOperation | AuditLogin) -> str:
         """Convert record to a log string in CEF format"""
         raise NotImplementedError
 
@@ -348,7 +346,7 @@ class AuditRecordConverter:
         return val
 
 
-def get_parsed_archive_files(adcm: ADCM) -> Dict[str, List[Dict[str, Any]]]:
+def get_parsed_archive_files(adcm: ADCM) -> dict[str, list[dict[str, Any]]]:
     """
     Get audit archive files from ADCM and return them in dict format,
     where keys are names of files from archive and values are lists with dicts (parsed csv file values)

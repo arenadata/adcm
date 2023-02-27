@@ -40,7 +40,8 @@ LOG_FILE = LOG_DIR / "adcm.log"
 SECRETS_FILE = BASE_DIR / "data" / "var" / "secrets.json"
 ADCM_TOKEN_FILE = BASE_DIR / "data/var/adcm_token"
 PYTHON_SITE_PACKAGES = Path(
-    sys.exec_prefix, f"lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages"
+    sys.exec_prefix,
+    f"lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages",
 )
 
 ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
@@ -298,6 +299,10 @@ ADCM_SERVICE_ACTION_NAMES_SET = {
     ADCM_DELETE_SERVICE_ACTION_NAME,
 }
 ADCM_MM_ACTION_FORBIDDEN_PROPS_SET = {"config", "hc_acl", "ui_options"}
+
+STACK_COMPLEX_FIELD_TYPES = {"json", "structure", "list", "map", "secretmap"}
+STACK_NUMERIC_FIELD_TYPES = {"integer", "float"}
+TEMPLATE_CONFIG_DELETE_FIELDS = {"yspec", "option", "activatable", "active", "read_only", "writable", "subs"}
 
 EMPTY_REQUEST_STATUS_CODE = 32
 VALUE_ERROR_STATUS_CODE = 8

@@ -32,7 +32,7 @@ class JobStats(PermissionListMixin, GenericUIView):
                 JobStatus.FAILED.value: jobs.filter(status=JobStatus.FAILED).count(),
                 JobStatus.SUCCESS.value: jobs.filter(status=JobStatus.SUCCESS).count(),
                 JobStatus.RUNNING.value: jobs.filter(status=JobStatus.RUNNING).count(),
-            }
+            },
         )
 
 
@@ -50,5 +50,5 @@ class TaskStats(PermissionListMixin, GenericUIView):
                 JobStatus.FAILED.value: tasks.filter(status=JobStatus.FAILED).count(),
                 JobStatus.SUCCESS.value: tasks.filter(status=JobStatus.SUCCESS).count(),
                 JobStatus.RUNNING.value: tasks.filter(status=JobStatus.RUNNING).count(),
-            }
+            },
         )

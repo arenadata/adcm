@@ -1,0 +1,210 @@
+---
+
+- type: cluster
+  name: multistate_cluster_change
+  version: &version 1.0
+
+  actions:
+    set_multistate:
+      type: job
+      script_type: ansible
+      script: set_multistate.yaml
+      params:
+        ansible_tags: cluster
+      masking:
+
+    state_changing_fail:
+      type: task
+      allow_to_terminate: true
+      masking:
+      scripts:
+        - script_type: ansible
+          script: ok.yaml
+          name: "first_step"
+          on_fail: failed1
+
+        - script_type: ansible
+          script: fail.yaml
+          name: "second_step"
+          on_fail:
+            state: not_multi_state
+            multi_state:
+              set:
+                - "multi_fail_on_last"
+              unset:
+                - "unset_this"
+
+    state_changing_success:
+      type: task
+      allow_to_terminate: true
+      scripts:
+        - script_type: ansible
+          script: ok.yaml
+          name: "first_step"
+          on_fail: failed1
+
+        - script_type: ansible
+          script: ok.yaml
+          name: "second_step"
+          on_fail: failed2
+
+      masking:
+      on_fail:
+        multi_state:
+          set:
+            - "multi_fail"
+          unset:
+            - "unset_this"
+      on_success:
+        state: multi_ok
+        multi_state:
+          set:
+            - "multi_ok"
+          unset:
+            - "unset_this"
+
+    second_state_changing_success:
+      type: task
+      allow_to_terminate: true
+      scripts:
+        - script_type: ansible
+          script: ok.yaml
+          name: "first_step"
+          on_fail: failed1
+      masking:
+      on_fail:
+        multi_state:
+          set:
+            - "multi_fail"
+          unset:
+            - "unset_this"
+      on_success:
+        state: multi_ok
+        multi_state:
+          set:
+            - "multi_ok"
+          unset:
+            - "unset_this"
+
+- type: service
+  name: service1
+  version: *version
+
+  actions:
+    set_multistate:
+      type: job
+      script_type: ansible
+      script: set_multistate.yaml
+      params:
+        ansible_tags: service
+      masking:
+
+    state_changing_fail:
+      type: task
+      allow_to_terminate: true
+      masking:
+      scripts:
+        - script_type: ansible
+          script: ok.yaml
+          name: "first_step"
+          on_fail: failed1
+
+        - script_type: ansible
+          script: fail.yaml
+          name: "second_step"
+          on_fail:
+            state: not_multi_state
+            multi_state:
+              set:
+                - "multi_fail_on_last"
+              unset:
+                - "unset_this"
+
+    state_changing_success:
+      type: task
+      allow_to_terminate: true
+      scripts:
+        - script_type: ansible
+          script: ok.yaml
+          name: "first_step"
+          on_fail: failed1
+
+        - script_type: ansible
+          script: ok.yaml
+          name: "second_step"
+          on_fail: failed2
+
+      masking:
+      on_fail:
+        multi_state:
+          set:
+            - "multi_fail"
+          unset:
+            - "unset_this"
+      on_success:
+        state: multi_ok
+        multi_state:
+          set:
+            - "multi_ok"
+          unset:
+            - "unset_this"
+
+  components:
+    component11:
+      actions:
+        set_multistate:
+          type: job
+          script_type: ansible
+          script: set_multistate.yaml
+          params:
+            ansible_tags: component
+          masking:
+        state_changing_fail:
+          type: task
+          allow_to_terminate: true
+          masking:
+          scripts:
+            - script_type: ansible
+              script: ok.yaml
+              name: "first_step"
+              on_fail: failed1
+
+            - script_type: ansible
+              script: fail.yaml
+              name: "second_step"
+              on_fail:
+                state: not_multi_state
+                multi_state:
+                  set:
+                    - "multi_fail_on_last"
+                  unset:
+                    - "unset_this"
+
+        state_changing_success:
+          type: task
+          allow_to_terminate: true
+          scripts:
+            - script_type: ansible
+              script: ok.yaml
+              name: "first_step"
+              on_fail: failed1
+
+            - script_type: ansible
+              script: ok.yaml
+              name: "second_step"
+              on_fail: failed2
+
+          masking:
+          on_fail:
+            multi_state:
+              set:
+                - "multi_fail"
+              unset:
+                - "unset_this"
+          on_success:
+            state: multi_ok
+            multi_state:
+              set:
+                - "multi_ok"
+              unset:
+                - "unset_this"

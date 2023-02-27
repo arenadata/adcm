@@ -12,7 +12,6 @@
 
 """Test concerns with hosts in MM"""
 
-from typing import Tuple
 
 import allure
 import pytest
@@ -29,7 +28,7 @@ from tests.functional.tools import AnyADCMObject
 
 
 @pytest.fixture()
-def provider_host_with_concerns(sdk_client_fs) -> Tuple[Provider, Host]:
+def provider_host_with_concerns(sdk_client_fs) -> tuple[Provider, Host]:
     """Create provider and host with concerns about their configs"""
     bundle = sdk_client_fs.upload_from_fs(BUNDLES_DIR / "provider_with_issues")
     provider = bundle.provider_create("Provider with issues")
@@ -50,7 +49,9 @@ def _set_host_config(provider_host_with_concerns) -> None:
 
 @pytest.mark.usefixtures("_set_provider_config")
 def test_mm_host_with_concern_not_raising_issue_on_cluster_objects(
-    api_client, cluster_with_mm, provider_host_with_concerns
+    api_client,
+    cluster_with_mm,
+    provider_host_with_concerns,
 ):
     """
     Test that when there's a concern on host that is in MM and mapped to a cluster,
@@ -81,7 +82,9 @@ def test_mm_host_with_concern_not_raising_issue_on_cluster_objects(
 
 @pytest.mark.usefixtures("_set_host_config")
 def test_host_from_provider_with_concern_not_raising_issue_on_cluster_objects(
-    api_client, cluster_with_mm, provider_host_with_concerns
+    api_client,
+    cluster_with_mm,
+    provider_host_with_concerns,
 ):
     """
     Test that when there's a concern on provider, but not on host,
@@ -93,7 +96,7 @@ def test_host_from_provider_with_concern_not_raising_issue_on_cluster_objects(
     component = service.component()
 
     with allure.step(
-        "Add host to a cluster and check that concern from provider affects host, provider, but not cluster objects"
+        "Add host to a cluster and check that concern from provider affects host, provider, but not cluster objects",
     ):
         cluster_with_mm.host_add(host)
         # since host own config is set, provider's concern should affect the host
@@ -102,7 +105,7 @@ def test_host_from_provider_with_concern_not_raising_issue_on_cluster_objects(
         _check_no_concerns_on_cluster_objects(cluster_with_mm)
 
     with allure.step(
-        "Map component to host with a concern and check concern from provider appeared on cluster objects"
+        "Map component to host with a concern and check concern from provider appeared on cluster objects",
     ):
         cluster_with_mm.hostcomponent_set((host, component))
         _check_concern_is_presented_on_object(host, f"host {host.fqdn}")

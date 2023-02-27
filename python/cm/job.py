@@ -9,13 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=too-many-lines
 
 import copy
 import json
 import subprocess
+from collections.abc import Hashable
 from configparser import ConfigParser
 from pathlib import Path
-from typing import Any, Hashable, List, Optional, Tuple
+from typing import Any
 
 from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
@@ -77,20 +79,22 @@ from cm.models import (
     get_object_cluster,
 )
 from cm.status_api import post_event
+from cm.utils import get_env_with_venv_path
 from cm.variant import process_variant
 from django.conf import settings
 from django.db import transaction
+from django.db.models import JSONField
 from django.utils import timezone
 from rbac.roles import re_apply_policy_for_jobs
 
 
 def start_task(
     action: Action,
-    obj: ADCMEntity,
+    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
     conf: dict,
     attr: dict,
-    hostcomponent: List[HostComponent],
-    hosts: List[Host],
+    hostcomponent: list[dict],
+    hosts: list[Host],
     verbose: bool,
 ) -> TaskLog:
     if action.type not in ActionType.values:
@@ -105,7 +109,7 @@ def start_task(
     return task
 
 
-def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster, hosts: List[Host]):
+def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster, hosts: list[Host]):
     provider = None
     if obj.prototype.type == "provider":
         provider = obj
@@ -133,11 +137,11 @@ def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster, hosts:
 
 def prepare_task(
     action: Action,
-    obj: ADCMEntity,
+    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
     conf: dict,
     attr: dict,
-    hostcomponent: List[HostComponent],
-    hosts: List[Host],
+    hostcomponent: list[dict],
+    hosts: list[Host],
     verbose: bool,
 ) -> TaskLog:  # pylint: disable=too-many-locals
     cluster = get_object_cluster(obj)
@@ -189,7 +193,7 @@ def cancel_task(task: TaskLog):
     task.cancel(CTX.event)
 
 
-def get_host_object(action: Action, cluster: Cluster) -> Optional[ADCMEntity]:
+def get_host_object(action: Action, cluster: Cluster) -> ADCMEntity | None:
     obj = None
     if action.prototype.type == "service":
         obj = ClusterObject.obj.get(cluster=cluster, prototype=action.prototype)
@@ -222,7 +226,7 @@ def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster
     raise_adcm_ex("TASK_ERROR", "action is disabled")
 
 
-def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict) -> Tuple[dict, dict]:
+def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict) -> tuple[dict, dict]:
     proto = action.prototype
     spec, flat_spec, _, _ = get_prototype_config(proto, action)
     if not spec:
@@ -247,7 +251,12 @@ def add_to_dict(my_dict: dict, key: Hashable, subkey: Hashable, value: Any):
     my_dict[key][subkey] = value
 
 
-def check_action_hc(action_hc: List[dict], service: ClusterObject, component: ServiceComponent, action: Action) -> bool:
+def check_action_hc(
+    action_hc: list[dict],
+    service: ClusterObject,
+    component: ServiceComponent,
+    action: Action,
+) -> bool:
     for item in action_hc:
         if item["service"] == service and item["component"] == component:
             if item["action"] == action:
@@ -260,10 +269,10 @@ def cook_comp_key(name, subname):
     return f"{name}.{subname}"
 
 
-def cook_delta(  # pylint: disable=too-many-branches
+def cook_delta(  # pylint: disable=too-many-branches # noqa: C901
     cluster: Cluster,
-    new_hc: List[Tuple[ClusterObject, Host, ServiceComponent]],
-    action_hc: List[dict],
+    new_hc: list[tuple[ClusterObject, Host, ServiceComponent]],
+    action_hc: list[dict],
     old: dict = None,
 ) -> dict:
     def add_delta(_delta, action, _key, fqdn, _host):
@@ -313,7 +322,7 @@ def cook_delta(  # pylint: disable=too-many-branches
     return delta
 
 
-def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict]):
+def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: list[dict]):
     if not action.hostcomponentmap:
         return None, []
 
@@ -479,7 +488,7 @@ def get_actual_hc(cluster: Cluster):
     return new_hc
 
 
-def get_old_hc(saved_hostcomponent: List[dict]):
+def get_old_hc(saved_hostcomponent: list[dict]):
     if not saved_hostcomponent:
         return {}
 
@@ -524,9 +533,9 @@ def prepare_job(
     sub_action: SubAction,
     job_id: int,
     obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
-    conf: dict,
+    conf: JSONField | None,
     delta: dict,
-    hosts: List[Host],
+    hosts: JSONField | None,
     verbose: bool,
 ):
     prepare_job_config(action, sub_action, job_id, obj, conf, verbose)
@@ -567,7 +576,8 @@ def get_selector(obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostPr
 
 
 def prepare_context(
-    action: Action, obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+    action: Action,
+    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
 ) -> dict:
     selector = get_selector(obj, action)
     context = {f"{k}_id": v["id"] for k, v in selector.items()}
@@ -579,12 +589,12 @@ def prepare_context(
     return context
 
 
-def prepare_job_config(
+def prepare_job_config(  # noqa: C901
     action: Action,
     sub_action: SubAction,
     job_id: int,
     obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
-    conf: dict,
+    conf: JSONField | None,
     verbose: bool,
 ):
     # pylint: disable=too-many-branches,too-many-statements
@@ -667,7 +677,9 @@ def prepare_job_config(
         job_conf["job"]["config"] = conf
 
     file_descriptor = open(  # pylint: disable=consider-using-with
-        Path(settings.RUN_DIR, f"{job_id}", "config.json"), "w", encoding=settings.ENCODING_UTF_8
+        Path(settings.RUN_DIR, f"{job_id}", "config.json"),
+        "w",
+        encoding=settings.ENCODING_UTF_8,
     )
     json.dump(job_conf, file_descriptor, indent=3, sort_keys=True)
     file_descriptor.close()
@@ -678,10 +690,10 @@ def create_task(
     obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
     conf: dict,
     attr: dict,
-    hostcomponent: List[HostComponent],
-    hosts: List[Host],
+    hostcomponent: list[HostComponent],
+    hosts: list[Host],
     verbose: bool,
-    post_upgrade_hc: List[dict],
+    post_upgrade_hc: list[dict],
 ) -> TaskLog:
     task = TaskLog.objects.create(
         action=action,
@@ -724,7 +736,7 @@ def create_task(
     return task
 
 
-def get_state(action: Action, job: JobLog, status: str) -> Tuple[Optional[str], List[str], List[str]]:
+def get_state(action: Action, job: JobLog, status: str) -> tuple[str | None, list[str], list[str]]:
     sub_action = None
     if job and job.sub_action:
         sub_action = job.sub_action
@@ -756,8 +768,8 @@ def set_action_state(
     task: TaskLog,
     obj: ADCMEntity,
     state: str = None,
-    multi_state_set: List[str] = None,
-    multi_state_unset: List[str] = None,
+    multi_state_set: list[str] = None,
+    multi_state_unset: list[str] = None,
 ):
     if not obj:
         logger.warning("empty object for action %s of task #%s", action.name, task.pk)
@@ -809,7 +821,7 @@ def restore_hc(task: TaskLog, action: Action, status: str):
     save_hc(cluster, host_comp_list)
 
 
-def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
+def finish_task(task: TaskLog, job: JobLog | None, status: str):
     action = task.action
     obj = task.task_object
     state, multi_state_set, multi_state_unset = get_state(action, job, status)
@@ -893,19 +905,18 @@ def log_custom(job_id, name, log_format, body):
 
 def run_task(task: TaskLog, event, args: str = ""):
     err_file = open(  # pylint: disable=consider-using-with
-        Path(settings.LOG_DIR, "task_runner.err"), "a+", encoding=settings.ENCODING_UTF_8
+        Path(settings.LOG_DIR, "task_runner.err"),
+        "a+",
+        encoding=settings.ENCODING_UTF_8,
     )
     cmd = [
-        "/adcm/python/job_venv_wrapper.sh",
-        task.action.venv,
         str(Path(settings.CODE_DIR, "task_runner.py")),
         str(task.pk),
         args,
     ]
     logger.info("task run cmd: %s", " ".join(cmd))
     proc = subprocess.Popen(  # pylint: disable=consider-using-with
-        cmd,
-        stderr=err_file,
+        args=cmd, stderr=err_file, env=get_env_with_venv_path(venv=task.action.venv)
     )
     logger.info("task run #%s, python process %s", task.pk, proc.pid)
 
@@ -930,7 +941,7 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
     if mitogen:
         config_parser["defaults"]["strategy"] = "mitogen_linear"
         config_parser["defaults"]["strategy_plugins"] = str(
-            Path(settings.PYTHON_SITE_PACKAGES, "ansible_mitogen", "plugins", "strategy")
+            Path(settings.PYTHON_SITE_PACKAGES, "ansible_mitogen", "plugins", "strategy"),
         )
         config_parser["defaults"]["host_key_checking"] = "False"
 
@@ -944,7 +955,11 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
     if "jinja2_native" in params:
         config_parser["defaults"]["jinja2_native"] = str(params["jinja2_native"])
 
-    with open(Path(settings.RUN_DIR, f"{job_id}", "ansible.cfg"), "w", encoding=settings.ENCODING_UTF_8) as config_file:
+    with open(
+        Path(settings.RUN_DIR, f"{job_id}", "ansible.cfg"),
+        "w",
+        encoding=settings.ENCODING_UTF_8,
+    ) as config_file:
         config_parser.write(config_file)
 
 

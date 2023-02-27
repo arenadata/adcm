@@ -1,7 +1,7 @@
 import { Component, forwardRef, Input, OnInit } from '@angular/core';
 import { BaseFormDirective } from '../../../../shared/add-component';
 import { AbstractControl, FormGroup } from '@angular/forms';
-import { AdwpStringHandler, Entity } from '@adwp-ui/widgets';
+import { AdwpStringHandler, Entity } from '@app/adwp';
 import {
   IRbacObjectCandidateHostModel,
   IRbacObjectCandidateModel,

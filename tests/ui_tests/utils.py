@@ -14,8 +14,9 @@
 
 # pylint: disable=too-many-ancestors
 import os
+from collections.abc import Callable, Sized
 from contextlib import contextmanager
-from typing import Any, Callable, Dict, Optional, Sized, Tuple, TypeVar, Union
+from typing import Any, TypeVar
 
 import allure
 import requests
@@ -26,8 +27,8 @@ from selenium.common.exceptions import (
     StaleElementReferenceException,
 )
 from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait as WDW
+from selenium.webdriver.support import expected_conditions as EC  # noqa: N812
+from selenium.webdriver.support.ui import WebDriverWait as WDW  # noqa: N817
 
 from tests.ui_tests.app.app import ADCMTest
 
@@ -109,17 +110,14 @@ def is_not_empty(first_value: T) -> bool:
 
 
 def wait_and_assert_ui_info(
-    expected_values: Dict[
+    expected_values: dict[
         str,
-        Union[
-            Union[T, Callable[[T], bool]],
-            Tuple[T, Callable[[T, T], bool]],
-        ],
+        T | Callable[[T], bool] | tuple[T, Callable[[T, T], bool]],
     ],
-    get_info_func: Union[Callable[[Any], F]],
-    get_info_kwargs: Optional[dict] = None,
-    timeout: Union[int, float] = 5,
-    period: Union[int, float] = 0.5,
+    get_info_func: Callable[[Any], F],
+    get_info_kwargs: dict | None = None,
+    timeout: int | float = 5,
+    period: int | float = 0.5,
 ):
     """
     Wait for some information on UI to be correct.
@@ -208,8 +206,8 @@ def wait_file_is_presented(
     filename: str,
     app_fs: ADCMTest,
     dirname: os.PathLike,
-    timeout: Union[int, float] = 30,
-    period: Union[int, float] = 1,
+    timeout: int | float = 30,
+    period: int | float = 1,
 ):
     """Checks if file is presented in directory"""
     if app_fs.selenoid["host"]:

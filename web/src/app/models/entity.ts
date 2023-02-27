@@ -1,4 +1,4 @@
-import { Entity } from '@adwp-ui/widgets';
+import { Entity } from '@app/adwp';
 import { TypeName } from '@app/core/types';
 
 export interface AdcmEntity extends Entity {

@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { IColumns } from '@adwp-ui/widgets';
+import { IColumns } from '@app/adwp';
 
 import { TypeName } from '@app/core/types';
 import { IHost } from '@app/models/host';

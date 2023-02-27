@@ -17,7 +17,7 @@ import json
 from collections import OrderedDict
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import yspec.checker
 from ansible.errors import AnsibleError
@@ -113,7 +113,10 @@ def group_keys_to_flat(origin: dict, spec: dict):
     return result
 
 
-def get_default(conf, proto=None):  # pylint: disable=too-many-branches
+def get_default(  # pylint: disable=too-many-branches  # noqa: C901
+    conf: PrototypeConfig,
+    proto: Prototype | None = None,
+) -> Any:
     value = conf.default
     if conf.default == "":
         value = None
@@ -125,7 +128,11 @@ def get_default(conf, proto=None):  # pylint: disable=too-many-branches
         if conf.default:
             value = ansible_encrypt_and_format(conf.default)
     elif type_is_complex(conf.type):
-        value = json.loads(conf.default)
+        if isinstance(conf.default, str):
+            conf.default = conf.default.replace("'", '"')
+            value = json.loads(s=conf.default)
+        else:
+            value = conf.default
     elif conf.type == "integer":
         value = int(conf.default)
     elif conf.type == "float":
@@ -153,12 +160,22 @@ def get_default(conf, proto=None):  # pylint: disable=too-many-branches
     elif conf.type == "file":
         if proto:
             if conf.default:
-                value = read_file_type(proto, conf.default, proto.bundle.hash, conf.name, conf.subname)
+                value = read_bundle_file(
+                    proto=proto,
+                    fname=conf.default,
+                    pattern=proto.bundle.hash,
+                    ref=f'config key "{conf.name}/{conf.subname}" default file',
+                )
     elif conf.type == "secretfile":
         if proto:
             if conf.default:
                 value = ansible_encrypt_and_format(
-                    read_file_type(proto, conf.default, proto.bundle.hash, conf.name, conf.subname)
+                    msg=read_bundle_file(
+                        proto=proto,
+                        fname=conf.default,
+                        pattern=proto.bundle.hash,
+                        ref=f'config key "{conf.name}/{conf.subname}" default file',
+                    ),
                 )
 
     if conf.type == "secretmap" and conf.default:
@@ -172,30 +189,20 @@ def get_default(conf, proto=None):  # pylint: disable=too-many-branches
 
 
 def type_is_complex(conf_type):
-    if conf_type in ("json", "structure", "list", "map", "secretmap"):
+    if conf_type in settings.STACK_COMPLEX_FIELD_TYPES:
         return True
 
     return False
 
 
-def read_file_type(proto, default, bundle_hash, name, subname):
-    msg = f'config key "{name}/{subname}" default file'
-
-    return read_bundle_file(proto, default, bundle_hash, msg)
-
-
-def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None) -> str | None:
+def read_bundle_file(proto: Prototype, fname: str, pattern: str, ref=None) -> str | None:
     if not ref:
         ref = proto_ref(proto)
 
-    if fname[0:2] == "./":
-        path = Path(settings.BUNDLE_DIR, bundle_hash, proto.path, fname)
-    else:
-        path = Path(settings.BUNDLE_DIR, bundle_hash, fname)
-
     file_descriptor = None
+    path = Path(settings.BUNDLE_DIR, proto.path, fname)
     try:
-        file_descriptor = open(path, "r", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
+        file_descriptor = open(path, encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
     except FileNotFoundError:
         raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'{pattern} "{path}" is not found ({ref})')
     except PermissionError:
@@ -210,7 +217,7 @@ def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None) -> str | None
     return None
 
 
-def init_object_config(proto: Prototype, obj: Any) -> Optional[ObjectConfig]:
+def init_object_config(proto: Prototype, obj: Any) -> ObjectConfig | None:
     spec, _, conf, attr = get_prototype_config(proto)
     if not conf:
         return None
@@ -223,7 +230,7 @@ def init_object_config(proto: Prototype, obj: Any) -> Optional[ObjectConfig]:
     return obj_conf
 
 
-def get_prototype_config(proto: Prototype, action: Action = None) -> Tuple[dict, dict, dict, dict]:
+def get_prototype_config(proto: Prototype, action: Action = None) -> tuple[dict, dict, dict, dict]:
     spec = {}
     flat_spec = OrderedDict()
     config = {}
@@ -258,8 +265,10 @@ def make_object_config(obj: ADCMEntity, prototype: Prototype) -> None:
         obj.save()
 
 
-def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
-    obj: ADCMEntity, new_proto: Prototype, old_proto: Prototype
+def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements # noqa: C901
+    obj: ADCMEntity,
+    new_proto: Prototype,
+    old_proto: Prototype,
 ) -> None:
     # process objects without config
     if not obj.config:
@@ -423,7 +432,7 @@ def ansible_encrypt_and_format(msg):
     return f"{settings.ANSIBLE_VAULT_HEADER}\n{str(ciphertext, settings.ENCODING_UTF_8)}"
 
 
-def process_file_type(obj: Any, spec: dict, conf: dict):
+def process_file_type(obj: Any, spec: dict, conf: dict):  # noqa: C901
     # pylint: disable=too-many-branches,disable=too-many-nested-blocks
 
     for key in conf:
@@ -432,18 +441,15 @@ def process_file_type(obj: Any, spec: dict, conf: dict):
                 save_file_type(obj, key, "", conf[key])
             elif spec[key]["type"] == "secretfile":
                 if conf[key] is not None:
+                    value = conf[key]
                     if conf[key].startswith(settings.ANSIBLE_VAULT_HEADER):
                         try:
-                            ansible_decrypt(msg=conf[key])
+                            value = ansible_decrypt(msg=value)
                         except AnsibleError:
                             raise_adcm_ex(
                                 code="CONFIG_VALUE_ERROR",
                                 msg=f"Secret value must not starts with {settings.ANSIBLE_VAULT_HEADER}",
                             )
-
-                        value = conf[key]
-                    else:
-                        value = ansible_encrypt_and_format(msg=conf[key])
                 else:
                     value = None
 
@@ -454,19 +460,16 @@ def process_file_type(obj: Any, spec: dict, conf: dict):
                 if spec[key][subkey]["type"] == "file":
                     save_file_type(obj, key, subkey, conf[key][subkey])
                 elif spec[key][subkey]["type"] == "secretfile":
+                    value = conf[key][subkey]
                     if conf[key][subkey] is not None:
                         if conf[key][subkey].startswith(settings.ANSIBLE_VAULT_HEADER):
                             try:
-                                ansible_decrypt(msg=conf[key])
+                                value = ansible_decrypt(msg=value)
                             except AnsibleError:
                                 raise_adcm_ex(
                                     code="CONFIG_VALUE_ERROR",
                                     msg=f"Secret value must not starts with {settings.ANSIBLE_VAULT_HEADER}",
                                 )
-
-                            value = conf[key][subkey]
-                        else:
-                            value = ansible_encrypt_and_format(msg=conf[key][subkey])
                     else:
                         value = None
 
@@ -494,7 +497,7 @@ def is_ansible_encrypted(msg):
     return False
 
 
-def process_secret_params(spec, conf):
+def process_secret_params(spec, conf):  # noqa: C901
     for key in conf:  # pylint: disable=too-many-nested-blocks
         if "type" in spec[key]:
             if spec[key]["type"] in SECURE_PARAM_TYPES and conf[key]:
@@ -554,7 +557,11 @@ def process_secretmap(spec: dict, conf: dict) -> dict:
     return conf
 
 
-def process_config(obj, spec, old_conf):  # pylint: disable=too-many-branches
+def process_config(  # pylint: disable=too-many-branches # noqa: C901
+    obj: ADCMEntity,
+    spec: dict,
+    old_conf: dict,
+) -> dict:
     if not old_conf:
         return old_conf
 
@@ -715,11 +722,12 @@ def check_read_only(obj, specs, conf, old_conf):
 
             if flat_conf[spec] != flat_old_conf[spec]:
                 raise_adcm_ex(
-                    code="CONFIG_VALUE_ERROR", msg=f"config key {spec} of {proto_ref(obj.prototype)} is read only"
+                    code="CONFIG_VALUE_ERROR",
+                    msg=f"config key {spec} of {proto_ref(obj.prototype)} is read only",
                 )
 
 
-def restore_read_only(obj, spec, conf, old_conf):  # # pylint: disable=too-many-branches
+def restore_read_only(obj, spec, conf, old_conf):  # pylint: disable=too-many-branches # noqa: C901
     # Do not remove!
     # This patch fix old error when sometimes group config values can be lost
     # during bundle upgrade
@@ -730,7 +738,7 @@ def restore_read_only(obj, spec, conf, old_conf):  # # pylint: disable=too-many-
             old_conf[key] = {}
             for subkey in spec[key]:
                 old_conf[subkey] = get_default(
-                    dict_to_obj(spec[key][subkey], PrototypeConfig(), ("type", "default", "limits"))
+                    dict_to_obj(spec[key][subkey], PrototypeConfig(), ("type", "default", "limits")),
                 )
     # end of patch
 
@@ -768,7 +776,13 @@ def check_and_process_json_config(
         config_spec = obj.get_config_spec()
         group_keys = new_attr.get("group_keys", {})
         check_value_unselected_field(
-            current_config, new_config, current_attr, new_attr, group_keys, config_spec, obj.object
+            current_config,
+            new_config,
+            current_attr,
+            new_attr,
+            group_keys,
+            config_spec,
+            obj.object,
         )
         group = obj
         obj = group.object
@@ -865,7 +879,9 @@ def check_value_unselected_field(current_config, new_config, current_attr, new_a
         else:
             if spec[group_key]["type"] in {"list", "map", "secretmap", "string", "structure"}:
                 if config_is_ro(obj, group_key, spec[group_key]["limits"]) or check_empty_values(
-                    group_key, current_config, new_config
+                    group_key,
+                    current_config,
+                    new_config,
                 ):
                     continue
 
@@ -894,8 +910,12 @@ def check_group_keys_attr(attr, spec, group_config):
     check_agreement_group_attr(group_keys, custom_group_keys, spec)
 
 
-def check_attr(
-    proto: Prototype, obj, attr: dict, spec: dict, current_attr: dict | None = None
+def check_attr(  # noqa: C901
+    proto: Prototype,
+    obj,
+    attr: dict,
+    spec: dict,
+    current_attr: dict | None = None,
 ):  # pylint: disable=too-many-branches
     is_group_config = False
     if isinstance(obj, GroupConfig):
@@ -983,10 +1003,15 @@ def sub_key_is_required(key: str, attr: dict, flat_spec: dict, spec: dict, obj: 
     return False
 
 
-def check_config_spec(
-    proto: Prototype, obj: ADCMEntity | Action, spec: dict, flat_spec: dict, conf: dict, attr: dict = None
+def check_config_spec(  # noqa: C901
+    proto: Prototype,
+    obj: ADCMEntity | Action,
+    spec: dict,
+    flat_spec: dict,
+    conf: dict,
+    attr: dict = None,
 ) -> None:
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches,too-many-statements
     ref = proto_ref(proto)
     if isinstance(conf, (float, int)):
         raise_adcm_ex(code="JSON_ERROR", msg="config should not be just one int or float")
@@ -1001,7 +1026,8 @@ def check_config_spec(
         if "type" in spec[key] and spec[key]["type"] != "group":
             if isinstance(conf[key], dict) and not type_is_complex(spec[key]["type"]):
                 raise_adcm_ex(
-                    code="CONFIG_KEY_ERROR", msg=f'Key "{key}" in input config should not have any subkeys ({ref})'
+                    code="CONFIG_KEY_ERROR",
+                    msg=f'Key "{key}" in input config should not have any subkeys ({ref})',
                 )
 
     for key in spec:
@@ -1062,8 +1088,14 @@ def process_config_spec(obj: ADCMEntity, spec: dict, new_config: dict, current_c
     return conf
 
 
-def check_config_type(
-    proto, key, subkey, spec, value, default=False, inactive=False
+def check_config_type(  # noqa: C901
+    proto,
+    key,
+    subkey,
+    spec,
+    value,
+    default=False,
+    inactive=False,
 ):  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
     ref = proto_ref(proto)
     if default:
@@ -1136,8 +1168,6 @@ def check_config_type(
             if len(value) > 2048:
                 raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl1.format("is too long"))
 
-            read_file_type(proto, value, default, key, subkey)
-
     if spec["type"] == "structure":
         schema = spec["limits"]["yspec"]
         try:
@@ -1194,7 +1224,7 @@ def check_config_type(
                     raise_adcm_ex("CONFIG_VALUE_ERROR", tmpl2.format(msg))
 
 
-def get_main_info(obj: Optional[ADCMEntity]) -> Optional[str]:
+def get_main_info(obj: ADCMEntity | None) -> str | None:
     """Return __main_info for object"""
     if obj.config is None:
         return None

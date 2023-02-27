@@ -13,7 +13,6 @@
 """Check that ADCM works correctly after upgrade"""
 
 import threading
-from typing import Tuple
 
 import allure
 import pytest
@@ -67,7 +66,7 @@ def test_upgrade_adcm(
     launcher,
     sdk_client_fs: ADCMClient,
     adcm_api_credentials: dict,
-    adcm_image_tags: Tuple[str, str],
+    adcm_image_tags: tuple[str, str],
 ):
     """
     Login to ADCM (previous version)
@@ -97,7 +96,11 @@ def test_upgrade_adcm(
         ):
             with allure.step(f'Check message "{message}" is presented'):
                 wait_until_step_succeeds(
-                    wait_info_popup_contains, page=intro_page, text=message, timeout=30, period=0.3
+                    wait_info_popup_contains,
+                    page=intro_page,
+                    text=message,
+                    timeout=30,
+                    period=0.3,
                 )
     with allure.step("Wait for upgrade to finish"):
         upgrade_thread.join(timeout=60)

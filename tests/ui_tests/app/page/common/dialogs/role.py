@@ -55,7 +55,9 @@ class _PermissionsPick(AutoChildElement):
 class _Locators(Dialog):
     name = Locator(By.CSS_SELECTOR, "adwp-input[controlname='display_name'] input", Descriptor.INPUT | Descriptor.TEXT)
     description = Locator(
-        By.CSS_SELECTOR, "adwp-input[controlname='description'] input", Descriptor.INPUT | Descriptor.TEXT
+        By.CSS_SELECTOR,
+        "adwp-input[controlname='description'] input",
+        Descriptor.INPUT | Descriptor.TEXT,
     )
     field_error = Locator(By.TAG_NAME, "mat-error", Descriptor.SERVICE)
     cancel = Locator(By.XPATH, "//button[./span[contains(text(), 'Cancel')]]", Descriptor.BUTTON)

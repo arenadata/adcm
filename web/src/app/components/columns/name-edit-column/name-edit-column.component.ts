@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { AdwpCellComponent } from "@adwp-ui/widgets";
+import { AdwpCellComponent } from "@app/adwp";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { DialogComponent } from "@app/shared/components";
 import { NameEditColumnFieldComponent } from "@app/components/columns/name-edit-column/name-edit-column-field.component";

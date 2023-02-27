@@ -12,7 +12,6 @@
 
 """Test designed to check LDAP filters"""
 
-from typing import Tuple
 
 import allure
 import pytest
@@ -42,7 +41,7 @@ GroupInfo = dict
 
 
 @pytest.fixture()
-def two_adcm_groups_with_users(sdk_client_fs) -> Tuple[Group, User, Group, User]:
+def two_adcm_groups_with_users(sdk_client_fs) -> tuple[Group, User, Group, User]:
     """Method to create ADCM users ADCM groups and add users to groups"""
     adcm_user_1 = sdk_client_fs.user_create("first-adcm-user", random_string(12))
     adcm_user_2 = sdk_client_fs.user_create("second-adcm-user", random_string(12))
@@ -54,7 +53,7 @@ def two_adcm_groups_with_users(sdk_client_fs) -> Tuple[Group, User, Group, User]
 
 
 @pytest.fixture()
-def two_ldap_groups_with_users(ldap_ad, ldap_basic_ous) -> Tuple[GroupInfo, UserInfo, GroupInfo, UserInfo]:
+def two_ldap_groups_with_users(ldap_ad, ldap_basic_ous) -> tuple[GroupInfo, UserInfo, GroupInfo, UserInfo]:
     """Create two ldap users and groups with a user in each one"""
     groups_ou, users_ou = ldap_basic_ous
     group_1 = {"name": "group-with-users-1"}
