@@ -146,6 +146,7 @@ class HostList(PermissionListMixin, PaginatedView):
         "exclude_group_config__in",
     )
     ordering_fields = (
+        "id",
         "fqdn",
         "state",
         "provider__name",
