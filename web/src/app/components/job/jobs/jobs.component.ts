@@ -31,6 +31,8 @@ import { JobNameComponent } from '@app/components/columns/job-name/job-name.comp
 })
 export class JobsComponent<T extends Task> implements AdwpComponentHolder<Task> {
 
+  sortDirection = 'ASC';
+
   columns: IColumns<Job> = [
     {
       type: 'component',
@@ -68,12 +70,22 @@ export class JobsComponent<T extends Task> implements AdwpComponentHolder<Task> 
   private ownRow: Task;
   @Input() set row(row: Task) {
     this.ownRow = row;
-    this.ownData = { results: this.ownRow?.jobs, count: 0 };
+    this.ownData = { results: this.sortJobs(this.ownRow?.jobs), count: 0 };
   }
   get row(): Task {
     return this.ownRow;
   }
 
   @Input() expandedTask: BehaviorSubject<Task>;
+
+  sortJobs(jobs: Job[]) {
+    if (this.sortDirection === 'ASC'){
+      return jobs.sort((cur: Job , next: Job) => cur.id  - next.id)
+    }
+
+    if (this.sortDirection === 'DESC'){
+      return jobs.sort((cur: Job , next: Job) => next.id - cur.id)
+    }
+  }
 
 }

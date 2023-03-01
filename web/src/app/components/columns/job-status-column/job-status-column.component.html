@@ -1,4 +1,4 @@
-<ng-container *ngIf="row.status === 'running' && row.terminatable; else done">
+<ng-container *ngIf="row.status === 'running'; else done">
   <button
     class="stop-btn"
     mat-raised-button
@@ -16,6 +16,7 @@
 <ng-template #done>
   <mat-icon
     [class]="row.status"
+    [class.icon-locked]="row.status === 'running'"
     [matTooltip]="row.status"
   >
     {{ iconDisplay[row.status] }}
