@@ -518,7 +518,7 @@ def get_license(proto: Prototype) -> str | None:
     if not isinstance(proto, Prototype):
         raise_adcm_ex("LICENSE_ERROR")
 
-    return read_bundle_file(proto=proto, fname=proto.license_path, pattern="license file")
+    return read_bundle_file(proto=proto, fname=proto.license_path, bundle_hash=proto.bundle.hash, ref="license file")
 
 
 def accept_license(proto: Prototype) -> None:
