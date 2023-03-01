@@ -240,7 +240,7 @@ def get_license_hash(proto, conf, bundle_hash):
     if "license" not in conf:
         return None
 
-    body = read_bundle_file(proto, conf["license"], bundle_hash, "license file")
+    body = read_bundle_file(proto=proto, fname=conf["license"], bundle_hash=bundle_hash, ref="license file")
     sha1 = hashlib.sha256()
     sha1.update(body.encode(settings.ENCODING_UTF_8))
 
@@ -729,7 +729,7 @@ def get_yspec(proto: StagePrototype | Prototype, bundle_hash: str, conf: dict, n
     yspec_body = read_bundle_file(
         proto=proto,
         fname=conf["yspec"],
-        pattern=bundle_hash,
+        bundle_hash=bundle_hash,
         ref=f'yspec file of config key "{name}/{subname}":',
     )
     try:

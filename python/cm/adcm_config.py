@@ -163,7 +163,7 @@ def get_default(  # pylint: disable=too-many-branches  # noqa: C901
                 value = read_bundle_file(
                     proto=proto,
                     fname=conf.default,
-                    pattern=proto.bundle.hash,
+                    bundle_hash=proto.bundle.hash,
                     ref=f'config key "{conf.name}/{conf.subname}" default file',
                 )
     elif conf.type == "secretfile":
@@ -173,7 +173,7 @@ def get_default(  # pylint: disable=too-many-branches  # noqa: C901
                     msg=read_bundle_file(
                         proto=proto,
                         fname=conf.default,
-                        pattern=proto.bundle.hash,
+                        bundle_hash=proto.bundle.hash,
                         ref=f'config key "{conf.name}/{conf.subname}" default file',
                     ),
                 )
@@ -195,7 +195,7 @@ def type_is_complex(conf_type):
     return False
 
 
-def read_bundle_file(proto: Prototype, fname: str, pattern: str, ref=None) -> str | None:
+def read_bundle_file(proto: Prototype | StagePrototype, fname: str, bundle_hash: str, ref=None) -> str | None:
     if not ref:
         ref = proto_ref(proto)
 
@@ -204,14 +204,14 @@ def read_bundle_file(proto: Prototype, fname: str, pattern: str, ref=None) -> st
     if fname[0:2] == "./":
         path = Path(settings.BUNDLE_DIR, proto.path, fname)
     else:
-        path = Path(settings.BUNDLE_DIR, proto.bundle.hash, fname)
+        path = Path(settings.BUNDLE_DIR, bundle_hash, fname)
 
     try:
         file_descriptor = open(path, encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
     except FileNotFoundError:
-        raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'{pattern} "{path}" is not found ({ref})')
+        raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'{bundle_hash} "{path}" is not found ({ref})')
     except PermissionError:
-        raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'{pattern} "{path}" can not be open ({ref})')
+        raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'{bundle_hash} "{path}" can not be open ({ref})')
 
     if file_descriptor:
         body = file_descriptor.read()
