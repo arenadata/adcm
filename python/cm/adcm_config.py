@@ -200,7 +200,12 @@ def read_bundle_file(proto: Prototype, fname: str, pattern: str, ref=None) -> st
         ref = proto_ref(proto)
 
     file_descriptor = None
-    path = Path(settings.BUNDLE_DIR, proto.path, fname)
+
+    if fname[0:2] == "./":
+        path = Path(settings.BUNDLE_DIR, proto.path, fname)
+    else:
+        path = Path(settings.BUNDLE_DIR, proto.bundle.hash, fname)
+
     try:
         file_descriptor = open(path, encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
     except FileNotFoundError:
