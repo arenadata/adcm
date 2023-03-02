@@ -100,7 +100,11 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "csp.middleware.CSPMiddleware",
 ]
+
+CSP_DEFAULT_SRC = ["'none'"]
+CSP_FRAME_ANCESTORS = ["'none'"]
 
 ROOT_URLCONF = "adcm.urls"
 
