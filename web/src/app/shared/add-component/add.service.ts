@@ -20,7 +20,7 @@ import { catchError, concatAll, concatMap, filter, map, switchMap, tap } from 'r
 import { StackInfo, StackService } from '@app/core/services';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ApiService } from '@app/core/api';
-import { Host, Prototype, ServicePrototype, StackBase, TypeName } from '@app/core/types';
+import {Host, License, Prototype, ServicePrototype, StackBase, TypeName} from '@app/core/types';
 import { DialogComponent } from '@app/shared/components/dialog.component';
 import { GenName } from './naming';
 import { MainService } from '@app/shared/configuration/main/main.service';
@@ -170,13 +170,12 @@ export class AddService implements IAddService {
     return from(services)
       .pipe(
         tap((service) => serviceObj[service.prototype_id] = { service_name: service.service_name, license: service.license }),
-        concatMap((service) => fetch(`/api/v1/stack/prototype/${service.prototype_id}/license/`)),
-        switchMap((response) => response.json()),
+        concatMap((service) => this.api.get<License>(`/api/v1/stack/prototype/${service.prototype_id}/license/`).pipe()),
         concatMap((result) => {
           const prototype_id = result.accept.substring(
             result.accept.lastIndexOf("prototype/") + 10,
             result.accept.indexOf("/license")
-          );
+          ) as unknown as number;
 
           if (serviceObj[prototype_id].license !== 'absent') {
             return this.dialog
