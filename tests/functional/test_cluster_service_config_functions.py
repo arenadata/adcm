@@ -335,6 +335,7 @@ class TestClusterConfig:
         with allure.step("Check new config"):
             assert cluster.config() == expected
 
+    @pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3524")
     def test_create_new_config_version_with_other_parameters(self, cluster: Cluster):
         """Test create new cluster config with many parameters"""
         cfg = {"required": 99, "str-key": random_string()}

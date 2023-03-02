@@ -122,7 +122,7 @@ def pytest_runtest_setup(item: Function):
 def pytest_collection_modifyitems(session, config, items):  # pylint: disable=unused-argument
     """Run tests with id "adcm_with_dummy_data" after everything else"""
 
-    items.sort(key=lambda x: "adcm_with_dummy_data" in x.name)
+    items.sort(key=lambda x: x.name)
 
 
 def pytest_addoption(parser):
