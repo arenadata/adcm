@@ -17,8 +17,8 @@ Test that granting any permission on object allows user to:
 """
 
 import os.path
+from collections.abc import Callable, Iterable
 from contextlib import contextmanager
-from typing import Callable, Dict, Iterable, List, Set, Union
 
 import allure
 import pytest
@@ -41,7 +41,7 @@ from tests.functional.rbac.action_role_utils import (
     create_action_policy,
 )
 from tests.functional.rbac.conftest import DATA_DIR
-from tests.functional.rbac.conftest import BusinessRoles as BR
+from tests.functional.rbac.conftest import BusinessRoles as BR  # noqa: N817
 from tests.functional.rbac.conftest import (
     RbacRoles,
     SDKClients,
@@ -77,11 +77,11 @@ class TestAccessToBasicObjects:
         not_viewable_objects = (component, provider, host) + second_objects
         cluster_and_service = (cluster, service)
 
-        for business_role in (BR.VIEW_SERVICE_CONFIGURATIONS, BR.EDIT_SSERVICE_CONFIGURATIONS, BR.VIEW_IMPORTS):
+        for business_role in (BR.VIEW_SERVICE_CONFIGURATIONS, BR.EDIT_SERVICE_CONFIGURATIONS, BR.VIEW_IMPORTS):
             objects_to_check = ", ".join(map(lower_class_name, cluster_and_service))
             with allure.step(
                 f'Check that granting "{business_role.value.role_name}" role to service '
-                f"gives view access to: {objects_to_check}"
+                f"gives view access to: {objects_to_check}",
             ):
                 check_objects_are_not_viewable(clients.user, all_objects)
                 with granted_policy(clients.admin, business_role, service, user):
@@ -101,7 +101,7 @@ class TestAccessToBasicObjects:
         for business_role in (BR.VIEW_COMPONENT_CONFIGURATIONS, BR.EDIT_COMPONENT_CONFIGURATIONS):
             with allure.step(
                 f'Check that granting "{business_role.value.role_name}" role to component '
-                'gives access to "view" cluster'
+                'gives access to "view" cluster',
             ):
                 check_objects_are_not_viewable(clients.user, all_objects)
                 with granted_policy(clients.admin, business_role, component, user):
@@ -182,7 +182,7 @@ class TestActionBasedAccess:
 
         for adcm_object in objects:
             with allure.step(
-                f"Add permission to run action on {adcm_object.__class__.__name__} and check if it became visible"
+                f"Add permission to run action on {adcm_object.__class__.__name__} and check if it became visible",
             ):
                 check_objects_are_not_viewable(clients.user, all_objects)
                 policy = create_action_policy(
@@ -193,7 +193,8 @@ class TestActionBasedAccess:
                 )
                 check_objects_are_viewable(clients.user, [adcm_object])
                 check_objects_are_not_viewable(
-                    clients.user, all_objects - self._get_object_and_parents_from_objects(adcm_object, all_objects)
+                    clients.user,
+                    all_objects - self._get_object_and_parents_from_objects(adcm_object, all_objects),
                 )
                 delete_policy(policy)
                 check_objects_are_not_viewable(clients.user, all_objects)
@@ -207,12 +208,12 @@ class TestActionBasedAccess:
             parent = next(obj for obj in objects if isinstance(obj, Cluster) and obj.id == adcm_object.cluster_id)
             return {adcm_object, parent}
         if isinstance(adcm_object, Component):
-            parents = set(
+            parents = {
                 obj
                 for obj in objects
                 if (isinstance(obj, Service) and obj.id == adcm_object.service_id)
                 or (isinstance(obj, Cluster) and obj.id == adcm_object.cluster_id)
-            )
+            }
             return parents | {adcm_object}
         return {adcm_object}
 
@@ -286,7 +287,7 @@ class TestAccessForJobsAndLogs:
         return provider
 
     @pytest.fixture()
-    def finished_tasks(self, cluster, provider) -> List[Task]:
+    def finished_tasks(self, cluster, provider) -> list[Task]:
         """Bunch of finished tasks"""
         tasks = []
         service = cluster.service()
@@ -297,7 +298,7 @@ class TestAccessForJobsAndLogs:
         return tasks
 
     @pytest.fixture(params=["user", "group"], ids=["with_user", "with_group"])
-    def user_or_group(self, request, user, clients) -> Dict[str, Union[User, Group]]:
+    def user_or_group(self, request, user, clients) -> dict[str, User | Group]:
         """Return user or group"""
 
         if request.param == "user":
@@ -322,7 +323,7 @@ class TestAccessForJobsAndLogs:
         self.check_no_access_granted_for_tasks(clients.user, finished_tasks)
         for adcm_object in (cluster, service, service.component(), provider, provider.host()):
             with allure.step(
-                f'Create policy for running action "{self.MULTIJOB_ACTION}" on {adcm_object.__class__.__name__}'
+                f'Create policy for running action "{self.MULTIJOB_ACTION}" on {adcm_object.__class__.__name__}',
             ):
                 policy = create_action_policy(
                     clients.admin,
@@ -345,7 +346,10 @@ class TestAccessForJobsAndLogs:
 
     @pytest.mark.extra_rbac()
     def test_access_to_tasks_on_service_add_remove(
-        self, user_or_group: dict, cluster_wo_service: Cluster, clients: SDKClients
+        self,
+        user_or_group: dict,
+        cluster_wo_service: Cluster,
+        clients: SDKClients,
     ):
         """
         Test that service add/remove doesn't break permission to view task objects:
@@ -380,7 +384,11 @@ class TestAccessForJobsAndLogs:
 
     @pytest.mark.extra_rbac()
     def test_access_to_tasks_on_cluster_host_add_remove(
-        self, user_or_group: Callable, cluster: Cluster, provider: Provider, clients: SDKClients
+        self,
+        user_or_group: Callable,
+        cluster: Cluster,
+        provider: Provider,
+        clients: SDKClients,
     ):
         """
         Test that access to task objects is correct after host add/remove from cluster
@@ -428,14 +436,16 @@ class TestAccessForJobsAndLogs:
             second_host_task = _run_and_wait(host, self.REGULAR_ACTION)
             second_component_task = _run_and_wait(component, self.REGULAR_ACTION)
             self.check_access_granted_for_tasks(
-                clients.user, [host_task, component_task, second_host_task, second_component_task]
+                clients.user,
+                [host_task, component_task, second_host_task, second_component_task],
             )
         with allure.step("Change HC map and check access to task objects"):
             second_host = provider.host_create("second-host")
             cluster.host_add(second_host)
             cluster.hostcomponent_set((second_host, component))
             self.check_access_granted_for_tasks(
-                clients.user, [host_task, component_task, second_host_task, second_component_task]
+                clients.user,
+                [host_task, component_task, second_host_task, second_component_task],
             )
 
     @pytest.mark.extra_rbac()
@@ -445,7 +455,10 @@ class TestAccessForJobsAndLogs:
         """
         cluster = cluster_for_upgrade
         with granted_policy(
-            clients.admin, clients.admin.role(name=RbacRoles.CLUSTER_ADMINISTRATOR.value), cluster, user
+            clients.admin,
+            clients.admin.role(name=RbacRoles.CLUSTER_ADMINISTRATOR.value),
+            cluster,
+            user,
         ):
             with allure.step("Run actions and check task objects are available"):
                 tasks = [_run_and_wait(cluster, action.display_name) for action in cluster.action_list()]
@@ -467,7 +480,7 @@ class TestAccessForJobsAndLogs:
 
         with allure.step(
             f"Check role {RbacRoles.CLUSTER_ADMINISTRATOR.value} grants access to task objects of "
-            "cluster, service, component and host"
+            "cluster, service, component and host",
         ):
             role = clients.admin.role(name=RbacRoles.CLUSTER_ADMINISTRATOR.value)
             cluster.host_add(host)
@@ -478,7 +491,8 @@ class TestAccessForJobsAndLogs:
             cluster.host_delete(host)
 
         with allure.step(
-            f"Check role {RbacRoles.SERVICE_ADMINISTRATOR.value} grants access to task objects of service and component"
+            f"Check role {RbacRoles.SERVICE_ADMINISTRATOR.value} "
+            f"grants access to task objects of service and component",
         ):
             role = clients.admin.role(name=RbacRoles.SERVICE_ADMINISTRATOR.value)
             with granted_policy(clients.admin, role, service, user):
@@ -487,7 +501,7 @@ class TestAccessForJobsAndLogs:
             self.check_no_access_granted_for_tasks(clients.user, tasks)
 
         with allure.step(
-            f"Check role {RbacRoles.PROVIDER_ADMINISTRATOR.value} grants access to task objects of provider and host"
+            f"Check role {RbacRoles.PROVIDER_ADMINISTRATOR.value} grants access to task objects of provider and host",
         ):
             role = clients.admin.role(name=RbacRoles.PROVIDER_ADMINISTRATOR.value)
             with granted_policy(clients.admin, role, provider, user):
@@ -522,7 +536,7 @@ class TestAccessForJobsAndLogs:
         with allure.step("Check that user have access for both tasks"):
             self.check_access_granted_for_tasks(clients.user, [regular_task, multijob_task])
         with allure.step(
-            'Delete policy on "multijob" and check that user now have access right only on "regular" task'
+            'Delete policy on "multijob" and check that user now have access right only on "regular" task',
         ):
             delete_policy(multijob_policy)
             self.check_access_granted_for_tasks(clients.user, [regular_task])
@@ -552,11 +566,14 @@ class TestAccessForJobsAndLogs:
                     _expect_not_found(api, job, "Job object should be available directly via client")
                     log = job.log()
                     _expect_not_found(
-                        api, log, "Log object should be available directly via client", path_args={"job_pk": job.id}
+                        api,
+                        log,
+                        "Log object should be available directly via client",
+                        path_args={"job_pk": job.id},
                     )
 
 
-def _get_objects_id(get_objects_list: Callable) -> Set[int]:
+def _get_objects_id(get_objects_list: Callable) -> set[int]:
     return {obj.id for obj in get_objects_list()}
 
 
@@ -585,7 +602,8 @@ def check_objects_are_viewable(user_client: ADCMClient, objects):
                     adcm_object.id in available_objects_ids
                 ), f'Object "{object_represent}" should be listed in the list of {object_type_name}s'
                 with catch_failed(
-                    ObjectNotFound, f'Object "{object_represent}" should be available directly via client'
+                    ObjectNotFound,
+                    f'Object "{object_represent}" should be available directly via client',
                 ):
                     get_as_client_object(api, adcm_object)
 
@@ -605,7 +623,9 @@ def check_objects_are_not_viewable(user_client: ADCMClient, objects):
                     adcm_object.id not in available_objects_ids
                 ), f'Object "{object_represent}" should not be listed in the list of {object_type_name}s'
                 _expect_not_found(
-                    api, adcm_object, f'Object "{object_represent}" should not be available directly via client'
+                    api,
+                    adcm_object,
+                    f'Object "{object_represent}" should not be available directly via client',
                 )
 
 

@@ -16,7 +16,7 @@ Test cases that include two ADCM instances and their interaction
 
 # pylint: disable=redefined-outer-name
 
-from typing import Iterable, Set, Tuple
+from collections.abc import Iterable
 
 import allure
 import pytest
@@ -110,8 +110,11 @@ def test_export_cluster_from_another_adcm(adcm_fs, extra_adcm_fs, sdk_client_fs,
 
 @allure.step("Import cluster from one ADCM to another")
 def import_cluster_to_second_adcm(
-    cluster_id: int, export_from_adcm: ADCM, import_to_adcm: ADCM, second_adcm_sdk: ADCMClient
-) -> Tuple[Cluster, Provider]:
+    cluster_id: int,
+    export_from_adcm: ADCM,
+    import_to_adcm: ADCM,
+    second_adcm_sdk: ADCMClient,
+) -> tuple[Cluster, Provider]:
     """Import cluster from one ADCM to another and return cluster and provider from "new" ADCM"""
     password = "unbreakablepassword"
     path_to_dump = "/adcm/data/cluster_dump"
@@ -137,7 +140,7 @@ def set_hc_map(cluster: Cluster, provider: Provider):
     hosts = [cluster.host_add(provider.host_create(f"host-{i}")) for i in range(3)]
     host_1, host_2, *_ = hosts
     provider.host_create("free-host")
-    component_1, component_2, *_ = [s.component() for s in cluster.service_list()]
+    component_1, component_2, *_ = (s.component() for s in cluster.service_list())
     return _clear_hc_map(cluster.hostcomponent_set((host_1, component_1), (host_2, component_2)))
 
 
@@ -205,5 +208,5 @@ def _check_secrets(cluster):
     run_cluster_action_and_assert_result(cluster, "check_secrets")
 
 
-def _clear_hc_map(raw_hc) -> Set[str]:
+def _clear_hc_map(raw_hc) -> set[str]:
     return {(hc["host"], hc["service_name"], hc["component"]) for hc in raw_hc}

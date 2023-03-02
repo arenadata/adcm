@@ -34,13 +34,19 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
         self.service_1 = ClusterObject.objects.create(cluster=self.cluster, prototype=self.sp_1)
         self.service_2 = ClusterObject.objects.create(cluster=self.cluster, prototype=self.sp_2)
         self.component_11 = ServiceComponent.objects.create(
-            cluster=self.cluster, service=self.service_1, prototype=self.cop_11
+            cluster=self.cluster,
+            service=self.service_1,
+            prototype=self.cop_11,
         )
         self.component_12 = ServiceComponent.objects.create(
-            cluster=self.cluster, service=self.service_1, prototype=self.cop_12
+            cluster=self.cluster,
+            service=self.service_1,
+            prototype=self.cop_12,
         )
         self.component_21 = ServiceComponent.objects.create(
-            cluster=self.cluster, service=self.service_2, prototype=self.cop_21
+            cluster=self.cluster,
+            service=self.service_2,
+            prototype=self.cop_21,
         )
 
     def get_hosts_and_provider(self):
@@ -409,7 +415,7 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
                     "service_id": self.service_1.id,
                     "component_id": self.component_11.id,
                     "host_id": host1.id,
-                }
+                },
             ],
         )
 
@@ -449,7 +455,7 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
                     "service_id": self.service_1.id,
                     "component_id": self.component_11.id,
                     "host_id": host1.id,
-                }
+                },
             ],
         )
         policy = Policy.objects.create(role=self.object_role_custom_perm_service_component_host())

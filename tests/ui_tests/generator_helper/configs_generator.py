@@ -15,7 +15,6 @@
 
 import os
 import tempfile
-from typing import Optional
 
 import allure
 import pytest
@@ -97,8 +96,8 @@ def generate_configs(
     default: bool = True,
     required: bool = True,
     read_only: bool = True,
-    config_group_customization: Optional[bool] = True,
-    group_customization: Optional[bool] = True,
+    config_group_customization: bool | None = True,
+    group_customization: bool | None = True,
 ) -> tuple:
     """Generate ADCM config dictionaries for fields"""
 
@@ -146,7 +145,7 @@ def generate_configs(
     config_dict["config"] = [field_config]
     config = [config_dict]
     expected_result = generate_config_expected_result(data)
-    return (config, expected_result)
+    return config, expected_result
 
 
 def prepare_config(config, *, enforce_file: bool = False):
@@ -226,9 +225,9 @@ def generate_group_configs(
     read_only: bool = True,
     field_invisible: bool = True,
     field_advanced: bool = True,
-    config_group_customization: Optional[bool] = True,
-    group_customization: Optional[bool] = True,
-    field_customization: Optional[bool] = True,
+    config_group_customization: bool | None = True,
+    group_customization: bool | None = True,
+    field_customization: bool | None = True,
 ) -> tuple:
     """Generate ADCM config dictionaries for groups"""
 

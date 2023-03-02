@@ -40,7 +40,11 @@ def get_component_queryset(queryset, user, kwargs):
     if "cluster_id" in kwargs:
         cluster = get_object_for_user(user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"])
         service = get_object_for_user(
-            user, "cm.view_clusterobject", ClusterObject, cluster=cluster, id=kwargs["service_id"]
+            user,
+            "cm.view_clusterobject",
+            ClusterObject,
+            cluster=cluster,
+            id=kwargs["service_id"],
         )
         queryset = queryset.filter(cluster=cluster, service=service)
     elif "service_id" in kwargs:
@@ -90,7 +94,10 @@ class ComponentMaintenanceModeView(GenericUIView):
     @audit
     def post(self, request: Request, **kwargs) -> Response:
         component = get_object_for_user(
-            request.user, "cm.view_servicecomponent", ServiceComponent, id=kwargs["component_id"]
+            request.user,
+            "cm.view_servicecomponent",
+            ServiceComponent,
+            id=kwargs["component_id"],
         )
         # pylint: disable=protected-access
         check_custom_perm(request.user, "change_maintenance_mode", component._meta.model_name, component)
@@ -109,7 +116,7 @@ class StatusList(GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = ComponentStatusSerializer
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         queryset = get_component_queryset(ServiceComponent.objects.all(), request.user, kwargs)
         component = get_object_for_user(request.user, "cm.view_servicecomponent", queryset, id=kwargs["component_id"])
         if self._is_for_ui():

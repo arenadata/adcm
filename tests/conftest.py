@@ -17,8 +17,8 @@ import os
 import pathlib
 import sys
 import tarfile
+from collections.abc import Generator
 from pathlib import PosixPath
-from typing import Generator, List, Optional, Tuple, Union
 
 import allure
 import ldap
@@ -61,7 +61,7 @@ DUMMY_CLUSTER_BUNDLE = [
         "description": "community description",
         "version": "1.5",
         "edition": "community",
-    }
+    },
 ]
 DUMMY_ACTION = {
     "dummy_action": {
@@ -69,7 +69,7 @@ DUMMY_ACTION = {
         "script": "./actions.yaml",
         "script_type": "ansible",
         "states": {"available": "any"},
-    }
+    },
 }
 
 CHROME_PARAM = pytest.param("Chrome")
@@ -81,7 +81,7 @@ INCLUDE_FIREFOX_MARK = "include_firefox"
 TEST_USER_CREDENTIALS = "test_user", "password"
 
 
-def _marker_in_node(mark: str, node: Union[FunctionDefinition, Module]) -> bool:
+def _marker_in_node(mark: str, node: FunctionDefinition | Module) -> bool:
     """Check if mark is in own_markers of a node"""
     return any(marker.name == mark for marker in node.own_markers)
 
@@ -119,8 +119,9 @@ def pytest_runtest_setup(item: Function):
 
 
 @pytest.hookimpl(trylast=True)
-def pytest_collection_modifyitems(session, config, items):
+def pytest_collection_modifyitems(session, config, items):  # pylint: disable=unused-argument
     """Run tests with id "adcm_with_dummy_data" after everything else"""
+
     items.sort(key=lambda x: "adcm_with_dummy_data" in x.name)
 
 
@@ -158,7 +159,7 @@ def _override_allure_test_parameters(item: Function):
         test_result.parameters = [Parameter(name="ID", value=item.callspec.id)]
 
 
-def _get_listener_by_item_if_present(item: Function) -> Optional[AllureListener]:
+def _get_listener_by_item_if_present(item: Function) -> AllureListener | None:
     """
     Find AllureListener instance in pytest pluginmanager
     """
@@ -180,7 +181,8 @@ def _get_listener_by_item_if_present(item: Function) -> Optional[AllureListener]
 @pytest.fixture()
 def api_client(adcm_fs, adcm_api_credentials) -> APIClient:
     return APIClient(
-        adcm_fs.url, {"username": adcm_api_credentials["user"], "password": adcm_api_credentials["password"]}
+        adcm_fs.url,
+        {"username": adcm_api_credentials["user"], "password": adcm_api_credentials["password"]},
     )
 
 
@@ -231,7 +233,7 @@ def _pack_bundle(stack_dir, archive_dir):
 
 
 @pytest.fixture()
-def bundle_archives(request, tmp_path) -> List[str]:
+def bundle_archives(request, tmp_path) -> list[str]:
     """
     Prepare multiple bundles as in bundle_archive fixture
     """
@@ -239,7 +241,7 @@ def bundle_archives(request, tmp_path) -> List[str]:
 
 
 @pytest.fixture(params=[[DUMMY_CLUSTER_BUNDLE]])
-def create_bundle_archives(request, tmp_path: PosixPath) -> List[str]:
+def create_bundle_archives(request, tmp_path: PosixPath) -> list[str]:
     """
     Create dummy bundle archives to test pagination
     It no license required in archive type of params should be List[List[dict]]
@@ -277,7 +279,7 @@ def create_bundle_archives(request, tmp_path: PosixPath) -> List[str]:
 
 
 @pytest.fixture(scope="session")
-def adcm_image_tags(cmd_opts) -> Tuple[str, str]:
+def adcm_image_tags(cmd_opts) -> tuple[str, str]:
     """Get tag parts of --adcm-image argument (split by ":")"""
     if not cmd_opts.adcm_image:
         pytest.fail("CLI parameter adcm_image should be provided")
@@ -295,9 +297,11 @@ def user(sdk_client_fs) -> User:
 
 
 @pytest.fixture()
-def user_sdk(user, adcm_fs) -> ADCMClient:
+def user_sdk(user, adcm_fs) -> ADCMClient:  # pylint: disable=unused-argument
     """Returns ADCMClient object from adcm_client with testing user"""
+
     username, password = TEST_USER_CREDENTIALS
+
     return ADCMClient(url=adcm_fs.url, user=username, password=password)
 
 
@@ -313,7 +317,8 @@ async def adcm_ws(sdk_client_fs, adcm_fs) -> ADCMWebsocket:
     """
     addr = f"{adcm_fs.ip}:{adcm_fs.port}"
     async with websockets.client.connect(
-        uri=f"ws://{addr}/ws/event/", subprotocols=["adcm", sdk_client_fs.api_token()]
+        uri=f"ws://{addr}/ws/event/",
+        subprotocols=["adcm", sdk_client_fs.api_token()],
     ) as conn:
         yield ADCMWebsocket(conn)
 
@@ -368,7 +373,7 @@ def ad_config(ldap_config: dict) -> LDAPTestConfig:
         raise ConfigError(
             'Not all required keys are presented in "ad" LDAP config.\n'
             f"Required: {required_keys}\n"
-            f"Actual: {config.keys()}"
+            f"Actual: {config.keys()}",
         )
     return LDAPTestConfig(
         config["uri"],
@@ -460,7 +465,7 @@ def another_ldap_user_in_group(ldap_ad, ldap_basic_ous, another_ldap_group) -> d
 
 
 @pytest.fixture()
-def ad_ssl_cert(adcm_fs, ad_config) -> Optional[pathlib.Path]:
+def ad_ssl_cert(adcm_fs, ad_config) -> pathlib.Path | None:
     """Put SSL certificate from config to ADCM container and return path to it"""
     if ad_config.cert is None:
         return None

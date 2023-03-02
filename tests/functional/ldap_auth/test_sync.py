@@ -12,8 +12,8 @@
 
 """Test synchronization and test connection with LDAP"""
 import time
+from collections.abc import Callable
 from contextlib import contextmanager
-from typing import Callable, Optional, Tuple
 
 import allure
 import pytest
@@ -98,7 +98,7 @@ class TestDisablingCause:
             adcm.config_set_diff({"attr": {"ldap_integration": {"active": False}}})
             self._check_disabling_cause(adcm, LDAP_ACTION_CAN_NOT_START_REASON)
 
-    def _check_disabling_cause(self, adcm: ADCM, expected: Optional[str]):
+    def _check_disabling_cause(self, adcm: ADCM, expected: str | None):
         # retrieve each time to avoid rereading
         sync = adcm.action(name=SYNC_ACTION_NAME)
         test_connection = adcm.action(name=TEST_CONNECTION_ACTION)
@@ -115,7 +115,7 @@ class TestDisablingCause:
             f"Expected: {expected}"
         )
 
-    def _set_ldap_settings(self, client: ADCMClient, config: LDAPTestConfig, ous: Tuple[str, str]):
+    def _set_ldap_settings(self, client: ADCMClient, config: LDAPTestConfig, ous: tuple[str, str]):
         groups_ou, users_ou = ous
         configure_adcm_for_ldap(client, config, False, None, users_ou, groups_ou)
 
@@ -465,7 +465,7 @@ def session_should_expire(user: str, password: str, url: str):
             assert "401 Unauthorized" in e.value.error.title, "Operation should fail with 401 code"
         except (KeyError, AttributeError) as err:
             raise AssertionError(
-                f"Operation should fail as an unauthorized one\nBut check was failed due to {err}\n"
+                f"Operation should fail as an unauthorized one\nBut check was failed due to {err}\n",
             ) from err
 
 

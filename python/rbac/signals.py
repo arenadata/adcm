@@ -23,5 +23,5 @@ from rest_framework.authtoken.models import Token
 @receiver(post_delete, sender=Policy)
 @receiver(post_delete, sender=Role)
 @receiver(post_delete, sender=Token)
-def mark_deleted_audit_object_handler(sender, instance, **kwargs):
+def mark_deleted_audit_object_handler(sender, instance, **kwargs):  # pylint: disable=unused-argument
     mark_deleted_audit_object(instance, object_type=MODEL_TO_AUDIT_OBJECT_TYPE_MAP[sender])

@@ -37,7 +37,12 @@ from tests.ui_tests.utils import prepare_cluster_and_open_config_page
 # pylint: disable=too-many-locals,too-many-boolean-expressions, too-many-statements
 
 pytestmark = [
-    pytest.mark.usefixtures("_cleanup_browser_logs", "_attach_debug_info_on_ui_test_fail", "_login_over_api_ms")
+    pytest.mark.usefixtures(
+        "_cleanup_browser_logs",
+        "_attach_debug_info_on_ui_test_fail",
+        "_login_over_api_ms",
+        "_attach_adcm_data_on_fail",
+    ),
 ]
 
 
@@ -46,14 +51,18 @@ def skip_test_if_one_already_failed(request: FixtureRequest):
         return
 
     test_base_name = request.node.originalname
-    for item in filter(lambda i: i.originalname == test_base_name, request.session.items):
+    test_full_name = request.node.name
+    for item in filter(lambda i: i.originalname == test_base_name and i.name != test_full_name, request.session.items):
         if hasattr(item, "rep_call") and not item.rep_call.passed:
             pytest.skip(f"There's already one {test_base_name} failed")
             return
 
 
 def check_default_field_values_in_configs(
-    cluster_config_page: ClusterConfigPage, config_item: WebElement, field_type: str, config
+    cluster_config_page: ClusterConfigPage,
+    config_item: WebElement,
+    field_type: str,
+    config,
 ):
     """Check that input value in config is equal to the default one"""
     main_config = config["config"][0]["subs"][0] if "subs" in config["config"][0] else config["config"][0]
@@ -62,7 +71,9 @@ def check_default_field_values_in_configs(
     elif field_type in ("password", "secrettext"):
         is_password_value = bool(field_type == "password")
         cluster_config_page.config.assert_input_value_is(
-            expected_value="********", display_name=field_type, is_password=is_password_value
+            expected_value="********",
+            display_name=field_type,
+            is_password=is_password_value,
         )
     elif field_type == "list":
         cluster_config_page.config.assert_list_value_is(expected_value=main_config["default"], display_name=field_type)
@@ -145,7 +156,7 @@ def _prepare_combinations():
     ]
 
 
-def _check_expectations_for_group_configs_fields(page, combo: ParamCombination, alerts_expected, config):
+def _check_expectations_for_group_configs_fields(page, combo: ParamCombination, alerts_expected, config):  # noqa: C901
     with allure.step("Check that group field is visible"):
         group_name = page.config.get_group_names()[0].text
         assert group_name == "group", "Group with name 'group' should be visible"
@@ -213,11 +224,17 @@ def test_group_configs_fields(request, combo: ParamCombination, sdk_client_ms: A
         page.config.check_no_rows_or_groups_on_page()
     else:
         _check_expectations_for_group_configs_fields(
-            page=page, combo=combo, alerts_expected=expected["alerts"], config=config
+            page=page,
+            combo=combo,
+            alerts_expected=expected["alerts"],
+            config=config,
         )
     page.config.click_on_advanced()
     _check_expectations_for_group_configs_fields(
-        page=page, combo=combo, alerts_expected=expected["alerts"], config=config
+        page=page,
+        combo=combo,
+        alerts_expected=expected["alerts"],
+        config=config,
     )
     if (not combo.read_only) and (not combo.field_invisible) and (not combo.required) and combo.default:
         check_save_in_configs(page, combo.field_type, expected["save"], combo.default)
@@ -243,7 +260,7 @@ def test_group_configs_fields(request, combo: ParamCombination, sdk_client_ms: A
     [True, False, None],
     ids=("group_customization_true", "group_customization_false", "no_group_customization"),
 )
-def test_visible_group_config_fields(
+def test_visible_group_config_fields(  # noqa: C901
     request,
     sdk_client_ms,
     app_ms,
@@ -269,19 +286,22 @@ def test_visible_group_config_fields(
             read_only=is_read_only,
             config_group_customization=config_group_customization,
             group_customization=group_customization,
-        )
+        ),
     )
     cluster, *_ = prepare_cluster_and_open_config_page(sdk_client_ms, path, app_ms)
     objects_to_delete.append(cluster)
     cluster_group_config = cluster.group_config_create(name="Test group")
     cluster_config_page = ClusterGroupConfigConfig(
-        app_ms.driver, app_ms.adcm.url, cluster.id, cluster_group_config.id
+        app_ms.driver,
+        app_ms.adcm.url,
+        cluster.id,
+        cluster_group_config.id,
     ).open()
 
     def check_expectations():
         with allure.step("Check that field is visible"):
             assert len(
-                cluster_config_page.group_config.get_all_group_config_rows(timeout=1)
+                cluster_config_page.group_config.get_all_group_config_rows(timeout=1),
             ), f"Config field {field_type} should be visible"
             config_row = cluster_config_page.group_config.get_all_group_config_rows(timeout=0.5)[0]
 
@@ -294,13 +314,13 @@ def test_visible_group_config_fields(
         if is_read_only:
             with allure.step("Check read only"):
                 assert cluster_config_page.config.is_element_read_only(
-                    config_row
+                    config_row,
                 ), f"Config field {field_type} should be read only"
 
         if not config_group_customization:
             with allure.step("Check group customization checkbox is disabled"):
                 assert cluster_config_page.group_config.is_customization_chbx_disabled(
-                    config_row
+                    config_row,
                 ), f"Checkbox for field {field_type} should be disabled"
         elif expected["alerts"] and (not is_read_only):
             if not cluster_config_page.group_config.is_customization_chbx_checked(config_row):
@@ -321,7 +341,7 @@ def test_visible_group_config_fields(
     if not is_required:
         check_save_in_configs(cluster_config_page, field_type, expected["save"], is_default)
     assert cluster_config_page.group_config.is_customization_chbx_checked(
-        cluster_config_page.config.get_config_row(field_type)
+        cluster_config_page.config.get_config_row(field_type),
     ), f"Config field {field_type} should be checked"
 
 
@@ -357,7 +377,7 @@ def test_visible_group_config_fields(
     [True, False, None],
     ids=("field_customization_true", "field_customization_false", "no_field_customization"),
 )
-def test_group_configs_fields_in_group_invisible_false(
+def test_group_configs_fields_in_group_invisible_false(  # noqa: C901
     request,
     sdk_client_ms: ADCMClient,
     app_ms,
@@ -390,16 +410,19 @@ def test_group_configs_fields_in_group_invisible_false(
             config_group_customization=config_group_customization,
             group_customization=group_customization,
             field_customization=field_customization,
-        )
+        ),
     )
     cluster, *_ = prepare_cluster_and_open_config_page(sdk_client_ms, path, app_ms)
     objects_to_delete.append(cluster)
     cluster_group_config = cluster.group_config_create(name="Test group")
     cluster_config_page = ClusterGroupConfigConfig(
-        app_ms.driver, app_ms.adcm.url, cluster.id, cluster_group_config.id
+        app_ms.driver,
+        app_ms.adcm.url,
+        cluster.id,
+        cluster_group_config.id,
     ).open()
 
-    def check_expectations():
+    def check_expectations():  # noqa: C901
         with allure.step("Check that field visible"):
             group_name = cluster_config_page.config.get_group_names()[0].text
             assert group_name == "group", "Should be group 'group' visible"
@@ -427,7 +450,7 @@ def test_group_configs_fields_in_group_invisible_false(
         if is_read_only:
             if config_row.tag_name == "app-field":
                 assert cluster_config_page.config.is_element_read_only(
-                    config_row
+                    config_row,
                 ), f"Config field {field_type} should be read only"
             return
 
@@ -437,7 +460,7 @@ def test_group_configs_fields_in_group_invisible_false(
         ) or ((config_group_customization is not False) and (field_customization is False)):
             cluster_config_page.config.check_inputs_disabled(config_row, is_password=bool(field_type == "password"))
             assert cluster_config_page.group_config.is_customization_chbx_disabled(
-                config_row
+                config_row,
             ), f"Checkbox for field {field_type} should be disabled"
             return
 
@@ -445,13 +468,13 @@ def test_group_configs_fields_in_group_invisible_false(
             cluster_config_page.config.activate_group_chbx(config_row)
             cluster_config_page.config.check_inputs_enabled(config_row, is_password=field_type == "password")
             assert not cluster_config_page.group_config.is_customization_chbx_disabled(
-                config_row
+                config_row,
             ), f"Checkbox for field {field_type} should not be disabled"
 
         if not cluster_config_page.group_config.is_customization_chbx_checked(config_row):
             cluster_config_page.group_config.click_on_customization_chbx(config_row)
         assert cluster_config_page.group_config.is_customization_chbx_checked(
-            config_row
+            config_row,
         ), f"Config field {field_type} should be checked"
 
         if not expected["alerts"]:
@@ -501,7 +524,7 @@ def test_group_configs_fields_in_group_invisible_false(
 
     with allure.step("Check that group configuration checkbox is checked"):
         assert cluster_config_page.group_config.is_customization_chbx_checked(
-            cluster_config_page.config.get_config_row(field_type)
+            cluster_config_page.config.get_config_row(field_type),
         ), f"Config field {field_type} should be checked"
 
 
@@ -552,7 +575,7 @@ def test_configs_fields_invisible_false(
             read_only=is_read_only,
             config_group_customization=config_group_customization,
             group_customization=group_customization,
-        )
+        ),
     )
     cluster, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_ms, path, app_ms)
     objects_to_delete.append(cluster)
@@ -570,7 +593,7 @@ def test_configs_fields_invisible_false(
         if is_read_only:
             with allure.step("Check is read only"):
                 assert cluster_config_page.config.is_element_read_only(
-                    config_row
+                    config_row,
                 ), f"Config field {field_type} should be read only"
 
         if expected["alerts"] and not is_read_only:

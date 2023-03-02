@@ -39,7 +39,9 @@ class TestHostAPI(BaseTestCase):
 
         self.bundle = Bundle.objects.create()
         self.cluster_prototype = Prototype.objects.create(
-            bundle=self.bundle, type="cluster", allow_maintenance_mode=True
+            bundle=self.bundle,
+            type="cluster",
+            allow_maintenance_mode=True,
         )
         cluster = Cluster.objects.create(name="test_cluster", prototype=self.cluster_prototype)
 
@@ -103,7 +105,13 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
-            action=action, obj=self.host, conf={}, attr={}, hostcomponent=[], hosts=[], verbose=False
+            action=action,
+            obj=self.host,
+            conf={},
+            attr={},
+            hostcomponent=[],
+            hosts=[],
+            verbose=False,
         )
 
     def test_change_mm_on_from_on_with_action_fail(self):
@@ -141,7 +149,8 @@ class TestHostAPI(BaseTestCase):
         self.host.maintenance_mode = MaintenanceMode.ON
         self.host.save(update_fields=["maintenance_mode"])
         action = Action.objects.create(
-            prototype=self.host.cluster.prototype, name=settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME
+            prototype=self.host.cluster.prototype,
+            name=settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
         )
 
         with patch("api.utils.start_task") as start_task_mock:
@@ -156,7 +165,13 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
-            action=action, obj=self.host, conf={}, attr={}, hostcomponent=[], hosts=[], verbose=False
+            action=action,
+            obj=self.host,
+            conf={},
+            attr={},
+            hostcomponent=[],
+            hosts=[],
+            verbose=False,
         )
 
     def test_change_mm_off_to_off_with_action_fail(self):
@@ -326,5 +341,11 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
         self.assertEqual(host.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
-            action=action, obj=host, conf={}, attr={}, hostcomponent=[], hosts=[], verbose=False
+            action=action,
+            obj=host,
+            conf={},
+            attr={},
+            hostcomponent=[],
+            hosts=[],
+            verbose=False,
         )

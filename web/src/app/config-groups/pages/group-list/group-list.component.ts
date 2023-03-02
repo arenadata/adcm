@@ -1,7 +1,7 @@
 import { Component, OnInit, Type } from '@angular/core';
 import { TypeName } from '@app/core/types';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
-import { IColumns } from '@adwp-ui/widgets';
+import { IColumns } from '@app/adwp';
 import { ListFactory } from '@app/factories/list.factory';
 import { ConfigGroupAddService, ConfigGroupListService } from '../../service';
 import { LIST_SERVICE_PROVIDER } from '@app/shared/components/list/list-service-token';

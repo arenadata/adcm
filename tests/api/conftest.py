@@ -11,8 +11,8 @@
 # limitations under the License.
 
 """ADCM API tests fixtures"""
+from collections.abc import Generator
 from itertools import chain
-from typing import Generator
 
 import allure
 import pytest
@@ -37,7 +37,7 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture(scope="session")
-def fill_adcm(sdk_client_ss):
+def fill_adcm(sdk_client_ss):  # pylint: disable=too-many-locals
     adcm_client = sdk_client_ss
     with allure.step("Create provider"):
         provider_bundle = adcm_client.upload_from_fs(GENERIC_BUNDLES_DIR / "simple_provider")
@@ -47,7 +47,7 @@ def fill_adcm(sdk_client_ss):
     with allure.step("Create cluster for the further import and add hosts to it"):
         cluster_to_import_bundle = adcm_client.upload_from_fs(GENERIC_BUNDLES_DIR / "cluster_to_import")
         cluster_to_import = cluster_to_import_bundle.cluster_prototype().cluster_create(
-            name="Pre-uploaded cluster for the import"
+            name="Pre-uploaded cluster for the import",
         )
         for i in range(6):
             cluster_to_import.host_add(provider.host_create(fqdn=f"pre-uploaded-host-import-{i}"))
@@ -56,7 +56,7 @@ def fill_adcm(sdk_client_ss):
         cluster = cluster_bundle.cluster_create(name="Pre-uploaded cluster with services")
         cluster.bind(cluster_to_import)
     with allure.step("Create hosts and add them to cluster"):
-        hosts = tuple((cluster.host_add(provider.host_create(fqdn=f"pre-uploaded-host-{i}")) for i in range(6)))
+        hosts = tuple(cluster.host_add(provider.host_create(fqdn=f"pre-uploaded-host-{i}")) for i in range(6))
     with allure.step("Add services"):
         service_first = cluster.service_add(name="First service")
         service_second = cluster.service_add(name="Second service")
@@ -67,6 +67,9 @@ def fill_adcm(sdk_client_ss):
         )
     with allure.step("Add hosts to cluster and set hostcomponent map"):
         cluster.hostcomponent_set(*[(host, component) for host in hosts for component in components])
+    with allure.step("Create group configs"):
+        for adcm_object in (cluster, *cluster.service_list(), *components, provider):
+            adcm_object.group_config_create(f"group for {adcm_object.__class__.__name__}")
     with allure.step("Run task"):
         task = cluster.action(name="action_on_cluster").run()
         task.wait()
@@ -74,7 +77,10 @@ def fill_adcm(sdk_client_ss):
 
 @pytest.fixture()
 def adcm_api(
-    request, launcher, sdk_client_ss, fill_adcm  # pylint: disable=redefined-outer-name
+    request,
+    launcher,
+    sdk_client_ss,
+    fill_adcm,  # pylint: disable=redefined-outer-name,unused-argument
 ) -> Generator[ADCMTestApiWrapper, None, None]:
     """Runs ADCM container with previously initialized image.
     Returns authorized instance of ADCMTestApiWrapper object

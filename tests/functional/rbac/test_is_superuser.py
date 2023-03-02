@@ -38,7 +38,7 @@ def superuser(sdk_client_fs: ADCMClient) -> User:
 
 
 @pytest.fixture()
-def superuser_sdk(superuser, adcm_fs) -> ADCMClient:
+def superuser_sdk(superuser, adcm_fs) -> ADCMClient:  # pylint: disable=unused-argument
     """Returns ADCMClient for superuser"""
     creds = SUPERUSER_CREDENTIALS
     return ADCMClient(url=adcm_fs.url, user=creds["username"], password=creds["password"])

@@ -11,11 +11,20 @@
 # limitations under the License.
 
 from cm.models import ConfigLog, ObjectConfig
-from rest_framework import serializers
 from rest_framework.reverse import reverse
+from rest_framework.serializers import (
+    HyperlinkedIdentityField,
+    HyperlinkedRelatedField,
+    ModelSerializer,
+    RelatedField,
+    SerializerMethodField,
+)
 
 
-class VersionConfigLogURL(serializers.RelatedField):
+class VersionConfigLogURL(RelatedField):
+    def to_internal_value(self, data):
+        pass
+
     def to_representation(self, value):
         return reverse(
             viewname="config-log-detail",
@@ -25,16 +34,16 @@ class VersionConfigLogURL(serializers.RelatedField):
         )
 
 
-class HistoryConfigLogURL(serializers.HyperlinkedRelatedField):
+class HistoryConfigLogURL(HyperlinkedRelatedField):
     view_name = "config-log-list"
     queryset = ConfigLog.objects.all()
 
 
-class ObjectConfigSerializer(serializers.ModelSerializer):
-    history = serializers.SerializerMethodField()
+class ObjectConfigSerializer(ModelSerializer):
+    history = SerializerMethodField()
     current = VersionConfigLogURL(read_only=True)
     previous = VersionConfigLogURL(read_only=True)
-    url = serializers.HyperlinkedIdentityField(view_name="config-detail")
+    url = HyperlinkedIdentityField(view_name="config-detail")
 
     class Meta:
         model = ObjectConfig

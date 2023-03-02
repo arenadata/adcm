@@ -24,6 +24,10 @@ export abstract class DetailAbstractDirective<EntityType extends AdcmEntity> ext
   ngOnInit() {
     super.ngOnInit();
 
+    this.updateEntity();
+  }
+
+  updateEntity() {
     this.route.params.pipe(
       switchMap((params) => this.subjectService.get(params[this.entityParam])),
       this.takeUntil(),

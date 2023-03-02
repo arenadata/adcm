@@ -12,7 +12,6 @@
 
 """ADCM API urls checks"""
 # pylint: disable=redefined-outer-name
-from typing import List
 
 import allure
 import pytest
@@ -36,12 +35,13 @@ def prepare_data(request, adcm_api):
     Generate request body here since it depends on actual ADCM instance
     and can't be determined when generating
     """
-    test_data_list: List[TestDataWithPreparedPath] = request.param
-    final_test_data: List[TestData] = []
+    test_data_list: list[TestDataWithPreparedPath] = request.param
+    final_test_data: list[TestData] = []
     for td_with_url in test_data_list:
         test_data, path = td_with_url.test_data, td_with_url.request_path
         request_data = DbFiller(adcm=adcm_api).generate_valid_request_data(
-            endpoint=test_data.request.endpoint, method=test_data.request.method
+            endpoint=test_data.request.endpoint,
+            method=test_data.request.method,
         )
 
         test_data.request.data = request_data["data"]

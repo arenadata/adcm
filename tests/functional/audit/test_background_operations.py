@@ -9,14 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Test audit of background operations"""
+# pylint: disable=redefined-outer-name
 
 import time
 from datetime import datetime, timedelta
 from itertools import chain
 from operator import attrgetter, itemgetter, methodcaller
-from typing import Tuple
+from zoneinfo import ZoneInfo
 
 import allure
 import pytest
@@ -31,14 +30,11 @@ from tests.functional.audit.conftest import (
 )
 from tests.library.db import set_configs_date, set_jobs_date, set_tasks_date
 
-# pylint: disable=redefined-outer-name
-
-
 RUN_SYNC_NAME = "run_ldap_sync"
 
 
 @pytest.fixture()
-def cluster_with_history(sdk_client_fs) -> Tuple[Cluster, Tuple[dict, ...], Tuple[Task, ...]]:
+def cluster_with_history(sdk_client_fs) -> tuple[Cluster, tuple[dict, ...], tuple[Task, ...]]:
     """Create cluster, change its configs and run some actions"""
     bundle = sdk_client_fs.upload_from_fs(BUNDLES_DIR / "adb")
     cluster = bundle.cluster_create("Cluster with Actions")
@@ -54,7 +50,7 @@ def cluster_with_history(sdk_client_fs) -> Tuple[Cluster, Tuple[dict, ...], Tupl
 @pytest.fixture()
 def _make_objects_old(adcm_db, sdk_client_fs, cluster_with_history) -> None:
     """Change object's dates (configs, tasks and audit records)"""
-    old_date = datetime.utcnow() - timedelta(days=300)
+    old_date = datetime.now(tz=ZoneInfo("UTC")) - timedelta(days=300)
     _, configs, tasks = cluster_with_history
     old_tasks = tasks[: len(tasks) // 2]
     get_id = attrgetter("id")
@@ -75,12 +71,10 @@ def test_background_operations_audit(audit_log_checker, adcm_fs, sdk_client_fs):
 
     def _sync_ran_finished():
         assert any(
-            map(
-                lambda task: (
-                    task.status == "failed" and task.action_id is not None and task.action().name == RUN_SYNC_NAME
-                ),
-                map(methodcaller("task"), sdk_client_fs.job_list()),
-            )
+            (
+                (task.status == "failed" and task.action_id is not None and task.action().name == RUN_SYNC_NAME)
+                for task in map(methodcaller("task"), sdk_client_fs.job_list())
+            ),
         )
 
     logrotate(adcm_fs, "all")
@@ -92,7 +86,7 @@ def test_background_operations_audit(audit_log_checker, adcm_fs, sdk_client_fs):
                 "ldap_integration": {
                     "sync_interval": 60,
                 },
-            }
+            },
         )
     operations = sdk_client_fs.audit_operation_list()
     audit_log_checker.check(operations)

@@ -34,7 +34,7 @@ common_object: &common_object
     config: config_obj
     actions: actions_dict
     venv: string
-  required_items: &common_object_required_items
+  required_items:
     - type
     - name
     - version
@@ -295,7 +295,7 @@ config_dict_sub_common: &config_dict_sub_common
     description: string_or_none
     ui_options: json
     group_customization: boolean
-  required_items: &config_dict_sub_required
+  required_items:
     - type
 
 config_dict_sub_boolean:
@@ -402,7 +402,7 @@ config_list_common: &config_list_common
   items: &config_list_items
     <<: *config_dict_sub_items
     name: string
-  required_items: &config_list_required
+  required_items:
    - type
    - name
 
@@ -703,7 +703,7 @@ action_item:
     job: action_job_dict
     task: action_task_dict
 
-common_action: &common_action
+common_action:
   match: dict
   items: &common_action_items
     type: string
@@ -760,6 +760,7 @@ action_job_dict:
     <<: *common_action_items
     script_type: action_script_type
     script: string
+    config_jinja: string
   required_items:
     - type
     - script_type

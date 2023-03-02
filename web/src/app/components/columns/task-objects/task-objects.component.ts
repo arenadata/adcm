@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { AdwpCellComponent } from '@adwp-ui/widgets';
+import { AdwpCellComponent } from '@app/adwp';
 
 import { Task } from '@app/core/types';
 

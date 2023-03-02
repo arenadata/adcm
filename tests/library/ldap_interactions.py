@@ -15,7 +15,7 @@
 import uuid
 import warnings
 from pathlib import Path
-from typing import List, NamedTuple, Optional, Tuple
+from typing import NamedTuple
 from zlib import crc32
 
 import allure
@@ -38,7 +38,7 @@ class LDAPTestConfig(NamedTuple):
     admin_dn: str
     admin_pass: SecureString
     base_ou_dn: str
-    cert: Optional[SecureString] = None
+    cert: SecureString | None = None
 
 
 class LDAPEntityManager:
@@ -48,7 +48,7 @@ class LDAPEntityManager:
     test_dn: str
 
     _config: LDAPTestConfig
-    _created_records: List[str]
+    _created_records: list[str]
     # unique name identifier
     # it will be added to user/group names
     _uni: str
@@ -74,13 +74,13 @@ class LDAPEntityManager:
 
         self._created_records = []
         self._config = config
-        self._uni = str(crc32(f"{test_name}{uuid.uuid4()}".encode("utf-8")))
+        self._uni = str(crc32(f"{test_name}{uuid.uuid4()}".encode()))
         # for the cleanup we'll need the CN with uppercase node names, I think
         corrected_base_ou_dn = ",".join(
-            map(
-                lambda x: ((parts := x.split("=")) and f"{parts[0].upper()}={parts[1]}"),
-                self._config.base_ou_dn.split(","),
-            )
+            (
+                ((parts := x.split("=")) and f"{parts[0].upper()}={parts[1]}")
+                for x in self._config.base_ou_dn.split(",")
+            ),
         )
         self.test_dn = self.create_ou(self._uni, corrected_base_ou_dn)
 
@@ -115,7 +115,7 @@ class LDAPEntityManager:
         name: str,
         password: str,
         custom_base_dn: str = None,
-        extra_modlist: Optional[List[Tuple[str, List[bytes]]]] = None,
+        extra_modlist: list[tuple[str, list[bytes]]] | None = None,
     ) -> str:
         """
         Create user (CN) and activate it.
@@ -167,7 +167,7 @@ class LDAPEntityManager:
             unknown_fields = {k for k in fields if k in self._ATTR_MAP}
             raise ValueError(
                 f'You can update only those fields: {", ".join(self._ATTR_MAP.keys())}\n'
-                f'Input was: {", ".join(unknown_fields)}'
+                f'Input was: {", ".join(unknown_fields)}',
             ) from e
 
     @allure.step("Add user {user_dn} to {group_dn}")
@@ -230,10 +230,10 @@ def configure_adcm_for_ldap(
     client: ADCMClient,
     config: LDAPTestConfig,
     ssl_on: bool,
-    ssl_cert: Optional[Path],
+    ssl_cert: Path | None,
     user_base: str,
-    group_base: Optional[str],
-    extra_config: Optional[dict] = None,
+    group_base: str | None,
+    extra_config: dict | None = None,
 ):
     """Set ADCM settings to work with LDAP (for tests only)"""
     extra_config = extra_config or {}
@@ -262,7 +262,7 @@ def configure_adcm_for_ldap(
                     "group_search_base": group_base,
                     **ssl_extra_config,
                     **extra_config,
-                }
+                },
             },
         },
         attach_to_allure=False,

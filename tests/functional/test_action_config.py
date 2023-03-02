@@ -110,7 +110,7 @@ def test_pass_no_config(cluster: Cluster, provider: Provider, sdk_client_fs: ADC
     for obj in (cluster, service, component, provider, host):
         with allure.step(f"Check run action that require config with on {obj.__class__.__name__}"):
             with allure.step(
-                "Run action that require config without config and expect ADCM to response with non 500 status code"
+                "Run action that require config without config and expect ADCM to response with non 500 status code",
             ):
                 try:
                     ACTION_MAP[obj.__class__](obj, "with_config", "failed")

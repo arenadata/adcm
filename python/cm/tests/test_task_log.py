@@ -147,7 +147,7 @@ class TaskLogLockTest(BaseTestCase):
                     prototype=cluster_2.prototype,
                     type="job",
                     state_available="any",
-                )
+                ),
             ),
         )
         JobLog.objects.create(
@@ -160,7 +160,7 @@ class TaskLogLockTest(BaseTestCase):
                     prototype=cluster_3.prototype,
                     type="job",
                     state_available="any",
-                )
+                ),
             ),
         )
         JobLog.objects.create(
@@ -173,7 +173,7 @@ class TaskLogLockTest(BaseTestCase):
                     prototype=cluster_4.prototype,
                     type="job",
                     state_available="any",
-                )
+                ),
             ),
         )
         job_no_files = JobLog.objects.create(
@@ -186,7 +186,7 @@ class TaskLogLockTest(BaseTestCase):
                     prototype=cluster_5.prototype,
                     type="job",
                     state_available="any",
-                )
+                ),
             ),
         )
         LogStorage.objects.create(job=job_no_files, body="stdout db", type="stdout", format="txt")
@@ -227,7 +227,9 @@ class TaskLogLockTest(BaseTestCase):
             start_date=datetime.now(tz=ZoneInfo("UTC")),
             finish_date=datetime.now(tz=ZoneInfo("UTC")),
             sub_action=SubAction.objects.create(
-                name="test_subaction_1", action=action, display_name="Test   Dis%#play   NAME!"
+                name="test_subaction_1",
+                action=action,
+                display_name="Test   Dis%#play   NAME!",
             ),
         )
         JobLog.objects.create(

@@ -14,7 +14,6 @@
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import List, Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -42,7 +41,9 @@ from tests.ui_tests.app.page.common.dialogs.create_host_locators import (
 from tests.ui_tests.app.page.common.dialogs.locators import (
     ActionDialog,
     DeleteDialogLocators,
+    ServiceLicenseDialog,
 )
+from tests.ui_tests.app.page.common.dialogs.service_license import ServiceLicenseModal
 from tests.ui_tests.app.page.common.group_config.page import CommonGroupConfigMenu
 from tests.ui_tests.app.page.common.group_config_list.locators import (
     GroupConfigListLocators,
@@ -87,7 +88,13 @@ class CommonClusterPage(BasePageObject):  # pylint: disable=too-many-instance-at
     def __init__(self, driver, base_url, cluster_id: int, **kwargs):
         if self.MENU_SUFFIX is None:
             raise AttributeError("You should explicitly set MENU_SUFFIX in class definition")
-        super().__init__(driver, base_url, "/cluster/{cluster_id}/" + self.MENU_SUFFIX, cluster_id=cluster_id, **kwargs)
+        super().__init__(
+            driver,
+            base_url,
+            "/cluster/{cluster_id}/" + self.MENU_SUFFIX,
+            cluster_id=cluster_id,
+            **kwargs,
+        )
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.cluster_id = cluster_id
         self.toolbar = CommonToolbar(self.driver, self.base_url)
@@ -195,9 +202,23 @@ class ClusterServicesPage(CommonClusterPage, ObjectRowMixin):
         CommonTable.Pagination.previous_page,
     ]
 
-    def click_add_service_btn(self):
+    def click_add_service_button(self) -> None:
         """Click on Add service button"""
         self.find_and_click(ClusterServicesLocators.add_services_btn)
+        self.wait_element_visible(ClusterServicesLocators.AddServicePopup.block, timeout=3)
+
+    def click_add_service_in_dialog(self) -> None:
+        self.find_and_click(ClusterServicesLocators.AddServicePopup.create_btn)
+
+    def close_add_service_window(self) -> None:
+        """Close dialog window"""
+        self.find_and_click(ClusterServicesLocators.AddServicePopup.cancel_btn)
+
+    @allure.step("Get service license dialog")
+    def get_service_license_dialog(self) -> ServiceLicenseModal:
+        self.wait_element_visible(ServiceLicenseDialog.block)
+        license_dialog = self.find_element(ServiceLicenseDialog.block)
+        return ServiceLicenseModal(driver=self.driver, element=license_dialog)
 
     @allure.step("Add service {service_name} to cluster")
     def add_service_by_name(self, service_name: str):
@@ -210,6 +231,12 @@ class ClusterServicesPage(CommonClusterPage, ObjectRowMixin):
                 service_text.click()
         self.find_and_click(ClusterServicesLocators.AddServicePopup.create_btn)
         self.wait_element_hide(ClusterServicesLocators.AddServicePopup.block)
+
+    def find_service(self, service_name: str) -> WebElement:
+        for service in self.find_elements(ClusterServicesLocators.AddServicePopup.service_row):
+            if service_name == self.find_child(service, ClusterServicesLocators.AddServicePopup.ServiceRow.text).text:
+                return self.find_child(service, ClusterServicesLocators.AddServicePopup.ServiceRow.text)
+        raise ValueError(f"Service with name {service_name} not found")
 
     @allure.step("Click on service concern object name from the row")
     def click_on_concern_by_object_name(self, row: WebElement, concern_object_name: str):
@@ -315,7 +342,7 @@ class ClusterConfigPage(CommonClusterPage):
     @allure.step("Check that group field is visible = {is_group_visible} if group is active = {is_group_active}")
     def check_groups(
         self,
-        group_names: List[str],
+        group_names: list[str],
         is_group_visible: bool = True,
         is_group_active: bool = True,
         is_subs_visible: bool = True,
@@ -475,7 +502,7 @@ class ClusterHostPage(CommonClusterPage):
         self.find_child(row, ClusterHostLocators.HostTable.HostRow.maintenance_mode_btn).click()
 
     @allure.step("Assert maintenance mode state in row {row_num}")
-    def assert_maintenance_mode_state(self, row_num: int, is_mm_state_on: Optional[bool] = True):
+    def assert_maintenance_mode_state(self, row_num: int, is_mm_state_on: bool | None = True):
         """
         Assert maintenance mode state in row
         :param row_num: number of the row with maintenance mode button
@@ -487,7 +514,8 @@ class ClusterHostPage(CommonClusterPage):
 
         def _check_mm_state(page: ClusterHostPage, row: WebElement):
             button_state = page.find_child(
-                row, ClusterHostLocators.HostTable.HostRow.maintenance_mode_btn
+                row,
+                ClusterHostLocators.HostTable.HostRow.maintenance_mode_btn,
             ).get_attribute("class")
             tooltips_info = [
                 t.get_property("innerHTML") for t in page.find_elements(ClusterHostLocators.HostTable.tooltip_text)

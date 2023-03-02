@@ -12,7 +12,6 @@
 
 """Test composition of built-in ADCM roles"""
 
-from typing import List
 
 import allure
 import pytest
@@ -46,7 +45,7 @@ SERVICE_ADMIN_ROLES = {
         BusinessRoles.GET_SERVICE,
         BusinessRoles.GET_COMPONENT,
         BusinessRoles.GET_HOST,
-        BusinessRoles.EDIT_SSERVICE_CONFIGURATIONS,
+        BusinessRoles.EDIT_SERVICE_CONFIGURATIONS,
         BusinessRoles.EDIT_COMPONENT_CONFIGURATIONS,
         BusinessRoles.VIEW_HOST_CONFIGURATIONS,
         BusinessRoles.MANAGE_SERVICE_IMPORTS,
@@ -72,7 +71,7 @@ CLUSTER_ADMIN_ROLES = SERVICE_ADMIN_ROLES.union(
             BusinessRoles.CREATE_HOST,
             BusinessRoles.REMOVE_HOSTS,
         )
-    }
+    },
 )
 
 PROVIDER_ADMIN_ROLES = {
@@ -91,7 +90,7 @@ PROVIDER_ADMIN_ROLES = {
 }
 
 
-def get_children_business_roles(role: Role) -> List[str]:
+def get_children_business_roles(role: Role) -> list[str]:
     """
     Get children roles "recursively"
     """
@@ -110,7 +109,8 @@ def test_default_role(clients):
     user_client = clients.user
     assert user_client.bundle_list(), "Default user should see bundles in bundle list"
     with catch_failed(
-        (AccessIsDenied, NoSuchEndpointOrAccessIsDenied), "Default user should be able to view ADCM objects"
+        (AccessIsDenied, NoSuchEndpointOrAccessIsDenied),
+        "Default user should be able to view ADCM objects",
     ):
         user_client.adcm()
     for object_type in ("cluster", "service", "component", "provider", "host"):

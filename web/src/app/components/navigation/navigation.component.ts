@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Observable } from 'rxjs';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 
 import { AdcmTypedEntity } from '@app/models/entity';
 import { EmmitRow, IAction } from '@app/core/types';
@@ -22,6 +22,7 @@ import { IIssues } from '@app/models/issue';
           <app-upgrade
             *ngIf="['cluster', 'provider'].includes(item?.entity?.typeName)"
             [row]="item?.entity"
+            [type]="item?.entity?.typeName"
             (refresh)="refresh.emit($event)"
           ></app-upgrade>
         </span>

@@ -40,7 +40,8 @@ LOG_FILE = LOG_DIR / "adcm.log"
 SECRETS_FILE = BASE_DIR / "data" / "var" / "secrets.json"
 ADCM_TOKEN_FILE = BASE_DIR / "data/var/adcm_token"
 PYTHON_SITE_PACKAGES = Path(
-    sys.exec_prefix, f"lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages"
+    sys.exec_prefix,
+    f"lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages",
 )
 
 ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
@@ -140,29 +141,20 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "cm.errors.custom_drf_exception_handler",
 }
 
-POSTGRES_ADCM_PASS = os.getenv("POSTGRES_ADCM_PASS")
+DB_PASS = os.getenv("DB_PASS")
 DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT")
 
-if all((POSTGRES_ADCM_PASS, DB_NAME, DB_USER, DB_HOST, DB_PORT)):
+if all((DB_PASS, DB_NAME, DB_USER, DB_HOST, DB_PORT)):
     DB_DEFAULT = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": DB_NAME,
         "USER": DB_USER,
-        "PASSWORD": POSTGRES_ADCM_PASS,
+        "PASSWORD": DB_PASS,
         "HOST": DB_HOST,
         "PORT": DB_PORT,
-    }
-elif POSTGRES_ADCM_PASS:
-    DB_DEFAULT = {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "adcm",
-        "USER": "adcm",
-        "PASSWORD": POSTGRES_ADCM_PASS,
-        "HOST": "db",
-        "PORT": 5432,
     }
 else:
     DB_DEFAULT = {
@@ -308,7 +300,14 @@ ADCM_SERVICE_ACTION_NAMES_SET = {
 }
 ADCM_MM_ACTION_FORBIDDEN_PROPS_SET = {"config", "hc_acl", "ui_options"}
 
+STACK_COMPLEX_FIELD_TYPES = {"json", "structure", "list", "map", "secretmap"}
+STACK_NUMERIC_FIELD_TYPES = {"integer", "float"}
+TEMPLATE_CONFIG_DELETE_FIELDS = {"yspec", "option", "activatable", "active", "read_only", "writable", "subs"}
+
 EMPTY_REQUEST_STATUS_CODE = 32
 VALUE_ERROR_STATUS_CODE = 8
 EMPTY_STATUS_STATUS_CODE = 4
 STATUS_REQUEST_TIMEOUT = 0.01
+
+JOB_TYPE = "job"
+TASK_TYPE = "task"

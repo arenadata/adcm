@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List
 
 from cm.api import load_mm_objects
 from cm.errors import AdcmEx
@@ -98,7 +97,7 @@ def get_object_for_user(user, perms, klass, **kwargs):
         raise AdcmEx(error_code) from None
 
 
-def check_obj(model, req, error=None):
+def check_obj(model, req, error=None):  # pylint: disable=unused-argument
     if isinstance(req, dict):
         kwargs = req
     else:
@@ -138,7 +137,7 @@ def update(serializer, **kwargs):
     return save(serializer, HTTP_200_OK, **kwargs)
 
 
-def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
+def filter_actions(obj: ADCMEntity, actions_set: list[Action]):
     """Filter out actions that are not allowed to run on object at that moment"""
     if obj.concerns.filter(type=ConcernType.LOCK).exists():
         return []
@@ -202,7 +201,10 @@ def fix_ordering(field, view):
     return fix
 
 
-def get_maintenance_mode_response(obj: Host | ClusterObject | ServiceComponent, serializer: Serializer) -> Response:
+def get_maintenance_mode_response(  # noqa: C901
+    obj: Host | ClusterObject | ServiceComponent,
+    serializer: Serializer,
+) -> Response:
     # pylint: disable=too-many-branches
 
     turn_on_action_name = settings.ADCM_TURN_ON_MM_ACTION_NAME
@@ -251,7 +253,10 @@ def get_maintenance_mode_response(obj: Host | ClusterObject | ServiceComponent, 
 
         if obj_name == "host" or service_has_hc or component_has_hc:
             serializer = _change_mm_via_action(
-                prototype=prototype, action_name=turn_on_action_name, obj=obj, serializer=serializer
+                prototype=prototype,
+                action_name=turn_on_action_name,
+                obj=obj,
+                serializer=serializer,
             )
         else:
             obj.maintenance_mode = MaintenanceMode.ON
@@ -275,7 +280,10 @@ def get_maintenance_mode_response(obj: Host | ClusterObject | ServiceComponent, 
 
         if obj_name == "host" or service_has_hc or component_has_hc:
             serializer = _change_mm_via_action(
-                prototype=prototype, action_name=turn_off_action_name, obj=obj, serializer=serializer
+                prototype=prototype,
+                action_name=turn_off_action_name,
+                obj=obj,
+                serializer=serializer,
             )
         else:
             obj.maintenance_mode = MaintenanceMode.OFF
@@ -307,7 +315,7 @@ class ObjectURL(HyperlinkedIdentityField):
 
 
 class UrlField(HyperlinkedIdentityField):
-    def get_kwargs(self, obj):
+    def get_kwargs(self, obj):  # pylint: disable=unused-argument
         return {}
 
     def get_url(self, obj, view_name, request, _format):

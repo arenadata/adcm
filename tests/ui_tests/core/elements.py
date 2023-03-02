@@ -1,6 +1,7 @@
 from collections import UserList
+from collections.abc import Callable, Iterable
 from operator import attrgetter
-from typing import Any, Callable, Iterable, Protocol, Type, TypeVar
+from typing import Any, Protocol, TypeVar
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -12,20 +13,17 @@ from tests.ui_tests.core.locators import BaseLocator, Descriptor, Locator
 
 
 class AutoChildElement:
-    Locators: Type
+    Locators: type
     _element: WebElement
     _view: Interactor
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
         if not hasattr(cls, "Locators"):
             raise ValueError("Children locators should be available as 'Locators' in class")
 
         locator_fields: Iterable[tuple[str, Locator]] = filter(
             lambda i: isinstance(i[1], Locator),
-            map(
-                lambda i: (i, getattr(cls.Locators, i)),
-                dir(cls.Locators),
-            ),
+            ((i, getattr(cls.Locators, i)) for i in dir(cls.Locators)),
         )
 
         for name, locator in locator_fields:
@@ -53,7 +51,10 @@ class AutoChildElement:
         return super().__new__(cls)
 
     def __init__(
-        self, parent_element: WebElement, driver: WebDriver | None = None, interactor: Interactor | None = None
+        self,
+        parent_element: WebElement,
+        driver: WebDriver | None = None,
+        interactor: Interactor | None = None,
     ):
         if not (driver or interactor):
             raise RuntimeError("Either driver or interactor should be provided")
@@ -89,7 +90,7 @@ def _build_property(locator: Locator, retrieve: Callable[[WebElement], Any] = la
 
 def _build_input(locator: Locator) -> property:
     return property(  # pylint: disable-next=protected-access
-        lambda self: Input(element=self._view.find_child(element=self._element, child=locator), interactor=self._view)
+        lambda self: Input(element=self._view.find_child(element=self._element, child=locator), interactor=self._view),
     )
 
 
@@ -98,7 +99,7 @@ def _build_input(locator: Locator) -> property:
 T = TypeVar("T")
 
 
-def as_element(cls: Type[T], interactor: Interactor) -> Callable[[WebElement], T]:
+def as_element(cls: type[T], interactor: Interactor) -> Callable[[WebElement], T]:
     return lambda element: cls(element=element, interactor=interactor)
 
 
@@ -176,7 +177,7 @@ class TableLike(Protocol):
 
 class ObjectRowMixin:
     # type of AutoChildElement's child
-    ROW_CLASS: Type[T]
+    ROW_CLASS: type[T]
     table: TableLike
     _driver: WebDriver
 
@@ -192,9 +193,9 @@ class ObjectRowMixin:
         return tuple(
             filter(
                 predicate,
-                map(
-                    lambda element: self.ROW_CLASS(parent_element=element, driver=self._driver),
-                    self.table.get_all_rows(timeout=1),
+                (
+                    self.ROW_CLASS(parent_element=element, driver=self._driver)
+                    for element in self.table.get_all_rows(timeout=1)
                 ),
-            )
+            ),
         )

@@ -25,7 +25,11 @@ from adcm.permissions import DjangoObjectPermissionsAudit
 
 
 class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
-    PermissionListMixin, CreateModelMixin, ListModelMixin, RetrieveModelMixin, GenericUIViewSet
+    PermissionListMixin,
+    CreateModelMixin,
+    ListModelMixin,
+    RetrieveModelMixin,
+    GenericUIViewSet,
 ):
     queryset = ConfigLog.objects.all()
     serializer_class = ConfigLogSerializer

@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=wrong-import-order
 
 from cm.api import add_host, add_host_provider, add_host_to_cluster
 from cm.errors import AdcmEx
@@ -49,7 +50,10 @@ def cook_service(cluster, name="UBER"):
 
 def cook_component(cluster, service, name):
     proto = Prototype.objects.create(
-        type="component", name=name, bundle=cluster.prototype.bundle, parent=service.prototype
+        type="component",
+        name=name,
+        bundle=cluster.prototype.bundle,
+        parent=service.prototype,
     )
 
     return ServiceComponent.objects.create(cluster=cluster, service=service, prototype=proto)

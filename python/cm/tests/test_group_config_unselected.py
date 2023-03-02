@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=wrong-import-order
 
 from cm.adcm_config import check_value_unselected_field
 from cm.errors import AdcmEx
@@ -77,7 +78,7 @@ class TestUnselectedFields(BaseTestCase):
                 "map": False,
                 "structure": False,
                 "json": False,
-            }
+            },
         }
         self.group_keys = self.new_attr.get("group_keys")
 

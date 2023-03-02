@@ -18,7 +18,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterModule } from '@angular/router';
-import { AdwpListModule } from '@adwp-ui/widgets';
+import { AdwpListModule } from '@app/adwp';
 import { StuffModule } from '../stuff.module';
 import { SubtitleComponent } from './subtitle.component';
 import { NavigationComponent } from '@app/components/navigation/navigation.component';

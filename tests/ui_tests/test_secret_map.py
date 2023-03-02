@@ -56,7 +56,7 @@ class TestSecretMap:
     pytestmark = [pytest.mark.usefixtures("_init")]
 
     @pytest.fixture()
-    def _init(self, app_fs, secret_map_cluster_objects):
+    def _init(self, app_fs, secret_map_cluster_objects):  # pylint: disable=unused-argument
         self.client = app_fs
 
     def _prepare_adcm_objects(self, cluster: Cluster, service: Service, component: Component):
@@ -64,7 +64,11 @@ class TestSecretMap:
             ClusterConfigPage(self.client.driver, self.client.adcm.url, cluster.id),
             ServiceConfigPage(self.client.driver, self.client.adcm.url, cluster.id, service.id),
             ComponentConfigPage(
-                self.client.driver, self.client.adcm.url, cluster.id, service.id, component.component_id
+                self.client.driver,
+                self.client.adcm.url,
+                cluster.id,
+                service.id,
+                component.component_id,
             ),
         ]:
             config_page.open()
@@ -72,7 +76,13 @@ class TestSecretMap:
 
     @pytest.mark.parametrize("obj_to_pick", [Cluster, Service, Component])
     @pytest.mark.usefixtures("_login_to_adcm_over_api")
-    def test_secret_map_cluster(self, app_fs, secret_map_cluster_objects, generic_provider, obj_to_pick):
+    def test_secret_map_cluster(
+        self,
+        app_fs,
+        secret_map_cluster_objects,
+        generic_provider,
+        obj_to_pick,
+    ):  # pylint: disable=unused-argument
         """Test to check secret map field in ui for cluster"""
         cluster, service, component = secret_map_cluster_objects
         cluster.host_add(generic_provider.host_create("testhost"))
@@ -97,7 +107,8 @@ class TestSecretMap:
         with allure.step("Checks config filled by action"):
             obj_page.driver.refresh()
             obj_page.config.assert_map_value_is(
-                expected_value={"key_secret": PARAMS["expected_value"]}, display_name=ROW_NAME
+                expected_value={"key_secret": PARAMS["expected_value"]},
+                display_name=ROW_NAME,
             )
         with allure.step("Add second secret map using config form"):
             row = obj_page.config.get_config_row(ROW_NAME)

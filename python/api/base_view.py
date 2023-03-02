@@ -103,7 +103,7 @@ class PaginatedView(GenericUIView):
     def get_ordering(request, queryset, view):
         return AdcmOrderingFilter().get_ordering(request, queryset, view)
 
-    def is_paged(self, request):
+    def is_paged(self, request):  # pylint: disable=unused-argument
         limit = self.request.query_params.get("limit", False)
         offset = self.request.query_params.get("offset", False)
 
@@ -117,7 +117,7 @@ class PaginatedView(GenericUIView):
 
         return url
 
-    def get_page(self, obj, request, context=None):
+    def get_page(self, obj, request, context=None):  # noqa: C901
         if not context:
             context = {}
 
@@ -138,7 +138,7 @@ class PaginatedView(GenericUIView):
 
             except (FieldError, ValueError):
                 query_params = ",".join(
-                    [f"{k}={v}" for k, v in request.query_params.items() if k in ["fields", "distinct"]]
+                    [f"{k}={v}" for k, v in request.query_params.items() if k in ["fields", "distinct"]],
                 )
                 msg = f"Bad query params: {query_params}"
 
@@ -163,7 +163,7 @@ class PaginatedView(GenericUIView):
 
         raise AdcmEx("TOO_LONG", msg=msg, args=self.get_paged_link())
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         obj = self.filter_queryset(self.get_queryset())
 
         return self.get_page(obj, request)
@@ -191,7 +191,7 @@ class DetailView(GenericUIView):
 
         return obj
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         obj = self.get_object()
         serializer = self.get_serializer(obj)
 

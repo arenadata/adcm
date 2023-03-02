@@ -14,7 +14,6 @@
 import os
 import re
 from contextlib import contextmanager, suppress
-from typing import List, Optional, Tuple, Type
 
 import ldap
 from cm.adcm_config import ansible_decrypt
@@ -46,8 +45,10 @@ def _process_extra_filter(filterstr: str) -> str:
 
 
 def configure_tls(
-    enabled: bool, cert_filepath: str = "", conn: Optional[ldap.ldapobject.LDAPObject] = None
-) -> Optional[dict]:
+    enabled: bool,
+    cert_filepath: str = "",
+    conn: ldap.ldapobject.LDAPObject | None = None,
+) -> dict | None:
     os.environ.pop(CERT_ENV_KEY, None)
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
 
@@ -77,7 +78,7 @@ def is_tls(ldap_uri: str) -> bool:
     return False
 
 
-def get_ldap_config() -> Optional[dict]:
+def get_ldap_config() -> dict | None:
     adcm_object = ADCM.objects.first()
     current_configlog = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
     if current_configlog.attr["ldap_integration"]["active"]:
@@ -86,8 +87,10 @@ def get_ldap_config() -> Optional[dict]:
 
 
 def get_groups_by_user_dn(
-    user_dn: str, user_search: LDAPSearch, conn: ldap.ldapobject.LDAPObject
-) -> Tuple[Optional[List[str]], Optional[str]]:
+    user_dn: str,
+    user_search: LDAPSearch,
+    conn: ldap.ldapobject.LDAPObject,
+) -> tuple[list[str] | None, str | None]:
     err_msg = None
     user_name_attr = get_ldap_config()["user_name_attribute"]
     replace = f"{user_name_attr}={USER_PLACEHOLDER}"
@@ -129,7 +132,7 @@ def get_user_search(ldap_config: dict) -> LDAPSearch:
     )
 
 
-def get_ldap_default_settings() -> Tuple[dict, Optional[str]]:
+def get_ldap_default_settings() -> tuple[dict, str | None]:
     ldap_config = get_ldap_config()
     if ldap_config:
         configure_tls(enabled=False)
@@ -172,7 +175,7 @@ def get_ldap_default_settings() -> Tuple[dict, Optional[str]]:
                     "GROUP_OBJECT_CLASS": ldap_config.get("group_object_class", "*"),
                     "MIRROR_GROUPS": True,
                     "FIND_GROUP_PERMS": True,
-                }
+                },
             )
 
         if is_tls(ldap_config["ldap_uri"]):
@@ -194,7 +197,7 @@ class CustomLDAPBackend(LDAPBackend):
         self.default_settings = {}
         self.is_tls = False
 
-    def authenticate_ldap_user(self, ldap_user: User | _LDAPUser, password: str) -> Optional[_LDAPUser]:
+    def authenticate_ldap_user(self, ldap_user: User | _LDAPUser, password: str) -> _LDAPUser | None:
         self.default_settings, _ = get_ldap_default_settings()
         if not self.default_settings:
             return None
@@ -223,14 +226,14 @@ class CustomLDAPBackend(LDAPBackend):
         return "GROUP_SEARCH" in self.default_settings and bool(self.default_settings.get("GROUP_SEARCH"))
 
     @staticmethod
-    def _get_local_groups_by_username(username: str) -> List[Group]:
+    def _get_local_groups_by_username(username: str) -> list[Group]:
         groups = []
         with suppress(User.DoesNotExist):
             user = User.objects.get(username__iexact=username, type=OriginType.LDAP)
             groups = [g.group for g in user.groups.all() if g.group.type == OriginType.LOCAL]
         return groups
 
-    def get_user_model(self) -> Type[User]:
+    def get_user_model(self) -> type[User]:
         return User
 
     @contextmanager
@@ -245,18 +248,20 @@ class CustomLDAPBackend(LDAPBackend):
         finally:
             conn.unbind_s()
 
-    def _get_groups_by_group_search(self) -> List[Tuple[str, dict]]:
+    def _get_groups_by_group_search(self) -> list[tuple[str, dict]]:
         with self._ldap_connection() as conn:
             groups = self.default_settings["GROUP_SEARCH"].execute(conn)
         logger.debug("Found %s groups: %s", len(groups), [i[0] for i in groups])
         return groups
 
-    def _process_groups(self, user: User | _LDAPUser, user_dn: str, additional_groups: List[Group] = ()) -> None:
+    def _process_groups(self, user: User | _LDAPUser, user_dn: str, additional_groups: list[Group] = ()) -> None:
         if not self._group_search_enabled:
             logger.warning("Group search is disabled. Getting all user groups")
             with self._ldap_connection() as conn:
                 ldap_group_names, err_msg = get_groups_by_user_dn(
-                    user_dn=user_dn, user_search=self.default_settings["USER_SEARCH"], conn=conn
+                    user_dn=user_dn,
+                    user_search=self.default_settings["USER_SEARCH"],
+                    conn=conn,
                 )
             if err_msg:
                 raise RuntimeError(err_msg)

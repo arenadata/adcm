@@ -16,7 +16,6 @@ from pathlib import Path
 from api.action.serializers import ActionJobSerializer
 from api.concern.serializers import ConcernItemSerializer
 from cm.ansible_plugin import get_check_log
-from cm.errors import AdcmEx
 from cm.job import start_task
 from cm.models import JobLog, JobStatus, LogStorage, TaskLog
 from django.conf import settings
@@ -105,7 +104,7 @@ class TaskRetrieveSerializer(HyperlinkedModelSerializer):
             "cancel",
             "download",
         )
-        read_only_fields = ("object_id", "status", "start_date", "finish_date")
+        read_only_fields = ("object_id", "status", "start_date", "finish_date", "pid", "selector")
         extra_kwargs = {"url": {"lookup_url_kwarg": "task_pk"}}
 
     def get_action_url(self, obj: TaskLog) -> str | None:
@@ -253,7 +252,7 @@ class JobRetrieveSerializer(HyperlinkedModelSerializer):
                         kwargs={"job_pk": obj.pk, "log_pk": log_storage.pk},
                         request=self.context["request"],
                     ),
-                }
+                },
             )
 
         return logs
@@ -277,12 +276,10 @@ class LogStorageRetrieveSerializer(HyperlinkedModelSerializer):
     def _get_ansible_content(obj):
         path_file = settings.RUN_DIR / f"{obj.job.id}" / f"{obj.name}-{obj.type}.{obj.format}"
         try:
-            with open(path_file, "r", encoding=settings.ENCODING_UTF_8) as f:
+            with open(path_file, encoding=settings.ENCODING_UTF_8) as f:
                 content = f.read()
-        except FileNotFoundError as e:
-            msg = f'File "{obj.name}-{obj.type}.{obj.format}" not found'
-
-            raise AdcmEx("LOG_NOT_FOUND", msg) from e
+        except FileNotFoundError:
+            content = ""
 
         return content
 

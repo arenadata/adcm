@@ -87,7 +87,7 @@ class TestCluster:
             pytest.param(
                 get_data_dir(__file__, "cluster_action_bundle"),
                 id="cluster_action_bundle",
-            )
+            ),
         ],
         indirect=True,
     )
@@ -190,7 +190,7 @@ class TestClusterService:
             pytest.param(
                 get_data_dir(__file__, "cluster_action_bundle"),
                 id="cluster_action_bundle",
-            )
+            ),
         ],
         indirect=True,
     )

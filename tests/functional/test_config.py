@@ -15,7 +15,6 @@
 """Tests for config"""
 
 import os
-from typing import Tuple
 
 import allure
 import coreapi
@@ -44,7 +43,7 @@ def get_value(path, entity, value_type):
     else:
         raise ValueError(f"Incorrect type of entity {entity}")
 
-    with open(file_name, "r", encoding="utf_8") as file:
+    with open(file_name, encoding="utf_8") as file:
         data = yaml.full_load(file)
         playbook_vars = data[0]["vars"]
         return playbook_vars[value_type]
@@ -748,16 +747,22 @@ class TestConfigFieldTypes:
                 adcm_object.config_set_diff(required_diff)
         with allure.step(f"Set other fields to {value_to_set} and check that config changed correctly"):
             self._change_config_and_check_changed_by_action(
-                objects_to_change, changed_diff, "check_default", "check_changed"
+                objects_to_change,
+                changed_diff,
+                "check_default",
+                "check_changed",
             )
         with allure.step("Set default values for fields and check that config changed correctly"):
             self._change_config_and_check_changed_by_action(
-                objects_to_change, default_diff, "check_changed", "check_default"
+                objects_to_change,
+                default_diff,
+                "check_changed",
+                "check_default",
             )
 
     def _change_config_and_check_changed_by_action(
         self,
-        objects_to_change: Tuple[AnyADCMObject],
+        objects_to_change: tuple[AnyADCMObject],
         config_to_set: dict,
         action_before: str,
         action_after: str,

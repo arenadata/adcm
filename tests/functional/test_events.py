@@ -9,19 +9,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Tests for ADCM events"""
+# pylint: disable=redefined-outer-name
 
 import json
 import os
 import re
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import allure
 import pytest
 import websocket
-
-# pylint: disable=redefined-outer-name
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
 
@@ -233,7 +231,8 @@ def test_check_timestamp_in_job_logs(sdk_client_fs: ADCMClient, verbose_state):
         # Job log timestamp can hit for 59 seconds
         # So it makes sense to check for a range of timestamps rather than a specific minute
         possible_timestamps = [
-            (datetime.utcnow() - timedelta(seconds=delta)).strftime("%A %d %B %Y  %H:%M") for delta in range(3)
+            (datetime.now(tz=ZoneInfo("UTC")) - timedelta(seconds=delta)).strftime("%A %d %B %Y  %H:%M")
+            for delta in range(3)
         ]
 
         assert any(

@@ -12,8 +12,8 @@
 
 """Admin pages PageObjects classes"""
 
+from collections.abc import Collection
 from dataclasses import dataclass
-from typing import Collection, List, Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -67,7 +67,7 @@ class GeneralAdminPage(BasePageObject):
     """Base class for admin pages"""
 
     MENU_SUFFIX: str
-    MAIN_ELEMENTS: List[BaseLocator]
+    MAIN_ELEMENTS: list[BaseLocator]
     MAIN_ELEMENTS: Collection[BaseLocator]
     config: CommonConfigMenuObj
     table: CommonTableObj
@@ -465,7 +465,7 @@ class AdminPoliciesPage(GeneralAdminPage, ObjectRowMixin):
         groups: list[str] = None,
         clusters: list[str] = None,
         service: str = None,
-        parent: Optional[str] = None,
+        parent: str | None = None,
         providers: list[str] = None,
         hosts: list[str] = None,
     ):
@@ -552,7 +552,10 @@ class GeneralAuditPage(GeneralAdminPage):
         filter_buttons[filter_position].click()
 
         wait_until_step_succeeds(
-            self._remove_buttons_amount_should_decrease, initial_amount=amount_of_buttons, timeout=2, period=0.5
+            self._remove_buttons_amount_should_decrease,
+            initial_amount=amount_of_buttons,
+            timeout=2,
+            period=0.5,
         )
 
     def refresh_filter(self, filter_position: int) -> None:
@@ -593,7 +596,8 @@ class GeneralAuditPage(GeneralAdminPage):
         self.wait_element_visible(dropdown_locator)
 
         suitable_option: WebElement | None = next(
-            filter(lambda option: option.text.strip() == value_to_pick, self.find_elements(dropdown_locator)), None
+            filter(lambda option: option.text.strip() == value_to_pick, self.find_elements(dropdown_locator)),
+            None,
         )
         if suitable_option is None:
             raise AssertionError(f"Failed to find option with value '{value_to_pick}'")
@@ -637,7 +641,7 @@ class OperationsAuditPage(GeneralAuditPage):
                     "operation_time",
                     "username",
                 )
-            }
+            },
         )
 
     def get_info_from_all_rows(self) -> tuple[OperationRowInfo, ...]:
@@ -671,7 +675,7 @@ class LoginAuditPage(GeneralAuditPage):
             **{
                 field: self.find_child(row, getattr(LoginAuditLocators.Row, field), timeout=0.5).text
                 for field in ("login", "result", "login_time")
-            }
+            },
         )
 
     def get_info_from_all_rows(self) -> tuple[LoginRowInfo, ...]:

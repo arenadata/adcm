@@ -12,7 +12,6 @@
 
 """Config page PageObjects classes"""
 
-from typing import List
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -33,7 +32,7 @@ class CommonGroupConfigMenu(BasePageObject):
     def is_customization_chbx_disabled(self, row: WebElement) -> bool:
         """Check if customization checkbox is disabled"""
         return "mat-checkbox-disabled" in str(
-            self.find_child(row, self.locators.customization_chbx).get_attribute("class")
+            self.find_child(row, self.locators.customization_chbx).get_attribute("class"),
         )
 
     @allure.step("Click on customization checkbox")
@@ -50,10 +49,10 @@ class CommonGroupConfigMenu(BasePageObject):
         """Check if customization checkbox is checked"""
 
         return "mat-checkbox-checked" in str(
-            self.find_child(row, self.locators.customization_chbx).get_attribute("class")
+            self.find_child(row, self.locators.customization_chbx).get_attribute("class"),
         )
 
-    def get_all_group_config_rows(self, *, displayed_only: bool = True, timeout: int = 5) -> List[WebElement]:
+    def get_all_group_config_rows(self, *, displayed_only: bool = True, timeout: int = 5) -> list[WebElement]:
         """Return all config field rows"""
 
         try:
@@ -63,7 +62,7 @@ class CommonGroupConfigMenu(BasePageObject):
         except TimeoutException:
             return []
 
-    def get_all_group_rows(self, *, displayed_only: bool = True, timeout: int = 5) -> List[WebElement]:
+    def get_all_group_rows(self, *, displayed_only: bool = True, timeout: int = 5) -> list[WebElement]:
         """Return all config group rows"""
 
         try:

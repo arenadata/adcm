@@ -25,7 +25,7 @@ from tests.functional.rbac.conftest import (
     PROVIDER_EDIT_CONFIG_ROLES,
     PROVIDER_VIEW_CONFIG_ROLES,
 )
-from tests.functional.rbac.conftest import BusinessRoles as BR
+from tests.functional.rbac.conftest import BusinessRoles as BR  # noqa: N817
 from tests.functional.rbac.conftest import (
     RbacRoles,
     as_user_objects,
@@ -90,7 +90,12 @@ def test_view_application_configurations(user_policy: Policy, user_sdk: ADCMClie
 
 
 @use_role(PROVIDER_VIEW_CONFIG_ROLES)
-def test_view_infrastructure_configurations(user_policy: Policy, user_sdk: ADCMClient, prepare_objects, second_objects):
+def test_view_infrastructure_configurations(
+    user_policy: Policy,
+    user_sdk: ADCMClient,
+    prepare_objects,
+    second_objects,
+):
     """Test that View infrastructure configuration role is ok"""
     cluster, service, component, provider, host = prepare_objects
     second_host_on_first_provider = provider.host_create(fqdn="new-host")
@@ -119,7 +124,12 @@ def test_edit_application_configurations(user_policy: Policy, user_sdk: ADCMClie
 
 
 @use_role(PROVIDER_EDIT_CONFIG_ROLES)
-def test_edit_infrastructure_configurations(user_policy: Policy, user_sdk: ADCMClient, prepare_objects, second_objects):
+def test_edit_infrastructure_configurations(
+    user_policy: Policy,
+    user_sdk: ADCMClient,
+    prepare_objects,
+    second_objects,
+):
     """Test that Edit infrastructure configuration role is ok"""
     cluster, service, component, provider, host = prepare_objects
 
@@ -169,7 +179,11 @@ def test_manage_imports(user_policy: Policy, user_sdk: ADCMClient, is_denied_to_
 
 @use_role(BR.VIEW_HOST_COMPONENTS)
 def test_view_hostcomponents(
-    user_policy: Policy, user_sdk: ADCMClient, is_denied_to_user, prepare_objects, second_objects
+    user_policy: Policy,
+    user_sdk: ADCMClient,
+    is_denied_to_user,
+    prepare_objects,
+    second_objects,
 ):
     """Test that View host-components role is ok"""
     cluster_via_admin, *_, host_via_admin = prepare_objects
@@ -186,7 +200,11 @@ def test_view_hostcomponents(
 
 @use_role(BR.EDIT_HOST_COMPONENTS)
 def test_edit_hostcomponents(
-    user_policy: Policy, user_sdk: ADCMClient, is_denied_to_user, prepare_objects, second_objects
+    user_policy: Policy,
+    user_sdk: ADCMClient,
+    is_denied_to_user,
+    prepare_objects,
+    second_objects,
 ):
     """Test that Edit host-components role is ok"""
 
@@ -243,7 +261,13 @@ def test_remove_service(user_policy: Policy, user_sdk: ADCMClient, is_denied_to_
 
 @use_role(BR.REMOVE_HOSTS)
 def test_remove_hosts(
-    user_policy: Policy, user_sdk: ADCMClient, is_denied_to_user, prepare_objects, second_objects, sdk_client_fs, user
+    user_policy: Policy,
+    user_sdk: ADCMClient,
+    is_denied_to_user,
+    prepare_objects,
+    second_objects,
+    sdk_client_fs,
+    user,
 ):
     """Test that Remove hosts role is ok"""
     *_, admin_host = prepare_objects
@@ -306,7 +330,12 @@ def test_unmap_hosts(user_policy: Policy, user_sdk: ADCMClient, is_denied_to_use
 @use_role(BR.UPGRADE_CLUSTER_BUNDLE)
 @pytest.mark.usefixtures("second_objects")
 def test_upgrade_application_bundle(
-    user_policy, user_sdk: ADCMClient, is_denied_to_user, prepare_objects, sdk_client_fs, user
+    user_policy,  # pylint: disable=unused-argument
+    user_sdk: ADCMClient,
+    is_denied_to_user,
+    prepare_objects,
+    sdk_client_fs,
+    user,
 ):
     """Test that Upgrade application bundle role is ok"""
     cluster_via_admin, *_, provider_via_admin, _ = prepare_objects
@@ -318,7 +347,11 @@ def test_upgrade_application_bundle(
     is_denied_to_user(second_cluster_via_admin, BR.UPGRADE_CLUSTER_BUNDLE)
 
     new_policy = create_policy(
-        sdk_client_fs, BR.UPGRADE_CLUSTER_BUNDLE, objects=[second_cluster_via_admin], users=[user], groups=[]
+        sdk_client_fs,
+        BR.UPGRADE_CLUSTER_BUNDLE,
+        objects=[second_cluster_via_admin],
+        users=[user],
+        groups=[],
     )
     delete_policy(new_policy)
     is_denied_to_user(second_cluster_via_admin, BR.UPGRADE_CLUSTER_BUNDLE)
@@ -327,7 +360,12 @@ def test_upgrade_application_bundle(
 @use_role(BR.UPGRADE_PROVIDER_BUNDLE)
 @pytest.mark.usefixtures("second_objects")
 def test_upgrade_infrastructure_bundle(
-    user_policy, user_sdk: ADCMClient, is_denied_to_user, prepare_objects, sdk_client_fs, user
+    user_policy,  # pylint: disable=unused-argument
+    user_sdk: ADCMClient,
+    is_denied_to_user,
+    prepare_objects,
+    sdk_client_fs,
+    user,
 ):
     """Test that Upgrade infrastructure bundle role is ok"""
     cluster_via_admin, *_, provider_via_admin, _ = prepare_objects
@@ -339,7 +377,11 @@ def test_upgrade_infrastructure_bundle(
     is_denied_to_user(second_provider_via_admin, BR.UPGRADE_PROVIDER_BUNDLE)
 
     new_policy = create_policy(
-        sdk_client_fs, BR.UPGRADE_PROVIDER_BUNDLE, objects=[second_provider_via_admin], users=[user], groups=[]
+        sdk_client_fs,
+        BR.UPGRADE_PROVIDER_BUNDLE,
+        objects=[second_provider_via_admin],
+        users=[user],
+        groups=[],
     )
     delete_policy(new_policy)
     is_denied_to_user(second_provider_via_admin, BR.UPGRADE_PROVIDER_BUNDLE)
@@ -351,7 +393,9 @@ def test_create_provider(user_policy, user_sdk: ADCMClient, is_denied_to_user, p
     cluster, *_, provider, _ = prepare_objects
     *_, second_provider, _ = second_objects
     provider_bundle_first, provider_bundle_second = as_user_objects(
-        user_sdk, provider.bundle(), second_provider.bundle()
+        user_sdk,
+        provider.bundle(),
+        second_provider.bundle(),
     )
 
     is_allowed(provider_bundle_first, BR.CREATE_HOST_PROVIDER)
@@ -383,7 +427,13 @@ def test_create_host(user_policy, user_sdk: ADCMClient, is_denied_to_user, prepa
 
 @use_role(BR.REMOVE_HOST_PROVIDER)
 def test_remove_provider(
-    user_policy, user_sdk: ADCMClient, is_denied_to_user, prepare_objects, second_objects, sdk_client_fs, user
+    user_policy,  # pylint: disable=unused-argument
+    user_sdk: ADCMClient,
+    is_denied_to_user,
+    prepare_objects,
+    second_objects,
+    sdk_client_fs,
+    user,
 ):
     """Test that Remove provider role is ok"""
     *_, provider_via_admin, host_via_admin = prepare_objects
@@ -398,7 +448,11 @@ def test_remove_provider(
     is_denied_to_user(second_provider_via_admin, BR.REMOVE_HOST_PROVIDER)
 
     new_policy = create_policy(
-        sdk_client_fs, BR.REMOVE_HOST_PROVIDER, objects=[second_provider_via_admin], users=[user], groups=[]
+        sdk_client_fs,
+        BR.REMOVE_HOST_PROVIDER,
+        objects=[second_provider_via_admin],
+        users=[user],
+        groups=[],
     )
     user_sdk.reread()
     delete_policy(new_policy)
@@ -406,7 +460,13 @@ def test_remove_provider(
 
 
 @use_role(BR.CREATE_CLUSTER)
-def test_create_cluster(user_policy, user_sdk: ADCMClient, is_denied_to_user, prepare_objects, second_objects):
+def test_create_cluster(
+    user_policy,
+    user_sdk: ADCMClient,
+    is_denied_to_user,
+    prepare_objects,
+    second_objects,
+):  # pylint: disable=unused-argument
     """Test that Create cluster role is ok"""
     cluster, *_, provider, _ = prepare_objects
     cluster_bundle, *_ = as_user_objects(user_sdk, cluster.bundle())
@@ -421,7 +481,13 @@ def test_create_cluster(user_policy, user_sdk: ADCMClient, is_denied_to_user, pr
 
 @use_role(BR.REMOVE_CLUSTER)
 def test_remove_cluster(
-    user_policy, user_sdk: ADCMClient, is_denied_to_user, prepare_objects, second_objects, sdk_client_fs, user
+    user_policy,  # pylint: disable=unused-argument
+    user_sdk: ADCMClient,
+    is_denied_to_user,
+    prepare_objects,
+    second_objects,
+    sdk_client_fs,
+    user,
 ):
     """Test that Remove cluster role is ok"""
     admin_cluster, *_ = prepare_objects
@@ -433,7 +499,11 @@ def test_remove_cluster(
     is_denied_to_user(admin_cluster_second, BR.REMOVE_CLUSTER)
 
     new_policy = create_policy(
-        sdk_client_fs, BR.REMOVE_CLUSTER, objects=[admin_cluster_second], users=[user], groups=[]
+        sdk_client_fs,
+        BR.REMOVE_CLUSTER,
+        objects=[admin_cluster_second],
+        users=[user],
+        groups=[],
     )
     delete_policy(new_policy)
     is_denied_to_user(admin_cluster_second, BR.REMOVE_CLUSTER)
@@ -471,7 +541,11 @@ def test_service_administrator(user, user_sdk: ADCMClient, sdk_client_fs, prepar
 
     role = sdk_client_fs.role(name=RbacRoles.SERVICE_ADMINISTRATOR.value)
     sdk_client_fs.policy_create(
-        name=f"Policy with role {role.name}", role=role, objects=[service], user=[user], group=[]
+        name=f"Policy with role {role.name}",
+        role=role,
+        objects=[service],
+        user=[user],
+        group=[],
     )
     user_sdk.reread()
 
@@ -489,12 +563,20 @@ def test_cluster_administrator(user, mm_changing_roles, clients, prepare_objects
 
     role = clients.admin.role(name=RbacRoles.CLUSTER_ADMINISTRATOR.value)
     clients.admin.policy_create(
-        name=f"Policy with role {role.name}", role=role, objects=[cluster], user=[user], group=[]
+        name=f"Policy with role {role.name}",
+        role=role,
+        objects=[cluster],
+        user=[user],
+        group=[],
     )
     clients.user.reread()
 
     allowed_user_objects = *_, user_service, user_component, user_host = as_user_objects(
-        clients.user, cluster, service, component, host
+        clients.user,
+        cluster,
+        service,
+        component,
+        host,
     )
     is_allowed_to_view(*allowed_user_objects)
     is_allowed_to_edit(*allowed_user_objects)
@@ -513,7 +595,11 @@ def test_provider_administrator(user, user_sdk: ADCMClient, sdk_client_fs, prepa
 
     role = sdk_client_fs.role(name=RbacRoles.PROVIDER_ADMINISTRATOR.value)
     sdk_client_fs.policy_create(
-        name=f"Policy with role {role.name}", role=role, objects=[hostprovider], user=[user], group=[]
+        name=f"Policy with role {role.name}",
+        role=role,
+        objects=[hostprovider],
+        user=[user],
+        group=[],
     )
     user_sdk.reread()
 

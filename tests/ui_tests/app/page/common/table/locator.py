@@ -48,14 +48,20 @@ class CommonTable:
         previous_page = BaseLocator(By.CSS_SELECTOR, "button[aria-label='Previous page']", "Previous page button")
         page_btn = BaseLocator(By.CSS_SELECTOR, "a[class*='page-button']", "Page button")
         page_to_choose_btn = TemplateLocator(
-            By.XPATH, "//a[contains(@class, 'page-button') and text()='{}']", "Page button"
+            By.XPATH,
+            "//a[contains(@class, 'page-button') and text()='{}']",
+            "Page button",
         )
         next_page = BaseLocator(By.CSS_SELECTOR, "button[aria-label='Next page']", "Next page button")
 
         per_page_dropdown = BaseLocator(
-            By.CSS_SELECTOR, "mat-select[aria-label='Items per page:']", "Rows per page dropdown"
+            By.CSS_SELECTOR,
+            "mat-select[aria-label='Items per page:']",
+            "Rows per page dropdown",
         )
         per_page_block = BaseLocator(
-            By.CSS_SELECTOR, "div[aria-label='Items per page:']", "Container of rows per page options"
+            By.CSS_SELECTOR,
+            "div[aria-label='Items per page:']",
+            "Container of rows per page options",
         )
         per_page_element = BaseLocator(By.TAG_NAME, "mat-option", "Rows per page option")

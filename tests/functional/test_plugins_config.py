@@ -12,7 +12,7 @@
 
 """Tests for adcm_config plugin"""
 
-from typing import Callable, Tuple, Type
+from collections.abc import Callable
 
 import allure
 import pytest
@@ -82,14 +82,14 @@ check_config_changed = build_objects_checker(
 
 
 @pytest.fixture()
-def two_clusters(request, sdk_client_fs: ADCMClient) -> Tuple[Cluster, Cluster]:
+def two_clusters(request, sdk_client_fs: ADCMClient) -> tuple[Cluster, Cluster]:
     """Get two clusters with both services"""
     bundle_dir = "cluster" if not hasattr(request, "param") else request.param
     return create_two_clusters(sdk_client_fs, __file__, bundle_dir)
 
 
 @pytest.fixture()
-def two_providers(sdk_client_fs: ADCMClient) -> Tuple[Provider, Provider]:
+def two_providers(sdk_client_fs: ADCMClient) -> tuple[Provider, Provider]:
     """Get two providers with two hosts"""
     return create_two_providers(sdk_client_fs, __file__, "provider")
 
@@ -101,8 +101,8 @@ def two_providers(sdk_client_fs: ADCMClient) -> Tuple[Provider, Provider]:
 @pytest.mark.usefixtures("two_clusters")
 def test_cluster_related_objects(
     change_action_name: str,
-    object_to_be_changed: Tuple[str, ...],
-    action_owner: Tuple[str, ...],
+    object_to_be_changed: tuple[str, ...],
+    action_owner: tuple[str, ...],
     sdk_client_fs: ADCMClient,
 ):
     """
@@ -126,8 +126,8 @@ def test_cluster_related_objects(
 @pytest.mark.usefixtures("two_providers")
 def test_provider_related_objects(
     change_action_name: str,
-    object_to_be_changed: Tuple[str, ...],
-    action_owner: Tuple[str, ...],
+    object_to_be_changed: tuple[str, ...],
+    action_owner: tuple[str, ...],
     sdk_client_fs: ADCMClient,
 ):
     """
@@ -144,21 +144,21 @@ def test_provider_related_objects(
     )
 
 
-def test_host_from_provider(two_providers: Tuple[Provider, Provider], sdk_client_fs: ADCMClient):
+def test_host_from_provider(two_providers: tuple[Provider, Provider], sdk_client_fs: ADCMClient):
     """Change host config from provider"""
     provider = two_providers[0]
     host = provider.host()
     provider_name = compose_name(provider)
     host_name = compose_name(host)
     with check_config_changed(sdk_client_fs, {host}), allure.step(
-        f"Set config of {host_name} with action from {provider_name}"
+        f"Set config of {host_name} with action from {provider_name}",
     ):
         run_provider_action_and_assert_result(provider, "change_host_from_provider", config={"host_id": host.id})
 
 
 def test_multijob(
-    two_clusters: Tuple[Cluster, Cluster],
-    two_providers: Tuple[Provider, Provider],
+    two_clusters: tuple[Cluster, Cluster],
+    two_providers: tuple[Provider, Provider],
     sdk_client_fs: ADCMClient,
 ):
     """Check that multijob actions change config or object itself"""
@@ -170,7 +170,7 @@ def test_multijob(
         affected_objects.add(obj)
         object_name = compose_name(obj)
         with check_config_changed(sdk_client_fs, affected_objects), allure.step(
-            f"Change {object_name} state with multijob action"
+            f"Change {object_name} state with multijob action",
         ):
             run_successful_task(obj.action(name=f"change_{classname}_multijob"), object_name)
 
@@ -206,8 +206,8 @@ def test_forbidden_actions(sdk_client_fs: ADCMClient):
 
 
 def test_from_host_actions(
-    two_clusters: Tuple[Cluster, Cluster],
-    two_providers: Tuple[Provider, Provider],
+    two_clusters: tuple[Cluster, Cluster],
+    two_providers: tuple[Provider, Provider],
     sdk_client_fs: ADCMClient,
 ):
     """Test that host actions actually change config"""
@@ -227,7 +227,7 @@ def test_from_host_actions(
         affected_objects.add(obj)
         classname = obj.__class__.__name__.lower()
         with check_config_changed_local(sdk_client_fs, affected_objects), allure.step(
-            f"Check change {compose_name(obj)} config from host action"
+            f"Check change {compose_name(obj)} config from host action",
         ):
             run_host_action_and_assert_result(host, f"change_{classname}_host")
 
@@ -257,7 +257,10 @@ class TestChangeMultipleParams:
     }
 
     def _prepare_objects(
-        self, cluster: Cluster, provider: Provider, pick_type: Type
+        self,
+        cluster: Cluster,
+        provider: Provider,
+        pick_type: type,
     ) -> tuple[ClusterRelatedObject | ProviderRelatedObject, ClusterRelatedObject | ProviderRelatedObject]:
         service_1 = cluster.service_add(name="first_service")
         service_2 = cluster.service_add(name="second_service")
@@ -282,7 +285,9 @@ class TestChangeMultipleParams:
 
     def _run_and_expect_success(self, adcm_object, action_name):
         return wait_for_task_and_assert_result(
-            adcm_object.action(name=action_name).run(), "success", action_name=action_name
+            adcm_object.action(name=action_name).run(),
+            "success",
+            action_name=action_name,
         )
 
     @pytest.fixture()
@@ -296,13 +301,17 @@ class TestChangeMultipleParams:
         return lambda: bundle.provider_create(name=f"Provider {random_string(12)}")
 
     def test_change_multiple_params_in_one_call(  # pylint: disable=too-many-locals
-        self, create_new_cluster, create_new_provider
+        self,
+        create_new_cluster,
+        create_new_provider,
     ):
         processed_objects = []
         for type_ in Component, Service, Cluster, Host, Provider:
             with allure.step(f"Prepare objects for checking plugin with {type_.__name__}"):
                 object_to_change, other_objects = self._prepare_objects(
-                    cluster=create_new_cluster(), provider=create_new_provider(), pick_type=type_
+                    cluster=create_new_cluster(),
+                    provider=create_new_provider(),
+                    pick_type=type_,
                 )
 
             processed_objects.extend(other_objects)
@@ -347,8 +356,8 @@ class TestImmediateConfigChange(TestImmediateChange):
     @allure.issue(url="https://arenadata.atlassian.net/browse/ADCM-2116")
     def test_immediate_config_change(
         self,
-        provider_host: Tuple[Provider, Host],
-        cluster_service_component: Tuple[Cluster, Service, Component],
+        provider_host: tuple[Provider, Host],
+        cluster_service_component: tuple[Cluster, Service, Component],
     ):
         """Test that config is changed right after adcm_config step in multijob action"""
         self.run_immediate_change_test(provider_host, cluster_service_component)
@@ -356,8 +365,8 @@ class TestImmediateConfigChange(TestImmediateChange):
 
 def _test_successful_config_change(
     action_name: str,
-    object_to_be_changed: Tuple[str, ...],
-    action_owner: Tuple[str, ...],
+    object_to_be_changed: tuple[str, ...],
+    action_owner: tuple[str, ...],
     sdk_client_fs: ADCMClient,
     get_object_func: Callable[..., AnyADCMObject],
 ):
@@ -367,6 +376,6 @@ def _test_successful_config_change(
     action_owner_object = get_object_func(sdk_client_fs, *action_owner)
     action_owner_name = compose_name(action_owner_object)
     with check_config_changed(sdk_client_fs, {object_to_be_changed}), allure.step(
-        f"Change config of {changed_object_name} with action from {action_owner_name}"
+        f"Change config of {changed_object_name} with action from {action_owner_name}",
     ):
         run_successful_task(action_owner_object.action(name=action_name), action_owner_name)

@@ -48,10 +48,14 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
         "Header button for in progress Jobs",
     )
     success_job_button = BaseLocator(
-        By.XPATH, "//button[@mattooltip='Show success jobs']", "Header button for success Jobs"
+        By.XPATH,
+        "//button[@mattooltip='Show success jobs']",
+        "Header button for success Jobs",
     )
     failed_job_button = BaseLocator(
-        By.XPATH, "//button[@mattooltip='Show failed jobs']", "Header button for failed Jobs"
+        By.XPATH,
+        "//button[@mattooltip='Show failed jobs']",
+        "Header button for failed Jobs",
     )
 
     class JobPopup:

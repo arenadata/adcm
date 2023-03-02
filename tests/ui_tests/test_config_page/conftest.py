@@ -12,7 +12,7 @@
 
 """conftest for config page UI tests"""
 
-from typing import Generator
+from collections.abc import Generator
 
 import allure
 import pytest

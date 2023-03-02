@@ -36,13 +36,16 @@ class SignalsTest(BaseTestCase):
         m2m_changed.connect(m2m_change, sender=GroupConfig.hosts.through)
         bundle = Bundle.objects.create()
         cluster = Cluster.objects.create(
-            prototype=Prototype.objects.create(type="cluster", name="prototype", bundle=bundle)
+            prototype=Prototype.objects.create(type="cluster", name="prototype", bundle=bundle),
         )
         group_config = GroupConfig.objects.create(
-            object_id=cluster.id, object_type=ContentType.objects.get(model="cluster"), name="group"
+            object_id=cluster.id,
+            object_type=ContentType.objects.get(model="cluster"),
+            name="group",
         )
         host = Host.objects.create(
-            cluster=cluster, prototype=Prototype.objects.create(type="host", name="prototype_2", bundle=bundle)
+            cluster=cluster,
+            prototype=Prototype.objects.create(type="host", name="prototype_2", bundle=bundle),
         )
 
         group_config.hosts.add(host)

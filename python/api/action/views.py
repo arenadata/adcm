@@ -29,12 +29,13 @@ from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 VIEW_ACTION_PERM = "cm.view_action"
 
 
-def get_object_type_id(**kwargs):
+def get_object_type_id(**kwargs) -> tuple[str, int, int]:
     object_type = kwargs.get("object_type")
     object_id = kwargs.get(f"{object_type}_id") or kwargs.get(f"{object_type}_pk")
     action_id = kwargs.get("action_id", None)
@@ -58,7 +59,7 @@ class ActionList(PermissionListMixin, GenericUIView):
     filter_backends = (AdcmFilterBackend,)
     permission_required = [VIEW_ACTION_PERM]
 
-    def _get_actions_for_host(self, host: Host) -> set:
+    def _get_actions_for_host(self, host: Host) -> set[Action]:
         actions = set(filter_actions(host, self.filter_queryset(self.get_queryset().filter(prototype=host.prototype))))
         hostcomponents = HostComponent.objects.filter(host_id=host.id)
         if hostcomponents:
@@ -71,9 +72,9 @@ class ActionList(PermissionListMixin, GenericUIView):
                         filter_actions(
                             connect_obj,
                             self.filter_queryset(
-                                self.get_queryset().filter(prototype=connect_obj.prototype, host_action=True)
+                                self.get_queryset().filter(prototype=connect_obj.prototype, host_action=True),
                             ),
-                        )
+                        ),
                     )
         else:
             if host.cluster is not None:
@@ -81,14 +82,14 @@ class ActionList(PermissionListMixin, GenericUIView):
                     filter_actions(
                         host.cluster,
                         self.filter_queryset(
-                            self.get_queryset().filter(prototype=host.cluster.prototype, host_action=True)
+                            self.get_queryset().filter(prototype=host.cluster.prototype, host_action=True),
                         ),
-                    )
+                    ),
                 )
 
         return actions
 
-    def get(self, request, *args, **kwargs):  # pylint: disable=too-many-locals
+    def get(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         if kwargs["object_type"] == "host":
             host, _ = get_obj(object_type="host", host_id=kwargs["host_id"])
             actions = self._get_actions_for_host(host)
@@ -109,7 +110,9 @@ class ActionList(PermissionListMixin, GenericUIView):
         actions = list(compress(actions, mask))
 
         serializer = self.get_serializer(
-            actions, many=True, context={"request": request, "objects": objects, "obj": obj}
+            actions,
+            many=True,
+            context={"request": request, "objects": objects, "obj": obj},
         )
 
         return Response(serializer.data)
@@ -122,12 +125,15 @@ class ActionDetail(PermissionListMixin, GenericUIView):
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = [VIEW_ACTION_PERM]
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         object_type, object_id, action_id = get_object_type_id(**kwargs)
         model = get_model_by_type(object_type)
         content_type = ContentType.objects.get_for_model(model)
         obj = get_object_for_user(
-            request.user, f"{content_type.app_label}.view_{content_type.model}", model, id=object_id
+            request.user,
+            f"{content_type.app_label}.view_{content_type.model}",
+            model,
+            id=object_id,
         )
         action = get_object_for_user(
             request.user,
@@ -150,7 +156,7 @@ class RunTask(GenericUIView):
     serializer_class = RunTaskRetrieveSerializer
     permission_classes = (IsAuthenticated,)
 
-    def has_action_perm(self, action, obj):
+    def has_action_perm(self, action: Action, obj) -> bool:
         user = self.request.user
 
         if user.has_perm("cm.add_task"):
@@ -158,17 +164,20 @@ class RunTask(GenericUIView):
 
         return user.has_perm(f"cm.run_action_{action.display_name}", obj)
 
-    def check_action_perm(self, action, obj):
+    def check_action_perm(self, action: Action, obj) -> None:
         if not self.has_action_perm(action, obj):
             raise PermissionDenied()
 
     @audit
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         object_type, object_id, action_id = get_object_type_id(**kwargs)
         model = get_model_by_type(object_type)
         content_type = ContentType.objects.get_for_model(model)
         obj = get_object_for_user(
-            request.user, f"{content_type.app_label}.view_{content_type.model}", model, id=object_id
+            request.user,
+            f"{content_type.app_label}.view_{content_type.model}",
+            model,
+            id=object_id,
         )
         action = get_object_for_user(request.user, VIEW_ACTION_PERM, Action, id=action_id)
         if reason := action.get_start_impossible_reason(obj):

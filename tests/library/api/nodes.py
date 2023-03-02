@@ -29,5 +29,8 @@ class ServiceNode(Node):
 class ComponentNode(Node):
     def change_maintenance_mode(self, component_id: int, value: Literal["ON", "OFF"]) -> RequestResult:
         return self._requester.post(
-            "component", str(component_id), "maintenance-mode", json={"maintenance_mode": value}
+            "component",
+            str(component_id),
+            "maintenance-mode",
+            json={"maintenance_mode": value},
         )

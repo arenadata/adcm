@@ -13,7 +13,7 @@
 """Test categories (filters for roles)"""
 
 import os
-from typing import Dict, Generator, Set
+from collections.abc import Generator
 from urllib import parse
 
 import allure
@@ -47,7 +47,7 @@ def test_category_lifecycle(sdk_client_fs):
 
 
 @allure.step("Check categories before upload of any bundle")
-def check_categories_before_bundle_upload(client: ADCMClient, expected_categories: Set[str]):
+def check_categories_before_bundle_upload(client: ADCMClient, expected_categories: set[str]):
     """Check that there's only one default category"""
     _check_category_list(client, expected_categories)
     roles_with_categories = tuple(filter(lambda role: len(role.categories) != 0, _get_all_roles_info(client)))
@@ -56,7 +56,9 @@ def check_categories_before_bundle_upload(client: ADCMClient, expected_categorie
 
 @allure.step("Check categories after cluster bundle uploads")
 def check_categories_during_cluster_bundle_uploads(
-    client: ADCMClient, cluster_bundle_paths: Dict[str, str], expected_categories: Set[str]
+    client: ADCMClient,
+    cluster_bundle_paths: dict[str, str],
+    expected_categories: set[str],
 ):
     """Check categories between and after two cluster bundles upload"""
     first_fp, second_fp = cluster_bundle_paths.values()
@@ -71,7 +73,7 @@ def check_categories_during_cluster_bundle_uploads(
         ), f"None of roles has new bundle's category '{first_bundle_category}'"
 
     with allure.step(
-        "Upload second cluster and check that new category has appeared and action roles have two categories"
+        "Upload second cluster and check that new category has appeared and action roles have two categories",
     ):
         second_bundle = client.upload_from_fs(second_fp)
         second_bundle_category = second_bundle.cluster_prototype().display_name
@@ -96,7 +98,7 @@ def check_categories_during_cluster_bundle_uploads(
 
 
 @allure.step("Check categories after provider bundle upload")
-def check_categories_after_provider_bundle_upload(client: ADCMClient, bundle_path: str, expected_categories: Set[str]):
+def check_categories_after_provider_bundle_upload(client: ADCMClient, bundle_path: str, expected_categories: set[str]):
     """Check that new categories wasn't created after provider bundle upload"""
     bundle = client.upload_from_fs(bundle_path)
     category_name = bundle.provider_prototype().display_name
@@ -107,7 +109,7 @@ def check_categories_after_provider_bundle_upload(client: ADCMClient, bundle_pat
 
 
 @allure.step("Check list of categories")
-def _check_category_list(client: ADCMClient, categories: Set[str]):
+def _check_category_list(client: ADCMClient, categories: set[str]):
     """Check if category list is the same as expected"""
     categories_request = requests.get(
         parse.urljoin(client.url, CATEGORIES_SUFFIX),

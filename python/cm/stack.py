@@ -17,9 +17,9 @@ import os
 import re
 import warnings
 from copy import deepcopy
+from pathlib import Path
 from typing import Any
 
-import cm.checker
 import ruyaml
 import yaml
 import yspec.checker
@@ -29,9 +29,11 @@ from cm.adcm_config import (
     read_bundle_file,
     type_is_complex,
 )
-from cm.errors import raise_adcm_ex as err
+from cm.checker import FormatError, check, round_trip_load
+from cm.errors import raise_adcm_ex
 from cm.logger import logger
 from cm.models import (
+    Prototype,
     StageAction,
     StagePrototype,
     StagePrototypeConfig,
@@ -42,137 +44,206 @@ from cm.models import (
 )
 from django.conf import settings
 from django.db import IntegrityError
+from jinja2 import Template
+from jinja2.exceptions import TemplateError
 from rest_framework import status
+from ruyaml.composer import ComposerError
+from ruyaml.constructor import DuplicateKeyError
+from ruyaml.error import ReusedAnchorWarning
+from ruyaml.parser import ParserError as RuYamlParserError
+from ruyaml.scanner import ScannerError as RuYamlScannerError
 from version_utils import rpm
+from yaml.parser import ParserError as YamlParserError
+from yaml.scanner import ScannerError as YamlScannerError
 
+ANY = "any"
+AVAILABLE = "available"
+MASKING = "masking"
+MULTI_STATE = "multi_state"
 NAME_REGEX = r"[0-9a-zA-Z_\.-]+"
+ON_FAIL = "on_fail"
+ON_SUCCESS = "on_success"
+SET = "set"
+STATE = "state"
+STATES = "states"
+UNAVAILABLE = "unavailable"
+UNSET = "unset"
 
 
-def save_definition(path, fname, conf, obj_list, bundle_hash, adcm_=False):
+def save_definition(
+    path: Path,
+    fname: Path,
+    conf: dict | list,
+    obj_list: dict,
+    bundle_hash: str,
+    adcm_: bool = False,
+) -> None:
     if isinstance(conf, dict):
-        save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm_)
+        save_object_definition(
+            path=path,
+            fname=fname,
+            conf=conf,
+            obj_list=obj_list,
+            bundle_hash=bundle_hash,
+            adcm_=adcm_,
+        )
     else:
         for obj_def in conf:
-            save_object_definition(path, fname, obj_def, obj_list, bundle_hash, adcm_)
+            save_object_definition(
+                path=path,
+                fname=fname,
+                conf=obj_def,
+                obj_list=obj_list,
+                bundle_hash=bundle_hash,
+                adcm_=adcm_,
+            )
 
 
 def cook_obj_id(conf):
     return f"{conf['type']}.{conf['name']}.{conf['version']}"
 
 
-def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm_=False):
+def save_object_definition(
+    path: Path,
+    fname: Path,
+    conf: dict,
+    obj_list: dict,
+    bundle_hash: str,
+    adcm_: bool = False,
+) -> StagePrototype:
     def_type = conf["type"]
     if def_type == "adcm" and not adcm_:
-        return err("INVALID_OBJECT_DEFINITION", f'Invalid type "{def_type}" in object definition: {fname}')
+        return raise_adcm_ex(
+            code="INVALID_OBJECT_DEFINITION",
+            msg=f'Invalid type "{def_type}" in object definition: {fname}',
+        )
 
-    check_object_definition(fname, conf, def_type, obj_list)
-    obj = save_prototype(path, conf, def_type, bundle_hash)
+    check_object_definition(fname=fname, conf=conf, def_type=def_type, obj_list=obj_list, bundle_hash=bundle_hash)
+    obj = save_prototype(path=path, conf=conf, def_type=def_type, bundle_hash=bundle_hash)
     logger.info('Save definition of %s "%s" %s to stage', def_type, conf["name"], conf["version"])
     obj_list[cook_obj_id(conf)] = fname
 
     return obj
 
 
-def check_object_definition(fname, conf, def_type, obj_list):
-    ref = f"{def_type} \"{conf['name']}\" {conf['version']}"
-    if cook_obj_id(conf) in obj_list:
-        err("INVALID_OBJECT_DEFINITION", f"Duplicate definition of {ref} (file {fname})")
-
-    for action_name, action_data in conf.get("actions", {}).items():
+def check_actions_definition(def_type: str, actions: dict, bundle_hash: str) -> None:
+    for action_name, action_data in actions.items():
         if action_name in {
             settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME,
             settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
         }:
             if def_type != "cluster":
-                err("INVALID_OBJECT_DEFINITION", f'Action named "{action_name}" can be started only in cluster context')
-
-            if not action_data.get("host_action"):
-                err(
-                    "INVALID_OBJECT_DEFINITION",
-                    f'Action named "{action_name}" should have "host_action: true" property',
+                raise_adcm_ex(
+                    code="INVALID_OBJECT_DEFINITION",
+                    msg=f'Action named "{action_name}" can be started only in cluster context',
                 )
 
+            if not action_data.get("host_action"):
+                raise_adcm_ex(
+                    code="INVALID_OBJECT_DEFINITION",
+                    msg=f'Action named "{action_name}" should have "host_action: true" property',
+                )
         if action_name in settings.ADCM_SERVICE_ACTION_NAMES_SET and set(action_data).intersection(
-            settings.ADCM_MM_ACTION_FORBIDDEN_PROPS_SET
+            settings.ADCM_MM_ACTION_FORBIDDEN_PROPS_SET,
         ):
-            err(
-                "INVALID_OBJECT_DEFINITION",
-                f'Maintenance mode actions shouldn\'t have "{settings.ADCM_MM_ACTION_FORBIDDEN_PROPS_SET}" properties',
+            raise_adcm_ex(
+                code="INVALID_OBJECT_DEFINITION",
+                msg=f"Maintenance mode actions shouldn't have "
+                f'"{settings.ADCM_MM_ACTION_FORBIDDEN_PROPS_SET}" properties',
             )
 
+        if action_data.get("config_jinja") and action_data.get("config"):
+            raise_adcm_ex(
+                code="INVALID_OBJECT_DEFINITION",
+                msg='"config" and "config_jinja" are mutually exclusive action options',
+            )
 
-def get_config_files(path, bundle_hash):
+        elif action_data.get("config_jinja") and action_data.get("config") is None:
+            jinja_conf_file = Path(settings.BUNDLE_DIR, bundle_hash, action_data["config_jinja"])
+            try:
+                Template(source=jinja_conf_file.read_text(encoding=settings.ENCODING_UTF_8))
+            except (FileNotFoundError, TemplateError) as e:
+                raise_adcm_ex(code="INVALID_OBJECT_DEFINITION", msg=str(e))
+
+
+def check_object_definition(fname: Path, conf: dict, def_type: str, obj_list, bundle_hash: str | None = None) -> None:
+    ref = f"{def_type} \"{conf['name']}\" {conf['version']}"
+    if cook_obj_id(conf) in obj_list:
+        raise_adcm_ex(code="INVALID_OBJECT_DEFINITION", msg=f"Duplicate definition of {ref} (file {fname})")
+
+    actions = conf.get("actions")
+    if actions:
+        check_actions_definition(def_type=def_type, actions=actions, bundle_hash=bundle_hash)
+
+
+def get_config_files(path: Path) -> list[tuple[Path, Path]]:
     conf_list = []
-    conf_types = [
-        ("config.yaml", "yaml"),
-        ("config.yml", "yaml"),
-    ]
-    if not os.path.isdir(path):
-        err("STACK_LOAD_ERROR", f"no directory: {path}", status.HTTP_404_NOT_FOUND)
-    for root, _, files in os.walk(path):
-        for conf_file, conf_type in conf_types:
-            if conf_file in files:
-                dirs = root.split("/")
-                start_index = dirs.index(bundle_hash) + 1
-                path = os.path.join("", *dirs[start_index:])
-                conf_list.append((path, root + "/" + conf_file, conf_type))
-                break
+    if not path.is_dir():
+        raise_adcm_ex(code="STACK_LOAD_ERROR", msg=f"no directory: {path}", args=status.HTTP_404_NOT_FOUND)
+
+    for item in path.rglob("*"):
+        if item.is_file() and item.name in {"config.yaml", "config.yml"}:
+            conf_list.append((item.parent, item))
+
     if not conf_list:
-        err("STACK_LOAD_ERROR", f'no config files in stack directory "{path}"')
+        raise_adcm_ex(code="STACK_LOAD_ERROR", msg=f'no config files in stack directory "{path}"')
+
     return conf_list
 
 
-def check_adcm_config(conf_file):
-    warnings.simplefilter("error", ruyaml.error.ReusedAnchorWarning)
-    schema_file = settings.CODE_DIR / "cm" / "adcm_schema.yaml"
+def check_adcm_config(conf_file: Path) -> Any:  # noqa: C901
+    warnings.simplefilter(action="error", category=ReusedAnchorWarning)
+    schema_file = Path(settings.CODE_DIR, "cm", "adcm_schema.yaml")
+
     with open(schema_file, encoding=settings.ENCODING_UTF_8) as f:
         rules = ruyaml.round_trip_load(f)
-
     try:
         with open(conf_file, encoding=settings.ENCODING_UTF_8) as f:
-            data = cm.checker.round_trip_load(f, version="1.1", allow_duplicate_keys=True)
-    except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
-        err("STACK_LOAD_ERROR", f'YAML decode "{conf_file}" error: {e}')
+            data = round_trip_load(f, version="1.1", allow_duplicate_keys=True)
+    except (RuYamlParserError, RuYamlScannerError, NotImplementedError) as e:
+        raise_adcm_ex(code="STACK_LOAD_ERROR", msg=f'YAML decode "{conf_file}" error: {e}')
     except ruyaml.error.ReusedAnchorWarning as e:
-        err("STACK_LOAD_ERROR", f'YAML decode "{conf_file}" error: {e}')
-    except ruyaml.constructor.DuplicateKeyError as e:
+        raise_adcm_ex(code="STACK_LOAD_ERROR", msg=f'YAML decode "{conf_file}" error: {e}')
+    except DuplicateKeyError as e:
         msg = f"{e.context}\n{e.context_mark}\n{e.problem}\n{e.problem_mark}"
-        err("STACK_LOAD_ERROR", f"Duplicate Keys error: {msg}")
-    except ruyaml.composer.ComposerError as e:
-        err("STACK_LOAD_ERROR", f"YAML Composer error: {e}")
-
+        raise_adcm_ex(code="STACK_LOAD_ERROR", msg=f"Duplicate Keys error: {msg}")
+    except ComposerError as e:
+        raise_adcm_ex(code="STACK_LOAD_ERROR", msg=f"YAML Composer error: {e}")
     try:
-        cm.checker.check(data, rules)
-
+        check(data, rules)
         return data
-    except cm.checker.FormatError as e:
-        args = ""
+    except FormatError as e:
+        error_msgs = []
         if e.errors:
             for error in e.errors:
                 if "Input data for" in error.message:
                     continue
-                args += f"line {error.line}: {error}\n"
 
-        err("INVALID_OBJECT_DEFINITION", f'"{conf_file}" line {e.line} error: {e}', args)
+                error_msgs.append(f"line {error.line}: {error}")
 
+        raise_adcm_ex(
+            code="INVALID_OBJECT_DEFINITION",
+            msg=f'"{conf_file}" line {e.line} error: {e}',
+            args=os.linesep.join(error_msgs),
+        )
         return {}
 
 
-def read_definition(conf_file, conf_type):
-    if os.path.isfile(conf_file):
-        conf = check_adcm_config(conf_file)
-        logger.info('Read config file: "%s"', conf_file)
-        return conf
-    logger.warning('Can not open config file: "%s"', conf_file)
-    return {}
+def read_definition(conf_file: Path) -> dict:
+    conf = check_adcm_config(conf_file=conf_file)
+    logger.info('Read config file: "%s"', conf_file)
+
+    return conf
 
 
 def get_license_hash(proto, conf, bundle_hash):
     if "license" not in conf:
         return None
-    body = read_bundle_file(proto, conf["license"], bundle_hash, "license file")
+
+    body = read_bundle_file(proto=proto, fname=conf["license"], bundle_hash=bundle_hash, ref="license file")
     sha1 = hashlib.sha256()
     sha1.update(body.encode(settings.ENCODING_UTF_8))
+
     return sha1.hexdigest()
 
 
@@ -195,44 +266,44 @@ def process_config_group_customization(actual_config: dict, obj: StagePrototype)
             actual_config["config_group_customization"] = stage_prototype.config_group_customization
 
 
-def save_prototype(path, conf, def_type, bundle_hash):
+def save_prototype(path: Path, conf: dict, def_type: str, bundle_hash: str) -> StagePrototype:
     proto = StagePrototype(name=conf["name"], type=def_type, path=path, version=conf["version"])
 
-    dict_to_obj(conf, "required", proto)
-    dict_to_obj(conf, "shared", proto)
-    dict_to_obj(conf, "monitoring", proto)
-    dict_to_obj(conf, "display_name", proto)
-    dict_to_obj(conf, "description", proto)
-    dict_to_obj(conf, "adcm_min_version", proto)
-    dict_to_obj(conf, "venv", proto)
-    dict_to_obj(conf, "edition", proto)
+    dict_to_obj(dictionary=conf, key="required", obj=proto)
+    dict_to_obj(dictionary=conf, key="shared", obj=proto)
+    dict_to_obj(dictionary=conf, key="monitoring", obj=proto)
+    dict_to_obj(dictionary=conf, key="display_name", obj=proto)
+    dict_to_obj(dictionary=conf, key="description", obj=proto)
+    dict_to_obj(dictionary=conf, key="adcm_min_version", obj=proto)
+    dict_to_obj(dictionary=conf, key="venv", obj=proto)
+    dict_to_obj(dictionary=conf, key="edition", obj=proto)
 
-    process_config_group_customization(conf, proto)
+    process_config_group_customization(actual_config=conf, obj=proto)
 
-    dict_to_obj(conf, "config_group_customization", proto)
-    dict_to_obj(conf, "allow_maintenance_mode", proto)
+    dict_to_obj(dictionary=conf, key="config_group_customization", obj=proto)
+    dict_to_obj(dictionary=conf, key="allow_maintenance_mode", obj=proto)
 
-    fix_display_name(conf, proto)
-
-    license_hash = get_license_hash(proto, conf, bundle_hash)
+    fix_display_name(conf=conf, obj=proto)
+    license_hash = get_license_hash(proto=proto, conf=conf, bundle_hash=bundle_hash)
     if license_hash:
-        if def_type not in ["cluster", "service", "provider"]:
-            err(
-                "INVALID_OBJECT_DEFINITION",
-                f"Invalid license definition in {proto_ref(proto)}."
-                f" License can be placed in cluster, service or provider",
+        if def_type not in {"cluster", "service", "provider"}:
+            raise_adcm_ex(
+                code="INVALID_OBJECT_DEFINITION",
+                msg=f"Invalid license definition in {proto_ref(proto)}. "
+                f"License can be placed in cluster, service or provider",
             )
 
         proto.license_path = conf["license"]
         proto.license_hash = license_hash
 
     proto.save()
-    save_actions(proto, conf, bundle_hash)
-    save_upgrade(proto, conf, bundle_hash)
-    save_components(proto, conf, bundle_hash)
-    save_prototype_config(proto, conf, bundle_hash)
-    save_export(proto, conf)
-    save_import(proto, conf)
+
+    save_actions(prototype=proto, config=conf, bundle_hash=bundle_hash)
+    save_upgrade(prototype=proto, config=conf, bundle_hash=bundle_hash)
+    save_components(proto=proto, conf=conf, bundle_hash=bundle_hash)
+    save_prototype_config(proto=proto, proto_conf=conf, bundle_hash=bundle_hash)
+    save_export(proto=proto, conf=conf)
+    save_import(proto=proto, conf=conf)
 
     return proto
 
@@ -240,16 +311,21 @@ def save_prototype(path, conf, def_type, bundle_hash):
 def check_component_constraint(proto, name, conf):
     if not conf:
         return
+
     if "constraint" not in conf:
         return
+
     if len(conf["constraint"]) > 2:
-        msg = 'constraint of component "{}" in {} should have only 1 or 2 elements'
-        err("INVALID_COMPONENT_DEFINITION", msg.format(name, proto_ref(proto)))
+        raise_adcm_ex(
+            code="INVALID_COMPONENT_DEFINITION",
+            msg=f'constraint of component "{name}" in {proto_ref(proto)} should have only 1 or 2 elements',
+        )
 
 
-def save_components(proto, conf, bundle_hash):
-    ref = proto_ref(proto)
-    if not in_dict(conf, "components"):
+def save_components(proto: StagePrototype, conf: dict, bundle_hash: str) -> None:
+    ref = proto_ref(prototype=proto)
+
+    if not in_dict(dictionary=conf, key="components"):
         return
 
     for comp_name in conf["components"]:
@@ -263,6 +339,7 @@ def save_components(proto, conf, bundle_hash):
             version=proto.version,
             adcm_min_version=proto.adcm_min_version,
         )
+
         dict_to_obj(component_conf, "description", component)
         dict_to_obj(component_conf, "display_name", component)
         dict_to_obj(component_conf, "monitoring", component)
@@ -279,68 +356,86 @@ def save_components(proto, conf, bundle_hash):
         process_config_group_customization(component_conf, component)
 
         dict_to_obj(component_conf, "config_group_customization", component)
-
         component.save()
 
-        save_actions(component, component_conf, bundle_hash)
+        save_actions(prototype=component, config=component_conf, bundle_hash=bundle_hash)
         save_prototype_config(component, component_conf, bundle_hash)
 
 
-def check_upgrade(proto, conf):
-    label = f"upgrade \"{conf['name']}\""
-    check_versions(proto, conf, label)
-    check_upgrade_scripts(proto, conf, label)
+def check_upgrade(prototype: StagePrototype, config: dict) -> None:
+    label = f'upgrade "{config["name"]}"'
+    check_versions(prototype=prototype, config=config, label=label)
+    check_upgrade_scripts(prototype=prototype, config=config, label=label)
 
 
-def check_upgrade_scripts(proto, conf, label):
-    ref = proto_ref(proto)
+def check_upgrade_scripts(prototype: StagePrototype, config: dict, label: str) -> None:
+    ref = proto_ref(prototype=prototype)
     count = 0
-    if "scripts" in conf:
-        for action in conf["scripts"]:
+
+    if "scripts" in config:
+        for action in config["scripts"]:
             if action["script_type"] == "internal":
                 count += 1
+
                 if count > 1:
-                    err(
-                        "INVALID_UPGRADE_DEFINITION",
-                        f'Script with script_type "internal" must be unique in {label} of {ref}',
+                    raise_adcm_ex(
+                        code="INVALID_UPGRADE_DEFINITION",
+                        msg=f'Script with script_type "internal" must be unique in {label} of {ref}',
                     )
 
-                if action["script"] not in {"bundle_switch", "bundle_revert"}:
-                    msg = (
-                        f'Script with script_type "internal" should be marked as'
-                        f' "bundle_switch" or "bundle_revert" in {label} of {ref}'
+                if action["script"] != "bundle_switch":
+                    raise_adcm_ex(
+                        code="INVALID_UPGRADE_DEFINITION",
+                        msg=f'Script with script_type "internal" should be marked '
+                        f'as "bundle_switch" in {label} of {ref}',
                     )
-                    err("INVALID_UPGRADE_DEFINITION", msg)
 
         if count == 0:
-            msg = f'Scripts block in {label} of {ref} must contain exact one block with script "bundle_switch"'
-            err("INVALID_UPGRADE_DEFINITION", msg)
-
+            raise_adcm_ex(
+                code="INVALID_UPGRADE_DEFINITION",
+                msg=f'Scripts block in {label} of {ref} must contain exact one block with script "bundle_switch"',
+            )
     else:
-        if "masking" in conf or "on_success" in conf or "on_fail" in conf:
-            msg = f"{label} of {ref} couldn't contain `masking`, `on_success` or `on_fail` without `scripts` block"
-            err("INVALID_UPGRADE_DEFINITION", msg)
+        if "masking" in config or "on_success" in config or "on_fail" in config:
+            raise_adcm_ex(
+                code="INVALID_UPGRADE_DEFINITION",
+                msg=f"{label} of {ref} couldn't contain `masking`, `on_success` or `on_fail` without `scripts` block",
+            )
 
 
-def check_versions(proto, conf, label):
-    ref = proto_ref(proto)
-    msg = '{} has no mandatory "versions" key ({})'
-    if "min" in conf["versions"] and "min_strict" in conf["versions"]:
-        msg = "min and min_strict can not be used simultaneously in versions of {} ({})"
-        err("INVALID_VERSION_DEFINITION", msg.format(label, ref))
-    if "min" not in conf["versions"] and "min_strict" not in conf["versions"] and "import" not in label:
-        msg = "min or min_strict should be present in versions of {} ({})"
-        err("INVALID_VERSION_DEFINITION", msg.format(label, ref))
-    if "max" in conf["versions"] and "max_strict" in conf["versions"]:
-        msg = "max and max_strict can not be used simultaneously in versions of {} ({})"
-        err("INVALID_VERSION_DEFINITION", msg.format(label, ref))
-    if "max" not in conf["versions"] and "max_strict" not in conf["versions"] and "import" not in label:
-        msg = "max and max_strict should be present in versions of {} ({})"
-        err("INVALID_VERSION_DEFINITION", msg.format(label, ref))
+def check_versions(prototype: StagePrototype, config: dict, label: str) -> None:
+    ref = proto_ref(prototype=prototype)
+
+    if "min" in config["versions"] and "min_strict" in config["versions"]:
+        raise_adcm_ex(
+            code="INVALID_VERSION_DEFINITION",
+            msg=f"min and min_strict can not be used simultaneously in versions of {label} ({ref})",
+        )
+
+    if all(("min" not in config["versions"], "min_strict" not in config["versions"], "import" not in label)):
+        raise_adcm_ex(
+            code="INVALID_VERSION_DEFINITION",
+            msg=f"min or min_strict should be present in versions of {label} ({ref})",
+        )
+
+    if "max" in config["versions"] and "max_strict" in config["versions"]:
+        raise_adcm_ex(
+            code="INVALID_VERSION_DEFINITION",
+            msg=f"max and max_strict can not be used simultaneously in versions of {label} ({ref})",
+        )
+
+    if all(("max" not in config["versions"], "max_strict" not in config["versions"], "import" not in label)):
+        raise_adcm_ex(
+            code="INVALID_VERSION_DEFINITION",
+            msg=f"max and max_strict should be present in versions of {label} ({ref})",
+        )
+
     for name in ("min", "min_strict", "max", "max_strict"):
-        if name in conf["versions"] and not conf["versions"][name]:
-            msg = "{} versions of {} should be not null ({})"
-            err("INVALID_VERSION_DEFINITION", msg.format(name, label, ref))
+        if name in config["versions"] and not config["versions"][name]:
+            raise_adcm_ex(
+                code="INVALID_VERSION_DEFINITION",
+                msg=f"{name} versions of {label} should be not null ({ref})",
+            )
 
 
 def set_version(obj, conf):
@@ -359,30 +454,38 @@ def set_version(obj, conf):
         obj.max_strict = True
 
 
-def save_upgrade(proto, conf, bundle_hash):
-    if not in_dict(conf, "upgrade"):
+def save_upgrade(prototype: StagePrototype, config: dict, bundle_hash: str) -> None:
+    if not in_dict(dictionary=config, key="upgrade"):
         return
-    for item in conf["upgrade"]:
-        check_upgrade(proto, item)
-        upg = StageUpgrade(name=item["name"])
-        set_version(upg, item)
-        dict_to_obj(item, "description", upg)
+
+    for item in config["upgrade"]:
+        check_upgrade(prototype=prototype, config=item)
+        upgrade = StageUpgrade(name=item["name"])
+        set_version(upgrade, item)
+        dict_to_obj(item, "description", upgrade)
         if "states" in item:
-            dict_to_obj(item["states"], "available", upg)
+            dict_to_obj(item["states"], "available", upgrade)
+
             if "available" in item["states"]:
-                upg.state_available = item["states"]["available"]
+                upgrade.state_available = item["states"]["available"]
             if "on_success" in item["states"]:
-                upg.state_on_success = item["states"]["on_success"]
-        if in_dict(item, "from_edition"):
-            upg.from_edition = item["from_edition"]
+                upgrade.state_on_success = item["states"]["on_success"]
+        if in_dict(dictionary=item, key="from_edition"):
+            upgrade.from_edition = item["from_edition"]
         if "scripts" in item:
-            upg.action = save_actions(proto, item, bundle_hash, upg)
-        upg.save()
+            upgrade.action = save_upgrade_action(
+                prototype=prototype,
+                config=item,
+                bundle_hash=bundle_hash,
+                upgrade=upgrade,
+            )
+
+        upgrade.save()
 
 
-def save_export(proto, conf):
-    ref = proto_ref(proto)
-    if not in_dict(conf, "export"):
+def save_export(proto: StagePrototype, conf: dict) -> None:
+    ref = proto_ref(prototype=proto)
+    if not in_dict(dictionary=conf, key="export"):
         return
 
     export = {}
@@ -393,7 +496,7 @@ def save_export(proto, conf):
 
     for key in export:
         if not StagePrototypeConfig.objects.filter(prototype=proto, name=key):
-            err("INVALID_OBJECT_DEFINITION", f'{ref} does not has "{key}" config group')
+            raise_adcm_ex(code="INVALID_OBJECT_DEFINITION", msg=f'{ref} does not has "{key}" config group')
 
         stage_prototype_export = StagePrototypeExport(prototype=proto, name=key)
         stage_prototype_export.save()
@@ -416,20 +519,20 @@ def check_default_import(proto, conf):
     groups = get_config_groups(proto)
     for key in conf["default"]:
         if key not in groups:
-            msg = 'No import default group "{}" in config ({})'
-            err("INVALID_OBJECT_DEFINITION", msg.format(key, ref))
+            raise_adcm_ex(code="INVALID_OBJECT_DEFINITION", msg=f'No import default group "{key}" in config ({ref})')
 
 
-def save_import(proto, conf):
-    ref = proto_ref(proto)
-    if not in_dict(conf, "import"):
+def save_import(proto: StagePrototype, conf: dict) -> None:
+    ref = proto_ref(prototype=proto)
+    if not in_dict(dictionary=conf, key="import"):
         return
 
     for key in conf["import"]:
         if "default" in conf["import"][key] and "required" in conf["import"][key]:
-            msg = "Import can't have default and be required in the same time ({})"
-            err("INVALID_OBJECT_DEFINITION", msg.format(ref))
-
+            raise_adcm_ex(
+                code="INVALID_OBJECT_DEFINITION",
+                msg=f"Import can't have default and be required in the same time ({ref})",
+            )
         check_default_import(proto, conf["import"][key])
         stage_prototype_import = StagePrototypeImport(prototype=proto, name=key)
         if "versions" in conf["import"][key]:
@@ -438,12 +541,15 @@ def save_import(proto, conf):
             if stage_prototype_import.min_version and stage_prototype_import.max_version:
                 if (
                     rpm.compare_versions(
-                        str(stage_prototype_import.min_version), str(stage_prototype_import.max_version)
+                        str(stage_prototype_import.min_version),
+                        str(stage_prototype_import.max_version),
                     )
                     > 0
                 ):
-                    msg = "Min version should be less or equal max version"
-                    err("INVALID_VERSION_DEFINITION", msg)
+                    raise_adcm_ex(
+                        code="INVALID_VERSION_DEFINITION",
+                        msg="Min version should be less or equal max version",
+                    )
 
         dict_to_obj(conf["import"][key], "required", stage_prototype_import)
         dict_to_obj(conf["import"][key], "multibind", stage_prototype_import)
@@ -452,9 +558,10 @@ def save_import(proto, conf):
         stage_prototype_import.save()
 
 
-def check_action_hc(proto, conf, name):
+def check_action_hc(proto: StagePrototype, conf: dict) -> None:
     if "hc_acl" not in conf:
         return
+
     for idx, item in enumerate(conf["hc_acl"]):
         if "service" not in item:
             if proto.type == "service":
@@ -463,15 +570,21 @@ def check_action_hc(proto, conf, name):
 
 
 def save_sub_actions(conf, action):
-    if action.type != "task":
+    if action.type != settings.TASK_TYPE:
         return
+
     for sub in conf["scripts"]:
         sub_action = StageSubAction(
-            action=action, script=sub["script"], script_type=sub["script_type"], name=sub["name"]
+            action=action,
+            script=sub["script"],
+            script_type=sub["script_type"],
+            name=sub["name"],
         )
         sub_action.display_name = sub["name"]
+
         if "display_name" in sub:
             sub_action.display_name = sub["display_name"]
+
         dict_to_obj(sub, "params", sub_action)
         dict_to_obj(sub, "allow_to_terminate", sub_action)
         on_fail = sub.get(ON_FAIL, "")
@@ -483,105 +596,119 @@ def save_sub_actions(conf, action):
             sub_action.state_on_fail = _deep_get(on_fail, STATE, default="")
             sub_action.multi_state_on_fail_set = _deep_get(on_fail, MULTI_STATE, SET, default=[])
             sub_action.multi_state_on_fail_unset = _deep_get(on_fail, MULTI_STATE, UNSET, default=[])
+
         sub_action.save()
 
 
-MASKING = "masking"
-STATES = "states"
-STATE = "state"
-MULTI_STATE = "multi_state"
-AVAILABLE = "available"
-UNAVAILABLE = "unavailable"
-ON_SUCCESS = "on_success"
-ON_FAIL = "on_fail"
-ANY = "any"
-SET = "set"
-UNSET = "unset"
-
-
-def save_actions(proto, conf, bundle_hash, upgrade: StageUpgrade | None = None):
-    if in_dict(conf, "versions"):
-        conf["type"] = "task"
-        upgrade_name = conf["name"]
-        conf["display_name"] = f"Upgrade: {upgrade_name}"
-        if upgrade is not None:
-            action_name = (
-                f"{proto.name}_{proto.version}_{proto.edition}_upgrade_{upgrade_name}_{upgrade.min_version}_strict_"
-                f"{upgrade.min_strict}-{upgrade.max_version}_strict_{upgrade.min_strict}_editions-"
-                f"{'_'.join(upgrade.from_edition)}_state_available-{'_'.join(upgrade.state_available)}_"
-                f"state_on_success-{upgrade.state_on_success}"
-            )
-        else:
-            action_name = f"{proto.name}_{proto.version}_{proto.edition}_upgrade_{upgrade_name}"
-
-        action_name = re.sub(r"\s+", "_", action_name).strip().lower()
-        action_name = re.sub(r"\(\)", "", action_name)
-        upgrade_action = save_action(proto, conf, bundle_hash, action_name)
-
-        return upgrade_action
-
-    if not in_dict(conf, "actions"):
+def save_upgrade_action(
+    prototype: StagePrototype,
+    config: dict,
+    bundle_hash: str,
+    upgrade: StageUpgrade,
+) -> None | StageAction:
+    if not in_dict(dictionary=config, key="versions"):
         return None
 
-    for action_name in sorted(conf["actions"]):
-        action_config = conf["actions"][action_name]
-        save_action(proto, action_config, bundle_hash, action_name)
+    config["type"] = settings.TASK_TYPE
+    config["display_name"] = f"Upgrade: {config['name']}"
 
-    return None
-
-
-def save_action(proto, action_config, bundle_hash, action_name):
-    check_action(proto, action_name)
-    action = StageAction(prototype=proto, name=action_name)
-    action.type = action_config["type"]
-    if action_config["type"] == "job":
-        action.script = action_config["script"]
-        action.script_type = action_config["script_type"]
-
-    dict_to_obj(action_config, "display_name", action)
-    dict_to_obj(action_config, "description", action)
-    dict_to_obj(action_config, "allow_to_terminate", action)
-    dict_to_obj(action_config, "partial_execution", action)
-    dict_to_obj(action_config, "host_action", action)
-    dict_to_obj(action_config, "ui_options", action)
-    dict_to_obj(action_config, "params", action)
-    dict_to_obj(action_config, "log_files", action)
-    dict_to_obj(action_config, "venv", action)
-    dict_to_obj(action_config, "allow_in_maintenance_mode", action)
-
-    fix_display_name(action_config, action)
-
-    check_action_hc(proto, action_config, action_name)
-    dict_to_obj(action_config, "hc_acl", action, "hostcomponentmap")
-    if MASKING in action_config:
-        if STATES in action_config:
-            err(
-                "INVALID_OBJECT_DEFINITION",
-                f'Action {action_name} uses both mutual excluding states "states" and "masking"',
-            )
-
-        action.state_available = _deep_get(action_config, MASKING, STATE, AVAILABLE, default=ANY)
-        action.state_unavailable = _deep_get(action_config, MASKING, STATE, UNAVAILABLE, default=[])
-        action.state_on_success = _deep_get(action_config, ON_SUCCESS, STATE, default="")
-        action.state_on_fail = _deep_get(action_config, ON_FAIL, STATE, default="")
-
-        action.multi_state_available = _deep_get(action_config, MASKING, MULTI_STATE, AVAILABLE, default=ANY)
-        action.multi_state_unavailable = _deep_get(action_config, MASKING, MULTI_STATE, UNAVAILABLE, default=[])
-        action.multi_state_on_success_set = _deep_get(action_config, ON_SUCCESS, MULTI_STATE, SET, default=[])
-        action.multi_state_on_success_unset = _deep_get(action_config, ON_SUCCESS, MULTI_STATE, UNSET, default=[])
-        action.multi_state_on_fail_set = _deep_get(action_config, ON_FAIL, MULTI_STATE, SET, default=[])
-        action.multi_state_on_fail_unset = _deep_get(action_config, ON_FAIL, MULTI_STATE, UNSET, default=[])
+    if upgrade is not None:
+        name = (
+            f"{prototype.name}_{prototype.version}_{prototype.edition}_upgrade_{config['name']}_{upgrade.min_version}_strict_"
+            f"{upgrade.min_strict}-{upgrade.max_version}_strict_{upgrade.min_strict}_editions-"
+            f"{'_'.join(upgrade.from_edition)}_state_available-{'_'.join(upgrade.state_available)}_"
+            f"state_on_success-{upgrade.state_on_success}"
+        )
     else:
-        if ON_SUCCESS in action_config or ON_FAIL in action_config:
-            err(
-                "INVALID_OBJECT_DEFINITION",
-                f'Action {action_name} uses "on_success/on_fail" states without "masking"',
+        name = f"{prototype.name}_{prototype.version}_{prototype.edition}_upgrade_{config['name']}"
+
+    name = re.sub(r"\s+", "_", name).strip().lower()
+    name = re.sub(r"[()]", "", name)
+
+    return save_action(proto=prototype, config=config, bundle_hash=bundle_hash, action_name=name)
+
+
+def check_internal_script(config: dict, name: str, ref: str) -> None:
+    if config["script_type"] == "internal" and config["script"] != "bundle_revert":
+        raise_adcm_ex(
+            code="INVALID_OBJECT_DEFINITION",
+            msg=f"Action {name} of {ref} uses script_type `internal` without `bundle_revert` script",
+        )
+
+
+def save_actions(prototype: StagePrototype, config: dict, bundle_hash: str) -> None:
+    if not in_dict(dictionary=config, key="actions"):
+        return
+
+    for name in sorted(config["actions"]):
+        action_config = config["actions"][name]
+
+        if action_config["type"] == settings.JOB_TYPE:
+            check_internal_script(config=action_config, name=name, ref=proto_ref(prototype=prototype))
+        else:
+            for subaction_config in action_config["scripts"]:
+                check_internal_script(config=subaction_config, name=name, ref=proto_ref(prototype=prototype))
+
+        save_action(proto=prototype, config=action_config, bundle_hash=bundle_hash, action_name=name)
+
+
+def save_action(proto: StagePrototype, config: dict, bundle_hash: str, action_name: str) -> StageAction:
+    validate_name(
+        name=action_name,
+        error_message=f'Action name "{action_name}" of {proto.type} "{proto.name}" {proto.version}',
+    )
+    action = StageAction(prototype=proto, name=action_name)
+    action.type = config["type"]
+
+    if config["type"] == settings.JOB_TYPE:
+        action.script = config["script"]
+        action.script_type = config["script_type"]
+
+    dict_to_obj(dictionary=config, key="display_name", obj=action)
+    dict_to_obj(dictionary=config, key="description", obj=action)
+    dict_to_obj(dictionary=config, key="allow_to_terminate", obj=action)
+    dict_to_obj(dictionary=config, key="partial_execution", obj=action)
+    dict_to_obj(dictionary=config, key="host_action", obj=action)
+    dict_to_obj(dictionary=config, key="ui_options", obj=action)
+    dict_to_obj(dictionary=config, key="params", obj=action)
+    dict_to_obj(dictionary=config, key="log_files", obj=action)
+    dict_to_obj(dictionary=config, key="venv", obj=action)
+    dict_to_obj(dictionary=config, key="allow_in_maintenance_mode", obj=action)
+    dict_to_obj(dictionary=config, key="config_jinja", obj=action)
+
+    fix_display_name(conf=config, obj=action)
+    check_action_hc(proto=proto, conf=config)
+
+    dict_to_obj(dictionary=config, key="hc_acl", obj=action, obj_key="hostcomponentmap")
+    if MASKING in config:
+        if STATES in config:
+            raise_adcm_ex(
+                code="INVALID_OBJECT_DEFINITION",
+                msg=f'Action {action_name} uses both mutual excluding states "states" and "masking"',
             )
 
-        action.state_available = _deep_get(action_config, STATES, AVAILABLE, default=[])
+        action.state_available = _deep_get(config, MASKING, STATE, AVAILABLE, default=ANY)
+        action.state_unavailable = _deep_get(config, MASKING, STATE, UNAVAILABLE, default=[])
+        action.state_on_success = _deep_get(config, ON_SUCCESS, STATE, default="")
+        action.state_on_fail = _deep_get(config, ON_FAIL, STATE, default="")
+
+        action.multi_state_available = _deep_get(config, MASKING, MULTI_STATE, AVAILABLE, default=ANY)
+        action.multi_state_unavailable = _deep_get(config, MASKING, MULTI_STATE, UNAVAILABLE, default=[])
+        action.multi_state_on_success_set = _deep_get(config, ON_SUCCESS, MULTI_STATE, SET, default=[])
+        action.multi_state_on_success_unset = _deep_get(config, ON_SUCCESS, MULTI_STATE, UNSET, default=[])
+        action.multi_state_on_fail_set = _deep_get(config, ON_FAIL, MULTI_STATE, SET, default=[])
+        action.multi_state_on_fail_unset = _deep_get(config, ON_FAIL, MULTI_STATE, UNSET, default=[])
+    else:
+        if ON_SUCCESS in config or ON_FAIL in config:
+            raise_adcm_ex(
+                code="INVALID_OBJECT_DEFINITION",
+                msg=f'Action {action_name} uses "on_success/on_fail" states without "masking"',
+            )
+
+        action.state_available = _deep_get(config, STATES, AVAILABLE, default=[])
         action.state_unavailable = []
-        action.state_on_success = _deep_get(action_config, STATES, ON_SUCCESS, default="")
-        action.state_on_fail = _deep_get(action_config, STATES, ON_FAIL, default="")
+        action.state_on_success = _deep_get(config, STATES, ON_SUCCESS, default="")
+        action.state_on_fail = _deep_get(config, STATES, ON_FAIL, default="")
 
         action.multi_state_available = ANY
         action.multi_state_unavailable = []
@@ -591,102 +718,114 @@ def save_action(proto, action_config, bundle_hash, action_name):
         action.multi_state_on_fail_unset = []
 
     action.save()
-    save_sub_actions(action_config, action)
-    save_prototype_config(proto, action_config, bundle_hash, action)
+    save_sub_actions(conf=config, action=action)
+    save_prototype_config(proto=proto, proto_conf=config, bundle_hash=bundle_hash, action=action)
 
     return action
 
 
-def check_action(proto, action):
-    err_msg = f'Action name "{action}" of {proto.type} "{proto.name}" {proto.version}'
-    validate_name(action, err_msg)
-
-
-def is_group(conf):
-    if conf["type"] == "group":
-        return True
-    return False
-
-
-def get_yspec(proto, ref, bundle_hash, conf, name, subname):
+def get_yspec(proto: StagePrototype | Prototype, bundle_hash: str, conf: dict, name: str, subname: str) -> Any:
     schema = None
-    yspec_body = read_bundle_file(proto, conf["yspec"], bundle_hash, f'yspec file of config key "{name}/{subname}":')
+    yspec_body = read_bundle_file(
+        proto=proto,
+        fname=conf["yspec"],
+        bundle_hash=bundle_hash,
+        ref=f'yspec file of config key "{name}/{subname}":',
+    )
     try:
-        schema = yaml.safe_load(yspec_body)
-    except (yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
-        err("CONFIG_TYPE_ERROR", f'yspec file of config key "{name}/{subname}" yaml decode error: {e}')
+        schema = yaml.safe_load(stream=yspec_body)
+    except (YamlParserError, YamlScannerError) as e:
+        raise_adcm_ex(
+            code="CONFIG_TYPE_ERROR",
+            msg=f'yspec file of config key "{name}/{subname}" yaml decode error: {e}',
+        )
 
-    success, error = yspec.checker.check_rule(schema)
+    success, error = yspec.checker.check_rule(rules=schema)
     if not success:
-        err("CONFIG_TYPE_ERROR", f'yspec file of config key "{name}/{subname}" error: {error}')
+        raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'yspec file of config key "{name}/{subname}" error: {error}')
 
     return schema
 
 
-def save_prototype_config(
-    proto, proto_conf, bundle_hash, action=None
-):  # pylint: disable=too-many-statements,too-many-locals
-    if not in_dict(proto_conf, "config"):
+def save_prototype_config(  # noqa: C901
+    proto: StagePrototype,
+    proto_conf: dict,
+    bundle_hash: str,
+    action: StageAction | None = None,
+) -> None:  # pylint: disable=too-many-statements,too-many-locals
+    if not in_dict(dictionary=proto_conf, key="config"):
         return
+
     conf_dict = proto_conf["config"]
     ref = proto_ref(proto)
 
-    def check_variant(conf, name, subname):
-        vtype = conf["source"]["type"]
+    def check_variant(_conf: dict) -> dict:  # pylint: disable=unused-argument
+        vtype = _conf["source"]["type"]
         source = {"type": vtype, "args": None}
-        if "strict" in conf["source"]:
-            source["strict"] = conf["source"]["strict"]
+        if "strict" in _conf["source"]:
+            source["strict"] = _conf["source"]["strict"]
         else:
             source["strict"] = True
+
         if vtype == "inline":
-            source["value"] = conf["source"]["value"]
+            source["value"] = _conf["source"]["value"]
         elif vtype in ("config", "builtin"):
-            source["name"] = conf["source"]["name"]
+            source["name"] = _conf["source"]["name"]
         if vtype == "builtin":
-            if "args" in conf["source"]:
-                source["args"] = conf["source"]["args"]
+            if "args" in _conf["source"]:
+                source["args"] = _conf["source"]["args"]
+
         return source
 
-    def process_limits(conf, name, subname):
+    def process_limits(_conf: dict, _name: str, _subname: str) -> dict:  # noqa: C901
         opt = {}
-        if conf["type"] == "option":
-            opt = {"option": conf["option"]}
-        elif conf["type"] == "variant":
-            opt["source"] = check_variant(conf, name, subname)
-        elif conf["type"] == "integer" or conf["type"] == "float":
-            if "min" in conf:
-                opt["min"] = conf["min"]
-            if "max" in conf:
-                opt["max"] = conf["max"]
-        elif conf["type"] == "structure":
-            opt["yspec"] = get_yspec(proto, ref, bundle_hash, conf, name, subname)
-        elif is_group(conf):
-            if "activatable" in conf:
-                opt["activatable"] = conf["activatable"]
-                opt["active"] = False
-                if "active" in conf:
-                    opt["active"] = conf["active"]
+        if _conf["type"] == "option":
+            opt = {"option": _conf["option"]}
 
-        if "read_only" in conf and "writable" in conf:
-            key_ref = f'(config key "{name}/{subname}" of {ref})'
+        elif _conf["type"] == "variant":
+            opt["source"] = check_variant(_conf=_conf)
+
+        elif _conf["type"] in settings.STACK_NUMERIC_FIELD_TYPES:
+            if "min" in _conf:
+                opt["min"] = _conf["min"]
+
+            if "max" in _conf:
+                opt["max"] = _conf["max"]
+
+        elif _conf["type"] == "structure":
+            opt["yspec"] = get_yspec(proto=proto, bundle_hash=bundle_hash, conf=_conf, name=_name, subname=_subname)
+
+        elif _conf["type"] == "group":
+            if "activatable" in _conf:
+                opt["activatable"] = _conf["activatable"]
+                opt["active"] = False
+
+                if "active" in _conf:
+                    opt["active"] = _conf["active"]
+
+        if "read_only" in _conf and "writable" in _conf:
+            key_ref = f'(config key "{_name}/{_subname}" of {ref})'
             msg = 'can not have "read_only" and "writable" simultaneously {}'
-            err("INVALID_CONFIG_DEFINITION", msg.format(key_ref))
+            raise_adcm_ex(code="INVALID_CONFIG_DEFINITION", msg=msg.format(key_ref))
 
         for label in ("read_only", "writable"):
-            if label in conf:
-                opt[label] = conf[label]
+            if label in _conf:
+                opt[label] = _conf[label]
 
         return opt
 
     def cook_conf(obj, _conf, _name, _subname):
         stage_prototype_config = StagePrototypeConfig(prototype=obj, action=action, name=_name, type=_conf["type"])
+
         dict_to_obj(_conf, "description", stage_prototype_config)
         dict_to_obj(_conf, "display_name", stage_prototype_config)
         dict_to_obj(_conf, "required", stage_prototype_config)
         dict_to_obj(_conf, "ui_options", stage_prototype_config)
         dict_to_obj(_conf, "group_customization", stage_prototype_config)
+
         _conf["limits"] = process_limits(_conf, _name, _subname)
         dict_to_obj(_conf, "limits", stage_prototype_config)
+
         if "display_name" not in _conf:
             if _subname:
                 stage_prototype_config.display_name = _subname
@@ -707,8 +846,10 @@ def save_prototype_config(
         try:
             stage_prototype_config.save()
         except IntegrityError:
-            msg = "Duplicate config on {} {}, action {}, with name {} and subname {}"
-            err("INVALID_CONFIG_DEFINITION", msg.format(obj.type, obj, action, _name, _subname))
+            raise_adcm_ex(
+                code="INVALID_CONFIG_DEFINITION",
+                msg=f"Duplicate config on {obj.type} {obj}, action {action}, with name {_name} and subname {_subname}",
+            )
 
     if isinstance(conf_dict, dict):
         for name, conf in conf_dict.items():
@@ -729,7 +870,7 @@ def save_prototype_config(
             name = conf["name"]
             validate_name(name, f'Config key "{name}" of {ref}')
             cook_conf(proto, conf, name, "")
-            if is_group(conf):
+            if conf["type"] == "group":
                 for subconf in conf["subs"]:
                     subname = subconf["name"]
                     err_msg = f'Config key "{name}/{subname}" of {ref}'
@@ -738,27 +879,31 @@ def save_prototype_config(
                     cook_conf(proto, subconf, name, subname)
 
 
-def validate_name(value, err_msg):
-    if not isinstance(value, str):
-        err("WRONG_NAME", f"{err_msg} should be string")
+def validate_name(name: str, error_message: str) -> None:
+    if not isinstance(name, str):
+        raise_adcm_ex(code="WRONG_NAME", msg=f"{error_message} should be string")
 
-    regex = re.compile(NAME_REGEX)
-    msg = "{} is incorrect. Only latin characters, digits, dots (.), dashes (-), and underscores (_) are allowed."
-    if regex.fullmatch(value) is None:
-        err("WRONG_NAME", msg.format(err_msg))
+    regex = re.compile(pattern=NAME_REGEX)
 
-    return value
+    if regex.fullmatch(name) is None:
+        raise_adcm_ex(
+            code="WRONG_NAME",
+            msg=f"{error_message} is incorrect. Only latin characters, digits, "
+            f"dots (.), dashes (-), and underscores (_) are allowed.",
+        )
 
 
 def fix_display_name(conf, obj):
     if isinstance(conf, dict) and "display_name" in conf:
         return
+
     obj.display_name = obj.name
 
 
 def in_dict(dictionary, key):
     if not isinstance(dictionary, dict):
         return False
+
     if key in dictionary:
         if dictionary[key] is None:
             return False
@@ -771,16 +916,19 @@ def in_dict(dictionary, key):
 def dict_to_obj(dictionary, key, obj, obj_key=None):
     if not obj_key:
         obj_key = key
+
     if not isinstance(dictionary, dict):
         return
+
     if key in dictionary:
         if dictionary[key] is not None:
             setattr(obj, obj_key, dictionary[key])
 
 
-def dict_json_to_obj(dictionary, key, obj, obj_key=""):
+def dict_json_to_obj(dictionary: dict, key: str, obj: StagePrototypeConfig, obj_key: str = "") -> None:
     if obj_key == "":
         obj_key = key
+
     if isinstance(dictionary, dict):
         if key in dictionary:
             setattr(obj, obj_key, json.dumps(dictionary[key]))
@@ -791,10 +939,12 @@ def _deep_get(deep_dict: dict, *nested_keys: str, default: Any) -> Any:
     Safe dict.get() for deep-nested dictionaries
     dct[key1][key2][...] -> _deep_get(dct, key1, key2, ..., default_value)
     """
+
     val = deepcopy(deep_dict)
     for key in nested_keys:
         try:
             val = val[key]
         except (KeyError, TypeError):
             return default
+
     return val

@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from datetime import datetime
-from typing import Optional
 from unittest.mock import patch
 
 from audit.models import (
@@ -95,7 +94,7 @@ class TestHostAudit(BaseTestCase):
         operation_result: AuditLogOperationResult = AuditLogOperationResult.SUCCESS,
         operation_name: str = "Host configuration updated",
         audit_object_name: str = None,
-        user: Optional[User] = None,
+        user: User | None = None,
         object_changes: dict | None = None,
     ) -> None:
         if object_changes is None:
@@ -119,7 +118,7 @@ class TestHostAudit(BaseTestCase):
         self,
         log: AuditLog,
         operation_result: AuditLogOperationResult = AuditLogOperationResult.SUCCESS,
-        user: Optional[User] = None,
+        user: User | None = None,
     ) -> None:
         if user is None:
             user = self.test_user
@@ -297,7 +296,10 @@ class TestHostAudit(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_cluster_updated_log(
-            log=log, obj=None, operation_result=AuditLogOperationResult.FAIL, user=self.test_user
+            log=log,
+            obj=None,
+            operation_result=AuditLogOperationResult.FAIL,
+            user=self.test_user,
         )
 
         host_pks = Host.objects.all().values_list("pk", flat=True).order_by("-pk")
@@ -564,7 +566,7 @@ class TestHostAudit(BaseTestCase):
                         "host_id": self.host.pk,
                         "action_id": action.pk,
                     },
-                )
+                ),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -581,7 +583,7 @@ class TestHostAudit(BaseTestCase):
                         "host_id": self.host.pk,
                         "action_id": action.pk,
                     },
-                )
+                ),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -654,7 +656,9 @@ class TestHostAudit(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_host_updated_log(
-            log=log, operation_result=AuditLogOperationResult.FAIL, operation_name="Host updated"
+            log=log,
+            operation_result=AuditLogOperationResult.FAIL,
+            operation_name="Host updated",
         )
 
     def test_change_maintenance_mode_denied(self):

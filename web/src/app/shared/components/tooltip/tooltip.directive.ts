@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Directive, ElementRef, HostListener, Input } from '@angular/core';
-import { EventHelper } from '@adwp-ui/widgets';
+import { EventHelper } from '@app/adwp';
 
 import { BaseEntity } from '@app/core/types/api';
 import { ComponentName, PositionType, TooltipService } from '../tooltip/tooltip.service';

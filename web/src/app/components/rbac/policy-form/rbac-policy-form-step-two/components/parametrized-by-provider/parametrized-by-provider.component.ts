@@ -4,7 +4,7 @@ import {
   IRbacObjectCandidateModel,
   IRbacObjectCandidateProviderModel
 } from '../../../../../../models/rbac/rbac-object-candidate';
-import { AdwpStringHandler } from '@adwp-ui/widgets';
+import { AdwpStringHandler } from '@app/adwp';
 
 @Component({
   selector: 'app-parametrized-by-provider',

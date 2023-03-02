@@ -51,8 +51,18 @@ class TestServiceConfigSave:
     CONFIG_ADVANCED_PARAM_AMOUNT = 1
     CHANGE_STRUCTURE_CODE = 12
     CHANGE_STRUCTURE_COUNTRY = "test-country"
-    STRUCTURE_MAP = {"test-country": "12", "test-country-0": "12", "test-country-1": "13", "test-country-2": "14"}
-    STRUCTURE_LIST = {"12": "test-country", "test-country-0": "12", "test-country-1": "13", "test-country-2": "14"}
+    # because of "broken" ordering in structures and hacky methods we use, I found this a better patch
+    # in case anything goes back
+    STRUCTURE_MAP = {
+        v: k
+        for k, v in {
+            "test-country": "12",
+            "test-country-0": "12",
+            "test-country-1": "13",
+            "test-country-2": "14",
+        }.items()
+    }
+    STRUCTURE_LIST = STRUCTURE_MAP
 
     @allure.step("Save config and check popup")
     def _save_config_and_refresh(self, config):
@@ -85,7 +95,7 @@ class TestServiceConfigSave:
         ), "All params should be present when 'Advanced' is enabled"
         config_page.config.click_on_advanced()
 
-    def test_config_save(self, app_fs, sdk_client_fs, create_cluster):
+    def test_config_save(self, app_fs, sdk_client_fs, create_cluster):  # pylint: disable=unused-argument
         """Test to check config save with default params"""
         with allure.step("Create cluster and service"):
             cluster = create_cluster
@@ -93,7 +103,7 @@ class TestServiceConfigSave:
 
         with allure.step("Create service config"):
             service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open(
-                close_popup=True
+                close_popup=True,
             )
             service_config_page.config.set_description(self.CONFIG_NAME_NEW)
             self._save_config_and_refresh(service_config_page)
@@ -102,11 +112,14 @@ class TestServiceConfigSave:
         with allure.step("Create service group config"):
             service_group_config = service.group_config_create(self.GROUP_NAME)
             cluster_group_config_page = ClusterGroupConfigConfig(
-                app_fs.driver, app_fs.adcm.url, cluster.id, service_group_config.id
+                app_fs.driver,
+                app_fs.adcm.url,
+                cluster.id,
+                service_group_config.id,
             ).open()
             cluster_group_config_page.config.set_description(self.CONFIG_NAME_NEW)
 
-    def test_config_empty(self, app_fs, sdk_client_fs, create_cluster):
+    def test_config_empty(self, app_fs, sdk_client_fs, create_cluster):  # pylint: disable=unused-argument
         """Test to check config save with empty params"""
         with allure.step("Create cluster and service"):
             cluster = create_cluster
@@ -114,7 +127,7 @@ class TestServiceConfigSave:
 
         with allure.step("Create service config"):
             service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open(
-                close_popup=True
+                close_popup=True,
             )
             service_config_page.config.set_description(self.CONFIG_NAME_NEW)
             self._save_config_and_refresh(service_config_page)
@@ -123,47 +136,52 @@ class TestServiceConfigSave:
         with allure.step("Add params to empty config and save"):
             service_config_page.config.click_add_item_btn_in_row(self.STRUCTURE_ROW_NAME)
             service_config_page.config.type_in_field_with_few_inputs(
-                self.STRUCTURE_ROW_NAME, [self.CHANGE_STRUCTURE_COUNTRY, self.CHANGE_STRUCTURE_CODE], clear=False
+                self.STRUCTURE_ROW_NAME,
+                [self.CHANGE_STRUCTURE_CODE, self.CHANGE_STRUCTURE_COUNTRY],
+                clear=False,
             )
             service_config_page.config.save_config()
 
         with allure.step("Create group config and check params from config"):
             service_group_config = service.group_config_create("service-group")
             cluster_group_config_page = ClusterGroupConfigConfig(
-                app_fs.driver, app_fs.adcm.url, cluster.id, service_group_config.id
+                app_fs.driver,
+                app_fs.adcm.url,
+                cluster.id,
+                service_group_config.id,
             ).open()
             cluster_group_config_page.config.assert_map_value_is(
-                expected_value={self.CHANGE_STRUCTURE_COUNTRY: str(self.CHANGE_STRUCTURE_CODE)},
+                expected_value={str(self.CHANGE_STRUCTURE_CODE): self.CHANGE_STRUCTURE_COUNTRY},
                 display_name=self.STRUCTURE_ROW_NAME,
             )
 
         with allure.step("Add new params in service config"):
-            service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open(
-                close_popup=True
-            )
-            structure_params = [self.CHANGE_STRUCTURE_COUNTRY, self.CHANGE_STRUCTURE_CODE]
+            service_config_page.open(close_popup=True)
+            structure_params = [self.CHANGE_STRUCTURE_CODE, self.CHANGE_STRUCTURE_COUNTRY]
             for i in range(3):
                 service_config_page.config.click_add_item_btn_in_row(self.STRUCTURE_ROW_NAME)
-                structure_params.extend((f"{self.CHANGE_STRUCTURE_COUNTRY}-{i}", self.CHANGE_STRUCTURE_CODE + i))
+                structure_params.extend((self.CHANGE_STRUCTURE_CODE + i, f"{self.CHANGE_STRUCTURE_COUNTRY}-{i}"))
                 service_config_page.config.type_in_field_with_few_inputs(
-                    self.STRUCTURE_ROW_NAME, structure_params, clear=True
+                    self.STRUCTURE_ROW_NAME,
+                    structure_params,
+                    clear=True,
                 )
             self._save_config_and_refresh(service_config_page)
 
         with allure.step("Check config params after save"):
             service_config_page.config.assert_map_value_is(
-                expected_value=self.STRUCTURE_MAP, display_name=self.STRUCTURE_ROW_NAME
+                expected_value=self.STRUCTURE_MAP,
+                display_name=self.STRUCTURE_ROW_NAME,
             )
 
         with allure.step("Check group config params from config after save"):
-            cluster_group_config_page = ClusterGroupConfigConfig(
-                app_fs.driver, app_fs.adcm.url, cluster.id, service_group_config.id
-            ).open()
+            cluster_group_config_page.open()
             cluster_group_config_page.config.assert_map_value_is(
-                expected_value=self.STRUCTURE_MAP, display_name=self.STRUCTURE_ROW_NAME
+                expected_value=self.STRUCTURE_MAP,
+                display_name=self.STRUCTURE_ROW_NAME,
             )
 
-    def test_config_save_required(self, app_fs, sdk_client_fs, create_cluster):
+    def test_config_save_required(self, app_fs, sdk_client_fs, create_cluster):  # pylint: disable=unused-argument
         """Test to check config can not be saved when required params is empty"""
         with allure.step("Create cluster and service"):
             cluster = create_cluster
@@ -173,7 +191,7 @@ class TestServiceConfigSave:
             service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
             assert service_config_page.config.is_save_btn_disabled(), "Save button must be disabled"
 
-    def test_config_save_invisible(self, app_fs, sdk_client_fs, create_cluster):
+    def test_config_save_invisible(self, app_fs, sdk_client_fs, create_cluster):  # pylint: disable=unused-argument
         """Test to check config save with ui option invisible"""
         with allure.step("Create cluster and service"):
             cluster = create_cluster
@@ -181,7 +199,7 @@ class TestServiceConfigSave:
 
         with allure.step("Create service config"):
             service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open(
-                close_popup=True
+                close_popup=True,
             )
 
         with allure.step("Check config ui option invisible"):
@@ -192,7 +210,10 @@ class TestServiceConfigSave:
         with allure.step("Create group config"):
             service_group_config = service.group_config_create("service-group")
             cluster_group_config_page = ClusterGroupConfigConfig(
-                app_fs.driver, app_fs.adcm.url, cluster.id, service_group_config.id
+                app_fs.driver,
+                app_fs.adcm.url,
+                cluster.id,
+                service_group_config.id,
             ).open(close_popup=True)
             cluster_group_config_page.config.set_description(self.CONFIG_NAME_NEW)
 
@@ -200,7 +221,7 @@ class TestServiceConfigSave:
             cluster_group_config_page.config.save_config()
             should_become_truth(lambda: not cluster_group_config_page.is_popup_presented_on_page(timeout=1))
 
-    def test_config_save_advanced(self, app_fs, sdk_client_fs, create_cluster):
+    def test_config_save_advanced(self, app_fs, sdk_client_fs, create_cluster):  # pylint: disable=unused-argument
         """Test to check config save with ui option advanced"""
         with allure.step("Create cluster and service"):
             cluster = create_cluster
@@ -208,7 +229,7 @@ class TestServiceConfigSave:
 
         with allure.step("Create service config"):
             service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open(
-                close_popup=True
+                close_popup=True,
             )
 
         with allure.step("Check config ui option advanced"):
@@ -219,7 +240,10 @@ class TestServiceConfigSave:
         with allure.step("Create group config"):
             service_group_config = service.group_config_create("service-group")
             cluster_group_config_page = ClusterGroupConfigConfig(
-                app_fs.driver, app_fs.adcm.url, cluster.id, service_group_config.id
+                app_fs.driver,
+                app_fs.adcm.url,
+                cluster.id,
+                service_group_config.id,
             ).open(close_popup=True)
             cluster_group_config_page.config.set_description(self.CONFIG_NAME_NEW)
 
@@ -227,7 +251,7 @@ class TestServiceConfigSave:
             cluster_group_config_page.config.save_config()
             should_become_truth(lambda: not cluster_group_config_page.is_popup_presented_on_page(timeout=1))
 
-    def test_config_save_read_only(self, app_fs, sdk_client_fs, create_cluster):
+    def test_config_save_read_only(self, app_fs, sdk_client_fs, create_cluster):  # pylint: disable=unused-argument
         """Test to check config save with ui option advanced"""
         with allure.step("Create cluster and service"):
             cluster = create_cluster
@@ -240,38 +264,48 @@ class TestServiceConfigSave:
             self._check_read_only_params(service_config_page)
             string_row, *_ = service_config_page.config.get_all_config_rows()
             service_config_page.config.type_in_field_with_few_inputs(
-                string_row, [self.CHANGE_STRUCTURE_COUNTRY], clear=True
+                string_row,
+                [self.CHANGE_STRUCTURE_COUNTRY],
+                clear=True,
             )
             service_config_page.config.save_config()
             service_config_page.config.driver.refresh()
             service_config_page.config.assert_input_value_is(
-                expected_value=self.CHANGE_STRUCTURE_COUNTRY, display_name="string"
+                expected_value=self.CHANGE_STRUCTURE_COUNTRY,
+                display_name="string",
             )
 
         with allure.step("Create group config"):
             service_group_config = service.group_config_create("service-group")
             cluster_group_config_page = ClusterGroupConfigConfig(
-                app_fs.driver, app_fs.adcm.url, cluster.id, service_group_config.id
+                app_fs.driver,
+                app_fs.adcm.url,
+                cluster.id,
+                service_group_config.id,
             ).open()
 
         with allure.step("Change writable param and click save button"):
             cluster_group_config_page.config.assert_input_value_is(
-                expected_value=self.CHANGE_STRUCTURE_COUNTRY, display_name="string"
+                expected_value=self.CHANGE_STRUCTURE_COUNTRY,
+                display_name="string",
             )
             string_row, *_ = service_config_page.config.get_all_config_rows()
             cluster_group_config_page.group_config.click_on_customization_chbx(string_row)
             cluster_group_config_page.config.type_in_field_with_few_inputs(
-                string_row, [self.STRING_ROW_NAME], clear=True
+                string_row,
+                [self.STRING_ROW_NAME],
+                clear=True,
             )
 
         with allure.step("Save group config and check row"):
             service_config_page.config.save_config()
             service_config_page.config.driver.refresh()
             cluster_group_config_page.config.assert_input_value_is(
-                expected_value=self.STRING_ROW_NAME, display_name="string"
+                expected_value=self.STRING_ROW_NAME,
+                display_name="string",
             )
 
-    def test_config_save_schema_dict(self, app_fs, sdk_client_fs, create_cluster):
+    def test_config_save_schema_dict(self, app_fs, sdk_client_fs, create_cluster):  # pylint: disable=unused-argument
         """Test to check config save"""
         with allure.step("Create cluster and service"):
             cluster = create_cluster
@@ -280,7 +314,10 @@ class TestServiceConfigSave:
         with allure.step("Create group config"):
             service_group_config = service.group_config_create("service-group")
             cluster_group_config_page = ClusterGroupConfigConfig(
-                app_fs.driver, app_fs.adcm.url, cluster.id, service_group_config.id
+                app_fs.driver,
+                app_fs.adcm.url,
+                cluster.id,
+                service_group_config.id,
             ).open(close_popup=True)
 
         with allure.step("Add params to group config and save"):
@@ -289,18 +326,21 @@ class TestServiceConfigSave:
             structure_params = [self.CHANGE_STRUCTURE_CODE, self.CHANGE_STRUCTURE_COUNTRY]
             for i in range(3):
                 cluster_group_config_page.config.click_add_item_btn_in_row(self.STRUCTURE_ROW_NAME)
-                structure_params.extend((f"{self.CHANGE_STRUCTURE_COUNTRY}-{i}", self.CHANGE_STRUCTURE_CODE + i))
+                structure_params.extend((self.CHANGE_STRUCTURE_CODE + i, f"{self.CHANGE_STRUCTURE_COUNTRY}-{i}"))
             cluster_group_config_page.config.type_in_field_with_few_inputs(
-                self.STRUCTURE_ROW_NAME, structure_params, clear=True
+                self.STRUCTURE_ROW_NAME,
+                structure_params,
+                clear=True,
             )
             self._save_config_and_refresh(cluster_group_config_page)
 
         with allure.step("Check group config params after save"):
             cluster_group_config_page.config.assert_map_value_is(
-                expected_value=self.STRUCTURE_LIST, display_name=self.STRUCTURE_ROW_NAME
+                expected_value=self.STRUCTURE_LIST,
+                display_name=self.STRUCTURE_ROW_NAME,
             )
 
-    def test_config_group(self, app_fs, sdk_client_fs, create_cluster):
+    def test_config_group(self, app_fs, sdk_client_fs, create_cluster):  # pylint: disable=unused-argument
         """Test to check config save"""
         with allure.step("Create cluster and service"):
             cluster = create_cluster
@@ -308,7 +348,7 @@ class TestServiceConfigSave:
 
         with allure.step("Create service config"):
             service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open(
-                close_popup=True
+                close_popup=True,
             )
             service_config_page.config.set_description(self.CONFIG_NAME_NEW)
             self._save_config_and_refresh(service_config_page)
@@ -317,14 +357,19 @@ class TestServiceConfigSave:
         with allure.step("Create group config"):
             service_group_config = service.group_config_create("service-group")
             cluster_group_config_page = ClusterGroupConfigConfig(
-                app_fs.driver, app_fs.adcm.url, cluster.id, service_group_config.id
+                app_fs.driver,
+                app_fs.adcm.url,
+                cluster.id,
+                service_group_config.id,
             ).open()
 
         with allure.step("Change structure params in group config and disable customization checkbox"):
             _, structure_row, *_ = cluster_group_config_page.group_config.get_all_group_config_rows()
             cluster_group_config_page.group_config.click_on_customization_chbx(structure_row)
             cluster_group_config_page.config.type_in_field_with_few_inputs(
-                structure_row, [self.CHANGE_STRUCTURE_CODE], clear=True
+                structure_row,
+                [self.CHANGE_STRUCTURE_CODE],
+                clear=True,
             )
             cluster_group_config_page.group_config.click_on_customization_chbx(structure_row)
 

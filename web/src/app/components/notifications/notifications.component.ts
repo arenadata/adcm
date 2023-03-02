@@ -34,7 +34,7 @@ export const ACKNOWLEDGE_EVENT = 'acknowledge';
             <mat-icon *ngSwitchCase="'aborted'" [ngClass]="task.status">block</mat-icon>
             <mat-icon *ngSwitchDefault [ngClass]="task.status">done_all</mat-icon>
           </ng-container>
-          <a [routerLink]="task | bellTaskLink">{{ task.action.display_name }}</a>
+          <a [routerLink]="['job', jobId(task), 'main']">{{ task?.action?.display_name }}</a>
         </div>
 
         <div class="footer">
@@ -64,6 +64,38 @@ export class NotificationsComponent {
   @Input() data: { counts: BehaviorSubject<NotificationsData>, tasks: BehaviorSubject<TaskRaw[]> };
 
   event: PopoverEventFunc;
+
+  jobId(task) {
+    const endStatuses = ['aborted', 'success', 'failed'];
+
+    if (task.status === 'running') {
+      const runningJob = task.jobs.find(job => job.status === 'running');
+
+      if (runningJob) {
+        return runningJob.id;
+      }
+
+      const createdJob = task.jobs.find(job => job.status === 'created');
+
+      if (createdJob) {
+        return createdJob.id;
+      }
+
+      const descOrderedJobs = task.jobs.slice().reverse();
+      const finishedJob = descOrderedJobs.find(job => endStatuses.includes(job.status));
+
+      if (finishedJob) {
+        return finishedJob.id;
+      }
+    } else if (endStatuses.includes(task.status)) {
+      const descOrderedJobs = task.jobs.slice().reverse();
+      const finishedJob = descOrderedJobs.find(job => endStatuses.includes(job.status));
+
+      if (finishedJob) {
+        return finishedJob.id;
+      }
+    }
+  }
 
   setLabelHeightAfterAcknowledge() {
     this.minHeightNotifications = this.notificationsRef.nativeElement.clientHeight;

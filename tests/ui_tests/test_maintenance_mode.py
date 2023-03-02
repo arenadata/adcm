@@ -51,7 +51,7 @@ def services(cluster) -> tuple[Service, Service, Service]:
 def _map_components_to_hosts(cluster, services, generic_provider):
     host = cluster.host_add(generic_provider.host_create("some-host"))
     cluster.hostcomponent_set(
-        *[(host, component) for component in chain.from_iterable(service.component_list() for service in services)]
+        *[(host, component) for component in chain.from_iterable(service.component_list() for service in services)],
     )
 
 
@@ -67,7 +67,12 @@ def long_action_components_page(app_fs, cluster, services) -> ServiceComponentsP
 
 
 @pytest.mark.usefixtures("_map_components_to_hosts")
-def test_switch_service_maintenance_mode(cluster, app_fs, services, cluster_services_page):
+def test_switch_service_maintenance_mode(
+    cluster,
+    app_fs,
+    services,
+    cluster_services_page,
+):  # pylint: disable=unused-argument
     no_action_service, short_action_service, long_action_service = services
 
     with allure.step("Open page with services and check MM is OFF"):
@@ -104,7 +109,12 @@ def test_switch_service_maintenance_mode(cluster, app_fs, services, cluster_serv
 
 
 @pytest.mark.usefixtures("_map_components_to_hosts")
-def test_switch_component_maintenance_mode(cluster, services, long_action_components_page, cluster_services_page):
+def test_switch_component_maintenance_mode(
+    cluster,
+    services,
+    long_action_components_page,
+    cluster_services_page,
+):  # pylint: disable=unused-argument
     *_, long_action_service = services
 
     with allure.step("Turn component's MM ON"):
@@ -172,7 +182,7 @@ def test_change_mm_with_and_without_hc(cluster, services, cluster_services_page,
 
     with allure.step("Map service to a host and check action's launched now"):
         cluster.hostcomponent_set(
-            (cluster.host_add(generic_provider.host_create("some-host")), service_with_action.component())
+            (cluster.host_add(generic_provider.host_create("some-host")), service_with_action.component()),
         )
         services_page.open()
         service, *_ = services_page.get_rows(name_is(service_with_action.name))
@@ -194,5 +204,8 @@ def check_amount_of_jobs(header: Header, succeed: int, in_progress: int, failed:
 
 def _open_components_page_for_service(service: Service, app: ADCMTest) -> ServiceComponentsPage:
     return ServiceComponentsPage(
-        app.driver, app.adcm.url, cluster_id=service.cluster().id, service_id=service.id
+        app.driver,
+        app.adcm.url,
+        cluster_id=service.cluster().id,
+        service_id=service.id,
     ).open()

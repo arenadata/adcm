@@ -188,7 +188,7 @@ class TestAuditObjectRename(BaseTestCase):
                         "id": self.cluster.pk,
                         "name": self.cluster.name,
                         "type": "cluster",
-                    }
+                    },
                 ],
                 "role": {"id": self.role.pk},
                 "user": [{"id": self.test_user.pk}],
@@ -221,7 +221,7 @@ class TestAuditObjectRename(BaseTestCase):
                         "id": self.cluster.pk,
                         "name": self.cluster.name,
                         "type": "cluster",
-                    }
+                    },
                 ],
                 "role": {"id": self.role.pk},
                 "user": [{"id": self.test_user.pk}],

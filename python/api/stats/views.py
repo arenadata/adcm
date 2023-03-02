@@ -24,7 +24,7 @@ class JobStats(PermissionListMixin, GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
     permission_required = ["cm.view_joblog"]
 
-    def get(self, request, pk):
+    def get(self, request, pk):  # pylint: disable=unused-argument
         jobs = self.get_queryset().filter(id__gt=pk)
 
         return Response(
@@ -32,7 +32,7 @@ class JobStats(PermissionListMixin, GenericUIView):
                 JobStatus.FAILED.value: jobs.filter(status=JobStatus.FAILED).count(),
                 JobStatus.SUCCESS.value: jobs.filter(status=JobStatus.SUCCESS).count(),
                 JobStatus.RUNNING.value: jobs.filter(status=JobStatus.RUNNING).count(),
-            }
+            },
         )
 
 
@@ -42,7 +42,7 @@ class TaskStats(PermissionListMixin, GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
     permission_required = ["cm.view_tasklog"]
 
-    def get(self, request, pk):
+    def get(self, request, pk):  # pylint: disable=unused-argument
         tasks = self.get_queryset().filter(id__gt=pk)
 
         return Response(
@@ -50,5 +50,5 @@ class TaskStats(PermissionListMixin, GenericUIView):
                 JobStatus.FAILED.value: tasks.filter(status=JobStatus.FAILED).count(),
                 JobStatus.SUCCESS.value: tasks.filter(status=JobStatus.SUCCESS).count(),
                 JobStatus.RUNNING.value: tasks.filter(status=JobStatus.RUNNING).count(),
-            }
+            },
         )

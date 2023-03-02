@@ -106,5 +106,5 @@ class RoleViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
         return super().destroy(request, *args, **kwargs)
 
     @action(methods=["get"], detail=False)
-    def category(self, request):
+    def category(self, request):  # pylint: disable=unused-argument
         return Response(sorted(b.value for b in ProductCategory.objects.all()))

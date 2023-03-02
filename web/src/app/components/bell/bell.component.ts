@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, ElementRef, Renderer2, ViewChild } from '@angular/core';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 import { BehaviorSubject, combineLatest, interval, Observable, zip } from 'rxjs';
 import { filter, map, mergeMap, take, takeWhile } from 'rxjs/operators';
 
@@ -156,6 +156,9 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
     if (taskIndex < 0) return;
 
     const updatedJobIndex = tasks[taskIndex].jobs.findIndex((job) => job.id === updatedJobId);
+
+    if (updatedJobIndex < 0) return;
+
     tasks[taskIndex].jobs[updatedJobIndex].status = status;
     this.tasks.next(tasks);
   }

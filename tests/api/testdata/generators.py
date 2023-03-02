@@ -14,7 +14,7 @@
 
 from collections import ChainMap
 from http import HTTPStatus
-from typing import List, NamedTuple, Optional
+from typing import NamedTuple
 
 import allure
 import attr
@@ -38,7 +38,7 @@ class TestData:
 
     request: Request
     response: ExpectedResponse
-    description: Optional[str] = None
+    description: str | None = None
     __test__ = False
 
     def __repr__(self):
@@ -69,7 +69,7 @@ class TestDataWithPreparedPath(NamedTuple):
 
 
 def _fill_pytest_param(
-    value: List[TestDataWithPreparedBody] or List[TestData],
+    value: list[TestDataWithPreparedBody] or list[TestData],
     endpoint: Endpoints,
     method: Methods,
     positive=True,
@@ -119,7 +119,7 @@ def get_data_for_methods_check():
                     endpoint=endpoint,
                     method=method,
                     positive=response.status_code != HTTPStatus.METHOD_NOT_ALLOWED,
-                )
+                ),
             )
     return test_data
 
@@ -144,12 +144,12 @@ def get_data_for_params_check(method=Methods.GET, fields_predicate=None):
                 endpoint=endpoint,
                 method=method,
                 positive=True,
-            )
+            ),
         )
     return test_data
 
 
-def get_data_for_urls_check() -> List[TestDataWithPreparedPath]:
+def get_data_for_urls_check() -> list[TestDataWithPreparedPath]:
     """
     Get test data for requests with invalid url data with parent object id - /api/v1/parent/{id}/object
     """
@@ -170,7 +170,7 @@ def get_data_for_urls_check() -> List[TestDataWithPreparedPath]:
                         TestDataWithPreparedPath(
                             TestData(request=request, response=response),
                             request_path=endpoint.path.format(id="unexpected"),
-                        )
+                        ),
                     ],
                     endpoint=endpoint,
                     method=method,
@@ -231,7 +231,7 @@ def get_positive_data_for_post_body_check():
                             value_properties={"value": None},
                         ),
                     ],
-                )
+                ),
             )
     return get_data_for_body_check(Methods.POST, test_sets, positive=True)
 
@@ -286,7 +286,7 @@ def get_negative_data_for_post_body_check():
                             positive_case=False,
                         ),
                     ],
-                )
+                ),
             )
     return get_data_for_body_check(Methods.POST, test_sets, positive=False)
 
@@ -335,7 +335,7 @@ def get_positive_data_for_patch_body_check():
                             value_properties={"generated_value": True},
                         ),
                     ],
-                )
+                ),
             )
     return get_data_for_body_check(Methods.PATCH, test_sets, positive=True)
 
@@ -369,7 +369,7 @@ def get_negative_data_for_patch_body_check():
                             positive_case=False,
                         ),
                     ],
-                )
+                ),
             )
     return get_data_for_body_check(Methods.PATCH, test_sets, positive=False)
 
@@ -412,7 +412,7 @@ def get_positive_data_for_put_body_check():
                             positive_case=True,
                         ),
                     ],
-                )
+                ),
             )
     return get_data_for_body_check(Methods.PUT, test_sets, positive=True)
 
@@ -455,12 +455,12 @@ def get_negative_data_for_put_body_check():
                             positive_case=False,
                         ),
                     ],
-                )
+                ),
             )
     return get_data_for_body_check(Methods.PUT, test_sets, positive=False)
 
 
-def get_data_for_body_check(method: Methods, endpoints_with_test_sets: List[tuple], positive: bool):
+def get_data_for_body_check(method: Methods, endpoints_with_test_sets: list[tuple], positive: bool):  # noqa: C901
     """
     Collect test sets for body testing
     Each test set is set of data params where values are PreparedFieldValue instances
@@ -475,7 +475,7 @@ def get_data_for_body_check(method: Methods, endpoints_with_test_sets: List[tupl
         if endpoint.technical:
             continue
         for test_group, group_name in test_groups:
-            values: List[TestDataWithPreparedBody] = []
+            values: list[TestDataWithPreparedBody] = []
             for test_set in test_group:
                 if positive:
                     status_code = method.default_success_code
@@ -507,7 +507,7 @@ def get_data_for_body_check(method: Methods, endpoints_with_test_sets: List[tupl
                             method=method,
                             positive=positive,
                             addition=group_name,
-                        )
+                        ),
                     )
             elif values:
                 test_data.append(
@@ -517,13 +517,16 @@ def get_data_for_body_check(method: Methods, endpoints_with_test_sets: List[tupl
                         method=method,
                         positive=positive,
                         addition=group_name,
-                    )
+                    ),
                 )
     return test_data
 
 
 def _prepare_test_data_with_all_fields(
-    endpoint: Endpoints, method: Methods, status_code: int, test_set: dict
+    endpoint: Endpoints,
+    method: Methods,
+    status_code: int,
+    test_set: dict,
 ) -> TestDataWithPreparedBody:
     request = Request(method=method, endpoint=endpoint)
     response = ExpectedResponse(status_code=status_code)
@@ -550,8 +553,11 @@ def _step_description(test_set: dict):
 
 
 def _prepare_test_data_with_one_by_one_fields(
-    endpoint: Endpoints, method: Methods, status_code: int, test_set: dict
-) -> List[TestDataWithPreparedBody]:
+    endpoint: Endpoints,
+    method: Methods,
+    status_code: int,
+    test_set: dict,
+) -> list[TestDataWithPreparedBody]:
     test_data_list = []
     for param_name, param_value in test_set.items():
         request_data = {}
@@ -570,7 +576,7 @@ def _prepare_test_data_with_one_by_one_fields(
                     description=f"{param_name}: {param_value.error_messages}",
                 ),
                 test_body=request_data,
-            )
+            ),
         )
     return test_data_list
 

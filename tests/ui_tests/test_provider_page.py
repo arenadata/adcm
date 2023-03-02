@@ -217,7 +217,9 @@ class TestProviderMainPage:
     def test_open_by_tab_provider_main_page(self, app_fs, upload_and_create_test_provider):
         """Test provider main page from left menu"""
         provider_config_page = ProviderConfigPage(
-            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            upload_and_create_test_provider.id,
         ).open()
         provider_main_page = provider_config_page.open_main_tab()
         provider_main_page.wait_page_is_opened()
@@ -241,7 +243,13 @@ class TestProviderMainPage:
             ), f"Provider state should be {params['state']}"
 
     @pytest.mark.parametrize("bundle", ["provider_with_host_with_issue"], indirect=True)
-    def test_provider_with_host_with_issues(self, app_fs, bundle, upload_and_create_test_provider, cluster):
+    def test_provider_with_host_with_issues(
+        self,
+        app_fs,
+        bundle,
+        upload_and_create_test_provider,
+        cluster,
+    ):  # pylint: disable=unused-argument
         """Test that if host has issue then provider is not"""
 
         host = upload_and_create_test_provider.host_create(fqdn="first")
@@ -249,7 +257,10 @@ class TestProviderMainPage:
         cluster.host_add(host)
         cluster.hostcomponent_set((host, service.component()))
         host_page = HostMainPage(app_fs.driver, app_fs.adcm.url, host.host_id).open()
-        host_page.toolbar.check_warn_button(tab_name="first", expected_warn_text=["first has an issue with its config"])
+        host_page.toolbar.check_warn_button(
+            tab_name="first",
+            expected_warn_text=["first has an issue with its config"],
+        )
         provider_page = ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).open()
         provider_page.toolbar.check_no_warn_button(tab_name=upload_and_create_test_provider.name)
 
@@ -261,7 +272,11 @@ class TestProviderConfigPage:
     @pytest.mark.include_firefox()
     def test_open_by_tab_provider_config_page(self, app_fs, upload_and_create_test_provider):
         """Test provider config page from left menu"""
-        provider_main_page = ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).open()
+        provider_main_page = ProviderMainPage(
+            app_fs.driver,
+            app_fs.adcm.url,
+            upload_and_create_test_provider.id,
+        ).open()
         provider_config_page = provider_main_page.open_config_tab()
         provider_config_page.wait_page_is_opened()
         provider_config_page.check_all_elements()
@@ -272,7 +287,9 @@ class TestProviderConfigPage:
         """Test config filter on provider config page"""
         params = {"search_param": "str_param", "group_name": "core-site"}
         provider_config_page = ProviderConfigPage(
-            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            upload_and_create_test_provider.id,
         ).open()
         with provider_config_page.config.wait_rows_change(expected_rows_amount=1):
             provider_config_page.config.search(params["search_param"])
@@ -293,7 +310,7 @@ class TestProviderConfigPage:
     @pytest.mark.include_firefox()
     @pytest.mark.parametrize("bundle", ["provider_with_all_config_params"], indirect=True)
     @pytest.mark.skip(
-        "Config filling method has flaky problem with filling password values, fix it and remove this skip"
+        "Config filling method has flaky problem with filling password values, fix it and remove this skip",
     )
     def test_save_custom_config_on_provider_config_page(self, app_fs, upload_and_create_test_provider):
         """Test save config on provider config page"""
@@ -303,7 +320,9 @@ class TestProviderConfigPage:
             "config_name_old": "init",
         }
         provider_config_page = ProviderConfigPage(
-            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            upload_and_create_test_provider.id,
         ).open()
         provider_config_page.config.fill_config_fields_with_test_values()
         provider_config_page.config.set_description(params["config_name_new"])
@@ -320,22 +339,32 @@ class TestProviderConfigPage:
             "config_name": "test_name",
         }
         provider_config_page = ProviderConfigPage(
-            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            upload_and_create_test_provider.id,
         ).open()
         config_row = provider_config_page.config.get_all_config_rows()[0]
         provider_config_page.config.type_in_field_with_few_inputs(
-            row=config_row, values=[params["row_value_new"]], clear=True
+            row=config_row,
+            values=[params["row_value_new"]],
+            clear=True,
         )
         provider_config_page.config.set_description(params["config_name"])
         provider_config_page.config.save_config()
 
         provider_config_page.config.reset_to_default(row=config_row)
         provider_config_page.config.assert_input_value_is(
-            expected_value=params["row_value_old"], display_name=params["row_name"]
+            expected_value=params["row_value_old"],
+            display_name=params["row_name"],
         )
 
     @pytest.mark.parametrize("bundle", ["provider_required_fields"], indirect=True)
-    def test_field_validation_on_provider_config_page(self, app_fs, bundle, upload_and_create_test_provider):
+    def test_field_validation_on_provider_config_page(
+        self,
+        app_fs,
+        bundle,
+        upload_and_create_test_provider,
+    ):  # pylint: disable=unused-argument
         """Test config field validation on provider config page"""
         params = {
             "pass_name": "Test password",
@@ -344,7 +373,9 @@ class TestProviderConfigPage:
             "wrong_value": "test",
         }
         provider_config_page = ProviderConfigPage(
-            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            upload_and_create_test_provider.id,
         ).open()
         provider_config_page.config.check_password_confirm_required(params["pass_name"])
         provider_config_page.config.check_field_is_required(params["req_name"])
@@ -359,31 +390,45 @@ class TestProviderConfigPage:
 
     @pytest.mark.parametrize("bundle", ["provider_default_fields"], indirect=True)
     def test_field_validation_on_provider_config_page_with_default_value(
-        self, app_fs, bundle, upload_and_create_test_provider
+        self,
+        app_fs,
+        bundle,  # pylint: disable=unused-argument
+        upload_and_create_test_provider,
     ):
         """Test config field validation on provider config page"""
 
         params = {"field_name": "string", "new_value": "test", "config_name": "test_name"}
 
         provider_config_page = ProviderConfigPage(
-            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            upload_and_create_test_provider.id,
         ).open()
         provider_config_page.config.clear_field_by_keys(params["field_name"])
         provider_config_page.config.check_field_is_required(params["field_name"])
         provider_config_page.config.type_in_field_with_few_inputs(
-            row=provider_config_page.config.get_all_config_rows()[0], values=[params["new_value"]]
+            row=provider_config_page.config.get_all_config_rows()[0],
+            values=[params["new_value"]],
         )
         provider_config_page.config.save_config()
         provider_config_page.config.assert_input_value_is(
-            expected_value=params["new_value"], display_name=params["field_name"]
+            expected_value=params["new_value"],
+            display_name=params["field_name"],
         )
 
     @pytest.mark.parametrize("bundle", ["provider_with_all_config_params"], indirect=True)
-    def test_field_tooltips_on_provider_config_page(self, app_fs, bundle, upload_and_create_test_provider):
+    def test_field_tooltips_on_provider_config_page(
+        self,
+        app_fs,
+        bundle,
+        upload_and_create_test_provider,
+    ):  # pylint: disable=unused-argument
         """Test config fields tooltips on provider config page"""
 
         provider_config_page = ProviderConfigPage(
-            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            upload_and_create_test_provider.id,
         ).open()
         for item in CONFIG_ITEMS:
             provider_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
@@ -395,7 +440,11 @@ class TestProviderGroupConfigPage:
     def test_open_by_tab_group_config_provider_page(self, app_fs, upload_and_create_test_provider):
         """Test open provider group_config from left menu"""
 
-        provider_main_page = ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).open()
+        provider_main_page = ProviderMainPage(
+            app_fs.driver,
+            app_fs.adcm.url,
+            upload_and_create_test_provider.id,
+        ).open()
         group_conf_page = provider_main_page.open_group_config_tab()
         group_conf_page.check_all_elements()
 
@@ -408,7 +457,9 @@ class TestProviderGroupConfigPage:
         }
 
         provider_group_conf_page = ProviderGroupConfigPage(
-            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            upload_and_create_test_provider.id,
         ).open()
         with provider_group_conf_page.group_config.wait_rows_change(expected_rows_amount=1):
             provider_group_conf_page.group_config.create_group(name=params["name"], description=params["description"])
@@ -416,18 +467,24 @@ class TestProviderGroupConfigPage:
         with allure.step("Check created row in provider"):
             group_info = provider_group_conf_page.group_config.get_config_row_info(group_row)
             assert group_info == GroupConfigRowInfo(
-                name=params["name"], description=params["description"]
+                name=params["name"],
+                description=params["description"],
             ), "Row value differs in provider groups"
         with provider_group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
             provider_group_conf_page.group_config.delete_row(group_row)
 
     def test_check_pagination_on_group_config_provider_page(
-        self, sdk_client_fs, app_fs, upload_and_create_test_provider
+        self,
+        sdk_client_fs,
+        app_fs,
+        upload_and_create_test_provider,
     ):
         """Test pagination on /cluster/{}/service/{}/component/{}/group_config page"""
 
         create_few_groups(sdk_client_fs, upload_and_create_test_provider)
         group_conf_page = ProviderGroupConfigPage(
-            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            upload_and_create_test_provider.id,
         ).open()
         check_pagination(group_conf_page.table, expected_on_second=1)

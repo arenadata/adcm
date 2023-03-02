@@ -15,5 +15,7 @@
 
 waitforwsgi
 
-echo "Run cron ..."
-crond -f -l 2
+if [ -z "$MIGRATION_MODE" ] || [ "$MIGRATION_MODE" -ne 1 ]; then
+    echo "Run cron ..."
+    crond -f -l 2
+fi

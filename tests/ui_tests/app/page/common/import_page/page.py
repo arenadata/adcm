@@ -30,7 +30,7 @@ class ImportItem(Element):
 
     def get_available_exports(self) -> tuple["ExportItem", ...]:
         return tuple(
-            map(as_element(ExportItem, self._view), self._view.find_children(self.element, self.Locators.export_item))
+            map(as_element(ExportItem, self._view), self._view.find_children(self.element, self.Locators.export_item)),
         )
 
 
@@ -57,7 +57,7 @@ class ExportItem(Element):
 
     def is_checked(self) -> bool:
         string_value = self._view.find_child(self.element, self.Locators.input, timeout=0.1).get_attribute(
-            "aria-checked"
+            "aria-checked",
         )
         if string_value == "false":
             return False

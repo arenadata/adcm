@@ -16,7 +16,6 @@
 
 import os
 from copy import deepcopy
-from typing import Tuple
 
 import allure
 import pytest
@@ -85,7 +84,7 @@ def cluster_bundle(sdk_client_fs: ADCMClient, data_dir_name: str) -> Bundle:
 
 
 @pytest.fixture()
-def create_cluster_with_service(sdk_client_fs: ADCMClient) -> Tuple[Cluster, Service]:
+def create_cluster_with_service(sdk_client_fs: ADCMClient) -> tuple[Cluster, Service]:
     bundle = cluster_bundle(sdk_client_fs, BUNDLE)
     cluster = bundle.cluster_create(name=CLUSTER_NAME)
     return cluster, cluster.service_add(name=SERVICE_NAME)
@@ -93,8 +92,9 @@ def create_cluster_with_service(sdk_client_fs: ADCMClient) -> Tuple[Cluster, Ser
 
 @pytest.fixture()
 def create_cluster_with_component(
-    create_cluster_with_service: Tuple[Cluster, Service], sdk_client_fs: ADCMClient
-) -> Tuple[Cluster, Service, Host, Provider]:
+    create_cluster_with_service: tuple[Cluster, Service],
+    sdk_client_fs: ADCMClient,
+) -> tuple[Cluster, Service, Host, Provider]:
     """Create cluster with component"""
 
     cluster, service = create_cluster_with_service
@@ -158,7 +158,7 @@ class TestAdminSettingsPage:
         }
         get_rows_func = settings_page.config.get_all_config_rows
         with allure.step(
-            f'Search {params["search_text"]} and check {params["field_display_name"]} is presented after search'
+            f'Search {params["search_text"]} and check {params["field_display_name"]} is presented after search',
         ):
             with expect_rows_amount_change(get_rows_func):
                 settings_page.config.search(params["search_text"])
@@ -167,7 +167,7 @@ class TestAdminSettingsPage:
             settings_page.config.clear_search()
         with allure.step(
             f'Click on {params["group"]} group and check {params["field_display_name"]} '
-            "is not presented after group roll up"
+            "is not presented after group roll up",
         ):
             with expect_rows_amount_change(get_rows_func):
                 settings_page.config.click_on_group(params["group"])
@@ -175,7 +175,7 @@ class TestAdminSettingsPage:
                 settings_page.config.get_config_row(params["field_display_name"])
         with allure.step(
             f'Click on {params["group"]} group and check {params["field_display_name"]} '
-            "is presented after group expand"
+            "is presented after group expand",
         ):
             with expect_rows_amount_change(get_rows_func):
                 settings_page.config.click_on_group(params["group"])
@@ -223,12 +223,14 @@ class TestAdminSettingsPage:
 
         for field, inappropriate_value, error_message in params:
             with allure.step(
-                f'Set value {inappropriate_value} to field "{field}" and expect error message: {error_message}'
+                f'Set value {inappropriate_value} to field "{field}" and expect error message: {error_message}',
             ):
                 config_row = settings_page.config.get_config_row(field)
                 settings_page.scroll_to(config_row)
                 settings_page.config.type_in_field_with_few_inputs(
-                    row=config_row, values=[inappropriate_value], clear=True
+                    row=config_row,
+                    values=[inappropriate_value],
+                    clear=True,
                 )
                 settings_page.config.check_invalid_value_message(error_message)
 
@@ -256,10 +258,10 @@ class TestAdminSettingsPage:
         }
         with allure.step("Check ldap actions are disabled"):
             assert settings_page.toolbar.is_adcm_action_inactive(
-                action_name=params["connect_action"]
+                action_name=params["connect_action"],
             ), f"Action {params['connect_action']} should be disabled"
             assert settings_page.toolbar.is_adcm_action_inactive(
-                action_name=params["test_action"]
+                action_name=params["test_action"],
             ), f"Action {params['test_action']} should be disabled"
 
         with allure.step("Check actions hint is present on toolbar"):
@@ -274,7 +276,8 @@ class TestAdminSettingsPage:
             settings_page.config.type_in_field_with_few_inputs(row="LDAP URI", values=[params["test_value"]])
             settings_page.config.type_in_field_with_few_inputs(row="Bind DN", values=[params["test_value"]])
             settings_page.config.type_in_field_with_few_inputs(
-                row="Bind Password", values=[params["test_value"], params["test_value"]]
+                row="Bind Password",
+                values=[params["test_value"], params["test_value"]],
             )
             settings_page.config.type_in_field_with_few_inputs(row="User search base", values=[params["test_value"]])
             settings_page.config.type_in_field_with_few_inputs(row="Group search base", values=[params["test_value"]])
@@ -282,10 +285,10 @@ class TestAdminSettingsPage:
             settings_page.config.wait_config_loaded()
         with allure.step("Check ldap actions are enabled"):
             assert not settings_page.toolbar.is_adcm_action_inactive(
-                action_name=params["connect_action"]
+                action_name=params["connect_action"],
             ), f"Action {params['connect_action']} should be enabled"
             assert not settings_page.toolbar.is_adcm_action_inactive(
-                action_name=params["test_action"]
+                action_name=params["test_action"],
             ), f"Action {params['test_action']} should be enabled"
         with allure.step("Check Test LDAP connection action"):
             settings_page.toolbar.run_adcm_action(action_name=params["test_action"])
@@ -354,7 +357,7 @@ class TestAdminUsersPage:
 
         with allure.step("Check user can't delete itself"):
             assert not users_page.get_row(
-                username_is(current_user)
+                username_is(current_user),
             ).is_delete_button_presented, f"Delete button for user {current_user} should be disabled"
 
         with allure.step(f"Create user {username} and check it has appeared in users list"):
@@ -376,7 +379,8 @@ class TestAdminUsersPage:
             # and minor effect of such check
             for field_name in ("username", "first_name", "last_name", "email"):
                 assert not getattr(
-                    dialog, f"{field_name}_element"
+                    dialog,
+                    f"{field_name}_element",
                 ).is_enabled(), f"Field '{field_name}' should not be editable"
 
     def test_change_admin_password(self, users_page: AdminUsersPage):
@@ -440,7 +444,13 @@ class TestAdminUsersPage:
 
     @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
-    def test_add_ldap_group_to_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
+    def test_add_ldap_group_to_users(
+        self,
+        user,
+        users_page,
+        sdk_client_fs,
+        ldap_user_in_group,
+    ):  # pylint: disable=unused-argument
         """Check that user can't add ldap group to usual user"""
         with allure.step("Wait ldap integration ends"):
             wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), "success")
@@ -466,7 +476,13 @@ class TestAdminUsersPage:
 
     @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
-    def test_filter_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
+    def test_filter_users(
+        self,
+        user,
+        users_page,
+        sdk_client_fs,
+        ldap_user_in_group,
+    ):  # pylint: disable=unused-argument
         """Check that users can be filtered"""
 
         with allure.step("Wait ldap integration ends"):
@@ -615,7 +631,7 @@ class TestAdminRolesPage:
                 "name": "ADCM User",
                 "description": "",
                 "permissions": sorted(
-                    ("View any object configuration", "View any object import", "View any object host-components")
+                    ("View any object configuration", "View any object import", "View any object host-components"),
                 ),
             },
             {
@@ -627,7 +643,7 @@ class TestAdminRolesPage:
                         "Edit service configurations",
                         "Edit component configurations",
                         "View host-components",
-                    )
+                    ),
                 ),
             },
             {
@@ -648,7 +664,7 @@ class TestAdminRolesPage:
                         "Upgrade cluster bundle",
                         "Remove bundle",
                         "Service Administrator",
-                    )
+                    ),
                 ),
             },
             {
@@ -663,7 +679,7 @@ class TestAdminRolesPage:
                         "Remove hosts",
                         "Upgrade provider bundle",
                         "Remove bundle",
-                    )
+                    ),
                 ),
             },
         ]
@@ -696,7 +712,9 @@ class TestAdminGroupsPage:
 
         groups_page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
         groups_page.create_custom_group(
-            self.custom_group["name"], self.custom_group["description"], [self.custom_group["users"]]
+            self.custom_group["name"],
+            self.custom_group["description"],
+            [self.custom_group["users"]],
         )
         current_groups = tuple(map(dict, groups_page.get_rows()))
         with allure.step("Check that there are 1 custom group"):
@@ -711,7 +729,9 @@ class TestAdminGroupsPage:
         wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), "success")
         groups_page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
         groups_page.create_custom_group(
-            self.custom_group["name"], self.custom_group["description"], [ldap_user_in_group["name"]]
+            self.custom_group["name"],
+            self.custom_group["description"],
+            [ldap_user_in_group["name"]],
         )
         current_groups = tuple(map(dict, groups_page.get_rows()))
         with allure.step("Check that there are 1 custom group and 1 ldap"):
@@ -741,7 +761,9 @@ class TestAdminGroupsPage:
 
         page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
         page.create_custom_group(
-            self.custom_group["name"], self.custom_group["description"], [self.custom_group["users"]]
+            self.custom_group["name"],
+            self.custom_group["description"],
+            [self.custom_group["users"]],
         )
         page.select_all_groups()
         page.delete_selected_groups()
@@ -750,7 +772,7 @@ class TestAdminGroupsPage:
 
     @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
-    def test_ldap_group_change_is_forbidden(self, app_fs, ldap_user_in_group):
+    def test_ldap_group_change_is_forbidden(self, app_fs, ldap_user_in_group):  # pylint: disable=unused-argument
         """Change ldap group"""
 
         params = {"group_name": "adcm_users"}
@@ -948,7 +970,11 @@ class TestAdminPolicyPage:
     # pylint: enable=too-many-locals
 
     def test_policy_permission_to_view_access_cluster(
-        self, sdk_client_fs, app_fs, create_cluster_with_component, another_user
+        self,
+        sdk_client_fs,
+        app_fs,
+        create_cluster_with_component,
+        another_user,
     ):
         """Test for the permissions to cluster."""
 
@@ -979,7 +1005,11 @@ class TestAdminPolicyPage:
             second_cluster_config_page.config.check_no_rows_or_groups_on_page()
 
     def test_policy_permission_to_view_access_service(
-        self, sdk_client_fs, app_fs, create_cluster_with_component, another_user
+        self,
+        sdk_client_fs,
+        app_fs,
+        create_cluster_with_component,
+        another_user,
     ):
         """Test for the permissions to service."""
 
@@ -1004,17 +1034,27 @@ class TestAdminPolicyPage:
         AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
         with allure.step("Check that user can view first service config"):
             service_config_page = ServiceConfigPage(
-                app_fs.driver, app_fs.adcm.url, cluster.id, service.service_id
+                app_fs.driver,
+                app_fs.adcm.url,
+                cluster.id,
+                service.service_id,
             ).open()
             service_config_page.config.check_config_fields_visibility({"str_param", "int", "param1", "param2"})
         with allure.step("Check that user can not view second service config"):
             second_service_config_page = ServiceConfigPage(
-                app_fs.driver, app_fs.adcm.url, cluster.id, second_service.service_id
+                app_fs.driver,
+                app_fs.adcm.url,
+                cluster.id,
+                second_service.service_id,
             ).open()
             second_service_config_page.config.check_no_rows_or_groups_on_page()
 
     def test_policy_permission_to_view_access_component(
-        self, sdk_client_fs, app_fs, create_cluster_with_component, another_user
+        self,
+        sdk_client_fs,
+        app_fs,
+        create_cluster_with_component,
+        another_user,
     ):
         """Test for the permissions to component."""
 
@@ -1043,12 +1083,20 @@ class TestAdminPolicyPage:
         AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
         with allure.step("Check that user can view first component config"):
             component_config_page = ComponentConfigPage(
-                app_fs.driver, app_fs.adcm.url, cluster.id, service.service_id, 1
+                app_fs.driver,
+                app_fs.adcm.url,
+                cluster.id,
+                service.service_id,
+                1,
             ).open()
             component_config_page.config.check_config_fields_visibility({"str_param"})
         with allure.step("Check that user can not view second component config"):
             second_component_config_page = ComponentConfigPage(
-                app_fs.driver, app_fs.adcm.url, cluster.id, second_service.service_id, 2
+                app_fs.driver,
+                app_fs.adcm.url,
+                cluster.id,
+                second_service.service_id,
+                2,
             ).open()
             second_component_config_page.config.check_no_rows_or_groups_on_page()
 
@@ -1116,7 +1164,11 @@ class TestAdminPolicyPage:
 
     # pylint: disable=too-many-locals
     def test_policy_permission_to_run_cluster_action_and_view_task(
-        self, sdk_client_fs, app_fs, create_cluster_with_component, another_user
+        self,
+        sdk_client_fs,
+        app_fs,
+        create_cluster_with_component,
+        another_user,
     ):
         """Test for the permissions to task."""
 
@@ -1161,7 +1213,7 @@ class TestAdminPolicyPage:
             assert len(cluster_rows) == 2, "There should be 2 row with cluster"
         with allure.step("Check actions in clusters"):
             assert cluster_list_page.get_all_actions_name_in_cluster(cluster_rows[0]) == [
-                "some_action"
+                "some_action",
             ], "First cluster action should be visible"
             assert (
                 cluster_list_page.get_all_actions_name_in_cluster(cluster_rows[1]) == []

@@ -13,7 +13,7 @@ import { Component, ComponentRef, OnInit, ViewChild } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import { IColumns } from '@adwp-ui/widgets';
+import { IColumns } from '@app/adwp';
 import { Observable } from 'rxjs';
 
 import { StackService } from '../../core/services';

@@ -10,9 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from datetime import datetime
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 from audit.models import (
     AuditLog,
@@ -40,8 +40,8 @@ class TestTaskAudit(BaseTestCase):
         self.task = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=ContentType.objects.get(app_label="cm", model="adcm"),
-            start_date=datetime.now(),
-            finish_date=datetime.now(),
+            start_date=datetime.now(tz=ZoneInfo("UTC")),
+            finish_date=datetime.now(tz=ZoneInfo("UTC")),
         )
         self.task_restarted_str = "Task restarted"
 

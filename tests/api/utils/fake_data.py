@@ -57,7 +57,7 @@ def gen_string(prop=None):
     return random_string(strlen=randint(min_length, max_length))
 
 
-def gen_bool(prop=None):
+def gen_bool(prop=None):  # pylint: disable=unused-argument
     """
     Generate Boolean value
     :param prop: for capability only

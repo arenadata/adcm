@@ -12,7 +12,7 @@
 
 """Test basic login scenarios"""
 
-from typing import Callable, Union
+from collections.abc import Callable
 
 import allure
 import pytest
@@ -164,7 +164,7 @@ _deactivate_ldap_integration = (
     [_deactivate_ldap_integration, *_wrong_user_password],
     ids=lambda x: x.replace(" ", "_") if isinstance(x, str) else x,
 )
-def test_ldap_config_change(change_name: str, config: Union[dict, Callable], sdk_client_fs, ldap_user_in_group):
+def test_ldap_config_change(change_name: str, config: dict | Callable, sdk_client_fs, ldap_user_in_group):
     """Test that changing ldap config to "incorrect" leads to users access loss"""
     login_operation = "login as LDAP user"
     user, password = ldap_user_in_group["name"], ldap_user_in_group["password"]
@@ -220,7 +220,11 @@ def test_login_as_existing_user_is_forbidden(sdk_client_fs, ldap_user_in_group):
 
 @allure.issue("https://tracker.yandex.ru/ADCM-3019")
 def test_login_when_group_itself_is_group_search_base(
-    sdk_client_fs, ldap_user, ldap_user_in_group, another_ldap_user_in_group, ldap_group
+    sdk_client_fs,
+    ldap_user,
+    ldap_user_in_group,
+    another_ldap_user_in_group,
+    ldap_group,
 ):
     """Test login when group_search_base is set directly to LDAP group with one user"""
     ldap_group_name = ldap_group["name"]

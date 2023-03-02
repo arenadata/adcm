@@ -13,7 +13,6 @@
 """Tests for /stack related objects ans stuff"""
 
 import json
-from typing import List, Tuple
 
 import allure
 import coreapi
@@ -376,7 +375,7 @@ def test_when_bundle_hasnt_only_host_definition(sdk_client_fs: ADCMClient):
         errorcodes.BUNDLE_ERROR.equal(e, "There isn't any cluster or host provider definition in bundle")
 
 
-def _get_invalid_bundle_config_params() -> List[ParameterSet]:
+def _get_invalid_bundle_config_params() -> list[ParameterSet]:
     def _get_pytest_param(bundle_name, adcm_err: ADCMError, msg: str):
         return pytest.param(utils.get_data_dir(__file__, bundle_name), (adcm_err, msg), id=bundle_name)
 
@@ -416,7 +415,7 @@ def _get_invalid_bundle_config_params() -> List[ParameterSet]:
     _get_invalid_bundle_config_params(),
     indirect=["bundle_archive"],
 )
-def test_invalid_bundle_config(sdk_client_fs: ADCMClient, bundle_archive, expected_error: Tuple[ADCMError, str]):
+def test_invalid_bundle_config(sdk_client_fs: ADCMClient, bundle_archive, expected_error: tuple[ADCMError, str]):
     """Test upload bundle with invalid config"""
     (adcm_error, expected_msg) = expected_error
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:

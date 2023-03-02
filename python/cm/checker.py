@@ -22,8 +22,8 @@ def round_trip_load(stream, version=None, preserve_quotes=None, allow_duplicate_
     This is a replace for ruyaml.round_trip_load() function which can switch off
     duplicate YAML keys error
     """
-    Loader = ruyaml.RoundTripLoader
-    loader = Loader(stream, version, preserve_quotes=preserve_quotes)
+
+    loader = ruyaml.RoundTripLoader(stream, version, preserve_quotes=preserve_quotes)
     loader._constructor.allow_duplicate_keys = allow_duplicate_keys
     try:
         return loader._constructor.get_single_data()
@@ -78,7 +78,7 @@ def check_match_type(match, data, data_type, path, rule, parent=None):
         raise FormatError(path, msg, data, rule, parent)
 
 
-def match_none(data, rules, rule, path, parent=None, is_service=False):
+def match_none(data, rules, rule, path, parent=None, is_service=False):  # pylint: disable=unused-argument
     if data is not None:
         msg = "Object should be empty"
         if path:
@@ -87,7 +87,7 @@ def match_none(data, rules, rule, path, parent=None, is_service=False):
         raise FormatError(path, msg, data, rule, parent)
 
 
-def match_any(data, rules, rule, path, parent=None, is_service=False):
+def match_any(data, rules, rule, path, parent=None, is_service=False):  # pylint: disable=unused-argument
     pass
 
 
@@ -157,14 +157,14 @@ def match_one_of(data, rules, rule, path, parent=None, is_service=False):
         raise FormatError(path, msg, data, rule, parent, caused_by=errors)
 
 
-def match_set(data, rules, rule, path, parent=None, is_service=False):
+def match_set(data, rules, rule, path, parent=None, is_service=False):  # pylint: disable=unused-argument
     if data not in rules[rule]["variants"]:
         msg = f'Value "{data}" not in set {rules[rule]["variants"]}'
         raise FormatError(path, msg, data, rule, parent=parent)
 
 
 def match_simple_type(obj_type):
-    def match(data, rules, rule, path, parent=None, is_service=False):
+    def match(data, rules, rule, path, parent=None, is_service=False):  # pylint: disable=unused-argument
         check_type(data, obj_type, path, rule, parent=parent)
 
     return match

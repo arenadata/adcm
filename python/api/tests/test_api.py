@@ -84,7 +84,7 @@ class TestAPI(BaseTestCase):
 
     def get_component_id(self, cluster_id: int, service_id: int, component_name: str) -> int | None:
         response: Response = self.client.get(
-            reverse("component", kwargs={"cluster_id": cluster_id, "service_id": service_id})
+            reverse("component", kwargs={"cluster_id": cluster_id, "service_id": service_id}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -124,7 +124,8 @@ class TestAPI(BaseTestCase):
 
         provider_id = response.json()["id"]
         response: Response = self.client.post(
-            reverse("host"), {"fqdn": fqdn, "prototype_id": host_proto, "provider_id": provider_id}
+            reverse("host"),
+            {"fqdn": fqdn, "prototype_id": host_proto, "provider_id": provider_id},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -271,7 +272,11 @@ class TestAPI(BaseTestCase):
 
         patched_name = "patched-cluster"
 
-        response: Response = self.client.patch(first_cluster_url, {"name": patched_name}, content_type=APPLICATION_JSON)
+        response: Response = self.client.patch(
+            first_cluster_url,
+            {"name": patched_name},
+            content_type=APPLICATION_JSON,
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["name"], patched_name)
@@ -294,7 +299,9 @@ class TestAPI(BaseTestCase):
         second_cluster_url = reverse("cluster-details", kwargs={"cluster_id": second_cluster_id})
 
         response: Response = self.client.patch(
-            second_cluster_url, {"name": patched_name}, content_type=APPLICATION_JSON
+            second_cluster_url,
+            {"name": patched_name},
+            content_type=APPLICATION_JSON,
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -465,7 +472,8 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.json()["code"], "SERVICE_CONFLICT")
 
         this_service_from_cluster_url = reverse(
-            "service-details", kwargs={"cluster_id": cluster_id, "service_id": service_id}
+            "service-details",
+            kwargs={"cluster_id": cluster_id, "service_id": service_id},
         )
         response: Response = self.client.delete(this_service_from_cluster_url)
 
@@ -486,7 +494,10 @@ class TestAPI(BaseTestCase):
         adh_bundle_id, cluster_proto = self.get_cluster_proto_id()
         ssh_bundle_id, _, host_id = self.create_host(self.host)
         service_proto_id = self.get_service_proto_id()
-        response: Response = self.client.post(reverse("cluster"), {"name": self.cluster, "prototype_id": cluster_proto})
+        response: Response = self.client.post(
+            reverse("cluster"),
+            {"name": self.cluster, "prototype_id": cluster_proto},
+        )
         cluster_id = response.json()["id"]
 
         response: Response = self.client.post(
@@ -552,7 +563,9 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.json()["desc"], "hc field should be a list")
 
         response: Response = self.client.post(
-            hc_url, {"hc": [{"component_id": comp_id}]}, content_type=APPLICATION_JSON
+            hc_url,
+            {"hc": [{"component_id": comp_id}]},
+            content_type=APPLICATION_JSON,
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -569,7 +582,7 @@ class TestAPI(BaseTestCase):
                 "hc": [
                     {"service_id": service_id, "host_id": 1, "component_id": comp_id},
                     {"service_id": service_id, "host_id": 1, "component_id": comp_id},
-                ]
+                ],
             },
             content_type=APPLICATION_JSON,
         )
@@ -665,7 +678,8 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.json(), [])
 
         response: Response = self.client.post(
-            reverse("service", kwargs={"cluster_id": cluster_id}), {"prototype_id": 100500}
+            reverse("service", kwargs={"cluster_id": cluster_id}),
+            {"prototype_id": 100500},
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -694,7 +708,7 @@ class TestAPI(BaseTestCase):
                     "object_type": "service",
                     "version": "current",
                 },
-            )
+            ),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -735,7 +749,7 @@ class TestAPI(BaseTestCase):
                     "object_type": "service",
                     "version": id2,
                 },
-            )
+            ),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -769,7 +783,7 @@ class TestAPI(BaseTestCase):
                     "object_type": "service",
                     "version": "current",
                 },
-            )
+            ),
         )
         config = response.json()["config"]
 
@@ -784,7 +798,7 @@ class TestAPI(BaseTestCase):
                     "object_type": "service",
                     "version": "previous",
                 },
-            )
+            ),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -814,7 +828,7 @@ class TestAPI2(BaseTestCase):
                 "hash": "2232f33c6259d44c23046fce4382f16c450f8ba5",
                 "description": "",
                 "date": timezone.now(),
-            }
+            },
         )
 
         self.prototype = Prototype.objects.create(
@@ -833,7 +847,7 @@ class TestAPI2(BaseTestCase):
                 "adcm_min_version": None,
                 "monitoring": "active",
                 "description": "",
-            }
+            },
         )
         self.object_config = ObjectConfig.objects.create(**{"current": 0, "previous": 0})
 
@@ -844,7 +858,7 @@ class TestAPI2(BaseTestCase):
                 "description": "",
                 "config_id": self.object_config.id,
                 "state": "installed",
-            }
+            },
         )
 
     @patch("cm.api.load_service_map")
@@ -854,14 +868,22 @@ class TestAPI2(BaseTestCase):
         cluster_object = ClusterObject.objects.create(prototype=self.prototype, cluster=self.cluster)
         host = Host.objects.create(prototype=self.prototype, cluster=self.cluster)
         component = Prototype.objects.create(
-            parent=self.prototype, type="component", bundle_id=self.bundle.id, name="node"
+            parent=self.prototype,
+            type="component",
+            bundle_id=self.bundle.id,
+            name="node",
         )
         service_component = ServiceComponent.objects.create(
-            cluster=self.cluster, service=cluster_object, prototype=component
+            cluster=self.cluster,
+            service=cluster_object,
+            prototype=component,
         )
 
         HostComponent.objects.create(
-            cluster=self.cluster, host=host, service=cluster_object, component=service_component
+            cluster=self.cluster,
+            host=host,
+            service=cluster_object,
+            component=service_component,
         )
 
         host_comp_list = [(cluster_object, host, service_component)]
@@ -876,7 +898,12 @@ class TestAPI2(BaseTestCase):
     @patch("cm.api.CTX")
     @patch("cm.api.load_service_map")
     @patch("cm.api.update_hierarchy_issues")
-    def test_save_hc__big_update__locked_hierarchy(self, mock_issue, mock_load, ctx):
+    def test_save_hc__big_update__locked_hierarchy(
+        self,
+        mock_issue,
+        mock_load,
+        ctx,
+    ):  # pylint: disable=unused-argument
         """
         Update bigger HC map - move `component_2` from `host_2` to `host_3`
         On locked hierarchy (from ansible task)
@@ -928,7 +955,7 @@ class TestAPI2(BaseTestCase):
 
     @patch("cm.api.load_service_map")
     @patch("cm.api.update_hierarchy_issues")
-    def test_save_hc__big_update__unlocked_hierarchy(self, mock_update, mock_load):
+    def test_save_hc__big_update__unlocked_hierarchy(self, mock_update, mock_load):  # pylint: disable=unused-argument
         """
         Update bigger HC map - move `component_2` from `host_2` to `host_3`
         On unlocked hierarchy (from API)

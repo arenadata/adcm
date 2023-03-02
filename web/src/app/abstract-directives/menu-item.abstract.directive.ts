@@ -1,6 +1,5 @@
 import { Directive, Input } from '@angular/core';
-import { BaseDirective } from '@adwp-ui/widgets';
-
+import { BaseDirective } from '@app/adwp';
 import { AdcmEntity } from '../models/entity';
 
 @Directive({

@@ -183,7 +183,7 @@ class TestProviderAudit(BaseTestCase):
         )
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse("provider-details", kwargs={"provider_id": provider.pk})
+                path=reverse("provider-details", kwargs={"provider_id": provider.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -372,7 +372,7 @@ class TestProviderAudit(BaseTestCase):
                 path=reverse(
                     "do-provider-upgrade",
                     kwargs={"provider_id": provider.pk, "upgrade_id": upgrade.pk},
-                )
+                ),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

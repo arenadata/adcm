@@ -132,7 +132,7 @@ class Command(BaseCommand):
             "no_compress": "" if self.config["logrotate"]["nginx"]["compress"] else "#",
             "num_rotations": self.config["logrotate"]["nginx"]["max_history"],
         }
-        with open(self.__nginx_logrotate_conf, "wt", encoding=settings.ENCODING_UTF_8) as conf_file:
+        with open(self.__nginx_logrotate_conf, "w", encoding=settings.ENCODING_UTF_8) as conf_file:
             conf_file.write(LOGROTATE_CONF_FILE_TEMPLATE.format(**conf_file_args))
         self.__log(f"conf file `{self.__nginx_logrotate_conf}` generated", "debug")
 
@@ -169,10 +169,10 @@ class Command(BaseCommand):
                     exclude_pks.add(group_config.config.current)
 
             target_configlogs = target_configlogs.exclude(pk__in=exclude_pks)
-            target_configlog_ids = set(i[0] for i in target_configlogs.values_list("id"))
-            target_objectconfig_ids = set(
+            target_configlog_ids = {i[0] for i in target_configlogs.values_list("id")}
+            target_objectconfig_ids = {
                 cl.obj_ref.id for cl in target_configlogs if not self.__has_related_records(cl.obj_ref)
-            )
+            }
             if target_configlog_ids or target_objectconfig_ids:
                 make_audit_log("config", AuditLogOperationResult.SUCCESS, "launched")
 
@@ -187,7 +187,7 @@ class Command(BaseCommand):
                 "info",
             )
 
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except # noqa: BLE001
             make_audit_log("config", AuditLogOperationResult.FAIL, "completed")
             self.__log("Error in ConfigLog rotation", "warning")
             self.__log(e, "exception")
@@ -204,14 +204,14 @@ class Command(BaseCommand):
                     HostProvider.objects.filter(config=obj_conf).count(),
                     ServiceComponent.objects.filter(config=obj_conf).count(),
                     GroupConfig.objects.filter(config=obj_conf).count(),
-                ]
+                ],
             )
             > 0
         ):
             return True
         return False
 
-    def __run_joblog_rotation(self):
+    def __run_joblog_rotation(self):  # noqa: C901
         try:  # pylint: disable=too-many-nested-blocks
             days_delta_db = self.config["job"]["log_rotation_in_db"]
             days_delta_fs = self.config["job"]["log_rotation_on_fs"]
@@ -227,7 +227,8 @@ class Command(BaseCommand):
             is_deleted = False
             if days_delta_db > 0:
                 target_tasklogs = TaskLog.objects.filter(
-                    finish_date__lte=threshold_date_db, status__in=["success", "failed"]
+                    finish_date__lte=threshold_date_db,
+                    status__in=["success", "failed"],
                 )
                 if target_tasklogs:
                     is_deleted = True
@@ -256,7 +257,7 @@ class Command(BaseCommand):
                     make_audit_log("task", AuditLogOperationResult.SUCCESS, "launched")
                     make_audit_log("task", AuditLogOperationResult.SUCCESS, "completed")
                 self.__log("fs JobLog rotated", "info")
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except # noqa: BLE001
             make_audit_log("task", AuditLogOperationResult.FAIL, "completed")
             self.__log("Error in JobLog rotation", "warning")
             self.__log(e, "exception")

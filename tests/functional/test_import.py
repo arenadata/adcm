@@ -100,7 +100,7 @@ def test_cluster_import(sdk_client_fs: ADCMClient, path):
 def test_import_with_zero_range(sdk_client_fs: ADCMClient):
     """Import cluster with range where min is greater than max"""
     with allure.step("Try to upload bundle with zero range import"), pytest.raises(
-        coreapi.exceptions.ErrorMessage
+        coreapi.exceptions.ErrorMessage,
     ) as e:
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_empty_range", "import"))
     with allure.step("Check that error is correct"):

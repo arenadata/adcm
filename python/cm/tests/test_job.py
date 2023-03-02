@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=wrong-import-order
 
 from pathlib import Path
 from signal import SIGTERM
@@ -112,7 +113,10 @@ class TestJob(BaseTestCase):
         return response, target_action
 
     def run_action_get_target_job(
-        self, action: dict, job_display_name: str, force_job_status: JobStatus | None = None
+        self,
+        action: dict,
+        job_display_name: str,
+        force_job_status: JobStatus | None = None,
     ) -> tuple[Response, dict | None]:
         response: Response = self.client.post(path=urljoin(action["url"], "run/"), content_type=APPLICATION_JSON)
 
@@ -130,8 +134,17 @@ class TestJob(BaseTestCase):
     def test_set_job_status(self):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
-        action = Action.objects.create(prototype=prototype)
-        job = JobLog.objects.create(action=action, start_date=timezone.now(), finish_date=timezone.now())
+        action = Action.objects.create(prototype=prototype, name="action_name", display_name="Test Action")
+        cluster = gen_cluster(prototype=prototype)
+        task = TaskLog.objects.create(
+            task_object=cluster,
+            action=action,
+            object_id=1,
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+        )
+        job = JobLog.objects.create(task=task, action=action, start_date=timezone.now(), finish_date=timezone.now())
+        task.lock_affected([cluster])
         status = JobStatus.RUNNING
         pid = 10
         event = Mock()
@@ -142,6 +155,7 @@ class TestJob(BaseTestCase):
 
         self.assertEqual(job.status, status)
         self.assertEqual(job.pid, pid)
+        self.assertEqual(task.lock.reason["placeholder"]["job"]["name"], action.display_name)
         event.set_job_status.assert_called_once_with(job=job, status=status)
 
     def test_set_task_status(self):
@@ -149,7 +163,12 @@ class TestJob(BaseTestCase):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
         action = Action.objects.create(prototype=prototype)
-        task = TaskLog.objects.create(action=action, object_id=1, start_date=timezone.now(), finish_date=timezone.now())
+        task = TaskLog.objects.create(
+            action=action,
+            object_id=1,
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+        )
 
         set_task_status(task, JobStatus.RUNNING, event)
 
@@ -224,7 +243,12 @@ class TestJob(BaseTestCase):
         host_provider = HostProvider.objects.create(prototype=prototype)
         adcm = ADCM.objects.create(prototype=prototype)
         action = Action.objects.create(prototype=prototype)
-        task = TaskLog.objects.create(action=action, object_id=1, start_date=timezone.now(), finish_date=timezone.now())
+        task = TaskLog.objects.create(
+            action=action,
+            object_id=1,
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+        )
         to_set = "to set"
         to_unset = "to unset"
         for obj in (adcm, cluster, cluster_object, host_provider, host):
@@ -255,14 +279,16 @@ class TestJob(BaseTestCase):
         host = Host.objects.create(prototype=prototype, cluster=cluster)
         component = Prototype.objects.create(parent=prototype, type="component", bundle=bundle)
         service_component = ServiceComponent.objects.create(
-            cluster=cluster, service=cluster_object, prototype=component
+            cluster=cluster,
+            service=cluster_object,
+            prototype=component,
         )
         hostcomponentmap = [
             {
                 "host_id": host.id,
                 "service_id": cluster_object.id,
                 "component_id": service_component.id,
-            }
+            },
         ]
         action = Action.objects.create(prototype=prototype, hostcomponentmap=hostcomponentmap)
         task = TaskLog.objects.create(
@@ -432,7 +458,7 @@ class TestJob(BaseTestCase):
         mock_prepare_context.return_value = {"type": "cluster", "cluster_id": 1}
         mock_get_bundle_root.return_value = str(settings.BUNDLE_DIR)
         mock_cook_script.return_value = str(
-            Path(settings.BUNDLE_DIR, cluster_action.prototype.bundle.hash, cluster_action.script)
+            Path(settings.BUNDLE_DIR, cluster_action.prototype.bundle.hash, cluster_action.script),
         )
 
         job = JobLog.objects.create(action=cluster_action, start_date=timezone.now(), finish_date=timezone.now())
@@ -485,7 +511,7 @@ class TestJob(BaseTestCase):
                             "service_id": obj.id,
                             "service_type_id": obj.prototype.id,
                             "cluster_id": cluster.id,
-                        }
+                        },
                     )
 
                 elif prototype_type == "cluster":
@@ -499,7 +525,7 @@ class TestJob(BaseTestCase):
                             "host_id": obj.id,
                             "host_type_id": obj.prototype.id,
                             "provider_id": obj.provider.id,
-                        }
+                        },
                     )
                 elif prototype_type == "provider":
                     job_config["job"].update({"hostgroup": "PROVIDER", "provider_id": obj.id})
@@ -538,10 +564,13 @@ class TestJob(BaseTestCase):
         host = Host.objects.create(prototype=prototype, cluster=cluster)
         component = Prototype.objects.create(parent=prototype, type="component", bundle=bundle)
         service_component = ServiceComponent.objects.create(
-            cluster=cluster, service=cluster_object, prototype=component
+            cluster=cluster,
+            service=cluster_object,
+            prototype=component,
         )
         action = Action.objects.create(
-            prototype=prototype, hostcomponentmap=[{"service": "", "component": "", "action": ""}]
+            prototype=prototype,
+            hostcomponentmap=[{"service": "", "component": "", "action": ""}],
         )
         sub_action = SubAction.objects.create(action=action)
         hostcomponentmap = [
@@ -549,7 +578,7 @@ class TestJob(BaseTestCase):
                 "host_id": host.id,
                 "service_id": cluster_object.id,
                 "component_id": service_component.id,
-            }
+            },
         ]
         task = TaskLog.objects.create(
             action=action,
@@ -590,18 +619,21 @@ class TestJob(BaseTestCase):
 
         with patch("cm.job.run_task"):
             response, job = self.run_action_get_target_job(
-                action=action, job_display_name=job_display_name, force_job_status=JobStatus.RUNNING
+                action=action,
+                job_display_name=job_display_name,
+                force_job_status=JobStatus.RUNNING,
             )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         if job is None:
             raise AssertionError(
                 f"Can't find job '{job_display_name}' "
-                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'"
+                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'",
             )
 
         with patch("cm.models.os.kill") as kill_mock:
             response: Response = self.client.put(
-                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}), content_type=APPLICATION_JSON
+                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}),
+                content_type=APPLICATION_JSON,
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -623,18 +655,21 @@ class TestJob(BaseTestCase):
 
         with patch("cm.job.run_task"):
             response, job = self.run_action_get_target_job(
-                action=action, job_display_name=job_display_name, force_job_status=JobStatus.RUNNING
+                action=action,
+                job_display_name=job_display_name,
+                force_job_status=JobStatus.RUNNING,
             )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         if job is None:
             raise AssertionError(
                 f"Can't find job '{job_display_name}' "
-                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'"
+                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'",
             )
 
         with patch("cm.models.os.kill") as kill_mock:
             response: Response = self.client.put(
-                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}), content_type=APPLICATION_JSON
+                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}),
+                content_type=APPLICATION_JSON,
             )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -656,18 +691,21 @@ class TestJob(BaseTestCase):
 
         with patch("cm.job.run_task"):
             response, job = self.run_action_get_target_job(
-                action=action, job_display_name=job_display_name, force_job_status=JobStatus.RUNNING
+                action=action,
+                job_display_name=job_display_name,
+                force_job_status=JobStatus.RUNNING,
             )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         if job is None:
             raise AssertionError(
                 f"Can't find job '{job_display_name}' "
-                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'"
+                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'",
             )
 
         with patch("cm.models.os.kill") as kill_mock:
             response: Response = self.client.put(
-                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}), content_type=APPLICATION_JSON
+                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}),
+                content_type=APPLICATION_JSON,
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -689,18 +727,21 @@ class TestJob(BaseTestCase):
 
         with patch("cm.job.run_task"):
             response, job = self.run_action_get_target_job(
-                action=action, job_display_name=job_display_name, force_job_status=JobStatus.RUNNING
+                action=action,
+                job_display_name=job_display_name,
+                force_job_status=JobStatus.RUNNING,
             )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         if job is None:
             raise AssertionError(
                 f"Can't find job '{job_display_name}' "
-                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'"
+                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'",
             )
 
         with patch("cm.models.os.kill") as kill_mock:
             response: Response = self.client.put(
-                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}), content_type=APPLICATION_JSON
+                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}),
+                content_type=APPLICATION_JSON,
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -722,18 +763,21 @@ class TestJob(BaseTestCase):
 
         with patch("cm.job.run_task"):
             response, job = self.run_action_get_target_job(
-                action=action, job_display_name=job_display_name, force_job_status=JobStatus.RUNNING
+                action=action,
+                job_display_name=job_display_name,
+                force_job_status=JobStatus.RUNNING,
             )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         if job is None:
             raise AssertionError(
                 f"Can't find job '{job_display_name}' "
-                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'"
+                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'",
             )
 
         with patch("cm.models.os.kill") as kill_mock:
             response: Response = self.client.put(
-                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}), content_type=APPLICATION_JSON
+                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}),
+                content_type=APPLICATION_JSON,
             )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -755,18 +799,21 @@ class TestJob(BaseTestCase):
 
         with patch("cm.job.run_task"):
             response, job = self.run_action_get_target_job(
-                action=action, job_display_name=job_display_name, force_job_status=JobStatus.RUNNING
+                action=action,
+                job_display_name=job_display_name,
+                force_job_status=JobStatus.RUNNING,
             )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         if job is None:
             raise AssertionError(
                 f"Can't find job '{job_display_name}' "
-                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'"
+                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'",
             )
 
         with patch("cm.models.os.kill") as kill_mock:
             response: Response = self.client.put(
-                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}), content_type=APPLICATION_JSON
+                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}),
+                content_type=APPLICATION_JSON,
             )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -795,12 +842,13 @@ class TestJob(BaseTestCase):
         if job is None:
             raise AssertionError(
                 f"Can't find job '{job_display_name}' "
-                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'"
+                f"in action '{action_name}' of cluster '{self.multijob_cluster_name}'",
             )
 
         with patch("cm.models.os.kill") as kill_mock:
             response: Response = self.client.put(
-                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}), content_type=APPLICATION_JSON
+                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}),
+                content_type=APPLICATION_JSON,
             )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)

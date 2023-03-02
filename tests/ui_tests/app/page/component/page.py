@@ -87,7 +87,13 @@ class ComponentPageMixin(BasePageObject):
     def open_group_config_tab(self) -> "ComponentGroupConfigPage":
         """Open Group Configuration tab by menu click"""
         self.find_and_click(ObjectPageMenuLocators.group_config_tab)
-        page = ComponentGroupConfigPage(self.driver, self.base_url, self.cluster_id, self.service_id, self.component_id)
+        page = ComponentGroupConfigPage(
+            self.driver,
+            self.base_url,
+            self.cluster_id,
+            self.service_id,
+            self.component_id,
+        )
         page.wait_page_is_opened()
         return page
 
@@ -113,7 +119,7 @@ class ComponentPageMixin(BasePageObject):
 
     def check_component_toolbar(self, cluster_name: str, service_name: str, component_name: str):
         self.toolbar.check_toolbar_elements(
-            ["CLUSTERS", cluster_name, "SERVICES", service_name, "COMPONENTS", component_name]
+            ["CLUSTERS", cluster_name, "SERVICES", service_name, "COMPONENTS", component_name],
         )
 
 

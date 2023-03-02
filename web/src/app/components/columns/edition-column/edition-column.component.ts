@@ -1,5 +1,5 @@
 import { Component, Input, Output } from '@angular/core';
-import { AdwpCellComponent } from '@adwp-ui/widgets';
+import { AdwpCellComponent } from '@app/adwp';
 
 import { IBundle } from '@app/models/bundle';
 

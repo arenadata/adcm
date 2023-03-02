@@ -14,7 +14,6 @@
 Manipulations with different type of configuration parameters
 """
 from contextlib import contextmanager
-from typing import Dict
 
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebElement
@@ -48,7 +47,7 @@ class ConfigFieldsManipulator(BasePageObject):
             item_to_fill = self._get_first_empty_input(row)
             item_to_fill.send_keys(value)
 
-    def add_map_values(self, values: Dict[str, str], row: WebElement):
+    def add_map_values(self, values: dict[str, str], row: WebElement):
         """Add map values to config parameter in row"""
         add_button = self.find_child(row, CommonConfigMenu.ConfigRow.add_item_btn)
         for key, value in values.items():

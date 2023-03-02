@@ -55,7 +55,13 @@ def test_mm_state_service(api_client, cluster_with_mm, hosts):
         set_maintenance_mode(api_client=api_client, adcm_object=first_service, maintenance_mode=MM_IS_OFF)
         set_maintenance_mode(api_client=api_client, adcm_object=second_service, maintenance_mode=MM_IS_OFF)
         check_mm_is(
-            MM_IS_OFF, first_host, second_host, first_component, second_component, first_service, second_service
+            MM_IS_OFF,
+            first_host,
+            second_host,
+            first_component,
+            second_component,
+            first_service,
+            second_service,
         )
 
         set_maintenance_mode(api_client=api_client, adcm_object=first_service, maintenance_mode=MM_IS_ON)

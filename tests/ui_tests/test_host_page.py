@@ -102,7 +102,8 @@ def _create_many_hosts(request, upload_and_create_provider: tuple[Bundle, Provid
 
 @pytest.fixture()
 def create_bonded_host(
-    upload_and_create_cluster: tuple[Bundle, Cluster], upload_and_create_provider: tuple[Bundle, Provider]
+    upload_and_create_cluster: tuple[Bundle, Cluster],
+    upload_and_create_provider: tuple[Bundle, Provider],
 ):
     """Create host bonded to cluster"""
     provider = upload_and_create_provider[1]
@@ -260,7 +261,10 @@ class TestHostListPage:
         ("row_child_name", "menu_item_name"),
         [
             pytest.param(
-                "fqdn", "main_tab", id="open_host_tab", marks=[pytest.mark.smoke, pytest.mark.include_firefox()]
+                "fqdn",
+                "main_tab",
+                id="open_host_tab",
+                marks=[pytest.mark.smoke, pytest.mark.include_firefox()],
             ),
             pytest.param("status", "status_tab", id="open_status_tab"),
             pytest.param("config", "config_tab", id="open_config_tab"),
@@ -297,7 +301,7 @@ class TestHostListPage:
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
-    def test_delete_bonded_host(self, page: HostListPage, create_bonded_host):
+    def test_delete_bonded_host(self, page: HostListPage, create_bonded_host):  # pylint: disable=unused-argument
         """Host shouldn't be deleted"""
 
         check_element_is_visible(page, HostListLocators.HostTable.row)
@@ -346,7 +350,12 @@ class TestHostListPage:
             page.assert_maintenance_mode_state(0, None)
 
     @pytest.mark.smoke()
-    def test_action_with_maintenance_mode_on_host_page(self, sdk_client_fs, page: HostListPage, create_bonded_host):
+    def test_action_with_maintenance_mode_on_host_page(
+        self,
+        sdk_client_fs,
+        page: HostListPage,
+        create_bonded_host,
+    ):  # pylint: disable=unused-argument
         """Test maintenance mode on host page"""
 
         with allure.step("Turn ON maintenance mode"):
@@ -354,7 +363,7 @@ class TestHostListPage:
             page.click_on_maintenance_mode_btn(0)
         with allure.step("Check actions are displayed"):
             assert page.get_enabled_action_names(0) == [
-                INIT_ACTION
+                INIT_ACTION,
             ], f"Action list with MM ON should be with action {INIT_ACTION}"
             assert page.get_disabled_action_names(0) == [], "There should be 0 disabled actions"
         with allure.step("Run action and check available actions changed"):
@@ -363,13 +372,13 @@ class TestHostListPage:
             page.header.wait_success_job_amount(1)
             page.driver.refresh()
             assert page.get_disabled_action_names(0) == [
-                REINIT_ACTION
+                REINIT_ACTION,
             ], f"Action {REINIT_ACTION} should be shown and disabled in new state"
             assert page.get_enabled_action_names(0) == [], "There should be 0 enabled actions"
         with allure.step("Turn ON maintenance mode and check actions"):
             page.click_on_maintenance_mode_btn(0)
             assert page.get_enabled_action_names(0) == [
-                REINIT_ACTION
+                REINIT_ACTION,
             ], f"Action list with MM ON should be with action {REINIT_ACTION}"
 
 
@@ -434,13 +443,15 @@ class TestHostConfigPage:
         get_rows_func = host_page.config.get_all_config_rows
         with allure.step("Check unfiltered configuration"):
             host_page.config.check_config_fields_visibility(
-                {REGULAR_FIELD_NAME, REQUIRED_FIELD_NAME, PASSWORD_FIELD_NAME}, {ADVANCED_FIELD_NAME}
+                {REGULAR_FIELD_NAME, REQUIRED_FIELD_NAME, PASSWORD_FIELD_NAME},
+                {ADVANCED_FIELD_NAME},
             )
         with allure.step("Check group roll up"):
             with expect_rows_amount_change(get_rows_func):
                 host_page.config.click_on_group(params["group"])
             host_page.config.check_config_fields_visibility(
-                {PASSWORD_FIELD_NAME}, {REGULAR_FIELD_NAME, REQUIRED_FIELD_NAME}
+                {PASSWORD_FIELD_NAME},
+                {REGULAR_FIELD_NAME, REQUIRED_FIELD_NAME},
             )
             with expect_rows_amount_change(get_rows_func):
                 host_page.config.click_on_group(params["group"])
@@ -449,13 +460,14 @@ class TestHostConfigPage:
             with expect_rows_amount_change(get_rows_func):
                 host_page.find_and_click(CommonConfigMenu.advanced_label)
             host_page.config.check_config_fields_visibility(
-                {ADVANCED_FIELD_NAME, REGULAR_FIELD_NAME, REQUIRED_FIELD_NAME, PASSWORD_FIELD_NAME}
+                {ADVANCED_FIELD_NAME, REGULAR_FIELD_NAME, REQUIRED_FIELD_NAME, PASSWORD_FIELD_NAME},
             )
         with allure.step("Check search filtration"):
             with expect_rows_amount_change(get_rows_func):
                 host_page.config.search(params["search_text"])
             host_page.config.check_config_fields_visibility(
-                {ADVANCED_FIELD_NAME}, {REGULAR_FIELD_NAME, REQUIRED_FIELD_NAME, PASSWORD_FIELD_NAME}
+                {ADVANCED_FIELD_NAME},
+                {REGULAR_FIELD_NAME, REQUIRED_FIELD_NAME, PASSWORD_FIELD_NAME},
             )
             with expect_rows_amount_change(get_rows_func):
                 host_page.find_and_click(CommonConfigMenu.advanced_label)
@@ -497,7 +509,9 @@ class TestHostConfigPage:
             clear=True,
         )
         host_page.config.type_in_field_with_few_inputs(
-            row=host_page.config.get_config_row(REQUIRED_FIELD_NAME), values=[params["type_in_req_field"]], clear=True
+            row=host_page.config.get_config_row(REQUIRED_FIELD_NAME),
+            values=[params["type_in_req_field"]],
+            clear=True,
         )
         host_page.config.save_config()
         host_page.config.reset_to_default(host_page.config.get_config_row(REQUIRED_FIELD_NAME))
@@ -522,7 +536,8 @@ class TestHostConfigPage:
         host_page.config.check_field_is_invalid_error(REGULAR_FIELD_NAME)
         host_page.config.check_config_warn_icon_on_left_menu()
         host_page.toolbar.check_warn_button(
-            tab_name=HOST_FQDN, expected_warn_text=[f"{HOST_FQDN} has an issue with its config"]
+            tab_name=HOST_FQDN,
+            expected_warn_text=[f"{HOST_FQDN} has an issue with its config"],
         )
 
     @pytest.mark.parametrize("provider_bundle", ["host_with_default_string"], indirect=True)
@@ -536,7 +551,8 @@ class TestHostConfigPage:
         host_page.config.clear_field_by_keys(params["field_name"])
         host_page.config.check_field_is_required(params["field_name"])
         host_page.config.type_in_field_with_few_inputs(
-            row=host_page.config.get_all_config_rows()[0], values=[params["new_value"]]
+            row=host_page.config.get_all_config_rows()[0],
+            values=[params["new_value"]],
         )
         host_page.config.save_config()
         host_page.config.assert_input_value_is(expected_value=params["new_value"], display_name=params["field_name"])
@@ -568,19 +584,31 @@ class TestHostStatusPage:
 
         success_status = [
             StatusRowInfo(
-                icon_status=True, group_name="best-host", state="successful 1/1", state_color=SUCCESS_COLOR, link=None
+                icon_status=True,
+                group_name="best-host",
+                state="successful 1/1",
+                state_color=SUCCESS_COLOR,
+                link=None,
             ),
             StatusRowInfo(icon_status=True, group_name=None, state=None, state_color=None, link="first"),
         ]
         negative_status_component = [
             StatusRowInfo(
-                icon_status=True, group_name="best-host", state="successful 0/1", state_color=NEGATIVE_COLOR, link=None
+                icon_status=True,
+                group_name="best-host",
+                state="successful 0/1",
+                state_color=NEGATIVE_COLOR,
+                link=None,
             ),
             StatusRowInfo(icon_status=False, group_name=None, state=None, state_color=None, link="first"),
         ]
         negative_status_host = [
             StatusRowInfo(
-                icon_status=False, group_name="best-host", state="successful 0/1", state_color=NEGATIVE_COLOR, link=None
+                icon_status=False,
+                group_name="best-host",
+                state="successful 0/1",
+                state_color=NEGATIVE_COLOR,
+                link=None,
             ),
             StatusRowInfo(icon_status=False, group_name=None, state=None, state_color=None, link="first"),
         ]
@@ -599,7 +627,7 @@ class TestHostStatusPage:
             host_status_page.compare_current_and_expected_state(success_status)
         with allure.step("Check negative status on component"):
             status_changer.set_component_negative_status(
-                (create_host, cluster.service(name="test_service").component(name="first"))
+                (create_host, cluster.service(name="test_service").component(name="first")),
             )
             host_status_page.driver.refresh()
             host_status_page.compare_current_and_expected_state(negative_status_component)
@@ -619,7 +647,7 @@ class TestHostRenaming:
     EXPECTED_ERROR = "Please enter a valid name"
 
     @pytest.mark.usefixtures("_login_to_adcm_over_api")
-    def test_rename_host(self, sdk_client_fs, app_fs, create_host):
+    def test_rename_host(self, sdk_client_fs, app_fs, create_host):  # pylint: disable=unused-argument
         host = create_host
         page = HostListPage(app_fs.driver, app_fs.adcm.url).open()
         self._test_correct_name_can_be_set(host, page)

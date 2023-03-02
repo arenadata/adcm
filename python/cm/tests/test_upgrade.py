@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+# pylint: disable=wrong-import-order
 
 from cm.adcm_config import save_obj_config, switch_config
 from cm.api import (
@@ -579,24 +579,42 @@ class TestRevertUpgrade(BaseTestCase):
         service2_proto2 = Prototype.objects.get(bundle=bundle2, type="service", name="hive")
 
         component11_proto1 = Prototype.objects.get(
-            bundle=bundle1, type="component", name="server", parent=service1_proto1
+            bundle=bundle1,
+            type="component",
+            name="server",
+            parent=service1_proto1,
         )
         component11_proto2 = Prototype.objects.get(
-            bundle=bundle2, type="component", name="server", parent=service1_proto2
+            bundle=bundle2,
+            type="component",
+            name="server",
+            parent=service1_proto2,
         )
 
         component12_proto1 = Prototype.objects.get(
-            bundle=bundle1, type="component", name="node", parent=service1_proto1
+            bundle=bundle1,
+            type="component",
+            name="node",
+            parent=service1_proto1,
         )
         component12_proto2 = Prototype.objects.get(
-            bundle=bundle2, type="component", name="node", parent=service1_proto2
+            bundle=bundle2,
+            type="component",
+            name="node",
+            parent=service1_proto2,
         )
 
         component21_proto1 = Prototype.objects.get(
-            bundle=bundle1, type="component", name="server", parent=service2_proto1
+            bundle=bundle1,
+            type="component",
+            name="server",
+            parent=service2_proto1,
         )
         component21_proto2 = Prototype.objects.get(
-            bundle=bundle2, type="component", name="server", parent=service2_proto2
+            bundle=bundle2,
+            type="component",
+            name="server",
+            parent=service2_proto2,
         )
 
         cluster = cook_cluster(bundle=bundle1, name="Test0")

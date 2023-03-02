@@ -61,9 +61,9 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true_active_false(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
         path,
-        app_fs,
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that field is invisible if group is active or not."""
 
@@ -91,9 +91,9 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_false_invisible_false_field_advanced_false_invisible_true_active_false(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
         path,
-        app_fs,
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that field is invisible if group is active or not."""
 
@@ -121,9 +121,9 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_false_invisible_false_field_advanced_false_invisible_true_active_true(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
         path,
-        app_fs,
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that field invisible if activatable group active and not."""
 
@@ -151,9 +151,9 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true_active_true(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
         path,
-        app_fs,
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that field invisible if activatable group active and not."""
 
@@ -181,9 +181,9 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_true_invisible_false_field_advanced_false_invisible_false_active_false(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
         path,
-        app_fs,
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Field visible if advanced and activatable true."""
 
@@ -213,9 +213,9 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_true_invisible_false_field_advanced_false_invisible_false_active_true(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
         path,
-        app_fs,
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Field visible if advanced and activatable true."""
 
@@ -245,8 +245,8 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_false_invisible_true_field_advanced_false_invisible_false_active_false(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
-        app_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that all fields and groups invisible."""
 
@@ -259,8 +259,8 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_false_invisible_true_field_advanced_false_invisible_false_active_true(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
-        app_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that all fields and groups invisible."""
 
@@ -273,8 +273,8 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true_active_false(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
-        app_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that all fields and groups invisible."""
 
@@ -287,8 +287,8 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true_active_true(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
-        app_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that all fields and groups invisible."""
 
@@ -301,8 +301,8 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false_active_false(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
-        app_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that all fields and groups invisible."""
 
@@ -315,8 +315,8 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false_active_true(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
-        app_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that all fields and groups invisible."""
 
@@ -329,8 +329,8 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_active_false(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
-        app_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that all fields and groups invisible."""
 
@@ -343,8 +343,8 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_active_true(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
-        app_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that all fields and groups invisible."""
 
@@ -357,8 +357,8 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false_active_false(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
-        app_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that all fields and groups invisible.."""
 
@@ -371,8 +371,8 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false_active_true(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
-        app_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that all fields and groups invisible."""
 
@@ -385,8 +385,8 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_active_false(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
-        app_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that all fields and groups invisible."""
 
@@ -399,8 +399,8 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_active_false(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
-        app_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that all fields and groups invisible."""
 
@@ -413,8 +413,8 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_active_true(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
-        app_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that all fields and groups invisible."""
 
@@ -427,8 +427,8 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_active_true(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
-        app_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that all fields and groups invisible."""
 
@@ -441,8 +441,8 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_active_false(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
-        app_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that all fields and groups invisible."""
 
@@ -455,8 +455,8 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_active_true(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
-        app_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that all fields and groups invisible."""
 
@@ -469,9 +469,9 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true_active_true(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
         path,
-        app_fs,
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that field invisible."""
 
@@ -501,9 +501,9 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_active_true(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
         path,
-        app_fs,
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that field invisible."""
 
@@ -533,9 +533,9 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_false_invisible_false_field_advanced_false_invisible_false_active_false(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
         path,
-        app_fs,
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that group not active and field is invisible until group is not active."""
 
@@ -563,9 +563,9 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_false_invisible_false_field_advanced_false_invisible_false_active_true(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
         path,
-        app_fs,
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that group active and all fields always visible."""
 
@@ -593,9 +593,9 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_false_invisible_false_field_advanced_true_invisible_false_active_false(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
         path,
-        app_fs,
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that field visible if advanced group is enabled."""
 
@@ -629,9 +629,9 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_false_invisible_false_field_advanced_true_invisible_false_active_true(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
         path,
-        app_fs,
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that field is visible if group active and advanced enabled."""
 
@@ -665,9 +665,9 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true_active_false(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
         path,
-        app_fs,
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Field invisible, group visible if advanced."""
 
@@ -697,9 +697,9 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false_active_false(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
         path,
-        app_fs,
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that field and group visible if advanced button clicked."""
 
@@ -729,9 +729,9 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false_active_true(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
         path,
-        app_fs,
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Check that field visible if advanced clicked."""
 
@@ -761,9 +761,9 @@ class TestActivatableGroupConfigs:
     def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_active_false(
         self,
         create_cluster_and_open_config_page,
-        sdk_client_fs,
+        sdk_client_fs,  # pylint: disable=unused-argument
         path,
-        app_fs,
+        app_fs,  # pylint: disable=unused-argument
     ):
         """Field always invisible."""
 

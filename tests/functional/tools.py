@@ -13,7 +13,7 @@
 Common functions and helpers for testing ADCM
 """
 import json
-from typing import Callable, Collection, Dict, Iterable, List, Optional, Tuple, Union
+from collections.abc import Callable, Collection, Iterable
 from uuid import uuid4
 
 import allure
@@ -51,10 +51,10 @@ BEFORE_UPGRADE_DEFAULT_STATE = None
 ADCMObjects = (Cluster, Service, Component, Provider, Host)
 RBACObjects = (User, Group, Role, Policy)
 
-ClusterRelatedObject = Union[Cluster, Service, Component]
-ProviderRelatedObject = Union[Provider, Host]
-AnyADCMObject = Union[ClusterRelatedObject, ProviderRelatedObject, ADCMClient]
-AnyRBACObject = Union[User, Group, Role, Policy]
+ClusterRelatedObject = Cluster | Service | Component
+ProviderRelatedObject = Provider | Host
+AnyADCMObject = ClusterRelatedObject | ProviderRelatedObject | ADCMClient
+AnyRBACObject = User | Group | Role | Policy
 
 DEFAULT_TIMEOUT = 20
 DEFAULT_PERIOD = 2
@@ -77,8 +77,8 @@ def wait_all_jobs_are_finished(client: ADCMClient):
 def wait_for_job_status(
     job: Job,
     status: str = "running",
-    timeout: Optional[int] = DEFAULT_TIMEOUT,
-    period: Optional[int | float] = DEFAULT_PERIOD,
+    timeout: int | None = DEFAULT_TIMEOUT,
+    period: int | float | None = DEFAULT_PERIOD,
 ):
     def _wait():
         job.reread()
@@ -88,20 +88,23 @@ def wait_for_job_status(
 
 
 @allure.step("Check object state")
-def check_object_state(adcm_object: Cluster | Service | Component, expected_state: str) -> None:
+def compare_object_state(adcm_object: Cluster | Service | Component, expected_state: str) -> None:
     adcm_object.reread()
     actual = adcm_object.state
     assert actual == expected_state, f"Expected object state {expected_state} Actual {actual}"
 
 
 @allure.step("Check object multi state")
-def check_object_multi_state(adcm_object: Cluster | Service | Component, expected_state: list) -> None:
+def compare_object_multi_state(adcm_object: Cluster | Service | Component, expected_state: list) -> None:
     adcm_object.reread()
     assert (
         len(adcm_object.multi_state) > 0
     ), f"Expected object does not have multi state while expected state: {expected_state}"
-    for actual, expected in zip(adcm_object.multi_state, expected_state):
-        assert actual == expected, f"Expected object multi state {actual} Actual object multi state{expected}"
+    assert sorted(adcm_object.multi_state) == sorted(expected_state), (
+        "Actual and expected multistate lists are not equal.\n"
+        f"Expected object multi state: {sorted(expected_state)}\n"
+        f"Actual object multi state: {sorted(adcm_object.multi_state)}"
+    )
 
 
 @allure.step("Check jobs status")
@@ -119,8 +122,9 @@ def check_jobs_status(task: Task, expected_job_status: dict) -> None:
 
 
 def get_objects_via_pagination(
-    object_list_method: Callable, pagination_step: int = 20
-) -> List[Union[AnyADCMObject, Job, Task]]:
+    object_list_method: Callable,
+    pagination_step: int = 20,
+) -> list[AnyADCMObject | Job | Task]:
     """Get all objects as a flat list using pagination"""
 
     def ignore_paging_ends(paging: dict) -> list:
@@ -147,7 +151,7 @@ def action_in_object_is_present(action: str, obj: AnyADCMObject):
             obj.action(name=action)
 
 
-def actions_in_objects_are_present(actions_to_obj: List[Tuple[str, AnyADCMObject]]):
+def actions_in_objects_are_present(actions_to_obj: list[tuple[str, AnyADCMObject]]):
     """Assert actions in objects are present"""
     for pair in actions_to_obj:
         action_in_object_is_present(*pair)
@@ -161,7 +165,7 @@ def action_in_object_is_absent(action: str, obj: AnyADCMObject):
                 obj.action(name=action)
 
 
-def actions_in_objects_are_absent(actions_to_obj: List[Tuple[str, AnyADCMObject]]):
+def actions_in_objects_are_absent(actions_to_obj: list[tuple[str, AnyADCMObject]]):
     """Assert actions in objects are absent"""
     for pair in actions_to_obj:
         action_in_object_is_absent(*pair)
@@ -178,7 +182,7 @@ def get_object_represent(obj: AnyADCMObject) -> str:
 
 def create_config_group_and_add_host(
     group_name: str,
-    object_with_group: Union[ClusterRelatedObject, Provider],
+    object_with_group: ClusterRelatedObject | Provider,
     *hosts: Iterable[Host],
 ) -> GroupConfig:
     """Create config group with given name and add all passed hosts"""
@@ -230,10 +234,10 @@ def attach_inventory_file(request: SubRequest, inventory_content: dict, name: st
 
 def build_hc_for_hc_acl_action(
     cluster: Cluster,
-    add: Collection[Tuple[Component, Host]] = (),
-    remove: Collection[Tuple[Component, Host]] = (),
-    add_new_bundle_components: Collection[Tuple[int, Host]] = (),
-) -> List[Dict[str, int]]:
+    add: Collection[tuple[Component, Host]] = (),
+    remove: Collection[tuple[Component, Host]] = (),
+    add_new_bundle_components: Collection[tuple[int, Host]] = (),
+) -> list[dict[str, int]]:
     """
     Build a `hc` argument for a `hc_acl` action run based on cluster's hostcomponent and add/remove "directives".
     Result contains only unique entries (because of the HC nature).

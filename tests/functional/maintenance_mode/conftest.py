@@ -17,8 +17,9 @@ conftest.py for maintenance mode related tests
 # pylint: disable=redefined-outer-name
 
 import os
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Literal, Set, Tuple
+from typing import Literal
 
 import allure
 import pytest
@@ -61,7 +62,7 @@ def provider(sdk_client_fs: ADCMClient) -> Provider:
 
 
 @pytest.fixture()
-def hosts(provider) -> Tuple[Host, Host, Host, Host, Host, Host]:
+def hosts(provider) -> tuple[Host, Host, Host, Host, Host, Host]:
     """Create 6 hosts from the default bundle"""
     return tuple(provider.host_create(f"test-host-{i}") for i in range(6))
 
@@ -91,7 +92,9 @@ def cluster_without_mm(request, sdk_client_fs: ADCMClient):
 
 
 def set_maintenance_mode(
-    api_client: APIClient, adcm_object: Host | Service | Component, maintenance_mode: bool
+    api_client: APIClient,
+    adcm_object: Host | Service | Component,
+    maintenance_mode: bool,
 ) -> None:
     """Change maintenance mode on ADCM objects"""
     if isinstance(adcm_object, Service):
@@ -130,7 +133,9 @@ def turn_mm_off(api_client: APIClient, host: Host, expected_code: int = 200):
 
 
 def expect_changing_mm_fail(
-    api_client: APIClient, object_with_mm: Host | Service | Component, new_mm: Literal["ON", "OFF"]
+    api_client: APIClient,
+    object_with_mm: Host | Service | Component,
+    new_mm: Literal["ON", "OFF"],
 ) -> None:
     """
     Check that changing MM is disallowed on object.
@@ -166,7 +171,7 @@ def check_mm_is(maintenance_mode: str, *adcm_object: Host | Service | Component)
     """Check value of maintenance_mode on object"""
     representation = [get_object_represent(obj) for obj in adcm_object]
     with allure.step(
-        f'Check that "maintenance_mode" is equal to "{maintenance_mode}" ' f"on objects: {representation}"
+        f'Check that "maintenance_mode" is equal to "{maintenance_mode}" ' f"on objects: {representation}",
     ):
         for obj in adcm_object:
             obj.reread()
@@ -176,7 +181,7 @@ def check_mm_is(maintenance_mode: str, *adcm_object: Host | Service | Component)
         raise AssertionError(
             f"{', '.join(get_object_represent(obj) for obj in obj_in_wrong_mode)} "
             "have incorrect value of 'maintenance_mode' flag.\n"
-            f"Expected: {maintenance_mode}\nActual: {obj_in_wrong_mode[0].maintenance_mode}"
+            f"Expected: {maintenance_mode}\nActual: {obj_in_wrong_mode[0].maintenance_mode}",
         )
 
 
@@ -184,7 +189,7 @@ def check_mm_availability(is_mm_available: bool, *hosts: Host):
     """Check that MM change is allowed/disallowed for the given hosts"""
     with allure.step(
         f'Check that "is_maintenance_mode_available" is {is_mm_available} '
-        f"on hosts: {get_hosts_fqdn_representation(hosts)}"
+        f"on hosts: {get_hosts_fqdn_representation(hosts)}",
     ):
         for host in hosts:
             host.reread()
@@ -193,11 +198,11 @@ def check_mm_availability(is_mm_available: bool, *hosts: Host):
             return
         raise AssertionError(
             'Some hosts have incorrect value of "is_maintenance_mode_available" flag.\n'
-            f"Hosts: {get_hosts_fqdn_representation(hosts_in_wrong_mode)}"
+            f"Hosts: {get_hosts_fqdn_representation(hosts_in_wrong_mode)}",
         )
 
 
-def get_enabled_actions_names(adcm_object: AnyADCMObject) -> Set[str]:
+def get_enabled_actions_names(adcm_object: AnyADCMObject) -> set[str]:
     """Get actions that aren't disabled by maintenance mode"""
     return {
         action.name
@@ -206,7 +211,7 @@ def get_enabled_actions_names(adcm_object: AnyADCMObject) -> Set[str]:
     }
 
 
-def get_disabled_actions_names(adcm_object: AnyADCMObject) -> Set[str]:
+def get_disabled_actions_names(adcm_object: AnyADCMObject) -> set[str]:
     """Get actions disabled because of maintenance mode"""
     return {
         action.name
@@ -249,7 +254,9 @@ def check_no_concerns_on_objects(*adcm_object):
 
 
 def check_actions_availability(
-    adcm_object: AnyADCMObject, expected_enabled: set[str], expected_disabled: set[str]
+    adcm_object: AnyADCMObject,
+    expected_enabled: set[str],
+    expected_disabled: set[str],
 ) -> None:
     """Method to check actual enabled and disabled actions with expected"""
     representation = get_object_represent(adcm_object)

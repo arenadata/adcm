@@ -1,5 +1,5 @@
 import { ComponentFactory, ComponentFactoryResolver, ComponentRef, Directive, ElementRef, HostListener, Input, OnDestroy, OnInit, Renderer2, Type, ViewContainerRef, } from '@angular/core';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 
 import { PopoverComponent } from '@app/components/popover/popover.component';
 import { PopoverContentDirective, PopoverEventFunc } from '@app/abstract-directives/popover-content.directive';

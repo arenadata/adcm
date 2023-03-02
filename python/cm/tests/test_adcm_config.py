@@ -42,5 +42,5 @@ class TestAdcmConfig(BaseTestCase):
             [
                 call(obj_mock, "global", ""),
                 call(obj_mock, "global", "test"),
-            ]
+            ],
         )

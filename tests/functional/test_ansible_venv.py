@@ -94,7 +94,11 @@ def test_default_ansible(
     Check that by default (if developer write nothing) we have Ansible 2.8.
     """
     run_cluster_action_and_assert_result(cluster_no_venv, "no_venv", config=DEFAULT_ANSIBLE_VER)
-    run_service_action_and_assert_result(cluster_no_venv.service(name="no_venv"), "no_venv", config=DEFAULT_ANSIBLE_VER)
+    run_service_action_and_assert_result(
+        cluster_no_venv.service(name="no_venv"),
+        "no_venv",
+        config=DEFAULT_ANSIBLE_VER,
+    )
     run_component_action_and_assert_result(
         cluster_no_venv.service(name="no_venv").component(name="no_venv"),
         "no_venv",
@@ -199,7 +203,9 @@ def test_ansible_set_on_action(
     Check that we able to change ansible on action.
     """
     run_cluster_action_and_assert_result(
-        cluster_obj_venv_default_action_9, "obj_venv_default_action_9", config=ANSIBLE_9
+        cluster_obj_venv_default_action_9,
+        "obj_venv_default_action_9",
+        config=ANSIBLE_9,
     )
     run_service_action_and_assert_result(
         cluster_obj_venv_default_action_9.service(name="obj_venv_default_action_9"),
@@ -208,7 +214,7 @@ def test_ansible_set_on_action(
     )
     run_component_action_and_assert_result(
         cluster_obj_venv_default_action_9.service(name="obj_venv_default_action_9").component(
-            name="obj_venv_default_action_9"
+            name="obj_venv_default_action_9",
         ),
         "obj_venv_default_action_9",
         config=ANSIBLE_9,
@@ -234,7 +240,9 @@ def test_ansible_set_on_action(
     )
 
     run_provider_action_and_assert_result(
-        provider_obj_venv_default_action_9, "obj_venv_default_action_9", config=ANSIBLE_9
+        provider_obj_venv_default_action_9,
+        "obj_venv_default_action_9",
+        config=ANSIBLE_9,
     )
     run_host_action_and_assert_result(
         provider_obj_venv_default_action_9.host(fqdn="obj-venv-default-action-9"),

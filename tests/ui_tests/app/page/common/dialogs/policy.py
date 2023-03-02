@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable, Union
+from collections.abc import Callable
+from typing import Union
 
 import allure
 from selenium.webdriver.chrome.webdriver import WebDriver
@@ -29,7 +30,9 @@ class _Locators(Dialog):
 
 
 def prepare_multiple_pick(
-    item_name: str, selector_name: str, item_locator: BaseLocator = _Locators.selector_item
+    item_name: str,
+    selector_name: str,
+    item_locator: BaseLocator = _Locators.selector_item,
 ) -> Callable[[Union["AddPolicyBaseInfoDialog", "AddPolicyObjectPickDialog"], list[str]], None]:
     def pick(self, items_to_pick: list[str]) -> None:
         # pylint: disable=protected-access
@@ -50,7 +53,9 @@ def prepare_multiple_pick(
 
 
 def prepare_single_pick(
-    item_name: str, selector_name: str, item_locator: BaseLocator = _Locators.selector_item
+    item_name: str,
+    selector_name: str,
+    item_locator: BaseLocator = _Locators.selector_item,
 ) -> Callable[[Union["AddPolicyBaseInfoDialog", "AddPolicyObjectPickDialog"], str], None]:
     def pick(self, item: list[str]) -> None:
         with allure.step(f"Select {item_name} '{item}' in dialog"):
@@ -58,7 +63,8 @@ def prepare_single_pick(
             # pylint: disable=protected-access
             self._view.wait_element_visible(item_locator, timeout=3)
             suitable_item = get_or_raise(
-                self._view.find_elements(item_locator, timeout=1), lambda element: element.text == item
+                self._view.find_elements(item_locator, timeout=1),
+                lambda element: element.text == item,
             )
             suitable_item.click()
             self._view.wait_element_hide(item_locator, timeout=2)
@@ -74,7 +80,9 @@ class AddPolicyBaseInfoDialog(AutoChildDialog):
         description = Locator(By.CSS_SELECTOR, "input[name='description']", Descriptor.INPUT | Descriptor.TEXT)
         roles = Locator(By.CSS_SELECTOR, "mat-select[placeholder='Role']", Descriptor.ELEMENT)
         role_item = Locator(
-            By.XPATH, "//div[./mat-option//*[@placeholderlabel='Select role']]/mat-option", Descriptor.SERVICE
+            By.XPATH,
+            "//div[./mat-option//*[@placeholderlabel='Select role']]/mat-option",
+            Descriptor.SERVICE,
         )
         users = Locator(By.CSS_SELECTOR, "adwp-input-select[label='User'] adwp-select", Descriptor.ELEMENT)
         groups = Locator(By.CSS_SELECTOR, "adwp-input-select[label='Group'] adwp-select", Descriptor.ELEMENT)
@@ -101,7 +109,9 @@ class AddPolicyObjectPickDialog(AutoChildDialog):
         hosts = Locator(By.CSS_SELECTOR, "app-parametrized-by-host mat-form-field", Descriptor.ELEMENT)
 
         back = Locator(
-            By.CSS_SELECTOR, "app-rbac-policy-form-step-two~div button[matstepperprevious]", Descriptor.BUTTON
+            By.CSS_SELECTOR,
+            "app-rbac-policy-form-step-two~div button[matstepperprevious]",
+            Descriptor.BUTTON,
         )
         next = Locator(By.CSS_SELECTOR, "app-rbac-policy-form-step-two~div .mat-stepper-next", Descriptor.BUTTON)
 

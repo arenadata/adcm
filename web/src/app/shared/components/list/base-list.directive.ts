@@ -13,7 +13,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ParamMap } from '@angular/router';
 import { select, Store } from '@ngrx/store';
 import { filter, mergeMap, switchMap, takeUntil, tap } from 'rxjs/operators';
-import { IListResult } from '@adwp-ui/widgets';
+import { IListResult } from '@app/adwp';
 import { Sort } from '@angular/material/sort';
 import { Observable, Subject } from 'rxjs';
 import { clearMessages, EventMessage, getMessage, SocketState } from '@app/core/store';

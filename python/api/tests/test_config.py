@@ -28,7 +28,7 @@ class TestConfigPasswordAPI(BaseTestCase):
         super().setUp()
 
         _, self.cluster, self.config_log = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_password.tar")
+            bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_password.tar"),
         )
 
     def test_post_same_password_success(self):
@@ -83,7 +83,7 @@ class TestConfigSecrettextAPI(BaseTestCase):
         super().setUp()
 
         _, self.cluster, self.config_log = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_secrettext.tar")
+            bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_secrettext.tar"),
         )
 
     def test_post_same_secrettext_success(self):
@@ -138,7 +138,7 @@ class TestConfigSecretfileAPI(BaseTestCase):
         super().setUp()
 
         _, self.cluster, self.config_log = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_secretfile.tar")
+            bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_secretfile.tar"),
         )
 
     def test_post_same_secretfile_success(self):
@@ -155,7 +155,7 @@ class TestConfigSecretfileAPI(BaseTestCase):
         config_log = ConfigLog.objects.get(pk=self.cluster.config.current)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.assertEqual(config_log.config["secretfile"], secretfile_value)
+        self.assertEqual(config_log.config["secretfile"], ansible_decrypt(msg=secretfile_value))
 
     def test_post_new_secretfile_success(self):
         secretfile_value = "new_test_secretfile_data"
@@ -171,7 +171,7 @@ class TestConfigSecretfileAPI(BaseTestCase):
         config_log = ConfigLog.objects.get(pk=self.cluster.config.current)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.assertEqual(ansible_decrypt(config_log.config["secretfile"]), secretfile_value)
+        self.assertEqual(ansible_decrypt(msg=config_log.config["secretfile"]), secretfile_value)
 
     def test_post_wrong_secretfile_fail(self):
         response: Response = self.client.post(
@@ -193,7 +193,7 @@ class TestConfigSecretmapAPI(BaseTestCase):
         super().setUp()
 
         _, self.cluster, self.config_log = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_secretmap.tar")
+            bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_secretmap.tar"),
         )
 
     def test_post_same_secretmap_success(self):

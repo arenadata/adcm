@@ -13,7 +13,6 @@
 """ADCM API PUT body tests"""
 # pylint: disable=redefined-outer-name
 from copy import deepcopy
-from typing import List
 
 import allure
 import pytest
@@ -39,13 +38,13 @@ def prepare_put_body_data(request, adcm_api):
     """
     Fixture for preparing test data for PUT request, depending on generated test datasets
     """
-    test_data_list: List[TestDataWithPreparedBody] = request.param
+    test_data_list: list[TestDataWithPreparedBody] = request.param
     dbfiller = DbFiller(adcm=adcm_api)
     endpoint = test_data_list[0].test_data.request.endpoint
     valid_data = dbfiller.generate_valid_request_data(endpoint=endpoint, method=Methods.PUT)
     full_item = deepcopy(valid_data["full_item"])
     changed_fields = deepcopy(valid_data["changed_fields"])
-    final_test_data_list: List[TestDataWithPreparedBody] = []
+    final_test_data_list: list[TestDataWithPreparedBody] = []
     for test_data_with_prepared_values in test_data_list:
         test_data, prepared_field_values = deepcopy(test_data_with_prepared_values)
         test_data.request.data = deepcopy(full_item)
@@ -56,7 +55,9 @@ def prepare_put_body_data(request, adcm_api):
                         current_field_value = full_item[field.name]
                         changed_field_value = changed_fields.get(field.name, None)
                         test_data.request.data[field.name] = prepared_field_values[field.name].return_value(
-                            dbfiller, current_field_value, changed_field_value
+                            dbfiller,
+                            current_field_value,
+                            changed_field_value,
                         )
 
                 else:

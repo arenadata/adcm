@@ -31,7 +31,9 @@ class HostListLocators:
         """Host List page host table elements locators"""
 
         cluster_option = TemplateLocator(
-            By.XPATH, "//mat-option//span[contains(text(), '{}')]", "Table dropdown option"
+            By.XPATH,
+            "//mat-option//span[contains(text(), '{}')]",
+            "Table dropdown option",
         )
         header = BaseLocator(By.TAG_NAME, "mat-header-row", "Header of the table")
 
@@ -46,15 +48,21 @@ class HostListLocators:
             actions = BaseLocator(By.CSS_SELECTOR, "app-actions-button button", "Host actions in row")
             config = BaseLocator(By.XPATH, ".//button[.//mat-icon[text()='settings']]", "Host config in row")
             maintenance_mode_btn = BaseLocator(
-                By.XPATH, ".//button[.//mat-icon[text()='medical_services']]", "Maintenance Mode button in row"
+                By.XPATH,
+                ".//button[.//mat-icon[text()='medical_services']]",
+                "Maintenance Mode button in row",
             )
             delete_btn = BaseLocator(By.XPATH, ".//button[.//mat-icon[text()='delete']]", "Host delete button in row")
             link_off_btn = BaseLocator(
-                By.XPATH, ".//button[.//mat-icon[text()='link_off']]", "Host link off button in row"
+                By.XPATH,
+                ".//button[.//mat-icon[text()='link_off']]",
+                "Host link off button in row",
             )
             dropdown_menu = BaseLocator(By.CSS_SELECTOR, "div[role='menu']", "Dropdown menu")
             action_option = TemplateLocator(By.XPATH, "//button/span[text()='{}']", "Action dropdown option")
             action_option_all = BaseLocator(
-                By.CSS_SELECTOR, "button[adcm_test='action_btn']", "Action dropdown options"
+                By.CSS_SELECTOR,
+                "button[adcm_test='action_btn']",
+                "Action dropdown options",
             )
             rename_btn = BaseLocator(By.CLASS_NAME, "rename-button", "Cluster rename button in row")

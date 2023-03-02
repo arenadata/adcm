@@ -14,7 +14,8 @@
 
 # pylint: disable=redefined-outer-name
 
-from typing import Dict, Iterable, List, Literal, Tuple
+from collections.abc import Iterable
+from typing import Literal
 
 import allure
 import pytest
@@ -74,12 +75,12 @@ class TestActionRolesOnUpgrade:
     NOT_ALLOWED_ACTIONS = (NO_RIGHTS_ACTION, NEW_ACTION, CHANGED_ACTION_NAME)
 
     @pytest.fixture()
-    def old_cluster_objects(self, old_cluster) -> Tuple[Cluster, Service, Component]:
+    def old_cluster_objects(self, old_cluster) -> tuple[Cluster, Service, Component]:
         """Get cluster, service and component from old cluster as admin objects"""
         return old_cluster, (service := old_cluster.service()), service.component()
 
     @pytest.fixture()
-    def old_cluster_objects_map(self, old_cluster_objects) -> Dict[ClusterObjectClassName, ClusterRelatedObject]:
+    def old_cluster_objects_map(self, old_cluster_objects) -> dict[ClusterObjectClassName, ClusterRelatedObject]:
         """Get old cluster objects as map"""
         return self._get_objects_map(old_cluster_objects)
 
@@ -97,7 +98,7 @@ class TestActionRolesOnUpgrade:
         ]
 
     @pytest.fixture()
-    def old_cluster_actions_policies(self, clients, user, all_business_roles, old_cluster_objects_map) -> List[Policy]:
+    def old_cluster_actions_policies(self, clients, user, all_business_roles, old_cluster_objects_map) -> list[Policy]:
         """
         Grant permissions to run all actions on cluster, service and component for a user except:
         1. "No Rights" action.
@@ -159,7 +160,7 @@ class TestActionRolesOnUpgrade:
                 self._get_roles_filter_exclude_by_action_name(
                     all_business_roles,
                     (ACTION_NAME_BEFORE_CHANGE, ACTION_TO_BE_DELETED, *self.NOT_ALLOWED_ACTIONS),
-                )
+                ),
             ),
         )
 
@@ -200,7 +201,7 @@ class TestActionRolesOnUpgrade:
     def check_roles_are_allowed(
         self,
         user_client: ADCMClient,
-        cluster_object_map: Dict[ClusterObjectClassName, ClusterRelatedObject],
+        cluster_object_map: dict[ClusterObjectClassName, ClusterRelatedObject],
         business_roles: Iterable[BusinessRole],
     ):
         """Check that given roles are allowed to be launched"""
@@ -214,7 +215,7 @@ class TestActionRolesOnUpgrade:
     def check_roles_are_denied(
         self,
         user_client: ADCMClient,
-        cluster_object_map: Dict[ClusterObjectClassName, ClusterRelatedObject],
+        cluster_object_map: dict[ClusterObjectClassName, ClusterRelatedObject],
         business_roles: Iterable[BusinessRole],
     ):
         """Check that given roles aren't allowed to be launched"""

@@ -12,14 +12,14 @@
 
 """Test complex RBAC cases"""
 
-from typing import Iterable
+from collections.abc import Iterable
 
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Host
 
 from tests.functional.maintenance_mode.conftest import MM_IS_OFF, MM_IS_ON
-from tests.functional.rbac.conftest import BusinessRoles as BR
+from tests.functional.rbac.conftest import BusinessRoles as BR  # noqa: N817
 from tests.functional.rbac.conftest import (
     as_user_objects,
     check_mm_change_is_allowed,
@@ -50,7 +50,12 @@ class TestMaintenanceMode:
 
     @pytest.mark.usefixtures("host_in_cluster_with_mm_allowed", "second_host_in_cluster_with_mm_allowed")
     def test_manage_maintenance_mode(  # pylint: disable=too-many-locals
-        self, mm_changing_roles, clients, user, prepare_objects, second_objects
+        self,
+        mm_changing_roles,
+        clients,
+        user,
+        prepare_objects,
+        second_objects,
     ):
         """
         Test that manage maintenance mode role is working correctly
@@ -105,7 +110,7 @@ class TestTwoUsers:
         return sdk_client_fs.user_create(*self._SECOND_USER_CREDS)
 
     @pytest.fixture()
-    def second_user_sdk(self, adcm_fs, second_user):
+    def second_user_sdk(self, adcm_fs, second_user):  # pylint: disable=unused-argument
         """ADCM Client for second non-superuser"""
         username, password = self._SECOND_USER_CREDS
         return ADCMClient(url=adcm_fs.url, user=username, password=password)
@@ -113,7 +118,14 @@ class TestTwoUsers:
     # pylint: disable=too-many-locals
 
     def test_grant_role_to_users_withdraw_from_one(
-        self, sdk_client_fs, user_sdk, second_user_sdk, first_user, second_user, prepare_objects, second_objects
+        self,
+        sdk_client_fs,
+        user_sdk,
+        second_user_sdk,
+        first_user,
+        second_user,
+        prepare_objects,
+        second_objects,
     ):
         """
         Assign role to two users
@@ -126,7 +138,11 @@ class TestTwoUsers:
 
         with allure.step("Create policy assigned to both users"):
             policy = create_policy(
-                admin_client, BR.EDIT_SSERVICE_CONFIGURATIONS, [service], [first_user, second_user], []
+                admin_client,
+                BR.EDIT_SERVICE_CONFIGURATIONS,
+                [service],
+                [first_user, second_user],
+                [],
             )
 
         with allure.step("Check that config of only one service can be edited by both users"):
@@ -144,7 +160,14 @@ class TestTwoUsers:
             self._edit_is_denied_to(first_client, [*prepare_objects, *second_objects])
 
     def test_change_users_in_groups(
-        self, sdk_client_fs, user_sdk, second_user_sdk, first_user, second_user, prepare_objects, second_objects
+        self,
+        sdk_client_fs,
+        user_sdk,
+        second_user_sdk,
+        first_user,
+        second_user,
+        prepare_objects,
+        second_objects,
     ):
         """
         Add two users to groups
@@ -161,7 +184,7 @@ class TestTwoUsers:
             second_group = admin_client.group_create("Second Group", user=[{"id": second_user.id}])
 
         with allure.step("Create two policies and assign separate group to each"):
-            create_policy(admin_client, BR.EDIT_SSERVICE_CONFIGURATIONS, [service], [], [first_group])
+            create_policy(admin_client, BR.EDIT_SERVICE_CONFIGURATIONS, [service], [], [first_group])
             create_policy(admin_client, BR.EDIT_CLUSTER_CONFIGURATIONS, [cluster], [], [second_group])
 
         with allure.step("Check that one user have access only to service config and another only to cluster config"):
@@ -181,7 +204,14 @@ class TestTwoUsers:
             self._edit_is_denied_to(second_client, objects_wo_service)
 
     def test_grant_different_permissions_to_two_users(
-        self, sdk_client_fs, user_sdk, second_user_sdk, first_user, second_user, prepare_objects, second_objects
+        self,
+        sdk_client_fs,
+        user_sdk,
+        second_user_sdk,
+        first_user,
+        second_user,
+        prepare_objects,
+        second_objects,
     ):
         """
         Give one user one permission
@@ -194,11 +224,11 @@ class TestTwoUsers:
         admin_client, first_client, second_client = sdk_client_fs, user_sdk, second_user_sdk
 
         with allure.step("Create two policies and assign separate group to each"):
-            first_policy = create_policy(admin_client, BR.EDIT_SSERVICE_CONFIGURATIONS, [service], [first_user], [])
+            first_policy = create_policy(admin_client, BR.EDIT_SERVICE_CONFIGURATIONS, [service], [first_user], [])
             second_policy = create_policy(admin_client, BR.EDIT_CLUSTER_CONFIGURATIONS, [cluster], [second_user], [])
 
         with allure.step(
-            "Check that one user have access only to cluster config change, another user to service config change"
+            "Check that one user have access only to cluster config change, another user to service config change",
         ):
             self._edit_is_allowed_to(first_client, [service])
             self._edit_is_allowed_to(second_client, [cluster])
@@ -216,7 +246,14 @@ class TestTwoUsers:
             self._edit_is_denied_to(second_client, objects_wo_service)
 
     def test_reassign_policies_between_two_users(
-        self, sdk_client_fs, user_sdk, second_user_sdk, first_user, second_user, prepare_objects, second_objects
+        self,
+        sdk_client_fs,
+        user_sdk,
+        second_user_sdk,
+        first_user,
+        second_user,
+        prepare_objects,
+        second_objects,
     ):
         """
         Grant policy to one user
@@ -228,7 +265,7 @@ class TestTwoUsers:
         admin_client, first_client, second_client = sdk_client_fs, user_sdk, second_user_sdk
 
         with allure.step("Create policy assigned to one user"):
-            policy = create_policy(admin_client, BR.EDIT_SSERVICE_CONFIGURATIONS, [service], [first_user], [])
+            policy = create_policy(admin_client, BR.EDIT_SERVICE_CONFIGURATIONS, [service], [first_user], [])
 
         with allure.step("Check that user have access only to service config change"):
             self._edit_is_allowed_to(first_client, [service])

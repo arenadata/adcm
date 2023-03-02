@@ -50,8 +50,12 @@ fi
 
 "${adcmroot}"/python/backupdb.py
 "${adcmroot}"/python/manage.py migrate
-"${adcmroot}"/python/init_db.py
-"${adcmroot}"/python/manage.py upgraderole
+
+if [ -z "$MIGRATION_MODE" ] || [ "$MIGRATION_MODE" -ne 1 ]; then
+    "${adcmroot}"/python/init_db.py
+    "${adcmroot}"/python/manage.py upgraderole
+fi
+
 touch "${initreadyfile}"
 
 # That is sleep forever case because I have no idea how to force

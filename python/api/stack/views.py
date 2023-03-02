@@ -151,7 +151,7 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
     queryset = Bundle.objects.all()
     serializer_class = BundleSerializer
     filterset_fields = ("name", "version")
-    ordering_fields = ("name", "version_order")
+    ordering_fields = ("id", "name", "version_order")
     lookup_url_kwarg = "bundle_pk"
 
     def get_permissions(self):
@@ -177,7 +177,7 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
 
     @audit
     @action(methods=["put"], detail=True)
-    def update_bundle(self, request, *args, **kwargs) -> Response:
+    def update_bundle(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         bundle = check_obj(Bundle, kwargs["bundle_pk"], "BUNDLE_NOT_FOUND")
         update_bundle(bundle)
         serializer = self.get_serializer(bundle)
@@ -186,16 +186,17 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
 
     @staticmethod
     @action(methods=["get"], detail=True)
-    def license(request, *args, **kwargs) -> Response:
+    def license(request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         bundle = check_obj(Bundle, kwargs["bundle_pk"], "BUNDLE_NOT_FOUND")
         proto = Prototype.objects.filter(bundle=bundle, name=bundle.name).first()
         body = get_license(proto)
         url = reverse(viewname="accept-license", kwargs={"prototype_pk": proto.pk}, request=request)
+
         return Response({"license": proto.license, "accept": url, "text": body})
 
     @audit
     @action(methods=["put"], detail=True)
-    def accept_license(self, request: Request, *args, **kwargs) -> Response:
+    def accept_license(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         # self is necessary for audit
 
         bundle = check_obj(Bundle, kwargs["bundle_pk"], "BUNDLE_NOT_FOUND")
@@ -231,7 +232,7 @@ class PrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
 
     @staticmethod
     @action(methods=["get"], detail=True)
-    def license(request: Request, *args, **kwargs) -> Response:
+    def license(request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         prototype = check_obj(Prototype, kwargs["prototype_pk"], "PROTOTYPE_NOT_FOUND")
         body = get_license(prototype)
         url = reverse(viewname="accept-license", kwargs={"prototype_pk": prototype.pk}, request=request)
@@ -240,7 +241,7 @@ class PrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
 
     @audit
     @action(methods=["put"], detail=True)
-    def accept_license(self, request: Request, *args, **kwargs) -> Response:
+    def accept_license(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         # self is necessary for audit
 
         prototype = check_obj(Prototype, kwargs["prototype_pk"], "PROTOTYPE_NOT_FOUND")
@@ -289,7 +290,7 @@ class ServicePrototypeViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewS
         return Response(serializer.data)
 
     @action(methods=["get"], detail=True)
-    def actions(self, request: Request, prototype_pk: int) -> Response:
+    def actions(self, request: Request, prototype_pk: int) -> Response:  # pylint: disable=unused-argument
         return Response(
             StackActionSerializer(
                 Action.objects.filter(prototype__type="service", prototype_id=prototype_pk),
