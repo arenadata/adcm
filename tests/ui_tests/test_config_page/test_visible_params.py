@@ -219,6 +219,7 @@ def test_group_configs_fields(request, combo: ParamCombination, sdk_client_ms: A
     config, expected, path = prepare_group_config(generate_group_configs(group_invisible=False, **asdict(combo)))
     cluster, page = prepare_cluster_and_open_config_page(sdk_client_ms, path, app_ms)
     objects_to_delete.append(cluster)
+    objects_to_delete.append(cluster.bundle())
 
     if combo.group_advanced:
         page.config.check_no_rows_or_groups_on_page()
@@ -290,6 +291,8 @@ def test_visible_group_config_fields(  # noqa: C901
     )
     cluster, *_ = prepare_cluster_and_open_config_page(sdk_client_ms, path, app_ms)
     objects_to_delete.append(cluster)
+    objects_to_delete.append(cluster.bundle())
+
     cluster_group_config = cluster.group_config_create(name="Test group")
     cluster_config_page = ClusterGroupConfigConfig(
         app_ms.driver,
@@ -414,6 +417,8 @@ def test_group_configs_fields_in_group_invisible_false(  # noqa: C901
     )
     cluster, *_ = prepare_cluster_and_open_config_page(sdk_client_ms, path, app_ms)
     objects_to_delete.append(cluster)
+    objects_to_delete.append(cluster.bundle())
+
     cluster_group_config = cluster.group_config_create(name="Test group")
     cluster_config_page = ClusterGroupConfigConfig(
         app_ms.driver,
@@ -579,6 +584,7 @@ def test_configs_fields_invisible_false(
     )
     cluster, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_ms, path, app_ms)
     objects_to_delete.append(cluster)
+    objects_to_delete.append(cluster.bundle())
 
     def check_expectations():
         with allure.step("Check that field visible"):
