@@ -177,26 +177,28 @@ export class AddService implements IAddService {
             result.accept.indexOf("/license")
           ) as unknown as number;
 
-          if (serviceObj[prototype_id].license !== 'absent') {
-            return this.dialog
-              .open(DialogComponent, {
-                data: {
-                  title: `Accept license agreement ${serviceObj[prototype_id].service_name}`,
-                  text: result.text,
-                  closeOnGreenButtonCLick: true,
-                  controls: {label: 'Do you accept the license agreement?', buttons: ['Yes', 'No']},
-                },
+          if (serviceObj[prototype_id].license === 'absent') {
+            return this.cluster.addServices({prototype_id: prototype_id})
+          }
+
+          return this.dialog
+            .open(DialogComponent, {
+              data: {
+                title: `Accept license agreement ${serviceObj[prototype_id].service_name}`,
+                text: result.text,
+                closeOnGreenButtonCLick: true,
+                controls: {label: 'Do you accept the license agreement?', buttons: ['Yes', 'No']},
+              },
+            })
+            .beforeClosed()
+            .pipe(
+              filter((yes) => yes),
+              switchMap(() => {
+                return this.api.put(`/api/v1/stack/prototype/${prototype_id}/license/accept/`, {}).pipe(
+                  switchMap(() => this.cluster.addServices({prototype_id: prototype_id}))
+                )
               })
-              .beforeClosed()
-              .pipe(
-                filter((yes) => yes),
-                switchMap(() => {
-                  return this.api.put(`/api/v1/stack/prototype/${prototype_id}/license/accept/`, {}).pipe(
-                    switchMap(() => this.cluster.addServices({prototype_id: prototype_id}))
-                  )
-                })
-              )
-          } else return this.cluster.addServices({prototype_id: prototype_id})
+            )
         })
       )
   }
