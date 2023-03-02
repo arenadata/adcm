@@ -131,6 +131,7 @@ yarn install
 2. Stop container:
    ```shell
    docker stop adcm
+   docker rm adcm
    ```
 3. Start container in `MIGRATION_MODE`:
    ```shell
@@ -149,6 +150,7 @@ yarn install
 5. Stop container:
    ```shell
    docker stop adcm
+   docker rm adcm
    ```
 6. Start container:
    ```shell
