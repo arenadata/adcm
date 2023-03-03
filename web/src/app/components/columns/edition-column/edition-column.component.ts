@@ -9,7 +9,7 @@ import { IBundle } from '@app/models/bundle';
     {{ row.edition }}
     <ng-container *ngIf="row.license === 'unaccepted'">
       <button mat-icon-button color="warn" matTooltip="Accept license agreement"
-              (click)="onClick({ event: $event, action: 'license', row: row })">
+              (click)="onClick({ event: $event, action: 'license', row: row })" onclick="this.blur()">
         <mat-icon>warning</mat-icon>
       </button>
     </ng-container>
