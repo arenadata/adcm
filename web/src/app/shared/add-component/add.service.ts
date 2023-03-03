@@ -178,7 +178,7 @@ export class AddService implements IAddService {
           ) as unknown as number;
 
           if (serviceObj[prototype_id].license === 'absent') {
-            return this.cluster.addServices({prototype_id: prototype_id})
+            return this.cluster.addServices({ prototype_id })
           }
 
           return this.dialog
@@ -187,7 +187,7 @@ export class AddService implements IAddService {
                 title: `Accept license agreement ${serviceObj[prototype_id].service_name}`,
                 text: result.text,
                 closeOnGreenButtonCLick: true,
-                controls: {label: 'Do you accept the license agreement?', buttons: ['Yes', 'No']},
+                controls: { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] },
               },
             })
             .beforeClosed()
@@ -195,7 +195,7 @@ export class AddService implements IAddService {
               filter((yes) => yes),
               switchMap(() => {
                 return this.api.put(`/api/v1/stack/prototype/${prototype_id}/license/accept/`, {}).pipe(
-                  switchMap(() => this.cluster.addServices({prototype_id: prototype_id}))
+                  switchMap(() => this.cluster.addServices({ prototype_id }))
                 )
               })
             )
