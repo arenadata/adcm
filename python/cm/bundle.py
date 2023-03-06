@@ -19,7 +19,8 @@ import tarfile
 from collections.abc import Iterable
 from pathlib import Path
 
-from cm.adcm_config import init_object_config, proto_ref, switch_config
+from cm.adcm_config import init_object_config, switch_config
+from cm.adcm_config.utils import proto_ref
 from cm.errors import raise_adcm_ex
 from cm.logger import logger
 from cm.models import (

@@ -306,6 +306,7 @@ ADCM_MM_ACTION_FORBIDDEN_PROPS_SET = {"config", "hc_acl", "ui_options"}
 
 STACK_COMPLEX_FIELD_TYPES = {"json", "structure", "list", "map", "secretmap"}
 STACK_NUMERIC_FIELD_TYPES = {"integer", "float"}
+SECURE_PARAM_TYPES = {"password", "secrettext"}
 TEMPLATE_CONFIG_DELETE_FIELDS = {"yspec", "option", "activatable", "active", "read_only", "writable", "subs"}
 
 EMPTY_REQUEST_STATUS_CODE = 32

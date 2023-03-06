@@ -345,7 +345,7 @@ def get_target_host(host_id):
 
 
 def get_inventory_data(
-    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
+    obj: type[ADCMEntity],
     action: Action,
     action_host: list[Host] | None = None,
     delta: dict | None = None,

@@ -14,10 +14,9 @@ import json
 import os
 from pathlib import Path
 from secrets import token_hex
-from typing import Any
+from typing import Any, Iterable
 
 from django.conf import settings
-from yaml import safe_load
 
 
 def dict_json_get_or_create(path: str | Path, field: str, value: Any = None) -> Any:
@@ -44,104 +43,6 @@ def get_adcm_token() -> str:
     return adcm_token
 
 
-def get_attr(config: dict) -> dict:
-    attr = {}
-
-    if all(
-        (
-            "activatable" in config["limits"],
-            "active" in config["limits"],
-            config["type"] == "group",
-            config.get("name"),
-        ),
-    ):
-        attr[config["name"]] = config["limits"]
-
-    return attr
-
-
-def _get_limits(config: dict, root_path: str) -> dict:  # noqa: C901
-    # pylint: disable=too-many-branches
-    limits = {}
-
-    if "yspec" in config and config["type"] in settings.STACK_COMPLEX_FIELD_TYPES:
-        with open(file=Path(root_path, config["yspec"]), encoding=settings.ENCODING_UTF_8) as f:
-            data = f.read()
-
-        limits.update(**safe_load(stream=data))
-
-    if "option" in config and config["type"] == "option":
-        limits["option"] = config["option"]
-
-    if "source" in config and config["type"] == "variant":
-        variant_type = config["source"]["type"]
-        source = {"type": variant_type, "args": None}
-
-        if "strict" in config["source"]:
-            source["strict"] = config["source"]["strict"]
-        else:
-            source["strict"] = True
-
-        if variant_type == "inline":
-            source["value"] = config["source"]["value"]
-        elif variant_type in ("config", "builtin"):
-            source["name"] = config["source"]["name"]
-
-        if variant_type == "builtin":
-            if "args" in config["source"]:
-                source["args"] = config["source"]["args"]
-
-        limits["source"] = source
-
-    if "activatable" in config and config["type"] == "group":
-        limits.update(
-            activatable=config["activatable"],
-            active=False,
-        )
-
-        if "active" in config:
-            limits.update(active=config["active"])
-
-    if config["type"] in settings.STACK_NUMERIC_FIELD_TYPES:
-        if "min" in config:
-            limits["min"] = config["min"]
-
-        if "max" in config:
-            limits["max"] = config["max"]
-
-    for label in ("read_only", "writable"):
-        if label in config:
-            limits[label] = config[label]
-
-    return limits
-
-
-def normalize_config(config: dict, root_path: str, name: str = "", subname: str = "") -> list[dict]:
-    config_list = [config]
-
-    name = name or config["name"]
-    config["name"] = name
-    if subname:
-        config["subname"] = subname
-
-    if config.get("display_name") is None:
-        config["display_name"] = subname or name
-
-    config["limits"] = _get_limits(config=config, root_path=root_path)
-
-    if "subs" in config:
-        for subconf in config["subs"]:
-            config_list.extend(
-                normalize_config(config=subconf, root_path=root_path, name=name, subname=subconf["name"]),
-            )
-
-    for field in settings.TEMPLATE_CONFIG_DELETE_FIELDS:
-        if field in config:
-            del config[field]
-
-    return config_list
-
-
 def get_env_with_venv_path(venv: str, existing_env: dict | None = None) -> dict:
     if existing_env is None:
         existing_env = os.environ.copy()
@@ -149,3 +50,30 @@ def get_env_with_venv_path(venv: str, existing_env: dict | None = None) -> dict:
     existing_env["PATH"] = f"/adcm/venv/{venv}/bin:{existing_env['PATH']}"
 
     return existing_env
+
+
+def obj_to_dict(obj: Any, keys: Iterable) -> dict:
+    dictionary = {}
+    for key in keys:
+        if hasattr(obj, key):
+            dictionary[key] = getattr(obj, key)
+
+    return dictionary
+
+
+def dict_to_obj(dictionary: dict, obj: Any, keys: Iterable) -> Any:
+    for key in keys:
+        setattr(obj, key, dictionary[key])
+
+    return obj
+
+
+def obj_ref(obj: type["ADCMEntity"]) -> str:
+    if hasattr(obj, "name"):
+        name = obj.name
+    elif hasattr(obj, "fqdn"):
+        name = obj.fqdn
+    else:
+        name = obj.prototype.name
+
+    return f'{obj.prototype.type} #{obj.id} "{name}"'
