@@ -15,7 +15,6 @@ import functools
 from cm.adcm_config import (
     init_object_config,
     make_object_config,
-    obj_ref,
     proto_ref,
     save_obj_config,
     switch_config,
@@ -48,6 +47,7 @@ from cm.models import (
     Upgrade,
 )
 from cm.status_api import post_event
+from cm.utils import obj_ref
 from django.db import transaction
 from rbac.models import re_apply_object_policy
 from version_utils import rpm

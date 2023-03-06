@@ -226,9 +226,9 @@ def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster
     raise_adcm_ex("TASK_ERROR", "action is disabled")
 
 
-def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict) -> tuple[dict, dict]:
+def check_action_config(action: Action, obj: type[ADCMEntity], conf: dict, attr: dict) -> tuple[dict, dict]:
     proto = action.prototype
-    spec, flat_spec, _, _ = get_prototype_config(proto, action)
+    spec, flat_spec, _, _ = get_prototype_config(proto=proto, action=action, obj=obj)
     if not spec:
         return {}, {}
 

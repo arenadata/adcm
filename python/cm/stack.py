@@ -23,12 +23,7 @@ from typing import Any
 import ruyaml
 import yaml
 import yspec.checker
-from cm.adcm_config import (
-    check_config_type,
-    proto_ref,
-    read_bundle_file,
-    type_is_complex,
-)
+from cm.adcm_config import check_config_type, proto_ref, read_bundle_file
 from cm.checker import FormatError, check, round_trip_load
 from cm.errors import raise_adcm_ex
 from cm.logger import logger
@@ -835,7 +830,7 @@ def save_prototype_config(  # noqa: C901
         if "default" in _conf:
             check_config_type(proto, _name, _subname, _conf, _conf["default"], bundle_hash)
 
-        if type_is_complex(_conf["type"]):
+        if _conf["type"] in settings.STACK_COMPLEX_FIELD_TYPES:
             dict_json_to_obj(_conf, "default", stage_prototype_config)
         else:
             dict_to_obj(_conf, "default", stage_prototype_config)

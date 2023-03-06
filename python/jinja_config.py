@@ -1,0 +1,139 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from pathlib import Path
+
+from cm.models import Action, ADCMEntity, PrototypeConfig
+from django.conf import settings
+from jinja2 import Template
+from yaml import load, safe_load
+from yaml.loader import SafeLoader
+
+
+def _get_attr(config: dict) -> dict:
+    attr = {}
+
+    if all(
+        (
+            "activatable" in config["limits"],
+            "active" in config["limits"],
+            config["type"] == "group",
+            config.get("name"),
+        ),
+    ):
+        attr[config["name"]] = config["limits"]
+
+    return attr
+
+
+def _get_limits(config: dict, root_path: str) -> dict:  # noqa: C901
+    # pylint: disable=too-many-branches
+    limits = {}
+
+    if "yspec" in config and config["type"] in settings.STACK_COMPLEX_FIELD_TYPES:
+        limits["yspec"] = config["yspec"]
+
+        with open(file=Path(root_path, config["yspec"]), encoding=settings.ENCODING_UTF_8) as f:
+            data = f.read()
+
+        limits.update(**safe_load(stream=data))
+
+    if "option" in config and config["type"] == "option":
+        limits["option"] = config["option"]
+
+    if "source" in config and config["type"] == "variant":
+        variant_type = config["source"]["type"]
+        source = {"type": variant_type, "args": None}
+
+        if "strict" in config["source"]:
+            source["strict"] = config["source"]["strict"]
+        else:
+            source["strict"] = True
+
+        if variant_type == "inline":
+            source["value"] = config["source"]["value"]
+        elif variant_type in ("config", "builtin"):
+            source["name"] = config["source"]["name"]
+
+        if variant_type == "builtin":
+            if "args" in config["source"]:
+                source["args"] = config["source"]["args"]
+
+        limits["source"] = source
+
+    if "activatable" in config and config["type"] == "group":
+        limits.update(
+            activatable=config["activatable"],
+            active=False,
+        )
+
+        if "active" in config:
+            limits.update(active=config["active"])
+
+    if config["type"] in settings.STACK_NUMERIC_FIELD_TYPES:
+        if "min" in config:
+            limits["min"] = config["min"]
+
+        if "max" in config:
+            limits["max"] = config["max"]
+
+    for label in ("read_only", "writable"):
+        if label in config:
+            limits[label] = config[label]
+
+    return limits
+
+
+def _normalize_config(config: dict, root_path: str, name: str = "", subname: str = "") -> list[dict]:
+    config_list = [config]
+
+    name = name or config["name"]
+    config["name"] = name
+    if subname:
+        config["subname"] = subname
+
+    if config.get("display_name") is None:
+        config["display_name"] = subname or name
+
+    config["limits"] = _get_limits(config=config, root_path=root_path)
+
+    if "subs" in config:
+        for subconf in config["subs"]:
+            config_list.extend(
+                _normalize_config(config=subconf, root_path=root_path, name=name, subname=subconf["name"]),
+            )
+
+    for field in settings.TEMPLATE_CONFIG_DELETE_FIELDS:
+        if field in config:
+            del config[field]
+
+    return config_list
+
+
+def get_jinja_config(action: Action, obj: type[ADCMEntity]) -> tuple[list[PrototypeConfig], dict]:
+    # pylint: disable=import-outside-toplevel, cyclic-import
+    from cm.inventory import get_inventory_data
+
+    inventory_data = get_inventory_data(obj=obj, action=action)
+    jinja_conf_file = Path(settings.BUNDLE_DIR, action.prototype.bundle.hash, action.config_jinja)
+    template = Template(source=jinja_conf_file.read_text(encoding=settings.ENCODING_UTF_8))
+    data_yaml = template.render(inventory_data["all"]["children"]["CLUSTER"]["vars"])
+    data = load(stream=data_yaml, Loader=SafeLoader)
+
+    configs = []
+    attr = {}
+    for config in data:
+        for normalized_config in _normalize_config(config=config, root_path=action.prototype.path):
+            configs.append(PrototypeConfig(prototype=action.prototype, action=action, **normalized_config))
+            attr.update(**_get_attr(config=normalized_config))
+
+    return configs, attr

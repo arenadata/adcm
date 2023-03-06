@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.adcm_config import get_prototype_config, obj_ref, proto_ref
+from cm.adcm_config import get_prototype_config, proto_ref
 from cm.errors import AdcmEx
 from cm.errors import raise_adcm_ex as err
 from cm.hierarchy import Tree
@@ -31,6 +31,7 @@ from cm.models import (
     Prototype,
     PrototypeImport,
 )
+from cm.utils import obj_ref
 
 
 def check_config(obj):  # pylint: disable=too-many-branches # noqa: C901

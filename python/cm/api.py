@@ -16,13 +16,12 @@ import json
 from functools import wraps
 
 from cm.adcm_config import (
-    check_and_process_json_config,
     init_object_config,
-    obj_ref,
-    proto_ref,
+    process_json_config,
     read_bundle_file,
     save_obj_config,
 )
+from cm.adcm_config.utils import proto_ref
 from cm.api_context import CTX
 from cm.errors import raise_adcm_ex
 from cm.issue import (
@@ -54,6 +53,7 @@ from cm.models import (
     TaskLog,
 )
 from cm.status_api import api_request, post_event
+from cm.utils import obj_ref
 from django.core.exceptions import MultipleObjectsReturned
 from django.db import transaction
 from rbac.models import re_apply_object_policy
@@ -548,7 +548,7 @@ def update_obj_config(obj_conf: ObjectConfig, conf: dict, attr: dict, desc: str 
         proto = obj.prototype
 
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
-    new_conf = check_and_process_json_config(
+    new_conf = process_json_config(
         proto=proto,
         obj=group or obj,
         new_config=conf,
@@ -571,7 +571,7 @@ def update_obj_config(obj_conf: ObjectConfig, conf: dict, attr: dict, desc: str 
 
 def set_object_config(obj: ADCMEntity, config: dict) -> ConfigLog:
     old_conf = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-    new_conf = check_and_process_json_config(proto=obj.prototype, obj=obj, new_config=config, new_attr=old_conf.attr)
+    new_conf = process_json_config(proto=obj.prototype, obj=obj, new_config=config, new_attr=old_conf.attr)
 
     with transaction.atomic():
         config_log = save_obj_config(obj_conf=obj.config, conf=new_conf, attr=old_conf.attr, desc="ansible update")
