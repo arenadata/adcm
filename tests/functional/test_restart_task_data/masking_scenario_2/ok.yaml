@@ -1,0 +1,12 @@
+
+
+---
+- hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: sleep
+      pause:
+        seconds: 5
+    - debug:
+        msg: "Everything Allright"
