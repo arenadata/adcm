@@ -13,10 +13,10 @@ import { Directive, EventEmitter, HostListener, Input, Output } from '@angular/c
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { DialogComponent } from '../dialog.component';
 import { IUpgrade } from "./upgrade.component";
-import { concat, Observable, of } from "rxjs";
-import { combineAll, filter, map, switchMap, tap } from "rxjs/operators";
+import { concat, from, Observable, of } from "rxjs";
+import { concatMap, filter, map, switchMap, tap } from "rxjs/operators";
 import { ApiService } from "@app/core/api";
-import { EmmitRow, Entities } from "@app/core/types";
+import { EmmitRow, Entities, License } from "@app/core/types";
 import { BaseDirective } from "../../directives";
 import { UpgradeMasterComponent as component } from "../upgrades/master/master.component";
 import { AddService } from "@app/shared/add-component/add.service";
@@ -115,16 +115,8 @@ export class UpgradesDirective extends BaseDirective {
         dialogModel.data.text = 'The cluster will be prepared for upgrade';
       }
 
-      const observableArray = [];
       if (this.needLicenseAcceptance.length > 0) {
-        this.needLicenseAcceptance.map((o) => {
-          observableArray.push(this.service.acceptServiceLicense(o))
-        })
-
-        of(...observableArray)
-          .pipe(
-            combineAll(),
-          )
+        this.licenseCheckOnUpgrade()
           .subscribe(() => this.dialog.open(DialogComponent, dialogModel));
       } else {
         this.dialog.open(DialogComponent, dialogModel);
@@ -154,16 +146,8 @@ export class UpgradesDirective extends BaseDirective {
                 filter(yes => yes)
               )
               .subscribe(() => {
-                const observableArray = [];
                 if (this.needLicenseAcceptance.length > 0) {
-                  this.needLicenseAcceptance.map((o) => {
-                    observableArray.push(this.service.acceptServiceLicense(o))
-                  })
-
-                  of(...observableArray)
-                    .pipe(
-                      combineAll(),
-                    )
+                  this.licenseCheckOnUpgrade()
                     .subscribe(() => this.dialog.open(DialogComponent, dialogModel));
                 } else {
                   this.dialog.open(DialogComponent, dialogModel);
@@ -199,19 +183,11 @@ export class UpgradesDirective extends BaseDirective {
               switchMap(() => concat(license$, do$))
             )
             .subscribe((row) => {
-              const observableArray = [];
               if (this.needLicenseAcceptance.length > 0) {
-                this.needLicenseAcceptance.map((o) => {
-                  observableArray.push(this.service.acceptServiceLicense(o))
-                })
-
-                of(...observableArray)
-                  .pipe(
-                    combineAll(),
-                  )
-                  .subscribe(() => this.refresh.emit({cmd: 'refresh', row}));
+                this.licenseCheckOnUpgrade()
+                  .subscribe(() => this.refresh.emit({ cmd: 'refresh', row }));
               } else {
-                this.refresh.emit({cmd: 'refresh', row});
+                this.refresh.emit({ cmd: 'refresh', row });
               }
             })
         )
@@ -257,6 +233,38 @@ export class UpgradesDirective extends BaseDirective {
     } else {
       this.prepare();
     }
+  }
+
+  licenseCheckOnUpgrade() {
+    const licenseObj = {};
+    return from(this.needLicenseAcceptance)
+      .pipe(
+        tap((service) => licenseObj[service.prototype_id] = { service_name: service.service_name, license: service.license }),
+        concatMap((service) => this.api.get<License>(`/api/v1/stack/prototype/${service.prototype_id}/license/`).pipe()),
+        concatMap((result) => {
+          const prototype_id = result.accept.substring(
+            result.accept.lastIndexOf("prototype/") + 10,
+            result.accept.indexOf("/license")
+          ) as unknown as number;
+
+          return this.dialog
+            .open(DialogComponent, {
+              data: {
+                title: `Accept license agreement ${licenseObj[prototype_id].service_name}`,
+                text: result.text,
+                closeOnGreenButtonCLick: true,
+                controls: { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] },
+              },
+            })
+            .beforeClosed()
+            .pipe(
+              filter((yes) => yes),
+              switchMap(() => {
+                return this.api.put(`/api/v1/stack/prototype/${prototype_id}/license/accept/`, {}).pipe()
+              })
+            )
+        })
+      );
   }
 
   checkHostComponents() {
