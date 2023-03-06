@@ -40,12 +40,11 @@ def _get_limits(config: dict, root_path: str) -> dict:  # noqa: C901
     limits = {}
 
     if "yspec" in config and config["type"] in settings.STACK_COMPLEX_FIELD_TYPES:
-        limits["yspec"] = config["yspec"]
 
         with open(file=Path(root_path, config["yspec"]), encoding=settings.ENCODING_UTF_8) as f:
             data = f.read()
 
-        limits.update(**safe_load(stream=data))
+        limits["yspec"] = safe_load(stream=data)
 
     if "option" in config and config["type"] == "option":
         limits["option"] = config["option"]
