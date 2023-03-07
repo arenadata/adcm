@@ -14,7 +14,7 @@ import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { DialogComponent } from '../dialog.component';
 import { IUpgrade } from "./upgrade.component";
 import { concat, from, Observable, of } from "rxjs";
-import { concatMap, filter, map, switchMap, tap} from "rxjs/operators";
+import {concatMap, filter, finalize, map, switchMap, tap} from "rxjs/operators";
 import { ApiService } from "@app/core/api";
 import { EmmitRow, Entities, License } from "@app/core/types";
 import { BaseDirective } from "../../directives";
@@ -117,12 +117,7 @@ export class UpgradesDirective extends BaseDirective {
 
       if (this.needLicenseAcceptance.length > 0) {
         this.licenseCheckOnUpgrade()
-          .pipe(
-            tap((licenseAccepted) => {
-              if (licenseAccepted) this.dialog.open(DialogComponent, dialogModel);
-            })
-          )
-          .subscribe();
+          .subscribe(null, (e) => console.log(e), () => this.dialog.open(DialogComponent, dialogModel));
       } else {
         this.dialog.open(DialogComponent, dialogModel);
       }
@@ -153,12 +148,7 @@ export class UpgradesDirective extends BaseDirective {
               .subscribe(() => {
                 if (this.needLicenseAcceptance.length > 0) {
                   this.licenseCheckOnUpgrade()
-                    .pipe(
-                      tap((licenseAccepted) => {
-                        if (licenseAccepted) this.dialog.open(DialogComponent, dialogModel);
-                      })
-                    )
-                    .subscribe();
+                    .subscribe(null, (e) => console.log(e), () => this.dialog.open(DialogComponent, dialogModel))
                 } else {
                   this.dialog.open(DialogComponent, dialogModel);
                 }
@@ -195,12 +185,7 @@ export class UpgradesDirective extends BaseDirective {
             .subscribe((row) => {
               if (this.needLicenseAcceptance.length > 0) {
                 this.licenseCheckOnUpgrade()
-                  .pipe(
-                    tap((licenseAccepted) => {
-                      if (licenseAccepted) this.refresh.emit({ cmd: 'refresh', row });
-                    })
-                  )
-                  .subscribe();
+                  .subscribe(null, (e) => console.log(e), () => this.refresh.emit({ cmd: 'refresh', row }));
               } else {
                 this.refresh.emit({ cmd: 'refresh', row });
               }
@@ -264,7 +249,8 @@ export class UpgradesDirective extends BaseDirective {
             result.accept.indexOf("/license")
           ) as unknown as number;
 
-          if (exit) return of(false);
+          // hack to end the flow if license declined
+          if (exit) throw new Error(`License was declined`);
 
           return this.dialog
             .open(DialogComponent, {
