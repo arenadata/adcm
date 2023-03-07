@@ -14,7 +14,7 @@ import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { DialogComponent } from '../dialog.component';
 import { IUpgrade } from "./upgrade.component";
 import { concat, from, Observable, of } from "rxjs";
-import { concatMap, filter, map, switchMap, tap } from "rxjs/operators";
+import {concatMap, filter, finalize, map, switchMap, tap} from "rxjs/operators";
 import { ApiService } from "@app/core/api";
 import { EmmitRow, Entities, License } from "@app/core/types";
 import { BaseDirective } from "../../directives";
@@ -117,7 +117,8 @@ export class UpgradesDirective extends BaseDirective {
 
       if (this.needLicenseAcceptance.length > 0) {
         this.licenseCheckOnUpgrade()
-          .subscribe(() => this.dialog.open(DialogComponent, dialogModel));
+          .pipe(finalize(() => this.dialog.open(DialogComponent, dialogModel)))
+          .subscribe();
       } else {
         this.dialog.open(DialogComponent, dialogModel);
       }
@@ -148,7 +149,8 @@ export class UpgradesDirective extends BaseDirective {
               .subscribe(() => {
                 if (this.needLicenseAcceptance.length > 0) {
                   this.licenseCheckOnUpgrade()
-                    .subscribe(() => this.dialog.open(DialogComponent, dialogModel));
+                    .pipe(finalize(() => this.dialog.open(DialogComponent, dialogModel)))
+                    .subscribe();
                 } else {
                   this.dialog.open(DialogComponent, dialogModel);
                 }
@@ -185,7 +187,8 @@ export class UpgradesDirective extends BaseDirective {
             .subscribe((row) => {
               if (this.needLicenseAcceptance.length > 0) {
                 this.licenseCheckOnUpgrade()
-                  .subscribe(() => this.refresh.emit({ cmd: 'refresh', row }));
+                  .pipe(finalize(() => this.refresh.emit({ cmd: 'refresh', row })))
+                  .subscribe();
               } else {
                 this.refresh.emit({ cmd: 'refresh', row });
               }
