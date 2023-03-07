@@ -14,7 +14,7 @@ import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { DialogComponent } from '../dialog.component';
 import { IUpgrade } from "./upgrade.component";
 import { concat, from, Observable, of } from "rxjs";
-import {concatMap, filter, finalize, map, switchMap, tap} from "rxjs/operators";
+import { concatMap, filter, map, switchMap, tap} from "rxjs/operators";
 import { ApiService } from "@app/core/api";
 import { EmmitRow, Entities, License } from "@app/core/types";
 import { BaseDirective } from "../../directives";
@@ -117,7 +117,11 @@ export class UpgradesDirective extends BaseDirective {
 
       if (this.needLicenseAcceptance.length > 0) {
         this.licenseCheckOnUpgrade()
-          .pipe(finalize(() => this.dialog.open(DialogComponent, dialogModel)))
+          .pipe(
+            tap((licenseAccepted) => {
+              if (licenseAccepted) this.dialog.open(DialogComponent, dialogModel);
+            })
+          )
           .subscribe();
       } else {
         this.dialog.open(DialogComponent, dialogModel);
@@ -149,7 +153,11 @@ export class UpgradesDirective extends BaseDirective {
               .subscribe(() => {
                 if (this.needLicenseAcceptance.length > 0) {
                   this.licenseCheckOnUpgrade()
-                    .pipe(finalize(() => this.dialog.open(DialogComponent, dialogModel)))
+                    .pipe(
+                      tap((licenseAccepted) => {
+                        if (licenseAccepted) this.dialog.open(DialogComponent, dialogModel);
+                      })
+                    )
                     .subscribe();
                 } else {
                   this.dialog.open(DialogComponent, dialogModel);
@@ -187,7 +195,11 @@ export class UpgradesDirective extends BaseDirective {
             .subscribe((row) => {
               if (this.needLicenseAcceptance.length > 0) {
                 this.licenseCheckOnUpgrade()
-                  .pipe(finalize(() => this.refresh.emit({ cmd: 'refresh', row })))
+                  .pipe(
+                    tap((licenseAccepted) => {
+                      if (licenseAccepted) this.refresh.emit({ cmd: 'refresh', row });
+                    })
+                  )
                   .subscribe();
               } else {
                 this.refresh.emit({ cmd: 'refresh', row });
@@ -240,6 +252,8 @@ export class UpgradesDirective extends BaseDirective {
 
   licenseCheckOnUpgrade() {
     const licenseObj = {};
+    let exit: boolean;
+
     return from(this.needLicenseAcceptance)
       .pipe(
         tap((service) => licenseObj[service.prototype_id] = { service_name: service.service_name, license: service.license }),
@@ -249,6 +263,8 @@ export class UpgradesDirective extends BaseDirective {
             result.accept.lastIndexOf("prototype/") + 10,
             result.accept.indexOf("/license")
           ) as unknown as number;
+
+          if (exit) return of(false);
 
           return this.dialog
             .open(DialogComponent, {
@@ -261,13 +277,14 @@ export class UpgradesDirective extends BaseDirective {
             })
             .beforeClosed()
             .pipe(
+              tap((result) => exit = !result),
               filter((yes) => yes),
               switchMap(() => {
                 return this.api.put(`/api/v1/stack/prototype/${prototype_id}/license/accept/`, {}).pipe()
               })
             )
         })
-      );
+      )
   }
 
   checkHostComponents() {

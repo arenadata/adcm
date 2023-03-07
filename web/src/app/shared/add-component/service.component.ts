@@ -64,7 +64,6 @@ export class ServiceComponent extends BaseFormDirective implements OnInit {
     this.service
       .addServiceInCluster(result)
       .pipe(
-        this.takeUntil(),
         finalize(() => this.dialog.closeAll()))
       .subscribe();
   }
