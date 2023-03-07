@@ -127,12 +127,11 @@ def get_default(  # pylint: disable=too-many-branches  # noqa: C901
     elif conf.type in SECURE_PARAM_TYPES:
         if conf.default:
             value = ansible_encrypt_and_format(conf.default)
-    elif type_is_complex(conf.type):
-        if isinstance(conf.default, str):
-            conf.default = conf.default.replace("'", '"')
+    elif type_is_complex(conf_type=conf.type):
+        try:
             value = json.loads(s=conf.default)
-        else:
-            value = conf.default
+        except json.JSONDecodeError:
+            value = json.loads(s=conf.default.replace("'", '"'))
     elif conf.type == "integer":
         value = int(conf.default)
     elif conf.type == "float":
