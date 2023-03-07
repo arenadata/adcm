@@ -12,6 +12,7 @@
 
 """Cluster List page PageObjects classes"""
 from contextlib import contextmanager
+from typing import Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -30,8 +31,10 @@ from tests.ui_tests.app.page.common.dialogs.create_host_locators import (
 from tests.ui_tests.app.page.common.dialogs.locators import (
     ActionDialog,
     DeleteDialogLocators,
+    ServiceLicenseDialog,
 )
 from tests.ui_tests.app.page.common.dialogs.rename import RenameDialog
+from tests.ui_tests.app.page.common.dialogs.service_license import ServiceLicenseModal
 from tests.ui_tests.app.page.common.host_components.locators import (
     HostComponentsLocators,
 )
@@ -181,6 +184,28 @@ class ClusterListPage(BasePageObject):  # pylint: disable=too-many-public-method
         return RenameDialog.wait_opened(driver=self.driver)
 
     @allure.step("Run upgrade {upgrade_name} for cluster from row")
+    def run_upgrade_with_service_license(self, row: WebElement, upgrade_name: str) -> None:
+        self.find_child(row, self.table.locators.ClusterRow.upgrade).click()
+        self.wait_element_visible(self.table.locators.UpgradePopup.block)
+        self.find_and_click(self.table.locators.UpgradePopup.button(upgrade_name))
+
+    @allure.step("Get service license dialog")
+    def get_service_license_dialog(self) -> ServiceLicenseModal:
+        self.wait_element_visible(ServiceLicenseDialog.block)
+        license_dialog = self.find_element(ServiceLicenseDialog.block)
+        return ServiceLicenseModal(driver=self.driver, element=license_dialog)
+
+    @allure.step("Confirm upgrade")
+    def confirm_upgrade(self) -> None:
+        self.wait_element_visible(ActionDialog.run)
+        self.find_and_click(ActionDialog.run)
+
+    @allure.step("Cancel upgrade")
+    def cancel_upgrade(self) -> None:
+        self.wait_element_visible(ActionDialog.cancel)
+        self.find_and_click(ActionDialog.cancel)
+
+    @allure.step("Do upgrade {upgrade_name} for cluster from row")
     def run_upgrade_in_cluster_row(
         self,
         row: WebElement,
