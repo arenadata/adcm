@@ -12,7 +12,6 @@
 
 """Cluster List page PageObjects classes"""
 from contextlib import contextmanager
-from typing import Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
