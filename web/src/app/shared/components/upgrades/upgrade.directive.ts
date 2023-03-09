@@ -14,7 +14,7 @@ import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { DialogComponent } from '../dialog.component';
 import { IUpgrade } from "./upgrade.component";
 import { concat, from, Observable, of } from "rxjs";
-import {concatMap, filter, finalize, map, switchMap, tap} from "rxjs/operators";
+import {concatMap, filter, map, switchMap, tap } from "rxjs/operators";
 import { ApiService } from "@app/core/api";
 import { EmmitRow, Entities, License } from "@app/core/types";
 import { BaseDirective } from "../../directives";
@@ -237,7 +237,6 @@ export class UpgradesDirective extends BaseDirective {
 
   licenseCheckOnUpgrade() {
     const licenseObj = {};
-    let exit: boolean;
 
     return from(this.needLicenseAcceptance)
       .pipe(
@@ -248,9 +247,6 @@ export class UpgradesDirective extends BaseDirective {
             result.accept.lastIndexOf("prototype/") + 10,
             result.accept.indexOf("/license")
           ) as unknown as number;
-
-          // hack to end the flow if license declined
-          if (exit) throw new Error(`License was declined`);
 
           return this.dialog
             .open(DialogComponent, {
@@ -263,7 +259,9 @@ export class UpgradesDirective extends BaseDirective {
             })
             .beforeClosed()
             .pipe(
-              tap((result) => exit = !result),
+              tap((result) => {
+                if (!result) throw new Error(`License was declined`) // hack to end the flow if license declined
+              }),
               filter((yes) => yes),
               switchMap(() => {
                 return this.api.put(`/api/v1/stack/prototype/${prototype_id}/license/accept/`, {}).pipe()
