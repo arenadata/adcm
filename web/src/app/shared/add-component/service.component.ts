@@ -14,7 +14,7 @@ import { MatSelectionList, MatSelectionListChange } from '@angular/material/list
 import { SelectOption } from '@app/core/types';
 import { Observable } from 'rxjs';
 import { BaseFormDirective } from './base-form.directive';
-import { take } from "rxjs/operators";
+import {finalize} from "rxjs/operators";
 
 @Component({
   selector: 'app-add-service',
@@ -62,8 +62,9 @@ export class ServiceComponent extends BaseFormDirective implements OnInit {
       license_url: a.value.license_url,
     }));
     this.service
-      .addService(result)
-      .pipe(this.takeUntil())
-      .subscribe(() => this.dialog.closeAll());
+      .addServiceInCluster(result)
+      .pipe(
+        finalize(() => this.dialog.closeAll()))
+      .subscribe();
   }
 }
