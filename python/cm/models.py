@@ -20,9 +20,11 @@ import signal
 import time
 from collections.abc import Iterable, Mapping
 from copy import deepcopy
+from datetime import datetime
 from enum import Enum
 from itertools import chain
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from cm.errors import AdcmEx
 from cm.logger import logger
@@ -1574,6 +1576,10 @@ class TaskLog(ADCMModel):
             i += 1
         if i == 10:
             raise AdcmEx("NO_JOBS_RUNNING", "no jobs running")
+
+        self.status = JobStatus.ABORTED
+        self.finish_date = datetime.now(tz=ZoneInfo("UTC"))
+        self.save(update_fields=["status", "finish_date"])
 
         if event_queue:
             event_queue.send_state()

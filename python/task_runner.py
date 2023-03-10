@@ -17,17 +17,18 @@ import signal
 import subprocess
 import sys
 import time
-
-from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
-from django.utils import timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import adcm.init_django  # pylint: disable=unused-import # noqa: F401
+
 from cm.errors import AdcmEx
 from cm.job import finish_task, re_prepare_job
 from cm.logger import logger
 from cm.models import JobLog, JobStatus, LogStorage, TaskLog
 from cm.utils import get_env_with_venv_path
+from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 
 TASK_ID = 0
 
@@ -138,7 +139,7 @@ def run_task(task_id, args=None):  # noqa: C901
 
         task.refresh_from_db()
         re_prepare_job(task, job)
-        job.start_date = timezone.now()
+        job.start_date = datetime.now(tz=ZoneInfo("UTC"))
         job.save()
         res = run_job(task.id, job.id, err_file)
         set_log_body(job)
@@ -154,8 +155,11 @@ def run_task(task_id, args=None):  # noqa: C901
         job.refresh_from_db()
         count += 1
         if res != 0:
-            if job.status != JobStatus.ABORTED:
-                break
+            task.refresh_from_db()
+            if job.status == JobStatus.ABORTED and task.status != JobStatus.ABORTED:
+                continue
+
+            break
 
     if job is not None:
         job.refresh_from_db()
