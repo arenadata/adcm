@@ -16,8 +16,10 @@ import json
 import subprocess
 from collections.abc import Hashable
 from configparser import ConfigParser
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
@@ -84,7 +86,6 @@ from cm.variant import process_variant
 from django.conf import settings
 from django.db import transaction
 from django.db.models import JSONField
-from django.utils import timezone
 from rbac.roles import re_apply_policy_for_jobs
 
 
@@ -704,8 +705,8 @@ def create_task(
         hosts=hosts,
         post_upgrade_hc_map=post_upgrade_hc,
         verbose=verbose,
-        start_date=timezone.now(),
-        finish_date=timezone.now(),
+        start_date=datetime.now(tz=ZoneInfo("UTC")),
+        finish_date=datetime.now(tz=ZoneInfo("UTC")),
         status=JobStatus.CREATED,
         selector=get_selector(obj, action),
     )
@@ -722,8 +723,8 @@ def create_task(
             action=action,
             sub_action=sub_action,
             log_files=action.log_files,
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
+            start_date=datetime.now(tz=ZoneInfo("UTC")),
+            finish_date=datetime.now(tz=ZoneInfo("UTC")),
             status=JobStatus.CREATED,
             selector=get_selector(obj, action),
         )
@@ -965,14 +966,14 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
 
 def set_task_status(task: TaskLog, status: str, event):
     task.status = status
-    task.finish_date = timezone.now()
+    task.finish_date = datetime.now(tz=ZoneInfo("UTC"))
     task.save()
     event.set_task_status(task=task, status=status)
 
 
 def set_job_status(job_id: int, status: str, event, pid: int = 0):
     job_query = JobLog.objects.filter(id=job_id)
-    job_query.update(status=status, pid=pid, finish_date=timezone.now())
+    job_query.update(status=status, pid=pid, finish_date=datetime.now(tz=ZoneInfo("UTC")))
     job = job_query.first()
 
     if status == JobStatus.RUNNING:
