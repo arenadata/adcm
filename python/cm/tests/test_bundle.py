@@ -37,6 +37,7 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 class TestBundle(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
+
         self.files_dir = settings.BASE_DIR / "python" / "cm" / "tests" / "files"
 
     def test_bundle_upload_duplicate_upgrade_fail(self):
@@ -110,6 +111,7 @@ class TestBundle(BaseTestCase):
         )
 
         secretfile_bundle_content = "aaa"
+        secretfile_group_bundle_content = "bbb"
         response: Response = self.client.post(
             path=reverse("config-history", kwargs={"cluster_id": cluster.pk}),
             params={"view": "interface"},
@@ -123,7 +125,7 @@ class TestBundle(BaseTestCase):
                         "password": "aaa",
                         "secrettext": "aaa",
                         "secretmap": {"aaa": "aaa"},
-                        "secretfile": "bbb",
+                        "secretfile": secretfile_group_bundle_content,
                     },
                 },
                 "attr": {},
@@ -140,6 +142,15 @@ class TestBundle(BaseTestCase):
             secret_file_content = f.read()
 
         self.assertEqual(secretfile_bundle_content, secret_file_content)
+
+        response: Response = self.client.get(path=reverse("config-current", kwargs={"cluster_id": cluster.pk}))
+
+        self.assertIn(settings.ANSIBLE_VAULT_HEADER, response.data["config"]["secretfile"])
+        self.assertEqual(ansible_decrypt(msg=response.data["config"]["secretfile"]), secretfile_bundle_content)
+        self.assertEqual(
+            ansible_decrypt(msg=response.data["config"]["group"]["secretfile"]),
+            secretfile_group_bundle_content,
+        )
 
     def test_secretmap(self):
         _, cluster, config_log = self.upload_bundle_create_cluster_config_log(
