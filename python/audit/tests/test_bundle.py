@@ -25,7 +25,11 @@ from django.conf import settings
 from django.urls import reverse
 from rbac.models import User
 from rest_framework.response import Response
-from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
+from rest_framework.status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_401_UNAUTHORIZED,
+    HTTP_403_FORBIDDEN,
+)
 
 from adcm.tests.base import BaseTestCase
 
@@ -309,3 +313,9 @@ class TestBundleAudit(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_log_deleted(log=log, operation_result=AuditLogOperationResult.FAIL)
+
+    def test_get_unauthorized(self):
+        self.client.post(path=reverse("rbac:logout"))
+        response: Response = self.client.get(path=reverse("bundle-detail", kwargs={"bundle_pk": self.bundle.pk}))
+
+        self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
