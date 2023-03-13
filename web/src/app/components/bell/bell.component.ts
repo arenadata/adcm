@@ -174,7 +174,7 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
         this.successCount.next(this.successCount.value + 1);
         this.decRunningCount();
         this.afterCountChanged();
-      } else if (status === 'failed') {
+      } else if (status === 'failed' || status === 'aborted') {
         this.failedCount.next(this.failedCount.value + 1);
         this.decRunningCount();
         this.afterCountChanged();
