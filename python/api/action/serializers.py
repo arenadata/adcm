@@ -146,7 +146,9 @@ class StackActionDetailSerializer(StackActionSerializer):
         configs = []
         attr = {}
         for config in data:
-            for normalized_config in normalize_config(config=config, root_path=action.prototype.path):
+            for normalized_config in normalize_config(
+                config=config, root_path=Path(settings.BUNDLE_DIR, action.prototype.bundle.hash, action.prototype.path)
+            ):
                 configs.append(PrototypeConfig(prototype=action.prototype, action=action, **normalized_config))
                 attr.update(**get_attr(config=normalized_config))
 

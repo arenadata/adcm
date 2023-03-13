@@ -201,7 +201,7 @@ def read_bundle_file(proto: Prototype | StagePrototype, fname: str, bundle_hash:
     file_descriptor = None
 
     if fname[0:2] == "./":
-        path = Path(settings.BUNDLE_DIR, proto.path, fname)
+        path = Path(settings.BUNDLE_DIR, bundle_hash, proto.path, fname)
     else:
         path = Path(settings.BUNDLE_DIR, bundle_hash, fname)
 
