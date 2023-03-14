@@ -254,8 +254,8 @@ describe('Configuration fields service', () => {
     expect(checkValue('', 'integer')).toBeNull();
   });
 
-  it('checkValue("12345678", "option") should return 12345678', () => {
-    expect(checkValue('12345678', 'option')).toBe(12345678);
+  it('checkValue(12345678, "option") should return 12345678', () => {
+    expect(checkValue(12345678, 'option')).toBe(12345678);
   });
 
   it('checkValue("default", "option") should return "default"', () => {
@@ -266,8 +266,8 @@ describe('Configuration fields service', () => {
     expect(checkValue('0 one two', 'option')).toBe('0 one two');
   });
 
-  it('checkValue("0", "option") should return 0', () => {
-    expect(checkValue('0', 'option')).toBe(0);
+  it('checkValue(0, "option") should return 0', () => {
+    expect(checkValue(0, 'option')).toBe(0);
   });
 
   it('checkValue("", "option") should return null', () => {

@@ -326,6 +326,17 @@ export class FieldService {
           if (type === 'structure') return replaceEmptyObjectWithNull(runYspecParse(formData, elementProperties));
           else if (type === 'group') {
             return this.checkValue(runParse(formData as IOutput, elementProperties.name), type);
+          } else if (type === 'option') {
+            const optionValueType = elementProperties?.limits?.option ? typeof Object.values(elementProperties?.limits?.option)[0] : typeof elementProperties?.default;
+            let optionTypeParam: TNForm;
+
+            if (optionValueType === 'number') {
+              optionTypeParam = Number.isInteger(formData) ? 'integer' : 'float';
+            } else {
+              optionTypeParam = optionValueType as TNForm;
+            }
+
+            return this.checkValue(formData, optionTypeParam);
           }
           else {
             return this.checkValue(formData, type);
@@ -374,10 +385,9 @@ export class FieldService {
     }
 
     if (typeof value === 'boolean') return value;
+    else if (typeof value === 'string' && type === 'boolean') return value === 'true';
     else if (typeof value === 'string')
       switch (type) {
-        case 'option':
-          return !isNaN(+value) ? parseInt(value, 10) : value;
         case 'integer':
         case 'int':
           return parseInt(value, 10);
