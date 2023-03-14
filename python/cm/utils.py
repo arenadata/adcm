@@ -60,7 +60,7 @@ def get_attr(config: dict) -> dict:
     return attr
 
 
-def _get_limits(config: dict, root_path: str) -> dict:  # noqa: C901
+def _get_limits(config: dict, root_path: str | Path) -> dict:  # noqa: C901
     # pylint: disable=too-many-branches
     limits = {}
 
@@ -116,7 +116,7 @@ def _get_limits(config: dict, root_path: str) -> dict:  # noqa: C901
     return limits
 
 
-def normalize_config(config: dict, root_path: str, name: str = "", subname: str = "") -> list[dict]:
+def normalize_config(config: dict, root_path: str | Path, name: str = "", subname: str = "") -> list[dict]:
     config_list = [config]
 
     name = name or config["name"]

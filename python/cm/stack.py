@@ -183,7 +183,7 @@ def get_config_files(path: Path) -> list[tuple[Path, Path]]:
 
     for item in path.rglob("*"):
         if item.is_file() and item.name in {"config.yaml", "config.yml"}:
-            conf_list.append((item.parent, item))
+            conf_list.append((item.relative_to(path).parent, item))
 
     if not conf_list:
         raise_adcm_ex(code="STACK_LOAD_ERROR", msg=f'no config files in stack directory "{path}"')
