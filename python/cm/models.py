@@ -1312,36 +1312,37 @@ class Action(AbstractAction):
 
         return state_allowed and multi_state_allowed
 
-    def get_start_impossible_reason(self, obj: ADCMEntity) -> None:  # noqa: C901
-        # pylint: disable=too-many-branches
+    def get_start_impossible_reason(self, obj: ADCMEntity) -> str | None:  # noqa: C901
+        # pylint: disable=too-many-branches, too-many-return-statements
 
-        start_impossible_reason = None
         if obj.prototype.type == "adcm":
             current_configlog = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
             if not current_configlog.attr["ldap_integration"]["active"]:
-                start_impossible_reason = NO_LDAP_SETTINGS
+                return NO_LDAP_SETTINGS
 
         if obj.prototype.type == "cluster":
             if (
                 not self.allow_in_maintenance_mode
                 and Host.objects.filter(cluster=obj, maintenance_mode=MaintenanceMode.ON).exists()
             ):
-                start_impossible_reason = MANY_HOSTS_IN_MM
+                return MANY_HOSTS_IN_MM
+
         elif obj.prototype.type == "service":
             if not self.allow_in_maintenance_mode:
                 if obj.maintenance_mode == MaintenanceMode.ON:
-                    start_impossible_reason = SERVICE_IN_MM
+                    return SERVICE_IN_MM
 
                 if HostComponent.objects.filter(
                     service=obj,
                     cluster=obj.cluster,
                     host__maintenance_mode=MaintenanceMode.ON,
                 ).exists():
-                    start_impossible_reason = MANY_HOSTS_IN_MM
+                    return MANY_HOSTS_IN_MM
+
         elif obj.prototype.type == "component":
             if not self.allow_in_maintenance_mode:
                 if obj.maintenance_mode == MaintenanceMode.ON:
-                    start_impossible_reason = COMPONENT_IN_MM
+                    return COMPONENT_IN_MM
 
                 if HostComponent.objects.filter(
                     component=obj,
@@ -1349,22 +1350,16 @@ class Action(AbstractAction):
                     service=obj.service,
                     host__maintenance_mode=MaintenanceMode.ON,
                 ).exists():
-                    start_impossible_reason = MANY_HOSTS_IN_MM
+                    return MANY_HOSTS_IN_MM
+
         elif obj.prototype.type == "host":
+            obj: Host
+
             if not self.allow_in_maintenance_mode:
                 if obj.maintenance_mode == MaintenanceMode.ON:
-                    start_impossible_reason = HOST_IN_MM
+                    return HOST_IN_MM
 
-                if (
-                    self.host_action
-                    and HostComponent.objects.filter(
-                        component_id__in=HostComponent.objects.filter(host=obj).values_list("component_id"),
-                        host__maintenance_mode=MaintenanceMode.ON,
-                    ).exists()
-                ):
-                    start_impossible_reason = MANY_HOSTS_IN_MM
-
-        return start_impossible_reason
+        return None
 
 
 class AbstractSubAction(ADCMModel):
