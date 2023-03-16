@@ -267,7 +267,7 @@ class CustomLDAPBackend(LDAPBackend):
                 raise RuntimeError(err_msg)
 
             for ldap_group_name in ldap_group_names:
-                group, _ = Group.objects.get_or_create(name=ldap_group_name, type=OriginType.LDAP)
+                group, _ = Group.objects.get_or_create(display_name=ldap_group_name, type=OriginType.LDAP)
                 group.user_set.add(user)
             return
 
