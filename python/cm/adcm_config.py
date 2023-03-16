@@ -38,8 +38,6 @@ from cm.models import (
 from cm.variant import get_variant, process_variant
 from django.conf import settings
 
-SECURE_PARAM_TYPES = ("password", "secrettext")
-
 
 def proto_ref(prototype: StagePrototype | Prototype) -> str:
     return f'{prototype.type} "{prototype.name}" {prototype.version}'
@@ -124,7 +122,7 @@ def get_default(  # pylint: disable=too-many-branches  # noqa: C901
         value = conf.default
     elif conf.type == "text":
         value = conf.default
-    elif conf.type in SECURE_PARAM_TYPES:
+    elif conf.type in {"password", "secrettext"}:
         if conf.default:
             value = ansible_encrypt_and_format(conf.default)
     elif type_is_complex(conf_type=conf.type):
@@ -179,6 +177,7 @@ def get_default(  # pylint: disable=too-many-branches  # noqa: C901
 
     if conf.type == "secretmap" and conf.default:
         new_value = {}
+
         for conf_key, conf_value in value.items():
             new_value[conf_key] = ansible_encrypt_and_format(conf_value)
 
@@ -458,7 +457,6 @@ def process_file_type(obj: Any, spec: dict, conf: dict):  # noqa: C901
                     value = None
 
                 save_file_type(obj, key, "", value)
-                conf[key] = value
         elif conf[key]:
             for subkey in conf[key]:
                 if spec[key][subkey]["type"] == "file":
@@ -478,7 +476,6 @@ def process_file_type(obj: Any, spec: dict, conf: dict):  # noqa: C901
                         value = None
 
                     save_file_type(obj, key, subkey, value)
-                    conf[key][subkey] = value
 
 
 def ansible_decrypt(msg):
@@ -504,7 +501,7 @@ def is_ansible_encrypted(msg):
 def process_secret_params(spec, conf):  # noqa: C901
     for key in conf:  # pylint: disable=too-many-nested-blocks
         if "type" in spec[key]:
-            if spec[key]["type"] in SECURE_PARAM_TYPES and conf[key]:
+            if spec[key]["type"] in {"password", "secrettext", "secretfile"} and conf[key]:
                 if conf[key].startswith(settings.ANSIBLE_VAULT_HEADER):
                     try:
                         ansible_decrypt(msg=conf[key])
@@ -517,7 +514,7 @@ def process_secret_params(spec, conf):  # noqa: C901
                     conf[key] = ansible_encrypt_and_format(msg=conf[key])
         else:
             for subkey in conf[key]:
-                if spec[key][subkey]["type"] in SECURE_PARAM_TYPES and conf[key][subkey]:
+                if spec[key][subkey]["type"] in {"password", "secrettext", "secretfile"} and conf[key][subkey]:
                     if conf[key][subkey].startswith(settings.ANSIBLE_VAULT_HEADER):
                         try:
                             ansible_decrypt(msg=conf[key][subkey])
@@ -576,7 +573,7 @@ def process_config(  # pylint: disable=too-many-branches # noqa: C901
                 if spec[key]["type"] in {"file", "secretfile"}:
                     conf[key] = cook_file_type_name(obj, key, "")
 
-                elif spec[key]["type"] in SECURE_PARAM_TYPES:
+                elif spec[key]["type"] in {"password", "secrettext"}:
                     if settings.ANSIBLE_VAULT_HEADER in conf[key]:
                         conf[key] = {"__ansible_vault": conf[key]}
 
@@ -590,7 +587,7 @@ def process_config(  # pylint: disable=too-many-branches # noqa: C901
                     if spec[key][subkey]["type"] in {"file", "secretfile"}:
                         conf[key][subkey] = cook_file_type_name(obj, key, subkey)
 
-                    elif spec[key][subkey]["type"] in SECURE_PARAM_TYPES:
+                    elif spec[key][subkey]["type"] in {"password", "secrettext"}:
                         if settings.ANSIBLE_VAULT_HEADER in conf[key][subkey]:
                             conf[key][subkey] = {"__ansible_vault": conf[key][subkey]}
 
