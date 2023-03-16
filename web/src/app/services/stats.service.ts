@@ -8,6 +8,7 @@ export interface Stats {
   failed: number;
   success: number;
   running: number;
+  aborted: number;
 }
 
 @Injectable({
