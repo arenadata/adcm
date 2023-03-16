@@ -100,7 +100,7 @@ class TestBundle(BaseTestCase):
 
         new_config_log = ConfigLog.objects.filter(obj_ref=cluster.config).order_by("pk").last()
 
-        self.assertEqual(new_content, new_config_log.config["secretfile"])
+        self.assertEqual(new_content, ansible_decrypt(msg=new_config_log.config["secretfile"]))
 
     def test_secretfile_update_config(self):
         _, cluster, _ = self.upload_bundle_create_cluster_config_log(
