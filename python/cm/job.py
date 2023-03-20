@@ -934,7 +934,7 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
         "stdout_callback": "yaml",
         "callback_whitelist": "profile_tasks",
     }
-    adcm_object = ADCM.objects.get(id=1)
+    adcm_object = ADCM.objects.first()
     config_log = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
     adcm_conf = config_log.config
     mitogen = adcm_conf["ansible_settings"]["mitogen"]

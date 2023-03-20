@@ -12,6 +12,7 @@
 
 import json
 import os
+from collections.abc import Mapping
 from pathlib import Path
 from secrets import token_hex
 from typing import Any
@@ -149,3 +150,22 @@ def get_env_with_venv_path(venv: str, existing_env: dict | None = None) -> dict:
     existing_env["PATH"] = f"/adcm/venv/{venv}/bin:{existing_env['PATH']}"
 
     return existing_env
+
+
+def deep_merge(origin: dict, renovator: Mapping) -> dict:
+    """
+    Merge renovator into origin
+
+    >>> o = {'a': 1, 'b': {'c': 1, 'd': 1}}
+    >>> r = {'a': 1, 'b': {'c': 2 }}
+    >>> deep_merge(o, r) == {'a': 1, 'b': {'c': 2, 'd': 1}}
+    """
+
+    for key, value in renovator.items():
+        if isinstance(value, Mapping):
+            node = origin.setdefault(key, {})
+            deep_merge(node, value)
+        else:
+            origin[key] = value
+
+    return origin
