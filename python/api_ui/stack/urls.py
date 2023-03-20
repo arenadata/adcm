@@ -10,11 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_ui import views
-from django.urls import include, path
+from api_ui.stack.root import StackUIRoot
+from api_ui.stack.views import ClusterPrototypeUIViewSet, ProviderPrototypeUIViewSet
+from django.urls import path
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register("cluster", ClusterPrototypeUIViewSet, basename="cluster")
+router.register("provider", ProviderPrototypeUIViewSet, basename="provider")
 
 urlpatterns = [
-    path("", views.APIRoot.as_view()),
-    path("rbac/", include(("rbac.urls_ui", "rbac"), namespace="rbac-ui")),
-    path("stack/", include(("api_ui.stack.urls", "api_ui"), namespace="stack-ui")),
+    path("", StackUIRoot.as_view(), name="root"),
+    *router.urls,
 ]

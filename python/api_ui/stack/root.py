@@ -10,11 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_ui import views
-from django.urls import include, path
+from rest_framework.permissions import AllowAny
+from rest_framework.routers import APIRootView
 
-urlpatterns = [
-    path("", views.APIRoot.as_view()),
-    path("rbac/", include(("rbac.urls_ui", "rbac"), namespace="rbac-ui")),
-    path("stack/", include(("api_ui.stack.urls", "api_ui"), namespace="stack-ui")),
-]
+
+class StackUIRoot(APIRootView):
+    permission_classes = (AllowAny,)
+    api_root_dict = {
+        "cluster": "cluster-list",
+        "provider": "provider-list",
+    }
