@@ -28,6 +28,7 @@ from zoneinfo import ZoneInfo
 
 from cm.errors import AdcmEx
 from cm.logger import logger
+from cm.utils import deep_merge
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -288,24 +289,6 @@ class ObjectConfig(ADCMModel):
                 obj = getattr(self, object_type)
                 return obj
         return None
-
-
-def deep_merge(origin: dict, renovator: Mapping):
-    """
-    Merge renovator into origin
-
-    >>> o = {'a': 1, 'b': {'c': 1, 'd': 1}}
-    >>> r = {'a': 1, 'b': {'c': 2 }}
-    >>> deep_merge(o, r) == {'a': 1, 'b': {'c': 2, 'd': 1}}
-    """
-
-    for key, value in renovator.items():
-        if isinstance(value, Mapping):
-            node = origin.setdefault(key, {})
-            deep_merge(node, value)
-        else:
-            origin[key] = value
-    return origin
 
 
 class ConfigLog(ADCMModel):

@@ -34,6 +34,7 @@ from cm.models import (
     ServiceComponent,
     get_object_cluster,
 )
+from cm.utils import deep_merge
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 
@@ -255,7 +256,7 @@ def get_provider_config(provider_id) -> dict:
     return {"provider": get_provider_variables(provider)}
 
 
-def get_host_groups(  # noqa: C901
+def get_host_groups(  # noqa: C901  # pylint: disable=too-many-branches
     cluster: Cluster,
     delta: dict | None = None,
     action_host: Host | None = None,
@@ -264,6 +265,7 @@ def get_host_groups(  # noqa: C901
         delta = {}
 
     groups = {}
+    extra_remove_mm_hosts = {}
     host_components = HostComponent.objects.filter(cluster=cluster)
     for hostcomponent in host_components:
         if action_host and hostcomponent.host.id not in action_host:
@@ -271,14 +273,23 @@ def get_host_groups(  # noqa: C901
 
         key_object_pairs = (
             (
+                "service.component",
                 f"{hostcomponent.service.prototype.name}.{hostcomponent.component.prototype.name}",
                 hostcomponent.component,
             ),
-            (f"{hostcomponent.service.prototype.name}", hostcomponent.service),
+            ("service", f"{hostcomponent.service.prototype.name}", hostcomponent.service),
         )
 
-        for key, adcm_object in key_object_pairs:
+        for key_type, key, adcm_object in key_object_pairs:
             if hostcomponent.host.maintenance_mode == MaintenanceMode.ON:
+                if key_type == "service.component":
+                    deep_merge(
+                        origin=extra_remove_mm_hosts,
+                        renovator={
+                            f"{key}.remove": {"hosts": {hostcomponent.host.fqdn: get_obj_config(hostcomponent.host)}}
+                        },
+                    )
+
                 key = f"{key}.{MAINTENANCE_MODE}"
 
             if key not in groups:
@@ -297,6 +308,9 @@ def get_host_groups(  # noqa: C901
                 host = delta[htype][key][fqdn]
                 if host.maintenance_mode != MaintenanceMode.ON:
                     groups[lkey]["hosts"][host.fqdn] = get_obj_config(host)
+
+    if extra_remove_mm_hosts:
+        groups = deep_merge(origin=groups, renovator=extra_remove_mm_hosts)
 
     return groups
 
