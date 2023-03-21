@@ -219,6 +219,56 @@ def test_mm_flag_on_service_and_components(cluster_with_service_component_mm, sd
     )
 
 
+def test_host_hc_acl_mm_inventory(sdk_client_fs, api_client, adcm_fs, cluster_with_mm: Cluster, hosts):
+    """Test to check inventory for host with hc_acl and mm"""
+    with allure.step("Create cluster and hosts"):
+        hosts_in_cluster = hosts[:4]
+        service = get_or_add_service(cluster_with_mm, HC_ACL_SERVICE_NAME)
+        first_component = service.component(name=FIRST_COMPONENT)
+        second_component = service.component(name=SECOND_COMPONENT)
+
+    with allure.step("Add hosts to cluster and set hostcomponent"):
+        for host in hosts_in_cluster:
+            cluster_with_mm.host_add(host)
+        cluster_with_mm.hostcomponent_set(
+            *[(host, first_component) for host in hosts_in_cluster],
+            *[(host, second_component) for host in hosts_in_cluster[:2]],
+        )
+
+    with allure.step("Turn mm ON on host"):
+        for host in hosts_in_cluster:
+            turn_mm_on(api_client, host)
+
+    with allure.step("Run shrink action and check inventory"):
+        inventory = run_action_and_get_inventory(
+            service.action(name="shrink"),
+            adcm_fs,
+            hc=build_hc_for_hc_acl_action(cluster_with_mm, remove=[(second_component, host)]),  # host-3
+        )
+
+        check_mm_flag_in_inventory(
+            client=sdk_client_fs,
+            inventory=inventory,
+            expect_on=(second_component,),
+        )
+
+        check_remove_groups(inventory, component_name=FIRST_COMPONENT, hosts={host.fqdn for host in hosts_in_cluster})
+        check_remove_groups(inventory, component_name=SECOND_COMPONENT, hosts={"test-host-0", "test-host-1"})
+
+
+def check_remove_groups(inventory, component_name: str, hosts: set[str]):
+    """Check one group with "remove" suffix"""
+    children = inventory["all"]["children"]
+    remove_nodes = [(k, v) for k, v in children.items() if "remove" in k]
+    if not remove_nodes:
+        raise AssertionError('At least on node with "remove" suffix should be presented in inventory')
+
+    for node in remove_nodes:
+        if component_name in node[0]:
+            actual_hosts = set(node[1]["hosts"].keys())
+            sets_are_equal(actual_hosts, hosts, f'"remove" node is incorrect for component {node[0]}')
+
+
 def run_action_and_get_inventory(action: Action, adcm: ADCM, **run_kwargs) -> dict:
     """Run action and get inventory file contents from container"""
     with allure.step(f"Run action {action.name}"):
