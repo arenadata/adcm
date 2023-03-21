@@ -24,7 +24,7 @@ from cm.tests.utils import (
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED, HTTP_409_CONFLICT
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
 
 from adcm.tests.base import BaseTestCase
 
@@ -145,7 +145,7 @@ class ActionAllowTest(BaseTestCase):
         self.files_dir = settings.BASE_DIR / "python" / "cm" / "tests" / "files"
 
         _, self.cluster, _ = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(self.files_dir, "cluster_test_host_actions_mm.tar")
+            bundle_path=Path(self.files_dir, "cluster_test_host_actions_mm.tar"), cluster_name="test-cluster-1"
         )
         service = add_service_to_cluster(
             cluster=self.cluster,
@@ -186,6 +186,15 @@ class ActionAllowTest(BaseTestCase):
         self.host_action_comp2_disallowed_in_mm = Action.objects.get(
             prototype=component_2.prototype, name="s1_c2_action_disallowed_in_mm", allow_in_maintenance_mode=False
         )
+
+        _, self.cluster_2, _ = self.upload_bundle_create_cluster_config_log(
+            bundle_path=Path(self.files_dir, "cluster_with_various_actions.tar"), cluster_name="test-cluster-2"
+        )
+        self.service_2_robot = add_service_to_cluster(
+            cluster=self.cluster_2,
+            proto=Prototype.objects.get(name="robot", type="service"),
+        )
+        self.component_wheel_of_robot = ServiceComponent.objects.get(cluster=self.cluster_2, prototype__name="wheel")
 
     def test_variants(self):
         bundle = gen_bundle()
@@ -300,3 +309,101 @@ class ActionAllowTest(BaseTestCase):
             )
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_component_mm_affects_service_actions_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                "object-action",
+                kwargs={
+                    "cluster_id": self.cluster_2.pk,
+                    "service_id": self.service_2_robot.pk,
+                    "object_type": "service",
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertTrue(all(action["start_impossible_reason"] is None for action in response.json()))
+
+        self.component_wheel_of_robot.maintenance_mode = MaintenanceMode.ON
+        self.component_wheel_of_robot.save()
+
+        response: Response = self.client.get(
+            path=reverse(
+                "object-action",
+                kwargs={
+                    "cluster_id": self.cluster_2.pk,
+                    "service_id": self.service_2_robot.pk,
+                    "object_type": "service",
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        disallowed_in_mm_action = [
+            action for action in response.json() if action["name"] == "regular_action_disallowed"
+        ][0]
+        self.assertIsNotNone(disallowed_in_mm_action["start_impossible_reason"])
+
+    def test_component_mm_affects_cluster_actions_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                "object-action",
+                kwargs={
+                    "cluster_id": self.cluster_2.pk,
+                    "object_type": "cluster",
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertTrue(all(action["start_impossible_reason"] is None for action in response.json()))
+
+        self.component_wheel_of_robot.maintenance_mode = MaintenanceMode.ON
+        self.component_wheel_of_robot.save()
+
+        response: Response = self.client.get(
+            path=reverse(
+                "object-action",
+                kwargs={
+                    "cluster_id": self.cluster_2.pk,
+                    "object_type": "cluster",
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertIsNotNone(
+            [action for action in response.json() if action["name"] == "regular_action_disallowed"][0][
+                "start_impossible_reason"
+            ]
+        )
+
+    def test_service_mm_affects_cluster_actions_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                "object-action",
+                kwargs={
+                    "cluster_id": self.cluster_2.pk,
+                    "object_type": "cluster",
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertTrue(all(action["start_impossible_reason"] is None for action in response.json()))
+
+        self.service_2_robot.maintenance_mode = MaintenanceMode.ON
+        self.service_2_robot.save()
+
+        response: Response = self.client.get(
+            path=reverse(
+                "object-action",
+                kwargs={
+                    "cluster_id": self.cluster_2.pk,
+                    "object_type": "cluster",
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertIsNotNone(
+            [action for action in response.json() if action["name"] == "regular_action_disallowed"][0][
+                "start_impossible_reason"
+            ]
+        )

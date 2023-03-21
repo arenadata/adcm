@@ -1299,21 +1299,42 @@ class Action(AbstractAction):
         # pylint: disable=too-many-branches, too-many-return-statements
 
         if obj.prototype.type == "adcm":
+            obj: ADCM
+
             current_configlog = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
             if not current_configlog.attr["ldap_integration"]["active"]:
                 return NO_LDAP_SETTINGS
 
         if obj.prototype.type == "cluster":
-            if (
-                not self.allow_in_maintenance_mode
-                and Host.objects.filter(cluster=obj, maintenance_mode=MaintenanceMode.ON).exists()
-            ):
-                return MANY_HOSTS_IN_MM
+            obj: Cluster
+
+            if not self.allow_in_maintenance_mode:
+                if Host.objects.filter(cluster=obj, maintenance_mode=MaintenanceMode.ON).exists():
+                    return MANY_HOSTS_IN_MM
+
+                related_services = ClusterObject.objects.filter(cluster=obj)
+
+                if any(service.maintenance_mode == MaintenanceMode.ON for service in related_services):
+                    return SERVICE_IN_MM
+
+                if any(
+                    component.maintenance_mode == MaintenanceMode.ON
+                    for component in ServiceComponent.objects.filter(service__in=related_services)
+                ):
+                    return COMPONENT_IN_MM
 
         elif obj.prototype.type == "service":
+            obj: ClusterObject
+
             if not self.allow_in_maintenance_mode:
                 if obj.maintenance_mode == MaintenanceMode.ON:
                     return SERVICE_IN_MM
+
+                if any(
+                    component.maintenance_mode == MaintenanceMode.ON
+                    for component in ServiceComponent.objects.filter(service=obj)
+                ):
+                    return COMPONENT_IN_MM
 
                 if HostComponent.objects.filter(
                     service=obj,
@@ -1323,6 +1344,8 @@ class Action(AbstractAction):
                     return MANY_HOSTS_IN_MM
 
         elif obj.prototype.type == "component":
+            obj: ServiceComponent
+
             if not self.allow_in_maintenance_mode:
                 if obj.maintenance_mode == MaintenanceMode.ON:
                     return COMPONENT_IN_MM
