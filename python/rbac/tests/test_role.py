@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import hashlib
 import json
 
 from api.utils import PermissionDenied, check_custom_perm
@@ -28,6 +29,7 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.test import Client
@@ -480,41 +482,49 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         self.check_permission()
 
     def check_permission(self):
+        cluster_action_name = hashlib.sha256("cluster_action".encode(settings.ENCODING_UTF_8)).hexdigest()
+        service_1_action_name = hashlib.sha256("service_1_action".encode(settings.ENCODING_UTF_8)).hexdigest()
+        service_2_action_name = hashlib.sha256("service_2_action".encode(settings.ENCODING_UTF_8)).hexdigest()
+        component_1_1_action_name = hashlib.sha256("component_1_1_action".encode(settings.ENCODING_UTF_8)).hexdigest()
+        component_2_1_action_name = hashlib.sha256("component_2_1_action".encode(settings.ENCODING_UTF_8)).hexdigest()
+        component_1_2_action_name = hashlib.sha256("component_1_2_action".encode(settings.ENCODING_UTF_8)).hexdigest()
+        component_2_2_action_name = hashlib.sha256("component_2_2_action".encode(settings.ENCODING_UTF_8)).hexdigest()
+
         permissions = [
             {
                 "content_type": ContentType.objects.get_for_model(Cluster),
-                "codename": "run_action_Cluster Action",
-                "name": "Can run Cluster Action actions",
+                "codename": f"run_action_{cluster_action_name}",
+                "name": f"Can run {cluster_action_name} actions",
             },
             {
                 "content_type": ContentType.objects.get_for_model(ClusterObject),
-                "codename": "run_action_Service 1 Action",
-                "name": "Can run Service 1 Action actions",
+                "codename": f"run_action_{service_1_action_name}",
+                "name": f"Can run {service_1_action_name} actions",
             },
             {
                 "content_type": ContentType.objects.get_for_model(ClusterObject),
-                "codename": "run_action_Service 2 Action",
-                "name": "Can run Service 2 Action actions",
+                "codename": f"run_action_{service_2_action_name}",
+                "name": f"Can run {service_2_action_name} actions",
             },
             {
                 "content_type": ContentType.objects.get_for_model(ServiceComponent),
-                "codename": "run_action_Component 1 from Service 1 Action",
-                "name": "Can run Component 1 from Service 1 Action actions",
+                "codename": f"run_action_{component_1_1_action_name}",
+                "name": f"Can run {component_1_1_action_name} actions",
             },
             {
                 "content_type": ContentType.objects.get_for_model(ServiceComponent),
-                "codename": "run_action_Component 2 from Service 1 Action",
-                "name": "Can run Component 2 from Service 1 Action actions",
+                "codename": f"run_action_{component_2_1_action_name}",
+                "name": f"Can run {component_2_1_action_name} actions",
             },
             {
                 "content_type": ContentType.objects.get_for_model(ServiceComponent),
-                "codename": "run_action_Component 1 from Service 2 Action",
-                "name": "Can run Component 1 from Service 2 Action actions",
+                "codename": f"run_action_{component_1_2_action_name}",
+                "name": f"Can run {component_1_2_action_name} actions",
             },
             {
                 "content_type": ContentType.objects.get_for_model(ServiceComponent),
-                "codename": "run_action_Component 2 from Service 2 Action",
-                "name": "Can run Component 2 from Service 2 Action actions",
+                "codename": f"run_action_{component_2_2_action_name}",
+                "name": f"Can run {component_2_2_action_name} actions",
             },
         ]
         for permission_data in permissions:
