@@ -12,7 +12,7 @@
 import { AfterViewChecked, ChangeDetectorRef, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { IActionParameter, isNumber } from '@app/core/types';
-import { CompTile, Tile } from '../types';
+import { CompTile, HostTile, Tile } from '../types';
 import { StatusType } from "@app/components/maintenance-mode-button/maintenance-mode-button.component";
 
 @Component({
@@ -29,6 +29,7 @@ export class Much2ManyComponent implements AfterViewChecked {
   @Input() model: Tile;
   @Input() form: FormGroup;
   @Input() actionParameters: IActionParameter[];
+  @Input() selectedComponent: CompTile;
 
   constructor(private cdRef : ChangeDetectorRef) {}
 
@@ -42,7 +43,7 @@ export class Much2ManyComponent implements AfterViewChecked {
   }
 
   isHostDisabled() {
-    return this.model?.mm === this.statusType.On;
+    return this.model?.mm === this.statusType.On && !this.hasHcRelations(this.model)
   }
 
   isError() {
@@ -96,5 +97,13 @@ export class Much2ManyComponent implements AfterViewChecked {
     }
 
     return null;
+  }
+
+  hasHcRelations(host: HostTile): boolean {
+    if (!this.selectedComponent) return false;
+    if (host?.relations.length === 0 && this.selectedComponent?.actions.includes('add')) return true;
+    if (host?.relations.length === 0) return false;
+
+    return !!host?.relations.some((relation) => relation.id === this.selectedComponent.id && this.selectedComponent?.actions.includes('remove'));
   }
 }

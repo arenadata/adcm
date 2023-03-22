@@ -80,6 +80,10 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
     this.sourceMap.set('compo', v);
   }
 
+  get selectedComponent() {
+    return this.Components.find((component) => component.isSelected);
+  }
+
   constructor(public service: TakeService, private channel: ChannelService, socket: Store<SocketState>, private api: ApiService) {
     super(socket);
   }
