@@ -664,7 +664,6 @@ def save_action(proto: StagePrototype, config: dict, bundle_hash: str, action_na
         action.script = config["script"]
         action.script_type = config["script_type"]
 
-    dict_to_obj(dictionary=config, key="display_name", obj=action)
     dict_to_obj(dictionary=config, key="description", obj=action)
     dict_to_obj(dictionary=config, key="allow_to_terminate", obj=action)
     dict_to_obj(dictionary=config, key="partial_execution", obj=action)
@@ -676,7 +675,11 @@ def save_action(proto: StagePrototype, config: dict, bundle_hash: str, action_na
     dict_to_obj(dictionary=config, key="allow_in_maintenance_mode", obj=action)
     dict_to_obj(dictionary=config, key="config_jinja", obj=action)
 
-    fix_display_name(conf=config, obj=action)
+    if "display_name" in config:
+        dict_to_obj(dictionary=config, key="display_name", obj=action)
+    else:
+        action.display_name = action_name
+
     check_action_hc(proto=proto, conf=config)
 
     dict_to_obj(dictionary=config, key="hc_acl", obj=action, obj_key="hostcomponentmap")
