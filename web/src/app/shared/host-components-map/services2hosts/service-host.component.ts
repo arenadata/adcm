@@ -193,12 +193,12 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   }
 
   init(raw: IRawHosComponent) {
-    if (raw.host) this.Hosts = raw.host.map((h) => new HostTile(h));
+    if (raw?.host) this.Hosts = raw.host.map((h) => new HostTile(h));
 
-    if (raw.component)
+    if (raw?.component)
       this.Components = [...this.Components, ...this.service.fillComponent(raw.component, this.actionParameters)];
 
-    if (raw.hc) {
+    if (raw?.hc) {
       this.initFlag = false;
       this.statePost.update(raw.hc);
       this.loadPost.update(raw.hc);
