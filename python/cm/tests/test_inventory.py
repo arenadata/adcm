@@ -16,6 +16,8 @@ from unittest.mock import Mock, patch
 
 from cm.api import add_hc, add_service_to_cluster, update_obj_config
 from cm.inventory import (
+    MAINTENANCE_MODE,
+    HcAclAction,
     get_cluster_config,
     get_cluster_hosts,
     get_host,
@@ -452,52 +454,56 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
             cluster=self.cluster_hc_acl, prototype__name="component_2"
         )
 
-        self.hc_permanent = [
-            {
-                "host_id": self.host_hc_acl_1.pk,
-                "service_id": self.service_hc_acl.pk,
-                "component_id": self.component_hc_acl_1.pk,
-            },
-            {
-                "host_id": self.host_hc_acl_1.pk,
-                "service_id": self.service_hc_acl.pk,
-                "component_id": self.component_hc_acl_2.pk,
-            },
-            {
-                "host_id": self.host_hc_acl_2.pk,
-                "service_id": self.service_hc_acl.pk,
-                "component_id": self.component_hc_acl_2.pk,
-            },
-            {
-                "host_id": self.host_hc_acl_3.pk,
-                "service_id": self.service_hc_acl.pk,
-                "component_id": self.component_hc_acl_1.pk,
-            },
-        ]
-        self.hc_to_remove = {
+        self.hc_c1_h1 = {
+            "host_id": self.host_hc_acl_1.pk,
+            "service_id": self.service_hc_acl.pk,
+            "component_id": self.component_hc_acl_1.pk,
+        }
+        self.hc_c1_h2 = {
             "host_id": self.host_hc_acl_2.pk,
             "service_id": self.service_hc_acl.pk,
             "component_id": self.component_hc_acl_1.pk,
         }
+        self.hc_c1_h3 = {
+            "host_id": self.host_hc_acl_3.pk,
+            "service_id": self.service_hc_acl.pk,
+            "component_id": self.component_hc_acl_1.pk,
+        }
+        self.hc_c2_h1 = {
+            "host_id": self.host_hc_acl_1.pk,
+            "service_id": self.service_hc_acl.pk,
+            "component_id": self.component_hc_acl_2.pk,
+        }
+        self.hc_c2_h2 = {
+            "host_id": self.host_hc_acl_2.pk,
+            "service_id": self.service_hc_acl.pk,
+            "component_id": self.component_hc_acl_2.pk,
+        }
 
         add_hc(
             cluster=self.cluster_hc_acl,
-            hc_in=[*self.hc_permanent, self.hc_to_remove],
+            hc_in=[self.hc_c1_h1, self.hc_c1_h2, self.hc_c1_h3, self.hc_c2_h1, self.hc_c2_h2],
         )
 
         self.action_hc_acl = Action.objects.get(name="cluster_action_hc_acl", allow_in_maintenance_mode=True)
 
-    def test_hosts_in_mm_in_remove_group_success(self):
-        self.host_hc_acl_1.maintenance_mode = MaintenanceMode.ON
-        self.host_hc_acl_1.save()
+    @staticmethod
+    def _get_hc_request_data(*new_hc_items: dict) -> list[dict]:
+        hc_fields = ("id", "service_id", "component_id", "host_id")
+        hc_request_data = []
+
+        for host_component in new_hc_items:
+            hc_values = HostComponent.objects.filter(**host_component).values_list(*hc_fields).first()
+            hc_request_data.append(dict(zip(hc_fields, hc_values)))
+
+        return hc_request_data
+
+    def test_groups_remove_host_not_in_mm_success(self):
         self.host_hc_acl_3.maintenance_mode = MaintenanceMode.ON
         self.host_hc_acl_3.save()
 
-        hc_fields = ("id", "service_id", "component_id", "host_id")
-        hc_request_data = []
-        for host_component in self.hc_permanent:
-            hc_values = HostComponent.objects.filter(**host_component).values_list(*hc_fields).first()
-            hc_request_data.append(dict(zip(hc_fields, hc_values)))
+        # remove: hc_c1_h2
+        hc_request_data = self._get_hc_request_data(self.hc_c1_h1, self.hc_c1_h3, self.hc_c2_h1, self.hc_c2_h2)
 
         self.assertEqual(TaskLog.objects.count(), 0)
         self.assertEqual(JobLog.objects.count(), 0)
@@ -528,19 +534,82 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         with open(file=inventory_file, encoding=settings.ENCODING_UTF_8) as f:
             inventory_data = loads(s=f.read())["all"]["children"]
 
-        target_key_action = (
-            f"{ClusterObject.objects.get(pk=self.hc_to_remove['service_id']).prototype.name}"
-            f".{ServiceComponent.objects.get(pk=self.hc_to_remove['component_id']).prototype.name}"
-            ".remove"
+        target_key_remove = (
+            f"{ClusterObject.objects.get(pk=self.hc_c1_h2['service_id']).prototype.name}"
+            f".{ServiceComponent.objects.get(pk=self.hc_c1_h2['component_id']).prototype.name}"
+            f".{HcAclAction.REMOVE}"
         )
-        target_key_mm = f"{self.service_hc_acl.prototype.name}.{self.component_hc_acl_2.prototype.name}.remove"
+        target_key_mm_service = (
+            f"{ClusterObject.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}.{MAINTENANCE_MODE}"
+        )
+        target_key_mm_service_component = (
+            f"{ClusterObject.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"
+            f".{ServiceComponent.objects.get(pk=self.hc_c1_h3['component_id']).prototype.name}"
+            f".{MAINTENANCE_MODE}"
+        )
 
-        self.assertTrue(all(key in inventory_data for key in (target_key_action, target_key_mm)))
-        self.assertTrue(
-            all(
-                fqdn in inventory_data[target_key_action]["hosts"]
-                for fqdn in (self.host_hc_acl_1.fqdn, self.host_hc_acl_2.fqdn, self.host_hc_acl_3.fqdn)
-            )
+        self.assertIn(target_key_remove, inventory_data)
+        self.assertIn(self.host_hc_acl_2.fqdn, inventory_data[target_key_remove]["hosts"])
+
+        self.assertIn(target_key_mm_service, inventory_data)
+        self.assertIn(self.host_hc_acl_3.fqdn, inventory_data[target_key_mm_service]["hosts"])
+
+        self.assertIn(target_key_mm_service_component, inventory_data)
+        self.assertIn(self.host_hc_acl_3.fqdn, inventory_data[target_key_mm_service_component]["hosts"])
+
+        remove_keys = [key for key in inventory_data if key.endswith(f".{HcAclAction.REMOVE}")]
+        self.assertEqual(len(remove_keys), 1)
+
+        mm_keys = [key for key in inventory_data if key.endswith(f".{MAINTENANCE_MODE}")]
+        self.assertEqual(len(mm_keys), 2)
+
+    def test_groups_remove_host_in_mm_success(self):
+        self.host_hc_acl_3.maintenance_mode = MaintenanceMode.ON
+        self.host_hc_acl_3.save()
+
+        # remove: hc_c1_h3
+        hc_request_data = self._get_hc_request_data(self.hc_c1_h1, self.hc_c1_h2, self.hc_c2_h1, self.hc_c2_h2)
+
+        self.assertEqual(TaskLog.objects.count(), 0)
+        self.assertEqual(JobLog.objects.count(), 0)
+
+        response: Response = self.client.post(
+            path=reverse(
+                "run-task",
+                kwargs={
+                    "cluster_id": self.cluster_hc_acl.pk,
+                    "object_type": "cluster",
+                    "action_id": self.action_hc_acl.pk,
+                },
+            ),
+            data={
+                "hc": hc_request_data,
+                "verbose": False,
+            },
+            content_type=APPLICATION_JSON,
         )
-        self.assertEqual(len(inventory_data[target_key_mm]["hosts"]), 1)
-        self.assertIn(self.host_hc_acl_1.fqdn, inventory_data[target_key_mm]["hosts"])
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        task = TaskLog.objects.last()
+        job = JobLog.objects.last()
+
+        re_prepare_job(task=task, job=job)
+
+        inventory_file = settings.RUN_DIR / str(job.pk) / "inventory.json"
+        with open(file=inventory_file, encoding=settings.ENCODING_UTF_8) as f:
+            inventory_data = loads(s=f.read())["all"]["children"]
+
+        target_key_remove = (
+            f"{ClusterObject.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"
+            f".{ServiceComponent.objects.get(pk=self.hc_c1_h3['component_id']).prototype.name}"
+            f".{HcAclAction.REMOVE}"
+        )
+
+        self.assertIn(target_key_remove, inventory_data)
+        self.assertIn(self.host_hc_acl_3.fqdn, inventory_data[target_key_remove]["hosts"])
+
+        remove_keys = [key for key in inventory_data if key.endswith(f".{HcAclAction.REMOVE}")]
+        self.assertEqual(len(remove_keys), 1)
+
+        mm_keys = [key for key in inventory_data if key.endswith(f".{MAINTENANCE_MODE}")]
+        self.assertEqual(len(mm_keys), 0)
