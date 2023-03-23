@@ -48,7 +48,12 @@ from cm.api import (
 from cm.api_context import CTX
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.hierarchy import Tree
-from cm.inventory import get_obj_config, prepare_job_inventory, process_config_and_attr
+from cm.inventory import (
+    HcAclAction,
+    get_obj_config,
+    prepare_job_inventory,
+    process_config_and_attr,
+)
 from cm.issue import (
     check_bound_components,
     check_component_constraint,
@@ -297,24 +302,24 @@ def cook_delta(  # pylint: disable=too-many-branches # noqa: C901
             key = cook_comp_key(hostcomponent.service.prototype.name, hostcomponent.component.prototype.name)
             add_to_dict(old, key, hostcomponent.host.fqdn, hostcomponent.host)
 
-    delta = {"add": {}, "remove": {}}
+    delta = {HcAclAction.ADD: {}, HcAclAction.REMOVE: {}}
     for key, value in new.items():
         if key in old:
             for host in value:
                 if host not in old[key]:
-                    add_delta(delta, "add", key, host, value[host])
+                    add_delta(_delta=delta, action=HcAclAction.ADD, _key=key, fqdn=host, _host=value[host])
 
             for host in old[key]:
                 if host not in value:
-                    add_delta(delta, "remove", key, host, old[key][host])
+                    add_delta(_delta=delta, action=HcAclAction.REMOVE, _key=key, fqdn=host, _host=old[key][host])
         else:
             for host in value:
-                add_delta(delta, "add", key, host, value[host])
+                add_delta(_delta=delta, action=HcAclAction.ADD, _key=key, fqdn=host, _host=value[host])
 
     for key, value in old.items():
         if key not in new:
             for host in value:
-                add_delta(delta, "remove", key, host, value[host])
+                add_delta(_delta=delta, action=HcAclAction.REMOVE, _key=key, fqdn=host, _host=value[host])
 
     logger.debug("OLD: %s", old)
     logger.debug("NEW: %s", new)
@@ -404,7 +409,7 @@ def check_upgrade_hc(action, new_hc):
             for hc_acl in action.hostcomponentmap:
                 if proto.name == hc_acl["component"]:
                     buff += 1
-                    if hc_acl["action"] != "add":
+                    if hc_acl["action"] != HcAclAction.ADD:
                         raise_adcm_ex(
                             "WRONG_ACTION_HC",
                             "New components from bundle with upgrade you can only add, not remove",

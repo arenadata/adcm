@@ -34,9 +34,14 @@ from cm.models import (
     ServiceComponent,
     get_object_cluster,
 )
-from cm.utils import deep_merge
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+
+
+class HcAclAction:
+    ADD = "add"
+    REMOVE = "remove"
+
 
 MAINTENANCE_MODE = "maintenance_mode"
 
@@ -265,7 +270,6 @@ def get_host_groups(  # noqa: C901  # pylint: disable=too-many-branches
         delta = {}
 
     groups = {}
-    extra_remove_mm_hosts = {}
     host_components = HostComponent.objects.filter(cluster=cluster)
     for hostcomponent in host_components:
         if action_host and hostcomponent.host.id not in action_host:
@@ -273,23 +277,14 @@ def get_host_groups(  # noqa: C901  # pylint: disable=too-many-branches
 
         key_object_pairs = (
             (
-                "service.component",
                 f"{hostcomponent.service.prototype.name}.{hostcomponent.component.prototype.name}",
                 hostcomponent.component,
             ),
-            ("service", f"{hostcomponent.service.prototype.name}", hostcomponent.service),
+            (f"{hostcomponent.service.prototype.name}", hostcomponent.service),
         )
 
-        for key_type, key, adcm_object in key_object_pairs:
+        for key, adcm_object in key_object_pairs:
             if hostcomponent.host.maintenance_mode == MaintenanceMode.ON:
-                if key_type == "service.component":
-                    deep_merge(
-                        origin=extra_remove_mm_hosts,
-                        renovator={
-                            f"{key}.remove": {"hosts": {hostcomponent.host.fqdn: get_obj_config(hostcomponent.host)}}
-                        },
-                    )
-
                 key = f"{key}.{MAINTENANCE_MODE}"
 
             if key not in groups:
@@ -298,19 +293,16 @@ def get_host_groups(  # noqa: C901  # pylint: disable=too-many-branches
             groups[key]["hosts"][hostcomponent.host.fqdn] = get_obj_config(hostcomponent.host)
             groups[key]["hosts"][hostcomponent.host.fqdn].update(get_host_vars(hostcomponent.host, adcm_object))
 
-    for htype in delta:
-        for key in delta[htype]:
-            lkey = f"{key}.{htype}"
+    for hc_acl_action in delta:
+        for key in delta[hc_acl_action]:
+            lkey = f"{key}.{hc_acl_action}"
             if lkey not in groups:
                 groups[lkey] = {"hosts": {}}
 
-            for fqdn in delta[htype][key]:
-                host = delta[htype][key][fqdn]
-                if host.maintenance_mode != MaintenanceMode.ON:
+            for fqdn in delta[hc_acl_action][key]:
+                host = delta[hc_acl_action][key][fqdn]
+                if host.maintenance_mode != MaintenanceMode.ON or hc_acl_action == HcAclAction.REMOVE:
                     groups[lkey]["hosts"][host.fqdn] = get_obj_config(host)
-
-    if extra_remove_mm_hosts:
-        groups = deep_merge(origin=groups, renovator=extra_remove_mm_hosts)
 
     return groups
 
