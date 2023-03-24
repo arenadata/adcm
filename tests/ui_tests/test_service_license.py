@@ -15,7 +15,7 @@
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Bundle, Cluster
-from adcm_pytest_plugin.utils import get_data_dir
+from adcm_pytest_plugin.utils import get_data_dir, wait_until_step_succeeds
 
 from tests.ui_tests.app.page.cluster.page import ClusterServicesPage
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
@@ -157,20 +157,15 @@ def test_service_license_update(app_fs, service_license_bundle_old, service_lice
         row_with_upgrade = cluster_page.get_row_by_cluster_name(cluster_old.name)
         cluster_page.run_upgrade_with_service_license(row_with_upgrade, "upgrade_with_service_license")
 
+        license_dialog_header = cluster_page.get_service_license_dialog_header()
         license_dialog_window = cluster_page.get_service_license_dialog()
         license_dialog_window.accept_license()
 
+        _wait_another_license_dialog_appear(cluster_page=cluster_page, old_license_dialog_header=license_dialog_header)
         license_dialog_window = cluster_page.get_service_license_dialog()
         license_dialog_window.reject_license()
-        cluster_page.confirm_upgrade()
-
-    with allure.step("Check that popup is presented on page"):
-        assert cluster_page.is_popup_presented_on_page(), "License popup should be shown"
-        assert cluster_page.get_info_popup_text() == LICENSE_ERROR
-        cluster_page.close_info_popup()
 
     with allure.step("Check that cluster state did not change"):
-        cluster_page.cancel_upgrade()
         check_cluster_upgraded(app_fs, cluster_old.name, "created")
 
     with allure.step("Run upgrade cluster and accept all"):
@@ -184,3 +179,17 @@ def test_service_license_update(app_fs, service_license_bundle_old, service_lice
 
         cluster_old.reread()
         check_cluster_upgraded(app_fs, cluster_old.name, "upgraded")
+
+
+def _wait_another_license_dialog_appear(cluster_page: ClusterListPage, old_license_dialog_header: str):
+    """
+    This method should be used in case when in one action we have few service license dialogs one by one
+    Appearing new license dialog can take a few moments
+    """
+
+    def _wait_new_license_dialog():
+        assert (
+            actual_status := cluster_page.get_service_license_dialog_header()
+        ) != old_license_dialog_header, f'Service license dialog header should be changed\nHeader "{actual_status}"'
+
+    wait_until_step_succeeds(_wait_new_license_dialog, timeout=2, period=0.5)

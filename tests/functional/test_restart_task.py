@@ -37,6 +37,7 @@ from tests.library.utils import get_or_raise
 # pylint: disable=redefined-outer-name
 
 SET_MULTI_SET_ACTION = "set_multistate"
+MULTISTATE_CHANGING_FAIL = "multistate_changing_fail"
 
 
 class MultiState:
@@ -328,6 +329,11 @@ class TestTaskCancelRestart:
             check_succeed(self._cancel_job(job))
             wait_for_task_and_assert_result(task=task, status=Status.SUCCESS)
             compare_object_state(adcm_object=cluster, expected_state=MultiState.SUCCESS)
+            compare_object_multi_state(adcm_object=cluster, expected_state=[MultiState.FAILED, MultiState.SUCCESS])
+
+        with allure.step("Restart failed task and check multi state"):
+            run_cluster_action_and_assert_result(cluster=cluster, action=MULTISTATE_CHANGING_FAIL, status=Status.FAILED)
+            compare_object_state(adcm_object=cluster, expected_state=MultiState.FAILED)
             compare_object_multi_state(adcm_object=cluster, expected_state=[MultiState.FAILED])
 
     @pytest.mark.parametrize(
