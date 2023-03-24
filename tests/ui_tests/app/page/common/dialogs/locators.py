@@ -46,6 +46,11 @@ class OperationChangesDialogLocators(Dialog):
 class ServiceLicenseDialog:
     """Services page licence popup elements locators"""
 
+    block_header = BaseLocator(
+        By.XPATH,
+        "//app-dialog/h3[contains(text(), 'license')]",
+        "header of block with license agreement",
+    )
     block = BaseLocator(
         By.XPATH,
         "//app-dialog[./h3[contains(text(), 'license')]]",

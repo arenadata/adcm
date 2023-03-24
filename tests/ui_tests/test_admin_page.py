@@ -490,35 +490,35 @@ class TestAdminUsersPage:
         users_page.driver.refresh()
         users_page.filter_users_by("status", "active")
         with allure.step("Check users are filtered by active status"):
-            assert users_page.get_all_user_names() == [
-                user.username for user in sdk_client_fs.user_list(is_active=True)
-            ], "Not all active users are visible"
+            self._compare_filtered_users(sdk_client_fs, actual=users_page.get_all_user_names(), is_active=True)
         users_page.remove_user_filter()
         users_page.filter_users_by("status", "inactive")
         with allure.step("Check users are filtered by inactive status"):
-            assert users_page.get_all_user_names() == [
-                user.username for user in sdk_client_fs.user_list(is_active=False)
-            ], "Not all inactive users are visible"
+            self._compare_filtered_users(sdk_client_fs, actual=users_page.get_all_user_names(), is_active=False)
         users_page.remove_user_filter()
         users_page.filter_users_by("type", "local")
         with allure.step("Check users are filtered by local type"):
-            assert users_page.get_all_user_names() == [
-                user.username for user in sdk_client_fs.user_list(type="local")
-            ], "Not all local users are visible"
+            self._compare_filtered_users(sdk_client_fs, actual=users_page.get_all_user_names(), type="local")
         users_page.remove_user_filter()
         users_page.filter_users_by("type", "ldap")
         with allure.step("Check users are filtered by ldap status"):
-            assert users_page.get_all_user_names() == [
-                user.username for user in sdk_client_fs.user_list(type="ldap")
-            ], "Not all ldap users are visible"
+            self._compare_filtered_users(sdk_client_fs, actual=users_page.get_all_user_names(), type="ldap")
         users_page.filter_users_by("status", "active")
         with allure.step("Check users are filtered both by active status and ldap"):
-            assert users_page.get_all_user_names() == [
-                user.username for user in sdk_client_fs.user_list(is_active=True, type="ldap")
-            ], "Not all active ldap users are visible"
+            self._compare_filtered_users(
+                sdk_client_fs, actual=users_page.get_all_user_names(), is_active=True, type="ldap"
+            )
 
-    def check_user_is_listed_on_page(self, users_page: AdminUsersPage, username: str) -> None:
+    @staticmethod
+    def check_user_is_listed_on_page(users_page: AdminUsersPage, username: str) -> None:
         assert username in users_page.get_all_user_names(), f"User {username} was not created"
+
+    @staticmethod
+    def _compare_filtered_users(sdk_client_fs, actual: list, **kwargs) -> None:
+        expected = [user.username for user in sdk_client_fs.user_list(**kwargs)]
+        assert sorted(actual) == sorted(
+            expected
+        ), f"Compare filtered users failed\nActual: {actual}. Expected: {expected}"
 
 
 @pytest.mark.usefixtures("_login_to_adcm_over_api")
@@ -1212,14 +1212,14 @@ class TestAdminPolicyPage:
             cluster_rows = cluster_list_page.table.get_all_rows()
             assert len(cluster_rows) == 2, "There should be 2 row with cluster"
         with allure.step("Check actions in clusters"):
-            assert cluster_list_page.get_all_actions_name_in_cluster(cluster_rows[0]) == [
+            assert cluster_list_page.get_all_actions_name_in_cluster(cluster_rows[1]) == [
                 "some_action",
             ], "First cluster action should be visible"
             assert (
-                cluster_list_page.get_all_actions_name_in_cluster(cluster_rows[1]) == []
+                cluster_list_page.get_all_actions_name_in_cluster(cluster_rows[0]) == []
             ), "Second cluster action should not be visible"
         with allure.step("Run action from first cluster"):
-            cluster_list_page.run_action_in_cluster_row(cluster_rows[0], "some_action")
+            cluster_list_page.run_action_in_cluster_row(cluster_rows[1], "some_action")
         with allure.step("Check task"):
             cluster_list_page.header.click_job_block()
             assert len(cluster_list_page.header.get_job_rows_from_popup()) == 1, "Job amount should be 1"

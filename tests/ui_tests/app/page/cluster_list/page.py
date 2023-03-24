@@ -188,6 +188,10 @@ class ClusterListPage(BasePageObject):  # pylint: disable=too-many-public-method
         self.wait_element_visible(self.table.locators.UpgradePopup.block)
         self.find_and_click(self.table.locators.UpgradePopup.button(upgrade_name))
 
+    @allure.step("Get service license dialog header")
+    def get_service_license_dialog_header(self) -> str:
+        return self.find_element(ServiceLicenseDialog.block_header).text
+
     @allure.step("Get service license dialog")
     def get_service_license_dialog(self) -> ServiceLicenseModal:
         self.wait_element_visible(ServiceLicenseDialog.block)
