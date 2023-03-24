@@ -526,6 +526,7 @@ class ADCMEntity(ADCMModel):
 class Upgrade(ADCMModel):
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
     name = models.CharField(max_length=1000, blank=True)
+    display_name = models.CharField(max_length=1000, blank=True)
     description = models.TextField(blank=True)
     min_version = models.CharField(max_length=1000)
     max_version = models.CharField(max_length=1000)
@@ -1706,6 +1707,7 @@ class StagePrototype(ADCMModel):
 
 class StageUpgrade(ADCMModel):
     name = models.CharField(max_length=1000, blank=True)
+    display_name = models.CharField(max_length=1000, blank=True)
     description = models.TextField(blank=True)
     min_version = models.CharField(max_length=1000)
     max_version = models.CharField(max_length=1000)

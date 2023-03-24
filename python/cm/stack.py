@@ -456,6 +456,7 @@ def save_upgrade(prototype: StagePrototype, config: dict, bundle_hash: str) -> N
     for item in config["upgrade"]:
         check_upgrade(prototype=prototype, config=item)
         upgrade = StageUpgrade(name=item["name"])
+        upgrade.display_name = item.get("display_name", item["name"])
         set_version(upgrade, item)
         dict_to_obj(item, "description", upgrade)
         if "states" in item:

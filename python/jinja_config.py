@@ -40,7 +40,6 @@ def _get_limits(config: dict, root_path: str) -> dict:  # noqa: C901
     limits = {}
 
     if "yspec" in config and config["type"] in settings.STACK_COMPLEX_FIELD_TYPES:
-
         with open(file=Path(root_path, config["yspec"]), encoding=settings.ENCODING_UTF_8) as f:
             data = f.read()
 

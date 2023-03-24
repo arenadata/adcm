@@ -516,6 +516,7 @@ def copy_stage_upgrade(stage_upgrades, bundle):
             Upgrade,
             (
                 "name",
+                "display_name",
                 "description",
                 "min_version",
                 "max_version",
@@ -949,6 +950,7 @@ def update_bundle_from_stage(  # noqa: C901
             Upgrade,
             (
                 "name",
+                "display_name",
                 "description",
                 "min_version",
                 "max_version",
