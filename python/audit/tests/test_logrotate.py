@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from datetime import datetime, timedelta
 
 from audit.models import AuditLog, AuditLogOperationResult, AuditLogOperationType
@@ -31,8 +32,6 @@ from adcm.tests.base import BaseTestCase
 
 class TestLogrotate(BaseTestCase):
     def setUp(self) -> None:
-        super().setUp()
-
         bundle = Bundle.objects.create()
         date = timezone.now() - timedelta(days=3)
         prototype = Prototype.objects.create(bundle=bundle, type="adcm")
@@ -49,7 +48,7 @@ class TestLogrotate(BaseTestCase):
         config.current = config_log.pk
         config.save(update_fields=["current"])
 
-        ADCM.objects.create(prototype=prototype, name="ADCM", config=config)
+        ADCM.objects.create(prototype=prototype, name="ADCM_2", config=config)
         self.user = User.objects.create_superuser("system", "", None, built_in=True)
         prototype = Prototype.objects.create(bundle=bundle, type="cluster")
         config_2 = ObjectConfig.objects.create(current=4, previous=3)

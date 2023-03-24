@@ -52,11 +52,11 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         self.upload_and_load_bundle(path=Path(settings.BASE_DIR, "python", "cm", "tests", "files", "ssh.1.0.tar"))
         self.provider = HostProvider.objects.create(
             name="test_provider",
-            prototype=Prototype.objects.all()[1],
+            prototype=Prototype.objects.filter(type="provider").first(),
         )
         self.host = Host.objects.create(
             fqdn="test-fqdn",
-            prototype=Prototype.objects.all()[0],
+            prototype=Prototype.objects.filter(type="host").first(),
             provider=self.provider,
             maintenance_mode=MaintenanceMode.ON,
         )

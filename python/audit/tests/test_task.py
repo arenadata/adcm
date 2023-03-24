@@ -20,7 +20,8 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import ADCM, Bundle, Prototype, TaskLog
+from cm.models import ADCM, TaskLog
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from rbac.models import User
@@ -34,14 +35,12 @@ class TestTaskAudit(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle, type="adcm")
-        self.adcm = ADCM.objects.create(prototype=prototype, name="ADCM")
+        self.adcm = ADCM.objects.first()
         self.task = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=ContentType.objects.get(app_label="cm", model="adcm"),
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
         )
         self.task_restarted_str = "Task restarted"
 

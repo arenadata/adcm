@@ -37,7 +37,7 @@ def check_migrations():
 
 
 def backup_sqlite(dbfile):
-    now_str = datetime.datetime.now(tz=ZoneInfo("UTC")).strftime("%Y%m%d_%H%M%S")
+    now_str = datetime.datetime.now(tz=ZoneInfo(settings.TIME_ZONE)).strftime("%Y%m%d_%H%M%S")
     backupfile = os.path.join(settings.BASE_DIR, "data", "var", f"{now_str}.db")
     old = sqlite3.connect(dbfile)
     new = sqlite3.connect(backupfile)

@@ -15,16 +15,7 @@ from pathlib import Path
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
-from cm.models import (
-    ADCM,
-    Action,
-    ActionType,
-    Bundle,
-    Cluster,
-    JobLog,
-    Prototype,
-    TaskLog,
-)
+from cm.models import ADCM, Action, ActionType, Cluster, JobLog, Prototype, TaskLog
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
@@ -40,34 +31,29 @@ class TestJobAPI(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        bundle = Bundle.objects.create()
-        self.adcm_prototype = Prototype.objects.create(bundle=bundle, type="adcm")
-        self.adcm = ADCM.objects.create(
-            prototype=self.adcm_prototype,
-            name="ADCM",
-        )
+        self.adcm = ADCM.objects.first()
         self.action = Action.objects.create(
             display_name="test_adcm_action",
-            prototype=self.adcm_prototype,
+            prototype=self.adcm.prototype,
             type=ActionType.JOB,
             state_available="any",
         )
         self.task = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=ContentType.objects.get(app_label="cm", model="adcm"),
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
             action=self.action,
         )
         self.job_1 = JobLog.objects.create(
             status="created",
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")) + timedelta(days=1),
+            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)) + timedelta(days=1),
         )
         self.job_2 = JobLog.objects.create(
             status="failed",
-            start_date=datetime.now(tz=ZoneInfo("UTC")) + timedelta(days=1),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")) + timedelta(days=2),
+            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)) + timedelta(days=1),
+            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)) + timedelta(days=2),
             action=self.action,
             task=self.task,
             pid=self.job_1.pid + 1,
@@ -217,7 +203,7 @@ class TestJobAPI(BaseTestCase):
 
         with self.no_rights_user_logged_in:
             with patch("cm.job.run_task"):
-                response: Response = self.client.post(
+                self.client.post(
                     path=reverse("run-task", kwargs={"cluster_id": cluster.pk, "action_id": action.pk}),
                 )
 
