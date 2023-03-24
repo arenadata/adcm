@@ -296,13 +296,23 @@ def get_host_groups(  # noqa: C901  # pylint: disable=too-many-branches
     for hc_acl_action in delta:
         for key in delta[hc_acl_action]:
             lkey = f"{key}.{hc_acl_action}"
+
             if lkey not in groups:
                 groups[lkey] = {"hosts": {}}
 
             for fqdn in delta[hc_acl_action][key]:
                 host = delta[hc_acl_action][key][fqdn]
+
                 if host.maintenance_mode != MaintenanceMode.ON or hc_acl_action == HcAclAction.REMOVE:
                     groups[lkey]["hosts"][host.fqdn] = get_obj_config(host)
+
+                if hc_acl_action == HcAclAction.REMOVE and host.maintenance_mode == MaintenanceMode.ON:
+                    remove_maintenance_mode_group_name = f"{lkey}.{MAINTENANCE_MODE}"
+
+                    if remove_maintenance_mode_group_name not in groups:
+                        groups[remove_maintenance_mode_group_name] = {"hosts": {}}
+
+                    groups[remove_maintenance_mode_group_name]["hosts"][host.fqdn] = get_obj_config(host)
 
     return groups
 
