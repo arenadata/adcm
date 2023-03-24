@@ -13,7 +13,7 @@
 from datetime import timedelta
 
 from audit.models import AuditLog, AuditSession
-from cm.models import ADCM, Bundle, Prototype
+from cm.models import ADCM
 from django.urls import reverse
 from rest_framework.response import Response
 
@@ -47,10 +47,7 @@ class TestAuditAPI(BaseTestCase):
         self.assertEqual(response.data["count"], 1)
 
     def test_filter_operations_operation_time(self):
-        adcm = ADCM.objects.create(
-            prototype=Prototype.objects.create(bundle=Bundle.objects.create(), type="adcm"),
-            name="ADCM",
-        )
+        adcm = ADCM.objects.first()
         self.client.post(
             path=reverse("config-history", kwargs={"adcm_pk": adcm.pk}),
             data={"config": {}},

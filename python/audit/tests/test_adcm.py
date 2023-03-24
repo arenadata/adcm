@@ -19,7 +19,8 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import ADCM, Action, Bundle, ConfigLog, ObjectConfig, Prototype, TaskLog
+from cm.models import ADCM, Action, ConfigLog, TaskLog
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from rbac.models import User
@@ -33,30 +34,21 @@ class TestADCMAudit(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        bundle = Bundle.objects.create()
-        self.prototype = Prototype.objects.create(bundle=bundle, type="adcm")
-        config = ObjectConfig.objects.create(current=0, previous=0)
-        self.config_log = ConfigLog.objects.create(
-            obj_ref=config,
-            config="{}",
-            attr={"ldap_integration": {"active": True}},
-        )
-        config.current = self.config_log.pk
-        config.save(update_fields=["current"])
-
-        self.adcm_name = "ADCM"
-        self.adcm = ADCM.objects.create(prototype=self.prototype, name=self.adcm_name, config=config)
+        self.adcm = ADCM.objects.first()
+        self.config_log = ConfigLog.objects.get(obj_ref=self.adcm.config)
+        self.config_log.attr["ldap_integration"]["active"] = True
+        self.config_log.save(update_fields=["attr"])
         self.action = Action.objects.create(
             display_name="test_adcm_action",
-            prototype=self.prototype,
+            prototype=self.adcm.prototype,
             type="job",
             state_available="any",
         )
         self.task = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=ContentType.objects.get(app_label="cm", model="adcm"),
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
             action=self.action,
         )
         self.adcm_conf_updated_str = "ADCM configuration updated"
@@ -81,9 +73,17 @@ class TestADCMAudit(BaseTestCase):
         self.assertEqual(log.object_changes, {})
 
     def test_update_and_restore(self):
+        self.config_log.config["ldap_integration"]["ldap_uri"] = "test_ldap_uri"
+        self.config_log.config["ldap_integration"]["ldap_user"] = "test_ldap_user"
+        self.config_log.config["ldap_integration"]["ldap_password"] = "test_ldap_password"
+        self.config_log.config["ldap_integration"]["user_search_base"] = "test_ldap_user_search_base"
+        self.config_log.config["global"]["adcm_url"] = "https://test_ldap.url"
+        self.config_log.config["auth_policy"]["min_password_length"] = 6
+        self.config_log.save(update_fields=["config"])
+
         self.client.post(
             path=reverse("config-history", kwargs={"adcm_pk": self.adcm.pk}),
-            data={"config": {}},
+            data={"config": self.config_log.config, "attr": self.config_log.attr},
             content_type=APPLICATION_JSON,
         )
 

@@ -46,14 +46,10 @@ class TestActionAPI(BaseTestCase):
         config.save(update_fields=["current"])
 
         self.adcm_prototype = Prototype.objects.create(bundle=bundle, type="adcm")
-        self.adcm = ADCM.objects.create(
-            prototype=self.adcm_prototype,
-            name="ADCM",
-            config=config,
-        )
+        self.adcm = ADCM.objects.first()
         self.action = Action.objects.create(
             display_name="test_adcm_action",
-            prototype=self.adcm_prototype,
+            prototype=self.adcm.prototype,
             type=ActionType.JOB,
             state_available="any",
         )
@@ -72,12 +68,12 @@ class TestActionAPI(BaseTestCase):
 
         action = Action.objects.create(
             name=settings.ADCM_TURN_ON_MM_ACTION_NAME,
-            prototype=self.adcm_prototype,
+            prototype=self.adcm.prototype,
             type=ActionType.JOB,
             state_available="any",
         )
 
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data), 3)
         self.assertNotIn(action.pk, {action_data["id"] for action_data in response.data})
 
     def test_jinja_conf_success(self):

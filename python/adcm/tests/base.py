@@ -10,14 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import random
+import string
 from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
 
-from cm.models import Bundle, Cluster, ConfigLog, Prototype
+from cm.models import ADCM, Bundle, Cluster, ConfigLog, Prototype
 from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
+from init_db import init
 from rbac.models import Role, User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
@@ -61,6 +64,13 @@ class BaseTestCase(TestCase):
             "python/audit/tests/files",
             self.test_bundle_filename,
         )
+
+        init()
+
+        adcm = ADCM.objects.first()
+        config_log = ConfigLog.objects.get(obj_ref=adcm.config)
+        config_log.config["auth_policy"]["max_password_length"] = 20
+        config_log.save(update_fields=["config"])
 
     def tearDown(self) -> None:
         dirs_to_clear = (
@@ -155,3 +165,7 @@ class BaseTestCase(TestCase):
         cluster = Cluster.objects.get(pk=cluster_response.data["id"])
 
         return bundle, cluster, ConfigLog.objects.get(obj_ref=cluster.config)
+
+    @staticmethod
+    def get_random_str_num(length: int) -> str:
+        return "".join(random.sample(f"{string.ascii_letters}{string.digits}", length))

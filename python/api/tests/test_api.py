@@ -39,7 +39,6 @@ from cm.tests.utils import (
 from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
-from init_db import init
 from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -60,7 +59,6 @@ class TestAPI(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        init()
         init_roles()
 
         self.files_dir = settings.BASE_DIR / "python" / "cm" / "tests" / "files"

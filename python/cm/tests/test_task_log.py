@@ -102,8 +102,8 @@ class TaskLogLockTest(BaseTestCase):
         task = TaskLog.objects.create(
             task_object=cluster,
             action=action,
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
         )
         cluster_2 = Cluster.objects.create(
             prototype=Prototype.objects.create(
@@ -139,8 +139,8 @@ class TaskLogLockTest(BaseTestCase):
         )
         JobLog.objects.create(
             task=task,
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
             sub_action=SubAction.objects.create(
                 action=Action.objects.create(
                     display_name="test_subaction_job_1",
@@ -152,8 +152,8 @@ class TaskLogLockTest(BaseTestCase):
         )
         JobLog.objects.create(
             task=task,
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
             sub_action=SubAction.objects.create(
                 action=Action.objects.create(
                     display_name="test_subaction_job_2",
@@ -165,8 +165,8 @@ class TaskLogLockTest(BaseTestCase):
         )
         JobLog.objects.create(
             task=task,
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
             sub_action=SubAction.objects.create(
                 action=Action.objects.create(
                     display_name="test_subaction_job_3",
@@ -178,8 +178,8 @@ class TaskLogLockTest(BaseTestCase):
         )
         job_no_files = JobLog.objects.create(
             task=task,
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
             sub_action=SubAction.objects.create(
                 action=Action.objects.create(
                     display_name="test_subaction_job_4",
@@ -219,13 +219,13 @@ class TaskLogLockTest(BaseTestCase):
         task = TaskLog.objects.create(
             task_object=cluster,
             action=action,
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
         )
         JobLog.objects.create(
             task=task,
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
             sub_action=SubAction.objects.create(
                 name="test_subaction_1",
                 action=action,
@@ -234,8 +234,8 @@ class TaskLogLockTest(BaseTestCase):
         )
         JobLog.objects.create(
             task=task,
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
             sub_action=SubAction.objects.create(name="test_subaction_2", action=action),
         )
         file_handler = get_task_download_archive_file_handler(task)

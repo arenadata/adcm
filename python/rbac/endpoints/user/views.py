@@ -13,15 +13,19 @@
 from audit.utils import audit
 from cm.errors import raise_adcm_ex
 from guardian.mixins import PermissionListMixin
-from rbac import models
 from rbac.endpoints.user.serializers import UserSerializer
+from rbac.models import User
+from rest_framework.decorators import action
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.status import HTTP_400_BAD_REQUEST
 from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import DjangoModelPermissionsAudit
 
 
 class UserViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = models.User.objects.all()
+    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (DjangoModelPermissionsAudit,)
     permission_required = ["rbac.view_user"]
@@ -52,4 +56,21 @@ class UserViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
         instance = self.get_object()
         if instance.built_in:
             raise_adcm_ex("USER_DELETE_ERROR")
+
         return super().destroy(request, args, kwargs)
+
+    @audit
+    @action(methods=["post"], detail=True)
+    def reset_login_attempts(self, request: Request, pk: int) -> Response:
+        if not request.user.is_superuser:
+            return Response(data={"error": "Only superuser can reset login attempts."}, status=HTTP_400_BAD_REQUEST)
+
+        user = User.objects.filter(pk=pk).first()
+        if not user:
+            return Response(data={"error": f"User with ID {pk} was not found."}, status=HTTP_400_BAD_REQUEST)
+
+        user.login_attempts = 0
+        user.blocked_at = None
+        user.save(update_fields=["login_attempts", "blocked_at"])
+
+        return Response()

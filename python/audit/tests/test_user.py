@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from datetime import datetime
 
 from audit.models import (
@@ -22,7 +21,7 @@ from audit.models import (
 from django.urls import reverse
 from rbac.models import User
 from rest_framework.response import Response
-from rest_framework.status import HTTP_403_FORBIDDEN
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -42,6 +41,7 @@ class TestUserAudit(BaseTestCase):
         operation_result: AuditLogOperationResult,
         user: User,
         object_changes: dict | None = None,
+        operation_name: str = "User updated",
     ) -> None:
         if object_changes is None:
             object_changes = {}
@@ -50,7 +50,7 @@ class TestUserAudit(BaseTestCase):
         self.assertEqual(log.audit_object.object_name, self.test_user.username)
         self.assertEqual(log.audit_object.object_type, AuditObjectType.USER)
         self.assertFalse(log.audit_object.is_deleted)
-        self.assertEqual(log.operation_name, "User updated")
+        self.assertEqual(log.operation_name, operation_name)
         self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
@@ -83,7 +83,7 @@ class TestUserAudit(BaseTestCase):
             path=reverse(self.list_name),
             data={
                 "username": self.username,
-                "password": "test_password",
+                "password": "test_pass",
             },
         )
 
@@ -103,7 +103,7 @@ class TestUserAudit(BaseTestCase):
                 path=reverse(self.list_name),
                 data={
                     "username": self.username,
-                    "password": "test_password",
+                    "password": "test_pass",
                 },
             )
 
@@ -242,3 +242,51 @@ class TestUserAudit(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(log=log, operation_result=AuditLogOperationResult.DENIED, user=self.no_rights_user)
+
+    def test_reset_login_attempts_success(self):
+        response: Response = self.client.post(
+            path=reverse("rbac:user-reset-login-attempts", kwargs={"pk": self.test_user.pk}),
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.check_log(
+            log=log,
+            operation_result=AuditLogOperationResult.SUCCESS,
+            user=self.test_user,
+            operation_name="User login attempts reset",
+        )
+
+    def test_reset_login_attempts_fail(self):
+        user_pks = User.objects.all().values_list("pk", flat=True).order_by("-pk")
+        response: Response = self.client.post(
+            path=reverse("rbac:user-reset-login-attempts", kwargs={"pk": user_pks[0] + 1}),
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertIsNone(log.audit_object)
+        self.assertEqual(log.operation_name, "User login attempts reset")
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.FAIL)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.object_changes, {})
+
+    def test_reset_login_attempts_denied(self):
+        with self.no_rights_user_logged_in:
+            response: Response = self.client.post(
+                path=reverse("rbac:user-reset-login-attempts", kwargs={"pk": self.test_user.pk}),
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_log(
+            log=log,
+            operation_result=AuditLogOperationResult.DENIED,
+            user=self.no_rights_user,
+            operation_name="User login attempts reset",
+        )

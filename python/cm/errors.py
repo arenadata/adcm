@@ -217,6 +217,10 @@ ERRORS = {
     "USER_UPDATE_ERROR": ("Error during process of user updating", HTTP_400_BAD_REQUEST, ERR),
     "USER_DELETE_ERROR": ("Built-in user could not be deleted", HTTP_405_METHOD_NOT_ALLOWED, ERR),
     "JOB_TERMINATION_ERROR": ("Can't terminate job", HTTP_409_CONFLICT, ERR),
+    "USER_PASSWORD_TOO_SHORT_ERROR": ("This password is shorter than min password length", HTTP_400_BAD_REQUEST, ERR),
+    "USER_PASSWORD_TOO_LONG_ERROR": ("This password is longer than max password length", HTTP_400_BAD_REQUEST, ERR),
+    "USER_PASSWORD_TOO_COMMON_ERROR": ("This password is too common", HTTP_400_BAD_REQUEST, ERR),
+    "USER_PASSWORD_ENTIRELY_NUMERIC_ERROR": ("This password is entirely numeric", HTTP_400_BAD_REQUEST, ERR),
 }
 
 

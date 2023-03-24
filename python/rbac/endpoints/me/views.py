@@ -10,8 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rbac import models
+from collections import OrderedDict
+
+from rbac.models import User
 from rbac.services import user as user_services
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.serializers import BooleanField, CharField, IntegerField, JSONField
 
@@ -33,9 +36,24 @@ class MeUserSerializer(EmptySerializer):
     email = CharField(read_only=True)
     is_superuser = BooleanField(read_only=True)
     password = PasswordField(trim_whitespace=False)
+    current_password = PasswordField(trim_whitespace=False, required=False)
     profile = JSONField(required=False, default="")
     type = CharField(read_only=True)
     is_active = BooleanField(read_only=True)
+
+    def validate(self, attrs: OrderedDict) -> OrderedDict:
+        if not attrs.get("password"):
+            return attrs
+
+        if self.instance.check_password(raw_password=attrs["password"]):
+            return attrs
+
+        if not (attrs.get("current_password") and self.instance.check_password(raw_password=attrs["current_password"])):
+            raise ValidationError('Field "current_password" should be filled and match user current password')
+
+        attrs.pop("current_password")
+
+        return attrs
 
     def update(self, instance, validated_data):
         context_user = self.context["request"].user
@@ -44,11 +62,11 @@ class MeUserSerializer(EmptySerializer):
 
 
 class MyselfView(RetrieveUpdateAPIView):
-    queryset = models.User.objects.all()
+    queryset = User.objects.all()
     serializer_class = MeUserSerializer
 
     def get_object(self):
         # request user object is disconnected from DB, use another instance
-        user = models.User.objects.get(id=self.request.user.id)
+        user = User.objects.get(id=self.request.user.id)
 
         return user
