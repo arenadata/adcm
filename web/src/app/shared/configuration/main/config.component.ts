@@ -15,7 +15,7 @@ import {
   Component,
   EventEmitter,
   Input,
-  OnChanges,
+  OnChanges, OnDestroy,
   OnInit,
   Output,
   SimpleChanges,
@@ -44,7 +44,7 @@ import * as deepmerge from 'deepmerge';
   animations: historyAnime,
   providers: [MainService]
 })
-export class ConfigComponent extends SocketListenerDirective implements OnChanges, OnInit, AfterViewInit {
+export class ConfigComponent extends SocketListenerDirective implements OnChanges, OnInit, OnDestroy, AfterViewInit {
   loadingStatus = 'Loading...';
   rawConfig = new BehaviorSubject<IConfig>(null);
   saveFlag = false;
@@ -81,10 +81,12 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     this.worker$ = service.worker$.pipe(this.takeUntil());
 
     service.worker$.subscribe((data) => {
-      this.getConfigUrlFromWorker();
-      if (data.current.config && !this.isLoading) {
-        this.service.changeService(data.current.typeName);
-        this._getConfig(data.current.config).subscribe();
+      if (window.location.href === data?.current?.url) {
+        this.getConfigUrlFromWorker();
+        if (data?.current?.config && !this.isLoading) {
+          this.service.changeService(data.current.typeName);
+          this._getConfig(data.current.config).subscribe();
+        }
       }
     });
   }
@@ -94,7 +96,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   ngOnChanges(changes: SimpleChanges): void {
     const url = changes['configUrl'];
     const firstChange = url?.firstChange;
-    if (!firstChange || !url) this.getConfigUrlFromWorker();
+    if (!firstChange || !url) this._getConfig(changes['configUrl'].currentValue).subscribe();
   }
 
   ngOnInit(): void {
@@ -123,6 +125,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
       });
     }
 
+    this._scrollConfigListOnTop()
   };
 
   filter(c: ISearchParam): void {
@@ -243,5 +246,10 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   _isValid() {
     const f = this.fields.form;
     return f.status !== 'INVALID';
+  }
+
+  _scrollConfigListOnTop() {
+    const fiedsContainer: any = document.getElementsByClassName('fields')[0];
+    fiedsContainer.scrollTop = 0;
   }
 }
