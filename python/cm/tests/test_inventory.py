@@ -611,5 +611,5 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         remove_keys = [key for key in inventory_data if key.endswith(f".{HcAclAction.REMOVE}")]
         self.assertEqual(len(remove_keys), 1)
 
-        mm_keys = [key for key in inventory_data if key.endswith(f".{MAINTENANCE_MODE}")]
-        self.assertEqual(len(mm_keys), 0)
+        mm_keys = [key for key in inventory_data if key.endswith(f".{HcAclAction.REMOVE}.{MAINTENANCE_MODE}")]
+        self.assertEqual(len(mm_keys), 1)
