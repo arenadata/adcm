@@ -199,8 +199,8 @@ class ClusterListPage(BasePageObject):  # pylint: disable=too-many-public-method
         return ServiceLicenseModal(driver=self.driver, element=license_dialog)
 
     @allure.step("Confirm upgrade")
-    def confirm_upgrade(self) -> None:
-        self.wait_element_visible(ActionDialog.run)
+    def confirm_upgrade(self, timeout: int | None = None) -> None:
+        self.wait_element_visible(ActionDialog.run, timeout)
         self.find_and_click(ActionDialog.run)
 
     @allure.step("Cancel upgrade")
