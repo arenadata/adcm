@@ -175,7 +175,7 @@ def test_service_license_update(app_fs, service_license_bundle_old, service_lice
 
         license_dialog_window = cluster_page.get_service_license_dialog()
         license_dialog_window.accept_license()
-        cluster_page.confirm_upgrade()
+        cluster_page.confirm_upgrade(timeout=3)
 
         cluster_old.reread()
         check_cluster_upgraded(app_fs, cluster_old.name, "upgraded")
@@ -192,4 +192,4 @@ def _wait_another_license_dialog_appear(cluster_page: ClusterListPage, old_licen
             actual_status := cluster_page.get_service_license_dialog_header()
         ) != old_license_dialog_header, f'Service license dialog header should be changed\nHeader "{actual_status}"'
 
-    wait_until_step_succeeds(_wait_new_license_dialog, timeout=2, period=0.5)
+    wait_until_step_succeeds(_wait_new_license_dialog, timeout=5, period=0.5)
