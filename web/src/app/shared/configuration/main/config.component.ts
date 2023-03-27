@@ -36,6 +36,7 @@ import { WorkerInstance } from '@app/core/services/cluster.service';
 import { ActivatedRoute } from '@angular/router';
 import { AttributeService } from '@app/shared/configuration/attributes/attribute.service';
 import * as deepmerge from 'deepmerge';
+import { environment } from '@env/environment';
 
 @Component({
   selector: 'app-config-form',
@@ -81,12 +82,23 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     this.worker$ = service.worker$.pipe(this.takeUntil());
 
     service.worker$.subscribe((data) => {
-      if (window.location.href === data?.current?.url) {
-        this.getConfigUrlFromWorker();
-        if (data?.current?.config && !this.isLoading) {
-          this.service.changeService(data.current.typeName);
-          this._getConfig(data.current.config).subscribe();
+      /**
+       * TODO: fix this bullshit.
+       * It's dirty hack condition. We shouldn't compare page url from browser and api url from config
+       * we have to take pathname from urls, cut last slashes, cut /api/v1/ substring. It's incorrect and very ugly
+       */
+      try {
+        const configPageUrl = new URL(window.location.href).pathname.replace(/\/$/, '');
+        const configDataUrl = new URL(data?.current?.config).pathname.replace(/\/$/, '').replace(environment.apiRoot, '/');
+        if (configPageUrl === configDataUrl) {
+          this.getConfigUrlFromWorker();
+          if (data?.current?.config && !this.isLoading) {
+            this.service.changeService(data.current.typeName);
+            this._getConfig(data.current.config).subscribe();
+          }
         }
+      } catch (e) {
+        return;
       }
     });
   }
