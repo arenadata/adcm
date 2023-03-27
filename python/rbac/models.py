@@ -122,7 +122,7 @@ def handle_name_type_display_name(sender, instance, **kwargs):  # pylint: disabl
         instance.name = f"{match.group('base_name')} [{instance.type}]"
         instance.display_name = match.group("base_name")
     else:
-        raise RuntimeError(f"Check regex. Data: `{instance.name}`")
+        raise_adcm_ex(code="GROUP_CONFLICT", msg=f"Check regex. Data: `{instance.name}`")
 
 
 class RoleTypes(TextChoices):
