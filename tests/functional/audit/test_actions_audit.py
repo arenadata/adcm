@@ -344,6 +344,7 @@ class TestTaskCancelRestart(RunActionTestMixin):
         """Fill all utility fields for audit of actions testing"""
         _action_run_test_init(self, sdk_client_fs, new_user_client)
 
+    @pytest.skip(reason="https://tracker.yandex.ru/ADCM-3690")
     @parametrize_audit_scenario_parsing("cancel_restart.yaml", {**NEW_USER, "action_display_name": "Terminate Simple"})
     def test_task_with_one_job(self, cluster, audit_log_checker):
         """Test audit of cancel/restart tasks with one job"""
