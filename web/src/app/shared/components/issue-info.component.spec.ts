@@ -25,6 +25,8 @@ class MockComponentData {
 describe('Issue-info component', () => {
   let fixture: ComponentFixture<IssueInfoComponent>;
   let component: IssueInfoComponent;
+  let os = require("os");
+  let hostname = os.hostname();
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -49,8 +51,9 @@ describe('Issue-info component', () => {
     fixture.detectChanges();
     const href = fixture.nativeElement.querySelector('div:last-child a').getAttribute('href');
     const c = component.current;
+    const hostlessHref = href.slice(href.indexOf(c.path)-1);
     const issueName = Object.keys(c.issue)[0];
-    expect(href).toBe(`/${c.path}/${c.id}/${issueName}`);
+    expect(hostlessHref).toBe(`/${c.path}/${c.id}/${issueName}`);
   });
 
   it('issue at the daughter elements', () => {
@@ -58,10 +61,11 @@ describe('Issue-info component', () => {
     fixture.detectChanges();
     const href = fixture.nativeElement.querySelector('div:last-child a').getAttribute('href');
     const c = component.current;
+    const hostlessHref = href.slice(href.indexOf(c.path)-1);
     const daughterName = Object.keys(c.issue)[0];
     const daughterObj = c.issue[daughterName][0];
     const issueName = Object.keys(daughterObj.issue)[0];
-    expect(href).toBe(`/${c.path}/${c.id}/${daughterName}/${daughterObj.id}/${issueName}`);
+    expect(hostlessHref).toBe(`/${c.path}/${c.id}/${daughterName}/${daughterObj.id}/${issueName}`);
   });
 
   it('issue at the parent element', () => {
@@ -71,7 +75,8 @@ describe('Issue-info component', () => {
     const c = component.current;
     const parentName = Object.keys(c.issue)[0];
     const parentObj = c.issue[parentName][0];
+    const hostlessHref = href.slice(href.indexOf(parentObj.path)-1);
     const issueName = Object.keys(parentObj.issue)[0];
-    expect(href).toBe(`/${parentObj.path}/${parentObj.id}/${issueName}`);
+    expect(hostlessHref).toBe(`/${parentObj.path}/${parentObj.id}/${issueName}`);
   });
 });

@@ -12,11 +12,12 @@
 
 """Test corner cases where permissions got messed up and allows more than they should be"""
 
-from typing import Callable, Iterable, Tuple
+from collections.abc import Callable, Iterable
 
 import allure
 import pytest
 from adcm_client.objects import Cluster
+
 from tests.functional.rbac.action_role_utils import (
     action_business_role,
     create_action_policy,
@@ -39,7 +40,7 @@ class TestClusterAdminRoleDoNotBreakParametrization:
     """Test that granting "Cluster Administrator" role doesn't break parametrization of other objects"""
 
     @pytest.fixture()
-    def clusters(self, actions_cluster_bundle, simple_cluster_bundle) -> Tuple[Cluster, Cluster, Cluster, Cluster]:
+    def clusters(self, actions_cluster_bundle, simple_cluster_bundle) -> tuple[Cluster, Cluster, Cluster, Cluster]:
         """Prepare clusters from two bundles"""
         first_cluster = actions_cluster_bundle.cluster_create("First Cluster")
         second_cluster = actions_cluster_bundle.cluster_create("Second Cluster")
@@ -53,7 +54,7 @@ class TestClusterAdminRoleDoNotBreakParametrization:
         )
 
     @pytest.fixture()
-    def clusters_with_services(self, actions_cluster_bundle, simple_cluster_bundle) -> Tuple[Cluster, Cluster]:
+    def clusters_with_services(self, actions_cluster_bundle, simple_cluster_bundle) -> tuple[Cluster, Cluster]:
         """
         Prepare two clusters with services:
           - first from actions bundle with two services
@@ -85,7 +86,7 @@ class TestClusterAdminRoleDoNotBreakParametrization:
 
         clients.admin.policy_create(
             name="Cluster Admin for First Cluster",
-            role=clients.admin.role(display_name=RbacRoles.ClusterAdministrator.value),
+            role=clients.admin.role(display_name=RbacRoles.CLUSTER_ADMINISTRATOR.value),
             objects=[first_cluster_admin],
             user=[user],
         )
@@ -168,7 +169,7 @@ class TestClusterAdminRoleDoNotBreakParametrization:
 
         clients.admin.policy_create(
             name="Service Admin for First Cluster",
-            role=clients.admin.role(display_name=RbacRoles.ServiceAdministrator.value),
+            role=clients.admin.role(display_name=RbacRoles.SERVICE_ADMINISTRATOR.value),
             objects=[first_service],
             user=[user],
         )
@@ -237,8 +238,8 @@ class TestClusterAdminRoleDoNotBreakParametrization:
     def check_permissions(
         self,
         message: str,
-        allowed: Iterable[Tuple[AnyADCMObject, BusinessRole]],
-        denied: Iterable[Tuple[Cluster, BusinessRole]],
+        allowed: Iterable[tuple[AnyADCMObject, BusinessRole]],
+        denied: Iterable[tuple[Cluster, BusinessRole]],
         check_denied: Callable,
     ):
         """Check that permissions on actions works as expected"""

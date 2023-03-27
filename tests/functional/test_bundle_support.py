@@ -19,6 +19,7 @@ from _pytest.outcomes import Failed
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import catch_failed, random_string
+
 from tests.library import errorcodes as err
 
 
@@ -28,7 +29,7 @@ from tests.library import errorcodes as err
         pytest.param(
             utils.get_data_dir(__file__, "bundle_wo_cluster_definition"),
             id="bundle_wo_cluster_definition",
-        )
+        ),
     ],
     indirect=True,
 )

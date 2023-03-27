@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { AdwpCellComponent, ILinkColumn } from '@adwp-ui/widgets';
+import { AdwpCellComponent, ILinkColumn } from '@app/adwp';
 
 import { Job } from '@app/core/types';
 
@@ -7,7 +7,7 @@ import { Job } from '@app/core/types';
   selector: 'app-job-name',
   template: `
     <div class="job-name-container">
-      <ng-container *ngIf="row.status === 'created' || row.status === 'aborted'; else link">
+      <ng-container *ngIf="row.status === 'created'; else link">
         <span class="regular-name">{{ row.display_name || row.id }}</span>
       </ng-container>
       <ng-template #link>

@@ -14,16 +14,6 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
-from django.conf import settings
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import (
-    HTTP_201_CREATED,
-    HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
-)
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -43,11 +33,21 @@ from cm.models import (
     PrototypeExport,
     PrototypeImport,
 )
+from django.conf import settings
+from django.urls import reverse
 from rbac.models import Policy, Role, User
 from rbac.upgrade.role import init_roles
+from rest_framework.response import Response
+from rest_framework.status import (
+    HTTP_201_CREATED,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+)
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
-class TestService(BaseTestCase):
+class TestServiceAudit(BaseTestCase):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
     def setUp(self) -> None:
@@ -67,7 +67,9 @@ class TestService(BaseTestCase):
         config.save(update_fields=["current"])
 
         self.service = ClusterObject.objects.create(
-            prototype=self.service_prototype, cluster=self.cluster, config=config
+            prototype=self.service_prototype,
+            cluster=self.cluster,
+            config=config,
         )
         self.service_conf_updated_str = "Service configuration updated"
         self.action_display_name = "test_service_action"
@@ -109,10 +111,10 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            object_type=AuditObjectType.Service,
+            object_type=AuditObjectType.SERVICE,
             operation_name=f"{self.action_display_name} action launched",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -133,10 +135,10 @@ class TestService(BaseTestCase):
             log=log,
             obj=cluster,
             obj_name=cluster.name,
-            object_type=AuditObjectType.Cluster,
+            object_type=AuditObjectType.CLUSTER,
             operation_name=f"{self.service_prototype.display_name} service added",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -155,10 +157,10 @@ class TestService(BaseTestCase):
             log=log,
             obj=cluster,
             obj_name=cluster.name,
-            object_type=AuditObjectType.Cluster,
+            object_type=AuditObjectType.CLUSTER,
             operation_name="service added",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Fail,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.FAIL,
             user=self.test_user,
         )
 
@@ -197,10 +199,10 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            object_type=AuditObjectType.Service,
+            object_type=AuditObjectType.SERVICE,
             operation_name=self.service_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -219,10 +221,10 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            object_type=AuditObjectType.Service,
+            object_type=AuditObjectType.SERVICE,
             operation_name=self.service_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -241,10 +243,10 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            object_type=AuditObjectType.Service,
+            object_type=AuditObjectType.SERVICE,
             operation_name=self.service_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -265,10 +267,10 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            object_type=AuditObjectType.Service,
+            object_type=AuditObjectType.SERVICE,
             operation_name=self.service_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -284,10 +286,10 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service.cluster,
             obj_name=self.service.cluster.name,
-            object_type=AuditObjectType.Cluster,
+            object_type=AuditObjectType.CLUSTER,
             operation_name=f"{self.service.display_name} service removed",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -300,8 +302,8 @@ class TestService(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.assertEqual(log.operation_name, "service removed")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.FAIL)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.test_user.pk)
         self.assertEqual(log.object_changes, {})
@@ -329,10 +331,10 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service.cluster,
             obj_name=self.service.cluster.name,
-            object_type=AuditObjectType.Cluster,
+            object_type=AuditObjectType.CLUSTER,
             operation_name=f"{self.service.display_name} service removed",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -426,10 +428,10 @@ class TestService(BaseTestCase):
             log=log,
             obj=cluster,
             obj_name=cluster.name,
-            object_type=AuditObjectType.Cluster,
+            object_type=AuditObjectType.CLUSTER,
             operation_name=f"{service.display_name} service removed",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=user,
         )
 
@@ -446,10 +448,10 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            object_type=AuditObjectType.Service,
+            object_type=AuditObjectType.SERVICE,
             operation_name="Service import updated",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -468,10 +470,10 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            object_type=AuditObjectType.Service,
+            object_type=AuditObjectType.SERVICE,
             operation_name="Service import updated",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -489,10 +491,10 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            object_type=AuditObjectType.Service,
+            object_type=AuditObjectType.SERVICE,
             operation_name=f"Service bound to {cluster.name}",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -508,10 +510,10 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            object_type=AuditObjectType.Service,
+            object_type=AuditObjectType.SERVICE,
             operation_name=f"{cluster.name} unbound",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -529,10 +531,10 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            object_type=AuditObjectType.Service,
+            object_type=AuditObjectType.SERVICE,
             operation_name=f"Service bound to {cluster.name}/{service.display_name}",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -548,10 +550,10 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            object_type=AuditObjectType.Service,
+            object_type=AuditObjectType.SERVICE,
             operation_name=f"{cluster.name}/{service.display_name} unbound",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -571,10 +573,10 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            object_type=AuditObjectType.Service,
+            object_type=AuditObjectType.SERVICE,
             operation_name=f"Service bound to {cluster.name}",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -600,17 +602,17 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            object_type=AuditObjectType.Service,
+            object_type=AuditObjectType.SERVICE,
             operation_name=f"{cluster.name} unbound",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
     def test_action_launch(self):
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
-                path=reverse("run-task", kwargs={"service_id": self.service.pk, "action_id": self.action.pk})
+                path=reverse("run-task", kwargs={"service_id": self.service.pk, "action_id": self.action.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -626,7 +628,7 @@ class TestService(BaseTestCase):
                         "service_id": self.service.pk,
                         "action_id": self.action.pk,
                     },
-                )
+                ),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -646,9 +648,9 @@ class TestService(BaseTestCase):
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
             operation_name="Service updated",
-            object_type=AuditObjectType.Service,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
+            object_type=AuditObjectType.SERVICE,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
             object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
         )
@@ -669,9 +671,9 @@ class TestService(BaseTestCase):
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
             operation_name="Service updated",
-            object_type=AuditObjectType.Service,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
+            object_type=AuditObjectType.SERVICE,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
             object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
         )
@@ -689,9 +691,9 @@ class TestService(BaseTestCase):
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
             operation_name="Service updated",
-            object_type=AuditObjectType.Service,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Fail,
+            object_type=AuditObjectType.SERVICE,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.FAIL,
             user=self.test_user,
         )
 
@@ -709,8 +711,8 @@ class TestService(BaseTestCase):
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
             operation_name="Service updated",
-            object_type=AuditObjectType.Service,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            object_type=AuditObjectType.SERVICE,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )

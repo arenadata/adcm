@@ -39,6 +39,19 @@
         available: any
       params:
         ansible_tags: fail
+    one_job_action:
+      type: task
+      display_name: "one_job_action"
+      scripts:
+        - name: first_step
+          allow_to_terminate: true
+          script_type: ansible
+          script: sleep.yaml
+          params:
+            ansible_tags: fail
+      states:
+        available: any
+        on_success: success
     multijob:
       type: task
       display_name: "Multijob"
@@ -53,8 +66,10 @@
           name: second_step
         - <<: *multijob
           name: third_step
+          allow_to_terminate: true
       states:
         available: any
+        on_success: success
     with_check:
       type: task
       display_name: "With check"
@@ -90,5 +105,32 @@
           display_name: "Long action"
           params:
             ansible_tags: pause
+        component_cancel:
+          type: task
+          display_name: "component_cancel"
+          scripts:
+            - name: first_step
+              allow_to_terminate: true
+              script_type: ansible
+              script: sleep.yaml
+              params:
+                ansible_tags: fail
+          states:
+            available: any
+            on_success: success
+        component_cancel_multijob:
+          type: task
+          display_name: "component_cancel_multijob"
+          scripts:
+            - <<: *multijob
+              name: second_step
+            - <<: *multijob
+              name: third_step
+              allow_to_terminate: true
+          states:
+            available: any
+            on_success: success
+
+
 
   actions: *actions

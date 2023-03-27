@@ -9,8 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-order,wrong-import-position
+# ruff: noqa: E402,F401
 
 DOCUMENTATION = """
 ---
@@ -94,7 +94,7 @@ class ActionModule(ActionBase):
         obj_value = "ON" if self._task.args["value"] else "OFF"
         obj_pk = get_object_id_from_context(
             task_vars,
-            f'{obj_type}_id',
+            f"{obj_type}_id",
             context_type,
             err_msg=f'You can change "{obj_type}" maintenance mode only in {context_type} context',
         )

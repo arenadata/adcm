@@ -11,6 +11,9 @@
 # limitations under the License.
 
 import jsonschema
+from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from rbac.models import Group, Policy, Role, RoleTypes, User
+from rbac.utils import BaseRelatedSerializer
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import (
@@ -23,9 +26,6 @@ from rest_framework.relations import HyperlinkedIdentityField, PrimaryKeyRelated
 from rest_framework.serializers import ModelSerializer
 
 from adcm.utils import get_obj_type
-from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
-from rbac.models import Group, Policy, Role, RoleTypes, User
-from rbac.utils import BaseRelatedSerializer
 
 
 class ObjectField(JSONField):
@@ -81,7 +81,7 @@ class ObjectField(JSONField):
                     "id": obj.object_id,
                     "type": obj.object.prototype.type,
                     "name": obj.object.display_name,
-                }
+                },
             )
 
         return super().to_representation(data)
@@ -132,7 +132,7 @@ class PolicySerializer(FlexFieldsSerializerMixin, ModelSerializer):
 
     @staticmethod
     def validate_role(role):
-        if role.type != RoleTypes.role:
+        if role.type != RoleTypes.ROLE:
             raise ValidationError(f'Role with type "{role.type}" could not be used in policy')
 
         return role

@@ -4,7 +4,7 @@ import { RbacUserFormComponent } from './rbac-user-form.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RbacGroupFormModule } from '../group-form/rbac-group-form.module';
 import { RbacGroupsAsOptionsModule } from '../group-form/options/rbac-groups-as-options.module';
-import { AdwpFormElementModule } from '@adwp-ui/widgets';
+import { AdwpFormElementModule } from '@app/adwp';
 import { FalseAsEmptyArrayModule } from '../../../shared/pipes/false-as-empty-array/false-as-empty-array.module';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 

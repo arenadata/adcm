@@ -12,21 +12,21 @@
 
 from datetime import datetime
 
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_403_FORBIDDEN
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
     AuditObjectType,
 )
+from django.urls import reverse
 from rbac.models import Group, User
+from rest_framework.response import Response
+from rest_framework.status import HTTP_403_FORBIDDEN
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
-class TestGroup(BaseTestCase):
+class TestGroupAudit(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -52,7 +52,7 @@ class TestGroup(BaseTestCase):
 
         self.assertEqual(log.audit_object.object_id, self.group.pk)
         self.assertEqual(log.audit_object.object_name, self.group.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Group)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.GROUP)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, operation_name)
         self.assertEqual(log.operation_type, operation_type)
@@ -72,11 +72,11 @@ class TestGroup(BaseTestCase):
         group = Group.objects.get(pk=response.data["id"])
         self.assertEqual(log.audit_object.object_id, response.data["id"])
         self.assertEqual(log.audit_object.object_name, group.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Group)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.GROUP)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, self.group_created_str)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.SUCCESS)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.test_user.pk)
         self.assertIsInstance(log.object_changes, dict)
@@ -90,8 +90,8 @@ class TestGroup(BaseTestCase):
 
         self.assertFalse(log.audit_object)
         self.assertEqual(log.operation_name, self.group_created_str)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
+        self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.FAIL)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.test_user.pk)
         self.assertIsInstance(log.object_changes, dict)
@@ -108,8 +108,8 @@ class TestGroup(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.assertFalse(log.audit_object)
         self.assertEqual(log.operation_name, self.group_created_str)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
+        self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.DENIED)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.no_rights_user.pk)
         self.assertIsInstance(log.object_changes, dict)
@@ -125,8 +125,8 @@ class TestGroup(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Group deleted",
-            operation_type=AuditLogOperationType.Delete,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.DELETE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -143,8 +143,8 @@ class TestGroup(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Group deleted",
-            operation_type=AuditLogOperationType.Delete,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.DELETE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -165,8 +165,8 @@ class TestGroup(BaseTestCase):
         self.check_log(
             log=log,
             operation_name=self.group_updated_str,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
             object_changes={
                 "current": {"description": new_description, "user": [self.test_user.username]},
@@ -191,8 +191,8 @@ class TestGroup(BaseTestCase):
         self.check_log(
             log=log,
             operation_name=self.group_updated_str,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -212,8 +212,8 @@ class TestGroup(BaseTestCase):
         self.check_log(
             log=log,
             operation_name=self.group_updated_str,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
             object_changes={
                 "current": {"description": new_description, "user": [self.test_user.username]},
@@ -235,7 +235,7 @@ class TestGroup(BaseTestCase):
         self.check_log(
             log=log,
             operation_name=self.group_updated_str,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )

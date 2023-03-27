@@ -13,13 +13,18 @@
 """Profile page locators"""
 
 from selenium.webdriver.common.by import By
-from tests.ui_tests.app.helpers.locator import Locator
+
+from tests.ui_tests.core.locators import BaseLocator
 
 
 class ProfileLocators:
     """Profile page elements locators"""
 
-    username = Locator(By.XPATH, "//p[contains(text(), 'You are authorized as')]/b", "Authorized user name")
-    password = Locator(By.CSS_SELECTOR, "input[formcontrolname='password']", "New password input field")
-    confirm_password = Locator(By.CSS_SELECTOR, "input[formcontrolname='cpassword']", "New password confirmation field")
-    save_password_btn = Locator(By.XPATH, "//button[./span[text()= 'Save']]", "Save password button")
+    username = BaseLocator(By.XPATH, "//p[contains(text(), 'You are authorized as')]/b", "Authorized user name")
+    password = BaseLocator(By.CSS_SELECTOR, "input[formcontrolname='password']", "New password input field")
+    confirm_password = BaseLocator(
+        By.CSS_SELECTOR,
+        "input[formcontrolname='cpassword']",
+        "New password confirmation field",
+    )
+    save_password_btn = BaseLocator(By.XPATH, "//button[./span[text()= 'Save']]", "Save password button")

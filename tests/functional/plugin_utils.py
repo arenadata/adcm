@@ -13,9 +13,10 @@
 Common functions and helpers for testing plugins (state, multi_state, config)
 """
 
+from collections.abc import Callable, Collection
 from contextlib import contextmanager
 from operator import methodcaller
-from typing import Callable, Collection, Dict, List, Optional, Set, Tuple, Type, TypeVar
+from typing import TypeVar
 
 import allure
 import pytest
@@ -38,6 +39,7 @@ from adcm_pytest_plugin.steps.actions import (
     run_service_action_and_assert_result,
     wait_for_task_and_assert_result,
 )
+
 from tests.functional.tools import (
     ADCMObjects,
     AnyADCMObject,
@@ -47,12 +49,12 @@ from tests.functional.tools import (
 )
 
 # value of object's field (e.g. "created" as value for state)
-ADCMObjectField = TypeVar('ADCMObjectField')
+ADCMObjectField = TypeVar("ADCMObjectField")
 
-DEFAULT_OBJECT_NAMES = ('first', 'second')
+DEFAULT_OBJECT_NAMES = ("first", "second")
 
 
-def create_two_clusters(adcm_client: ADCMClient, caller_file: str, bundle_dir: str) -> Tuple[Cluster, Cluster]:
+def create_two_clusters(adcm_client: ADCMClient, caller_file: str, bundle_dir: str) -> tuple[Cluster, Cluster]:
     """
     Create two clusters with two services on each with "default object names"
     :param adcm_client: ADCM client
@@ -69,7 +71,7 @@ def create_two_clusters(adcm_client: ADCMClient, caller_file: str, bundle_dir: s
     return clusters
 
 
-def create_two_providers(adcm_client: ADCMClient, caller_file: str, bundle_dir: str) -> Tuple[Provider, Provider]:
+def create_two_providers(adcm_client: ADCMClient, caller_file: str, bundle_dir: str) -> tuple[Provider, Provider]:
     """
     Create two providers with two hosts
     :param adcm_client: ADCM client
@@ -82,11 +84,11 @@ def create_two_providers(adcm_client: ADCMClient, caller_file: str, bundle_dir: 
     providers = (first_provider, second_provider)
     for provider in providers:
         for suffix in DEFAULT_OBJECT_NAMES:
-            provider.host_create(fqdn=f'{provider.name}-{suffix}')
+            provider.host_create(fqdn=f"{provider.name}-{suffix}")
     return providers
 
 
-def generate_cluster_success_params(action_prefix: str, id_template: str) -> List[ParameterSet]:
+def generate_cluster_success_params(action_prefix: str, id_template: str) -> list[ParameterSet]:
     """
     Generate successful multi_state_set params for cluster objects:
 
@@ -103,91 +105,91 @@ def generate_cluster_success_params(action_prefix: str, id_template: str) -> Lis
                         'set_cluster_multi_state_from_service',
                         'set_service_multi_state_from_component'.
     """
-    cluster = ('first',)
+    cluster = ("first",)
 
-    first_service = (*cluster, 'first')
-    first_service_first_component = (*first_service, 'first')
-    first_service_second_component = (*first_service, 'second')
+    first_service = (*cluster, "first")
+    first_service_first_component = (*first_service, "first")
+    first_service_second_component = (*first_service, "second")
 
-    second_service = (*cluster, 'second')
-    second_service_first_component = (*second_service, 'first')
+    second_service = (*cluster, "second")
+    second_service_first_component = (*second_service, "first")
     return [
         *[
             pytest.param(
-                f'{action_prefix}_cluster',
+                f"{action_prefix}_cluster",
                 cluster,
                 from_obj_func,
-                id=id_template.format('cluster') + f'_from_{from_obj_id}',
+                id=id_template.format("cluster") + f"_from_{from_obj_id}",
             )
             for from_obj_func, from_obj_id in (
-                (cluster, 'self'),
-                (first_service, 'service'),
-                (first_service_first_component, 'component'),
+                (cluster, "self"),
+                (first_service, "service"),
+                (first_service_first_component, "component"),
             )
         ],
         *[
             pytest.param(
-                f'{action_prefix}_service',
+                f"{action_prefix}_service",
                 first_service,
                 from_obj_func,
-                id=id_template.format('service') + f'_from_{from_obj_id}',
+                id=id_template.format("service") + f"_from_{from_obj_id}",
             )
             for from_obj_func, from_obj_id in (
-                (first_service, 'self'),
-                (first_service_first_component, 'component'),
+                (first_service, "self"),
+                (first_service_first_component, "component"),
             )
         ],
         pytest.param(
-            f'{action_prefix}_component',
+            f"{action_prefix}_component",
             first_service_first_component,
             first_service_first_component,
-            id=id_template.format('component') + '_from_self',
+            id=id_template.format("component") + "_from_self",
         ),
         *[
             pytest.param(
-                f'{action_prefix}_first_service',
+                f"{action_prefix}_first_service",
                 first_service,
                 from_obj_func,
-                id=id_template.format('service') + f'_from_{from_obj_id}',
+                id=id_template.format("service") + f"_from_{from_obj_id}",
             )
             for from_obj_func, from_obj_id in (
-                (first_service, 'self_by_name'),
-                (cluster, 'cluster'),
-                (second_service, 'another_service'),
-                (second_service_first_component, 'another_service_component'),
+                (first_service, "self_by_name"),
+                (cluster, "cluster"),
+                (second_service, "another_service"),
+                (second_service_first_component, "another_service_component"),
             )
         ],
         *[
             pytest.param(
-                f'{action_prefix}_first_component',
+                f"{action_prefix}_first_component",
                 first_service_first_component,
                 from_obj_func,
-                id=id_template.format('component') + f'_from_{from_obj_id}',
+                id=id_template.format("component") + f"_from_{from_obj_id}",
             )
             for from_obj_func, from_obj_id in (
-                (first_service_first_component, 'self_by_name'),
-                (first_service, 'service'),
-                (first_service_second_component, 'another_component'),
+                (first_service_first_component, "self_by_name"),
+                (first_service, "service"),
+                (first_service_second_component, "another_component"),
             )
         ],
         *[
             pytest.param(
-                f'{action_prefix}_first_service_first_component',
+                f"{action_prefix}_first_service_first_component",
                 first_service_first_component,
                 from_obj_func,
-                id=id_template.format('component') + f'_from_{from_obj_id}',
+                id=id_template.format("component") + f"_from_{from_obj_id}",
             )
             for from_obj_func, from_obj_id in (
-                (first_service_first_component, 'self_by_service_component_name'),
-                (cluster, 'cluster'),
-                (second_service, 'another_service'),
-                (second_service_first_component, 'component_from_another_service'),
+                (first_service_first_component, "self_by_service_component_name"),
+                (cluster, "cluster"),
+                (second_service, "another_service"),
+                (second_service_first_component, "component_from_another_service"),
             )
         ],
     ]
 
 
-def generate_provider_success_params(action_prefix: str, id_template: str) -> List[ParameterSet]:
+def generate_provider_success_params(action_prefix: str, id_template: str) -> list[ParameterSet]:
     """
     Generate successful params for provider objects:
 
@@ -204,31 +206,31 @@ def generate_provider_success_params(action_prefix: str, id_template: str) -> Li
                         'set_cluster_multi_state_from_service',
                         'set_service_multi_state_from_component'.
     """
-    provider = ('first',)
-    host = (*provider, 'first-first')
+    provider = ("first",)
+    host = (*provider, "first-first")
 
     return [
         pytest.param(
-            f'{action_prefix}_provider',
+            f"{action_prefix}_provider",
             provider,
             provider,
-            id=id_template.format('provider') + '_from_self',
+            id=id_template.format("provider") + "_from_self",
         ),
         pytest.param(
-            f'{action_prefix}_provider',
+            f"{action_prefix}_provider",
             provider,
             host,
-            id=id_template.format('provider') + '_from_host',
+            id=id_template.format("provider") + "_from_host",
         ),
-        pytest.param(f'{action_prefix}_host', host, host, id=id_template.format('host') + '_from_self'),
+        pytest.param(f"{action_prefix}_host", host, host, id=id_template.format("host") + "_from_self"),
     ]
 
 
 def get_cluster_related_object(
     client: ADCMClient,
-    cluster: str = 'first',
-    service: Optional[str] = None,
-    component: Optional[str] = None,
+    cluster: str = "first",
+    service: str | None = None,
+    component: str | None = None,
 ) -> ClusterRelatedObject:
     """
     Get function to get one of ADCM cluster objects:
@@ -247,7 +249,9 @@ def get_cluster_related_object(
 
 
 def get_provider_related_object(
-    client: ADCMClient, provider: str = 'first', host: Optional[str] = None
+    client: ADCMClient,
+    provider: str = "first",
+    host: str | None = None,
 ) -> ProviderRelatedObject:
     """
     Get function to get one of ADCM provider objects:
@@ -267,7 +271,7 @@ def compose_name(adcm_object: AnyADCMObject) -> str:
     """
     if isinstance(adcm_object, Host):
         return f'Host "{adcm_object.fqdn}"'
-    if description := getattr(adcm_object, 'description', ''):
+    if description := getattr(adcm_object, "description", ""):
         return description
     return f'{adcm_object.__class__.__name__} "{adcm_object.name}"'
 
@@ -285,7 +289,7 @@ def build_objects_comparator(
         with allure.step(f"Assert that {adcm_object_name} has {expected_value} in {field_name.lower()} value"):
             assert (
                 actual_value := get_compare_value(adcm_object)
-            ) == expected_value, f'{field_name} of {adcm_object_name} should be {expected_value}, not {actual_value}'
+            ) == expected_value, f"{field_name} of {adcm_object_name} should be {expected_value}, not {actual_value}"
 
     return compare
 
@@ -293,8 +297,8 @@ def build_objects_comparator(
 def build_objects_checker(
     changed: ADCMObjectField,
     extractor: Callable[[AnyADCMObject], ADCMObjectField],
-    comparator: Optional[Callable[[AnyADCMObject, ADCMObjectField], None]] = None,
-    field_name: Optional[str] = None,
+    comparator: Callable[[AnyADCMObject, ADCMObjectField], None] | None = None,
+    field_name: str | None = None,
 ) -> Callable[..., None]:
     """
     Get context manager to check that only particular objects were changed
@@ -310,13 +314,14 @@ def build_objects_checker(
     """
     if comparator is None:
         comparator = build_objects_comparator(
-            get_compare_value=extractor, field_name=field_name if field_name else 'Attribute'
+            get_compare_value=extractor,
+            field_name=field_name if field_name else "Attribute",
         )
 
     title = (
-        f'Check {field_name.lower()} of presented objects changed correctly'
+        f"Check {field_name.lower()} of presented objects changed correctly"
         if field_name
-        else 'Check objects changed correctly'
+        else "Check objects changed correctly"
     )
 
     @contextmanager
@@ -327,7 +332,9 @@ def build_objects_checker(
         allure_step_title: str = title,
     ):
         unchanged_attributes = freeze_objects_attribute(
-            adcm_client, extractor, to_ignore=_build_ignore_map(changed_objects)
+            adcm_client,
+            extractor,
+            to_ignore=_build_ignore_map(changed_objects),
         )
 
         yield
@@ -336,7 +343,7 @@ def build_objects_checker(
             for adcm_object in changed_objects:
                 comparator(adcm_object, changed)
 
-        with allure.step('Check other objects was left intact'):
+        with allure.step("Check other objects was left intact"):
             unchanged_components = unchanged_attributes.pop(Component)
             for object_class, id_attr_map in unchanged_attributes.items():
                 get_method_name = object_class.__name__.lower()
@@ -353,11 +360,11 @@ def build_objects_checker(
     return wrapped
 
 
-@allure.step('Save objects configurations before changes')
+@allure.step("Save objects configurations before changes")
 def freeze_objects_attribute(
     adcm_client: ADCMClient,
     get_attribute_func: Callable[[AnyADCMObject], ADCMObjectField],
-    to_ignore: Dict[Type[AnyADCMObject], Set[int]],
+    to_ignore: dict[type[AnyADCMObject], set[int]],
 ):
     """
     Freeze all "dummies" (objects created before this fixture was called
@@ -397,7 +404,7 @@ def run_successful_task(action: Action, action_owner_name: str):
         wait_for_task_and_assert_result(task, status="success")
     except AssertionError as error:
         raise AssertionError(
-            f'Action {action.name} should have succeeded when ran on {action_owner_name}:\n{error}'
+            f"Action {action.name} should have succeeded when ran on {action_owner_name}:\n{error}",
         ) from error
 
 
@@ -413,7 +420,7 @@ def _build_ignore_map(objects_to_ignore: Collection[AnyADCMObject]):
 def __check_components(
     adcm_client: ADCMClient,
     comparator: Callable,
-    components: Dict[int, ADCMObjectField],
+    components: dict[int, ADCMObjectField],
     service_ids: Collection[int],
 ):
     """Check components config is intact since .component is not implemented"""
@@ -439,32 +446,36 @@ class TestImmediateChange:
     _provider_bundle_name = "immediate_change_provider"
 
     @pytest.fixture()
-    def provider_host(self, sdk_client_fs: ADCMClient) -> Tuple[Provider, Host]:
+    def provider_host(self, sdk_client_fs: ADCMClient) -> tuple[Provider, Host]:
         """Get provider and host created for immediate change testing"""
         uploaded_bundle = sdk_client_fs.upload_from_fs(
-            plugin_utils.get_data_dir(self._file, self._provider_bundle_name)
+            plugin_utils.get_data_dir(self._file, self._provider_bundle_name),
         )
-        provider = uploaded_bundle.provider_create('Nicer')
-        return provider, provider.host_create('good-fqdn')
+        provider = uploaded_bundle.provider_create("Nicer")
+        return provider, provider.host_create("good-fqdn")
 
     @pytest.fixture()
     def cluster_service_component(
-        self, provider_host: Tuple[Provider, Host], sdk_client_fs: ADCMClient
-    ) -> Tuple[Cluster, Service, Component]:
+        self,
+        provider_host: tuple[Provider, Host],
+        sdk_client_fs: ADCMClient,
+    ) -> tuple[Cluster, Service, Component]:
         """Get cluster, service and component with added service and host for immediate config change"""
-        uploaded_bundle = sdk_client_fs.upload_from_fs(plugin_utils.get_data_dir(self._file, self._cluster_bundle_name))
-        cluster = uploaded_bundle.cluster_create('Cooler')
+        uploaded_bundle = sdk_client_fs.upload_from_fs(
+            plugin_utils.get_data_dir(self._file, self._cluster_bundle_name),
+        )
+        cluster = uploaded_bundle.cluster_create("Cooler")
         _, host = provider_host
         cluster.host_add(host)
-        service = cluster.service_add(name='test_service')
+        service = cluster.service_add(name="test_service")
         component = service.component()
         cluster.hostcomponent_set((host, component))
         return cluster, service, component
 
     def run_immediate_change_test(
         self,
-        provider_host: Tuple[Provider, Host],
-        cluster_service_component: Tuple[Cluster, Service, Component],
+        provider_host: tuple[Provider, Host],
+        cluster_service_component: tuple[Cluster, Service, Component],
     ):
         """
         Run the same action (self._action) for cluster, service, component, provider, host

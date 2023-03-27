@@ -14,12 +14,10 @@
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageFooter,
-    PageHeader,
-)
+
+from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.profile.locators import ProfileLocators
+from tests.ui_tests.core.checks import check_elements_are_displayed
 
 
 class ProfilePage(BasePageObject):
@@ -27,8 +25,6 @@ class ProfilePage(BasePageObject):
 
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/profile")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
 
     def get_username(self) -> str:
         """Get username of authorized user"""
@@ -42,25 +38,25 @@ class ProfilePage(BasePageObject):
         self.send_text_to_element(ProfileLocators.confirm_password, password)
         self.find_and_click(ProfileLocators.save_password_btn)
 
-    @allure.step('Check required fields are presented on Profile page')
+    @allure.step("Check required fields are presented on Profile page")
     def check_required_fields_are_presented(self):
-        """Check that all fields that should be on page by default are presented"""
-        self.assert_displayed_elements(
+        check_elements_are_displayed(
+            self,
             [
                 ProfileLocators.username,
                 ProfileLocators.password,
                 ProfileLocators.confirm_password,
                 ProfileLocators.save_password_btn,
-            ]
+            ],
         )
 
-    @allure.step('Check that username is {expected_username}')
+    @allure.step("Check that username is {expected_username}")
     def check_username(self, expected_username: str):
         """Wait for username to be what it is expected on opened profile page"""
 
         def _check_username_on_profile_page():
             assert (
                 username := self.get_username()
-            ) == expected_username, f'Expected username is {expected_username}, got {username} instead'
+            ) == expected_username, f"Expected username is {expected_username}, got {username} instead"
 
         wait_until_step_succeeds(_check_username_on_profile_page, timeout=5, period=0.5)

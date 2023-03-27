@@ -11,12 +11,12 @@
 # limitations under the License.
 import string
 
+from cm.models import Bundle, Cluster, Prototype
 from django.urls import reverse
+from init_db import init
 from rest_framework import status
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.models import Bundle, Cluster, Prototype
-from init_db import init
 
 
 class TestCluster(BaseTestCase):
@@ -134,7 +134,9 @@ class TestCluster(BaseTestCase):
         with self.another_user_logged_in(username="admin", password="admin"):
             for method in ("patch", "put"):
                 response = getattr(self.client, method)(
-                    path=url, data={"name": valid_name}, content_type=APPLICATION_JSON
+                    path=url,
+                    data={"name": valid_name},
+                    content_type=APPLICATION_JSON,
                 )
                 self.assertEqual(response.status_code, status.HTTP_200_OK)
                 self.assertEqual(response.json()["name"], valid_name)
@@ -144,6 +146,8 @@ class TestCluster(BaseTestCase):
 
             for method in ("patch", "put"):
                 response = getattr(self.client, method)(
-                    path=url, data={"name": valid_name}, content_type=APPLICATION_JSON
+                    path=url,
+                    data={"name": valid_name},
+                    content_type=APPLICATION_JSON,
                 )
                 self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

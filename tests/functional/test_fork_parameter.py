@@ -35,8 +35,8 @@ def test_default_ansible_forks(testing_cluster):
     """
     Check that default ansible fork count is 5
     """
-    run_cluster_action_and_assert_result(testing_cluster, "assert_fork", config=dict(fork_count=5))
-    run_cluster_action_and_assert_result(testing_cluster, "assert_fork_multijob", config=dict(fork_count=5))
+    run_cluster_action_and_assert_result(testing_cluster, "assert_fork", config={"fork_count": 5})
+    run_cluster_action_and_assert_result(testing_cluster, "assert_fork_multijob", config={"fork_count": 5})
 
 
 def test_custom_ansible_forks(sdk_client_fs, testing_cluster):
@@ -45,9 +45,11 @@ def test_custom_ansible_forks(sdk_client_fs, testing_cluster):
     """
     custom_forks_count = 10
     sdk_client_fs.adcm().config_set_diff({"ansible_settings": {"forks": custom_forks_count}})
-    run_cluster_action_and_assert_result(testing_cluster, "assert_fork", config=dict(fork_count=custom_forks_count))
+    run_cluster_action_and_assert_result(testing_cluster, "assert_fork", config={"fork_count": custom_forks_count})
     run_cluster_action_and_assert_result(
-        testing_cluster, "assert_fork_multijob", config=dict(fork_count=custom_forks_count)
+        testing_cluster,
+        "assert_fork_multijob",
+        config={"fork_count": custom_forks_count},
     )
 
 

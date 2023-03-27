@@ -12,7 +12,7 @@
 
 - type: cluster
   name: Secrets Cluster
-  version: 7.7
+  version: 15
 
   config:
     - &pass
@@ -21,11 +21,19 @@
     - &text
       name: secrettext
       type: secrettext
+    - &map
+      name: secretmap
+      type: secretmap
+    - &file
+      name: secretfile
+      type: secretfile
     - name: group
       type: group
       subs:
         - <<: *pass
         - <<: *text
+        - <<: *map
+        - <<: *file
 
   actions:
     change_secrets:
@@ -37,6 +45,10 @@
           type: password
         - name: new_secrettext
           type: secrettext
+        - name: new_secretmap
+          type: secretmap
+        - name: new_secretfile
+          type: secretfile
       states:
         available: any
 
@@ -49,5 +61,9 @@
           type: password
         - name: secrettext
           type: secrettext
+        - name: secretmap
+          type: secretmap
+        - name: secretfile
+          type: secretfile
       states:
         available: any

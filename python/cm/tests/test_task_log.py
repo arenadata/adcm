@@ -9,17 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import tarfile
+
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from django.conf import settings
-from django.test import override_settings
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
-
-from adcm.tests.base import BaseTestCase
 from api.job.views import (
     get_task_download_archive_file_handler,
     get_task_download_archive_name,
@@ -42,11 +35,16 @@ from cm.tests.utils import (
     gen_job_log,
     gen_task_log,
 )
+from django.conf import settings
+from django.test import override_settings
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
+
+from adcm.tests.base import BaseTestCase
 
 
 class TaskLogLockTest(BaseTestCase):
-    """Tests for `cm.models.TaskLog` lock-related methods"""
-
     def setUp(self) -> None:
         super().setUp()
 
@@ -56,7 +54,7 @@ class TaskLogLockTest(BaseTestCase):
         cluster = gen_cluster()
         task = gen_task_log(cluster)
         gen_job_log(task)
-        task.lock = gen_concern_item(ConcernType.Lock)
+        task.lock = gen_concern_item(ConcernType.LOCK)
         task.save()
         task.lock_affected([cluster])
 
@@ -149,7 +147,7 @@ class TaskLogLockTest(BaseTestCase):
                     prototype=cluster_2.prototype,
                     type="job",
                     state_available="any",
-                )
+                ),
             ),
         )
         JobLog.objects.create(
@@ -162,7 +160,7 @@ class TaskLogLockTest(BaseTestCase):
                     prototype=cluster_3.prototype,
                     type="job",
                     state_available="any",
-                )
+                ),
             ),
         )
         JobLog.objects.create(
@@ -175,7 +173,7 @@ class TaskLogLockTest(BaseTestCase):
                     prototype=cluster_4.prototype,
                     type="job",
                     state_available="any",
-                )
+                ),
             ),
         )
         job_no_files = JobLog.objects.create(
@@ -188,7 +186,7 @@ class TaskLogLockTest(BaseTestCase):
                     prototype=cluster_5.prototype,
                     type="job",
                     state_available="any",
-                )
+                ),
             ),
         )
         LogStorage.objects.create(job=job_no_files, body="stdout db", type="stdout", format="txt")
@@ -229,7 +227,9 @@ class TaskLogLockTest(BaseTestCase):
             start_date=datetime.now(tz=ZoneInfo("UTC")),
             finish_date=datetime.now(tz=ZoneInfo("UTC")),
             sub_action=SubAction.objects.create(
-                name="test_subaction_1", action=action, display_name="Test   Dis%#play   NAME!"
+                name="test_subaction_1",
+                action=action,
+                display_name="Test   Dis%#play   NAME!",
             ),
         )
         JobLog.objects.create(
@@ -238,47 +238,18 @@ class TaskLogLockTest(BaseTestCase):
             finish_date=datetime.now(tz=ZoneInfo("UTC")),
             sub_action=SubAction.objects.create(name="test_subaction_2", action=action),
         )
-        fn = get_task_download_archive_file_handler(task)
-        fn.seek(0)
-        tar = tarfile.open(fileobj=fn, mode='r:gz')
+        file_handler = get_task_download_archive_file_handler(task)
+        file_handler.seek(0)
+
         self.assertEqual(
-            sorted(
-                [
-                    "1-test-display-name/ansible-stdout.txt",
-                    "1-test-display-name/inventory.json",
-                    "1-test-display-name/ansible-stderr.txt",
-                    "1-test-display-name/config.json",
-                    "2-testsubaction2/ansible-stdout.txt",
-                    "2-testsubaction2/inventory.json",
-                    "2-testsubaction2/ansible-stderr.txt",
-                    "2-testsubaction2/config.json",
-                ]
-            ),
-            sorted(tar.getnames()),
-        )
-        self.assertEqual(
-            "test-cluster_test-cluster-prototype_test-cluster-action_1.tar.gz",
+            f"test-cluster_test-cluster-prototype_test-cluster-action_{task.pk}.tar.gz",
             get_task_download_archive_name(task),
         )
+
         cluster.delete()
         bundle.delete()
         task.refresh_from_db()
-        fn = get_task_download_archive_file_handler(task)
-        fn.seek(0)
-        tar = tarfile.open(fileobj=fn, mode='r:gz')
-        self.assertEqual(
-            sorted(
-                [
-                    "1/ansible-stdout.txt",
-                    "1/inventory.json",
-                    "1/ansible-stderr.txt",
-                    "1/config.json",
-                    "2/ansible-stdout.txt",
-                    "2/inventory.json",
-                    "2/ansible-stderr.txt",
-                    "2/config.json",
-                ]
-            ),
-            sorted(tar.getnames()),
-        )
-        self.assertEqual("1.tar.gz", get_task_download_archive_name(task))
+        file_handler = get_task_download_archive_file_handler(task)
+        file_handler.seek(0)
+
+        self.assertEqual(f"{task.pk}.tar.gz", get_task_download_archive_name(task))

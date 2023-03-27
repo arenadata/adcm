@@ -17,40 +17,39 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0004_auto_20180914_1042'),
+        ("cm", "0004_auto_20180914_1042"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='prototypeconfig',
-            name='action',
+            model_name="prototypeconfig",
+            name="action",
             field=models.ForeignKey(
-                default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.Action'
+                default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to="cm.Action"
             ),
         ),
         migrations.AddField(
-            model_name='stageprototypeconfig',
-            name='action',
+            model_name="stageprototypeconfig",
+            name="action",
             field=models.ForeignKey(
                 default=None,
                 null=True,
                 on_delete=django.db.models.deletion.CASCADE,
-                to='cm.StageAction',
+                to="cm.StageAction",
             ),
         ),
         migrations.AddField(
-            model_name='tasklog',
-            name='config',
+            model_name="tasklog",
+            name="config",
             field=models.TextField(null=True),
         ),
         migrations.AlterUniqueTogether(
-            name='prototypeconfig',
-            unique_together={('prototype', 'action', 'name', 'subname')},
+            name="prototypeconfig",
+            unique_together={("prototype", "action", "name", "subname")},
         ),
         migrations.AlterUniqueTogether(
-            name='stageprototypeconfig',
-            unique_together={('prototype', 'action', 'name', 'subname')},
+            name="stageprototypeconfig",
+            unique_together={("prototype", "action", "name", "subname")},
         ),
     ]

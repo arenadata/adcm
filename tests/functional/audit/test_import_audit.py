@@ -11,12 +11,12 @@
 # limitations under the License.
 
 """Tests for imports"""
-from typing import Optional
 
 import allure
 import pytest
 import requests
 from adcm_client.objects import ADCMClient, Cluster
+
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,
@@ -26,10 +26,8 @@ from tests.functional.audit.conftest import (
     parametrize_audit_scenario_parsing,
 )
 from tests.functional.audit.test_objects_updates import EXPORT_SERVICE, IMPORT_SERVICE
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles, create_policy
 
-pytestmark = [only_clean_adcm]
 # pylint: disable=redefined-outer-name
 
 
@@ -45,7 +43,7 @@ def import_export_clusters(sdk_client_fs) -> tuple[Cluster, Cluster]:
     return import_cluster, export_cluster
 
 
-def bind(url: str, cluster_id: Optional[int], service_id: Optional[int], **kwargs) -> requests.Response:
+def bind(url: str, cluster_id: int | None, service_id: int | None, **kwargs) -> requests.Response:
     body = {
         **({"export_cluster_id": cluster_id} if cluster_id else {}),
         **({"export_service_id": service_id} if service_id else {}),
@@ -56,7 +54,10 @@ def bind(url: str, cluster_id: Optional[int], service_id: Optional[int], **kwarg
 
 
 def change_service_id(
-    admin_client: ADCMClient, user_client: ADCMClient, import_cluster: Cluster, export_cluster: Cluster
+    admin_client: ADCMClient,
+    user_client: ADCMClient,
+    import_cluster: Cluster,
+    export_cluster: Cluster,
 ) -> None:
     """Set different service id and send request"""
     export_service = export_cluster.service()
@@ -64,7 +65,7 @@ def change_service_id(
     url = f"{admin_client.url}/api/v1/cluster/{import_cluster.id}/service/{import_service.id}/bind/"
 
     with allure.step(
-        f"Bind cluster and service with wrong service id {(export_service.id + 1)}," " with admin header and wait fail"
+        f"Bind cluster and service with wrong service id {(export_service.id + 1)}," " with admin header and wait fail",
     ):
         check_failed(
             bind(
@@ -77,7 +78,7 @@ def change_service_id(
         )
 
     with allure.step(
-        f"Bind cluster and service with wrong service id {(export_service.id + 1)}," " with user header and wait fail"
+        f"Bind cluster and service with wrong service id {(export_service.id + 1)}," " with user header and wait fail",
     ):
         check_failed(
             bind(
@@ -103,7 +104,10 @@ def change_service_id(
 
 
 def change_import_url(
-    admin_client: ADCMClient, user_client: ADCMClient, import_cluster: Cluster, export_cluster: Cluster
+    admin_client: ADCMClient,
+    user_client: ADCMClient,
+    import_cluster: Cluster,
+    export_cluster: Cluster,
 ) -> None:
     """Set different url and send request"""
     export_service = export_cluster.service()
@@ -119,13 +123,13 @@ def change_import_url(
                 cluster_id=export_cluster.id,
                 service_id=export_service.id,
                 headers=make_auth_header(admin_client),
-            )
+            ),
         )
 
     with allure.step(f"Unbind service with url {bind_from_service_url}"):
         service_bind_id = requests.get(bind_from_cluster_url, headers=make_auth_header(admin_client)).json()[0]["id"]
         check_succeed(
-            requests.delete(f"{bind_from_cluster_url}{service_bind_id}/", headers=make_auth_header(admin_client))
+            requests.delete(f"{bind_from_cluster_url}{service_bind_id}/", headers=make_auth_header(admin_client)),
         )
 
     with allure.step(f"Bind cluster and service with url {bind_from_service_url} with admin header and wait success"):
@@ -135,7 +139,7 @@ def change_import_url(
                 cluster_id=export_cluster.id,
                 service_id=export_service.id,
                 headers=make_auth_header(admin_client),
-            )
+            ),
         )
 
     with allure.step(f"Bind cluster and service with url {bind_from_cluster_url} with user header and wait fail"):
@@ -162,12 +166,17 @@ def change_import_url(
 
 
 @parametrize_audit_scenario_parsing("import_audit.yaml", NEW_USER)
-def test_negative_service_import(sdk_client_fs: ADCMClient, new_user_client, audit_log_checker, import_export_clusters):
+def test_negative_service_import(
+    sdk_client_fs: ADCMClient,
+    new_user_client,
+    audit_log_checker,
+    import_export_clusters,
+):
     """Test to check params on import"""
     import_cluster, export_cluster = import_export_clusters
     import_service = import_cluster.service()
     new_user = sdk_client_fs.user(id=new_user_client.me().id)
-    create_policy(sdk_client_fs, [BusinessRoles.ViewServiceConfigurations], [import_service], [new_user], [])
+    create_policy(sdk_client_fs, [BusinessRoles.VIEW_SERVICE_CONFIGURATIONS], [import_service], [new_user], [])
 
     change_import_url(
         admin_client=sdk_client_fs,

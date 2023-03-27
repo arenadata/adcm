@@ -12,12 +12,12 @@
 
 """Config page PageObjects classes"""
 
-from typing import List
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webdriver import WebElement
+
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.group_config.locators import GroupConfigLocators
 
@@ -31,8 +31,8 @@ class CommonGroupConfigMenu(BasePageObject):
 
     def is_customization_chbx_disabled(self, row: WebElement) -> bool:
         """Check if customization checkbox is disabled"""
-        return 'mat-checkbox-disabled' in str(
-            self.find_child(row, self.locators.customization_chbx).get_attribute("class")
+        return "mat-checkbox-disabled" in str(
+            self.find_child(row, self.locators.customization_chbx).get_attribute("class"),
         )
 
     @allure.step("Click on customization checkbox")
@@ -48,11 +48,11 @@ class CommonGroupConfigMenu(BasePageObject):
     def is_customization_chbx_checked(self, row: WebElement) -> bool:
         """Check if customization checkbox is checked"""
 
-        return 'mat-checkbox-checked' in str(
-            self.find_child(row, self.locators.customization_chbx).get_attribute("class")
+        return "mat-checkbox-checked" in str(
+            self.find_child(row, self.locators.customization_chbx).get_attribute("class"),
         )
 
-    def get_all_group_config_rows(self, *, displayed_only: bool = True, timeout: int = 5) -> List[WebElement]:
+    def get_all_group_config_rows(self, *, displayed_only: bool = True, timeout: int = 5) -> list[WebElement]:
         """Return all config field rows"""
 
         try:
@@ -62,7 +62,7 @@ class CommonGroupConfigMenu(BasePageObject):
         except TimeoutException:
             return []
 
-    def get_all_group_rows(self, *, displayed_only: bool = True, timeout: int = 5) -> List[WebElement]:
+    def get_all_group_rows(self, *, displayed_only: bool = True, timeout: int = 5) -> list[WebElement]:
         """Return all config group rows"""
 
         try:
@@ -72,6 +72,6 @@ class CommonGroupConfigMenu(BasePageObject):
         except TimeoutException:
             return []
 
-    @allure.step('Check that there are no rows on group config page')
+    @allure.step("Check that there are no rows on group config page")
     def check_no_rows(self):
         assert len(self.get_all_group_config_rows(timeout=1)) == 0, "There should not be any rows"

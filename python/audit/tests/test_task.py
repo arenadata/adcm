@@ -10,16 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from datetime import datetime
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
-from django.contrib.contenttypes.models import ContentType
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_404_NOT_FOUND
-
-from adcm.tests.base import BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -27,10 +21,16 @@ from audit.models import (
     AuditObjectType,
 )
 from cm.models import ADCM, Bundle, Prototype, TaskLog
+from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse
 from rbac.models import User
+from rest_framework.response import Response
+from rest_framework.status import HTTP_404_NOT_FOUND
+
+from adcm.tests.base import BaseTestCase
 
 
-class TestPolicy(BaseTestCase):
+class TestTaskAudit(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -40,8 +40,8 @@ class TestPolicy(BaseTestCase):
         self.task = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=ContentType.objects.get(app_label="cm", model="adcm"),
-            start_date=datetime.now(),
-            finish_date=datetime.now(),
+            start_date=datetime.now(tz=ZoneInfo("UTC")),
+            finish_date=datetime.now(tz=ZoneInfo("UTC")),
         )
         self.task_restarted_str = "Task restarted"
 
@@ -62,7 +62,7 @@ class TestPolicy(BaseTestCase):
             self.assertFalse(obj)
 
         self.assertEqual(log.operation_name, operation_name)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
@@ -77,7 +77,7 @@ class TestPolicy(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Task cancelled",
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
             obj=self.adcm,
         )
@@ -94,7 +94,7 @@ class TestPolicy(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Task cancelled",
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
             obj=self.adcm,
         )
@@ -108,7 +108,7 @@ class TestPolicy(BaseTestCase):
         self.check_log(
             log=log,
             operation_name=self.task_restarted_str,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
             obj=self.adcm,
         )
@@ -125,7 +125,7 @@ class TestPolicy(BaseTestCase):
         self.check_log(
             log=log,
             operation_name=self.task_restarted_str,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
             obj=self.adcm,
         )
@@ -143,7 +143,7 @@ class TestPolicy(BaseTestCase):
         self.check_log(
             log=log,
             operation_name=self.task_restarted_str,
-            operation_result=AuditLogOperationResult.Fail,
+            operation_result=AuditLogOperationResult.FAIL,
             user=self.test_user,
             obj=None,
         )

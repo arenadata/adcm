@@ -10,8 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# pylint: disable=unused-import
+# pylint: disable=wrong-import-order
 
 import json
 import os
@@ -22,7 +21,7 @@ from pathlib import Path
 from django.conf import settings
 from django.db import transaction
 
-import adcm.init_django
+import adcm.init_django  # pylint: disable=unused-import # noqa: F401
 import cm.job
 from cm.ansible_plugin import finish_check
 from cm.api import get_hc, save_hc
@@ -30,19 +29,25 @@ from cm.errors import AdcmEx
 from cm.logger import logger
 from cm.models import JobLog, JobStatus, LogStorage, Prototype, ServiceComponent
 from cm.status_api import Event, post_event
-from cm.upgrade import bundle_switch
+from cm.upgrade import bundle_revert, bundle_switch
+from cm.utils import get_env_with_venv_path
 
 
 def open_file(root, tag, job_id):
     fname = f"{root}/{job_id}/{tag}.txt"
-    f = open(fname, "w", encoding=settings.ENCODING_UTF_8)
+    f = open(fname, "w", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
+
     return f
 
 
 def read_config(job_id):
-    fd = open(f"{settings.RUN_DIR}/{job_id}/config.json", encoding=settings.ENCODING_UTF_8)
-    conf = json.load(fd)
-    fd.close()
+    file_descriptor = open(  # pylint: disable=consider-using-with
+        f"{settings.RUN_DIR}/{job_id}/config.json",
+        encoding=settings.ENCODING_UTF_8,
+    )
+    conf = json.load(file_descriptor)
+    file_descriptor.close()
+
     return conf
 
 
@@ -72,32 +77,33 @@ def set_ansible_config(env, job_id):
     return env
 
 
-def env_configuration(job_config):
+def get_configured_env(job_config: dict) -> dict:
     job_id = job_config["job"]["id"]
     stack_dir = job_config["env"]["stack_dir"]
     env = os.environ.copy()
-    env = set_pythonpath(env, stack_dir)
+    env = set_pythonpath(env=env, stack_dir=stack_dir)
+    env = get_env_with_venv_path(venv=JobLog.objects.get(id=job_id).action.venv, existing_env=env)
 
     # This condition is intended to support compatibility.
     # Since older bundle versions may contain their own ansible.cfg
     if not Path(stack_dir, "ansible.cfg").is_file():
-        env = set_ansible_config(env, job_id)
+        env = set_ansible_config(env=env, job_id=job_id)
         logger.info("set ansible config for job:%s", job_id)
+
     return env
 
 
 def post_log(job_id, log_type, log_name):
-    l1 = LogStorage.objects.filter(job__id=job_id, type=log_type, name=log_name).first()
-    if l1:
+    log_storage = LogStorage.objects.filter(job__id=job_id, type=log_type, name=log_name).first()
+    if log_storage:
         post_event(
-            "add_job_log",
-            "job",
-            job_id,
-            {
-                "id": l1.id,
-                "type": l1.type,
-                "name": l1.name,
-                "format": l1.format,
+            event="add_job_log",
+            obj=log_storage.job,
+            details={
+                "id": log_storage.id,
+                "type": log_storage.type,
+                "name": log_storage.name,
+                "format": log_storage.format,
             },
         )
 
@@ -117,7 +123,12 @@ def process_err_out_file(job_id, job_type):
 def start_subprocess(job_id, cmd, conf, out_file, err_file):
     event = Event()
     logger.info("job run cmd: %s", " ".join(cmd))
-    proc = subprocess.Popen(cmd, env=env_configuration(conf), stdout=out_file, stderr=err_file)
+    proc = subprocess.Popen(  # pylint: disable=consider-using-with
+        cmd,
+        env=get_configured_env(job_config=conf),
+        stdout=out_file,
+        stderr=err_file,
+    )
     cm.job.set_job_status(job_id, JobStatus.RUNNING, event, proc.pid)
     event.send_state()
     logger.info("run job #%s, pid %s", job_id, proc.pid)
@@ -141,8 +152,6 @@ def run_ansible(job_id):
 
     os.chdir(conf["env"]["stack_dir"])
     cmd = [
-        "/adcm/python/job_venv_wrapper.sh",
-        get_venv(int(job_id)),
         "ansible-playbook",
         "--vault-password-file",
         f"{settings.CODE_DIR}/ansible_secret.py",
@@ -167,8 +176,14 @@ def run_upgrade(job):
     out_file, err_file = process_err_out_file(job.id, "internal")
     try:
         with transaction.atomic():
-            bundle_switch(job.task.task_object, job.action.upgrade)
-            switch_hc(job.task, job.action)
+            script = job.sub_action.script if job.sub_action else job.action.script
+
+            if script == "bundle_switch":
+                bundle_switch(obj=job.task.task_object, upgrade=job.action.upgrade)
+            elif script == "bundle_revert":
+                bundle_revert(obj=job.task.task_object)
+
+            switch_hc(task=job.task, action=job.action)
     except AdcmEx as e:
         err_file.write(e.msg)
         cm.job.set_job_status(job.id, JobStatus.FAILED, event)
@@ -195,21 +210,25 @@ def run_python(job):
 def switch_hc(task, action):
     if task.task_object.prototype.type != "cluster":
         return
+
     cluster = task.task_object
     old_hc = get_hc(cluster)
     new_hc = []
-    for hc in [*task.post_upgrade_hc_map, *old_hc]:
-        if hc not in new_hc:
-            new_hc.append(hc)
+    for hostcomponent in [*task.post_upgrade_hc_map, *old_hc]:
+        if hostcomponent not in new_hc:
+            new_hc.append(hostcomponent)
+
     task.hostcomponentmap = old_hc
     task.post_upgrade_hc_map = None
     task.save()
-    for hc in new_hc:
-        if "component_prototype_id" in hc:
-            proto = Prototype.objects.get(type="component", id=hc.pop("component_prototype_id"))
+
+    for hostcomponent in new_hc:
+        if "component_prototype_id" in hostcomponent:
+            proto = Prototype.objects.get(type="component", id=hostcomponent.pop("component_prototype_id"))
             comp = ServiceComponent.objects.get(cluster=cluster, prototype=proto)
-            hc["component_id"] = comp.id
-            hc["service_id"] = comp.service.id
+            hostcomponent["component_id"] = comp.id
+            hostcomponent["service_id"] = comp.service.id
+
     host_map, _ = cm.job.check_hostcomponentmap(cluster, action, new_hc)
     if host_map is not None:
         save_hc(cluster, host_map)
@@ -227,7 +246,7 @@ def main(job_id):
         run_ansible(job_id)
 
 
-def do():
+def do_job():
     if len(sys.argv) < 2:
         print(f"\nUsage:\n{os.path.basename(sys.argv[0])} job_id\n")
         sys.exit(4)
@@ -236,4 +255,4 @@ def do():
 
 
 if __name__ == "__main__":
-    do()
+    do_job()

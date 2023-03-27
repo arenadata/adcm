@@ -15,7 +15,7 @@
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Cluster, Provider
-from tests.functional.conftest import only_clean_adcm
+
 from tests.functional.maintenance_mode.conftest import (
     BUNDLES_DIR,
     MM_IS_OFF,
@@ -30,7 +30,6 @@ from tests.library.api.core import RequestResult
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm]
 DEFAULT_CLUSTER_PARAM = 12
 EXPECTED_ERROR = "LOCK_ERROR"
 
@@ -79,7 +78,8 @@ def test_mm_concern_cluster(api_client, cluster_with_concern, hosts):
 
     for obj in (cluster, first_service, second_component, second_host):
         check_concerns_on_object(
-            adcm_object=obj, expected_concerns={cluster.name, first_service.name, second_component.name}
+            adcm_object=obj,
+            expected_concerns={cluster.name, first_service.name, second_component.name},
         )
     for obj in (first_component, first_host):
         check_concerns_on_object(adcm_object=obj, expected_concerns={cluster.name, first_service.name})
@@ -97,7 +97,7 @@ def test_mm_concern_cluster(api_client, cluster_with_concern, hosts):
 
     with allure.step(
         "Switch MM 'OFF' on service and component objects,"
-        "switch MM 'ON' on component with concern and check cluster objects"
+        "switch MM 'ON' on component with concern and check cluster objects",
     ):
         set_maintenance_mode(api_client, first_service, MM_IS_OFF)
         set_maintenance_mode(api_client, second_component, MM_IS_ON)
@@ -106,7 +106,8 @@ def test_mm_concern_cluster(api_client, cluster_with_concern, hosts):
         check_mm_is(MM_IS_OFF, first_service, first_component, first_host, second_host)
 
         check_concerns_on_object(
-            adcm_object=second_component, expected_concerns={cluster.name, first_service.name, second_component.name}
+            adcm_object=second_component,
+            expected_concerns={cluster.name, first_service.name, second_component.name},
         )
         for obj in (cluster, first_service, first_component, first_host, second_host):
             check_concerns_on_object(adcm_object=obj, expected_concerns={cluster.name, first_service.name})
@@ -120,7 +121,8 @@ def test_mm_concern_cluster(api_client, cluster_with_concern, hosts):
 
         for obj in (cluster, first_service, second_component, second_host):
             check_concerns_on_object(
-                adcm_object=obj, expected_concerns={cluster.name, first_service.name, second_component.name}
+                adcm_object=obj,
+                expected_concerns={cluster.name, first_service.name, second_component.name},
             )
         for obj in (first_component, first_host):
             check_concerns_on_object(adcm_object=obj, expected_concerns={cluster.name, first_service.name})
@@ -143,7 +145,8 @@ def test_mm_concern_cluster(api_client, cluster_with_concern, hosts):
 
         for obj in (cluster, first_service, second_component, second_host):
             check_concerns_on_object(
-                adcm_object=obj, expected_concerns={cluster.name, first_service.name, second_component.name}
+                adcm_object=obj,
+                expected_concerns={cluster.name, first_service.name, second_component.name},
             )
         for obj in (first_component, first_host):
             check_concerns_on_object(adcm_object=obj, expected_concerns={cluster.name, first_service.name})
@@ -157,7 +160,7 @@ def test_mm_concern_provider_host(api_client, provider_with_concern, cluster_wit
     first_component = first_service.component()
 
     provider = provider_with_concern
-    host_concern = provider.host_create('host-with-concerns')
+    host_concern = provider.host_create("host-with-concerns")
 
     add_hosts_to_cluster(cluster, (first_host, host_concern))
     cluster.hostcomponent_set(
@@ -195,7 +198,7 @@ def test_mm_concern_provider_host(api_client, provider_with_concern, cluster_wit
 
     with allure.step(
         "Switch service and component to MM 'OFF', "
-        "switch host without concern to MM 'ON' and check cluster objects and hosts"
+        "switch host without concern to MM 'ON' and check cluster objects and hosts",
     ):
         set_maintenance_mode(api_client=api_client, adcm_object=first_service, maintenance_mode=MM_IS_OFF)
         set_maintenance_mode(api_client=api_client, adcm_object=first_component, maintenance_mode=MM_IS_OFF)
@@ -302,7 +305,8 @@ def test_mm_concern_action(api_client, sdk_client_fs, cluster_actions, hosts):
         check_mm_is(MM_IS_OFF, first_service, first_component, first_host, second_host)
 
         check_concerns_on_object(
-            adcm_object=second_component, expected_concerns={first_service.name, second_component.name}
+            adcm_object=second_component,
+            expected_concerns={first_service.name, second_component.name},
         )
         for obj in (cluster, first_service, first_component, first_host, second_host):
             check_concerns_on_object(adcm_object=obj, expected_concerns={first_service.name})

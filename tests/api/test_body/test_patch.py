@@ -13,10 +13,10 @@
 """ADCM API PATCH body tests"""
 # pylint: disable=redefined-outer-name
 from copy import deepcopy
-from typing import List
 
 import allure
 import pytest
+
 from tests.api.test_body import _test_patch_put_body_positive
 from tests.api.testdata.db_filler import DbFiller
 from tests.api.testdata.generators import (
@@ -24,7 +24,6 @@ from tests.api.testdata.generators import (
     get_negative_data_for_patch_body_check,
     get_positive_data_for_patch_body_check,
 )
-from tests.api.utils.api_objects import ADCMTestApiWrapper
 from tests.api.utils.methods import Methods
 from tests.api.utils.types import get_fields
 
@@ -35,18 +34,19 @@ pytestmark = [
 
 @allure.title("Prepare patch body data")
 @pytest.fixture()
-def prepare_patch_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
+def prepare_patch_body_data(request, adcm_api):
     """
     Fixture for preparing test data for PATCH request, depending on generated test datasets
     """
-    test_data_list: List[TestDataWithPreparedBody] = request.param
-    dbfiller = DbFiller(adcm=adcm_api_fs)
+    test_data_list: list[TestDataWithPreparedBody] = request.param
+    dbfiller = DbFiller(adcm=adcm_api)
     valid_data = dbfiller.generate_valid_request_data(
-        endpoint=test_data_list[0].test_data.request.endpoint, method=Methods.PATCH
+        endpoint=test_data_list[0].test_data.request.endpoint,
+        method=Methods.PATCH,
     )
     full_item = deepcopy(valid_data["full_item"])
     changed_fields = deepcopy(valid_data["changed_fields"])
-    final_test_data_list: List[TestDataWithPreparedBody] = []
+    final_test_data_list: list[TestDataWithPreparedBody] = []
     for test_data_with_prepared_values in test_data_list:
         test_data, prepared_field_values = deepcopy(test_data_with_prepared_values)
         for field in get_fields(test_data.request.endpoint.data_class):
@@ -55,7 +55,9 @@ def prepare_patch_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
                 if prepared_field_values[field.name].unchanged_value is False:
                     changed_field_value = changed_fields.get(field.name, None)
                     test_data.request.data[field.name] = prepared_field_values[field.name].return_value(
-                        dbfiller, current_field_value, changed_field_value
+                        dbfiller,
+                        current_field_value,
+                        changed_field_value,
                     )
                 else:
                     test_data.request.data[field.name] = current_field_value
@@ -63,7 +65,7 @@ def prepare_patch_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
         test_data.request.object_id = valid_data["object_id"]
         final_test_data_list.append(TestDataWithPreparedBody(test_data, prepared_field_values))
 
-    return adcm_api_fs, final_test_data_list
+    return adcm_api, final_test_data_list
 
 
 @pytest.mark.parametrize("prepare_patch_body_data", get_positive_data_for_patch_body_check(), indirect=True)
@@ -85,5 +87,5 @@ def test_patch_body_negative(prepare_patch_body_data, flexible_assert_step):
     adcm, test_data_list = prepare_patch_body_data
     for test_data_with_prepared_body in test_data_list:
         test_data, _ = test_data_with_prepared_body
-        with flexible_assert_step(title=f'Assert - {test_data.description}'):
+        with flexible_assert_step(title=f"Assert - {test_data.description}"):
             adcm.exec_request(request=test_data.request, expected_response=test_data.response)

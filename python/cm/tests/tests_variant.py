@@ -9,8 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=wrong-import-order
 
-from adcm.tests.base import BaseTestCase
 from cm.api import add_host, add_host_provider, add_host_to_cluster
 from cm.errors import AdcmEx
 from cm.models import (
@@ -23,19 +23,21 @@ from cm.models import (
 )
 from cm.variant import VARIANT_HOST_FUNC, get_variant, var_host_solver, variant_host
 
+from adcm.tests.base import BaseTestCase
+
 
 def cook_cluster():
-    b = Bundle.objects.create(name="ADH", version="1.0")
-    proto = Prototype.objects.create(type="cluster", name="ADH", bundle=b)
+    bundle = Bundle.objects.create(name="ADH", version="1.0")
+    proto = Prototype.objects.create(type="cluster", name="ADH", bundle=bundle)
 
     return Cluster.objects.create(prototype=proto, name="Blue Tiber")
 
 
 def cook_provider():
-    b = Bundle.objects.create(name="SSH", version="1.0")
-    pp = Prototype.objects.create(type="provider", bundle=b)
-    provider = add_host_provider(pp, "SSHone")
-    host_proto = Prototype.objects.create(bundle=b, type="host")
+    bundle = Bundle.objects.create(name="SSH", version="1.0")
+    provider_prototype = Prototype.objects.create(type="provider", bundle=bundle)
+    provider = add_host_provider(provider_prototype, "SSHone")
+    host_proto = Prototype.objects.create(bundle=bundle, type="host")
 
     return provider, host_proto
 
@@ -48,7 +50,10 @@ def cook_service(cluster, name="UBER"):
 
 def cook_component(cluster, service, name):
     proto = Prototype.objects.create(
-        type="component", name=name, bundle=cluster.prototype.bundle, parent=service.prototype
+        type="component",
+        name=name,
+        bundle=cluster.prototype.bundle,
+        parent=service.prototype,
     )
 
     return ServiceComponent.objects.create(cluster=cluster, service=service, prototype=proto)
@@ -65,137 +70,139 @@ class TestVariantBuiltIn(BaseTestCase):
     add_hc = HostComponent.objects.create
 
     def test_host_in_cluster_no_host(self):
-        cls = cook_cluster()
+        cluster = cook_cluster()
         limits = {"source": {"type": "builtin", "name": "host_in_cluster"}}
 
-        self.assertEqual(get_variant(cls, None, limits), [])
+        self.assertEqual(get_variant(cluster, None, limits), [])
 
     def test_host_in_cluster(self):
-        cls = cook_cluster()
-        provider, hp = cook_provider()
-        h1 = add_host(hp, provider, "h10")
+        cluster = cook_cluster()
+        provider, host_prototype = cook_provider()
+        host_1 = add_host(host_prototype, provider, "h10")
         limits = {"source": {"type": "builtin", "name": "host_in_cluster"}}
 
-        self.assertEqual(get_variant(cls, None, limits), [])
+        self.assertEqual(get_variant(cluster, None, limits), [])
 
-        add_host_to_cluster(cls, h1)
+        add_host_to_cluster(cluster, host_1)
 
-        self.assertEqual(get_variant(cls, None, limits), ["h10"])
+        self.assertEqual(get_variant(cluster, None, limits), ["h10"])
 
     def test_host_in_cluster_service(self):
-        cls = cook_cluster()
-        service = cook_service(cls)
-        comp1 = cook_component(cls, service, "Server")
-        provider, hp = cook_provider()
-        h1 = add_host(hp, provider, "h10")
-        h2 = add_host(hp, provider, "h11")
+        cluster = cook_cluster()
+        service = cook_service(cluster)
+        component_1 = cook_component(cluster, service, "Server")
+        provider, host_provider = cook_provider()
+        host_1 = add_host(host_provider, provider, "h10")
+        host_2 = add_host(host_provider, provider, "h11")
         limits = {"source": {"type": "builtin", "name": "host_in_cluster"}}
-        self.assertEqual(get_variant(cls, None, limits), [])
-        add_host_to_cluster(cls, h1)
-        add_host_to_cluster(cls, h2)
 
-        self.assertEqual(get_variant(cls, None, limits), ["h10", "h11"])
+        self.assertEqual(get_variant(cluster, None, limits), [])
+
+        add_host_to_cluster(cluster, host_1)
+        add_host_to_cluster(cluster, host_2)
+
+        self.assertEqual(get_variant(cluster, None, limits), ["h10", "h11"])
 
         limits["source"]["args"] = {"service": "QWE"}
 
-        self.assertEqual(get_variant(cls, None, limits), [])
+        self.assertEqual(get_variant(cluster, None, limits), [])
 
-        self.add_hc(cluster=cls, service=service, component=comp1, host=h2)
+        self.add_hc(cluster=cluster, service=service, component=component_1, host=host_2)
 
-        self.assertEqual(get_variant(cls, None, limits), [])
+        self.assertEqual(get_variant(cluster, None, limits), [])
 
         limits["source"]["args"]["service"] = "UBER"
 
-        self.assertEqual(get_variant(cls, None, limits), ["h11"])
+        self.assertEqual(get_variant(cluster, None, limits), ["h11"])
 
     def test_host_in_cluster_component(self):
-        cls = cook_cluster()
-        service = cook_service(cls)
-        comp1 = cook_component(cls, service, "Server")
-        comp2 = cook_component(cls, service, "Node")
-        provider, hp = cook_provider()
-        h1 = add_host(hp, provider, "h10")
-        h2 = add_host(hp, provider, "h11")
-        h3 = add_host(hp, provider, "h12")
+        cluster = cook_cluster()
+        service = cook_service(cluster)
+        component_1 = cook_component(cluster, service, "Server")
+        component_2 = cook_component(cluster, service, "Node")
+        provider, host_provider = cook_provider()
+        host_1 = add_host(host_provider, provider, "h10")
+        host_2 = add_host(host_provider, provider, "h11")
+        host_3 = add_host(host_provider, provider, "h12")
         limits = {"source": {"type": "builtin", "name": "host_in_cluster"}}
-        add_host_to_cluster(cls, h1)
-        add_host_to_cluster(cls, h2)
-        add_host_to_cluster(cls, h3)
+        add_host_to_cluster(cluster, host_1)
+        add_host_to_cluster(cluster, host_2)
+        add_host_to_cluster(cluster, host_3)
 
-        self.assertEqual(get_variant(cls, None, limits), ["h10", "h11", "h12"])
+        self.assertEqual(get_variant(cluster, None, limits), ["h10", "h11", "h12"])
 
         limits["source"]["args"] = {"service": "UBER", "component": "QWE"}
 
-        self.assertEqual(get_variant(cls, None, limits), [])
+        self.assertEqual(get_variant(cluster, None, limits), [])
 
-        self.add_hc(cluster=cls, service=service, component=comp1, host=h1)
-        self.add_hc(cluster=cls, service=service, component=comp2, host=h2)
+        self.add_hc(cluster=cluster, service=service, component=component_1, host=host_1)
+        self.add_hc(cluster=cluster, service=service, component=component_2, host=host_2)
 
-        self.assertEqual(get_variant(cls, None, limits), [])
+        self.assertEqual(get_variant(cluster, None, limits), [])
 
         limits["source"]["args"]["component"] = "Node"
 
-        self.assertEqual(get_variant(cls, None, limits), ["h11"])
+        self.assertEqual(get_variant(cluster, None, limits), ["h11"])
 
 
 class TestVariantHost(BaseTestCase):
     add_hc = HostComponent.objects.create
 
     def test_solver(self):
-        cls = cook_cluster()
+        cluster = cook_cluster()
         with self.assertRaises(AdcmEx) as e:
-            self.assertEqual(variant_host(cls, {"any": "dict"}), {"any": "dict"})
+            self.assertEqual(variant_host(obj=cluster, args={"any": "dict"}), {"any": "dict"})
 
         self.assertEqual(e.exception.msg, 'no "predicate" key in variant host function arguments')
 
         with self.assertRaises(AdcmEx) as e:
-            self.assertEqual(variant_host(cls, {}), {})
+            self.assertEqual(variant_host(obj=cluster, args={}), {})
 
         self.assertEqual(e.exception.msg, 'no "predicate" key in variant host function arguments')
 
         with self.assertRaises(AdcmEx) as e:
-            self.assertEqual(variant_host(cls, []), [])
+            self.assertEqual(variant_host(obj=cluster, args=[]), [])
 
         self.assertEqual(e.exception.msg, "arguments of variant host function should be a map")
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, 42)
+            variant_host(obj=cluster, args=42)
 
         self.assertEqual(e.exception.msg, "arguments of variant host function should be a map")
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, "qwe")
+            variant_host(obj=cluster, args="qwe")
 
         self.assertEqual(e.exception.msg, "arguments of variant host function should be a map")
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "qwe"})
+            variant_host(obj=cluster, args={"predicate": "qwe"})
 
         self.assertEqual(e.exception.msg, 'no "qwe" in list of host functions')
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "inline_list"})
+            variant_host(obj=cluster, args={"predicate": "inline_list"})
 
         self.assertEqual(e.exception.msg, 'no "args" key in solver args')
 
         with self.assertRaises(AdcmEx) as e:
-            var_host_solver(cls, VARIANT_HOST_FUNC, [{"qwe": 1}])
+            var_host_solver(cluster, VARIANT_HOST_FUNC, [{"qwe": 1}])
 
         self.assertEqual(e.exception.msg, 'no "predicate" key in solver args')
 
         with self.assertRaises(AdcmEx) as e:
-            var_host_solver(cls, VARIANT_HOST_FUNC, [{"predicate": "qwe"}])
+            var_host_solver(cluster, VARIANT_HOST_FUNC, [{"predicate": "qwe"}])
 
         self.assertEqual(e.exception.msg, 'no "args" key in solver args')
 
         with self.assertRaises(AdcmEx) as e:
-            var_host_solver(cls, VARIANT_HOST_FUNC, [{"predicate": "qwe", "args": {}}])
+            var_host_solver(cluster, VARIANT_HOST_FUNC, [{"predicate": "qwe", "args": {}}])
 
         self.assertEqual(e.exception.msg, 'no "qwe" in list of host functions')
 
         args = {"predicate": "inline_list", "args": {"list": [1, 2, 3]}}
 
-        self.assertEqual(variant_host(cls, args), [1, 2, 3])
+        self.assertEqual(variant_host(obj=cluster, args=args), [1, 2, 3])
 
         args = {
             "predicate": "and",
@@ -205,7 +212,7 @@ class TestVariantHost(BaseTestCase):
             ],
         }
 
-        self.assertEqual(variant_host(cls, args), [2, 3])
+        self.assertEqual(variant_host(obj=cluster, args=args), [2, 3])
 
         args = {
             "predicate": "or",
@@ -215,7 +222,7 @@ class TestVariantHost(BaseTestCase):
             ],
         }
 
-        self.assertEqual(variant_host(cls, args), [1, 2, 3, 4])
+        self.assertEqual(variant_host(obj=cluster, args=args), [1, 2, 3, 4])
 
         args = {
             "predicate": "or",
@@ -224,169 +231,169 @@ class TestVariantHost(BaseTestCase):
             ],
         }
 
-        self.assertEqual(variant_host(cls, args), [1, 2, 3])
+        self.assertEqual(variant_host(obj=cluster, args=args), [1, 2, 3])
 
     def test_no_host_in_cluster(self):
-        cls = cook_cluster()
-        hosts = variant_host(cls, {"predicate": "in_cluster", "args": None})
+        cluster = cook_cluster()
+        hosts = variant_host(obj=cluster, args={"predicate": "in_cluster", "args": None})
 
         self.assertEqual(hosts, [])
 
-        hosts = variant_host(cls, {"predicate": "in_cluster", "args": []})
+        hosts = variant_host(obj=cluster, args={"predicate": "in_cluster", "args": []})
 
         self.assertEqual(hosts, [])
 
-        hosts = variant_host(cls, {"predicate": "in_cluster", "args": {}})
+        hosts = variant_host(obj=cluster, args={"predicate": "in_cluster", "args": {}})
 
         self.assertEqual(hosts, [])
 
     def test_host_in_cluster(self):
-        cls = cook_cluster()
-        provider, hp = cook_provider()
-        h1 = add_host(hp, provider, "h10")
-        add_host_to_cluster(cls, h1)
-        hosts = variant_host(cls, {"predicate": "in_cluster", "args": []})
+        cluster = cook_cluster()
+        provider, host_provider = cook_provider()
+        host_1 = add_host(host_provider, provider, "h10")
+        add_host_to_cluster(cluster, host_1)
+        hosts = variant_host(obj=cluster, args={"predicate": "in_cluster", "args": []})
 
         self.assertEqual(hosts, ["h10"])
 
     def test_host_in_service(self):
-        cls = cook_cluster()
-        service = cook_service(cls)
-        comp = cook_component(cls, service, "Server")
-        provider, hp = cook_provider()
-        h1 = add_host(hp, provider, "h10")
-        add_host_to_cluster(cls, h1)
+        cluster = cook_cluster()
+        service = cook_service(cluster)
+        component = cook_component(cluster, service, "Server")
+        provider, host_provider = cook_provider()
+        host_1 = add_host(host_provider, provider, "h10")
+        add_host_to_cluster(cluster, host_1)
 
-        self.add_hc(cluster=cls, service=service, component=comp, host=h1)
+        self.add_hc(cluster=cluster, service=service, component=component, host=host_1)
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "in_service", "args": {}})
+            variant_host(obj=cluster, args={"predicate": "in_service", "args": {}})
 
         self.assertEqual(e.exception.msg, 'no "service" argument for predicate "in_service"')
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "in_service", "args": {"service": "qwe"}})
+            variant_host(obj=cluster, args={"predicate": "in_service", "args": {"service": "qwe"}})
 
         self.assertTrue("ClusterObject {" in e.exception.msg)
         self.assertTrue("} does not exist" in e.exception.msg)
 
         args = {"predicate": "in_service", "args": {"service": "UBER"}}
-        hosts = variant_host(cls, args)
+        hosts = variant_host(obj=cluster, args=args)
 
         self.assertEqual(hosts, ["h10"])
 
     def test_host_not_in_service(self):
-        cls = cook_cluster()
-        service = cook_service(cls)
-        comp = cook_component(cls, service, "Server")
-        service2 = cook_service(cls, "Gett")
-        comp2 = cook_component(cls, service2, "Server")
-        provider, hp = cook_provider()
-        h1 = add_host(hp, provider, "h10")
-        h2 = add_host(hp, provider, "h11")
-        h3 = add_host(hp, provider, "h12")
-        add_host(hp, provider, "h13")
-        add_host_to_cluster(cls, h1)
-        add_host_to_cluster(cls, h2)
-        add_host_to_cluster(cls, h3)
-        self.add_hc(cluster=cls, service=service, component=comp, host=h1)
-        self.add_hc(cluster=cls, service=service2, component=comp2, host=h3)
+        cluster = cook_cluster()
+        service = cook_service(cluster)
+        component = cook_component(cluster, service, "Server")
+        service_2 = cook_service(cluster, "Gett")
+        component_2 = cook_component(cluster, service_2, "Server")
+        provider, host_provider = cook_provider()
+        host_1 = add_host(host_provider, provider, "h10")
+        host_2 = add_host(host_provider, provider, "h11")
+        host_3 = add_host(host_provider, provider, "h12")
+        add_host(host_provider, provider, "h13")
+        add_host_to_cluster(cluster, host_1)
+        add_host_to_cluster(cluster, host_2)
+        add_host_to_cluster(cluster, host_3)
+        self.add_hc(cluster=cluster, service=service, component=component, host=host_1)
+        self.add_hc(cluster=cluster, service=service_2, component=component_2, host=host_3)
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "not_in_service", "args": {}})
+            variant_host(obj=cluster, args={"predicate": "not_in_service", "args": {}})
 
         self.assertEqual(e.exception.msg, 'no "service" argument for predicate "not_in_service"')
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "not_in_service", "args": {"service": "qwe"}})
+            variant_host(obj=cluster, args={"predicate": "not_in_service", "args": {"service": "qwe"}})
 
         self.assertTrue("ClusterObject {" in e.exception.msg)
         self.assertTrue("} does not exist" in e.exception.msg)
 
         args = {"predicate": "not_in_service", "args": {"service": "UBER"}}
-        hosts = variant_host(cls, args)
+        hosts = variant_host(obj=cluster, args=args)
 
         self.assertEqual(hosts, ["h11", "h12"])
 
         args = {"predicate": "not_in_service", "args": {"service": "Gett"}}
-        hosts = variant_host(cls, args)
+        hosts = variant_host(obj=cluster, args=args)
 
         self.assertEqual(hosts, ["h10", "h11"])
 
     def test_host_in_component(self):
-        cls = cook_cluster()
-        service = cook_service(cls)
-        comp1 = cook_component(cls, service, "Server")
-        comp2 = cook_component(cls, service, "Node")
-        provider, hp = cook_provider()
-        h1 = add_host(hp, provider, "h10")
-        h2 = add_host(hp, provider, "h11")
-        add_host_to_cluster(cls, h1)
-        add_host_to_cluster(cls, h2)
-        self.add_hc(cluster=cls, service=service, component=comp1, host=h1)
-        self.add_hc(cluster=cls, service=service, component=comp2, host=h2)
+        cluster = cook_cluster()
+        service = cook_service(cluster)
+        component_1 = cook_component(cluster, service, "Server")
+        component_2 = cook_component(cluster, service, "Node")
+        provider, host_provider = cook_provider()
+        host_1 = add_host(host_provider, provider, "h10")
+        host_2 = add_host(host_provider, provider, "h11")
+        add_host_to_cluster(cluster, host_1)
+        add_host_to_cluster(cluster, host_2)
+        self.add_hc(cluster=cluster, service=service, component=component_1, host=host_1)
+        self.add_hc(cluster=cluster, service=service, component=component_2, host=host_2)
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "in_component"})
+            variant_host(obj=cluster, args={"predicate": "in_component"})
 
         self.assertEqual(e.exception.msg, 'no "args" key in solver args')
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "in_component", "args": 123})
+            variant_host(obj=cluster, args={"predicate": "in_component", "args": 123})
 
         self.assertEqual(e.exception.msg, "arguments of solver should be a list or a map")
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "in_component", "args": []})
+            variant_host(obj=cluster, args={"predicate": "in_component", "args": []})
 
         self.assertEqual(e.exception.msg, 'no "service" argument for predicate "in_component"')
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "in_component", "args": {"service": "qwe"}})
+            variant_host(obj=cluster, args={"predicate": "in_component", "args": {"service": "qwe"}})
 
         self.assertTrue("ClusterObject {" in e.exception.msg)
         self.assertTrue("} does not exist" in e.exception.msg)
 
         with self.assertRaises(AdcmEx) as e:
             args = {"predicate": "in_component", "args": {"service": "UBER", "component": "asd"}}
-            variant_host(cls, args)
+            variant_host(obj=cluster, args=args)
 
         self.assertTrue("ServiceComponent {" in e.exception.msg)
         self.assertTrue("} does not exist" in e.exception.msg)
 
         args = {"predicate": "in_component", "args": {"service": "UBER", "component": "Node"}}
-        hosts = variant_host(cls, args)
+        hosts = variant_host(obj=cluster, args=args)
 
         self.assertEqual(hosts, ["h11"])
 
     def test_host_not_in_component(self):
-        cls = cook_cluster()
-        service = cook_service(cls)
-        comp1 = cook_component(cls, service, "Server")
-        comp2 = cook_component(cls, service, "Node")
-        service2 = cook_service(cls, "Gett")
-        comp3 = cook_component(cls, service2, "Server")
-        provider, hp = cook_provider()
-        h1 = add_host(hp, provider, "h10")
-        h2 = add_host(hp, provider, "h11")
-        h3 = add_host(hp, provider, "h12")
-        h4 = add_host(hp, provider, "h13")
-        add_host(hp, provider, "h14")
-        add_host_to_cluster(cls, h1)
-        add_host_to_cluster(cls, h2)
-        add_host_to_cluster(cls, h3)
-        add_host_to_cluster(cls, h4)
-        self.add_hc(cluster=cls, service=service, component=comp1, host=h1)
-        self.add_hc(cluster=cls, service=service, component=comp2, host=h2)
-        self.add_hc(cluster=cls, service=service2, component=comp3, host=h3)
+        cluster = cook_cluster()
+        service = cook_service(cluster)
+        component_1 = cook_component(cluster, service, "Server")
+        component_2 = cook_component(cluster, service, "Node")
+        service_2 = cook_service(cluster, "Gett")
+        component_3 = cook_component(cluster, service_2, "Server")
+        provider, host_provider = cook_provider()
+        host_1 = add_host(host_provider, provider, "h10")
+        host_2 = add_host(host_provider, provider, "h11")
+        host_3 = add_host(host_provider, provider, "h12")
+        host_4 = add_host(host_provider, provider, "h13")
+        add_host(host_provider, provider, "h14")
+        add_host_to_cluster(cluster, host_1)
+        add_host_to_cluster(cluster, host_2)
+        add_host_to_cluster(cluster, host_3)
+        add_host_to_cluster(cluster, host_4)
+        self.add_hc(cluster=cluster, service=service, component=component_1, host=host_1)
+        self.add_hc(cluster=cluster, service=service, component=component_2, host=host_2)
+        self.add_hc(cluster=cluster, service=service_2, component=component_3, host=host_3)
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "not_in_component", "args": []})
+            variant_host(obj=cluster, args={"predicate": "not_in_component", "args": []})
 
         self.assertEqual(e.exception.msg, 'no "service" argument for predicate "not_in_component"')
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "not_in_component", "args": {"service": "qwe"}})
+            variant_host(obj=cluster, args={"predicate": "not_in_component", "args": {"service": "qwe"}})
 
         self.assertTrue("ClusterObject {" in e.exception.msg)
         self.assertTrue("} does not exist" in e.exception.msg)
@@ -396,56 +403,56 @@ class TestVariantHost(BaseTestCase):
                 "predicate": "not_in_component",
                 "args": {"service": "UBER", "component": "asd"},
             }
-            variant_host(cls, args)
+            variant_host(obj=cluster, args=args)
 
         self.assertTrue("ServiceComponent {" in e.exception.msg)
         self.assertTrue("} does not exist" in e.exception.msg)
 
         args = {"predicate": "not_in_component", "args": {"service": "UBER", "component": "Node"}}
 
-        self.assertEqual(variant_host(cls, args), ["h10", "h12", "h13"])
+        self.assertEqual(variant_host(obj=cluster, args=args), ["h10", "h12", "h13"])
 
         args = {"predicate": "not_in_component", "args": {"service": "UBER", "component": "Server"}}
 
-        self.assertEqual(variant_host(cls, args), ["h11", "h12", "h13"])
+        self.assertEqual(variant_host(obj=cluster, args=args), ["h11", "h12", "h13"])
 
         args = {"predicate": "not_in_component", "args": {"service": "Gett", "component": "Server"}}
 
-        self.assertEqual(variant_host(cls, args), ["h10", "h11", "h13"])
+        self.assertEqual(variant_host(obj=cluster, args=args), ["h10", "h11", "h13"])
 
     def test_host_and(self):
-        cls = cook_cluster()
-        service = cook_service(cls)
-        comp1 = cook_component(cls, service, "Server")
-        comp2 = cook_component(cls, service, "Node")
-        provider, hp = cook_provider()
-        h1 = add_host(hp, provider, "h10")
-        h2 = add_host(hp, provider, "h11")
-        h3 = add_host(hp, provider, "h12")
-        add_host_to_cluster(cls, h1)
-        add_host_to_cluster(cls, h2)
-        add_host_to_cluster(cls, h3)
-        self.add_hc(cluster=cls, service=service, component=comp1, host=h1)
-        self.add_hc(cluster=cls, service=service, component=comp2, host=h2)
-        self.add_hc(cluster=cls, service=service, component=comp2, host=h3)
+        cluster = cook_cluster()
+        service = cook_service(cluster)
+        component_1 = cook_component(cluster, service, "Server")
+        component_2 = cook_component(cluster, service, "Node")
+        provider, host_provider = cook_provider()
+        host_1 = add_host(host_provider, provider, "h10")
+        host_2 = add_host(host_provider, provider, "h11")
+        host_3 = add_host(host_provider, provider, "h12")
+        add_host_to_cluster(cluster, host_1)
+        add_host_to_cluster(cluster, host_2)
+        add_host_to_cluster(cluster, host_3)
+        self.add_hc(cluster=cluster, service=service, component=component_1, host=host_1)
+        self.add_hc(cluster=cluster, service=service, component=component_2, host=host_2)
+        self.add_hc(cluster=cluster, service=service, component=component_2, host=host_3)
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "and", "args": 123})
+            variant_host(obj=cluster, args={"predicate": "and", "args": 123})
 
         self.assertEqual(e.exception.msg, "arguments of solver should be a list or a map")
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "and", "args": [123]})
+            variant_host(obj=cluster, args={"predicate": "and", "args": [123]})
 
         self.assertEqual(e.exception.msg, "predicate item should be a map")
 
         with self.assertRaises(AdcmEx) as e:
             args = {"predicate": "and", "args": [{"predicate": "qwe", "args": 123}]}
-            variant_host(cls, args)
+            variant_host(obj=cluster, args=args)
 
         self.assertEqual(e.exception.msg, 'no "qwe" in list of host functions')
 
-        self.assertEqual(variant_host(cls, {"predicate": "and", "args": []}), [])
+        self.assertEqual(variant_host(obj=cluster, args={"predicate": "and", "args": []}), [])
 
         args = {
             "predicate": "and",
@@ -454,54 +461,54 @@ class TestVariantHost(BaseTestCase):
                 {"predicate": "in_component", "args": {"service": "UBER", "component": "Node"}},
             ],
         }
-        hosts = variant_host(cls, args)
+        hosts = variant_host(obj=cluster, args=args)
 
         self.assertEqual(hosts, ["h11", "h12"])
 
     def test_host_or(self):
-        cls = cook_cluster()
-        service = cook_service(cls)
-        comp1 = cook_component(cls, service, "Server")
-        comp2 = cook_component(cls, service, "Node")
-        comp3 = cook_component(cls, service, "Secondary")
-        provider, hp = cook_provider()
-        h1 = add_host(hp, provider, "h10")
-        h2 = add_host(hp, provider, "h11")
-        h3 = add_host(hp, provider, "h12")
-        add_host_to_cluster(cls, h1)
-        add_host_to_cluster(cls, h2)
-        add_host_to_cluster(cls, h3)
-        self.add_hc(cluster=cls, service=service, component=comp1, host=h1)
-        self.add_hc(cluster=cls, service=service, component=comp2, host=h2)
-        self.add_hc(cluster=cls, service=service, component=comp3, host=h3)
+        cluster = cook_cluster()
+        service = cook_service(cluster)
+        component_1 = cook_component(cluster, service, "Server")
+        component_2 = cook_component(cluster, service, "Node")
+        component_3 = cook_component(cluster, service, "Secondary")
+        provider, host_provider = cook_provider()
+        host_1 = add_host(host_provider, provider, "h10")
+        host_2 = add_host(host_provider, provider, "h11")
+        host_3 = add_host(host_provider, provider, "h12")
+        add_host_to_cluster(cluster, host_1)
+        add_host_to_cluster(cluster, host_2)
+        add_host_to_cluster(cluster, host_3)
+        self.add_hc(cluster=cluster, service=service, component=component_1, host=host_1)
+        self.add_hc(cluster=cluster, service=service, component=component_2, host=host_2)
+        self.add_hc(cluster=cluster, service=service, component=component_3, host=host_3)
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "or", "args": 123})
+            variant_host(obj=cluster, args={"predicate": "or", "args": 123})
 
         self.assertEqual(e.exception.msg, "arguments of solver should be a list or a map")
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "or", "args": [123]})
+            variant_host(obj=cluster, args={"predicate": "or", "args": [123]})
 
         self.assertEqual(e.exception.msg, "predicate item should be a map")
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "or", "args": [{"qwe": 123}]})
+            variant_host(obj=cluster, args={"predicate": "or", "args": [{"qwe": 123}]})
 
         self.assertEqual(e.exception.msg, 'no "predicate" key in solver args')
 
         with self.assertRaises(AdcmEx) as e:
-            variant_host(cls, {"predicate": "or", "args": [{"predicate": "qwe"}]})
+            variant_host(obj=cluster, args={"predicate": "or", "args": [{"predicate": "qwe"}]})
 
         self.assertEqual(e.exception.msg, 'no "args" key in solver args')
 
         with self.assertRaises(AdcmEx) as e:
             args = {"predicate": "or", "args": [{"predicate": "qwe", "args": 123}]}
-            variant_host(cls, args)
+            variant_host(obj=cluster, args=args)
 
         self.assertEqual(e.exception.msg, 'no "qwe" in list of host functions')
 
-        self.assertEqual(variant_host(cls, {"predicate": "or", "args": []}), [])
+        self.assertEqual(variant_host(obj=cluster, args={"predicate": "or", "args": []}), [])
 
         args = {
             "predicate": "or",
@@ -522,45 +529,45 @@ class TestVariantHost(BaseTestCase):
                 },
             ],
         }
-        hosts = variant_host(cls, args)
+        hosts = variant_host(obj=cluster, args=args)
 
         self.assertEqual(hosts, ["h10", "h12"])
 
     def test_host_in_hc(self):
-        cls = cook_cluster()
+        cluster = cook_cluster()
 
-        self.assertEqual(variant_host(cls, {"predicate": "in_hc", "args": None}), [])
+        self.assertEqual(variant_host(obj=cluster, args={"predicate": "in_hc", "args": None}), [])
 
-        service = cook_service(cls)
-        comp1 = cook_component(cls, service, "Server")
-        provider, hp = cook_provider()
-        h1 = add_host(hp, provider, "h10")
-        h2 = add_host(hp, provider, "h11")
-        add_host_to_cluster(cls, h1)
-        add_host_to_cluster(cls, h2)
+        service = cook_service(cluster)
+        component_1 = cook_component(cluster, service, "Server")
+        provider, host_provider = cook_provider()
+        host_1 = add_host(host_provider, provider, "h10")
+        host_2 = add_host(host_provider, provider, "h11")
+        add_host_to_cluster(cluster, host_1)
+        add_host_to_cluster(cluster, host_2)
 
-        self.assertEqual(variant_host(cls, {"predicate": "in_hc", "args": None}), [])
+        self.assertEqual(variant_host(obj=cluster, args={"predicate": "in_hc", "args": None}), [])
 
-        self.add_hc(cluster=cls, service=service, component=comp1, host=h2)
+        self.add_hc(cluster=cluster, service=service, component=component_1, host=host_2)
 
-        self.assertEqual(variant_host(cls, {"predicate": "in_hc", "args": None}), ["h11"])
+        self.assertEqual(variant_host(obj=cluster, args={"predicate": "in_hc", "args": None}), ["h11"])
 
     def test_host_not_in_hc(self):
-        cls = cook_cluster()
+        cluster = cook_cluster()
 
-        self.assertEqual(variant_host(cls, {"predicate": "not_in_hc", "args": None}), [])
+        self.assertEqual(variant_host(obj=cluster, args={"predicate": "not_in_hc", "args": None}), [])
 
-        service = cook_service(cls)
-        comp1 = cook_component(cls, service, "Server")
-        provider, hp = cook_provider()
-        h1 = add_host(hp, provider, "h10")
-        h2 = add_host(hp, provider, "h11")
-        add_host_to_cluster(cls, h1)
-        add_host_to_cluster(cls, h2)
-        hosts = variant_host(cls, {"predicate": "not_in_hc", "args": None})
+        service = cook_service(cluster)
+        component_1 = cook_component(cluster, service, "Server")
+        provider, host_provider = cook_provider()
+        host_1 = add_host(host_provider, provider, "h10")
+        host_2 = add_host(host_provider, provider, "h11")
+        add_host_to_cluster(cluster, host_1)
+        add_host_to_cluster(cluster, host_2)
+        hosts = variant_host(obj=cluster, args={"predicate": "not_in_hc", "args": None})
 
         self.assertEqual(hosts, ["h10", "h11"])
 
-        self.add_hc(cluster=cls, service=service, component=comp1, host=h2)
+        self.add_hc(cluster=cluster, service=service, component=component_1, host=host_2)
 
-        self.assertEqual(variant_host(cls, {"predicate": "not_in_hc", "args": None}), ["h10"])
+        self.assertEqual(variant_host(obj=cluster, args={"predicate": "not_in_hc", "args": None}), ["h10"])

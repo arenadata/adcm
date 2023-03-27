@@ -10,35 +10,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db.transaction import atomic
-from rest_framework import serializers
-
 from api.serializers import UIConfigField
 from cm.api import update_obj_config
 from cm.models import ConfigLog
+from django.db.transaction import atomic
+from rest_framework import serializers
 
 
 class ConfigLogSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='config-log-detail')
+    url = serializers.HyperlinkedIdentityField(view_name="config-log-detail")
 
     class Meta:
         model = ConfigLog
-        fields = ('id', 'date', 'obj_ref', 'description', 'config', 'attr', 'url')
-        extra_kwargs = {'config': {'required': True}}
+        fields = ("id", "date", "obj_ref", "description", "config", "attr", "url")
+        extra_kwargs = {"config": {"required": True}}
 
     @atomic
     def create(self, validated_data):
-        object_config = validated_data.get('obj_ref')
-        config = validated_data.get('config')
-        attr = validated_data.get('attr', {})
-        description = validated_data.get('description', '')
-        cl = update_obj_config(object_config, config, attr, description)
-        return cl
+        object_config = validated_data.get("obj_ref")
+        config = validated_data.get("config")
+        attr = validated_data.get("attr", {})
+        description = validated_data.get("description", "")
+        config_log = update_obj_config(object_config, config, attr, description)
+
+        return config_log
 
 
 class UIConfigLogSerializer(ConfigLogSerializer):
-    config = UIConfigField(source='*')
+    config = UIConfigField(source="*")
 
     class Meta:
         model = ConfigLog
-        fields = ('id', 'date', 'obj_ref', 'description', 'config', 'attr', 'url')
+        fields = ("id", "date", "obj_ref", "description", "config", "attr", "url")

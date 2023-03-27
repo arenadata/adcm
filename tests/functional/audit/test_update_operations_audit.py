@@ -14,10 +14,11 @@
 Test config update/restore audit operations
 """
 
+from collections.abc import Callable
 from functools import partial
 from operator import attrgetter, itemgetter
 from random import randint
-from typing import Callable, Literal, Optional, Tuple, Union
+from typing import Literal
 
 import allure
 import pytest
@@ -34,6 +35,7 @@ from adcm_client.objects import (
     Service,
 )
 from adcm_pytest_plugin.utils import random_string
+
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,
@@ -42,8 +44,7 @@ from tests.functional.audit.conftest import (
     make_auth_header,
     parametrize_audit_scenario_parsing,
 )
-from tests.functional.conftest import only_clean_adcm
-from tests.functional.rbac.conftest import BusinessRoles as BR
+from tests.functional.rbac.conftest import BusinessRoles as BR  # noqa: N817
 from tests.functional.rbac.conftest import create_policy
 from tests.functional.tools import (
     ClusterRelatedObject,
@@ -53,9 +54,8 @@ from tests.functional.tools import (
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm]
 
-ObjectWithConfig = Union[ADCM, ClusterRelatedObject, ProviderRelatedObject]
+ObjectWithConfig = ADCM | ClusterRelatedObject | ProviderRelatedObject
 
 CONFIG_HISTORY_SUFFIX = "config/history/"
 SERVICE_NAME = "service_for_updates"
@@ -67,11 +67,13 @@ expect_403 = partial(check_failed, exact_code=403)
 
 
 @pytest.fixture()
-def basic_objects(sdk_client_fs) -> Tuple[Cluster, Service, Component, Provider, Host]:
+def basic_objects(sdk_client_fs) -> tuple[Cluster, Service, Component, Provider, Host]:
     """Create cluster, provider and host, add service"""
     cluster = sdk_client_fs.upload_from_fs(BUNDLES_DIR / "update" / "cluster").cluster_create("Cluster for Updates")
     service = cluster.service_add(name=SERVICE_NAME)
-    provider = sdk_client_fs.upload_from_fs(BUNDLES_DIR / "update" / "provider").provider_create("Provider for Updates")
+    provider = sdk_client_fs.upload_from_fs(BUNDLES_DIR / "update" / "provider").provider_create(
+        "Provider for Updates",
+    )
     return cluster, service, service.component(), provider, provider.host_create("host-0")
 
 
@@ -83,9 +85,9 @@ def _grant_view_config_permissions_on_adcm_objects(sdk_client_fs, basic_objects,
     create_policy(
         sdk_client_fs,
         [
-            BR.ViewClusterConfigurations,
-            BR.ViewServiceConfigurations,
-            BR.ViewComponentConfigurations,
+            BR.VIEW_CLUSTER_CONFIGURATIONS,
+            BR.VIEW_SERVICE_CONFIGURATIONS,
+            BR.VIEW_COMPONENT_CONFIGURATIONS,
         ],
         [cluster, service, component],
         users=[user],
@@ -94,17 +96,17 @@ def _grant_view_config_permissions_on_adcm_objects(sdk_client_fs, basic_objects,
     )
     create_policy(
         sdk_client_fs,
-        [BR.ViewProviderConfigurations, BR.ViewHostConfigurations],
+        [BR.VIEW_PROVIDER_CONFIGURATIONS, BR.VIEW_HOST_CONFIGURATIONS],
         [provider, host],
         users=[user],
         groups=[],
         use_all_objects=True,
     )
-    create_policy(sdk_client_fs, BR.ViewADCMSettings, [sdk_client_fs.adcm()], users=[user], groups=[])
+    create_policy(sdk_client_fs, BR.VIEW_ADCM_SETTINGS, [sdk_client_fs.adcm()], users=[user], groups=[])
 
 
 @pytest.fixture()
-def group_configs(basic_objects) -> Tuple[GroupConfig, GroupConfig, GroupConfig]:
+def group_configs(basic_objects) -> tuple[GroupConfig, GroupConfig, GroupConfig]:
     """Create group configs for cluster, service and component"""
     cluster, service, component, *_ = basic_objects
     return (
@@ -152,14 +154,15 @@ def test_update_config(basic_objects, audit_log_checker, sdk_client_fs, unauthor
         _check_object_config_restore(sdk_client_fs, obj, unauthorized_creds)
     audit_log_checker.set_user_map(sdk_client_fs)
     operations_to_check = tuple(
-        filter(lambda o: o.id > drop_from_id, sdk_client_fs.audit_operation_list(paging={"limit": 200}))
+        filter(lambda o: o.id > drop_from_id, sdk_client_fs.audit_operation_list(paging={"limit": 200})),
     )
     audit_log_checker.check(operations_to_check)
 
 
 @parametrize_audit_scenario_parsing("update_config_of_group_config.yaml", NEW_USER)
 @pytest.mark.usefixtures(
-    "_grant_view_config_permissions_on_adcm_objects", "basic_objects"
+    "_grant_view_config_permissions_on_adcm_objects",
+    "basic_objects",
 )  # pylint: disable-next=too-many-locals
 def test_update_config_of_group_config(group_configs, audit_log_checker, sdk_client_fs, unauthorized_creds):
     """
@@ -203,7 +206,7 @@ def test_update_config_of_group_config(group_configs, audit_log_checker, sdk_cli
         }
 
         with allure.step(
-            f"Update config of group config of {group_config.object_type} with result: {OperationResult.SUCCESS}"
+            f"Update config of group config of {group_config.object_type} with result: {OperationResult.SUCCESS}",
         ):
             check_succeed(update_group_config(group_config, correct_config, headers=admin_creds))
         with allure.step(f"Change group config of {group_config.object_type} with result: {OperationResult.FAIL}"):
@@ -217,11 +220,18 @@ def test_update_config_of_group_config(group_configs, audit_log_checker, sdk_cli
 
 
 @parametrize_audit_scenario_parsing(
-    "add_delete_host_group_config.yaml", {"username": NEW_USER["username"], "host": FQDN}
+    "add_delete_host_group_config.yaml",
+    {"username": NEW_USER["username"], "host": FQDN},
 )
 @pytest.mark.usefixtures("_grant_view_config_permissions_on_adcm_objects")
 def test_add_remove_hosts_from_group_config(
-    group_configs, basic_objects, audit_log_checker, sdk_client_fs, post, delete, unauthorized_creds
+    group_configs,
+    basic_objects,
+    audit_log_checker,
+    sdk_client_fs,
+    post,
+    delete,
+    unauthorized_creds,
 ):
     """
     Test audit of host manipulations with group configs: addition/deletion.
@@ -270,7 +280,7 @@ def _check_object_config_update(
             with allure.step(f"Run config update that will have result {result.value}"):
                 with allure.step("config-log"):
                     check_response(
-                        update_config_from_root(client, object_with_config, get_config(), headers=credentials)
+                        update_config_from_root(client, object_with_config, get_config(), headers=credentials),
                     )
                 with allure.step("object config history"):
                     url = get_plain_object_url(client, object_with_config, CONFIG_HISTORY_SUFFIX)
@@ -304,7 +314,7 @@ def _check_object_config_restore(
                     lambda c: c["id"] != current_config_id,
                     object_with_config.config_history(full=True),
                 ),
-            )
+            ),
         )
         return f"{CONFIG_HISTORY_SUFFIX}{config_id}/restore/"
 
@@ -317,7 +327,6 @@ def _check_object_config_restore(
         ):
             with allure.step(f"Run config restore that will have result {result.value}"):
                 with allure.step("object config history"):
-
                     url = get_plain_object_url(client, object_with_config, get_restore_suffix())
                     check_response(restore_config_from_url(url, get_config(), headers=credentials))
                 if not isinstance(object_with_config, (Service, Component, Host)):
@@ -356,7 +365,7 @@ def update_config_from_url(url: str, config: dict, **post_kwargs):
         return requests.post(url, json=body, **post_kwargs)
 
 
-def restore_config_from_url(url: str, attr: Optional[dict], **patch_kwargs):
+def restore_config_from_url(url: str, attr: dict | None, **patch_kwargs):
     """Restore config by PATCHing given URL"""
     body = {"description": f"Restored config {random_string(4)}", "attr": attr}
     with allure.step(f"Restore config via PATCH {url} with data: {body}"):
@@ -396,7 +405,7 @@ def get_plain_object_url(client: ADCMClient, obj: ObjectWithConfig, suffix: str 
     return f"{client.url}/api/v1/{obj.__class__.__name__.lower()}/{obj.id}/{suffix}"
 
 
-def get_object_from_parent_url(client: ADCMClient, obj: Union[Service, Component, Host], suffix: str = "") -> str:
+def get_object_from_parent_url(client: ADCMClient, obj: Service | Component | Host, suffix: str = "") -> str:
     """
     Get URL for object from its parent with given suffix.
     URL will be like '{base_url}/api/v1/{parent_type}/{parent_id}/{object_type}/{id}/{suffix}'.

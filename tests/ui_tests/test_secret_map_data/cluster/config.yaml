@@ -1,0 +1,60 @@
+﻿# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- type: cluster
+  version: 15
+  name: secret_config
+  display_name: secret_config
+  config: &config
+    - name: secret_map
+      type: secretmap
+      group_customization: false
+  actions:
+    action:
+      display_name: cluster action
+      type: task
+      scripts:
+        - name: some_script
+          script: action_cluster.yaml
+          script_type: ansible
+      states:
+        available: any
+
+- type: service
+  name: test_service
+  description: test_service
+  version: '1.2'
+  config: *config
+  actions:
+    action:
+      display_name: service action
+      type: task
+      scripts:
+        - name: some_script
+          script: action_service.yaml
+          script_type: ansible
+      states:
+        available: any
+
+  components:
+    first_component:
+      config: *config
+      actions:
+        action:
+          display_name: component action
+          type: task
+          scripts:
+            - name: some_script
+              script: action_component.yaml
+              script_type: ansible
+          states:
+            available: any

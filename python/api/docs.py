@@ -18,31 +18,31 @@ from rest_framework.schemas import SchemaGenerator
 def docs_md(request):
     return render(
         request,
-        'docs-md/index.md',
-        get_context(request, patterns=[path('api/v1/', include('api.urls'))]),
+        "docs-md/index.md",
+        get_context(request, patterns=[path("api/v1/", include("api.urls"))]),
     )
 
 
 def docs_html(request):
     return render(
         request,
-        'docs-html/index.html',
-        get_context(request, patterns=[path('api/v1/', include('api.urls'))]),
+        "docs-html/index.html",
+        get_context(request, patterns=[path("api/v1/", include("api.urls"))]),
     )
 
 
 def get_context(request, patterns=None):
-    generator = SchemaGenerator(title='ArenaData Cluster Manager API', description=intro(), patterns=patterns)
+    generator = SchemaGenerator(title="ArenaData Cluster Manager API", description=intro(), patterns=patterns)
     data = generator.get_schema(request, True)
     context = {
-        'document': data,
-        'request': request,
+        "document": data,
+        "request": request,
     }
     return context
 
 
 def intro():
-    return '''
+    return """
 
 __Version__: 1.0
 
@@ -62,4 +62,4 @@ __Task__: Service action at work. Consists of one or more jobs
 
 __Job__: Minimal quantum of action. Run ansible playbook to do actual work
 
-'''
+"""

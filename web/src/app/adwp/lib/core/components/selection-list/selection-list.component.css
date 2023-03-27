@@ -1,0 +1,12 @@
+.adwp-selection-list-empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.mat-list-item-disabled {
+  background: none !important;
+  color: #808080 !important;
+}

@@ -16,16 +16,13 @@ from dataclasses import dataclass
 from typing import Literal
 
 import allure
-from tests.ui_tests.app.helpers.locator import Locator
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageFooter,
-    PageHeader,
-)
+
+from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 from tests.ui_tests.app.page.job.locators import JobPageLocators
+from tests.ui_tests.core.locators import BaseLocator
 
 
 @dataclass
@@ -50,8 +47,6 @@ class JobPageMixin(BasePageObject):
 
     def __init__(self, driver, base_url, job_id: int):
         super().__init__(driver, base_url, "/job/{job_id}", job_id=job_id)
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
         self.job_id = job_id
         self.toolbar = CommonToolbar(self.driver, self.base_url)
 
@@ -73,7 +68,7 @@ class JobPageMixin(BasePageObject):
 
     def get_job_info(self) -> DetailedPageJobInfo:
         """Get information about job from detail page"""
-        invoker_objects = self.find_element(JobPageLocators.subtitle).text.strip().replace(' / ', '/')
+        invoker_objects = self.find_element(JobPageLocators.subtitle).text.strip().replace(" / ", "/")
         return DetailedPageJobInfo(
             name=self.find_element(JobPageLocators.title).text.strip(),
             invoker_objects=invoker_objects,
@@ -82,25 +77,25 @@ class JobPageMixin(BasePageObject):
             finish_date=self.find_element(JobPageLocators.finish_date).text.strip(),
         )
 
-    @allure.step('Open stdout menu')
+    @allure.step("Open stdout menu")
     def open_stdout_menu(self):
         """Open menu with stdout logs"""
         self._open_menu(JobPageLocators.Menu.stdout_tab)
 
-    @allure.step('Open stderr menu')
+    @allure.step("Open stderr menu")
     def open_stderr_menu(self):
         """Open menu with stderr logs"""
         self._open_menu(JobPageLocators.Menu.stderr_tab)
 
-    @allure.step('Click on {log_type} download button')
-    def click_on_log_download(self, log_type: Literal['stderr', 'stdout']):
+    @allure.step("Click on {log_type} download button")
+    def click_on_log_download(self, log_type: Literal["stderr", "stdout"]):
         """Click on log download button"""
-        locator = getattr(JobPageLocators.Menu, f'{log_type}_download_btn')
+        locator = getattr(JobPageLocators.Menu, f"{log_type}_download_btn")
         self.find_and_click(locator)
 
-    def _open_menu(self, locator: Locator):
+    def _open_menu(self, locator: BaseLocator):
         self.find_and_click(locator)
-        self.wait_element_attribute(locator, 'class', 'active', exact_match=False)
+        self.wait_element_attribute(locator, "class", "active", exact_match=False)
         self.wait_element_hide(CommonToolbarLocators.progress_bar)
 
     def check_jobs_toolbar(self, action_name: str):
@@ -113,7 +108,7 @@ class JobPageStdout(JobPageMixin):
     @allure.step("Check text on the job log page")
     def check_text(self, success_task: bool = True):
         """Check text on the page"""
-        task_result = 'Success' if success_task else 'Fail'
+        task_result = "Success" if success_task else "Fail"
         headings = [
             "PLAY [SeeMeInAction]",
             "TASK [Gathering Facts] ",

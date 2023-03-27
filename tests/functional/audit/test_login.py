@@ -12,16 +12,14 @@
 
 """Test login audit logs"""
 
-from typing import Callable
+from collections.abc import Callable
 
 import allure
 import pytest
 import requests
 from adcm_client.objects import ADCMClient
-from tests.functional.audit.conftest import make_auth_header
-from tests.functional.conftest import only_clean_adcm
 
-pytestmark = [only_clean_adcm]
+from tests.functional.audit.conftest import make_auth_header
 
 
 def _token_login(client: ADCMClient, username: str, password: str) -> requests.Response:
@@ -84,7 +82,7 @@ def test_login_audit(
         assert first_login["user_id"] is None, "Login user_id should be None"
         assert first_login["login_result"] == "user not found", 'Login should fail with "user not found" result'
         assert first_login["login_details"] == {
-            "username": not_existing_user
+            "username": not_existing_user,
         }, f"Username in login details should be {not_existing_user}"
     with allure.step("Incorrect password"):
         login(sdk_client_fs, admin_username, adcm_api_credentials["password"] + "alkjfelwm")
@@ -93,11 +91,12 @@ def test_login_audit(
         assert first_login["user_id"] is admin_user_id, f"Login user_id should be {admin_user_id}"
         assert first_login["login_result"] == "wrong password", 'Login should fail with "wrong password" result'
         assert first_login["login_details"] == {
-            "username": admin_username
+            "username": admin_username,
         }, f"Username in login details should be {not_existing_user}"
     with allure.step("Check logs are correct"):
         logins = requests.get(
-            f"{sdk_client_fs.url}/api/v1/audit/login", headers=make_auth_header(sdk_client_fs)
+            f"{sdk_client_fs.url}/api/v1/audit/login",
+            headers=make_auth_header(sdk_client_fs),
         ).json()["results"]
         assert all(
             rec.keys() == expected_fields for rec in logins

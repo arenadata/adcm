@@ -17,7 +17,7 @@ Test designed to check that actions are disallowed when cluster object in MM
 import allure
 import pytest
 from adcm_client.objects import Cluster
-from tests.functional.conftest import only_clean_adcm
+
 from tests.functional.maintenance_mode.conftest import (
     BUNDLES_DIR,
     MM_IS_OFF,
@@ -31,7 +31,6 @@ from tests.functional.maintenance_mode.conftest import (
 # pylint: disable=redefined-outer-name
 
 CLUSTER_OBJECTS = ("cluster", "service", "component")
-pytestmark = [only_clean_adcm]
 
 
 @pytest.fixture()
@@ -64,11 +63,13 @@ def test_mm_action(api_client, cluster_mm_action_disallowed, hosts):
         expected_disabled = {f"{obj_type}_action_disallowed" for obj_type in CLUSTER_OBJECTS if "component" in obj_type}
 
         check_actions_availability(
-            adcm_object=first_component, expected_enabled=expected_enabled, expected_disabled=expected_disabled
+            adcm_object=first_component,
+            expected_enabled=expected_enabled,
+            expected_disabled=expected_disabled,
         )
 
     with allure.step(
-        "Switch host MM to 'OFF', switch component with action to MM 'ON' and check enabled and disabled actions"
+        "Switch host MM to 'OFF', switch component with action to MM 'ON' and check enabled and disabled actions",
     ):
         set_maintenance_mode(api_client, host_in_mm, MM_IS_OFF)
         set_maintenance_mode(api_client, first_component, MM_IS_ON)
@@ -78,7 +79,9 @@ def test_mm_action(api_client, cluster_mm_action_disallowed, hosts):
         expected_disabled = {f"{obj_type}_action_disallowed" for obj_type in CLUSTER_OBJECTS if "component" in obj_type}
 
         check_actions_availability(
-            adcm_object=first_component, expected_enabled=expected_enabled, expected_disabled=expected_disabled
+            adcm_object=first_component,
+            expected_enabled=expected_enabled,
+            expected_disabled=expected_disabled,
         )
 
     with allure.step("Switch component MM to 'OFF', switch service MM to 'ON' and check enabled and disabled actions"):
@@ -90,8 +93,12 @@ def test_mm_action(api_client, cluster_mm_action_disallowed, hosts):
         expected_disabled = {f"{obj_type}_action_disallowed" for obj_type in CLUSTER_OBJECTS if "service" in obj_type}
 
         check_actions_availability(
-            adcm_object=first_service, expected_enabled=expected_enabled, expected_disabled=expected_disabled
+            adcm_object=first_service,
+            expected_enabled=expected_enabled,
+            expected_disabled=expected_disabled,
         )
         check_actions_availability(
-            adcm_object=first_service, expected_enabled=expected_enabled, expected_disabled=expected_disabled
+            adcm_object=first_service,
+            expected_enabled=expected_enabled,
+            expected_disabled=expected_disabled,
         )

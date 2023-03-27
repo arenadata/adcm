@@ -12,21 +12,21 @@
 
 from datetime import datetime
 
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
     AuditObjectType,
 )
+from django.urls import reverse
 from rbac.models import Role, RoleTypes, User
+from rest_framework.response import Response
+from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
-class TestRole(BaseTestCase):
+class TestRoleAudit(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -34,7 +34,7 @@ class TestRole(BaseTestCase):
         self.child = Role.objects.create(
             name="test_child_role",
             display_name="test_child_role",
-            type=RoleTypes.business,
+            type=RoleTypes.BUSINESS,
         )
         self.role = Role.objects.create(name="test_role_2", built_in=False)
         self.list_name = "rbac:role-list"
@@ -55,7 +55,7 @@ class TestRole(BaseTestCase):
         if obj:
             self.assertEqual(log.audit_object.object_id, obj.pk)
             self.assertEqual(log.audit_object.object_name, obj.name)
-            self.assertEqual(log.audit_object.object_type, AuditObjectType.Role)
+            self.assertEqual(log.audit_object.object_type, AuditObjectType.ROLE)
             self.assertFalse(log.audit_object.is_deleted)
         else:
             self.assertFalse(log.audit_object)
@@ -85,7 +85,7 @@ class TestRole(BaseTestCase):
             log=log,
             obj=obj,
             operation_name=self.role_updated_str,
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
             operation_result=operation_result,
             user=user,
             object_changes=object_changes,
@@ -108,8 +108,8 @@ class TestRole(BaseTestCase):
             log=log,
             obj=role,
             operation_name=self.role_created_str,
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.CREATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -128,8 +128,8 @@ class TestRole(BaseTestCase):
             log=log,
             obj=None,
             operation_name=self.role_created_str,
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Fail,
+            operation_type=AuditLogOperationType.CREATE,
+            operation_result=AuditLogOperationResult.FAIL,
             user=self.test_user,
         )
 
@@ -151,8 +151,8 @@ class TestRole(BaseTestCase):
             log=log,
             obj=None,
             operation_name=self.role_created_str,
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.CREATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -168,8 +168,8 @@ class TestRole(BaseTestCase):
             log=log,
             obj=self.role,
             operation_name="Role deleted",
-            operation_type=AuditLogOperationType.Delete,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.DELETE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -187,8 +187,8 @@ class TestRole(BaseTestCase):
             log=log,
             obj=self.role,
             operation_name="Role deleted",
-            operation_type=AuditLogOperationType.Delete,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.DELETE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -209,7 +209,7 @@ class TestRole(BaseTestCase):
         self.check_log_update(
             log=log,
             obj=self.role,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
             object_changes={
                 "current": {"display_name": new_display_name, "child": [self.child.display_name]},
@@ -234,7 +234,7 @@ class TestRole(BaseTestCase):
         self.check_log_update(
             log=log,
             obj=self.role,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -255,7 +255,7 @@ class TestRole(BaseTestCase):
         self.check_log_update(
             log=log,
             obj=self.role,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
             object_changes={
                 "current": {"display_name": new_display_name, "child": [self.child.display_name]},
@@ -280,7 +280,7 @@ class TestRole(BaseTestCase):
         self.check_log_update(
             log=log,
             obj=self.role,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -300,6 +300,6 @@ class TestRole(BaseTestCase):
         self.check_log_update(
             log=log,
             obj=self.role,
-            operation_result=AuditLogOperationResult.Fail,
+            operation_result=AuditLogOperationResult.FAIL,
             user=self.test_user,
         )

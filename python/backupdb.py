@@ -10,17 +10,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=wrong-import-order
 
 import datetime
 import os
 import sqlite3
-
+from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.migrations.executor import MigrationExecutor
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django  # pylint: disable=unused-import # noqa: F401
 from cm.logger import logger
 
 
@@ -36,12 +37,13 @@ def check_migrations():
 
 
 def backup_sqlite(dbfile):
-    dt = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    backupfile = os.path.join(settings.BASE_DIR, "data", "var", f"{dt}.db")
+    now_str = datetime.datetime.now(tz=ZoneInfo("UTC")).strftime("%Y%m%d_%H%M%S")
+    backupfile = os.path.join(settings.BASE_DIR, "data", "var", f"{now_str}.db")
     old = sqlite3.connect(dbfile)
     new = sqlite3.connect(backupfile)
     with new:
         old.backup(new)
+
     new.close()
     old.close()
     logger.info("Backup sqlite db to %s", backupfile)
@@ -50,10 +52,13 @@ def backup_sqlite(dbfile):
 def backup_db():
     if not check_migrations():
         return
+
     db = settings.DATABASES["default"]
     if db["ENGINE"] != "django.db.backends.sqlite3":
         logger.error("Backup for %s not implemented yet", db["ENGINE"])
+
         return
+
     backup_sqlite(db["NAME"])
 
 

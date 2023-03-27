@@ -13,20 +13,8 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 from unittest.mock import patch
 
-from django.conf import settings
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import (
-    HTTP_201_CREATED,
-    HTTP_400_BAD_REQUEST,
-    HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
-)
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -51,11 +39,22 @@ from cm.models import (
     ServiceComponent,
     Upgrade,
 )
+from django.conf import settings
+from django.urls import reverse
 from rbac.models import Policy, Role, User
 from rbac.upgrade.role import init_roles
+from rest_framework.response import Response
+from rest_framework.status import (
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+)
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
-class TestCluster(BaseTestCase):
+class TestClusterAudit(BaseTestCase):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
     def setUp(self) -> None:
@@ -105,7 +104,7 @@ class TestCluster(BaseTestCase):
     def check_log_no_obj(self, log: AuditLog, operation_result: AuditLogOperationResult, user: User) -> None:
         self.assertFalse(log.audit_object)
         self.assertEqual(log.operation_name, "Cluster created")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
@@ -119,8 +118,8 @@ class TestCluster(BaseTestCase):
         obj_type: AuditObjectType,
         operation_name: str,
         operation_type: AuditLogOperationType,
-        operation_result: AuditLogOperationResult = AuditLogOperationResult.Success,
-        user: Optional[User] = None,
+        operation_result: AuditLogOperationResult = AuditLogOperationResult.SUCCESS,
+        user: User | None = None,
         object_changes: dict | None = None,
     ) -> None:
         if object_changes is None:
@@ -142,11 +141,11 @@ class TestCluster(BaseTestCase):
     def check_log_denied(self, log: AuditLog, operation_name: str, operation_type: AuditLogOperationType) -> None:
         self.assertEqual(log.audit_object.object_id, self.cluster.pk)
         self.assertEqual(log.audit_object.object_name, self.cluster.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.CLUSTER)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, operation_name)
         self.assertEqual(log.operation_type, operation_type)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.DENIED)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.no_rights_user.pk)
         self.assertEqual(log.object_changes, {})
@@ -156,16 +155,16 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=self.cluster_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def check_cluster_delete_failed_not_found(self, log: AuditLog):
         self.assertFalse(log.audit_object)
         self.assertEqual(log.operation_name, self.cluster_deleted_str)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Delete)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
+        self.assertEqual(log.operation_type, AuditLogOperationType.DELETE)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.FAIL)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.test_user.pk)
         self.assertEqual(log.object_changes, {})
@@ -178,10 +177,10 @@ class TestCluster(BaseTestCase):
     ) -> None:
         self.assertEqual(log.audit_object.object_id, self.cluster.pk)
         self.assertEqual(log.audit_object.object_name, self.cluster.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.CLUSTER)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, operation_name)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.object_changes, {})
@@ -199,6 +198,7 @@ class TestCluster(BaseTestCase):
 
     def get_sc(self) -> HostComponent:
         service_component_prototype = Prototype.objects.create(bundle=self.bundle, type="component")
+
         return ServiceComponent.objects.create(
             cluster=self.cluster,
             service=self.service,
@@ -266,9 +266,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj_name=self.test_cluster_name,
             obj=Cluster.objects.get(pk=response.data["id"]),
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name="Cluster created",
-            operation_type=AuditLogOperationType.Create,
+            operation_type=AuditLogOperationType.CREATE,
         )
 
         self.create_cluster(
@@ -281,7 +281,7 @@ class TestCluster(BaseTestCase):
 
         self.check_log_no_obj(
             log=log,
-            operation_result=AuditLogOperationResult.Fail,
+            operation_result=AuditLogOperationResult.FAIL,
             user=self.test_user,
         )
 
@@ -298,7 +298,7 @@ class TestCluster(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_no_obj(
             log=log,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -412,12 +412,14 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=self.cluster_deleted_str,
-            operation_type=AuditLogOperationType.Delete,
+            operation_type=AuditLogOperationType.DELETE,
         )
 
-        response: Response = self.client.delete(path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}))
+        response: Response = self.client.delete(
+            path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+        )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -436,7 +438,7 @@ class TestCluster(BaseTestCase):
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
+                path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -445,14 +447,14 @@ class TestCluster(BaseTestCase):
         self.check_log_denied(
             log=log,
             operation_name=self.cluster_deleted_str,
-            operation_type=AuditLogOperationType.Delete,
+            operation_type=AuditLogOperationType.DELETE,
         )
 
     def test_delete_no_rights_denied(self):
         self.add_no_rights_user_cluster_view_rights()
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
+                path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -461,11 +463,10 @@ class TestCluster(BaseTestCase):
         self.check_log_denied(
             log=log,
             operation_name=self.cluster_deleted_str,
-            operation_type=AuditLogOperationType.Delete,
+            operation_type=AuditLogOperationType.DELETE,
         )
 
     def test_update(self):
-
         self.client.patch(
             path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
             data={
@@ -482,9 +483,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.test_cluster_name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name="Cluster updated",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
             object_changes={
                 "current": {
                     "description": self.description,
@@ -511,7 +512,7 @@ class TestCluster(BaseTestCase):
         self.check_log_denied(
             log=log,
             operation_name="Cluster updated",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_bind_unbind_empty_data(self):
@@ -527,10 +528,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name="Cluster bound to",
-            operation_result=AuditLogOperationResult.Fail,
-            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.FAIL,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
         self.client.delete(
@@ -544,10 +545,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name="unbound",
-            operation_result=AuditLogOperationResult.Fail,
-            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.FAIL,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_bind_unbind_cluster_to_cluster(self):
@@ -567,9 +568,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=f"Cluster bound to {cluster.name}",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
         bind = ClusterBind.objects.first()
@@ -584,9 +585,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=f"{cluster.name} unbound",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_bind_unbind_service_to_cluster(self):
@@ -606,9 +607,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=f"Cluster bound to {cluster.name}/{service.display_name}",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
         bind = ClusterBind.objects.first()
@@ -623,9 +624,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=f"{cluster.name}/{service.display_name} unbound",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_bind_unbind_service_to_cluster_denied(self):
@@ -646,7 +647,7 @@ class TestCluster(BaseTestCase):
         self.check_log_denied(
             log=log,
             operation_name=f"Cluster bound to {cluster.name}/{service.display_name}",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
         self.client.post(
@@ -674,7 +675,7 @@ class TestCluster(BaseTestCase):
         self.check_log_denied(
             log=log,
             operation_name=f"{cluster.name}/{service.display_name} unbound",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_update_config(self):
@@ -702,7 +703,7 @@ class TestCluster(BaseTestCase):
         self.check_log_denied(
             log=log,
             operation_name=self.cluster_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_add_host_success_and_fail(self):
@@ -718,9 +719,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=f"{self.host.fqdn} host added",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
         self.client.post(
@@ -735,10 +736,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name="host added",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Fail,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.FAIL,
         )
 
     def test_add_host_denied(self):
@@ -755,7 +756,7 @@ class TestCluster(BaseTestCase):
         self.check_log_denied(
             log=log,
             operation_name=f"{self.host.fqdn} host added",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_update_host_config(self):
@@ -774,9 +775,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.host,
             obj_name=self.host.name,
-            obj_type=AuditObjectType.Host,
+            obj_type=AuditObjectType.HOST,
             operation_name=self.host_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_update_host(self):
@@ -798,9 +799,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.host,
             obj_name=self.host.name,
-            obj_type=AuditObjectType.Host,
+            obj_type=AuditObjectType.HOST,
             operation_name=self.host_updated,
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
             object_changes={
                 "current": data,
                 "previous": {"description": ""},
@@ -819,10 +820,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.host,
             obj_name=self.host.name,
-            obj_type=AuditObjectType.Host,
+            obj_type=AuditObjectType.HOST,
             operation_name=self.host_updated,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Fail,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.FAIL,
         )
 
     def test_update_host_config_denied(self):
@@ -843,10 +844,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.host,
             obj_name=self.host.name,
-            obj_type=AuditObjectType.Host,
+            obj_type=AuditObjectType.HOST,
             operation_name=self.host_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -862,8 +863,8 @@ class TestCluster(BaseTestCase):
                         "component_id": self.get_sc().pk,
                         "host_id": self.host.pk,
                         "service_id": self.service.pk,
-                    }
-                ]
+                    },
+                ],
             },
             content_type=APPLICATION_JSON,
         )
@@ -874,9 +875,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name="Host-Component map updated",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_update_hostcomponent_denied(self):
@@ -892,8 +893,8 @@ class TestCluster(BaseTestCase):
                             "component_id": self.get_sc().pk,
                             "host_id": self.host.pk,
                             "service_id": self.service.pk,
-                        }
-                    ]
+                        },
+                    ],
                 },
                 content_type=APPLICATION_JSON,
             )
@@ -904,7 +905,7 @@ class TestCluster(BaseTestCase):
         self.check_log_denied(
             log=log,
             operation_name="Host-Component map updated",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_import(self):
@@ -920,9 +921,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name="Cluster import updated",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_import_denied(self):
@@ -939,7 +940,7 @@ class TestCluster(BaseTestCase):
         self.check_log_denied(
             log=log,
             operation_name="Cluster import updated",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_add_service(self):
@@ -959,9 +960,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=cluster,
             obj_name=cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=f"{self.service.display_name} service added",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_add_service_via_data(self):
@@ -982,9 +983,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=cluster,
             obj_name=cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=f"{self.service.display_name} service added",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_add_service_denied(self):
@@ -1006,10 +1007,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=cluster,
             obj_name=cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=f"{self.service.display_name} service added",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -1028,10 +1029,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=cluster,
             obj_name=cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name="service added",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Fail,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.FAIL,
         )
 
     def test_delete_service(self):
@@ -1049,9 +1050,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=f"{self.service.display_name} service removed",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_delete_service_denied(self):
@@ -1070,7 +1071,7 @@ class TestCluster(BaseTestCase):
         self.check_log_denied(
             log=log,
             operation_name=f"{self.service.display_name} service removed",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_bind_unbind_cluster_to_service(self):
@@ -1090,9 +1091,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            obj_type=AuditObjectType.Service,
+            obj_type=AuditObjectType.SERVICE,
             operation_name=f"Service bound to {cluster.name}",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
         bind = ClusterBind.objects.first()
@@ -1114,9 +1115,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            obj_type=AuditObjectType.Service,
+            obj_type=AuditObjectType.SERVICE,
             operation_name=f"{cluster.name} unbound",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_bind_unbind_service_to_service(self):
@@ -1136,9 +1137,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            obj_type=AuditObjectType.Service,
+            obj_type=AuditObjectType.SERVICE,
             operation_name=f"Service bound to {cluster.name}/{service.display_name}",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
         bind = ClusterBind.objects.first()
@@ -1160,9 +1161,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            obj_type=AuditObjectType.Service,
+            obj_type=AuditObjectType.SERVICE,
             operation_name=f"{cluster.name}/{service.display_name} unbound",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_bind_unbind_cluster_to_service_denied(self):
@@ -1184,10 +1185,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            obj_type=AuditObjectType.Service,
+            obj_type=AuditObjectType.SERVICE,
             operation_name=f"Service bound to {cluster.name}",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -1221,10 +1222,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            obj_type=AuditObjectType.Service,
+            obj_type=AuditObjectType.SERVICE,
             operation_name=f"{cluster.name} unbound",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -1247,10 +1248,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            obj_type=AuditObjectType.Service,
+            obj_type=AuditObjectType.SERVICE,
             operation_name=f"Service bound to {cluster.name}/{service.display_name}",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -1284,10 +1285,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            obj_type=AuditObjectType.Service,
+            obj_type=AuditObjectType.SERVICE,
             operation_name=f"{cluster.name}/{service.display_name} unbound",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -1312,9 +1313,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=component,
             obj_name=f"{self.cluster.name}/{self.service.display_name}/{component.display_name}",
-            obj_type=AuditObjectType.Component,
+            obj_type=AuditObjectType.COMPONENT,
             operation_name=self.component_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_update_component_config_denied(self):
@@ -1340,10 +1341,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=component,
             obj_name=f"{self.cluster.name}/{self.service.display_name}/{component.display_name}",
-            obj_type=AuditObjectType.Component,
+            obj_type=AuditObjectType.COMPONENT,
             operation_name=self.component_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -1373,9 +1374,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            obj_type=AuditObjectType.Service,
+            obj_type=AuditObjectType.SERVICE,
             operation_name=self.service_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_update_service_config_denied(self):
@@ -1406,10 +1407,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            obj_type=AuditObjectType.Service,
+            obj_type=AuditObjectType.SERVICE,
             operation_name=self.service_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -1429,9 +1430,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            obj_type=AuditObjectType.Service,
+            obj_type=AuditObjectType.SERVICE,
             operation_name="Service import updated",
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_service_import_denied(self):
@@ -1452,10 +1453,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            obj_type=AuditObjectType.Service,
+            obj_type=AuditObjectType.SERVICE,
             operation_name="Service import updated",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -1489,10 +1490,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_name=self.cluster.name,
-            obj_type=AuditObjectType.Cluster,
+            obj_type=AuditObjectType.CLUSTER,
             operation_name=self.cluster_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -1515,9 +1516,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.host,
             obj_name=self.host.fqdn,
-            obj_type=AuditObjectType.Host,
+            obj_type=AuditObjectType.HOST,
             operation_name=self.host_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_host_config_restore_denied(self):
@@ -1541,10 +1542,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.host,
             obj_name=self.host.fqdn,
-            obj_type=AuditObjectType.Host,
+            obj_type=AuditObjectType.HOST,
             operation_name=self.host_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -1569,9 +1570,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=component,
             obj_name=f"{self.cluster.name}/{self.service.display_name}/{component.display_name}",
-            obj_type=AuditObjectType.Component,
+            obj_type=AuditObjectType.COMPONENT,
             operation_name=self.component_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_component_config_restore_denied(self):
@@ -1597,10 +1598,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=component,
             obj_name=f"{self.cluster.name}/{self.service.display_name}/{component.display_name}",
-            obj_type=AuditObjectType.Component,
+            obj_type=AuditObjectType.COMPONENT,
             operation_name=self.component_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -1630,9 +1631,9 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            obj_type=AuditObjectType.Service,
+            obj_type=AuditObjectType.SERVICE,
             operation_name=self.service_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
         )
 
     def test_service_config_restore_denied(self):
@@ -1663,10 +1664,10 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_name=f"{self.cluster.name}/{self.service.display_name}",
-            obj_type=AuditObjectType.Service,
+            obj_type=AuditObjectType.SERVICE,
             operation_name=self.service_conf_updated_str,
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -1685,7 +1686,7 @@ class TestCluster(BaseTestCase):
         self.check_action_log(
             log=log,
             operation_name=f"{self.action_display_name} action launched",
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
         )
 
     def test_do_upgrade(self):
@@ -1711,7 +1712,7 @@ class TestCluster(BaseTestCase):
                 path=reverse(
                     "do-cluster-upgrade",
                     kwargs={"cluster_id": self.cluster.pk, "upgrade_id": upgrade.pk},
-                )
+                ),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -1719,7 +1720,7 @@ class TestCluster(BaseTestCase):
         self.check_action_log(
             log=log,
             operation_name=f"{self.action_display_name} upgrade launched",
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
         )
 
     def test_do_upgrade_no_action(self):
@@ -1738,7 +1739,7 @@ class TestCluster(BaseTestCase):
                 path=reverse(
                     "do-cluster-upgrade",
                     kwargs={"cluster_id": self.cluster.pk, "upgrade_id": upgrade.pk},
-                )
+                ),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -1746,7 +1747,7 @@ class TestCluster(BaseTestCase):
         self.check_action_log(
             log=log,
             operation_name=f"Upgraded to {upgrade.name}",
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
         )
 
     def test_do_upgrade_no_upgrade(self):
@@ -1754,7 +1755,7 @@ class TestCluster(BaseTestCase):
             path=reverse(
                 "do-cluster-upgrade",
                 kwargs={"cluster_id": self.cluster.pk, "upgrade_id": 1},
-            )
+            ),
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -1762,5 +1763,5 @@ class TestCluster(BaseTestCase):
         self.check_action_log(
             log=log,
             operation_name="Upgraded to",
-            operation_result=AuditLogOperationResult.Fail,
+            operation_result=AuditLogOperationResult.FAIL,
         )

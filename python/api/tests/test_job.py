@@ -15,13 +15,6 @@ from pathlib import Path
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
-from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED
-
-from adcm.tests.base import BaseTestCase
 from cm.models import (
     ADCM,
     Action,
@@ -32,8 +25,15 @@ from cm.models import (
     Prototype,
     TaskLog,
 )
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse
 from rbac.models import Policy, Role
 from rbac.upgrade.role import init_roles
+from rest_framework.response import Response
+from rest_framework.status import HTTP_201_CREATED
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestJobAPI(BaseTestCase):
@@ -49,7 +49,7 @@ class TestJobAPI(BaseTestCase):
         self.action = Action.objects.create(
             display_name="test_adcm_action",
             prototype=self.adcm_prototype,
-            type=ActionType.Job,
+            type=ActionType.JOB,
             state_available="any",
         )
         self.task = TaskLog.objects.create(
@@ -183,7 +183,7 @@ class TestJobAPI(BaseTestCase):
 
         with patch("cm.job.run_task"):
             response: Response = self.client.post(
-                path=reverse("run-task", kwargs={"cluster_id": cluster.pk, "action_id": action.pk})
+                path=reverse("run-task", kwargs={"cluster_id": cluster.pk, "action_id": action.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -218,7 +218,7 @@ class TestJobAPI(BaseTestCase):
         with self.no_rights_user_logged_in:
             with patch("cm.job.run_task"):
                 response: Response = self.client.post(
-                    path=reverse("run-task", kwargs={"cluster_id": cluster.pk, "action_id": action.pk})
+                    path=reverse("run-task", kwargs={"cluster_id": cluster.pk, "action_id": action.pk}),
                 )
 
             response: Response = self.client.get(reverse("joblog-list"))

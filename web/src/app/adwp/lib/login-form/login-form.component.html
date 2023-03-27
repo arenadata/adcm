@@ -1,0 +1,48 @@
+<div [style.height.px]="100"></div>
+<div class="container" [formGroup]="authForm">
+  <div *ngIf="loginOverGoogle; else form" class="double-auth">
+    <div class="social">
+      <button mat-raised-button class="google-auth" color="primary" (click)="google()">
+        <svg>
+          <use xlink:href="assets/google_icons.svg#btn_google_dark_normal_ios"></use>
+        </svg>
+        <span>Sign in with Google</span>
+      </button>
+    </div>
+    <div class="or">OR</div>
+    <div style="padding-left: 50px;">
+      <ng-container *ngTemplateOutlet="form"></ng-container>
+    </div>
+  </div>
+  <ng-template #form>
+    <div class="form-auth">
+      <mat-form-field>
+        <input matInput
+               autofocus
+               placeholder="Login"
+               formControlName="username"
+               id="login"/>
+      </mat-form-field>
+      <mat-form-field>
+        <input matInput
+               placeholder="Password"
+               type="password"
+               formControlName="password" (keyup.enter)="login()"
+               id="password"/>
+      </mat-form-field>
+      <p>
+        <button mat-raised-button
+                [disabled]="!authForm.valid"
+                color="primary"
+                (click)="login()"
+                (keyup.enter)="login()"
+        >Login</button>
+      </p>
+    </div>
+  </ng-template>
+  <p class="warn">
+    <ng-container *ngIf="isNeedValidation">
+      {{ message }}
+    </ng-container>
+  </p>
+</div>

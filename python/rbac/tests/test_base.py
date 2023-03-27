@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.models import Bundle, Prototype
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
+from rbac.models import Role
 
 from adcm.tests.base import BaseTestCase
-from cm.models import Bundle, Prototype
-from rbac.models import Role
 
 
 def cook_perm(codename, model, app="cm"):
@@ -104,10 +104,18 @@ class RBACBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-attri
             parent=self.sp_2,
         )
         self.bundle_2 = Bundle.objects.create(name="provider_bundle", version="1.0")
-        self.pp = Prototype.objects.create(
-            bundle=self.bundle_2, type="provider", name="provider", allow_maintenance_mode=True
+        self.provider_prototype = Prototype.objects.create(
+            bundle=self.bundle_2,
+            type="provider",
+            name="provider",
+            allow_maintenance_mode=True,
         )
-        self.hp = Prototype.objects.create(bundle=self.bundle_2, type="host", name="host", allow_maintenance_mode=True)
+        self.host_prototype = Prototype.objects.create(
+            bundle=self.bundle_2,
+            type="host",
+            name="host",
+            allow_maintenance_mode=True,
+        )
 
     def create_permissions(self):
         self.add_host_perm = cook_perm("add", "host")

@@ -9,10 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-lines
 
 import string
+from pathlib import Path
 
+from cm.models import Bundle, Cluster, Host, HostProvider, MaintenanceMode, Prototype
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
@@ -26,7 +27,6 @@ from rest_framework.status import (
 )
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.models import Bundle, Cluster, Host, HostProvider, MaintenanceMode, Prototype
 
 
 class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
@@ -49,9 +49,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
             "Contain-Hyphen.Dot",
         }
 
-        self.files_dir = settings.BASE_DIR / "python" / "cm" / "tests" / "files"
-        self.bundle_ssh_name = "ssh.1.0.tar"
-        self.load_bundle(self.bundle_ssh_name)
+        self.upload_and_load_bundle(path=Path(settings.BASE_DIR, "python", "cm", "tests", "files", "ssh.1.0.tar"))
         self.provider = HostProvider.objects.create(
             name="test_provider",
             prototype=Prototype.objects.all()[1],
@@ -62,22 +60,6 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
             provider=self.provider,
             maintenance_mode=MaintenanceMode.ON,
         )
-
-    def load_bundle(self, bundle_name):
-        with open(self.files_dir / bundle_name, encoding=settings.ENCODING_UTF_8) as f:
-            response: Response = self.client.post(
-                path=reverse("upload-bundle"),
-                data={"file": f},
-            )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        response: Response = self.client.post(
-            path=reverse("load-bundle"),
-            data={"bundle_file": bundle_name},
-        )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
 
     def get_host_proto_id(self):
         response: Response = self.client.get(reverse("host-prototype-list"))
@@ -97,18 +79,22 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
 
     def check_incorrect_fqdn_update(self, response: Response, expected_fqdn: str):
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
         err = response.json()
         if "code" in err:
             self.assertEqual(err["code"], "WRONG_NAME")
         else:
             self.assertIn("fqdn", err)
             self.assertEqual(err["fqdn"], ["Ensure this field has no more than 253 characters."])
+
         self.host.refresh_from_db()
         self.assertEqual(self.host.fqdn, expected_fqdn)
 
     def check_success_fqdn_update(self, response: Response, expected_fqdn: str):
         self.assertEqual(response.status_code, HTTP_200_OK)
+
         self.host.refresh_from_db()
+
         self.assertEqual(self.host.fqdn, expected_fqdn)
 
     def check_maintenance_mode_can_be_changed(self, host: Host):
@@ -124,6 +110,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
             },
             content_type=APPLICATION_JSON,
         )
+
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["maintenance_mode"], new_mm)
 
@@ -133,6 +120,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
             data={"maintenance_mode": new_mm},
             content_type=APPLICATION_JSON,
         )
+
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["maintenance_mode"], new_mm)
 
@@ -154,7 +142,8 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
 
         _, provider_proto = self.get_host_provider_proto_id()
         response: Response = self.client.post(
-            path=reverse("provider"), data={"name": "DF1", "prototype_id": provider_proto}
+            path=reverse("provider"),
+            data={"name": "DF1", "prototype_id": provider_proto},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -200,7 +189,8 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.json()["code"], "WRONG_NAME")
 
         response: Response = self.client.post(
-            host_url, {"fqdn": host, "prototype_id": host_proto, "provider_id": provider_id}
+            host_url,
+            {"fqdn": host, "prototype_id": host_proto, "provider_id": provider_id},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -227,7 +217,8 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         )
 
         response: Response = self.client.post(
-            host_url, {"fqdn": host, "prototype_id": host_proto, "provider_id": provider_id}
+            host_url,
+            {"fqdn": host, "prototype_id": host_proto, "provider_id": provider_id},
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)

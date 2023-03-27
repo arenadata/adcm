@@ -13,14 +13,18 @@ import { Directive, EventEmitter, HostListener, Input, Output } from '@angular/c
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { DialogComponent } from '../dialog.component';
 import { IUpgrade } from "./upgrade.component";
-import { concat, Observable, of } from "rxjs";
-import { filter, map, switchMap, tap } from "rxjs/operators";
+import { concat, from, Observable, of } from "rxjs";
+import {concatMap, filter, map, switchMap, tap } from "rxjs/operators";
 import { ApiService } from "@app/core/api";
-import { EmmitRow } from "@app/core/types";
+import { EmmitRow, Entities, License } from "@app/core/types";
 import { BaseDirective } from "../../directives";
 import { UpgradeMasterComponent as component } from "../upgrades/master/master.component";
 import { AddService } from "@app/shared/add-component/add.service";
 import { IRawHosComponent } from "@app/shared/host-components-map/types";
+import { ListResult } from "@app/models/list-result";
+import { ClusterService } from "@app/core/services/cluster.service";
+import { ICluster } from "@app/models/cluster";
+import { ServiceService } from "@app/services/service.service";
 
 export interface UpgradeParameters {
   cluster?: {
@@ -36,23 +40,27 @@ export interface UpgradeParameters {
 export class UpgradesDirective extends BaseDirective {
   @Input('appUpgrades') inputData: IUpgrade;
   @Input() clusterId: number;
+  @Input() bundleId: number;
+  @Input() type: string;
   @Output() refresh: EventEmitter<EmmitRow> = new EventEmitter<EmmitRow>();
 
   hc: IRawHosComponent;
   needPrototype = false;
+  needLicenseAcceptance = [];
 
-  constructor(private api: ApiService, private dialog: MatDialog, private service: AddService) {
+
+  constructor(private api: ApiService,
+              private dialog: MatDialog,
+              private add: AddService,
+              private service: ServiceService,
+              private cluster: ClusterService) {
     super();
   }
 
   @HostListener('click')
   onClick() {
     this.dialog.closeAll();
-    if (this.hasHostComponent) {
-      this.checkHostComponents();
-    } else {
-      this.prepare();
-    }
+    this.checkServicesAndPrepare();
   }
 
   get hasConfig(): boolean {
@@ -107,7 +115,13 @@ export class UpgradesDirective extends BaseDirective {
         dialogModel.data.text = 'The cluster will be prepared for upgrade';
       }
 
-      this.dialog.open(DialogComponent, dialogModel);
+      if (this.needLicenseAcceptance.length > 0) {
+        this.licenseCheckOnUpgrade()
+          .subscribe(null, (e) => console.log(e), () => this.dialog.open(DialogComponent, dialogModel));
+      } else {
+        this.dialog.open(DialogComponent, dialogModel);
+      }
+
     }
   }
 
@@ -128,8 +142,16 @@ export class UpgradesDirective extends BaseDirective {
                 }
               })
               .afterClosed()
-              .subscribe((res) => {
-                if (res) this.dialog.open(DialogComponent, dialogModel);
+              .pipe(
+                filter(yes => yes)
+              )
+              .subscribe(() => {
+                if (this.needLicenseAcceptance.length > 0) {
+                  this.licenseCheckOnUpgrade()
+                    .subscribe(null, (e) => console.log(e), () => this.dialog.open(DialogComponent, dialogModel))
+                } else {
+                  this.dialog.open(DialogComponent, dialogModel);
+                }
               })
           }
         )
@@ -142,7 +164,7 @@ export class UpgradesDirective extends BaseDirective {
 
     this.fork(item)
       .pipe(
-        switchMap(text =>
+        tap(text =>
           this.dialog
             .open(DialogComponent, {
               data: {
@@ -155,19 +177,98 @@ export class UpgradesDirective extends BaseDirective {
                 } : ['Yes', 'No']
               }
             })
-            .beforeClosed()
+            .afterClosed()
             .pipe(
               filter(yes => yes),
               switchMap(() => concat(license$, do$))
             )
+            .subscribe((row) => {
+              if (this.needLicenseAcceptance.length > 0) {
+                this.licenseCheckOnUpgrade()
+                  .subscribe(null, (e) => console.log(e), () => this.refresh.emit({ cmd: 'refresh', row }));
+              } else {
+                this.refresh.emit({ cmd: 'refresh', row });
+              }
+            })
         )
       )
-      .subscribe(row => this.refresh.emit({cmd: 'refresh', row}));
+      .subscribe();
   }
 
   fork(item: IUpgrade) {
     const flag = item.license === 'unaccepted';
     return flag ? this.api.get<{ text: string }>(item.license_url).pipe(map(a => a.text)) : of(item.description);
+  }
+
+  checkServicesAndPrepare() {
+    let oldVersionAcceptedServices;
+
+    if (this.type === 'cluster') {
+      if (!this.add.Cluster) {
+        this.getCluster().pipe(
+          tap((res: ICluster) => this.cluster.Cluster = res)
+        ).subscribe();
+      }
+
+      this.getClusterServices().subscribe(res => {
+        oldVersionAcceptedServices = res.map(service => service.name);
+
+        this.getPrototypeServices().subscribe(res => {
+          this.needLicenseAcceptance = res.results
+            .filter((service) => service.bundle_id === this.inputData.bundle_id && oldVersionAcceptedServices.includes(service.name) && service.license === 'unaccepted')
+            .map((i) => ({
+              prototype_id: i.id,
+              service_name: i.name,
+              license: i.license,
+              license_url: i.license_url,
+            }));
+
+          if (this.hasHostComponent) {
+            this.checkHostComponents();
+          } else {
+            this.prepare();
+          }
+        })
+      })
+    } else {
+      this.prepare();
+    }
+  }
+
+  licenseCheckOnUpgrade() {
+    const licenseObj = {};
+
+    return from(this.needLicenseAcceptance)
+      .pipe(
+        tap((service) => licenseObj[service.prototype_id] = { service_name: service.service_name, license: service.license }),
+        concatMap((service) => this.api.get<License>(`/api/v1/stack/prototype/${service.prototype_id}/license/`).pipe()),
+        concatMap((result) => {
+          const prototype_id = result.accept.substring(
+            result.accept.lastIndexOf("prototype/") + 10,
+            result.accept.indexOf("/license")
+          ) as unknown as number;
+
+          return this.dialog
+            .open(DialogComponent, {
+              data: {
+                title: `Accept license agreement ${licenseObj[prototype_id].service_name}`,
+                text: result.text,
+                closeOnGreenButtonCLick: true,
+                controls: { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] },
+              },
+            })
+            .beforeClosed()
+            .pipe(
+              tap((result) => {
+                if (!result) throw new Error(`License was declined`) // hack to end the flow if license declined
+              }),
+              filter((yes) => yes),
+              switchMap(() => {
+                return this.api.put(`/api/v1/stack/prototype/${prototype_id}/license/accept/`, {}).pipe()
+              })
+            )
+        })
+      )
   }
 
   checkHostComponents() {
@@ -189,7 +290,7 @@ export class UpgradesDirective extends BaseDirective {
               };
 
               // fix later
-              this.service.getPrototype('prototype', params).subscribe((prototype): any => {
+              this.add.getPrototype('prototype', params).subscribe((prototype): any => {
                 if (prototype[0]) {
                   cluster.component.push(prototype[0]);
                   this.hc = cluster;
@@ -211,11 +312,23 @@ export class UpgradesDirective extends BaseDirective {
       ).subscribe();
   }
 
+  getCluster(): Observable<any> {
+    return this.api.get(`api/v1/cluster/${this.clusterId}/`);
+  }
+
   getClusterInfo(): Observable<any> {
-    return this.api.get(`api/v1/cluster/${this.clusterId}/hostcomponent/`)
+    return this.api.get(`api/v1/cluster/${this.clusterId}/hostcomponent/`);
   }
 
   getPrototype(params): Observable<any> {
-    return this.service.getPrototype('prototype', params)
+    return this.add.getPrototype('prototype', params);
+  }
+
+  getClusterServices(): Observable<any> {
+    return this.api.get<ListResult<Entities>>(`api/v1/cluster/${this.clusterId}/service/`);
+  }
+
+  getPrototypeServices(): Observable<any> {
+    return this.api.get<ListResult<Entities>>('/api/v1/stack/service/');
   }
 }

@@ -13,18 +13,19 @@
 """Common import page locators"""
 
 from selenium.webdriver.common.by import By
-from tests.ui_tests.app.helpers.locator import Locator
+
+from tests.ui_tests.core.locators import BaseLocator
 
 
 class ImportLocators:
     """Common import page elements locators"""
 
-    save_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Save button")
-    import_item_block = Locator(By.CSS_SELECTOR, ".items>div", "Import item block")
+    save_btn = BaseLocator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Save button")
+    import_item_block = BaseLocator(By.CSS_SELECTOR, ".items>div", "Import item block")
 
     class ImportItem:
         """Import item elements locators"""
 
-        name = Locator(By.CSS_SELECTOR, "h3", "Import item name")
-        import_chbx = Locator(By.CSS_SELECTOR, "mat-checkbox", "Import checkbox")
-        description = Locator(By.CSS_SELECTOR, "app-exports>div>div", "Description text")
+        name = BaseLocator(By.CSS_SELECTOR, "h3", "Import item name")
+        import_chbx = BaseLocator(By.CSS_SELECTOR, "mat-checkbox", "Import checkbox")
+        description = BaseLocator(By.CSS_SELECTOR, "app-exports>div>div", "Description text")

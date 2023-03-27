@@ -14,24 +14,26 @@
 
 # pylint: disable=too-many-ancestors
 import os
+from collections.abc import Callable, Sized
 from contextlib import contextmanager
-from typing import Any, Callable, Dict, Optional, Sized, Tuple, TypeVar, Union
+from typing import Any, TypeVar
 
 import allure
 import requests
-from adcm_client.objects import ADCMClient, Cluster
+from adcm_client.objects import ADCMClient, Cluster, Component, Provider, Service
 from adcm_pytest_plugin.utils import random_string, wait_until_step_succeeds
 from selenium.common.exceptions import (
     NoSuchElementException,
     StaleElementReferenceException,
 )
 from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait as WDW
+from selenium.webdriver.support import expected_conditions as EC  # noqa: N812
+from selenium.webdriver.support.ui import WebDriverWait as WDW  # noqa: N817
+
 from tests.ui_tests.app.app import ADCMTest
 
-ValueType = TypeVar('ValueType')
-FuncType = TypeVar('FuncType')
+T = TypeVar("T")
+F = TypeVar("F")
 
 
 def _prepare_cluster(sdk_client: ADCMClient, path) -> Cluster:
@@ -41,7 +43,7 @@ def _prepare_cluster(sdk_client: ADCMClient, path) -> Cluster:
     return cluster
 
 
-@allure.step('Wait for a new window after action')
+@allure.step("Wait for a new window after action")
 @contextmanager
 def wait_for_new_window(driver: WebDriver, wait_time: int = 10):
     """Wait a new window is opened after some action"""
@@ -53,7 +55,7 @@ def wait_for_new_window(driver: WebDriver, wait_time: int = 10):
     driver.switch_to.window(tabs[len(tabs) - 1])
 
 
-@allure.step('Close current tab')
+@allure.step("Close current tab")
 def close_current_tab(driver: WebDriver):
     """Close current tab and switch to first tab"""
 
@@ -71,7 +73,7 @@ def check_rows_amount(page, expected_amount: int, table_page_num: int):
     """
     assert (
         row_count := page.locators.row_count
-    ) == expected_amount, f'Page #{table_page_num} should contain {expected_amount}, not {row_count}'
+    ) == expected_amount, f"Page #{table_page_num} should contain {expected_amount}, not {row_count}"
 
 
 def ignore_flaky_errors(func: Callable):
@@ -84,7 +86,7 @@ def ignore_flaky_errors(func: Callable):
         try:
             func(*args, **kwargs)
         except (StaleElementReferenceException, NoSuchElementException) as e:
-            raise AssertionError(f'Got a flaky error: {e}') from e
+            raise AssertionError(f"Got a flaky error: {e}") from e
 
     return wrapped
 
@@ -92,33 +94,30 @@ def ignore_flaky_errors(func: Callable):
 # !===== UI Information Comparator Function =====!
 
 
-def is_equal(first_value: ValueType, second_value: ValueType) -> bool:
+def is_equal(first_value: T, second_value: T) -> bool:
     """Check if two values are equal (==)"""
     return first_value == second_value
 
 
-def is_empty(first_value: ValueType) -> bool:
+def is_empty(first_value: T) -> bool:
     """Check if first value is empty (=='')"""
-    return first_value == ''
+    return first_value == ""
 
 
-def is_not_empty(first_value: ValueType) -> bool:
+def is_not_empty(first_value: T) -> bool:
     """Check if first value is not empty (!='')"""
-    return first_value != ''
+    return first_value != ""
 
 
 def wait_and_assert_ui_info(
-    expected_values: Dict[
+    expected_values: dict[
         str,
-        Union[
-            Union[ValueType, Callable[[ValueType], bool]],
-            Tuple[ValueType, Callable[[ValueType, ValueType], bool]],
-        ],
+        T | Callable[[T], bool] | tuple[T, Callable[[T, T], bool]],
     ],
-    get_info_func: Union[Callable[[Any], FuncType]],
-    get_info_kwargs: Optional[dict] = None,
-    timeout: Union[int, float] = 5,
-    period: Union[int, float] = 0.5,
+    get_info_func: Callable[[Any], F],
+    get_info_kwargs: dict | None = None,
+    timeout: int | float = 5,
+    period: int | float = 0.5,
 ):
     """
     Wait for some information on UI to be correct.
@@ -144,7 +143,7 @@ def wait_and_assert_ui_info(
 
     @ignore_flaky_errors
     def _check_info_from_ui():
-        ui_info: FuncType = get_info_func(**get_info_kwargs)
+        ui_info: F = get_info_func(**get_info_kwargs)
         # to make assertion message more verbal
         ui_info_classname = ui_info.__class__.__name__
         for key, value in expected_values.items():
@@ -154,9 +153,9 @@ def wait_and_assert_ui_info(
                 # expected callable with 1 argument like 'is_empty', etc.
                 compare_func = value
                 assert compare_func(actual_value), (
-                    f'{human_key_names[key]} in {ui_info_classname} '
+                    f"{human_key_names[key]} in {ui_info_classname} "
                     f'failed to pass check "{compare_func.__name__}", '
-                    f'actual value is {actual_value}'
+                    f"actual value is {actual_value}"
                 )
                 return
             if isinstance(value, tuple):
@@ -165,10 +164,10 @@ def wait_and_assert_ui_info(
                 expected_value = value
                 compare_func = is_equal
             assert compare_func(actual_value, expected_value), (
-                f'{human_key_names[key]} in {ui_info_classname} ' f'should be {expected_value}, not {actual_value}'
+                f"{human_key_names[key]} in {ui_info_classname} " f"should be {expected_value}, not {actual_value}"
             )
 
-    with allure.step('Check information is correct on UI'):
+    with allure.step("Check information is correct on UI"):
         wait_until_step_succeeds(_check_info_from_ui, timeout=timeout, period=period)
 
 
@@ -202,29 +201,29 @@ def assert_enough_rows(required_row_num: int, row_count: int):
     ), f"Table has only {row_count} rows when row #{required_row_num} was requested"
 
 
-@allure.step('Wait file {filename} was downloaded to {dirname} or directly to selenium')
+@allure.step("Wait file {filename} was downloaded to {dirname} or directly to selenium")
 def wait_file_is_presented(
     filename: str,
     app_fs: ADCMTest,
     dirname: os.PathLike,
-    timeout: Union[int, float] = 30,
-    period: Union[int, float] = 1,
+    timeout: int | float = 30,
+    period: int | float = 1,
 ):
     """Checks if file is presented in directory"""
-    if app_fs.selenoid['host']:
+    if app_fs.selenoid["host"]:
         dir_url = f'http://{app_fs.selenoid["host"]}:{app_fs.selenoid["port"]}/download/{app_fs.driver.session_id}'
-        file_url = f'{dir_url}/{filename}'
+        file_url = f"{dir_url}/{filename}"
 
         def _check_file_is_presented():
             response = requests.get(file_url)
             assert (
                 response.status_code < 400
-            ), f'Request for file ended with {response.status_code}, file request text: {response.text}.'
+            ), f"Request for file ended with {response.status_code}, file request text: {response.text}."
 
     else:
 
         def _check_file_is_presented():
-            assert filename in os.listdir(dirname), f'File {filename} not found in {dirname}'
+            assert filename in os.listdir(dirname), f"File {filename} not found in {dirname}"
 
     wait_until_step_succeeds(_check_file_is_presented, timeout=timeout, period=period)
 
@@ -261,10 +260,16 @@ def prepare_cluster_and_open_config_page(sdk_client: ADCMClient, path: os.PathLi
 
 
 @allure.step("Create 11 group configs")
-def create_few_groups(group_config_list_page):
-    for i in range(10):
-        with group_config_list_page.wait_rows_change():
-            group_config_list_page.create_group(name=f"Test name_{i}", description="Test description")
-
-    group_config_list_page.create_group(name="Test name_10", description="Test description")
-    assert len(group_config_list_page.get_all_config_rows()) == 10, "There should be exactly 10 groups on 1st page"
+def create_few_groups(client: ADCMClient, adcm_object: Cluster | Service | Component | Provider):
+    for i in range(11):
+        response = requests.post(
+            f"{client.url}/api/v1/group-config/",
+            json={
+                "name": f"Test name_{i}",
+                "object_type": adcm_object.__class__.__name__.lower(),
+                "object_id": adcm_object.id,
+                "description": "Test description",
+            },
+            headers={"Authorization": f"Token {client.api_token()}"},
+        )
+        response.raise_for_status()

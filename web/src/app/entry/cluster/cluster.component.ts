@@ -11,7 +11,7 @@
 // limitations under the License.
 
 import { Component } from '@angular/core';
-import { IColumns } from '@adwp-ui/widgets';
+import { IColumns } from '@app/adwp';
 
 import { ICluster } from '@app/models/cluster';
 import { TypeName } from '@app/core/types';
@@ -54,7 +54,7 @@ export class ClusterListComponent extends ConcernListDirective<ICluster> {
     ListFactory.statusColumn(this),
     ListFactory.actionsButton(this),
     ListFactory.importColumn(this),
-    ListFactory.updateColumn(),
+    ListFactory.updateColumn(this.type),
     ListFactory.configColumn(this),
     ListFactory.deleteColumn(this),
   ] as IColumns<ICluster>;

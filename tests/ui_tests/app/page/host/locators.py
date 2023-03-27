@@ -13,8 +13,9 @@
 """Host page locators"""
 
 from selenium.webdriver.common.by import By
-from tests.ui_tests.app.helpers.locator import Locator, TemplateLocator
+
 from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators
+from tests.ui_tests.core.locators import BaseLocator, TemplateLocator
 
 
 class HostLocators:
@@ -23,16 +24,14 @@ class HostLocators:
     class MenuNavigation(ObjectPageMenuLocators):
         """Host main page main navigation elements locators"""
 
-        ...
-
 
 class HostActionsLocators(HostLocators):
     """Locators for Actions menu on host page"""
 
-    action_name = Locator(By.CSS_SELECTOR, "app-action-card mat-card-title", "Action title in Actions menu")
+    action_name = BaseLocator(By.CSS_SELECTOR, "app-action-card mat-card-title", "Action title in Actions menu")
     action_btn = TemplateLocator(
         By.XPATH,
         "//mat-card-title[text()='{}']/ancestor::mat-card-header//button",
         "Action in Actions menu",
     )
-    action_run_btn = Locator(By.CSS_SELECTOR, "app-action-list>button", "Action run button")
+    action_run_btn = BaseLocator(By.CSS_SELECTOR, "app-action-list>button", "Action run button")

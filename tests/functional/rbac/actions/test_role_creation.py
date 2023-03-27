@@ -13,6 +13,7 @@
 """Test policies, roles, permissions created after bundle upload"""
 
 import allure
+
 from tests.functional.rbac.action_role_utils import (
     check_cluster_actions_roles_are_created_correctly,
     check_provider_based_object_action_roles_are_created_correctly,
@@ -40,7 +41,7 @@ def test_roles_creation_on_cluster_bundle_upload(sdk_client_fs, actions_cluster_
     bundle = actions_cluster_bundle
     hidden_role_prefix = get_bundle_prefix_for_role_name(bundle)
 
-    with allure.step('Get info about roles created right after bundle upload'):
+    with allure.step("Get info about roles created right after bundle upload"):
         hidden_role_names = {role.name for role in get_roles_of_type(RoleType.HIDDEN, sdk_client_fs)}
 
     cluster = bundle.cluster_create("Test Cluster")
@@ -65,17 +66,23 @@ def test_roles_creation_on_provider_bundle_upload(sdk_client_fs, actions_provide
     bundle = actions_provider_bundle
     hidden_role_prefix = get_bundle_prefix_for_role_name(bundle)
 
-    with allure.step('Get info about roles created right after bundle upload'):
+    with allure.step("Get info about roles created right after bundle upload"):
         hidden_role_names = {role.name for role in get_roles_of_type(RoleType.HIDDEN, sdk_client_fs)}
 
     check_provider_based_object_action_roles_are_created_correctly(
-        bundle.provider_prototype(), sdk_client_fs, hidden_role_names, hidden_role_prefix
+        bundle.provider_prototype(),
+        sdk_client_fs,
+        hidden_role_names,
+        hidden_role_prefix,
     )
 
-    provider = bundle.provider_create('Test Provider')
-    host = provider.host_create(fqdn='test-host')
+    provider = bundle.provider_create("Test Provider")
+    host = provider.host_create(fqdn="test-host")
     check_provider_based_object_action_roles_are_created_correctly(
-        host.prototype(), sdk_client_fs, hidden_role_names, hidden_role_prefix
+        host.prototype(),
+        sdk_client_fs,
+        hidden_role_names,
+        hidden_role_prefix,
     )
 
     check_roles_does_not_have_category(

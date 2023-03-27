@@ -13,12 +13,10 @@
 
 import logging
 from collections import OrderedDict
-from typing import Tuple, Union
-
-from django.conf import settings
 
 from audit.apps import AuditConfig
 from audit.models import AuditLog, AuditLogOperationResult, AuditSession
+from django.conf import settings
 
 audit_logger = logging.getLogger(AuditConfig.name)
 
@@ -29,11 +27,11 @@ class CEFLogConstants:
     device_product: str = "Arenadata Cluster Manager"
     adcm_version: str = settings.ADCM_VERSION
     operation_name_session: str = "User logged"
-    extension_keys: Tuple[str] = ("actor", "act", "operation", "resource", "result", "timestamp")
+    extension_keys: tuple[str] = ("actor", "act", "operation", "resource", "result", "timestamp")
 
 
 def cef_logger(
-    audit_instance: Union[AuditLog, AuditSession],
+    audit_instance: AuditLog | AuditSession,
     signature_id: str,
     severity: int = 1,
     empty_resource: bool = False,
@@ -59,14 +57,14 @@ def cef_logger(
         if not empty_resource and audit_instance.audit_object:
             extension["resource"] = audit_instance.audit_object.object_name
         extension["result"] = audit_instance.operation_result
-        if audit_instance.operation_result == AuditLogOperationResult.Denied:
+        if audit_instance.operation_result == AuditLogOperationResult.DENIED:
             severity = 3
         extension["timestamp"] = str(audit_instance.operation_time)
 
     else:
         raise NotImplementedError
 
-    extension = " ".join([f"{k}=\"{v}\"" for k, v in extension.items() if v is not None])
+    extension = " ".join([f'{k}="{v}"' for k, v in extension.items() if v is not None])
 
     msg = (
         f"{CEFLogConstants.cef_version}|{CEFLogConstants.device_vendor}|"

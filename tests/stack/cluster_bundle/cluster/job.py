@@ -18,21 +18,26 @@ from cm.models import Action, Prototype
 def task_generator(action, selector):
     logger.debug("call task_generator: %s", action)
     try:
-        service = Prototype.objects.get(bundle=action.prototype.bundle, type='service', name='ZOOKEEPER', version='1.2')
-    except Prototype.DoesNotExist:
-        raise AdcmEx('TASK_GENERATOR_ERROR', 'service ZOOKEEPER not found')
+        service = Prototype.objects.get(
+            bundle=action.prototype.bundle,
+            type="service",
+            name="ZOOKEEPER",
+            version="1.2",
+        )
+    except Prototype.DoesNotExist as e:
+        raise AdcmEx("TASK_GENERATOR_ERROR", "service ZOOKEEPER not found") from e
 
     try:
-        stop = Action.objects.get(prototype=service, name='stop')
-    except Prototype.DoesNotExist:
-        raise AdcmEx('TASK_GENERATOR_ERROR', 'action stop of service ZOOKEEPER not found')
+        stop = Action.objects.get(prototype=service, name="stop")
+    except Prototype.DoesNotExist as e:
+        raise AdcmEx("TASK_GENERATOR_ERROR", "action stop of service ZOOKEEPER not found") from e
 
     try:
-        start = Action.objects.get(prototype=service, name='start')
-    except Prototype.DoesNotExist:
-        raise AdcmEx('TASK_GENERATOR_ERROR', 'action start of service ZOOKEEPER not found')
+        start = Action.objects.get(prototype=service, name="start")
+    except Prototype.DoesNotExist as e:
+        raise AdcmEx("TASK_GENERATOR_ERROR", "action start of service ZOOKEEPER not found") from e
 
     return (
-        {'action': stop, 'selector': selector},
-        {'action': start, 'selector': selector},
+        {"action": stop, "selector": selector},
+        {"action": start, "selector": selector},
     )

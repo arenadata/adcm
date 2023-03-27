@@ -16,50 +16,49 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0014_auto_20190124_1344'),
+        ("cm", "0014_auto_20190124_1344"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='action',
-            name='description',
+            model_name="action",
+            name="description",
             field=models.TextField(blank=True),
         ),
         migrations.AddField(
-            model_name='action',
-            name='display_name',
+            model_name="action",
+            name="display_name",
             field=models.CharField(blank=True, max_length=160),
         ),
         migrations.AddField(
-            model_name='component',
-            name='display_name',
+            model_name="component",
+            name="display_name",
             field=models.CharField(blank=True, max_length=160),
         ),
         migrations.AddField(
-            model_name='prototype',
-            name='display_name',
+            model_name="prototype",
+            name="display_name",
             field=models.CharField(blank=True, max_length=160),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='description',
+            model_name="stageaction",
+            name="description",
             field=models.TextField(blank=True),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='display_name',
+            model_name="stageaction",
+            name="display_name",
             field=models.CharField(blank=True, max_length=160),
         ),
         migrations.AddField(
-            model_name='stagecomponent',
-            name='display_name',
+            model_name="stagecomponent",
+            name="display_name",
             field=models.CharField(blank=True, max_length=160),
         ),
         migrations.AddField(
-            model_name='stageprototype',
-            name='display_name',
+            model_name="stageprototype",
+            name="display_name",
             field=models.CharField(blank=True, max_length=160),
         ),
     ]

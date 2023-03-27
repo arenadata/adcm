@@ -1,4 +1,4 @@
-import { IComponentColumn, IValueColumn, IButtonsColumn, ILinkColumn } from '@adwp-ui/widgets';
+import { IComponentColumn, IValueColumn, IButtonsColumn, ILinkColumn } from '@app/adwp';
 import { ComponentRef } from '@angular/core';
 
 import { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';
@@ -109,13 +109,16 @@ export class ListFactory {
     };
   }
 
-  static updateColumn(): IComponentColumn<any> {
+  static updateColumn(objectType: string): IComponentColumn<any> {
     return {
       label: 'Upgrade',
       type: 'component',
       className: 'list-control',
       headerClassName: 'list-control',
       component: UpgradeComponent,
+      instanceTaken: (componentRef: ComponentRef<UpgradeComponent>) => {
+        componentRef.instance.type = objectType;
+      }
     };
   }
 

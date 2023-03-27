@@ -12,9 +12,10 @@
 
 """Test API contract via client"""
 
+from collections.abc import Callable, Collection
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Collection, Tuple, Union
+from typing import Any
 
 import allure
 import pytest
@@ -22,14 +23,13 @@ import requests
 from adcm_client.audit import LoginResult, ObjectType, OperationResult, OperationType
 from adcm_client.objects import ADCMClient, Group, Policy, Role, User
 from coreapi.exceptions import ErrorMessage
+
 from tests.functional.audit.conftest import check_failed, make_auth_header
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles
 from tests.library.assertions import sets_are_equal
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm]
 
 BUNDLES_DIR = Path(__file__).parent / "bundles"
 NOT_EXISTING_USER = "nosuchuser"
@@ -40,9 +40,10 @@ def _check_audit_logs(
     operation: Callable,
     token: str,
     log_field_name: str,
-    filters: Union[Enum, Collection[str]],
+    filters: Enum | Collection[str],
     check_field_in_records: Callable[
-        [str, Any, Collection], bool
+        [str, Any, Collection],
+        bool,
     ] = lambda field_name, expected_value, client_logs: all(
         getattr(o, field_name) == expected_value for o in client_logs
     ),
@@ -62,12 +63,14 @@ def _check_audit_logs(
             items = result.json()["results"]
             assert len(logs_from_client) == len(items), "Client and direct API call returned different results"
             sets_are_equal(
-                set(o.id for o in logs_from_client),
-                set(i["id"] for i in items),
+                {o.id for o in logs_from_client},
+                {i["id"] for i in items},
                 "Objects from API and client should be the same",
             )
             assert check_field_in_records(
-                log_field_name, filter_value, logs_from_client
+                log_field_name,
+                filter_value,
+                logs_from_client,
             ), f"All operation should have {log_field_name} {filter_value}"
 
 
@@ -99,14 +102,14 @@ class TestAuditLogsAPI:
 
     @allure.title("Create RBAC objects and update user and group")
     @pytest.fixture()
-    def various_rbac_objects(self, sdk_client_fs) -> Tuple[User, Group, Role, Policy]:
+    def various_rbac_objects(self, sdk_client_fs) -> tuple[User, Group, Role, Policy]:
         """Create RBAC objects, update user and group"""
         user: User = sdk_client_fs.user_create(username="simple_user", password="password")
         group: Group = sdk_client_fs.group_create("sortofgroup")
         role = sdk_client_fs.role_create(
             "custom role",
             display_name="custom role",
-            child=[{"id": sdk_client_fs.role(name=BusinessRoles.ViewADCMConfigurations.value.role_name).id}],
+            child=[{"id": sdk_client_fs.role(name=BusinessRoles.VIEW_ADCM_CONFIGURATIONS.value.role_name).id}],
         )
         policy = sdk_client_fs.policy_create("custom policy", role=role, user=[user])
         user.update(first_name="first", last_name="second")
@@ -159,7 +162,11 @@ class TestAuditLogsAPI:
         )
 
     def _check_audit_operations_filter(
-        self, client: ADCMClient, field_name: str, filters: Union[Enum, Collection[str]], **kwargs
+        self,
+        client: ADCMClient,
+        field_name: str,
+        filters: Enum | Collection[str],
+        **kwargs,
     ) -> None:
         endpoint = f"{client.url}/api/v1/audit/operation/"
         client_func = client.audit_operation_list
@@ -171,7 +178,7 @@ class TestAuditLoginAPI:
     """Test endpoints for login audit records"""
 
     @pytest.fixture()
-    def users(self, sdk_client_fs) -> Tuple[dict, dict]:
+    def users(self, sdk_client_fs) -> tuple[dict, dict]:
         """Create basic users for login with their credentials"""
         user_1_creds = {"username": "Bababa", "password": "Bebebe"}
         user_2_creds = {"username": "Augo", "password": "Goauel"}
@@ -186,22 +193,22 @@ class TestAuditLoginAPI:
             self._login(sdk_client_fs, **creds)
 
     @pytest.fixture()
-    def failed_logins(self, sdk_client_fs, users) -> Tuple[dict, dict]:
+    def failed_logins(self, sdk_client_fs, users) -> tuple[dict, dict]:
         """Create required users and make failed logins"""
-        user_does_not_exist = {'username': NOT_EXISTING_USER, 'password': 'klfjwoevzlxm02()#U)F('}
-        deactivated_user = {'username': 'ohno', 'password': 'imdonneeeee'}
+        user_does_not_exist = {"username": NOT_EXISTING_USER, "password": "klfjwoevzlxm02()#U)F("}
+        deactivated_user = {"username": "ohno", "password": "imdonneeeee"}
         user = sdk_client_fs.user_create(**deactivated_user)
         user.update(is_active=False)
         self._login(sdk_client_fs, **deactivated_user)
         for creds in users:
-            self._login(sdk_client_fs, **{**creds, 'password': 'it is jut wrong'})
+            self._login(sdk_client_fs, **{**creds, "password": "it is jut wrong"})
         self._login(sdk_client_fs, **user_does_not_exist)
         return deactivated_user, user_does_not_exist
 
     @pytest.mark.usefixtures("_successful_logins", "failed_logins")
     def test_audit_login_api_filtering(self, sdk_client_fs, users):
         """Test audit log list filtering: by operation result and username"""
-        self._check_login_list_filtering(sdk_client_fs, 'login_result', LoginResult)
+        self._check_login_list_filtering(sdk_client_fs, "login_result", LoginResult)
         self._check_login_list_filtering(
             sdk_client_fs,
             "username",
@@ -216,7 +223,11 @@ class TestAuditLoginAPI:
             ), f"Audit login records for username {NOT_EXISTING_USER} should be 0, because there is no such user"
 
     def _check_login_list_filtering(
-        self, client: ADCMClient, field_name: str, filters: Union[Enum, Collection[str]], **kwargs
+        self,
+        client: ADCMClient,
+        field_name: str,
+        filters: Enum | Collection[str],
+        **kwargs,
     ):
         endpoint = f"{client.url}/api/v1/audit/login/"
         client_func = client.audit_login_list

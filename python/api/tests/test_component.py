@@ -13,12 +13,6 @@
 from pathlib import Path
 from unittest.mock import patch
 
-from django.conf import settings
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
-
-from adcm.tests.base import BaseTestCase
 from cm.models import (
     Action,
     Bundle,
@@ -30,6 +24,12 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from django.conf import settings
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestComponentAPI(BaseTestCase):
@@ -55,7 +55,8 @@ class TestComponentAPI(BaseTestCase):
             service=self.service,
         )
         self.host = Host.objects.create(
-            fqdn="test-host", prototype=Prototype.objects.create(bundle=bundle, type="host")
+            fqdn="test-host",
+            prototype=Prototype.objects.create(bundle=bundle, type="host"),
         )
 
     def test_change_maintenance_mode_wrong_name_fail(self):
@@ -123,7 +124,10 @@ class TestComponentAPI(BaseTestCase):
 
     def test_change_maintenance_mode_on_with_action_success(self):
         HostComponent.objects.create(
-            cluster=self.cluster, host=self.host, service=self.service, component=self.component
+            cluster=self.cluster,
+            host=self.host,
+            service=self.service,
+            component=self.component,
         )
         action = Action.objects.create(prototype=self.component.prototype, name=settings.ADCM_TURN_ON_MM_ACTION_NAME)
 
@@ -139,7 +143,13 @@ class TestComponentAPI(BaseTestCase):
         self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
         self.assertEqual(self.component.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
-            action=action, obj=self.component, conf={}, attr={}, hc=[], hosts=[], verbose=False
+            action=action,
+            obj=self.component,
+            conf={},
+            attr={},
+            hostcomponent=[],
+            hosts=[],
+            verbose=False,
         )
 
     def test_change_maintenance_mode_on_from_on_with_action_fail(self):
@@ -177,7 +187,10 @@ class TestComponentAPI(BaseTestCase):
         self.component.maintenance_mode = MaintenanceMode.ON
         self.component.save()
         HostComponent.objects.create(
-            cluster=self.cluster, host=self.host, service=self.service, component=self.component
+            cluster=self.cluster,
+            host=self.host,
+            service=self.service,
+            component=self.component,
         )
         action = Action.objects.create(prototype=self.component.prototype, name=settings.ADCM_TURN_OFF_MM_ACTION_NAME)
 
@@ -193,7 +206,13 @@ class TestComponentAPI(BaseTestCase):
         self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
         self.assertEqual(self.component.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
-            action=action, obj=self.component, conf={}, attr={}, hc=[], hosts=[], verbose=False
+            action=action,
+            obj=self.component,
+            conf={},
+            attr={},
+            hostcomponent=[],
+            hosts=[],
+            verbose=False,
         )
 
     def test_change_maintenance_mode_off_to_off_with_action_fail(self):

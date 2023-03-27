@@ -18,9 +18,9 @@ from django.apps import AppConfig
 class RBACConfig(AppConfig):
     """RBAC app config"""
 
-    name = 'rbac'
-    verbose_name = 'Arenadata Web Platform role-based access control'
+    name = "rbac"
+    verbose_name = "Arenadata Web Platform role-based access control"
 
     def ready(self):
         # pylint: disable-next=import-outside-toplevel,unused-import
-        from cm.signals import mark_deleted_audit_object_handler
+        from cm.signals import mark_deleted_audit_object_handler  # noqa: F401

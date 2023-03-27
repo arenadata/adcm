@@ -13,13 +13,8 @@
 
 from datetime import datetime
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
-from django.contrib.contenttypes.models import ContentType
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
-
-from adcm.tests.base import BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -40,11 +35,17 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse
 from rbac.models import Policy, Role, User
 from rbac.upgrade.role import init_roles
+from rest_framework.response import Response
+from rest_framework.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
+
+from adcm.tests.base import BaseTestCase
 
 
-class TestAction(BaseTestCase):
+class TestActionAudit(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -52,7 +53,9 @@ class TestAction(BaseTestCase):
         adcm_prototype = Prototype.objects.create(bundle=self.bundle, type="adcm")
         self.config = ObjectConfig.objects.create(current=0, previous=0)
         config_log = ConfigLog.objects.create(
-            obj_ref=self.config, config="{}", attr={"ldap_integration": {"active": True}}
+            obj_ref=self.config,
+            config="{}",
+            attr={"ldap_integration": {"active": True}},
         )
         self.config.current = config_log.pk
         self.config.save(update_fields=["current"])
@@ -68,8 +71,8 @@ class TestAction(BaseTestCase):
         self.task = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=ContentType.objects.get(app_label="cm", model="adcm"),
-            start_date=datetime.now(),
-            finish_date=datetime.now(),
+            start_date=datetime.now(tz=ZoneInfo("UTC")),
+            finish_date=datetime.now(tz=ZoneInfo("UTC")),
             action=self.action,
         )
         self.action_create_view = "api.action.views.create"
@@ -119,7 +122,7 @@ class TestAction(BaseTestCase):
             self.assertFalse(log.audit_object)
 
         self.assertEqual(log.operation_name, operation_name)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
 
@@ -140,7 +143,7 @@ class TestAction(BaseTestCase):
             obj_name=self.adcm_name,
             obj_type=AuditObjectType.ADCM,
             operation_name=f"{self.action.display_name} action launched",
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -155,7 +158,7 @@ class TestAction(BaseTestCase):
             obj_name=self.adcm_name,
             obj_type=AuditObjectType.ADCM,
             operation_name=f"{self.action.display_name} action launched",
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.test_user,
         )
 
@@ -170,7 +173,7 @@ class TestAction(BaseTestCase):
             obj_name=self.adcm_name,
             obj_type=AuditObjectType.ADCM,
             operation_name=f"{self.action.display_name} action completed",
-            operation_result=AuditLogOperationResult.Fail,
+            operation_result=AuditLogOperationResult.FAIL,
         )
 
     def test_component_launch(self):
@@ -185,7 +188,7 @@ class TestAction(BaseTestCase):
                         "component_id": component.pk,
                         "action_id": self.action.pk,
                     },
-                )
+                ),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -193,10 +196,10 @@ class TestAction(BaseTestCase):
         self.check_obj_updated(
             log=log,
             obj_pk=component.pk,
-            obj_type=AuditObjectType.Component,
+            obj_type=AuditObjectType.COMPONENT,
             obj_name=f"{cluster.name}/{service.display_name}/{component.display_name}",
             operation_name=f"{self.action.display_name} action launched",
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -215,7 +218,7 @@ class TestAction(BaseTestCase):
                         "component_id": component.pk,
                         "action_id": self.action.pk,
                     },
-                )
+                ),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -224,10 +227,10 @@ class TestAction(BaseTestCase):
         self.check_obj_updated(
             log=log,
             obj_pk=component.pk,
-            obj_type=AuditObjectType.Component,
+            obj_type=AuditObjectType.COMPONENT,
             obj_name=f"{cluster.name}/{service.display_name}/{component.display_name}",
             operation_name=f"{self.action.display_name} action launched",
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -291,4 +294,4 @@ class TestAction(BaseTestCase):
                 log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
                 self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-                self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
+                self.assertEqual(log.operation_result, AuditLogOperationResult.DENIED)

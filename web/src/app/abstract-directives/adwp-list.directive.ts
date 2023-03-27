@@ -1,6 +1,6 @@
 import { Directive, OnInit } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { IColumns, IListResult, Paging, RowEventData } from '@adwp-ui/widgets';
+import { IColumns, IListResult, Paging, RowEventData } from '@app/adwp';
 import { Sort } from '@angular/material/sort';
 import { PageEvent } from '@angular/material/paginator';
 

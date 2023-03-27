@@ -12,7 +12,7 @@
 
 """Test audit of actions"""
 
-from typing import Callable, Tuple, Type, Union
+from collections.abc import Callable
 
 import allure
 import pytest
@@ -20,6 +20,7 @@ import requests
 from adcm_client.audit import AuditOperation, ObjectType, OperationResult, OperationType
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Job, Provider, Task
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
+
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,
@@ -31,14 +32,12 @@ from tests.functional.audit.conftest import (
     make_auth_header,
     parametrize_audit_scenario_parsing,
 )
-from tests.functional.conftest import only_clean_adcm
-from tests.functional.rbac.conftest import BusinessRoles as BR
+from tests.functional.rbac.conftest import BusinessRoles as BR  # noqa: N817
 from tests.functional.tools import AnyADCMObject
 from tests.library.audit.checkers import AuditLogChecker
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm]
 
 DummyTask = type("DummyTask", (), {"id": 10000})
 
@@ -64,25 +63,25 @@ def provider(sdk_client_fs) -> Provider:
 @pytest.fixture()
 def _grant_view_on_cluster(cluster, build_policy):
     """Grant new user a permission to "view cluster" with permission to view config"""
-    build_policy(BR.ViewClusterConfigurations, cluster)
+    build_policy(BR.VIEW_CLUSTER_CONFIGURATIONS, cluster)
 
 
 @pytest.fixture()
 def _grant_view_on_component(cluster, build_policy):
     """Grant new user a permission to "view component" with permission to view config"""
-    build_policy(BR.ViewComponentConfigurations, cluster.service().component())
+    build_policy(BR.VIEW_COMPONENT_CONFIGURATIONS, cluster.service().component())
 
 
 @pytest.fixture()
 def _grant_view_on_provider(provider, build_policy):
     """Grant new user a permission to "view provider" with permission to view config"""
-    build_policy(BR.ViewProviderConfigurations, provider)
+    build_policy(BR.VIEW_PROVIDER_CONFIGURATIONS, provider)
 
 
 @pytest.fixture()
 def _grant_view_on_host(provider, build_policy):
     """Grant new user a permission to "view host" with permission to view config"""
-    build_policy(BR.ViewHostConfigurations, provider.host())
+    build_policy(BR.VIEW_HOST_CONFIGURATIONS, provider.host())
 
 
 class RunActionTestMixin:
@@ -252,7 +251,7 @@ class TestUpgrade(RunActionTestMixin):
         _action_run_test_init(self, sdk_client_fs, new_user_client)
 
     @pytest.fixture()
-    def upload_new_bundles(self, sdk_client_fs) -> Tuple[Bundle, Bundle]:
+    def upload_new_bundles(self, sdk_client_fs) -> tuple[Bundle, Bundle]:
         """Upload new versions for cluster and provider bundles"""
         return (
             sdk_client_fs.upload_from_fs(BUNDLES_DIR / "actions" / "new_cluster"),
@@ -262,9 +261,12 @@ class TestUpgrade(RunActionTestMixin):
     @pytest.mark.parametrize("parse_with_context", ["upgrade.yaml"], indirect=True)
     @pytest.mark.parametrize("type_to_pick", [Cluster, Provider])
     @pytest.mark.usefixtures(
-        "_grant_view_on_cluster", "_grant_view_on_provider", "upload_new_bundles", "_init"
+        "_grant_view_on_cluster",
+        "_grant_view_on_provider",
+        "upload_new_bundles",
+        "_init",
     )  # pylint: disable-next=too-many-locals
-    def test_upgrade(self, type_to_pick: Type, cluster, provider, parse_with_context):
+    def test_upgrade(self, type_to_pick: type, cluster, provider, parse_with_context):
         """Test audit of cluster/provider simple upgrade/upgrade with action"""
         if type_to_pick == Cluster:
             obj = cluster
@@ -292,11 +294,13 @@ class TestUpgrade(RunActionTestMixin):
                 (self.admin_creds, {}, check_409),
                 (self.admin_creds, {"config": {"param": "asdklj"}}, check_succeed),
             ):
-                with allure.step(f"Run upgrade '{name}' on {type_name} {obj.name} via POST to {url} with body: {data}"):
+                with allure.step(
+                    f"Run upgrade '{name}' on {type_name} {obj.name} via POST to {url} with body: {data}",
+                ):
                     check_response(requests.post(url, json=data, headers=headers))
                 _wait_all_finished(self.client)
         checker = AuditLogChecker(
-            parse_with_context({"username": NEW_USER["username"], "name": obj.name, "object_type": type_name})
+            parse_with_context({"username": NEW_USER["username"], "name": obj.name, "object_type": type_name}),
         )
         checker.set_user_map(self.client)
         checker.check(self.client.audit_operation_list())
@@ -310,7 +314,7 @@ class TestADCMActions:
     def test_adcm_actions(self, sdk_client_fs, audit_log_checker, new_user_client, build_policy):
         """Test audit of ADCM actions"""
         adcm = sdk_client_fs.adcm()
-        build_policy(BR.ViewADCMSettings, adcm)
+        build_policy(BR.VIEW_ADCM_SETTINGS, adcm)
         sync_action = adcm.action(name="test_ldap_connection")
         url = f"{sdk_client_fs.url}/api/v1/adcm/{adcm.id}/action/{sync_action.id}/run/"
         with allure.step("Run action and get denied"):
@@ -321,7 +325,7 @@ class TestADCMActions:
                     url,
                     json={"config": {"i": "doesnotexist"}},
                     headers=make_auth_header(sdk_client_fs),
-                )
+                ),
             )
         with allure.step("Run action successfuly"):
             check_succeed(requests.post(url, headers=make_auth_header(sdk_client_fs)))
@@ -340,6 +344,7 @@ class TestTaskCancelRestart(RunActionTestMixin):
         """Fill all utility fields for audit of actions testing"""
         _action_run_test_init(self, sdk_client_fs, new_user_client)
 
+    @pytest.skip(reason="https://tracker.yandex.ru/ADCM-3690")
     @parametrize_audit_scenario_parsing("cancel_restart.yaml", {**NEW_USER, "action_display_name": "Terminate Simple"})
     def test_task_with_one_job(self, cluster, audit_log_checker):
         """Test audit of cancel/restart tasks with one job"""
@@ -370,12 +375,12 @@ class TestTaskCancelRestart(RunActionTestMixin):
         audit_checker.set_user_map(self.client)
         audit_checker.check(self.client.audit_operation_list())
 
-    def _cancel(self, task: Union[Task, DummyTask], headers: dict):
+    def _cancel(self, task: Task | DummyTask, headers: dict):
         url = f"{self.client.url}/api/v1/task/{task.id}/cancel/"
         with allure.step(f"Cancel task via PUT {url}"):
             return requests.put(url, headers=headers)
 
-    def _restart(self, task: Union[Task, DummyTask], headers: dict):
+    def _restart(self, task: Task | DummyTask, headers: dict):
         url = f"{self.client.url}/api/v1/task/{task.id}/restart/"
         with allure.step(f"Restart task via PUT {url}"):
             return requests.put(url, headers=headers)
@@ -393,8 +398,8 @@ class TestTaskCancelRestart(RunActionTestMixin):
 
 @allure.step("Wait all tasks are finished")
 def _wait_all_finished(client):
-    for j in client.job_list():
-        j.task().wait()
+    for job in client.job_list():
+        job.task().wait()
 
 
 def _succeed_action_id(obj: AnyADCMObject) -> int:

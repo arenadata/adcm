@@ -10,6 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api.config.serializers import ConfigSerializerUI
+from api.utils import UrlField, check_obj, hlink
+from cm.adcm_config import get_action_variant, get_prototype_config, ui_config
+from cm.errors import raise_adcm_ex
+from cm.models import Cluster, GroupConfig, HostProvider, PrototypeConfig
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (
     BooleanField,
@@ -24,11 +29,6 @@ from rest_framework.serializers import (
 from rest_framework_extensions.settings import extensions_api_settings
 
 from adcm.serializers import EmptySerializer
-from api.config.serializers import ConfigSerializerUI
-from api.utils import UrlField, check_obj, hlink
-from cm.adcm_config import get_action_variant, get_prototype_config, ui_config
-from cm.errors import raise_adcm_ex
-from cm.models import Cluster, GroupConfig, HostProvider, PrototypeConfig
 
 
 class UpgradeSerializer(EmptySerializer):
@@ -42,7 +42,7 @@ class UpgradeSerializer(EmptySerializer):
     max_strict = BooleanField(required=False)
     upgradable = BooleanField(required=False)
     license = CharField(required=False)
-    license_url = hlink('bundle-license', 'bundle_id', 'bundle_pk')
+    license_url = hlink("bundle-license", "bundle_id", "bundle_pk")
     from_edition = JSONField(required=False)
     state_available = JSONField(required=False)
     state_on_success = CharField(required=False)
@@ -57,33 +57,34 @@ class UpgradeSerializer(EmptySerializer):
 
     def get_config(self, instance):
         if instance.action is None:
-            return {'attr': {}, 'config': []}
+            return {"attr": {}, "config": []}
 
-        if 'cluster_id' in self.context:
-            obj = check_obj(Cluster, self.context['cluster_id'])
-        elif 'provider_id' in self.context:
-            obj = check_obj(HostProvider, self.context['provider_id'])
+        if "cluster_id" in self.context:
+            obj = check_obj(Cluster, self.context["cluster_id"])
+        elif "provider_id" in self.context:
+            obj = check_obj(HostProvider, self.context["provider_id"])
         else:
             obj = None
 
         action_conf = PrototypeConfig.objects.filter(
-            prototype=instance.action.prototype, action=instance.action
-        ).order_by('id')
+            prototype=instance.action.prototype,
+            action=instance.action,
+        ).order_by("id")
         *_, attr = get_prototype_config(instance.action.prototype, instance.action)
         if obj:
             get_action_variant(obj, action_conf)
         conf = ConfigSerializerUI(action_conf, many=True, context=self.context, read_only=True)
-        return {'attr': attr, 'config': conf.data}
+        return {"attr": attr, "config": conf.data}
 
 
 class ClusterUpgradeSerializer(UpgradeSerializer):
     class MyUrlField(UrlField):
         def get_kwargs(self, obj):
-            return {'cluster_id': self.context['cluster_id'], 'upgrade_id': obj.id}
+            return {"cluster_id": self.context["cluster_id"], "upgrade_id": obj.id}
 
     hostcomponentmap = SerializerMethodField()
-    url = MyUrlField(read_only=True, view_name='cluster-upgrade-details')
-    do = MyUrlField(read_only=True, view_name='do-cluster-upgrade')
+    url = MyUrlField(read_only=True, view_name="cluster-upgrade-details")
+    do = MyUrlField(read_only=True, view_name="do-cluster-upgrade")
 
     def get_hostcomponentmap(self, instance):
         if instance.action:
@@ -94,10 +95,10 @@ class ClusterUpgradeSerializer(UpgradeSerializer):
 class ProviderUpgradeSerializer(UpgradeSerializer):
     class MyUrlField(UrlField):
         def get_kwargs(self, obj):
-            return {'provider_id': self.context['provider_id'], 'upgrade_id': obj.id}
+            return {"provider_id": self.context["provider_id"], "upgrade_id": obj.id}
 
-    url = MyUrlField(read_only=True, view_name='provider-upgrade-details')
-    do = MyUrlField(read_only=True, view_name='do-provider-upgrade')
+    url = MyUrlField(read_only=True, view_name="provider-upgrade-details")
+    do = MyUrlField(read_only=True, view_name="do-provider-upgrade")
 
 
 class DoUpgradeSerializer(EmptySerializer):
@@ -118,13 +119,13 @@ class UIConfigField(JSONField):
     def to_representation(self, value):
         obj = value.obj_ref.object
         if obj is None:
-            raise_adcm_ex('INVALID_CONFIG_UPDATE', f'unknown object type "{value.obj_ref}"')
+            raise_adcm_ex("INVALID_CONFIG_UPDATE", f'unknown object type "{value.obj_ref}"')
         if isinstance(obj, GroupConfig):
             obj = obj.object
         return ui_config(obj, value)
 
     def to_internal_value(self, data):
-        return {'config': data}
+        return {"config": data}
 
 
 class MultiHyperlinkedIdentityField(HyperlinkedIdentityField):
@@ -140,7 +141,7 @@ class MultiHyperlinkedIdentityField(HyperlinkedIdentityField):
         kwargs = {}
         for url_arg in self.url_args:
             if url_arg.startswith(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX):
-                parent_name = url_arg.replace(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX, '', 1)
+                parent_name = url_arg.replace(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX, "", 1)
                 parent = self.context.get(parent_name)
                 kwargs.update({url_arg: parent.id})
             else:
@@ -154,7 +155,7 @@ class MultiHyperlinkedRelatedField(HyperlinkedRelatedField):
     """
 
     def __init__(self, view_name, *args, **kwargs):
-        kwargs['read_only'] = True
+        kwargs["read_only"] = True
         self.url_args = args
         super().__init__(view_name, **kwargs)
 
@@ -162,7 +163,7 @@ class MultiHyperlinkedRelatedField(HyperlinkedRelatedField):
         kwargs = {}
         for url_arg in self.url_args:
             if url_arg.startswith(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX):
-                parent_name = url_arg.replace(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX, '', 1)
+                parent_name = url_arg.replace(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX, "", 1)
                 parent = self.context.get(parent_name)
                 if parent is None:
                     parent = obj

@@ -12,86 +12,73 @@
 
 """Admin pages PageObjects classes"""
 
+from collections.abc import Collection
 from dataclasses import dataclass
-from typing import List, Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
-from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
+from selenium.common.exceptions import StaleElementReferenceException
+from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
-from tests.ui_tests.app.helpers.locator import Locator
+
+from tests.library.predicates import name_is
+from tests.library.utils import get_or_raise
 from tests.ui_tests.app.page.admin.locators import (
-    AdminGroupsLocators,
     AdminIntroLocators,
     AdminPoliciesLocators,
-    AdminRolesLocators,
     AdminSettingsLocators,
     AdminUsersLocators,
+    CommonAdminPagesLocators,
+    LoginAuditLocators,
+    OperationsAuditLocators,
 )
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageFooter,
-    PageHeader,
-)
+from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
-from tests.ui_tests.app.page.common.dialogs.locators import DeleteDialog
-from tests.ui_tests.app.page.common.popups.locator import CommonPopupLocators
+from tests.ui_tests.app.page.common.dialogs.delete import DeleteDialog
+from tests.ui_tests.app.page.common.dialogs.group import (
+    AddGroupDialog,
+    UpdateGroupDialog,
+)
+from tests.ui_tests.app.page.common.dialogs.locators import DeleteDialogLocators
+from tests.ui_tests.app.page.common.dialogs.operation_changes import (
+    OperationChangesDialog,
+)
+from tests.ui_tests.app.page.common.dialogs.policy import (
+    AddPolicyBaseInfoDialog,
+    AddPolicyFinishDialog,
+    AddPolicyObjectPickDialog,
+)
+from tests.ui_tests.app.page.common.dialogs.role import (
+    CreateRoleDialog,
+    UpdateRoleDialog,
+)
+from tests.ui_tests.app.page.common.dialogs.user import AddUserDialog, UpdateUserDialog
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
-
-
-@dataclass
-class AdminRoleInfo:
-    """Information about role"""
-
-    name: str
-    description: str
-    permissions: str
-
-
-@dataclass
-class AdminGroupInfo:
-    """Information about group"""
-
-    name: str
-    description: str
-    users: str
-
-
-@dataclass
-class AdminPolicyInfo:
-    """Information about policy"""
-
-    name: str
-    description: Optional[str]
-    role: str
-    users: Optional[str]
-    groups: Optional[str]
-    objects: Optional[str]
+from tests.ui_tests.core.checks import check_elements_are_displayed
+from tests.ui_tests.core.elements import AutoChildElement, ObjectRowMixin
+from tests.ui_tests.core.locators import BaseLocator, Descriptor, Locator, autoname
 
 
 class GeneralAdminPage(BasePageObject):
     """Base class for admin pages"""
 
     MENU_SUFFIX: str
-    MAIN_ELEMENTS: List[Locator]
-    header: PageHeader
-    footer: PageFooter
+    MAIN_ELEMENTS: list[BaseLocator]
+    MAIN_ELEMENTS: Collection[BaseLocator]
     config: CommonConfigMenuObj
     table: CommonTableObj
     toolbar: CommonToolbar
 
     def __init__(self, driver, base_url):
         if self.MENU_SUFFIX is None:
-            raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
+            raise AttributeError("You should explicitly set MENU_SUFFIX in class definition")
         super().__init__(driver, base_url, "/admin/" + self.MENU_SUFFIX)
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
-        self.table = CommonTableObj(self.driver, self.base_url)
+        self.table = CommonTableObj(driver=self.driver)
         self.toolbar = CommonToolbar(self.driver, self.base_url)
 
     @allure.step("Assert that all main elements are presented on the page")
@@ -99,15 +86,14 @@ class GeneralAdminPage(BasePageObject):
         """Assert presence of the MAIN_ELEMENTS"""
 
         if len(self.MAIN_ELEMENTS) == 0:
-            raise AttributeError('MAIN_ELEMENTS should contain at least 1 element')
-        self.assert_displayed_elements(self.MAIN_ELEMENTS)
+            raise AttributeError("MAIN_ELEMENTS should contain at least 1 element")
+        check_elements_are_displayed(self, self.MAIN_ELEMENTS)
 
     @allure.step("Check admin toolbar")
     def check_admin_toolbar(self):
-        """Check that admin toolbar has all required elements in place"""
-        self.assert_displayed_elements([CommonToolbarLocators.admin_link])
+        check_elements_are_displayed(self, [CommonToolbarLocators.admin_link])
 
-    @allure.step('Open Admin Intro page by left menu item click')
+    @allure.step("Open Admin Intro page by left menu item click")
     def open_intro_menu(self) -> "AdminIntroPage":
         """Open Admin Intro page by menu object click"""
 
@@ -116,7 +102,7 @@ class GeneralAdminPage(BasePageObject):
         page.wait_page_is_opened()
         return page
 
-    @allure.step('Open Admin Settings page by left menu item click')
+    @allure.step("Open Admin Settings page by left menu item click")
     def open_settings_menu(self) -> "AdminSettingsPage":
         """Open Admin Settings page by menu object click"""
 
@@ -125,7 +111,7 @@ class GeneralAdminPage(BasePageObject):
         page.wait_page_is_opened()
         return page
 
-    @allure.step('Open Admin Users page by left menu item click')
+    @allure.step("Open Admin Users page by left menu item click")
     def open_users_menu(self) -> "AdminUsersPage":
         """Open Admin Users page by menu object click"""
 
@@ -134,7 +120,7 @@ class GeneralAdminPage(BasePageObject):
         page.wait_page_is_opened()
         return page
 
-    @allure.step('Open Admin groups page by left menu item click')
+    @allure.step("Open Admin groups page by left menu item click")
     def open_groups_menu(self) -> "AdminGroupsPage":
         """Open Admin groups page by menu object click"""
 
@@ -143,7 +129,7 @@ class GeneralAdminPage(BasePageObject):
         page.wait_page_is_opened()
         return page
 
-    @allure.step('Open Admin Roles page by left menu item click')
+    @allure.step("Open Admin Roles page by left menu item click")
     def open_roles_menu(self) -> "AdminRolesPage":
         """Open Admin Roles page by menu object click"""
 
@@ -152,7 +138,7 @@ class GeneralAdminPage(BasePageObject):
         page.wait_page_is_opened()
         return page
 
-    @allure.step('Open Admin policies page by left menu item click')
+    @allure.step("Open Admin policies page by left menu item click")
     def open_policies_menu(self) -> "AdminPoliciesPage":
         """Open Admin policies page by menu object click"""
 
@@ -161,27 +147,29 @@ class GeneralAdminPage(BasePageObject):
         page.wait_page_is_opened()
         return page
 
+    @allure.step("Open Admin Operations Audit page by left menu item click")
+    def open_operations_menu(self) -> "OperationsAuditPage":
+        self.find_and_click(ObjectPageMenuLocators.operations_tab)
+        page = OperationsAuditPage(self.driver, self.base_url)
+        page.wait_page_is_opened()
+        return page
+
 
 class AdminIntroPage(GeneralAdminPage):
     """Admin Intro Page class"""
 
-    MENU_SUFFIX = 'intro'
+    MENU_SUFFIX = "intro"
     MAIN_ELEMENTS = [
         AdminIntroLocators.intro_title,
         AdminIntroLocators.intro_text,
         CommonToolbarLocators.admin_link,
     ]
 
-    def get_info_popup_text(self):
-        """Get text from info popup"""
-        self.wait_element_visible(CommonPopupLocators.block)
-        return self.wait_element_visible(CommonPopupLocators.text, timeout=5).text
-
 
 class AdminSettingsPage(GeneralAdminPage):
     """Admin Settings Page class"""
 
-    MENU_SUFFIX = 'settings'
+    MENU_SUFFIX = "settings"
     MAIN_ELEMENTS = [
         AdminSettingsLocators.save_btn,
         AdminSettingsLocators.search_input,
@@ -190,560 +178,264 @@ class AdminSettingsPage(GeneralAdminPage):
     ]
 
 
-class AdminUsersPage(GeneralAdminPage):
+# !===== Users Page =====!
+
+
+class UserRow(AutoChildElement):
+    @autoname
+    class Locators:
+        username = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", Descriptor.TEXT | Descriptor.ELEMENT)
+        groups = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(4)")
+        email = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(3)")
+        select = Locator(By.XPATH, ".//span[.//input[@type='checkbox']]", Descriptor.INPUT)
+        delete = Locator(By.XPATH, ".//button[.//mat-icon[text()='delete']]", Descriptor.BUTTON)
+
+    @property
+    def is_active(self) -> bool:
+        return "inactive" not in self._element.get_attribute("class")
+
+    @property
+    def is_delete_button_presented(self) -> bool:
+        return self._view.is_child_displayed(self._element, self.Locators.delete, timeout=1)
+
+    def get_groups(self) -> tuple[str, ...]:
+        return tuple(group.strip() for group in self.groups.split(","))
+
+    def open_update_dialog(self) -> UpdateUserDialog:
+        self.username_element.click()
+        return UpdateUserDialog.wait_opened(interactor=self._view)
+
+
+class AdminUsersPage(GeneralAdminPage, ObjectRowMixin):
     """Admin Users Page class"""
 
-    MENU_SUFFIX = 'users'
+    ROW_CLASS = UserRow
+    MENU_SUFFIX = "users"
     MAIN_ELEMENTS = [
         AdminUsersLocators.create_user_button,
         AdminUsersLocators.user_row,
         CommonToolbarLocators.admin_link,
     ]
 
-    def get_all_user_rows(self) -> List[WebElement]:
-        """Get all user rows (locator differs from self.table.get_all_rows())"""
-        try:
-            return self.find_elements(AdminUsersLocators.user_row, timeout=5)
-        except TimeoutException:
-            return []
-
-    def get_all_user_names(self) -> List[WebElement]:
-        """Get all users names"""
-        try:
-            return [self.find_child(user, AdminUsersLocators.Row.username).text for user in self.get_all_user_rows()]
-        except TimeoutException:
-            return []
-
-    @allure.step('Get user row where username is {username}')
-    def get_user_row_by_username(self, username: str) -> WebElement:
-        """Search for user row by username and return it"""
-        for row in self.get_all_user_rows():
-            if self.find_child(row, AdminUsersLocators.Row.username).text == username:
-                return row
-        raise AssertionError(f'User row with username "{username}" was not found')
-
-    def is_user_presented(self, username: str) -> bool:
-        """Check if user is presented in users list"""
-        for row in self.get_all_user_rows():
-            if self.find_child(row, AdminUsersLocators.Row.username).text == username:
-                return True
-        return False
-
-    def is_user_deactivated(self, username: str) -> bool:
-        """Get user's deactivation status on UI"""
-        row = self.get_user_row_by_username(username)
-        return "inactive" in row.get_attribute("class")
+    def get_all_user_names(self) -> list[str]:
+        return [user.username for user in self.get_rows()]
 
     @allure.step('Create new user "{username}" with password "{password}"')
     def create_user(self, username: str, password: str, first_name: str, last_name: str, email: str):
-        """Create new user via add user popup"""
         self.find_and_click(AdminUsersLocators.create_user_button)
-        self.wait_element_visible(AdminUsersLocators.AddUserPopup.block)
-        self.send_text_to_element(AdminUsersLocators.AddUserPopup.username, username)
-        self.send_text_to_element(AdminUsersLocators.AddUserPopup.password, password)
-        self.send_text_to_element(AdminUsersLocators.AddUserPopup.password_confirm, password)
-        self.send_text_to_element(AdminUsersLocators.AddUserPopup.first_name, first_name)
-        self.send_text_to_element(AdminUsersLocators.AddUserPopup.last_name, last_name)
-        self.send_text_to_element(AdminUsersLocators.AddUserPopup.email, email)
-        self.find_and_click(AdminUsersLocators.AddUserPopup.save_update_btn)
-        self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
+        dialog = AddUserDialog.wait_opened(driver=self.driver)
+        dialog.username_input.fill(username)
+        dialog.password_input.fill(password)
+        dialog.password_confirm_input.fill(password)
+        dialog.first_name_input.fill(first_name)
+        dialog.last_name_input.fill(last_name)
+        dialog.email_input.fill(email)
+        dialog.add()
 
-    @allure.step('Update user {username} info')
-    def update_user_info(
-        self,
-        username: str,
-        password: Optional[str] = None,
-        first_name: Optional[str] = None,
-        last_name: Optional[str] = None,
-        email: Optional[str] = None,
-        group: Optional[str] = None,
-    ):
-        """Update some of fields for user"""
-        if not (password or first_name or last_name or email or group):
-            raise ValueError("You should provide at least one field's value to make an update")
-        user_row = self.get_user_row_by_username(username)
-        self.find_child(user_row, AdminUsersLocators.Row.username).click()
-        self.wait_element_visible(AdminUsersLocators.AddUserPopup.block)
-        popup_locators = AdminUsersLocators.AddUserPopup
-        for value, locator in (
-            (password, popup_locators.password),
-            (first_name, popup_locators.first_name),
-            (last_name, popup_locators.last_name),
-            (email, popup_locators.email),
-        ):
-            if value:
-                self.send_text_to_element(locator, value)
-        if group:
-            with allure.step(f"Select group {group} in popup"):
-                self.find_and_click(popup_locators.select_groups)
-                self.wait_element_visible(popup_locators.group_item)
-                available_groups = self.find_elements(popup_locators.group_item)
-                for available_group in available_groups:
-                    if available_group.text == group:
-                        self.scroll_to(available_group)
-                        self.hover_element(available_group)
-                        available_group.click()
-                        self.find_and_click(popup_locators.block, is_js=True)
-                        break
-                else:
-                    raise AssertionError(f"There are no group {group} in select group popup")
+    @allure.step("Delete selected users")
+    def delete_selected_users(self):
+        self.find_and_click(AdminUsersLocators.delete_users, timeout=1)
+        dialog = DeleteDialog.wait_opened(self.driver)
+        dialog.yes_button.click()
+        dialog.wait_closed()
 
-        self.scroll_to(AdminUsersLocators.AddUserPopup.save_update_btn).click()
-        self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
-
-    @allure.step("Check user update is not allowed")
-    def check_user_update_is_not_allowed(self, username: str):
-        """Check that user can't be edited via UI"""
-        self.get_user_row_by_username(username).click()
-        self.wait_element_visible(AdminUsersLocators.AddUserPopup.block)
-        locators = AdminUsersLocators.AddUserPopup
-        assert not self.is_element_displayed(locators.save_update_btn, timeout=1), "Update button should not be visible"
-        # we don't check is_superuser and groups here because of their complex structure
-        # and minor effect of such check
-        for field in (locators.username, locators.first_name, locators.last_name, locators.email):
-            assert not self.find_element(field).is_enabled(), f"Field '{field.name}' should not be editable"
-        self.find_and_click(locators.cancel_btn)
-        self.wait_element_hide(locators.block)
-
-    @allure.step('Change password of user {username} to {password}')
-    def change_user_password(self, username: str, password: str):
-        """Change user password"""
-        user_row = self.get_user_row_by_username(username)
-        self.find_child(user_row, AdminUsersLocators.Row.username).click()
-        self.wait_element_visible(AdminUsersLocators.AddUserPopup.block)
-        self.send_text_to_element(AdminUsersLocators.AddUserPopup.password, password)
-        self.send_text_to_element(AdminUsersLocators.AddUserPopup.password_confirm, password)
-        self.find_and_click(AdminUsersLocators.AddUserPopup.save_update_btn)
-        self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
-
-    @allure.step('Check that changing user group is prohibited')
-    def check_user_group_change_is_disabled(self, username: str, group_name: str):
-        """Check that changing user group is prohibited"""
-
-        user_row = self.get_user_row_by_username(username)
-        self.find_child(user_row, AdminUsersLocators.Row.username).click()
-        self.wait_element_visible(AdminUsersLocators.AddUserPopup.block)
-
-        self.find_and_click(AdminUsersLocators.AddUserPopup.select_groups)
-        self.wait_element_visible(AdminUsersLocators.AddUserPopup.group_item)
-        available_groups = self.find_elements(AdminUsersLocators.AddUserPopup.group_item)
-        for available_group in available_groups:
-            if available_group.text == group_name:
-                assert "disabled" in available_group.get_attribute("class"), f"Group {group_name} should be disabled"
-                break
-        else:
-            raise AssertionError(f"There are no group {group_name} in select group popup")
-
-    @allure.step('Check that changing ldap user is prohibited')
-    def check_ldap_user(self, username: str):
-        """Check that changing ldap user is prohibited"""
-
-        def is_disabled(locators: [Locator]):
-            for loc in locators:
-                assert self.find_element(loc).get_attribute("disabled") == 'true', "Ldap user fields should be disabled"
-
-        user_row = self.get_user_row_by_username(username)
-        self.find_child(user_row, AdminUsersLocators.Row.username).click()
-        self.wait_element_visible(AdminUsersLocators.AddUserPopup.block)
-        is_disabled(
-            [
-                AdminUsersLocators.AddUserPopup.username,
-                AdminUsersLocators.AddUserPopup.password,
-                AdminUsersLocators.AddUserPopup.password_confirm,
-                AdminUsersLocators.AddUserPopup.first_name,
-                AdminUsersLocators.AddUserPopup.last_name,
-                AdminUsersLocators.AddUserPopup.email,
-                AdminUsersLocators.AddUserPopup.save_update_btn,
-            ]
-        )
-        assert (
-            self.find_element(AdminUsersLocators.AddUserPopup.select_groups).get_attribute("disabled") is None
-        ), "Ldap user group should not be disabled"
-
-    @allure.step('Delete user {username}')
-    def delete_user(self, username: str):
-        """Delete existing user"""
-        user_row = self.get_user_row_by_username(username)
-        self.find_child(user_row, AdminUsersLocators.Row.select_checkbox).click()
-        self.find_and_click(AdminUsersLocators.Row.delete_btn)
-        self.wait_element_visible(DeleteDialog.body)
-        self.find_and_click(DeleteDialog.yes)
-        self.wait_element_hide(DeleteDialog.body)
-
-    def is_delete_button_presented(self, username: str):
-        """Check that delete button is not presented in user row"""
-        row = self.get_user_row_by_username(username)
-        return self.is_child_displayed(row, AdminUsersLocators.Row.delete_btn, timeout=1)
-
-    @allure.step('Filter users by {filter_name}')
-    def filter_users_by(self, filter_name: str, filter_option_name: str):
-        """Filter users"""
-
-        def click_filter_item():
-            for filter_item in self.find_elements(AdminUsersLocators.FilterPopup.filter_item):
-                if filter_item.text.lower() == filter_name.lower():
-                    filter_item.click()
-                    return
-            raise AssertionError(f"Filter '{filter_name}' not found")
-
-        def click_dropdown_option():
-            for filter_option in self.find_elements(AdminUsersLocators.filter_dropdown_option):
-                if filter_option.text.lower() == filter_option_name.lower():
-                    filter_option.click()
-                    return
-            raise AssertionError(f"Filter option '{filter_option_name}' not found")
-
+    @allure.step("Filter users by {name}={value}")
+    def filter_users_by(self, name: str, value: str):
         self.find_and_click(AdminUsersLocators.filter_btn)
         self.wait_element_visible(AdminUsersLocators.FilterPopup.block)
-        click_filter_item()
+
+        suitable_filter = get_or_raise(
+            self.find_elements(AdminUsersLocators.FilterPopup.filter_item),
+            lambda element: element.text.lower() == name.lower(),
+        )
+        suitable_filter.click()
+
         self.wait_element_visible(AdminUsersLocators.filter_dropdown_select).click()
         self.wait_element_visible(AdminUsersLocators.filter_dropdown_option)
-        click_dropdown_option()
+
+        suitable_option = get_or_raise(
+            self.find_elements(AdminUsersLocators.filter_dropdown_option),
+            lambda element: element.text.lower() == value.lower(),
+        )
+        suitable_option.click()
+
         self.wait_page_is_opened()
 
-    @allure.step('Remove filter from users page')
+    @allure.step("Remove filter from users page")
     def remove_user_filter(self):
-        """Remove filter from users page"""
-
         self.find_and_click(AdminUsersLocators.filter_dropdown_remove)
         self.wait_page_is_opened()
 
 
-class AdminGroupsPage(GeneralAdminPage):
-    """Admin groups Page class"""
+# !===== Groups Page =====!
 
-    MENU_SUFFIX = 'groups'
+
+class GroupRow(AutoChildElement):
+    @autoname
+    class Locators:
+        checkbox = Locator(By.CSS_SELECTOR, "mat-checkbox", Descriptor.ELEMENT)
+        name = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", Descriptor.TEXT | Descriptor.ELEMENT)
+        description = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(3)", Descriptor.TEXT)
+        users = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(4)", Descriptor.TEXT)
+
+    def get_users(self) -> tuple[str, ...]:
+        return tuple(user.strip() for user in self.users.split(","))
+
+    def open_update_dialog(self) -> UpdateUserDialog:
+        self.name_element.click()
+        return UpdateGroupDialog.wait_opened(interactor=self._view)
+
+    def __iter__(self):
+        yield "name", self.name
+        yield "description", self.description
+        yield "users", self.users
+
+
+class AdminGroupsPage(GeneralAdminPage, ObjectRowMixin):
+    ROW_CLASS = GroupRow
+    MENU_SUFFIX = "groups"
     MAIN_ELEMENTS = [
         AdminIntroLocators.intro_title,
         AdminIntroLocators.intro_text,
-        AdminGroupsLocators.create_btn,
-        AdminGroupsLocators.delete_btn,
+        CommonAdminPagesLocators.create_btn,
+        CommonAdminPagesLocators.delete_btn,
         CommonTable.header,
     ]
 
-    def click_create_group_btn(self):
-        self.find_and_click(AdminGroupsLocators.create_btn)
-        self.wait_element_visible(AdminGroupsLocators.AddGroupPopup.block)
+    def open_add_group_dialog(self) -> AddGroupDialog:
+        self.find_and_click(CommonAdminPagesLocators.create_btn)
+        return AddGroupDialog.wait_opened(driver=self.driver)
 
-    @allure.step('Create custom group {name}')
-    def create_custom_group(self, name: str, description: Optional[str], users: Optional[str]):
-        self.click_create_group_btn()
-        self.send_text_to_element(AdminGroupsLocators.AddGroupPopup.name_input, name)
-        if description:
-            self.send_text_to_element(AdminGroupsLocators.AddGroupPopup.description_input, description)
-        if users:
-            self.find_and_click(AdminGroupsLocators.AddGroupPopup.users_select)
-            self.wait_element_visible(AdminGroupsLocators.item)
-            for user in users.split(", "):
-                for user_item in self.find_elements(AdminGroupsLocators.item):
-                    if user_item.text == user:
-                        user_chbx = self.find_child(user_item, AdminGroupsLocators.AddGroupPopup.UserRow.checkbox)
-                        self.hover_element(user_chbx)
-                        user_chbx.click()
-            self.find_and_click(AdminGroupsLocators.AddGroupPopup.users_select)
-        self.find_and_click(AdminGroupsLocators.save_update_btn)
-        self.wait_element_hide(AdminGroupsLocators.AddGroupPopup.block)
-
-    @allure.step('Update group {name}')
-    def update_group(
-        self,
-        name: str,
-        new_name: Optional[str] = None,
-        description: Optional[str] = None,
-        users: Optional[str] = None,
-    ):
-        self.get_group_by_name(name).click()
-        if new_name:
-            self.send_text_to_element(AdminGroupsLocators.AddGroupPopup.name_input, description, clean_input=True)
-        if description:
-            self.send_text_to_element(
-                AdminGroupsLocators.AddGroupPopup.description_input, description, clean_input=True
-            )
-        if users:
-            self.find_and_click(AdminGroupsLocators.AddGroupPopup.users_select)
-            self.wait_element_visible(AdminGroupsLocators.item)
-            for user in users.split(", "):
-                for user_item in self.find_elements(AdminGroupsLocators.item):
-                    if user_item.text == user:
-                        user_chbx = self.find_child(user_item, AdminGroupsLocators.AddGroupPopup.UserRow.checkbox)
-                        self.hover_element(user_chbx)
-                        user_chbx.click()
-            self.find_and_click(AdminGroupsLocators.AddGroupPopup.users_select)
-        self.find_and_click(AdminGroupsLocators.save_update_btn)
-        self.wait_element_hide(AdminGroupsLocators.AddGroupPopup.block)
-
-    def get_all_groups(self) -> [AdminGroupInfo]:
-        """Get all groups info."""
-
-        groups_items = []
-        groups_rows = self.table.get_all_rows()
-        for row in groups_rows:
-            row_item = AdminGroupInfo(
-                name=self.find_child(row, AdminGroupsLocators.GroupRow.name).text,
-                description=self.find_child(row, AdminGroupsLocators.GroupRow.description).text,
-                users=self.find_child(row, AdminGroupsLocators.GroupRow.users).text,
-            )
-            groups_items.append(row_item)
-        return groups_items
+    @allure.step("Create custom group {name}")
+    def create_custom_group(self, name: str, description: str, users: list[str]):
+        dialog = self.open_add_group_dialog()
+        dialog.name_input.fill(name)
+        dialog.description_input.fill(description)
+        dialog.add_users(users)
+        dialog.add()
 
     def select_all_groups(self):
         self.find_elements(self.table.locators.header)[0].click()
 
-    def click_delete_button(self):
-        self.find_and_click(AdminRolesLocators.delete_btn)
-        self.wait_element_visible(DeleteDialog.body)
-        self.find_and_click(DeleteDialog.yes)
-        self.wait_element_hide(DeleteDialog.body)
-
-    @allure.step('Get group {group_name}')
-    def get_group_by_name(self, group_name: str):
-        """Get group by name"""
-        for group in self.table.get_all_rows():
-            if group_name in group.text:
-                return group
-        raise AssertionError(f'Group {group_name} was not found')
-
-    @allure.step('Check that changing ldap group is prohibited')
-    def check_ldap_group(self, group_name: str):
-        """Check that changing ldap group is prohibited"""
-
-        def is_disabled(locators: [Locator]):
-            for loc in locators:
-                assert (
-                    self.find_element(loc).get_attribute("disabled") == 'true'
-                ), "Ldap group fields should be disabled"
-
-        group_row = self.get_group_by_name(group_name)
-        self.find_child(group_row, AdminGroupsLocators.GroupRow.name).click()
-        self.wait_element_visible(AdminGroupsLocators.AddGroupPopup.block)
-        is_disabled(
-            [
-                AdminGroupsLocators.AddGroupPopup.name_input,
-                AdminGroupsLocators.AddGroupPopup.description_input,
-                AdminGroupsLocators.save_update_btn,
-            ]
-        )
-        assert "disabled" in self.find_element(AdminGroupsLocators.AddGroupPopup.users_select).get_attribute(
-            "class"
-        ), "Select users should be disabled"
-        assert self.find_element(AdminGroupsLocators.AddGroupPopup.title).text == "Group Info", "Wrong title in popup"
+    def delete_selected_groups(self):
+        self.find_and_click(CommonAdminPagesLocators.delete_btn)
+        DeleteDialog.wait_opened(self.driver).confirm()
 
 
-class AdminRolesPage(GeneralAdminPage):
-    """Admin Roles Page class"""
+# !===== Roles Page =====!
 
-    MENU_SUFFIX = 'roles'
+
+class RoleRow(AutoChildElement):
+    @autoname
+    class Locators:
+        checkbox = Locator(By.CSS_SELECTOR, "mat-checkbox", Descriptor.ELEMENT)
+        name = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", Descriptor.TEXT | Descriptor.ELEMENT)
+        description = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(3)", Descriptor.TEXT)
+        permissions = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(4)", Descriptor.ELEMENT)
+
+    @property
+    def permissions(self) -> list[str]:
+        return sorted(self.permissions_element.text.split(", "))
+
+    def __iter__(self):
+        yield "name", self.name
+        yield "description", self.description
+        yield "permissions", self.permissions
+
+
+class AdminRolesPage(GeneralAdminPage, ObjectRowMixin):
+    ROW_CLASS = RoleRow
+    MENU_SUFFIX = "roles"
     MAIN_ELEMENTS = [
         AdminIntroLocators.intro_title,
         AdminIntroLocators.intro_text,
-        AdminRolesLocators.create_btn,
-        AdminRolesLocators.delete_btn,
+        CommonAdminPagesLocators.create_btn,
+        CommonAdminPagesLocators.delete_btn,
         CommonTable.header,
-        CommonTable.visible_row,
+        CommonTable.row,
     ]
 
-    def get_all_roles_info(self) -> [AdminRoleInfo]:
-        """Get all roles info."""
+    @allure.step("Open create role popup")
+    def open_create_role_dialog(self) -> CreateRoleDialog:
+        self.find_and_click(CommonAdminPagesLocators.create_btn)
+        return CreateRoleDialog.wait_opened(driver=self.driver)
 
-        roles_items = []
-        role_rows = self.table.get_all_rows()
-        for row in role_rows:
-            row_item = AdminRoleInfo(
-                name=self.find_child(row, AdminRolesLocators.RoleRow.name).text,
-                description=self.find_child(row, AdminRolesLocators.RoleRow.description).text,
-                permissions=self.find_child(row, AdminRolesLocators.RoleRow.permissions).text,
-            )
-            roles_items.append(row_item)
-        return roles_items
+    @allure.step("Create new role")
+    def create_role(self, name: str, description: str, permissions: list[str]):
+        dialog = self.open_create_role_dialog()
+        dialog.name_input.fill(name)
+        dialog.description_input.fill(description)
+        dialog.add_permissions(permissions)
+        dialog.add()
 
-    @allure.step('Check default roles')
-    def check_default_roles(self):
-        """Check default roles are listed on admin page"""
-
-        default_roles = [
-            AdminRoleInfo(
-                name='ADCM User',
-                description='',
-                permissions='View any object configuration, View any object import, View any object host-components',
-            ),
-            AdminRoleInfo(
-                name='Service Administrator',
-                description='',
-                permissions='View host configurations, Edit service configurations, Edit component configurations, '
-                'View host-components',
-            ),
-            AdminRoleInfo(
-                name='Cluster Administrator',
-                description='',
-                permissions='Create host, Upload bundle, Edit cluster configurations, Edit host configurations, '
-                'Add service, Remove service, Remove hosts, Map hosts, Unmap hosts, Edit host-components, '
-                'Upgrade cluster bundle, Remove bundle, Service Administrator',
-            ),
-            AdminRoleInfo(
-                name='Provider Administrator',
-                description='',
-                permissions='Create host, Upload bundle, Edit provider configurations, Edit host configurations, '
-                'Remove hosts, Upgrade provider bundle, Remove bundle',
-            ),
-        ]
-
-        roles = self.get_all_roles_info()
-        for role in default_roles:
-            assert role in roles, f"Default role {role.name} is wrong or missing. Expected to find: {role} in {roles}"
-
-    @allure.step('Check custom roles')
-    def check_custom_role(self, role: AdminRoleInfo):
-        assert role in self.get_all_roles_info(), f"Role {role.name} is wrong or missing"
-
-    @allure.step('Open create role popup')
-    def open_create_role_popup(self):
-        self.find_and_click(AdminRolesLocators.create_btn)
-        self.wait_element_visible(AdminRolesLocators.AddRolePopup.block)
-
-    @allure.step('Fill role name {role_name}')
-    def fill_role_name_in_role_popup(self, role_name: str):
-        self.send_text_to_element(AdminRolesLocators.AddRolePopup.role_name_input, role_name)
-        self.find_and_click(AdminRolesLocators.AddRolePopup.description_name_input)
-
-    @allure.step('Fill description {description}')
-    def fill_description_in_role_popup(self, description: str):
-        self.send_text_to_element(AdminRolesLocators.AddRolePopup.description_name_input, description)
-        self.find_and_click(AdminRolesLocators.AddRolePopup.role_name_input)
-
-    @allure.step('Create new role')
-    def create_role(self, role_name: str, role_description: str, role_permissions: str):
-        self.open_create_role_popup()
-        self.fill_role_name_in_role_popup(role_name)
-        self.fill_description_in_role_popup(role_description)
-        for permission in role_permissions.split(", "):
-            self.select_permission_in_add_role_popup(permission)
-        self.wait_element_visible(AdminRolesLocators.AddRolePopup.PermissionItemsBlock.item)
-        self.click_save_btn_in_role_popup()
-        self.wait_element_hide(CommonToolbarLocators.progress_bar)
-
-    @allure.step('Select permission {permission}')
-    def select_permission_in_add_role_popup(self, permission: str):
-        available_permissions = self.find_elements(
-            AdminRolesLocators.AddRolePopup.SelectPermissionsBlock.permissions_item_row
-        )
-        for perm in available_permissions:
-            if perm.text == permission:
-                perm.click()
-                self.find_and_click(AdminRolesLocators.AddRolePopup.SelectPermissionsBlock.select_btn)
-                return
-        raise ValueError(f"Permission {permission} has not found")
-
-    @allure.step('Open role {role_name}')
-    def open_role_by_name(self, role_name: str):
-        role_rows = self.table.get_all_rows()
-        for row in role_rows:
-            if role_name in row.text:
-                self.find_child(row, AdminRolesLocators.RoleRow.name).click()
-                self.wait_element_visible(AdminRolesLocators.AddRolePopup.block)
-                return
-        raise ValueError(f"Role {role_name} has not found")
-
-    @allure.step('Remove permissions {permissions_to_remove}')
-    def remove_permissions_in_add_role_popup(
-        self, permissions_to_remove: Optional[List], all_permissions: bool = False
-    ):
-
-        if all_permissions:
-            self.find_and_click(AdminRolesLocators.AddRolePopup.PermissionItemsBlock.clear_all_btn)
-        else:
-            for permission_to_remove in permissions_to_remove:
-                selected_permission = self.find_elements(AdminRolesLocators.AddRolePopup.PermissionItemsBlock.item)
-                for permission in selected_permission:
-                    if permission_to_remove in permission.text:
-                        self.find_child(
-                            permission,
-                            AdminRolesLocators.AddRolePopup.PermissionItemsBlock.PermissionItem.delete_btn,
-                        ).click()
-                        break
-
-    def click_save_btn_in_role_popup(self):
-        self.find_and_click(AdminRolesLocators.save_update_btn)
-
-    @allure.step('Check that save button is disabled')
-    def check_save_button_disabled(self):
-        assert (
-            self.find_element(AdminRolesLocators.save_update_btn).get_attribute("disabled") == 'true'
-        ), "Save role button should be disabled"
-
-    @allure.step("Check {error_message} error is presented")
-    def check_field_error_in_role_popup(self, error_message: str):
-        """Assert that message "{error_message}" is presented"""
-
-        self.check_element_should_be_visible(AdminRolesLocators.field_error(error_message))
+    @allure.step("Open role {role_name}")
+    def open_role_by_name(self, role_name: str) -> UpdateRoleDialog:
+        row = self.get_row(name_is(role_name))
+        row.name_element.click()
+        return UpdateRoleDialog.wait_opened(driver=self.driver)
 
     def select_all_roles(self):
         self.find_elements(self.table.locators.header)[0].click()
 
-    def click_delete_button(self):
-        self.find_and_click(AdminRolesLocators.delete_btn)
-        self.wait_element_visible(DeleteDialog.body)
-        self.find_and_click(DeleteDialog.yes)
-        self.wait_element_hide(DeleteDialog.body)
+    def delete_selected_roles(self):
+        self.find_and_click(CommonAdminPagesLocators.delete_btn)
+        DeleteDialog.wait_opened(driver=self.driver).confirm()
 
 
-class AdminPoliciesPage(GeneralAdminPage):
+# !===== Policies Page =====!
+
+
+class PolicyRow(AutoChildElement):
+    @autoname
+    class Locators:
+        checkbox = Locator(By.CSS_SELECTOR, "mat-checkbox", Descriptor.ELEMENT)
+        name = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", Descriptor.TEXT | Descriptor.ELEMENT)
+        description = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(3)")
+        role = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(4)")
+        users = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(5)", Descriptor.ELEMENT)
+        groups = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(6)", Descriptor.ELEMENT)
+        objects = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(7)", Descriptor.ELEMENT)
+
+    @property
+    def users(self) -> list[str]:
+        # bool will filter out empty strings
+        return sorted(filter(bool, self.users_element.text.split(", ")))
+
+    @property
+    def groups(self) -> list[str]:
+        # bool will filter out empty strings
+        return sorted(filter(bool, self.groups_element.text.split(", ")))
+
+    @property
+    def objects(self) -> list[str]:
+        # bool will filter out empty strings
+        return sorted(filter(bool, self.objects_element.text.split(", ")))
+
+    def __iter__(self):
+        for field in ("name", "description", "role", "users", "groups", "objects"):
+            yield field, getattr(self, field)
+
+
+class AdminPoliciesPage(GeneralAdminPage, ObjectRowMixin):
     """Admin Policy Page class"""
 
-    MENU_SUFFIX = 'policies'
+    ROW_CLASS = PolicyRow
+    MENU_SUFFIX = "policies"
     MAIN_ELEMENTS = [
         AdminIntroLocators.intro_title,
         AdminIntroLocators.intro_text,
-        AdminGroupsLocators.create_btn,
-        AdminGroupsLocators.delete_btn,
+        CommonAdminPagesLocators.create_btn,
+        CommonAdminPagesLocators.delete_btn,
         CommonTable.header,
     ]
 
-    def open_create_policy_popup(self):
+    def open_create_policy_popup(self) -> AddPolicyBaseInfoDialog:
         self.find_and_click(AdminPoliciesLocators.create_btn)
-        self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.block)
-
-    @allure.step('Fill first step in new policy')
-    def fill_first_step_in_policy_popup(
-        self,
-        policy_name: str,
-        description: Optional[str],
-        role: str,
-        users: Optional[str],
-        groups: Optional[str],
-    ):
-        if not (users or groups):
-            raise ValueError("There are should be users or groups in the policy")
-        self.send_text_to_element(AdminPoliciesLocators.AddPolicyPopup.FirstStep.name_input, policy_name)
-        if description:
-            self.send_text_to_element(AdminPoliciesLocators.AddPolicyPopup.FirstStep.description_input, description)
-        with allure.step(f"Select role {role} in popup"):
-            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.role_select)
-            self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.FirstStep.role_item)
-            available_roles = self.find_elements(AdminPoliciesLocators.AddPolicyPopup.FirstStep.role_item)
-            for available_role in available_roles:
-                if available_role.text == role:
-                    self.scroll_to(available_role)
-                    self.hover_element(available_role)
-                    available_role.click()
-                    break
-            else:
-                raise AssertionError(f"There are no role {role} in select role popup")
-        if users:
-            with allure.step(f"Select users {users} in popup"):
-                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.users_select)
-                self.wait_element_visible(AdminPoliciesLocators.item)
-                self.fill_select_in_policy_popup(users, AdminPoliciesLocators.item)
-                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.users_select)
-        if groups:
-            with allure.step(f"Select groups {groups} in popup"):
-                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.group_select)
-                self.wait_element_visible(AdminPoliciesLocators.item)
-                self.fill_select_in_policy_popup(groups, AdminPoliciesLocators.item)
-                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.group_select)
-        self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.next_btn_first)
+        return AddPolicyBaseInfoDialog.wait_opened(driver=self.driver)
 
     def fill_select_in_policy_popup(self, items, available_items_locator):
-        for item in items.split(", "):
+        temp_items = items.split(", ") if isinstance(items, str) else items
+        for item in temp_items:
             self.wait_element_visible(available_items_locator)
             for count, available_item in enumerate(self.find_elements(available_items_locator)):
                 try:
@@ -757,106 +449,52 @@ class AdminPoliciesPage(GeneralAdminPage):
             else:
                 raise AssertionError(f"There are no item {item} in select popup")
 
-    @allure.step('Fill second step in new policy')
-    def fill_second_step_in_policy_popup(
-        self,
-        clusters: Optional[str] = None,
-        services: Optional[str] = None,
-        parent: Optional[str] = None,
-        providers: Optional[str] = None,
-        hosts: Optional[str] = None,
-    ):
-        self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
-
-        def fill_select(locator_select: Locator, locator_items: Locator, values: str):
-            with allure.step(f"Select {values} in popup"):
-                self.wait_element_visible(locator_select)
-                self.find_and_click(locator_select)
-                self.wait_element_visible(locator_items)
-                self.fill_select_in_policy_popup(values, locator_items)
-
-        if clusters:
-            fill_select(
-                AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select,
-                AdminPoliciesLocators.item,
-                clusters,
-            )
-            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select)
-        if services:
-            if not parent:
-                raise ValueError("There are should be parent for service")
-            fill_select(
-                AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_select,
-                AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_item,
-                services,
-            )
-            fill_select(
-                AdminPoliciesLocators.AddPolicyPopup.SecondStep.parent_select,
-                AdminPoliciesLocators.item,
-                parent,
-            )
-            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.parent_select)
-
-        if hosts:
-            fill_select(
-                AdminPoliciesLocators.AddPolicyPopup.SecondStep.hosts_select,
-                AdminPoliciesLocators.item,
-                hosts,
-            )
-            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.hosts_select)
-        if providers:
-            fill_select(
-                AdminPoliciesLocators.AddPolicyPopup.SecondStep.provider_select,
-                AdminPoliciesLocators.item,
-                providers,
-            )
-            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.provider_select)
-        self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
-
-    @allure.step('Fill third step in new policy')
+    @allure.step("Fill third step in new policy")
     def fill_third_step_in_policy_popup(self):
         self.wait_element_visible(AdminPoliciesLocators.save_update_btn)
         self.find_and_click(AdminPoliciesLocators.save_update_btn)
         self.wait_element_hide(AdminPoliciesLocators.AddPolicyPopup.block)
 
-    @allure.step('Create new policy')
+    @allure.step("Create new policy")
     def create_policy(
         self,
         policy_name: str,
-        description: Optional[str],
+        description: str,
         role: str,
-        users: Optional[str] = None,
-        groups: Optional[str] = None,
-        clusters: Optional[str] = None,
-        services: Optional[str] = None,
-        parent: Optional[str] = None,
-        providers: Optional[str] = None,
-        hosts: Optional[str] = None,
+        users: list[str] | None = None,
+        groups: list[str] = None,
+        clusters: list[str] = None,
+        service: str = None,
+        parent: str | None = None,
+        providers: list[str] = None,
+        hosts: list[str] = None,
     ):
+        # first step
+        dialog: AddPolicyBaseInfoDialog = self.open_create_policy_popup()
+        dialog.name_input.fill(policy_name)
+        dialog.description_input.fill(description)
+        dialog.pick_role(role)
+        if users:
+            dialog.pick_users(users)
+        if groups:
+            dialog.pick_groups(groups)
+        dialog: AddPolicyObjectPickDialog = dialog.to_next_step()
 
-        self.open_create_policy_popup()
-        self.fill_first_step_in_policy_popup(policy_name, description, role, users, groups)
-        self.fill_second_step_in_policy_popup(clusters, services, parent, providers, hosts)
-        self.fill_third_step_in_policy_popup()
+        # second step
+        if clusters:
+            dialog.pick_clusters(clusters)
+        if service:
+            if not parent:
+                raise ValueError("There are should be parent for service")
+            dialog.pick_services(parent, service)
+        if hosts:
+            dialog.pick_hosts(hosts)
+        if providers:
+            dialog.pick_providers(providers)
+        dialog: AddPolicyFinishDialog = dialog.to_next_step()
 
-    def get_all_policies(self) -> [AdminPolicyInfo]:
-        """Get all policies info and returns list with policies names."""
-
-        policies_items = []
-        policies_rows = self.table.get_all_rows()
-        for policy in policies_rows:
-            policy_groups = self.find_child(policy, AdminPoliciesLocators.PolicyRow.groups).text
-            policy_objects = self.find_child(policy, AdminPoliciesLocators.PolicyRow.objects).text
-            policy_item = AdminPolicyInfo(
-                name=self.find_child(policy, AdminPoliciesLocators.PolicyRow.name).text,
-                description=self.find_child(policy, AdminPoliciesLocators.PolicyRow.description).text,
-                role=self.find_child(policy, AdminPoliciesLocators.PolicyRow.role).text,
-                users=self.find_child(policy, AdminPoliciesLocators.PolicyRow.users).text,
-                groups=policy_groups if policy_groups else None,
-                objects=policy_objects if policy_objects else None,
-            )
-            policies_items.append(policy_item)
-        return policies_items
+        # third step
+        dialog.add()
 
     def select_all_policies(self):
         # first header element is checkbox for selecting all policies
@@ -866,15 +504,182 @@ class AdminPoliciesPage(GeneralAdminPage):
         """Click delete button and confirm the action in dialog popup."""
 
         self.find_and_click(AdminPoliciesLocators.delete_btn)
-        self.wait_element_visible(DeleteDialog.body)
-        self.find_and_click(DeleteDialog.yes)
-        self.wait_element_hide(DeleteDialog.body)
+        self.wait_element_visible(DeleteDialogLocators.body)
+        self.find_and_click(DeleteDialogLocators.yes)
+        self.wait_element_hide(DeleteDialogLocators.body)
 
     def delete_all_policies(self):
         def delete_all():
             self.select_all_policies()
             if "disabled" not in self.find_element(AdminPoliciesLocators.delete_btn).get_attribute("class"):
                 self.click_delete_button()
-            assert len(self.table.get_all_rows()) == 0, "There should be 0 policies on the page"
+            assert self.table.row_count == 0, "There should be 0 policies on the page"
 
         wait_until_step_succeeds(delete_all, period=5)
+
+
+# !===== Audit =====!
+
+
+class GeneralAuditPage(GeneralAdminPage):
+    FILTER_LOCATORS = None
+
+    def add_filter(self, filter_menu_name: str) -> None:
+        """Filter name is the visible name of filter in menu"""
+        filter_locators = self.FILTER_LOCATORS
+        self.find_and_click(filter_locators.button)
+        self.wait_element_visible(filter_locators.menu)
+
+        suitable_option = next(
+            filter(
+                lambda child: child.text.strip() == filter_menu_name,
+                self.find_children(self.find_element(filter_locators.menu, timeout=0.5), filter_locators.choice),
+            ),
+            None,
+        )
+        if suitable_option is None:
+            raise AssertionError(f"Failed to find filter named '{filter_menu_name}'")
+
+        suitable_option.click()
+        self.wait_element_hide(filter_locators.menu)
+
+    def remove_filter(self, filter_position: int) -> None:
+        filter_buttons = self.find_elements_or_empty(self.FILTER_LOCATORS.remove_button)
+        amount_of_buttons = len(filter_buttons)
+        if filter_position >= amount_of_buttons:
+            raise ValueError(f"Can't get remove element #{filter_position}, because there's only {amount_of_buttons}")
+
+        filter_buttons[filter_position].click()
+
+        wait_until_step_succeeds(
+            self._remove_buttons_amount_should_decrease,
+            initial_amount=amount_of_buttons,
+            timeout=2,
+            period=0.5,
+        )
+
+    def refresh_filter(self, filter_position: int) -> None:
+        filter_buttons = self.find_elements_or_empty(self.FILTER_LOCATORS.refresh_button)
+        amount_of_buttons = len(filter_buttons)
+        if filter_position >= amount_of_buttons:
+            raise ValueError(f"Can't get remove element #{filter_position}, because there's only {amount_of_buttons}")
+
+        filter_buttons[filter_position].click()
+
+    def is_filter_visible(self, filter_name: str, timeout: int = 1) -> bool:
+        locators = self.FILTER_LOCATORS.Item
+
+        if not hasattr(locators, filter_name):
+            raise ValueError("Incorrect filter name")
+
+        filters_block = self.find_element(self.FILTER_LOCATORS.block, timeout=1)
+        return self.is_child_displayed(filters_block, getattr(locators, filter_name), timeout=timeout)
+
+    def get_filter_input(self, filter_name: str) -> WebElement:
+        """
+        Based on filter, return element will be:
+        - input
+        - mat-select
+        - mat-date-range-input
+        """
+        locators = self.FILTER_LOCATORS.Item
+
+        if not hasattr(locators, filter_name):
+            raise ValueError("Incorrect filter name")
+
+        filters_block = self.find_element(self.FILTER_LOCATORS.block, timeout=1)
+        return self.find_child(filters_block, getattr(locators, filter_name), timeout=3)
+
+    def pick_filter_value(self, filter_input: WebElement, value_to_pick: str) -> None:
+        filter_input.click()
+        dropdown_locator = self.FILTER_LOCATORS.dropdown_option
+        self.wait_element_visible(dropdown_locator)
+
+        suitable_option: WebElement | None = next(
+            filter(lambda option: option.text.strip() == value_to_pick, self.find_elements(dropdown_locator)),
+            None,
+        )
+        if suitable_option is None:
+            raise AssertionError(f"Failed to find option with value '{value_to_pick}'")
+
+        suitable_option.click()
+
+        self.wait_element_hide(dropdown_locator)
+
+    def _remove_buttons_amount_should_decrease(self, initial_amount: int) -> None:
+        assert (
+            len(self.find_elements_or_empty(self.FILTER_LOCATORS.remove_button)) < initial_amount
+        ), f"There should be less than {initial_amount} buttons"
+
+
+@dataclass()
+class OperationRowInfo:
+    object_type: str
+    object_name: str
+    operation_name: str
+    operation_type: str
+    operation_result: str
+    operation_time: str
+    username: str
+
+
+class OperationsAuditPage(GeneralAuditPage):
+    MENU_SUFFIX = "audit/operations"
+    FILTER_LOCATORS = OperationsAuditLocators.Filter
+    MAIN_ELEMENTS = (OperationsAuditLocators.Filter.button,)
+
+    def get_audit_operation_info(self, row: WebElement) -> OperationRowInfo:
+        return OperationRowInfo(
+            **{
+                field: self.find_child(row, getattr(OperationsAuditLocators.Row, field), timeout=0.5).text
+                for field in (
+                    "object_type",
+                    "object_name",
+                    "operation_name",
+                    "operation_type",
+                    "operation_result",
+                    "operation_time",
+                    "username",
+                )
+            },
+        )
+
+    def get_info_from_all_rows(self) -> tuple[OperationRowInfo, ...]:
+        return tuple(self.get_audit_operation_info(row) for row in self.table.get_all_rows(timeout=2))
+
+    def open_changes_dialog(self, row: WebElement) -> OperationChangesDialog:
+        self.get_show_changes_button(row).click()
+        return OperationChangesDialog(self.driver, self.base_url)
+
+    def get_show_changes_button(self, row: WebElement) -> WebElement:
+        return self.find_child(row, OperationsAuditLocators.Row.show_changes, timeout=1)
+
+    def click_out_of_filter(self):
+        self.find_and_click(OperationsAuditLocators.title, timeout=1.5)
+
+
+@dataclass()
+class LoginRowInfo:
+    login: str
+    result: str
+    login_time: str
+
+
+class LoginAuditPage(GeneralAuditPage):
+    MENU_SUFFIX = "audit/logins"
+    MAIN_ELEMENTS = (LoginAuditLocators.Filter.button,)
+    FILTER_LOCATORS = LoginAuditLocators.Filter
+
+    def get_audit_login_info(self, row: WebElement) -> LoginRowInfo:
+        return LoginRowInfo(
+            **{
+                field: self.find_child(row, getattr(LoginAuditLocators.Row, field), timeout=0.5).text
+                for field in ("login", "result", "login_time")
+            },
+        )
+
+    def get_info_from_all_rows(self) -> tuple[LoginRowInfo, ...]:
+        return tuple(self.get_audit_login_info(row) for row in self.table.get_all_rows(timeout=2))
+
+    def click_out_of_filter(self):
+        self.find_and_click(LoginAuditLocators.title, timeout=1.5)

@@ -12,9 +12,10 @@
 
 """Complex checks for audit tests stored here"""
 
+from collections.abc import Collection
 from datetime import datetime
 from pprint import pformat
-from typing import Collection, List, NamedTuple, Tuple, Union
+from typing import NamedTuple
 
 import allure
 from adcm_client.audit import AuditLogin, AuditOperation, OperationResult
@@ -50,22 +51,22 @@ def check_audit_cef_logs(client: ADCMClient, adcm_container: Container):
     version = client.adcm_version
     operations = client.audit_operation_list(paging={"limit": 200})
     logins = client.audit_login_list()
-    logs: List[Union[AuditOperation, AuditLogin]] = list(operations) + list(logins)
+    logs: list[AuditOperation | AuditLogin] = list(operations) + list(logins)
     logs.sort(
         key=lambda log_operation: log_operation.operation_time
         if isinstance(log_operation, AuditOperation)
-        else log_operation.login_time
+        else log_operation.login_time,
     )
     exit_code, out = adcm_container.exec_run(["cat", "/adcm/data/log/audit.log"])
     logfile_content = out.decode("utf-8")
     if exit_code != 0:
         raise ValueError(f"Failed to get audit logfile content: {logfile_content}")
     # filter out empty
-    cef_records: Tuple[CEFRecord, ...] = tuple(
-        map(
-            lambda r: CEFRecord(*r.split("|")),
-            filter(lambda log_operation: 'CEF' in log_operation, logfile_content.split("\n")),
-        )
+    cef_records: tuple[CEFRecord, ...] = tuple(
+        (
+            CEFRecord(*r.split("|"))
+            for r in filter(lambda log_operation: "CEF" in log_operation, logfile_content.split("\n"))
+        ),
     )
     with allure.step("Check all logs have correct CEF version, vendor, product name and version"):
         for param, expected in (
@@ -77,14 +78,14 @@ def check_audit_cef_logs(client: ADCMClient, adcm_container: Container):
             if any(getattr(rec, param) != expected for rec in cef_records):
                 _attach_cef_logs(cef_records)
                 raise AssertionError(
-                    f"Incorrect {param} in one of records.\nExpected: {expected}\nCheck attachments for more details"
+                    f"Incorrect {param} in one of records.\nExpected: {expected}\nCheck attachments for more details",
                 )
     with allure.step("Check that of audit logs (operations + logins) should be same as CEF logs"):
         if (audit_amount := len(logs)) != (cef_amount := len(cef_records)):
             _attach_api_logs(logs)
             raise AssertionError(f"Lengths are not the same.\nAudit logs: {audit_amount}.\nCEF logs: {cef_amount}")
     with allure.step(
-        "Check that all audit logs (operations and logins) have corresponding CEF record in container logs"
+        "Check that all audit logs (operations and logins) have corresponding CEF record in container logs",
     ):
         for i, log in enumerate(logs):
             result, name, extension = _extract_basic_info(client, log)
@@ -96,17 +97,16 @@ def check_audit_cef_logs(client: ADCMClient, adcm_container: Container):
                     ("severity", expected_severity),
                     ("extension", extension),
                 ):
-
                     if getattr(corresponding_cef_log, param) != expected:
                         _attach_api_log(log)
                         _attach_cef_logs(cef_records)
                         raise AssertionError(
                             f"Incorrect {param}. Expected {param}: {expected}.\n"
-                            f"Actual record:\n{pformat(corresponding_cef_log)}"
+                            f"Actual record:\n{pformat(corresponding_cef_log)}",
                         )
 
 
-def _extract_basic_info(client: ADCMClient, log: Union[AuditOperation, AuditLogin]) -> Tuple[str, str, str]:
+def _extract_basic_info(client: ADCMClient, log: AuditOperation | AuditLogin) -> tuple[str, str, str]:
     """Return result, name and extension"""
     username = client.user(id=log.user_id).username if log.user_id else None
     if isinstance(log, AuditOperation):
@@ -117,12 +117,12 @@ def _extract_basic_info(client: ADCMClient, log: Union[AuditOperation, AuditLogi
             " ".join(
                 f'{k}="{v}"'
                 for k, v in {
-                    'actor': username,
-                    'act': log.operation_type.value,
-                    'operation': name,
-                    'resource': log.object_name,
-                    'result': result,
-                    'timestamp': time,
+                    "actor": username,
+                    "act": log.operation_type.value,
+                    "operation": name,
+                    "resource": log.object_name,
+                    "result": result,
+                    "timestamp": time,
                 }.items()
                 if v is not None
             ),
@@ -136,8 +136,8 @@ def _extract_basic_info(client: ADCMClient, log: Union[AuditOperation, AuditLogi
 
 
 def _format_time(time: datetime):
-    t = time.strftime(DATETIME_FMT)
-    return f'{t[:-2]}:{t[-2:]}'
+    time_str = time.strftime(DATETIME_FMT)
+    return f"{time_str[:-2]}:{time_str[-2:]}"
 
 
 def _attach_cef_logs(cef_logs: Collection[CEFRecord]) -> None:
@@ -148,7 +148,7 @@ def _attach_cef_logs(cef_logs: Collection[CEFRecord]) -> None:
     )
 
 
-def _attach_api_log(api_log: Union[AuditOperation, AuditLogin]) -> None:
+def _attach_api_log(api_log: AuditOperation | AuditLogin) -> None:
     allure.attach(
         _prepare_log_for_attachment(api_log),
         name="Audit record",
@@ -156,7 +156,7 @@ def _attach_api_log(api_log: Union[AuditOperation, AuditLogin]) -> None:
     )
 
 
-def _attach_api_logs(api_logs: Collection[Union[AuditOperation, AuditLogin]]) -> None:
+def _attach_api_logs(api_logs: Collection[AuditOperation | AuditLogin]) -> None:
     allure.attach(
         pformat([_prepare_log_for_attachment(log) for log in api_logs]),
         name="Audit records",
@@ -164,7 +164,7 @@ def _attach_api_logs(api_logs: Collection[Union[AuditOperation, AuditLogin]]) ->
     )
 
 
-def _prepare_log_for_attachment(api_log: Union[AuditOperation, AuditLogin]) -> str:
+def _prepare_log_for_attachment(api_log: AuditOperation | AuditLogin) -> str:
     fields = [f for f in dir(api_log) if not (not f.islower() or f.startswith("_") or callable(getattr(api_log, f)))]
     fields.pop(fields.index("adcm_version"))
     return pformat({k: getattr(api_log, k) for k in fields})

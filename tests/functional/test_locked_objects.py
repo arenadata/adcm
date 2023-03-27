@@ -13,7 +13,6 @@
 
 """Tests for ADCM objects locks"""
 
-from typing import List, Tuple, Union
 
 import allure
 import pytest
@@ -74,7 +73,7 @@ def complete_cluster(cluster: Cluster, host: Host) -> Cluster:
 
 
 @pytest.fixture()
-def cluster_with_two_hosts(cluster: Cluster, host_provider: Provider) -> Tuple[Cluster, List[Host]]:
+def cluster_with_two_hosts(cluster: Cluster, host_provider: Provider) -> tuple[Cluster, list[Host]]:
     """
     Prepare dummy cluster with two hosts
     """
@@ -348,7 +347,7 @@ def test_service_should_be_unlocked_when_ansible_task_killed(complete_cluster: C
     ["expand_success", "expand_failed", "expand_success_multijob", "expand_failed_multijob"],
 )
 def test_host_should_be_unlocked_after_expand_action(
-    cluster_with_two_hosts: Tuple[Cluster, List[Host]],
+    cluster_with_two_hosts: tuple[Cluster, list[Host]],
     adcm_object: str,
     expand_action: str,
 ):
@@ -374,7 +373,7 @@ def test_host_should_be_unlocked_after_expand_action(
     ["shrink_success", "shrink_failed", "shrink_success_multijob", "shrink_failed_multijob"],
 )
 def test_host_should_be_unlocked_after_shrink_action(
-    cluster_with_two_hosts: Tuple[Cluster, List[Host]],
+    cluster_with_two_hosts: tuple[Cluster, list[Host]],
     adcm_object: str,
     shrink_action: str,
 ):
@@ -401,7 +400,7 @@ def test_host_should_be_unlocked_after_shrink_action(
     ],
 )
 def test_expand_on_clean_locked_host(
-    cluster_with_two_hosts: Tuple[Cluster, List[Host]],
+    cluster_with_two_hosts: tuple[Cluster, list[Host]],
     adcm_object: str,
     expand_action: str,
 ):
@@ -430,7 +429,9 @@ def test_expand_on_clean_locked_host(
     with allure.step(f"Run {obj_for_action.__class__.__name__} action: expand on clean locked host"):
         with catch_failed(Failed, "Expand action should throw an API error as Host is locked"):
             with pytest.raises(ErrorMessage, match="is locked"):
-                obj_for_action.action(name=expand_action,).run(
+                obj_for_action.action(
+                    name=expand_action,
+                ).run(
                     hc=[
                         {
                             "host_id": host1.host_id,
@@ -442,7 +443,7 @@ def test_expand_on_clean_locked_host(
                             "service_id": dummy_component.service_id,
                             "component_id": dummy_component.component_id,
                         },
-                    ]
+                    ],
                 ).wait()
 
 
@@ -467,7 +468,7 @@ def test_expand_on_clean_locked_host(
     ],
 )
 def test_host_should_be_unlocked_after_service_action_with_ansible_plugin(
-    cluster_with_two_hosts: Tuple[Cluster, List[Host]],
+    cluster_with_two_hosts: tuple[Cluster, list[Host]],
     action_with_ansible_plugin: str,
 ):
     """
@@ -476,7 +477,9 @@ def test_host_should_be_unlocked_after_service_action_with_ansible_plugin(
     cluster, _ = cluster_with_two_hosts
     dummy_service = cluster.service_add(name="first_service")
     _test_object_action_with_ansible_plugin(
-        cluster_with_two_hosts, action_name=action_with_ansible_plugin, obj_for_action=dummy_service
+        cluster_with_two_hosts,
+        action_name=action_with_ansible_plugin,
+        obj_for_action=dummy_service,
     )
 
 
@@ -497,7 +500,7 @@ def test_host_should_be_unlocked_after_service_action_with_ansible_plugin(
     ],
 )
 def test_host_should_be_unlocked_after_cluster_action_with_ansible_plugin(
-    cluster_with_two_hosts: Tuple[Cluster, List[Host]],
+    cluster_with_two_hosts: tuple[Cluster, list[Host]],
     action_with_ansible_plugin: str,
 ):
     """
@@ -505,7 +508,9 @@ def test_host_should_be_unlocked_after_cluster_action_with_ansible_plugin(
     """
     cluster, _ = cluster_with_two_hosts
     _test_object_action_with_ansible_plugin(
-        cluster_with_two_hosts, action_name=action_with_ansible_plugin, obj_for_action=cluster
+        cluster_with_two_hosts,
+        action_name=action_with_ansible_plugin,
+        obj_for_action=cluster,
     )
 
 
@@ -566,8 +571,8 @@ def test_host_should_be_unlocked_after_host_action(
 
 
 def _test_expand_object_action(
-    cluster_with_two_hosts: Tuple[Cluster, List[Host]],
-    obj_for_action: Union[Cluster, Service, Component],
+    cluster_with_two_hosts: tuple[Cluster, list[Host]],
+    obj_for_action: Cluster | Service | Component,
     action_name: str,
 ):
     """
@@ -581,7 +586,9 @@ def _test_expand_object_action(
         (host1, first_service_component),
     )
     with allure.step(f"Run {obj_for_action.__class__.__name__} action: expand component from host"):
-        obj_for_action.action(name=action_name,).run(
+        obj_for_action.action(
+            name=action_name,
+        ).run(
             hc=[
                 {
                     "host_id": host1.host_id,
@@ -593,15 +600,15 @@ def _test_expand_object_action(
                     "service_id": first_service_component.service_id,
                     "component_id": first_service_component.component_id,
                 },
-            ]
+            ],
         ).wait()
     is_free(host1)
     is_free(host2)
 
 
 def _test_shrink_object_action(
-    cluster_with_two_hosts: Tuple[Cluster, List[Host]],
-    obj_for_action: Union[Cluster, Service, Component],
+    cluster_with_two_hosts: tuple[Cluster, list[Host]],
+    obj_for_action: Cluster | Service | Component,
     action_name: str,
 ):
     """
@@ -611,7 +618,9 @@ def _test_shrink_object_action(
     host1, host2 = hosts
     first_service_component, second_service_component = _cluster_with_components(cluster, hosts)
     with allure.step(f"Run {obj_for_action.__class__.__name__} action: shrink component from host"):
-        obj_for_action.action(name=action_name,).run(
+        obj_for_action.action(
+            name=action_name,
+        ).run(
             hc=[
                 {
                     "host_id": host1.host_id,
@@ -623,15 +632,15 @@ def _test_shrink_object_action(
                     "service_id": first_service_component.service_id,
                     "component_id": first_service_component.component_id,
                 },
-            ]
+            ],
         ).wait()
     is_free(host1)
     is_free(host2)
 
 
 def _test_object_action_with_ansible_plugin(
-    cluster_with_two_hosts: Tuple[Cluster, List[Host]],
-    obj_for_action: Union[Cluster, Service, Component],
+    cluster_with_two_hosts: tuple[Cluster, list[Host]],
+    obj_for_action: Cluster | Service | Component,
     action_name: str,
 ):
     """
@@ -647,7 +656,7 @@ def _test_object_action_with_ansible_plugin(
     is_free(host2)
 
 
-def _cluster_with_components(cluster: Cluster, hosts: List[Host]):
+def _cluster_with_components(cluster: Cluster, hosts: list[Host]):
     host1, host2 = hosts
     try:
         first_service = cluster.service(name="first_service")
@@ -665,7 +674,7 @@ def _cluster_with_components(cluster: Cluster, hosts: List[Host]):
 
 
 def _lock_obj(
-    obj: Union[Cluster, Service, Component, Provider, Host],
+    obj: Cluster | Service | Component | Provider | Host,
     lock_action: str = "lock",
     duration: int = 5,
 ) -> Task:
@@ -676,7 +685,7 @@ def _lock_obj(
         return obj.action(name=lock_action).run(config={"duration": duration})
 
 
-def is_locked(obj: Union[Cluster, Service, Component, Provider, Host]):
+def is_locked(obj: Cluster | Service | Component | Provider | Host):
     """
     Assert that object state is 'locked' and action list is empty
     """
@@ -689,7 +698,7 @@ def is_locked(obj: Union[Cluster, Service, Component, Provider, Host]):
         ), f"{obj.__class__.__name__} action list isn't empty. {obj.__class__.__name__} not locked"
 
 
-def is_free(obj: Union[Cluster, Service, Component, Provider, Host]):
+def is_free(obj: Cluster | Service | Component | Provider | Host):
     """
     Assert that object state is 'created' and action list isn't empty
     """

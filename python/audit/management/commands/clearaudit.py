@@ -18,14 +18,13 @@ from pathlib import Path
 from shutil import rmtree
 from tarfile import TarFile
 
+from audit.models import AuditLog, AuditLogOperationResult, AuditObject, AuditSession
+from audit.utils import make_audit_log
+from cm.adcm_config import get_adcm_config
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.models import Count, Q
 from django.utils import timezone
-
-from audit.models import AuditLog, AuditLogOperationResult, AuditObject, AuditSession
-from audit.utils import make_audit_log
-from cm.adcm_config import get_adcm_config
 
 logger = logging.getLogger("background_tasks")
 
@@ -36,19 +35,19 @@ class Command(BaseCommand):
     archive_base_dir = "/adcm/data/audit/"
     archive_tmp_dir = "/adcm/data/audit/tmp"
     archive_name = "audit_archive.tar.gz"
-    tarfile_cfg = dict(
-        read=dict(
-            name=os.path.join(archive_base_dir, archive_name),
-            mode="r:gz",
-            encoding=settings.ENCODING_UTF_8,
-        ),
-        write=dict(
-            name=os.path.join(archive_base_dir, archive_name),
-            mode="w:gz",
-            encoding=settings.ENCODING_UTF_8,
-            compresslevel=9,
-        ),
-    )
+    tarfile_cfg = {
+        "read": {
+            "name": os.path.join(archive_base_dir, archive_name),
+            "mode": "r:gz",
+            "encoding": settings.ENCODING_UTF_8,
+        },
+        "write": {
+            "name": os.path.join(archive_base_dir, archive_name),
+            "mode": "w:gz",
+            "encoding": settings.ENCODING_UTF_8,
+            "compresslevel": 9,
+        },
+    }
 
     archive_model_postfix_map = {
         AuditLog: "operations",
@@ -59,8 +58,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         try:
             self.__handle()
-        except Exception as e:  # pylint: disable=broad-except
-            make_audit_log("audit", AuditLogOperationResult.Fail, "completed")
+        except Exception as e:  # pylint: disable=broad-except # noqa: BLE001
+            make_audit_log("audit", AuditLogOperationResult.FAIL, "completed")
             self.__log(e, "exception")
 
     def __handle(self):
@@ -83,7 +82,7 @@ class Command(BaseCommand):
 
         cleared = False
         if any(qs.exists() for qs in (target_operations, target_logins, target_objects)):
-            make_audit_log("audit", AuditLogOperationResult.Success, "launched")
+            make_audit_log("audit", AuditLogOperationResult.SUCCESS, "launched")
 
         if config["data_archiving"]:
             archive_path = os.path.join(self.archive_base_dir, self.archive_name)
@@ -96,7 +95,7 @@ class Command(BaseCommand):
 
         self.__log("Finished.")
         if cleared:
-            make_audit_log("audit", AuditLogOperationResult.Success, "completed")
+            make_audit_log("audit", AuditLogOperationResult.SUCCESS, "completed")
 
     def __archive(self, *querysets):
         os.makedirs(self.archive_base_dir, exist_ok=True)
@@ -116,11 +115,12 @@ class Command(BaseCommand):
 
     def __delete(self, *querysets):
         was_deleted = False
-        for qs in querysets:
-            self.__log(f"Deleting {qs.count()} {qs.model._meta.object_name}")
-            if qs.exists():
-                qs.delete()
+        for queryset in querysets:
+            self.__log(f"Deleting {queryset.count()} {queryset.model._meta.object_name}")
+            if queryset.exists():
+                queryset.delete()
                 was_deleted = True
+
         return was_deleted
 
     def __extract_to_tmp_dir(self):
@@ -140,20 +140,20 @@ class Command(BaseCommand):
         now = timezone.now().date()
 
         csv_files = []
-        for qs in querysets:
-            if not qs.exists():
+        for queryset in querysets:
+            if not queryset.exists():
                 continue
 
             tmp_cvf_name = os.path.join(
                 base_dir,
-                f"audit_{now}_{self.archive_model_postfix_map[qs.model]}.csv",
+                f"audit_{now}_{self.archive_model_postfix_map[queryset.model]}.csv",
             )
             header = self.__get_csv_header(tmp_cvf_name)
-            qs_fields = [f.column for f in qs.model._meta.fields]
+            qs_fields = [f.column for f in queryset.model._meta.fields]
             if header:
                 if set(header) != set(qs_fields):
                     self.__log(
-                        f"Fields of {qs.model._meta.object_name} was changed, "
+                        f"Fields of {queryset.model._meta.object_name} was changed, "
                         f"can't append to existing file. No archiving will be made",
                         "warning",
                     )
@@ -167,7 +167,7 @@ class Command(BaseCommand):
                 if header is None:
                     writer.writerow(qs_fields)  # header
 
-                for obj in qs:
+                for obj in queryset:
                     row = [str(getattr(obj, f)) for f in qs_fields]
                     writer.writerow(row)
 
@@ -178,7 +178,7 @@ class Command(BaseCommand):
     def __get_csv_header(self, path):
         header = None
         if Path(path).is_file():
-            with open(path, "rt", encoding=settings.ENCODING_UTF_8) as csv_file:
+            with open(path, encoding=settings.ENCODING_UTF_8) as csv_file:
                 header = csv_file.readline().strip().split(",")
         return header
 

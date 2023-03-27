@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rbac.models import Group, User
+from rbac.services import user as user_services
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.fields import (
     BooleanField,
@@ -27,8 +29,6 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
-from rbac.models import Group, User
-from rbac.services import user as user_services
 
 
 class PasswordField(CharField):
@@ -38,7 +38,7 @@ class PasswordField(CharField):
         return user_services.PW_MASK
 
 
-class GroupSerializer(EmptySerializer):
+class UserGroupSerializer(EmptySerializer):
     id = IntegerField()
     url = HyperlinkedIdentityField(view_name="rbac:group-detail")
 
@@ -61,7 +61,7 @@ class ExpandedGroupSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "user": (
                 "rbac.endpoints.user.views.UserSerializer",
                 {"many": True, "source": "user_set"},
-            )
+            ),
         }
 
 
@@ -85,7 +85,7 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
     password = PasswordField(trim_whitespace=False)
     url = HyperlinkedIdentityField(view_name="rbac:user-detail")
     profile = JSONField(required=False, default="")
-    group = GroupSerializer(many=True, required=False, source="groups")
+    group = UserGroupSerializer(many=True, required=False, source="groups")
     built_in = BooleanField(read_only=True)
     type = CharField(read_only=True)
     is_active = BooleanField(required=False, default=True)

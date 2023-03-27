@@ -13,28 +13,33 @@
 """Job page locators"""
 
 from selenium.webdriver.common.by import By
-from tests.ui_tests.app.helpers.locator import Locator
+
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
+from tests.ui_tests.core.locators import BaseLocator
 
 
 class JobPageLocators(ObjectPageLocators):
     """Locators for detailed job page"""
 
-    job_info = Locator(By.TAG_NAME, "app-job-info", "Job info section")
-    job_log = Locator(By.CSS_SELECTOR, "app-log-text", "Job log")
-    start_date = Locator(By.CSS_SELECTOR, ".time-info>div:first-child>span", "Start date")
-    finish_date = Locator(By.CSS_SELECTOR, ".time-info>div:last-child>span", "Finish date")
-    duration = Locator(By.CSS_SELECTOR, ".time-info>div:nth-child(2)>span", "Task duration")
+    job_info = BaseLocator(By.TAG_NAME, "app-job-info", "Job info section")
+    job_log = BaseLocator(By.CSS_SELECTOR, "app-log-text", "Job log")
+    start_date = BaseLocator(By.CSS_SELECTOR, ".time-info>div:first-child>span", "Start date")
+    finish_date = BaseLocator(By.CSS_SELECTOR, ".time-info>div:last-child>span", "Finish date")
+    duration = BaseLocator(By.CSS_SELECTOR, ".time-info>div:nth-child(2)>span", "Task duration")
 
     class Menu:
         """Locators for detailed job page menu"""
 
         # keep stdout(-err) prefix in naming
-        stdout_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_1']", "Job stdout tab")
-        stdout_download_btn = Locator(
-            By.XPATH, "//a[.//span[text()='ansible [ stdout ]']]//button", "Download stdout button"
+        stdout_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_1']", "Job stdout tab")
+        stdout_download_btn = BaseLocator(
+            By.XPATH,
+            "//a[.//span[text()='ansible [ stdout ]']]//button",
+            "Download stdout button",
         )
-        stderr_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_2']", "Job stderr tab")
-        stderr_download_btn = Locator(
-            By.XPATH, "//a[.//span[text()='ansible [ stderr ]']]//button", "Download stdout button"
+        stderr_tab = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_2']", "Job stderr tab")
+        stderr_download_btn = BaseLocator(
+            By.XPATH,
+            "//a[.//span[text()='ansible [ stderr ]']]//button",
+            "Download stdout button",
         )

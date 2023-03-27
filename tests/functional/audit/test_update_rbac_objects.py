@@ -13,31 +13,30 @@
 """Tests on audit logs for UPDATE of RBAC objects"""
 
 from functools import partial
-from typing import Dict, Literal, Tuple, Union
+from typing import Literal
 
 import allure
 import pytest
 import requests
 from adcm_client.objects import ADCMClient, Group, Policy, Role, User
+
 from tests.functional.audit.conftest import (
     check_failed,
     check_succeed,
     make_auth_header,
 )
-from tests.functional.conftest import only_clean_adcm
-from tests.functional.rbac.conftest import BusinessRoles as BR
+from tests.functional.rbac.conftest import BusinessRoles as BR  # noqa: N817
 from tests.library.audit.checkers import AuditLogChecker
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm]
 
-RBACObject = Union[User, Group, Role, Policy]
+RBACObject = User | Group | Role | Policy
 ChangeMethod = Literal["PUT", "PATCH"]
 
 
 @pytest.fixture()
-def rbac_objects(sdk_client_fs, rbac_create_data) -> Tuple[User, Group, Role, Policy]:
+def rbac_objects(sdk_client_fs, rbac_create_data) -> tuple[User, Group, Role, Policy]:
     """Create RBAC objects"""
     data_for_objects = {**rbac_create_data}
     # they are empty
@@ -52,11 +51,11 @@ def rbac_objects(sdk_client_fs, rbac_create_data) -> Tuple[User, Group, Role, Po
 
 
 @pytest.fixture()
-def new_rbac_objects_info(sdk_client_fs) -> Dict[str, Dict[str, Dict]]:
+def new_rbac_objects_info(sdk_client_fs) -> dict[str, dict[str, dict]]:
     """Prepare "changes" for RBAC objects"""
     user = sdk_client_fs.user_create("justuser", "password")
     group = sdk_client_fs.group_create("justagroup")
-    another_role: Role = sdk_client_fs.role(name=BR.ViewRoles.value.role_name)
+    another_role: Role = sdk_client_fs.role(name=BR.VIEW_ROLES.value.role_name)
     return {
         "user": {
             "correct": {"first_name": "newfirstname", "group": [{"id": group.id}]},
@@ -80,9 +79,9 @@ def new_rbac_objects_info(sdk_client_fs) -> Dict[str, Dict[str, Dict]]:
 @pytest.fixture()
 def prepared_changes(sdk_client_fs, rbac_create_data, new_rbac_objects_info) -> dict:
     """
-    Prepare dict with "obejct_changes"
+    Prepare dict with "object_changes"
     """
-    c = sdk_client_fs
+    client = sdk_client_fs
     initial = rbac_create_data
 
     def _get(key1, key2):
@@ -93,31 +92,31 @@ def prepared_changes(sdk_client_fs, rbac_create_data, new_rbac_objects_info) -> 
             "previous": {"first_name": initial["user"]["first_name"], "group": []},
             "current": {
                 "first_name": _get("user", "first_name"),
-                "group": [f"{c.group(id=i['id']).name} [local]" for i in _get("user", "group")],
+                "group": [f"{client.group(id=i['id']).name} [local]" for i in _get("user", "group")],
             },
         },
         "group": {
             "previous": {"description": initial["group"].get("description", ""), "user": []},
             "current": {
                 "description": _get("group", "description"),
-                "user": [c.user(id=i["id"]).username for i in _get("group", "user")],
+                "user": [client.user(id=i["id"]).username for i in _get("group", "user")],
             },
         },
         "role": {
             "previous": {
                 "description": initial["role"]["description"],
-                "child": [c.role(id=i["id"]).display_name for i in initial["role"]["child"]],
+                "child": [client.role(id=i["id"]).display_name for i in initial["role"]["child"]],
             },
             "current": {
                 "description": _get("role", "description"),
-                "child": [c.role(id=i["id"]).display_name for i in _get("role", "child")],
+                "child": [client.role(id=i["id"]).display_name for i in _get("role", "child")],
             },
         },
         "policy": {
             "previous": {"description": initial["policy"].get("description", ""), "group": []},
             "current": {
                 "description": _get("policy", "description"),
-                "group": [f"{c.group(id=i['id']).name} [local]" for i in _get("policy", "group")],
+                "group": [f"{client.group(id=i['id']).name} [local]" for i in _get("policy", "group")],
             },
         },
     }
@@ -161,12 +160,12 @@ def test_full_rbac_objects_update(http_method: str, parse_with_context, generic_
     """
     user, group, role, policy = rbac_objects
     admin_creds = make_auth_header(sdk_client_fs)
-    another_role: Role = sdk_client_fs.role(name=BR.ViewRoles.value.role_name)
+    another_role: Role = sdk_client_fs.role(name=BR.VIEW_ROLES.value.role_name)
     new_role = sdk_client_fs.role_create(
         name="NewCustomRole",
         display_name="New Custom Role",
         description="Just a description",
-        child=[{"id": sdk_client_fs.role(name=BR.ViewProviderConfigurations.value.role_name).id}],
+        child=[{"id": sdk_client_fs.role(name=BR.VIEW_PROVIDER_CONFIGURATIONS.value.role_name).id}],
     )
     new_values = {
         "user": {
@@ -201,13 +200,19 @@ def test_full_rbac_objects_update(http_method: str, parse_with_context, generic_
     check_succeed(change_rbac_object(sdk_client_fs, group, http_method, new_values["group"], headers=admin_creds))
     check_succeed(change_rbac_object(sdk_client_fs, role, http_method, new_values["role"], headers=admin_creds))
     check_succeed(change_rbac_object(sdk_client_fs, policy, http_method, new_values["policy"], headers=admin_creds))
-    AuditLogChecker(parse_with_context({"provider": {"id": generic_provider.id, "name": generic_provider.name}})).check(
-        sdk_client_fs.audit_operation_list()
+    AuditLogChecker(
+        parse_with_context({"provider": {"id": generic_provider.id, "name": generic_provider.name}}),
+    ).check(
+        sdk_client_fs.audit_operation_list(),
     )
 
 
 def change_rbac_object(
-    client: ADCMClient, rbac_object: RBACObject, method: ChangeMethod, data: dict, **call_kwargs
+    client: ADCMClient,
+    rbac_object: RBACObject,
+    method: ChangeMethod,
+    data: dict,
+    **call_kwargs,
 ) -> requests.Response:
     """
     Change RBAC object via API.

@@ -14,10 +14,11 @@
 
 import json
 import os
+from collections.abc import Callable
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Callable, Dict, Literal, NamedTuple, Optional, Union
+from typing import Literal, NamedTuple
 
 import allure
 import jsonschema
@@ -27,14 +28,14 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 @dataclass(frozen=True)
 class _ProcessorConfig:
-    process_type: Literal['exact', 'sequence', 'presence'] = 'sequence'
-    start_from_first: Literal['record', 'matched'] = 'matched'
+    process_type: Literal["exact", "sequence", "presence"] = "sequence"
+    start_from_first: Literal["record", "matched"] = "matched"
 
 
 @dataclass(frozen=True)
 class _ResolveDefaults:
-    result: Literal['success', 'fail', 'denied'] = 'success'
-    username: str = 'admin'
+    result: Literal["success", "fail", "denied"] = "success"
+    username: str = "admin"
 
 
 class ParsedAuditLog(NamedTuple):
@@ -42,15 +43,15 @@ class ParsedAuditLog(NamedTuple):
 
     defaults: _ResolveDefaults
     settings: _ProcessorConfig
-    operations: Dict[str, dict]
+    operations: dict[str, dict]
 
 
-_TemplateContext = Optional[Dict[str, Union[str, int]]]
+_TemplateContext = dict[str, str | int] | None
 
 
 @lru_cache
 def _get_schema() -> dict:
-    with (Path(__file__).parent / 'audit_log_schema.json').open() as schema:
+    with (Path(__file__).parent / "audit_log_schema.json").open() as schema:
         return json.load(schema)
 
 
@@ -64,7 +65,11 @@ class YAMLReader:
 
     def __init__(self, directory: os.PathLike):
         self._directory = directory
-        self._template_env = Environment(loader=FileSystemLoader(directory), undefined=StrictUndefined, autoescape=True)
+        self._template_env = Environment(
+            loader=FileSystemLoader(directory),
+            undefined=StrictUndefined,
+            autoescape=True,
+        )
 
     def prepare_parser_of(self, filename: str) -> Callable[[_TemplateContext], ParsedAuditLog]:
         """
@@ -81,18 +86,18 @@ class YAMLReader:
         context = context or {}
         data = self._read(filename, context)
         return ParsedAuditLog(
-            defaults=_ResolveDefaults(**data.get('defaults', {})),
-            operations=data.get('operations'),
-            settings=_ProcessorConfig(**{k.replace('-', '_'): v for k, v in data.get('settings', {}).items()}),
+            defaults=_ResolveDefaults(**data.get("defaults", {})),
+            operations=data.get("operations"),
+            settings=_ProcessorConfig(**{k.replace("-", "_"): v for k, v in data.get("settings", {}).items()}),
         )
 
-    def _read(self, filename: str, context: Dict[str, Union[str, int]]) -> dict:
+    def _read(self, filename: str, context: dict[str, str | int]) -> dict:
         rendered_file_content = self._template_env.get_template(filename).render(**context)
         data = yaml.safe_load(rendered_file_content)
         jsonschema.validate(data, _get_schema())
         allure.attach(
             json.dumps(data, indent=2),
-            name='Audit Log scenario',
+            name="Audit Log scenario",
             attachment_type=allure.attachment_type.JSON,
         )
         return data

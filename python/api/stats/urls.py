@@ -10,13 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path
-
 from api.stats.root import StatsRoot
 from api.stats.views import JobStats, TaskStats
+from django.urls import path
 
 urlpatterns = [
-    path('', StatsRoot.as_view(), {'pk': 0}, name='stats'),
-    path('task/<int:pk>/', TaskStats.as_view(), name='task-stats'),
-    path('job/<int:pk>/', JobStats.as_view(), name='job-stats'),
+    path("", StatsRoot.as_view(), {"pk": 0}, name="stats"),
+    path("task/<int:pk>/", TaskStats.as_view(), name="task-stats"),
+    path("job/<int:pk>/", JobStats.as_view(), name="job-stats"),
 ]

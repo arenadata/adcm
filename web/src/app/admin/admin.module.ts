@@ -24,7 +24,7 @@ import { GroupsComponent } from './groups/groups.component';
 import { RolesComponent } from './roles/roles.component';
 import { PoliciesComponent } from './policies/policies.component';
 import { AuditOperationsComponent } from './audit-operations/audit-operations.component';
-import { AdwpListModule } from '@adwp-ui/widgets';
+import { AdwpListModule } from '@app/adwp';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';

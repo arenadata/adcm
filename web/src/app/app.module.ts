@@ -17,7 +17,7 @@ import { StoreModule } from '@ngrx/store';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { TranslateLoader, TranslateModule, TranslateService } from '@ngx-translate/core';
 import { HttpClient } from '@angular/common/http';
-import { AdwpPortalHostModule, AdwpUiWidgetsModule } from '@adwp-ui/widgets';
+import { AdwpPortalHostModule, AdwpUiWidgetsModule } from '@app/adwp';
 
 import { CoreModule } from '@app/core/core.module';
 import { ConfigService } from '@app/core/services';

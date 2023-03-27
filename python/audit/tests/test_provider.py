@@ -13,16 +13,6 @@
 from datetime import datetime
 from unittest.mock import patch
 
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
-)
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -39,11 +29,21 @@ from cm.models import (
     Prototype,
     Upgrade,
 )
+from django.urls import reverse
 from rbac.models import Policy, Role, User
 from rbac.upgrade.role import init_roles
+from rest_framework.response import Response
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+)
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
-class TestProvider(BaseTestCase):
+class TestProviderAudit(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -61,10 +61,10 @@ class TestProvider(BaseTestCase):
     ) -> None:
         self.assertEqual(log.audit_object.object_id, provider.pk)
         self.assertEqual(log.audit_object.object_name, provider.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Provider)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.PROVIDER)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, "Provider configuration updated")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
@@ -79,10 +79,10 @@ class TestProvider(BaseTestCase):
     ) -> None:
         self.assertEqual(log.audit_object.object_id, provider.pk)
         self.assertEqual(log.audit_object.object_name, provider.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Provider)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.PROVIDER)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, "Provider deleted")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Delete)
+        self.assertEqual(log.operation_type, AuditLogOperationType.DELETE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
@@ -91,11 +91,11 @@ class TestProvider(BaseTestCase):
     def check_action_log(self, log: AuditLog, provider: HostProvider, operation_name: str) -> None:
         self.assertEqual(log.audit_object.object_id, provider.pk)
         self.assertEqual(log.audit_object.object_name, provider.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Provider)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.PROVIDER)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, operation_name)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.SUCCESS)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.object_changes, {})
 
@@ -112,11 +112,11 @@ class TestProvider(BaseTestCase):
 
         self.assertEqual(log.audit_object.object_id, response.data["id"])
         self.assertEqual(log.audit_object.object_name, self.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Provider)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.PROVIDER)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, self.provider_created_str)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.SUCCESS)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.test_user.pk)
         self.assertEqual(log.object_changes, {})
@@ -133,8 +133,8 @@ class TestProvider(BaseTestCase):
 
         self.assertFalse(log.audit_object)
         self.assertEqual(log.operation_name, self.provider_created_str)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
+        self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.FAIL)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.test_user.pk)
         self.assertEqual(log.object_changes, {})
@@ -154,8 +154,8 @@ class TestProvider(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.assertFalse(log.audit_object)
         self.assertEqual(log.operation_name, self.provider_created_str)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
+        self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.DENIED)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.no_rights_user.pk)
         self.assertEqual(log.object_changes, {})
@@ -172,7 +172,7 @@ class TestProvider(BaseTestCase):
         self.check_provider_deleted(
             log=log,
             provider=provider,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -183,7 +183,7 @@ class TestProvider(BaseTestCase):
         )
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse("provider-details", kwargs={"provider_id": provider.pk})
+                path=reverse("provider-details", kwargs={"provider_id": provider.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -192,7 +192,7 @@ class TestProvider(BaseTestCase):
         self.check_provider_deleted(
             log=log,
             provider=provider,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -222,7 +222,7 @@ class TestProvider(BaseTestCase):
         self.check_provider_deleted(
             log=log,
             provider=provider,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -244,7 +244,7 @@ class TestProvider(BaseTestCase):
         self.check_provider_deleted(
             log=log,
             provider=provider,
-            operation_result=AuditLogOperationResult.Fail,
+            operation_result=AuditLogOperationResult.FAIL,
             user=self.test_user,
         )
 
@@ -267,7 +267,7 @@ class TestProvider(BaseTestCase):
         self.check_provider_updated(
             log=log,
             provider=provider,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -285,7 +285,7 @@ class TestProvider(BaseTestCase):
         self.check_provider_updated(
             log=log,
             provider=provider,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -307,7 +307,7 @@ class TestProvider(BaseTestCase):
         self.check_provider_updated(
             log=log,
             provider=provider,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -326,7 +326,7 @@ class TestProvider(BaseTestCase):
         self.check_provider_updated(
             log=log,
             provider=provider,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -372,7 +372,7 @@ class TestProvider(BaseTestCase):
                 path=reverse(
                     "do-provider-upgrade",
                     kwargs={"provider_id": provider.pk, "upgrade_id": upgrade.pk},
-                )
+                ),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

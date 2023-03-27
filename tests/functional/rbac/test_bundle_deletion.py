@@ -12,26 +12,27 @@
 
 """Test events concerning roles after bundle removal"""
 
-from typing import Iterable, Set
+from collections.abc import Iterable
 
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Bundle, Role
 from adcm_pytest_plugin.utils import get_data_dir
+
 from tests.functional.rbac.action_role_utils import get_roles_of_type
 from tests.functional.rbac.conftest import RoleType, extract_role_short_info
 from tests.library.assertions import sets_are_equal
 
 pytestmark = [pytest.mark.extra_rbac]
 
-BUNDLE_V1 = 'cluster'
-BUNDLE_V2 = 'cluster_v2'
-ANOTHER_BUNDLE = 'another_cluster'
+BUNDLE_V1 = "cluster"
+BUNDLE_V2 = "cluster_v2"
+ANOTHER_BUNDLE = "another_cluster"
 
-ACTION_BUSINESS_ROLE_INFIX = ' Action: '
+ACTION_BUSINESS_ROLE_INFIX = " Action: "
 
-ACTION_NAME = 'just_action'
-ACTION_DISPLAY_NAME = 'Just Leave Me Here'
+ACTION_NAME = "just_action"
+ACTION_DISPLAY_NAME = "Just Leave Me Here"
 
 
 def test_single_bundle_deletion(sdk_client_fs):
@@ -51,7 +52,7 @@ def test_delete_one_version_of_bundle(sdk_client_fs):
     Upload two versions of one bundle, version of another bundle, delete one of bundles with two versions
     """
     check_no_action_business_roles(sdk_client_fs)
-    with allure.step('Upload bundles and check roles'):
+    with allure.step("Upload bundles and check roles"):
         bundles = []
         bundle_category_names = []
         for bundle_name in (BUNDLE_V1, BUNDLE_V2, ANOTHER_BUNDLE):
@@ -73,7 +74,7 @@ def test_instance_deletion_effect(sdk_client_fs):
     category = bundle.cluster_prototype().display_name
     check_categories_are_presented(sdk_client_fs, category)
     check_action_business_roles_have_hidden_roles(sdk_client_fs, [bundle])
-    cluster = bundle.cluster_create(name='Test Cluster')
+    cluster = bundle.cluster_create(name="Test Cluster")
     check_categories_are_presented(sdk_client_fs, category)
     check_action_business_roles_have_hidden_roles(sdk_client_fs, [bundle])
     cluster.delete()
@@ -104,12 +105,12 @@ def check_categories_are_presented(client: ADCMClient, *categories: str):
                 lambda x: ACTION_BUSINESS_ROLE_INFIX in x.name,
                 get_roles_of_type(RoleType.BUSINESS, client),
             ),
-        )
+        ),
     )
     for category in categories:
         assert all(
             category in role.categories for role in roles
-        ), f'Category {category} should be presented in all action business roles'
+        ), f"Category {category} should be presented in all action business roles"
 
 
 @allure.step("Check that categories aren't presented in any of roles")
@@ -119,7 +120,7 @@ def check_categories_not_presented(client: ADCMClient, *categories: str):
     for category in categories:
         assert all(
             category not in role.categories for role in roles
-        ), f'Category {category} should not be presented in any business roles'
+        ), f"Category {category} should not be presented in any business roles"
 
 
 @allure.step("Check action business roles have correct hidden children")
@@ -129,15 +130,15 @@ def check_action_business_roles_have_hidden_roles(client: ADCMClient, bundles: I
     have hidden action roles of given bundles
     """
     for object_type, extraction_function in zip(
-        ('Cluster', 'Service', 'Component'),
+        ("Cluster", "Service", "Component"),
         (
             _generate_cluster_hidden_action_role_names,
             _generate_service_hidden_action_role_names,
             _generate_component_hidden_action_role_names,
         ),
     ):
-        with allure.step(f'Check {object_type} action role has correct children'):
-            role = client.role(name=f'{object_type} Action: {ACTION_DISPLAY_NAME}')
+        with allure.step(f"Check {object_type} action role has correct children"):
+            role = client.role(name=f"{object_type} Action: {ACTION_DISPLAY_NAME}")
             actual_child_names = _get_children_names(role)
             expected_child_names = extraction_function(bundles)
             sets_are_equal(
@@ -147,29 +148,29 @@ def check_action_business_roles_have_hidden_roles(client: ADCMClient, bundles: I
             )
 
 
-def _get_children_names(role: Role) -> Set[str]:
+def _get_children_names(role: Role) -> set[str]:
     """Get names of children of a role"""
     return {r.name for r in role.child_list()}
 
 
-def _generate_cluster_hidden_action_role_names(bundles: Iterable[Bundle]) -> Set[str]:
+def _generate_cluster_hidden_action_role_names(bundles: Iterable[Bundle]) -> set[str]:
     return {
-        f'{bundle.name}_{bundle.version}_{bundle.edition}_cluster_' f'{bundle.cluster_prototype().name}_{ACTION_NAME}'
+        f"{bundle.name}_{bundle.version}_{bundle.edition}_cluster_" f"{bundle.cluster_prototype().name}_{ACTION_NAME}"
         for bundle in bundles
     }
 
 
-def _generate_service_hidden_action_role_names(bundles: Iterable[Bundle]) -> Set[str]:
+def _generate_service_hidden_action_role_names(bundles: Iterable[Bundle]) -> set[str]:
     return {
         # it's always test_service
-        f'{bundle.name}_{bundle.version}_{bundle.edition}_service_test_service_{ACTION_NAME}'
+        f"{bundle.name}_{bundle.version}_{bundle.edition}_service_test_service_{ACTION_NAME}"
         for bundle in bundles
     }
 
 
-def _generate_component_hidden_action_role_names(bundles: Iterable[Bundle]) -> Set[str]:
+def _generate_component_hidden_action_role_names(bundles: Iterable[Bundle]) -> set[str]:
     return {
         # it's always test_component
-        f'{bundle.name}_{bundle.version}_{bundle.edition}_service_test_service_component_test_component_{ACTION_NAME}'
+        f"{bundle.name}_{bundle.version}_{bundle.edition}_service_test_service_component_test_component_{ACTION_NAME}"
         for bundle in bundles
     }

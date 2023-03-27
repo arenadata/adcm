@@ -16,6 +16,7 @@ import allure
 import pytest
 from adcm_client.objects import ADCMClient
 from coreapi.exceptions import ErrorMessage
+
 from tests.api.utils.tools import random_string
 from tests.functional.rbac.conftest import (
     CLUSTER_VIEW_CONFIG_ROLES,
@@ -37,27 +38,27 @@ def test_lower_cluster_hierarchy(user_sdk: ADCMClient, user, is_denied_to_user, 
     cluster, service, component, provider, host = prepare_objects
     policy = create_policy(sdk_client_fs, CLUSTER_VIEW_CONFIG_ROLES, objects=[cluster], users=[user], groups=[])
     user_cluster, user_service, user_component = as_user_objects(user_sdk, cluster, service, component)
-    is_allowed(user_cluster, BusinessRoles.ViewClusterConfigurations)
-    is_allowed(user_service, BusinessRoles.ViewServiceConfigurations)
-    is_allowed(user_component, BusinessRoles.ViewComponentConfigurations)
-    is_denied_to_user(provider, BusinessRoles.ViewProviderConfigurations)
-    is_denied_to_user(host, BusinessRoles.ViewHostConfigurations)
+    is_allowed(user_cluster, BusinessRoles.VIEW_CLUSTER_CONFIGURATIONS)
+    is_allowed(user_service, BusinessRoles.VIEW_SERVICE_CONFIGURATIONS)
+    is_allowed(user_component, BusinessRoles.VIEW_COMPONENT_CONFIGURATIONS)
+    is_denied_to_user(provider, BusinessRoles.VIEW_PROVIDER_CONFIGURATIONS)
+    is_denied_to_user(host, BusinessRoles.VIEW_HOST_CONFIGURATIONS)
     delete_policy(policy)
 
     policy = create_policy(sdk_client_fs, CLUSTER_VIEW_CONFIG_ROLES, objects=[service], users=[user], groups=[])
-    is_denied_to_user(cluster, BusinessRoles.ViewClusterConfigurations)
-    is_allowed(user_service, BusinessRoles.ViewServiceConfigurations)
-    is_allowed(user_component, BusinessRoles.ViewComponentConfigurations)
-    is_denied_to_user(provider, BusinessRoles.ViewProviderConfigurations)
-    is_denied_to_user(host, BusinessRoles.ViewHostConfigurations)
+    is_denied_to_user(cluster, BusinessRoles.VIEW_CLUSTER_CONFIGURATIONS)
+    is_allowed(user_service, BusinessRoles.VIEW_SERVICE_CONFIGURATIONS)
+    is_allowed(user_component, BusinessRoles.VIEW_COMPONENT_CONFIGURATIONS)
+    is_denied_to_user(provider, BusinessRoles.VIEW_PROVIDER_CONFIGURATIONS)
+    is_denied_to_user(host, BusinessRoles.VIEW_HOST_CONFIGURATIONS)
     delete_policy(policy)
 
     create_policy(sdk_client_fs, CLUSTER_VIEW_CONFIG_ROLES, objects=[component], users=[user], groups=[])
-    is_denied_to_user(cluster, BusinessRoles.ViewClusterConfigurations)
-    is_denied_to_user(service, BusinessRoles.ViewServiceConfigurations)
-    is_allowed(user_component, BusinessRoles.ViewComponentConfigurations)
-    is_denied_to_user(provider, BusinessRoles.ViewProviderConfigurations)
-    is_denied_to_user(host, BusinessRoles.ViewHostConfigurations)
+    is_denied_to_user(cluster, BusinessRoles.VIEW_CLUSTER_CONFIGURATIONS)
+    is_denied_to_user(service, BusinessRoles.VIEW_SERVICE_CONFIGURATIONS)
+    is_allowed(user_component, BusinessRoles.VIEW_COMPONENT_CONFIGURATIONS)
+    is_denied_to_user(provider, BusinessRoles.VIEW_PROVIDER_CONFIGURATIONS)
+    is_denied_to_user(host, BusinessRoles.VIEW_HOST_CONFIGURATIONS)
 
 
 # pylint: disable-next=too-many-locals
@@ -68,13 +69,19 @@ def test_service_in_cluster_hierarchy(user, prepare_objects, sdk_client_fs, seco
     cluster_via_admin, *_ = prepare_objects
     cluster_via_admin.service_add(name="new_service")
 
-    service_role = {"id": sdk_client_fs.role(name=BusinessRoles.RemoveService.value.role_name).id}
-    cluster_role = {"id": sdk_client_fs.role(name=BusinessRoles.AddService.value.role_name).id}
+    service_role = {"id": sdk_client_fs.role(name=BusinessRoles.REMOVE_SERVICE.value.role_name).id}
+    cluster_role = {"id": sdk_client_fs.role(name=BusinessRoles.ADD_SERVICE.value.role_name).id}
     common_role = sdk_client_fs.role_create(
-        "Common role", display_name="Common role", child=[service_role, cluster_role]
+        "Common role",
+        display_name="Common role",
+        child=[service_role, cluster_role],
     )
     sdk_client_fs.policy_create(
-        name="Common policy", role=common_role, objects=[cluster_via_admin], user=[user], group=[]
+        name="Common policy",
+        role=common_role,
+        objects=[cluster_via_admin],
+        user=[user],
+        group=[],
     )
 
     username, password = TEST_USER_CREDENTIALS
@@ -83,9 +90,9 @@ def test_service_in_cluster_hierarchy(user, prepare_objects, sdk_client_fs, seco
     second_cluster_via_admin, *_ = second_objects
 
     for service in cluster.service_list():
-        is_allowed(cluster, BusinessRoles.RemoveService, service)
+        is_allowed(cluster, BusinessRoles.REMOVE_SERVICE, service)
     for service in second_cluster_via_admin.service_list():
-        is_denied(service, BusinessRoles.RemoveService, client=user_sdk)
+        is_denied(service, BusinessRoles.REMOVE_SERVICE, client=user_sdk)
 
 
 def test_provider_hierarchy(user_sdk: ADCMClient, user, is_denied_to_user, prepare_objects, sdk_client_fs):
@@ -97,19 +104,19 @@ def test_provider_hierarchy(user_sdk: ADCMClient, user, is_denied_to_user, prepa
     policy = create_policy(sdk_client_fs, PROVIDER_VIEW_CONFIG_ROLES, objects=[provider], users=[user], groups=[])
 
     user_provider, user_host = as_user_objects(user_sdk, provider, host)
-    is_allowed(user_provider, BusinessRoles.ViewProviderConfigurations)
-    is_allowed(user_host, BusinessRoles.ViewHostConfigurations)
-    is_denied_to_user(cluster, BusinessRoles.ViewClusterConfigurations)
-    is_denied_to_user(service, BusinessRoles.ViewServiceConfigurations)
-    is_denied_to_user(component, BusinessRoles.ViewComponentConfigurations)
+    is_allowed(user_provider, BusinessRoles.VIEW_PROVIDER_CONFIGURATIONS)
+    is_allowed(user_host, BusinessRoles.VIEW_HOST_CONFIGURATIONS)
+    is_denied_to_user(cluster, BusinessRoles.VIEW_CLUSTER_CONFIGURATIONS)
+    is_denied_to_user(service, BusinessRoles.VIEW_SERVICE_CONFIGURATIONS)
+    is_denied_to_user(component, BusinessRoles.VIEW_COMPONENT_CONFIGURATIONS)
     delete_policy(policy)
 
     create_policy(sdk_client_fs, PROVIDER_VIEW_CONFIG_ROLES, objects=[host], users=[user], groups=[])
-    is_denied_to_user(provider, BusinessRoles.ViewProviderConfigurations)
-    is_allowed(user_host, BusinessRoles.ViewHostConfigurations)
-    is_denied_to_user(cluster, BusinessRoles.ViewClusterConfigurations)
-    is_denied_to_user(service, BusinessRoles.ViewServiceConfigurations)
-    is_denied_to_user(component, BusinessRoles.ViewComponentConfigurations)
+    is_denied_to_user(provider, BusinessRoles.VIEW_PROVIDER_CONFIGURATIONS)
+    is_allowed(user_host, BusinessRoles.VIEW_HOST_CONFIGURATIONS)
+    is_denied_to_user(cluster, BusinessRoles.VIEW_CLUSTER_CONFIGURATIONS)
+    is_denied_to_user(service, BusinessRoles.VIEW_SERVICE_CONFIGURATIONS)
+    is_denied_to_user(component, BusinessRoles.VIEW_COMPONENT_CONFIGURATIONS)
 
 
 @pytest.mark.extra_rbac()
@@ -118,9 +125,11 @@ def test_role_with_two_hierarchy_not_allowed(sdk_client_fs):
     """
     Test that we can not create a new role with childs from different hierarchy
     """
-    application_role = {"id": sdk_client_fs.role(name=BusinessRoles.ViewClusterConfigurations.value.role_name).id}
-    infrastructure_role = {"id": sdk_client_fs.role(name=BusinessRoles.ViewProviderConfigurations.value.role_name).id}
-    generic_role = {"id": sdk_client_fs.role(name=BusinessRoles.ViewADCMSettings.value.role_name).id}
+    application_role = {"id": sdk_client_fs.role(name=BusinessRoles.VIEW_CLUSTER_CONFIGURATIONS.value.role_name).id}
+    infrastructure_role = {
+        "id": sdk_client_fs.role(name=BusinessRoles.VIEW_PROVIDER_CONFIGURATIONS.value.role_name).id,
+    }
+    generic_role = {"id": sdk_client_fs.role(name=BusinessRoles.VIEW_ADCM_SETTINGS.value.role_name).id}
     with allure.step("Assert that create role with different hierarchy is not possible"), pytest.raises(ErrorMessage):
         sdk_client_fs.role_create(
             name=random_string(),
@@ -153,8 +162,8 @@ def test_host_and_cluster_roles(sdk_client_fs):
     """
     Test that cluster and host roles is allowed to use together
     """
-    cluster_role = {"id": sdk_client_fs.role(name=BusinessRoles.ViewClusterConfigurations.value.role_name).id}
-    host_role = {"id": sdk_client_fs.role(name=BusinessRoles.RemoveHosts.value.role_name).id}
+    cluster_role = {"id": sdk_client_fs.role(name=BusinessRoles.VIEW_CLUSTER_CONFIGURATIONS.value.role_name).id}
+    host_role = {"id": sdk_client_fs.role(name=BusinessRoles.REMOVE_HOSTS.value.role_name).id}
     with allure.step("Assert that create role with cluster and host parametrization is allowed"):
         sdk_client_fs.role_create(
             name=random_string(),

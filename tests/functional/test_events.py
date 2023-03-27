@@ -9,41 +9,35 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Tests for ADCM events"""
+# pylint: disable=redefined-outer-name
 
 import json
 import os
 import re
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import allure
 import pytest
 import websocket
-
-# pylint: disable=redefined-outer-name
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
-from tests.functional.conftest import only_clean_adcm
 
 DATADIR = utils.get_data_dir(__file__)
 R_WWW_PREFIX = re.compile(r"https?://(www.\.)?")
 
 
-pytestmark = [only_clean_adcm]
-
-
 def repr_template(event_type, obj_type, obj_id, dtype=None, value=None):
     """Get template repr"""
     return {
-        'event': event_type,
-        'object': {'type': obj_type, 'id': obj_id, 'details': {'type': dtype, 'value': value}},
+        "event": event_type,
+        "object": {"type": obj_type, "id": obj_id, "details": {"type": dtype, "value": value}},
     }
 
 
 def prep_url(url):
     """Prepare URL"""
-    return R_WWW_PREFIX.sub('', url).strip().strip('/')
+    return R_WWW_PREFIX.sub("", url).strip().strip("/")
 
 
 # pylint: disable=modified-iterating-list
@@ -56,12 +50,14 @@ def assert_events(websocket_connection, *expected_events):
             data = json.loads(websocket_connection.recv())
             for event in expected_list:
                 if event == data:
-                    # FIXME: modified-iterating-list
                     expected_list.remove(event)
+
                     continue
+
             count = count + 1
     except websocket.WebSocketTimeoutException:
         pass
+
     assert not expected_list
 
 
@@ -88,7 +84,7 @@ def websocket_connection(sdk_client_fs: ADCMClient, max_conn=10):
 def cluster_with_svc_and_host(sdk_client_fs):
     """Create cluster, service and host"""
     cluster_instance = cluster(sdk_client_fs)
-    svc = cluster_instance.service_add(name='zookeeper')
+    svc = cluster_instance.service_add(name="zookeeper")
     hst = host(sdk_client_fs)
     cluster_instance.host_add(hst)
     components = svc.component_list()
@@ -98,7 +94,7 @@ def cluster_with_svc_and_host(sdk_client_fs):
 
 def cluster_bundle(sdk_client_fs):
     """Prepare cluster bundle path"""
-    return sdk_client_fs.upload_from_fs(os.path.join(DATADIR, 'cluster_bundle'))
+    return sdk_client_fs.upload_from_fs(os.path.join(DATADIR, "cluster_bundle"))
 
 
 def cluster(sdk_client_fs, name=utils.random_string()):
@@ -108,7 +104,7 @@ def cluster(sdk_client_fs, name=utils.random_string()):
 
 def provider(sdk_client_fs, name=utils.random_string()):
     """Create provider"""
-    return sdk_client_fs.upload_from_fs(os.path.join(DATADIR, 'hostprovider')).provider_create(name=name)
+    return sdk_client_fs.upload_from_fs(os.path.join(DATADIR, "hostprovider")).provider_create(name=name)
 
 
 def host(sdk_client_fs, fqdn=utils.random_string()):
@@ -116,7 +112,7 @@ def host(sdk_client_fs, fqdn=utils.random_string()):
     return provider(sdk_client_fs).host_create(fqdn=fqdn)
 
 
-def service(sdk_client_fs, name='zookeeper'):
+def service(sdk_client_fs, name="zookeeper"):
     """Create service"""
     return cluster(sdk_client_fs).service_add(name=name)
 
@@ -129,60 +125,60 @@ def cluster_action_run(sdk_client_fs, name, **kwargs):
 def expected_success_task(obj, job):
     """Get list of tasks expected to succeed"""
     return (
-        repr_template('change_job_status', 'task', obj.id, 'status', 'created'),
-        repr_template('change_job_status', 'job', job.id, 'status', 'created'),
-        repr_template('change_job_status', 'task', obj.id, 'status', 'running'),
-        repr_template('change_job_status', 'job', job.id, 'status', 'running'),
-        repr_template('change_job_status', 'job', job.id, 'status', 'success'),
-        repr_template('change_job_status', 'task', obj.id, 'status', 'success'),
+        repr_template("change_job_status", "task", obj.id, "status", "created"),
+        repr_template("change_job_status", "job", job.id, "status", "created"),
+        repr_template("change_job_status", "task", obj.id, "status", "running"),
+        repr_template("change_job_status", "job", job.id, "status", "running"),
+        repr_template("change_job_status", "job", job.id, "status", "success"),
+        repr_template("change_job_status", "task", obj.id, "status", "success"),
     )
 
 
 def expected_failed_task(obj, job):
     """Get list of tasks expected to fail"""
     return (
-        repr_template('change_job_status', 'task', obj.id, 'status', 'created'),
-        repr_template('change_job_status', 'job', job.id, 'status', 'created'),
-        repr_template('change_job_status', 'task', obj.id, 'status', 'running'),
-        repr_template('change_job_status', 'job', job.id, 'status', 'running'),
-        repr_template('change_job_status', 'job', job.id, 'status', 'failed'),
-        repr_template('change_job_status', 'task', obj.id, 'status', 'failed'),
+        repr_template("change_job_status", "task", obj.id, "status", "created"),
+        repr_template("change_job_status", "job", job.id, "status", "created"),
+        repr_template("change_job_status", "task", obj.id, "status", "running"),
+        repr_template("change_job_status", "job", job.id, "status", "running"),
+        repr_template("change_job_status", "job", job.id, "status", "failed"),
+        repr_template("change_job_status", "task", obj.id, "status", "failed"),
     )
 
 
 create_adcm_obj = [
-    (cluster_bundle, 'create', 'bundle'),
-    (cluster, 'create', 'cluster'),
-    (provider, 'create', 'provider'),
+    (cluster_bundle, "create", "bundle"),
+    (cluster, "create", "cluster"),
+    (provider, "create", "provider"),
 ]
 
 cluster_actions = [
-    ('finish_successfully', 'install', expected_success_task),
-    ('failed', 'run_fail', expected_failed_task),
+    ("finish_successfully", "install", expected_success_task),
+    ("failed", "run_fail", expected_failed_task),
 ]
 
 svc_actions = [
-    ('success_task', 'install', expected_success_task),
-    ('failed_task', 'should_be_failed', expected_failed_task),
+    ("success_task", "install", expected_success_task),
+    ("failed_task", "should_be_failed", expected_failed_task),
 ]
 
 
-@pytest.mark.parametrize(('adcm_object', 'event_type', 'obj_type'), create_adcm_obj)
+@pytest.mark.parametrize(("adcm_object", "event_type", "obj_type"), create_adcm_obj)
 def test_event_when_create_(obj_type, adcm_object, event_type, sdk_client_fs, websocket_connection):
     """Test events on object creation"""
-    with allure.step(f'Create {obj_type}'):
+    with allure.step(f"Create {obj_type}"):
         obj = adcm_object(sdk_client_fs)
-    with allure.step(f'Check created {obj_type}'):
+    with allure.step(f"Check created {obj_type}"):
         assert_events(websocket_connection, repr_template(event_type, obj_type, obj.id))
 
 
 def test_event_when_create_host(sdk_client_fs, websocket_connection):
     """Test events on host creation"""
     obj = host(sdk_client_fs, fqdn=utils.random_string())
-    with allure.step('Check created host'):
+    with allure.step("Check created host"):
         assert_events(
             websocket_connection,
-            repr_template('create', 'host', obj.id, 'provider', str(obj.provider_id)),
+            repr_template("create", "host", obj.id, "provider", str(obj.provider_id)),
         )
 
 
@@ -191,10 +187,10 @@ def test_event_when_host_added_to_cluster(sdk_client_fs, websocket_connection):
     cluster_instance = cluster(sdk_client_fs)
     hst = host(sdk_client_fs)
     cluster_instance.host_add(hst)
-    with allure.step('Check host'):
+    with allure.step("Check host"):
         assert_events(
             websocket_connection,
-            repr_template('add', 'host', hst.host_id, 'cluster', str(cluster_instance.cluster_id)),
+            repr_template("add", "host", hst.host_id, "cluster", str(cluster_instance.cluster_id)),
         )
 
 
@@ -203,25 +199,25 @@ def test_event_when_add_service(sdk_client_fs, websocket_connection):
     obj = service(sdk_client_fs)
     assert_events(
         websocket_connection,
-        repr_template('add', 'service', obj.id, 'cluster', str(obj.cluster_id)),
+        repr_template("add", "service", obj.id, "cluster", str(obj.cluster_id)),
     )
 
 
-@pytest.mark.parametrize(('case', 'action_name', 'expected'), cluster_actions)
+@pytest.mark.parametrize(("case", "action_name", "expected"), cluster_actions)
 def test_events_when_cluster_action_(case, action_name, expected, websocket_connection, cluster_with_svc_and_host):
     """Test events on cluster actions run"""
     cluster, _, _ = cluster_with_svc_and_host
     job = cluster.action(name=action_name).run()
-    with allure.step(f'Check {case}'):
+    with allure.step(f"Check {case}"):
         assert_events(websocket_connection, *expected(cluster, job))
 
 
-@pytest.mark.parametrize(('case', 'action_name', 'expected'), svc_actions)
+@pytest.mark.parametrize(("case", "action_name", "expected"), svc_actions)
 def test_events_when_service_(case, action_name, expected, websocket_connection, cluster_with_svc_and_host):
     """Test events on service manipulations"""
     _, zookeeper, _ = cluster_with_svc_and_host
     job = zookeeper.action(name=action_name).run()
-    with allure.step(f'Check {case}'):
+    with allure.step(f"Check {case}"):
         assert_events(websocket_connection, *expected(zookeeper, job))
 
 
@@ -235,7 +231,8 @@ def test_check_timestamp_in_job_logs(sdk_client_fs: ADCMClient, verbose_state):
         # Job log timestamp can hit for 59 seconds
         # So it makes sense to check for a range of timestamps rather than a specific minute
         possible_timestamps = [
-            (datetime.utcnow() - timedelta(seconds=delta)).strftime("%A %d %B %Y  %H:%M") for delta in range(3)
+            (datetime.now(tz=ZoneInfo("UTC")) - timedelta(seconds=delta)).strftime("%A %d %B %Y  %H:%M")
+            for delta in range(3)
         ]
 
         assert any(

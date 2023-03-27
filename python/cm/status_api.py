@@ -12,11 +12,10 @@
 
 import json
 from collections import defaultdict
-from typing import Iterable
+from collections.abc import Iterable
+from urllib.parse import urljoin
 
 import requests
-from django.conf import settings
-
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
@@ -24,11 +23,23 @@ from cm.models import (
     ClusterObject,
     Host,
     HostComponent,
+    JobLog,
     ServiceComponent,
+    TaskLog,
 )
+from django.conf import settings
+from requests import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-API_URL = "http://localhost:8020/api/v1"
-TIMEOUT = 0.01
+MODEL_OBJ_TYPE_MAP = {
+    "ClusterObject": "service",
+    "ServiceComponent": "component",
+    "HostProvider": "provider",
+    "ClusterBind": "cbind",
+    "JobLog": "job",
+    "TaskLog": "task",
+    "GroupConfig": "group-config",
+}
 
 
 class Event:
@@ -38,6 +49,9 @@ class Event:
     def __del__(self):
         self.send_state()
 
+    def clear_state(self):
+        self.events = []
+
     def send_state(self):
         while self.events:
             try:
@@ -46,35 +60,37 @@ class Event:
             except IndexError:
                 pass
 
-    def set_object_state(self, obj_type, obj_id, state):
-        self.events.append((set_obj_state, (obj_type, obj_id, state)))
+    def set_object_state(self, obj, state):
+        self.events.append((set_obj_state, (obj, state)))
 
-    def change_object_multi_state(self, obj_type, obj_id, multi_state):
-        self.events.append((change_obj_multi_state, (obj_type, obj_id, multi_state)))
+    def change_object_multi_state(self, obj, multi_state):
+        self.events.append((change_obj_multi_state, (obj, multi_state)))
 
-    def set_job_status(self, job_id, status):
-        self.events.append((set_job_status, (job_id, status)))
+    def set_job_status(self, job, status):
+        self.events.append((set_job_status, (job, status)))
 
-    def set_task_status(self, task_id, status):
-        self.events.append((set_task_status, (task_id, status)))
+    def set_task_status(self, task, status):
+        self.events.append((set_task_status, (task, status)))
 
 
-def api_request(method, url, data=None):
-    url = API_URL + url
+def api_request(method: str, url: str, data: dict = None) -> Response | None:
+    url = urljoin(settings.API_URL, url)
     kwargs = {
         "headers": {
             "Content-Type": "application/json",
             "Authorization": f"Token {settings.ADCM_TOKEN}",
         },
-        "timeout": TIMEOUT,
+        "timeout": settings.STATUS_REQUEST_TIMEOUT,
     }
+
     if data is not None:
         kwargs["data"] = json.dumps(data)
+
     try:
-        request = requests.request(method, url, **kwargs)
-        if request.status_code not in (200, 201):
-            logger.error("%s %s error %d: %s", method, url, request.status_code, request.text)
-        return request
+        response = requests.request(method, url, **kwargs)
+        if response.status_code not in {HTTP_200_OK, HTTP_201_CREATED}:
+            logger.error("%s %s error %d: %s", method, url, response.status_code, response.text)
+        return response
     except requests.exceptions.Timeout:
         logger.error("%s request to %s timed out", method, url)
         return None
@@ -83,140 +99,166 @@ def api_request(method, url, data=None):
         return None
 
 
-def post_event(event, obj_type, obj_id, det_type=None, det_val=None):
-    details = {"type": det_type, "value": det_val}
-    if det_type and not det_val:
-        details = det_type
+def post_event(event: str, obj, details: dict = None) -> Response | None:
+    if details is None:
+        details = {"type": None, "value": None}
+
+    class_name = obj.__class__.__name__
+    obj_type = MODEL_OBJ_TYPE_MAP.get(class_name, class_name.lower())
+
+    if details.get("model_name"):
+        obj_type = details.pop("model_name")
+
     data = {
         "event": event,
         "object": {
             "type": obj_type,
-            "id": int(obj_id),
+            "id": int(obj.id),
             "details": details,
         },
     }
+
     logger.debug("post_event %s", data)
-    return api_request("post", "/event/", data)
+    return api_request(method="post", url="event/", data=data)
 
 
-def set_job_status(job_id, status):
-    return post_event("change_job_status", "job", job_id, "status", status)
+def set_job_status(job: JobLog, status: str) -> Response | None:
+    return post_event(event="change_job_status", obj=job, details={"type": "status", "value": status})
 
 
-def set_task_status(task_id, status):
-    return post_event("change_job_status", "task", task_id, "status", status)
+def set_task_status(task: TaskLog, status: str) -> Response | None:
+    return post_event(event="change_job_status", obj=task, details={"type": "status", "value": status})
 
 
-def set_obj_state(obj_type, obj_id, state):
+def set_obj_state(obj: ADCMEntity, state: str) -> Response | None:
+    if not hasattr(obj, "prototype"):
+        return None
+
+    obj_type = obj.prototype.type
     if obj_type == "adcm":
         return None
-    if obj_type not in ("cluster", "service", "host", "provider", "component"):
+
+    if obj_type not in {"cluster", "service", "host", "provider", "component"}:
         logger.error("Unknown object type: '%s'", obj_type)
         return None
-    return post_event("change_state", obj_type, obj_id, "state", state)
+
+    return post_event(event="change_state", obj=obj, details={"type": "state", "value": state})
 
 
-def change_obj_multi_state(obj_type, obj_id, multi_state):
+def change_obj_multi_state(obj: ADCMEntity, multi_state: str) -> Response | None:
+    if not hasattr(obj, "prototype"):
+        return None
+
+    obj_type = obj.prototype.type
     if obj_type == "adcm":
         return None
-    if obj_type not in ("cluster", "service", "host", "provider", "component"):
+
+    if obj_type not in {"cluster", "service", "host", "provider", "component"}:
         logger.error("Unknown object type: '%s'", obj_type)
         return None
-    return post_event("change_state", obj_type, obj_id, "multi_state", multi_state)
+
+    return post_event(event="change_state", obj=obj, details={"type": "multi_state", "value": multi_state})
 
 
-def get_raw_status(url):
-    r = api_request("get", url)
-    if r is None:
-        return 32
+def get_raw_status(url: str) -> int:
+    response = api_request(method="get", url=url)
+    if response is None:
+        return settings.EMPTY_REQUEST_STATUS_CODE
+
     try:
-        js = r.json()
+        json_data = response.json()
     except ValueError:
-        return 8
-    if "status" in js:
-        return js["status"]
+        return settings.VALUE_ERROR_STATUS_CODE
+
+    if "status" in json_data:
+        return json_data["status"]
     else:
-        return 4
+        return settings.EMPTY_STATUS_STATUS_CODE
 
 
-def get_status(obj: ADCMEntity, url: str):
+def get_status(obj: ADCMEntity, url: str) -> int:
     if obj.prototype.monitoring == "passive":
         return 0
-    return get_raw_status(url)
+
+    return get_raw_status(url=url)
 
 
-def get_cluster_status(cluster):
-    return get_raw_status(f"/cluster/{cluster.id}/")
+def get_cluster_status(cluster: Cluster) -> int:
+    return get_raw_status(url=f"cluster/{cluster.id}/")
 
 
-def get_service_status(service):
-    return get_status(service, f"/cluster/{service.cluster.id}/service/{service.id}/")
+def get_service_status(service: ClusterObject) -> int:
+    return get_status(obj=service, url=f"cluster/{service.cluster.id}/service/{service.id}/")
 
 
-def get_host_status(host):
-    return get_status(host, f"/host/{host.id}/")
+def get_host_status(host: Host) -> int:
+    return get_status(obj=host, url=f"host/{host.id}/")
 
 
-def get_hc_status(hc):
-    return get_status(hc.component, f"/host/{hc.host_id}/component/{hc.component_id}/")
+def get_hc_status(hostcomponent: HostComponent) -> int:
+    return get_status(
+        obj=hostcomponent.component,
+        url=f"host/{hostcomponent.host_id}/component/{hostcomponent.component_id}/",
+    )
 
 
-def get_host_comp_status(host, component):
-    return get_status(component, f"/host/{host.id}/component/{component.id}/")
+def get_host_comp_status(host: Host, component: ServiceComponent) -> int:
+    return get_status(obj=component, url=f"host/{host.id}/component/{component.id}/")
 
 
-def get_component_status(comp: ServiceComponent):
-    return get_status(comp, f"/component/{comp.id}/")
+def get_component_status(component: ServiceComponent) -> int:
+    return get_status(obj=component, url=f"component/{component.id}/")
 
 
-def get_object_map(obj: ADCMEntity, url_type: str):
+def get_object_map(obj: ADCMEntity, url_type: str) -> dict | None:
     if url_type == "service":
-        r = api_request("get", f"/cluster/{obj.cluster.id}/service/{obj.id}/?view=interface")
+        response = api_request(method="get", url=f"cluster/{obj.cluster.id}/service/{obj.id}/?view=interface")
     else:
-        r = api_request("get", f"/{url_type}/{obj.id}/?view=interface")
-    if r is None:
+        response = api_request(method="get", url=f"{url_type}/{obj.id}/?view=interface")
+
+    if response is None:
         return None
-    return r.json()
+
+    return response.json()
 
 
 def make_ui_single_host_status(host: Host) -> dict:
     return {
         "id": host.id,
         "name": host.fqdn,
-        "status": get_host_status(host),
+        "status": get_host_status(host=host),
     }
 
 
 def make_ui_component_status(component: ServiceComponent, host_components: Iterable[HostComponent]) -> dict:
-    """Make UI representation of component's status per host"""
     host_list = []
-    for hc in host_components:
+    for hostcomponent in host_components:
         host_list.append(
             {
-                "id": hc.host.id,
-                "name": hc.host.fqdn,
-                "status": get_host_comp_status(hc.host, hc.component),
-            }
+                "id": hostcomponent.host.id,
+                "name": hostcomponent.host.fqdn,
+                "status": get_host_comp_status(host=hostcomponent.host, component=hostcomponent.component),
+            },
         )
+
     return {
         "id": component.id,
         "name": component.display_name,
-        "status": get_component_status(component),
+        "status": get_component_status(component=component),
         "hosts": host_list,
     }
 
 
 def make_ui_service_status(service: ClusterObject, host_components: Iterable[HostComponent]) -> dict:
-    """Make UI representation of service and its children statuses"""
     component_hc_map = defaultdict(list)
-    for hc in host_components:
-        component_hc_map[hc.component].append(hc)
+    for hostcomponent in host_components:
+        component_hc_map[hostcomponent.component].append(hostcomponent)
 
     comp_list = []
     for component, hc_list in component_hc_map.items():
-        comp_list.append(make_ui_component_status(component, hc_list))
+        comp_list.append(make_ui_component_status(component=component, host_components=hc_list))
 
-    service_map = get_object_map(service, "service")
+    service_map = get_object_map(obj=service, url_type="service")
     return {
         "id": service.id,
         "name": service.display_name,
@@ -226,20 +268,20 @@ def make_ui_service_status(service: ClusterObject, host_components: Iterable[Hos
 
 
 def make_ui_cluster_status(cluster: Cluster, host_components: Iterable[HostComponent]) -> dict:
-    """Make UI representation of cluster and its children statuses"""
     service_hc_map = defaultdict(list)
-    for hc in host_components:
-        service_hc_map[hc.service].append(hc)
+    for hostcomponent in host_components:
+        service_hc_map[hostcomponent.service].append(hostcomponent)
 
     service_list = []
     for service, hc_list in service_hc_map.items():
-        service_list.append(make_ui_service_status(service, hc_list))
+        service_list.append(make_ui_service_status(service=service, host_components=hc_list))
 
     host_list = []
     for host in Host.obj.filter(cluster=cluster):
-        host_list.append(make_ui_single_host_status(host))
+        host_list.append(make_ui_single_host_status(host=host))
 
-    cluster_map = get_object_map(cluster, "cluster")
+    cluster_map = get_object_map(obj=cluster, url_type="cluster")
+
     return {
         "name": cluster.name,
         "status": 32 if cluster_map is None else cluster_map.get("status", 0),
@@ -251,19 +293,20 @@ def make_ui_cluster_status(cluster: Cluster, host_components: Iterable[HostCompo
 
 
 def make_ui_host_status(host: Host, host_components: Iterable[HostComponent]) -> dict:
-    """Make UI representation of host and its children statuses"""
     comp_list = []
-    for hc in host_components:
+
+    for hostcomponent in host_components:
         comp_list.append(
             {
-                "id": hc.component.id,
-                "name": hc.component.display_name,
-                "status": get_component_status(hc.component),
-                "service_id": hc.service.id,
-            }
+                "id": hostcomponent.component.id,
+                "name": hostcomponent.component.display_name,
+                "status": get_component_status(component=hostcomponent.component),
+                "service_id": hostcomponent.service.id,
+            },
         )
 
-    host_map = get_object_map(host, "host")
+    host_map = get_object_map(obj=host, url_type="host")
+
     return {
         "id": host.id,
         "name": host.fqdn,

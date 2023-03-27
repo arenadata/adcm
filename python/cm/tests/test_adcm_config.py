@@ -12,8 +12,9 @@
 
 from unittest.mock import Mock, call, patch
 
-from adcm.tests.base import BaseTestCase
 from cm.adcm_config import process_config
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestAdcmConfig(BaseTestCase):
@@ -33,7 +34,6 @@ class TestAdcmConfig(BaseTestCase):
 
         for spec, conf, test_conf in test_data:
             with self.subTest(conf=conf, spec=spec):
-
                 config = process_config(obj_mock, spec, conf)
 
                 self.assertDictEqual(config, test_conf)
@@ -42,5 +42,5 @@ class TestAdcmConfig(BaseTestCase):
             [
                 call(obj_mock, "global", ""),
                 call(obj_mock, "global", "test"),
-            ]
+            ],
         )

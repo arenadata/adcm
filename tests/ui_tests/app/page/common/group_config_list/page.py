@@ -14,14 +14,14 @@
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import List, Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webdriver import WebElement
+
 from tests.ui_tests.app.page.common.base_page import BasePageObject
-from tests.ui_tests.app.page.common.dialogs.locators import DeleteDialog
+from tests.ui_tests.app.page.common.dialogs.locators import DeleteDialogLocators
 from tests.ui_tests.app.page.common.group_config_list.locators import (
     GroupConfigListLocators,
 )
@@ -41,7 +41,7 @@ class GroupConfigList(BasePageObject):
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url)
 
-    def get_all_config_rows(self) -> List[WebElement]:
+    def get_all_config_rows(self) -> list[WebElement]:
         """Return all group config rows"""
 
         try:
@@ -59,7 +59,7 @@ class GroupConfigList(BasePageObject):
             description=self.find_child(row, GroupConfigListLocators.GroupConfigRow.description).text,
         )
 
-    @allure.step('Create new group config {name}')
+    @allure.step("Create new group config {name}")
     def create_group(self, name: str, description: str):
         """Create new group config"""
 
@@ -75,7 +75,7 @@ class GroupConfigList(BasePageObject):
         self.wait_element_hide(GroupConfigListLocators.CreateGroupPopup.block)
 
     @contextmanager
-    def wait_rows_change(self, expected_rows_amount: Optional[int] = None):
+    def wait_rows_change(self, expected_rows_amount: int | None = None):
         """Wait changing rows amount."""
 
         amount_before = len(self.get_all_config_rows())
@@ -94,6 +94,6 @@ class GroupConfigList(BasePageObject):
     def delete_row(self, row: WebElement):
         """Delete row"""
         self.find_child(row, GroupConfigListLocators.GroupConfigRow.delete_btn).click()
-        self.wait_element_visible(DeleteDialog.body)
-        self.find_and_click(DeleteDialog.yes)
-        self.wait_element_hide(DeleteDialog.body)
+        self.wait_element_visible(DeleteDialogLocators.body)
+        self.find_and_click(DeleteDialogLocators.yes)
+        self.wait_element_hide(DeleteDialogLocators.body)

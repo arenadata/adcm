@@ -41,12 +41,6 @@ echo "Root keys generation"
 key=/root/.ssh/id_rsa
 [ ! -f ${key} ] && ssh-keygen -f ${key} -t rsa -N ""
 
-if [ ! -f "${adcmvar}"/cluster.db ]; then
-    echo "Assume first run, generate Django secret key"
-    "${adcmroot}"/python/manage.py generate_secret_key
-    mv "${adcmroot}/python/secretkey.txt" "${adcmsecretfile}"
-fi
-
 if [ ! \( -f "${adcmuserconf}/ssl/cert.pem" -a -f "${adcmuserconf}/ssl/key.pem" \) ]; then
     mkdir -p "${adcmuserconf}/ssl"
     cd "${adcmuserconf}/ssl"
@@ -56,8 +50,12 @@ fi
 
 "${adcmroot}"/python/backupdb.py
 "${adcmroot}"/python/manage.py migrate
-"${adcmroot}"/python/init_db.py
-"${adcmroot}"/python/manage.py upgraderole
+
+if [ -z "$MIGRATION_MODE" ] || [ "$MIGRATION_MODE" -ne 1 ]; then
+    "${adcmroot}"/python/init_db.py
+    "${adcmroot}"/python/manage.py upgraderole
+fi
+
 touch "${initreadyfile}"
 
 # That is sleep forever case because I have no idea how to force

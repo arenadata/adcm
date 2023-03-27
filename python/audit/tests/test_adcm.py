@@ -10,15 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
-from django.contrib.contenttypes.models import ContentType
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -26,10 +20,16 @@ from audit.models import (
     AuditObjectType,
 )
 from cm.models import ADCM, Action, Bundle, ConfigLog, ObjectConfig, Prototype, TaskLog
+from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse
 from rbac.models import User
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
-class TestADCM(BaseTestCase):
+class TestADCMAudit(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -37,7 +37,9 @@ class TestADCM(BaseTestCase):
         self.prototype = Prototype.objects.create(bundle=bundle, type="adcm")
         config = ObjectConfig.objects.create(current=0, previous=0)
         self.config_log = ConfigLog.objects.create(
-            obj_ref=config, config="{}", attr={"ldap_integration": {"active": True}}
+            obj_ref=config,
+            config="{}",
+            attr={"ldap_integration": {"active": True}},
         )
         config.current = self.config_log.pk
         config.save(update_fields=["current"])
@@ -53,8 +55,8 @@ class TestADCM(BaseTestCase):
         self.task = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=ContentType.objects.get(app_label="cm", model="adcm"),
-            start_date=datetime.now(),
-            finish_date=datetime.now(),
+            start_date=datetime.now(tz=ZoneInfo("UTC")),
+            finish_date=datetime.now(tz=ZoneInfo("UTC")),
             action=self.action,
         )
         self.adcm_conf_updated_str = "ADCM configuration updated"
@@ -69,7 +71,7 @@ class TestADCM(BaseTestCase):
             self.assertFalse(log.audit_object)
 
         self.assertEqual(log.operation_name, operation_name)
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
 
@@ -90,7 +92,7 @@ class TestADCM(BaseTestCase):
         self.check_adcm_updated(
             log=log,
             operation_name=self.adcm_conf_updated_str,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -109,7 +111,7 @@ class TestADCM(BaseTestCase):
         self.check_adcm_updated(
             log=new_log,
             operation_name=self.adcm_conf_updated_str,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -127,6 +129,6 @@ class TestADCM(BaseTestCase):
         self.check_adcm_updated(
             log=log,
             operation_name=self.adcm_conf_updated_str,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )

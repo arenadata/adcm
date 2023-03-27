@@ -23,6 +23,7 @@ from adcm_pytest_plugin.steps.actions import (
     run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import get_data_dir
+
 from tests.functional.test_actions import (
     FIRST_COMPONENT,
     FIRST_SERVICE,
@@ -242,7 +243,8 @@ class TestComponentActionOnHost:
     """Tests for component actions on host"""
 
     @allure.issue(
-        url="https://arenadata.atlassian.net/browse/ADCM-1948", name="Infinite host action on ADCM with pre-filled data"
+        url="https://arenadata.atlassian.net/browse/ADCM-1948",
+        name="Infinite host action on ADCM with pre-filled data",
     )
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
     def test_availability(self, cluster_with_components: Cluster, provider: Provider, action_name):

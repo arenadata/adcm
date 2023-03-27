@@ -68,7 +68,7 @@ def actions_cluster(actions_cluster_bundle) -> Cluster:
 def simple_cluster(simple_cluster_bundle) -> Cluster:
     """Cluster based on simple cluster bundle"""
     cluster = simple_cluster_bundle.cluster_create(name="Test Simple Cluster")
-    cluster.service_add(name='actions_service')
+    cluster.service_add(name="actions_service")
     return cluster
 
 

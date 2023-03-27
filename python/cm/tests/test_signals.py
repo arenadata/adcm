@@ -12,17 +12,15 @@
 
 from unittest.mock import patch
 
+from cm.models import Bundle, Cluster, GroupConfig, Host, Prototype
 from django.contrib.contenttypes.models import ContentType
 from django.db.models.signals import m2m_changed, post_delete, post_save
+from rbac.models import User
 
 from adcm.tests.base import BaseTestCase
-from cm.models import Bundle, Cluster, GroupConfig, Host, Prototype
-from rbac.models import User
 
 
 class SignalsTest(BaseTestCase):
-    """Tests for `cm.models.MessageTemplate` methods"""
-
     @patch("cm.signals.model_delete")
     @patch("cm.signals.model_change")
     def test_update_delete_signals(self, model_change, model_delete):
@@ -38,14 +36,18 @@ class SignalsTest(BaseTestCase):
         m2m_changed.connect(m2m_change, sender=GroupConfig.hosts.through)
         bundle = Bundle.objects.create()
         cluster = Cluster.objects.create(
-            prototype=Prototype.objects.create(type="cluster", name="prototype", bundle=bundle)
+            prototype=Prototype.objects.create(type="cluster", name="prototype", bundle=bundle),
         )
-        gc = GroupConfig.objects.create(
-            object_id=cluster.id, object_type=ContentType.objects.get(model="cluster"), name="group"
+        group_config = GroupConfig.objects.create(
+            object_id=cluster.id,
+            object_type=ContentType.objects.get(model="cluster"),
+            name="group",
         )
         host = Host.objects.create(
-            cluster=cluster, prototype=Prototype.objects.create(type="host", name="prototype_2", bundle=bundle)
+            cluster=cluster,
+            prototype=Prototype.objects.create(type="host", name="prototype_2", bundle=bundle),
         )
 
-        gc.hosts.add(host)
+        group_config.hosts.add(host)
+
         self.assertEqual(2, m2m_change.call_count)

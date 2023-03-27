@@ -16,22 +16,12 @@ Retrieve data in more than one way in cases when source is unstable
 """
 import sys
 import traceback
-from typing import (
-    Any,
-    Callable,
-    Collection,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-)
+from collections.abc import Callable, Collection
+from typing import Any, NamedTuple, TypeVar
 
 import allure
 
-_Result = TypeVar('_Result')
+_Result = TypeVar("_Result")
 
 
 class DataSource(NamedTuple):
@@ -39,7 +29,7 @@ class DataSource(NamedTuple):
 
     getter: Callable
     args: Collection[Any] = ()
-    kwargs: Optional[Dict[str, Any]] = None
+    kwargs: dict[str, Any] | None = None
 
     @property
     def name(self):
@@ -55,20 +45,20 @@ class DataSource(NamedTuple):
 # to auto-register silencers look into `__init_subclass__`,
 # but for now I don't see another silencer than this one
 class _ExceptionSilencer:
-    __slots__ = ('_type', '_failures')
+    __slots__ = ("_type", "_failures")
 
-    _failures: List[Tuple[str, str]]
+    _failures: list[tuple[str, str]]
 
     @property
-    def failures(self) -> Tuple[Tuple[str, str], ...]:
+    def failures(self) -> tuple[tuple[str, str], ...]:
         """Get failures as tuple with items like (name, traceback)"""
         return tuple(self._failures)
 
-    def __init__(self, ex_type: Type[Exception]):
+    def __init__(self, ex_type: type[Exception]):
         self._type = ex_type
         self._failures = []
 
-    def get(self, source: DataSource) -> Tuple[_Result, bool]:
+    def get(self, source: DataSource) -> tuple[_Result, bool]:
         """Get value and success flag"""
         try:
             return source.get(), True
@@ -91,25 +81,25 @@ class FromOneOf:
     instead of providing yet another conditional flag with extra `if` in method's body.
     """
 
-    _sources: Tuple[DataSource, ...]
+    _sources: tuple[DataSource, ...]
     _silencer: _ExceptionSilencer
 
     def __init__(self, data_sources: Collection[DataSource], ignore=Exception):
         if len(data_sources) < 2:
-            raise ValueError('There should be at least 2 data sources')
+            raise ValueError("There should be at least 2 data sources")
         self._sources = tuple(data_sources)
         self._check_ignore_value_is_correct(ignore)
         self._silencer = _ExceptionSilencer(ignore)
 
     def __call__(self) -> _Result:
         for source in self._sources:
-            result, ok = self._silencer.get(source)
-            if ok:
+            result, success = self._silencer.get(source)
+            if success:
                 return result
-        with allure.step('Attach failures'):
+        with allure.step("Attach failures"):
             for source_name, failure in self._silencer.failures:
-                allure.attach(failure, name=f'Failure from source: {source_name}')
-        raise AssertionError('None of the sources returned valuable result')
+                allure.attach(failure, name=f"Failure from source: {source_name}")
+        raise AssertionError("None of the sources returned valuable result")
 
     def _check_ignore_value_is_correct(self, ignore):
         if isinstance(ignore, type) and issubclass(ignore, BaseException):
@@ -117,5 +107,5 @@ class FromOneOf:
         if isinstance(ignore, tuple) and all(issubclass(i, BaseException) for i in ignore):
             return
         raise ValueError(
-            'Sorry, but only Exceptions can be ignored with `FromOneOf`.\nFeel free to create your own Silencer.'
+            "Sorry, but only Exceptions can be ignored with `FromOneOf`.\nFeel free to create your own Silencer.",
         )

@@ -15,7 +15,7 @@
 import allure
 import pytest
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
-from tests.functional.conftest import only_clean_adcm
+
 from tests.functional.ldap_auth.utils import (
     SYNC_ACTION_NAME,
     check_existing_groups,
@@ -25,7 +25,7 @@ from tests.functional.ldap_auth.utils import (
 )
 from tests.library.ldap_interactions import configure_adcm_for_ldap
 
-pytestmark = [only_clean_adcm, pytest.mark.ldap()]
+pytestmark = [pytest.mark.ldap()]
 
 
 @pytest.fixture()
@@ -33,7 +33,7 @@ def _configure_adcm(sdk_client_fs, ad_config, ldap_basic_ous):
     """Configure LDAP settings in ADCM and turn off LDAP sync"""
     _, users_ou = ldap_basic_ous
     configure_adcm_for_ldap(sdk_client_fs, ad_config, False, None, users_ou, None)
-    sdk_client_fs.adcm().config_set_diff({'ldap_integration': {'sync_interval': 0}})
+    sdk_client_fs.adcm().config_set_diff({"ldap_integration": {"sync_interval": 0}})
 
 
 @pytest.mark.usefixtures("_configure_adcm", "another_ldap_group")

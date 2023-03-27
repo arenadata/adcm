@@ -7,19 +7,34 @@ import { TaskRaw } from '@app/core/types';
 })
 export class BellTaskLinkPipe implements PipeTransform {
 
+  endStatuses = ['aborted', 'success', 'failed'];
+
   transform(task: TaskRaw): (string | number)[] {
     if (task?.jobs?.length > 0) {
-      if (task.status === 'failed') {
-        const failedJob = task.jobs.find(job => job.status === 'failed');
-        if (failedJob) {
-          return ['job', failedJob.id, 'main'];
+      if (task.status === 'running') {
+        const runningJob = task.jobs.find(job => job.status === 'running');
+        if (runningJob) {
+          return ['job', runningJob.id, 'main'];
         }
-      } else {
-        return ['job', task.jobs[0].id, 'main'];
+
+        const createdJob = task.jobs.find(job => job.status === 'created');
+        if (createdJob) {
+          return ['job', createdJob.id, 'main'];
+        }
+
+        const descOrderedJobs = task.jobs.slice().reverse();
+        const finishedJob = descOrderedJobs.find(job => this.endStatuses.includes(job.status));
+        if (finishedJob) {
+          return ['job', finishedJob.id, 'main'];
+        }
+      } else if (this.endStatuses.includes(task.status)) {
+        const descOrderedJobs = task.jobs.slice().reverse();
+        const finishedJob = descOrderedJobs.find(job => this.endStatuses.includes(job.status));
+        if (finishedJob) {
+          return ['job', finishedJob.id, 'main'];
+        }
       }
     }
-
-    return ['job', task.id, 'main'];
   }
 
 }

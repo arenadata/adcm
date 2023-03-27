@@ -31,7 +31,7 @@ export class NavigationEffects {
         ofType(setPathOfRoute),
         filter(action => !!action.params),
         switchMap(action => {
-          const getters: Observable<AdcmTypedEntity>[] = action.params.keys.reduce((acc, param) => {
+          const getters: Observable<AdcmTypedEntity>[] = action.params.keys?.reduce((acc, param) => {
             const getter = this.entityGetter(param as TypeName, +action.params.get(param));
             if (getter) {
               acc.push(getter);
@@ -52,7 +52,7 @@ export class NavigationEffects {
     concatMap((event: { message: EventMessage }) => {
       return new Observable<Action>(subscriber => {
         this.store.select(getNavigationPath).pipe(take(1)).subscribe((path) => {
-          if (path.some(item => item.typeName === getEventEntityType(event.message.object.type) && event.message.object.id === item.id)) {
+          if (path?.some(item => item.typeName === getEventEntityType(event.message.object.type) && event.message.object.id === item.id)) {
             this.entityGetter(getEventEntityType(event.message.object.type), event.message.object.id)
               .subscribe((entity) => {
                 subscriber.next(setPath({

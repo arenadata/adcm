@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Directive, HostListener, Input, OnInit } from '@angular/core';
-import { FormGroup } from '@angular/forms';
+import { FormGroup} from '@angular/forms';
 
 import { IFieldOptions } from '../configuration/types';
 import { BaseDirective } from '../directives';

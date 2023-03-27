@@ -14,12 +14,6 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
-from django.contrib.contenttypes.models import ContentType
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
-
-from adcm.tests.base import BaseTestCase
 from cm.models import (
     ADCM,
     Action,
@@ -30,6 +24,12 @@ from cm.models import (
     Prototype,
     TaskLog,
 )
+from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestTaskAPI(BaseTestCase):
@@ -49,7 +49,7 @@ class TestTaskAPI(BaseTestCase):
         self.action = Action.objects.create(
             display_name="test_adcm_action",
             prototype=self.adcm_prototype,
-            type=ActionType.Job,
+            type=ActionType.JOB,
             state_available="any",
         )
         adcm_object_type = ContentType.objects.get(app_label="cm", model="adcm")
@@ -170,7 +170,7 @@ class TestTaskAPI(BaseTestCase):
         self.assertEqual(response.data["id"], self.task_2.pk)
         self.assertSetEqual(
             set(response.data["jobs"][0].keys()),
-            {"display_name", "finish_date", "id", "start_date", "status", "url"},
+            {"display_name", "finish_date", "id", "terminatable", "start_date", "status", "url"},
         )
 
     def test_restart(self):
@@ -203,7 +203,7 @@ class TestTaskAPI(BaseTestCase):
                 reverse(
                     "run-task",
                     kwargs={"cluster_id": self.cluster.pk, "action_id": self.action.pk},
-                )
+                ),
             )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)

@@ -12,17 +12,17 @@
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebElement
-from tests.ui_tests.app.helpers.locator import Locator
+
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.status.locators import StatusLocators
+from tests.ui_tests.core.locators import BaseLocator
 
-SUCCESS_COLOR = '0, 230, 118'
-NEGATIVE_COLOR = '255, 152, 0'
+SUCCESS_COLOR = "0, 230, 118"
+NEGATIVE_COLOR = "255, 152, 0"
 
 
 @dataclass
@@ -30,10 +30,10 @@ class StatusRowInfo:
     """Information from status row"""
 
     icon_status: bool
-    group_name: Optional[str]
-    state: Optional[str]
-    state_color: Optional[str]
-    link: Optional[str]
+    group_name: str | None
+    state: str | None
+    state_color: str | None
+    link: str | None
 
 
 class StatusPage(BasePageObject):
@@ -54,7 +54,7 @@ class StatusPage(BasePageObject):
         page_rows = self.get_all_rows()
         components_items = []
 
-        def get_child_text(row: WebElement, locator: Locator) -> str:
+        def get_child_text(row: WebElement, locator: BaseLocator) -> str:
             return self.find_child(row, locator).text if self.is_child_displayed(row, locator, timeout=1) else None
 
         for row in page_rows:
@@ -65,7 +65,7 @@ class StatusPage(BasePageObject):
                 group_name=get_child_text(row, row_elements.group_name),
                 state=get_child_text(row, row_elements.state),
                 state_color=self.find_child(row, row_elements.state)
-                .value_of_css_property('color')
+                .value_of_css_property("color")
                 .split("(")[1]
                 .split(", 1)")[0]
                 .split(")")[0]

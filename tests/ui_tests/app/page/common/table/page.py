@@ -16,36 +16,32 @@ from contextlib import contextmanager
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
-from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait as WDW
-from tests.ui_tests.app.page.common.base_page import BasePageObject
+from selenium.webdriver.support import expected_conditions as EC  # noqa: N812
+from selenium.webdriver.support.ui import WebDriverWait as WDW  # noqa: N817
+
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
+from tests.ui_tests.core.interactors import Interactor
 from tests.ui_tests.utils import assert_enough_rows
 
 
-class CommonTableObj(BasePageObject):
+class CommonTableObj(Interactor):
     """Class for manipulating with common tables elements."""
 
-    LOADING_STATE_TEXT = 'autorenew'
+    LOADING_STATE_TEXT = "autorenew"
 
-    def __init__(self, driver, base_url, table_class_locators=CommonTable):
-        super().__init__(driver, base_url)
-        self.locators = table_class_locators
+    def __init__(self, driver, locators_class=CommonTable):
+        super().__init__(driver=driver, default_timeout=3)
+        self.locators = locators_class
 
     @property
     def row_count(self) -> int:
         """Get amount of rows on page"""
         return len(self.get_all_rows())
 
-    def get_all_rows(self, timeout=5) -> list:
-        """Get all rows from the table"""
-        try:
-            return self.find_elements(self.locators.visible_row, timeout=timeout)
-        except TimeoutException:
-            return []
+    def get_all_rows(self, timeout: int | float = 5) -> list[WebElement]:
+        return self.find_elements_or_empty(self.locators.row, timeout=timeout)
 
     def get_row(self, row_num: int = 0) -> WebElement:
         """Get row from the table"""
@@ -85,30 +81,29 @@ class CommonTableObj(BasePageObject):
     def click_page_by_number(self, number: int):
         """Click on page number"""
         page_loc = self.locators.Pagination.page_to_choose_btn
-        WDW(self.driver, self.default_loc_timeout).until(
+        WDW(self._driver, self._timeout).until(
             EC.presence_of_element_located([page_loc.by, page_loc.value.format(number)]),
-            message=f"Can't find page {number} in table on page {self.driver.current_url} "
-            f"for {self.default_loc_timeout} seconds",
+            message=f"Can't find page {number} in table on page {self._driver.current_url} "
+            f"for {self._timeout} seconds",
         ).click()
 
-    @allure.step("Check pagination")
-    def check_pagination(self, second_page_item_amount: int):
-        """Check pagination"""
-        params = {"fist_page_cluster_amount": 10}
-        self.wait_element_hide(CommonToolbarLocators.progress_bar, timeout=60)
-        with self.wait_rows_change():
-            self.click_page_by_number(2)
-        assert self.row_count == second_page_item_amount, f"Second page should contains {second_page_item_amount} items"
-        with self.wait_rows_change():
-            self.click_page_by_number(1)
-        assert (
-            self.row_count == params["fist_page_cluster_amount"]
-        ), f"First page should contains {params['fist_page_cluster_amount']} items"
-        with self.wait_rows_change():
-            self.click_next_page()
-        assert self.row_count == second_page_item_amount, f"Next page should contains {second_page_item_amount} items"
-        with self.wait_rows_change():
-            self.click_previous_page()
-        assert (
-            self.row_count == params["fist_page_cluster_amount"]
-        ), f"Previous page should contains {params['fist_page_cluster_amount']} items"
+    @allure.step("Set rows per page to {rows_amount}")
+    def set_rows_per_page(self, rows_amount: int) -> None:
+        paging = self.locators.Pagination
+
+        self.find_and_click(paging.per_page_dropdown)
+        self.wait_element_visible(paging.per_page_block, timeout=1.5)
+        per_page_options = self.find_element(paging.per_page_block, timeout=0.5)
+
+        suitable_option = next(
+            filter(
+                lambda child: child.text.strip() == str(rows_amount),
+                self.find_children(per_page_options, paging.per_page_element),
+            ),
+            None,
+        )
+        if suitable_option is None:
+            raise AssertionError(f"Failed to find suitable option to show {rows_amount} per page")
+
+        suitable_option.click()
+        self.wait_element_hide(paging.per_page_block, timeout=5)

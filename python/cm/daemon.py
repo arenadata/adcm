@@ -38,6 +38,7 @@ class Daemon:
         Programming in the UNIX Environment" for details (ISBN 0201563177)
         http://www.erlenstar.demon.co.uk/unix/faq_2.html#SEC16
         """
+
         try:
             pid = os.fork()
             if pid > 0:
@@ -63,23 +64,21 @@ class Daemon:
             sys.exit(1)
 
         try:
-            pidfile = open(self.pidfile, "w+", encoding=settings.ENCODING_UTF_8)
-        except IOError as e:
+            pidfile = open(self.pidfile, "w+", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
+        except OSError as e:
             sys.stderr.write(f"Can't open pid file {self.pidfile}\n")
             sys.stderr.write(f"{e.strerror}\n")
             sys.exit(1)
 
-        # redirect standard file descriptors
         sys.stdout.flush()
         sys.stderr.flush()
-        si = open(self.stdin, "r", encoding=settings.ENCODING_UTF_8)
-        so = open(self.stdout, "a+", encoding=settings.ENCODING_UTF_8)
-        se = open(self.stderr, "w+", encoding=settings.ENCODING_UTF_8)
-        os.dup2(si.fileno(), sys.stdin.fileno())
-        os.dup2(so.fileno(), sys.stdout.fileno())
-        os.dup2(se.fileno(), sys.stderr.fileno())
+        stdin_file = open(self.stdin, encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
+        stdout_file = open(self.stdout, "a+", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
+        stderr_file = open(self.stderr, "w+", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
+        os.dup2(stdin_file.fileno(), sys.stdin.fileno())
+        os.dup2(stdout_file.fileno(), sys.stdout.fileno())
+        os.dup2(stderr_file.fileno(), sys.stderr.fileno())
 
-        # write pidfile
         atexit.register(self.delpid)
         pid = str(os.getpid())
         pidfile.write(f"{pid}\n")
@@ -88,16 +87,17 @@ class Daemon:
         os.remove(self.pidfile)
 
     def getpid(self):
-        """get pid from pidfile"""
         try:
-            pf = open(self.pidfile, "r", encoding=settings.ENCODING_UTF_8)
+            file_handler = open(self.pidfile, encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
             try:
-                pid = int(pf.read().strip())
+                pid = int(file_handler.read().strip())
             except ValueError:
                 pid = None
-            pf.close()
-        except IOError:
+
+            file_handler.close()
+        except OSError:
             pid = None
+
         return pid
 
     def checkpid(self):
@@ -106,39 +106,34 @@ class Daemon:
             return False
         elif pid == 0:
             return False
+
         try:
             os.kill(pid, 0)
         except OSError:
             return False
+
         return True
 
     def start(self):
-        """
-        Start the daemon
-        """
         # Check for a pidfile to see if the daemon already runs
         if self.getpid():
             message = "pidfile %s already exist. Daemon already running?\n"
             sys.stderr.write(message % self.pidfile)
             sys.exit(1)
 
-        # Start the daemon
         self.daemonize()
         self.run()
 
     def stop(self):
-        """
-        Stop the daemon
-        """
         pid = self.getpid()
         if not pid:
             message = "pidfile %s does not exist. Daemon not running?\n"
             sys.stderr.write(message % self.pidfile)
+
             return  # not an error in a restart
 
-        # Try killing the daemon process
         try:
-            while 1:
+            while True:
                 os.kill(pid, SIGTERM)
                 time.sleep(0.1)
         except OSError as err:
@@ -151,9 +146,6 @@ class Daemon:
                 sys.exit(1)
 
     def restart(self):
-        """
-        Restart the daemon
-        """
         self.stop()
         self.start()
 

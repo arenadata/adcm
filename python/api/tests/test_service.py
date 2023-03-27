@@ -13,17 +13,6 @@
 from pathlib import Path
 from unittest.mock import patch
 
-from django.conf import settings
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import (
-    HTTP_200_OK,
-    HTTP_204_NO_CONTENT,
-    HTTP_400_BAD_REQUEST,
-    HTTP_409_CONFLICT,
-)
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.models import (
     Action,
     Bundle,
@@ -37,6 +26,17 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from django.conf import settings
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_409_CONFLICT,
+)
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestServiceAPI(BaseTestCase):
@@ -132,7 +132,13 @@ class TestServiceAPI(BaseTestCase):
         self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
-            action=action, obj=self.service, conf={}, attr={}, hc=[], hosts=[], verbose=False
+            action=action,
+            obj=self.service,
+            conf={},
+            attr={},
+            hostcomponent=[],
+            hosts=[],
+            verbose=False,
         )
 
     def test_change_maintenance_mode_on_from_on_with_action_fail(self):
@@ -189,7 +195,13 @@ class TestServiceAPI(BaseTestCase):
         self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
-            action=action, obj=self.service, conf={}, attr={}, hc=[], hosts=[], verbose=False
+            action=action,
+            obj=self.service,
+            conf={},
+            attr={},
+            hostcomponent=[],
+            hosts=[],
+            verbose=False,
         )
 
     def test_change_maintenance_mode_off_to_off_with_action_fail(self):
@@ -227,7 +239,9 @@ class TestServiceAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
     def test_delete_without_action(self):
-        response: Response = self.client.delete(path=reverse("service-details", kwargs={"service_id": self.service.pk}))
+        response: Response = self.client.delete(
+            path=reverse("service-details", kwargs={"service_id": self.service.pk}),
+        )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
@@ -236,7 +250,7 @@ class TestServiceAPI(BaseTestCase):
 
         with patch("api.service.views.delete_service"), patch("api.service.views.start_task") as start_task_mock:
             response: Response = self.client.delete(
-                path=reverse("service-details", kwargs={"service_id": self.service.pk})
+                path=reverse("service-details", kwargs={"service_id": self.service.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
@@ -267,12 +281,18 @@ class TestServiceAPI(BaseTestCase):
 
         with patch("api.service.views.delete_service"), patch("api.service.views.start_task") as start_task_mock:
             response: Response = self.client.delete(
-                path=reverse("service-details", kwargs={"service_id": self.service.pk})
+                path=reverse("service-details", kwargs={"service_id": self.service.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         start_task_mock.assert_called_once_with(
-            action=action, obj=self.service, conf={}, attr={}, hc=[], hosts=[], verbose=False
+            action=action,
+            obj=self.service,
+            conf={},
+            attr={},
+            hostcomponent=[],
+            hosts=[],
+            verbose=False,
         )
 
     def test_delete_with_action_not_created_state(self):
@@ -282,12 +302,18 @@ class TestServiceAPI(BaseTestCase):
 
         with patch("api.service.views.delete_service"), patch("api.service.views.start_task") as start_task_mock:
             response: Response = self.client.delete(
-                path=reverse("service-details", kwargs={"service_id": self.service.pk})
+                path=reverse("service-details", kwargs={"service_id": self.service.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         start_task_mock.assert_called_once_with(
-            action=action, obj=self.service, conf={}, attr={}, hc=[], hosts=[], verbose=False
+            action=action,
+            obj=self.service,
+            conf={},
+            attr={},
+            hostcomponent=[],
+            hosts=[],
+            verbose=False,
         )
 
     def test_delete_service_with_requires_fail(self):
@@ -321,7 +347,7 @@ class TestServiceAPI(BaseTestCase):
                 "hc": [
                     {"service_id": service_2.pk, "component_id": component_2_1.pk, "host_id": host.pk},
                     {"service_id": service_1.pk, "component_id": component_1_1.pk, "host_id": host.pk},
-                ]
+                ],
             },
             content_type=APPLICATION_JSON,
         )
@@ -336,24 +362,44 @@ class TestServiceAPI(BaseTestCase):
 
         with patch("api.service.views.delete_service"):
             response: Response = self.client.delete(
-                path=reverse("service-details", kwargs={"service_id": self.service.pk})
+                path=reverse("service-details", kwargs={"service_id": self.service.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
-    def test_delete_bind_fail(self):
+    def test_delete_export_bind_fail(self):
         cluster_2 = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_2")
         service_2 = ClusterObject.objects.create(prototype=self.service_prototype, cluster=cluster_2)
         ClusterBind.objects.create(
-            cluster=self.cluster, service=self.service, source_cluster=cluster_2, source_service=service_2
+            cluster=cluster_2,
+            service=service_2,
+            source_cluster=self.cluster,
+            source_service=self.service,
         )
 
         with patch("api.service.views.delete_service"):
             response: Response = self.client.delete(
-                path=reverse("service-details", kwargs={"service_id": self.service.pk})
+                path=reverse("service-details", kwargs={"service_id": self.service.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+    def test_delete_import_bind_success(self):
+        cluster_2 = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_2")
+        service_2 = ClusterObject.objects.create(prototype=self.service_prototype, cluster=cluster_2)
+        ClusterBind.objects.create(
+            cluster=self.cluster,
+            service=self.service,
+            source_cluster=cluster_2,
+            source_service=service_2,
+        )
+
+        with patch("api.service.views.delete_service"):
+            response: Response = self.client.delete(
+                path=reverse("service-details", kwargs={"service_id": self.service.pk}),
+            )
+
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
     def test_delete_with_dependent_component_fail(self):
         host = self.get_host(bundle_path="python/api/tests/files/bundle_test_provider.tar")
@@ -371,14 +417,15 @@ class TestServiceAPI(BaseTestCase):
         service_with_component = ClusterObject.objects.get(pk=service_with_component_response.data["id"])
 
         service_with_dependent_component_prototype = Prototype.objects.get(
-            name="with_dependent_component", type="service"
+            name="with_dependent_component",
+            type="service",
         )
         service_with_dependent_component_response: Response = self.client.post(
             path=reverse("service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": service_with_dependent_component_prototype.pk},
         )
         service_with_dependent_component = ClusterObject.objects.get(
-            pk=service_with_dependent_component_response.data["id"]
+            pk=service_with_dependent_component_response.data["id"],
         )
 
         component = ServiceComponent.objects.get(service=service_with_component)
@@ -394,13 +441,13 @@ class TestServiceAPI(BaseTestCase):
                         "component_id": component_with_dependent_component.pk,
                         "host_id": host.pk,
                     },
-                ]
+                ],
             },
             content_type=APPLICATION_JSON,
         )
 
         response: Response = self.client.delete(
-            path=reverse("service-details", kwargs={"service_id": service_with_component.pk})
+            path=reverse("service-details", kwargs={"service_id": service_with_component.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -408,7 +455,7 @@ class TestServiceAPI(BaseTestCase):
         HostComponent.objects.all().delete()
 
         response: Response = self.client.delete(
-            path=reverse("service-details", kwargs={"service_id": service_with_dependent_component.pk})
+            path=reverse("service-details", kwargs={"service_id": service_with_dependent_component.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)

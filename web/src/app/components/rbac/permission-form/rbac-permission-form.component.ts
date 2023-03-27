@@ -2,7 +2,7 @@ import { Component, Inject, Input } from '@angular/core';
 import { RbacFormDirective } from '../../../shared/add-component/rbac-form.directive';
 import { RbacRoleModel } from '../../../models/rbac/rbac-role.model';
 import { FormGroup } from '@angular/forms';
-import { ADWP_DEFAULT_STRINGIFY, adwpDefaultProp, AdwpHandler, AdwpMatcher, AdwpStringHandler } from '@adwp-ui/widgets';
+import { ADWP_DEFAULT_STRINGIFY, adwpDefaultProp, AdwpHandler, AdwpMatcher, AdwpStringHandler } from '@app/adwp';
 import { RbacRoleService } from '../../../services/rbac-role.service';
 import { MatDialog } from '@angular/material/dialog';
 import { Observable } from 'rxjs';

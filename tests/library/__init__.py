@@ -14,4 +14,4 @@
 
 import pytest
 
-pytest.register_assert_rewrite('tests.library.errorcodes')
+pytest.register_assert_rewrite("tests.library.errorcodes")

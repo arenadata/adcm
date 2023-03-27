@@ -36,13 +36,12 @@ export class DropdownComponent extends FieldDirective implements OnInit, AfterVi
 
   ngAfterViewInit() {
     setTimeout(() => {
-      this.form.get(this.field.name).markAsTouched();
+      this.form.get(this.field.name)?.markAsTouched();
     }, 100)
   }
 
   ngOnInit() {
     super.ngOnInit();
-
     if (this.field.limits) {
       const o = Object.entries<string | number>(this.field.limits.option).map((e) => ({
         id: String(e[1]),

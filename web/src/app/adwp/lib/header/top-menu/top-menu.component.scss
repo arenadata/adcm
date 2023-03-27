@@ -1,0 +1,38 @@
+@import '~@angular/material/theming';
+
+mat-toolbar {
+  @include mat-elevation(6);
+  height: auto;
+  padding: 6px 16px;
+  background-color: #333c47;
+  margin-bottom: 0;
+}
+
+mat-nav-list {
+  display: flex;
+  justify-content: center;
+  height: 40px;
+  justify-items: baseline;
+  padding: 0;
+
+  & a {
+    font-size: 14px;
+    color: mat-color($mat-green, A400);
+    width: auto;
+    height: 40px;
+  }
+}
+
+a {
+  display: flex;
+  align-items: center;
+
+  img {
+    height: 40px;
+    vertical-align: bottom;
+  }
+
+  &:hover {
+    text-decoration: none;
+  }
+}

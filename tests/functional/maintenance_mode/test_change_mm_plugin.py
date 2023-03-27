@@ -13,7 +13,7 @@
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Component, Host, Service
-from tests.functional.conftest import only_clean_adcm
+
 from tests.functional.maintenance_mode.conftest import (
     BUNDLES_DIR,
     MM_IS_OFF,
@@ -25,7 +25,6 @@ from tests.library.assertions import does_not_intersect
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm]
 
 MM_CHANGE_RELATED_ACTION_NAMES = frozenset(
     {
@@ -33,7 +32,7 @@ MM_CHANGE_RELATED_ACTION_NAMES = frozenset(
         "adcm_host_turn_off_maintenance_mode",
         "adcm_turn_on_maintenance_mode",
         "adcm_turn_off_maintenance_mode",
-    }
+    },
 )
 
 
@@ -73,7 +72,12 @@ def second_cluster_hosts(second_cluster_objects, hosts) -> tuple[Host, Host, Hos
 
 
 def test_changing_mm_via_plugin(
-    api_client, sdk_client_fs, first_cluster_objects, second_cluster_objects, first_cluster_hosts, second_cluster_hosts
+    api_client,
+    sdk_client_fs,
+    first_cluster_objects,
+    second_cluster_objects,
+    first_cluster_hosts,
+    second_cluster_hosts,
 ):
     """
     Test changing MM flag of service and component via bonded action with MM changing plugin call
@@ -82,7 +86,11 @@ def test_changing_mm_via_plugin(
     hosts = *first_cluster_hosts, *second_cluster_hosts
 
     check_mm_related_actions_are_absent_on(
-        service.cluster(), *first_cluster_objects, second_cluster_objects[0].cluster(), *second_cluster_objects, *hosts
+        service.cluster(),
+        *first_cluster_objects,
+        second_cluster_objects[0].cluster(),
+        *second_cluster_objects,
+        *hosts,
     )
 
     with allure.step("Change service's MM to 'ON' with action bond to it"):
@@ -108,12 +116,21 @@ def test_changing_mm_via_plugin(
         check_mm_is(MM_IS_OFF, *first_cluster_objects, *second_cluster_objects, *hosts)
 
     check_mm_related_actions_are_absent_on(
-        service.cluster(), *first_cluster_objects, second_cluster_objects[0].cluster(), *second_cluster_objects, *hosts
+        service.cluster(),
+        *first_cluster_objects,
+        second_cluster_objects[0].cluster(),
+        *second_cluster_objects,
+        *hosts,
     )
 
 
 def test_changing_host_mm_via_plugin(  # pylint: disable=too-many-locals
-    api_client, sdk_client_fs, first_cluster_objects, second_cluster_objects, second_cluster_hosts, hosts
+    api_client,
+    sdk_client_fs,
+    first_cluster_objects,
+    second_cluster_objects,
+    second_cluster_hosts,
+    hosts,
 ):
     """
     Test changing MM flag of host via bonded action with MM changing plugin call
@@ -186,7 +203,8 @@ def _wait_all_tasks_succeed(client: ADCMClient, expected_amount: int):
 
 
 def _prepare_new_cluster(
-    cluster_bundle: Bundle, cluster_name: str
+    cluster_bundle: Bundle,
+    cluster_name: str,
 ) -> tuple[Cluster, Service, Component, Component, Service, Component, Component]:
     cluster = cluster_bundle.cluster_create(cluster_name)
     service_with_plugin = cluster.service_add(name="service_with_mm_plugin")
@@ -203,7 +221,8 @@ def _prepare_new_cluster(
 
 
 def _map_components_to_hosts(
-    hosts: tuple[Host, Host, Host], components: tuple[Component, Component, Component, Component]
+    hosts: tuple[Host, Host, Host],
+    components: tuple[Component, Component, Component, Component],
 ) -> None:
     host_1, host_2, host_3 = hosts
     component_1, component_2, component_3, component_4 = components

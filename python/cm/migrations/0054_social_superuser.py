@@ -14,14 +14,13 @@ from django.db import migrations
 
 
 def make_all_superusers(apps, schema_editor):
-    User = apps.get_model('auth', 'User')
+    User = apps.get_model("auth", "User")
     User.objects.all().update(is_superuser=True)
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0053_auto_20200415_1247'),
+        ("cm", "0053_auto_20200415_1247"),
     ]
 
     operations = [

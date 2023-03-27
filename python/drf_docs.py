@@ -10,48 +10,51 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=wrong-import-order
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django  # pylint: disable=unused-import # noqa: F401
 import api.urls
 
 
 def fix_ordering(field, view):
-    fix = field.replace('prototype__', 'prototype_')
-    fix = fix.replace('provider__', 'provider_')
-    fix = fix.replace('cluster__', 'cluster_')
-    fix = fix.replace('version_order', 'version')
-    if view.__name__ == 'ClusterServiceList':
-        if 'display_name' in fix:
-            fix = fix.replace('prototype_display_name', 'display_name')
-    elif view.__name__ == 'ServiceComponentList':
-        if 'display_name' in fix:
-            fix = fix.replace('component__display_name', 'display_name')
+    fix = field.replace("prototype__", "prototype_")
+    fix = fix.replace("provider__", "provider_")
+    fix = fix.replace("cluster__", "cluster_")
+    fix = fix.replace("version_order", "version")
+    if view.__name__ == "ClusterServiceList":
+        if "display_name" in fix:
+            fix = fix.replace("prototype_display_name", "display_name")
+    elif view.__name__ == "ServiceComponentList":
+        if "display_name" in fix:
+            fix = fix.replace("component__display_name", "display_name")
     return fix
 
 
 def drf_docs():
-    for p in api.urls.urlpatterns:
-        if not p.callback:
+    for pattern in api.urls.urlpatterns:
+        if not pattern.callback:
             continue
-        if not hasattr(p.callback, 'view_class'):
-            continue
-
-        order = filtr = None
-        if hasattr(p.callback.view_class, 'ordering_fields'):
-            order = p.callback.view_class.ordering_fields
-        if hasattr(p.callback.view_class, 'filterset_fields'):
-            filtr = p.callback.view_class.filterset_fields
-
-        if not (order or filtr):
+        if not hasattr(pattern.callback, "view_class"):
             continue
 
-        print(f"{p.pattern}")
+        order = filters = None
+        if hasattr(pattern.callback.view_class, "ordering_fields"):
+            order = pattern.callback.view_class.ordering_fields
+
+        if hasattr(pattern.callback.view_class, "filterset_fields"):
+            filters = pattern.callback.view_class.filterset_fields
+
+        if not (order or filters):
+            continue
+
+        print(f"{pattern.pattern}")
         if order:
-            data = [fix_ordering(o, p.callback.view_class) for o in order]
-            print(f'	ORDERING:  {data}')
-        if filtr:
-            data = [fix_ordering(f, p.callback.view_class) for f in filtr]
-            print(f'	FILTERING: {data}')
+            data = [fix_ordering(o, pattern.callback.view_class) for o in order]
+            print(f"	ORDERING:  {data}")
+
+        if filters:
+            data = [fix_ordering(f, pattern.callback.view_class) for f in filters]
+            print(f"	FILTERING: {data}")
 
 
 drf_docs()

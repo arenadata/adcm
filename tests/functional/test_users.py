@@ -12,18 +12,17 @@
 
 """Test "generic" user manipulation scenarios"""
 
-from typing import Tuple
 
 import allure
 import pytest
 import requests
 from adcm_client.audit import ObjectType
 from adcm_client.objects import ADCMClient, Group, User
-from adcm_pytest_plugin.docker_utils import ADCM
+from adcm_pytest_plugin.docker.adcm import ADCM
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from docker.models.containers import Container
+
 from tests.functional.audit.conftest import make_auth_header
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import (
     get_ldap_user_from_adcm,
     login_should_fail,
@@ -56,11 +55,11 @@ def adcm_group(sdk_client_fs) -> Group:
 
 
 @pytest.fixture()
-def created_ldap_user(ldap_ad, ldap_basic_ous) -> Tuple[DN, Username]:
+def created_ldap_user(ldap_ad, ldap_basic_ous) -> tuple[DN, Username]:
     """Create LDAP user in AD and return its DN and username"""
     username = "ldap_user"
     _, users_ou = ldap_basic_ous
-    dn = ldap_ad.create_user(username, username, users_ou)
+    dn = ldap_ad.create_user(username, username, users_ou)  # pylint: disable=invalid-name
     return dn, username
 
 
@@ -74,14 +73,13 @@ def ldap_user(sdk_client_fs, created_ldap_user, configure_adcm_ldap_ad) -> User:
     return get_ldap_user_from_adcm(sdk_client_fs, username)
 
 
-@only_clean_adcm
 @pytest.mark.ldap()
 @pytest.mark.usefixtures("configure_adcm_ldap_ad")
 def test_users_deactivation(
     adcm_user: User,
     ldap_user: User,
     adcm_group: Group,
-    created_ldap_user: Tuple[DN, Username],
+    created_ldap_user: tuple[DN, Username],
     adcm_fs: ADCM,
     sdk_client_fs: ADCMClient,
     ldap_ad: LDAPEntityManager,
@@ -139,7 +137,7 @@ def _check_none_of_audit_objects_is_deleted(container: Container) -> None:
             "source /adcm/venv/default/bin/activate "
             "&& python3 adcm/python/manage.py shell -c "
             "'from audit.models import AuditObject; print(AuditObject.objects.filter(is_deleted=True).count())'",
-        ]
+        ],
     )
     assert exit_code == 0, "docker exec failed"
     output: bytes

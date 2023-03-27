@@ -13,8 +13,9 @@
 """Bundle page locators"""
 
 from selenium.webdriver.common.by import By
-from tests.ui_tests.app.helpers.locator import Locator
+
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
+from tests.ui_tests.core.locators import BaseLocator
 
 
 class BundleLocators:
@@ -23,10 +24,10 @@ class BundleLocators:
     class MenuNavigation:
         """Bundle main menu navigation elements locators"""
 
-        main = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_main']", "Main link in side menu")
+        main = BaseLocator(By.CSS_SELECTOR, "a[adcm_test='tab_main']", "Main link in side menu")
 
 
 class BundleMainMenuLocators(ObjectPageLocators):
     """Bundle object page main menu locators"""
 
-    text = Locator(By.CSS_SELECTOR, "mat-card-content", "Bundle main page text")
+    text = BaseLocator(By.CSS_SELECTOR, "mat-card-content", "Bundle main page text")

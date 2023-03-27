@@ -15,18 +15,6 @@ import re
 import tarfile
 from pathlib import Path
 
-from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-from django.http import HttpResponse
-from guardian.mixins import PermissionListMixin
-from rest_framework.decorators import action
-from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
-from rest_framework.permissions import DjangoModelPermissions
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
-
-from adcm.utils import str_remove_non_alnum
 from api.base_view import GenericUIViewSet
 from api.job.serializers import (
     JobRetrieveSerializer,
@@ -39,20 +27,34 @@ from api.job.serializers import (
 from api.utils import check_custom_perm, get_object_for_user
 from audit.utils import audit
 from cm.job import cancel_task, restart_task
-from cm.models import ActionType, JobLog, LogStorage, TaskLog
+from cm.models import ActionType, JobLog, JobStatus, LogStorage, TaskLog
+from cm.status_api import Event
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.http import HttpResponse
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
+from rest_framework.decorators import action
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import DjangoModelPermissions
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
+
+from adcm.utils import str_remove_non_alnum
 
 VIEW_TASKLOG_PERMISSION = "cm.view_tasklog"
+VIEW_JOBLOG_PERMISSION = "cm.view_joblog"
 
 
-def get_task_download_archive_name(task: TaskLog) -> str:
+def get_task_download_archive_name(task: TaskLog) -> str:  # noqa: C901
     archive_name = f"{task.pk}.tar.gz"
 
     if not task.action:
         return archive_name
 
     action_display_name = str_remove_non_alnum(value=task.action.display_name) or str_remove_non_alnum(
-        value=task.action.name
+        value=task.action.name,
     )
     if action_display_name:
         archive_name = f"{action_display_name}_{archive_name}"
@@ -65,7 +67,7 @@ def get_task_download_archive_name(task: TaskLog) -> str:
         "host provider",
     }:
         action_prototype_display_name = str_remove_non_alnum(
-            value=task.action.prototype.display_name
+            value=task.action.prototype.display_name,
         ) or str_remove_non_alnum(value=task.action.prototype.name)
         if action_prototype_display_name:
             archive_name = f"{action_prototype_display_name}_{archive_name}"
@@ -94,21 +96,21 @@ def get_task_download_archive_name(task: TaskLog) -> str:
 def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
     jobs = JobLog.objects.filter(task=task)
 
-    if task.action and task.action.type == ActionType.Job:
+    if task.action and task.action.type == ActionType.JOB:
         task_dir_name_suffix = str_remove_non_alnum(value=task.action.display_name) or str_remove_non_alnum(
-            value=task.action.name
+            value=task.action.name,
         )
     else:
         task_dir_name_suffix = None
 
-    fh = io.BytesIO()
-    with tarfile.open(fileobj=fh, mode="w:gz") as tar_file:
+    file_handler = io.BytesIO()
+    with tarfile.open(fileobj=file_handler, mode="w:gz") as tar_file:
         for job in jobs:
             if task_dir_name_suffix is None:
                 dir_name_suffix = ""
                 if job.sub_action:
                     dir_name_suffix = str_remove_non_alnum(value=job.sub_action.display_name) or str_remove_non_alnum(
-                        value=job.sub_action.name
+                        value=job.sub_action.name,
                     )
             else:
                 dir_name_suffix = task_dir_name_suffix
@@ -124,13 +126,13 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
                 log_storages = LogStorage.objects.filter(job=job, type__in={"stdout", "stderr"})
                 for log_storage in log_storages:
                     tarinfo = tarfile.TarInfo(
-                        f'{f"{job.pk}-{dir_name_suffix}".strip("-")}' f'/{log_storage.name}-{log_storage.type}.txt'
+                        f'{f"{job.pk}-{dir_name_suffix}".strip("-")}' f"/{log_storage.name}-{log_storage.type}.txt",
                     )
                     body = io.BytesIO(bytes(log_storage.body, settings.ENCODING_UTF_8))
                     tarinfo.size = body.getbuffer().nbytes
                     tar_file.addfile(tarinfo=tarinfo, fileobj=body)
 
-    return fh
+    return file_handler
 
 
 #  pylint:disable-next=too-many-ancestors
@@ -159,10 +161,22 @@ class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Generi
         return [permission() for permission in permission_classes]
 
     def get_serializer_class(self):
-        if self.is_for_ui() or self.action == "retrieve":
+        if self.is_for_ui() or self.action in ("retrieve", "cancel"):
             return JobRetrieveSerializer
 
         return super().get_serializer_class()
+
+    @audit
+    @action(methods=["put"], detail=True)
+    def cancel(self, request: Request, job_pk: int) -> Response:
+        job: JobLog = get_object_for_user(request.user, VIEW_JOBLOG_PERMISSION, JobLog, id=job_pk)
+        check_custom_perm(request.user, "change", JobLog, job_pk)
+
+        event = Event()
+        event.set_job_status(job=job, status=JobStatus.ABORTED.value)
+        job.cancel(event)
+
+        return Response(status=HTTP_200_OK)
 
 
 #  pylint:disable-next=too-many-ancestors
@@ -243,7 +257,7 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
 
     @audit
     @action(methods=["get"], detail=True)
-    def download(self, request: Request, job_pk: int, log_pk: int):
+    def download(self, request: Request, job_pk: int, log_pk: int):  # pylint: disable=unused-argument
         # self is necessary for audit
 
         job = JobLog.obj.get(id=job_pk)
@@ -267,7 +281,7 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
                 f"{log_storage.name}-{log_storage.type}.{log_storage.format}",
             )
             if Path.is_file(file_path):
-                with open(file_path, "r", encoding=settings.ENCODING_UTF_8) as f:
+                with open(file_path, encoding=settings.ENCODING_UTF_8) as f:
                     body = f.read()
                     length = len(body)
             else:

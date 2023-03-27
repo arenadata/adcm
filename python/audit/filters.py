@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from audit.models import AuditLog, AuditObjectType, AuditSession
 from django_filters.rest_framework import (
     CharFilter,
     ChoiceFilter,
@@ -18,12 +19,12 @@ from django_filters.rest_framework import (
     IsoDateTimeFromToRangeFilter,
 )
 
-from audit.models import AuditLog, AuditObjectType, AuditSession
-
 
 class AuditLogListFilter(FilterSet):
     object_type = ChoiceFilter(
-        field_name="audit_object__object_type", choices=AuditObjectType.choices, label="Object type"
+        field_name="audit_object__object_type",
+        choices=AuditObjectType.choices,
+        label="Object type",
     )
     object_name = CharFilter(field_name="audit_object__object_name", label="Object name")
     operation_date = DateFilter(field_name="operation_time", lookup_expr="date", label="Operation date")

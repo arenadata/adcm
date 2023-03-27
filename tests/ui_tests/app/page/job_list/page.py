@@ -14,31 +14,28 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, TypeVar, Union
+from typing import TypeVar
 
 import allure
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
+
 from tests.library.conditional_retriever import DataSource, FromOneOf
-from tests.ui_tests.app.helpers.locator import Locator
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageFooter,
-    PageHeader,
-)
+from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.header_locators import AuthorizedHeaderLocators
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.app.page.job_list.locators import TaskListLocators
+from tests.ui_tests.core.locators import BaseLocator
 
 
 class JobStatus(Enum):
     """Available job statuses"""
 
-    ABORTED = 'aborted'
-    RUNNING = 'running'
-    SUCCESS = 'success'
-    FAILED = 'failed'
+    ABORTED = "aborted"
+    RUNNING = "running"
+    SUCCESS = "success"
+    FAILED = "failed"
 
 
 @dataclass
@@ -66,7 +63,7 @@ class SubTaskJobInfo:
     status: JobStatus
 
 
-TaskInfo = TypeVar('TaskInfo', bound=Union[PopupTaskInfo, TableTaskInfo])
+TaskInfo = TypeVar("TaskInfo", bound=PopupTaskInfo | TableTaskInfo)
 
 
 class JobListPage(BasePageObject):
@@ -74,9 +71,7 @@ class JobListPage(BasePageObject):
 
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/task")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
-        self.table = CommonTableObj(self.driver, self.base_url, TaskListLocators.Table)
+        self.table = CommonTableObj(driver=self.driver, locators_class=TaskListLocators.Table)
 
     def get_task_info_from_table(self, row_num: int = 0, *, full_invoker_objects_link: bool = False) -> TableTaskInfo:
         """
@@ -94,7 +89,7 @@ class JobListPage(BasePageObject):
         row_locators = TaskListLocators.Table.Row
         if full_invoker_objects_link:
             invoker_objects = self.find_children(row, row_locators.invoker_objects)
-            object_link = '/'.join(obj.text.strip() for obj in invoker_objects)
+            object_link = "/".join(obj.text.strip() for obj in invoker_objects)
         else:
             object_link = self.find_child(row, row_locators.invoker_objects).text.strip()
         # if task can be cancelled, then it will need another locator to determine the status
@@ -129,11 +124,7 @@ class JobListPage(BasePageObject):
             status=self._get_status_from_class_string(self.find_child(job, popup_locators.JobRow.job_status)),
         )
 
-    def get_all_jobs_info(self) -> List[SubTaskJobInfo]:
-        """
-        Returns information about all jobs
-        from expanded first task's jobs list
-        """
+    def get_all_jobs_info(self) -> list[SubTaskJobInfo]:
         expand_task_locators = TaskListLocators.Table.ExpandedTask
         job_rows = self.find_elements(expand_task_locators.row)
         return [
@@ -144,7 +135,34 @@ class JobListPage(BasePageObject):
             for job in job_rows
         ]
 
-    @allure.step('Expand task in row {row_num}')
+    def get_jobs_amount(self) -> int:
+        expand_task_locators = TaskListLocators.Table.ExpandedTask
+        return len(self.find_elements(expand_task_locators.row))
+
+    def get_task_info(self, job_row: int = 0) -> SubTaskJobInfo:  # action
+        row = self.table.get_row(job_row)
+
+        def extract_status(locator):
+            return self._get_status_from_class_string(self.find_child(row, locator, timeout=4))
+
+        row_locators = TaskListLocators.Table.Row
+        get_status = FromOneOf(
+            [
+                DataSource(extract_status, [row_locators.status]),
+                DataSource(extract_status, [row_locators.status_under_btn]),
+            ],
+            (KeyError, TimeoutError),
+        )
+        get_name_element = FromOneOf(
+            [
+                DataSource(self.find_child, [row, row_locators.action_name, 1]),
+                DataSource(self.find_child, [row, row_locators.task_action_name, 1]),
+            ],
+            (TimeoutError, TimeoutException, AssertionError),
+        )
+        return SubTaskJobInfo(name=get_name_element().text, status=get_status())
+
+    @allure.step("Expand task in row {row_num}")
     def expand_task_in_row(self, row_num: int = 0):
         """Click on expand jobs button"""
         table_locators = TaskListLocators.Table
@@ -157,10 +175,10 @@ class JobListPage(BasePageObject):
         """Click on job in expanded first task's job list"""
         expand_task_locators = TaskListLocators.Table.ExpandedTask
         job_rows = self.find_elements(expand_task_locators.row)
-        assert job_num < len(job_rows), 'Not enough jobs in this task'
+        assert job_num < len(job_rows), "Not enough jobs in this task"
         self.find_child(job_rows[job_num], expand_task_locators.Row.job_name).click()
 
-    @allure.step('Click on action name')
+    @allure.step("Click on action name")
     def click_on_action_name_in_row(self, row: WebElement):
         """Click on action name in row"""
         locator = TaskListLocators.Table.Row.action_name
@@ -190,21 +208,21 @@ class JobListPage(BasePageObject):
         """Show only failed tasks"""
         self._select_filter(TaskListLocators.Filter.failed)
 
-    def _select_filter(self, filter_locator: Locator):
+    def _select_filter(self, filter_locator: BaseLocator):
         """Click on filter tab and wait it is pressed"""
         self.find_and_click(filter_locator)
-        self.wait_element_attribute(filter_locator, 'aria-pressed', "true")
+        self.wait_element_attribute(filter_locator, "aria-pressed", "true")
         self.wait_element_hide(CommonToolbarLocators.progress_bar)
 
     @staticmethod
     def _get_status_from_class_string(status_element: WebElement) -> JobStatus:
         """Get JobStatus from @class string"""
-        class_string = status_element.get_attribute('class')
+        class_string = status_element.get_attribute("class")
         for status in JobStatus:
             if status.value in class_string:
                 return status
         raise KeyError(
-            'Job status not found in class string: %s' % str(class_string)  # pylint: disable=consider-using-f-string
+            "Job status not found in class string: %s" % str(class_string),  # pylint: disable=consider-using-f-string
         )
 
     def get_selected_filter(self):
@@ -212,4 +230,4 @@ class JobListPage(BasePageObject):
         for filter_element in self.find_elements(TaskListLocators.Filter.filter_btn):
             if filter_element.get_attribute("aria-pressed") == "true":
                 return filter_element.text
-        raise RuntimeError('None of filters are selected')
+        raise RuntimeError("None of filters are selected")

@@ -16,21 +16,19 @@ import string
 import sys
 from pathlib import Path
 
-from django.core.management.utils import get_random_secret_key
-
 from cm.utils import dict_json_get_or_create, get_adcm_token
+from django.core.management.utils import get_random_secret_key
 
 ENCODING_UTF_8 = "utf-8"
 
+API_URL = "http://localhost:8020/api/v1/"
 BASE_DIR = os.getenv("ADCM_BASE_DIR")
 if BASE_DIR:
     BASE_DIR = Path(BASE_DIR)
 else:
     BASE_DIR = Path(__file__).absolute().parent.parent.parent
 
-CONF_DIR = BASE_DIR / "data" / "conf"
 CONFIG_FILE = BASE_DIR / "config.json"
-SECRET_KEY_FILE = CONF_DIR / "secret_key.txt"
 STACK_DIR = os.getenv("ADCM_STACK_DIR", BASE_DIR)
 BUNDLE_DIR = STACK_DIR / "data" / "bundle"
 CODE_DIR = BASE_DIR / "python"
@@ -42,7 +40,8 @@ LOG_FILE = LOG_DIR / "adcm.log"
 SECRETS_FILE = BASE_DIR / "data" / "var" / "secrets.json"
 ADCM_TOKEN_FILE = BASE_DIR / "data/var/adcm_token"
 PYTHON_SITE_PACKAGES = Path(
-    sys.exec_prefix, f"lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages"
+    sys.exec_prefix,
+    f"lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages",
 )
 
 ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
@@ -62,11 +61,7 @@ else:
     STATUS_SECRET_KEY = ""
     ANSIBLE_SECRET = ""
 
-if SECRET_KEY_FILE.is_file():
-    with open(SECRET_KEY_FILE, encoding=ENCODING_UTF_8) as f:
-        SECRET_KEY = f.read().strip()
-else:
-    SECRET_KEY = get_random_secret_key()
+SECRET_KEY = os.getenv("SECRET_KEY", get_random_secret_key())
 
 if CONFIG_FILE.is_file():
     with open(CONFIG_FILE, encoding=ENCODING_UTF_8) as f:
@@ -78,15 +73,14 @@ DEBUG = False
 ALLOWED_HOSTS = ["*"]
 INSTALLED_APPS = [
     "rbac",  # keep it above 'django.contrib.auth' in order to keep "createsuperuser" working
-    "django_generate_secret_key",
     "django_filters",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "drf_yasg",
     "rest_framework",
-    "rest_framework_swagger",
     "api.apps.APIConfig",
     "corsheaders",
     "rest_framework.authtoken",
@@ -147,15 +141,32 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "cm.errors.custom_drf_exception_handler",
 }
 
-DATABASES = {
-    "default": {
+DB_PASS = os.getenv("DB_PASS")
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
+
+if all((DB_PASS, DB_NAME, DB_USER, DB_HOST, DB_PORT)):
+    DB_DEFAULT = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": DB_NAME,
+        "USER": DB_USER,
+        "PASSWORD": DB_PASS,
+        "HOST": DB_HOST,
+        "PORT": DB_PORT,
+        "CONN_MAX_AGE": 60,
+    }
+else:
+    DB_DEFAULT = {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "data/var/cluster.db",
         "OPTIONS": {
             "timeout": 20,
         },
-    },
-}
+    }
+
+DATABASES = {"default": DB_DEFAULT}
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -289,3 +300,15 @@ ADCM_SERVICE_ACTION_NAMES_SET = {
     ADCM_DELETE_SERVICE_ACTION_NAME,
 }
 ADCM_MM_ACTION_FORBIDDEN_PROPS_SET = {"config", "hc_acl", "ui_options"}
+
+STACK_COMPLEX_FIELD_TYPES = {"json", "structure", "list", "map", "secretmap"}
+STACK_NUMERIC_FIELD_TYPES = {"integer", "float"}
+TEMPLATE_CONFIG_DELETE_FIELDS = {"yspec", "option", "activatable", "active", "read_only", "writable", "subs"}
+
+EMPTY_REQUEST_STATUS_CODE = 32
+VALUE_ERROR_STATUS_CODE = 8
+EMPTY_STATUS_STATUS_CODE = 4
+STATUS_REQUEST_TIMEOUT = 0.01
+
+JOB_TYPE = "job"
+TASK_TYPE = "task"

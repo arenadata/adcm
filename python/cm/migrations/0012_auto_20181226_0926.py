@@ -17,45 +17,44 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0011_auto_20181220_1327'),
+        ("cm", "0011_auto_20181220_1327"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ServiceComponent',
+            name="ServiceComponent",
             fields=[
                 (
-                    'id',
-                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
                 (
-                    'cluster',
-                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Cluster'),
+                    "cluster",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="cm.Cluster"),
                 ),
                 (
-                    'component',
-                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Component'),
+                    "component",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="cm.Component"),
                 ),
                 (
-                    'service',
-                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.ClusterObject'),
+                    "service",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="cm.ClusterObject"),
                 ),
             ],
         ),
         migrations.AlterField(
-            model_name='hostcomponent',
-            name='component',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.ServiceComponent'),
+            model_name="hostcomponent",
+            name="component",
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="cm.ServiceComponent"),
         ),
         migrations.AlterField(
-            model_name='hostcomponent',
-            name='service',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.ClusterObject'),
+            model_name="hostcomponent",
+            name="service",
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="cm.ClusterObject"),
         ),
         migrations.AlterUniqueTogether(
-            name='servicecomponent',
-            unique_together={('cluster', 'service', 'component')},
+            name="servicecomponent",
+            unique_together={("cluster", "service", "component")},
         ),
     ]

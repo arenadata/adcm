@@ -13,13 +13,14 @@
 """Component page locators"""
 
 from selenium.webdriver.common.by import By
-from tests.ui_tests.app.helpers.locator import Locator
+
+from tests.ui_tests.core.locators import BaseLocator
 
 
 class ComponentMainLocators:
     """Component main page elements locators"""
 
-    text = Locator(
+    text = BaseLocator(
         By.CSS_SELECTOR,
         "app-service-component-details .mat-card-content",
         "Component main page text",

@@ -1,10 +1,6 @@
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/arenadata/adcm.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/arenadata/adcm/alerts/)
-[![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/arenadata/adcm.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/arenadata/adcm/context:javascript)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/arenadata/adcm.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/arenadata/adcm/context:python)
-
 # Arenadata Cluster Manager
 
-That is Arenadata Cluster Manager Project (aka Chapelnik)
+That is Arenadata Cluster Manager Project aka Chapelnik
 
 # Documentation
 
@@ -86,7 +82,7 @@ After this you will see invocation of black and pylint on every commit.
 
 ## Link ADWP_UI packages
 
-If you need to debug packages from ADWP_UI, you should do next:
+If you need to debug packages from ADWP_UI, you should do:
 
 In ADWP_UI repository:
 ```sh
@@ -103,3 +99,64 @@ sudo rm -rf ./node_modules OR rmdir -force ./node_modules(WIN)
 yarn link "@adwp-ui/widgets"
 yarn install
 ```
+
+## Running ADCM using SQLite
+
+1. Start container:
+
+    ```shell
+    docker run -d --restart=always -p 8000:8000 -v /opt/adcm:/adcm/data --name adcm hub.arenadata.io/adcm/adcm:latest
+    ```
+
+    Use `-v /opt/adcm:/adcm/data:Z` for SELinux
+
+## Running ADCM using client PostgreSQL DB
+
+1. Start container:
+   ```shell
+   docker run -d --restart=always -p 8000:8000 -v /opt/adcm:/adcm/data 
+   -e DB_HOST="DATABASE_HOSTNAME_OR_IP_ADDRESS" -e DB_PORT="DATABASE_TCP_PORT" 
+   -e DB_USER="DATABASE_USERNAME" -e DB_NAME="DATABASE_NAME" 
+   -e DB_PASS="DATABASE_USER_PASSWORD" --name adcm hub.arenadata.io/adcm/adcm:latest
+   ```
+   Use `-v /opt/adcm:/adcm/data:Z` for SELinux
+   Target PostgreSQL DB must not have DB with name `DATABASE_NAME`
+
+## Migrate SQLite -> client PostgreSQL
+>__NOTE__: `adcm` is the ADCM's container name. 
+1. Dump SQLite DB to file:
+   ```shell
+   docker exec -it adcm /adcm/python/manage.py dumpdata --natural-foreign --natural-primary -o /adcm/data/var/data.json
+   ```
+2. Stop container:
+   ```shell
+   docker stop adcm
+   docker rm adcm
+   ```
+3. Start container in `MIGRATION_MODE`:
+   ```shell
+   docker run -d --restart=always -p 8000:8000 -v /opt/adcm:/adcm/data 
+   -e DB_HOST="DATABASE_HOSTNAME_OR_IP_ADDRESS" -e DB_PORT="DATABASE_TCP_PORT" 
+   -e DB_USER="DATABASE_USERNAME" -e DB_NAME="DATABASE_NAME" 
+   -e DB_PASS="DATABASE_USER_PASSWORD" -e MIGRATION_MODE=1
+   --name adcm hub.arenadata.io/adcm/adcm:latest
+   ```
+   Use `-v /opt/adcm:/adcm/data:Z` for SELinux
+   Target PostgreSQL DB must not have DB with name `DATABASE_NAME`
+4. Load dumped SQLite DB data to PostgreSQL
+   ```shell
+   docker exec -it adcm /adcm/python/manage.py loaddata /adcm/data/var/data.json
+   ```
+5. Stop container:
+   ```shell
+   docker stop adcm
+   docker rm adcm
+   ```
+6. Start container:
+   ```shell
+   docker run -d --restart=always -p 8000:8000 -v /opt/adcm:/adcm/data 
+   -e DB_HOST="DATABASE_HOSTNAME_OR_IP_ADDRESS" -e DB_PORT="DATABASE_TCP_PORT" 
+   -e DB_USER="DATABASE_USERNAME" -e DB_NAME="DATABASE_NAME" 
+   -e DB_PASS="DATABASE_USER_PASSWORD" -e MIGRATION_MODE=0
+   --name adcm hub.arenadata.io/adcm/adcm:latest
+   ```

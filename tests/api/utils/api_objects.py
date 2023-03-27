@@ -12,11 +12,11 @@
 
 """Module contains api objects for executing and checking requests"""
 from dataclasses import dataclass, field
-from typing import Optional, Union
 from urllib.parse import urlencode
 
 import allure
 from adcm_client.wrappers.api import ADCMApiWrapper
+
 from tests.api.steps.asserts import ExpectedBody, body_should_be, status_code_should_be
 from tests.api.utils.endpoints import Endpoints
 from tests.api.utils.methods import Methods
@@ -29,7 +29,7 @@ class Request:
 
     method: Methods
     endpoint: Endpoints
-    object_id: Optional[int] = None
+    object_id: int | None = None
     url_params: dict = field(default_factory=dict)
     headers: dict = field(default_factory=dict)
     data: dict = field(default_factory=dict)
@@ -43,7 +43,7 @@ class ExpectedResponse:
     """
 
     status_code: int
-    body: Optional[ExpectedBody] = None
+    body: ExpectedBody | None = None
 
 
 class ADCMTestApiWrapper:
@@ -89,7 +89,7 @@ class ADCMTestApiWrapper:
 
         return response
 
-    def get_url_for_endpoint(self, endpoint: Endpoints, method: Methods, object_id: Union[int, dict]):
+    def get_url_for_endpoint(self, endpoint: Endpoints, method: Methods, object_id: int | dict):
         """
         Return direct link for endpoint object.
         object_id can be dict if it's complex "object" id like `{'id': 4, 'url': 'blahblah.com'}`
@@ -97,7 +97,7 @@ class ADCMTestApiWrapper:
         if "{id}" in method.url_template:
             if object_id is None:
                 raise ValueError("Request template requires 'id', but 'request.object_id' is None")
-            real_id = object_id if isinstance(object_id, int) else object_id['id']
+            real_id = object_id if isinstance(object_id, int) else object_id["id"]
             url = method.url_template.format(name=endpoint.path, id=real_id)
         else:
             url = method.url_template.format(name=endpoint.path)

@@ -12,18 +12,13 @@
 
 """Tools for ADCM UI over selenium interactions"""
 
-# Created by a1wen at 27.02.19
-
 import os
-from typing import Optional, Union
 
 import allure
 from adcm_client.wrappers.docker import ADCM
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver import ChromeOptions, FirefoxOptions
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait as WDW
 
 
 class ADCMTest:
@@ -31,9 +26,9 @@ class ADCMTest:
 
     __slots__ = ("opts", "capabilities", "driver", "ui", "adcm", "selenoid")
 
-    def __init__(self, browser="Chrome", downloads: Optional[Union[os.PathLike, str]] = None):
+    def __init__(self, browser="Chrome", downloads: os.PathLike | str | None = None):
         self.opts = FirefoxOptions() if browser == "Firefox" else ChromeOptions()
-        self.opts.headless = True
+        self.opts.headless = os.getenv("UI_TEST_DEBUG") != "True"
         self.opts.add_argument("--no-sandbox")
         self.opts.add_argument("--disable-extensions")
         self.opts.add_argument("--ignore-certificate-errors")
@@ -80,24 +75,6 @@ class ADCMTest:
         """Attache ADCM instance to the driver wrapper"""
         self.adcm = adcm
 
-    def wait_for(self, condition: EC, locator: tuple, timer=5):
-        """Wait for condition"""
-
-        def _get_element(element):
-            return WDW(self.driver, timer).until(condition(element))
-
-        return _get_element(locator)
-
-    @allure.step("Wait for element displayed")
-    def wait_element_present(self, locator: tuple):
-        """Wait for element displayed"""
-        return self.wait_for(EC.presence_of_element_located, locator)
-
-    @allure.step("Wait for adress string to contain: {url}")
-    def contains_url(self, url: str, timer=5):
-        """Wait for adress string to contain given URL"""
-        return WDW(self.driver, timer).until(EC.url_contains(url))
-
     @allure.step("Open a new tab")
     def new_tab(self):
         """Open a new tab"""
@@ -120,7 +97,7 @@ class ADCMTest:
         """Destroy selenium driver"""
         self.driver.quit()
 
-    def _configure_downloads(self, browser: str, downloads_directory: Optional[Union[os.PathLike, str]]):
+    def _configure_downloads(self, browser: str, downloads_directory: os.PathLike | str | None):
         if downloads_directory is None:
             return
         if browser == "Chrome":
@@ -129,7 +106,7 @@ class ADCMTest:
                 {"download.default_directory": str(downloads_directory)},
             )
         else:
-            if not self.selenoid['host']:
+            if not self.selenoid["host"]:
                 # do not use default download directory
                 self.opts.set_preference("browser.download.folderList", 2)
                 self.opts.set_preference("browser.download.dir", str(downloads_directory))

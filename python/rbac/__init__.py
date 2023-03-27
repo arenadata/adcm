@@ -12,4 +12,4 @@
 
 import logging
 
-log = logging.getLogger('adwp.rbac')
+log = logging.getLogger("adwp.rbac")

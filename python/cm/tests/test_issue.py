@@ -12,7 +12,6 @@
 
 from unittest.mock import patch
 
-from adcm.tests.base import BaseTestCase
 from cm.api import add_cluster, add_service_to_cluster
 from cm.hierarchy import Tree
 from cm.issue import (
@@ -25,11 +24,13 @@ from cm.issue import (
 from cm.models import Bundle, ClusterBind, ConcernCause, Prototype, PrototypeImport
 from cm.tests.utils import gen_service, generate_hierarchy
 
+from adcm.tests.base import BaseTestCase
+
 mock_issue_check_map = {
-    ConcernCause.Config: lambda x: False,
-    ConcernCause.Import: lambda x: True,
-    ConcernCause.Service: lambda x: True,
-    ConcernCause.HostComponent: lambda x: True,
+    ConcernCause.CONFIG: lambda x: False,
+    ConcernCause.IMPORT: lambda x: True,
+    ConcernCause.SERVICE: lambda x: True,
+    ConcernCause.HOSTCOMPONENT: lambda x: True,
 }
 
 
@@ -37,24 +38,31 @@ class CreateIssueTest(BaseTestCase):
     """Tests for `cm.issue.create_issues()`"""
 
     def setUp(self) -> None:
+        super().setUp()
+
         self.hierarchy = generate_hierarchy()
-        self.cluster = self.hierarchy['cluster']
+        self.cluster = self.hierarchy["cluster"]
         self.tree = Tree(self.cluster)
 
     def test_new_issue(self):
         """Test if new issue is propagated to all affected objects"""
-        issue_type = ConcernCause.Config
+
+        issue_type = ConcernCause.CONFIG
         create_issue(self.cluster, issue_type)
         own_issue = self.cluster.get_own_issue(issue_type)
+
         self.assertIsNotNone(own_issue)
+
         for node in self.tree.get_directly_affected(self.tree.built_from):
             concerns = list(node.value.concerns.all())
+
             self.assertEqual(len(concerns), 1)
             self.assertEqual(own_issue.pk, concerns[0].pk)
 
     def test_same_issue(self):
         """Test if issue could not be added more than once"""
-        issue_type = ConcernCause.Config
+
+        issue_type = ConcernCause.CONFIG
         create_issue(self.cluster, issue_type)
         create_issue(self.cluster, issue_type)  # create twice
         for node in self.tree.get_directly_affected(self.tree.built_from):
@@ -64,8 +72,9 @@ class CreateIssueTest(BaseTestCase):
 
     def test_few_issues(self):
         """Test if object could have more than one issue"""
-        issue_type_1 = ConcernCause.Config
-        issue_type_2 = ConcernCause.Import
+
+        issue_type_1 = ConcernCause.CONFIG
+        issue_type_2 = ConcernCause.IMPORT
         create_issue(self.cluster, issue_type_1)
         create_issue(self.cluster, issue_type_2)
         own_issue_1 = self.cluster.get_own_issue(issue_type_1)
@@ -83,11 +92,11 @@ class CreateIssueTest(BaseTestCase):
             self.assertEqual(len(concerns), 2)
             self.assertSetEqual({own_issue_1.pk, own_issue_2.pk}, concerns)
 
-    @patch('cm.issue._issue_check_map', mock_issue_check_map)
+    @patch("cm.issue._issue_check_map", mock_issue_check_map)
     def test_inherit_on_creation(self):
         """Test if new object in hierarchy inherits existing issues"""
 
-        issue_type = ConcernCause.Config
+        issue_type = ConcernCause.CONFIG
         create_issue(self.cluster, issue_type)
         cluster_issue = self.cluster.get_own_issue(issue_type)
         new_service = gen_service(self.cluster, self.cluster.prototype.bundle)
@@ -101,15 +110,15 @@ class CreateIssueTest(BaseTestCase):
 
 
 class RemoveIssueTest(BaseTestCase):
-    """Tests for `cm.issue.create_issues()`"""
-
     def setUp(self) -> None:
+        super().setUp()
+
         self.hierarchy = generate_hierarchy()
-        self.cluster = self.hierarchy['cluster']
+        self.cluster = self.hierarchy["cluster"]
         self.tree = Tree(self.cluster)
 
     def test_no_issue(self):
-        issue_type = ConcernCause.Config
+        issue_type = ConcernCause.CONFIG
 
         self.assertIsNone(self.cluster.get_own_issue(issue_type))
 
@@ -118,7 +127,7 @@ class RemoveIssueTest(BaseTestCase):
         self.assertIsNone(self.cluster.get_own_issue(issue_type))
 
     def test_single_issue(self):
-        issue_type = ConcernCause.Config
+        issue_type = ConcernCause.CONFIG
         create_issue(self.cluster, issue_type)
 
         remove_issue(self.cluster, issue_type)
@@ -131,8 +140,8 @@ class RemoveIssueTest(BaseTestCase):
             self.assertEqual(len(concerns), 0)
 
     def test_few_issues(self):
-        issue_type_1 = ConcernCause.Config
-        issue_type_2 = ConcernCause.Import
+        issue_type_1 = ConcernCause.CONFIG
+        issue_type_2 = ConcernCause.IMPORT
         create_issue(self.cluster, issue_type_1)
         create_issue(self.cluster, issue_type_2)
 
@@ -155,11 +164,11 @@ class RemoveIssueTest(BaseTestCase):
 class TestImport(BaseTestCase):
     @staticmethod
     def cook_cluster(proto_name, cluster_name):
-        b = Bundle.objects.create(name=proto_name, version="1.0")
-        proto = Prototype.objects.create(type="cluster", name=proto_name, bundle=b)
+        bundle = Bundle.objects.create(name=proto_name, version="1.0")
+        proto = Prototype.objects.create(type="cluster", name=proto_name, bundle=bundle)
         cluster = add_cluster(proto, cluster_name)
 
-        return b, proto, cluster
+        return bundle, proto, cluster
 
     def test_no_import(self):
         _, _, cluster = self.cook_cluster("Hadoop", "Cluster1")
@@ -191,16 +200,16 @@ class TestImport(BaseTestCase):
         _, proto1, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
         PrototypeImport.objects.create(prototype=proto1, name="Graphana", required=True)
 
-        b2, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
-        proto3 = Prototype.objects.create(type="service", name="Graphana", bundle=b2)
+        bundle_2, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
+        proto3 = Prototype.objects.create(type="service", name="Graphana", bundle=bundle_2)
         service = add_service_to_cluster(cluster2, proto3)
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2, source_service=service)
 
         self.assertEqual(do_check_import(cluster1), (True, "SERVICE_IMPORTED"))
 
     def test_import_to_service(self):
-        b1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
-        proto2 = Prototype.objects.create(type="service", name="YARN", bundle=b1)
+        bundle_1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
+        proto2 = Prototype.objects.create(type="service", name="YARN", bundle=bundle_1)
         PrototypeImport.objects.create(prototype=proto2, name="Monitoring", required=True)
         service = add_service_to_cluster(cluster1, proto2)
 
@@ -210,15 +219,20 @@ class TestImport(BaseTestCase):
         self.assertEqual(do_check_import(cluster1, service), (True, "CLUSTER_IMPORTED"))
 
     def test_import_service_to_service(self):
-        b1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
-        proto2 = Prototype.objects.create(type="service", name="YARN", bundle=b1)
+        bundle_1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
+        proto2 = Prototype.objects.create(type="service", name="YARN", bundle=bundle_1)
         PrototypeImport.objects.create(prototype=proto2, name="Graphana", required=True)
         service1 = add_service_to_cluster(cluster1, proto2)
 
-        b2, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
-        proto3 = Prototype.objects.create(type="service", name="Graphana", bundle=b2)
+        bundle_2, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
+        proto3 = Prototype.objects.create(type="service", name="Graphana", bundle=bundle_2)
         service2 = add_service_to_cluster(cluster2, proto3)
-        ClusterBind.objects.create(cluster=cluster1, service=service1, source_cluster=cluster2, source_service=service2)
+        ClusterBind.objects.create(
+            cluster=cluster1,
+            service=service1,
+            source_cluster=cluster2,
+            source_service=service2,
+        )
 
         self.assertEqual(do_check_import(cluster1, service1), (True, "SERVICE_IMPORTED"))
 
@@ -230,7 +244,7 @@ class TestImport(BaseTestCase):
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2)
 
         recheck_issues(cluster1)
-        issue = cluster1.get_own_issue(ConcernCause.Import)
+        issue = cluster1.get_own_issue(ConcernCause.IMPORT)
 
         self.assertIsNotNone(issue)
 
@@ -242,13 +256,13 @@ class TestImport(BaseTestCase):
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2)
 
         recheck_issues(cluster1)
-        issue = cluster1.get_own_issue(ConcernCause.Import)
+        issue = cluster1.get_own_issue(ConcernCause.IMPORT)
 
         self.assertIsNone(issue)
 
     def test_issue_service_required_import(self):
-        b1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
-        proto2 = Prototype.objects.create(type="service", name="YARN", bundle=b1)
+        bundle_1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
+        proto2 = Prototype.objects.create(type="service", name="YARN", bundle=bundle_1)
         PrototypeImport.objects.create(prototype=proto2, name="Monitoring", required=True)
         service = add_service_to_cluster(cluster1, proto2)
 
@@ -256,13 +270,13 @@ class TestImport(BaseTestCase):
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
 
         recheck_issues(service)
-        issue = service.get_own_issue(ConcernCause.Import)
+        issue = service.get_own_issue(ConcernCause.IMPORT)
 
         self.assertIsNotNone(issue)
 
     def test_issue_service_imported(self):
-        b1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
-        proto2 = Prototype.objects.create(type="service", name="YARN", bundle=b1)
+        bundle_1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
+        proto2 = Prototype.objects.create(type="service", name="YARN", bundle=bundle_1)
         PrototypeImport.objects.create(prototype=proto2, name="Monitoring", required=True)
         service = add_service_to_cluster(cluster1, proto2)
 
@@ -270,6 +284,6 @@ class TestImport(BaseTestCase):
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
 
         recheck_issues(service)
-        issue = service.get_own_issue(ConcernCause.Import)
+        issue = service.get_own_issue(ConcernCause.IMPORT)
 
         self.assertIsNone(issue)

@@ -25,6 +25,7 @@ from adcm_pytest_plugin.steps.actions import (
     run_service_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import fixture_parametrized_by_data_subdirs
+
 from tests.functional.tools import (
     AnyADCMObject,
     actions_in_objects_are_absent,
@@ -66,7 +67,7 @@ SWITCH_PROVIDER_STATE = "switch_provider_state"
 
 
 @allure.title("Create cluster")
-@fixture_parametrized_by_data_subdirs(__file__, 'cluster')
+@fixture_parametrized_by_data_subdirs(__file__, "cluster")
 def cluster(sdk_client_fs: ADCMClient, request) -> Cluster:
     """Create cluster"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
@@ -74,7 +75,7 @@ def cluster(sdk_client_fs: ADCMClient, request) -> Cluster:
 
 
 @allure.title("Create a cluster with service")
-@fixture_parametrized_by_data_subdirs(__file__, 'cluster_with_service')
+@fixture_parametrized_by_data_subdirs(__file__, "cluster_with_service")
 def cluster_with_service(sdk_client_fs: ADCMClient, request) -> Cluster:
     """Create cluster with service"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
@@ -83,7 +84,7 @@ def cluster_with_service(sdk_client_fs: ADCMClient, request) -> Cluster:
 
 
 @allure.title("Create a cluster with service and components")
-@fixture_parametrized_by_data_subdirs(__file__, 'cluster_with_components')
+@fixture_parametrized_by_data_subdirs(__file__, "cluster_with_components")
 def cluster_with_components(sdk_client_fs: ADCMClient, request) -> Cluster:
     """Create cluster with components"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
@@ -92,7 +93,7 @@ def cluster_with_components(sdk_client_fs: ADCMClient, request) -> Cluster:
 
 
 @allure.title("Create provider")
-@fixture_parametrized_by_data_subdirs(__file__, 'provider')
+@fixture_parametrized_by_data_subdirs(__file__, "provider")
 def provider(sdk_client_fs: ADCMClient, request) -> Provider:
     """Create provider"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
@@ -174,13 +175,13 @@ def _assert_actions_state_created(obj: AnyADCMObject):
         [
             (ACTION_UNAVAILABLE, obj),
             (ACTION_STATE_INSTALLED, obj),
-        ]
+        ],
     )
     actions_in_objects_are_present(
         [
             (ACTION, obj),
             (ACTION_STATE_CREATED, obj),
-        ]
+        ],
     )
 
 
@@ -189,13 +190,13 @@ def _assert_actions_state_installed(obj: AnyADCMObject):
         [
             (ACTION_UNAVAILABLE, obj),
             (ACTION_STATE_CREATED, obj),
-        ]
+        ],
     )
     actions_in_objects_are_present(
         [
             (ACTION, obj),
             (ACTION_STATE_INSTALLED, obj),
-        ]
+        ],
     )
 
 

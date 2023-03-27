@@ -63,10 +63,10 @@ def test_create_one_host(second_p: Provider):
     3. Ensure host exists
     """
     hostname = "second_h"
-    with allure.step('Run action create host'):
-        second_p.action(name="create_host").run(config_diff={'fqdn': hostname}).try_wait()
+    with allure.step("Run action create host"):
+        second_p.action(name="create_host").run(config_diff={"fqdn": hostname}).try_wait()
         second_h = second_p.host(fqdn=hostname)
-    with allure.step('Check if host is created'):
+    with allure.step("Check if host is created"):
         assert second_h.provider().id == second_p.id
         assert second_h.fqdn == hostname
 
@@ -81,17 +81,17 @@ def test_create_multi_host_and_delete_one(first_p: Provider, third_p: Provider):
     5. Check that host has been removed
     6. Check that other hosts still there.
     """
-    with allure.step('Create two host from first providers'):
-        first_p.action(name="create_host").run(config_diff={'fqdn': "one_one"}).try_wait()
-        first_p.action(name="create_host").run(config_diff={'fqdn': "one_two"}).try_wait()
-    with allure.step('Create one host from third provider'):
-        third_p.action(name="create_host").run(config_diff={'fqdn': "three_one"}).try_wait()
-    with allure.step('Remove one of host bound to first provider'):
+    with allure.step("Create two host from first providers"):
+        first_p.action(name="create_host").run(config_diff={"fqdn": "one_one"}).try_wait()
+        first_p.action(name="create_host").run(config_diff={"fqdn": "one_two"}).try_wait()
+    with allure.step("Create one host from third provider"):
+        third_p.action(name="create_host").run(config_diff={"fqdn": "three_one"}).try_wait()
+    with allure.step("Remove one of host bound to first provider"):
         one_two = first_p.host(fqdn="one_two")
         one_two.action(name="remove_host").run().try_wait()
-    with allure.step('Check that host has been removed'):
+    with allure.step("Check that host has been removed"):
         assert first_p.host(fqdn="one_one").fqdn == "one_one"
-    with allure.step('Check that other hosts still there'):
+    with allure.step("Check that other hosts still there"):
         assert third_p.host(fqdn="three_one").fqdn == "three_one"
         with pytest.raises(adcm_client.base.ObjectNotFound):
             first_p.host(fqdn="one_two")
@@ -121,11 +121,11 @@ def test_check_host_lock_during_operations(forth_p: Provider):
     10. Wait for job to be finished without errors
     11. Check that remaining host is free.
     """
-    with allure.step('Create host first host on provider'):
-        forth_p.action(name="create_host").run(config_diff={'fqdn': "forth_one"}).try_wait()
-    with allure.step('Run job that creates the second host on provider'):
-        job = forth_p.action(name="create_host").run(config={'fqdn': "forth_two", 'sleep': 2})
-    with allure.step('Wait until second host will be created'):
+    with allure.step("Create host first host on provider"):
+        forth_p.action(name="create_host").run(config_diff={"fqdn": "forth_one"}).try_wait()
+    with allure.step("Run job that creates the second host on provider"):
+        job = forth_p.action(name="create_host").run(config={"fqdn": "forth_two", "sleep": 2})
+    with allure.step("Wait until second host will be created"):
         wait_until_step_succeeds(
             _assert_that_object_exists,
             period=0.5,
@@ -133,26 +133,26 @@ def test_check_host_lock_during_operations(forth_p: Provider):
             fqdn="forth_two",
         )
         forth_two_h = forth_p.host(fqdn="forth_two")
-        forth_one_h = forth_p.host(fqdn='forth_one')
-    with allure.step('Check that both host has is locked'):
+        forth_one_h = forth_p.host(fqdn="forth_one")
+    with allure.step("Check that both host has is locked"):
         assert forth_one_h.locked is True
         assert forth_two_h.locked is True
-    with allure.step('Wait for job to be finished without errors'):
+    with allure.step("Wait for job to be finished without errors"):
         job.try_wait()
-    with allure.step('Check that both hosts is free'):
+    with allure.step("Check that both hosts is free"):
         forth_one_h.reread()
         forth_two_h.reread()
         assert forth_one_h.locked is False
         assert forth_two_h.locked is False
-    with allure.step('Run remove action on one of hosts'):
+    with allure.step("Run remove action on one of hosts"):
         job = forth_one_h.action(name="remove_host").run(config={"sleep": 2})
-    with allure.step('Check that host under action is locked, while other host is free'):
+    with allure.step("Check that host under action is locked, while other host is free"):
         forth_one_h.reread()
         forth_two_h.reread()
         assert forth_one_h.locked is True
         assert forth_two_h.locked is False
-    with allure.step('Wait for job to be finished without errors'):
+    with allure.step("Wait for job to be finished without errors"):
         job.try_wait()
-    with allure.step('Check that remaining host is free'):
+    with allure.step("Check that remaining host is free"):
         forth_two_h.reread()
         assert forth_two_h.locked is False

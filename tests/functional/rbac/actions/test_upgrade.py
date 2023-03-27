@@ -14,13 +14,15 @@
 
 # pylint: disable=redefined-outer-name
 
-from typing import Dict, Iterable, List, Literal, Tuple
+from collections.abc import Iterable
+from typing import Literal
 
 import allure
 import pytest
 from adcm_client.base import NoSuchEndpointOrAccessIsDenied, ObjectNotFound
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Component, Policy, Service
 from adcm_client.wrappers.api import AccessIsDenied
+
 from tests.functional.rbac.action_role_utils import (
     action_business_role,
     create_action_policy,
@@ -37,7 +39,7 @@ from tests.functional.rbac.conftest import (
 from tests.functional.tools import ClusterRelatedObject
 from tests.library.consts import HTTPMethod
 
-ClusterObjectClassName = Literal['Cluster', 'Service', 'Component']
+ClusterObjectClassName = Literal["Cluster", "Service", "Component"]
 
 NO_RIGHTS_ACTION = "No Rights"
 NEW_ACTION = "New Job"
@@ -56,7 +58,7 @@ def old_bundle(sdk_client_fs) -> Bundle:
 @pytest.fixture()
 def old_cluster(old_bundle) -> Cluster:
     """Create "old" version of cluster"""
-    cluster = old_bundle.cluster_create(name='Test cluster to upgrade')
+    cluster = old_bundle.cluster_create(name="Test cluster to upgrade")
     cluster.service_add(name="servicemaster")
     return cluster
 
@@ -73,12 +75,12 @@ class TestActionRolesOnUpgrade:
     NOT_ALLOWED_ACTIONS = (NO_RIGHTS_ACTION, NEW_ACTION, CHANGED_ACTION_NAME)
 
     @pytest.fixture()
-    def old_cluster_objects(self, old_cluster) -> Tuple[Cluster, Service, Component]:
+    def old_cluster_objects(self, old_cluster) -> tuple[Cluster, Service, Component]:
         """Get cluster, service and component from old cluster as admin objects"""
         return old_cluster, (service := old_cluster.service()), service.component()
 
     @pytest.fixture()
-    def old_cluster_objects_map(self, old_cluster_objects) -> Dict[ClusterObjectClassName, ClusterRelatedObject]:
+    def old_cluster_objects_map(self, old_cluster_objects) -> dict[ClusterObjectClassName, ClusterRelatedObject]:
         """Get old cluster objects as map"""
         return self._get_objects_map(old_cluster_objects)
 
@@ -96,7 +98,7 @@ class TestActionRolesOnUpgrade:
         ]
 
     @pytest.fixture()
-    def old_cluster_actions_policies(self, clients, user, all_business_roles, old_cluster_objects_map) -> List[Policy]:
+    def old_cluster_actions_policies(self, clients, user, all_business_roles, old_cluster_objects_map) -> list[Policy]:
         """
         Grant permissions to run all actions on cluster, service and component for a user except:
         1. "No Rights" action.
@@ -127,7 +129,7 @@ class TestActionRolesOnUpgrade:
         self.check_new_action_can_be_launched(clients, user, new_cluster)
         self.check_new_action_with_old_display_name(clients.user, old_cluster_objects_map)
 
-    @allure.step('Check permissions working as expected before upgrade')
+    @allure.step("Check permissions working as expected before upgrade")
     def check_permissions_before_upgrade(self, user_client: ADCMClient, all_business_roles, object_map):
         """Check that correct permissions are allowed/denied before cluster upgrade"""
         self.check_roles_are_allowed(
@@ -141,14 +143,14 @@ class TestActionRolesOnUpgrade:
             tuple(self._get_roles_filter_select_by_action_name(all_business_roles, (NO_RIGHTS_ACTION,))),
         )
 
-    @allure.step('Upgrade cluster')
+    @allure.step("Upgrade cluster")
     def upgrade_cluster(self, cluster):
         """Upgrade cluster and reread it"""
         cluster.upgrade().do()
         cluster.reread()
         return cluster
 
-    @allure.step('Check permissions working as expected after upgrade')
+    @allure.step("Check permissions working as expected after upgrade")
     def check_permissions_after_upgrade(self, user_client: ADCMClient, all_business_roles, user_object_map):
         """Check that correct permissions are allowed/denied after cluster upgrade"""
         self.check_roles_are_allowed(
@@ -158,7 +160,7 @@ class TestActionRolesOnUpgrade:
                 self._get_roles_filter_exclude_by_action_name(
                     all_business_roles,
                     (ACTION_NAME_BEFORE_CHANGE, ACTION_TO_BE_DELETED, *self.NOT_ALLOWED_ACTIONS),
-                )
+                ),
             ),
         )
 
@@ -171,15 +173,15 @@ class TestActionRolesOnUpgrade:
     @allure.step("Check action with changed display name isn't available for user")
     def check_action_with_changed_display_name_not_allowed_by_name(self, user_client, object_map):
         """Check that action with changed display name can't be launched by its name"""
-        cluster, *_ = as_user_objects(user_client, object_map['Cluster'])
+        cluster, *_ = as_user_objects(user_client, object_map["Cluster"])
         try:
-            cluster.action(name='alternative_display_name').run()
+            cluster.action(name="alternative_display_name").run()
         except (AccessIsDenied, NoSuchEndpointOrAccessIsDenied, ObjectNotFound):
             pass
         else:
             raise AssertionError("Action that changed display name shouldn't be allowed to run")
 
-    @allure.step('Check that new action in bundle can be launched when policy is created')
+    @allure.step("Check that new action in bundle can be launched when policy is created")
     def check_new_action_can_be_launched(self, clients, user, upgraded_cluster: Cluster):
         """Check that policy can be created to run new action from cluster bundle and action actually can be launched"""
         service = upgraded_cluster.service()
@@ -192,14 +194,14 @@ class TestActionRolesOnUpgrade:
     @allure.step('Check display_name based role works on "mimic" action')
     def check_new_action_with_old_display_name(self, user_client, user_object_map):
         """Check that new action that have display_name of another action from old version can be launched"""
-        cluster = user_object_map['Cluster']
+        cluster = user_object_map["Cluster"]
         business_role = action_business_role(cluster, MIMIC_NAME)
         is_allowed(as_user_objects(user_client, cluster)[0], business_role)
 
     def check_roles_are_allowed(
         self,
         user_client: ADCMClient,
-        cluster_object_map: Dict[ClusterObjectClassName, ClusterRelatedObject],
+        cluster_object_map: dict[ClusterObjectClassName, ClusterRelatedObject],
         business_roles: Iterable[BusinessRole],
     ):
         """Check that given roles are allowed to be launched"""
@@ -213,7 +215,7 @@ class TestActionRolesOnUpgrade:
     def check_roles_are_denied(
         self,
         user_client: ADCMClient,
-        cluster_object_map: Dict[ClusterObjectClassName, ClusterRelatedObject],
+        cluster_object_map: dict[ClusterObjectClassName, ClusterRelatedObject],
         business_roles: Iterable[BusinessRole],
     ):
         """Check that given roles aren't allowed to be launched"""
@@ -223,7 +225,7 @@ class TestActionRolesOnUpgrade:
             rule_with_denied = BusinessRole(
                 role.role_name,
                 role.method_call,
-                ForbiddenCallChecker(adcm_object.__class__, f'action/{action_id}/run', HTTPMethod.POST),
+                ForbiddenCallChecker(adcm_object.__class__, f"action/{action_id}/run", HTTPMethod.POST),
             )
             is_denied(adcm_object, rule_with_denied, client=user_client)
 
@@ -237,7 +239,7 @@ class TestActionRolesOnUpgrade:
         try:
             return objects_map[object_type]
         except KeyError as e:
-            raise KeyError(f'Object of type {object_type} was not found in objects map: {objects_map}') from e
+            raise KeyError(f"Object of type {object_type} was not found in objects map: {objects_map}") from e
 
     def _objects_map_as_user_objects(self, client, objects_map):
         """Convert objects in map to user's objects"""

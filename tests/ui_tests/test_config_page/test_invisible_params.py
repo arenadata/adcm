@@ -15,14 +15,15 @@
 import allure
 import pytest
 from adcm_client.objects import ADCMClient
-from tests.ui_tests.app.helpers.configs_generator import (
+
+from tests.ui_tests.app.page.cluster.page import ClusterGroupConfigConfig
+from tests.ui_tests.generator_helper import (
     TYPES,
     generate_configs,
     generate_group_configs,
     prepare_config,
     prepare_group_config,
 )
-from tests.ui_tests.app.page.cluster.page import ClusterGroupConfigConfig
 from tests.ui_tests.utils import prepare_cluster_and_open_config_page
 
 
@@ -62,13 +63,16 @@ def test_group_configs_fields_invisible_true(sdk_client_fs: ADCMClient, app_fs):
     cluster, _ = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
     cluster_group_config = cluster.group_config_create(name="Test group")
     cluster_config_page = ClusterGroupConfigConfig(
-        app_fs.driver, app_fs.adcm.url, cluster.id, cluster_group_config.id
+        app_fs.driver,
+        app_fs.adcm.url,
+        cluster.id,
+        cluster_group_config.id,
     ).open()
     cluster_config_page.wait_page_is_opened()
     cluster_config_page.config.check_no_rows_or_groups_on_page()
     cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
-    with allure.step('Check that save button is disabled'):
-        assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
+    with allure.step("Check that save button is disabled"):
+        assert cluster_config_page.config.is_save_btn_disabled(), "Save button should be disabled"
 
 
 @pytest.mark.full()
@@ -103,5 +107,5 @@ def test_configs_fields_invisible_true(sdk_client_fs: ADCMClient, app_fs):
     _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
     cluster_config_page.config.check_no_rows_or_groups_on_page()
     cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
-    with allure.step('Check that save button is disabled'):
-        assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
+    with allure.step("Check that save button is disabled"):
+        assert cluster_config_page.config.is_save_btn_disabled(), "Save button should be disabled"

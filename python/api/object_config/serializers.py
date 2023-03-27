@@ -10,41 +10,49 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework import serializers
-from rest_framework.reverse import reverse
-
 from cm.models import ConfigLog, ObjectConfig
+from rest_framework.reverse import reverse
+from rest_framework.serializers import (
+    HyperlinkedIdentityField,
+    HyperlinkedRelatedField,
+    ModelSerializer,
+    RelatedField,
+    SerializerMethodField,
+)
 
 
-class VersionConfigLogURL(serializers.RelatedField):
+class VersionConfigLogURL(RelatedField):
+    def to_internal_value(self, data):
+        pass
+
     def to_representation(self, value):
         return reverse(
-            viewname='config-log-detail',
-            kwargs={'pk': value},
-            request=self.context['request'],
-            format=self.context['format'],
+            viewname="config-log-detail",
+            kwargs={"pk": value},
+            request=self.context["request"],
+            format=self.context["format"],
         )
 
 
-class HistoryConfigLogURL(serializers.HyperlinkedRelatedField):
-    view_name = 'config-log-list'
+class HistoryConfigLogURL(HyperlinkedRelatedField):
+    view_name = "config-log-list"
     queryset = ConfigLog.objects.all()
 
 
-class ObjectConfigSerializer(serializers.ModelSerializer):
-    history = serializers.SerializerMethodField()
+class ObjectConfigSerializer(ModelSerializer):
+    history = SerializerMethodField()
     current = VersionConfigLogURL(read_only=True)
     previous = VersionConfigLogURL(read_only=True)
-    url = serializers.HyperlinkedIdentityField(view_name='config-detail')
+    url = HyperlinkedIdentityField(view_name="config-detail")
 
     class Meta:
         model = ObjectConfig
-        fields = ('id', 'history', 'current', 'previous', 'url')
+        fields = ("id", "history", "current", "previous", "url")
 
     def get_history(self, obj):
         url = reverse(
-            viewname='config-log-list',
-            request=self.context['request'],
-            format=self.context['format'],
+            viewname="config-log-list",
+            request=self.context["request"],
+            format=self.context["format"],
         )
-        return f'{url}?obj_ref={obj.pk}&ordering=-id'
+        return f"{url}?obj_ref={obj.pk}&ordering=-id"

@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, ElementRef, Renderer2, ViewChild } from '@angular/core';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 import { BehaviorSubject, combineLatest, interval, Observable, zip } from 'rxjs';
 import { filter, map, mergeMap, take, takeWhile } from 'rxjs/operators';
 
@@ -54,6 +54,7 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
   failedCount = new BehaviorSubject<number>(0);
 
   bellGradient = '';
+  currentTaskId: number;
 
   isAnimationRunning = new BehaviorSubject<boolean>(false);
   animationElem = new BehaviorSubject<Element>(null);
@@ -128,7 +129,11 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
   }
 
   getChangeTaskObservable(): Observable<EventMessage> {
-    return this.taskService.events({ events: ['change_job_status'] }).pipe(this.takeUntil());
+    return this.taskService.events({ events: ['change_job_status'] }, 'task').pipe(this.takeUntil());
+  }
+
+  getChangeJobObservable(): Observable<EventMessage> {
+    return this.taskService.events({ events: ['change_job_status'] }, 'job').pipe(this.takeUntil());
   }
 
   decRunningCount() {
@@ -144,9 +149,24 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
     this.tasks.next(tasks);
   }
 
-  listenToJobs() {
+  updateJob(updatedJobId: number, status: JobStatus) {
+    const tasks: TaskRaw[] = this.tasks.value.slice();
+    const taskIndex = tasks.findIndex((task) => task.id === this.currentTaskId);
+
+    if (taskIndex < 0) return;
+
+    const updatedJobIndex = tasks[taskIndex].jobs.findIndex((job) => job.id === updatedJobId);
+
+    if (updatedJobIndex < 0) return;
+
+    tasks[taskIndex].jobs[updatedJobIndex].status = status;
+    this.tasks.next(tasks);
+  }
+
+  listenToTasks() {
     this.getChangeTaskObservable().subscribe((event) => {
       const status = event.object.details.value;
+      this.currentTaskId = event.object.id;
       if (status === 'running') {
         this.runningCount.next(this.runningCount.value + 1);
         this.afterCountChanged();
@@ -154,11 +174,17 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
         this.successCount.next(this.successCount.value + 1);
         this.decRunningCount();
         this.afterCountChanged();
-      } else if (status === 'failed') {
+      } else if (status === 'failed' || status === 'aborted') { // fix if aborted counter will be added
         this.failedCount.next(this.failedCount.value + 1);
         this.decRunningCount();
         this.afterCountChanged();
       }
+    });
+
+    this.getChangeJobObservable().subscribe((event) => {
+      const jobStatus = event.object.details.value;
+      const jobId = event.object.id;
+      this.updateJob(jobId, jobStatus);
     });
 
     this.getChangeTaskObservable().pipe(
@@ -195,13 +221,14 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
 
   getLastTasks(): Observable<Task[]> {
     return zip(
+      this.taskService.list({ ordering: '-finish_date', status: 'aborted', limit: '5' }),
       this.taskService.list({ ordering: '-finish_date', status: 'failed', limit: '5' }),
       this.taskService.list({ ordering: '-finish_date', status: 'success', limit: '5' }),
       this.taskService.list({ ordering: '-start_date', status: 'running', limit: '5' }),
       this.profileService.getProfile(),
-    ).pipe(map(([failed, succeed, running, user]) => {
-      let tasks = [...failed.results, ...succeed.results, ...running.results].sort((a, b) => {
-        const getDateField = (task: Task) => task.status === 'failed' || task.status === 'success' ? task.finish_date : task.start_date;
+    ).pipe(map(([aborted, failed, succeed, running, user]) => {
+      let tasks = [...aborted.results, ...failed.results, ...succeed.results, ...running.results].sort((a, b) => {
+        const getDateField = (task: Task) => task.status === 'failed' || task.status === 'aborted' || task.status === 'success' ? task.finish_date : task.start_date;
         const aDate = new Date(getDateField(a));
         const bDate = new Date(getDateField(b));
         return aDate.getTime() - bDate.getTime();
@@ -232,10 +259,10 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
         .subscribe(([stats, tasks]) => {
           this.runningCount.next(stats.running);
           this.successCount.next(stats.success);
-          this.failedCount.next(stats.failed);
-          this.afterCountChanged(!!(stats.running || stats.success || stats.failed));
+          this.failedCount.next(stats.failed + stats.aborted);
+          this.afterCountChanged(!!(stats.running || stats.success || stats.failed || stats.aborted));
           this.tasks.next(tasks);
-          this.listenToJobs();
+          this.listenToTasks();
         });
     });
 

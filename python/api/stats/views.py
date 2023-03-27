@@ -10,45 +10,51 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api.base_view import GenericUIView
+from api.stats.serializers import StatsSerializer
+from cm.models import JobLog, JobStatus, TaskLog
 from guardian.mixins import PermissionListMixin
 from rest_framework import permissions
 from rest_framework.response import Response
 
-from api.base_view import GenericUIView
-from cm.models import JobLog, JobStatus, TaskLog
-
 
 class JobStats(PermissionListMixin, GenericUIView):
     queryset = JobLog.objects.all()
+    serializer_class = StatsSerializer
     permission_classes = (permissions.IsAuthenticated,)
     permission_required = ["cm.view_joblog"]
 
-    def get(self, request, pk):
-        """
-        Show jobs stats
-        """
+    def get(self, request, pk):  # pylint: disable=unused-argument
         jobs = self.get_queryset().filter(id__gt=pk)
-        data = {
-            JobStatus.FAILED.value: jobs.filter(status=JobStatus.FAILED).count(),
-            JobStatus.SUCCESS.value: jobs.filter(status=JobStatus.SUCCESS).count(),
-            JobStatus.RUNNING.value: jobs.filter(status=JobStatus.RUNNING).count(),
-        }
-        return Response(data)
+
+        return Response(
+            data={
+                JobStatus.FAILED.value: jobs.filter(status=JobStatus.FAILED).count(),
+                JobStatus.SUCCESS.value: jobs.filter(status=JobStatus.SUCCESS).count(),
+                JobStatus.RUNNING.value: jobs.filter(status=JobStatus.RUNNING).count(),
+                JobStatus.ABORTED.value: jobs.filter(status=JobStatus.ABORTED).count(),
+                JobStatus.LOCKED.value: jobs.filter(status=JobStatus.LOCKED).count(),
+                JobStatus.CREATED.value: jobs.filter(status=JobStatus.CREATED).count(),
+            },
+        )
 
 
 class TaskStats(PermissionListMixin, GenericUIView):
     queryset = TaskLog.objects.all()
+    serializer_class = StatsSerializer
     permission_classes = (permissions.IsAuthenticated,)
     permission_required = ["cm.view_tasklog"]
 
-    def get(self, request, pk):
-        """
-        Show tasks stats
-        """
+    def get(self, request, pk):  # pylint: disable=unused-argument
         tasks = self.get_queryset().filter(id__gt=pk)
-        data = {
-            JobStatus.FAILED.value: tasks.filter(status=JobStatus.FAILED).count(),
-            JobStatus.SUCCESS.value: tasks.filter(status=JobStatus.SUCCESS).count(),
-            JobStatus.RUNNING.value: tasks.filter(status=JobStatus.RUNNING).count(),
-        }
-        return Response(data)
+
+        return Response(
+            data={
+                JobStatus.FAILED.value: tasks.filter(status=JobStatus.FAILED).count(),
+                JobStatus.SUCCESS.value: tasks.filter(status=JobStatus.SUCCESS).count(),
+                JobStatus.RUNNING.value: tasks.filter(status=JobStatus.RUNNING).count(),
+                JobStatus.ABORTED.value: tasks.filter(status=JobStatus.ABORTED).count(),
+                JobStatus.LOCKED.value: tasks.filter(status=JobStatus.LOCKED).count(),
+                JobStatus.CREATED.value: tasks.filter(status=JobStatus.CREATED).count(),
+            },
+        )

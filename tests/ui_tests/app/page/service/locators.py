@@ -13,19 +13,20 @@
 """Service page locators"""
 
 from selenium.webdriver.common.by import By
-from tests.ui_tests.app.helpers.locator import Locator
+
+from tests.ui_tests.core.locators import BaseLocator
 
 
 class ServiceComponentLocators:
     """Service component page elements locators"""
 
-    component_row = Locator(By.CSS_SELECTOR, "app-service-components .mat-row", "Component row")
+    component_row = BaseLocator(By.CSS_SELECTOR, "app-service-components .mat-row", "Component row")
 
     class ComponentRow:
         """Component row locators"""
 
-        name = Locator(By.CSS_SELECTOR, "mat-cell:first-of-type", "Component name")
-        state = Locator(By.CSS_SELECTOR, "app-state-column", "Component state")
-        status = Locator(By.CSS_SELECTOR, "app-status-column button", "Component status")
-        actions = Locator(By.CSS_SELECTOR, "app-actions-button button", "Component actions")
-        config = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(5) button", "Component config")
+        name = BaseLocator(By.CSS_SELECTOR, "mat-cell:first-of-type", "Component name")
+        state = BaseLocator(By.CSS_SELECTOR, "app-state-column", "Component state")
+        status = BaseLocator(By.CSS_SELECTOR, "app-status-column button", "Component status")
+        actions = BaseLocator(By.CSS_SELECTOR, "app-actions-button button", "Component actions")
+        config = BaseLocator(By.CSS_SELECTOR, "mat-cell:nth-child(5) button", "Component config")

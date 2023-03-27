@@ -13,12 +13,19 @@
 """Group Configuration list page locators"""
 
 from selenium.webdriver.common.by import By
-from tests.ui_tests.app.helpers.locator import Locator
+
+from tests.ui_tests.core.locators import BaseLocator
 
 
 class GroupConfigLocators:
     """Group Configuration locators"""
 
-    group_row = Locator(By.CSS_SELECTOR, "app-group-fields mat-expansion-panel-header", "Configuration row")
-    config_row = Locator(By.CSS_SELECTOR, "app-config-field-attribute-provider", "Configuration row")
-    customization_chbx = Locator(By.CSS_SELECTOR, "mat-checkbox", "Checkbox customization")
+    group_row = BaseLocator(By.CSS_SELECTOR, "app-group-fields mat-expansion-panel-header", "Configuration row")
+    config_row = BaseLocator(By.CSS_SELECTOR, "app-config-field-attribute-provider", "Configuration row")
+    customization_chbx = BaseLocator(By.CSS_SELECTOR, "mat-checkbox", "Checkbox customization")
+    input = BaseLocator(By.CSS_SELECTOR, '*:not([style="display: none;"])>mat-form-field input,textarea', "Row input")
+    add_item_btn = BaseLocator(
+        By.XPATH,
+        ".//button//mat-icon[text()='add_circle_outline']",
+        "Add item to parameter button",
+    )

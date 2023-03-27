@@ -12,6 +12,14 @@
 
 # pylint: disable=redefined-builtin
 
+from api.action.serializers import ActionShort
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
+from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
+from api.serializers import StringListSerializer
+from api.utils import CommonAPIURL, ObjectURL, filter_actions
+from cm.adcm_config import get_main_info
+from cm.models import Action, MaintenanceMode, ServiceComponent
+from cm.status_api import get_component_status
 from rest_framework.serializers import (
     BooleanField,
     CharField,
@@ -24,14 +32,6 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
-from api.action.serializers import ActionShort
-from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
-from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
-from api.serializers import StringListSerializer
-from api.utils import CommonAPIURL, ObjectURL, filter_actions
-from cm.adcm_config import get_main_info
-from cm.models import Action, MaintenanceMode, ServiceComponent
-from cm.status_api import get_component_status
 
 
 class ComponentSerializer(EmptySerializer):
@@ -54,6 +54,9 @@ class ComponentUISerializer(ComponentSerializer):
     status = SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
+    hostcomponent = HyperlinkedIdentityField(
+        view_name="host-component", lookup_field="cluster_id", lookup_url_kwarg="cluster_id"
+    )
 
     @staticmethod
     def get_version(obj: ServiceComponent) -> str:
@@ -100,7 +103,7 @@ class ComponentDetailSerializer(ComponentSerializer):
         return get_component_status(obj)
 
 
-class StatusSerializer(EmptySerializer):
+class ComponentStatusSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     name = CharField(read_only=True)
     status = SerializerMethodField()
@@ -115,6 +118,9 @@ class ComponentDetailUISerializer(ComponentDetailSerializer):
     version = SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     main_info = SerializerMethodField()
+    hostcomponent = HyperlinkedIdentityField(
+        view_name="host-component", lookup_field="cluster_id", lookup_url_kwarg="cluster_id"
+    )
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)

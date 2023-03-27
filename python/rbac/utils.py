@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Tuple, Type
+from typing import Any
 
 from django.db.models import Model
 from rest_framework import serializers
@@ -41,7 +41,7 @@ def update_m2m_field(m2m, instances) -> None:
         m2m.clear()
 
 
-def create_model_serializer_class(name: str, model: Type[Model], meta_fields: Tuple[str, ...], fields: dict = None):
+def create_model_serializer_class(name: str, model: type[Model], meta_fields: tuple[str, ...], fields: dict = None):
     """
     Creating serializer class for model
 
@@ -51,9 +51,9 @@ def create_model_serializer_class(name: str, model: Type[Model], meta_fields: Tu
     :param fields: Overridden fields in serializer class
     :return: Serializer class inherited from ModelSerializer
     """
-    meta_class = type('Meta', (), {'model': model, 'fields': meta_fields})
+    meta_class = type("Meta", (), {"model": model, "fields": meta_fields})
     _bases = (serializers.ModelSerializer,)
-    _dict = {'Meta': meta_class}
+    _dict = {"Meta": meta_class}
 
     if fields is not None:
         _dict.update(fields)

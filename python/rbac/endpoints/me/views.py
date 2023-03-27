@@ -10,49 +10,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""User view sets"""
-
-from rest_framework import serializers
-from rest_framework.generics import RetrieveUpdateAPIView
-
 from rbac import models
 from rbac.services import user as user_services
+from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.serializers import BooleanField, CharField, IntegerField, JSONField
+
+from adcm.serializers import EmptySerializer
 
 
-class PasswordField(serializers.CharField):
+class PasswordField(CharField):
     """Text field with content masking for passwords"""
 
     def to_representation(self, value):
         return user_services.PW_MASK
 
 
-class UserSerializer(serializers.Serializer):
-    """
-    User serializer
-    TODO: add old password field for changing password
-    """
-
-    id = serializers.IntegerField(read_only=True)
-    username = serializers.CharField(read_only=True)
-    first_name = serializers.CharField(read_only=True)
-    last_name = serializers.CharField(read_only=True)
-    email = serializers.CharField(read_only=True)
-    is_superuser = serializers.BooleanField(read_only=True)
+class MeUserSerializer(EmptySerializer):
+    id = IntegerField(read_only=True)
+    username = CharField(read_only=True)
+    first_name = CharField(read_only=True)
+    last_name = CharField(read_only=True)
+    email = CharField(read_only=True)
+    is_superuser = BooleanField(read_only=True)
     password = PasswordField(trim_whitespace=False)
-    profile = serializers.JSONField(required=False, default='')
-    type = serializers.CharField(read_only=True)
-    is_active = serializers.BooleanField(read_only=True)
+    profile = JSONField(required=False, default="")
+    type = CharField(read_only=True)
+    is_active = BooleanField(read_only=True)
 
     def update(self, instance, validated_data):
-        context_user = self.context['request'].user
+        context_user = self.context["request"].user
+
         return user_services.update(instance, context_user, partial=True, **validated_data)
 
 
 class MyselfView(RetrieveUpdateAPIView):
     queryset = models.User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = MeUserSerializer
 
     def get_object(self):
         # request user object is disconnected from DB, use another instance
         user = models.User.objects.get(id=self.request.user.id)
+
         return user

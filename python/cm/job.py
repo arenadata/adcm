@@ -9,17 +9,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=too-many-lines
 
 import copy
 import json
 import subprocess
+from collections.abc import Hashable
 from configparser import ConfigParser
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Hashable, List, Optional, Tuple, Union
-
-from django.conf import settings
-from django.db import transaction
-from django.utils import timezone
+from typing import Any
+from zoneinfo import ZoneInfo
 
 from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
@@ -33,6 +33,7 @@ from cm.adcm_config import (
     check_attr,
     check_config_spec,
     get_prototype_config,
+    process_config_spec,
     process_file_type,
 )
 from cm.api import (
@@ -44,10 +45,15 @@ from cm.api import (
     make_host_comp_list,
     save_hc,
 )
-from cm.api_context import ctx
+from cm.api_context import CTX
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.hierarchy import Tree
-from cm.inventory import get_obj_config, prepare_job_inventory, process_config_and_attr
+from cm.inventory import (
+    HcAclAction,
+    get_obj_config,
+    prepare_job_inventory,
+    process_config_and_attr,
+)
 from cm.issue import (
     check_bound_components,
     check_component_constraint,
@@ -64,7 +70,6 @@ from cm.models import (
     ClusterObject,
     ConcernType,
     ConfigLog,
-    DummyData,
     Host,
     HostComponent,
     HostProvider,
@@ -81,32 +86,36 @@ from cm.models import (
     get_object_cluster,
 )
 from cm.status_api import post_event
+from cm.utils import get_env_with_venv_path
 from cm.variant import process_variant
+from django.conf import settings
+from django.db import transaction
+from django.db.models import JSONField
 from rbac.roles import re_apply_policy_for_jobs
 
 
 def start_task(
     action: Action,
-    obj: ADCMEntity,
+    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
     conf: dict,
     attr: dict,
-    hc: List[HostComponent],
-    hosts: List[Host],
+    hostcomponent: list[dict],
+    hosts: list[Host],
     verbose: bool,
 ) -> TaskLog:
     if action.type not in ActionType.values:
         msg = f'unknown type "{action.type}" for action {action} on {obj}'
         raise_adcm_ex("WRONG_ACTION_TYPE", msg)
 
-    task = prepare_task(action, obj, conf, attr, hc, hosts, verbose)
-    ctx.event.send_state()
-    run_task(task, ctx.event)
-    ctx.event.send_state()
+    task = prepare_task(action, obj, conf, attr, hostcomponent, hosts, verbose)
+    CTX.event.send_state()
+    run_task(task, CTX.event)
+    CTX.event.send_state()
 
     return task
 
 
-def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster, hosts: List[Host]):
+def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster, hosts: list[Host]):
     provider = None
     if obj.prototype.type == "provider":
         provider = obj
@@ -134,11 +143,11 @@ def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster, hosts:
 
 def prepare_task(
     action: Action,
-    obj: ADCMEntity,
+    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
     conf: dict,
     attr: dict,
-    hc: List[HostComponent],
-    hosts: List[Host],
+    hostcomponent: list[dict],
+    hosts: list[Host],
     verbose: bool,
 ) -> TaskLog:  # pylint: disable=too-many-locals
     cluster = get_object_cluster(obj)
@@ -149,7 +158,7 @@ def prepare_task(
 
     check_action_hosts(action, obj, cluster, hosts)
     old_hc = get_hc(cluster)
-    host_map, post_upgrade_hc = check_hostcomponentmap(cluster, action, hc)
+    host_map, post_upgrade_hc = check_hostcomponentmap(cluster, action, hostcomponent)
 
     if hasattr(action, "upgrade") and not action.hostcomponentmap:
         check_constraints_for_upgrade(cluster, action.upgrade, get_actual_hc(cluster))
@@ -158,8 +167,6 @@ def prepare_task(
         attr = {}
 
     with transaction.atomic():  # pylint: disable=too-many-locals
-        DummyData.objects.filter(id=1).update(date=timezone.now())
-
         task = create_task(action, obj, conf, attr, old_hc, hosts, verbose, post_upgrade_hc)
         if host_map or (hasattr(action, "upgrade") and host_map is not None):
             save_hc(cluster, host_map)
@@ -179,20 +186,20 @@ def restart_task(task: TaskLog):
     if task.status in (JobStatus.CREATED, JobStatus.RUNNING):
         raise_adcm_ex("TASK_ERROR", f"task #{task.pk} is running")
     elif task.status == JobStatus.SUCCESS:
-        run_task(task, ctx.event)
-        ctx.event.send_state()
+        run_task(task, CTX.event)
+        CTX.event.send_state()
     elif task.status in (JobStatus.FAILED, JobStatus.ABORTED):
-        run_task(task, ctx.event, "restart")
-        ctx.event.send_state()
+        run_task(task, CTX.event, "restart")
+        CTX.event.send_state()
     else:
         raise_adcm_ex("TASK_ERROR", f"task #{task.pk} has unexpected status: {task.status}")
 
 
 def cancel_task(task: TaskLog):
-    task.cancel(ctx.event)
+    task.cancel(CTX.event)
 
 
-def get_host_object(action: Action, cluster: Cluster) -> Optional[ADCMEntity]:
+def get_host_object(action: Action, cluster: Cluster) -> ADCMEntity | None:
     obj = None
     if action.prototype.type == "service":
         obj = ClusterObject.obj.get(cluster=cluster, prototype=action.prototype)
@@ -210,12 +217,12 @@ def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster
     else:
         obj = task_object
 
-    if obj.concerns.filter(type=ConcernType.Lock).exists():
+    if obj.concerns.filter(type=ConcernType.LOCK).exists():
         raise_adcm_ex("LOCK_ERROR", f"object {obj} is locked")
 
     if (
         action.name not in settings.ADCM_SERVICE_ACTION_NAMES_SET
-        and obj.concerns.filter(type=ConcernType.Issue).exists()
+        and obj.concerns.filter(type=ConcernType.ISSUE).exists()
     ):
         raise_adcm_ex("ISSUE_INTEGRITY_ERROR", f"object {obj} has issues")
 
@@ -225,7 +232,7 @@ def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster
     raise_adcm_ex("TASK_ERROR", "action is disabled")
 
 
-def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict) -> Tuple[dict, dict]:
+def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict) -> tuple[dict, dict]:
     proto = action.prototype
     spec, flat_spec, _, _ = get_prototype_config(proto, action)
     if not spec:
@@ -235,10 +242,12 @@ def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict)
         raise_adcm_ex("TASK_ERROR", "action config is required")
 
     check_attr(proto, action, attr, flat_spec)
-    process_variant(obj, spec, conf)
-    new_conf = check_config_spec(proto, action, spec, flat_spec, conf, None, attr)
+    process_variant(obj=obj, spec=spec, conf=conf)
+    check_config_spec(proto=proto, obj=action, spec=spec, flat_spec=flat_spec, conf=conf, attr=attr)
 
-    return new_conf, spec
+    new_config = process_config_spec(obj=obj, spec=spec, new_config=conf)
+
+    return new_config, spec
 
 
 def add_to_dict(my_dict: dict, key: Hashable, subkey: Hashable, value: Any):
@@ -248,7 +257,12 @@ def add_to_dict(my_dict: dict, key: Hashable, subkey: Hashable, value: Any):
     my_dict[key][subkey] = value
 
 
-def check_action_hc(action_hc: List[dict], service: ClusterObject, component: ServiceComponent, action: Action) -> bool:
+def check_action_hc(
+    action_hc: list[dict],
+    service: ClusterObject,
+    component: ServiceComponent,
+    action: Action,
+) -> bool:
     for item in action_hc:
         if item["service"] == service and item["component"] == component:
             if item["action"] == action:
@@ -261,10 +275,10 @@ def cook_comp_key(name, subname):
     return f"{name}.{subname}"
 
 
-def cook_delta(  # pylint: disable=too-many-branches
+def cook_delta(  # pylint: disable=too-many-branches # noqa: C901
     cluster: Cluster,
-    new_hc: List[Tuple[ClusterObject, Host, ServiceComponent]],
-    action_hc: List[dict],
+    new_hc: list[tuple[ClusterObject, Host, ServiceComponent]],
+    action_hc: list[dict],
     old: dict = None,
 ) -> dict:
     def add_delta(_delta, action, _key, fqdn, _host):
@@ -284,28 +298,28 @@ def cook_delta(  # pylint: disable=too-many-branches
 
     if old is None:
         old = {}
-        for hc in HostComponent.objects.filter(cluster=cluster):
-            key = cook_comp_key(hc.service.prototype.name, hc.component.prototype.name)
-            add_to_dict(old, key, hc.host.fqdn, hc.host)
+        for hostcomponent in HostComponent.objects.filter(cluster=cluster):
+            key = cook_comp_key(hostcomponent.service.prototype.name, hostcomponent.component.prototype.name)
+            add_to_dict(old, key, hostcomponent.host.fqdn, hostcomponent.host)
 
-    delta = {"add": {}, "remove": {}}
+    delta = {HcAclAction.ADD: {}, HcAclAction.REMOVE: {}}
     for key, value in new.items():
         if key in old:
             for host in value:
                 if host not in old[key]:
-                    add_delta(delta, "add", key, host, value[host])
+                    add_delta(_delta=delta, action=HcAclAction.ADD, _key=key, fqdn=host, _host=value[host])
 
             for host in old[key]:
                 if host not in value:
-                    add_delta(delta, "remove", key, host, old[key][host])
+                    add_delta(_delta=delta, action=HcAclAction.REMOVE, _key=key, fqdn=host, _host=old[key][host])
         else:
             for host in value:
-                add_delta(delta, "add", key, host, value[host])
+                add_delta(_delta=delta, action=HcAclAction.ADD, _key=key, fqdn=host, _host=value[host])
 
     for key, value in old.items():
         if key not in new:
             for host in value:
-                add_delta(delta, "remove", key, host, value[host])
+                add_delta(_delta=delta, action=HcAclAction.REMOVE, _key=key, fqdn=host, _host=value[host])
 
     logger.debug("OLD: %s", old)
     logger.debug("NEW: %s", new)
@@ -314,7 +328,7 @@ def cook_delta(  # pylint: disable=too-many-branches
     return delta
 
 
-def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict]):
+def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: list[dict]):
     if not action.hostcomponentmap:
         return None, []
 
@@ -327,10 +341,10 @@ def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict])
     for host_comp in new_hc:
         if not hasattr(action, "upgrade"):
             host = Host.obj.get(id=host_comp.get("host_id", 0))
-            if host.concerns.filter(type=ConcernType.Lock).exists():
+            if host.concerns.filter(type=ConcernType.LOCK).exists():
                 raise_adcm_ex("LOCK_ERROR", f"object {host} is locked")
 
-            if host.concerns.filter(type=ConcernType.Issue).exists():
+            if host.concerns.filter(type=ConcernType.ISSUE).exists():
                 raise_adcm_ex("ISSUE_INTEGRITY_ERROR", f"object {host} has issues")
 
     post_upgrade_hc, clear_hc = check_upgrade_hc(action, new_hc)
@@ -395,7 +409,7 @@ def check_upgrade_hc(action, new_hc):
             for hc_acl in action.hostcomponentmap:
                 if proto.name == hc_acl["component"]:
                     buff += 1
-                    if hc_acl["action"] != "add":
+                    if hc_acl["action"] != HcAclAction.ADD:
                         raise_adcm_ex(
                             "WRONG_ACTION_HC",
                             "New components from bundle with upgrade you can only add, not remove",
@@ -475,24 +489,24 @@ def get_adcm_config():
 
 def get_actual_hc(cluster: Cluster):
     new_hc = []
-    for hc in HostComponent.objects.filter(cluster=cluster):
-        new_hc.append((hc.service, hc.host, hc.component))
+    for hostcomponent in HostComponent.objects.filter(cluster=cluster):
+        new_hc.append((hostcomponent.service, hostcomponent.host, hostcomponent.component))
     return new_hc
 
 
-def get_old_hc(saved_hc: List[dict]):
-    if not saved_hc:
+def get_old_hc(saved_hostcomponent: list[dict]):
+    if not saved_hostcomponent:
         return {}
 
-    old_hc = {}
-    for hc in saved_hc:
-        service = ClusterObject.objects.get(id=hc["service_id"])
-        comp = ServiceComponent.objects.get(id=hc["component_id"])
-        host = Host.objects.get(id=hc["host_id"])
+    old_hostcomponent = {}
+    for hostcomponent in saved_hostcomponent:
+        service = ClusterObject.objects.get(id=hostcomponent["service_id"])
+        comp = ServiceComponent.objects.get(id=hostcomponent["component_id"])
+        host = Host.objects.get(id=hostcomponent["host_id"])
         key = cook_comp_key(service.prototype.name, comp.prototype.name)
-        add_to_dict(old_hc, key, host.fqdn, host)
+        add_to_dict(old_hostcomponent, key, host.fqdn, host)
 
-    return old_hc
+    return old_hostcomponent
 
 
 def re_prepare_job(task: TaskLog, job: JobLog):
@@ -525,9 +539,9 @@ def prepare_job(
     sub_action: SubAction,
     job_id: int,
     obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
-    conf: dict,
+    conf: JSONField | None,
     delta: dict,
-    hosts: List[Host],
+    hosts: JSONField | None,
     verbose: bool,
 ):
     prepare_job_config(action, sub_action, job_id, obj, conf, verbose)
@@ -538,28 +552,28 @@ def prepare_job(
 def get_selector(obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host, action: Action) -> dict:
     selector = {obj.prototype.type: {"id": obj.pk, "name": obj.display_name}}
 
-    if obj.prototype.type == ObjectType.Service:
-        selector[ObjectType.Cluster] = {"id": obj.cluster.pk, "name": obj.cluster.display_name}
-    elif obj.prototype.type == ObjectType.Component:
-        selector[ObjectType.Service] = {"id": obj.service.pk, "name": obj.service.display_name}
-        selector[ObjectType.Cluster] = {"id": obj.cluster.pk, "name": obj.cluster.display_name}
-    elif obj.prototype.type == ObjectType.Host:
+    if obj.prototype.type == ObjectType.SERVICE:
+        selector[ObjectType.CLUSTER] = {"id": obj.cluster.pk, "name": obj.cluster.display_name}
+    elif obj.prototype.type == ObjectType.COMPONENT:
+        selector[ObjectType.SERVICE] = {"id": obj.service.pk, "name": obj.service.display_name}
+        selector[ObjectType.CLUSTER] = {"id": obj.cluster.pk, "name": obj.cluster.display_name}
+    elif obj.prototype.type == ObjectType.HOST:
         if action.host_action:
             cluster = obj.cluster
-            selector[ObjectType.Cluster] = {"id": cluster.pk, "name": cluster.display_name}
-            if action.prototype.type == ObjectType.Service:
+            selector[ObjectType.CLUSTER] = {"id": cluster.pk, "name": cluster.display_name}
+            if action.prototype.type == ObjectType.SERVICE:
                 service = ClusterObject.objects.get(prototype=action.prototype, cluster=cluster)
-                selector[ObjectType.Service] = {"id": service.pk, "name": service.display_name}
-            elif action.prototype.type == ObjectType.Component:
+                selector[ObjectType.SERVICE] = {"id": service.pk, "name": service.display_name}
+            elif action.prototype.type == ObjectType.COMPONENT:
                 service = ClusterObject.objects.get(prototype=action.prototype.parent, cluster=cluster)
-                selector[ObjectType.Service] = {"id": service.pk, "name": service.display_name}
+                selector[ObjectType.SERVICE] = {"id": service.pk, "name": service.display_name}
                 component = ServiceComponent.objects.get(prototype=action.prototype, cluster=cluster, service=service)
-                selector[ObjectType.Component] = {
+                selector[ObjectType.COMPONENT] = {
                     "id": component.pk,
                     "name": component.display_name,
                 }
         else:
-            selector[ObjectType.Provider] = {
+            selector[ObjectType.PROVIDER] = {
                 "id": obj.provider.pk,
                 "name": obj.provider.display_name,
             }
@@ -568,25 +582,25 @@ def get_selector(obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostPr
 
 
 def prepare_context(
-    action: Action, obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+    action: Action,
+    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
 ) -> dict:
-
     selector = get_selector(obj, action)
     context = {f"{k}_id": v["id"] for k, v in selector.items()}
     context["type"] = obj.prototype.type
 
-    if obj.prototype.type == ObjectType.Host and action.host_action:
+    if obj.prototype.type == ObjectType.HOST and action.host_action:
         context["type"] = action.prototype.type
 
     return context
 
 
-def prepare_job_config(
+def prepare_job_config(  # noqa: C901
     action: Action,
     sub_action: SubAction,
     job_id: int,
     obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
-    conf: dict,
+    conf: JSONField | None,
     verbose: bool,
 ):
     # pylint: disable=too-many-branches,too-many-statements
@@ -668,9 +682,13 @@ def prepare_job_config(
     if conf:
         job_conf["job"]["config"] = conf
 
-    fd = open(Path(settings.RUN_DIR, f"{job_id}", "config.json"), "w", encoding=settings.ENCODING_UTF_8)
-    json.dump(job_conf, fd, indent=3, sort_keys=True)
-    fd.close()
+    file_descriptor = open(  # pylint: disable=consider-using-with
+        Path(settings.RUN_DIR, f"{job_id}", "config.json"),
+        "w",
+        encoding=settings.ENCODING_UTF_8,
+    )
+    json.dump(job_conf, file_descriptor, indent=3, sort_keys=True)
+    file_descriptor.close()
 
 
 def create_task(
@@ -678,28 +696,28 @@ def create_task(
     obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
     conf: dict,
     attr: dict,
-    hc: List[HostComponent],
-    hosts: List[Host],
+    hostcomponent: list[HostComponent],
+    hosts: list[Host],
     verbose: bool,
-    post_upgrade_hc: List[dict],
+    post_upgrade_hc: list[dict],
 ) -> TaskLog:
     task = TaskLog.objects.create(
         action=action,
         task_object=obj,
         config=conf,
         attr=attr,
-        hostcomponentmap=hc,
+        hostcomponentmap=hostcomponent,
         hosts=hosts,
         post_upgrade_hc_map=post_upgrade_hc,
         verbose=verbose,
-        start_date=timezone.now(),
-        finish_date=timezone.now(),
+        start_date=datetime.now(tz=ZoneInfo("UTC")),
+        finish_date=datetime.now(tz=ZoneInfo("UTC")),
         status=JobStatus.CREATED,
         selector=get_selector(obj, action),
     )
-    set_task_status(task, JobStatus.CREATED, ctx.event)
+    set_task_status(task, JobStatus.CREATED, CTX.event)
 
-    if action.type == ActionType.Job.value:
+    if action.type == ActionType.JOB.value:
         sub_actions = [None]
     else:
         sub_actions = SubAction.objects.filter(action=action).all()
@@ -710,25 +728,21 @@ def create_task(
             action=action,
             sub_action=sub_action,
             log_files=action.log_files,
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
+            start_date=datetime.now(tz=ZoneInfo("UTC")),
+            finish_date=datetime.now(tz=ZoneInfo("UTC")),
             status=JobStatus.CREATED,
             selector=get_selector(obj, action),
         )
         log_type = sub_action.script_type if sub_action else action.script_type
         LogStorage.objects.create(job=job, name=log_type, type="stdout", format="txt")
         LogStorage.objects.create(job=job, name=log_type, type="stderr", format="txt")
-        set_job_status(job.pk, JobStatus.CREATED, ctx.event)
+        set_job_status(job.pk, JobStatus.CREATED, CTX.event)
         Path(settings.RUN_DIR, f"{job.pk}", "tmp").mkdir(parents=True, exist_ok=True)
-
-    tree = Tree(obj)
-    affected = (node.value for node in tree.get_all_affected(tree.built_from))
-    task.lock_affected(affected)
 
     return task
 
 
-def get_state(action: Action, job: JobLog, status: str) -> Tuple[Optional[str], List[str], List[str]]:
+def get_state(action: Action, job: JobLog, status: str) -> tuple[str | None, list[str], list[str]]:
     sub_action = None
     if job and job.sub_action:
         sub_action = job.sub_action
@@ -746,7 +760,8 @@ def get_state(action: Action, job: JobLog, status: str) -> Tuple[Optional[str], 
         if not state:
             logger.warning('action "%s" fail state is not set', action.name)
     else:
-        logger.error("unknown task status: %s", status)
+        if status != JobStatus.ABORTED:
+            logger.error("unknown task status: %s", status)
         state = None
         multi_state_set = []
         multi_state_unset = []
@@ -759,8 +774,8 @@ def set_action_state(
     task: TaskLog,
     obj: ADCMEntity,
     state: str = None,
-    multi_state_set: List[str] = None,
-    multi_state_unset: List[str] = None,
+    multi_state_set: list[str] = None,
+    multi_state_unset: list[str] = None,
 ):
     if not obj:
         logger.warning("empty object for action %s of task #%s", action.name, task.pk)
@@ -779,13 +794,13 @@ def set_action_state(
     )
 
     if state:
-        obj.set_state(state, ctx.event)
+        obj.set_state(state, CTX.event)
 
     for m_state in multi_state_set or []:
-        obj.set_multi_state(m_state, ctx.event)
+        obj.set_multi_state(m_state, CTX.event)
 
     for m_state in multi_state_unset or []:
-        obj.unset_multi_state(m_state, ctx.event)
+        obj.unset_multi_state(m_state, CTX.event)
 
 
 def restore_hc(task: TaskLog, action: Action, status: str):
@@ -802,36 +817,26 @@ def restore_hc(task: TaskLog, action: Action, status: str):
         return
 
     host_comp_list = []
-    for hc in task.hostcomponentmap:
-        host = Host.objects.get(id=hc["host_id"])
-        service = ClusterObject.objects.get(id=hc["service_id"], cluster=cluster)
-        comp = ServiceComponent.objects.get(id=hc["component_id"], cluster=cluster, service=service)
+    for hostcomponent in task.hostcomponentmap:
+        host = Host.objects.get(id=hostcomponent["host_id"])
+        service = ClusterObject.objects.get(id=hostcomponent["service_id"], cluster=cluster)
+        comp = ServiceComponent.objects.get(id=hostcomponent["component_id"], cluster=cluster, service=service)
         host_comp_list.append((service, host, comp))
 
     logger.warning("task #%s is failed, restore old hc", task.pk)
     save_hc(cluster, host_comp_list)
 
 
-def set_before_upgrade_state(action: Action, obj: Union[Cluster, HostProvider]) -> None:
-    if action.upgrade is not None:
-        obj.before_upgrade["state"] = obj.state
-        obj.save()
-
-
-def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
+def finish_task(task: TaskLog, job: JobLog | None, status: str):
     action = task.action
     obj = task.task_object
     state, multi_state_set, multi_state_unset = get_state(action, job, status)
 
     with transaction.atomic():
-        DummyData.objects.filter(id=1).update(date=timezone.now())
-        if hasattr(action, "upgrade"):
-            set_before_upgrade_state(action, obj)
-
         set_action_state(action, task, obj, state, multi_state_set, multi_state_unset)
         restore_hc(task, action, status)
         task.unlock_affected()
-        set_task_status(task, status, ctx.event)
+        set_task_status(task, status, CTX.event)
         update_hierarchy_issues(obj)
 
     upgrade = Upgrade.objects.filter(action=action).first()
@@ -864,20 +869,20 @@ def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
         object_type=obj_type,
     )
     if status == "success":
-        operation_result = AuditLogOperationResult.Success
+        operation_result = AuditLogOperationResult.SUCCESS
     else:
-        operation_result = AuditLogOperationResult.Fail
+        operation_result = AuditLogOperationResult.FAIL
 
     audit_log = AuditLog.objects.create(
         audit_object=audit_object,
         operation_name=operation_name,
-        operation_type=AuditLogOperationType.Update,
+        operation_type=AuditLogOperationType.UPDATE,
         operation_result=operation_result,
         object_changes={},
     )
     cef_logger(audit_instance=audit_log, signature_id="Action completion")
 
-    ctx.event.send_state()
+    CTX.event.send_state()
     try:
         load_mm_objects()
     except Exception as e:  # pylint: disable=broad-except
@@ -891,37 +896,41 @@ def cook_log_name(tag, level, ext="txt"):
 
 def log_custom(job_id, name, log_format, body):
     job = JobLog.obj.get(id=job_id)
-    l1 = LogStorage.objects.create(job=job, name=name, type="custom", format=log_format, body=body)
+    log_storage = LogStorage.objects.create(job=job, name=name, type="custom", format=log_format, body=body)
     post_event(
-        "add_job_log",
-        "job",
-        job_id,
-        {
-            "id": l1.pk,
-            "type": l1.type,
-            "name": l1.name,
-            "format": l1.format,
+        event="add_job_log",
+        obj=job,
+        details={
+            "id": log_storage.pk,
+            "type": log_storage.type,
+            "name": log_storage.name,
+            "format": log_storage.format,
         },
     )
 
 
 def run_task(task: TaskLog, event, args: str = ""):
-    err_file = open(Path(settings.LOG_DIR, "task_runner.err"), "a+", encoding=settings.ENCODING_UTF_8)
+    err_file = open(  # pylint: disable=consider-using-with
+        Path(settings.LOG_DIR, "task_runner.err"),
+        "a+",
+        encoding=settings.ENCODING_UTF_8,
+    )
     cmd = [
-        "/adcm/python/job_venv_wrapper.sh",
-        task.action.venv,
         str(Path(settings.CODE_DIR, "task_runner.py")),
         str(task.pk),
         args,
     ]
     logger.info("task run cmd: %s", " ".join(cmd))
-    proc = subprocess.Popen(
-        cmd,
-        stderr=err_file,
+    proc = subprocess.Popen(  # pylint: disable=consider-using-with
+        args=cmd, stderr=err_file, env=get_env_with_venv_path(venv=task.action.venv)
     )
     logger.info("task run #%s, python process %s", task.pk, proc.pid)
 
-    set_task_status(task, JobStatus.RUNNING, event)
+    tree = Tree(obj=task.task_object)
+    affected_objs = (node.value for node in tree.get_all_affected(node=tree.built_from))
+    task.lock_affected(objects=affected_objs)
+
+    set_task_status(task=task, status=JobStatus.RUNNING, event=event)
 
 
 def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
@@ -930,15 +939,15 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
         "stdout_callback": "yaml",
         "callback_whitelist": "profile_tasks",
     }
-    adcm_object = ADCM.objects.get(id=1)
-    cl = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
-    adcm_conf = cl.config
+    adcm_object = ADCM.objects.first()
+    config_log = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
+    adcm_conf = config_log.config
     mitogen = adcm_conf["ansible_settings"]["mitogen"]
 
     if mitogen:
         config_parser["defaults"]["strategy"] = "mitogen_linear"
         config_parser["defaults"]["strategy_plugins"] = str(
-            Path(settings.PYTHON_SITE_PACKAGES, "ansible_mitogen", "plugins", "strategy")
+            Path(settings.PYTHON_SITE_PACKAGES, "ansible_mitogen", "plugins", "strategy"),
         )
         config_parser["defaults"]["host_key_checking"] = "False"
 
@@ -952,20 +961,32 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
     if "jinja2_native" in params:
         config_parser["defaults"]["jinja2_native"] = str(params["jinja2_native"])
 
-    with open(Path(settings.RUN_DIR, f"{job_id}", "ansible.cfg"), "w", encoding=settings.ENCODING_UTF_8) as config_file:
+    with open(
+        Path(settings.RUN_DIR, f"{job_id}", "ansible.cfg"),
+        "w",
+        encoding=settings.ENCODING_UTF_8,
+    ) as config_file:
         config_parser.write(config_file)
 
 
 def set_task_status(task: TaskLog, status: str, event):
     task.status = status
-    task.finish_date = timezone.now()
+    task.finish_date = datetime.now(tz=ZoneInfo("UTC"))
     task.save()
-    event.set_task_status(task.pk, status)
+    event.set_task_status(task=task, status=status)
 
 
 def set_job_status(job_id: int, status: str, event, pid: int = 0):
-    JobLog.objects.filter(id=job_id).update(status=status, pid=pid, finish_date=timezone.now())
-    event.set_job_status(job_id, status)
+    job_query = JobLog.objects.filter(id=job_id)
+    job_query.update(status=status, pid=pid, finish_date=datetime.now(tz=ZoneInfo("UTC")))
+    job = job_query.first()
+
+    if status == JobStatus.RUNNING:
+        if job.task.lock and job.task.task_object:
+            job.task.lock.reason = job.cook_reason()
+            job.task.lock.save(update_fields=["reason"])
+
+    event.set_job_status(job=job, status=status)
 
 
 def abort_all(event):
@@ -974,7 +995,7 @@ def abort_all(event):
         task.unlock_affected()
     for job in JobLog.objects.filter(status=JobStatus.RUNNING):
         set_job_status(job.pk, JobStatus.ABORTED, event)
-    ctx.event.send_state()
+    CTX.event.send_state()
 
 
 def getattr_first(attr: str, *objects: Any, default: Any = None) -> Any:

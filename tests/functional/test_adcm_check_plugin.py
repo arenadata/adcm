@@ -18,7 +18,7 @@ from adcm_client.objects import ADCMClient, Cluster, Host
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.steps.asserts import assert_action_result
-from tests.functional.conftest import only_clean_adcm
+
 from tests.library.consts import MessageStates, States
 
 NO_FIELD = [
@@ -231,7 +231,7 @@ def test_multiple_group_tasks(sdk_client_fs: ADCMClient):
             "Check log 3",
             "This is success message. Params: group_title, success_msg, fail_msg. result=yes",
             True,
-        )
+        ),
     ]
     bundle_dir = utils.get_data_dir(__file__, "multiple_tasks_groups")
     bundle = sdk_client_fs.upload_from_fs(bundle_dir)
@@ -339,23 +339,22 @@ class TestDatabaseIsMalformed:
     @pytest.fixture()
     def cluster(self, sdk_client_fs) -> Cluster:
         """Create cluster"""
-        bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, 'parallel', 'cluster'))
-        return bundle.cluster_create('Test Cluster')
+        bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "parallel", "cluster"))
+        return bundle.cluster_create("Test Cluster")
 
     @pytest.fixture()
     def hosts(self, sdk_client_fs, cluster) -> [Host]:
         """Create and return 50 hosts bonded to a cluster"""
-        bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, 'parallel', 'provider'))
-        provider = bundle.provider_create('Test Provider')
-        return [cluster.host_add(provider.host_create(fqdn=f'test-host-{i}')) for i in range(50)]
+        bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "parallel", "provider"))
+        provider = bundle.provider_create("Test Provider")
+        return [cluster.host_add(provider.host_create(fqdn=f"test-host-{i}")) for i in range(50)]
 
-    @allure.issue(name='Database is malformed', url='https://arenadata.atlassian.net/browse/ADCM-2169')
-    @only_clean_adcm
+    @allure.issue(name="Database is malformed", url="https://arenadata.atlassian.net/browse/ADCM-2169")
     @pytest.mark.full()
-    @pytest.mark.usefixtures('hosts')
+    @pytest.mark.usefixtures("hosts")
     def test_multiple_parallel_check_run(self, cluster):
         """
         Run cluster action adcm_check change on 50 hosts
         """
         for _ in range(5):
-            run_cluster_action_and_assert_result(cluster, 'check')
+            run_cluster_action_and_assert_result(cluster, "check")

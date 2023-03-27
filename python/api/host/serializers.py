@@ -10,6 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api.action.serializers import ActionShort
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
+from api.serializers import StringListSerializer
+from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions
+from api.validators import HostUniqueValidator, StartMidEndValidator
+from cm.adcm_config import get_main_info
+from cm.api import add_host
+from cm.issue import update_hierarchy_issues, update_issue_after_deleting
+from cm.models import Action, Host, HostProvider, MaintenanceMode, Prototype
+from cm.status_api import get_host_status
 from django.conf import settings
 from rest_framework.serializers import (
     BooleanField,
@@ -22,16 +32,6 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
-from api.action.serializers import ActionShort
-from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
-from api.serializers import StringListSerializer
-from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions
-from api.validators import HostUniqueValidator, StartMidEndValidator
-from cm.adcm_config import get_main_info
-from cm.api import add_host
-from cm.issue import update_hierarchy_issues, update_issue_after_deleting
-from cm.models import Action, Host, HostProvider, MaintenanceMode, Prototype
-from cm.status_api import get_host_status
 
 
 class HostSerializer(EmptySerializer):
@@ -82,7 +82,9 @@ class HostDetailSerializer(HostSerializer):
     config = CommonAPIURL(view_name="object-config")
     action = CommonAPIURL(view_name="object-action")
     prototype = HyperlinkedIdentityField(
-        view_name="host-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+        view_name="host-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
@@ -145,7 +147,7 @@ class ProvideHostSerializer(HostSerializer):
         return add_host(proto, provider, validated_data.get("fqdn"), validated_data.get("description", ""))
 
 
-class StatusSerializer(EmptySerializer):
+class HostStatusSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     fqdn = CharField(read_only=True)
     status = SerializerMethodField()

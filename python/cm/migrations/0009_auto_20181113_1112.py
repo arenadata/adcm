@@ -17,68 +17,67 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0008_auto_20181107_1216'),
+        ("cm", "0008_auto_20181107_1216"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='HostProvider',
+            name="HostProvider",
             fields=[
                 (
-                    'id',
-                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+                    "id",
+                    models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID"),
                 ),
-                ('name', models.CharField(max_length=80, unique=True)),
-                ('description', models.TextField(blank=True)),
-                ('state', models.CharField(default='created', max_length=64)),
-                ('stack', models.TextField(blank=True)),
+                ("name", models.CharField(max_length=80, unique=True)),
+                ("description", models.TextField(blank=True)),
+                ("state", models.CharField(default="created", max_length=64)),
+                ("stack", models.TextField(blank=True)),
                 (
-                    'config',
-                    models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.ObjectConfig'),
+                    "config",
+                    models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to="cm.ObjectConfig"),
                 ),
             ],
         ),
         migrations.AlterField(
-            model_name='prototype',
-            name='type',
+            model_name="prototype",
+            name="type",
             field=models.CharField(
                 choices=[
-                    ('service', 'service'),
-                    ('cluster', 'cluster'),
-                    ('host', 'host'),
-                    ('provider', 'provider'),
+                    ("service", "service"),
+                    ("cluster", "cluster"),
+                    ("host", "host"),
+                    ("provider", "provider"),
                 ],
                 max_length=16,
             ),
         ),
         migrations.AlterField(
-            model_name='stageprototype',
-            name='type',
+            model_name="stageprototype",
+            name="type",
             field=models.CharField(
                 choices=[
-                    ('service', 'service'),
-                    ('cluster', 'cluster'),
-                    ('host', 'host'),
-                    ('provider', 'provider'),
+                    ("service", "service"),
+                    ("cluster", "cluster"),
+                    ("host", "host"),
+                    ("provider", "provider"),
                 ],
                 max_length=16,
             ),
         ),
         migrations.AddField(
-            model_name='hostprovider',
-            name='prototype',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cm.Prototype'),
+            model_name="hostprovider",
+            name="prototype",
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="cm.Prototype"),
         ),
         migrations.AddField(
-            model_name='host',
-            name='provider',
+            model_name="host",
+            name="provider",
             field=models.ForeignKey(
                 default=None,
                 null=True,
                 on_delete=django.db.models.deletion.CASCADE,
-                to='cm.HostProvider',
+                to="cm.HostProvider",
             ),
         ),
     ]

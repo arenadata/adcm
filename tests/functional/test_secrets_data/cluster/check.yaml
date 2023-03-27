@@ -22,3 +22,11 @@
       fail:
         msg: "Expected value is {{ job.config.secrettext }}, actual value is {{ cluster.config.secrettext }}"
       when: "{{ job.config.secrettext != cluster.config.secrettext }}"
+    - name: "Check secretmap"
+      fail:
+        msg: "Expected value is {{ job.config.secretmap }}, actual value is {{ cluster.config.secretmap }}"
+      when: "{{ job.config.secretmap != cluster.config.secretmap }}"
+    - name: "Check secretfile"
+      fail:
+        msg: "Expected value is {{ lookup('file', job.config.secretfile) }}, actual value is {{ lookup('file', cluster.config.secretfile) }}"
+      when: "{{ lookup('file', job.config.secretfile) != lookup('file', cluster.config.secretfile) }}"

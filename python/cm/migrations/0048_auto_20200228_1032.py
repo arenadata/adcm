@@ -74,7 +74,6 @@ def remove_logs(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("cm", "0047_auto_20200210_1152"),
     ]

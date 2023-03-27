@@ -16,9 +16,10 @@ import { BaseMapListDirective } from '@app/shared/form-elements/map.component';
 
 import { SchemeComponent } from '../scheme/scheme.component';
 import { IFieldOptions } from '../types';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 import { PasswordComponent } from "@app/shared/form-elements/password/password.component";
 import { SecretTextComponent } from "@app/shared/form-elements/secret-text/secret-text.component";
+import { SecretFileComponent } from "@app/shared/form-elements/secret-file/secret-file.component";
 
 export const CONFIG_FIELD = new InjectionToken('Config field');
 
@@ -43,12 +44,13 @@ export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
   form: FormGroup;
   currentFormGroup: FormGroup;
 
-  noRefreshButtonFields = ['password', 'secrettext', 'secretmap'];
+  noRefreshButtonFields = ['password', 'secrettext', 'secretmap', 'secretfile'];
   disabled: boolean = false;
 
   @ViewChild('cc') inputControl: FieldDirective;
   @ViewChild('pass') passControl: FieldDirective;
   @ViewChild('sc') secretTextControl: FieldDirective;
+  @ViewChild('sf') secretFileControl:  FieldDirective
 
   ngOnInit() {
     this.initCurrentGroup();
@@ -73,7 +75,8 @@ export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
 
   outputValue(v: string, isPart = false) {
     if (this.options.type === 'password') v = v.replace(/\w/gi, '*');
-    if (this.options.type === 'secrettext') v = '****';
+    if (['secrettext', 'secretfile'].includes(this.options.type)) v = '****';
+
     return v.length > 80 ? (isPart ? v : `${v.substr(0, 80)}...`) : v;
   }
 
@@ -119,7 +122,6 @@ export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
     }
   }
 
-
   reset() {
     const type = this.options.type;
 
@@ -141,10 +143,19 @@ export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
         (this.passControl as PasswordComponent).isHideDummy = true;
         this.passControl['dummy'] = '';
         break;
+      case('secretfile'):
+        field.setValue(null);
+        field.updateValueAndValidity();
+        (this.secretFileControl as SecretFileComponent).clear();
+        break;
       case('secrettext'):
         field.setValue(null);
         field.updateValueAndValidity();
         (this.secretTextControl as SecretTextComponent).clear();
+        break;
+      case('secretmap'):
+        field.setValue(null);
+        field.updateValueAndValidity();
         break;
     }
 

@@ -17,13 +17,6 @@ import getpass
 import json
 import sys
 
-from cryptography.fernet import Fernet
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from django.conf import settings
-from django.core.management.base import BaseCommand
-
 from cm.models import (
     Bundle,
     Cluster,
@@ -37,6 +30,12 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cryptography.fernet import Fernet
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from django.conf import settings
+from django.core.management.base import BaseCommand
 
 
 def serialize_datetime_fields(obj, fields=None):
@@ -141,14 +140,16 @@ def get_groups(object_id, model_name):
     :return: List with GroupConfig on that object in dict format
     :rtype: list
     """
+
     fields = ("object_id", "name", "description", "config", "object_type")
     groups = []
-    for gc in GroupConfig.objects.filter(object_id=object_id, object_type__model=model_name):
-        group = get_object(GroupConfig, gc.id, fields)
+    for group_config in GroupConfig.objects.filter(object_id=object_id, object_type__model=model_name):
+        group = get_object(GroupConfig, group_config.id, fields)
         group["config"] = get_config(group["config"])
         group["model_name"] = model_name
-        group["hosts"] = [host.id for host in gc.hosts.all()]
+        group["hosts"] = [host.id for host in group_config.hosts.all()]
         groups.append(group)
+
     return groups
 
 

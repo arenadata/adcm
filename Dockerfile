@@ -6,20 +6,21 @@ RUN apk update && \
         linux-headers && \
     apk add \
         bash \
-        openssl \
+        curl \
+        git \
         libc6-compat \
         libffi \
-        libxslt \
         libstdc++ \
-        openldap-dev \
-        git \
-        runit \
+        libxslt \
+        logrotate \
+        musl-dev \
         nginx \
+        openldap-dev \
         openssh-client \
         openssh-keygen \
-        logrotate \
-        curl \
+        openssl \
         rsync \
+        runit \
         sshpass
 COPY requirements*.txt /adcm/
 RUN pip install --upgrade pip &&  \

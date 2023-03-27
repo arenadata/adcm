@@ -10,14 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Module contains all field types and it special values"""
 import random
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from datetime import datetime, timedelta
 from random import choice, randint
-from typing import ClassVar, List, NamedTuple, Optional, Type, Union
+from typing import ClassVar, NamedTuple, Optional
+from zoneinfo import ZoneInfo
 
 import attr
 from multipledispatch import dispatch
@@ -36,7 +36,7 @@ def random_json():
 
 def random_datetime():
     """Generating datetime"""
-    return (datetime.now() + timedelta(randint(-1000, 1000))).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return (datetime.now(tz=ZoneInfo("UTC")) + timedelta(randint(-1000, 1000))).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 @attr.dataclass
@@ -60,9 +60,9 @@ class PreparedFieldValue:  # pylint: disable=function-redefined
                      Used to generate PUT PATCH test datasets
     """
 
-    value: Optional[object] = None
+    value: object | None = None
     generated_value: bool = False
-    error_messages: Optional[Union[list, dict]] = None
+    error_messages: list | dict | None = None
     f_type: Optional["BaseType"] = None
 
     drop_key: bool = False
@@ -96,7 +96,8 @@ class PreparedFieldValue:  # pylint: disable=function-redefined
                 return self.f_type.generate_new(old_value=current_field_value)
             if isinstance(self.f_type, ForeignKey):
                 return dbfiller.generate_new_value_for_unchangeable_fk_field(
-                    f_type=self.f_type, current_field_value=current_field_value
+                    f_type=self.f_type,
+                    current_field_value=current_field_value,
                 )
             if isinstance(self.f_type, GenericForeignKeyList):
                 return dbfiller.generate_new_value_for_generic_foreign_key_list(
@@ -115,7 +116,7 @@ class Relation(NamedTuple):
     """Named tuple for relates_on attribute"""
 
     field: "Field"
-    data_class: Type["data_classes.BaseClass"] = None
+    data_class: type["data_classes.BaseClass"] = None
 
 
 @attr.dataclass
@@ -126,10 +127,10 @@ class BaseType(ABC):
     """
 
     # Tuple of class + field name to get related schema or other limitations
-    relates_on: Optional[Relation] = None
+    relates_on: Relation | None = None
 
-    _sp_vals_positive: Optional[list] = None
-    _sp_vals_negative: Optional[List[Union[object, Type["BaseType"], PreparedFieldValue]]] = None
+    _sp_vals_positive: list | None = None
+    _sp_vals_negative: list[object | type["BaseType"] | PreparedFieldValue] | None = None
 
     is_huge: ClassVar[bool] = False
     error_message_not_be_null: ClassVar[str] = "This field may not be null."
@@ -180,7 +181,7 @@ class BaseType(ABC):
                         negative_value,
                         f_type=self,
                         error_messages=[self.error_message_invalid_data],
-                    )
+                    ),
                 )
         return final_negative_values
 
@@ -244,12 +245,12 @@ class String(BaseType):
     def __init__(self, max_length=1024, special_chars=r"!@#$%^&*\/{}[]", **kwargs):
         super().__init__(**kwargs)
         self.max_length = max_length
-        self._sp_vals_positive = ['s', special_chars, random_string(max_length)]
+        self._sp_vals_positive = ["s", special_chars, random_string(max_length)]
 
         self._sp_vals_negative = [
             generate_json_from_schema(json_schema=None),
             PreparedFieldValue(
-                value='some\nstring',
+                value="some\nstring",
                 f_type=self,
                 error_messages=["New line symbols are not allowed"],
             ),
@@ -272,9 +273,9 @@ class Username(String):
         super().__init__(**kwargs)
         self._sp_vals_negative.append(
             PreparedFieldValue(
-                value='string with spaces',
+                value="string with spaces",
                 error_messages=["Space symbols are not allowed"],
-            )
+            ),
         )
 
 
@@ -361,9 +362,9 @@ class Enum(BaseType):
         self._sp_vals_negative = [
             PreparedFieldValue(
                 value,
-                f_type=Type[String],
+                f_type=type[String],
                 error_messages=[f'"{value}" is not a valid choice.'],
-            )
+            ),
         ]
 
     def generate(self, **kwargs):
@@ -383,19 +384,19 @@ class Enum(BaseType):
 class ForeignKey(BaseType):
     """Foreign key field type"""
 
-    def __init__(self, fk_link: Type["data_classes.BaseClass"] = None, **kwargs):
+    def __init__(self, fk_link: type["data_classes.BaseClass"] = None, **kwargs):
         self.fk_link = fk_link
         super().__init__(**kwargs)
         self._sp_vals_negative = [
             PreparedFieldValue(
                 100,
                 f_type=self,
-                error_messages=["Invalid pk \"100\" - object does not exist."],
+                error_messages=['Invalid pk "100" - object does not exist.'],
             ),
             PreparedFieldValue(
                 2**63,
                 f_type=self,
-                error_messages=[f"Invalid pk \"{2**63}\" - object does not exist."],
+                error_messages=[f'Invalid pk "{2**63}" - object does not exist.'],
             ),
         ]
 
@@ -407,18 +408,18 @@ class ForeignKey(BaseType):
 class ObjectForeignKey(ForeignKey):
     """Object foreign key field type (e.g. {'id': 2})"""
 
-    def __init__(self, fk_link: Type["data_classes.BaseClass"] = None, **kwargs):
+    def __init__(self, fk_link: type["data_classes.BaseClass"] = None, **kwargs):
         super().__init__(fk_link=fk_link, **kwargs)
         self._sp_vals_negative = [
             PreparedFieldValue(
-                {'id': 1000},
+                {"id": 1000},
                 f_type=self,
-                error_messages={"id": ["Invalid pk \"1000\" - object does not exist."]},
+                error_messages={"id": ['Invalid pk "1000" - object does not exist.']},
             ),
             PreparedFieldValue(
-                {'id': 2**63},
+                {"id": 2**63},
                 f_type=self,
-                error_messages={"id": [f"Invalid pk \"{2**63}\" - object does not exist."]},
+                error_messages={"id": [f'Invalid pk "{2**63}" - object does not exist.']},
             ),
         ]
 
@@ -426,9 +427,9 @@ class ObjectForeignKey(ForeignKey):
 class BackReferenceFK(BaseType):
     """Back reference foreign key field type"""
 
-    fk_link: Optional[Type["data_classes.BaseClass"]] = None
+    fk_link: type["data_classes.BaseClass"] | None = None
 
-    def __init__(self, fk_link: Type["data_classes.BaseClass"], **kwargs):
+    def __init__(self, fk_link: type["data_classes.BaseClass"], **kwargs):
         self.fk_link = fk_link
         super().__init__(**kwargs)
 
@@ -445,12 +446,12 @@ class ForeignKeyM2M(ForeignKey):
             PreparedFieldValue(
                 [{"id": 1000}],
                 f_type=self,
-                error_messages=[{"id": ["Invalid pk \"1000\" - object does not exist."]}],
+                error_messages=[{"id": ['Invalid pk "1000" - object does not exist.']}],
             ),
             PreparedFieldValue(
                 [{"id": 2**63}],
                 f_type=self,
-                error_messages=[{"id": [f"Invalid pk \"{2**63}\" - object does not exist."]}],
+                error_messages=[{"id": [f'Invalid pk "{2**63}" - object does not exist.']}],
             ),
         ]
 
@@ -458,7 +459,7 @@ class ForeignKeyM2M(ForeignKey):
 class GenericForeignKeyList(BaseType):
     """List with generic foreign keys (special variant of ListOf(Json))"""
 
-    payload: List[dict]
+    payload: list[dict]
 
     def generate(self, **kwargs):
         """
@@ -499,8 +500,8 @@ class Field:  # pylint: disable=too-many-instance-attributes
     """Field class based on ADCM API spec"""
 
     name: str
-    f_type: Optional[BaseType] = None
-    default_value: Optional[object] = None
+    f_type: BaseType | None = None
+    default_value: object | None = None
     nullable: bool = False
     # Some fields are declared as nullable but with
     # * about field value validation on another logical level
@@ -515,7 +516,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
     custom_required: bool = False
 
 
-def get_fields(data_class: type, predicate: Callable = None) -> List[Field]:
+def get_fields(data_class: type, predicate: Callable = None) -> list[Field]:
     """Get fields by data class and filtered by predicate"""
 
     def dummy_predicate(_):

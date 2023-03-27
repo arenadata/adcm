@@ -12,11 +12,6 @@
 
 from datetime import datetime
 
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_403_FORBIDDEN
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -24,10 +19,15 @@ from audit.models import (
     AuditObjectType,
 )
 from cm.models import Bundle, Cluster, HostProvider, Prototype
+from django.urls import reverse
 from rbac.models import Policy, Role, RoleTypes, User
+from rest_framework.response import Response
+from rest_framework.status import HTTP_403_FORBIDDEN
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
-class TestPolicy(BaseTestCase):
+class TestPolicyAudit(BaseTestCase):
     # pylint: disable=too-many-instance-attributes
 
     def setUp(self) -> None:
@@ -41,7 +41,7 @@ class TestPolicy(BaseTestCase):
         self.role = Role.objects.create(
             name="test_role",
             display_name="test_role",
-            type=RoleTypes.role,
+            type=RoleTypes.ROLE,
             parametrized_by_type=["cluster", "provider"],
             module_name="rbac.roles",
             class_name="ObjectRole",
@@ -68,7 +68,7 @@ class TestPolicy(BaseTestCase):
         if obj:
             self.assertEqual(log.audit_object.object_id, obj.pk)
             self.assertEqual(log.audit_object.object_name, obj.name)
-            self.assertEqual(log.audit_object.object_type, AuditObjectType.Policy)
+            self.assertEqual(log.audit_object.object_type, AuditObjectType.POLICY)
             self.assertFalse(log.audit_object.is_deleted)
         else:
             self.assertFalse(log.audit_object)
@@ -98,7 +98,7 @@ class TestPolicy(BaseTestCase):
             log=log,
             obj=obj,
             operation_name=self.policy_updated_str,
-            operation_type=AuditLogOperationType.Update,
+            operation_type=AuditLogOperationType.UPDATE,
             operation_result=operation_result,
             user=user,
             object_changes=object_changes,
@@ -123,8 +123,8 @@ class TestPolicy(BaseTestCase):
             log=log,
             obj=policy,
             operation_name="Policy created",
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.CREATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -148,8 +148,8 @@ class TestPolicy(BaseTestCase):
             log=log,
             obj=None,
             operation_name="Policy created",
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.CREATE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -165,8 +165,8 @@ class TestPolicy(BaseTestCase):
             log=log,
             obj=self.policy,
             operation_name="Policy deleted",
-            operation_type=AuditLogOperationType.Delete,
-            operation_result=AuditLogOperationResult.Success,
+            operation_type=AuditLogOperationType.DELETE,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
@@ -184,8 +184,8 @@ class TestPolicy(BaseTestCase):
             log=log,
             obj=self.policy,
             operation_name="Policy deleted",
-            operation_type=AuditLogOperationType.Delete,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_type=AuditLogOperationType.DELETE,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -209,7 +209,7 @@ class TestPolicy(BaseTestCase):
         self.check_log_update(
             log=log,
             obj=self.policy,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
             object_changes={
                 "current": {
@@ -220,7 +220,7 @@ class TestPolicy(BaseTestCase):
                             "id": self.cluster.pk,
                             "name": self.cluster_name,
                             "type": "cluster",
-                        }
+                        },
                     ],
                     "user": [self.test_user.username],
                 },
@@ -253,7 +253,7 @@ class TestPolicy(BaseTestCase):
         self.check_log_update(
             log=log,
             obj=self.policy,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -279,7 +279,7 @@ class TestPolicy(BaseTestCase):
         self.check_log_update(
             log=log,
             obj=self.policy,
-            operation_result=AuditLogOperationResult.Success,
+            operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
             object_changes={
                 "current": {
@@ -327,7 +327,7 @@ class TestPolicy(BaseTestCase):
         self.check_log_update(
             log=log,
             obj=self.policy,
-            operation_result=AuditLogOperationResult.Denied,
+            operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
@@ -351,6 +351,6 @@ class TestPolicy(BaseTestCase):
         self.check_log_update(
             log=log,
             obj=self.policy,
-            operation_result=AuditLogOperationResult.Fail,
+            operation_result=AuditLogOperationResult.FAIL,
             user=self.test_user,
         )

@@ -9,11 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=wrong-import-order
 
 import time
 from unittest import skip
 
-from adcm.tests.base import BaseTestCase
 from cm.hierarchy import HierarchyError, Tree
 from cm.tests.utils import (
     gen_bundle,
@@ -25,6 +25,8 @@ from cm.tests.utils import (
     gen_provider,
     gen_service,
 )
+
+from adcm.tests.base import BaseTestCase
 
 
 def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements
@@ -120,31 +122,31 @@ def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements
     gen_host_component(component_221, host_32)
     gen_host_component(component_222, host_32)
 
-    return dict(
-        cluster_1=cluster_1,
-        service_11=service_11,
-        service_12=service_12,
-        component_111=component_111,
-        component_112=component_112,
-        component_121=component_121,
-        component_122=component_122,
-        cluster_2=cluster_2,
-        service_21=service_21,
-        service_22=service_22,
-        component_211=component_211,
-        component_212=component_212,
-        component_221=component_221,
-        component_222=component_222,
-        provider_1=provider_1,
-        host_11=host_11,
-        host_12=host_12,
-        provider_2=provider_2,
-        host_21=host_21,
-        host_22=host_22,
-        provider_3=provider_3,
-        host_31=host_31,
-        host_32=host_32,
-    )
+    return {
+        "cluster_1": cluster_1,
+        "service_11": service_11,
+        "service_12": service_12,
+        "component_111": component_111,
+        "component_112": component_112,
+        "component_121": component_121,
+        "component_122": component_122,
+        "cluster_2": cluster_2,
+        "service_21": service_21,
+        "service_22": service_22,
+        "component_211": component_211,
+        "component_212": component_212,
+        "component_221": component_221,
+        "component_222": component_222,
+        "provider_1": provider_1,
+        "host_11": host_11,
+        "host_12": host_12,
+        "provider_2": provider_2,
+        "host_21": host_21,
+        "host_22": host_22,
+        "provider_3": provider_3,
+        "host_31": host_31,
+        "host_32": host_32,
+    }
 
 
 class HierarchyTest(BaseTestCase):
@@ -202,7 +204,6 @@ class HierarchyTest(BaseTestCase):
                 tree.get_node(hierarchy_objects[name])
 
     def test_get_directly_affected(self):
-        """Test `hierarchy.Tree.get_directly_affected()` function"""
         hierarchy_objects = generate_hierarchy()
         tree = Tree(hierarchy_objects["cluster_1"])
 
@@ -303,7 +304,6 @@ class HierarchyTest(BaseTestCase):
             self.assertSetEqual(expected_affected, got_affected)
 
     def test_get_all_affected(self):
-        """Test `hierarchy.Tree.get_all_affected()` function"""
         hierarchy_objects = generate_hierarchy()
         tree = Tree(hierarchy_objects["cluster_1"])
 

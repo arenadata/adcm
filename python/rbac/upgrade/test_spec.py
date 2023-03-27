@@ -57,23 +57,24 @@ class TestRoleSpecification(TestCase):
                 self.assertIn(key, role)
 
     def test_children(self):
-        for v in self.role_map.values():
-            if "child" in v:
-                for child in v["child"]:
+        for value in self.role_map.values():
+            if "child" in value:
+                for child in value["child"]:
                     self.assertIn(child, self.role_map)
 
     @staticmethod
     def _is_in_set(allowed: list[set[str]], value: set):
-        for s in allowed:
-            if s == value:
+        for allowed_value in allowed:
+            if allowed_value == value:
                 return True
+
         return False
 
     def test_allowed_parametrization(self):
-        for v in self.role_map.values():
-            if "parametrized_by" in v:
-                if v["type"] == "business":
-                    self.assertTrue(self._is_in_set(BUSINESS_PARAMETRISATION, set(v["parametrized_by"])))
+        for value in self.role_map.values():
+            if "parametrized_by" in value:
+                if value["type"] == "business":
+                    self.assertTrue(self._is_in_set(BUSINESS_PARAMETRISATION, set(value["parametrized_by"])))
 
     def _tree_dive_in(self, roles: dict, visited: dict, path: list, role: dict, root):
         if role["name"] in visited:
@@ -81,8 +82,8 @@ class TestRoleSpecification(TestCase):
 
         visited[role["name"]] = True
         if "child" in role:
-            for c in role["child"]:
-                self._tree_dive_in(roles, visited.copy(), path + [c], roles[c], root)
+            for child_role in role["child"]:
+                self._tree_dive_in(roles, visited.copy(), path + [child_role], roles[child_role], root)
 
     def test_acyclic(self):
         for value in self.roots.values():

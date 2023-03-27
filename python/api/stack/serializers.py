@@ -10,6 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api.action.serializers import StackActionDetailSerializer
+from api.config.serializers import ConfigSerializer
+from api.serializers import UpgradeSerializer
+from cm.models import Bundle, ClusterObject, Prototype
+from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.serializers import (
     BooleanField,
     CharField,
@@ -23,10 +28,6 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
-from api.action.serializers import StackActionDetailSerializer
-from api.config.serializers import ConfigSerializer
-from api.serializers import UpgradeSerializer
-from cm.models import Bundle, ClusterObject, Prototype
 
 
 class UploadBundleSerializer(EmptySerializer):
@@ -78,7 +79,9 @@ class BundleSerializer(HyperlinkedModelSerializer):
 
 class PrototypeSerializer(HyperlinkedModelSerializer):
     license_url = HyperlinkedIdentityField(
-        view_name="prototype-license", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+        view_name="prototype-license",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
     bundle_edition = CharField(source="bundle.edition")
 
@@ -211,7 +214,9 @@ class ImportSerializer(EmptySerializer):
 
 class ComponentPrototypeSerializer(PrototypeSerializer):
     url = HyperlinkedIdentityField(
-        view_name="component-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+        view_name="component-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
 
     class Meta:
@@ -229,7 +234,9 @@ class ComponentPrototypeSerializer(PrototypeSerializer):
 
 class ServicePrototypeSerializer(PrototypeSerializer):
     url = HyperlinkedIdentityField(
-        view_name="service-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+        view_name="service-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
 
     class Meta:
@@ -286,7 +293,9 @@ class BundleServiceUIPrototypeSerializer(ServicePrototypeSerializer):
 
 class ADCMPrototypeSerializer(PrototypeSerializer):
     url = HyperlinkedIdentityField(
-        view_name="adcm-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+        view_name="adcm-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
 
     class Meta:
@@ -298,9 +307,11 @@ class ADCMPrototypeSerializer(PrototypeSerializer):
         read_only_fields = fields
 
 
-class ClusterPrototypeSerializer(PrototypeSerializer):
+class ClusterPrototypeSerializer(FlexFieldsSerializerMixin, PrototypeSerializer):
     url = HyperlinkedIdentityField(
-        view_name="cluster-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+        view_name="cluster-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
 
     class Meta:
@@ -315,7 +326,9 @@ class ClusterPrototypeSerializer(PrototypeSerializer):
 class HostPrototypeSerializer(PrototypeSerializer):
     monitoring = CharField(read_only=True)
     url = HyperlinkedIdentityField(
-        view_name="host-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+        view_name="host-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
 
     class Meta:
@@ -328,9 +341,11 @@ class HostPrototypeSerializer(PrototypeSerializer):
         read_only_fields = fields
 
 
-class ProviderPrototypeSerializer(PrototypeSerializer):
+class ProviderPrototypeSerializer(FlexFieldsSerializerMixin, PrototypeSerializer):
     url = HyperlinkedIdentityField(
-        view_name="provider-prototype-detail", lookup_field="pk", lookup_url_kwarg="prototype_pk"
+        view_name="provider-prototype-detail",
+        lookup_field="pk",
+        lookup_url_kwarg="prototype_pk",
     )
 
     class Meta:
@@ -342,7 +357,7 @@ class ProviderPrototypeSerializer(PrototypeSerializer):
         read_only_fields = fields
 
 
-class ProviderPrototypeDetailSerializer(ProviderPrototypeSerializer):
+class ProviderPrototypeDetailSerializer(ProviderPrototypeSerializer):  # pylint: disable=too-many-ancestors
     actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
     upgrade = UpgradeSerializer(many=True, read_only=True)
@@ -400,7 +415,7 @@ class ADCMPrototypeDetailSerializer(ADCMPrototypeSerializer):
         read_only_fields = fields
 
 
-class ClusterPrototypeDetailSerializer(ClusterPrototypeSerializer):
+class ClusterPrototypeDetailSerializer(ClusterPrototypeSerializer):  # pylint: disable=too-many-ancestors
     actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
     upgrade = UpgradeSerializer(many=True, read_only=True)

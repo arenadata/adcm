@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { AdwpCellComponent } from '@adwp-ui/widgets';
+import { AdwpCellComponent } from '@app/adwp';
 
 import { Task } from '@app/core/types';
 
@@ -9,7 +9,12 @@ import { Task } from '@app/core/types';
   styleUrls: ['./task-objects.component.scss']
 })
 export class TaskObjectsComponent implements AdwpCellComponent<Task> {
+  row: Task;
 
-  @Input() row: Task;
+  @Input() set object(currentObject: any) {
+    if (currentObject) {
+      this.row = currentObject;
+    }
+  }
 
 }

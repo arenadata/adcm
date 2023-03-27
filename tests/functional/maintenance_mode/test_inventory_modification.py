@@ -28,9 +28,9 @@ from adcm_client.objects import (
     Host,
     Service,
 )
-from adcm_pytest_plugin.docker_utils import ADCM
+from adcm_pytest_plugin.docker.adcm import ADCM
 from adcm_pytest_plugin.utils import get_or_add_service
-from tests.functional.conftest import only_clean_adcm
+
 from tests.functional.maintenance_mode.conftest import (
     BUNDLES_DIR,
     DEFAULT_SERVICE_NAME,
@@ -53,7 +53,6 @@ from tests.library.assertions import sets_are_equal
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm]
 
 DEFAULT_ACTION_NAME = "default_action"
 HC_ACL_SERVICE_NAME = "hc_acl_service"
@@ -186,7 +185,7 @@ def test_host_filtering_with_hc_acl(api_client, adcm_fs, cluster_with_hc_set: Cl
         hc=build_hc_for_hc_acl_action(cluster, add=[(first_component, free_host)], remove=[(first_component, host)]),
     )
     check_hosts_in_mm_are_absent(inventory, cluster, service_name=HC_ACL_SERVICE_NAME)
-    _check_add_remove_groups(inventory, add={free_host.fqdn}, remove=set())
+    _check_add_remove_groups(inventory, add={free_host.fqdn}, remove={host.fqdn})
 
 
 def test_mm_flag_on_service_and_components(cluster_with_service_component_mm, sdk_client_fs, api_client, adcm_fs: ADCM):
@@ -220,6 +219,59 @@ def test_mm_flag_on_service_and_components(cluster_with_service_component_mm, sd
     )
 
 
+def test_host_hc_acl_mm_inventory(sdk_client_fs, api_client, adcm_fs, cluster_with_mm: Cluster, hosts):
+    """Test to check inventory for host with hc_acl and mm"""
+    with allure.step("Create cluster and hosts"):
+        hosts_in_cluster = hosts[:4]
+        service = get_or_add_service(cluster_with_mm, HC_ACL_SERVICE_NAME)
+        first_component = service.component(name=FIRST_COMPONENT)
+        second_component = service.component(name=SECOND_COMPONENT)
+
+    with allure.step("Add hosts to cluster and set hostcomponent"):
+        for host in hosts_in_cluster:
+            cluster_with_mm.host_add(host)
+        cluster_with_mm.hostcomponent_set(
+            *[(host, first_component) for host in hosts_in_cluster],
+            *[(host, second_component) for host in hosts_in_cluster[:2]],
+        )
+
+    with allure.step("Turn mm ON on host"):
+        for host in hosts_in_cluster:
+            turn_mm_on(api_client, host)
+
+    with allure.step("Run shrink action and check inventory"):
+        inventory = run_action_and_get_inventory(
+            service.action(name="shrink"),
+            adcm_fs,
+            hc=build_hc_for_hc_acl_action(cluster_with_mm, remove=[(second_component, host)]),
+        )
+
+        check_mm_flag_in_inventory(
+            client=sdk_client_fs,
+            inventory=inventory,
+            expect_on=(second_component,),
+        )
+        _check_mm_groups_component(
+            inventory=inventory,
+            service_name=HC_ACL_SERVICE_NAME,
+            component_name=second_component.name,
+            hosts_in_mm={"test-host-0", "test-host-1"},
+        )
+
+
+def check_remove_groups(inventory, component_name: str, hosts: set[str]):
+    """Check one group with "remove" suffix"""
+    children = inventory["all"]["children"]
+    remove_nodes = [(k, v) for k, v in children.items() if "remove" in k]
+    if not remove_nodes:
+        raise AssertionError('At least on node with "remove" suffix should be presented in inventory')
+
+    for node in remove_nodes:
+        if component_name in node[0]:
+            actual_hosts = set(node[1]["hosts"].keys())
+            sets_are_equal(actual_hosts, hosts, f'"remove" node is incorrect for component {node[0]}')
+
+
 def run_action_and_get_inventory(action: Action, adcm: ADCM, **run_kwargs) -> dict:
     """Run action and get inventory file contents from container"""
     with allure.step(f"Run action {action.name}"):
@@ -248,7 +300,7 @@ def check_hosts_in_mm_are_absent(inventory: dict, cluster: Cluster, service_name
     _check_groups(inventory, expected, expected_on_second_component, service_name)
     components_with_mm = {hc["component"] for hc in cluster.hostcomponent() if hc["host"] in hostnames_in_mm}
     if len(components_with_mm) == 0:
-        raise RuntimeError('There should be at least 1 component with host in MM')
+        raise RuntimeError("There should be at least 1 component with host in MM")
     for component in components_with_mm:
         _check_mm_groups(inventory, service_name, component, hostnames_in_mm)
 
@@ -308,6 +360,18 @@ def _check_mm_groups(inventory: dict, service_name: str, component_name: str, ho
     with allure.step("Check that correct hosts are in MM groups"):
         hosts_in_group = set(children[service_key]["hosts"].keys())
         sets_are_equal(hosts_in_group, hosts_in_mm, "Wrong hosts in service's maintenance mode group")
+        hosts_in_group = set(children[second_component_key]["hosts"].keys())
+        sets_are_equal(hosts_in_group, hosts_in_mm, "Wrong hosts in component's maintenance mode group")
+
+
+def _check_mm_groups_component(inventory: dict, service_name: str, component_name: str, hosts_in_mm: Set[str]):
+    children = inventory["all"]["children"]
+    second_component_key = f"{service_name}.{component_name}.maintenance_mode"
+
+    with allure.step("Check maintenance mode groups are presented in inventory"):
+        assert second_component_key in children, f"{second_component_key} not found in: {', '.join(children.keys())}"
+
+    with allure.step("Check that correct hosts are in MM groups"):
         hosts_in_group = set(children[second_component_key]["hosts"].keys())
         sets_are_equal(hosts_in_group, hosts_in_mm, "Wrong hosts in component's maintenance mode group")
 

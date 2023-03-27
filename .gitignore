@@ -9,6 +9,7 @@
 .venv
 .version
 .vscode
+config.json
 /allure-results/
 /cluster.db
 /coverage.xml
@@ -27,4 +28,6 @@
 /tests/db_test.db
 /tests/fixture.db
 /web/node_modules/
+/web/yarn.lock
+/web/src/assets/config.json
 /wwwroot

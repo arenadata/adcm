@@ -17,7 +17,7 @@
 import json
 import os
 import tempfile
-from typing import Generator
+from collections.abc import Generator
 
 import allure
 import pytest
@@ -25,21 +25,18 @@ import requests
 from _pytest.fixtures import SubRequest
 from adcm_client.objects import ADCMClient
 from adcm_client.wrappers.docker import ADCM
+from adcm_pytest_plugin.docker.launchers import ADCMWithPostgresLauncher
+from adcm_pytest_plugin.docker.steps import (
+    attach_adcm_data_dir,
+    attach_postgres_data_dir,
+)
 from selenium.common.exceptions import WebDriverException
-from tests.conftest import CLEAN_ADCM_PARAM
+
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.login.page import LoginPage
 
-SELENOID_DOWNLOADS_PATH = '/home/selenium/Downloads'
-
-
-def pytest_generate_tests(metafunc):
-    """
-    Parametrize for running tests on clean ADCM only
-    """
-    if "additional_adcm_init_config" in metafunc.fixturenames:
-        metafunc.parametrize("additional_adcm_init_config", [CLEAN_ADCM_PARAM], scope="session")
+SELENOID_DOWNLOADS_PATH = "/home/selenium/Downloads"
 
 
 @pytest.fixture(scope="session")
@@ -51,7 +48,7 @@ def downloads_directory(tmpdir_factory: pytest.TempdirFactory):
     """
     if os.environ.get("SELENOID_HOST"):
         return SELENOID_DOWNLOADS_PATH
-    downloads_dirname = 'browser-downloads'
+    downloads_dirname = "browser-downloads"
     return tmpdir_factory.mktemp(downloads_dirname)
 
 
@@ -66,7 +63,7 @@ def _clean_downloads_fs(request: SubRequest, downloads_directory):
     yield
     if request.node.rep_setup.passed and request.node.rep_call.failed:
         allure.attach(
-            '\n'.join(str(doc) for doc in downloads_directory.listdir()),
+            "\n".join(str(doc) for doc in downloads_directory.listdir()),
             name='Files in "Downloads" directory',
             attachment_type=allure.attachment_type.TEXT,
         )
@@ -94,7 +91,7 @@ def web_driver(browser, downloads_directory):
 @pytest.fixture()
 def _skip_firefox(browser: str):
     """Skip one test on firefox"""
-    if browser == 'Firefox':
+    if browser == "Firefox":
         pytest.skip("This test shouldn't be launched on Firefox")
 
 
@@ -123,17 +120,17 @@ def _attach_debug_info_on_ui_test_fail(request, web_driver):
             attachment_type=allure.attachment_type.JSON,
         )
         # this way of getting logs does not work for Firefox, see ADCM-1497
-        if web_driver.capabilities['browserName'] != 'firefox':
-            console_logs = web_driver.driver.get_log('browser')
+        if web_driver.capabilities["browserName"] != "firefox":
+            console_logs = web_driver.driver.get_log("browser")
             perf_log = web_driver.driver.get_log("performance")
             events = [_process_browser_log_entry(entry) for entry in perf_log]
-            network_logs = [event for event in events if 'Network.response' in event['method']]
+            network_logs = [event for event in events if "Network.response" in event["method"]]
             events_json = _write_json_file("all_logs", events)
             network_console_logs = _write_json_file("network_log", network_logs)
             console_logs = _write_json_file("console_logs", console_logs)
             allure.attach(
                 web_driver.driver.current_url,
-                name='Current URL',
+                name="Current URL",
                 attachment_type=allure.attachment_type.TEXT,
             )
             allure.attach.file(console_logs, name="console_log", attachment_type=allure.attachment_type.TEXT)
@@ -148,16 +145,30 @@ def _attach_debug_info_on_ui_test_fail(request, web_driver):
         pass
 
 
+@allure.title("Attach ADCM data on failure")
+@pytest.fixture()
+def _attach_adcm_data_on_fail(request, launcher):
+    yield
+    try:
+        attach_adcm_data_dir(launcher, request)
+
+        if isinstance(launcher, ADCMWithPostgresLauncher):
+            attach_postgres_data_dir(launcher, request)
+    except Exception as e:  # pylint: disable=broad-except # noqa: BLE001
+        with allure.step(f"[ERROR] {e}"):
+            ...
+
+
 @pytest.fixture()
 def _cleanup_browser_logs(request, web_driver):
     """Cleanup browser logs"""
     try:
         if (
             not (request.node.rep_setup.failed or request.node.rep_call.failed)
-            and web_driver.capabilities['browserName'] != 'firefox'
+            and web_driver.capabilities["browserName"] != "firefox"
         ):
             with allure.step("Flush browser logs so as not to affect next tests"):
-                web_driver.driver.get_log('browser')
+                web_driver.driver.get_log("browser")
                 web_driver.driver.get_log("performance")
     except AttributeError:
         # rep_setup and rep_call attributes are generated in runtime and can be absent
@@ -181,24 +192,24 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, _attach_debug_info_on_ui_test_fa
     return web_driver
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def adcm_credentials():
     """
     Provides ADCM username and password by default
     Examples:
         login(**adcm_credentials)
     """
-    return {'username': 'admin', 'password': 'admin'}
+    return {"username": "admin", "password": "admin"}
 
 
 def _process_browser_log_entry(entry):
-    response = json.loads(entry['message'])['message']
+    response = json.loads(entry["message"])["message"]
     return response
 
 
 def _write_json_file(f_name, j_data):
     f_path = "/".join([tempfile.mkdtemp(), f_name])
-    with open(f_path, 'w', encoding='utf_8') as file:
+    with open(f_path, "w", encoding="utf_8") as file:
         json.dump(j_data, file, indent=2)
     return f_path
 
@@ -207,9 +218,9 @@ def login_over_api(app_fs, credentials):
     """Perform login with given credentials"""
     login_endpoint = f'{app_fs.adcm.url.rstrip("/")}/api/v1/token/'
     LoginPage(app_fs.driver, app_fs.adcm.url).open(close_popup=False)
-    token = requests.post(login_endpoint, json=credentials).json()['token']
+    token = requests.post(login_endpoint, json=credentials).json()["token"]
     with allure.step("Set token to localStorage"):
-        auth = {'login': credentials['username'], 'token': token}
+        auth = {"login": credentials["username"], "token": token}
         script = f'localStorage.setItem("auth", JSON.stringify({json.dumps(auth)}))'
         app_fs.driver.execute_script(script)
         auth = app_fs.driver.execute_script("return localStorage.auth")
@@ -238,7 +249,7 @@ def _login_to_adcm_over_ui(app_fs, adcm_credentials):
 @pytest.fixture()
 def another_user(sdk_client_fs: ADCMClient) -> Generator[dict, None, None]:
     """Create another user, return it's credentials, remove afterwards"""
-    user_credentials = {'username': 'blondy', 'password': 'goodbadevil'}
+    user_credentials = {"username": "blondy", "password": "goodbadevil"}
     user = sdk_client_fs.user_create(**user_credentials)
     yield user_credentials
     user.delete()

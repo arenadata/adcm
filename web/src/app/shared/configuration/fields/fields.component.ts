@@ -16,7 +16,7 @@ import { FieldService, TFormOptions } from '../services/field.service';
 import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
 import { IConfig, IPanelOptions } from '../types';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 import { FormGroup } from "@angular/forms";
 
 @Component({

@@ -12,11 +12,12 @@
 
 """conftest for config page UI tests"""
 
-from typing import Generator
+from collections.abc import Generator
 
 import allure
 import pytest
 from selenium.common.exceptions import WebDriverException
+
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.conftest import login_over_api
 

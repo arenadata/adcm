@@ -15,6 +15,7 @@
 import allure
 import pytest
 from adcm_pytest_plugin.params import including_https
+
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.login.page import LoginPage
 
@@ -78,15 +79,15 @@ def test_check_header_links_in_login_page_unauthorised(app_fs):
     """Test header for unauthorised user"""
     params = {"error_text": "User is not authorized!"}
     login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
-    login_page.header.click_arenadata_logo_in_header()
+    login_page.header.click_arenadata_logo()
     login_page.check_error_message(params["error_text"])
-    login_page.header.click_clusters_tab_in_header()
+    login_page.header.click_clusters_tab()
     login_page.check_error_message(params["error_text"])
-    login_page.header.click_hostproviders_tab_in_header()
+    login_page.header.click_hostproviders_tab()
     login_page.check_error_message(params["error_text"])
-    login_page.header.click_hosts_tab_in_header()
+    login_page.header.click_hosts_tab()
     login_page.check_error_message(params["error_text"])
-    login_page.header.click_jobs_tab_in_header()
+    login_page.header.click_jobs_tab()
     login_page.check_error_message(params["error_text"])
-    login_page.header.click_bundles_tab_in_header()
+    login_page.header.click_bundles_tab()
     login_page.check_error_message(params["error_text"])

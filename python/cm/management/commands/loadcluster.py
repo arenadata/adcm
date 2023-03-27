@@ -19,16 +19,6 @@ import sys
 from datetime import datetime
 
 from ansible.parsing.vault import VaultAES256, VaultSecret
-from cryptography.fernet import Fernet, InvalidToken
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-from django.core.management.base import BaseCommand
-from django.db.transaction import atomic
-from django.db.utils import IntegrityError
-
 from cm.adcm_config import save_file_type
 from cm.errors import AdcmEx
 from cm.models import (
@@ -45,6 +35,15 @@ from cm.models import (
     PrototypeConfig,
     ServiceComponent,
 )
+from cryptography.fernet import Fernet, InvalidToken
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.core.management.base import BaseCommand
+from django.db.transaction import atomic
+from django.db.utils import IntegrityError
 
 OLD_ADCM_PASSWORD = None
 
@@ -127,14 +126,15 @@ def create_group(group, ex_hosts_list, obj):
     hosts = []
     for host in group.pop("hosts"):
         hosts.append(ex_hosts_list[host])
-    gc = GroupConfig.objects.create(
+    group_config = GroupConfig.objects.create(
         object_id=obj.id,
         config=config,
         object_type=ContentType.objects.get(model=model_name),
         **group,
     )
-    gc.hosts.set(hosts)
-    return ex_object_id, gc
+    group_config.hosts.set(hosts)
+
+    return ex_object_id, group_config
 
 
 def switch_encoding(msg):
@@ -213,7 +213,11 @@ def create_provider(provider):
     except HostProvider.DoesNotExist:
         prototype = get_prototype(bundle_hash=bundle_hash, type="provider")
         config = provider.pop("config")
-        provider = HostProvider.objects.create(prototype=prototype, config=create_config(config, prototype), **provider)
+        provider = HostProvider.objects.create(
+            prototype=prototype,
+            config=create_config(config, prototype),
+            **provider,
+        )
         create_file_from_config(provider, config)
         return ex_id, provider
 
@@ -263,12 +267,17 @@ def create_service(service, cluster):
     :rtype: models.ClusterObject
     """
     prototype = get_prototype(
-        bundle_hash=service.pop("bundle_hash"), type="service", name=service.pop("prototype__name")
+        bundle_hash=service.pop("bundle_hash"),
+        type="service",
+        name=service.pop("prototype__name"),
     )
     ex_id = service.pop("id")
     config = service.pop("config")
     service = ClusterObject.objects.create(
-        prototype=prototype, cluster=cluster, config=create_config(config, prototype), **service
+        prototype=prototype,
+        cluster=cluster,
+        config=create_config(config, prototype),
+        **service,
     )
     create_file_from_config(service, config)
     return ex_id, service
@@ -325,7 +334,11 @@ def create_host_component(host_component, cluster, host, service, component):
     """
     host_component.pop("cluster")
     host_component = HostComponent.objects.create(
-        cluster=cluster, host=host, service=service, component=component, **host_component
+        cluster=cluster,
+        host=host,
+        service=service,
+        component=component,
+        **host_component,
     )
     return host_component
 
@@ -377,7 +390,7 @@ def set_old_password(password):
 
 
 @atomic
-def load(file_path):
+def load(file_path):  # noqa: C901
     """
     Loading and creating objects from JSON file
 
@@ -386,7 +399,7 @@ def load(file_path):
     """
     try:
         password = getpass.getpass()
-        with open(file_path, "r", encoding=settings.ENCODING_UTF_8) as f:
+        with open(file_path, encoding=settings.ENCODING_UTF_8) as f:
             encrypted = f.read()
             decrypted = decrypt_file(password, encrypted)
             data = json.loads(decrypted.decode(settings.ENCODING_UTF_8))
@@ -417,7 +430,9 @@ def load(file_path):
     ex_component_ids = {}
     for component_data in data["components"]:
         ex_component_id, component = create_component(
-            component_data, cluster, ex_service_ids[component_data.pop("service")]
+            component_data,
+            cluster,
+            ex_service_ids[component_data.pop("service")],
         )
         ex_component_ids[ex_component_id] = component
 

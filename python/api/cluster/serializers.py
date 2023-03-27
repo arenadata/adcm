@@ -10,21 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf import settings
-from rest_framework.exceptions import ValidationError
-from rest_framework.serializers import (
-    BooleanField,
-    CharField,
-    HyperlinkedIdentityField,
-    IntegerField,
-    JSONField,
-    ModelSerializer,
-    Serializer,
-    SerializerMethodField,
-)
-from rest_framework.validators import UniqueValidator
-
-from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
 from api.component.serializers import ComponentShortSerializer
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
@@ -40,6 +25,22 @@ from cm.issue import update_hierarchy_issues
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 from cm.status_api import get_cluster_status, get_hc_status
 from cm.upgrade import get_upgrade
+from django.conf import settings
+from rest_framework.exceptions import ValidationError
+from rest_framework.serializers import (
+    BooleanField,
+    CharField,
+    HyperlinkedIdentityField,
+    HyperlinkedRelatedField,
+    IntegerField,
+    JSONField,
+    ModelSerializer,
+    Serializer,
+    SerializerMethodField,
+)
+from rest_framework.validators import UniqueValidator
+
+from adcm.serializers import EmptySerializer
 
 
 def get_cluster_id(obj):
@@ -105,20 +106,24 @@ class ClusterDetailSerializer(ClusterSerializer):
     service = ObjectURL(view_name="service")
     host = ObjectURL(view_name="host")
     hostcomponent = HyperlinkedIdentityField(
-        view_name="host-component", lookup_field="id", lookup_url_kwarg="cluster_id"
+        view_name="host-component",
+        lookup_field="id",
+        lookup_url_kwarg="cluster_id",
     )
     status = SerializerMethodField()
     status_url = HyperlinkedIdentityField(view_name="cluster-status", lookup_field="id", lookup_url_kwarg="cluster_id")
     config = CommonAPIURL(view_name="object-config")
     serviceprototype = HyperlinkedIdentityField(
-        view_name="cluster-service-prototype", lookup_field="id", lookup_url_kwarg="cluster_id"
+        view_name="cluster-service-prototype",
+        lookup_field="id",
+        lookup_url_kwarg="cluster_id",
     )
     upgrade = HyperlinkedIdentityField(view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id")
     imports = HyperlinkedIdentityField(view_name="cluster-import", lookup_field="id", lookup_url_kwarg="cluster_id")
     bind = HyperlinkedIdentityField(view_name="cluster-bind", lookup_field="id", lookup_url_kwarg="cluster_id")
-    prototype = HyperlinkedIdentityField(
+    prototype = HyperlinkedRelatedField(
         view_name="cluster-prototype-detail",
-        lookup_field="pk",
+        read_only=True,
         lookup_url_kwarg="prototype_pk",
     )
     multi_state = StringListSerializer(read_only=True)
@@ -233,7 +238,7 @@ class ClusterDetailUISerializer(ClusterDetailSerializer):
         return get_main_info(obj)
 
 
-class StatusSerializer(EmptySerializer):
+class ClusterStatusSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     component_id = IntegerField(read_only=True)
     service_id = IntegerField(read_only=True)
@@ -289,12 +294,12 @@ class HostComponentUISerializer(EmptySerializer):
     host = SerializerMethodField()
     component = SerializerMethodField()
 
-    def get_host(self, obj):
+    def get_host(self, obj):  # pylint: disable=unused-argument
         hosts = Host.objects.filter(cluster=self.context.get("cluster"))
 
         return HostSerializer(hosts, many=True, context=self.context).data
 
-    def get_component(self, obj):
+    def get_component(self, obj):  # pylint: disable=unused-argument
         comps = ServiceComponent.objects.filter(cluster=self.context.get("cluster"))
 
         return HCComponentSerializer(comps, many=True, context=self.context).data
@@ -304,26 +309,26 @@ class HostComponentSaveSerializer(EmptySerializer):
     hc = JSONField()
 
     @staticmethod
-    def validate_hc(hc):
-        if not hc:
+    def validate_hc(hostcomponent):
+        if not hostcomponent:
             raise AdcmEx("INVALID_INPUT", "hc field is required")
 
-        if not isinstance(hc, list):
+        if not isinstance(hostcomponent, list):
             raise AdcmEx("INVALID_INPUT", "hc field should be a list")
 
-        for item in hc:
+        for item in hostcomponent:
             for key in ("component_id", "host_id", "service_id"):
                 if key not in item:
                     msg = '"{}" sub-field is required'
 
                     raise AdcmEx("INVALID_INPUT", msg.format(key))
 
-        return hc
+        return hostcomponent
 
     def create(self, validated_data):
-        hc = validated_data.get("hc")
+        hostcomponent = validated_data.get("hc")
 
-        return add_hc(self.context.get("cluster"), hc)
+        return add_hc(self.context.get("cluster"), hostcomponent)
 
 
 class HCComponentSerializer(ComponentShortSerializer):
@@ -346,18 +351,18 @@ class HCComponentSerializer(ComponentShortSerializer):
         return obj.service.prototype.display_name
 
     @staticmethod
-    def get_requires(obj):
+    def get_requires(obj):  # noqa: C901
         if not obj.prototype.requires:
             return None
 
         comp_list = {}
 
         def process_requires(req_list):
-            for c in req_list:
+            for require in req_list:
                 _comp = Prototype.obj.get(
                     type="component",
-                    name=c["component"],
-                    parent__name=c["service"],
+                    name=require["component"],
+                    parent__name=require["service"],
                     parent__bundle_id=obj.prototype.bundle_id,
                 )
                 if _comp == obj.prototype:
@@ -385,7 +390,7 @@ class HCComponentSerializer(ComponentShortSerializer):
                         "prototype_id": comp.id,
                         "name": comp_name,
                         "display_name": comp.display_name,
-                    }
+                    },
                 )
 
             if not comp_out:
@@ -397,7 +402,7 @@ class HCComponentSerializer(ComponentShortSerializer):
                     "name": service_name,
                     "display_name": service.display_name,
                     "components": comp_out,
-                }
+                },
             )
 
         return out

@@ -13,7 +13,6 @@
 """Tests for /stack related objects ans stuff"""
 
 import json
-from typing import List, Tuple
 
 import allure
 import coreapi
@@ -22,6 +21,7 @@ from _pytest.mark import ParameterSet
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
 from jsonschema import validate
+
 from tests.library import errorcodes
 from tests.library.errorcodes import ADCMError
 
@@ -34,7 +34,7 @@ def test_service_wo_name(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check error: no name in service definition"):
-        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, "There is no required key \"name\" in map.")
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'There is no required key "name" in map.')
 
 
 def test_service_wo_version(sdk_client_fs: ADCMClient):
@@ -52,7 +52,7 @@ def test_service_wo_actions(sdk_client_fs: ADCMClient):
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Get service without actions"):
         service_prototype = sdk_client_fs.service_prototype()._data  # pylint: disable=protected-access
-        with open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8') as file:
+        with open(SCHEMAS + "/stack_list_item_schema.json", encoding="utf_8") as file:
             schema = json.load(file)
     with allure.step("Check service"):
         assert validate(service_prototype, schema) is None
@@ -64,7 +64,7 @@ def test_cluster_proto_wo_actions(sdk_client_fs: ADCMClient):
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Get cluster without actions"):
         cluster_prototype = sdk_client_fs.cluster_prototype()._data  # pylint: disable=protected-access
-        with open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8') as file:
+        with open(SCHEMAS + "/stack_list_item_schema.json", encoding="utf_8") as file:
             schema = json.load(file)
     with allure.step("Check cluster"):
         assert validate(cluster_prototype, schema) is None
@@ -76,7 +76,7 @@ def test_host_proto_wo_actions(sdk_client_fs: ADCMClient):
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Get host without actions"):
         host_prototype = sdk_client_fs.host_prototype()._data  # pylint: disable=protected-access
-        with open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8') as file:
+        with open(SCHEMAS + "/stack_list_item_schema.json", encoding="utf_8") as file:
             schema = json.load(file)
     with allure.step("Check host prototype"):
         assert validate(host_prototype, schema) is None
@@ -88,7 +88,7 @@ def test_service_wo_type(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check error: No type in object definition"):
-        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, "There is no key \"type\" in map.")
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'There is no key "type" in map.')
 
 
 def test_service_unknown_type(sdk_client_fs: ADCMClient):
@@ -97,7 +97,7 @@ def test_service_unknown_type(sdk_client_fs: ADCMClient):
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check error: Unknown type"):
-        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, "Value \"unknown\" is not allowed")
+        errorcodes.INVALID_OBJECT_DEFINITION.equal(e, 'Value "unknown" is not allowed')
 
 
 def test_stack_hasnt_script_mandatory_key(sdk_client_fs: ADCMClient):
@@ -375,7 +375,7 @@ def test_when_bundle_hasnt_only_host_definition(sdk_client_fs: ADCMClient):
         errorcodes.BUNDLE_ERROR.equal(e, "There isn't any cluster or host provider definition in bundle")
 
 
-def _get_invalid_bundle_config_params() -> List[ParameterSet]:
+def _get_invalid_bundle_config_params() -> list[ParameterSet]:
     def _get_pytest_param(bundle_name, adcm_err: ADCMError, msg: str):
         return pytest.param(utils.get_data_dir(__file__, bundle_name), (adcm_err, msg), id=bundle_name)
 
@@ -415,7 +415,7 @@ def _get_invalid_bundle_config_params() -> List[ParameterSet]:
     _get_invalid_bundle_config_params(),
     indirect=["bundle_archive"],
 )
-def test_invalid_bundle_config(sdk_client_fs: ADCMClient, bundle_archive, expected_error: Tuple[ADCMError, str]):
+def test_invalid_bundle_config(sdk_client_fs: ADCMClient, bundle_archive, expected_error: tuple[ADCMError, str]):
     """Test upload bundle with invalid config"""
     (adcm_error, expected_msg) = expected_error
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:

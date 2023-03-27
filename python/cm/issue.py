@@ -33,7 +33,7 @@ from cm.models import (
 )
 
 
-def check_config(obj):  # pylint: disable=too-many-branches
+def check_config(obj):  # pylint: disable=too-many-branches # noqa: C901
     spec, _, _, _ = get_prototype_config(obj.prototype)
     conf, attr = get_obj_config(obj)
     for key, value in spec.items():  # pylint: disable=too-many-nested-blocks
@@ -75,10 +75,10 @@ def check_required_services(cluster):
 
 
 def check_required_import(obj: [Cluster, ClusterObject]):
-    if obj.prototype.type == ObjectType.Cluster:
+    if obj.prototype.type == ObjectType.CLUSTER:
         cluster = obj
         service = None
-    elif obj.prototype.type == ObjectType.Service:
+    elif obj.prototype.type == ObjectType.SERVICE:
         service = obj
         cluster = obj.cluster
     else:
@@ -93,38 +93,40 @@ def do_check_import(cluster, service=None):
             return True, "NOT_REQUIRED"
 
         import_exist = (False, None)
-        for cb in ClusterBind.objects.filter(cluster=cluster):
-            if cb.source_cluster and cb.source_cluster.prototype.name == _pi.name:
+        for cluster_bind in ClusterBind.objects.filter(cluster=cluster):
+            if cluster_bind.source_cluster and cluster_bind.source_cluster.prototype.name == _pi.name:
                 import_exist = (True, "CLUSTER_IMPORTED")
 
-            if cb.source_service and cb.source_service.prototype.name == _pi.name:
+            if cluster_bind.source_service and cluster_bind.source_service.prototype.name == _pi.name:
                 import_exist = (True, "SERVICE_IMPORTED")
+
         return import_exist
 
     res = (True, None)
     proto = cluster.prototype
     if service:
         proto = service.prototype
-    for pi in PrototypeImport.objects.filter(prototype=proto):
-        res = check_import(pi)
+
+    for prototype_import in PrototypeImport.objects.filter(prototype=proto):
+        res = check_import(prototype_import)
         if not res[0]:
             return res
 
     return res
 
 
-def check_hc(cluster):
+def check_hc(cluster):  # noqa: C901
     shc_list = []
-    for hc in HostComponent.objects.filter(cluster=cluster):
-        shc_list.append((hc.service, hc.host, hc.component))
+    for hostcomponent in HostComponent.objects.filter(cluster=cluster):
+        shc_list.append((hostcomponent.service, hostcomponent.host, hostcomponent.component))
 
     if not shc_list:
-        for co in ClusterObject.objects.filter(cluster=cluster):
-            for comp in Prototype.objects.filter(parent=co.prototype, type="component"):
+        for service in ClusterObject.objects.filter(cluster=cluster):
+            for comp in Prototype.objects.filter(parent=service.prototype, type="component"):
                 const = comp.constraint
                 if len(const) == 2 and const[0] == 0:
                     continue
-                logger.debug("void host components for %s", proto_ref(co.prototype))
+                logger.debug("void host components for %s", proto_ref(service.prototype))
                 return False
 
     for service in ClusterObject.objects.filter(cluster=cluster):
@@ -132,11 +134,13 @@ def check_hc(cluster):
             check_component_constraint(cluster, service.prototype, [i for i in shc_list if i[0] == service])
         except AdcmEx:
             return False
+
     try:
         check_component_requires(shc_list)
         check_bound_components(shc_list)
     except AdcmEx:
         return False
+
     return True
 
 
@@ -145,17 +149,18 @@ def check_component_requires(shc_list):
         return [i for i in shc_list if i[2].prototype.requires]
 
     def check_component_req(service, component):
-        for shc in shc_list:
-            if shc[0].prototype.name == service and shc[2].prototype.name == component:
+        for _shc in shc_list:
+            if _shc[0].prototype.name == service and _shc[2].prototype.name == component:
                 return True
+
         return False
 
     for shc in get_components_with_requires():
-        for r in shc[2].prototype.requires:
-            if not check_component_req(r["service"], r["component"]):
+        for requre in shc[2].prototype.requires:
+            if not check_component_req(requre["service"], requre["component"]):
                 ref = f'component "{shc[2].prototype.name}" of service "{shc[0].prototype.name}"'
                 msg = 'no required component "{}" of service "{}" for {}'
-                err("COMPONENT_CONSTRAINT_ERROR", msg.format(r["component"], r["service"], ref))
+                err("COMPONENT_CONSTRAINT_ERROR", msg.format(requre["component"], requre["service"], ref))
 
 
 def check_bound_components(shc_list):
@@ -187,15 +192,17 @@ def check_bound_components(shc_list):
 
 def get_obj_config(obj):
     if obj.config is None:
-        return ({}, {})
-    cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-    attr = cl.attr
+        return {}, {}
+
+    config_log = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
+    attr = config_log.attr
     if not attr:
         attr = {}
-    return (cl.config, attr)
+
+    return config_log.config, attr
 
 
-def check_component_constraint(cluster, service_prototype, hc_in, old_bundle=None):
+def check_component_constraint(cluster, service_prototype, hc_in, old_bundle=None):  # noqa: C901
     ref = f"in host component list for {service_prototype.type} {service_prototype.name}"
     all_host = Host.objects.filter(cluster=cluster)
 
@@ -219,8 +226,8 @@ def check_component_constraint(cluster, service_prototype, hc_in, old_bundle=Non
 
     def check(comp, const):
         count = 0
-        for (_, _, c) in hc_in:
-            if comp.name == c.prototype.name:
+        for _, _, component in hc_in:
+            if comp.name == component.prototype.name:
                 count += 1
 
         if isinstance(const[0], int):
@@ -239,42 +246,50 @@ def check_component_constraint(cluster, service_prototype, hc_in, old_bundle=Non
         elif const[0] == "odd":
             check_odd(count, const[0], comp)
 
-    for c in Prototype.objects.filter(parent=service_prototype, type="component"):
+    for component_prototype in Prototype.objects.filter(parent=service_prototype, type="component"):
         if old_bundle:
             try:
                 old_service_proto = Prototype.objects.get(
-                    name=service_prototype.name, type="service", bundle=old_bundle
+                    name=service_prototype.name,
+                    type="service",
+                    bundle=old_bundle,
                 )
-                Prototype.objects.get(parent=old_service_proto, bundle=old_bundle, type="component", name=c.name)
+                Prototype.objects.get(
+                    parent=old_service_proto,
+                    bundle=old_bundle,
+                    type="component",
+                    name=component_prototype.name,
+                )
             except Prototype.DoesNotExist:
                 continue
-        check(c, c.constraint)
+
+        check(component_prototype, component_prototype.constraint)
 
 
 _issue_check_map = {
-    ConcernCause.Config: check_config,
-    ConcernCause.Import: check_required_import,
-    ConcernCause.Service: check_required_services,
-    ConcernCause.HostComponent: check_hc,
+    ConcernCause.CONFIG: check_config,
+    ConcernCause.IMPORT: check_required_import,
+    ConcernCause.SERVICE: check_required_services,
+    ConcernCause.HOSTCOMPONENT: check_hc,
 }
 _prototype_issue_map = {
-    ObjectType.ADCM: tuple(),
-    ObjectType.Cluster: (
-        ConcernCause.Config,
-        ConcernCause.Import,
-        ConcernCause.Service,
-        ConcernCause.HostComponent,
+    ObjectType.ADCM: (),
+    ObjectType.CLUSTER: (
+        ConcernCause.CONFIG,
+        ConcernCause.IMPORT,
+        ConcernCause.SERVICE,
+        ConcernCause.HOSTCOMPONENT,
     ),
-    ObjectType.Service: (ConcernCause.Config, ConcernCause.Import),
-    ObjectType.Component: (ConcernCause.Config,),
-    ObjectType.Provider: (ConcernCause.Config,),
-    ObjectType.Host: (ConcernCause.Config,),
+    ObjectType.SERVICE: (ConcernCause.CONFIG, ConcernCause.IMPORT),
+    ObjectType.COMPONENT: (ConcernCause.CONFIG,),
+    ObjectType.PROVIDER: (ConcernCause.CONFIG,),
+    ObjectType.HOST: (ConcernCause.CONFIG,),
 }
 _issue_template_map = {
-    ConcernCause.Config: MessageTemplate.KnownNames.ConfigIssue,
-    ConcernCause.Import: MessageTemplate.KnownNames.RequiredImportIssue,
-    ConcernCause.Service: MessageTemplate.KnownNames.RequiredServiceIssue,
-    ConcernCause.HostComponent: MessageTemplate.KnownNames.HostComponentIssue,
+    ConcernCause.CONFIG: MessageTemplate.KnownNames.CONFIG_ISSUE,
+    ConcernCause.IMPORT: MessageTemplate.KnownNames.REQUIRED_IMPORT_ISSUE,
+    ConcernCause.SERVICE: MessageTemplate.KnownNames.REQUIRED_SERVICE_ISSUE,
+    ConcernCause.HOSTCOMPONENT: MessageTemplate.KnownNames.HOST_COMPONENT_ISSUE,
 }
 
 
@@ -288,7 +303,11 @@ def _create_concern_item(obj: ADCMEntity, issue_cause: ConcernCause) -> ConcernI
     reason = MessageTemplate.get_message_from_template(msg_name.value, source=obj)
     issue_name = _gen_issue_name(obj, issue_cause)
     issue = ConcernItem.objects.create(
-        type=ConcernType.Issue, name=issue_name, reason=reason, owner=obj, cause=issue_cause
+        type=ConcernType.ISSUE,
+        name=issue_name,
+        reason=reason,
+        owner=obj,
+        cause=issue_cause,
     )
     return issue
 
@@ -336,7 +355,7 @@ def update_hierarchy_issues(obj: ADCMEntity):
 
 def update_issue_after_deleting():
     """Remove issues which have no owners after object deleting"""
-    for concern in ConcernItem.objects.exclude(type=ConcernType.Lock):
+    for concern in ConcernItem.objects.exclude(type=ConcernType.LOCK):
         tree = Tree(concern.owner)
         affected = {node.value for node in tree.get_directly_affected(tree.built_from)}
         related = set(concern.related_objects)  # pylint: disable=consider-using-set-comprehension

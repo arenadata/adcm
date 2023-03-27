@@ -12,15 +12,16 @@
 
 import copy
 
-from adcm.tests.base import BaseTestCase
 from cm.models import ConfigLog
 from cm.tests.utils import gen_cluster, gen_config, gen_group, gen_prototype_config
 
+from adcm.tests.base import BaseTestCase
+
 
 class GroupConfigTest(BaseTestCase):
-    """Tests `GroupConfig` model"""
-
     def setUp(self) -> None:
+        super().setUp()
+
         self.cluster_config = {"group": {"string": "string"}, "activatable_group": {"integer": 1}}
         self.cluster_attr = {"activatable_group": {"active": True}}
         self.cluster = gen_cluster()
@@ -62,9 +63,9 @@ class GroupConfigTest(BaseTestCase):
         """Test create groups for objects"""
         group = gen_group("group", self.cluster.id, "cluster")
         parent_cl = ConfigLog.objects.get(id=self.cluster.config.current)
-        cl = ConfigLog.objects.get(id=group.config.current)
+        config_log = ConfigLog.objects.get(id=group.config.current)
 
-        self.assertDictEqual(parent_cl.config, cl.config)
+        self.assertDictEqual(parent_cl.config, config_log.config)
         self.assertDictEqual(parent_cl.attr, {"activatable_group": {"active": True}})
 
         cl_attr = {
@@ -79,19 +80,18 @@ class GroupConfigTest(BaseTestCase):
             },
         }
 
-        self.assertDictEqual(cl.attr, cl_attr)
+        self.assertDictEqual(config_log.attr, cl_attr)
 
     def test_get_diff_config_attr(self):
-        """Test get_diff_config_attr() method"""
         group = gen_group("group", self.cluster.id, "cluster")
         diff_config, diff_attr = group.get_diff_config_attr()
 
         self.assertDictEqual(diff_config, {})
         self.assertDictEqual(diff_attr, {})
 
-        cl = ConfigLog.objects.get(id=group.config.current)
-        cl.config = {"group": {"string": "str"}, "activatable_group": {"integer": 1}}
-        cl.attr = {
+        config_log = ConfigLog.objects.get(id=group.config.current)
+        config_log.config = {"group": {"string": "str"}, "activatable_group": {"integer": 1}}
+        config_log.attr = {
             "activatable_group": {"active": True},
             "group_keys": {
                 "group": {"value": None, "fields": {"string": True}},
@@ -102,14 +102,13 @@ class GroupConfigTest(BaseTestCase):
                 "activatable_group": {"value": True, "fields": {"integer": True}},
             },
         }
-        cl.save()
+        config_log.save()
         diff_config, diff_attr = group.get_diff_config_attr()
 
         self.assertDictEqual(diff_config, {"group": {"string": "str"}})
         self.assertDictEqual(diff_attr, {})
 
     def test_get_config_spec(self):
-        """Test get_config_spec() method"""
         group = gen_group("group", self.cluster.id, "cluster")
         spec = {
             "group": {
@@ -121,7 +120,7 @@ class GroupConfigTest(BaseTestCase):
                         "type": "string",
                         "group_customization": True,
                         "limits": {},
-                    }
+                    },
                 },
             },
             "activatable_group": {
@@ -133,7 +132,7 @@ class GroupConfigTest(BaseTestCase):
                         "type": "integer",
                         "group_customization": True,
                         "limits": {},
-                    }
+                    },
                 },
             },
         }
@@ -141,7 +140,6 @@ class GroupConfigTest(BaseTestCase):
         self.assertDictEqual(group.get_config_spec(), spec)
 
     def test_create_group_keys(self):
-        """Test create_group_keys() method"""
         group = gen_group("group", self.cluster.id, "cluster")
         gen_prototype_config(
             prototype=self.cluster.prototype,
@@ -206,19 +204,16 @@ class GroupConfigTest(BaseTestCase):
         self.assertDictEqual(test_custom_group_keys, custom_group_keys)
 
     def test_update_parent_config(self):
-        """Test update parent config for group"""
         group = gen_group("group", self.cluster.id, "cluster")
 
-        cl = ConfigLog.objects.get(id=group.config.current)
+        config_log = ConfigLog.objects.get(id=group.config.current)
         parent_cl = ConfigLog.objects.get(id=self.cluster.config.current)
 
-        # change group.string
-
-        cl.config = {
+        config_log.config = {
             "group": {"string": "str"},
             "activatable_group": {"integer": 1},
         }
-        cl.attr = {
+        config_log.attr = {
             "activatable_group": {"active": True},
             "group_keys": {
                 "group": {"value": None, "fields": {"string": True}},
@@ -229,24 +224,24 @@ class GroupConfigTest(BaseTestCase):
                 "activatable_group": {"value": True, "fields": {"integer": True}},
             },
         }
-        cl.save()
+        config_log.save()
 
         parent_cl.config = {"group": {"string": "string"}, "activatable_group": {"integer": 100}}
         parent_cl.save()
         group.refresh_from_db()
-        cl = ConfigLog.objects.get(id=group.config.current)
+        config_log = ConfigLog.objects.get(id=group.config.current)
 
-        self.assertDictEqual(cl.config, {"group": {"string": "str"}, "activatable_group": {"integer": 100}})
+        self.assertDictEqual(config_log.config, {"group": {"string": "str"}, "activatable_group": {"integer": 100}})
 
         parent_cl.config = {"group": {"string": "string"}, "activatable_group": {"integer": 100}}
         parent_cl.attr = {"activatable_group": {"active": False}}
         parent_cl.save()
         group.refresh_from_db()
-        cl = ConfigLog.objects.get(id=group.config.current)
+        config_log = ConfigLog.objects.get(id=group.config.current)
 
-        self.assertDictEqual(cl.config, {"group": {"string": "str"}, "activatable_group": {"integer": 100}})
+        self.assertDictEqual(config_log.config, {"group": {"string": "str"}, "activatable_group": {"integer": 100}})
         self.assertDictEqual(
-            cl.attr,
+            config_log.attr,
             {
                 "activatable_group": {"active": False},
                 "group_keys": {
@@ -260,7 +255,7 @@ class GroupConfigTest(BaseTestCase):
             },
         )
 
-        cl.attr = {
+        config_log.attr = {
             "activatable_group": {"active": True},
             "group_keys": {
                 "group": {"value": None, "fields": {"string": True}},
@@ -271,14 +266,14 @@ class GroupConfigTest(BaseTestCase):
                 "activatable_group": {"value": True, "fields": {"integer": True}},
             },
         }
-        cl.save()
+        config_log.save()
         parent_cl.attr = {"activatable_group": {"active": False}}
         parent_cl.save()
         group.refresh_from_db()
-        cl = ConfigLog.objects.get(id=group.config.current)
+        config_log = ConfigLog.objects.get(id=group.config.current)
 
         self.assertDictEqual(
-            cl.attr,
+            config_log.attr,
             {
                 "activatable_group": {"active": True},
                 "group_keys": {
@@ -293,7 +288,6 @@ class GroupConfigTest(BaseTestCase):
         )
 
     def test_create_config_for_group(self):
-        """Test create new config for GroupConfig"""
         group = gen_group("group", self.cluster.id, "cluster")
         cl_current = ConfigLog.objects.get(id=group.config.current)
         attr = copy.deepcopy(cl_current.attr)
@@ -302,28 +296,26 @@ class GroupConfigTest(BaseTestCase):
                 "custom_group_keys": {
                     "group": {"value": False, "fields": {"string": False}},
                     "activatable_group": {"value": False, "fields": {"integer": False}},
-                }
-            }
+                },
+            },
         )
         cl_new = ConfigLog.objects.create(obj_ref=cl_current.obj_ref, config=cl_current.config, attr=attr)
 
         self.assertDictEqual(cl_current.attr, cl_new.attr)
 
     def test_upgrade_cluster_config(self):
-        """Test upgrade cluster with GroupConfig"""
-
         group = gen_group("group", self.cluster.id, "cluster")
-        cl = ConfigLog.objects.get(id=group.config.current)
+        config_log = ConfigLog.objects.get(id=group.config.current)
 
         self.assertDictEqual(
-            cl.config,
+            config_log.config,
             {
                 "group": {"string": "string"},
                 "activatable_group": {"integer": 1},
             },
         )
         self.assertDictEqual(
-            cl.attr,
+            config_log.attr,
             {
                 "activatable_group": {"active": True},
                 "group_keys": {
@@ -375,10 +367,10 @@ class GroupConfigTest(BaseTestCase):
         )
 
         group.refresh_from_db()
-        cl = ConfigLog.objects.get(id=group.config.current)
+        config_log = ConfigLog.objects.get(id=group.config.current)
 
         self.assertDictEqual(
-            cl.config,
+            config_log.config,
             {
                 "float": 0.1,
                 "group": {"string": "string", "float": 0.1},
@@ -386,7 +378,7 @@ class GroupConfigTest(BaseTestCase):
             },
         )
         self.assertDictEqual(
-            cl.attr,
+            config_log.attr,
             {
                 "activatable_group": {"active": True},
                 "group_keys": {

@@ -13,6 +13,11 @@
 import json
 from pathlib import Path
 
+from api.action.serializers import ActionJobSerializer
+from api.concern.serializers import ConcernItemSerializer
+from cm.ansible_plugin import get_check_log
+from cm.job import start_task
+from cm.models import JobLog, JobStatus, LogStorage, TaskLog
 from django.conf import settings
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (
@@ -22,20 +27,14 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
-from api.action.serializers import ActionJobSerializer
-from api.concern.serializers import ConcernItemSerializer
-from cm.ansible_plugin import get_check_log
-from cm.errors import AdcmEx
-from cm.job import start_task
-from cm.models import JobLog, JobStatus, LogStorage, TaskLog
-
 
 class JobShortSerializer(HyperlinkedModelSerializer):
     display_name = SerializerMethodField()
+    terminatable = SerializerMethodField()
 
     class Meta:
         model = JobLog
-        fields = ("id", "display_name", "status", "start_date", "finish_date", "url")
+        fields = ("id", "display_name", "status", "terminatable", "start_date", "finish_date", "url")
         extra_kwargs = {"url": {"lookup_url_kwarg": "job_pk"}}
 
     @staticmethod
@@ -46,6 +45,13 @@ class JobShortSerializer(HyperlinkedModelSerializer):
             return obj.action.display_name
         else:
             return None
+
+    @staticmethod
+    def get_terminatable(obj: JobLog):
+        if obj.sub_action is None:
+            return False
+
+        return obj.sub_action.allowed_to_terminate
 
 
 class TaskSerializer(HyperlinkedModelSerializer):
@@ -98,7 +104,7 @@ class TaskRetrieveSerializer(HyperlinkedModelSerializer):
             "cancel",
             "download",
         )
-        read_only_fields = ("object_id", "status", "start_date", "finish_date")
+        read_only_fields = ("object_id", "status", "start_date", "finish_date", "pid", "selector")
         extra_kwargs = {"url": {"lookup_url_kwarg": "task_pk"}}
 
     def get_action_url(self, obj: TaskLog) -> str | None:
@@ -178,6 +184,13 @@ class JobRetrieveSerializer(HyperlinkedModelSerializer):
         view_name="tasklog-detail",
         lookup_url_kwarg="task_pk",
     )
+    terminatable = SerializerMethodField()
+
+    @staticmethod
+    def get_terminatable(obj: JobLog):
+        if obj.sub_action is None:
+            return False
+        return obj.sub_action.allowed_to_terminate
 
     class Meta:
         model = JobLog
@@ -191,6 +204,7 @@ class JobRetrieveSerializer(HyperlinkedModelSerializer):
             "log_files",
             "action_url",
             "task_url",
+            "terminatable",
         )
         extra_kwargs = {"url": {"lookup_url_kwarg": "job_pk"}}
 
@@ -238,7 +252,7 @@ class JobRetrieveSerializer(HyperlinkedModelSerializer):
                         kwargs={"job_pk": obj.pk, "log_pk": log_storage.pk},
                         request=self.context["request"],
                     ),
-                }
+                },
             )
 
         return logs
@@ -262,12 +276,10 @@ class LogStorageRetrieveSerializer(HyperlinkedModelSerializer):
     def _get_ansible_content(obj):
         path_file = settings.RUN_DIR / f"{obj.job.id}" / f"{obj.name}-{obj.type}.{obj.format}"
         try:
-            with open(path_file, "r", encoding=settings.ENCODING_UTF_8) as f:
+            with open(path_file, encoding=settings.ENCODING_UTF_8) as f:
                 content = f.read()
-        except FileNotFoundError as e:
-            msg = f'File "{obj.name}-{obj.type}.{obj.format}" not found'
-
-            raise AdcmEx("LOG_NOT_FOUND", msg) from e
+        except FileNotFoundError:
+            content = ""
 
         return content
 

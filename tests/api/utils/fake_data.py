@@ -19,6 +19,7 @@ from random import choice, randint
 import allure
 from genson import SchemaBuilder
 from rstr.xeger import Xeger
+
 from tests.api.utils.tools import random_string
 
 
@@ -49,13 +50,14 @@ def gen_string(prop=None):
     pattern = prop.get("pattern", None)
     if pattern:
         if min_length or max_length:
-            # TODO implement pattern with min/max length
             raise NotImplementedError
+
         return Xeger().xeger(pattern)
+
     return random_string(strlen=randint(min_length, max_length))
 
 
-def gen_bool(prop=None):
+def gen_bool(prop=None):  # pylint: disable=unused-argument
     """
     Generate Boolean value
     :param prop: for capability only
@@ -139,16 +141,16 @@ def gen_object(prop=None):
             return _gen_any_obj()
         return {key: gen_string() for key in prop.get("additionalProperties", {})}
 
-    for k in prop[prop_key].keys():
-        json_prop = prop[prop_key][k]
+    for _prop in prop[prop_key].keys():
+        json_prop = prop[prop_key][_prop]
 
-        if _should_include(k, required):
-            output[k] = _get_generator(json_prop)
+        if _should_include(_prop, required):
+            output[_prop] = _get_generator(json_prop)
 
-        if k == "duration":
+        if _prop == "duration":
             msg = "Set 'duration' property to 2 sec in fake generated data by JSON schema"
             with allure.step(msg):
-                output[k] = 2
+                output[_prop] = 2
 
     return output
 

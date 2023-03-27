@@ -7,7 +7,7 @@ import {
 } from '@app/shared/configuration/attributes/attribute.service';
 import { FormControl, FormGroup } from '@angular/forms';
 import { IFieldOptions } from '@app/shared/configuration/types';
-import { BaseDirective } from '@adwp-ui/widgets';
+import { BaseDirective } from '@app/adwp';
 import { MatCheckboxChange } from '@angular/material/checkbox';
 import { FieldComponent } from '@app/shared/configuration/field/field.component';
 

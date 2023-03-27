@@ -10,24 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List
-
-from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
-from django.http.request import QueryDict
-from django_filters import rest_framework as drf_filters
-from guardian.shortcuts import get_objects_for_user
-from rest_framework.exceptions import PermissionDenied
-from rest_framework.filters import OrderingFilter
-from rest_framework.response import Response
-from rest_framework.reverse import reverse
-from rest_framework.serializers import HyperlinkedIdentityField, Serializer
-from rest_framework.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_400_BAD_REQUEST,
-    HTTP_409_CONFLICT,
-)
 
 from cm.api import load_mm_objects
 from cm.errors import AdcmEx
@@ -45,6 +27,22 @@ from cm.models import (
     PrototypeConfig,
     ServiceComponent,
 )
+from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
+from django.http.request import QueryDict
+from django_filters import rest_framework as drf_filters
+from guardian.shortcuts import get_objects_for_user
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.filters import OrderingFilter
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+from rest_framework.serializers import HyperlinkedIdentityField, Serializer
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_409_CONFLICT,
+)
 
 
 def _change_mm_via_action(
@@ -60,7 +58,7 @@ def _change_mm_via_action(
             obj=obj,
             conf={},
             attr={},
-            hc=[],
+            hostcomponent=[],
             hosts=[],
             verbose=False,
         )
@@ -73,9 +71,9 @@ def _update_mm_hierarchy_issues(obj: Host | ClusterObject | ServiceComponent) ->
     if isinstance(obj, Host):
         update_hierarchy_issues(obj.provider)
 
-    hosts = (host_component.host for host_component in HostComponent.objects.filter(cluster=obj.cluster))
-    for host in hosts:
-        update_hierarchy_issues(host.provider)
+    providers = {host_component.host.provider for host_component in HostComponent.objects.filter(cluster=obj.cluster)}
+    for provider in providers:
+        update_hierarchy_issues(provider)
 
     update_hierarchy_issues(obj.cluster)
     update_issue_after_deleting()
@@ -99,13 +97,13 @@ def get_object_for_user(user, perms, klass, **kwargs):
         raise AdcmEx(error_code) from None
 
 
-def check_obj(model, req, error=None):
+def check_obj(model, req, error=None):  # pylint: disable=unused-argument
     if isinstance(req, dict):
-        kw = req
+        kwargs = req
     else:
-        kw = {"id": req}
+        kwargs = {"id": req}
 
-    return model.obj.get(**kw)
+    return model.obj.get(**kwargs)
 
 
 def hlink(view, lookup, lookup_url):
@@ -139,9 +137,9 @@ def update(serializer, **kwargs):
     return save(serializer, HTTP_200_OK, **kwargs)
 
 
-def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
+def filter_actions(obj: ADCMEntity, actions_set: list[Action]):
     """Filter out actions that are not allowed to run on object at that moment"""
-    if obj.concerns.filter(type=ConcernType.Lock).exists():
+    if obj.concerns.filter(type=ConcernType.LOCK).exists():
         return []
 
     allowed = []
@@ -156,7 +154,7 @@ def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
 def get_api_url_kwargs(obj, request, no_obj_type=False):
     obj_type = obj.prototype.type
 
-    if obj_type == "adcm":  # TODO: this is a temporary patch for `config` endpoint
+    if obj_type == "adcm":
         kwargs = {"adcm_pk": obj.pk}
     else:
         kwargs = {f"{obj_type}_id": obj.id}
@@ -203,7 +201,10 @@ def fix_ordering(field, view):
     return fix
 
 
-def get_maintenance_mode_response(obj: Host | ClusterObject | ServiceComponent, serializer: Serializer) -> Response:
+def get_maintenance_mode_response(  # noqa: C901
+    obj: Host | ClusterObject | ServiceComponent,
+    serializer: Serializer,
+) -> Response:
     # pylint: disable=too-many-branches
 
     turn_on_action_name = settings.ADCM_TURN_ON_MM_ACTION_NAME
@@ -252,7 +253,10 @@ def get_maintenance_mode_response(obj: Host | ClusterObject | ServiceComponent, 
 
         if obj_name == "host" or service_has_hc or component_has_hc:
             serializer = _change_mm_via_action(
-                prototype=prototype, action_name=turn_on_action_name, obj=obj, serializer=serializer
+                prototype=prototype,
+                action_name=turn_on_action_name,
+                obj=obj,
+                serializer=serializer,
             )
         else:
             obj.maintenance_mode = MaintenanceMode.ON
@@ -276,7 +280,10 @@ def get_maintenance_mode_response(obj: Host | ClusterObject | ServiceComponent, 
 
         if obj_name == "host" or service_has_hc or component_has_hc:
             serializer = _change_mm_via_action(
-                prototype=prototype, action_name=turn_off_action_name, obj=obj, serializer=serializer
+                prototype=prototype,
+                action_name=turn_off_action_name,
+                obj=obj,
+                serializer=serializer,
             )
         else:
             obj.maintenance_mode = MaintenanceMode.OFF
@@ -308,7 +315,7 @@ class ObjectURL(HyperlinkedIdentityField):
 
 
 class UrlField(HyperlinkedIdentityField):
-    def get_kwargs(self, obj):
+    def get_kwargs(self, obj):  # pylint: disable=unused-argument
         return {}
 
     def get_url(self, obj, view_name, request, _format):
@@ -346,6 +353,9 @@ class SuperuserOnlyMixin:
     not_superuser_error_code = None
 
     def get_queryset(self, *args, **kwargs):
+        if getattr(self, "swagger_fake_view", False):
+            return self.queryset.model.objects.none()
+
         if not self.request.user.is_superuser:
             if self.not_superuser_error_code:
                 raise AdcmEx(self.not_superuser_error_code)

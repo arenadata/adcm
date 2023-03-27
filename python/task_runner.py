@@ -10,23 +10,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# pylint: disable=unused-import,useless-return,protected-access,bare-except,global-statement
+# pylint: disable=wrong-import-order
 
 import os
 import signal
 import subprocess
 import sys
 import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
-from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
-from django.utils import timezone
+import adcm.init_django  # pylint: disable=unused-import # noqa: F401
 
-import adcm.init_django
+from cm.errors import AdcmEx
 from cm.job import finish_task, re_prepare_job
 from cm.logger import logger
 from cm.models import JobLog, JobStatus, LogStorage, TaskLog
+from cm.utils import get_env_with_venv_path
+from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 
 TASK_ID = 0
 
@@ -35,13 +37,16 @@ def terminate_job(task, jobs):
     running_job = jobs.get(status=JobStatus.RUNNING)
 
     if running_job.pid:
-        os.kill(running_job.pid, signal.SIGTERM)
+        try:
+            os.kill(running_job.pid, signal.SIGTERM)
+        except OSError as e:
+            raise AdcmEx("NOT_ALLOWED_TERMINATION", f"Failed to terminate process: {e}") from e
         finish_task(task, running_job, JobStatus.ABORTED)
     else:
         finish_task(task, None, JobStatus.ABORTED)
 
 
-def terminate_task(signum, frame):
+def terminate_task(signum, frame):  # pylint: disable=unused-argument
     logger.info("cancel task #%s, signal: #%s", TASK_ID, signum)
     task = TaskLog.objects.get(id=TASK_ID)
     jobs = JobLog.objects.filter(task_id=TASK_ID)
@@ -58,7 +63,7 @@ def terminate_task(signum, frame):
         logger.warning("no jobs running for task #%s", TASK_ID)
         finish_task(task, None, JobStatus.ABORTED)
 
-    os._exit(signum)
+    sys.exit(signum)
 
 
 signal.signal(signal.SIGTERM, terminate_task)
@@ -67,35 +72,37 @@ signal.signal(signal.SIGTERM, terminate_task)
 def run_job(task_id, job_id, err_file):
     logger.debug("task run job #%s of task #%s", job_id, task_id)
     cmd = [
-        "/adcm/python/job_venv_wrapper.sh",
-        TaskLog.objects.get(id=task_id).action.venv,
         str(settings.CODE_DIR / "job_runner.py"),
         str(job_id),
     ]
     logger.info("task run job cmd: %s", " ".join(cmd))
+
     try:
-        proc = subprocess.Popen(cmd, stderr=err_file)
+        # pylint: disable=consider-using-with
+        proc = subprocess.Popen(
+            args=cmd, stderr=err_file, env=get_env_with_venv_path(venv=TaskLog.objects.get(id=task_id).action.venv)
+        )
         res = proc.wait()
-
         return res
-    except Exception:  # pylint: disable=broad-except
+    except Exception:  # pylint: disable=broad-except # noqa: BLE001
         logger.error("exception running job %s", job_id)
-
         return 1
 
 
 def set_log_body(job):
     name = job.sub_action.script_type if job.sub_action else job.action.script_type
-    log_storage = LogStorage.objects.filter(job=job, name=name, type__in=["stdout", "stderr"])
-    for ls in log_storage:
-        file_path = settings.RUN_DIR / f"{ls.job.id}" / f"{ls.name}-{ls.type}.{ls.format}"
-        with open(file_path, "r", encoding=settings.ENCODING_UTF_8) as f:
+    log_storages = LogStorage.objects.filter(job=job, name=name, type__in=["stdout", "stderr"])
+    for log_storage in log_storages:
+        file_path = (
+            settings.RUN_DIR / f"{log_storage.job.id}" / f"{log_storage.name}-{log_storage.type}.{log_storage.format}"
+        )
+        with open(file_path, encoding=settings.ENCODING_UTF_8) as f:
             body = f.read()
 
-        LogStorage.objects.filter(job=job, name=ls.name, type=ls.type).update(body=body)
+        LogStorage.objects.filter(job=job, name=log_storage.name, type=log_storage.type).update(body=body)
 
 
-def run_task(task_id, args=None):
+def run_task(task_id, args=None):  # noqa: C901
     logger.debug("task_runner.py called as: %s", sys.argv)
     try:
         task = TaskLog.objects.get(id=task_id)
@@ -113,7 +120,11 @@ def run_task(task_id, args=None):
 
         return
 
-    err_file = open(settings.LOG_DIR / "job_runner.err", "a+", encoding=settings.ENCODING_UTF_8)
+    err_file = open(  # pylint: disable=consider-using-with
+        settings.LOG_DIR / "job_runner.err",
+        "a+",
+        encoding=settings.ENCODING_UTF_8,
+    )
 
     logger.info("run task #%s", task_id)
 
@@ -121,13 +132,14 @@ def run_task(task_id, args=None):
     count = 0
     res = 0
     for job in jobs:
+        job.refresh_from_db()
         if args == "restart" and job.status == JobStatus.SUCCESS:
             logger.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
-
             continue
+
         task.refresh_from_db()
         re_prepare_job(task, job)
-        job.start_date = timezone.now()
+        job.start_date = datetime.now(tz=ZoneInfo("UTC"))
         job.save()
         res = run_job(task.id, job.id, err_file)
         set_log_body(job)
@@ -140,11 +152,21 @@ def run_task(task_id, args=None):
                 task.object_id = 0
                 task.object_type = None
 
+        job.refresh_from_db()
         count += 1
         if res != 0:
+            task.refresh_from_db()
+            if job.status == JobStatus.ABORTED and task.status != JobStatus.ABORTED:
+                continue
+
             break
 
-    if res == 0:
+    if job is not None:
+        job.refresh_from_db()
+
+    if job is not None and job.status == JobStatus.ABORTED:
+        finish_task(task, job, JobStatus.ABORTED)
+    elif res == 0:
         finish_task(task, job, JobStatus.SUCCESS)
     else:
         finish_task(task, job, JobStatus.FAILED)
@@ -154,8 +176,9 @@ def run_task(task_id, args=None):
     logger.info("finish task #%s, ret %s", task_id, res)
 
 
-def do():
-    global TASK_ID
+def do_task():
+    global TASK_ID  # pylint: disable=global-statement
+
     if len(sys.argv) < 2:
         print(f"\nUsage:\n{os.path.basename(sys.argv[0])} task_id [restart]\n")
         sys.exit(4)
@@ -168,4 +191,4 @@ def do():
 
 
 if __name__ == "__main__":
-    do()
+    do_task()

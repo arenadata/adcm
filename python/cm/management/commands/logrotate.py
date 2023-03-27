@@ -16,11 +16,6 @@ from datetime import datetime, timedelta
 from enum import Enum
 from subprocess import STDOUT, CalledProcessError, check_output
 
-from django.conf import settings
-from django.core.management.base import BaseCommand
-from django.db import transaction
-from django.utils import timezone
-
 from audit.models import AuditLogOperationResult
 from audit.utils import make_audit_log
 from cm.models import (
@@ -28,7 +23,6 @@ from cm.models import (
     Cluster,
     ClusterObject,
     ConfigLog,
-    DummyData,
     GroupConfig,
     Host,
     HostProvider,
@@ -37,6 +31,10 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from django.conf import settings
+from django.core.management.base import BaseCommand
+from django.db import transaction
+from django.utils import timezone
 
 logger = logging.getLogger("background_tasks")
 
@@ -134,7 +132,7 @@ class Command(BaseCommand):
             "no_compress": "" if self.config["logrotate"]["nginx"]["compress"] else "#",
             "num_rotations": self.config["logrotate"]["nginx"]["max_history"],
         }
-        with open(self.__nginx_logrotate_conf, "wt", encoding=settings.ENCODING_UTF_8) as conf_file:
+        with open(self.__nginx_logrotate_conf, "w", encoding=settings.ENCODING_UTF_8) as conf_file:
             conf_file.write(LOGROTATE_CONF_FILE_TEMPLATE.format(**conf_file_args))
         self.__log(f"conf file `{self.__nginx_logrotate_conf}` generated", "debug")
 
@@ -161,35 +159,36 @@ class Command(BaseCommand):
 
             exclude_pks = set()
             target_configlogs = ConfigLog.objects.filter(date__lte=threshold_date)
-            for cl in target_configlogs:
-                for cl_pk in (cl.obj_ref.current, cl.obj_ref.previous):
+            for config_log in target_configlogs:
+                for cl_pk in (config_log.obj_ref.current, config_log.obj_ref.previous):
                     exclude_pks.add(cl_pk)
-            for gc in GroupConfig.objects.all():
-                if gc.config:
-                    exclude_pks.add(gc.config.previous)
-                    exclude_pks.add(gc.config.current)
+
+            for group_config in GroupConfig.objects.all():
+                if group_config.config:
+                    exclude_pks.add(group_config.config.previous)
+                    exclude_pks.add(group_config.config.current)
+
             target_configlogs = target_configlogs.exclude(pk__in=exclude_pks)
-            target_configlog_ids = set(i[0] for i in target_configlogs.values_list("id"))
-            target_objectconfig_ids = set(
+            target_configlog_ids = {i[0] for i in target_configlogs.values_list("id")}
+            target_objectconfig_ids = {
                 cl.obj_ref.id for cl in target_configlogs if not self.__has_related_records(cl.obj_ref)
-            )
+            }
             if target_configlog_ids or target_objectconfig_ids:
-                make_audit_log("config", AuditLogOperationResult.Success, "launched")
+                make_audit_log("config", AuditLogOperationResult.SUCCESS, "launched")
 
             with transaction.atomic():
-                DummyData.objects.filter(id=1).update(date=timezone.now())
                 ConfigLog.objects.filter(id__in=target_configlog_ids).delete()
                 ObjectConfig.objects.filter(id__in=target_objectconfig_ids).delete()
                 if target_configlog_ids or target_objectconfig_ids:
-                    make_audit_log("config", AuditLogOperationResult.Success, "completed")
+                    make_audit_log("config", AuditLogOperationResult.SUCCESS, "completed")
 
             self.__log(
                 f"Deleted {len(target_configlog_ids)} ConfigLogs and " f"{len(target_objectconfig_ids)} ObjectConfigs",
                 "info",
             )
 
-        except Exception as e:  # pylint: disable=broad-except
-            make_audit_log("config", AuditLogOperationResult.Fail, "completed")
+        except Exception as e:  # pylint: disable=broad-except # noqa: BLE001
+            make_audit_log("config", AuditLogOperationResult.FAIL, "completed")
             self.__log("Error in ConfigLog rotation", "warning")
             self.__log(e, "exception")
 
@@ -205,14 +204,14 @@ class Command(BaseCommand):
                     HostProvider.objects.filter(config=obj_conf).count(),
                     ServiceComponent.objects.filter(config=obj_conf).count(),
                     GroupConfig.objects.filter(config=obj_conf).count(),
-                ]
+                ],
             )
             > 0
         ):
             return True
         return False
 
-    def __run_joblog_rotation(self):
+    def __run_joblog_rotation(self):  # noqa: C901
         try:  # pylint: disable=too-many-nested-blocks
             days_delta_db = self.config["job"]["log_rotation_in_db"]
             days_delta_fs = self.config["job"]["log_rotation_on_fs"]
@@ -228,13 +227,14 @@ class Command(BaseCommand):
             is_deleted = False
             if days_delta_db > 0:
                 target_tasklogs = TaskLog.objects.filter(
-                    finish_date__lte=threshold_date_db, status__in=["success", "failed"]
+                    finish_date__lte=threshold_date_db,
+                    status__in=["success", "failed"],
                 )
                 if target_tasklogs:
                     is_deleted = True
                     with transaction.atomic():
-                        DummyData.objects.filter(id=1).update(date=timezone.now())
                         target_tasklogs.delete()
+
                         # valid as long as `on_delete=models.SET_NULL` in JobLog.task field
                         JobLog.objects.filter(task__isnull=True).delete()
 
@@ -254,11 +254,11 @@ class Command(BaseCommand):
                         except FileNotFoundError:
                             pass
                 if is_deleted:
-                    make_audit_log("task", AuditLogOperationResult.Success, "launched")
-                    make_audit_log("task", AuditLogOperationResult.Success, "completed")
+                    make_audit_log("task", AuditLogOperationResult.SUCCESS, "launched")
+                    make_audit_log("task", AuditLogOperationResult.SUCCESS, "completed")
                 self.__log("fs JobLog rotated", "info")
-        except Exception as e:  # pylint: disable=broad-except
-            make_audit_log("task", AuditLogOperationResult.Fail, "completed")
+        except Exception as e:  # pylint: disable=broad-except # noqa: BLE001
+            make_audit_log("task", AuditLogOperationResult.FAIL, "completed")
             self.__log("Error in JobLog rotation", "warning")
             self.__log(e, "exception")
 

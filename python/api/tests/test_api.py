@@ -14,22 +14,6 @@
 from unittest.mock import patch
 from uuid import uuid4
 
-from django.conf import settings
-from django.urls import reverse
-from django.utils import timezone
-from rest_framework.response import Response
-from rest_framework.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_204_NO_CONTENT,
-    HTTP_400_BAD_REQUEST,
-    HTTP_401_UNAUTHORIZED,
-    HTTP_404_NOT_FOUND,
-    HTTP_405_METHOD_NOT_ALLOWED,
-    HTTP_409_CONFLICT,
-)
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.api import save_hc
 from cm.hierarchy import Tree
 from cm.models import (
@@ -52,17 +36,31 @@ from cm.tests.utils import (
     gen_service,
     gen_task_log,
 )
-from init_db import init as init_adcm
+from django.conf import settings
+from django.urls import reverse
+from django.utils import timezone
+from init_db import init
 from rbac.upgrade.role import init_roles
+from rest_framework.response import Response
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_401_UNAUTHORIZED,
+    HTTP_404_NOT_FOUND,
+    HTTP_405_METHOD_NOT_ALLOWED,
+    HTTP_409_CONFLICT,
+)
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestAPI(BaseTestCase):
-    # pylint: disable=too-many-public-methods
-
     def setUp(self) -> None:
         super().setUp()
 
-        init_adcm()
+        init()
         init_roles()
 
         self.files_dir = settings.BASE_DIR / "python" / "cm" / "tests" / "files"
@@ -73,23 +71,7 @@ class TestAPI(BaseTestCase):
         self.service = "ZOOKEEPER"
         self.component = "ZOOKEEPER_SERVER"
 
-    def load_bundle(self, bundle_name):
-        with open(self.files_dir / bundle_name, encoding=settings.ENCODING_UTF_8) as f:
-            response: Response = self.client.post(
-                path=reverse("upload-bundle"),
-                data={"file": f},
-            )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        response: Response = self.client.post(
-            path=reverse("load-bundle"),
-            data={"bundle_file": bundle_name},
-        )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-
-    def get_service_proto_id(self):
+    def get_service_proto_id(self) -> int | None:
         response: Response = self.client.get(reverse("service-prototype-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -98,11 +80,11 @@ class TestAPI(BaseTestCase):
             if service["name"] == self.service:
                 return service["id"]
 
-        raise AssertionError
+        return None
 
-    def get_component_id(self, cluster_id, service_id, component_name):
+    def get_component_id(self, cluster_id: int, service_id: int, component_name: str) -> int | None:
         response: Response = self.client.get(
-            reverse("component", kwargs={"cluster_id": cluster_id, "service_id": service_id})
+            reverse("component", kwargs={"cluster_id": cluster_id, "service_id": service_id}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -111,43 +93,39 @@ class TestAPI(BaseTestCase):
             if comp["name"] == component_name:
                 return comp["id"]
 
-        raise AssertionError
+        return None
 
-    def get_cluster_proto_id(self):
+    def get_cluster_proto_id(self) -> tuple[int, int]:
         response: Response = self.client.get(reverse("cluster-prototype-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        for cluster in response.json()["results"]:
-            return cluster["bundle_id"], cluster["id"]
+        return response.json()["results"][0]["bundle_id"], response.json()["results"][0]["id"]
 
-    def get_host_proto_id(self):
+    def create_host(self, fqdn: str, name: str | None = None) -> tuple[int, int, int]:
+        name = name or uuid4().hex
+
         response: Response = self.client.get(reverse("host-prototype-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        for host in response.json()["results"]:
-            return host["bundle_id"], host["id"]
+        ssh_bundle_id = response.json()["results"][0]["bundle_id"]
+        host_proto = response.json()["results"][0]["id"]
 
-    def get_host_provider_proto_id(self):
         response: Response = self.client.get(reverse("provider-prototype-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        for provider in response.json()["results"]:
-            return provider["bundle_id"], provider["id"]
+        provider_proto = response.json()["results"][0]["id"]
 
-    def create_host(self, fqdn, name=None):
-        name = name or uuid4().hex
-        ssh_bundle_id, host_proto = self.get_host_proto_id()
-        _, provider_proto = self.get_host_provider_proto_id()
         response: Response = self.client.post(reverse("provider"), {"name": name, "prototype_id": provider_proto})
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         provider_id = response.json()["id"]
         response: Response = self.client.post(
-            reverse("host"), {"fqdn": fqdn, "prototype_id": host_proto, "provider_id": provider_id}
+            reverse("host"),
+            {"fqdn": fqdn, "prototype_id": host_proto, "provider_id": provider_id},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -201,7 +179,7 @@ class TestAPI(BaseTestCase):
     def test_cluster(self):  # pylint: disable=too-many-statements
         cluster_name = "test-cluster"
         cluster_url = reverse("cluster")
-        self.load_bundle(self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
         bundle_id, proto_id = self.get_cluster_proto_id()
 
         response: Response = self.client.post(cluster_url, {})
@@ -282,7 +260,7 @@ class TestAPI(BaseTestCase):
         name = "test-cluster"
         cluster_url = reverse("cluster")
 
-        self.load_bundle(self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
         bundle_id, proto_id = self.get_cluster_proto_id()
 
         response: Response = self.client.post(cluster_url, {"name": name, "prototype_id": proto_id})
@@ -294,7 +272,11 @@ class TestAPI(BaseTestCase):
 
         patched_name = "patched-cluster"
 
-        response: Response = self.client.patch(first_cluster_url, {"name": patched_name}, content_type=APPLICATION_JSON)
+        response: Response = self.client.patch(
+            first_cluster_url,
+            {"name": patched_name},
+            content_type=APPLICATION_JSON,
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["name"], patched_name)
@@ -317,7 +299,9 @@ class TestAPI(BaseTestCase):
         second_cluster_url = reverse("cluster-details", kwargs={"cluster_id": second_cluster_id})
 
         response: Response = self.client.patch(
-            second_cluster_url, {"name": patched_name}, content_type=APPLICATION_JSON
+            second_cluster_url,
+            {"name": patched_name},
+            content_type=APPLICATION_JSON,
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -339,8 +323,8 @@ class TestAPI(BaseTestCase):
         host = "test.host.net"
         cluster_url = reverse("cluster")
 
-        self.load_bundle(self.bundle_adh_name)
-        self.load_bundle(self.bundle_ssh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_ssh_name)
 
         adh_bundle_id, cluster_proto = self.get_cluster_proto_id()
 
@@ -402,7 +386,7 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.json()["code"], "BUNDLE_CONFLICT")
 
     def test_service(self):
-        self.load_bundle(self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
         service_id = self.get_service_proto_id()
         service_url = reverse("service-prototype-list")
         this_service_url = reverse("service-prototype-detail", kwargs={"prototype_pk": service_id})
@@ -434,7 +418,7 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
     def test_cluster_service(self):
-        self.load_bundle(self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
 
         service_proto_id = self.get_service_proto_id()
         bundle_id, cluster_proto_id = self.get_cluster_proto_id()
@@ -459,7 +443,7 @@ class TestAPI(BaseTestCase):
         response: Response = self.client.post(
             this_service_url,
             {
-                "prototype_id": -service_proto_id,
+                "prototype_id": -1 * service_proto_id,
             },
         )
 
@@ -488,7 +472,8 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.json()["code"], "SERVICE_CONFLICT")
 
         this_service_from_cluster_url = reverse(
-            "service-details", kwargs={"cluster_id": cluster_id, "service_id": service_id}
+            "service-details",
+            kwargs={"cluster_id": cluster_id, "service_id": service_id},
         )
         response: Response = self.client.delete(this_service_from_cluster_url)
 
@@ -503,13 +488,16 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
     def test_hostcomponent(self):  # pylint: disable=too-many-statements,too-many-locals
-        self.load_bundle(self.bundle_adh_name)
-        self.load_bundle(self.bundle_ssh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_ssh_name)
 
         adh_bundle_id, cluster_proto = self.get_cluster_proto_id()
         ssh_bundle_id, _, host_id = self.create_host(self.host)
         service_proto_id = self.get_service_proto_id()
-        response: Response = self.client.post(reverse("cluster"), {"name": self.cluster, "prototype_id": cluster_proto})
+        response: Response = self.client.post(
+            reverse("cluster"),
+            {"name": self.cluster, "prototype_id": cluster_proto},
+        )
         cluster_id = response.json()["id"]
 
         response: Response = self.client.post(
@@ -575,7 +563,9 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.json()["desc"], "hc field should be a list")
 
         response: Response = self.client.post(
-            hc_url, {"hc": [{"component_id": comp_id}]}, content_type=APPLICATION_JSON
+            hc_url,
+            {"hc": [{"component_id": comp_id}]},
+            content_type=APPLICATION_JSON,
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -592,7 +582,7 @@ class TestAPI(BaseTestCase):
                 "hc": [
                     {"service_id": service_id, "host_id": 1, "component_id": comp_id},
                     {"service_id": service_id, "host_id": 1, "component_id": comp_id},
-                ]
+                ],
             },
             content_type=APPLICATION_JSON,
         )
@@ -676,7 +666,7 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.json()["code"], "BUNDLE_CONFLICT")
 
     def test_config(self):  # pylint: disable=too-many-statements
-        self.load_bundle(self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
         adh_bundle_id, proto_id = self.get_cluster_proto_id()
         service_proto_id = self.get_service_proto_id()
         response: Response = self.client.post(reverse("cluster"), {"name": self.cluster, "prototype_id": proto_id})
@@ -688,7 +678,8 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.json(), [])
 
         response: Response = self.client.post(
-            reverse("service", kwargs={"cluster_id": cluster_id}), {"prototype_id": 100500}
+            reverse("service", kwargs={"cluster_id": cluster_id}),
+            {"prototype_id": 100500},
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -717,7 +708,7 @@ class TestAPI(BaseTestCase):
                     "object_type": "service",
                     "version": "current",
                 },
-            )
+            ),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -758,7 +749,7 @@ class TestAPI(BaseTestCase):
                     "object_type": "service",
                     "version": id2,
                 },
-            )
+            ),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -792,7 +783,7 @@ class TestAPI(BaseTestCase):
                     "object_type": "service",
                     "version": "current",
                 },
-            )
+            ),
         )
         config = response.json()["config"]
 
@@ -807,7 +798,7 @@ class TestAPI(BaseTestCase):
                     "object_type": "service",
                     "version": "previous",
                 },
-            )
+            ),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -837,7 +828,7 @@ class TestAPI2(BaseTestCase):
                 "hash": "2232f33c6259d44c23046fce4382f16c450f8ba5",
                 "description": "",
                 "date": timezone.now(),
-            }
+            },
         )
 
         self.prototype = Prototype.objects.create(
@@ -856,7 +847,7 @@ class TestAPI2(BaseTestCase):
                 "adcm_min_version": None,
                 "monitoring": "active",
                 "description": "",
-            }
+            },
         )
         self.object_config = ObjectConfig.objects.create(**{"current": 0, "previous": 0})
 
@@ -867,7 +858,7 @@ class TestAPI2(BaseTestCase):
                 "description": "",
                 "config_id": self.object_config.id,
                 "state": "installed",
-            }
+            },
         )
 
     @patch("cm.api.load_service_map")
@@ -877,14 +868,22 @@ class TestAPI2(BaseTestCase):
         cluster_object = ClusterObject.objects.create(prototype=self.prototype, cluster=self.cluster)
         host = Host.objects.create(prototype=self.prototype, cluster=self.cluster)
         component = Prototype.objects.create(
-            parent=self.prototype, type="component", bundle_id=self.bundle.id, name="node"
+            parent=self.prototype,
+            type="component",
+            bundle_id=self.bundle.id,
+            name="node",
         )
         service_component = ServiceComponent.objects.create(
-            cluster=self.cluster, service=cluster_object, prototype=component
+            cluster=self.cluster,
+            service=cluster_object,
+            prototype=component,
         )
 
         HostComponent.objects.create(
-            cluster=self.cluster, host=host, service=cluster_object, component=service_component
+            cluster=self.cluster,
+            host=host,
+            service=cluster_object,
+            component=service_component,
         )
 
         host_comp_list = [(cluster_object, host, service_component)]
@@ -892,14 +891,19 @@ class TestAPI2(BaseTestCase):
 
         self.assertListEqual(hc_list, [HostComponent.objects.first()])
 
-        mock_post_event.assert_called_once_with("change_hostcomponentmap", "cluster", self.cluster.id)
+        mock_post_event.assert_called_once_with(event="change_hostcomponentmap", obj=self.cluster)
         mock_update_issues.assert_called()
         mock_load_service_map.assert_called_once()
 
-    @patch("cm.api.ctx")
+    @patch("cm.api.CTX")
     @patch("cm.api.load_service_map")
     @patch("cm.api.update_hierarchy_issues")
-    def test_save_hc__big_update__locked_hierarchy(self, mock_issue, mock_load, ctx):
+    def test_save_hc__big_update__locked_hierarchy(
+        self,
+        mock_issue,
+        mock_load,
+        ctx,
+    ):  # pylint: disable=unused-argument
         """
         Update bigger HC map - move `component_2` from `host_2` to `host_3`
         On locked hierarchy (from ansible task)
@@ -951,7 +955,7 @@ class TestAPI2(BaseTestCase):
 
     @patch("cm.api.load_service_map")
     @patch("cm.api.update_hierarchy_issues")
-    def test_save_hc__big_update__unlocked_hierarchy(self, mock_update, mock_load):
+    def test_save_hc__big_update__unlocked_hierarchy(self, mock_update, mock_load):  # pylint: disable=unused-argument
         """
         Update bigger HC map - move `component_2` from `host_2` to `host_3`
         On unlocked hierarchy (from API)

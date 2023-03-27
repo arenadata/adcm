@@ -9,17 +9,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from django.contrib.contenttypes.models import ContentType
-from django.test import TestCase
+# pylint: disable=wrong-import-order
 
 from cm.adcm_config import check_value_unselected_field
 from cm.errors import AdcmEx
 from cm.models import GroupConfig
-from cm.tests import utils
+from cm.tests.utils import gen_cluster, gen_config, gen_prototype_config
+from django.contrib.contenttypes.models import ContentType
+
+from adcm.tests.base import BaseTestCase
 
 
-class TestUnselectedFields(TestCase):
+class TestUnselectedFields(BaseTestCase):
     def setUp(self):
+        super().setUp()
+
         self.cluster_config = {
             "list": None,
             "string": None,
@@ -28,34 +32,34 @@ class TestUnselectedFields(TestCase):
             "json": None,
         }
         self.cluster_attr = {}
-        self.cluster = utils.gen_cluster()
-        self.cluster.config = utils.gen_config(config=self.cluster_config, attr=self.cluster_attr)
+        self.cluster = gen_cluster()
+        self.cluster.config = gen_config(config=self.cluster_config, attr=self.cluster_attr)
         self.cluster.save()
-        utils.gen_prototype_config(
+        gen_prototype_config(
             prototype=self.cluster.prototype,
             name="list",
             field_type="list",
             group_customization=True,
         )
-        utils.gen_prototype_config(
+        gen_prototype_config(
             prototype=self.cluster.prototype,
             name="map",
             field_type="map",
             group_customization=True,
         )
-        utils.gen_prototype_config(
+        gen_prototype_config(
             prototype=self.cluster.prototype,
             name="string",
             field_type="string",
             group_customization=True,
         )
-        utils.gen_prototype_config(
+        gen_prototype_config(
             prototype=self.cluster.prototype,
             name="structure",
             field_type="structure",
             group_customization=True,
         )
-        utils.gen_prototype_config(
+        gen_prototype_config(
             prototype=self.cluster.prototype,
             name="json",
             field_type="json",
@@ -74,7 +78,7 @@ class TestUnselectedFields(TestCase):
                 "map": False,
                 "structure": False,
                 "json": False,
-            }
+            },
         }
         self.group_keys = self.new_attr.get("group_keys")
 
@@ -137,7 +141,7 @@ class TestUnselectedFields(TestCase):
 
     def test_unequal_values(self):
         cluster_config = {"list": [], "string": "", "map": {}, "structure": {}, "json": {}}
-        self.cluster.config = utils.gen_config(config=cluster_config, attr=self.cluster_attr)
+        self.cluster.config = gen_config(config=cluster_config, attr=self.cluster_attr)
         self.cluster.save()
 
         new_config = {"list": [], "string": "wow", "map": {}, "structure": {}, "json": {}}

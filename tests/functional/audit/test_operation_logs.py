@@ -12,7 +12,6 @@
 
 """Test audit operation logs"""
 
-from typing import Tuple
 
 import allure
 import pytest
@@ -21,13 +20,12 @@ from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, User
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.utils import random_string
 from docker.models.containers import Container
+
 from tests.functional.audit.conftest import BUNDLES_DIR, ScenarioArg
-from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles, create_policy
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm]
 
 CONTEXT = {
     "simple_user": "simpler",
@@ -55,9 +53,9 @@ def dummy_host(generic_provider) -> Host:
 
 
 @pytest.fixture()
-def new_user_and_client(sdk_client_fs) -> Tuple[User, ADCMClient]:
+def new_user_and_client(sdk_client_fs) -> tuple[User, ADCMClient]:
     """Create new user and login under it"""
-    credentials = dict(username=CONTEXT["simple_user"], password="n2ohvzikj(#*Fhxznc")
+    credentials = {"username": CONTEXT["simple_user"], "password": "n2ohvzikj(#*Fhxznc"}
     user = sdk_client_fs.user_create(**credentials)
     return user, ADCMClient(url=sdk_client_fs.url, user=credentials["username"], password=credentials["password"])
 
@@ -80,7 +78,7 @@ def test_simple_flow(sdk_client_fs, audit_log_checker, adb_bundle, dummy_host, n
     new_user, new_client = new_user_and_client
     create_policy(
         sdk_client_fs,
-        BusinessRoles.ViewClusterConfigurations,
+        BusinessRoles.VIEW_CLUSTER_CONFIGURATIONS,
         [cluster],
         users=[new_user],
         groups=[],
@@ -124,7 +122,7 @@ def test_no_audit_objects_duplication(adcm_fs, sdk_client_fs, adb_bundle, generi
         assert total_deleted == 5, "5 objects should be considered deleted"
         for object_type, expected_amount in (("cluster", 1), ("service", 2), ("component", 2)):
             actual_amount = int(
-                _exec_django_shell(container, template.format(f'is_deleted=True, object_type="{object_type}"'))
+                _exec_django_shell(container, template.format(f'is_deleted=True, object_type="{object_type}"')),
             )
             assert actual_amount == expected_amount, (
                 f"Unexpected amount of deleted audit objects of type {object_type}\n"
@@ -140,7 +138,7 @@ def _exec_django_shell(container: Container, statement: str) -> str:
                 "sh",
                 "-c",
                 ". /adcm/venv/default/bin/activate " f"&& python /adcm/python/manage.py shell -c '{script}'",
-            ]
+            ],
         )
         out = output.decode("utf-8").strip()
         assert exit_code == 0, f"docker exec failed: {out}"

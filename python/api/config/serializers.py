@@ -10,8 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-builtin
+from typing import Any
 
+from api.utils import CommonAPIURL, get_api_url_kwargs
+from cm.adcm_config import (
+    get_default,
+    group_is_activatable,
+    restore_cluster_config,
+    ui_config,
+)
+from cm.api import update_obj_config
+from cm.models import PrototypeConfig
+
+# pylint: disable=redefined-builtin
+from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (
     BooleanField,
@@ -24,30 +36,22 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
-from api.utils import CommonAPIURL, get_api_url_kwargs
-from cm.adcm_config import (
-    get_default,
-    group_is_activatable,
-    restore_cluster_config,
-    ui_config,
-)
-from cm.api import update_obj_config
 
 
 class ConfigVersionURL(HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, _format):
-        kwargs = get_api_url_kwargs(self.context.get('object'), request)
-        kwargs['version'] = obj.id
+        kwargs = get_api_url_kwargs(self.context.get("object"), request)
+        kwargs["version"] = obj.id
         return reverse(view_name, kwargs=kwargs, request=request, format=_format)
 
 
 class HistoryCurrentPreviousConfigSerializer(EmptySerializer):
-    history = CommonAPIURL(read_only=True, view_name='config-history')
-    current = CommonAPIURL(read_only=True, view_name='config-current')
-    previous = CommonAPIURL(read_only=True, view_name='config-previous')
+    history = CommonAPIURL(read_only=True, view_name="config-history")
+    current = CommonAPIURL(read_only=True, view_name="config-current")
+    previous = CommonAPIURL(read_only=True, view_name="config-previous")
 
 
-class ObjectConfigSerializer(EmptySerializer):
+class ConfigObjectConfigSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     date = DateTimeField(read_only=True)
     description = CharField(required=False, allow_blank=True)
@@ -55,34 +59,37 @@ class ObjectConfigSerializer(EmptySerializer):
     attr = JSONField(required=False)
 
 
-class ObjectConfigUpdateSerializer(ObjectConfigSerializer):
+class ObjectConfigUpdateSerializer(ConfigObjectConfigSerializer):
     def update(self, instance, validated_data):
-        conf = validated_data.get('config')
-        attr = validated_data.get('attr', {})
-        desc = validated_data.get('description', '')
-        cl = update_obj_config(instance.obj_ref, conf, attr, desc)
-        if validated_data.get('ui'):
-            cl.config = ui_config(validated_data.get('obj'), cl)
-        return cl
+        conf = validated_data.get("config")
+        attr = validated_data.get("attr", {})
+        desc = validated_data.get("description", "")
+        config_log = update_obj_config(instance.obj_ref, conf, attr, desc)
+        if validated_data.get("ui"):
+            config_log.config = ui_config(validated_data.get("obj"), config_log)
+
+        return config_log
 
 
-class ObjectConfigRestoreSerializer(ObjectConfigSerializer):
+class ObjectConfigRestoreSerializer(ConfigObjectConfigSerializer):
     config = JSONField(read_only=True)
 
     def update(self, instance, validated_data):
         return restore_cluster_config(
-            instance.obj_ref, instance.id, validated_data.get('description', instance.description)
+            instance.obj_ref,
+            instance.id,
+            validated_data.get("description", instance.description),
         )
 
 
-class ConfigHistorySerializer(ObjectConfigSerializer):
-    url = ConfigVersionURL(read_only=True, view_name='config-history-version')
+class ConfigHistorySerializer(FlexFieldsSerializerMixin, ConfigObjectConfigSerializer):
+    url = ConfigVersionURL(read_only=True, view_name="config-history-version")
 
 
 class ConfigSerializer(EmptySerializer):
     name = CharField()
     description = CharField(required=False)
-    display_name = CharField(required=False)
+    display_name = SerializerMethodField()
     subname = CharField()
     default = SerializerMethodField(method_name="get_default_field")
     value = SerializerMethodField()
@@ -92,11 +99,18 @@ class ConfigSerializer(EmptySerializer):
     required = BooleanField()
 
     @staticmethod
-    def get_default_field(obj):
+    def get_display_name(obj: PrototypeConfig) -> str:
+        if not obj.display_name:
+            return obj.name
+
+        return obj.display_name
+
+    @staticmethod
+    def get_default_field(obj: PrototypeConfig) -> Any:
         return get_default(obj)
 
-    def get_value(self, obj):  # pylint: disable=arguments-renamed
-        proto = self.context.get('prototype', None)
+    def get_value(self, obj: PrototypeConfig) -> Any:  # pylint: disable=arguments-renamed
+        proto = self.context.get("prototype", None)
         return get_default(obj, proto)
 
 

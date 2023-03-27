@@ -10,20 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from guardian.mixins import PermissionListMixin
-from rest_framework import permissions
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
-
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.component.serializers import (
     ComponentChangeMaintenanceModeSerializer,
     ComponentDetailSerializer,
     ComponentDetailUISerializer,
     ComponentSerializer,
+    ComponentStatusSerializer,
     ComponentUISerializer,
-    StatusSerializer,
 )
 from api.utils import (
     check_custom_perm,
@@ -34,17 +28,28 @@ from audit.utils import audit
 from cm.api import update_mm_objects
 from cm.models import Cluster, ClusterObject, HostComponent, ServiceComponent
 from cm.status_api import make_ui_component_status
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
+from rest_framework import permissions
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
 
 
 def get_component_queryset(queryset, user, kwargs):
     if "cluster_id" in kwargs:
         cluster = get_object_for_user(user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"])
-        co = get_object_for_user(user, "cm.view_clusterobject", ClusterObject, cluster=cluster, id=kwargs["service_id"])
-        queryset = queryset.filter(cluster=cluster, service=co)
+        service = get_object_for_user(
+            user,
+            "cm.view_clusterobject",
+            ClusterObject,
+            cluster=cluster,
+            id=kwargs["service_id"],
+        )
+        queryset = queryset.filter(cluster=cluster, service=service)
     elif "service_id" in kwargs:
-        co = get_object_for_user(user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
-        queryset = queryset.filter(service=co)
+        service = get_object_for_user(user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
+        queryset = queryset.filter(service=service)
 
     return queryset
 
@@ -89,7 +94,10 @@ class ComponentMaintenanceModeView(GenericUIView):
     @audit
     def post(self, request: Request, **kwargs) -> Response:
         component = get_object_for_user(
-            request.user, "cm.view_servicecomponent", ServiceComponent, id=kwargs["component_id"]
+            request.user,
+            "cm.view_servicecomponent",
+            ServiceComponent,
+            id=kwargs["component_id"],
         )
         # pylint: disable=protected-access
         check_custom_perm(request.user, "change_maintenance_mode", component._meta.model_name, component)
@@ -106,9 +114,9 @@ class ComponentMaintenanceModeView(GenericUIView):
 class StatusList(GenericUIView):
     queryset = HostComponent.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
-    serializer_class = StatusSerializer
+    serializer_class = ComponentStatusSerializer
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         queryset = get_component_queryset(ServiceComponent.objects.all(), request.user, kwargs)
         component = get_object_for_user(request.user, "cm.view_servicecomponent", queryset, id=kwargs["component_id"])
         if self._is_for_ui():

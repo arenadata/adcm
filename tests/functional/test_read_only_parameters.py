@@ -16,6 +16,7 @@ import allure
 import coreapi
 import pytest
 from adcm_pytest_plugin import utils
+
 from tests.library.errorcodes import CONFIG_VALUE_ERROR
 
 # pylint: disable=redefined-outer-name
@@ -24,9 +25,9 @@ TEST_DATA = [
     ("read-only-when-runned", False, True, "run", False, True),
     ("writable-when-installed", "bluhbluh", "bluhbluh", "install", False, False),
     ("writable", "bluh bluh", "bluh bluh", "", False, False),
-    ('read-only-when-installed', False, True, "install", True, True),
-    ('read-only-runned-integer', 500, 10, "run", True, True),
-    ('read-only-int', 10, 10, "", False, False),
+    ("read-only-when-installed", False, True, "install", True, True),
+    ("read-only-runned-integer", 500, 10, "run", True, True),
+    ("read-only-int", 10, 10, "", False, False),
 ]
 TEST_IDS = [
     "ro_when_runned",
@@ -54,19 +55,19 @@ def cluster_config(cluster):
 
 @pytest.mark.xfail(
     reason="Disabled due to temporary fix in https://arenadata.atlassian.net/browse/ADCM-2353\n"
-    "Fix is incompatible with this test"
+    "Fix is incompatible with this test",
 )
 @pytest.mark.parametrize(
-    ('key', 'input_value', 'expected', 'action', 'group', 'check_exception'),
+    ("key", "input_value", "expected", "action", "group", "check_exception"),
     TEST_DATA,
     ids=TEST_IDS,
 )
 def test_readonly_variable(key, input_value, expected, action, group, check_exception, cluster):
     """Assert properties of read-only params"""
-    with allure.step('Set config'):
+    with allure.step("Set config"):
         current_config = cluster.config()
         if group:
-            current_config['group'][key] = input_value
+            current_config["group"][key] = input_value
         else:
             current_config[key] = input_value
         if action:
@@ -74,12 +75,12 @@ def test_readonly_variable(key, input_value, expected, action, group, check_exce
         if check_exception:
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
                 cluster.config_set(current_config)
-            CONFIG_VALUE_ERROR.equal(e, 'config key ', 'is read only')
+            CONFIG_VALUE_ERROR.equal(e, "config key ", "is read only")
         else:
             cluster.config_set(current_config)
-    with allure.step('Check config after update'):
+    with allure.step("Check config after update"):
         config_after_update = cluster.config()
         if group:
-            assert config_after_update['group'][key] == expected
+            assert config_after_update["group"][key] == expected
         else:
             assert config_after_update[key] == expected

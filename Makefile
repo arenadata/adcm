@@ -24,9 +24,18 @@ build_base:
 
 build: describe buildss buildjs build_base
 
-unittests: build_base
-	docker run -e DJANGO_SETTINGS_MODULE=adcm.settings -i --rm -v $(CURDIR)/data:/adcm/data $(APP_IMAGE):$(APP_TAG) \
+unittests_sqlite: describe
+	docker run -i --rm -v $(CURDIR)/data:/adcm/data -e DJANGO_SETTINGS_MODULE=adcm.settings $(APP_IMAGE):$(APP_TAG) \
 	sh -c "pip install --no-cache -r /adcm/requirements.txt && /adcm/python/manage.py test /adcm/python -v 2"
+
+unittests_postgresql: describe
+	docker network create adcm
+	docker run -d -e POSTGRES_PASSWORD="postgres" --network=adcm --name postgres postgres:14
+	docker run -i --rm --network=adcm -v $(CURDIR)/data:/adcm/data -e DJANGO_SETTINGS_MODULE=adcm.settings \
+	-e DB_HOST="postgres" -e DB_PORT=5432 -e DB_NAME="postgres" -e DB_USER="postgres" -e DB_PASS="postgres" \
+	$(APP_IMAGE):$(APP_TAG) \
+	sh -c "pip install --no-cache -r /adcm/requirements.txt && /adcm/python/manage.py test /adcm/python -v 2"
+	docker stop postgres && docker rm postgres && docker network rm adcm
 
 pytest:
 	docker pull hub.adsw.io/library/functest:3.10.6.slim.buster-x64
@@ -61,3 +70,11 @@ pretty:
 	autoflake -r -i --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python tests
 	isort license_checker.py python tests
 	python license_checker.py --fix --folders python go
+
+lint:
+	black --check license_checker.py python tests
+	autoflake --check --quiet -r --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python tests
+	isort --check license_checker.py python tests
+	python license_checker.py --folders python go
+	flake8 --max-line-length=120 tests/functional tests/ui_tests
+	pylint --rcfile pyproject.toml --recursive y python tests

@@ -9,8 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from rest_framework.response import Response
-
 from audit.models import (
     AUDIT_OBJECT_TYPE_TO_MODEL_MAP,
     MODEL_TO_AUDIT_OBJECT_TYPE_MAP,
@@ -24,10 +22,12 @@ from cm.models import (
     Action,
     ADCMEntity,
     ClusterObject,
+    JobLog,
     ServiceComponent,
     TaskLog,
     Upgrade,
 )
+from rest_framework.response import Response
 
 
 def _get_audit_operation(
@@ -63,7 +63,7 @@ def _task_case(task_pk: str, action: str) -> tuple[AuditOperation, AuditObject |
 
     audit_operation = AuditOperation(
         name=f"{action_name} {action}ed",
-        operation_type=AuditLogOperationType.Update,
+        operation_type=AuditLogOperationType.UPDATE,
     )
 
     if task and task.task_object:
@@ -71,6 +71,39 @@ def _task_case(task_pk: str, action: str) -> tuple[AuditOperation, AuditObject |
             object_id=task.task_object.pk,
             object_name=task.task_object.name,
             object_type=task.object_type.name,
+        )
+    else:
+        audit_object = None
+
+    return audit_operation, audit_object
+
+
+def _job_case(job_pk: str, action: str) -> tuple[AuditOperation, AuditObject | None]:
+    job = JobLog.objects.filter(pk=job_pk).first()
+    operation_name = None
+
+    if job:
+        if job.sub_action:
+            operation_name = f'Job "{job.sub_action.display_name}"'
+        if job.action and operation_name is not None:
+            operation_name = f'{operation_name} of action "{job.action.display_name}"'
+
+    if operation_name is None:
+        operation_name = "Job"
+    operation_name_postfix = {
+        "cancel": " cancelled",
+    }.get(action, None) or f" {action}ed"
+
+    audit_operation = AuditOperation(
+        name=f"{operation_name}{operation_name_postfix}",
+        operation_type=AuditLogOperationType.UPDATE,
+    )
+
+    if job and job.task and job.task.task_object:
+        audit_object = get_or_create_audit_obj(
+            object_id=job.task.task_object.pk,
+            object_name=job.task.task_object.name,
+            object_type=job.task.object_type.name,
         )
     else:
         audit_object = None
@@ -196,7 +229,7 @@ def action_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | Non
         ):
             audit_operation = AuditOperation(
                 name="{action_display_name} action launched",
-                operation_type=AuditLogOperationType.Update,
+                operation_type=AuditLogOperationType.UPDATE,
             )
 
             action = Action.objects.filter(pk=action_pk).first()
@@ -233,7 +266,7 @@ def upgrade_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | No
 
             audit_operation = AuditOperation(
                 name=audit_operation_name,
-                operation_type=AuditLogOperationType.Update,
+                operation_type=AuditLogOperationType.UPDATE,
             )
             obj = PATH_STR_TO_OBJ_CLASS_MAP[obj_type].objects.filter(pk=obj_pk).first()
             object_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP[PATH_STR_TO_OBJ_CLASS_MAP[obj_type]]
@@ -249,12 +282,14 @@ def upgrade_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | No
     return audit_operation, audit_object
 
 
-def task_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | None]:
+def task_job_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | None]:
     audit_operation = None
     audit_object = None
 
     match path:
         case ["task", task_pk, action] | ["task", task_pk, action]:
             audit_operation, audit_object = _task_case(task_pk=task_pk, action=action)
+        case ["job", job_pk, action]:
+            audit_operation, audit_object = _job_case(job_pk=job_pk, action=action)
 
     return audit_operation, audit_object

@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { MatDialog } from '@angular/material/dialog';
 import { MatCheckboxChange } from '@angular/material/checkbox';
-import { Entity, IListResult, RowEventData, IChoiceColumn } from '@adwp-ui/widgets';
+import { Entity, IListResult, RowEventData, IChoiceColumn } from '@app/adwp';
 import * as Immutable from 'immutable';
 import { filter } from 'rxjs/operators';
 import { zip } from 'rxjs';

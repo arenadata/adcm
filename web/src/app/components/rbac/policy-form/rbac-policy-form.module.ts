@@ -4,7 +4,7 @@ import { RbacPolicyFormComponent } from './rbac-policy-form.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatStepperModule } from '@angular/material/stepper';
 import { MatButtonModule } from '@angular/material/button';
-import { AdwpFilterPipeModule, AdwpFormElementModule, AdwpMapperPipeModule } from '@adwp-ui/widgets';
+import { AdwpFilterPipeModule, AdwpFormElementModule, AdwpMapperPipeModule } from '@app/adwp';
 import { RbacPolicyFormStepOneComponent } from './rbac-policy-form-step-one/rbac-policy-form-step-one.component';
 import { RbacPolicyFormStepTwoComponent } from './rbac-policy-form-step-two/rbac-policy-form-step-two.component';
 import { RbacPolicyFormStepThreeComponent } from './rbac-policy-form-step-three/rbac-policy-form-step-three.component';

@@ -9,9 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from django.urls import reverse
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import AuditLog
 from cm.models import (
     Bundle,
@@ -23,7 +20,10 @@ from cm.models import (
     ObjectConfig,
     Prototype,
 )
+from django.urls import reverse
 from rbac.models import Group, Policy, Role, RoleTypes
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestAuditObjectRename(BaseTestCase):
@@ -57,7 +57,7 @@ class TestAuditObjectRename(BaseTestCase):
         self.role = Role.objects.create(
             name="test_role",
             display_name="test_role",
-            type=RoleTypes.role,
+            type=RoleTypes.ROLE,
             parametrized_by_type=["cluster"],
             module_name="rbac.roles",
             class_name="ObjectRole",
@@ -188,7 +188,7 @@ class TestAuditObjectRename(BaseTestCase):
                         "id": self.cluster.pk,
                         "name": self.cluster.name,
                         "type": "cluster",
-                    }
+                    },
                 ],
                 "role": {"id": self.role.pk},
                 "user": [{"id": self.test_user.pk}],
@@ -221,7 +221,7 @@ class TestAuditObjectRename(BaseTestCase):
                         "id": self.cluster.pk,
                         "name": self.cluster.name,
                         "type": "cluster",
-                    }
+                    },
                 ],
                 "role": {"id": self.role.pk},
                 "user": [{"id": self.test_user.pk}],

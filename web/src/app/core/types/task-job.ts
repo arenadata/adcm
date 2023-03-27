@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { BaseEntity } from './api';
-import { Entity } from '@adwp-ui/widgets';
+import { Entity } from '@app/adwp';
 
 export type JobStatus = 'created' | 'running' | 'failed' | 'success' | 'aborted';
 

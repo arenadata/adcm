@@ -16,7 +16,7 @@
 
 import os
 from contextlib import nullcontext
-from typing import List, Literal
+from typing import Literal
 
 import allure
 import pytest
@@ -31,13 +31,12 @@ from adcm_pytest_plugin.utils import (
     random_string,
 )
 from coreapi.exceptions import ErrorMessage
-from tests.functional.conftest import only_clean_adcm
 
 CASES_PATH = "cases"
-CONSTRAINTS_DIR = get_data_dir(__file__, 'bundle_configs', 'constraints')
+CONSTRAINTS_DIR = get_data_dir(__file__, "bundle_configs", "constraints")
 
 
-expect_hostcomponent_set_success = catch_failed(ErrorMessage, 'Host component set should not fail')
+expect_hostcomponent_set_success = catch_failed(ErrorMessage, "Host component set should not fail")
 expect_hostcomponent_set_fail = pytest.raises(ErrorMessage)
 
 
@@ -51,7 +50,7 @@ def _get_or_add_service(cluster, service_name):
         return cluster.service_add(name=service_name)
 
 
-def _get_cases_paths(path: str) -> List[ParameterSet]:
+def _get_cases_paths(path: str) -> list[ParameterSet]:
     """
     Get cases path for parametrize test
     """
@@ -65,7 +64,7 @@ def _get_cases_paths(path: str) -> List[ParameterSet]:
                     pytest.param(
                         os.path.join(case_dir, bundle_file),
                         id=f"{bundles_ids[i]}_{sub_path}_{bundle_file.strip('.yaml')}",
-                    )
+                    ),
                 )
     return params
 
@@ -79,7 +78,7 @@ def _test_related_hc(client: ADCMClient, case_path: str):
         cluster_bundle = client.upload_from_fs(bundle_path)
         created_cluster = cluster_bundle.cluster_prototype().cluster_create(random_string())
     with allure.step("Parse case description from YAML file and set host-component map"):
-        with open(case_path, encoding='utf_8') as file:
+        with open(case_path, encoding="utf_8") as file:
             case_template = yaml.safe_load(file)
         allure.dynamic.description(case_template["description"])
         hostcomponent_list = []
@@ -115,45 +114,45 @@ def test_required_hc(sdk_client_fs: ADCMClient, case_path: str):
 # Test constraints
 
 
-def parametrize_by_constraint(case_type: Literal['positive', 'negative']):
+def parametrize_by_constraint(case_type: Literal["positive", "negative"]):
     """Parametrize tests by "cases.yaml" file"""
-    test_arg_names = ('constraint', 'hosts_amounts')
+    test_arg_names = ("constraint", "hosts_amounts")
     parameters = []
     ids = []
 
-    with open(os.path.join(CONSTRAINTS_DIR, 'cases.yaml'), 'rb') as file:
-        constraints_cases = yaml.safe_load(file)['constraints']
+    with open(os.path.join(CONSTRAINTS_DIR, "cases.yaml"), "rb") as file:
+        constraints_cases = yaml.safe_load(file)["constraints"]
 
     for constraint, cases in constraints_cases.items():
         if not cases[case_type]:
             continue
         hosts = cases[case_type]
         parameters.append((constraint, hosts))
-        constraint_id = f'constraint_{constraint}'.replace('+', 'plus')
+        constraint_id = f"constraint_{constraint}".replace("+", "plus")
         hosts_id = f'hosts_{"_".join(map(str, hosts))}'
-        ids.append(f'{constraint_id}_{hosts_id}')
+        ids.append(f"{constraint_id}_{hosts_id}")
 
     return pytest.mark.parametrize(test_arg_names, parameters, ids=ids)
 
 
 def _test_constraint(
     constraint: str,
-    hosts_amounts: List[int],
+    hosts_amounts: list[int],
     cluster_bundle: Bundle,
     provider: Provider,
     expectation_message: str,
     expectation_context,
 ):
-    service_name = f'service_{constraint}'
+    service_name = f"service_{constraint}"
     for amount in hosts_amounts:
-        with allure.step(f'Try to add component on {amount}'):
+        with allure.step(f"Try to add component on {amount}"):
             new_cluster_name = random_string(12)
-            with allure.step(f'Create cluster {new_cluster_name}'):
+            with allure.step(f"Create cluster {new_cluster_name}"):
                 cluster = cluster_bundle.cluster_create(new_cluster_name)
                 component = cluster.service_add(name=service_name).component()
-            with allure.step(f'Create {amount} hosts and add them to a cluster {new_cluster_name}'):
-                hosts = [cluster.host_add(provider.host_create(f'{new_cluster_name}-{i}')) for i in range(amount)]
-            with allure.step(f'Map component to {amount} hosts and expect it to {expectation_message}'):
+            with allure.step(f"Create {amount} hosts and add them to a cluster {new_cluster_name}"):
+                hosts = [cluster.host_add(provider.host_create(f"{new_cluster_name}-{i}")) for i in range(amount)]
+            with allure.step(f"Map component to {amount} hosts and expect it to {expectation_message}"):
                 hc_map = _enrich_hc_map(cluster, provider, hc_map=tuple((host, component) for host in hosts))
                 with expectation_context:
                     cluster.hostcomponent_set(*hc_map)
@@ -162,49 +161,46 @@ def _test_constraint(
 @pytest.fixture()
 def cluster_bundle(sdk_client_fs) -> Bundle:
     """Upload cluster bundle"""
-    return sdk_client_fs.upload_from_fs(os.path.join(CONSTRAINTS_DIR, 'various_hc'))
+    return sdk_client_fs.upload_from_fs(os.path.join(CONSTRAINTS_DIR, "various_hc"))
 
 
 @pytest.fixture()
 def provider(sdk_client_fs) -> Provider:
     """Upload provider bundle and create provider"""
-    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'provider'))
-    return bundle.provider_create(f'Provider {random_string(6)}')
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider"))
+    return bundle.provider_create(f"Provider {random_string(6)}")
 
 
-@only_clean_adcm
-@parametrize_by_constraint('positive')
-def test_hostcomponent_constraints_positive(constraint: str, hosts_amounts: List[int], cluster_bundle, provider):
+@parametrize_by_constraint("positive")
+def test_hostcomponent_constraints_positive(constraint: str, hosts_amounts: list[int], cluster_bundle, provider):
     """
     Tests for constraints on components (positive cases)
     """
-    _test_constraint(constraint, hosts_amounts, cluster_bundle, provider, 'succeed', expect_hostcomponent_set_success)
+    _test_constraint(constraint, hosts_amounts, cluster_bundle, provider, "succeed", expect_hostcomponent_set_success)
 
 
-@only_clean_adcm
-@parametrize_by_constraint('negative')
-def test_hostcomponent_constraints_negative(constraint: str, hosts_amounts: List[int], cluster_bundle, provider):
+@parametrize_by_constraint("negative")
+def test_hostcomponent_constraints_negative(constraint: str, hosts_amounts: list[int], cluster_bundle, provider):
     """
     Tests for constraints on components (negative cases)
     """
-    _test_constraint(constraint, hosts_amounts, cluster_bundle, provider, 'fail', expect_hostcomponent_set_fail)
+    _test_constraint(constraint, hosts_amounts, cluster_bundle, provider, "fail", expect_hostcomponent_set_fail)
 
 
-@only_clean_adcm
 def test_hostcomponent_plus_constraint(cluster_bundle, provider):
     """
     Test positive and negative cases with [+] constraint
     """
-    cluster = cluster_bundle.cluster_create('Test Cluster')
-    component = cluster.service_add(name='service_+').component()
-    hosts = [cluster.host_add(provider.host_create(f'host-{i}')) for i in range(5)]
+    cluster = cluster_bundle.cluster_create("Test Cluster")
+    component = cluster.service_add(name="service_+").component()
+    hosts = [cluster.host_add(provider.host_create(f"host-{i}")) for i in range(5)]
     not_all_hosts = hosts[:-1]
     with allure.step(
-        f'Try to set HC with component on {len(not_all_hosts)} of {len(hosts)} hosts and expect it to fail'
+        f"Try to set HC with component on {len(not_all_hosts)} of {len(hosts)} hosts and expect it to fail",
     ):
         with expect_hostcomponent_set_fail:
             cluster.hostcomponent_set(*[(h, component) for h in not_all_hosts])
-    with allure.step('Try to set HC with component on all hosts and expect it to succeed'):
+    with allure.step("Try to set HC with component on all hosts and expect it to succeed"):
         with expect_hostcomponent_set_success:
             cluster.hostcomponent_set(*[(h, component) for h in hosts])
 
@@ -217,7 +213,7 @@ def _enrich_hc_map(cluster: Cluster, provider: Provider, hc_map: tuple) -> tuple
     if hc_map:
         # if it's not empty then no need to add any hc
         return hc_map
-    with allure.step('Add component without constraints to hc_map'):
-        component = cluster.service_add(name='service_without_constraints').component()
-        host = cluster.host_add(provider.host_create(f'host-{cluster.name}-{random_string(6)}'))
+    with allure.step("Add component without constraints to hc_map"):
+        component = cluster.service_add(name="service_without_constraints").component()
+        host = cluster.host_add(provider.host_create(f"host-{cluster.name}-{random_string(6)}"))
         return ((host, component),)

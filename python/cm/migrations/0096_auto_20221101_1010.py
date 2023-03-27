@@ -36,44 +36,43 @@ def migrate_host_maintenance_mode_reverse(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0095_JobStatus'),
+        ("cm", "0095_JobStatus"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='action',
-            name='button',
+            model_name="action",
+            name="button",
         ),
         migrations.RemoveField(
-            model_name='stageaction',
-            name='button',
+            model_name="stageaction",
+            name="button",
         ),
         migrations.AddField(
-            model_name='clusterobject',
-            name='_maintenance_mode',
+            model_name="clusterobject",
+            name="_maintenance_mode",
             field=models.CharField(
-                choices=[('ON', 'ON'), ('OFF', 'OFF'), ('CHANGING', 'CHANGING')],
-                default='OFF',
+                choices=[("ON", "ON"), ("OFF", "OFF"), ("CHANGING", "CHANGING")],
+                default="OFF",
                 max_length=64,
             ),
         ),
         migrations.AddField(
-            model_name='servicecomponent',
-            name='_maintenance_mode',
+            model_name="servicecomponent",
+            name="_maintenance_mode",
             field=models.CharField(
-                choices=[('ON', 'ON'), ('OFF', 'OFF'), ('CHANGING', 'CHANGING')],
-                default='OFF',
+                choices=[("ON", "ON"), ("OFF", "OFF"), ("CHANGING", "CHANGING")],
+                default="OFF",
                 max_length=64,
             ),
         ),
         migrations.AlterField(
-            model_name='host',
-            name='maintenance_mode',
+            model_name="host",
+            name="maintenance_mode",
             field=models.CharField(
-                choices=[('ON', 'ON'), ('OFF', 'OFF'), ('CHANGING', 'CHANGING')],
-                default='OFF',
+                choices=[("ON", "ON"), ("OFF", "OFF"), ("CHANGING", "CHANGING")],
+                default="OFF",
                 max_length=64,
             ),
         ),

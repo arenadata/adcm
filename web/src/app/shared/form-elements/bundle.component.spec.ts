@@ -36,17 +36,18 @@ describe('Form control :: bundle component', () => {
   };
 
   beforeEach(async () => {
-    TestBed.configureTestingModule({
+    await TestBed.configureTestingModule({
       imports: [MatSelectModule, NoopAnimationsModule, MatTooltipModule],
       providers: [{ provide: AddService, useValue: aService }],
     }).compileComponents();
   });
 
-  beforeEach(() => {
-    fixture = TestBed.createComponent(BundlesComponent);
+  beforeEach(async () => {
+    fixture = await TestBed.createComponent(BundlesComponent);
     component = fixture.componentInstance;
     component.form = new FormGroup({ prototype_id: new FormControl() });
     component.limit = 10;
+    component.page = 1
   });
 
   it('Bundle component should created', () => {
@@ -72,6 +73,7 @@ describe('Form control :: bundle component', () => {
       expect(component.bundles.length).toBe(component.page * component.limit);
       expect(component.bundles.length).toBe(10);
 
+      COUNT_DATA = 20;
       component.getNextPage();
       fixture.detectChanges();
       expect(component.bundles.length).toBe(component.page * component.limit);

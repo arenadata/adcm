@@ -21,7 +21,6 @@ Implemented as singleton module, just `import ctx from cm.api_context` and use `
 
 import os
 from pathlib import Path
-from typing import Optional
 
 from cm import models
 from cm.logger import logger
@@ -33,30 +32,30 @@ class _Context:
 
     def __init__(self):
         self.event = Event()
-        self.task: Optional[models.TaskLog] = None
-        self.job: Optional[models.JobLog] = None
-        self.lock: Optional[models.ConcernItem] = None
+        self.task: models.TaskLog | None = None
+        self.job: models.JobLog | None = None
+        self.lock: models.ConcernItem | None = None
         self.get_job_data()
 
     def get_job_data(self):
         env = os.environ
-        ansible_config = env.get('ANSIBLE_CONFIG')
+        ansible_config = env.get("ANSIBLE_CONFIG")
         if not ansible_config:
             return
 
         job_id = Path(ansible_config).parent.name
         try:
-            self.job = models.JobLog.objects.select_related('task', 'task__lock').get(id=int(job_id))
+            self.job = models.JobLog.objects.select_related("task", "task__lock").get(id=int(job_id))
         except (ValueError, models.ObjectDoesNotExist):
             return
 
-        self.task = getattr(self.job, 'task', None)
-        self.lock = getattr(self.task, 'lock', None)
-        msg = f'API context was initialized with {self.job}, {self.task}, {self.lock}'
+        self.task = getattr(self.job, "task", None)
+        self.lock = getattr(self.task, "lock", None)
+        msg = f"API context was initialized with {self.job}, {self.task}, {self.lock}"
         logger.debug(msg)
 
 
 # initialized on first import
-ctx = None
-if not ctx:
-    ctx = _Context()
+CTX = None
+if not CTX:
+    CTX = _Context()

@@ -12,20 +12,15 @@
 
 """UI tests for /cluster page"""
 
-import os
-
 import allure
 import pytest
 from _pytest.fixtures import SubRequest
 from adcm_client.objects import ADCMClient, Bundle, Cluster, Host, Provider
-from adcm_pytest_plugin import params, utils
+from adcm_pytest_plugin.params import including_https
 from adcm_pytest_plugin.utils import get_data_dir, parametrize_by_data_subdirs
 from selenium.common.exceptions import TimeoutException
+
 from tests.library.status import ADCMObjectStatusChanger
-from tests.ui_tests.app.helpers.configs_generator import (
-    generate_configs,
-    prepare_config,
-)
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import (
     ClusterComponentsPage,
@@ -43,7 +38,7 @@ from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
 from tests.ui_tests.app.page.common.host_components.page import ComponentsHostRowInfo
-from tests.ui_tests.app.page.common.import_page.page import ImportItemInfo
+from tests.ui_tests.app.page.common.import_page.page import ImportInfo
 from tests.ui_tests.app.page.common.status.page import (
     NEGATIVE_COLOR,
     SUCCESS_COLOR,
@@ -55,6 +50,8 @@ from tests.ui_tests.app.page.service.page import (
     ServiceImportPage,
     ServiceMainPage,
 )
+from tests.ui_tests.core.checks import check_pagination
+from tests.ui_tests.generator_helper import generate_configs, prepare_config
 from tests.ui_tests.utils import (
     check_host_value,
     create_few_groups,
@@ -82,9 +79,9 @@ BUNDLE_DEFAULT_FIELDS = "cluster_and_service_with_default_string"
 BUNDLE_WITH_SERVICES = "cluster_with_services"
 CLUSTER_NAME = "Test cluster"
 SERVICE_NAME = "test_service"
-PROVIDER_NAME = 'test_provider'
-HOST_NAME = 'test-host'
-PROVIDER_WITH_ISSUE_NAME = 'provider_with_issue'
+PROVIDER_NAME = "test_provider"
+HOST_NAME = "test-host"
+PROVIDER_WITH_ISSUE_NAME = "provider_with_issue"
 COMPONENT_NAME = "first"
 BUNDLE_WITH_REQUIRED_FIELDS = "cluster_required_fields"
 BUNDLE_WITH_DESCRIPTION_FIELDS = "cluster_with_all_config_params"
@@ -139,14 +136,14 @@ def create_import_cluster_with_service(sdk_client_fs: ADCMClient):
 @allure.step("Upload cluster bundle")
 def cluster_bundle(sdk_client_fs: ADCMClient, data_dir_name: str) -> Bundle:
     """Upload cluster bundle"""
-    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), data_dir_name))
+    return sdk_client_fs.upload_from_fs(get_data_dir(__file__, data_dir_name))
 
 
 @pytest.fixture(params=["provider"])
 @allure.title("Upload provider bundle")
 def provider_bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
     """Upload provider bundle"""
-    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
+    return sdk_client_fs.upload_from_fs(get_data_dir(__file__, request.param))
 
 
 @pytest.fixture()
@@ -166,7 +163,12 @@ def create_cluster_with_all_config_fields(sdk_client_fs: ADCMClient) -> Cluster:
 
 @pytest.fixture()
 @allure.title("Create community cluster and add host")
-def create_community_cluster_with_host(app_fs, sdk_client_fs: ADCMClient, upload_and_create_provider, create_host):
+def create_community_cluster_with_host(
+    app_fs,
+    sdk_client_fs: ADCMClient,
+    upload_and_create_provider,
+    create_host,
+):  # pylint: disable=unused-argument
     """Create community cluster and add host"""
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     cluster = bundle.cluster_create(name=CLUSTER_NAME)
@@ -196,8 +198,8 @@ def create_host(upload_and_create_provider):
 @allure.title("Check all values in host info")
 def check_components_host_info(host_info: ComponentsHostRowInfo, name: str, components: str):
     """Check all values in host info"""
-    check_host_value('name', host_info.name, name)
-    check_host_value('components', host_info.components, components)
+    check_host_value("name", host_info.name, name)
+    check_host_value("components", host_info.components, components)
 
 
 # !===== Funcs =====!
@@ -223,8 +225,8 @@ class TestClusterListPage:
     @pytest.mark.parametrize(
         "bundle_archive",
         [
-            pytest.param(utils.get_data_dir(__file__, BUNDLE_COMMUNITY), id="community"),
-            pytest.param(utils.get_data_dir(__file__, BUNDLE_ENTERPRISE), id="enterprise"),
+            pytest.param(get_data_dir(__file__, BUNDLE_COMMUNITY), id="community"),
+            pytest.param(get_data_dir(__file__, BUNDLE_ENTERPRISE), id="enterprise"),
         ],
         indirect=True,
     )
@@ -240,19 +242,21 @@ class TestClusterListPage:
         with allure.step("Check no cluster rows"):
             assert len(cluster_page.table.get_all_rows()) == 0, "There should be no row with clusters"
         cluster_page.create_cluster(
-            bundle_archive, cluster_params['description'], is_license=bool(edition == "enterprise")
+            bundle_archive,
+            cluster_params["description"],
+            is_license=bool(edition == "enterprise"),
         )
         with allure.step("Check uploaded cluster"):
             assert len(cluster_page.table.get_all_rows()) == 1, "There should be 1 row with cluster"
             uploaded_cluster = cluster_page.get_cluster_info_from_row(0)
-            assert cluster_params['bundle'] == uploaded_cluster['bundle'], (
+            assert cluster_params["bundle"] == uploaded_cluster["bundle"], (
                 f"Cluster bundle should be {cluster_params['bundle']} and " f"not {uploaded_cluster['bundle']}"
             )
-            assert cluster_params['description'] == uploaded_cluster['description'], (
+            assert cluster_params["description"] == uploaded_cluster["description"], (
                 f"Cluster description should be {cluster_params['description']} and "
                 f"not {uploaded_cluster['description']}"
             )
-            assert cluster_params['state'] == uploaded_cluster['state'], (
+            assert cluster_params["state"] == uploaded_cluster["state"], (
                 f"Cluster state should be {cluster_params['state']} " f"and not {uploaded_cluster['state']}"
             )
 
@@ -264,7 +268,7 @@ class TestClusterListPage:
                 bundle.cluster_create(name=f"{CLUSTER_NAME} {i}")
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         cluster_page.close_info_popup()
-        cluster_page.table.check_pagination(second_page_item_amount=1)
+        check_pagination(cluster_page.table, expected_on_second=1)
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -280,12 +284,10 @@ class TestClusterListPage:
             wait_and_assert_ui_info(
                 {"state": params["expected_state"]},
                 wrap_in_dict("state", cluster_page.get_cluster_state_from_row),
-                get_info_kwargs={'row': row},
+                get_info_kwargs={"row": row},
             )
         with allure.step("Check success cluster job"):
-            assert (
-                cluster_page.header.get_success_job_amount_from_header() == "1"
-            ), "There should be 1 success cluster job in header"
+            assert cluster_page.header.get_success_job_amount() == 1, "There should be 1 success cluster job in header"
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -298,7 +300,7 @@ class TestClusterListPage:
         import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, cluster.id)
         import_page.wait_page_is_opened()
         with allure.step("Check import on import page"):
-            assert len(import_page.get_import_items()) == 1, "Cluster import page should contain 1 import"
+            assert len(import_page.get_imports()) == 1, "Cluster import page should contain 1 import"
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
@@ -409,7 +411,7 @@ class TestClusterListPage:
             disclaimer_text=disclaimer_text,
         )
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-        cluster_page.header.wait_success_job_amount_from_header(1)
+        cluster_page.header.wait_success_job_amount(1)
         check_cluster_upgraded(app_fs, CLUSTER_NAME, params["state"])
 
 
@@ -466,7 +468,7 @@ class TestClusterMainPage:
         cluster_main_page.toolbar.run_action(CLUSTER_NAME, params["action_name"])
         with allure.step("Check success job"):
             assert (
-                cluster_main_page.header.get_in_progress_job_amount_from_header() == "1"
+                cluster_main_page.header.get_in_progress_job_amount() == 1
             ), "There should be 1 in progress job in header"
 
 
@@ -519,7 +521,7 @@ class TestClusterServicePage:
         service_main_page.wait_page_is_opened()
         service_main_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
-    @params.including_https
+    @including_https
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
     def test_check_actions_from_service_list_page(self, app_fs, create_community_cluster_with_service):
@@ -537,7 +539,7 @@ class TestClusterServicePage:
             ), f"Cluster state should be {params['expected_state']}"
         with allure.step("Check success service job"):
             assert (
-                cluster_service_page.header.get_success_job_amount_from_header() == "1"
+                cluster_service_page.header.get_success_job_amount() == 1
             ), "There should be 1 success service job in header"
 
     def test_check_service_list_page_import_run(self, app_fs, create_import_cluster_with_service):
@@ -549,7 +551,7 @@ class TestClusterServicePage:
         import_page = ServiceImportPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id)
         import_page.wait_page_is_opened()
         with allure.step("Check import on import page"):
-            assert len(import_page.get_import_items()) == 1, "Service import page should contain 1 import"
+            assert len(import_page.get_imports()) == 1, "Service import page should contain 1 import"
         import_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
     def test_check_service_list_page_open_service_config(self, app_fs, create_community_cluster_with_service):
@@ -573,7 +575,7 @@ class TestClusterServicePage:
         except TimeoutException:
             cluster_service_page.driver.refresh()
             cluster_service_page.wait_page_is_opened(timeout=30)
-        cluster_service_page.table.check_pagination(second_page_item_amount=2)
+        check_pagination(cluster_service_page.table, expected_on_second=2)
 
     def test_delete_service_on_service_list_page(self, app_fs, create_community_cluster_with_service):
         """Test delete service from cluster/{}/service page"""
@@ -603,26 +605,29 @@ class TestClusterHostPage:
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
-    @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, "provider")], indirect=True)
+    @pytest.mark.parametrize("bundle_archive", [get_data_dir(__file__, "provider")], indirect=True)
     def test_create_host_and_hostprovider_from_cluster_host_page(
-        self, app_fs, bundle_archive, create_community_cluster_with_service
+        self,
+        app_fs,
+        bundle_archive,
+        create_community_cluster_with_service,
     ):
         """Test create host and hostprovider from cluster/{}/host page"""
         cluster, _ = create_community_cluster_with_service
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_host_page.wait_page_is_opened()
-        cluster_host_page.click_add_host_btn(is_not_first_host=False)
-        new_provider_name = cluster_host_page.host_popup.create_provider_and_host(bundle_archive, HOST_NAME)
+        dialog = cluster_host_page.click_add_host_btn(is_not_first_host=False)
+        new_provider_name = dialog.create_provider_and_host(bundle_archive, HOST_NAME)
         expected_values = {
-            'fqdn': HOST_NAME,
-            'provider': new_provider_name,
-            'cluster': None,
-            'state': 'created',
+            "fqdn": HOST_NAME,
+            "provider": new_provider_name,
+            "cluster": None,
+            "state": "created",
         }
         wait_and_assert_ui_info(
             expected_values,
             cluster_host_page.get_host_info_from_row,
-            get_info_kwargs={'table_has_cluster_column': False},
+            get_info_kwargs={"table_has_cluster_column": False},
         )
 
     @pytest.mark.smoke()
@@ -631,41 +636,41 @@ class TestClusterHostPage:
     def test_create_host_from_cluster_host_page(self, app_fs, create_community_cluster_with_service):
         """Test create host from cluster/{}/host page"""
         expected_values = {
-            'fqdn': HOST_NAME,
-            'provider': PROVIDER_NAME,
-            'cluster': None,
-            'state': 'created',
+            "fqdn": HOST_NAME,
+            "provider": PROVIDER_NAME,
+            "cluster": None,
+            "state": "created",
         }
         cluster, _ = create_community_cluster_with_service
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_host_page.wait_page_is_opened()
-        cluster_host_page.click_add_host_btn(is_not_first_host=False)
-        cluster_host_page.host_popup.create_host(HOST_NAME)
+        dialog = cluster_host_page.click_add_host_btn(is_not_first_host=False)
+        dialog.create_host(HOST_NAME)
         wait_and_assert_ui_info(
             expected_values,
             cluster_host_page.get_host_info_from_row,
-            get_info_kwargs={'table_has_cluster_column': False},
+            get_info_kwargs={"table_has_cluster_column": False},
         )
         host_row = cluster_host_page.table.get_all_rows()[0]
         cluster_host_page.click_on_host_name_in_host_row(host_row)
         HostMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, 1).wait_page_is_opened()
         cluster_host_page.check_cluster_hosts_toolbar(CLUSTER_NAME, HOST_NAME)
 
-    @pytest.mark.usefixtures('create_host')
+    @pytest.mark.usefixtures("create_host")
     def test_create_host_error_from_cluster_host_page(self, app_fs, create_community_cluster_with_service):
         """Test create host from cluster/{}/host page error"""
         cluster, _ = create_community_cluster_with_service
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_host_page.wait_page_is_opened()
         cluster_host_page.close_info_popup()
-        cluster_host_page.click_add_host_btn()
-        cluster_host_page.host_popup.create_host(HOST_NAME)
+        dialog = cluster_host_page.click_add_host_btn()
+        dialog.create_host(HOST_NAME)
         with allure.step("Check error message"):
             assert (
-                cluster_host_page.get_info_popup_text() == '[ CONFLICT ] HOST_CONFLICT -- duplicate host'
+                cluster_host_page.get_info_popup_text() == "[ CONFLICT ] HOST_CONFLICT -- duplicate host"
             ), "No message about host duplication"
 
-    @pytest.mark.parametrize('provider_bundle', [PROVIDER_WITH_ISSUE_NAME], indirect=True)
+    @pytest.mark.parametrize("provider_bundle", [PROVIDER_WITH_ISSUE_NAME], indirect=True)
     def test_open_host_concern_from_cluster_host_page(self, app_fs, create_community_cluster_with_host):
         """Test open host concern from cluster/{}/host page"""
         cluster, host = create_community_cluster_with_host
@@ -692,7 +697,7 @@ class TestClusterHostPage:
             ), f"Cluster state should be {params['expected_state']}"
         with allure.step("Check success host job"):
             assert (
-                cluster_host_page.header.get_success_job_amount_from_header() == "1"
+                cluster_host_page.header.get_success_job_amount() == 1
             ), "There should be 1 success host job in header"
 
     def test_check_delete_host_from_cluster_host_page(self, app_fs, create_community_cluster_with_host):
@@ -706,7 +711,9 @@ class TestClusterHostPage:
             assert len(cluster_host_page.table.get_all_rows()) == 0, "Host table should be empty"
 
     def test_delete_linked_host_from_cluster_components_page(
-        self, app_fs, create_community_cluster_with_host_and_service
+        self,
+        app_fs,
+        create_community_cluster_with_host_and_service,
     ):
         """Test host with component delete from cluster/{}/host page"""
         params = {"message": "[ CONFLICT ] HOST_CONFLICT -- Host #1 has component(s)"}
@@ -732,12 +739,12 @@ class TestClusterHostPage:
         cluster = create_community_cluster
         provider = upload_and_create_provider
         host_count = 11
-        with allure.step(f'Create {host_count} hosts'):
+        with allure.step(f"Create {host_count} hosts"):
             for i in range(host_count):
                 host = provider.host_create(f"{HOST_NAME}-{i}")
                 cluster.host_add(host)
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
-        cluster_host_page.table.check_pagination(1)
+        check_pagination(cluster_host_page.table, expected_on_second=1)
         cluster_host_page.check_cluster_toolbar(CLUSTER_NAME)
 
     @pytest.mark.smoke()
@@ -766,9 +773,11 @@ class TestClusterComponentsPage:
         cluster_components_page.check_cluster_toolbar(CLUSTER_NAME)
 
     def test_check_cluster_components_page_open_service_page(self, app_fs, create_community_cluster):
-        """Test open /cluter/{}/service from /cluter/{}/component"""
+        """Test open /cluster/{}/service from /cluster/{}/component"""
         cluster_components_page = ClusterComponentsPage(
-            app_fs.driver, app_fs.adcm.url, create_community_cluster.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            create_community_cluster.id,
         ).open()
         cluster_components_page.click_service_page_link()
         service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
@@ -778,21 +787,25 @@ class TestClusterComponentsPage:
     def test_check_cluster_components_page_open_hosts_page(self, app_fs, create_community_cluster):
         """Test open /cluter/{}/host from /cluter/{}/component"""
         cluster_components_page = ClusterComponentsPage(
-            app_fs.driver, app_fs.adcm.url, create_community_cluster.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            create_community_cluster.id,
         ).open()
         cluster_components_page.click_hosts_page_link()
         host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
         host_page.wait_page_is_opened()
         host_page.check_cluster_toolbar(CLUSTER_NAME)
 
-    @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, "provider")], indirect=True)
+    @pytest.mark.parametrize("bundle_archive", [get_data_dir(__file__, "provider")], indirect=True)
     def test_check_cluster_components_page_create_host(self, app_fs, bundle_archive, create_community_cluster):
-        """Test add host from /cluter/{}/component"""
+        """Test add host from /cluster/{}/component"""
         cluster_components_page = ClusterComponentsPage(
-            app_fs.driver, app_fs.adcm.url, create_community_cluster.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            create_community_cluster.id,
         ).open()
-        cluster_components_page.click_add_host_btn()
-        cluster_components_page.host_popup.create_provider_and_host(bundle_path=bundle_archive, fqdn=HOST_NAME)
+        dialog = cluster_components_page.click_add_host_btn()
+        dialog.create_provider_and_host(bundle_path=bundle_archive, fqdn=HOST_NAME)
         host_row = cluster_components_page.get_host_rows()[0]
         check_components_host_info(cluster_components_page.get_row_info(host_row), HOST_NAME, "0")
 
@@ -845,7 +858,9 @@ class TestClusterComponentsPage:
             )
 
     def test_check_cluster_components_page_restore_components(
-        self, app_fs, create_community_cluster_with_host_and_service
+        self,
+        app_fs,
+        create_community_cluster_with_host_and_service,
     ):
         """Test restore components to hosts distribution"""
         cluster, *_ = create_community_cluster_with_host_and_service
@@ -864,7 +879,9 @@ class TestClusterComponentsPage:
             check_components_host_info(cluster_components_page.get_row_info(component_row), COMPONENT_NAME, "0")
 
     def test_check_cluster_components_page_delete_host_from_component(
-        self, app_fs, create_community_cluster_with_host_and_service
+        self,
+        app_fs,
+        create_community_cluster_with_host_and_service,
     ):
         """Test delete component from host"""
         cluster, *_ = create_community_cluster_with_host_and_service
@@ -913,7 +930,7 @@ class TestClusterComponentsPage:
         cluster_components_page.config.check_hostcomponents_warn_icon_on_left_menu()
         cluster_components_page.toolbar.check_warn_button(
             tab_name=CLUSTER_NAME,
-            expected_warn_text=['Test cluster has an issue with host-component mapping'],
+            expected_warn_text=["Test cluster has an issue with host-component mapping"],
         )
 
 
@@ -956,8 +973,10 @@ class TestClusterConfigPage:
         }
 
         cluster_config_page = ClusterConfigPage(
-            app_fs.driver, app_fs.adcm.url, create_cluster_with_all_config_fields.id
-        ).open()
+            app_fs.driver,
+            app_fs.adcm.url,
+            create_cluster_with_all_config_fields.id,
+        ).open(close_popup=True)
         cluster_config_page.config.fill_config_fields_with_test_values()
         cluster_config_page.config.set_description(params["config_name_new"])
         cluster_config_page.config.save_config()
@@ -975,60 +994,67 @@ class TestClusterConfigPage:
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         config_row = cluster_config_page.config.get_all_config_rows()[0]
         cluster_config_page.config.type_in_field_with_few_inputs(
-            row=config_row, values=[params["row_value_new"]], clear=True
+            row=config_row,
+            values=[params["row_value_new"]],
+            clear=True,
         )
         cluster_config_page.config.set_description(params["config_name"])
         cluster_config_page.config.save_config()
         cluster_config_page.driver.refresh()
         cluster_config_page.config.assert_input_value_is(
-            expected_value=params["row_value_new"], display_name=params["row_name"]
+            expected_value=params["row_value_new"],
+            display_name=params["row_name"],
         )
 
         config_row = cluster_config_page.config.get_all_config_rows()[0]
         cluster_config_page.config.reset_to_default(row=config_row)
         cluster_config_page.config.assert_input_value_is(
-            expected_value=params["row_value_old"], display_name=params["row_name"]
+            expected_value=params["row_value_old"],
+            display_name=params["row_name"],
         )
 
     def test_field_validation_on_cluster_config_page(self, app_fs, sdk_client_fs):
         """Test config fields validation on cluster/{}/config page"""
         params = {
-            'pass_name': 'Important password',
-            'req_name': 'Required item',
-            'not_req_name': 'Just item',
-            'wrong_value': 'test',
+            "pass_name": "Important password",
+            "req_name": "Required item",
+            "not_req_name": "Just item",
+            "wrong_value": "test",
         }
         with allure.step("Create cluster"):
             bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_REQUIRED_FIELDS)
             cluster = bundle.cluster_create(name=CLUSTER_NAME)
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
-        cluster_config_page.config.check_password_confirm_required(params['pass_name'])
-        cluster_config_page.config.check_field_is_required(params['req_name'])
+        cluster_config_page.config.check_password_confirm_required(params["pass_name"])
+        cluster_config_page.config.check_field_is_required(params["req_name"])
         config_row = cluster_config_page.config.get_all_config_rows()[0]
-        cluster_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params['wrong_value']])
-        cluster_config_page.config.check_field_is_invalid(params['not_req_name'])
+        cluster_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params["wrong_value"]])
+        cluster_config_page.config.check_field_is_invalid_error(params["not_req_name"])
         cluster_config_page.config.check_config_warn_icon_on_left_menu()
         cluster_config_page.toolbar.check_warn_button(
-            tab_name=CLUSTER_NAME, expected_warn_text=['Test cluster has an issue with its config']
+            tab_name=CLUSTER_NAME,
+            expected_warn_text=["Test cluster has an issue with its config"],
         )
 
     def test_field_validation_on_cluster_config_page_with_default_value(self, app_fs, sdk_client_fs):
         """Test config fields validation on /cluster/{}/service/{}/config page"""
 
-        params = {'field_name': 'string', 'new_value': 'test', "config_name": "test_name"}
+        params = {"field_name": "string", "new_value": "test", "config_name": "test_name"}
 
         with allure.step("Create cluster"):
             bundle = cluster_bundle(sdk_client_fs, BUNDLE_DEFAULT_FIELDS)
             cluster = bundle.cluster_create(name=CLUSTER_NAME)
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
-        cluster_config_page.config.clear_field_by_keys(params['field_name'])
-        cluster_config_page.config.check_field_is_required(params['field_name'])
+        cluster_config_page.config.clear_field_by_keys(params["field_name"])
+        cluster_config_page.config.check_field_is_required(params["field_name"])
         cluster_config_page.config.type_in_field_with_few_inputs(
-            row=cluster_config_page.config.get_all_config_rows()[0], values=[params['new_value']]
+            row=cluster_config_page.config.get_all_config_rows()[0],
+            values=[params["new_value"]],
         )
         cluster_config_page.config.save_config()
         cluster_config_page.config.assert_input_value_is(
-            expected_value=params["new_value"], display_name=params["field_name"]
+            expected_value=params["new_value"],
+            display_name=params["field_name"],
         )
 
     def test_field_tooltips_on_cluster_config_page(self, app_fs, sdk_client_fs):
@@ -1043,59 +1069,72 @@ class TestClusterConfigPage:
 
     # pylint: enable=too-many-locals
     @pytest.mark.full()
-    @parametrize_by_data_subdirs(__file__, 'bundles_for_numbers_tests')
+    @parametrize_by_data_subdirs(__file__, "bundles_for_numbers_tests")
     def test_number_validation_on_cluster_config_page(self, sdk_client_fs: ADCMClient, path, app_fs):
         """Check that we have errors and save button is not active for number field with values out of range"""
         params = {"filed_name": "numbers_test"}
 
         _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
 
-        with allure.step('Check that save button is active'):
+        with allure.step("Check that save button is active"):
             cluster_config_page.config.get_config_row("numbers_test").click()
-            assert not cluster_config_page.config.is_save_btn_disabled(), 'Save button should be active'
+            assert not cluster_config_page.config.is_save_btn_disabled(), "Save button should be active"
         cluster_config_page.config.clear_field_by_keys(params["filed_name"])
 
-        with allure.step('Check that save button is disabled'):
-            assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
+        with allure.step("Check that save button is disabled"):
+            assert cluster_config_page.config.is_save_btn_disabled(), "Save button should be disabled"
         cluster_config_page.config.check_field_is_required(params["filed_name"])
 
         cluster_config_page.config.type_in_field_with_few_inputs(
-            row=cluster_config_page.config.get_all_config_rows()[0], values=["asdsa"]
+            row=cluster_config_page.config.get_all_config_rows()[0],
+            values=["asdsa"],
         )
-        cluster_config_page.config.check_field_is_invalid(params["filed_name"])
-        with allure.step('Check that save button is disabled'):
-            assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
+        cluster_config_page.config.check_field_is_invalid_error(params["filed_name"])
+        with allure.step("Check that save button is disabled"):
+            assert cluster_config_page.config.is_save_btn_disabled(), "Save button should be disabled"
 
         cluster_config_page.config.type_in_field_with_few_inputs(
-            row=cluster_config_page.config.get_all_config_rows()[0], values=["-111111"], clear=True
+            row=cluster_config_page.config.get_all_config_rows()[0],
+            values=["-111111"],
+            clear=True,
         )
-        with allure.step('Check that save button is disabled'):
-            assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
+        with allure.step("Check that save button is disabled"):
+            assert cluster_config_page.config.is_save_btn_disabled(), "Save button should be disabled"
         cluster_config_page.config.check_invalid_value_message(
-            f"Field [{params['filed_name']}] value cannot be less than"
+            f"Field [{params['filed_name']}] value cannot be less than",
         )
 
         cluster_config_page.config.type_in_field_with_few_inputs(
-            row=cluster_config_page.config.get_all_config_rows()[0], values=["111111"], clear=True
+            row=cluster_config_page.config.get_all_config_rows()[0],
+            values=["111111"],
+            clear=True,
         )
-        with allure.step('Check that save button is disabled'):
-            assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
+        with allure.step("Check that save button is disabled"):
+            assert cluster_config_page.config.is_save_btn_disabled(), "Save button should be disabled"
         cluster_config_page.config.check_invalid_value_message(
-            f"Field [{params['filed_name']}] value cannot be greater than"
+            f"Field [{params['filed_name']}] value cannot be greater than",
         )
 
     @pytest.mark.full()
     @pytest.mark.parametrize(("number_type", "value"), RANGE_VALUES)
-    def test_number_in_range_values_on_cluster_config_page(self, sdk_client_fs: ADCMClient, value, app_fs, number_type):
+    def test_number_in_range_values_on_cluster_config_page(
+        self,
+        sdk_client_fs: ADCMClient,
+        value,
+        app_fs,
+        number_type,
+    ):
         """Test save button is active for valid number values"""
 
         path = get_data_dir(__file__) + f"/bundles_for_numbers_tests/{number_type}-positive_and_negative"
         _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.type_in_field_with_few_inputs(
-            row=cluster_config_page.config.get_all_config_rows()[0], values=[str(value)], clear=True
+            row=cluster_config_page.config.get_all_config_rows()[0],
+            values=[str(value)],
+            clear=True,
         )
-        with allure.step('Check that save button active for number fields in min-max range'):
-            assert not cluster_config_page.config.is_save_btn_disabled(), 'Save button should be active'
+        with allure.step("Check that save button active for number fields in min-max range"):
+            assert not cluster_config_page.config.is_save_btn_disabled(), "Save button should be active"
 
     def test_float_in_integer_field_on_cluster_config_page(self, sdk_client_fs: ADCMClient, app_fs):
         """Test set float value for integer field"""
@@ -1104,11 +1143,13 @@ class TestClusterConfigPage:
         path = get_data_dir(__file__) + "/bundles_for_numbers_tests/integer-positive_and_negative"
         _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.type_in_field_with_few_inputs(
-            row=cluster_config_page.config.get_all_config_rows()[0], values=["1.2"], clear=True
+            row=cluster_config_page.config.get_all_config_rows()[0],
+            values=["1.2"],
+            clear=True,
         )
-        with allure.step('Check that we cannot set float in integer field'):
-            assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
-            cluster_config_page.config.check_field_is_invalid(params["filed_name"])
+        with allure.step("Check that we cannot set float in integer field"):
+            assert cluster_config_page.config.is_save_btn_disabled(), "Save button should be disabled"
+            cluster_config_page.config.check_field_is_invalid_error(params["filed_name"])
 
     def test_save_list_on_cluster_config_page(self, sdk_client_fs: ADCMClient, app_fs):
         """Test set value for list field, save and refresh page"""
@@ -1122,7 +1163,7 @@ class TestClusterConfigPage:
                 default=True,
                 required=False,
                 read_only=False,
-            )
+            ),
         )
         _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.type_in_field_with_few_inputs(
@@ -1132,15 +1173,16 @@ class TestClusterConfigPage:
         )
         cluster_config_page.config.save_config()
         cluster_config_page.driver.refresh()
-        with allure.step('Check saved list values'):
+        with allure.step("Check saved list values"):
             cluster_config_page.config.assert_list_value_is(
-                expected_value=params["new_value"], display_name=config['config'][0]['name']
+                expected_value=params["new_value"],
+                display_name=config["config"][0]["name"],
             )
 
     def test_save_map_on_cluster_config_page(self, sdk_client_fs: ADCMClient, app_fs):
         """Test set value for map field, save and refresh page"""
 
-        params = {"new_value": {'test': 'test', 'test_2': 'test', 'test_3': 'test'}}
+        params = {"new_value": {"test": "test", "test_2": "test", "test_3": "test"}}
         config, _, path = prepare_config(
             generate_configs(
                 field_type="map",
@@ -1149,19 +1191,20 @@ class TestClusterConfigPage:
                 default=True,
                 required=False,
                 read_only=False,
-            )
+            ),
         )
         _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.type_in_field_with_few_inputs(
             row=cluster_config_page.config.get_all_config_rows()[0],
-            values=['test', 'test', 'test_2', 'test', 'test_3', 'test'],
+            values=["test", "test", "test_2", "test", "test_3", "test"],
             clear=True,
         )
         cluster_config_page.config.save_config()
         cluster_config_page.driver.refresh()
-        with allure.step('Check saved map values'):
+        with allure.step("Check saved map values"):
             cluster_config_page.config.assert_map_value_is(
-                expected_value=params["new_value"], display_name=config['config'][0]['name']
+                expected_value=params["new_value"],
+                display_name=config["config"][0]["name"],
             )
 
 
@@ -1179,79 +1222,90 @@ class TestClusterGroupConfigPage:
     def test_open_by_tab_group_config_host_cluster_page(self, app_fs, create_community_cluster):
         """Test open cluster/{}/group_config from left menu"""
 
-        params = {'group_name': 'Test group'}
-        cluster_group_config = create_community_cluster.group_config_create(name=params['group_name'])
+        params = {"group_name": "Test group"}
+        cluster_group_config = create_community_cluster.group_config_create(name=params["group_name"])
         cluster_config_page = ClusterGroupConfigConfig(
-            app_fs.driver, app_fs.adcm.url, create_community_cluster.id, cluster_group_config.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            create_community_cluster.id,
+            cluster_group_config.id,
         ).open()
         cluster_groupconf_page = cluster_config_page.open_hosts_tab()
         cluster_groupconf_page.check_all_elements()
-        cluster_groupconf_page.check_cluster_group_conf_toolbar(CLUSTER_NAME, params['group_name'])
+        cluster_groupconf_page.check_cluster_group_conf_toolbar(CLUSTER_NAME, params["group_name"])
 
     def test_open_by_tab_group_config_cluster_page(self, app_fs, create_community_cluster):
         """Test open cluster/{}/group_config from left menu"""
 
-        params = {'group_name': 'Test group'}
-        cluster_group_config = create_community_cluster.group_config_create(name=params['group_name'])
+        params = {"group_name": "Test group"}
+        cluster_group_config = create_community_cluster.group_config_create(name=params["group_name"])
         cluster_host_config_page = ClusterGroupConfigHosts(
-            app_fs.driver, app_fs.adcm.url, create_community_cluster.id, cluster_group_config.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            create_community_cluster.id,
+            cluster_group_config.id,
         ).open()
         cluster_groupconf_page = cluster_host_config_page.open_config_tab()
         cluster_groupconf_page.check_all_elements()
-        cluster_groupconf_page.check_cluster_group_conf_toolbar(CLUSTER_NAME, params['group_name'])
+        cluster_groupconf_page.check_cluster_group_conf_toolbar(CLUSTER_NAME, params["group_name"])
 
     def test_create_group_config_cluster(self, app_fs, create_community_cluster):
         """Test create group config on cluster/{}/group_config"""
 
         params = {
-            'name': 'Test name',
-            'description': 'Test description',
+            "name": "Test name",
+            "description": "Test description",
         }
 
         cluster_group_conf_page = ClusterGroupConfigPage(
-            app_fs.driver, app_fs.adcm.url, create_community_cluster.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            create_community_cluster.id,
         ).open()
         with cluster_group_conf_page.group_config.wait_rows_change(expected_rows_amount=1):
-            cluster_group_conf_page.group_config.create_group(name=params['name'], description=params['description'])
+            cluster_group_conf_page.group_config.create_group(name=params["name"], description=params["description"])
         group_row = cluster_group_conf_page.group_config.get_all_config_rows()[0]
         with allure.step("Check created row in cluster"):
             group_info = cluster_group_conf_page.group_config.get_config_row_info(group_row)
             assert group_info == GroupConfigRowInfo(
-                name=params['name'], description=params['description']
+                name=params["name"],
+                description=params["description"],
             ), "Row value differs in cluster groups"
         with cluster_group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
             cluster_group_conf_page.group_config.delete_row(group_row)
 
-    def test_check_pagination_on_group_config_component_page(self, app_fs, create_community_cluster):
+    def test_check_pagination_on_group_config_component_page(self, sdk_client_fs, app_fs, create_community_cluster):
         """Test pagination on cluster/{}/group_config page"""
-
+        create_few_groups(sdk_client_fs, create_community_cluster)
         group_conf_page = ClusterGroupConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        create_few_groups(group_conf_page.group_config)
-        group_conf_page.table.check_pagination(second_page_item_amount=1)
+        check_pagination(group_conf_page.table, expected_on_second=1)
 
     # pylint: disable=too-many-locals, undefined-loop-variable, too-many-statements
 
     def test_two_fields_on_cluster_config_page(self, sdk_client_fs: ADCMClient, app_fs):
         """Test two different fields on group config page"""
 
-        path = get_data_dir(__file__, 'cluster_with_two_different_fields')
+        path = get_data_dir(__file__, "cluster_with_two_different_fields")
         cluster, *_ = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_group_config = cluster.group_config_create(name="Test group")
         cluster_config_page = ClusterGroupConfigConfig(
-            app_fs.driver, app_fs.adcm.url, cluster.id, cluster_group_config.id
+            app_fs.driver,
+            app_fs.adcm.url,
+            cluster.id,
+            cluster_group_config.id,
         ).open()
         config_rows = cluster_config_page.group_config.get_all_group_config_rows()
         with allure.step("Check that first field is enabled"):
             first_row = config_rows[0]
             assert not cluster_config_page.group_config.is_customization_chbx_disabled(
-                first_row
+                first_row,
             ), "Checkbox for first field should be enabled"
             cluster_config_page.group_config.click_on_customization_chbx(first_row)
             cluster_config_page.config.check_inputs_enabled(first_row)
         with allure.step("Check that second field is disabled"):
             second_row = config_rows[1]
             assert cluster_config_page.group_config.is_customization_chbx_disabled(
-                second_row
+                second_row,
             ), "Checkbox for second field should be disabled"
             cluster_config_page.group_config.click_on_customization_chbx(second_row)
             cluster_config_page.config.check_inputs_disabled(second_row)
@@ -1260,35 +1314,35 @@ class TestClusterGroupConfigPage:
 class TestClusterStatusPage:
     """Tests for the /cluster/{}/status page"""
 
-    one_successful = 'successful 1/1'
-    one_negative = 'successful 0/1'
+    one_successful = "successful 1/1"
+    one_negative = "successful 0/1"
 
     success_status = [
-        StatusRowInfo(True, CLUSTER_NAME, 'successful 2/2', SUCCESS_COLOR, None),
-        StatusRowInfo(True, 'Hosts', one_successful, SUCCESS_COLOR, None),
-        StatusRowInfo(True, None, None, None, 'test-host'),
-        StatusRowInfo(True, 'Services', one_successful, SUCCESS_COLOR, None),
+        StatusRowInfo(True, CLUSTER_NAME, "successful 2/2", SUCCESS_COLOR, None),
+        StatusRowInfo(True, "Hosts", one_successful, SUCCESS_COLOR, None),
+        StatusRowInfo(True, None, None, None, "test-host"),
+        StatusRowInfo(True, "Services", one_successful, SUCCESS_COLOR, None),
         StatusRowInfo(True, SERVICE_NAME, one_successful, SUCCESS_COLOR, None),
-        StatusRowInfo(True, 'first', one_successful, SUCCESS_COLOR, None),
-        StatusRowInfo(True, None, None, None, 'test-host'),
+        StatusRowInfo(True, "first", one_successful, SUCCESS_COLOR, None),
+        StatusRowInfo(True, None, None, None, "test-host"),
     ]
     host_negative_status = [
-        StatusRowInfo(False, CLUSTER_NAME, 'successful 1/2', NEGATIVE_COLOR, None),
-        StatusRowInfo(False, 'Hosts', one_negative, NEGATIVE_COLOR, None),
-        StatusRowInfo(False, None, None, None, 'test-host'),
-        StatusRowInfo(True, 'Services', one_successful, SUCCESS_COLOR, None),
+        StatusRowInfo(False, CLUSTER_NAME, "successful 1/2", NEGATIVE_COLOR, None),
+        StatusRowInfo(False, "Hosts", one_negative, NEGATIVE_COLOR, None),
+        StatusRowInfo(False, None, None, None, "test-host"),
+        StatusRowInfo(True, "Services", one_successful, SUCCESS_COLOR, None),
         StatusRowInfo(True, SERVICE_NAME, one_successful, SUCCESS_COLOR, None),
-        StatusRowInfo(True, 'first', one_successful, SUCCESS_COLOR, None),
-        StatusRowInfo(True, None, None, None, 'test-host'),
+        StatusRowInfo(True, "first", one_successful, SUCCESS_COLOR, None),
+        StatusRowInfo(True, None, None, None, "test-host"),
     ]
     host_and_component_negative_status = [
-        StatusRowInfo(False, CLUSTER_NAME, 'successful 0/2', NEGATIVE_COLOR, None),
-        StatusRowInfo(False, 'Hosts', one_negative, NEGATIVE_COLOR, None),
-        StatusRowInfo(False, None, None, None, 'test-host'),
-        StatusRowInfo(False, 'Services', one_negative, NEGATIVE_COLOR, None),
+        StatusRowInfo(False, CLUSTER_NAME, "successful 0/2", NEGATIVE_COLOR, None),
+        StatusRowInfo(False, "Hosts", one_negative, NEGATIVE_COLOR, None),
+        StatusRowInfo(False, None, None, None, "test-host"),
+        StatusRowInfo(False, "Services", one_negative, NEGATIVE_COLOR, None),
         StatusRowInfo(False, SERVICE_NAME, one_negative, NEGATIVE_COLOR, None),
-        StatusRowInfo(False, 'first', one_negative, NEGATIVE_COLOR, None),
-        StatusRowInfo(False, None, None, None, 'test-host'),
+        StatusRowInfo(False, "first", one_negative, NEGATIVE_COLOR, None),
+        StatusRowInfo(False, None, None, None, "test-host"),
     ]
 
     def test_open_by_tab_cluster_status_page(self, app_fs, create_community_cluster):
@@ -1299,7 +1353,11 @@ class TestClusterStatusPage:
         cluster_status_page.check_cluster_toolbar(CLUSTER_NAME)
 
     def test_status_on_cluster_status_page(
-        self, app_fs, adcm_fs, sdk_client_fs, create_community_cluster_with_host_and_service
+        self,
+        app_fs,
+        adcm_fs,
+        sdk_client_fs,
+        create_community_cluster_with_host_and_service,
     ):
         """Changes status on cluster/{}/status page"""
         cluster, host = create_community_cluster_with_host_and_service
@@ -1326,7 +1384,11 @@ class TestClusterStatusPage:
 
     @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2636")
     def test_service_passive_status_on_cluster_status_page(
-        self, app_fs, adcm_fs, create_host, sdk_client_fs: ADCMClient
+        self,
+        app_fs,
+        adcm_fs,
+        create_host,
+        sdk_client_fs: ADCMClient,
     ):
         """Check that service status with monitoring: passive don't break status tree"""
 
@@ -1363,10 +1425,11 @@ class TestClusterImportPage:
         params = {"message": "Successfully saved"}
         cluster, _, _, _ = create_import_cluster_with_service
         import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
-        import_item = import_page.get_import_items()[0]
+        import_item = import_page.get_imports()[0]
         with allure.step("Check import on import page"):
-            assert import_page.get_import_item_info(import_item) == ImportItemInfo(
-                'Pre-uploaded Dummy cluster to import', 'Pre-uploaded Dummy cluster to import 2.5'
+            assert import_page.get_import_info(import_item) == ImportInfo(
+                "Pre-uploaded Dummy cluster to import",
+                "Pre-uploaded Dummy cluster to import 2.5",
             ), "Text in import item changed"
         import_page.close_info_popup()
         import_page.click_checkbox_in_import_item(import_item)
@@ -1385,17 +1448,16 @@ class TestClusterImportPage:
         import_page.config.check_import_warn_icon_on_left_menu()
         import_page.toolbar.check_warn_button(
             tab_name=CLUSTER_NAME,
-            expected_warn_text=['Test cluster has an issue with required import'],
+            expected_warn_text=["Test cluster has an issue with required import"],
         )
 
 
 class TestClusterRenaming:
-
     SPECIAL_CHARS = (".", "-", "_")
     DISALLOWED_AT_START_END = (*SPECIAL_CHARS, " ")
     EXPECTED_ERROR = "Please enter a valid name"
 
-    def test_rename_cluster(self, sdk_client_fs, app_fs, create_community_cluster):
+    def test_rename_cluster(self, sdk_client_fs, app_fs, create_community_cluster):  # pylint: disable=unused-argument
         cluster = create_community_cluster
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         self._test_correct_name_can_be_set(cluster, cluster_page)
@@ -1407,8 +1469,8 @@ class TestClusterRenaming:
         new_name = "Hahahah"
 
         dialog = page.open_rename_cluster_dialog(page.get_row_by_cluster_name(cluster.name))
-        dialog.set_new_name_in_rename_dialog(new_name)
-        dialog.click_save_on_rename_dialog()
+        dialog.set_new_name(new_name)
+        dialog.save()
         with allure.step("Check name of cluster in table"):
             name_in_row = page.get_cluster_info_from_row(0)["name"]
             assert name_in_row == new_name, f"Incorrect cluster name, expected: {new_name}"
@@ -1427,14 +1489,12 @@ class TestClusterRenaming:
 
         for cluster_name in incorrect_names:
             with allure.step(f"Check if printing cluster name '{cluster_name}' triggers a warning message"):
-                dialog.set_new_name_in_rename_dialog(dummy_name)
-                dialog.set_new_name_in_rename_dialog(cluster_name)
-                assert dialog.is_dialog_error_message_visible(), "Error about incorrect name should be visible"
-                assert (
-                    dialog.get_dialog_error_message() == self.EXPECTED_ERROR
-                ), f"Incorrect error message, expected: {self.EXPECTED_ERROR}"
+                dialog.set_new_name(dummy_name)
+                dialog.set_new_name(cluster_name)
+                assert dialog.is_error_message_visible(), "Error about incorrect name should be visible"
+                assert dialog.error == self.EXPECTED_ERROR, f"Incorrect error message, expected: {self.EXPECTED_ERROR}"
 
-        dialog.click_cancel_on_rename_dialog()
+        dialog.cancel()
 
     def _test_an_error_is_not_shown_on_correct_char_in_name(self, cluster: Cluster, page: ClusterListPage) -> None:
         dummy_name = "clUster"
@@ -1447,10 +1507,10 @@ class TestClusterRenaming:
 
         for cluster_name in correct_names:
             with allure.step(f"Check if printing cluster name '{cluster_name}' shows no error"):
-                dialog.set_new_name_in_rename_dialog(dummy_name)
-                dialog.set_new_name_in_rename_dialog(cluster_name)
-                assert not dialog.is_dialog_error_message_visible(), "Error about correct name should not be shown"
-                dialog.click_save_on_rename_dialog()
+                dialog.set_new_name(dummy_name)
+                dialog.set_new_name(cluster_name)
+                assert not dialog.is_error_message_visible(), "Error about correct name should not be shown"
+                dialog.save()
                 name_in_row = page.get_cluster_info_from_row(0)["name"]
                 assert name_in_row == cluster_name, f"Incorrect cluster name, expected: {cluster_name}"
                 dialog = page.open_rename_cluster_dialog(page.get_row_by_cluster_name(cluster_name))

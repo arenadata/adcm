@@ -1,5 +1,5 @@
 import { Component, ComponentRef } from '@angular/core';
-import { IColumns, IListResult } from '@adwp-ui/widgets';
+import { IColumns, IListResult } from '@app/adwp';
 import { Store } from '@ngrx/store';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';

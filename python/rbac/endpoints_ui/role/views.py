@@ -10,10 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Role object candidates view set"""
-
 from collections import defaultdict
 
+from api.base_view import GenericUIViewSet
+from cm.models import Cluster, ClusterObject, Host, HostProvider, ObjectType
+from rbac.models import ObjectType as RBACObjectType
+from rbac.models import Role, RoleTypes
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin
 from rest_framework.response import Response
@@ -22,16 +24,13 @@ from rest_framework.serializers import (
     HyperlinkedIdentityField,
     IntegerField,
     JSONField,
-    Serializer,
 )
 
 from adcm.permissions import DjangoObjectPermissionsAudit
-from api.base_view import GenericUIViewSet
-from cm import models as cm_models
-from rbac import models
+from adcm.serializers import EmptySerializer
 
 
-class RoleSerializer(Serializer):
+class RoleUISerializer(EmptySerializer):
     id = IntegerField()
     name = CharField()
     parametrized_by_type = JSONField()
@@ -39,14 +38,14 @@ class RoleSerializer(Serializer):
 
 
 class RoleViewSet(ListModelMixin, GenericUIViewSet):
-    queryset = models.Role.objects.all()
-    serializer_class = RoleSerializer
+    queryset = Role.objects.all()
+    serializer_class = RoleUISerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
 
     @action(methods=["get"], detail=True)
-    def object_candidate(self, request, **kwargs):
+    def object_candidate(self, request, **kwargs):  # pylint: disable=unused-argument # noqa: C901
         role = self.get_object()
-        if role.type != models.RoleTypes.role:
+        if role.type != RoleTypes.ROLE:
             return Response({"cluster": [], "provider": [], "service": [], "host": []})
 
         clusters = []
@@ -54,55 +53,55 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
         services = []
         hosts = []
 
-        if models.ObjectType.cluster.value in role.parametrized_by_type:
-            for cluster in cm_models.Cluster.objects.all():
+        if RBACObjectType.CLUSTER.value in role.parametrized_by_type:
+            for cluster in Cluster.objects.all():
                 clusters.append(
                     {
                         "name": cluster.display_name,
-                        "type": cm_models.ObjectType.Cluster,
+                        "type": ObjectType.CLUSTER,
                         "id": cluster.id,
-                    }
+                    },
                 )
 
-        if models.ObjectType.provider.value in role.parametrized_by_type:
-            for provider in cm_models.HostProvider.objects.all():
+        if RBACObjectType.PROVIDER.value in role.parametrized_by_type:
+            for provider in HostProvider.objects.all():
                 providers.append(
                     {
                         "name": provider.display_name,
-                        "type": cm_models.ObjectType.Provider,
+                        "type": ObjectType.PROVIDER,
                         "id": provider.id,
-                    }
+                    },
                 )
 
-        if models.ObjectType.host.value in role.parametrized_by_type:
-            for host in cm_models.Host.objects.all():
+        if RBACObjectType.HOST.value in role.parametrized_by_type:
+            for host in Host.objects.all():
                 hosts.append(
                     {
                         "name": host.display_name,
-                        "type": cm_models.ObjectType.Host,
+                        "type": ObjectType.HOST,
                         "id": host.id,
-                    }
+                    },
                 )
 
         if (
-            models.ObjectType.service.value in role.parametrized_by_type
-            or models.ObjectType.component.value in role.parametrized_by_type
+            RBACObjectType.SERVICE.value in role.parametrized_by_type
+            or RBACObjectType.COMPONENT.value in role.parametrized_by_type
         ):
             _services = defaultdict(list)
-            for service in cm_models.ClusterObject.objects.all():
+            for service in ClusterObject.objects.all():
                 _services[service.display_name].append(
                     {
                         "name": service.cluster.display_name,
                         "type": "service",
                         "id": service.id,
-                    }
+                    },
                 )
             for service_name, clusters_info in _services.items():
                 services.append(
                     {
                         "name": service_name,
                         "clusters": sorted(clusters_info, key=lambda x: x["name"]),
-                    }
+                    },
                 )
 
         return Response(
@@ -111,5 +110,5 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
                 "provider": sorted(providers, key=lambda x: x["name"]),
                 "service": sorted(services, key=lambda x: x["name"]),
                 "host": sorted(hosts, key=lambda x: x["name"]),
-            }
+            },
         )

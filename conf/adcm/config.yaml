@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 2.3
+  version: 2.4
 
   actions:
     run_ldap_sync:
@@ -107,6 +107,8 @@
       display_name: "Nginx Server Logrotate"
       type: "group"
       activatable: true
+      ui_options:
+        invisible: true
       subs:
         - name: size
           display_name: "Max file size"

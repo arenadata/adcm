@@ -12,8 +12,8 @@
 
 """Test synchronization and test connection with LDAP"""
 import time
+from collections.abc import Callable
 from contextlib import contextmanager
-from typing import Callable, Optional, Tuple
 
 import allure
 import pytest
@@ -22,7 +22,7 @@ from adcm_client.objects import ADCM, ADCMClient, Group, User
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import random_string, wait_until_step_succeeds
 from coreapi.exceptions import ErrorMessage
-from tests.functional.conftest import only_clean_adcm
+
 from tests.functional.ldap_auth.utils import (
     DEFAULT_LOCAL_USERS,
     LDAP_ACTION_CAN_NOT_START_REASON,
@@ -48,7 +48,7 @@ from tests.library.ldap_interactions import (
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm, pytest.mark.ldap()]
+pytestmark = [pytest.mark.ldap()]
 
 
 @pytest.fixture()
@@ -56,7 +56,7 @@ def adcm_user_client(sdk_client_fs) -> ADCMClient:
     """Create simple user with ADCM User role"""
     username, password = "SimpleUser", "MegaPassword"
     user = sdk_client_fs.user_create(username, password)
-    sdk_client_fs.policy_create("Simple user", role=sdk_client_fs.role(name=RbacRoles.ADCMUser.value), user=[user])
+    sdk_client_fs.policy_create("Simple user", role=sdk_client_fs.role(name=RbacRoles.ADCM_USER.value), user=[user])
     return ADCMClient(url=sdk_client_fs.url, user=username, password=password)
 
 
@@ -68,7 +68,7 @@ def adcm_admin_client(sdk_client_fs) -> ADCMClient:
     role = sdk_client_fs.role_create(
         "ADCM admin role",
         display_name="ADCM admin role",
-        child=[{"id": sdk_client_fs.role(name=BusinessRoles.EditADCMSettings.value.role_name).id}],
+        child=[{"id": sdk_client_fs.role(name=BusinessRoles.EDIT_ADCM_SETTINGS.value.role_name).id}],
     )
     sdk_client_fs.policy_create("ADCM Admins", role=role, user=[user])
     return ADCMClient(url=sdk_client_fs.url, user=username, password=password)
@@ -98,7 +98,7 @@ class TestDisablingCause:
             adcm.config_set_diff({"attr": {"ldap_integration": {"active": False}}})
             self._check_disabling_cause(adcm, LDAP_ACTION_CAN_NOT_START_REASON)
 
-    def _check_disabling_cause(self, adcm: ADCM, expected: Optional[str]):
+    def _check_disabling_cause(self, adcm: ADCM, expected: str | None):
         # retrieve each time to avoid rereading
         sync = adcm.action(name=SYNC_ACTION_NAME)
         test_connection = adcm.action(name=TEST_CONNECTION_ACTION)
@@ -115,7 +115,7 @@ class TestDisablingCause:
             f"Expected: {expected}"
         )
 
-    def _set_ldap_settings(self, client: ADCMClient, config: LDAPTestConfig, ous: Tuple[str, str]):
+    def _set_ldap_settings(self, client: ADCMClient, config: LDAPTestConfig, ous: tuple[str, str]):
         groups_ou, users_ou = ous
         configure_adcm_for_ldap(client, config, False, None, users_ou, groups_ou)
 
@@ -224,13 +224,13 @@ class TestLDAPSyncAction:
         with allure.step("Remove user in AD from LDAP group and rerun sync"):
             ldap_ad.remove_user_from_group(ldap_user_in_group["dn"], ldap_group["dn"])
             sync_adcm_with_ldap(sdk_client_fs)
-        with allure.step('Check user was removed only from LDAP group'):
-            check_existing_users(sdk_client_fs, {ldap_user_in_group['name']})
-            check_existing_groups(sdk_client_fs, {ldap_group['name']}, {another_group.name})
+        with allure.step("Check user was removed only from LDAP group"):
+            check_existing_users(sdk_client_fs, {ldap_user_in_group["name"]})
+            check_existing_groups(sdk_client_fs, {ldap_group["name"]}, {another_group.name})
             group.reread()
             assert len(group.user_list()) == 0, "Group from LDAP should be empty"
             another_group.reread()
-            assert len(another_group.user_list()) == 1, 'Local group should still have deactivated users in it'
+            assert len(another_group.user_list()) == 1, "Local group should still have deactivated users in it"
 
     def test_user_deactivated(self, sdk_client_fs, ldap_ad, ldap_user_in_group):
         """Test that user is deactivated in ADCM after it's deactivated in AD"""
@@ -250,8 +250,8 @@ class TestLDAPSyncAction:
                 ldap_ad.deactivate_user(ldap_user["dn"])
                 sync_adcm_with_ldap(sdk_client_fs)
                 user.reread()
-                assert not user.is_active, 'User should be deactivated'
-                expect_api_error('login as deactivated user', ADCMClient, **credentials)
+                assert not user.is_active, "User should be deactivated"
+                expect_api_error("login as deactivated user", ADCMClient, **credentials)
 
     def test_user_deleted(self, sdk_client_fs, ldap_ad, ldap_user_in_group):
         """Test that user is deleted in ADCM after it's deleted in AD"""
@@ -269,10 +269,10 @@ class TestLDAPSyncAction:
             with session_should_expire(**credentials):
                 ldap_ad.delete(ldap_user_in_group["dn"])
                 sync_adcm_with_ldap(sdk_client_fs)
-                check_existing_users(sdk_client_fs, {ldap_user_in_group['name']})
-                user = get_ldap_user_from_adcm(sdk_client_fs, ldap_user_in_group['name'])
-                assert not user.is_active, 'User should be deactivated'
-                expect_api_error('login as deleted user', ADCMClient, **credentials)
+                check_existing_users(sdk_client_fs, {ldap_user_in_group["name"]})
+                user = get_ldap_user_from_adcm(sdk_client_fs, ldap_user_in_group["name"])
+                assert not user.is_active, "User should be deactivated"
+                expect_api_error("login as deleted user", ADCMClient, **credentials)
 
     def test_name_email_sync_from_ldap(self, sdk_client_fs, ldap_ad, ldap_user_in_group):
         """Test that first/last name and email are synced with LDAP"""
@@ -465,7 +465,7 @@ def session_should_expire(user: str, password: str, url: str):
             assert "401 Unauthorized" in e.value.error.title, "Operation should fail with 401 code"
         except (KeyError, AttributeError) as err:
             raise AssertionError(
-                f"Operation should fail as an unauthorized one\nBut check was failed due to {err}\n"
+                f"Operation should fail as an unauthorized one\nBut check was failed due to {err}\n",
             ) from err
 
 

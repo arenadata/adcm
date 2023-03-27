@@ -28,8 +28,8 @@ from adcm_pytest_plugin.utils import get_data_dir
 
 pytestmark = allure.link(url="https://arenadata.atlassian.net/browse/ADCM-2580", name="Test cases")
 
-DEFAULT_ANSIBLE_VER = dict(major=2, minor=8)
-ANSIBLE_9 = dict(major=2, minor=9)
+DEFAULT_ANSIBLE_VER = {"major": 2, "minor": 8}
+ANSIBLE_9 = {"major": 2, "minor": 9}
 
 
 def _prepare_cluster(client: ADCMClient, name):
@@ -37,7 +37,7 @@ def _prepare_cluster(client: ADCMClient, name):
     Prepared cluster for test: create cluster, couple services and couple components.
     """
     cluster_bundle = client.upload_from_fs(get_data_dir(__file__) + "/cluster_" + name)
-    cluster = cluster_bundle.cluster_prototype().cluster_create(name.replace('_', ' '))
+    cluster = cluster_bundle.cluster_prototype().cluster_create(name.replace("_", " "))
     cluster.service_add(name=name)
     return cluster
 
@@ -94,7 +94,11 @@ def test_default_ansible(
     Check that by default (if developer write nothing) we have Ansible 2.8.
     """
     run_cluster_action_and_assert_result(cluster_no_venv, "no_venv", config=DEFAULT_ANSIBLE_VER)
-    run_service_action_and_assert_result(cluster_no_venv.service(name="no_venv"), "no_venv", config=DEFAULT_ANSIBLE_VER)
+    run_service_action_and_assert_result(
+        cluster_no_venv.service(name="no_venv"),
+        "no_venv",
+        config=DEFAULT_ANSIBLE_VER,
+    )
     run_component_action_and_assert_result(
         cluster_no_venv.service(name="no_venv").component(name="no_venv"),
         "no_venv",
@@ -199,7 +203,9 @@ def test_ansible_set_on_action(
     Check that we able to change ansible on action.
     """
     run_cluster_action_and_assert_result(
-        cluster_obj_venv_default_action_9, "obj_venv_default_action_9", config=ANSIBLE_9
+        cluster_obj_venv_default_action_9,
+        "obj_venv_default_action_9",
+        config=ANSIBLE_9,
     )
     run_service_action_and_assert_result(
         cluster_obj_venv_default_action_9.service(name="obj_venv_default_action_9"),
@@ -208,7 +214,7 @@ def test_ansible_set_on_action(
     )
     run_component_action_and_assert_result(
         cluster_obj_venv_default_action_9.service(name="obj_venv_default_action_9").component(
-            name="obj_venv_default_action_9"
+            name="obj_venv_default_action_9",
         ),
         "obj_venv_default_action_9",
         config=ANSIBLE_9,
@@ -234,7 +240,9 @@ def test_ansible_set_on_action(
     )
 
     run_provider_action_and_assert_result(
-        provider_obj_venv_default_action_9, "obj_venv_default_action_9", config=ANSIBLE_9
+        provider_obj_venv_default_action_9,
+        "obj_venv_default_action_9",
+        config=ANSIBLE_9,
     )
     run_host_action_and_assert_result(
         provider_obj_venv_default_action_9.host(fqdn="obj-venv-default-action-9"),

@@ -1,6 +1,6 @@
 import { Component, ContentChild, Input } from '@angular/core';
 import { AbstractControl, FormGroup } from '@angular/forms';
-import { ADWP_DEFAULT_MATCHER, AdwpMatcher, AdwpStringHandler } from '@adwp-ui/widgets';
+import { ADWP_DEFAULT_MATCHER, AdwpMatcher, AdwpStringHandler } from '@app/adwp';
 import { RbacRoleModel } from '../../../models/rbac/rbac-role.model';
 import { RbacPermissionFormComponent } from '../../../components/rbac/permission-form/rbac-permission-form.component';
 

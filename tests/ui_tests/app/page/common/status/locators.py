@@ -13,20 +13,25 @@
 """Cluster page locators"""
 
 from selenium.webdriver.common.by import By
-from tests.ui_tests.app.helpers.locator import Locator
+
+from tests.ui_tests.core.locators import BaseLocator
 
 
 class StatusLocators:
     """Status page elements locators"""
 
-    expand_collapse_btn = Locator(By.CSS_SELECTOR, "mat-card-content .mat-raised-button", "Expand/Collapse All button")
-    group_row = Locator(By.CSS_SELECTOR, "mat-card-content mat-tree-node", "Status row")
+    expand_collapse_btn = BaseLocator(
+        By.CSS_SELECTOR,
+        "mat-card-content .mat-raised-button",
+        "Expand/Collapse All button",
+    )
+    group_row = BaseLocator(By.CSS_SELECTOR, "mat-card-content mat-tree-node", "Status row")
 
     class StatusRow:
         """Status page row elements locators"""
 
-        collapse_btn = Locator(By.CSS_SELECTOR, "button", "Collapse list button")
-        icon = Locator(By.XPATH, ".//mat-icon[not(contains(text(), 'expand_more'))]", "Status icon")
-        group_name = Locator(By.CSS_SELECTOR, ".expandable", "Status group name")
-        state = Locator(By.CSS_SELECTOR, ".counts", "Status group state")
-        link = Locator(By.CSS_SELECTOR, "a", "Link")
+        collapse_btn = BaseLocator(By.CSS_SELECTOR, "button", "Collapse list button")
+        icon = BaseLocator(By.XPATH, ".//mat-icon[not(contains(text(), 'expand_more'))]", "Status icon")
+        group_name = BaseLocator(By.CSS_SELECTOR, ".expandable", "Status group name")
+        state = BaseLocator(By.CSS_SELECTOR, ".counts", "Status group state")
+        link = BaseLocator(By.CSS_SELECTOR, "a", "Link")

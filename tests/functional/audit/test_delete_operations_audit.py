@@ -14,7 +14,6 @@
 Test audit operations with "operation_type == DELETE"
 """
 
-from typing import Tuple
 
 import allure
 import pytest
@@ -29,21 +28,19 @@ from adcm_client.objects import (
     Role,
     User,
 )
+
 from tests.functional.audit.conftest import BUNDLES_DIR, NEW_USER
 from tests.functional.audit.conftest import CreateDeleteOperation as Delete
 from tests.functional.audit.conftest import check_failed, check_succeed
-from tests.functional.conftest import only_clean_adcm
-from tests.functional.rbac.conftest import BusinessRoles as BR
+from tests.functional.rbac.conftest import BusinessRoles as BR  # noqa: N817
 from tests.functional.rbac.conftest import create_policy
 from tests.library.audit.checkers import AuditLogChecker
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm]
-
 
 @pytest.fixture()
-def bundles(sdk_client_fs) -> Tuple[Bundle, Bundle]:
+def bundles(sdk_client_fs) -> tuple[Bundle, Bundle]:
     """Upload two bundles: cluster and provider"""
     return (
         sdk_client_fs.upload_from_fs(BUNDLES_DIR / "create" / "cluster"),
@@ -52,7 +49,7 @@ def bundles(sdk_client_fs) -> Tuple[Bundle, Bundle]:
 
 
 @pytest.fixture()
-def adcm_objects(bundles) -> Tuple[Cluster, Provider, Host, Host]:
+def adcm_objects(bundles) -> tuple[Cluster, Provider, Host, Host]:
     """
     Create ADCM objects: cluster, provider, two hosts
     Add service to cluster
@@ -69,7 +66,7 @@ def adcm_objects(bundles) -> Tuple[Cluster, Provider, Host, Host]:
 
 
 @pytest.fixture()
-def rbac_objects(sdk_client_fs, rbac_create_data) -> Tuple[User, Group, Role, Policy]:
+def rbac_objects(sdk_client_fs, rbac_create_data) -> tuple[User, Group, Role, Policy]:
     """Create RBAC objects (user may be taken, if already created)"""
     policy_data = {**rbac_create_data["policy"]}
     try:
@@ -96,18 +93,18 @@ def _grant_view_config_permissions_on_adcm_objects(sdk_client_fs, adcm_objects, 
     create_policy(
         sdk_client_fs,
         [
-            BR.ViewClusterConfigurations,
-            BR.ViewServiceConfigurations,
-            BR.ViewComponentConfigurations,
+            BR.VIEW_CLUSTER_CONFIGURATIONS,
+            BR.VIEW_SERVICE_CONFIGURATIONS,
+            BR.VIEW_COMPONENT_CONFIGURATIONS,
         ],
-        [cluster, (s := cluster.service()), s.component()],
+        [cluster, (service := cluster.service()), service.component()],
         users=[user],
         groups=[],
         use_all_objects=True,
     )
     create_policy(
         sdk_client_fs,
-        [BR.ViewProviderConfigurations, BR.ViewHostConfigurations],
+        [BR.VIEW_PROVIDER_CONFIGURATIONS, BR.VIEW_HOST_CONFIGURATIONS],
         [provider, host_1, host_2],
         users=[user],
         groups=[],
@@ -115,7 +112,7 @@ def _grant_view_config_permissions_on_adcm_objects(sdk_client_fs, adcm_objects, 
     )
 
 
-@pytest.mark.parametrize('parse_with_context', ['delete_objects.yaml'], indirect=True)
+@pytest.mark.parametrize("parse_with_context", ["delete_objects.yaml"], indirect=True)
 @pytest.mark.usefixtures("_grant_view_config_permissions_on_adcm_objects")  # pylint: disable-next=too-many-locals
 def test_delete(
     parse_with_context,

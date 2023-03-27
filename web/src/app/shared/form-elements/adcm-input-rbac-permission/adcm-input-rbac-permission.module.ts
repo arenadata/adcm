@@ -8,7 +8,7 @@ import {
   AdwpDropdownModule,
   AdwpMapperPipeModule,
   AdwpFilterPipeModule
-} from '@adwp-ui/widgets';
+} from '@app/adwp';
 import { MatIconModule } from '@angular/material/icon';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';

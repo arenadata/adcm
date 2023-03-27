@@ -14,14 +14,13 @@ from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
 
+from cm.models import Bundle, Cluster, ConfigLog, Prototype
 from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
+from rbac.models import Role, User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
-
-from cm.models import Bundle
-from rbac.models import Role, User
 
 APPLICATION_JSON = "application/json"
 
@@ -121,7 +120,7 @@ class BaseTestCase(TestCase):
 
         self.login()
 
-    def upload_and_load_bundle(self, path: Path) -> Bundle:
+    def upload_bundle(self, path: Path) -> None:
         with open(path, encoding=settings.ENCODING_UTF_8) as f:
             response: Response = self.client.post(
                 path=reverse("upload-bundle"),
@@ -130,6 +129,7 @@ class BaseTestCase(TestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
+    def load_bundle(self, path: Path) -> Bundle:
         response: Response = self.client.post(
             path=reverse("load-bundle"),
             data={"bundle_file": path.name},
@@ -138,3 +138,22 @@ class BaseTestCase(TestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         return Bundle.objects.get(pk=response.data["id"])
+
+    def upload_and_load_bundle(self, path: Path) -> Bundle:
+        self.upload_bundle(path=path)
+
+        return self.load_bundle(path=path)
+
+    def upload_bundle_create_cluster_config_log(
+        self, bundle_path: Path, cluster_name: str = "test-cluster"
+    ) -> tuple[Bundle, Cluster, ConfigLog]:
+        bundle = self.upload_and_load_bundle(path=bundle_path)
+
+        cluster_prototype = Prototype.objects.get(bundle_id=bundle.pk, type="cluster")
+        cluster_response: Response = self.client.post(
+            path=reverse("cluster"),
+            data={"name": cluster_name, "prototype_id": cluster_prototype.pk},
+        )
+        cluster = Cluster.objects.get(pk=cluster_response.data["id"])
+
+        return bundle, cluster, ConfigLog.objects.get(obj_ref=cluster.config)
