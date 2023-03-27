@@ -36,7 +36,7 @@ export class DropdownComponent extends FieldDirective implements OnInit, AfterVi
 
   ngAfterViewInit() {
     setTimeout(() => {
-      this.form.get(this.field.name).markAsTouched();
+      this.form.get(this.field.name)?.markAsTouched();
     }, 100)
   }
 
