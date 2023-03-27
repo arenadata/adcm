@@ -982,7 +982,7 @@ def set_job_status(job_id: int, status: str, event, pid: int = 0):
     job = job_query.first()
 
     if status == JobStatus.RUNNING:
-        if job.task.lock:
+        if job.task.lock and job.task.task_object:
             job.task.lock.reason = job.cook_reason()
             job.task.lock.save(update_fields=["reason"])
 
