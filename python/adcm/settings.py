@@ -159,6 +159,7 @@ if all((DB_PASS, DB_NAME, DB_USER, DB_HOST, DB_PORT)):
         "PASSWORD": DB_PASS,
         "HOST": DB_HOST,
         "PORT": DB_PORT,
+        "CONN_MAX_AGE": 60,
     }
 else:
     DB_DEFAULT = {

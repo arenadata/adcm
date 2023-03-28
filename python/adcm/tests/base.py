@@ -154,13 +154,15 @@ class BaseTestCase(TestCase):
 
         return self.load_bundle(path=path)
 
-    def upload_bundle_create_cluster_config_log(self, bundle_path: Path) -> tuple[Bundle, Cluster, ConfigLog]:
+    def upload_bundle_create_cluster_config_log(
+        self, bundle_path: Path, cluster_name: str = "test-cluster"
+    ) -> tuple[Bundle, Cluster, ConfigLog]:
         bundle = self.upload_and_load_bundle(path=bundle_path)
 
         cluster_prototype = Prototype.objects.get(bundle_id=bundle.pk, type="cluster")
         cluster_response: Response = self.client.post(
             path=reverse("cluster"),
-            data={"name": "test-cluster", "prototype_id": cluster_prototype.pk},
+            data={"name": cluster_name, "prototype_id": cluster_prototype.pk},
         )
         cluster = Cluster.objects.get(pk=cluster_response.data["id"])
 

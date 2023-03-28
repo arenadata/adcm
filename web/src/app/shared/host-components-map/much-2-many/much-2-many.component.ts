@@ -101,9 +101,9 @@ export class Much2ManyComponent implements AfterViewChecked {
 
   hasHcRelations(host: HostTile): boolean {
     if (!this.selectedComponent) return false;
-    if (host?.relations.length === 0 && this.selectedComponent?.actions.includes('add')) return true;
+    if (host?.relations.length === 0 && this.selectedComponent?.actions && this.selectedComponent?.actions.includes('add')) return true;
     if (host?.relations.length === 0) return false;
 
-    return !!host?.relations.some((relation) => relation.id === this.selectedComponent.id && this.selectedComponent?.actions.includes('remove'));
+    return !!host?.relations.some((relation) => relation.id === this.selectedComponent.id && this.selectedComponent?.actions && this.selectedComponent?.actions.includes('remove'));
   }
 }

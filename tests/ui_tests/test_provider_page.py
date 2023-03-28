@@ -237,7 +237,7 @@ class TestProviderMainPage:
         main_page.toolbar.run_upgrade(PROVIDER_NAME, PROVIDER_NAME)
         with allure.step("Check that provider has been upgraded"):
             provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
-            row = provider_page.table.get_all_rows()[0]
+            row = provider_page.table.get_all_rows()[1]
             assert (
                 provider_page.get_provider_info_from_row(row).state == params["state"]
             ), f"Provider state should be {params['state']}"

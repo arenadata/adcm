@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import {AfterViewInit, Component, OnInit} from '@angular/core';
+import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { Observable, of } from 'rxjs';
 
 import { FieldDirective } from './field.directive';
@@ -36,7 +36,7 @@ export class DropdownComponent extends FieldDirective implements OnInit, AfterVi
 
   ngAfterViewInit() {
     setTimeout(() => {
-      this.form.get(this.field.name).markAsTouched();
+      this.form.get(this.field.name)?.markAsTouched();
     }, 100)
   }
 

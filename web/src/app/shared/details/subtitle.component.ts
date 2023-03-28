@@ -15,26 +15,26 @@ import { IDetails } from '@app/models/details';
 @Component({
   selector: 'app-details-subtitle',
   template: `
-    <ng-container *ngIf="cur">
-      <ng-container *ngIf="cur.typeName === 'job'; else link">
-        <app-task-objects [row]="cur"></app-task-objects>
+    <ng-container *ngIf="currentObject">
+      <ng-container *ngIf="currentObject.typeName === 'job'; else link">
+        <app-task-objects [object]="currentObject"></app-task-objects>
       </ng-container>
       <ng-template #link>
-        <a [routerLink]="['/', cur.provider_id ? 'provider' : 'bundle', cur.provider_id || cur.bundle_id || {}]">
-          {{ cur.provider_name || '' }}
-          {{ cur.typeName === 'host' ? '' : cur.prototype_display_name || cur.prototype_name }}
-          {{ cur.typeName === 'host' ? '' : cur.prototype_version }}
+        <a [routerLink]="['/', currentObject.provider_id ? 'provider' : 'bundle', currentObject.provider_id || currentObject.bundle_id || {}]">
+          {{ currentObject.provider_name || '' }}
+          {{ currentObject.typeName === 'host' ? '' : currentObject.prototype_display_name || currentObject.prototype_name }}
+          {{ currentObject.typeName === 'host' ? '' : currentObject.prototype_version }}
         </a>
       </ng-template>
     </ng-container>
   `,
 })
 export class SubtitleComponent {
-  cur: IDetails;
+  currentObject: IDetails;
 
-  @Input() set current(c: IDetails) {
-    if (c) {
-      this.cur = c;
+  @Input() set current(currentInput: IDetails) {
+    if (currentInput) {
+      this.currentObject = currentInput;
     }
   }
 

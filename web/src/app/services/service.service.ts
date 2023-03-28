@@ -7,7 +7,7 @@ import { environment } from '@env/environment';
 import { Service } from '@app/core/types';
 import { HavingStatusTreeAbstractService } from '@app/abstract/having-status-tree.abstract.service';
 import { ServiceStatusTree, StatusTree } from '@app/models/status-tree';
-import {filter, switchMap, tap} from "rxjs/operators";
+import { filter, switchMap } from "rxjs/operators";
 import { DialogComponent } from "@app/shared/components";
 import { MatDialog } from "@angular/material/dialog";
 

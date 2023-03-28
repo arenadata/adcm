@@ -60,7 +60,7 @@ def read_bundle_file(proto: Prototype | StagePrototype, fname: str, bundle_hash:
     file_descriptor = None
 
     if fname[0:2] == "./":
-        path = Path(settings.BUNDLE_DIR, proto.path, fname)
+        path = Path(settings.BUNDLE_DIR, bundle_hash, proto.path, fname)
     else:
         path = Path(settings.BUNDLE_DIR, bundle_hash, fname)
 
@@ -296,7 +296,6 @@ def process_file_type(obj: Any, spec: dict, conf: dict):  # noqa: C901
                     value = None
 
                 save_file_type(obj, key, "", value)
-                conf[key] = value
         elif conf[key]:
             for subkey in conf[key]:
                 if spec[key][subkey]["type"] == "file":
@@ -316,13 +315,12 @@ def process_file_type(obj: Any, spec: dict, conf: dict):  # noqa: C901
                         value = None
 
                     save_file_type(obj, key, subkey, value)
-                    conf[key][subkey] = value
 
 
 def process_secret_params(spec, conf):  # noqa: C901
     for key in conf:  # pylint: disable=too-many-nested-blocks
         if "type" in spec[key]:
-            if spec[key]["type"] in settings.SECURE_PARAM_TYPES and conf[key]:
+            if spec[key]["type"] in {"password", "secrettext", "secretfile"} and conf[key]:
                 if conf[key].startswith(settings.ANSIBLE_VAULT_HEADER):
                     try:
                         ansible_decrypt(msg=conf[key])
@@ -335,7 +333,7 @@ def process_secret_params(spec, conf):  # noqa: C901
                     conf[key] = ansible_encrypt_and_format(msg=conf[key])
         else:
             for subkey in conf[key]:
-                if spec[key][subkey]["type"] in settings.SECURE_PARAM_TYPES and conf[key][subkey]:
+                if spec[key][subkey]["type"] in {"password", "secrettext", "secretfile"} and conf[key][subkey]:
                     if conf[key][subkey].startswith(settings.ANSIBLE_VAULT_HEADER):
                         try:
                             ansible_decrypt(msg=conf[key][subkey])
@@ -394,7 +392,7 @@ def process_config(  # pylint: disable=too-many-branches # noqa: C901
                 if spec[key]["type"] in {"file", "secretfile"}:
                     conf[key] = cook_file_type_name(obj, key, "")
 
-                elif spec[key]["type"] in settings.SECURE_PARAM_TYPES:
+                elif spec[key]["type"] in {"password", "secrettext"}:
                     if settings.ANSIBLE_VAULT_HEADER in conf[key]:
                         conf[key] = {"__ansible_vault": conf[key]}
 
@@ -408,7 +406,7 @@ def process_config(  # pylint: disable=too-many-branches # noqa: C901
                     if spec[key][subkey]["type"] in {"file", "secretfile"}:
                         conf[key][subkey] = cook_file_type_name(obj, key, subkey)
 
-                    elif spec[key][subkey]["type"] in settings.SECURE_PARAM_TYPES:
+                    elif spec[key][subkey]["type"] in {"password", "secrettext"}:
                         if settings.ANSIBLE_VAULT_HEADER in conf[key][subkey]:
                             conf[key][subkey] = {"__ansible_vault": conf[key][subkey]}
 

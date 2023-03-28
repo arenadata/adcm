@@ -102,9 +102,7 @@ def test_terminate_action_with_hc_acl(cluster, generic_provider):
 
     with allure.step("Check that HC is the same as the original one after task is cancelled"):
         _wait_state_is_aborted(task)
-        cluster.reread()
-        new_hc = tuple(cluster.hostcomponent())
-        assert new_hc == original_hc, "Hostcomponent is incorrect after cancellation of action with hc_acl"
+        _wait_cluster_hostcomponent(cluster=cluster, original_hc=original_hc)
 
 
 def _wait_state_is_aborted(task):
@@ -116,3 +114,15 @@ def _wait_state_is_aborted(task):
         ) == CANCELLED_STATUS, f'Task should be of status "{CANCELLED_STATUS}", not "{actual_status}"'
 
     wait_until_step_succeeds(_wait_cancel, timeout=5, period=0.5)
+
+
+def _wait_cluster_hostcomponent(cluster: Cluster, original_hc: tuple):
+    # correct list of hostcomponent may be incorrect from first time
+    def _wait_hostcomponent():
+        cluster.reread()
+        assert (actual_hostcomponent := tuple(cluster.hostcomponent())) == original_hc, (
+            f"Hostcomponent is incorrect"
+            f"\nActual hostcomponent is:'{actual_hostcomponent}', expected is: '{original_hc}'"
+        )
+
+    wait_until_step_succeeds(_wait_hostcomponent, timeout=3, period=0.5)

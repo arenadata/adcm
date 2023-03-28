@@ -37,6 +37,7 @@ from tests.library.utils import get_or_raise
 # pylint: disable=redefined-outer-name
 
 SET_MULTI_SET_ACTION = "set_multistate"
+MULTISTATE_CHANGING_FAIL = "multistate_changing_fail"
 
 
 class MultiState:
@@ -73,6 +74,20 @@ def cluster_multi_state(sdk_client_fs) -> Cluster:
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_multi_state"))
     cluster = bundle.cluster_create("multi_state")
     cluster.service_add(name="first_srv")
+    return cluster
+
+
+@pytest.fixture()
+def cluster_masking_1(sdk_client_fs) -> Cluster:
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "masking_scenario_1"))
+    cluster = bundle.cluster_create("multi_state")
+    return cluster
+
+
+@pytest.fixture()
+def cluster_masking_2(sdk_client_fs) -> Cluster:
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "masking_scenario_2"))
+    cluster = bundle.cluster_create("multi_state")
     return cluster
 
 
@@ -314,7 +329,40 @@ class TestTaskCancelRestart:
             check_succeed(self._cancel_job(job))
             wait_for_task_and_assert_result(task=task, status=Status.SUCCESS)
             compare_object_state(adcm_object=cluster, expected_state=MultiState.SUCCESS)
+            compare_object_multi_state(adcm_object=cluster, expected_state=[MultiState.FAILED, MultiState.SUCCESS])
+
+        with allure.step("Restart failed task and check multi state"):
+            run_cluster_action_and_assert_result(cluster=cluster, action=MULTISTATE_CHANGING_FAIL, status=Status.FAILED)
+            compare_object_state(adcm_object=cluster, expected_state=MultiState.FAILED)
             compare_object_multi_state(adcm_object=cluster, expected_state=[MultiState.FAILED])
+
+    @pytest.mark.parametrize(
+        ("cluster", "expected"),
+        [
+            (pytest.lazy_fixture("cluster_masking_1"), [MultiState.FAILED, MultiState.SUCCESS]),
+            (pytest.lazy_fixture("cluster_masking_2"), [MultiState.SUCCESS]),
+        ],
+    )
+    def test_cancel_failed(self, cluster, expected):
+        """
+        Test to check multi states after job cancel
+        """
+        with allure.step("Run action and check states"):
+            run_cluster_action_and_assert_result(cluster=cluster, action="state_changing_fail", status=Status.FAILED)
+            compare_object_state(adcm_object=cluster, expected_state=MultiState.FAILED)
+            compare_object_multi_state(adcm_object=cluster, expected_state=[MultiState.FAILED])
+
+        with allure.step("Run same action again and cancel job"):
+            action = cluster.action(name="state_changing_fail")
+            task = action.run()
+            job = get_or_raise(task.job_list(), display_name_is(JobStep.FIRST))
+            wait_for_job_status(job)
+            check_succeed(self._cancel_job(job))
+            wait_for_task_and_assert_result(task=task, status=Status.SUCCESS)
+
+        with allure.step("Check state and multi state"):
+            compare_object_state(adcm_object=cluster, expected_state=MultiState.SUCCESS)
+            compare_object_multi_state(adcm_object=cluster, expected_state=expected)
 
     @allure.step("Restarting task")
     def _restart_task(self, task: Task):

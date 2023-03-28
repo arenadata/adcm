@@ -1,0 +1,37 @@
+---
+- type: cluster
+  name: license_upgrade_service
+  version: &version "2.0"
+  upgrade:
+    - name: upgrade_with_service_license
+      versions:
+        min: "1.0"
+        max: "2.0"
+      states:
+        available: any
+        on_success: upgraded
+
+- type: service
+  name: service_1
+  display_name: service_1
+  license: ./license1.txt
+  version: *version
+
+- type: service
+  name: service_2
+  display_name: service_2
+  version: *version
+
+- type: service
+  name: service_3
+  display_name: service_3
+  license: ./license2.txt
+  version: *version
+
+- type: service
+  name: service_4
+  display_name: service_4
+  license: ./license3.txt
+  version: *version
+
+

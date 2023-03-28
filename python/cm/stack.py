@@ -178,7 +178,7 @@ def get_config_files(path: Path) -> list[tuple[Path, Path]]:
 
     for item in path.rglob("*"):
         if item.is_file() and item.name in {"config.yaml", "config.yml"}:
-            conf_list.append((item.parent, item))
+            conf_list.append((item.relative_to(path).parent, item))
 
     if not conf_list:
         raise_adcm_ex(code="STACK_LOAD_ERROR", msg=f'no config files in stack directory "{path}"')
@@ -661,7 +661,6 @@ def save_action(proto: StagePrototype, config: dict, bundle_hash: str, action_na
         action.script = config["script"]
         action.script_type = config["script_type"]
 
-    dict_to_obj(dictionary=config, key="display_name", obj=action)
     dict_to_obj(dictionary=config, key="description", obj=action)
     dict_to_obj(dictionary=config, key="allow_to_terminate", obj=action)
     dict_to_obj(dictionary=config, key="partial_execution", obj=action)
@@ -673,7 +672,11 @@ def save_action(proto: StagePrototype, config: dict, bundle_hash: str, action_na
     dict_to_obj(dictionary=config, key="allow_in_maintenance_mode", obj=action)
     dict_to_obj(dictionary=config, key="config_jinja", obj=action)
 
-    fix_display_name(conf=config, obj=action)
+    if "display_name" in config:
+        dict_to_obj(dictionary=config, key="display_name", obj=action)
+    else:
+        action.display_name = action_name
+
     check_action_hc(proto=proto, conf=config)
 
     dict_to_obj(dictionary=config, key="hc_acl", obj=action, obj_key="hostcomponentmap")

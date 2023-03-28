@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import hashlib
 from itertools import compress
 
 from api.action.serializers import (
@@ -105,7 +105,7 @@ class ActionList(PermissionListMixin, GenericUIView):
             objects = {obj.prototype.type: obj}
 
         # added filter actions by custom perm for run actions
-        perms = [f"cm.run_action_{a.display_name}" for a in actions]
+        perms = [f"cm.run_action_{hashlib.sha256(a.name.encode(settings.ENCODING_UTF_8)).hexdigest()}" for a in actions]
         mask = [request.user.has_perm(perm, obj) for perm in perms]
         actions = list(compress(actions, mask))
 
@@ -162,7 +162,9 @@ class RunTask(GenericUIView):
         if user.has_perm("cm.add_task"):
             return True
 
-        return user.has_perm(f"cm.run_action_{action.display_name}", obj)
+        action_name = hashlib.sha256(action.name.encode(settings.ENCODING_UTF_8)).hexdigest()
+
+        return user.has_perm(f"cm.run_action_{action_name}", obj)
 
     def check_action_perm(self, action: Action, obj) -> None:
         if not self.has_action_perm(action, obj):
