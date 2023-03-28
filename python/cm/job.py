@@ -50,7 +50,7 @@ from cm.inventory import get_obj_config, prepare_job_inventory, process_config_a
 from cm.issue import (
     check_bound_components,
     check_component_constraint,
-    check_component_requires,
+    check_requires,
     update_hierarchy_issues,
 )
 from cm.logger import logger
@@ -370,9 +370,9 @@ def check_constraints_for_upgrade(cluster, upgrade, host_comp_list):
             except Prototype.DoesNotExist:
                 pass
 
-        check_component_requires(host_comp_list)
-        check_bound_components(host_comp_list)
-        check_maintenance_mode(cluster, host_comp_list)
+        check_requires(shc_list=host_comp_list)
+        check_bound_components(shc_list=host_comp_list)
+        check_maintenance_mode(cluster=cluster, host_comp_list=host_comp_list)
     except AdcmEx as e:
         if e.code == "COMPONENT_CONSTRAINT_ERROR":
             e.msg = (

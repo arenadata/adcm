@@ -244,6 +244,7 @@ class ServicePrototypeSerializer(PrototypeSerializer):
         fields = (
             *PrototypeSerializer.Meta.fields,
             "shared",
+            "requires",
             "monitoring",
             "url",
         )

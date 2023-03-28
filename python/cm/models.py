@@ -745,6 +745,10 @@ class ClusterObject(ADCMEntity):
         return self.prototype.description
 
     @property
+    def requires(self) -> list:
+        return self.prototype.requires
+
+    @property
     def monitoring(self):
         return self.prototype.monitoring
 

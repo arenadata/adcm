@@ -107,6 +107,7 @@ class ServiceDetailSerializer(ServiceSerializer):
     prototype_id = IntegerField(read_only=True)
     description = CharField(read_only=True)
     bundle_id = IntegerField(read_only=True)
+    requires = JSONField(read_only=True)
     status = SerializerMethodField()
     monitoring = CharField(read_only=True)
     action = CommonAPIURL(read_only=True, view_name="object-action")
