@@ -17,6 +17,7 @@ from contextlib import contextmanager, suppress
 
 import ldap
 from cm.adcm_config import ansible_decrypt
+from cm.errors import raise_adcm_ex
 from cm.logger import logger
 from cm.models import ADCM, ConfigLog
 from django.contrib.auth.models import Group as DjangoGroup
@@ -264,7 +265,7 @@ class CustomLDAPBackend(LDAPBackend):
                     conn=conn,
                 )
             if err_msg:
-                raise RuntimeError(err_msg)
+                raise_adcm_ex(code="GROUP_CONFLICT", msg=err_msg)
 
             for ldap_group_name in ldap_group_names:
                 group, _ = Group.objects.get_or_create(name=ldap_group_name, type=OriginType.LDAP)
