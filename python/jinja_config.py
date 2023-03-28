@@ -35,7 +35,7 @@ def _get_attr(config: dict) -> dict:
     return attr
 
 
-def _get_limits(config: dict, root_path: str) -> dict:  # noqa: C901
+def _get_limits(config: dict, root_path: Path) -> dict:  # noqa: C901
     # pylint: disable=too-many-branches
     limits = {}
 
@@ -91,7 +91,7 @@ def _get_limits(config: dict, root_path: str) -> dict:  # noqa: C901
     return limits
 
 
-def _normalize_config(config: dict, root_path: str, name: str = "", subname: str = "") -> list[dict]:
+def _normalize_config(config: dict, root_path: Path, name: str = "", subname: str = "") -> list[dict]:
     config_list = [config]
 
     name = name or config["name"]
@@ -130,7 +130,9 @@ def get_jinja_config(action: Action, obj: type[ADCMEntity]) -> tuple[list[Protot
     configs = []
     attr = {}
     for config in data:
-        for normalized_config in _normalize_config(config=config, root_path=action.prototype.path):
+        for normalized_config in _normalize_config(
+            config=config, root_path=Path(settings.BUNDLE_DIR, action.prototype.bundle.hash, action.prototype.path)
+        ):
             configs.append(PrototypeConfig(prototype=action.prototype, action=action, **normalized_config))
             attr.update(**_get_attr(config=normalized_config))
 

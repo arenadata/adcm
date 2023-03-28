@@ -53,7 +53,7 @@ def reverse_migrate_nginx_logrotate_config(apps, schema_editor) -> None:
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("cm", "0105_auto_20230220_0800"),
+        ("cm", "0106_add_display_name_field_to_upgrade"),
     ]
 
     operations = [
