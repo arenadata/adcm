@@ -265,6 +265,7 @@ def save_prototype(path: Path, conf: dict, def_type: str, bundle_hash: str) -> S
     proto = StagePrototype(name=conf["name"], type=def_type, path=path, version=conf["version"])
 
     dict_to_obj(dictionary=conf, key="required", obj=proto)
+    dict_to_obj(dictionary=conf, key="requires", obj=proto)
     dict_to_obj(dictionary=conf, key="shared", obj=proto)
     dict_to_obj(dictionary=conf, key="monitoring", obj=proto)
     dict_to_obj(dictionary=conf, key="display_name", obj=proto)

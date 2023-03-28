@@ -328,19 +328,23 @@ def re_check_actions():
                 )
 
 
-def check_component_requires(comp):
+def check_component_requires(comp: StagePrototype) -> None:
     if not comp.requires:
         return
 
     req_list = comp.requires
     for i, item in enumerate(req_list):
+        req_comp = None
         if "service" in item:
             service = StagePrototype.obj.get(name=item["service"], type="service")
         else:
             service = comp.parent
             req_list[i]["service"] = comp.parent.name
-        req_comp = StagePrototype.obj.get(name=item["component"], type="component", parent=service)
-        if comp == req_comp:
+
+        if "component" in item:
+            req_comp = StagePrototype.obj.get(name=item["component"], type="component", parent=service)
+
+        if req_comp and comp == req_comp:
             raise_adcm_ex(
                 code="COMPONENT_CONSTRAINT_ERROR",
                 msg=f"Component can not require themself in requires of component "
@@ -349,6 +353,25 @@ def check_component_requires(comp):
 
     comp.requires = req_list
     comp.save()
+
+
+def check_services_requires() -> None:
+    for service in StagePrototype.objects.filter(type="service"):
+        if not service.requires:
+            continue
+
+        req_list = service.requires
+        for item in req_list:
+            req_service = StagePrototype.obj.get(name=item["service"], type="service")
+
+            if service == req_service:
+                raise_adcm_ex(
+                    code="SERVICE_CONSTRAINT_ERROR",
+                    msg=f'Service can not require themself "{service.name}" of {proto_ref(prototype=service.parent)}',
+                )
+
+        service.requires = req_list
+        service.save(update_fields=["requires"])
 
 
 def check_bound_component(comp):
@@ -468,6 +491,7 @@ def re_check_config():  # pylint: disable=too-many-branches # noqa: C901
 
 
 def second_pass():
+    check_services_requires()
     re_check_actions()
     re_check_components()
     re_check_config()
@@ -485,6 +509,7 @@ def copy_stage_prototype(stage_prototypes, bundle):
                 "name",
                 "version",
                 "required",
+                "requires",
                 "shared",
                 "license_path",
                 "license_hash",

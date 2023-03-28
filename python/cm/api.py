@@ -27,7 +27,7 @@ from cm.errors import raise_adcm_ex
 from cm.issue import (
     check_bound_components,
     check_component_constraint,
-    check_component_requires,
+    check_requires,
     update_hierarchy_issues,
     update_issue_after_deleting,
 )
@@ -467,16 +467,40 @@ def unbind(cbind):
         update_hierarchy_issues(cbind.cluster)
 
 
-def add_service_to_cluster(cluster, proto):
-    if proto.type != "service":
-        raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be service, not {proto.type}")
+def check_service_requires(cluster: Cluster, proto: Prototype) -> None:
+    if not proto.requires:
+        return
 
-    check_license(proto)
+    for require in proto.requires:
+        req_service = ClusterObject.objects.filter(prototype__name=require["service"], cluster=cluster)
+        obj_prototype = Prototype.objects.filter(name=require["service"], type="service")
+
+        if comp_name := require.get("component"):
+            req_obj = ServiceComponent.objects.filter(
+                prototype__name=comp_name, service=req_service.first(), cluster=cluster
+            )
+            obj_prototype = Prototype.objects.filter(name=comp_name, type="component", parent=obj_prototype.first())
+        else:
+            req_obj = req_service
+
+        if not req_obj.exists():
+            raise_adcm_ex(
+                code="SERVICE_CONFLICT",
+                msg=f"No required {proto_ref(prototype=obj_prototype.first())} for {proto_ref(prototype=proto)}",
+            )
+
+
+def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> ClusterObject:
+    if proto.type != "service":
+        raise_adcm_ex(code="OBJ_TYPE_ERROR", msg=f"Prototype type should be service, not {proto.type}")
+
+    check_license(proto=proto)
+    check_service_requires(cluster=cluster, proto=proto)
     if not proto.shared:
         if cluster.prototype.bundle != proto.bundle:
             raise_adcm_ex(
-                "SERVICE_CONFLICT",
-                f"{proto_ref(proto)} does not belong to bundle "
+                code="SERVICE_CONFLICT",
+                msg=f"{proto_ref(prototype=proto)} does not belong to bundle "
                 f'"{cluster.prototype.bundle.name}" {cluster.prototype.version}',
             )
 
@@ -502,13 +526,13 @@ def add_service_to_cluster(cluster, proto):
     return service
 
 
-def add_components_to_service(cluster, service):
+def add_components_to_service(cluster: Cluster, service: ClusterObject) -> None:
     for comp in Prototype.objects.filter(type="component", parent=service.prototype):
         service_component = ServiceComponent.objects.create(cluster=cluster, service=service, prototype=comp)
-        obj_conf = init_object_config(comp, service_component)
+        obj_conf = init_object_config(proto=comp, obj=service_component)
         service_component.config = obj_conf
-        service_component.save()
-        update_hierarchy_issues(service_component)
+        service_component.save(update_fields=["config"])
+        update_hierarchy_issues(obj=service_component)
 
 
 def get_license(proto: Prototype) -> str | None:
@@ -622,7 +646,7 @@ def check_sub_key(hc_in):
             raise_adcm_ex("INVALID_INPUT", f"duplicate ({item}) in host service list")
 
 
-def make_host_comp_list(cluster, hc_in):
+def make_host_comp_list(cluster: Cluster, hc_in: list[dict]) -> list[tuple[ClusterObject, Host, ServiceComponent]]:
     host_comp_list = []
     for item in hc_in:
         host = Host.obj.get(pk=item["host_id"])
@@ -642,20 +666,24 @@ def make_host_comp_list(cluster, hc_in):
     return host_comp_list
 
 
-def check_hc(cluster, hc_in):
-    check_sub_key(hc_in)
-    host_comp_list = make_host_comp_list(cluster, hc_in)
+def check_hc(cluster: Cluster, hc_in: list[dict]) -> list[tuple[ClusterObject, Host, ServiceComponent]]:
+    check_sub_key(hc_in=hc_in)
+    host_comp_list = make_host_comp_list(cluster=cluster, hc_in=hc_in)
     for service in ClusterObject.objects.filter(cluster=cluster):
-        check_component_constraint(cluster, service.prototype, [i for i in host_comp_list if i[0] == service])
+        check_component_constraint(
+            cluster=cluster, service_prototype=service.prototype, hc_in=[i for i in host_comp_list if i[0] == service]
+        )
 
-    check_component_requires(host_comp_list)
-    check_bound_components(host_comp_list)
-    check_maintenance_mode(cluster, host_comp_list)
+    check_requires(shc_list=host_comp_list)
+    check_bound_components(shc_list=host_comp_list)
+    check_maintenance_mode(cluster=cluster, host_comp_list=host_comp_list)
 
     return host_comp_list
 
 
-def check_maintenance_mode(cluster, host_comp_list):
+def check_maintenance_mode(
+    cluster: Cluster, host_comp_list: list[tuple[ClusterObject, Host, ServiceComponent]]
+) -> None:
     for service, host, comp in host_comp_list:
         try:
             HostComponent.objects.get(cluster=cluster, service=service, host=host, component=comp)
@@ -664,7 +692,7 @@ def check_maintenance_mode(cluster, host_comp_list):
                 raise_adcm_ex("INVALID_HC_HOST_IN_MM")
 
 
-def still_existed_hc(cluster, host_comp_list):
+def still_existed_hc(cluster: Cluster, host_comp_list: list[tuple[ClusterObject, Host, ServiceComponent]]) -> list:
     result = []
     for service, host, comp in host_comp_list:
         try:
@@ -676,7 +704,9 @@ def still_existed_hc(cluster, host_comp_list):
     return result
 
 
-def save_hc(cluster, host_comp_list):
+def save_hc(
+    cluster: Cluster, host_comp_list: list[tuple[ClusterObject, Host, ServiceComponent]]
+) -> list[HostComponent]:
     # pylint: disable=too-many-locals
 
     hc_queryset = HostComponent.objects.filter(cluster=cluster)
@@ -733,10 +763,10 @@ def save_hc(cluster, host_comp_list):
     return result
 
 
-def add_hc(cluster, hc_in):
-    host_comp_list = check_hc(cluster, hc_in)
+def add_hc(cluster: Cluster, hc_in: list[dict]) -> list[HostComponent]:
+    host_comp_list = check_hc(cluster=cluster, hc_in=hc_in)
     with transaction.atomic():
-        new_hc = save_hc(cluster, host_comp_list)
+        new_hc = save_hc(cluster=cluster, host_comp_list=host_comp_list)
 
     return new_hc
 
