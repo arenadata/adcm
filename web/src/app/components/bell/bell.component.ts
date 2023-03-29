@@ -174,7 +174,7 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
         this.successCount.next(this.successCount.value + 1);
         this.decRunningCount();
         this.afterCountChanged();
-      } else if (status === 'failed' || status === 'aborted') {
+      } else if (status === 'failed' || status === 'aborted') { // fix if aborted counter will be added
         this.failedCount.next(this.failedCount.value + 1);
         this.decRunningCount();
         this.afterCountChanged();
@@ -221,13 +221,14 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
 
   getLastTasks(): Observable<Task[]> {
     return zip(
+      this.taskService.list({ ordering: '-finish_date', status: 'aborted', limit: '5' }),
       this.taskService.list({ ordering: '-finish_date', status: 'failed', limit: '5' }),
       this.taskService.list({ ordering: '-finish_date', status: 'success', limit: '5' }),
       this.taskService.list({ ordering: '-start_date', status: 'running', limit: '5' }),
       this.profileService.getProfile(),
-    ).pipe(map(([failed, succeed, running, user]) => {
-      let tasks = [...failed.results, ...succeed.results, ...running.results].sort((a, b) => {
-        const getDateField = (task: Task) => task.status === 'failed' || task.status === 'success' ? task.finish_date : task.start_date;
+    ).pipe(map(([aborted, failed, succeed, running, user]) => {
+      let tasks = [...aborted.results, ...failed.results, ...succeed.results, ...running.results].sort((a, b) => {
+        const getDateField = (task: Task) => task.status === 'failed' || task.status === 'aborted' || task.status === 'success' ? task.finish_date : task.start_date;
         const aDate = new Date(getDateField(a));
         const bDate = new Date(getDateField(b));
         return aDate.getTime() - bDate.getTime();
@@ -258,8 +259,8 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
         .subscribe(([stats, tasks]) => {
           this.runningCount.next(stats.running);
           this.successCount.next(stats.success);
-          this.failedCount.next(stats.failed);
-          this.afterCountChanged(!!(stats.running || stats.success || stats.failed));
+          this.failedCount.next(stats.failed + stats.aborted);
+          this.afterCountChanged(!!(stats.running || stats.success || stats.failed || stats.aborted));
           this.tasks.next(tasks);
           this.listenToTasks();
         });

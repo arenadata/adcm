@@ -47,12 +47,13 @@ def stack_case(
 
         case ["stack", "bundle", bundle_pk]:
             deleted_obj: Bundle
-            audit_operation, audit_object = obj_pk_case(
-                obj_type=AuditObjectType.BUNDLE,
-                operation_type=AuditLogOperationType.DELETE,
-                obj_pk=bundle_pk,
-                obj_name=deleted_obj.name,
-            )
+            if deleted_obj:
+                audit_operation, audit_object = obj_pk_case(
+                    obj_type=AuditObjectType.BUNDLE,
+                    operation_type=AuditLogOperationType.DELETE,
+                    obj_pk=bundle_pk,
+                    obj_name=deleted_obj.name,
+                )
 
         case ["stack", "bundle", bundle_pk, "update"]:
             audit_operation, audit_object = obj_pk_case(

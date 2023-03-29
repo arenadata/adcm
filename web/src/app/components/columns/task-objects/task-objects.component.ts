@@ -9,7 +9,12 @@ import { Task } from '@app/core/types';
   styleUrls: ['./task-objects.component.scss']
 })
 export class TaskObjectsComponent implements AdwpCellComponent<Task> {
+  row: Task;
 
-  @Input() row: Task;
+  @Input() set object(currentObject: any) {
+    if (currentObject) {
+      this.row = currentObject;
+    }
+  }
 
 }

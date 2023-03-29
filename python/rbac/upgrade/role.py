@@ -11,6 +11,7 @@
 # limitations under the License.
 
 """Init or upgrade RBAC roles and permissions"""
+import hashlib
 
 import cm.checker
 import ruyaml
@@ -179,10 +180,12 @@ def prepare_hidden_roles(bundle: Bundle):
     """Prepares hidden roles"""
 
     hidden_roles = {}
+
     for act in Action.objects.filter(prototype__bundle=bundle):
         name_prefix = f"{act.prototype.type} action:".title()
         name = f"{name_prefix} {act.display_name}"
         model = get_model_by_type(act.prototype.type)
+
         if act.prototype.type == "component":
             serv_name = f"service_{act.prototype.parent.name}_"
         else:
@@ -213,25 +216,29 @@ def prepare_hidden_roles(bundle: Bundle):
             parametrized_by_type=[act.prototype.type],
         )
         role.save()
+
         if bundle.category:
             role.category.add(bundle.category)
 
         content_type = ContentType.objects.get_for_model(model)
         model_name = model.__name__.lower()
         role.permissions.add(get_perm(content_type, f"view_{model_name}"))
+
         if name not in hidden_roles:
             hidden_roles[name] = {"parametrized_by_type": act.prototype.type, "children": []}
 
         hidden_roles[name]["children"].append(role)
+        action_name_hash = hashlib.sha256(act.name.encode(settings.ENCODING_UTF_8)).hexdigest()
+
         if act.host_action:
             ct_host = ContentType.objects.get_for_model(Host)
             role.permissions.add(get_perm(ct_host, "view_host"))
             role.permissions.add(
-                get_perm(ct_host, f"run_action_{act.display_name}", f"Can run {act.display_name} actions"),
+                get_perm(ct_host, f"run_action_{action_name_hash}", f"Can run {action_name_hash} actions"),
             )
         else:
             role.permissions.add(
-                get_perm(content_type, f"run_action_{act.display_name}", f"Can run {act.display_name} actions"),
+                get_perm(content_type, f"run_action_{action_name_hash}", f"Can run {action_name_hash} actions"),
             )
 
     return hidden_roles

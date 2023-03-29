@@ -97,9 +97,11 @@ class TestSecretMap:
         component,
     ) -> ClusterConfigPage | ServiceConfigPage | ComponentConfigPage:
         if adcm_object == Cluster:
-            config_page = ClusterConfigPage(self.client.driver, self.client.adcm.url, cluster.id).open()
+            config_page = ClusterConfigPage(self.client.driver, self.client.adcm.url, cluster.id).open(close_popup=True)
         elif adcm_object == Service:
-            config_page = ServiceConfigPage(self.client.driver, self.client.adcm.url, cluster.id, service.id).open()
+            config_page = ServiceConfigPage(self.client.driver, self.client.adcm.url, cluster.id, service.id).open(
+                close_popup=True
+            )
         else:
             config_page = ComponentConfigPage(
                 self.client.driver,
@@ -107,7 +109,7 @@ class TestSecretMap:
                 cluster.id,
                 service.service_id,
                 component.component_id,
-            ).open()
+            ).open(close_popup=True)
         return config_page
 
     @staticmethod

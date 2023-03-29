@@ -155,7 +155,7 @@ class TestConfigSecretfileAPI(BaseTestCase):
         config_log = ConfigLog.objects.get(pk=self.cluster.config.current)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.assertEqual(config_log.config["secretfile"], ansible_decrypt(msg=secretfile_value))
+        self.assertEqual(ansible_decrypt(msg=config_log.config["secretfile"]), ansible_decrypt(msg=secretfile_value))
 
     def test_post_new_secretfile_success(self):
         secretfile_value = "new_test_secretfile_data"

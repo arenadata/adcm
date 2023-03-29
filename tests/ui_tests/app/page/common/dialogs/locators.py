@@ -31,6 +31,7 @@ class ActionDialog(Dialog):
     text = BaseLocator(By.CSS_SELECTOR, "app-dialog mat-dialog-content", "Dialog content")
     next_btn = BaseLocator(By.CSS_SELECTOR, ".mat-stepper-next", "Next button in action dialog")
     run = BaseLocator(By.CSS_SELECTOR, "app-dialog button[color='accent']", "Run button in action dialog")
+    cancel = BaseLocator(By.CSS_SELECTOR, "app-dialog button[color='primary']", "Cancel button in action dialog")
 
 
 class OperationChangesDialogLocators(Dialog):
@@ -45,6 +46,11 @@ class OperationChangesDialogLocators(Dialog):
 class ServiceLicenseDialog:
     """Services page licence popup elements locators"""
 
+    block_header = BaseLocator(
+        By.XPATH,
+        "//app-dialog/h3[contains(text(), 'license')]",
+        "header of block with license agreement",
+    )
     block = BaseLocator(
         By.XPATH,
         "//app-dialog[./h3[contains(text(), 'license')]]",

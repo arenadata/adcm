@@ -41,6 +41,13 @@ class CommonTable:
 
         block = BaseLocator(By.CSS_SELECTOR, "div[role='menu']", "Upgrade popup block")
         button = TemplateLocator(By.XPATH, "//button[./span[text()='{}']]", "Button with upgrade {}")
+        license_block = BaseLocator(
+            By.XPATH,
+            "//app-dialog[./h3[contains(text(), 'license')]]",
+            "block with license agreement",
+        )
+        hide_btn = BaseLocator(By.XPATH, "//button[./span[text()='Hide']]", "Hide pop up button")
+        text = BaseLocator(By.CSS_SELECTOR, "app-snack-bar .message", "Popup info message")
 
     class Pagination:
         """Common table pagination locators."""
