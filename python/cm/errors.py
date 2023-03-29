@@ -221,6 +221,11 @@ ERRORS = {
     "USER_PASSWORD_TOO_LONG_ERROR": ("This password is longer than max password length", HTTP_400_BAD_REQUEST, ERR),
     "USER_PASSWORD_TOO_COMMON_ERROR": ("This password is too common", HTTP_400_BAD_REQUEST, ERR),
     "USER_PASSWORD_ENTIRELY_NUMERIC_ERROR": ("This password is entirely numeric", HTTP_400_BAD_REQUEST, ERR),
+    "USER_PASSWORD_CURRENT_PASSWORD_REQUIRED_ERROR": (
+        'Field "current_password" should be filled and match user current password',
+        HTTP_400_BAD_REQUEST,
+        ERR,
+    ),
 }
 
 

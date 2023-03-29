@@ -294,7 +294,7 @@ class UserTestCase(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertEqual(
-            response.data["non_field_errors"][0],
+            response.data["desc"],
             'Field "current_password" should be filled and match user current password',
         )
 

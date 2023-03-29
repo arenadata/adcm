@@ -10,10 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Service functions for working with User model"""
-
-
 from cm.errors import raise_adcm_ex
+from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
@@ -21,11 +19,9 @@ from rbac import models
 from rbac.utils import Empty, set_not_empty_attr
 from rest_framework.authtoken.models import Token
 
-PW_MASK = "******"
-
 
 def _set_password(user: models.User, value: str) -> None:
-    if value is Empty or value == PW_MASK:
+    if value is Empty or value == settings.PASSWORD_MASK:
         return
 
     if not value:
