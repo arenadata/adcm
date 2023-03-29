@@ -13,8 +13,9 @@
 from collections import OrderedDict
 
 from django.contrib.auth.password_validation import validate_password
+from rbac.endpoints.fields import PasswordField
 from rbac.models import Group, User
-from rbac.services import user as user_services
+from rbac.services.user import create, update
 from rbac.validators import (
     ADCMCommonPasswordValidator,
     ADCMLengthPasswordValidator,
@@ -37,13 +38,6 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
-
-
-class PasswordField(CharField):
-    """Text field with content masking for passwords"""
-
-    def to_representation(self, value):
-        return user_services.PW_MASK
 
 
 class UserGroupSerializer(EmptySerializer):
@@ -117,10 +111,10 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
     def update(self, instance, validated_data):
         context_user = self.context["request"].user
 
-        return user_services.update(instance, context_user, partial=self.partial, **validated_data)
+        return update(user=instance, context_user=context_user, partial=self.partial, **validated_data)
 
     def create(self, validated_data):
-        return user_services.create(**validated_data)
+        return create(**validated_data)
 
 
 class UserAuditSerializer(ModelSerializer):

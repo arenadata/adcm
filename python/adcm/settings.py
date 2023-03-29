@@ -308,3 +308,4 @@ STATUS_REQUEST_TIMEOUT = 0.01
 
 JOB_TYPE = "job"
 TASK_TYPE = "task"
+PASSWORD_MASK = "******"

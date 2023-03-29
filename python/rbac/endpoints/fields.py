@@ -10,7 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path
-from rbac.endpoints.me.views import MyselfView
+from django.conf import settings
+from rest_framework.fields import CharField
 
-urlpatterns = [path("", MyselfView.as_view(), name="me")]
+
+class PasswordField(CharField):
+    def to_representation(self, value):
+        return settings.PASSWORD_MASK
