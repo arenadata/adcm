@@ -27,7 +27,7 @@ class ADCMLengthPasswordValidator:
 
         adcm = ADCM.objects.first()
         if adcm:
-            config_log = ConfigLog.objects.filter(obj_ref=adcm.config).first()
+            config_log = ConfigLog.objects.filter(obj_ref=adcm.config).last()
 
         if config_log and config_log.config.get("auth_policy"):
             self.min_password_length = config_log.config["auth_policy"]["min_password_length"]

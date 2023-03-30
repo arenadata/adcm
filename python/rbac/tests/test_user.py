@@ -306,3 +306,32 @@ class UserTestCase(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_change_min_pass_length_add_user_success(self):
+        adcm = ADCM.objects.first()
+        config_log = ConfigLog.objects.filter(obj_ref=adcm.config).first()
+        config_log.config["auth_policy"]["min_password_length"] = 1
+        config_log.config["global"]["adcm_url"] = "http://127.0.0.1:8000"
+
+        response: Response = self.client.post(
+            path=reverse("config-history", kwargs={"adcm_pk": adcm.pk}),
+            params={"view": "interface"},
+            data={"config": config_log.config, "attr": config_log.attr},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response: Response = self.client.post(
+            reverse("rbac:user-list"),
+            data={
+                "username": "test_config_username",
+                "password": "test_pass",
+                "first_name": "test_config_first_name",
+                "last_name": "test_config_last_name",
+                "email": "test@email.ru",
+                "group": [],
+            },
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
