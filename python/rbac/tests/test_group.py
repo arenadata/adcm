@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.errors import AdcmEx
 from django.contrib.auth.models import Group as AuthGroup
 from rbac.models import Group, OriginType
 
@@ -19,7 +20,7 @@ from adcm.tests.base import BaseTestCase
 class GroupTestCase(BaseTestCase):
     def test_group_creation_blank(self):
         with self.assertRaisesRegex(
-            RuntimeError,
+            AdcmEx,
             r"Check regex. Data: ",
             msg="group creation with no args is not allowed",
         ):

@@ -18,4 +18,5 @@ class APIRoot(APIRootView):
     permission_classes = (AllowAny,)
     api_root_dict = {
         "rbac": "rbac-ui:root",
+        "stack": "stack-ui:root",
     }

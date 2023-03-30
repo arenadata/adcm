@@ -22,6 +22,7 @@ from audit.models import (
     AuditSession,
     AuditSessionLoginResult,
 )
+from django.conf import settings
 from django.urls import reverse
 from init_db import init as init_adcm
 from rbac.upgrade.role import init_roles
@@ -74,7 +75,7 @@ class TestAuditViews(BaseTestCase):
             object_changes=self.object_changes_first,
         )
         AuditLog.objects.filter(pk=self.audit_log_first.pk).update(
-            operation_time=datetime.strptime(self.date_first, date_fmt).astimezone(tz=ZoneInfo("UTC")),
+            operation_time=datetime.strptime(self.date_first, date_fmt).astimezone(tz=ZoneInfo(settings.TIME_ZONE)),
         )
         self.audit_log_second = AuditLog.objects.create(
             audit_object=self.audit_object_second,
@@ -85,7 +86,7 @@ class TestAuditViews(BaseTestCase):
             object_changes=self.object_changes_second,
         )
         AuditLog.objects.filter(pk=self.audit_log_second.pk).update(
-            operation_time=datetime.strptime(self.date_second, date_fmt).astimezone(tz=ZoneInfo("UTC")),
+            operation_time=datetime.strptime(self.date_second, date_fmt).astimezone(tz=ZoneInfo(settings.TIME_ZONE)),
         )
 
         self.login_details_first = {"login": {"details": "first"}}
@@ -102,7 +103,7 @@ class TestAuditViews(BaseTestCase):
             login_details=self.login_details_second,
         )
         AuditSession.objects.filter(pk=self.audit_session_second.pk).update(
-            login_time=datetime.strptime(self.date_second, date_fmt).astimezone(tz=ZoneInfo("UTC")),
+            login_time=datetime.strptime(self.date_second, date_fmt).astimezone(tz=ZoneInfo(settings.TIME_ZONE)),
         )
 
     def test_audit_operations_visibility_superuser(self):

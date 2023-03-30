@@ -161,7 +161,7 @@ class HostListPage(BasePageObject):  # pylint: disable=too-many-public-methods
             assert real_state == state
 
         host_row = self.table.get_row(row_num)
-        wait_until_step_succeeds(_check_host_state, timeout=10, period=0.5, page=self, row=host_row)
+        wait_until_step_succeeds(_check_host_state, timeout=15, period=0.5, page=self, row=host_row)
 
     @allure.step("Click on maintenance mode button in row {row_num}")
     def click_on_maintenance_mode_btn(self, row_num: int):

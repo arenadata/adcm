@@ -350,37 +350,40 @@ class HCComponentSerializer(ComponentShortSerializer):
     def get_service_display_name(obj):
         return obj.service.prototype.display_name
 
-    @staticmethod
-    def get_requires(obj):  # noqa: C901
+    def process_requires(self, proto: Prototype, comp_dict: dict) -> dict:
+        for require in proto.requires:
+            req_service = Prototype.obj.get(type="service", name=require["service"], bundle=proto.bundle)
+
+            if req_service.name not in comp_dict:
+                comp_dict[req_service.name] = {"components": {}, "service": req_service}
+
+            req_comp = None
+            if require.get("component"):
+                req_comp = Prototype.obj.get(
+                    type="component",
+                    name=require["component"],
+                    parent=req_service,
+                )
+                comp_dict[req_service.name]["components"][req_comp.name] = req_comp
+
+            if req_service.requires:
+                self.process_requires(proto=req_service, comp_dict=comp_dict)
+
+            if req_comp and req_comp.requires:
+                self.process_requires(proto=req_comp, comp_dict=comp_dict)
+
+        return comp_dict
+
+    def get_requires(self, obj) -> list | None:
         if not obj.prototype.requires:
             return None
 
-        comp_list = {}
+        comp_dict = {}
 
-        def process_requires(req_list):
-            for require in req_list:
-                _comp = Prototype.obj.get(
-                    type="component",
-                    name=require["component"],
-                    parent__name=require["service"],
-                    parent__bundle_id=obj.prototype.bundle_id,
-                )
-                if _comp == obj.prototype:
-                    return
-
-                if _comp.name not in comp_list:
-                    comp_list[_comp.name] = {"components": {}, "service": _comp.parent}
-
-                if _comp.name in comp_list[_comp.name]["components"]:
-                    return
-
-                comp_list[_comp.name]["components"][_comp.name] = _comp
-                if _comp.requires:
-                    process_requires(_comp.requires)
-
-        process_requires(obj.requires)
+        comp_dict = self.process_requires(proto=obj.prototype, comp_dict=comp_dict)
         out = []
-        for service_name, params in comp_list.items():
+
+        for service_name, params in comp_dict.items():
             comp_out = []
             service = params["service"]
             for comp_name in params["components"]:
@@ -392,9 +395,6 @@ class HCComponentSerializer(ComponentShortSerializer):
                         "display_name": comp.display_name,
                     },
                 )
-
-            if not comp_out:
-                continue
 
             out.append(
                 {

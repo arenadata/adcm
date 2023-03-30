@@ -34,6 +34,7 @@ from adcm.serializers import EmptySerializer
 class UpgradeSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     name = CharField(required=False)
+    display_name = CharField(read_only=True)
     bundle_id = IntegerField(read_only=True)
     description = CharField(required=False)
     min_version = CharField(required=False)

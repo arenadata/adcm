@@ -35,7 +35,7 @@ class Command(BaseCommand):
     help = "Run synchronization with ldap if sync_interval is specified in ADCM settings"
 
     def handle(self, *args, **options):
-        adcm_object = ADCM.objects.get(id=1)
+        adcm_object = ADCM.objects.first()
         action = Action.objects.get(name="run_ldap_sync", prototype=adcm_object.prototype)
         period = get_settings(adcm_object)
         if period <= 0:

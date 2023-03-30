@@ -41,6 +41,7 @@ def clusters(sdk_client_fs, generic_provider) -> tuple[Cluster, Cluster]:
     return cluster_1, cluster_2
 
 
+@pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3685")
 @pytest.mark.usefixtures("_login_to_adcm_over_api")
 def test_running_job_concern_links(app_fs, clusters):  # pylint: disable=redefined-outer-name
     cluster_1, cluster_2 = clusters
@@ -89,7 +90,7 @@ def test_running_job_concern_links(app_fs, clusters):  # pylint: disable=redefin
         clusters_page.open()
         task = cluster_1.action(name=COMPLEX_ACTION).run()
         second_job = next(j for j in task.job_list() if j.display_name == second_step_name)
-        should_become_truth(lambda: second_job.reread() or second_job.status == "running", retries=10, period=0.5)
+        should_become_truth(lambda: second_job.reread() or second_job.status == "running", retries=30, period=0.4)
         popover = clusters_page.hover_concern_button(clusters_page.get_row_by_cluster_name(cluster_1.name))
         popover.concerns.first.links.named(COMPLEX_ACTION).click()
         job_info = (

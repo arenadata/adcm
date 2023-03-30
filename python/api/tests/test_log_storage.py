@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from cm.models import JobLog, LogStorage
+from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
@@ -27,8 +28,8 @@ class TestTaskAPI(BaseTestCase):
 
         self.job = JobLog.objects.create(
             status="created",
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")) + timedelta(days=1),
+            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)) + timedelta(days=1),
         )
         self.log_storage_1 = LogStorage.objects.create(
             name="log_storage_1",

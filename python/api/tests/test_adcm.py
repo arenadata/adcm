@@ -12,7 +12,6 @@
 
 from cm.models import ADCM
 from django.urls import reverse
-from init_db import init
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
@@ -20,11 +19,6 @@ from adcm.tests.base import BaseTestCase
 
 
 class TestADCM(BaseTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-
-        init()
-
     def test_list(self):
         adcm = ADCM.objects.select_related("prototype").last()
         test_data = {

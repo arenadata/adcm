@@ -39,9 +39,9 @@ def get_cluster(obj):
     return cluster
 
 
-def variant_service_in_cluster(obj):
+def variant_service_in_cluster(**kwargs):
     out = []
-    cluster = get_cluster(obj)
+    cluster = get_cluster(obj=kwargs["obj"])
     if cluster is None:
         return out
 
@@ -51,9 +51,9 @@ def variant_service_in_cluster(obj):
     return out
 
 
-def variant_service_to_add(obj):
+def variant_service_to_add(**kwargs):
     out = []
-    cluster = get_cluster(obj)
+    cluster = get_cluster(obj=kwargs["obj"])
     if cluster is None:
         return out
 
@@ -232,28 +232,29 @@ def var_host_solver(cluster, func_map, args):  # noqa: C901
     return res
 
 
-def variant_host(obj, args=None):
-    cluster = get_cluster(obj)
+def variant_host(**kwargs):
+    cluster = get_cluster(obj=kwargs["obj"])
     if not cluster:
         return []
 
-    if not isinstance(args, dict):
+    if not isinstance(kwargs["args"], dict):
         err("CONFIG_VARIANT_ERROR", "arguments of variant host function should be a map")
 
-    if "predicate" not in args:
+    if "predicate" not in kwargs["args"]:
         err("CONFIG_VARIANT_ERROR", 'no "predicate" key in variant host function arguments')
 
-    res = var_host_solver(cluster, VARIANT_HOST_FUNC, args)
+    res = var_host_solver(cluster=cluster, func_map=VARIANT_HOST_FUNC, args=kwargs["args"])
 
     return res
 
 
-def variant_host_in_cluster(obj, args=None):  # noqa: C901
+def variant_host_in_cluster(**kwargs):  # noqa: C901
     out = []
-    cluster = get_cluster(obj)
+    cluster = get_cluster(obj=kwargs["obj"])
     if cluster is None:
         return out
 
+    args = kwargs["args"]
     if args and "service" in args:
         try:
             service = ClusterObject.objects.get(cluster=cluster, prototype__name=args["service"])
@@ -290,7 +291,7 @@ def variant_host_in_cluster(obj, args=None):  # noqa: C901
     return out
 
 
-def variant_host_not_in_clusters():
+def variant_host_not_in_clusters(**kwargs):  # pylint: disable=unused-argument
     out = []
     for host in Host.objects.filter(cluster=None).order_by("fqdn"):
         out.append(host.fqdn)
@@ -299,6 +300,7 @@ def variant_host_not_in_clusters():
 
 
 VARIANT_FUNCTIONS = {
+    # function's signature MUST be ...(**kwargs)
     "host": variant_host,
     "host_in_cluster": variant_host_in_cluster,
     "host_not_in_clusters": variant_host_not_in_clusters,
@@ -314,7 +316,7 @@ def get_builtin_variant(obj, func_name, args):
         return None
 
     try:
-        return VARIANT_FUNCTIONS[func_name](obj, args)
+        return VARIANT_FUNCTIONS[func_name](obj=obj, args=args)
     except AdcmEx as e:
         if e.code == "CONFIG_VARIANT_ERROR":
             return []

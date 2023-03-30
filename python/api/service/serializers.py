@@ -81,6 +81,9 @@ class ServiceUISerializer(ServiceSerializer):
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
     status = SerializerMethodField()
+    hostcomponent = HyperlinkedIdentityField(
+        view_name="host-component", lookup_field="cluster_id", lookup_url_kwarg="cluster_id"
+    )
 
     @staticmethod
     def get_version(obj: ClusterObject) -> str:
@@ -107,6 +110,7 @@ class ServiceDetailSerializer(ServiceSerializer):
     prototype_id = IntegerField(read_only=True)
     description = CharField(read_only=True)
     bundle_id = IntegerField(read_only=True)
+    requires = JSONField(read_only=True)
     status = SerializerMethodField()
     monitoring = CharField(read_only=True)
     action = CommonAPIURL(read_only=True, view_name="object-action")
@@ -136,6 +140,9 @@ class ServiceDetailUISerializer(ServiceDetailSerializer):
     version = SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     main_info = SerializerMethodField()
+    hostcomponent = HyperlinkedIdentityField(
+        view_name="host-component", lookup_field="cluster_id", lookup_url_kwarg="cluster_id"
+    )
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)

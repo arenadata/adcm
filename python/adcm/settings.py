@@ -96,7 +96,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "audit.middleware.AuditLoginMiddleware",
+    "audit.middleware.LoginMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -159,6 +159,7 @@ if all((DB_PASS, DB_NAME, DB_USER, DB_HOST, DB_PORT)):
         "PASSWORD": DB_PASS,
         "HOST": DB_HOST,
         "PORT": DB_PORT,
+        "CONN_MAX_AGE": 60,
     }
 else:
     DB_DEFAULT = {
@@ -170,15 +171,6 @@ else:
     }
 
 DATABASES = {"default": DB_DEFAULT}
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
-]
 
 AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.ModelBackend",
@@ -306,6 +298,7 @@ ADCM_MM_ACTION_FORBIDDEN_PROPS_SET = {"config", "hc_acl", "ui_options"}
 
 STACK_COMPLEX_FIELD_TYPES = {"json", "structure", "list", "map", "secretmap"}
 STACK_NUMERIC_FIELD_TYPES = {"integer", "float"}
+SECURE_PARAM_TYPES = {"password", "secrettext"}
 TEMPLATE_CONFIG_DELETE_FIELDS = {"yspec", "option", "activatable", "active", "read_only", "writable", "subs"}
 
 EMPTY_REQUEST_STATUS_CODE = 32
@@ -315,3 +308,4 @@ STATUS_REQUEST_TIMEOUT = 0.01
 
 JOB_TYPE = "job"
 TASK_TYPE = "task"
+PASSWORD_MASK = "******"

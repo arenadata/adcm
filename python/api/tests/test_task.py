@@ -24,6 +24,7 @@ from cm.models import (
     Prototype,
     TaskLog,
 )
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from rest_framework.response import Response
@@ -41,14 +42,10 @@ class TestTaskAPI(BaseTestCase):
             name="test_cluster",
             prototype=Prototype.objects.create(bundle=bundle, type="cluster"),
         )
-        self.adcm_prototype = Prototype.objects.create(bundle=bundle, type="adcm")
-        self.adcm = ADCM.objects.create(
-            prototype=self.adcm_prototype,
-            name="ADCM",
-        )
+        self.adcm = ADCM.objects.first()
         self.action = Action.objects.create(
             display_name="test_adcm_action",
-            prototype=self.adcm_prototype,
+            prototype=self.adcm.prototype,
             type=ActionType.JOB,
             state_available="any",
         )
@@ -56,23 +53,23 @@ class TestTaskAPI(BaseTestCase):
         self.task_1 = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=adcm_object_type,
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")) + timedelta(days=1),
+            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)) + timedelta(days=1),
             status="created",
         )
         self.task_2 = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=adcm_object_type,
-            start_date=datetime.now(tz=ZoneInfo("UTC")) + timedelta(days=1),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")) + timedelta(days=2),
+            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)) + timedelta(days=1),
+            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)) + timedelta(days=2),
             action=self.action,
             status="failed",
             pid=self.task_1.pid + 1,
         )
         JobLog.objects.create(
             status="created",
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")) + timedelta(days=1),
+            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)) + timedelta(days=1),
             task=self.task_2,
         )
 

@@ -23,12 +23,7 @@ from typing import Any
 import ruyaml
 import yaml
 import yspec.checker
-from cm.adcm_config import (
-    check_config_type,
-    proto_ref,
-    read_bundle_file,
-    type_is_complex,
-)
+from cm.adcm_config import check_config_type, proto_ref, read_bundle_file
 from cm.checker import FormatError, check, round_trip_load
 from cm.errors import raise_adcm_ex
 from cm.logger import logger
@@ -183,7 +178,7 @@ def get_config_files(path: Path) -> list[tuple[Path, Path]]:
 
     for item in path.rglob("*"):
         if item.is_file() and item.name in {"config.yaml", "config.yml"}:
-            conf_list.append((item.parent, item))
+            conf_list.append((item.relative_to(path).parent, item))
 
     if not conf_list:
         raise_adcm_ex(code="STACK_LOAD_ERROR", msg=f'no config files in stack directory "{path}"')
@@ -270,6 +265,7 @@ def save_prototype(path: Path, conf: dict, def_type: str, bundle_hash: str) -> S
     proto = StagePrototype(name=conf["name"], type=def_type, path=path, version=conf["version"])
 
     dict_to_obj(dictionary=conf, key="required", obj=proto)
+    dict_to_obj(dictionary=conf, key="requires", obj=proto)
     dict_to_obj(dictionary=conf, key="shared", obj=proto)
     dict_to_obj(dictionary=conf, key="monitoring", obj=proto)
     dict_to_obj(dictionary=conf, key="display_name", obj=proto)
@@ -461,6 +457,7 @@ def save_upgrade(prototype: StagePrototype, config: dict, bundle_hash: str) -> N
     for item in config["upgrade"]:
         check_upgrade(prototype=prototype, config=item)
         upgrade = StageUpgrade(name=item["name"])
+        upgrade.display_name = item.get("display_name", item["name"])
         set_version(upgrade, item)
         dict_to_obj(item, "description", upgrade)
         if "states" in item:
@@ -664,7 +661,6 @@ def save_action(proto: StagePrototype, config: dict, bundle_hash: str, action_na
         action.script = config["script"]
         action.script_type = config["script_type"]
 
-    dict_to_obj(dictionary=config, key="display_name", obj=action)
     dict_to_obj(dictionary=config, key="description", obj=action)
     dict_to_obj(dictionary=config, key="allow_to_terminate", obj=action)
     dict_to_obj(dictionary=config, key="partial_execution", obj=action)
@@ -676,7 +672,11 @@ def save_action(proto: StagePrototype, config: dict, bundle_hash: str, action_na
     dict_to_obj(dictionary=config, key="allow_in_maintenance_mode", obj=action)
     dict_to_obj(dictionary=config, key="config_jinja", obj=action)
 
-    fix_display_name(conf=config, obj=action)
+    if "display_name" in config:
+        dict_to_obj(dictionary=config, key="display_name", obj=action)
+    else:
+        action.display_name = action_name
+
     check_action_hc(proto=proto, conf=config)
 
     dict_to_obj(dictionary=config, key="hc_acl", obj=action, obj_key="hostcomponentmap")
@@ -835,7 +835,7 @@ def save_prototype_config(  # noqa: C901
         if "default" in _conf:
             check_config_type(proto, _name, _subname, _conf, _conf["default"], bundle_hash)
 
-        if type_is_complex(_conf["type"]):
+        if _conf["type"] in settings.STACK_COMPLEX_FIELD_TYPES:
             dict_json_to_obj(_conf, "default", stage_prototype_config)
         else:
             dict_to_obj(_conf, "default", stage_prototype_config)

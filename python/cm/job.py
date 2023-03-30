@@ -16,8 +16,10 @@ import json
 import subprocess
 from collections.abc import Hashable
 from configparser import ConfigParser
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
@@ -46,11 +48,16 @@ from cm.api import (
 from cm.api_context import CTX
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.hierarchy import Tree
-from cm.inventory import get_obj_config, prepare_job_inventory, process_config_and_attr
+from cm.inventory import (
+    HcAclAction,
+    get_obj_config,
+    prepare_job_inventory,
+    process_config_and_attr,
+)
 from cm.issue import (
     check_bound_components,
     check_component_constraint,
-    check_component_requires,
+    check_requires,
     update_hierarchy_issues,
 )
 from cm.logger import logger
@@ -84,7 +91,6 @@ from cm.variant import process_variant
 from django.conf import settings
 from django.db import transaction
 from django.db.models import JSONField
-from django.utils import timezone
 from rbac.roles import re_apply_policy_for_jobs
 
 
@@ -226,9 +232,9 @@ def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster
     raise_adcm_ex("TASK_ERROR", "action is disabled")
 
 
-def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict) -> tuple[dict, dict]:
+def check_action_config(action: Action, obj: type[ADCMEntity], conf: dict, attr: dict) -> tuple[dict, dict]:
     proto = action.prototype
-    spec, flat_spec, _, _ = get_prototype_config(proto, action)
+    spec, flat_spec, _, _ = get_prototype_config(proto=proto, action=action, obj=obj)
     if not spec:
         return {}, {}
 
@@ -296,24 +302,24 @@ def cook_delta(  # pylint: disable=too-many-branches # noqa: C901
             key = cook_comp_key(hostcomponent.service.prototype.name, hostcomponent.component.prototype.name)
             add_to_dict(old, key, hostcomponent.host.fqdn, hostcomponent.host)
 
-    delta = {"add": {}, "remove": {}}
+    delta = {HcAclAction.ADD: {}, HcAclAction.REMOVE: {}}
     for key, value in new.items():
         if key in old:
             for host in value:
                 if host not in old[key]:
-                    add_delta(delta, "add", key, host, value[host])
+                    add_delta(_delta=delta, action=HcAclAction.ADD, _key=key, fqdn=host, _host=value[host])
 
             for host in old[key]:
                 if host not in value:
-                    add_delta(delta, "remove", key, host, old[key][host])
+                    add_delta(_delta=delta, action=HcAclAction.REMOVE, _key=key, fqdn=host, _host=old[key][host])
         else:
             for host in value:
-                add_delta(delta, "add", key, host, value[host])
+                add_delta(_delta=delta, action=HcAclAction.ADD, _key=key, fqdn=host, _host=value[host])
 
     for key, value in old.items():
         if key not in new:
             for host in value:
-                add_delta(delta, "remove", key, host, value[host])
+                add_delta(_delta=delta, action=HcAclAction.REMOVE, _key=key, fqdn=host, _host=value[host])
 
     logger.debug("OLD: %s", old)
     logger.debug("NEW: %s", new)
@@ -370,9 +376,9 @@ def check_constraints_for_upgrade(cluster, upgrade, host_comp_list):
             except Prototype.DoesNotExist:
                 pass
 
-        check_component_requires(host_comp_list)
-        check_bound_components(host_comp_list)
-        check_maintenance_mode(cluster, host_comp_list)
+        check_requires(shc_list=host_comp_list)
+        check_bound_components(shc_list=host_comp_list)
+        check_maintenance_mode(cluster=cluster, host_comp_list=host_comp_list)
     except AdcmEx as e:
         if e.code == "COMPONENT_CONSTRAINT_ERROR":
             e.msg = (
@@ -403,7 +409,7 @@ def check_upgrade_hc(action, new_hc):
             for hc_acl in action.hostcomponentmap:
                 if proto.name == hc_acl["component"]:
                     buff += 1
-                    if hc_acl["action"] != "add":
+                    if hc_acl["action"] != HcAclAction.ADD:
                         raise_adcm_ex(
                             "WRONG_ACTION_HC",
                             "New components from bundle with upgrade you can only add, not remove",
@@ -704,8 +710,8 @@ def create_task(
         hosts=hosts,
         post_upgrade_hc_map=post_upgrade_hc,
         verbose=verbose,
-        start_date=timezone.now(),
-        finish_date=timezone.now(),
+        start_date=datetime.now(tz=ZoneInfo("UTC")),
+        finish_date=datetime.now(tz=ZoneInfo("UTC")),
         status=JobStatus.CREATED,
         selector=get_selector(obj, action),
     )
@@ -722,8 +728,8 @@ def create_task(
             action=action,
             sub_action=sub_action,
             log_files=action.log_files,
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
+            start_date=datetime.now(tz=ZoneInfo("UTC")),
+            finish_date=datetime.now(tz=ZoneInfo("UTC")),
             status=JobStatus.CREATED,
             selector=get_selector(obj, action),
         )
@@ -933,7 +939,7 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
         "stdout_callback": "yaml",
         "callback_whitelist": "profile_tasks",
     }
-    adcm_object = ADCM.objects.get(id=1)
+    adcm_object = ADCM.objects.first()
     config_log = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
     adcm_conf = config_log.config
     mitogen = adcm_conf["ansible_settings"]["mitogen"]
@@ -965,18 +971,18 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
 
 def set_task_status(task: TaskLog, status: str, event):
     task.status = status
-    task.finish_date = timezone.now()
+    task.finish_date = datetime.now(tz=ZoneInfo("UTC"))
     task.save()
     event.set_task_status(task=task, status=status)
 
 
 def set_job_status(job_id: int, status: str, event, pid: int = 0):
     job_query = JobLog.objects.filter(id=job_id)
-    job_query.update(status=status, pid=pid, finish_date=timezone.now())
+    job_query.update(status=status, pid=pid, finish_date=datetime.now(tz=ZoneInfo("UTC")))
     job = job_query.first()
 
     if status == JobStatus.RUNNING:
-        if job.task.lock:
+        if job.task.lock and job.task.task_object:
             job.task.lock.reason = job.cook_reason()
             job.task.lock.save(update_fields=["reason"])
 

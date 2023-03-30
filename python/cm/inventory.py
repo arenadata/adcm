@@ -37,6 +37,12 @@ from cm.models import (
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 
+
+class HcAclAction:
+    ADD = "add"
+    REMOVE = "remove"
+
+
 MAINTENANCE_MODE = "maintenance_mode"
 
 
@@ -255,7 +261,7 @@ def get_provider_config(provider_id) -> dict:
     return {"provider": get_provider_variables(provider)}
 
 
-def get_host_groups(  # noqa: C901
+def get_host_groups(  # noqa: C901  # pylint: disable=too-many-branches
     cluster: Cluster,
     delta: dict | None = None,
     action_host: Host | None = None,
@@ -287,16 +293,26 @@ def get_host_groups(  # noqa: C901
             groups[key]["hosts"][hostcomponent.host.fqdn] = get_obj_config(hostcomponent.host)
             groups[key]["hosts"][hostcomponent.host.fqdn].update(get_host_vars(hostcomponent.host, adcm_object))
 
-    for htype in delta:
-        for key in delta[htype]:
-            lkey = f"{key}.{htype}"
+    for hc_acl_action in delta:
+        for key in delta[hc_acl_action]:
+            lkey = f"{key}.{hc_acl_action}"
+
             if lkey not in groups:
                 groups[lkey] = {"hosts": {}}
 
-            for fqdn in delta[htype][key]:
-                host = delta[htype][key][fqdn]
-                if host.maintenance_mode != MaintenanceMode.ON:
+            for fqdn in delta[hc_acl_action][key]:
+                host = delta[hc_acl_action][key][fqdn]
+
+                if host.maintenance_mode != MaintenanceMode.ON or hc_acl_action == HcAclAction.REMOVE:
                     groups[lkey]["hosts"][host.fqdn] = get_obj_config(host)
+
+                if hc_acl_action == HcAclAction.REMOVE and host.maintenance_mode == MaintenanceMode.ON:
+                    remove_maintenance_mode_group_name = f"{lkey}.{MAINTENANCE_MODE}"
+
+                    if remove_maintenance_mode_group_name not in groups:
+                        groups[remove_maintenance_mode_group_name] = {"hosts": {}}
+
+                    groups[remove_maintenance_mode_group_name]["hosts"][host.fqdn] = get_obj_config(host)
 
     return groups
 
@@ -345,7 +361,7 @@ def get_target_host(host_id):
 
 
 def get_inventory_data(
-    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
+    obj: type[ADCMEntity],
     action: Action,
     action_host: list[Host] | None = None,
     delta: dict | None = None,

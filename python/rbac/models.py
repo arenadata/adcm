@@ -20,7 +20,23 @@ from django.contrib.auth.models import Permission
 from django.contrib.auth.models import User as AuthUser
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.db import models
+from django.db.models import (
+    CASCADE,
+    SET_NULL,
+    BooleanField,
+    CharField,
+    DateTimeField,
+    ForeignKey,
+    Index,
+    JSONField,
+    ManyToManyField,
+    Model,
+    PositiveIntegerField,
+    SmallIntegerField,
+    TextChoices,
+    TextField,
+    UniqueConstraint,
+)
 from django.db.models.signals import pre_save
 from django.db.transaction import atomic
 from django.dispatch import receiver
@@ -28,7 +44,7 @@ from guardian.models import GroupObjectPermission, UserObjectPermission
 from rest_framework.exceptions import ValidationError
 
 
-class ObjectType(models.TextChoices):
+class ObjectType(TextChoices):
     CLUSTER = "cluster", "cluster"
     SERVICE = "service", "service"
     COMPONENT = "component", "component"
@@ -44,7 +60,7 @@ def validate_object_type(value):
         raise ValidationError("Not a valid object type.")
 
 
-class OriginType(models.TextChoices):
+class OriginType(TextChoices):
     LOCAL = "local", "local"
     LDAP = "ldap", "ldap"
 
@@ -55,14 +71,16 @@ class User(AuthUser):
     Original User model extended with profile
     """
 
-    profile = models.JSONField(default=str)
-    built_in = models.BooleanField(default=False, null=False)
+    profile = JSONField(default=str)
+    built_in = BooleanField(default=False, null=False)
+    login_attempts = SmallIntegerField(default=0)
+    blocked_at = DateTimeField(null=True)
 
     def delete(self, using=None, keep_parents=False):
         self.is_active = False
         self.save()
 
-    type = models.CharField(max_length=1000, choices=OriginType.choices, null=False, default=OriginType.LOCAL)
+    type = CharField(max_length=1000, choices=OriginType.choices, null=False, default=OriginType.LOCAL)
 
     @property
     def name(self):
@@ -75,16 +93,16 @@ class Group(AuthGroup):
     Original Group model extended with description field
     """
 
-    description = models.CharField(max_length=1000, null=True)
-    built_in = models.BooleanField(default=False, null=False)
-    type = models.CharField(max_length=1000, choices=OriginType.choices, null=False, default=OriginType.LOCAL)
+    description = CharField(max_length=1000, null=True)
+    built_in = BooleanField(default=False, null=False)
+    type = CharField(max_length=1000, choices=OriginType.choices, null=False, default=OriginType.LOCAL)
     # works as `name` field because `name` field now contains name and type
     # to bypass unique constraint on `AuthGroup` base table
-    display_name = models.CharField(max_length=1000, null=True)
+    display_name = CharField(max_length=1000, null=True)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["display_name", "type"], name="unique_display_name_type"),
+            UniqueConstraint(fields=["display_name", "type"], name="unique_display_name_type"),
         ]
 
     def name_to_display(self):
@@ -104,45 +122,45 @@ def handle_name_type_display_name(sender, instance, **kwargs):  # pylint: disabl
         instance.name = f"{match.group('base_name')} [{instance.type}]"
         instance.display_name = match.group("base_name")
     else:
-        raise RuntimeError(f"Check regex. Data: `{instance.name}`")
+        raise_adcm_ex(code="GROUP_CONFLICT", msg=f"Check regex. Data: `{instance.name}`")
 
 
-class RoleTypes(models.TextChoices):
+class RoleTypes(TextChoices):
     BUSINESS = "business", "business"
     ROLE = "role", "role"
     HIDDEN = "hidden", "hidden"
 
 
-class Role(models.Model):  # pylint: disable=too-many-instance-attributes
+class Role(Model):  # pylint: disable=too-many-instance-attributes
     """
     Role is a list of Django permissions.
     Role can be assigned to user or to group of users
     Also Role can have children and so produce acyclic graph of linked roles
     """
 
-    name = models.CharField(max_length=1000)
-    description = models.TextField(blank=True)
-    display_name = models.CharField(max_length=1000, null=False, default="")
-    child = models.ManyToManyField("self", symmetrical=False, blank=True)
-    permissions = models.ManyToManyField(Permission, blank=True)
-    module_name = models.CharField(max_length=1000)
-    class_name = models.CharField(max_length=1000)
-    init_params = models.JSONField(default=dict)
-    bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE, null=True, default=None)
-    built_in = models.BooleanField(default=True, null=False)
-    type = models.CharField(max_length=1000, choices=RoleTypes.choices, null=False, default=RoleTypes.ROLE)
-    category = models.ManyToManyField(ProductCategory)
-    any_category = models.BooleanField(default=False)
-    parametrized_by_type = models.JSONField(default=list, null=False, validators=[validate_object_type])
+    name = CharField(max_length=1000)
+    description = TextField(blank=True)
+    display_name = CharField(max_length=1000, null=False, default="")
+    child = ManyToManyField("self", symmetrical=False, blank=True)
+    permissions = ManyToManyField(Permission, blank=True)
+    module_name = CharField(max_length=1000)
+    class_name = CharField(max_length=1000)
+    init_params = JSONField(default=dict)
+    bundle = ForeignKey(Bundle, on_delete=CASCADE, null=True, default=None)
+    built_in = BooleanField(default=True, null=False)
+    type = CharField(max_length=1000, choices=RoleTypes.choices, null=False, default=RoleTypes.ROLE)
+    category = ManyToManyField(ProductCategory)
+    any_category = BooleanField(default=False)
+    parametrized_by_type = JSONField(default=list, null=False, validators=[validate_object_type])
     __obj__ = None
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["name", "built_in"], name="unique_name"),
-            models.UniqueConstraint(fields=["display_name", "built_in"], name="unique_display_name"),
+            UniqueConstraint(fields=["name", "built_in"], name="unique_name"),
+            UniqueConstraint(fields=["display_name", "built_in"], name="unique_display_name"),
         ]
         indexes = [
-            models.Index(fields=["name", "display_name"]),
+            Index(fields=["name", "display_name"]),
         ]
 
     def get_role_obj(self):
@@ -200,45 +218,45 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
         return perm_list
 
 
-class RoleMigration(models.Model):
+class RoleMigration(Model):
     """Keep version of last role upgrade"""
 
-    version = models.PositiveIntegerField(primary_key=True)
-    date = models.DateTimeField(auto_now=True)
+    version = PositiveIntegerField(primary_key=True)
+    date = DateTimeField(auto_now=True)
 
 
-class PolicyObject(models.Model):
+class PolicyObject(Model):
     """Reference to any model for Policy"""
 
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object_id = models.PositiveIntegerField()
+    content_type = ForeignKey(ContentType, on_delete=CASCADE)
+    object_id = PositiveIntegerField()
     object = GenericForeignKey("content_type", "object_id")
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=["content_type", "object_id"], name="unique_policy_object")]
+        constraints = [UniqueConstraint(fields=["content_type", "object_id"], name="unique_policy_object")]
 
 
-class PolicyPermission(models.Model):
+class PolicyPermission(Model):
     """Reference to Policy model level Permissions"""
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, default=None)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True, default=None)
-    permission = models.ForeignKey(Permission, on_delete=models.CASCADE, null=True, default=None)
+    user = ForeignKey(User, on_delete=CASCADE, null=True, default=None)
+    group = ForeignKey(Group, on_delete=CASCADE, null=True, default=None)
+    permission = ForeignKey(Permission, on_delete=CASCADE, null=True, default=None)
 
 
-class Policy(models.Model):
+class Policy(Model):
     """Policy connect role, users and (maybe) objects"""
 
-    name = models.CharField(max_length=1000, unique=True)
-    description = models.TextField(blank=True)
-    role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True)
-    object = models.ManyToManyField(PolicyObject, blank=True)
-    built_in = models.BooleanField(default=True)
-    user = models.ManyToManyField(User, blank=True)
-    group = models.ManyToManyField(Group, blank=True)
-    model_perm = models.ManyToManyField(PolicyPermission, blank=True)
-    user_object_perm = models.ManyToManyField(UserObjectPermission, blank=True)
-    group_object_perm = models.ManyToManyField(GroupObjectPermission, blank=True)
+    name = CharField(max_length=1000, unique=True)
+    description = TextField(blank=True)
+    role = ForeignKey(Role, on_delete=SET_NULL, null=True)
+    object = ManyToManyField(PolicyObject, blank=True)
+    built_in = BooleanField(default=True)
+    user = ManyToManyField(User, blank=True)
+    group = ManyToManyField(Group, blank=True)
+    model_perm = ManyToManyField(PolicyPermission, blank=True)
+    user_object_perm = ManyToManyField(UserObjectPermission, blank=True)
+    group_object_perm = ManyToManyField(GroupObjectPermission, blank=True)
 
     def remove_permissions(self):
         with atomic():

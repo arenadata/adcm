@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""User URLs"""
-
 from django.urls import path
 from rbac.endpoints.me.views import MyselfView
 

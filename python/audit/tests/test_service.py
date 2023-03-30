@@ -376,7 +376,7 @@ class TestServiceAudit(BaseTestCase):
 
         service = ClusterObject.objects.get(pk=response.data["id"])
         username = "new_user"
-        password = "password"
+        password = self.get_random_str_num(length=12)
         response: Response = self.client.post(
             path=reverse("rbac:user-list"),
             data={

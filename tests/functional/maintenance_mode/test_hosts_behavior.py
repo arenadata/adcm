@@ -214,10 +214,10 @@ def test_host_actions_on_another_component_host(api_client, host_actions_cluster
     Test host_actions from cluster, service and component are working correctly
     with regular host with component that is also mapped to an MM host
     """
-    expected_enabled = {"default_action"} | {
-        f"{obj_type}_host_action_allowed" for obj_type in ("cluster", "service", "component")
+    expected_enabled = {f"{obj_type}_host_action_allowed" for obj_type in ("cluster", "service", "component")}
+    expected_disabled = {"default_action"} | {
+        f"{obj_type}_host_action_disallowed" for obj_type in ("cluster", "service", "component")
     }
-    expected_disabled = {f"{obj_type}_host_action_disallowed" for obj_type in ("cluster", "service", "component")}
 
     host_in_mm, regular_host, *_ = hosts
     cluster = host_actions_cluster
@@ -228,15 +228,27 @@ def test_host_actions_on_another_component_host(api_client, host_actions_cluster
 
     turn_mm_on(api_client, host_in_mm)
 
+    # Host with mm ON has actions only with allow_mm; Host with mm OFF has all actions. Task ADCM-3648
     enabled_actions = get_enabled_actions_names(regular_host)
     disabled_actions = get_disabled_actions_names(regular_host)
 
-    with allure.step("Check that correct actions are enabled/disabled on the host"):
-        sets_are_equal(enabled_actions, expected_enabled, f"Incorrect actions are enabled on host {regular_host.fqdn}")
+    enabled_actions_mm = get_enabled_actions_names(host_in_mm)
+    disabled_actions_mm = get_disabled_actions_names(host_in_mm)
+
+    with allure.step("Check that correct actions are enabled/disabled on the host with mm OFF"):
         sets_are_equal(
-            disabled_actions,
+            enabled_actions,
+            expected_enabled | expected_disabled,
+            f"Incorrect actions are enabled on host {regular_host.fqdn}",
+        )
+        assert disabled_actions == set()
+
+    with allure.step("Check that correct actions are enabled/disabled on the host with mm ON"):
+        sets_are_equal(enabled_actions_mm, expected_enabled, f"Incorrect actions are enabled on host {host_in_mm.fqdn}")
+        sets_are_equal(
+            disabled_actions_mm,
             expected_disabled,
-            f"Incorrect actions are disabled on host {regular_host.fqdn}",
+            f"Incorrect actions are disabled on host {host_in_mm.fqdn}",
         )
 
 
@@ -292,11 +304,10 @@ def test_host_actions_with_mm(api_client, cluster_with_mm, hosts):
 
     expect_no_api_error("run allowed in MM action", host_in_mm.action(name=allowed_action).run).wait()
 
-    expect_api_error(
-        "run not allowed in MM action",
-        regular_host.action(name=not_allowed_action).run,
-        err_=ACTION_ERROR,
-    )
+    # When host mm is OFF all actions is enabled. Task ADCM-3648
+    expect_no_api_error(
+        "run should be allowed on host with MM OFF", regular_host.action(name=not_allowed_action).run
+    ).wait()
     expect_api_error("run not allowed in MM action", host_in_mm.action(name=not_allowed_action).run, err_=ACTION_ERROR)
     expect_api_error(
         "run not allowed in MM action of host",

@@ -1,0 +1,13 @@
+
+
+---
+- hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: sleep
+      pause:
+        seconds: 5
+    - name: "Fail"
+      fail:
+        msg: "Just fail"

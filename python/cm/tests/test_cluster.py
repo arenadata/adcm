@@ -9,11 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import string
 
 from cm.models import Bundle, Cluster, Prototype
 from django.urls import reverse
-from init_db import init
 from rest_framework import status
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
@@ -22,7 +22,6 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 class TestCluster(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
-        init()
 
         self.allowed_name_chars_start_end = f"{string.ascii_letters}{string.digits}"
         self.allowed_name_chars_middle = f"{self.allowed_name_chars_start_end}-. _"

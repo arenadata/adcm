@@ -45,4 +45,6 @@ export interface IAddService {
   getProtoServiceForCurrentCluster?(): Observable<{ name: string, id: number, url: string, version: string, edition: string, description: string, display_name: string, license: 'unaccepted' | 'accepted' | 'absent', bundle_id: number, bundle_edition: string, selected: boolean }[]>;
 
   addService?(data: { prototype_id: number }[]): Observable<Service[]>;
+
+  addServiceInCluster?(data: { prototype_id: number }[]): Observable<unknown>;
 }

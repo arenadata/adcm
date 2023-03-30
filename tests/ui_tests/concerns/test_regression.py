@@ -46,6 +46,7 @@ def cluster_objects(sdk_client_fs) -> tuple[Cluster, Service, Service]:
 
 
 @allure.issue(url="https://tracker.yandex.ru/ADCM-3327")
+@pytest.mark.skip(reason="Issue link lead to wrong configuration content")
 @pytest.mark.usefixtures("_login_to_adcm_over_ui")
 def test_config_renders_correctly_after_following_concern_links(  # pylint: disable=redefined-outer-name
     app_fs,

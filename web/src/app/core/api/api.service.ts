@@ -49,6 +49,7 @@ export class ApiService {
       params['limit'] = limit.toString();
       params['offset'] = offset.toString();
       params['status'] = paramMap.get('filter') || '';
+      params['ordering'] = paramMap.get('ordering') || '-id'
     }
     return this.get<ListResult<T>>(url, { ...params, ...outsideParams });
   }

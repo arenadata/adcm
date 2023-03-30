@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.adcm_config import get_prototype_config, obj_ref, proto_ref
+from cm.adcm_config import get_prototype_config, proto_ref
 from cm.errors import AdcmEx
 from cm.errors import raise_adcm_ex as err
 from cm.hierarchy import Tree
@@ -30,7 +30,9 @@ from cm.models import (
     ObjectType,
     Prototype,
     PrototypeImport,
+    ServiceComponent,
 )
+from cm.utils import obj_ref
 
 
 def check_config(obj):  # pylint: disable=too-many-branches # noqa: C901
@@ -115,7 +117,7 @@ def do_check_import(cluster, service=None):
     return res
 
 
-def check_hc(cluster):  # noqa: C901
+def check_hc(cluster: Cluster) -> bool:
     shc_list = []
     for hostcomponent in HostComponent.objects.filter(cluster=cluster):
         shc_list.append((hostcomponent.service, hostcomponent.host, hostcomponent.component))
@@ -126,68 +128,61 @@ def check_hc(cluster):  # noqa: C901
                 const = comp.constraint
                 if len(const) == 2 and const[0] == 0:
                     continue
-                logger.debug("void host components for %s", proto_ref(service.prototype))
+                logger.debug("void host components for %s", proto_ref(prototype=service.prototype))
                 return False
 
     for service in ClusterObject.objects.filter(cluster=cluster):
         try:
-            check_component_constraint(cluster, service.prototype, [i for i in shc_list if i[0] == service])
+            check_component_constraint(
+                cluster=cluster, service_prototype=service.prototype, hc_in=[i for i in shc_list if i[0] == service]
+            )
         except AdcmEx:
             return False
 
     try:
-        check_component_requires(shc_list)
-        check_bound_components(shc_list)
+        check_requires(shc_list=shc_list)
+        check_bound_components(shc_list=shc_list)
     except AdcmEx:
         return False
 
     return True
 
 
-def check_component_requires(shc_list):
-    def get_components_with_requires():
-        return [i for i in shc_list if i[2].prototype.requires]
+def check_requires(shc_list: list[tuple[ClusterObject, Host, ServiceComponent]]) -> None:
+    for serv_host_comp in [i for i in shc_list if i[2].prototype.requires or i[0].prototype.requires]:
+        for require in [*serv_host_comp[2].prototype.requires, *serv_host_comp[0].prototype.requires]:
+            ref = f'component "{serv_host_comp[2].prototype.name}" of service "{serv_host_comp[0].prototype.name}"'
 
-    def check_component_req(service, component):
-        for _shc in shc_list:
-            if _shc[0].prototype.name == service and _shc[2].prototype.name == component:
-                return True
+            if not ClusterObject.objects.filter(prototype__name=require["service"]).exists():
+                err(code="COMPONENT_CONSTRAINT_ERROR", msg=f"No required service {require['service']} for {ref}")
 
-        return False
+            if not require.get("component"):
+                continue
 
-    for shc in get_components_with_requires():
-        for requre in shc[2].prototype.requires:
-            if not check_component_req(requre["service"], requre["component"]):
-                ref = f'component "{shc[2].prototype.name}" of service "{shc[0].prototype.name}"'
-                msg = 'no required component "{}" of service "{}" for {}'
-                err("COMPONENT_CONSTRAINT_ERROR", msg.format(requre["component"], requre["service"], ref))
+            if not any(
+                {
+                    (shc[0].prototype.name == require["service"] and shc[2].prototype.name == require["component"])
+                    for shc in shc_list
+                }
+            ):
+                msg = f'No required component "{require["component"]}" of service "{require["service"]}" for {ref}'
+                err(code="COMPONENT_CONSTRAINT_ERROR", msg=msg)
 
 
-def check_bound_components(shc_list):
-    def get_components_bound_to():
-        return [i for i in shc_list if i[2].prototype.bound_to]
-
-    def component_on_host(component, host):
-        return [i for i in shc_list if i[1] == host and i[2].prototype == component]
-
-    def bound_host_components(service, comp):
-        return [i for i in shc_list if i[0].prototype.name == service and i[2].prototype.name == comp]
-
-    def check_bound_component(component):
+def check_bound_components(shc_list: list[tuple[ClusterObject, Host, ServiceComponent]]) -> None:
+    for shc in [i for i in shc_list if i[2].prototype.bound_to]:
+        component = shc[2].prototype
         service = component.bound_to["service"]
         comp_name = component.bound_to["component"]
         ref = f'component "{comp_name}" of service "{service}"'
-        bound_hc = bound_host_components(service, comp_name)
+        bound_hc = [i for i in shc_list if i[0].prototype.name == service and i[2].prototype.name == comp_name]
         if not bound_hc:
             msg = f'bound service "{service}", component "{comp_name}" not in hc for {ref}'
             err("COMPONENT_CONSTRAINT_ERROR", msg)
         for shc in bound_hc:
-            if not component_on_host(component, shc[1]):
+            if not [i for i in shc_list if i[1] == shc[1] and i[2].prototype == component]:
                 msg = 'No bound component "{}" on host "{}" for {}'
                 err("COMPONENT_CONSTRAINT_ERROR", msg.format(component.name, shc[1].fqdn, ref))
-
-    for shc in get_components_bound_to():
-        check_bound_component(shc[2].prototype)
 
 
 def get_obj_config(obj):

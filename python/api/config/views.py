@@ -20,9 +20,10 @@ from api.config.serializers import (
 )
 from api.utils import check_obj, create, update
 from audit.utils import audit
-from cm.adcm_config import ui_config
+from cm.adcm_config import ansible_encrypt_and_format, ui_config
 from cm.errors import AdcmEx
 from cm.models import ConfigLog, ObjectConfig, get_model_by_type
+from django.conf import settings
 from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
 from rest_framework.exceptions import PermissionDenied
@@ -30,7 +31,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 
-def get_config_version(queryset, objconf, version):
+def get_config_version(queryset, objconf, version) -> ConfigLog:
     if version == "previous":
         ver = objconf.previous
     elif version == "current":
@@ -48,10 +49,13 @@ def get_config_version(queryset, objconf, version):
 def type_to_model(object_type):
     if object_type == "provider":
         object_type = "hostprovider"
+
     if object_type == "service":
         object_type = "clusterobject"
+
     if object_type == "component":
         object_type = "servicecomponent"
+
     return object_type
 
 
@@ -153,8 +157,27 @@ class ConfigVersionView(PermissionListMixin, GenericUIView):
         object_type, object_id, version = get_object_type_id_version(**kwargs)
         obj, object_config = get_obj(object_type, object_id)
         config_log = get_config_version(self.get_queryset(), object_config, version)
+        ui_config_data = ui_config(obj, config_log)
+        for item in ui_config_data:
+            if item["type"] != "secretfile":
+                continue
+
+            if not item["value"]:
+                continue
+
+            if settings.ANSIBLE_VAULT_HEADER not in item["value"]:
+                encrypted_value = ansible_encrypt_and_format(msg=item["value"])
+                item["value"] = encrypted_value
+            else:
+                encrypted_value = item["value"]
+
+            if not item["subname"]:
+                config_log.config[item["name"]] = encrypted_value
+            else:
+                config_log.config[item["name"]][item["subname"]] = encrypted_value
+
         if self._is_for_ui():
-            config_log.config = ui_config(obj, config_log)
+            config_log.config = ui_config_data
 
         serializer = self.get_serializer(config_log)
 

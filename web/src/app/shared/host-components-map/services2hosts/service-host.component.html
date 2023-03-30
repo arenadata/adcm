@@ -23,7 +23,7 @@
       <div *ngIf="!Hosts?.length">
         Add hosts on the <a [routerLink]="['/cluster', cluster?.id, 'host']">hosts page.</a>
       </div>
-      <app-much-2-many *ngFor="let host of Hosts" [model]="host" [form]="form" [actionParameters]="actionParameters"
+      <app-much-2-many *ngFor="let host of Hosts" [model]="host" [form]="form" [actionParameters]="actionParameters" [selectedComponent]="selectedComponent"
         (clickToTitleEvt)="selectHost($event)" (clearRelationEvt)="clearServiceFromHost($event)">
       </app-much-2-many>
     </div>
