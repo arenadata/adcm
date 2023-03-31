@@ -12,6 +12,7 @@
 
 from rbac.endpoints.me.serializers import MeUserSerializer
 from rbac.models import User
+from rbac.services.user import update
 from rest_framework.generics import RetrieveUpdateAPIView
 
 
@@ -21,3 +22,6 @@ class MyselfView(RetrieveUpdateAPIView):
 
     def get_object(self):
         return User.objects.get(id=self.request.user.id)
+
+    def perform_update(self, serializer: MeUserSerializer):
+        update(user=serializer.instance, context_user=self.request.user, partial=True, **serializer.validated_data)

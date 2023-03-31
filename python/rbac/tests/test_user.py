@@ -299,10 +299,18 @@ class UserTestCase(BaseTestCase):
         )
 
     def test_change_password_success(self):
+        new_pass = "new_pass"
         response: Response = self.client.patch(
-            reverse("rbac:me"),
-            data={"password": "new_pass", "current_password": self.test_user_password},
+            reverse(viewname="rbac:me"),
+            data={"password": new_pass, "current_password": self.test_user_password},
             content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        response: Response = self.client.post(
+            reverse(viewname="token"),
+            data={"username": self.test_user_username, "password": new_pass},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
