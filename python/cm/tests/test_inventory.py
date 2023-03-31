@@ -434,13 +434,20 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         self.files_dir = settings.BASE_DIR / "python" / "cm" / "tests" / "files"
 
         _, self.cluster_hc_acl, _ = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(self.files_dir, "test_inventory_remove_group_mm_hosts.tar")
+            bundle_path=Path(self.files_dir, "test_inventory_remove_group_mm_hosts.tar"), cluster_name="cluster_hc_acl"
         )
 
         self.provider = gen_provider(name="test_provider")
-        self.host_hc_acl_1 = gen_host(provider=self.provider, cluster=self.cluster_hc_acl, fqdn="hc_acl_host_1")
-        self.host_hc_acl_2 = gen_host(provider=self.provider, cluster=self.cluster_hc_acl, fqdn="hc_acl_host_2")
-        self.host_hc_acl_3 = gen_host(provider=self.provider, cluster=self.cluster_hc_acl, fqdn="hc_acl_host_3")
+        host_prototype = gen_prototype(bundle=self.provider.prototype.bundle, proto_type="host")
+        self.host_hc_acl_1 = gen_host(
+            provider=self.provider, cluster=self.cluster_hc_acl, fqdn="hc_acl_host_1", prototype=host_prototype
+        )
+        self.host_hc_acl_2 = gen_host(
+            provider=self.provider, cluster=self.cluster_hc_acl, fqdn="hc_acl_host_2", prototype=host_prototype
+        )
+        self.host_hc_acl_3 = gen_host(
+            provider=self.provider, cluster=self.cluster_hc_acl, fqdn="hc_acl_host_3", prototype=host_prototype
+        )
 
         self.service_hc_acl = add_service_to_cluster(
             cluster=self.cluster_hc_acl,
@@ -486,6 +493,50 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         )
 
         self.action_hc_acl = Action.objects.get(name="cluster_action_hc_acl", allow_in_maintenance_mode=True)
+
+        _, self.cluster_target_group, _ = self.upload_bundle_create_cluster_config_log(
+            bundle_path=Path(self.files_dir, "cluster_mm_host_target_group.tar"),
+            cluster_name="cluster_target_group",
+        )
+
+        self.host_target_group_1 = gen_host(
+            provider=self.provider,
+            cluster=self.cluster_target_group,
+            fqdn="host_target_group_1",
+            prototype=host_prototype,
+        )
+        self.host_target_group_2 = gen_host(
+            provider=self.provider,
+            cluster=self.cluster_target_group,
+            fqdn="host_target_group_2",
+            prototype=host_prototype,
+        )
+
+        self.service_target_group = add_service_to_cluster(
+            cluster=self.cluster_target_group,
+            proto=Prototype.objects.get(name="service_1_target_group", type="service"),
+        )
+        self.component_target_group = ServiceComponent.objects.get(
+            cluster=self.cluster_target_group, prototype__name="component_1_target_group"
+        )
+
+        add_hc(
+            cluster=self.cluster_target_group,
+            hc_in=[
+                {
+                    "host_id": self.host_target_group_1.pk,
+                    "service_id": self.service_target_group.pk,
+                    "component_id": self.component_target_group.pk,
+                },
+                {
+                    "host_id": self.host_target_group_2.pk,
+                    "service_id": self.service_target_group.pk,
+                    "component_id": self.component_target_group.pk,
+                },
+            ],
+        )
+
+        self.action_target_group = Action.objects.get(name="host_action_target_group", allow_in_maintenance_mode=True)
 
     @staticmethod
     def _get_hc_request_data(*new_hc_items: dict) -> list[dict]:
@@ -613,3 +664,73 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
 
         mm_keys = [key for key in inventory_data if key.endswith(f".{HcAclAction.REMOVE}.{MAINTENANCE_MODE}")]
         self.assertEqual(len(mm_keys), 1)
+
+    def test_host_in_target_group_hostaction_on_host_in_mm_success(self):
+        self.host_target_group_1.maintenance_mode = MaintenanceMode.ON
+        self.host_target_group_1.save()
+
+        self.assertEqual(TaskLog.objects.count(), 0)
+        self.assertEqual(JobLog.objects.count(), 0)
+
+        response: Response = self.client.post(
+            path=reverse(
+                "run-task",
+                kwargs={
+                    "cluster_id": self.cluster_target_group.pk,
+                    "host_id": self.host_target_group_1.pk,
+                    "object_type": "host",
+                    "action_id": self.action_target_group.pk,
+                },
+            ),
+            data={
+                "verbose": False,
+            },
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        task = TaskLog.objects.last()
+        job = JobLog.objects.last()
+
+        re_prepare_job(task=task, job=job)
+
+        inventory_file = settings.RUN_DIR / str(job.pk) / "inventory.json"
+        with open(file=inventory_file, encoding=settings.ENCODING_UTF_8) as f:
+            target_hosts_data = loads(s=f.read())["all"]["children"]["target"]["hosts"]
+
+        self.assertIn(self.host_target_group_1.fqdn, target_hosts_data)
+
+    def test_host_in_target_group_hostaction_on_host_not_in_mm_success(self):
+        self.host_target_group_2.maintenance_mode = MaintenanceMode.OFF
+        self.host_target_group_2.save()
+
+        self.assertEqual(TaskLog.objects.count(), 0)
+        self.assertEqual(JobLog.objects.count(), 0)
+
+        response: Response = self.client.post(
+            path=reverse(
+                "run-task",
+                kwargs={
+                    "cluster_id": self.cluster_target_group.pk,
+                    "host_id": self.host_target_group_2.pk,
+                    "object_type": "host",
+                    "action_id": self.action_target_group.pk,
+                },
+            ),
+            data={
+                "verbose": False,
+            },
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        task = TaskLog.objects.last()
+        job = JobLog.objects.last()
+
+        re_prepare_job(task=task, job=job)
+
+        inventory_file = settings.RUN_DIR / str(job.pk) / "inventory.json"
+        with open(file=inventory_file, encoding=settings.ENCODING_UTF_8) as f:
+            target_hosts_data = loads(s=f.read())["all"]["children"]["target"]["hosts"]
+
+        self.assertIn(self.host_target_group_2.fqdn, target_hosts_data)
