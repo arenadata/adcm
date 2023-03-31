@@ -78,7 +78,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
     confirm: new FormGroup({
       password: new FormControl('', [
         CustomValidators.required,
-        Validators.minLength(5),
+        Validators.minLength(2),
         Validators.maxLength(128)
       ])
     })
