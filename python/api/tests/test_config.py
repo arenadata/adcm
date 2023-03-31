@@ -14,7 +14,7 @@ from copy import deepcopy
 from pathlib import Path
 
 from cm.adcm_config import ansible_decrypt
-from cm.models import ConfigLog
+from cm.models import ADCM, ConfigLog
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
@@ -258,3 +258,27 @@ class TestConfigSecretmapAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertIsNone(config_log.config["secretmap"])
+
+
+class TestADCMConfigMinMaxPassLengthAPI(BaseTestCase):
+    def test_min_pass_length_greater_than_max_fail(self):
+        adcm = ADCM.objects.first()
+
+        config_log = ConfigLog.objects.get(obj_ref=adcm.config)
+        config_log.config["auth_policy"]["max_password_length"] = 1
+        config_log.config["auth_policy"]["min_password_length"] = 2
+        config_log.config["global"]["adcm_url"] = "http://127.0.0.1:8000"
+        config_log.save(update_fields=["config", "attr"])
+
+        response: Response = self.client.post(
+            path=reverse("config-history", kwargs={"adcm_pk": adcm.pk}),
+            params={"view": "interface"},
+            data={"config": config_log.config, "attr": config_log.attr},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["desc"],
+            '"min_password_length" must be less or equal than "max_password_length"',
+        )

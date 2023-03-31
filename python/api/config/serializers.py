@@ -20,7 +20,8 @@ from cm.adcm_config import (
     ui_config,
 )
 from cm.api import update_obj_config
-from cm.models import PrototypeConfig
+from cm.errors import raise_adcm_ex
+from cm.models import ConfigLog, PrototypeConfig
 
 # pylint: disable=redefined-builtin
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
@@ -60,7 +61,31 @@ class ConfigObjectConfigSerializer(EmptySerializer):
 
 
 class ObjectConfigUpdateSerializer(ConfigObjectConfigSerializer):
-    def update(self, instance, validated_data):
+    def validate(self, attrs: dict) -> dict:
+        if not isinstance(attrs["config"], dict):
+            return attrs
+
+        auth_policy = attrs["config"].get("auth_policy")
+        if not auth_policy:
+            return attrs
+
+        max_password_length = auth_policy.get("max_password_length")
+        if not max_password_length:
+            return attrs
+
+        min_password_length = auth_policy.get("min_password_length")
+        if not min_password_length:
+            return attrs
+
+        if min_password_length > max_password_length:
+            raise_adcm_ex(
+                code="CONFIG_VALUE_ERROR",
+                msg='"min_password_length" must be less or equal than "max_password_length"',
+            )
+
+        return attrs
+
+    def update(self, instance: ConfigLog, validated_data: dict) -> ConfigLog:
         conf = validated_data.get("config")
         attr = validated_data.get("attr", {})
         desc = validated_data.get("description", "")
