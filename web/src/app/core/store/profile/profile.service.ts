@@ -66,7 +66,7 @@ export class ProfileService {
 
   setProfile(): Observable<RbacUserModel> {
     const { username, password, profile } = { ...this.user };
-    return this.http.put<RbacUserModel>(`${environment.apiRoot}rbac/me/`, { username, password, profile });
+    return this.http.patch<RbacUserModel>(`${environment.apiRoot}rbac/me/`, { username, profile });
   }
 
   setTextareaProfile(data: { key: string; value: number }): Observable<IUser> {
@@ -85,7 +85,7 @@ export class ProfileService {
     return this.http.post<IUser>(`${PROFILE_LINK}`, user);
   }
 
-  setPassword(password: string) {
-    return this.http.patch(`${environment.apiRoot}rbac/me/`, { password });
+  setPassword(password: string, currentPassword: string) {
+    return this.http.patch(`${environment.apiRoot}rbac/me/`, { password, current_password: currentPassword });
   }
 }
