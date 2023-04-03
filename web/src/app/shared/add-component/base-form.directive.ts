@@ -15,6 +15,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { BaseDirective } from '@app/adwp';
 
 import { ADD_SERVICE_PROVIDER, IAddService } from '@app/shared/add-component/add-service-model';
+import { ApiService } from "@app/core/api";
 
 @Directive({
   selector: '[appBaseForm]',
@@ -25,6 +26,7 @@ export class BaseFormDirective extends BaseDirective {
   constructor(
     @Inject(ADD_SERVICE_PROVIDER) public service: IAddService,
     public dialog: MatDialog,
+    public api?: ApiService
   ) {
     super();
   }

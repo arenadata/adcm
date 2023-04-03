@@ -24,20 +24,9 @@ export const passwordsConfirmValidator: ValidatorFn = (control: AbstractControl)
 })
 export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
   private _isFirstTouch = true;
-
-  isDisabled = (value) => {
-    return value?.type === 'ldap';
-  };
-
-  get userForm(): FormGroup {
-    return this.form.get('user') as FormGroup;
-  }
-
-  get confirmForm(): FormGroup {
-    return this.form.get('confirm') as FormGroup;
-  }
-
-  form = new FormGroup({
+  passMinLength = null;
+  passMaxLength = null;
+  form: FormGroup = new FormGroup({
     user: new FormGroup({
       id: new FormControl(null),
       is_superuser: new FormControl(null),
@@ -50,11 +39,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
         Validators.maxLength(150),
         Validators.pattern('^[a-zA-Z0-9_.-\/]*$')
       ]),
-      password: new FormControl(null, [
-        CustomValidators.required,
-        Validators.minLength(2),
-        Validators.maxLength(128)
-      ]),
+      password: new FormControl(null, this.passwordValidators),
       first_name: new FormControl(null, [
         CustomValidators.required,
         Validators.minLength(2),
@@ -76,18 +61,46 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
       group: new FormControl([])
     }),
     confirm: new FormGroup({
-      password: new FormControl('', [
-        CustomValidators.required,
-        Validators.minLength(2),
-        Validators.maxLength(128)
-      ])
+      password: new FormControl('', this.passwordValidators)
     })
   }, { validators: passwordsConfirmValidator });
 
+  isDisabled = (value) => {
+    return value?.type === 'ldap';
+  };
+
+  get passwordValidators() {
+    return [
+      CustomValidators.required,
+      Validators.minLength(this.passMinLength || 3),
+      Validators.maxLength(this.passMaxLength || 128),
+      Validators.pattern(new RegExp(/^[\s\S]*$/u))
+    ]
+  }
+
+  get userForm(): FormGroup {
+    return this.form.get('user') as FormGroup;
+  }
+
+  get confirmForm(): FormGroup {
+    return this.form.get('confirm') as FormGroup;
+  }
+
   ngOnInit(): void {
-    this._setValue(this.value);
-    this._initPasswordConfirmSubscription();
-    this.form.markAllAsTouched();
+    this.getGlobalSettings().subscribe((resp) => {
+      this.passMinLength = resp.config['auth_policy'].min_password_length;
+      this.passMaxLength = resp.config['auth_policy'].max_password_length;
+
+      const userForm: Partial<FormGroup> = this.form.controls.user;
+      const confirmForm: Partial<FormGroup> = this.form.controls.confirm;
+      userForm.controls['password'].setValidators(this.passwordValidators);
+      confirmForm.controls['password'].setValidators(this.passwordValidators);
+      this.form.updateValueAndValidity();
+
+      this._setValue(this.value);
+      this._initPasswordConfirmSubscription();
+      this.form.markAllAsTouched();
+    })
   }
 
   rbacBeforeSave(value: any): Partial<RbacUserModel> {

@@ -14,6 +14,7 @@ import { clearEmptyField } from '@app/core/types';
 import { BaseFormDirective } from '@app/shared/add-component/base-form.directive';
 import { take } from 'rxjs/operators';
 import { Params } from '@angular/router';
+import { IConfig } from "@app/shared/configuration/types";
 
 @Directive({
   selector: '[appRbacForm]',
@@ -62,5 +63,9 @@ export class RbacFormDirective<T extends { url: string } = { url: string }> exte
 
   updateFilter(key: string, value: string): void {
     this.filter = { ...this.filter, [key]: value?.trim() };
+  }
+
+  getGlobalSettings() {
+    return this.api.get<IConfig>('/api/v1/adcm/1/config/current/?noview')
   }
 }

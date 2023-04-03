@@ -10,13 +10,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
+import {AbstractControl, FormControl, FormGroup, ValidationErrors, ValidatorFn, Validators} from '@angular/forms';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 
 import { getProfileSelector, ProfileService, ProfileState } from '@app/core/store';
 import { BaseDirective } from '@app/shared/directives';
+import { IConfig } from "@app/shared/configuration/types";
+import { ApiService } from "@app/core/api";
+import {CustomValidators} from "@app/shared/validators/custom-validators";
+import {passwordsConfirmValidator} from "@app/components/rbac/user-form/rbac-user-form.component";
 
 @Component({
   selector: 'app-profile',
@@ -29,26 +33,9 @@ import { BaseDirective } from '@app/shared/directives';
         <hr />
         <div [formGroup]="cpForm">
           <h3>Change Password</h3>
-          <mat-form-field>
-            <input
-              matInput
-              placeholder="Password"
-              formControlName="password"
-              (input)="cpForm.get('cpassword').updateValueAndValidity()"
-              type="password"
-            />
-          </mat-form-field>
-          &nbsp;
-          <mat-form-field>
-            <input
-              matInput
-              placeholder="Confirm password"
-              formControlName="cpassword"
-              appConfirmEqualValidator="password"
-              type="password"
-            />
-          </mat-form-field>
-          &nbsp;
+          <adwp-input [form]="cpForm" label='Current password' controlName='current_password' type="password" ></adwp-input>
+          <adwp-input [form]="cpForm" label='New password' controlName='password' type="password" ></adwp-input>
+          <adwp-input [form]="cpForm" label='Confirm new password' controlName='confirm_password' type="password" ></adwp-input>
           <button mat-raised-button [disabled]="!cpForm.valid" (click)="changePassword()">Save</button>
         </div>
         <hr />
@@ -60,18 +47,38 @@ import { BaseDirective } from '@app/shared/directives';
     '.container { padding-top: 40px; }',
     'hr { margin: 40px 0; border: 0; border-top: dashed 1px rgb(140, 140, 140); }',
     'h3, h4, h5 { font-weight: normal; }',
+    'adwp-input { display: inline-flex; margin-right: 10px }'
   ],
 })
 export class ProfileComponent extends BaseDirective implements OnInit, OnDestroy {
   link: string;
   user$: Observable<ProfileState>;
+  passMinLength = null;
+  passMaxLength = null;
+
+  passwordsConfirmValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+    const password = control.get('password');
+    const confirm = control.get('confirm_password');
+
+    return password && confirm && password.value !== confirm.value ? { passwordsNotMatch: true } : null;
+  };
 
   cpForm = new FormGroup({
-    password: new FormControl('', Validators.required),
-    cpassword: new FormControl('', Validators.required),
-  });
+    current_password: new FormControl(null, [CustomValidators.required]),
+    password: new FormControl(null, this.passwordValidators),
+    confirm_password: new FormControl(null, this.passwordValidators),
+  }, { validators: this.passwordsConfirmValidator });
 
-  constructor(private router: Router, private store: Store<ProfileState>, private service: ProfileService) {
+  get passwordValidators() {
+    return [
+      CustomValidators.required,
+      Validators.minLength(this.passMinLength || 3),
+      Validators.maxLength(this.passMaxLength || 128),
+      Validators.pattern(new RegExp(/^[\s\S]*$/u))
+    ]
+  }
+
+  constructor(private router: Router, private store: Store<ProfileState>, private service: ProfileService, private api: ApiService) {
     super();
   }
 
@@ -79,11 +86,25 @@ export class ProfileComponent extends BaseDirective implements OnInit, OnDestroy
     this.user$ = this.store.select(getProfileSelector).pipe(
       this.takeUntil()
     );
+
+    this.getGlobalSettings().subscribe((resp) => {
+      this.passMinLength = resp.config['auth_policy'].min_password_length;
+      this.passMaxLength = resp.config['auth_policy'].max_password_length;
+
+      this.cpForm.controls['password'].setValidators(this.passwordValidators);
+      this.cpForm.controls['confirm_password'].setValidators(this.passwordValidators);
+      this.cpForm.updateValueAndValidity();
+    })
   }
 
   changePassword() {
     const password = this.cpForm.get('password').value;
-    this.service.setPassword(password).subscribe(() => this.router.navigate(['/login']));
+    const currentPassword = this.cpForm.get('current_password').value;
+    this.service.setPassword(password, currentPassword).subscribe(() => this.router.navigate(['/login']));
+  }
+
+  getGlobalSettings() {
+    return this.api.get<IConfig>('/api/v1/adcm/1/config/current/?noview');
   }
 
 }

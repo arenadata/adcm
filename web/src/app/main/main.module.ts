@@ -23,13 +23,15 @@ import { PageNotFoundComponent, FatalErrorComponent, GatewayTimeoutComponent } f
 import { BellComponent } from '@app/components/bell/bell.component';
 import { NotificationsComponent } from '@app/components/notifications/notifications.component';
 import { BellTaskLinkPipe } from '@app/pipes/bell-task-link.pipe';
+import { AdwpFormElementModule } from "@app/adwp";
 
 @NgModule({
-  imports: [
-    CommonModule,
-    SharedModule,
-    RouterModule,
-  ],
+    imports: [
+        CommonModule,
+        SharedModule,
+        RouterModule,
+        AdwpFormElementModule,
+    ],
   declarations: [
     LoginComponent,
     ProfileComponent,
