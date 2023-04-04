@@ -24,6 +24,7 @@ mitogen
 multipledispatch
 psycopg2-binary
 pycryptodome
+pydantic
 requests-toolbelt
 rstr
 ruyaml
