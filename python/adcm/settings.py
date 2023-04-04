@@ -103,8 +103,9 @@ MIDDLEWARE = [
     "csp.middleware.CSPMiddleware",
 ]
 
-CSP_DEFAULT_SRC = ["'none'"]
+CSP_DEFAULT_SRC = ["'self'"]
 CSP_FRAME_ANCESTORS = ["'none'"]
+CSP_STYLE_SRC = ["'self'", "'unsafe-inline'"]
 
 ROOT_URLCONF = "adcm.urls"
 
