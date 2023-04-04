@@ -18,10 +18,12 @@ from api.stack.serializers import (
     ADCMPrototypeDetailSerializer,
     ADCMPrototypeSerializer,
     BundleSerializer,
+    BundleServiceUIPrototypeSerializer,
     ClusterPrototypeDetailSerializer,
     ClusterPrototypeSerializer,
     ComponentPrototypeDetailSerializer,
     ComponentPrototypeSerializer,
+    ComponentPrototypeUISerializer,
     HostPrototypeDetailSerializer,
     HostPrototypeSerializer,
     LoadBundleSerializer,
@@ -271,6 +273,8 @@ class ServicePrototypeViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewS
     lookup_url_kwarg = "prototype_pk"
 
     def get_serializer_class(self):
+        if self.is_for_ui():
+            return BundleServiceUIPrototypeSerializer
         if self.action == "retrieve":
             return ServiceDetailPrototypeSerializer
         elif self.action == "action":
@@ -308,6 +312,8 @@ class ComponentPrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
     lookup_url_kwarg = "prototype_pk"
 
     def get_serializer_class(self):
+        if self.is_for_ui():
+            return ComponentPrototypeUISerializer
         if self.action == "retrieve":
             return ComponentPrototypeDetailSerializer
 
