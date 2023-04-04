@@ -207,29 +207,29 @@ LOGGING = {
         },
     },
     "formatters": {
-        "adwp": {
+        "adcm": {
             "format": "{asctime} {levelname} {module} {message}",
             "style": "{",
         },
-        "simple_formatter": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
     },
     "handlers": {
-        "file": {
+        "adcm_file": {
             "level": "DEBUG",
             "filters": ["require_debug_false"],
-            "formatter": "adwp",
+            "formatter": "adcm",
+            "class": "logging.FileHandler",
+            "filename": LOG_FILE,
+        },
+        "adcm_debug_file": {
+            "level": "DEBUG",
+            "filters": ["require_debug_false"],
+            "formatter": "adcm",
             "class": "logging.FileHandler",
             "filename": BASE_DIR / "data/log/adcm_debug.log",
         },
-        "adwp_file": {
-            "level": "DEBUG",
-            "formatter": "adwp",
-            "class": "logging.FileHandler",
-            "filename": BASE_DIR / "data/log/adwp.log",
-        },
         "background_task_file_handler": {
             "level": "DEBUG",
-            "formatter": "simple_formatter",
+            "formatter": "adcm",
             "class": "logging.handlers.TimedRotatingFileHandler",
             "filename": BASE_DIR / "data/log/cron_task.log",
             "when": "midnight",
@@ -244,19 +244,13 @@ LOGGING = {
         },
     },
     "loggers": {
-        "django": {
-            "handlers": ["file"],
+        "adcm": {
+            "handlers": ["adcm_file"],
             "level": "DEBUG",
             "propagate": True,
         },
-        "django.template": {
-            "level": "ERROR",
-        },
-        "django.utils.autoreload": {
-            "level": "INFO",
-        },
-        "django_auth_ldap": {
-            "handlers": ["file"],
+        "django": {
+            "handlers": ["adcm_debug_file"],
             "level": "DEBUG",
             "propagate": True,
         },
