@@ -81,9 +81,13 @@ def is_tls(ldap_uri: str) -> bool:
 
 def get_ldap_config() -> dict | None:
     adcm_object = ADCM.objects.first()
+    if not adcm_object:
+        return None
+
     current_configlog = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
     if current_configlog.attr["ldap_integration"]["active"]:
         return current_configlog.config["ldap_integration"]
+
     return None
 
 
