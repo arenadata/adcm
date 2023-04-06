@@ -82,12 +82,14 @@ def update(
     context_user: User = None,  # None is for use outside of web context
     *,
     partial: bool = False,
+    need_current_password: bool = True,
     username: str = Empty,
     first_name: str = Empty,
     last_name: str = Empty,
     email: str = Empty,
     is_superuser: bool = Empty,
     password: str = Empty,
+    current_password: str = Empty,
     profile: dict = Empty,
     groups: list = Empty,
     is_active: bool = Empty,
@@ -105,7 +107,7 @@ def update(
     if user_exist and (email != ""):
         email_user = User.objects.get(email=email)
         if email_user != user:
-            raise_adcm_ex("USER_CONFLICT", msg="User with the same email already exist")
+            raise_adcm_ex(code="USER_CONFLICT", msg="User with the same email already exist")
 
     names = {
         "username": username,
@@ -119,7 +121,13 @@ def update(
     if user.type == OriginType.LDAP and any(
         (value is not Empty and getattr(user, key) != value) for key, value in names.items()
     ):
-        raise_adcm_ex("USER_CONFLICT", msg="You cannot change LDAP type user")
+        raise_adcm_ex(code="USER_CONFLICT", msg='You can change only "profile" for LDAP type user')
+
+    is_password_changing = password is not Empty and not user.check_password(raw_password=password)
+    if (is_password_changing and need_current_password) and (
+        current_password is Empty or not user.check_password(raw_password=current_password)
+    ):
+        raise_adcm_ex(code="USER_PASSWORD_CURRENT_PASSWORD_REQUIRED_ERROR")
 
     set_not_empty_attr(user, partial, "first_name", first_name, "")
     set_not_empty_attr(user, partial, "last_name", last_name, "")

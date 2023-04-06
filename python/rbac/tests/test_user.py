@@ -26,64 +26,21 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_401_UNAUTHORIZED,
     HTTP_403_FORBIDDEN,
+    HTTP_409_CONFLICT,
 )
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
-class UserTestCase(BaseTestCase):
+class BaseUserTestCase(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
         adcm = ADCM.objects.first()
         self.config_log = ConfigLog.objects.filter(obj_ref=adcm.config).first()
 
-    def test_create_too_common_pass_fail(self):
-        response: Response = self.client.post(
-            reverse("rbac:user-list"),
-            data={"username": "test_user_new", "password": "qwerty"},
-        )
 
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["desc"], "This password is too common")
-
-    def test_create_only_numeric_pass_fail(self):
-        response: Response = self.client.post(
-            reverse("rbac:user-list"),
-            data={"username": "test_user_new", "password": "88002000600"},
-        )
-
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["desc"], "This password is entirely numeric")
-
-    def test_create_shorter_than_min_pass_fail(self):
-        response: Response = self.client.post(
-            reverse("rbac:user-list"),
-            data={
-                "username": "test_user_new",
-                "password": self.get_random_str_num(
-                    length=self.config_log.config["auth_policy"]["min_password_length"] - 1,
-                ),
-            },
-        )
-
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["desc"], "This password is shorter than min password length")
-
-    def test_create_longer_than_max_pass_fail(self):
-        response: Response = self.client.post(
-            reverse("rbac:user-list"),
-            data={
-                "username": "test_user_new",
-                "password": self.get_random_str_num(
-                    length=self.config_log.config["auth_policy"]["max_password_length"] + 1,
-                ),
-            },
-        )
-
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["desc"], "This password is longer than max password length")
-
+class UserTestCase(BaseUserTestCase):
     def test_create_success(self):
         response: Response = self.client.post(
             reverse("rbac:user-list"),
@@ -96,33 +53,6 @@ class UserTestCase(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-    def test_update_longer_than_max_pass_fail(self):
-        response: Response = self.client.patch(
-            reverse("rbac:user-detail", kwargs={"pk": self.test_user.pk}),
-            data={
-                "password": self.get_random_str_num(
-                    length=self.config_log.config["auth_policy"]["max_password_length"] + 1,
-                ),
-            },
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["desc"], "This password is longer than max password length")
-
-    def test_update_success(self):
-        response: Response = self.client.patch(
-            reverse("rbac:user-detail", kwargs={"pk": self.test_user.pk}),
-            data={
-                "password": self.get_random_str_num(
-                    length=self.config_log.config["auth_policy"]["max_password_length"] - 1,
-                ),
-            },
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_filter_success(self):
         response: Response = self.client.get(reverse("rbac:user-list"), {"type": OriginType.LOCAL})
@@ -285,7 +215,110 @@ class UserTestCase(BaseTestCase):
         self.assertEqual(self.test_user.login_attempts, 0)
         self.assertIsNone(self.test_user.blocked_at)
 
+    def test_change_profile_ldap_user_via_me_endpoint_success(self):
+        self.test_user.type = OriginType.LDAP
+        self.test_user.save(update_fields=["type"])
+
+        response: Response = self.client.patch(
+            reverse(viewname="rbac:me"),
+            data={"profile": {"test_profile_key": "test_profile_value"}},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_change_profile_ldap_user_via_user_endpoint_success(self):
+        self.test_user.type = OriginType.LDAP
+        self.test_user.save(update_fields=["type"])
+
+        response: Response = self.client.patch(
+            reverse(viewname="rbac:user-detail", kwargs={"pk": self.test_user.pk}),
+            data={"profile": {"test_profile_key": "test_profile_value"}},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+
+class UserPasswordTestCase(BaseUserTestCase):
+    def test_create_too_common_password_fail(self):
+        response: Response = self.client.post(
+            reverse("rbac:user-list"),
+            data={"username": "test_user_new", "password": "qwerty"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["desc"], "This password is too common")
+
+    def test_create_only_numeric_password_fail(self):
+        response: Response = self.client.post(
+            reverse("rbac:user-list"),
+            data={"username": "test_user_new", "password": "88002000600"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["desc"], "This password is entirely numeric")
+
+    def test_create_shorter_than_min_password_fail(self):
+        response: Response = self.client.post(
+            reverse("rbac:user-list"),
+            data={
+                "username": "test_user_new",
+                "password": self.get_random_str_num(
+                    length=self.config_log.config["auth_policy"]["min_password_length"] - 1,
+                ),
+            },
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["desc"], "This password is shorter than min password length")
+
+    def test_create_longer_than_max_password_fail(self):
+        response: Response = self.client.post(
+            reverse("rbac:user-list"),
+            data={
+                "username": "test_user_new",
+                "password": self.get_random_str_num(
+                    length=self.config_log.config["auth_policy"]["max_password_length"] + 1,
+                ),
+            },
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["desc"], "This password is longer than max password length")
+
+    def test_update_longer_than_max_password_fail(self):
+        response: Response = self.client.patch(
+            reverse("rbac:user-detail", kwargs={"pk": self.test_user.pk}),
+            data={
+                "password": self.get_random_str_num(
+                    length=self.config_log.config["auth_policy"]["max_password_length"] + 1,
+                ),
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["desc"], "This password is longer than max password length")
+
+    def test_update_password_success(self):
+        response: Response = self.client.patch(
+            reverse("rbac:user-detail", kwargs={"pk": self.test_user.pk}),
+            data={
+                "password": self.get_random_str_num(
+                    length=self.config_log.config["auth_policy"]["max_password_length"] - 1,
+                ),
+                "current_password": self.test_user_password,
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
     def test_change_password_no_current_password_fail(self):
+        self.test_user.is_superuser = False
+        self.test_user.save(update_fields=["is_superuser"])
+
         response: Response = self.client.patch(
             reverse("rbac:me"),
             data={"password": "new_pass"},
@@ -315,7 +348,7 @@ class UserTestCase(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-    def test_change_min_pass_length_add_user_success(self):
+    def test_change_min_password_length_add_user_success(self):
         adcm = ADCM.objects.first()
         config_log = ConfigLog.objects.filter(obj_ref=adcm.config).first()
         config_log.config["auth_policy"]["min_password_length"] = 1
@@ -343,3 +376,41 @@ class UserTestCase(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_change_password_ldap_user_via_me_endpoint_fail(self):
+        self.test_user.type = OriginType.LDAP
+        self.test_user.save(update_fields=["type"])
+
+        new_pass = "new_pass"
+        response: Response = self.client.patch(
+            reverse(viewname="rbac:me"),
+            data={"password": new_pass, "current_password": self.test_user_password},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.data["desc"], 'You can change only "profile" for LDAP type user')
+
+    def test_change_password_ldap_user_via_user_endpoint_fail(self):
+        self.test_user.type = OriginType.LDAP
+        self.test_user.save(update_fields=["type"])
+
+        new_pass = "new_very_long_pass"
+        response: Response = self.client.patch(
+            reverse(viewname="rbac:user-detail", kwargs={"pk": self.test_user.pk}),
+            data={"password": new_pass},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.data["desc"], 'You can change only "profile" for LDAP type user')
+
+    def test_admin_change_password_user_via_user_endpoint_success(self):
+        new_pass = "new_very_long_pass"
+        response: Response = self.client.patch(
+            reverse(viewname="rbac:user-detail", kwargs={"pk": self.test_user.pk}),
+            data={"password": new_pass},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)

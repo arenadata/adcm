@@ -85,6 +85,7 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
     )
     is_superuser = BooleanField(default=False)
     password = PasswordField(trim_whitespace=False)
+    current_password = PasswordField(trim_whitespace=False, required=False)
     url = HyperlinkedIdentityField(view_name="rbac:user-detail")
     profile = JSONField(required=False, default="")
     group = UserGroupSerializer(many=True, required=False, source="groups")
@@ -111,7 +112,13 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
     def update(self, instance, validated_data):
         context_user = self.context["request"].user
 
-        return update(user=instance, context_user=context_user, partial=self.partial, **validated_data)
+        return update(
+            user=instance,
+            context_user=context_user,
+            partial=self.partial,
+            need_current_password=False,
+            **validated_data,
+        )
 
     def create(self, validated_data):
         return create(**validated_data)
