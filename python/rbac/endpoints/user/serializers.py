@@ -92,6 +92,7 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
     built_in = BooleanField(read_only=True)
     type = CharField(read_only=True)
     is_active = BooleanField(required=False, default=True)
+    failed_login_attempts = IntegerField(read_only=True)
 
     class Meta:
         expandable_fields = {"group": (ExpandedGroupSerializer, {"many": True, "source": "groups"})}
