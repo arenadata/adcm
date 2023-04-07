@@ -588,28 +588,28 @@ def copy_stage_actions(stage_actions, prototype):
 
 def copy_stage_sub_actions(bundle: Bundle) -> None:
     sub_actions = []
-    for ssubaction in StageSubAction.objects.all():
-        if ssubaction.action.prototype.type == "component":
+    for stage_sub_action in StageSubAction.objects.order_by("id"):
+        if stage_sub_action.action.prototype.type == "component":
             parent = Prototype.objects.get(
                 bundle=bundle,
                 type="service",
-                name=ssubaction.action.prototype.parent.name,
+                name=stage_sub_action.action.prototype.parent.name,
             )
         else:
             parent = None
 
         action = Action.objects.get(
             prototype__bundle=bundle,
-            prototype__type=ssubaction.action.prototype.type,
-            prototype__name=ssubaction.action.prototype.name,
+            prototype__type=stage_sub_action.action.prototype.type,
+            prototype__name=stage_sub_action.action.prototype.name,
             prototype__parent=parent,
-            prototype__version=ssubaction.action.prototype.version,
-            name=ssubaction.action.name,
+            prototype__version=stage_sub_action.action.prototype.version,
+            name=stage_sub_action.action.name,
         )
-        sub = copy_obj(
-            ssubaction,
-            SubAction,
-            (
+        sub_action = copy_obj(
+            orig=stage_sub_action,
+            clone=SubAction,
+            fields=(
                 "name",
                 "display_name",
                 "script",
@@ -621,14 +621,15 @@ def copy_stage_sub_actions(bundle: Bundle) -> None:
                 "allow_to_terminate",
             ),
         )
-        sub.action = action
-        sub_actions.append(sub)
+        sub_action.action = action
+        sub_actions.append(sub_action)
 
     SubAction.objects.bulk_create(sub_actions)
 
 
 def copy_stage_component(stage_components, stage_proto, prototype, bundle):
     components = []
+
     for stage_component in stage_components:
         comp = copy_obj(
             stage_component,
@@ -655,11 +656,14 @@ def copy_stage_component(stage_components, stage_proto, prototype, bundle):
         components.append(comp)
 
     Prototype.objects.bulk_create(components)
-    for stage_prototype in StagePrototype.objects.filter(type="component", parent=stage_proto):
+
+    for stage_prototype in StagePrototype.objects.filter(type="component", parent=stage_proto).order_by("id"):
         proto = Prototype.objects.get(name=stage_prototype.name, type="component", parent=prototype, bundle=bundle)
-        copy_stage_actions(stage_actions=StageAction.objects.filter(prototype=stage_prototype), prototype=proto)
+        copy_stage_actions(
+            stage_actions=StageAction.objects.filter(prototype=stage_prototype).order_by("id"), prototype=proto
+        )
         copy_stage_config(
-            stage_configs=StagePrototypeConfig.objects.filter(prototype=stage_prototype),
+            stage_configs=StagePrototypeConfig.objects.filter(prototype=stage_prototype).order_by("id"),
             prototype=proto,
         )
 
@@ -685,6 +689,7 @@ def copy_stage_import(stage_imports, prototype):
 
 def copy_stage_config(stage_configs, prototype):
     target_config = []
+
     for stage_config in stage_configs:
         stage_config_copy = copy_obj(
             stage_config,
@@ -731,28 +736,32 @@ def copy_stage(bundle_hash, bundle_proto):
             msg=f'Bundle "{bundle_proto.name}" {bundle_proto.version} already installed',
         )
 
-    stage_prototypes = StagePrototype.objects.exclude(type="component")
+    stage_prototypes = StagePrototype.objects.exclude(type="component").order_by("id")
     copy_stage_prototype(stage_prototypes, bundle)
 
     for stage_prototype in stage_prototypes:
         proto = Prototype.objects.get(name=stage_prototype.name, type=stage_prototype.type, bundle=bundle)
-        copy_stage_actions(StageAction.objects.filter(prototype=stage_prototype), proto)
-        copy_stage_config(StagePrototypeConfig.objects.filter(prototype=stage_prototype), proto)
+        copy_stage_actions(
+            stage_actions=StageAction.objects.filter(prototype=stage_prototype).order_by("id"), prototype=proto
+        )
+        copy_stage_config(
+            stage_configs=StagePrototypeConfig.objects.filter(prototype=stage_prototype).order_by("id"), prototype=proto
+        )
         copy_stage_component(
-            stage_components=StagePrototype.objects.filter(parent=stage_prototype, type="component"),
+            stage_components=StagePrototype.objects.filter(parent=stage_prototype, type="component").order_by("id"),
             stage_proto=stage_prototype,
             prototype=proto,
             bundle=bundle,
         )
 
-        for stage_prototype_export in StagePrototypeExport.objects.filter(prototype=stage_prototype):
+        for stage_prototype_export in StagePrototypeExport.objects.filter(prototype=stage_prototype).order_by("id"):
             prototype_export = PrototypeExport(prototype=proto, name=stage_prototype_export.name)
             prototype_export.save()
 
-        copy_stage_import(StagePrototypeImport.objects.filter(prototype=stage_prototype), proto)
+        copy_stage_import(StagePrototypeImport.objects.filter(prototype=stage_prototype).order_by("id"), proto)
 
     copy_stage_sub_actions(bundle)
-    copy_stage_upgrade(StageUpgrade.objects.all(), bundle)
+    copy_stage_upgrade(StageUpgrade.objects.order_by("id"), bundle)
 
     return bundle
 
