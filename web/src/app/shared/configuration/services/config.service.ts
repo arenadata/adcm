@@ -22,7 +22,7 @@ export interface IConfigListResponse {
 export interface IConfigService {
   getConfig(url: string): Observable<IConfig>;
 
-  getHistoryList(url: string, currentVersionId: number): Observable<CompareConfig[]>;
+  getHistoryList(url: string): Observable<CompareConfig[]>;
 
   send(url: string, data: any): Observable<IConfig>;
 
@@ -43,12 +43,12 @@ export class ConfigService implements IConfigService {
     return this.api.get<IConfig>(`${url}current/`);
   }
 
-  getHistoryList(url: string, currentVersionId: number): Observable<CompareConfig[]> {
+  getHistoryList(url: string): Observable<CompareConfig[]> {
     return this.api.get<IConfigResponse>(url).pipe(
-      switchMap((config) => this.api.get<IConfigListResponse | IConfig[]>(config.history)),
+      switchMap((config) => this.api.get<IConfigListResponse | IConfig[]>(config.history + '?fields=id,date,description')),
       // ToDo remove it when API will be consistent
       map((value) => Array.isArray(value) ? value as IConfig[] : value.results),
-      map((h) => h.filter((a) => a.id !== currentVersionId).map((b) => ({
+      map((h) => h.map((b) => ({
         ...b,
         color: getRandomColor()
       }))));
