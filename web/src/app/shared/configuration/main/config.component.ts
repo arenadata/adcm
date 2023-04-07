@@ -52,6 +52,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   historyShow = false;
   isLock = false;
   isLoading = false;
+  isLoadingHistory = false;
   attributeUniqId: string = null;
 
   worker$: Observable<WorkerInstance>;
@@ -129,10 +130,13 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     this.filter(this.tools.filterParams);
     this.cd.detectChanges();
 
-    if (!this.isGroupConfig) {
-      this.service.getHistoryList(this.configUrl, this.rawConfig.value.id).subscribe((h) => {
+    if (!this.isGroupConfig && !this.isLoadingHistory) {
+      this.isLoadingHistory = true;
+      this.service.getHistoryList(this.configUrl).subscribe((h) => {
         this.historyComponent.compareConfig = h;
-        this.tools.disabledHistory = !h.length;
+        this.historyComponent.currentVersion = this.rawConfig.value.id;
+        this.tools.disabledHistory = !h.length || h.length === 1;
+        this.isLoadingHistory = false;
         this.cd.detectChanges();
       });
     }
@@ -212,7 +216,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   }
 
   compareVersion(ids: number[]): void {
-    if (ids) this.service.compareConfig(ids, this.fields.dataOptions, this.historyComponent.compareConfig);
+    if (ids) this.service.compareConfig(ids, this.fields.dataOptions, this.historyComponent.compareConfig, this.configUrl);
   }
 
   reset(): void {

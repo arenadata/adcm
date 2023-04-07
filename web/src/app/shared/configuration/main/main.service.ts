@@ -94,14 +94,18 @@ export class MainService {
     return this.configService.send(url, data);
   }
 
-  getHistoryList(url: string, currentVersionId: number) {
-    return this.configService.getHistoryList(url, currentVersionId);
+  getHistoryList(url: string) {
+    return this.configService.getHistoryList(url);
   }
 
-  compareConfig(ids: number[], dataOptions: TFormOptions[], compareConfig: CompareConfig[]) {
+  compareConfig(ids: number[], dataOptions: TFormOptions[], compareConfig: CompareConfig[], configUrl: string) {
     dataOptions.map((a) => this.runClear(a, ids));
     const cc = ids.map((id) => compareConfig.find((a) => a.id === id));
-    dataOptions.map((a) => this.runCheck(a, cc));
+
+    this.changeVersion(configUrl, ids[0]).subscribe((resp) => {
+      const mockConfig = this.fields.toFormGroup(this.fields.getPanels(resp));
+      dataOptions.map((a) => this.runCheck(a, cc, mockConfig.value));
+    });
   }
 
   runClear(a: TFormOptions, ids: number[]) {
@@ -110,17 +114,18 @@ export class MainService {
     return a;
   }
 
-  runCheck(a: TFormOptions, configs: CompareConfig[]) {
-    if ('options' in a) a.options.map((b) => this.runCheck(b, configs));
-    else this.checkField(a, configs);
+  runCheck(a: TFormOptions, configs: CompareConfig[], mockConfig: IFieldStack[]) {
+    if ('options' in a) a.options.map((b) => this.runCheck(b, configs, mockConfig));
+    else this.checkField(a, configs, mockConfig);
     return a;
   }
 
-  checkField(a: IFieldOptions, configs: CompareConfig[]) {
+  checkField(a: IFieldOptions, configs: CompareConfig[], mockConfig: IFieldStack[]) {
     configs
       .filter((b) => a.compare.every((e) => e.id !== b.id))
       .map((c) => {
-        const co = this.findFieldiCompare(a.key, c);
+        const co = this.findFieldCompare(a.key, { ...c, config: mockConfig });
+        console.log(co)
         if (!co) {
           if (String(a.value) && String(a.value) !== 'null') a.compare.push({
             id: c.id,
@@ -147,7 +152,7 @@ export class MainService {
     return a;
   }
 
-  findFieldiCompare(key: string, cc: CompareConfig) {
+  findFieldCompare(key: string, cc: CompareConfig) {
     const value = key
       .split('/')
       .reverse()

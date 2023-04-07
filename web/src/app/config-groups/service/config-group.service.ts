@@ -28,11 +28,11 @@ export class ConfigGroupService implements IConfigService {
     );
   }
 
-  getHistoryList(url: string, currentVersionId: number): Observable<CompareConfig[]> {
+  getHistoryList(url: string): Observable<CompareConfig[]> {
     return this.api.get<IConfigResponse>(url).pipe(
       switchMap((config) => this.api.get<IConfigListResponse>(config.history)),
       map((value) => value.results),
-      map((h) => h.filter((a) => a.id !== currentVersionId).map((b) => ({
+      map((h) => h.map((b) => ({
         ...b,
         color: getRandomColor()
       }))));

@@ -20,14 +20,14 @@ import { CompareConfig } from '../types';
   template: `
     <mat-toolbar>
       <mat-form-field>
-        <mat-select #vs placeholder="History" (valueChange)="changeVersion($event); vs.value = ''">
+        <mat-select #vs placeholder="History" [formControl]="historyVersion">
           <mat-option *ngFor="let item of compareConfig; trackBy: trackById" [value]="item.id">[#{{ item.id }}] - {{ item.date | date: 'short' }} {{ item.description }} </mat-option>
         </mat-select>
       </mat-form-field>
       <span>&nbsp;&nbsp;</span>
       <mat-form-field>
         <mat-select placeholder="Compare to" [formControl]="comparator" multiple>
-          <mat-option *ngFor="let item of compareConfig; trackBy: trackById" [value]="item.id" [appColorOption]="item.color">
+          <mat-option *ngFor="let item of currentCompareConfig; trackBy: trackById" [value]="item.id" [appColorOption]="item.color">
             [#{{ item.id }}] - {{ item.date | date: 'short' }} {{ item.description }}
           </mat-option>
         </mat-select>
@@ -38,13 +38,20 @@ import { CompareConfig } from '../types';
 })
 export class HistoryComponent extends BaseDirective implements OnInit {
   @Input() compareConfig: CompareConfig[];
+  @Input() currentVersion: number;
   @Output() version = new EventEmitter<number>();
   @Output() compare = new EventEmitter<number[]>();
 
+  historyVersion = new FormControl();
   comparator = new FormControl();
+
+  get currentCompareConfig() {
+    return this.compareConfig ? this.compareConfig.filter((config) => config.id !== this.currentVersion) : [];
+  }
 
   ngOnInit() {
     this.comparator.valueChanges.pipe(this.takeUntil()).subscribe((ids: number[]) => this.compare.emit(ids));
+    this.historyVersion.valueChanges.pipe(this.takeUntil()).subscribe((id: number) => this.version.emit(id));
   }
 
   changeVersion(id: number) {
@@ -56,7 +63,6 @@ export class HistoryComponent extends BaseDirective implements OnInit {
   }
 
   reset() {
-    this.compareConfig = [];
     this.comparator.reset();
   }
 }
