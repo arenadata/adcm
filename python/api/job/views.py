@@ -241,6 +241,7 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
     ordering_fields = ("id", "name")
     permission_required = ["cm.view_logstorage"]
     lookup_url_kwarg = "log_pk"
+    ordering = ["id"]
 
     def get_queryset(self, *args, **kwargs):
         queryset = super().get_queryset(*args, **kwargs)

@@ -54,6 +54,7 @@ class ProviderList(PermissionListMixin, PaginatedView):
     filterset_fields = ("name", "prototype_id")
     ordering_fields = ("id", "name", "state", "prototype__display_name", "prototype__version_order")
     permission_required = ["cm.view_hostprovider"]
+    ordering = ["id"]
 
     @audit
     def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
@@ -76,6 +77,7 @@ class ProviderDetail(PermissionListMixin, DetailView):
     lookup_field = "id"
     lookup_url_kwarg = "provider_id"
     error_code = "PROVIDER_NOT_FOUND"
+    ordering = ["id"]
 
     @audit
     def delete(self, request, *args, **kwargs):  # pylint: disable=unused-argument
@@ -94,6 +96,7 @@ class ProviderUpgrade(GenericUIView):
     serializer_class = ProviderUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
     filter_backends = (AdcmFilterBackend, AdcmOrderingFilter)
+    ordering = ["id"]
 
     def get_ordering(self):
         order = AdcmOrderingFilter()
@@ -118,6 +121,7 @@ class ProviderUpgradeDetail(GenericUIView):
     queryset = Upgrade.objects.all()
     serializer_class = ProviderUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
+    ordering = ["id"]
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         """
@@ -136,6 +140,7 @@ class DoProviderUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
     serializer_class = DoProviderUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
+    ordering = ["id"]
 
     @audit
     def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument

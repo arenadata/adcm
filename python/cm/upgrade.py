@@ -226,7 +226,7 @@ def check_upgrade_import(  # noqa: C901
 
 def check_upgrade(obj: Cluster | HostProvider, upgrade: Upgrade) -> tuple[bool, str]:
     if obj.locked:
-        concerns = [i.name or "Action lock" for i in obj.concerns.all()]
+        concerns = [i.name or "Action lock" for i in obj.concerns.order_by("id")]
 
         return False, f"{obj} has blocking concerns to address: {concerns}"
 

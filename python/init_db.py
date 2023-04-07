@@ -81,7 +81,7 @@ def recheck_issues():
     """
     ConcernItem.objects.filter(type=ConcernType.ISSUE).delete()
     for model in chain([Cluster, HostProvider]):
-        for obj in model.objects.all():
+        for obj in model.objects.order_by("id"):
             update_hierarchy_issues(obj)
 
 

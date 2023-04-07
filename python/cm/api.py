@@ -96,7 +96,7 @@ def load_service_map():  # noqa: C901
     for service_component in ServiceComponent.objects.filter(prototype__monitoring="passive"):
         passive[service_component.pk] = True
 
-    for hostcomponent in HostComponent.objects.all():
+    for hostcomponent in HostComponent.objects.order_by("id"):
         if hostcomponent.component.pk in passive:
             continue
 
@@ -148,7 +148,7 @@ def load_mm_objects():
     for service in ClusterObject.objects.filter(cluster__in=clusters).prefetch_related("servicecomponent_set"):
         if service.maintenance_mode == MaintenanceMode.ON:
             service_ids.add(service.pk)
-        for component in service.servicecomponent_set.all():
+        for component in service.servicecomponent_set.order_by("id"):
             if component.maintenance_mode == MaintenanceMode.ON:
                 component_ids.add(component.pk)
 
@@ -360,9 +360,10 @@ def _clean_up_related_hc(service: ClusterObject) -> None:
         HostComponent.objects.filter(cluster=service.cluster)
         .exclude(service=service)
         .select_related("host", "component")
+        .order_by("id")
     )
     new_hc_list = []
-    for hostcomponent in queryset.all():
+    for hostcomponent in queryset:
         new_hc_list.append((hostcomponent.service, hostcomponent.host, hostcomponent.component))
 
     save_hc(service.cluster, new_hc_list)
@@ -412,7 +413,7 @@ def delete_cluster(cluster, cancel_tasks=True):
         cancel_locking_tasks(cluster, obj_deletion=True)
 
     cluster_pk = cluster.pk
-    hosts = cluster.host_set.all()
+    hosts = cluster.host_set.order_by("id")
     host_pks = [str(host.pk) for host in hosts]
     hosts.update(maintenance_mode=MaintenanceMode.OFF)
     logger.debug(
@@ -441,7 +442,7 @@ def remove_host_from_cluster(host: Host) -> Host:
         host.cluster = None
         host.save()
 
-        for group in cluster.group_config.all():
+        for group in cluster.group_config.order_by("id"):
             group.hosts.remove(host)
             update_hierarchy_issues(obj=host)
 
@@ -679,9 +680,9 @@ def still_existed_hc(cluster, host_comp_list):
 def save_hc(cluster, host_comp_list):
     # pylint: disable=too-many-locals
 
-    hc_queryset = HostComponent.objects.filter(cluster=cluster)
+    hc_queryset = HostComponent.objects.filter(cluster=cluster).order_by("id")
     service_map = {hc.service for hc in hc_queryset}
-    old_hosts = {i.host for i in hc_queryset.select_related("host").all()}
+    old_hosts = {i.host for i in hc_queryset.select_related("host")}
     new_hosts = {i[1] for i in host_comp_list}
     for removed_host in old_hosts.difference(new_hosts):
         removed_host.remove_from_concerns(CTX.lock)

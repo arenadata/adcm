@@ -43,7 +43,7 @@ def _update_groups(user: models.User, groups: [Empty, list[dict]]) -> None:
     if groups is Empty:
         return
 
-    user_groups = {g.id: g.group for g in user.groups.all()}
+    user_groups = {g.id: g.group for g in user.groups.order_by("id")}
     new_groups = [g["id"] for g in groups]
 
     for group_id in new_groups:

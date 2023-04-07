@@ -242,7 +242,7 @@ class Policy(models.Model):
 
     def remove_permissions(self):
         with atomic():
-            for policy_permission in self.model_perm.all():
+            for policy_permission in self.model_perm.order_by("id"):
                 if policy_permission.policy_set.count() <= 1:
                     if policy_permission.user:
                         policy_permission.user.user_permissions.remove(policy_permission.permission)
@@ -252,11 +252,11 @@ class Policy(models.Model):
 
                 policy_permission.policy_set.remove(self)
 
-            for uop in self.user_object_perm.all():
+            for uop in self.user_object_perm.order_by("id"):
                 if uop.policy_set.count() <= 1:
                     uop.delete()
 
-            for gop in self.group_object_perm.all():
+            for gop in self.group_object_perm.order_by("id"):
                 if gop.policy_set.count() <= 1:
                     gop.delete()
 
@@ -271,7 +271,7 @@ class Policy(models.Model):
             return [param_obj]
 
         obj_list = []
-        for obj in self.object.all():
+        for obj in self.object.order_by("id"):
             obj_list.append(obj.object)
 
         return obj_list
@@ -286,7 +286,7 @@ class Policy(models.Model):
 
     @atomic
     def apply_without_deletion(self):
-        for user in self.user.all():
+        for user in self.user.order_by("id"):
             self.role.apply(self, user, None)
 
         for group in self.group.all():

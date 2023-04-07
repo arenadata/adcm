@@ -203,7 +203,7 @@ def get_group_config(obj: ADCMEntity, host: Host) -> dict | None:
 
 def get_host_vars(host: Host, obj: ADCMEntity) -> dict:
     variables = {}
-    if not host.group_config.all().exists():
+    if not host.group_config.exists():
         return variables
 
     if isinstance(obj, Cluster):

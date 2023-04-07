@@ -86,6 +86,7 @@ class GroupConfigHostViewSet(
     permission_classes = (DjangoObjectPermissionsAudit,)
     permission_required = ["view_host"]
     lookup_url_kwarg = "host_id"
+    ordering = ["id"]
 
     @audit
     def create(self, request, *args, **kwargs):
@@ -165,6 +166,7 @@ class GroupConfigConfigViewSet(
     serializer_class = GroupConfigConfigSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
     permission_required = ["view_objectconfig"]
+    ordering = ["id"]
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -241,6 +243,7 @@ class GroupConfigViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):
     filterset_class = GroupConfigFilterSet
     permission_classes = (DjangoObjectPermissionsAudit,)
     permission_required = ["cm.view_groupconfig"]
+    ordering = ["id"]
 
     @audit
     def create(self, request, *args, **kwargs):

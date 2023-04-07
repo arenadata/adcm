@@ -92,6 +92,7 @@ class ConcernItemList(PaginatedView):
     permission_classes = (IsAuthenticated,)
     filterset_class = ConcernFilter
     ordering_fields = ("name",)
+    ordering = ["id"]
 
 
 class ConcernItemDetail(DetailView):
@@ -106,3 +107,4 @@ class ConcernItemDetail(DetailView):
     lookup_field = "id"
     lookup_url_kwarg = "concern_id"
     error_code = "CONCERNITEM_NOT_FOUND"
+    ordering = ["id"]
