@@ -78,7 +78,8 @@ func startHTTP(httpPort string, hub Hub) {
 	router.GET("/api/v1/", apiRoot)
 
 	router.GET("/ws/event/", func(w http.ResponseWriter, r *http.Request) {
-		if !wsTokenAuth(w, r, hub) {
+		if !isADCMUser(r, hub) {
+		    ErrOut(w, r, "AUTH_ERROR")
 			return
 		}
 		initWS(hub.EventWS, w, r)

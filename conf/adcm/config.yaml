@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 2.4
+  version: 2.5
 
   actions:
     run_ldap_sync:
@@ -46,9 +46,6 @@
           required: false
           ui_options:
             no_confirm: true
-        - name: "whitelisted_domains"
-          type: list
-          required: false
     - name: "yandex_oauth"
       display_name: "Yandex Auth"
       type: "group"
