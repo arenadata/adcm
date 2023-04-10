@@ -82,7 +82,6 @@ INSTALLED_APPS = [
     "drf_yasg",
     "rest_framework",
     "api.apps.APIConfig",
-    "corsheaders",
     "rest_framework.authtoken",
     "social_django",
     "guardian",
@@ -99,7 +98,6 @@ MIDDLEWARE = [
     "audit.middleware.LoginMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "csp.middleware.CSPMiddleware",
 ]
 
@@ -128,6 +126,8 @@ TEMPLATES = [
 WSGI_APPLICATION = "adcm.wsgi.application"
 LOGIN_URL = "/api/v1/auth/login/"
 LOGIN_REDIRECT_URL = "/admin/intro/"
+
+SOCIAL_AUTH_USER_MODEL = "rbac.User"
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],

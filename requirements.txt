@@ -5,7 +5,6 @@ coreapi
 cryptography
 Django~=3.0
 django-auth-ldap
-django-cors-headers
 django-csp
 django-filter
 django-guardian
