@@ -16,10 +16,11 @@ import json
 import os
 import subprocess
 import sys
+from functools import partial
 from pathlib import Path
 
 from django.conf import settings
-from django.db import transaction
+from django.db.transaction import atomic, on_commit
 
 import adcm.init_django  # pylint: disable=unused-import # noqa: F401
 import cm.job
@@ -173,10 +174,12 @@ def run_ansible(job_id):
 def run_upgrade(job):
     event = Event()
     cm.job.set_job_status(job.id, JobStatus.RUNNING, event)
-    out_file, err_file = process_err_out_file(job.id, "internal")
+    out_file, err_file = process_err_out_file(job_id=job.id, job_type="internal")
+    script = job.sub_action.script if job.sub_action else job.action.script
+
     try:
-        with transaction.atomic():
-            script = job.sub_action.script if job.sub_action else job.action.script
+        with atomic():
+            on_commit(func=partial(post_event, event="change_hostcomponentmap", obj=job.task.task_object))
 
             if script == "bundle_switch":
                 bundle_switch(obj=job.task.task_object, upgrade=job.action.upgrade)
@@ -184,13 +187,15 @@ def run_upgrade(job):
                 bundle_revert(obj=job.task.task_object)
 
             switch_hc(task=job.task, action=job.action)
+
     except AdcmEx as e:
         err_file.write(e.msg)
-        cm.job.set_job_status(job.id, JobStatus.FAILED, event)
+        cm.job.set_job_status(job_id=job.id, status=JobStatus.FAILED, event=event)
         out_file.close()
         err_file.close()
         sys.exit(1)
-    cm.job.set_job_status(job.id, JobStatus.SUCCESS, event)
+
+    cm.job.set_job_status(job_id=job.id, status=JobStatus.SUCCESS, event=event)
     event.send_state()
     out_file.close()
     err_file.close()

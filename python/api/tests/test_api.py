@@ -861,8 +861,7 @@ class TestAPI2(BaseTestCase):
 
     @patch("cm.api.load_service_map")
     @patch("cm.api.update_hierarchy_issues")
-    @patch("cm.api.post_event")
-    def test_save_hc(self, mock_post_event, mock_update_issues, mock_load_service_map):
+    def test_save_hc(self, mock_update_issues, mock_load_service_map):
         cluster_object = ClusterObject.objects.create(prototype=self.prototype, cluster=self.cluster)
         host = Host.objects.create(prototype=self.prototype, cluster=self.cluster)
         component = Prototype.objects.create(
@@ -889,7 +888,6 @@ class TestAPI2(BaseTestCase):
 
         self.assertListEqual(hc_list, [HostComponent.objects.first()])
 
-        mock_post_event.assert_called_once_with(event="change_hostcomponentmap", obj=self.cluster)
         mock_update_issues.assert_called()
         mock_load_service_map.assert_called_once()
 
