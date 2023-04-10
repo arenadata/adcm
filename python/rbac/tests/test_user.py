@@ -68,7 +68,7 @@ class UserTestCase(BaseUserTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 4)
 
-    def test_login_attempts(self):
+    def test_failed_login_attempts(self):
         self.client.post(path=reverse("rbac:logout"))
 
         self.config_log.config["auth_policy"]["login_attempt_limit"] = 2
@@ -83,7 +83,7 @@ class UserTestCase(BaseUserTestCase):
         self.test_user.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
-        self.assertEqual(self.test_user.login_attempts, 1)
+        self.assertEqual(self.test_user.failed_login_attempts, 1)
         self.assertIsNone(self.test_user.blocked_at)
 
         response: Response = self.client.post(
@@ -94,7 +94,7 @@ class UserTestCase(BaseUserTestCase):
         self.test_user.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
-        self.assertEqual(self.test_user.login_attempts, 2)
+        self.assertEqual(self.test_user.failed_login_attempts, 2)
         self.assertIsNotNone(self.test_user.blocked_at)
 
         response: Response = self.client.post(
@@ -105,7 +105,7 @@ class UserTestCase(BaseUserTestCase):
         self.test_user.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.assertEqual(self.test_user.login_attempts, 2)
+        self.assertEqual(self.test_user.failed_login_attempts, 2)
         self.assertIsNotNone(self.test_user.blocked_at)
 
         self.test_user.refresh_from_db()
@@ -122,7 +122,7 @@ class UserTestCase(BaseUserTestCase):
         self.test_user.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
-        self.assertEqual(self.test_user.login_attempts, 3)
+        self.assertEqual(self.test_user.failed_login_attempts, 3)
         self.assertIsNotNone(self.test_user.blocked_at)
 
         self.test_user.refresh_from_db()
@@ -137,10 +137,10 @@ class UserTestCase(BaseUserTestCase):
         self.test_user.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(self.test_user.login_attempts, 0)
+        self.assertEqual(self.test_user.failed_login_attempts, 0)
         self.assertIsNone(self.test_user.blocked_at)
 
-    def test_reset_login_attempts_not_superuser_fail(self):
+    def test_reset_failed_login_attempts_not_superuser_fail(self):
         self.client.post(path=reverse("rbac:logout"))
 
         response: Response = self.client.post(
@@ -151,7 +151,7 @@ class UserTestCase(BaseUserTestCase):
         self.test_user.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
-        self.assertEqual(self.test_user.login_attempts, 1)
+        self.assertEqual(self.test_user.failed_login_attempts, 1)
         self.assertIsNone(self.test_user.blocked_at)
 
         self.no_rights_user.user_permissions.add(
@@ -169,7 +169,7 @@ class UserTestCase(BaseUserTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response: Response = self.client.post(
-            path=reverse("rbac:user-reset-login-attempts", kwargs={"pk": self.test_user.pk}),
+            path=reverse("rbac:user-reset-failed-login-attempts", kwargs={"pk": self.test_user.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -177,19 +177,19 @@ class UserTestCase(BaseUserTestCase):
 
         self.test_user.refresh_from_db()
 
-        self.assertEqual(self.test_user.login_attempts, 1)
+        self.assertEqual(self.test_user.failed_login_attempts, 1)
         self.assertIsNone(self.test_user.blocked_at)
 
-    def test_reset_login_attempts_wrong_user_fail(self):
+    def test_reset_failed_login_attempts_wrong_user_fail(self):
         user_pks = User.objects.all().values_list("pk", flat=True).order_by("-pk")
         response: Response = self.client.post(
-            path=reverse("rbac:user-reset-login-attempts", kwargs={"pk": user_pks[0] + 1}),
+            path=reverse("rbac:user-reset-failed-login-attempts", kwargs={"pk": user_pks[0] + 1}),
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["error"], f"User with ID {user_pks[0] + 1} was not found.")
 
-    def test_reset_login_attempts_success(self):
+    def test_reset_failed_login_attempts_success(self):
         self.client.post(path=reverse("rbac:logout"))
 
         response: Response = self.client.post(
@@ -200,19 +200,19 @@ class UserTestCase(BaseUserTestCase):
         self.test_user.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
-        self.assertEqual(self.test_user.login_attempts, 1)
+        self.assertEqual(self.test_user.failed_login_attempts, 1)
         self.assertIsNone(self.test_user.blocked_at)
 
         self.login()
 
         response: Response = self.client.post(
-            path=reverse("rbac:user-reset-login-attempts", kwargs={"pk": self.test_user.pk}),
+            path=reverse("rbac:user-reset-failed-login-attempts", kwargs={"pk": self.test_user.pk}),
         )
 
         self.test_user.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(self.test_user.login_attempts, 0)
+        self.assertEqual(self.test_user.failed_login_attempts, 0)
         self.assertIsNone(self.test_user.blocked_at)
 
     def test_change_profile_ldap_user_via_me_endpoint_success(self):

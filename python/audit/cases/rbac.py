@@ -131,7 +131,7 @@ def rbac_case(
                 response=response,
             )
 
-        case ["rbac", "user", user_pk] | ["rbac", "user", user_pk, "reset_login_attempts"]:
+        case ["rbac", "user", user_pk] | ["rbac", "user", user_pk, "reset_failed_login_attempts"]:
             data = RbacCaseData(view=view, deleted_obj=deleted_obj, obj_pk=user_pk)
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.USER,
@@ -139,7 +139,7 @@ def rbac_case(
                 data=data,
             )
 
-            if view.action == "reset_login_attempts":
+            if view.action == "reset_failed_login_attempts":
                 audit_operation.name = "User login attempts reset"
 
     return audit_operation, audit_object

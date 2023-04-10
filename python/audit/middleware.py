@@ -74,17 +74,17 @@ class LoginMiddleware:
 
         if not user.blocked_at:
             if result == AuditSessionLoginResult.SUCCESS:
-                user.login_attempts = 0
-                user.save(update_fields=["login_attempts"])
+                user.failed_login_attempts = 0
+                user.save(update_fields=["failed_login_attempts"])
 
                 result = None
 
             if result == AuditSessionLoginResult.WRONG_PASSWORD:
-                user.login_attempts += 1
-                if user.login_attempts >= login_attempt_limit:
+                user.failed_login_attempts += 1
+                if user.failed_login_attempts >= login_attempt_limit:
                     user.blocked_at = datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
 
-                user.save(update_fields=["login_attempts", "blocked_at"])
+                user.save(update_fields=["failed_login_attempts", "blocked_at"])
 
                 result = None
 
@@ -93,15 +93,15 @@ class LoginMiddleware:
                 tz=ZoneInfo(settings.TIME_ZONE)
             ):
                 if result == AuditSessionLoginResult.SUCCESS:
-                    user.login_attempts = 0
+                    user.failed_login_attempts = 0
                     user.blocked_at = None
-                    user.save(update_fields=["login_attempts", "blocked_at"])
+                    user.save(update_fields=["failed_login_attempts", "blocked_at"])
 
                     result = None
 
                 if result == AuditSessionLoginResult.WRONG_PASSWORD:
-                    user.login_attempts += 1
-                    user.save(update_fields=["login_attempts", "blocked_at"])
+                    user.failed_login_attempts += 1
+                    user.save(update_fields=["failed_login_attempts", "blocked_at"])
 
                     result = None
             else:

@@ -34,6 +34,7 @@ class MeUserSerializer(ModelSerializer):
             "profile",
             "type",
             "is_active",
+            "failed_login_attempts",
         )
         read_only_fields = (
             "id",
@@ -44,4 +45,5 @@ class MeUserSerializer(ModelSerializer):
             "is_superuser",
             "type",
             "is_active",
+            "failed_login_attempts",
         )

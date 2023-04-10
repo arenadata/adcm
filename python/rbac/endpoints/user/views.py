@@ -61,7 +61,7 @@ class UserViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
 
     @audit
     @action(methods=["post"], detail=True)
-    def reset_login_attempts(self, request: Request, pk: int) -> Response:
+    def reset_failed_login_attempts(self, request: Request, pk: int) -> Response:
         if not request.user.is_superuser:
             return Response(data={"error": "Only superuser can reset login attempts."}, status=HTTP_400_BAD_REQUEST)
 
@@ -69,8 +69,8 @@ class UserViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
         if not user:
             return Response(data={"error": f"User with ID {pk} was not found."}, status=HTTP_400_BAD_REQUEST)
 
-        user.login_attempts = 0
+        user.failed_login_attempts = 0
         user.blocked_at = None
-        user.save(update_fields=["login_attempts", "blocked_at"])
+        user.save(update_fields=["failed_login_attempts", "blocked_at"])
 
         return Response()

@@ -243,9 +243,9 @@ class TestUserAudit(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(log=log, operation_result=AuditLogOperationResult.DENIED, user=self.no_rights_user)
 
-    def test_reset_login_attempts_success(self):
+    def test_reset_failed_login_attempts_success(self):
         response: Response = self.client.post(
-            path=reverse("rbac:user-reset-login-attempts", kwargs={"pk": self.test_user.pk}),
+            path=reverse("rbac:user-reset-failed-login-attempts", kwargs={"pk": self.test_user.pk}),
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -258,10 +258,10 @@ class TestUserAudit(BaseTestCase):
             operation_name="User login attempts reset",
         )
 
-    def test_reset_login_attempts_fail(self):
+    def test_reset_failed_login_attempts_fail(self):
         user_pks = User.objects.all().values_list("pk", flat=True).order_by("-pk")
         response: Response = self.client.post(
-            path=reverse("rbac:user-reset-login-attempts", kwargs={"pk": user_pks[0] + 1}),
+            path=reverse("rbac:user-reset-failed-login-attempts", kwargs={"pk": user_pks[0] + 1}),
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -275,10 +275,10 @@ class TestUserAudit(BaseTestCase):
         self.assertEqual(log.user.pk, self.test_user.pk)
         self.assertEqual(log.object_changes, {})
 
-    def test_reset_login_attempts_denied(self):
+    def test_reset_failed_login_attempts_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("rbac:user-reset-login-attempts", kwargs={"pk": self.test_user.pk}),
+                path=reverse("rbac:user-reset-failed-login-attempts", kwargs={"pk": self.test_user.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

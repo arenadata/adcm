@@ -73,7 +73,7 @@ class User(AuthUser):
 
     profile = JSONField(default=str)
     built_in = BooleanField(default=False, null=False)
-    login_attempts = SmallIntegerField(default=0)
+    failed_login_attempts = SmallIntegerField(default=0)
     blocked_at = DateTimeField(null=True)
 
     def delete(self, using=None, keep_parents=False):
