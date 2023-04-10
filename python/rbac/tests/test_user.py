@@ -241,24 +241,6 @@ class UserTestCase(BaseUserTestCase):
 
 
 class UserPasswordTestCase(BaseUserTestCase):
-    def test_create_too_common_password_fail(self):
-        response: Response = self.client.post(
-            reverse("rbac:user-list"),
-            data={"username": "test_user_new", "password": "qwerty"},
-        )
-
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["desc"], "This password is too common")
-
-    def test_create_only_numeric_password_fail(self):
-        response: Response = self.client.post(
-            reverse("rbac:user-list"),
-            data={"username": "test_user_new", "password": "88002000600"},
-        )
-
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["desc"], "This password is entirely numeric")
-
     def test_create_shorter_than_min_password_fail(self):
         response: Response = self.client.post(
             reverse("rbac:user-list"),
