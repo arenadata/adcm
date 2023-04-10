@@ -12,11 +12,6 @@
 
 from cm.errors import raise_adcm_ex
 from cm.models import ADCM, ConfigLog
-from django.contrib.auth.password_validation import (
-    CommonPasswordValidator,
-    NumericPasswordValidator,
-)
-from django.core.exceptions import ValidationError
 
 
 class ADCMLengthPasswordValidator:
@@ -47,19 +42,3 @@ class ADCMLengthPasswordValidator:
         return (
             f"Your password can’t be shorter than {self.min_password_length} or longer than {self.max_password_length}."
         )
-
-
-class ADCMCommonPasswordValidator(CommonPasswordValidator):
-    def validate(self, password, user=None):
-        try:
-            super().validate(password=password, user=user)
-        except ValidationError:
-            raise_adcm_ex(code="USER_PASSWORD_TOO_COMMON_ERROR")
-
-
-class ADCMNumericPasswordValidator(NumericPasswordValidator):
-    def validate(self, password, user=None):
-        try:
-            super().validate(password=password, user=user)
-        except ValidationError:
-            raise_adcm_ex(code="USER_PASSWORD_ENTIRELY_NUMERIC_ERROR")

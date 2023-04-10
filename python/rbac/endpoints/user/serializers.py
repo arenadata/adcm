@@ -16,11 +16,7 @@ from django.contrib.auth.password_validation import validate_password
 from rbac.endpoints.fields import PasswordField
 from rbac.models import Group, User
 from rbac.services.user import create, update
-from rbac.validators import (
-    ADCMCommonPasswordValidator,
-    ADCMLengthPasswordValidator,
-    ADCMNumericPasswordValidator,
-)
+from rbac.validators import ADCMLengthPasswordValidator
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.fields import (
     BooleanField,
@@ -101,11 +97,7 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
         if attrs.get("password"):
             validate_password(
                 password=attrs["password"],
-                password_validators=[
-                    ADCMCommonPasswordValidator(),
-                    ADCMNumericPasswordValidator(),
-                    ADCMLengthPasswordValidator(),
-                ],
+                password_validators=[ADCMLengthPasswordValidator()],
             )
 
         return attrs
