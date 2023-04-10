@@ -28,6 +28,8 @@ class TestBundle(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
+        self.files_dir = settings.BASE_DIR / "python" / "api" / "tests" / "files"
+
         self.bundle_1 = Bundle.objects.create(
             name="test_bundle_1",
             version="123",
@@ -245,3 +247,68 @@ class TestBundle(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.data["code"], "BUNDLE_VERSION_ERROR")
+
+    def test_upload_hc_apply_without_hc_acl_job_fail(self):
+        bundle_filename = "hc_apply_without_hc_acl_job.tar"
+        self.upload_bundle(path=Path(self.files_dir, bundle_filename))
+
+        response: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": bundle_filename},
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
+
+    def test_upload_hc_apply_without_hc_acl_task_fail(self):
+        bundle_filename = "hc_apply_without_hc_acl_task.tar"
+        self.upload_bundle(path=Path(self.files_dir, bundle_filename))
+
+        response: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": bundle_filename},
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
+
+    def test_upload_hc_apply_wrong_internal_script_fail(self):
+        bundle_filename = "hc_apply_action_wrong_script_bundle_switch.tar"
+        self.upload_bundle(path=Path(self.files_dir, bundle_filename))
+
+        response: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": bundle_filename},
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
+
+    def test_upload_hc_apply_upgrade_success(self):
+        bundle_filename = "upgrade_hc_apply_success.tar"
+        self.upload_bundle(path=Path(self.files_dir, bundle_filename))
+
+        response: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": bundle_filename},
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_upload_hc_apply_upgrade_no_hc_acl_fail(self):
+        bundle_filename = "upgrade_hc_apply_no_hc_acl.tar"
+        self.upload_bundle(path=Path(self.files_dir, bundle_filename))
+
+        response: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": bundle_filename},
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "INVALID_UPGRADE_DEFINITION")
+
+    def test_upload_hc_apply_upgrade_wrong_script_fail(self):
+        bundle_filename = "upgrade_hc_apply_wrong_script.tar"
+        self.upload_bundle(path=Path(self.files_dir, bundle_filename))
+
+        response: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": bundle_filename},
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "INVALID_UPGRADE_DEFINITION")

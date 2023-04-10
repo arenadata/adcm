@@ -145,7 +145,7 @@ def start_subprocess(job_id, cmd, conf, out_file, err_file):
     return ret
 
 
-def run_ansible(job_id):
+def run_ansible(job_id: int) -> None:
     logger.debug("job_runner.py starts to run ansible job %s", job_id)
     conf = read_config(job_id)
     playbook = conf["job"]["playbook"]
@@ -171,7 +171,7 @@ def run_ansible(job_id):
     sys.exit(ret)
 
 
-def run_upgrade(job):
+def run_internal(job: JobLog) -> None:
     event = Event()
     cm.job.set_job_status(job.id, JobStatus.RUNNING, event)
     out_file, err_file = process_err_out_file(job_id=job.id, job_type="internal")
@@ -185,8 +185,12 @@ def run_upgrade(job):
                 bundle_switch(obj=job.task.task_object, upgrade=job.action.upgrade)
             elif script == "bundle_revert":
                 bundle_revert(obj=job.task.task_object)
+            elif script == "hc_apply":
+                job.task.restore_hc_on_fail = False
+                job.task.save(update_fields=["restore_hc_on_fail"])
 
-            switch_hc(task=job.task, action=job.action)
+            if script != "hc_apply":
+                switch_hc(task=job.task, action=job.action)
 
     except AdcmEx as e:
         err_file.write(e.msg)
@@ -195,14 +199,14 @@ def run_upgrade(job):
         err_file.close()
         sys.exit(1)
 
-    cm.job.set_job_status(job_id=job.id, status=JobStatus.SUCCESS, event=event)
+    cm.job.set_job_status(job.id, JobStatus.SUCCESS, event)
     event.send_state()
     out_file.close()
     err_file.close()
     sys.exit(0)
 
 
-def run_python(job):
+def run_python(job: JobLog) -> None:
     out_file, err_file = process_err_out_file(job.id, "python")
     conf = read_config(job.id)
     script_path = conf["job"]["playbook"]
@@ -244,11 +248,11 @@ def main(job_id):
     job = JobLog.objects.get(id=job_id)
     job_type = job.sub_action.script_type if job.sub_action else job.action.script_type
     if job_type == "internal":
-        run_upgrade(job)
+        run_internal(job=job)
     elif job_type == "python":
-        run_python(job)
+        run_python(job=job)
     else:
-        run_ansible(job_id)
+        run_ansible(job_id=job_id)
 
 
 def do_job():

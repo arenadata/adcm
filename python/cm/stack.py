@@ -366,24 +366,25 @@ def check_upgrade(prototype: StagePrototype, config: dict) -> None:
 
 def check_upgrade_scripts(prototype: StagePrototype, config: dict, label: str) -> None:
     ref = proto_ref(prototype=prototype)
+    obj_ref = f"{label} of {ref}".capitalize()
+    is_hc_acl_present = bool(config.get("hc_acl", False))
     count = 0
 
     if "scripts" in config:
         for action in config["scripts"]:
-            if action["script_type"] == "internal":
+            if check_internal_script(
+                config=action,
+                allowed_scripts=("bundle_switch",),
+                is_hc_acl_present=is_hc_acl_present,
+                obj_ref=obj_ref,
+                err_code="INVALID_UPGRADE_DEFINITION",
+            ):
                 count += 1
 
                 if count > 1:
                     raise_adcm_ex(
                         code="INVALID_UPGRADE_DEFINITION",
                         msg=f'Script with script_type "internal" must be unique in {label} of {ref}',
-                    )
-
-                if action["script"] != "bundle_switch":
-                    raise_adcm_ex(
-                        code="INVALID_UPGRADE_DEFINITION",
-                        msg=f'Script with script_type "internal" should be marked '
-                        f'as "bundle_switch" in {label} of {ref}',
                     )
 
         if count == 0:
@@ -625,26 +626,63 @@ def save_upgrade_action(
     return save_action(proto=prototype, config=config, bundle_hash=bundle_hash, action_name=name)
 
 
-def check_internal_script(config: dict, name: str, ref: str) -> None:
-    if config["script_type"] == "internal" and config["script"] != "bundle_revert":
+def check_internal_script(
+    config: dict,
+    allowed_scripts: tuple[str, ...],
+    is_hc_acl_present: bool,
+    obj_ref: str,
+    err_code: str = "INVALID_OBJECT_DEFINITION",
+) -> bool:
+    if config["script_type"] != "internal":
+        return False
+
+    hc_apply = "hc_apply"
+
+    allowed_scripts = {*allowed_scripts, hc_apply}
+
+    if config["script"] not in allowed_scripts:
         raise_adcm_ex(
-            code="INVALID_OBJECT_DEFINITION",
-            msg=f"Action {name} of {ref} uses script_type `internal` without `bundle_revert` script",
+            code=err_code,
+            msg=f"{obj_ref}: only `{allowed_scripts}` internal scripts allowed here, got `{config['script']}`",
         )
+
+    if config["script"] == hc_apply and not is_hc_acl_present:
+        raise_adcm_ex(
+            code=err_code,
+            msg=f"{obj_ref}: `{hc_apply}` requires `hc_acl` declaration",
+        )
+
+    if config["script"] == hc_apply:
+        return False
+
+    return True
 
 
 def save_actions(prototype: StagePrototype, config: dict, bundle_hash: str) -> None:
     if not in_dict(dictionary=config, key="actions"):
         return
 
+    prototype_ref = proto_ref(prototype=prototype)
     for name in sorted(config["actions"]):
         action_config = config["actions"][name]
+        is_hc_acl_present = bool(action_config.get("hc_acl", False))
+        obj_ref = f"Action {name} of {prototype_ref}"
 
         if action_config["type"] == settings.JOB_TYPE:
-            check_internal_script(config=action_config, name=name, ref=proto_ref(prototype=prototype))
+            check_internal_script(
+                config=action_config,
+                allowed_scripts=("bundle_revert",),
+                is_hc_acl_present=is_hc_acl_present,
+                obj_ref=obj_ref,
+            )
         else:
             for subaction_config in action_config["scripts"]:
-                check_internal_script(config=subaction_config, name=name, ref=proto_ref(prototype=prototype))
+                check_internal_script(
+                    config=subaction_config,
+                    allowed_scripts=("bundle_revert",),
+                    is_hc_acl_present=is_hc_acl_present,
+                    obj_ref=obj_ref,
+                )
 
         save_action(proto=prototype, config=action_config, bundle_hash=bundle_hash, action_name=name)
 
