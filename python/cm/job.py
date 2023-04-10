@@ -17,6 +17,7 @@ import subprocess
 from collections.abc import Hashable
 from configparser import ConfigParser
 from datetime import datetime
+from functools import partial
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -89,8 +90,8 @@ from cm.status_api import post_event
 from cm.utils import get_env_with_venv_path
 from cm.variant import process_variant
 from django.conf import settings
-from django.db import transaction
 from django.db.models import JSONField
+from django.db.transaction import atomic, on_commit
 from rbac.roles import re_apply_policy_for_jobs
 
 
@@ -166,18 +167,30 @@ def prepare_task(
     if not attr:
         attr = {}
 
-    with transaction.atomic():  # pylint: disable=too-many-locals
-        task = create_task(action, obj, conf, attr, old_hc, hosts, verbose, post_upgrade_hc)
+    with atomic():
+        # pylint: disable=too-many-locals
+        on_commit(func=partial(post_event, event="change_hostcomponentmap", obj=cluster))
+
+        task = create_task(
+            action=action,
+            obj=obj,
+            conf=conf,
+            attr=attr,
+            hostcomponent=old_hc,
+            hosts=hosts,
+            verbose=verbose,
+            post_upgrade_hc=post_upgrade_hc,
+        )
         if host_map or (hasattr(action, "upgrade") and host_map is not None):
-            save_hc(cluster, host_map)
+            save_hc(cluster=cluster, host_comp_list=host_map)
 
         if conf:
-            new_conf = process_config_and_attr(task, conf, attr, spec)
-            process_file_type(task, spec, conf)
+            new_conf = process_config_and_attr(obj=task, conf=conf, attr=attr, spec=spec)
+            process_file_type(obj=task, spec=spec, conf=conf)
             task.config = new_conf
             task.save()
 
-    re_apply_policy_for_jobs(obj, task)
+    re_apply_policy_for_jobs(action_object=obj, task=task)
 
     return task
 
@@ -832,12 +845,21 @@ def finish_task(task: TaskLog, job: JobLog | None, status: str):
     obj = task.task_object
     state, multi_state_set, multi_state_unset = get_state(action, job, status)
 
-    with transaction.atomic():
-        set_action_state(action, task, obj, state, multi_state_set, multi_state_unset)
-        restore_hc(task, action, status)
+    with atomic():
+        on_commit(func=partial(post_event, event="change_hostcomponentmap", obj=get_object_cluster(obj=obj)))
+
+        set_action_state(
+            action=action,
+            task=task,
+            obj=obj,
+            state=state,
+            multi_state_set=multi_state_set,
+            multi_state_unset=multi_state_unset,
+        )
+        restore_hc(task=task, action=action, status=status)
         task.unlock_affected()
-        set_task_status(task, status, CTX.event)
-        update_hierarchy_issues(obj)
+        set_task_status(task=task, status=status, event=CTX.event)
+        update_hierarchy_issues(obj=obj)
 
     upgrade = Upgrade.objects.filter(action=action).first()
     if upgrade:
