@@ -22,6 +22,7 @@ class ObjectConfigViewSet(PermissionListMixin, ReadOnlyModelViewSet):  # pylint:
     serializer_class = ObjectConfigSerializer
     permission_classes = (DjangoObjectPermissions,)
     permission_required = ["cm.view_objectconfig"]
+    ordering = ["id"]
 
     def get_queryset(self, *args, **kwargs):
         if self.request.user.has_perm("cm.view_settings_of_adcm"):

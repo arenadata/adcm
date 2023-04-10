@@ -23,6 +23,7 @@ class JobStats(PermissionListMixin, GenericUIView):
     serializer_class = StatsSerializer
     permission_classes = (permissions.IsAuthenticated,)
     permission_required = ["cm.view_joblog"]
+    ordering = ["id"]
 
     def get(self, request, pk):  # pylint: disable=unused-argument
         jobs = self.get_queryset().filter(id__gt=pk)
@@ -44,6 +45,7 @@ class TaskStats(PermissionListMixin, GenericUIView):
     serializer_class = StatsSerializer
     permission_classes = (permissions.IsAuthenticated,)
     permission_required = ["cm.view_tasklog"]
+    ordering = ["id"]
 
     def get(self, request, pk):  # pylint: disable=unused-argument
         tasks = self.get_queryset().filter(id__gt=pk)

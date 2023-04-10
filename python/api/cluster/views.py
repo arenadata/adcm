@@ -95,6 +95,7 @@ class ClusterList(PermissionListMixin, PaginatedView):
     filterset_fields = ("name", "prototype_id")
     ordering_fields = ("id", "name", "state", "prototype__display_name", "prototype__version_order")
     permission_required = [VIEW_CLUSTER_PERM]
+    ordering = ["id"]
 
     @audit
     def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
@@ -114,6 +115,7 @@ class ClusterDetail(PermissionListMixin, DetailView):
     lookup_field = "id"
     lookup_url_kwarg = "cluster_id"
     error_code = "CLUSTER_NOT_FOUND"
+    ordering = ["id"]
 
     @audit
     def patch(self, request, *args, **kwargs):  # pylint: disable=unused-argument
@@ -161,6 +163,7 @@ class ClusterImport(GenericUIView):
     serializer_class = ImportSerializer
     serializer_class_post = PostImportSerializer
     permission_classes = (IsAuthenticated,)
+    ordering = ["id"]
 
     @staticmethod
     def get(request, *args, **kwargs):  # pylint: disable=unused-argument
@@ -188,6 +191,7 @@ class ClusterBindList(GenericUIView):
     serializer_class = ClusterBindSerializer
     serializer_class_post = DoBindSerializer
     permission_classes = (IsAuthenticated,)
+    ordering = ["id"]
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
@@ -210,6 +214,7 @@ class ClusterBindDetail(GenericUIView):
     queryset = ClusterBind.objects.all()
     serializer_class = BindSerializer
     permission_classes = (IsAuthenticated,)
+    ordering = ["id"]
 
     @staticmethod
     def get_obj(kwargs, bind_id):  # pylint: disable=unused-argument
@@ -241,6 +246,7 @@ class ClusterUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
     serializer_class = ClusterUpgradeSerializer
     permission_classes = (IsAuthenticated,)
+    ordering = ["id"]
 
     def get_ordering(self):
         order = AdcmOrderingFilter()
@@ -260,6 +266,7 @@ class ClusterUpgradeDetail(GenericUIView):
     queryset = Upgrade.objects.all()
     serializer_class = ClusterUpgradeSerializer
     permission_classes = (IsAuthenticated,)
+    ordering = ["id"]
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
@@ -274,6 +281,7 @@ class DoClusterUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
     serializer_class = DoClusterUpgradeSerializer
     permission_classes = (IsAuthenticated,)
+    ordering = ["id"]
 
     @audit
     def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
@@ -302,6 +310,7 @@ class StatusList(GenericUIView):
     permission_classes = (IsAuthenticated,)
     queryset = HostComponent.objects.all()
     serializer_class = ClusterStatusSerializer
+    ordering = ["id"]
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
@@ -320,6 +329,7 @@ class HostComponentList(GenericUIView):
     serializer_class_ui = HostComponentUISerializer
     serializer_class_post = HostComponentSaveSerializer
     permission_classes = (IsAuthenticated,)
+    ordering = ["id"]
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
@@ -358,6 +368,7 @@ class HostComponentDetail(GenericUIView):
     queryset = HostComponent.objects.all()
     serializer_class = HostComponentSerializer
     permission_classes = (IsAuthenticated,)
+    ordering = ["id"]
 
     def get_obj(self, cluster_id, hs_id):
         cluster = get_object_for_user(self.request.user, VIEW_CLUSTER_PERM, Cluster, id=cluster_id)

@@ -106,7 +106,7 @@ def update_bundle(bundle):
 
 def order_model_versions(model):
     items = []
-    for obj in model.objects.all():
+    for obj in model.objects.order_by("id"):
         items.append(obj)
     ver = ""
     count = 0
@@ -306,7 +306,7 @@ def update_obj(dest, source, fields):
 
 
 def re_check_actions():
-    for act in StageAction.objects.all():
+    for act in StageAction.objects.order_by("id"):
         if not act.hostcomponentmap:
             continue
 
@@ -769,7 +769,7 @@ def copy_stage(bundle_hash, bundle_proto):
 def update_bundle_from_stage(  # noqa: C901
     bundle,
 ):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
-    for stage_prototype in StagePrototype.objects.all():
+    for stage_prototype in StagePrototype.objects.order_by("id"):
         try:
             prototype = Prototype.objects.get(
                 bundle=bundle,
@@ -951,7 +951,7 @@ def update_bundle_from_stage(  # noqa: C901
             prototype_import.save()
 
     Upgrade.objects.filter(bundle=bundle).delete()
-    for stage_upgrade in StageUpgrade.objects.all():
+    for stage_upgrade in StageUpgrade.objects.order_by("id"):
         upg = copy_obj(
             stage_upgrade,
             Upgrade,
@@ -1015,7 +1015,7 @@ def delete_bundle(bundle):
     bundle.delete()
 
     for role in Role.objects.filter(class_name="ParentRole"):
-        if not role.child.all():
+        if not role.child.order_by("id"):
             role.delete()
 
     ProductCategory.re_collect()

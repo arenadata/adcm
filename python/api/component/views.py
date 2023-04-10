@@ -61,6 +61,7 @@ class ComponentListView(PermissionListMixin, PaginatedView):
     filterset_fields = ("cluster_id", "service_id")
     ordering_fields = ("state", "prototype__display_name", "prototype__version_order")
     permission_required = ["cm.view_servicecomponent"]
+    ordering = ["id"]
 
     def get_queryset(self, *args, **kwargs):
         queryset = super().get_queryset(*args, **kwargs)
@@ -76,6 +77,7 @@ class ComponentDetailView(PermissionListMixin, DetailView):
     permission_required = ["cm.view_servicecomponent"]
     lookup_url_kwarg = "component_id"
     error_code = ServiceComponent.__error_code__
+    ordering = ["id"]
 
     def get_queryset(self, *args, **kwargs):
         queryset = super().get_queryset(*args, **kwargs)
@@ -89,6 +91,7 @@ class ComponentMaintenanceModeView(GenericUIView):
     serializer_class = ComponentChangeMaintenanceModeSerializer
     lookup_field = "id"
     lookup_url_kwarg = "component_id"
+    ordering = ["id"]
 
     @update_mm_objects
     @audit
@@ -115,9 +118,10 @@ class StatusList(GenericUIView):
     queryset = HostComponent.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = ComponentStatusSerializer
+    ordering = ["id"]
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
-        queryset = get_component_queryset(ServiceComponent.objects.all(), request.user, kwargs)
+        queryset = get_component_queryset(ServiceComponent.objects.order_by("id"), request.user, kwargs)
         component = get_object_for_user(request.user, "cm.view_servicecomponent", queryset, id=kwargs["component_id"])
         if self._is_for_ui():
             host_components = self.get_queryset().filter(component=component)

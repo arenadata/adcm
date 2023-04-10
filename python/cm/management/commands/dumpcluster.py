@@ -147,7 +147,7 @@ def get_groups(object_id, model_name):
         group = get_object(GroupConfig, group_config.id, fields)
         group["config"] = get_config(group["config"])
         group["model_name"] = model_name
-        group["hosts"] = [host.id for host in group_config.hosts.all()]
+        group["hosts"] = [host.id for host in group_config.hosts.order_by("id")]
         groups.append(group)
 
     return groups

@@ -81,6 +81,6 @@ def role_update(role: Role, partial, **kwargs) -> Role:
     if child:
         update_m2m_field(role.child, child)
 
-    for policy in role.policy_set.all():
+    for policy in role.policy_set.order_by("id"):
         policy.apply()
     return role
