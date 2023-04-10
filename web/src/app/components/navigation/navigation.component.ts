@@ -17,8 +17,13 @@ import { IIssues } from '@app/models/issue';
           <div class="link">
             <a routerLink="{{ item.url }}" [title]="item.title | uppercase">{{ item.title | uppercase }}</a>
           </div>
-          <app-actions-button *ngIf="item?.entity?.typeName !== 'group_config'"
-                              [row]="item?.entity"></app-actions-button>
+          <app-actions-button
+            *ngIf="
+              item?.entity?.typeName !== 'group_config' &&
+              item?.entity?.typeName !== 'job' &&
+              item?.entity?.typeName !== 'bundle'"
+            [row]="item?.entity"
+          ></app-actions-button>
           <app-upgrade
             *ngIf="['cluster', 'provider'].includes(item?.entity?.typeName)"
             [row]="item?.entity"
