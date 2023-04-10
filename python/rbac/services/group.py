@@ -25,7 +25,7 @@ def _update_users(group: models.Group, users: [Empty, list[dict]]) -> None:
         return
     if group.type == models.OriginType.LDAP:
         raise_adcm_ex("GROUP_CONFLICT", msg="You can't change users in LDAP group")
-    group_users = {u.id: u for u in group.user_set.all()}
+    group_users = {u.id: u for u in group.user_set.order_by("id")}
     new_users = [u["id"] for u in users]
 
     for user_id in new_users:

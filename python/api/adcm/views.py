@@ -25,6 +25,7 @@ class ADCMViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
     queryset = ADCM.objects.select_related("prototype").all()
     serializer_class = ADCMSerializer
     lookup_url_kwarg = "adcm_pk"
+    ordering = ["id"]
 
     def get_serializer_class(self):
         if self.is_for_ui():

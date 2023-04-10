@@ -76,18 +76,18 @@ class HostFilter(drf_filters.FilterSet):
     cluster_is_null = drf_filters.BooleanFilter(field_name="cluster_id", lookup_expr="isnull")
     provider_is_null = drf_filters.BooleanFilter(field_name="provider_id", lookup_expr="isnull")
     group_config = drf_filters.ModelChoiceFilter(
-        queryset=GroupConfig.objects.all(),
+        queryset=GroupConfig.objects.order_by("id"),
         field_name="group_config",
         label="GroupConfig",
     )
     hostcomponent__service_id = drf_filters.ModelChoiceFilter(
-        queryset=ClusterObject.objects.all(),
+        queryset=ClusterObject.objects.order_by("id"),
         field_name="hostcomponent__service_id",
         label="HostComponentService",
         distinct=True,
     )
     hostcomponent__component_id = drf_filters.ModelChoiceFilter(
-        queryset=ServiceComponent.objects.all(),
+        queryset=ServiceComponent.objects.order_by("id"),
         field_name="hostcomponent__component_id",
         label="HostComponentComponent",
         distinct=True,
@@ -154,6 +154,7 @@ class HostList(PermissionListMixin, PaginatedView):
         "prototype__display_name",
         "prototype__version_order",
     )
+    ordering = ["id"]
 
     def get_queryset(self, *args, **kwargs):
         queryset = super().get_queryset(*args, **kwargs)
@@ -229,6 +230,7 @@ class HostDetail(PermissionListMixin, DetailView):
     lookup_field = "id"
     lookup_url_kwarg = "host_id"
     error_code = "HOST_NOT_FOUND"
+    ordering = ["id"]
 
     def _update_host_object(  # pylint: disable=unused-argument
         self,
@@ -295,6 +297,7 @@ class HostMaintenanceModeView(GenericUIView):
     serializer_class = HostChangeMaintenanceModeSerializer
     lookup_field = "id"
     lookup_url_kwarg = "host_id"
+    ordering = ["id"]
 
     @update_mm_objects
     @audit
@@ -322,6 +325,7 @@ class StatusList(GenericUIView):
     queryset = HostComponent.objects.all()
     permission_classes = (IsAuthenticated,)
     serializer_class = HostStatusSerializer
+    ordering = ["id"]
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = None

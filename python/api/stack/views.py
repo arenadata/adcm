@@ -116,6 +116,7 @@ class UploadBundleView(CreateModelMixin, GenericUIViewSet):
     permission_classes = (DjangoObjectPermissionsAudit,)
     authentication_classes = (CsrfOffSessionAuthentication, TokenAuthentication)
     parser_classes = (MultiPartParser,)
+    ordering = ["id"]
 
     @audit
     def create(self, request: Request, *args, **kwargs) -> Response:
@@ -135,6 +136,7 @@ class LoadBundleView(CreateModelMixin, GenericUIViewSet):
     queryset = Bundle.objects.all()
     serializer_class = LoadBundleSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
+    ordering = ["id"]
 
     @audit
     def create(self, request: Request, *args, **kwargs) -> Response:
@@ -153,6 +155,7 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
     filterset_fields = ("name", "version")
     ordering_fields = ("id", "name", "version_order")
     lookup_url_kwarg = "bundle_pk"
+    ordering = ["id"]
 
     def get_permissions(self):
         if self.action == "list":
@@ -213,6 +216,7 @@ class PrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
     filterset_fields = ("name", "bundle_id", "license")
     ordering_fields = ("display_name", "version_order")
     lookup_url_kwarg = "prototype_pk"
+    ordering = ["id"]
 
     def get_permissions(self):
         if self.action == "list":
@@ -254,6 +258,7 @@ class ProtoActionViewSet(RetrieveModelMixin, GenericUIViewSet):
     queryset = Action.objects.all()
     serializer_class = StackActionSerializer
     lookup_url_kwarg = "action_pk"
+    ordering = ["id"]
 
     def retrieve(self, request: Request, *args, **kwargs) -> Response:
         obj = check_obj(Action, kwargs["action_pk"], "ACTION_NOT_FOUND")

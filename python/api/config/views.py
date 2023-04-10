@@ -96,6 +96,7 @@ class ConfigView(GenericUIView):
     queryset = ConfigLog.objects.all()
     serializer_class = HistoryCurrentPreviousConfigSerializer
     permission_classes = (IsAuthenticated,)
+    ordering = ["id"]
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
@@ -111,6 +112,7 @@ class ConfigHistoryView(PermissionListMixin, GenericUIView):
     serializer_class = ConfigHistorySerializer
     serializer_class_post = ObjectConfigUpdateSerializer
     permission_required = ["cm.view_configlog"]
+    ordering = ["id"]
 
     def get_queryset(self, *args, **kwargs):
         if self.request.user.has_perm("cm.view_settings_of_adcm"):
@@ -146,6 +148,7 @@ class ConfigVersionView(PermissionListMixin, GenericUIView):
     permission_classes = (DjangoOnlyObjectPermissions,)
     serializer_class = ConfigObjectConfigSerializer
     permission_required = ["cm.view_configlog"]
+    ordering = ["id"]
 
     def get_queryset(self, *args, **kwargs):
         if self.request.user.has_perm("cm.view_settings_of_adcm"):
@@ -189,6 +192,7 @@ class ConfigHistoryRestoreView(PermissionListMixin, GenericUIView):
     serializer_class = ObjectConfigRestoreSerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ["cm.view_configlog"]
+    ordering = ["id"]
 
     def get_queryset(self, *args, **kwargs):
         if self.request.user.has_perm("cm.view_settings_of_adcm"):
