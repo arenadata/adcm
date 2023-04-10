@@ -1518,6 +1518,7 @@ class TaskLog(ADCMModel):
     attr = models.JSONField(default=dict)
     hostcomponentmap = models.JSONField(null=True, default=None)
     post_upgrade_hc_map = models.JSONField(null=True, default=None)
+    restore_hc_on_fail = models.BooleanField(default=True)
     hosts = models.JSONField(null=True, default=None)
     verbose = models.BooleanField(default=False)
     start_date = models.DateTimeField()

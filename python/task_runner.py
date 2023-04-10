@@ -102,7 +102,7 @@ def set_log_body(job):
         LogStorage.objects.filter(job=job, name=log_storage.name, type=log_storage.type).update(body=body)
 
 
-def run_task(task_id, args=None):  # noqa: C901
+def run_task(task_id: int, args: str | None = None) -> None:  # noqa: C901  # pylint: disable=too-many-statements
     logger.debug("task_runner.py called as: %s", sys.argv)
     try:
         task = TaskLog.objects.get(id=task_id)
@@ -112,7 +112,9 @@ def run_task(task_id, args=None):  # noqa: C901
         return
 
     task.pid = os.getpid()
-    task.save()
+    task.restore_hc_on_fail = True
+    task.save(update_fields=["pid", "restore_hc_on_fail"])
+
     jobs = JobLog.objects.filter(task_id=task.id).order_by("id")
     if not jobs:
         logger.error("no jobs for task %s", task.id)

@@ -817,10 +817,9 @@ def set_action_state(
 
 
 def restore_hc(task: TaskLog, action: Action, status: str):
-    if status not in {JobStatus.FAILED, JobStatus.ABORTED}:
-        return
-
-    if not action.hostcomponentmap:
+    if any(
+        (status not in {JobStatus.FAILED, JobStatus.ABORTED}, not action.hostcomponentmap, not task.restore_hc_on_fail)
+    ):
         return
 
     cluster = get_object_cluster(task.task_object)
