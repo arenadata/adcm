@@ -608,7 +608,7 @@ def set_object_config(obj: ADCMEntity, config: dict) -> ConfigLog:
     return config_log
 
 
-def get_hc(cluster):
+def get_hc(cluster: Cluster | None) -> list[dict] | None:
     if not cluster:
         return None
 
