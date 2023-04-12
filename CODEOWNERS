@@ -21,7 +21,3 @@ Makefile @aas @k.shestakov @aer
 pyproject.toml @aas @k.shestakov @aer
 pytest.sh @aas @k.shestakov @aer @v.chudasov
 README.md @aas @k.shestakov @aer @v.chudasov @d.skrynnik @tsd @ke @k.fedorenko
-requirements.txt @aas @k.shestakov
-requirements-test.txt @aas @k.shestakov @aer @v.chudasov
-requirements-venv-2.9.txt @aas @k.shestakov
-requirements-venv-default.txt @aas @k.shestakov

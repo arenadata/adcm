@@ -10,13 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import OrderedDict
 
-from django.contrib.auth.password_validation import validate_password
 from rbac.endpoints.fields import PasswordField
 from rbac.models import Group, User
 from rbac.services.user import create, update
-from rbac.validators import ADCMLengthPasswordValidator
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.fields import (
     BooleanField,
@@ -92,15 +89,6 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
 
     class Meta:
         expandable_fields = {"group": (ExpandedGroupSerializer, {"many": True, "source": "groups"})}
-
-    def validate(self, attrs: OrderedDict) -> OrderedDict:
-        if attrs.get("password"):
-            validate_password(
-                password=attrs["password"],
-                password_validators=[ADCMLengthPasswordValidator()],
-            )
-
-        return attrs
 
     def update(self, instance, validated_data):
         context_user = self.context["request"].user

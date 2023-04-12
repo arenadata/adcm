@@ -26,7 +26,7 @@ build: describe buildss buildjs build_base
 
 unittests_sqlite: describe
 	docker run -i --rm -v $(CURDIR)/data:/adcm/data -e DJANGO_SETTINGS_MODULE=adcm.settings $(APP_IMAGE):$(APP_TAG) \
-	sh -c "pip install --no-cache -r /adcm/requirements.txt && /adcm/python/manage.py test /adcm/python -v 2"
+	sh -c "poetry install --no-root && /adcm/python/manage.py test /adcm/python -v 2"
 
 unittests_postgresql: describe
 	docker network create adcm
@@ -34,7 +34,7 @@ unittests_postgresql: describe
 	docker run -i --rm --network=adcm -v $(CURDIR)/data:/adcm/data -e DJANGO_SETTINGS_MODULE=adcm.settings \
 	-e DB_HOST="postgres" -e DB_PORT=5432 -e DB_NAME="postgres" -e DB_USER="postgres" -e DB_PASS="postgres" \
 	$(APP_IMAGE):$(APP_TAG) \
-	sh -c "pip install --no-cache -r /adcm/requirements.txt && /adcm/python/manage.py test /adcm/python -v 2"
+	sh -c "poetry install --no-root && /adcm/python/manage.py test /adcm/python -v 2"
 	docker stop postgres && docker rm postgres && docker network rm adcm
 
 pytest:
@@ -66,15 +66,18 @@ npm_check:
 	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:16-alpine ./npm_check.sh
 
 pretty:
-	black license_checker.py python tests
-	autoflake -r -i --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python tests
-	isort license_checker.py python tests
+	black license_checker.py python
+	autoflake -r -i --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python
+	isort license_checker.py python
 	python license_checker.py --fix --folders python go
 
 lint:
-	black --check license_checker.py python tests
-	autoflake --check --quiet -r --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python tests
-	isort --check license_checker.py python tests
+	black --check license_checker.py python
+	autoflake --check --quiet -r --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python
+	isort --check license_checker.py python
 	python license_checker.py --folders python go
-	flake8 --max-line-length=120 tests/functional tests/ui_tests
-	pylint --rcfile pyproject.toml --recursive y python tests
+	pylint --rcfile pyproject.toml --recursive y python
+
+lint_docker:
+	docker run -i --rm -e DJANGO_SETTINGS_MODULE=adcm.settings $(APP_IMAGE):$(APP_TAG) \
+	sh -c "poetry install --no-root --with test && apk add make && make lint"

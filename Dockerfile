@@ -21,27 +21,29 @@ RUN apk update && \
         openssl \
         rsync \
         runit \
-        sshpass
-COPY requirements*.txt /adcm/
-RUN pip install --upgrade pip &&  \
-    pip install --no-cache-dir -r /adcm/requirements-venv-default.txt && \
-    python -m venv /adcm/venv/2.9 && \
-    . /adcm/venv/2.9/bin/activate && \
-    pip install --no-cache-dir -r /adcm/requirements-venv-2.9.txt && \
-    deactivate && \
-    python -m venv /adcm/venv/default &&  \
-    . /adcm/venv/default/bin/activate && \
-    pip install --no-cache-dir -r /adcm/requirements-venv-default.txt && \
+        sshpass && \
+    curl -sSL https://install.python-poetry.org | python -
+ENV PATH="/root/.local/bin:$PATH"
+COPY pyproject.toml /adcm/
+WORKDIR /adcm
+RUN python -m venv venv/2.9 && \
+    python -m venv venv/default &&  \
+    poetry config virtualenvs.create false && \
+    poetry install --no-root && \
+    cp -r /usr/local/lib/python3.10/site-packages venv/2.9/lib/python3.10 && \
+    cp -r /usr/local/lib/python3.10/site-packages venv/default/lib/python3.10 && \
+    . venv/2.9/bin/activate && \
+    pip install git+https://github.com/arenadata/ansible.git@v2.9.27-p1 && \
     deactivate
 RUN apk del .build-deps
 COPY . /adcm
-RUN mkdir -p /adcm/data/log && \
+RUN mkdir -p data/log && \
     mkdir -p /usr/share/ansible/plugins/modules && \
-    cp -r /adcm/os/* / && \
-    cp /adcm/os/etc/crontabs/root /var/spool/cron/crontabs/root && \
-    cp -r /adcm/python/ansible/* adcm/venv/default/lib/python3.10/site-packages/ansible/ && \
-    cp -r /adcm/python/ansible/* adcm/venv/2.9/lib/python3.10/site-packages/ansible/ && \
-    python /adcm/python/manage.py collectstatic --noinput && \
-    cp -r /adcm/wwwroot/static/rest_framework/css/* /adcm/wwwroot/static/rest_framework/docs/css/
+    cp -r os/* / && \
+    cp os/etc/crontabs/root /var/spool/cron/crontabs/root && \
+    cp -r python/ansible/* venv/default/lib/python3.10/site-packages/ansible/ && \
+    cp -r /adcm/python/ansible/* venv/2.9/lib/python3.10/site-packages/ansible/ && \
+    python python/manage.py collectstatic --noinput && \
+    cp -r wwwroot/static/rest_framework/css/* wwwroot/static/rest_framework/docs/css/
 EXPOSE 8000
 CMD ["/etc/startup.sh"]
