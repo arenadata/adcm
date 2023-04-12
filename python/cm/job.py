@@ -58,7 +58,7 @@ from cm.inventory import (
 from cm.issue import (
     check_bound_components,
     check_component_constraint,
-    check_requires,
+    check_hc_requires,
     update_hierarchy_issues,
 )
 from cm.logger import logger
@@ -389,7 +389,7 @@ def check_constraints_for_upgrade(cluster, upgrade, host_comp_list):
             except Prototype.DoesNotExist:
                 pass
 
-        check_requires(shc_list=host_comp_list)
+        check_hc_requires(shc_list=host_comp_list)
         check_bound_components(shc_list=host_comp_list)
         check_maintenance_mode(cluster=cluster, host_comp_list=host_comp_list)
     except AdcmEx as e:

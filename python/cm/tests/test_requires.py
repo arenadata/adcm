@@ -12,7 +12,16 @@
 
 from cm.api import add_hc, add_service_to_cluster
 from cm.errors import AdcmEx
-from cm.models import Bundle, Cluster, Host, Prototype, ServiceComponent
+from cm.issue import update_hierarchy_issues
+from cm.models import (
+    Bundle,
+    Cluster,
+    ClusterObject,
+    ConcernCause,
+    Host,
+    Prototype,
+    ServiceComponent,
+)
 
 from adcm.tests.base import BaseTestCase
 
@@ -79,3 +88,14 @@ class TestComponent(BaseTestCase):
             AdcmEx, 'No required service service_2 for component "component_1_1" of service "service_1"'
         ):
             add_hc(self.cluster, [{"host_id": host.id, "service_id": service_1.id, "component_id": component_1.id}])
+
+    def test_service_issue(self):
+        service_2 = ClusterObject.objects.create(prototype=self.service_proto_2, cluster=self.cluster)
+        update_hierarchy_issues(obj=self.cluster)
+        concerns = service_2.concerns.all()
+        self.assertEqual(len(concerns), 1)
+        self.assertEqual(concerns.first().cause, ConcernCause.REQUIREMENT)
+        self.assertIn(
+            "${source} has an issue with requirement. Need to be installed: ${target}",
+            concerns.first().reason.values(),
+        )

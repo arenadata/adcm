@@ -31,6 +31,7 @@ mock_issue_check_map = {
     ConcernCause.IMPORT: lambda x: True,
     ConcernCause.SERVICE: lambda x: True,
     ConcernCause.HOSTCOMPONENT: lambda x: True,
+    ConcernCause.REQUIREMENT: lambda x: True,
 }
 
 

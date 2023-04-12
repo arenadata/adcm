@@ -27,7 +27,8 @@ from cm.errors import raise_adcm_ex
 from cm.issue import (
     check_bound_components,
     check_component_constraint,
-    check_requires,
+    check_hc_requires,
+    check_service_requires,
     update_hierarchy_issues,
     update_issue_after_deleting,
 )
@@ -469,29 +470,6 @@ def unbind(cbind):
         update_hierarchy_issues(cbind.cluster)
 
 
-def check_service_requires(cluster: Cluster, proto: Prototype) -> None:
-    if not proto.requires:
-        return
-
-    for require in proto.requires:
-        req_service = ClusterObject.objects.filter(prototype__name=require["service"], cluster=cluster)
-        obj_prototype = Prototype.objects.filter(name=require["service"], type="service")
-
-        if comp_name := require.get("component"):
-            req_obj = ServiceComponent.objects.filter(
-                prototype__name=comp_name, service=req_service.first(), cluster=cluster
-            )
-            obj_prototype = Prototype.objects.filter(name=comp_name, type="component", parent=obj_prototype.first())
-        else:
-            req_obj = req_service
-
-        if not req_obj.exists():
-            raise_adcm_ex(
-                code="SERVICE_CONFLICT",
-                msg=f"No required {proto_ref(prototype=obj_prototype.first())} for {proto_ref(prototype=proto)}",
-            )
-
-
 def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> ClusterObject:
     if proto.type != "service":
         raise_adcm_ex(code="OBJ_TYPE_ERROR", msg=f"Prototype type should be service, not {proto.type}")
@@ -512,7 +490,7 @@ def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> ClusterObject:
         service.config = obj_conf
         service.save(update_fields=["config"])
         add_components_to_service(cluster=cluster, service=service)
-        update_hierarchy_issues(obj=service)
+        update_hierarchy_issues(obj=cluster)
         re_apply_object_policy(apply_object=cluster)
 
     post_event(event="add", obj=service, details={"type": "cluster", "value": str(cluster.pk)})
@@ -676,7 +654,7 @@ def check_hc(cluster: Cluster, hc_in: list[dict]) -> list[tuple[ClusterObject, H
             cluster=cluster, service_prototype=service.prototype, hc_in=[i for i in host_comp_list if i[0] == service]
         )
 
-    check_requires(shc_list=host_comp_list)
+    check_hc_requires(shc_list=host_comp_list)
     check_bound_components(shc_list=host_comp_list)
     check_maintenance_mode(cluster=cluster, host_comp_list=host_comp_list)
 
