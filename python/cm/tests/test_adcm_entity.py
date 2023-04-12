@@ -10,7 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ConcernCause, ConcernItem, ConcernType, MessageTemplate
+from cm.models import (
+    ConcernCause,
+    ConcernItem,
+    ConcernType,
+    KnownNames,
+    MessageTemplate,
+)
 from cm.tests.utils import gen_concern_item, generate_hierarchy
 
 from adcm.tests.base import BaseTestCase
@@ -98,7 +104,7 @@ class ADCMEntityConcernTest(BaseTestCase):
         cluster = self.hierarchy["cluster"]
         service = self.hierarchy["service"]
         reason = MessageTemplate.get_message_from_template(
-            MessageTemplate.KnownNames.CONFIG_ISSUE.value,
+            KnownNames.CONFIG_ISSUE.value,
             source=cluster,
         )
         issue_type = ConcernCause.CONFIG
@@ -111,7 +117,7 @@ class ADCMEntityConcernTest(BaseTestCase):
     def test_get_own_issue__exists(self):
         cluster = self.hierarchy["cluster"]
         reason = MessageTemplate.get_message_from_template(
-            MessageTemplate.KnownNames.CONFIG_ISSUE.value,
+            KnownNames.CONFIG_ISSUE.value,
             source=cluster,
         )
         issue_type = ConcernCause.CONFIG

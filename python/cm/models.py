@@ -1614,7 +1614,7 @@ class JobLog(ADCMModel):
 
     def cook_reason(self):
         return MessageTemplate.get_message_from_template(
-            MessageTemplate.KnownNames.LOCKED_BY_JOB.value,
+            KnownNames.LOCKED_BY_JOB.value,
             job=self,
             target=self.task.task_object,
         )
@@ -1781,6 +1781,28 @@ class StagePrototypeImport(ADCMModel):
         unique_together = (("prototype", "name"),)
 
 
+class KnownNames(Enum):
+    LOCKED_BY_JOB = "locked by running job on target"  # kwargs=(job, target)
+    CONFIG_ISSUE = "object config issue"  # kwargs=(source, )
+    REQUIRED_SERVICE_ISSUE = "required service issue"  # kwargs=(source, )
+    REQUIRED_IMPORT_ISSUE = "required import issue"  # kwargs=(source, )
+    HOST_COMPONENT_ISSUE = "host component issue"  # kwargs=(source, )
+    UNSATISFIED_REQUIREMENT_ISSUE = "unsatisfied service requirement"  # kwargs=(source, )
+
+
+class PlaceHolderType(Enum):
+    ACTION = "action"
+    JOB = "job"
+    ADCM_ENTITY = "adcm_entity"
+    ADCM = "adcm"
+    CLUSTER = "cluster"
+    SERVICE = "service"
+    COMPONENT = "component"
+    PROVIDER = "provider"
+    HOST = "host"
+    PROTOTYPE = "prototype"
+
+
 class MessageTemplate(ADCMModel):
     """
     Templates for `ConcernItem.reason
@@ -1798,35 +1820,13 @@ class MessageTemplate(ADCMModel):
     placeholder fill functions have unified interface:
       @classmethod
       def _func(cls, placeholder_name, **kwargs) -> dict
-
-    TODO: load from bundle
-    TODO: check consistency on creation
-    TODO: separate JSON processing logic from model
     """
 
     name = models.CharField(max_length=1000, unique=True)
     template = models.JSONField()
 
-    class KnownNames(Enum):
-        LOCKED_BY_JOB = "locked by running job on target"  # kwargs=(job, target)
-        CONFIG_ISSUE = "object config issue"  # kwargs=(source, )
-        REQUIRED_SERVICE_ISSUE = "required service issue"  # kwargs=(source, )
-        REQUIRED_IMPORT_ISSUE = "required import issue"  # kwargs=(source, )
-        HOST_COMPONENT_ISSUE = "host component issue"  # kwargs=(source, )
-
-    class PlaceHolderType(Enum):
-        ACTION = "action"
-        ADCM_ENTITY = "adcm_entity"
-        ADCM = "adcm"
-        CLUSTER = "cluster"
-        SERVICE = "service"
-        COMPONENT = "component"
-        PROVIDER = "provider"
-        HOST = "host"
-        JOB = "job"
-
     @classmethod
-    def get_message_from_template(cls, name: str, **kwargs) -> dict:
+    def get_message_from_template(cls, name: KnownNames, **kwargs) -> dict:
         """Find message template by its name and fill placeholders"""
 
         tpl = cls.obj.get(name=name).template
@@ -1854,37 +1854,58 @@ class MessageTemplate(ADCMModel):
     @classmethod
     def _fill_placeholder(cls, ph_name: str, ph_data: dict, **ph_source_data) -> dict:
         type_map = {
-            cls.PlaceHolderType.ACTION.value: cls._action_placeholder,
-            cls.PlaceHolderType.ADCM_ENTITY.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.ADCM.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.CLUSTER.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.SERVICE.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.COMPONENT.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.PROVIDER.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.HOST.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.JOB.value: cls._job_placeholder,
+            PlaceHolderType.ACTION.value: cls._action_placeholder,
+            PlaceHolderType.ADCM_ENTITY.value: cls._adcm_entity_placeholder,
+            PlaceHolderType.ADCM.value: cls._adcm_entity_placeholder,
+            PlaceHolderType.CLUSTER.value: cls._adcm_entity_placeholder,
+            PlaceHolderType.SERVICE.value: cls._adcm_entity_placeholder,
+            PlaceHolderType.COMPONENT.value: cls._adcm_entity_placeholder,
+            PlaceHolderType.PROVIDER.value: cls._adcm_entity_placeholder,
+            PlaceHolderType.HOST.value: cls._adcm_entity_placeholder,
+            PlaceHolderType.JOB.value: cls._job_placeholder,
+            PlaceHolderType.PROTOTYPE.value: cls._prototype_placeholder,
         }
         return type_map[ph_data["type"]](ph_name, **ph_source_data)
 
     @classmethod
     def _action_placeholder(cls, _, **kwargs) -> dict:
         action = kwargs.get("action")
-        assert action
         target = kwargs.get("target")
-        assert target
+        if not target or not action:
+            return {}
 
         ids = target.get_id_chain()
         ids["action"] = action.pk
         return {
-            "type": cls.PlaceHolderType.ACTION.value,
+            "type": PlaceHolderType.ACTION.value,
             "name": action.display_name,
             "ids": ids,
         }
 
     @classmethod
+    def _prototype_placeholder(cls, _, **kwargs) -> dict:
+        service = kwargs.get("source")
+        proto = None
+
+        for require in service.prototype.requires:
+            try:
+                ClusterObject.objects.get(prototype__name=require["service"], cluster=service.cluster)
+            except ClusterObject.DoesNotExist:
+                proto = Prototype.objects.get(name=require["service"], type="service", bundle=service.prototype.bundle)
+                break
+        if proto:
+            return {
+                "id": proto.id,
+                "name": proto.display_name or proto.name,
+            }
+
+        return {}
+
+    @classmethod
     def _adcm_entity_placeholder(cls, ph_name, **kwargs) -> dict:
         obj = kwargs.get(ph_name)
-        assert obj
+        if not obj:
+            return {}
 
         return {
             "type": obj.prototype.type,
@@ -1895,11 +1916,13 @@ class MessageTemplate(ADCMModel):
     @classmethod
     def _job_placeholder(cls, _, **kwargs) -> dict:
         job = kwargs.get("job")
-        assert job
         action = job.sub_action or job.action
 
+        if not job:
+            return {}
+
         return {
-            "type": cls.PlaceHolderType.JOB.value,
+            "type": PlaceHolderType.JOB.value,
             "name": action.display_name or action.name,
             "ids": job.id,
         }
@@ -1917,6 +1940,7 @@ class ConcernCause(models.TextChoices):
     HOSTCOMPONENT = "host-component", "host-component"
     IMPORT = "import", "import"
     SERVICE = "service", "service"
+    REQUIREMENT = "requirement", "requirement"
 
 
 class ConcernItem(ADCMModel):
