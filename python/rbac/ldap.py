@@ -235,7 +235,7 @@ class CustomLDAPBackend(LDAPBackend):
         groups = []
         with suppress(User.DoesNotExist):
             user = User.objects.get(username__iexact=username, type=OriginType.LDAP)
-            groups = [g.group for g in user.groups.all() if g.group.type == OriginType.LOCAL]
+            groups = [g.group for g in user.groups.order_by("id") if g.group.type == OriginType.LOCAL]
         return groups
 
     def get_user_model(self) -> type[User]:

@@ -163,7 +163,7 @@ class Command(BaseCommand):
                 for cl_pk in (config_log.obj_ref.current, config_log.obj_ref.previous):
                     exclude_pks.add(cl_pk)
 
-            for group_config in GroupConfig.objects.all():
+            for group_config in GroupConfig.objects.order_by("id"):
                 if group_config.config:
                     exclude_pks.add(group_config.config.previous)
                     exclude_pks.add(group_config.config.current)

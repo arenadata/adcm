@@ -155,6 +155,7 @@ class RunTask(GenericUIView):
     queryset = TaskLog.objects.all()
     serializer_class = RunTaskRetrieveSerializer
     permission_classes = (IsAuthenticated,)
+    ordering = ["id"]
 
     def has_action_perm(self, action: Action, obj) -> bool:
         user = self.request.user

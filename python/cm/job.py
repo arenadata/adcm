@@ -738,7 +738,7 @@ def create_task(
     if action.type == ActionType.JOB.value:
         sub_actions = [None]
     else:
-        sub_actions = SubAction.objects.filter(action=action).all()
+        sub_actions = SubAction.objects.filter(action=action).order_by("id")
 
     for sub_action in sub_actions:
         job = JobLog.obj.create(

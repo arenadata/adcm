@@ -202,13 +202,13 @@ class ProductCategory(ADCMModel):
     @classmethod
     def re_collect(cls) -> None:
         """Re-sync category list with installed bundles"""
-        for bundle in Bundle.objects.filter(category=None).all():
+        for bundle in Bundle.objects.filter(category=None).order_by("id"):
             prototype = Prototype.objects.filter(bundle=bundle, name=bundle.name, type=ObjectType.CLUSTER).first()
             if prototype:
                 value = prototype.display_name or bundle.name
                 bundle.category, _ = cls.objects.get_or_create(value=value)
                 bundle.save()
-        for category in cls.objects.all():
+        for category in cls.objects.order_by("id"):
             if category.bundle_set.count() == 0:
                 category.delete()
 
@@ -356,7 +356,7 @@ class ConfigLog(ADCMModel):
         obj = self.obj_ref.object
         if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
             # Sync group configs with object config
-            for conf_group in obj.group_config.all():
+            for conf_group in obj.group_config.order_by("id"):
                 diff_config, diff_attr = conf_group.get_diff_config_attr()
                 group_config = ConfigLog()
                 current_group_config = ConfigLog.objects.get(id=conf_group.config.current)
@@ -1079,7 +1079,7 @@ class GroupConfig(ADCMModel):
         """Returns candidate hosts valid to add to the group"""
 
         if isinstance(self.object, (Cluster, HostProvider)):
-            hosts = self.object.host_set.all()
+            hosts = self.object.host_set.order_by("id")
         elif isinstance(self.object, ClusterObject):
             hosts = Host.objects.filter(cluster=self.object.cluster, hostcomponent__service=self.object).distinct()
         elif isinstance(self.object, ServiceComponent):
@@ -1949,12 +1949,12 @@ class ConcernItem(ADCMModel):
     def related_objects(self) -> Iterable[ADCMEntity]:
         """List of objects that has that item in concerns"""
         return chain(
-            self.adcm_entities.all(),
-            self.cluster_entities.all(),
-            self.clusterobject_entities.all(),
-            self.servicecomponent_entities.all(),
-            self.hostprovider_entities.all(),
-            self.host_entities.all(),
+            self.adcm_entities.order_by("id"),
+            self.cluster_entities.order_by("id"),
+            self.clusterobject_entities.order_by("id"),
+            self.servicecomponent_entities.order_by("id"),
+            self.hostprovider_entities.order_by("id"),
+            self.host_entities.order_by("id"),
         )
 
     def delete(self, using=None, keep_parents=False):

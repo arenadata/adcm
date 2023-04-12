@@ -37,6 +37,7 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
     permission_required = ["cm.view_configlog"]
     filterset_fields = ("id", "obj_ref")
     ordering_fields = ("id",)
+    ordering = ["id"]
 
     def get_serializer_class(self):
         if self.is_for_ui():

@@ -133,9 +133,11 @@ class Tree:
             children_values = [n.value for n in node.children]
 
         if node.type == "cluster":
-            children_values = ClusterObject.objects.filter(cluster=node.value).all()
+            children_values = ClusterObject.objects.filter(cluster=node.value).order_by("id")
         elif node.type == "service":
-            children_values = ServiceComponent.objects.filter(cluster=node.value.cluster, service=node.value).all()
+            children_values = ServiceComponent.objects.filter(cluster=node.value.cluster, service=node.value).order_by(
+                "id"
+            )
         elif node.type == "component":
             children_values = [
                 c.host
@@ -145,7 +147,7 @@ class Tree:
                     component=node.value,
                 )
                 .select_related("host")
-                .all()
+                .order_by("id")
             ]
         elif node.type == "host":
             children_values = []
@@ -178,10 +180,10 @@ class Tree:
                 for hc in HostComponent.objects.filter(host=node.value)
                 .exclude(host__maintenance_mode=MaintenanceMode.ON)
                 .select_related("component")
-                .all()
+                .order_by("id")
             ]
         elif node.type == "provider":
-            parent_values = Host.objects.filter(provider=node.value).all()
+            parent_values = Host.objects.filter(provider=node.value).order_by("id")
 
         for value in parent_values:
             parent = self._make_node(value)

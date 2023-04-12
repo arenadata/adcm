@@ -34,7 +34,7 @@ def upgrade(data: dict):
     for role in data["roles"]:
         role_obj = new_roles[role["name"]]
         task_roles = []
-        for child in role_obj.child.all():
+        for child in role_obj.child.order_by("id"):
             if child.class_name == "TaskRole":
                 task_roles.append(child)
         role_obj.child.clear()
