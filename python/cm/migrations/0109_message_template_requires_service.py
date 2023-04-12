@@ -40,7 +40,7 @@ def insert_message_templates_revert(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("cm", "0107_set_nginx_rotate_config_to_defaults"),
+        ("cm", "0108_add_restore_hc_on_fail_field_to_task"),
     ]
     operations = [
         migrations.AlterField(
