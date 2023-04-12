@@ -13,10 +13,12 @@
 from cm.errors import raise_adcm_ex
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
 from rbac.models import Group, OriginType, User
 from rbac.utils import Empty, set_not_empty_attr
+from rbac.validators import ADCMLengthPasswordValidator
 from rest_framework.authtoken.models import Token
 
 
@@ -124,10 +126,16 @@ def update(
         raise_adcm_ex(code="USER_CONFLICT", msg='You can change only "profile" for LDAP type user')
 
     is_password_changing = password is not Empty and not user.check_password(raw_password=password)
-    if (is_password_changing and need_current_password) and (
-        current_password is Empty or not user.check_password(raw_password=current_password)
-    ):
-        raise_adcm_ex(code="USER_PASSWORD_CURRENT_PASSWORD_REQUIRED_ERROR")
+    if is_password_changing:
+        if need_current_password and (
+            current_password is Empty or not user.check_password(raw_password=current_password)
+        ):
+            raise_adcm_ex(code="USER_PASSWORD_CURRENT_PASSWORD_REQUIRED_ERROR")
+
+        validate_password(
+            password=password,
+            password_validators=[ADCMLengthPasswordValidator()],
+        )
 
     set_not_empty_attr(user, partial, "first_name", first_name, "")
     set_not_empty_attr(user, partial, "last_name", last_name, "")
@@ -166,6 +174,11 @@ def create(
     user_exist = User.objects.filter(email=email).exists()
     if user_exist and (email != ""):
         raise_adcm_ex("USER_CREATE_ERROR", msg="User with the same email already exist")
+
+    validate_password(
+        password=password,
+        password_validators=[ADCMLengthPasswordValidator()],
+    )
 
     user = None
     try:

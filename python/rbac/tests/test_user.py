@@ -314,7 +314,7 @@ class UserPasswordTestCase(BaseUserTestCase):
         )
 
     def test_change_password_success(self):
-        new_pass = "new_pass"
+        new_pass = "new_very_long_pass"
         response: Response = self.client.patch(
             reverse(viewname="rbac:me"),
             data={"password": new_pass, "current_password": self.test_user_password},
@@ -396,3 +396,18 @@ class UserPasswordTestCase(BaseUserTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_update_shorter_than_min_password_fail(self):
+        response: Response = self.client.patch(
+            reverse("rbac:me"),
+            data={
+                "password": self.get_random_str_num(
+                    length=self.config_log.config["auth_policy"]["min_password_length"] - 1,
+                ),
+                "current_password": self.test_user_password,
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["desc"], "This password is shorter than min password length")
