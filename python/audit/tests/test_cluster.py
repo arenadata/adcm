@@ -42,7 +42,6 @@ from cm.models import (
 from django.conf import settings
 from django.urls import reverse
 from rbac.models import Policy, Role, User
-from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_201_CREATED,
@@ -246,7 +245,6 @@ class TestClusterAudit(BaseTestCase):
         )
 
     def add_no_rights_user_cluster_view_rights(self) -> None:
-        init_roles()
         role = Role.objects.get(name="View cluster configurations")
         policy = Policy.objects.create(name="test_policy", role=role)
         policy.user.add(self.no_rights_user)

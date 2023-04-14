@@ -32,15 +32,15 @@ from cm.models import (
 from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from django.test import Client
 from django.urls import reverse
 from init_db import init as init_adcm
-from rbac.models import Role, RoleTypes, User
+from rbac.models import Role, RoleTypes
 from rbac.roles import ModelRole
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
 from rbac.tests.test_base import RBACBaseTestCase
-from rbac.upgrade.role import init_roles, prepare_action_roles
+from rbac.upgrade.role import prepare_action_roles
+from rest_framework.status import HTTP_404_NOT_FOUND
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -168,7 +168,6 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         super().setUp()
 
         init_adcm()
-        init_roles()
 
         category = ProductCategory.objects.create(
             value="Sample Cluster",
@@ -578,10 +577,10 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
 # pylint: disable=too-many-instance-attributes, protected-access
 class TestMMRoles(RBACBaseTestCase):
     def setUp(self) -> None:
-        init_adcm()
-        init_roles()
+        super().setUp()
 
-        self.create_bundles_and_prototypes()
+        init_adcm()
+
         self.cluster = Cluster.objects.create(name="testcluster", prototype=self.clp)
         self.provider = HostProvider.objects.create(
             name="test_provider",
@@ -596,16 +595,6 @@ class TestMMRoles(RBACBaseTestCase):
             prototype=self.cop_11,
         )
 
-        self.test_user_username = "test_user"
-        self.test_user_password = "test_user_password"
-        self.test_user = User.objects.create_user(
-            username=self.test_user_username,
-            password=self.test_user_password,
-        )
-
-        self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
-        self.login()
-
         self.mm_role_host = role_create(
             name="mm role host",
             display_name="mm role host",
@@ -617,18 +606,55 @@ class TestMMRoles(RBACBaseTestCase):
             child=[Role.objects.get(name="Manage cluster Maintenance mode")],
         )
 
-    def test_no_roles(self):
-        for view_name, url_kwarg_name, obj in (
-            ("host-details", "host_id", self.host),
-            ("component-details", "component_id", self.component),
-            ("service-details", "service_id", self.service),
-        ):
-            url = reverse(view_name, kwargs={url_kwarg_name: obj.pk})
-            response = self.client.get(path=url, content_type=APPLICATION_JSON)
-            self.assertEqual(response.status_code, 404)
+    def test_change_host_maintenance_mode_failed(self):
+        with self.no_rights_user_logged_in:
+            response = self.client.get(
+                path=reverse(viewname="host-details", kwargs={"host_id": self.host.id}), content_type=APPLICATION_JSON
+            )
 
-            with self.assertRaises(PermissionDenied):
-                check_custom_perm(self.test_user, "change_maintenance_mode", obj._meta.model_name, obj)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        with self.assertRaises(PermissionDenied):
+            check_custom_perm(
+                user=self.no_rights_user,
+                action_type="change_maintenance_mode",
+                model=self.host._meta.model_name,
+                obj=self.host,
+            )
+
+    def test_change_component_maintenance_mode_failed(self):
+        with self.no_rights_user_logged_in:
+            response = self.client.get(
+                path=reverse(viewname="component-details", kwargs={"component_id": self.component.id}),
+                content_type=APPLICATION_JSON,
+            )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        with self.assertRaises(PermissionDenied):
+            check_custom_perm(
+                user=self.no_rights_user,
+                action_type="change_maintenance_mode",
+                model=self.component._meta.model_name,
+                obj=self.component,
+            )
+
+    def test_change_service_maintenance_mode_failed(self):
+        with self.no_rights_user_logged_in:
+            response = self.client.get(
+                path=reverse(viewname="service-details", kwargs={"service_id": self.service.id}),
+                content_type=APPLICATION_JSON,
+            )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        with self.assertRaises(PermissionDenied):
+            check_custom_perm(
+                user=self.no_rights_user,
+                action_type="change_maintenance_mode",
+                model=self.service._meta.model_name,
+                obj=self.service,
+            )
 
     def test_mm_host_role(self):
         policy_create(name="mm host policy", object=[self.host], role=self.mm_role_host, user=[self.test_user])

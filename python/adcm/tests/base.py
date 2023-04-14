@@ -18,7 +18,8 @@ from cm.models import Bundle, Cluster, ConfigLog, Prototype
 from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
-from rbac.models import Role, User
+from rbac.models import User
+from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
@@ -29,6 +30,8 @@ class BaseTestCase(TestCase):
     # pylint: disable=too-many-instance-attributes
 
     def setUp(self) -> None:
+        init_roles()
+
         self.test_user_username = "test_user"
         self.test_user_password = "test_user_password"
 
@@ -47,20 +50,6 @@ class BaseTestCase(TestCase):
 
         self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
         self.login()
-
-        self.cluster_admin_role = Role.objects.create(
-            name="Cluster Administrator",
-            display_name="Cluster Administrator",
-        )
-        Role.objects.create(name="Provider Administrator", display_name="Provider Administrator")
-        Role.objects.create(name="Service Administrator", display_name="Service Administrator")
-
-        self.test_bundle_filename = "test_bundle.tar"
-        self.test_bundle_path = Path(
-            settings.BASE_DIR,
-            "python/audit/tests/files",
-            self.test_bundle_filename,
-        )
 
     def tearDown(self) -> None:
         dirs_to_clear = (
