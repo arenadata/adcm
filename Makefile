@@ -26,7 +26,7 @@ build: describe buildss buildjs build_base
 
 unittests_sqlite: describe
 	docker run -i --rm -v $(CURDIR)/data:/adcm/data -e DJANGO_SETTINGS_MODULE=adcm.settings $(APP_IMAGE):$(APP_TAG) \
-	sh -c "poetry install --no-root && /adcm/python/manage.py test /adcm/python -v 2"
+	sh -c "poetry -C /adcm install --no-root && /adcm/python/manage.py test /adcm/python -v 2"
 
 unittests_postgresql: describe
 	docker network create adcm
@@ -34,7 +34,7 @@ unittests_postgresql: describe
 	docker run -i --rm --network=adcm -v $(CURDIR)/data:/adcm/data -e DJANGO_SETTINGS_MODULE=adcm.settings \
 	-e DB_HOST="postgres" -e DB_PORT=5432 -e DB_NAME="postgres" -e DB_USER="postgres" -e DB_PASS="postgres" \
 	$(APP_IMAGE):$(APP_TAG) \
-	sh -c "poetry install --no-root && /adcm/python/manage.py test /adcm/python -v 2"
+	sh -c "poetry -C /adcm install --no-root && /adcm/python/manage.py test /adcm/python -v 2"
 	docker stop postgres && docker rm postgres && docker network rm adcm
 
 pytest:
@@ -80,4 +80,4 @@ lint:
 
 lint_docker:
 	docker run -i --rm -e DJANGO_SETTINGS_MODULE=adcm.settings $(APP_IMAGE):$(APP_TAG) \
-	sh -c "poetry install --no-root --with test && apk add make && make lint"
+	sh -c "cd /adcm && poetry install --no-root --with test && apk add make && make lint"
