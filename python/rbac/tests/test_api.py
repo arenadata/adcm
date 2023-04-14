@@ -12,10 +12,8 @@
 
 import json
 
-from django.test import Client
 from init_db import init
-from rbac.models import Policy, Role, User
-from rbac.upgrade.role import init_roles
+from rbac.models import Policy, Role
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -26,18 +24,9 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 class ApiTests(BaseTestCase):
     def setUp(self) -> None:
-        self.test_user_username = "test_user"
-        self.test_user_password = "test_user_password"
-        self.test_user = User.objects.create_user(
-            username=self.test_user_username,
-            password=self.test_user_password,
-            is_superuser=True,
-        )
-        self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
-        self.login()
+        super().setUp()
 
         init()
-        init_roles()
 
         invalid_data_dict_exp_int_got_str = "Invalid data. Expected a dictionary, but got int."
         invalid_data_dict_exp_str_got_str = "Invalid data. Expected a dictionary, but got str."

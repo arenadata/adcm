@@ -31,7 +31,6 @@ from cm.models import (
 )
 from django.urls import reverse
 from rbac.models import Policy, Role, User
-from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
@@ -202,7 +201,6 @@ class TestProviderAudit(BaseTestCase):
             prototype=self.prototype,
         )
 
-        init_roles()
         role = Role.objects.get(name="View provider configurations")
         policy = Policy.objects.create(name="test_policy", role=role)
         policy.user.add(self.no_rights_user)
