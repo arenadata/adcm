@@ -69,6 +69,7 @@ import {
   DownloadButtonColumnComponent
 } from "@app/components/columns/download-button-column/download-button-column.component";
 import { RbacAuditLoginService } from "@app/services/rbac-audit-login.service";
+import { ResetLoginAttemptsButtonComponent } from "./reset-login-attempts-button/reset-login-attempts-button.component";
 
 @NgModule({
   imports: [
@@ -121,6 +122,7 @@ import { RbacAuditLoginService } from "@app/services/rbac-audit-login.service";
     HistoryColumnComponent,
     WrapperColumnComponent,
     DownloadButtonColumnComponent,
+    ResetLoginAttemptsButtonComponent,
   ],
   exports: [
     FormsModule,
@@ -160,6 +162,7 @@ import { RbacAuditLoginService } from "@app/services/rbac-audit-login.service";
     HistoryColumnComponent,
     WrapperColumnComponent,
     DownloadButtonColumnComponent,
+    ResetLoginAttemptsButtonComponent
   ],
   providers: [
     JobService,

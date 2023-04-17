@@ -1,0 +1,9 @@
+<div [matTooltip]="tooltip">
+    <button mat-icon-button color="primary"
+        (click)="resetFailureLoginAttempts($event)" 
+        [disabled]="isDisabled"
+        [ngClass]="limitClass">
+
+        <mat-icon>refresh</mat-icon>
+    </button>
+</div>

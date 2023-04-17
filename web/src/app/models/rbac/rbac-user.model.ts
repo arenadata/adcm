@@ -15,6 +15,7 @@ export interface RbacUserModel {
   group: Pick<RbacGroupModel, 'id' | 'name' | 'url'>[];
   built_in: boolean;
   type: string;
+  failed_login_attempts: number;
 
   //
   change_password: string;

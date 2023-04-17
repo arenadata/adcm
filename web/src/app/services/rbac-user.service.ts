@@ -46,4 +46,8 @@ export class RbacUserService implements EntityAbstractService {
       .pipe(map((list) => list.results));
   }
 
+  resetLoginAttemps(id: number): Observable<any> {
+    return this.api.post(`${environment.apiRoot}rbac/user/${id}/reset_failed_login_attempts/`, {});
+  }
+
 }
