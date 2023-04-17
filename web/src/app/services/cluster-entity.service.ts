@@ -31,11 +31,10 @@ export class ClusterEntityService extends EntityService<ICluster> implements Hav
   }
 
   entityStatusTreeToStatusTree(input: ClusterStatusTree): StatusTree[] {
-    let hostsStatus;
-    let servicesStatus;
+    const hostsStatus = input.chilren.hosts.every((host) => host.status === 0) ? 0 : 16;
+    const servicesStatus = input.chilren.services.every((service) => service.status === 0) ? 0 : 16;
 
     const hosts = input.chilren.hosts.map((host) => {
-      hostsStatus = host.status;
 
       return {
         subject: {
@@ -49,7 +48,6 @@ export class ClusterEntityService extends EntityService<ICluster> implements Hav
     });
 
     const services = input.chilren.services.map((service) => {
-      servicesStatus = service.status;
 
       return {
         subject: {
