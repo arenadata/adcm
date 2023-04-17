@@ -10,17 +10,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
+
 from cm import api
 from cm.models import (
+    Bundle,
     Cluster,
     ClusterObject,
     Host,
     HostProvider,
+    ObjectType,
     Prototype,
     ServiceComponent,
 )
+from django.conf import settings
+from django.urls import reverse
 from rbac.models import Group, Policy, User
 from rbac.tests.test_base import RBACBaseTestCase
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-attributes
@@ -501,3 +511,367 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
         self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_12))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host2))
+
+
+class TestPolicyWithClusterAdminRole(BaseTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        files_dir = settings.BASE_DIR / "python" / "rbac" / "tests" / "files"
+        provider_bundle_filename = files_dir / "provider.tar"
+        cluster_bundle_filename = files_dir / "test_cluster_for_cluster_admin_role.tar"
+
+        provider = self._make_adcm_entity(
+            entity_type=ObjectType.PROVIDER, bundle_filename=provider_bundle_filename, name="Test Provider"
+        )
+        self.cluster = self._make_adcm_entity(
+            entity_type=ObjectType.CLUSTER, bundle_filename=cluster_bundle_filename, name="Test Cluster"
+        )
+
+        self.host_pks = self._make_hosts(num=5, provider_id=provider.pk, cluster_id=self.cluster.pk)
+        self.service_pks = self._make_services(cluster_id=self.cluster.pk)
+        self.assertEqual(len(self.host_pks), len(self.service_pks))
+
+        self.component_pks = self._save_hc_map(host_pks=self.host_pks, service_pks=self.service_pks)
+
+    def _save_hc_map(self, host_pks: list[int], service_pks: list[int]) -> list[int]:
+        component_pks = []
+        hc_data = []
+
+        for host_pk, service_pk in zip(host_pks, service_pks):
+            for component in ServiceComponent.objects.filter(service=ClusterObject.objects.get(pk=service_pk)):
+                component_pks.append(component.pk)
+                hc_data.append({"component_id": component.pk, "host_id": host_pk, "service_id": service_pk})
+
+        response: Response = self.client.post(
+            path=reverse(viewname="host-component", kwargs={"cluster_id": self.cluster.pk}),
+            data={"cluster_id": self.cluster.pk, "hc": hc_data},
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        return component_pks
+
+    def _make_adcm_entity(self, entity_type: ObjectType, bundle_filename: Path, name: str) -> Cluster | HostProvider:
+        if entity_type == ObjectType.CLUSTER:
+            model = Cluster
+            viewname = "cluster"
+        elif entity_type == ObjectType.PROVIDER:
+            model = HostProvider
+            viewname = "provider"
+        else:
+            raise NotImplementedError
+
+        bundle = self.upload_and_load_bundle(path=bundle_filename)
+
+        response: Response = self.client.post(
+            path=reverse(viewname=viewname),
+            data={
+                "prototype_id": Prototype.objects.get(bundle=bundle, type=entity_type).pk,
+                "name": name,
+                "display_name": name,
+                "bundle_id": bundle.pk,
+            },
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        return model.objects.get(pk=response.json()["id"])
+
+    def _get_role_request_data(self, role_display_name: str) -> dict | None:
+        response: Response = self.client.get(
+            path=reverse(viewname="rbac:role-list"),
+            data={"ordering": "name", "type": "role", "view": "interface"},
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        target_role_data = None
+        for role_data in response.json()["results"]:
+            if role_data["display_name"] == role_display_name:
+                target_role_data = role_data
+                break
+
+        return target_role_data
+
+    def _get_user_request_data(self, username: str) -> dict | None:
+        response: Response = self.client.get(
+            path=reverse(viewname="rbac:user-list"),
+            data={"ordering": "username", "view": "interface"},
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        target_user_data = None
+        for user_data in response.json()["results"]:
+            if user_data["username"] == username:
+                target_user_data = user_data
+                break
+
+        return target_user_data
+
+    def _apply_policy(self, role_display_name: str, username: str) -> None:
+        role_data = self._get_role_request_data(role_display_name=role_display_name)
+        self.assertIsNotNone(role_data)
+
+        user_data = self._get_user_request_data(username=username)
+        self.assertIsNotNone(user_data)
+
+        policy_request_data = {
+            "name": "test_policy_cluster_admin",
+            "role": {"id": role_data["id"]},
+            "user": [
+                {"id": user_data["id"]},
+            ],
+            "group": [],
+            "object": [
+                {"name": self.cluster.name, "type": "cluster", "id": self.cluster.pk},
+            ],
+        }
+        response: Response = self.client.post(
+            path=reverse(viewname="rbac:policy-list"),
+            data=policy_request_data,
+            content_type=APPLICATION_JSON,
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def _make_hosts(self, num: int, provider_id: int, cluster_id: int | None = None) -> list[int]:
+        host_pks = []
+
+        for host_num in range(num):
+            fqdn = f"host-{host_num}"
+
+            response: Response = self.client.post(
+                path=reverse(viewname="host", kwargs={"provider_id": provider_id}),
+                data={
+                    "fqdn": fqdn,
+                },
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+            host_id = response.json()["id"]
+            host_pks.append(host_id)
+
+            if not cluster_id:
+                continue
+
+            response: Response = self.client.post(
+                path=reverse(viewname="host", kwargs={"cluster_id": cluster_id}),
+                data={
+                    "host_id": host_id,
+                },
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        return host_pks
+
+    def _make_services(self, cluster_id: int) -> list[int]:
+        service_pks = []
+
+        service_proto_pks = (
+            Prototype.objects.filter(
+                bundle=Bundle.objects.get(name="test_cluster_for_cluster_admin_role"), type=ObjectType.SERVICE
+            )
+            .order_by("name")
+            .values_list("pk", flat=True)
+        )
+        for service_proto_pk in service_proto_pks:
+            response = self.client.post(
+                path=reverse(viewname="service", kwargs={"cluster_id": cluster_id}),
+                data={
+                    "prototype_id": service_proto_pk,
+                },
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+            service_pks.append(response.json()["id"])
+
+        return service_pks
+
+    def test_view_perm_for_cluster_and_all_descendants_success(self):
+        # pylint: disable=too-many-statements
+        with self.no_rights_user_logged_in:
+            response: Response = self.client.get(
+                path=reverse(viewname="cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            response: Response = self.client.get(
+                path=reverse(viewname="service-details", kwargs={"service_id": self.service_pks[0]}),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            response: Response = self.client.get(
+                path=reverse(viewname="component-details", kwargs={"component_id": self.component_pks[0]}),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            response: Response = self.client.get(
+                path=reverse(viewname="host-details", kwargs={"host_id": self.host_pks[0]}),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            response: Response = self.client.get(
+                path=reverse(viewname="host", kwargs={"cluster_id": self.cluster.pk}),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            response: Response = self.client.get(
+                path=reverse(
+                    viewname="config-current",
+                    kwargs={"cluster_id": self.cluster.pk, "object_type": "cluster", "version": "current"},
+                ),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            response: Response = self.client.get(
+                path=reverse(
+                    viewname="config-current",
+                    kwargs={
+                        "cluster_id": self.cluster.pk,
+                        "service_id": self.service_pks[0],
+                        "object_type": "service",
+                        "version": "current",
+                    },
+                ),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            response: Response = self.client.get(
+                path=reverse(
+                    viewname="config-current",
+                    kwargs={"component_id": self.component_pks[0], "object_type": "component", "version": "current"},
+                ),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            response: Response = self.client.get(
+                path=reverse(
+                    viewname="object-action", kwargs={"cluster_id": self.cluster.pk, "object_type": "cluster"}
+                ),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(response.json(), [])
+
+            response: Response = self.client.get(
+                path=reverse(
+                    viewname="object-action", kwargs={"service_id": self.service_pks[0], "object_type": "service"}
+                ),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(response.json(), [])
+
+            response: Response = self.client.get(
+                path=reverse(
+                    viewname="object-action", kwargs={"component_id": self.component_pks[0], "object_type": "component"}
+                ),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(response.json(), [])
+
+        self._apply_policy(role_display_name="Cluster Administrator", username=self.no_rights_user_username)
+
+        with self.no_rights_user_logged_in:
+            response: Response = self.client.get(
+                path=reverse(viewname="cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response: Response = self.client.get(
+                path=reverse(viewname="service-details", kwargs={"service_id": self.service_pks[0]}),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response: Response = self.client.get(
+                path=reverse(viewname="component-details", kwargs={"component_id": self.component_pks[0]}),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response: Response = self.client.get(
+                path=reverse(viewname="host-details", kwargs={"host_id": self.host_pks[0]}),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response: Response = self.client.get(
+                path=reverse(viewname="host", kwargs={"cluster_id": self.cluster.pk}),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response: Response = self.client.get(
+                path=reverse(
+                    viewname="config-current",
+                    kwargs={"cluster_id": self.cluster.pk, "object_type": "cluster", "version": "current"},
+                ),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response: Response = self.client.get(
+                path=reverse(
+                    viewname="config-current",
+                    kwargs={
+                        "cluster_id": self.cluster.pk,
+                        "service_id": self.service_pks[0],
+                        "object_type": "service",
+                        "version": "current",
+                    },
+                ),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response: Response = self.client.get(
+                path=reverse(
+                    viewname="config-current",
+                    kwargs={"component_id": self.component_pks[0], "object_type": "component", "version": "current"},
+                ),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response: Response = self.client.get(
+                path=reverse(
+                    viewname="object-action", kwargs={"cluster_id": self.cluster.pk, "object_type": "cluster"}
+                ),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertIsInstance(response.json(), list)
+            self.assertTrue(len(response.json()) > 0)
+
+            response: Response = self.client.get(
+                path=reverse(
+                    viewname="object-action", kwargs={"service_id": self.service_pks[0], "object_type": "service"}
+                ),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertIsInstance(response.json(), list)
+            self.assertTrue(len(response.json()) > 0)
+
+            response: Response = self.client.get(
+                path=reverse(
+                    viewname="object-action", kwargs={"component_id": self.component_pks[0], "object_type": "component"}
+                ),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertIsInstance(response.json(), list)
+            self.assertTrue(len(response.json()) > 0)
