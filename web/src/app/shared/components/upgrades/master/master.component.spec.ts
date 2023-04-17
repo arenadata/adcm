@@ -91,6 +91,7 @@ describe('MasterComponent', () => {
         min_strict: false,
         min_version: '',
         name: '',
+        display_name: '',
         state_available: '',
         state_on_success: '',
         ui_options: null,
@@ -126,6 +127,7 @@ describe('MasterComponent', () => {
           min_strict: false,
           min_version: '',
           name: '',
+          display_name: '',
           state_available: '',
           state_on_success: '',
           ui_options: {} as IUIOptions,
@@ -147,6 +149,7 @@ describe('MasterComponent', () => {
           min_strict: false,
           min_version: '',
           name: '',
+          display_name: '',
           state_available: '',
           state_on_success: '',
           ui_options: {} as IUIOptions,
@@ -196,6 +199,7 @@ describe('MasterComponent', () => {
           min_strict: false,
           min_version: '',
           name: '',
+          display_name: '',
           state_available: '',
           state_on_success: '',
           ui_options: {} as IUIOptions,
@@ -217,7 +221,7 @@ describe('MasterComponent', () => {
       upgrades: [{
         bundle_id: 1, config: null, description: '', do: 'url', from_edition: ['community'],
         hostcomponentmap: [{component: '', action: 'add', service: ''}] as IActionParameter[], id: 1, license: '',
-        license_url: '', max_strict: true, max_version: '', min_strict: false, min_version: '', name: '',
+        license_url: '', max_strict: true, max_version: '', min_strict: false, min_version: '', name: '', display_name: '',
         state_available: '', state_on_success: '', ui_options: {} as IUIOptions, upgradable: true, url: ''
       }]
     };
@@ -250,7 +254,7 @@ describe('MasterComponent', () => {
           ]
         } as IConfig, description: '', do: 'url', from_edition: ['community'],
         hostcomponentmap: [{component: '', action: 'add', service: ''}] as IActionParameter[], id: 1, license: '',
-        license_url: '', max_strict: true, max_version: '', min_strict: false, min_version: '', name: '',
+        license_url: '', max_strict: true, max_version: '', min_strict: false, min_version: '', name: '', display_name: '',
         state_available: '', state_on_success: '', ui_options: {} as IUIOptions, upgradable: true, url: ''
       }]
     };

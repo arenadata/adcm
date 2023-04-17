@@ -40,6 +40,7 @@ export interface IUpgrade {
   min_strict: boolean;
   min_version: string;
   name: string;
+  display_name: string;
   state_available: string;
   state_on_success: string;
   ui_options: IUIOptions;
@@ -63,7 +64,7 @@ export interface IUpgrade {
     <mat-menu #menu="matMenu" [overlapTrigger]="false" [xPosition]="xPosition" yPosition="below">
       <ng-template matMenuContent>
         <button *ngFor="let item of list$ | async" mat-menu-item [appUpgrades]="item" [clusterId]="pRow['id']" [bundleId]="pRow['bundle_id']" [type]="type">
-          <span>{{ item.name || 'No name' }}</span>
+          <span>{{ item.display_name || item.name || 'No name' }}</span>
         </button>
       </ng-template>
     </mat-menu>
