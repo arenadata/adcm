@@ -189,7 +189,7 @@ def get_obj_config(obj):
     if obj.config is None:
         return {}, {}
 
-    config_log = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
+    config_log = ConfigLog.obj.get(obj_ref=obj.config, id=obj.config.current)
     attr = config_log.attr
     if not attr:
         attr = {}

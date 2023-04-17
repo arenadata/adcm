@@ -40,6 +40,7 @@ def get_adcm_token() -> str:
 
     with open(file=settings.ADCM_TOKEN_FILE, encoding=settings.ENCODING_UTF_8) as f:
         adcm_token = f.read().strip()
+        adcm_token.encode(encoding="idna").decode(encoding=settings.ENCODING_UTF_8)
 
     return adcm_token
 
