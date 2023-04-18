@@ -29,7 +29,7 @@ from django.db import IntegrityError
 from django.db.transaction import TransactionManagementError
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED
+from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -75,13 +75,13 @@ class TestBundle(BaseTestCase):
             ),
         )
 
-        with open(Path(settings.BUNDLE_DIR, bundle.hash, "secretfile"), encoding=settings.ENCODING_UTF_8) as f:
+        with open(file=Path(settings.BUNDLE_DIR, bundle.hash, "secretfile"), encoding=settings.ENCODING_UTF_8) as f:
             secret_file_bundle_content = f.read()
 
         self.assertNotIn(settings.ANSIBLE_VAULT_HEADER, secret_file_bundle_content)
 
         with open(
-            Path(settings.FILE_DIR, f"cluster.{cluster.pk}.secretfile."),
+            file=Path(settings.FILE_DIR, f"cluster.{cluster.pk}.secretfile."),
             encoding=settings.ENCODING_UTF_8,
         ) as f:
             secret_file_content = f.read()
@@ -136,7 +136,7 @@ class TestBundle(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         with open(
-            Path(settings.FILE_DIR, f"cluster.{cluster.pk}.secretfile."),
+            file=Path(settings.FILE_DIR, f"cluster.{cluster.pk}.secretfile."),
             encoding=settings.ENCODING_UTF_8,
         ) as f:
             secret_file_content = f.read()
@@ -214,3 +214,19 @@ class TestBundle(BaseTestCase):
             delete_host_provider(provider)
         except AdcmEx as e:
             self.assertEqual(e.code, "PROVIDER_CONFLICT")
+
+    def test_duplicate_component_name_fail(self):
+        path = Path(self.files_dir, "test_duplicate_component_name.tar")
+        self.upload_bundle(path=path)
+
+        response: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": path.name},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["desc"],
+            "Display name for component within one service must be unique."
+            ' Incorrect definition of component "component_2" 3.0',
+        )
