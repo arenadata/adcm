@@ -534,10 +534,10 @@ class TestPolicyWithClusterAdminRole(BaseTestCase):
         provider_bundle_filename = files_dir / "provider.tar"
         cluster_bundle_filename = files_dir / "test_cluster_for_cluster_admin_role.tar"
 
-        provider = self._make_adcm_entity(
+        provider = self.make_adcm_entity(
             entity_type=ObjectType.PROVIDER, bundle_filename=provider_bundle_filename, name="Test Provider"
         )
-        self.cluster = self._make_adcm_entity(
+        self.cluster = self.make_adcm_entity(
             entity_type=ObjectType.CLUSTER, bundle_filename=cluster_bundle_filename, name="Test Cluster"
         )
 
@@ -547,13 +547,13 @@ class TestPolicyWithClusterAdminRole(BaseTestCase):
             type=ObjectType.SERVICE,
         )
 
-        self.host_pks = self._make_hosts(num=5, provider_id=provider.pk, cluster_id=self.cluster.pk)
-        self.service_pks = self._make_services(cluster_id=self.cluster.pk)
+        self.host_pks = self.make_hosts(num=5, provider_id=provider.pk, cluster_id=self.cluster.pk)
+        self.service_pks = self.make_services(cluster_id=self.cluster.pk)
         self.assertEqual(len(self.host_pks), len(self.service_pks))
 
-        self.component_pks = self._save_hc_map(host_pks=self.host_pks, service_pks=self.service_pks)
+        self.component_pks = self.save_hc_map(host_pks=self.host_pks, service_pks=self.service_pks)
 
-    def _save_hc_map(self, host_pks: list[int], service_pks: list[int]) -> list[int]:
+    def save_hc_map(self, host_pks: list[int], service_pks: list[int]) -> list[int]:
         component_pks = []
         hc_data = []
 
@@ -571,7 +571,7 @@ class TestPolicyWithClusterAdminRole(BaseTestCase):
 
         return component_pks
 
-    def _make_adcm_entity(self, entity_type: ObjectType, bundle_filename: Path, name: str) -> Cluster | HostProvider:
+    def make_adcm_entity(self, entity_type: ObjectType, bundle_filename: Path, name: str) -> Cluster | HostProvider:
         if entity_type == ObjectType.CLUSTER:
             model = Cluster
             viewname = "cluster"
@@ -597,7 +597,7 @@ class TestPolicyWithClusterAdminRole(BaseTestCase):
 
         return model.objects.get(pk=response.json()["id"])
 
-    def _get_role_request_data(self, role_display_name: str) -> dict | None:
+    def get_role_request_data(self, role_display_name: str) -> dict | None:
         response: Response = self.client.get(
             path=reverse(viewname="rbac:role-list"),
             data={"ordering": "name", "type": "role", "view": "interface"},
@@ -613,7 +613,7 @@ class TestPolicyWithClusterAdminRole(BaseTestCase):
 
         return target_role_data
 
-    def _get_user_request_data(self, username: str) -> dict | None:
+    def get_user_request_data(self, username: str) -> dict | None:
         response: Response = self.client.get(
             path=reverse(viewname="rbac:user-list"),
             data={"ordering": "username", "view": "interface"},
@@ -629,11 +629,11 @@ class TestPolicyWithClusterAdminRole(BaseTestCase):
 
         return target_user_data
 
-    def _apply_policy(self, role_display_name: str, username: str) -> None:
-        role_data = self._get_role_request_data(role_display_name=role_display_name)
+    def apply_policy(self, role_display_name: str, username: str) -> None:
+        role_data = self.get_role_request_data(role_display_name=role_display_name)
         self.assertIsNotNone(role_data)
 
-        user_data = self._get_user_request_data(username=username)
+        user_data = self.get_user_request_data(username=username)
         self.assertIsNotNone(user_data)
 
         policy_request_data = {
@@ -654,7 +654,7 @@ class TestPolicyWithClusterAdminRole(BaseTestCase):
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-    def _make_hosts(self, num: int, provider_id: int, cluster_id: int | None = None) -> list[int]:
+    def make_hosts(self, num: int, provider_id: int, cluster_id: int | None = None) -> list[int]:
         host_pks = []
 
         for host_num in range(num):
@@ -685,7 +685,7 @@ class TestPolicyWithClusterAdminRole(BaseTestCase):
 
         return host_pks
 
-    def _make_services(self, cluster_id: int) -> list[int]:
+    def make_services(self, cluster_id: int) -> list[int]:
         service_pks = []
 
         service_proto_pks = (
@@ -801,7 +801,7 @@ class TestPolicyWithClusterAdminRole(BaseTestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(response.json(), [])
 
-        self._apply_policy(role_display_name="Cluster Administrator", username=self.no_rights_user_username)
+        self.apply_policy(role_display_name="Cluster Administrator", username=self.no_rights_user_username)
 
         with self.no_rights_user_logged_in:
             response: Response = self.client.get(
@@ -1010,7 +1010,7 @@ class TestPolicyWithClusterAdminRole(BaseTestCase):
             )
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._apply_policy(role_display_name="Cluster Administrator", username=self.no_rights_user_username)
+        self.apply_policy(role_display_name="Cluster Administrator", username=self.no_rights_user_username)
 
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
@@ -1129,11 +1129,11 @@ class TestPolicyWithProviderAdminRole(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.new_user = self._get_new_user()
-        self.provider = self._get_provider()
-        self._create_policy()
+        self.new_user = self.get_new_user()
+        self.provider = self.get_provider()
+        self.create_policy()
 
-    def _get_provider(self) -> HostProvider:
+    def get_provider(self) -> HostProvider:
         bundle = self.upload_and_load_bundle(
             path=settings.BASE_DIR / "python" / "rbac" / "tests" / "files" / "provider_2.tar",
         )
@@ -1153,7 +1153,7 @@ class TestPolicyWithProviderAdminRole(BaseTestCase):
 
         return HostProvider.objects.get(pk=response.json()["id"])
 
-    def _get_new_user(self) -> User:
+    def get_new_user(self) -> User:
         response: Response = self.client.post(
             path=reverse(viewname="rbac:user-list"),
             data={"username": "new_user", "password": "new_user_password"},
@@ -1164,7 +1164,7 @@ class TestPolicyWithProviderAdminRole(BaseTestCase):
 
         return User.objects.get(pk=response.json()["id"])
 
-    def _get_role_pk(self) -> int:
+    def get_role_pk(self) -> int:
         response: Response = self.client.get(
             path=reverse(viewname="rbac:role-list"),
             data={"ordering": "name", "type": "role", "view": "interface"},
@@ -1177,12 +1177,12 @@ class TestPolicyWithProviderAdminRole(BaseTestCase):
             role_data["id"] for role_data in response.json()["results"] if role_data["name"] == "Provider Administrator"
         ][0]
 
-    def _create_policy(self) -> None:
+    def create_policy(self) -> None:
         response: Response = self.client.post(
             path=reverse(viewname="rbac:policy-list"),
             data={
                 "name": "test_policy_provider_admin",
-                "role": {"id": self._get_role_pk()},
+                "role": {"id": self.get_role_pk()},
                 "user": [{"id": self.new_user.pk}],
                 "group": [],
                 "object": [{"name": self.provider.name, "type": "provider", "id": self.provider.pk}],
@@ -1192,7 +1192,7 @@ class TestPolicyWithProviderAdminRole(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-    def _retrieve_provider_action(self) -> Response:
+    def retrieve_provider_action(self) -> Response:
         response: Response = self.client.get(
             path=reverse(viewname="object-action", kwargs={"provider_id": self.provider.pk}),
         )
@@ -1202,7 +1202,7 @@ class TestPolicyWithProviderAdminRole(BaseTestCase):
 
         return response
 
-    def _create_host(self) -> Host:
+    def create_host(self) -> Host:
         response: Response = self.client.post(
             path=reverse("host", kwargs={"provider_id": self.provider.pk}),
             data={"fqdn": "test-host"},
@@ -1212,7 +1212,7 @@ class TestPolicyWithProviderAdminRole(BaseTestCase):
 
         return Host.objects.get(pk=response.data["id"])
 
-    def _retrieve_host_action(self, host_pk: int) -> Response:
+    def retrieve_host_action(self, host_pk: int) -> Response:
         response: Response = self.client.get(
             path=reverse(viewname="object-action", kwargs={"host_id": host_pk}),
         )
@@ -1283,10 +1283,10 @@ class TestPolicyWithProviderAdminRole(BaseTestCase):
         self.assertEqual(config_log.config["string"], new_string)
 
     def test_retrieve_provider_actions_success(self):
-        self._retrieve_provider_action()
+        self.retrieve_provider_action()
 
     def test_run_provider_actions_success(self):
-        response: Response = self._retrieve_provider_action()
+        response: Response = self.retrieve_provider_action()
 
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             response: Response = self.client.post(
@@ -1300,10 +1300,10 @@ class TestPolicyWithProviderAdminRole(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     def test_create_host_success(self):
-        self._create_host()
+        self.create_host()
 
     def test_retrieve_host_success(self):
-        host: Host = self._create_host()
+        host: Host = self.create_host()
         response: Response = self.client.get(path=reverse("host-details", kwargs={"host_id": host.pk}))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -1311,13 +1311,13 @@ class TestPolicyWithProviderAdminRole(BaseTestCase):
 
     def test_retrieve_host_config_success(self):
         response: Response = self.client.get(
-            path=reverse(viewname="object-config", kwargs={"host_id": self._create_host().pk}),
+            path=reverse(viewname="object-config", kwargs={"host_id": self.create_host().pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_update_host_config_success(self):
-        host: Host = self._create_host()
+        host: Host = self.create_host()
         new_string = "new_string"
 
         response: Response = self.client.post(
@@ -1333,11 +1333,11 @@ class TestPolicyWithProviderAdminRole(BaseTestCase):
         self.assertEqual(config_log.config["string"], new_string)
 
     def test_retrieve_host_actions_success(self):
-        self._retrieve_host_action(host_pk=self._create_host().pk)
+        self.retrieve_host_action(host_pk=self.create_host().pk)
 
     def test_run_host_actions_success(self):
-        host: Host = self._create_host()
-        response: Response = self._retrieve_host_action(host_pk=host.pk)
+        host: Host = self.create_host()
+        response: Response = self.retrieve_host_action(host_pk=host.pk)
 
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             response: Response = self.client.post(
@@ -1351,7 +1351,7 @@ class TestPolicyWithProviderAdminRole(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     def test_delete_host_success(self):
-        host: Host = self._create_host()
+        host: Host = self.create_host()
 
         response: Response = self.client.delete(path=reverse("host-details", kwargs={"host_id": host.pk}))
 
