@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-lines
+
 from pathlib import Path
 from unittest.mock import patch
 
@@ -20,7 +22,9 @@ from cm.models import (
     ClusterObject,
     ConfigLog,
     Host,
+    HostComponent,
     HostProvider,
+    MaintenanceMode,
     ObjectType,
     Prototype,
     ServiceComponent,
@@ -35,6 +39,7 @@ from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
+    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
 )
 
@@ -536,6 +541,12 @@ class TestPolicyWithClusterAdminRole(BaseTestCase):
             entity_type=ObjectType.CLUSTER, bundle_filename=cluster_bundle_filename, name="Test Cluster"
         )
 
+        self.service_6_proto = Prototype.objects.get(
+            bundle=Bundle.objects.get(name="test_cluster_for_cluster_admin_role"),
+            name="service_6_manual_add",
+            type=ObjectType.SERVICE,
+        )
+
         self.host_pks = self._make_hosts(num=5, provider_id=provider.pk, cluster_id=self.cluster.pk)
         self.service_pks = self._make_services(cluster_id=self.cluster.pk)
         self.assertEqual(len(self.host_pks), len(self.service_pks))
@@ -681,6 +692,7 @@ class TestPolicyWithClusterAdminRole(BaseTestCase):
             Prototype.objects.filter(
                 bundle=Bundle.objects.get(name="test_cluster_for_cluster_admin_role"), type=ObjectType.SERVICE
             )
+            .exclude(pk=self.service_6_proto.pk)
             .order_by("name")
             .values_list("pk", flat=True)
         )
@@ -883,6 +895,234 @@ class TestPolicyWithClusterAdminRole(BaseTestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertIsInstance(response.json(), list)
             self.assertTrue(len(response.json()) > 0)
+
+    def test_edit_perm_for_cluster_and_all_descendants_success(self):
+        initial_hc_count = HostComponent.objects.count()
+
+        with self.no_rights_user_logged_in:
+            response: Response = self.client.post(
+                path=reverse(viewname="host-component", kwargs={"cluster_id": self.cluster.pk}),
+                data={
+                    "cluster_id": self.cluster.pk,
+                    "hc": [
+                        {
+                            "component_id": self.component_pks[0],
+                            "host_id": self.host_pks[0],
+                            "service_id": self.service_pks[0],
+                        }
+                    ],
+                },
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="config-history", kwargs={"cluster_id": self.cluster.pk, "object_type": "cluster"}
+                ),
+                data={"attr": {}, "config": {"float": 3.3}},
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="config-history",
+                    kwargs={"cluster_id": self.cluster.pk, "service_id": self.service_pks[0], "object_type": "service"},
+                ),
+                data={"attr": {}, "config": {"float": 3.3}},
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="config-history",
+                    kwargs={"component_id": self.component_pks[0], "object_type": "component"},
+                ),
+                data={"attr": {}, "config": {"float": 3.3}},
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="config-history",
+                    kwargs={"host_id": self.host_pks[0], "object_type": "host"},
+                ),
+                data={"attr": {}, "config": {"string": "new_srting"}},
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="config-history",
+                    kwargs={"cluster_id": self.cluster.pk, "host_id": self.host_pks[0], "object_type": "host"},
+                ),
+                data={"attr": {}, "config": {"string": "new_srting"}},
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+            response = self.client.post(
+                path=reverse(viewname="service", kwargs={"cluster_id": self.cluster.pk}),
+                data={
+                    "prototype_id": self.service_6_proto.pk,
+                },
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+            response = self.client.delete(
+                path=reverse(
+                    viewname="service-details",
+                    kwargs={"cluster_id": self.cluster.pk, "service_id": self.service_pks[-1]},
+                ),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            response = self.client.post(
+                path=reverse(viewname="service-maintenance-mode", kwargs={"service_id": self.service_pks[0]}),
+                data={
+                    "maintenance_mode": MaintenanceMode.ON,
+                },
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            response = self.client.post(
+                path=reverse(viewname="component-maintenance-mode", kwargs={"component_id": self.component_pks[0]}),
+                data={
+                    "maintenance_mode": MaintenanceMode.ON,
+                },
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            response = self.client.post(
+                path=reverse(viewname="host-maintenance-mode", kwargs={"host_id": self.host_pks[0]}),
+                data={
+                    "maintenance_mode": MaintenanceMode.ON,
+                },
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self._apply_policy(role_display_name="Cluster Administrator", username=self.no_rights_user_username)
+
+        with self.no_rights_user_logged_in:
+            response: Response = self.client.post(
+                path=reverse(viewname="host-component", kwargs={"cluster_id": self.cluster.pk}),
+                data={
+                    "cluster_id": self.cluster.pk,
+                    "hc": [
+                        {
+                            "component_id": self.component_pks[0],
+                            "host_id": self.host_pks[0],
+                            "service_id": self.service_pks[0],
+                        }
+                    ],
+                },
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+            self.assertTrue(initial_hc_count != HostComponent.objects.count())
+
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="config-history", kwargs={"cluster_id": self.cluster.pk, "object_type": "cluster"}
+                ),
+                data={"attr": {}, "config": {"float": 3.3}},
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="config-history",
+                    kwargs={"cluster_id": self.cluster.pk, "service_id": self.service_pks[0], "object_type": "service"},
+                ),
+                data={"attr": {}, "config": {"float": 3.3}},
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="config-history",
+                    kwargs={"component_id": self.component_pks[0], "object_type": "component"},
+                ),
+                data={"attr": {}, "config": {"float": 3.3}},
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="config-history",
+                    kwargs={"host_id": self.host_pks[0], "object_type": "host"},
+                ),
+                data={"attr": {}, "config": {"string": "new_srting"}},
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="config-history",
+                    kwargs={"cluster_id": self.cluster.pk, "host_id": self.host_pks[0], "object_type": "host"},
+                ),
+                data={"attr": {}, "config": {"string": "new_srting"}},
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+            response = self.client.post(
+                path=reverse(viewname="service", kwargs={"cluster_id": self.cluster.pk}),
+                data={
+                    "prototype_id": self.service_6_proto.pk,
+                },
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+            response = self.client.delete(
+                path=reverse(
+                    viewname="service-details",
+                    kwargs={"cluster_id": self.cluster.pk, "service_id": self.service_pks[-1]},
+                ),
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+            response = self.client.post(
+                path=reverse(viewname="service-maintenance-mode", kwargs={"service_id": self.service_pks[0]}),
+                data={
+                    "maintenance_mode": MaintenanceMode.ON,
+                },
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response = self.client.post(
+                path=reverse(viewname="component-maintenance-mode", kwargs={"component_id": self.component_pks[0]}),
+                data={
+                    "maintenance_mode": MaintenanceMode.ON,
+                },
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response = self.client.post(
+                path=reverse(viewname="host-maintenance-mode", kwargs={"host_id": self.host_pks[0]}),
+                data={
+                    "maintenance_mode": MaintenanceMode.ON,
+                },
+                content_type=APPLICATION_JSON,
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
 
 
 class TestPolicyWithProviderAdminRole(BaseTestCase):
