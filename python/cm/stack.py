@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=line-too-long,too-many-statements
+# pylint: disable=line-too-long,too-many-statements, too-many-lines
 
 import hashlib
 import json
@@ -285,7 +285,7 @@ def save_prototype(path: Path, conf: dict, def_type: str, bundle_hash: str) -> S
         if def_type not in {"cluster", "service", "provider"}:
             raise_adcm_ex(
                 code="INVALID_OBJECT_DEFINITION",
-                msg=f"Invalid license definition in {proto_ref(proto)}. "
+                msg=f"Invalid license definition in {proto_ref(prototype=proto)}. "
                 f"License can be placed in cluster, service or provider",
             )
 
@@ -314,7 +314,7 @@ def check_component_constraint(proto, name, conf):
     if len(conf["constraint"]) > 2:
         raise_adcm_ex(
             code="INVALID_COMPONENT_DEFINITION",
-            msg=f'constraint of component "{name}" in {proto_ref(proto)} should have only 1 or 2 elements',
+            msg=f'constraint of component "{name}" in {proto_ref(prototype=proto)} should have only 1 or 2 elements',
         )
 
 
@@ -326,7 +326,7 @@ def save_components(proto: StagePrototype, conf: dict, bundle_hash: str) -> None
 
     for comp_name in conf["components"]:
         component_conf = conf["components"][comp_name]
-        validate_name(comp_name, f'Component name "{comp_name}" of {ref}')
+        validate_name(name=comp_name, error_message=f'Component name "{comp_name}" of {ref}')
         component = StagePrototype(
             type="component",
             parent=proto,
@@ -336,26 +336,27 @@ def save_components(proto: StagePrototype, conf: dict, bundle_hash: str) -> None
             adcm_min_version=proto.adcm_min_version,
         )
 
-        dict_to_obj(component_conf, "description", component)
-        dict_to_obj(component_conf, "display_name", component)
-        dict_to_obj(component_conf, "monitoring", component)
+        dict_to_obj(dictionary=component_conf, key="description", obj=component)
+        dict_to_obj(dictionary=component_conf, key="display_name", obj=component)
+        dict_to_obj(dictionary=component_conf, key="monitoring", obj=component)
 
-        fix_display_name(component_conf, component)
-        check_component_constraint(proto, comp_name, component_conf)
+        fix_display_name(conf=component_conf, obj=component)
+        check_display_name(obj=component)
+        check_component_constraint(proto=proto, name=comp_name, conf=component_conf)
 
-        dict_to_obj(component_conf, "params", component)
-        dict_to_obj(component_conf, "constraint", component)
-        dict_to_obj(component_conf, "requires", component)
-        dict_to_obj(component_conf, "venv", component)
-        dict_to_obj(component_conf, "bound_to", component)
+        dict_to_obj(dictionary=component_conf, key="params", obj=component)
+        dict_to_obj(dictionary=component_conf, key="constraint", obj=component)
+        dict_to_obj(dictionary=component_conf, key="requires", obj=component)
+        dict_to_obj(dictionary=component_conf, key="venv", obj=component)
+        dict_to_obj(dictionary=component_conf, key="bound_to", obj=component)
 
-        process_config_group_customization(component_conf, component)
+        process_config_group_customization(actual_config=component_conf, obj=component)
 
-        dict_to_obj(component_conf, "config_group_customization", component)
+        dict_to_obj(dictionary=component_conf, key="config_group_customization", obj=component)
         component.save()
 
         save_actions(prototype=component, config=component_conf, bundle_hash=bundle_hash)
-        save_prototype_config(component, component_conf, bundle_hash)
+        save_prototype_config(proto=component, proto_conf=component_conf, bundle_hash=bundle_hash)
 
 
 def check_upgrade(prototype: StagePrototype, config: dict) -> None:
@@ -500,7 +501,7 @@ def save_export(proto: StagePrototype, conf: dict) -> None:
         stage_prototype_export.save()
 
 
-def get_config_groups(proto, action=None):
+def get_config_groups(proto: StagePrototype, action: StageAction | None = None) -> dict:
     groups = {}
     for stage_prototype_config in StagePrototypeConfig.objects.filter(prototype=proto, action=action):
         if stage_prototype_config.subname != "":
@@ -509,12 +510,12 @@ def get_config_groups(proto, action=None):
     return groups
 
 
-def check_default_import(proto, conf):
-    ref = proto_ref(proto)
+def check_default_import(proto: StagePrototype, conf: dict) -> None:
+    ref = proto_ref(prototype=proto)
     if "default" not in conf:
         return
 
-    groups = get_config_groups(proto)
+    groups = get_config_groups(proto=proto)
     for key in conf["default"]:
         if key not in groups:
             raise_adcm_ex(code="INVALID_OBJECT_DEFINITION", msg=f'No import default group "{key}" in config ({ref})')
@@ -795,7 +796,7 @@ def save_prototype_config(  # noqa: C901
         return
 
     conf_dict = proto_conf["config"]
-    ref = proto_ref(proto)
+    ref = proto_ref(prototype=proto)
 
     def check_variant(_conf: dict) -> dict:  # pylint: disable=unused-argument
         vtype = _conf["source"]["type"]
@@ -931,14 +932,28 @@ def validate_name(name: str, error_message: str) -> None:
         )
 
 
-def fix_display_name(conf, obj):
+def check_display_name(obj: StagePrototype) -> None:
+    another_comps = (
+        StagePrototype.objects.filter(type="component", display_name=obj.display_name, parent=obj.parent)
+        .exclude(id=obj.id)
+        .exists()
+    )
+
+    if another_comps:
+        raise_adcm_ex(
+            code="WRONG_NAME",
+            msg=f"Display name for component within one service must be unique. Incorrect definition of {proto_ref(prototype=obj)}",
+        )
+
+
+def fix_display_name(conf: dict, obj: StagePrototype) -> None:
     if isinstance(conf, dict) and "display_name" in conf:
         return
 
     obj.display_name = obj.name
 
 
-def in_dict(dictionary, key):
+def in_dict(dictionary: dict, key: str) -> bool:
     if not isinstance(dictionary, dict):
         return False
 

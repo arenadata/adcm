@@ -62,6 +62,7 @@ STAGE = (
 )
 
 
+@transaction.atomic()
 def load_bundle(bundle_file: str) -> None:
     logger.info('loading bundle file "%s" ...', bundle_file)
     bundle_hash, path = process_file(bundle_file=bundle_file)
