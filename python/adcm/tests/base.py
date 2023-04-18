@@ -30,8 +30,6 @@ class BaseTestCase(TestCase):
     # pylint: disable=too-many-instance-attributes
 
     def setUp(self) -> None:
-        init_roles()
-
         self.test_user_username = "test_user"
         self.test_user_password = "test_user_password"
 
@@ -50,6 +48,14 @@ class BaseTestCase(TestCase):
 
         self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
         self.login()
+
+    @classmethod
+    def setUpClass(cls):
+        init_roles()
+
+    @classmethod
+    def tearDownClass(cls):
+        ...
 
     def tearDown(self) -> None:
         dirs_to_clear = (

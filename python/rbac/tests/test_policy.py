@@ -11,12 +11,14 @@
 # limitations under the License.
 
 from pathlib import Path
+from unittest.mock import patch
 
 from cm import api
 from cm.models import (
     Bundle,
     Cluster,
     ClusterObject,
+    ConfigLog,
     Host,
     HostProvider,
     ObjectType,
@@ -24,11 +26,17 @@ from cm.models import (
     ServiceComponent,
 )
 from django.conf import settings
+from django.db.models import ObjectDoesNotExist
 from django.urls import reverse
 from rbac.models import Group, Policy, User
 from rbac.tests.test_base import RBACBaseTestCase
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_404_NOT_FOUND,
+)
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -875,3 +883,238 @@ class TestPolicyWithClusterAdminRole(BaseTestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertIsInstance(response.json(), list)
             self.assertTrue(len(response.json()) > 0)
+
+
+class TestPolicyWithProviderAdminRole(BaseTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.new_user = self._get_new_user()
+        self.provider = self._get_provider()
+        self._create_policy()
+
+    def _get_provider(self) -> HostProvider:
+        bundle = self.upload_and_load_bundle(
+            path=settings.BASE_DIR / "python" / "rbac" / "tests" / "files" / "provider_2.tar",
+        )
+
+        response: Response = self.client.post(
+            path=reverse(viewname="provider"),
+            data={
+                "prototype_id": Prototype.objects.get(bundle=bundle, type=ObjectType.PROVIDER).pk,
+                "name": "Test Provider",
+                "display_name": "Test Provider",
+                "bundle_id": bundle.pk,
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        return HostProvider.objects.get(pk=response.json()["id"])
+
+    def _get_new_user(self) -> User:
+        response: Response = self.client.post(
+            path=reverse(viewname="rbac:user-list"),
+            data={"username": "new_user", "password": "new_user_password"},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        return User.objects.get(pk=response.json()["id"])
+
+    def _get_role_pk(self) -> int:
+        response: Response = self.client.get(
+            path=reverse(viewname="rbac:role-list"),
+            data={"ordering": "name", "type": "role", "view": "interface"},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        return [
+            role_data["id"] for role_data in response.json()["results"] if role_data["name"] == "Provider Administrator"
+        ][0]
+
+    def _create_policy(self) -> None:
+        response: Response = self.client.post(
+            path=reverse(viewname="rbac:policy-list"),
+            data={
+                "name": "test_policy_provider_admin",
+                "role": {"id": self._get_role_pk()},
+                "user": [{"id": self.new_user.pk}],
+                "group": [],
+                "object": [{"name": self.provider.name, "type": "provider", "id": self.provider.pk}],
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def _retrieve_provider_action(self) -> Response:
+        response: Response = self.client.get(
+            path=reverse(viewname="object-action", kwargs={"provider_id": self.provider.pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+        return response
+
+    def _create_host(self) -> Host:
+        response: Response = self.client.post(
+            path=reverse("host", kwargs={"provider_id": self.provider.pk}),
+            data={"fqdn": "test-host"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        return Host.objects.get(pk=response.data["id"])
+
+    def _retrieve_host_action(self, host_pk: int) -> Response:
+        response: Response = self.client.get(
+            path=reverse(viewname="object-action", kwargs={"host_id": host_pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+        return response
+
+    def test_policy_add_required_perms_success(self):
+        required_perms = {perm.codename for perm in self.new_user.user_permissions.all()}
+        required_perms.update({perm.permission.codename for perm in self.new_user.userobjectpermission_set.all()})
+
+        self.assertEqual(
+            required_perms,
+            {
+                "delete_bundle",
+                "add_groupconfig",
+                "change_objectconfig",
+                "add_bundle",
+                "change_groupconfig",
+                "add_configlog",
+                "delete_groupconfig",
+                "add_prototype",
+                "change_bundle",
+                "change_configlog",
+                "add_host",
+                "view_configlog",
+                "view_hostprovider",
+                "do_upgrade_of_hostprovider",
+                "change_config_of_hostprovider",
+                "view_action",
+                "view_upgrade_of_hostprovider",
+                "view_objectconfig",
+                "add_host_to_hostprovider",
+                "run_action_bd938c688f49b77c7fc537c6b9222e2c97ebddd63076b87f2feaec66fb9c05d0",
+            },
+        )
+
+    def test_retrieve_provider_success(self):
+        response: Response = self.client.get(
+            path=reverse(viewname="provider-details", kwargs={"provider_id": self.provider.pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.data["name"], self.provider.name)
+
+    def test_retrieve_provider_config_success(self):
+        response: Response = self.client.get(
+            path=reverse(viewname="object-config", kwargs={"provider_id": self.provider.pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_update_provider_config_success(self):
+        new_string = "new_string"
+
+        response: Response = self.client.post(
+            path=reverse(viewname="config-history", kwargs={"provider_id": self.provider.pk}),
+            data={"config": {"string": new_string}},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.provider.refresh_from_db()
+        config_log = ConfigLog.objects.get(pk=self.provider.config.current)
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(config_log.config["string"], new_string)
+
+    def test_retrieve_provider_actions_success(self):
+        self._retrieve_provider_action()
+
+    def test_run_provider_actions_success(self):
+        response: Response = self._retrieve_provider_action()
+
+        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="run-task",
+                    kwargs={"provider_id": self.provider.pk, "action_id": response.data[0]["id"]},
+                ),
+                content_type=APPLICATION_JSON,
+            )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_create_host_success(self):
+        self._create_host()
+
+    def test_retrieve_host_success(self):
+        host: Host = self._create_host()
+        response: Response = self.client.get(path=reverse("host-details", kwargs={"host_id": host.pk}))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.data["id"], host.pk)
+
+    def test_retrieve_host_config_success(self):
+        response: Response = self.client.get(
+            path=reverse(viewname="object-config", kwargs={"host_id": self._create_host().pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_update_host_config_success(self):
+        host: Host = self._create_host()
+        new_string = "new_string"
+
+        response: Response = self.client.post(
+            path=reverse(viewname="config-history", kwargs={"host_id": host.pk}),
+            data={"config": {"string": new_string}},
+            content_type=APPLICATION_JSON,
+        )
+
+        host.refresh_from_db()
+        config_log = ConfigLog.objects.get(pk=host.config.current)
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(config_log.config["string"], new_string)
+
+    def test_retrieve_host_actions_success(self):
+        self._retrieve_host_action(host_pk=self._create_host().pk)
+
+    def test_run_host_actions_success(self):
+        host: Host = self._create_host()
+        response: Response = self._retrieve_host_action(host_pk=host.pk)
+
+        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="run-task",
+                    kwargs={"host_id": host.pk, "action_id": response.data[0]["id"]},
+                ),
+                content_type=APPLICATION_JSON,
+            )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_delete_host_success(self):
+        host: Host = self._create_host()
+
+        response: Response = self.client.delete(path=reverse("host-details", kwargs={"host_id": host.pk}))
+
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        with self.assertRaises(ObjectDoesNotExist):
+            host.refresh_from_db()
