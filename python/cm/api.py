@@ -681,9 +681,10 @@ def save_hc(cluster, host_comp_list):
     # pylint: disable=too-many-locals
 
     hc_queryset = HostComponent.objects.filter(cluster=cluster).order_by("id")
-    service_map = {hc.service for hc in hc_queryset}
+    service_set = {hc.service for hc in hc_queryset}
     old_hosts = {i.host for i in hc_queryset.select_related("host")}
     new_hosts = {i[1] for i in host_comp_list}
+
     for removed_host in old_hosts.difference(new_hosts):
         removed_host.remove_from_concerns(CTX.lock)
 
@@ -692,6 +693,7 @@ def save_hc(cluster, host_comp_list):
 
     still_hc = still_existed_hc(cluster, host_comp_list)
     host_service_of_still_hc = {(hc.host, hc.service) for hc in still_hc}
+
     for removed_hc in set(hc_queryset) - set(still_hc):
         groupconfigs = GroupConfig.objects.filter(
             object_type__model__in=["clusterobject", "servicecomponent"],
@@ -706,32 +708,35 @@ def save_hc(cluster, host_comp_list):
             group_config.hosts.remove(removed_hc.host)
 
     hc_queryset.delete()
-    result = []
+    host_component_list = []
+
     for proto, host, comp in host_comp_list:
-        hostcomponent = HostComponent(
+        host_component = HostComponent(
             cluster=cluster,
             service=proto,
             host=host,
             component=comp,
         )
-        hostcomponent.save()
-        result.append(hostcomponent)
+        host_component.save()
+        host_component_list.append(host_component)
 
     CTX.event.send_state()
     post_event(event="change_hostcomponentmap", obj=cluster)
     update_hierarchy_issues(cluster)
-    for provider in [host.provider for host in Host.objects.filter(cluster=cluster)]:
+
+    for provider in {host.provider for host in Host.objects.filter(cluster=cluster)}:
         update_hierarchy_issues(provider)
 
     update_issue_after_deleting()
     load_service_map()
-    for service in service_map:
-        re_apply_object_policy(service)
 
-    for hostcomponent in result:
-        re_apply_object_policy(hostcomponent.service)
+    for host_component_item in host_component_list:
+        service_set.add(host_component_item.service)
 
-    return result
+    for service in service_set:
+        re_apply_object_policy(apply_object=service)
+
+    return host_component_list
 
 
 def add_hc(cluster, hc_in):

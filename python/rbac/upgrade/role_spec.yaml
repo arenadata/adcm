@@ -1,6 +1,6 @@
 ---
 
-version: 4
+version: 5
 
 roles:
     - name: Add host
@@ -1430,14 +1430,17 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       child:
-        - Get service object
+        - Edit component config
+        - Edit config
+        - Edit service config
         - Get component object
         - Get host object
-        - View host configurations
-        - Edit service configurations
-        - Edit component configurations
-        - View host-components
+        - Get service object
         - Manage service imports
+        - View component config
+        - View host config
+        - View host-components hidden
+        - View service config
 
     - name: Cluster Administrator
       type: role
@@ -1449,23 +1452,40 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       child:
-        - Service Administrator
-        - Edit cluster configurations
-        - Edit host configurations
-        - Edit host-components
+        - Accept license
+        - Add bundle
+        - Add host
+        - Add host to provider
+        - Add service hidden
+        - Create service
+        - Delete host
+        - Edit cluster config
+        - Edit component config
+        - Edit config
+        - Edit host config
+        - Edit host-components hidden
+        - Edit service config
+        - Get cluster object
+        - Get component object
+        - Get host
+        - Get host object
+        - Get service object
         - Manage cluster imports
-        - Add service
-        - Remove service
-        - Remove hosts
-        - Map hosts
-        - Unmap hosts
-        - Upgrade cluster bundle
-        - Create host
-        - Upload bundle
-        - Remove bundle
+        - Manage component Maintenance mode
         - Manage host Maintenance mode hidden
         - Manage service Maintenance mode
-        - Manage component Maintenance mode
+        - Manage service imports
+        - Map hosts hidden
+        - Remove bundle
+        - Remove hosts hidden
+        - Remove service
+        - Unmap hosts hidden
+        - Upgrade cluster bundle
+        - View cluster config
+        - View component config
+        - View host config
+        - View host-components hidden
+        - View service config
 
     - name: Provider Administrator
       type: role

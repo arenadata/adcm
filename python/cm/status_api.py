@@ -118,7 +118,6 @@ def post_event(event: str, obj, details: dict = None) -> Response | None:
         },
     }
 
-    logger.debug("post_event %s", data)
     return api_request(method="post", url="event/", data=data)
 
 
