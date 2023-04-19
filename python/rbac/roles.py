@@ -182,7 +182,7 @@ def get_perm_for_model(model, action: str = "view") -> Permission:
     return perm
 
 
-def apply_jobs(task: TaskLog, policy: Policy, user: User, group: Group = None) -> None:
+def apply_jobs(task: TaskLog, policy: Policy, user: User | None = None, group: Group | None = None) -> None:
     assign_user_or_group_perm(user=user, group=group, policy=policy, perm=get_perm_for_model(model=TaskLog), obj=task)
     assign_user_or_group_perm(
         user=user,
@@ -242,7 +242,7 @@ def re_apply_policy_for_jobs(action_object, task):  # noqa: C901
                     obj=action_object,
                 ):
                     policy.role.child.add(task_role)
-                    apply_jobs(task=task, policy=policy, user=user, group=None)
+                    apply_jobs(task=task, policy=policy, user=user)
 
             for group in policy.group.all():
                 try:
@@ -261,7 +261,7 @@ def re_apply_policy_for_jobs(action_object, task):  # noqa: C901
 
                 if group_obj_perm in policy.group_object_perm.all() and model_view_gop:
                     policy.role.child.add(task_role)
-                    apply_jobs(task=task, policy=policy, user=None, group=group)
+                    apply_jobs(task=task, policy=policy, group=group)
 
 
 def apply_policy_for_new_config(config_object: ADCMEntity, config_log: ConfigLog) -> None:  # noqa: C901
@@ -383,9 +383,6 @@ class ParentRole(AbstractRole):
             parametrized_by.update(set(child_role.parametrized_by_type))
 
         for obj in policy.get_objects(param_obj=param_obj):
-            view_cluster_perm = Permission.objects.get(codename="view_cluster")
-            view_service_perm = Permission.objects.get(codename="view_clusterobject")
-
             self.find_and_apply(obj=obj, policy=policy, role=role, user=user, group=group)
 
             if obj.prototype.type == "cluster":
@@ -412,7 +409,7 @@ class ParentRole(AbstractRole):
                     user=user,
                     group=group,
                     policy=policy,
-                    perm=view_cluster_perm,
+                    perm=Permission.objects.get(codename="view_cluster"),
                     obj=obj.cluster,
                 )
             elif obj.prototype.type == "component":
@@ -428,14 +425,14 @@ class ParentRole(AbstractRole):
                     user=user,
                     group=group,
                     policy=policy,
-                    perm=view_cluster_perm,
+                    perm=Permission.objects.get(codename="view_cluster"),
                     obj=obj.cluster,
                 )
                 assign_user_or_group_perm(
                     user=user,
                     group=group,
                     policy=policy,
-                    perm=view_service_perm,
+                    perm=Permission.objects.get(codename="view_clusterobject"),
                     obj=obj.service,
                 )
             elif obj.prototype.type == "provider":

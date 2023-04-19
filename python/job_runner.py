@@ -31,6 +31,7 @@ from cm.models import JobLog, JobStatus, LogStorage, Prototype, ServiceComponent
 from cm.status_api import Event, post_event
 from cm.upgrade import bundle_revert, bundle_switch
 from cm.utils import get_env_with_venv_path
+from rbac.roles import re_apply_policy_for_jobs
 
 
 def open_file(root, tag, job_id):
@@ -184,6 +185,8 @@ def run_upgrade(job):
                 bundle_revert(obj=job.task.task_object)
 
             switch_hc(task=job.task, action=job.action)
+            re_apply_policy_for_jobs(action_object=job.task.task_object, task=job.task)
+
     except AdcmEx as e:
         err_file.write(e.msg)
         cm.job.set_job_status(job.id, JobStatus.FAILED, event)
