@@ -38,7 +38,7 @@ from rbac.models import (
     Role,
     RoleTypes,
     User,
-    get_objects_for_policy,
+    get_objects_hierarchy_for_policy,
 )
 
 
@@ -89,6 +89,15 @@ def assign_user_or_group_perm(user: User | None, group: Group | None, policy: Po
         if group is not None:
             gop = GroupObjectPermission.objects.assign_perm(perm, group, obj)
             policy.group_object_perm.add(gop)
+
+
+def bulk_remove_user_or_group_permissions_of_node(node: ADCMEntity):
+    content_type = ContentType.objects.get_for_model(model=node)
+    user_permission_queryset = UserObjectPermission.objects.filter(object_pk=node.pk, content_type=content_type)
+    group_permission_queryset = UserObjectPermission.objects.filter(object_pk=node.pk, content_type=content_type)
+    with transaction.atomic():
+        user_permission_queryset.delete()
+        group_permission_queryset.delete()
 
 
 class ObjectRole(AbstractRole):
@@ -210,7 +219,7 @@ def apply_jobs(task: TaskLog, policy: Policy, user: User | None = None, group: G
 
 
 def re_apply_policy_for_jobs(action_object, task):  # noqa: C901
-    obj_type_map = get_objects_for_policy(action_object)
+    obj_type_map = get_objects_hierarchy_for_policy(action_object)
     object_model = action_object.__class__.__name__.lower()
     task_role, _ = Role.objects.get_or_create(
         name=f"View role for task {task.id}",
@@ -265,7 +274,7 @@ def re_apply_policy_for_jobs(action_object, task):  # noqa: C901
 
 
 def apply_policy_for_new_config(config_object: ADCMEntity, config_log: ConfigLog) -> None:  # noqa: C901
-    obj_type_map = get_objects_for_policy(obj=config_object)
+    obj_type_map = get_objects_hierarchy_for_policy(obj=config_object)
     object_model = config_object.__class__.__name__.lower()
 
     for obj, content_type in obj_type_map.items():

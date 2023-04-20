@@ -56,8 +56,11 @@ from cm.models import (
 from cm.status_api import api_request, post_event
 from django.core.exceptions import MultipleObjectsReturned
 from django.db import transaction
-from rbac.models import re_apply_object_policy
-from rbac.roles import apply_policy_for_new_config
+from rbac.models import apply_objects_policies_on_node, re_apply_object_policy
+from rbac.roles import (
+    apply_policy_for_new_config,
+    bulk_remove_user_or_group_permissions_of_node,
+)
 from version_utils import rpm
 
 
@@ -211,8 +214,8 @@ def add_host(proto, provider, fqdn, desc=""):
         host.config = obj_conf
         host.save()
         host.add_to_concerns(CTX.lock)
-        update_hierarchy_issues(host.provider)
-        re_apply_object_policy(provider)
+        update_hierarchy_issues(provider)
+        apply_objects_policies_on_node(list_of_policy_objects=[provider], node=host)
 
     CTX.event.send_state()
     post_event(event="create", obj=host, details={"type": "provider", "value": str(provider.pk)})
@@ -261,7 +264,9 @@ def delete_host_provider(provider, cancel_tasks=True):
 
     provider_pk = provider.pk
     post_event(event="delete", obj=provider)
-    provider.delete()
+    with transaction.atomic():
+        provider.delete()
+        bulk_remove_user_or_group_permissions_of_node(provider)
     logger.info("host provider #%s is deleted", provider_pk)
 
 
@@ -277,7 +282,7 @@ def add_host_to_cluster(cluster, host):
         host.save()
         host.add_to_concerns(CTX.lock)
         update_hierarchy_issues(host)
-        re_apply_object_policy(cluster)
+        re_apply_object_policy(apply_object=cluster)
 
     post_event(event="add", obj=host, details={"type": "cluster", "value": str(cluster.pk)})
     load_service_map()
@@ -336,9 +341,11 @@ def delete_host(host, cancel_tasks=True):
 
     host_pk = host.pk
     post_event(event="delete", obj=host)
-    host.delete()
+    with transaction.atomic():
+        host.delete()
+        update_issue_after_deleting()
+        bulk_remove_user_or_group_permissions_of_node(host)
     load_service_map()
-    update_issue_after_deleting()
     logger.info("host #%s is deleted", host_pk)
 
 
@@ -375,9 +382,8 @@ def delete_service_by_pk(service_pk):
 
     This is intended for use in adcm_delete_service ansible plugin only
     """
-
+    service = ClusterObject.obj.get(pk=service_pk)
     with transaction.atomic():
-        service = ClusterObject.obj.get(pk=service_pk)
         _clean_up_related_hc(service)
         ClusterBind.objects.filter(source_service=service).delete()
         delete_service(service=service)
@@ -390,8 +396,8 @@ def delete_service_by_name(service_name, cluster_pk):
     This is intended for use in adcm_delete_service ansible plugin only
     """
 
+    service = ClusterObject.obj.get(cluster__pk=cluster_pk, prototype__name=service_name)
     with transaction.atomic():
-        service = ClusterObject.obj.get(cluster__pk=cluster_pk, prototype__name=service_name)
         _clean_up_related_hc(service)
         ClusterBind.objects.filter(source_service=service).delete()
         delete_service(service=service)
@@ -400,10 +406,11 @@ def delete_service_by_name(service_name, cluster_pk):
 def delete_service(service: ClusterObject) -> None:
     service_pk = service.pk
     post_event(event="delete", obj=service)
-    service.delete()
-    update_issue_after_deleting()
-    update_hierarchy_issues(service.cluster)
-    re_apply_object_policy(service.cluster)
+    with transaction.atomic():
+        service.delete()
+        update_issue_after_deleting()
+        update_hierarchy_issues(service.cluster)
+        bulk_remove_user_or_group_permissions_of_node(service)
     load_service_map()
     logger.info("service #%s is deleted", service_pk)
 
@@ -423,8 +430,10 @@ def delete_cluster(cluster, cancel_tasks=True):
         ", ".join(host_pks),
     )
     post_event(event="delete", obj=cluster)
-    cluster.delete()
-    update_issue_after_deleting()
+    with transaction.atomic():
+        cluster.delete()
+        update_issue_after_deleting()
+        bulk_remove_user_or_group_permissions_of_node(cluster)
     load_service_map()
 
 
@@ -444,8 +453,8 @@ def remove_host_from_cluster(host: Host) -> Host:
 
         for group in cluster.group_config.order_by("id"):
             group.hosts.remove(host)
-            update_hierarchy_issues(obj=host)
 
+        update_hierarchy_issues(obj=host)
         host.remove_from_concerns(CTX.lock)
         update_hierarchy_issues(obj=cluster)
         re_apply_object_policy(apply_object=cluster)
@@ -488,7 +497,7 @@ def add_service_to_cluster(cluster, proto):
         service.save(update_fields=["config"])
         add_components_to_service(cluster=cluster, service=service)
         update_hierarchy_issues(obj=service)
-        re_apply_object_policy(apply_object=cluster)
+        apply_objects_policies_on_node(list_of_policy_objects=[cluster], node=service)
 
     post_event(event="add", obj=service, details={"type": "cluster", "value": str(cluster.pk)})
     load_service_map()
@@ -722,12 +731,12 @@ def save_hc(cluster, host_comp_list):
 
     CTX.event.send_state()
     post_event(event="change_hostcomponentmap", obj=cluster)
+    update_issue_after_deleting()
     update_hierarchy_issues(cluster)
 
     for provider in {host.provider for host in Host.objects.filter(cluster=cluster)}:
         update_hierarchy_issues(provider)
 
-    update_issue_after_deleting()
     load_service_map()
 
     for host_component_item in host_component_list:
