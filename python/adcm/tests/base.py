@@ -51,11 +51,9 @@ class BaseTestCase(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        init_roles()
+        super().setUpClass()
 
-    @classmethod
-    def tearDownClass(cls):
-        ...
+        init_roles()
 
     def tearDown(self) -> None:
         dirs_to_clear = (
@@ -114,6 +112,18 @@ class BaseTestCase(TestCase):
         yield
 
         self.login()
+
+    def another_user_log_in(self, username: str, password: str):
+        self.client.post(path=reverse("rbac:logout"))
+        response: Response = self.client.post(
+            path=reverse("rbac:token"),
+            data={
+                "username": username,
+                "password": password,
+            },
+            content_type=APPLICATION_JSON,
+        )
+        self.client.defaults["Authorization"] = f"Token {response.data['token']}"
 
     def upload_bundle(self, path: Path) -> None:
         with open(path, encoding=settings.ENCODING_UTF_8) as f:
