@@ -285,12 +285,12 @@ class Policy(models.Model):
         return super().delete(using, keep_parents)
 
     @atomic
-    def apply_without_deletion(self):
+    def apply_without_deletion(self, apply_node):
         for user in self.user.order_by("id"):
-            self.role.apply(self, user, None)
+            self.role.apply(self, user, None, obj=apply_node)
 
         for group in self.group.all():
-            self.role.apply(self, None, group=group)
+            self.role.apply(self, None, group=group, obj=apply_node)
 
     @atomic
     def apply(self):
@@ -302,7 +302,7 @@ class Policy(models.Model):
             self.role.apply(self, None, group=group)
 
 
-def get_objects_for_policy(obj: ADCMEntity) -> dict[ADCMEntity, ContentType]:
+def get_objects_hierarchy_for_policy(obj: ADCMEntity) -> dict[ADCMEntity, ContentType]:
     obj_type_map = {}
     obj_type = obj.prototype.type
 
@@ -317,6 +317,8 @@ def get_objects_for_policy(obj: ADCMEntity) -> dict[ADCMEntity, ContentType]:
             for hostcomponent in HostComponent.objects.filter(cluster=obj.cluster, host=obj):
                 object_list.append(hostcomponent.service)
                 object_list.append(hostcomponent.component)
+
+            object_list = list(set(object_list))
         else:
             object_list = [obj, obj.provider]
     else:
@@ -333,10 +335,21 @@ def re_apply_object_policy(apply_object):
     This function search for polices linked with specified object and re apply them
     """
 
-    obj_type_map = get_objects_for_policy(apply_object)
+    obj_type_map = get_objects_hierarchy_for_policy(apply_object)
     for obj, content_type in obj_type_map.items():
         for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=content_type):
             policy.apply()
+
+
+def apply_objects_policies_on_node(list_of_policy_objects: list, node: ADCMEntity):
+    """
+    This function search for polices of objects  and apply them on node
+    """
+
+    for obj in list_of_policy_objects:
+        content_type = ContentType.objects.get_for_model(obj)
+        for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=content_type):
+            policy.apply_without_deletion(node)
 
 
 def re_apply_all_polices():
