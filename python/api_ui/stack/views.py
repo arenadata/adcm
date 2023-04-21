@@ -33,17 +33,21 @@ class PrototypeUIViewMixin:
         return queryset.filter(pk__in=distinct_prototype_pks)
 
 
-class PrototypeUIViewSet(GenericViewSet, ListModelMixin, PrototypeUIViewMixin):
+class ClusterPrototypeUIViewSet(
+    PrototypeUIViewMixin, ListModelMixin, GenericViewSet
+):  # pylint: disable=too-many-ancestors
     permission_classes = (IsAuthenticated,)
     serializer_class = PrototypeUISerializer
 
     def get_queryset(self):
-        return self.get_distinct_queryset(queryset=self.queryset)
+        return self.get_distinct_queryset(queryset=Prototype.objects.filter(type=ObjectType.CLUSTER))
 
 
-class ClusterPrototypeUIViewSet(PrototypeUIViewSet):  # pylint: disable=too-many-ancestors
-    queryset = Prototype.objects.filter(type=ObjectType.CLUSTER)
+class ProviderPrototypeUIViewSet(
+    PrototypeUIViewMixin, ListModelMixin, GenericViewSet
+):  # pylint: disable=too-many-ancestors
+    permission_classes = (IsAuthenticated,)
+    serializer_class = PrototypeUISerializer
 
-
-class ProviderPrototypeUIViewSet(PrototypeUIViewSet):  # pylint: disable=too-many-ancestors
-    queryset = Prototype.objects.filter(type=ObjectType.PROVIDER)
+    def get_queryset(self):
+        return self.get_distinct_queryset(queryset=Prototype.objects.filter(type=ObjectType.PROVIDER))
