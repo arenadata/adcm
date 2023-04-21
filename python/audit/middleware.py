@@ -60,6 +60,11 @@ class LoginMiddleware:
         config_log = None
         login_attempt_limit = None
         block_time_minutes = None
+        forbidden_response = HttpResponseForbidden(
+            content=json.dumps(
+                {"error": "Account locked: too many login attempts. Please try again later."},
+            ).encode(encoding=settings.ENCODING_UTF_8),
+        )
 
         adcm = ADCM.objects.first()
         if adcm:
@@ -70,48 +75,48 @@ class LoginMiddleware:
             block_time_minutes = config_log.config["auth_policy"]["block_time"]
 
         if not all((login_attempt_limit, block_time_minutes)):
-            result = None
+            return None
 
-        if not user.blocked_at:
-            if result == AuditSessionLoginResult.SUCCESS:
-                user.failed_login_attempts = 0
-                user.save(update_fields=["failed_login_attempts"])
+        if result == AuditSessionLoginResult.SUCCESS:
+            if user.blocked_at:
+                user_blocked_till = user.blocked_at + timedelta(minutes=block_time_minutes)
+                user_block_period_past = user_blocked_till < datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
+                if not user_block_period_past:
+                    return forbidden_response
 
-                result = None
+            user.failed_login_attempts = 0
+            user.blocked_at = None
+            user.save(update_fields=["failed_login_attempts", "blocked_at"])
 
-            if result == AuditSessionLoginResult.WRONG_PASSWORD:
-                user.failed_login_attempts += 1
-                if user.failed_login_attempts >= login_attempt_limit:
-                    user.blocked_at = datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
-
-                user.save(update_fields=["failed_login_attempts", "blocked_at"])
-
-                result = None
-
+            return None
         else:
-            if (user.blocked_at + timedelta(minutes=block_time_minutes)) < datetime.now(
-                tz=ZoneInfo(settings.TIME_ZONE)
-            ):
-                if result == AuditSessionLoginResult.SUCCESS:
-                    user.failed_login_attempts = 0
+            if user.blocked_at:
+                user_blocked_till = user.blocked_at + timedelta(minutes=block_time_minutes)
+                user_block_period_past = user_blocked_till < datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
+                if not user_block_period_past:
+                    return forbidden_response
+                else:
+                    user.failed_login_attempts = 1
                     user.blocked_at = None
-                    user.save(update_fields=["failed_login_attempts", "blocked_at"])
-
-                    result = None
-
-                if result == AuditSessionLoginResult.WRONG_PASSWORD:
-                    user.failed_login_attempts += 1
-                    user.save(update_fields=["failed_login_attempts", "blocked_at"])
-
-                    result = None
             else:
-                result = HttpResponseForbidden(
-                    content=json.dumps(
-                        {"error": "Account locked: too many login attempts. Please try again later."},
-                    ).encode(encoding=settings.ENCODING_UTF_8),
-                )
+                if user.last_failed_login_at and (
+                    user.last_failed_login_at + timedelta(minutes=block_time_minutes)
+                ) < datetime.now(tz=ZoneInfo(settings.TIME_ZONE)):
+                    user.failed_login_attempts = 1
+                else:
+                    user.failed_login_attempts += 1
 
-        return result
+                user.last_failed_login_at = datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
+
+            if user.failed_login_attempts >= login_attempt_limit:
+                user.blocked_at = datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
+                user.save(update_fields=["failed_login_attempts", "blocked_at", "last_failed_login_at"])
+
+                return forbidden_response
+            else:
+                user.save(update_fields=["failed_login_attempts", "blocked_at", "last_failed_login_at"])
+
+                return None
 
     def __call__(self, request):
         if request.method == "POST" and request.path in {

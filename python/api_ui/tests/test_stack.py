@@ -42,12 +42,21 @@ class TestStackClusterPrototypeUIAPI(BaseTestCase):
             version="1",
             display_name="test_prototype_2",
         )
+        self.test_prototype_4 = Prototype.objects.create(
+            bundle=bundle,
+            type=ObjectType.CLUSTER,
+            version="3",
+            display_name="test_prototype_2",
+        )
 
     def test_get_cluster_prototypes_success(self):
         response: Response = self.client.get(path=reverse("api_ui:cluster-list"))
+        response_json = response.json()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertIsNotNone(response.data)
+        self.assertEqual(response_json["count"], 2)
+        self.assertEqual(len(response_json["results"][0]["versions"]), 2)
+        self.assertEqual(len(response_json["results"][1]["versions"]), 2)
 
 
 class TestStackProviderPrototypeUIAPI(BaseTestCase):

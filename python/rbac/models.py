@@ -75,6 +75,7 @@ class User(AuthUser):
     built_in = BooleanField(default=False, null=False)
     failed_login_attempts = SmallIntegerField(default=0)
     blocked_at = DateTimeField(null=True)
+    last_failed_login_at = DateTimeField(null=True)
 
     def delete(self, using=None, keep_parents=False):
         self.is_active = False
