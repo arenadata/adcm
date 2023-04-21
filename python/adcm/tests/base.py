@@ -18,7 +18,8 @@ from cm.models import Bundle, Cluster, ConfigLog, Prototype
 from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
-from rbac.models import Role, User
+from rbac.models import User
+from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
@@ -48,19 +49,11 @@ class BaseTestCase(TestCase):
         self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
         self.login()
 
-        self.cluster_admin_role = Role.objects.create(
-            name="Cluster Administrator",
-            display_name="Cluster Administrator",
-        )
-        Role.objects.create(name="Provider Administrator", display_name="Provider Administrator")
-        Role.objects.create(name="Service Administrator", display_name="Service Administrator")
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
 
-        self.test_bundle_filename = "test_bundle.tar"
-        self.test_bundle_path = Path(
-            settings.BASE_DIR,
-            "python/audit/tests/files",
-            self.test_bundle_filename,
-        )
+        init_roles()
 
     def tearDown(self) -> None:
         dirs_to_clear = (
@@ -119,6 +112,18 @@ class BaseTestCase(TestCase):
         yield
 
         self.login()
+
+    def another_user_log_in(self, username: str, password: str):
+        self.client.post(path=reverse("rbac:logout"))
+        response: Response = self.client.post(
+            path=reverse("rbac:token"),
+            data={
+                "username": username,
+                "password": password,
+            },
+            content_type=APPLICATION_JSON,
+        )
+        self.client.defaults["Authorization"] = f"Token {response.data['token']}"
 
     def upload_bundle(self, path: Path) -> None:
         with open(path, encoding=settings.ENCODING_UTF_8) as f:

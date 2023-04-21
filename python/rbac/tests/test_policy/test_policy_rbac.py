@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm import api
+from cm.api import add_hc, add_host_to_cluster, add_service_to_cluster
 from cm.models import (
     Cluster,
     ClusterObject,
@@ -23,7 +23,7 @@ from rbac.models import Group, Policy, User
 from rbac.tests.test_base import RBACBaseTestCase
 
 
-class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-attributes
+class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance-attributes
     """Tests for applying policy with different combination of roles and object"""
 
     def setUp(self) -> None:
@@ -243,8 +243,8 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
     def test_parent_policy4host_in_cluster(self):
         provider, host1, host2 = self.get_hosts_and_provider()
         host3 = Host.objects.create(provider=provider, prototype=self.host_prototype, fqdn="host_3")
-        api.add_host_to_cluster(self.cluster, host1)
-        api.add_host_to_cluster(self.cluster, host2)
+        add_host_to_cluster(self.cluster, host1)
+        add_host_to_cluster(self.cluster, host2)
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_host())
         policy.user.add(self.user)
         policy.add_object(self.cluster)
@@ -263,9 +263,9 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
 
     def test_parent_policy4host_in_service(self):
         _, host1, host2 = self.get_hosts_and_provider()
-        api.add_host_to_cluster(self.cluster, host1)
-        api.add_host_to_cluster(self.cluster, host2)
-        api.add_hc(
+        add_host_to_cluster(self.cluster, host1)
+        add_host_to_cluster(self.cluster, host2)
+        add_hc(
             self.cluster,
             [
                 {
@@ -305,10 +305,10 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
     def test_parent_policy4host_in_component(self):
         provider, host1, host2 = self.get_hosts_and_provider()
         host3 = Host.objects.create(provider=provider, prototype=self.host_prototype, fqdn="host_3")
-        api.add_host_to_cluster(self.cluster, host1)
-        api.add_host_to_cluster(self.cluster, host2)
-        api.add_host_to_cluster(self.cluster, host3)
-        api.add_hc(
+        add_host_to_cluster(self.cluster, host1)
+        add_host_to_cluster(self.cluster, host2)
+        add_host_to_cluster(self.cluster, host3)
+        add_hc(
             self.cluster,
             [
                 {
@@ -401,14 +401,14 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
         self.assertTrue(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
         self.assertTrue(self.user.has_perm("cm.change_config_of_clusterobject", self.service_2))
 
-        service3 = api.add_service_to_cluster(self.cluster, sp_3)
+        service3 = add_service_to_cluster(self.cluster, sp_3)
 
         self.assertTrue(self.user.has_perm("cm.change_config_of_clusterobject", service3))
 
     def test_add_host(self):
         _, host1, host2 = self.get_hosts_and_provider()
-        api.add_host_to_cluster(self.cluster, host1)
-        api.add_hc(
+        add_host_to_cluster(self.cluster, host1)
+        add_hc(
             self.cluster,
             [
                 {
@@ -437,7 +437,7 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
-        api.add_host_to_cluster(self.cluster, host2)
+        add_host_to_cluster(self.cluster, host2)
 
         self.assertTrue(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertTrue(self.user.has_perm("cm.change_config_of_clusterobject", self.service_1))
@@ -447,8 +447,8 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
 
     def test_add_hc(self):
         _, host1, host2 = self.get_hosts_and_provider()
-        api.add_host_to_cluster(self.cluster, host1)
-        api.add_hc(
+        add_host_to_cluster(self.cluster, host1)
+        add_hc(
             self.cluster,
             [
                 {
@@ -478,8 +478,8 @@ class PolicyTestRBAC(RBACBaseTestCase):  # pylint: disable=too-many-instance-att
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
-        api.add_host_to_cluster(self.cluster, host2)
-        api.add_hc(
+        add_host_to_cluster(self.cluster, host2)
+        add_hc(
             self.cluster,
             [
                 {

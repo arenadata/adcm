@@ -24,7 +24,6 @@ from audit.models import (
 )
 from django.urls import reverse
 from init_db import init as init_adcm
-from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
 
@@ -38,7 +37,6 @@ class TestAuditViews(BaseTestCase):
         super().setUp()
 
         init_adcm()
-        init_roles()
 
         self.object_name_first = "object_name_first"
         self.object_name_second = "object_name_second"
