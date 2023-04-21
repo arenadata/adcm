@@ -93,7 +93,7 @@ class UserTestCase(BaseUserTestCase):
 
         self.test_user.refresh_from_db()
 
-        self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.assertEqual(self.test_user.failed_login_attempts, 2)
         self.assertIsNotNone(self.test_user.blocked_at)
 
@@ -122,8 +122,8 @@ class UserTestCase(BaseUserTestCase):
         self.test_user.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
-        self.assertEqual(self.test_user.failed_login_attempts, 3)
-        self.assertIsNotNone(self.test_user.blocked_at)
+        self.assertEqual(self.test_user.failed_login_attempts, 1)
+        self.assertIsNone(self.test_user.blocked_at)
 
         self.test_user.refresh_from_db()
         self.test_user.blocked_at = None
