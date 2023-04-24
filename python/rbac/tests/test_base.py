@@ -40,6 +40,7 @@ def cook_role(name, class_name, obj_type=None):
 
 class RBACBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-attributes
     def setUp(self) -> None:
+        super().setUp()
         self.create_bundles_and_prototypes()
         self.create_permissions()
 

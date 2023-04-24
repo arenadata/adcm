@@ -50,6 +50,13 @@ class TestBundleAudit(BaseTestCase):
             license="unaccepted",
         )
 
+        self.test_bundle_filename = "test_bundle.tar"
+        self.test_bundle_path = Path(
+            settings.BASE_DIR,
+            "python/audit/tests/files",
+            self.test_bundle_filename,
+        )
+
     def check_log_upload(self, log: AuditLog, operation_result: AuditLogOperationResult, user: User) -> None:
         self.assertFalse(log.audit_object)
         self.assertEqual(log.operation_name, "Bundle uploaded")

@@ -43,6 +43,12 @@ class TestBundle(BaseTestCase):
             license="unaccepted",
         )
         Prototype.objects.create(bundle=self.bundle_2, name=self.bundle_2.name)
+        self.test_bundle_filename = "bundle_cluster.tar"
+        self.test_bundle_path = Path(
+            settings.BASE_DIR,
+            "python/api/tests/files",
+            self.test_bundle_filename,
+        )
 
     def test_upload_bundle(self) -> None:
         self.upload_bundle(path=self.test_bundle_path)

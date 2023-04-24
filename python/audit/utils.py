@@ -38,7 +38,7 @@ from cm.models import (
     TaskLog,
 )
 from django.contrib.auth.models import User as DjangoUser
-from django.db.models import Model
+from django.db.models import Model, ObjectDoesNotExist
 from django.http.response import Http404
 from django.urls import resolve
 from rbac.endpoints.group.serializers import GroupAuditSerializer
@@ -84,15 +84,23 @@ def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs) -> Model | 
                 deleted_obj = None
         except AttributeError:
             deleted_obj = None
-    except (AdcmEx, Http404):  # when denied returns 404 from PermissionListMixin
+    except (AdcmEx, Http404) as e:  # when denied returns 404 from PermissionListMixin
         try:
-            deleted_obj = view.queryset[0]
+            if getattr(view, "queryset") is None:
+                raise TypeError from e
+
+            if len(view.queryset.all()) == 1:
+                deleted_obj = view.queryset.all()[0]
+            elif "pk" in view.kwargs:
+                deleted_obj = view.queryset.get(pk=view.kwargs["pk"])
+            else:
+                deleted_obj = None
         except TypeError:
             if "role" in request.path:
                 deleted_obj = Role.objects.filter(pk=view.kwargs["pk"]).first()
             else:
                 deleted_obj = None
-        except IndexError:
+        except (IndexError, ObjectDoesNotExist):
             deleted_obj = None
     except KeyError:
         deleted_obj = None

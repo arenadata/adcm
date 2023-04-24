@@ -60,7 +60,6 @@ from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 from init_db import init
-from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
 
@@ -71,6 +70,8 @@ class TestJob(BaseTestCase):
     # pylint: disable=too-many-public-methods
 
     def setUp(self):
+        super().setUp()
+
         self.files_dir = settings.BASE_DIR / "python" / "cm" / "tests" / "files"
         self.multijob_bundle = "multijob_cluster.tar"
         self.multijob_cluster_name = "multijob_cluster"
@@ -82,7 +83,6 @@ class TestJob(BaseTestCase):
     @staticmethod
     def init_adcm():
         init()
-        init_roles()
 
     def create_multijob_cluster(self) -> Response:
         bundle_id = self.upload_and_load_bundle(path=Path(self.files_dir, self.multijob_bundle)).pk
@@ -345,9 +345,7 @@ class TestJob(BaseTestCase):
 
     @patch("cm.job.get_obj_config")
     def test_get_adcm_config(self, mock_get_obj_config):
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle)
-        adcm = ADCM.objects.create(prototype=prototype)
+        adcm = ADCM.objects.first()
         mock_get_obj_config.return_value = {}
 
         conf = get_adcm_config()

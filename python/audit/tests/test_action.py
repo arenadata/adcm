@@ -38,7 +38,6 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from rbac.models import Policy, Role, User
-from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
 
@@ -228,8 +227,6 @@ class TestActionAudit(BaseTestCase):
         )
 
     def test_host_denied(self):
-        init_roles()
-
         adcm_role = Role.objects.get(name="View ADCM settings")
         adcm_policy = Policy.objects.create(name="test_adcm_policy", role=adcm_role)
         adcm_policy.user.add(self.no_rights_user)

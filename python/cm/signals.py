@@ -13,7 +13,6 @@
 import casestyle
 from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP, AuditObject
 from audit.utils import mark_deleted_audit_object
-from cm.logger import logger
 from cm.models import (
     ADCM,
     ADCMEntity,
@@ -109,16 +108,12 @@ def model_change(sender, **kwargs):
     if kwargs["raw"]:
         return
 
-    name, module, obj = get_names(sender, **kwargs)
-    if "filter_out" in kwargs:
-        if kwargs["filter_out"](module, name, obj):
-            return
+    _, module, obj = get_names(sender, **kwargs)
 
     action = "update"
     if kwargs.get("created"):
         action = "create"
 
-    logger.info("%s %s %s #%s", action, module, name, obj.pk)
     _post_event(action=action, module=module, obj=obj)
 
 
@@ -128,15 +123,8 @@ def model_change(sender, **kwargs):
 @receiver(post_delete, sender=Role)
 @receiver(post_delete, sender=GroupConfig)
 def model_delete(sender, **kwargs):
-    name, module, obj = get_names(sender, **kwargs)
-
-    if "filter_out" in kwargs:
-        if kwargs["filter_out"](module, name, obj):
-            return
-
-    action = "delete"
-    logger.info("%s %s %s #%s", action, module, name, obj.pk)
-    _post_event(action=action, module=module, obj=obj)
+    _, module, obj = get_names(sender, **kwargs)
+    _post_event(action="delete", module=module, obj=obj)
 
 
 @receiver(m2m_changed, sender=GroupConfig)
@@ -147,9 +135,6 @@ def model_delete(sender, **kwargs):
 @receiver(m2m_changed, sender=Group)
 def m2m_change(sender, **kwargs):
     name, module, obj = get_names(sender, **kwargs)
-    if "filter_out" in kwargs:
-        if kwargs["filter_out"](module, name, obj):
-            return
 
     if kwargs["action"] == "post_add":
         action = "add"
@@ -158,5 +143,4 @@ def m2m_change(sender, **kwargs):
     else:
         return
 
-    logger.info("%s %s %s #%s", action, module, name, obj.pk)
     _post_event(action=action, module=module, obj=obj, model_name=name)

@@ -48,8 +48,9 @@ from cm.models import (
 )
 from cm.status_api import post_event
 from cm.utils import obj_ref
+from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from rbac.models import re_apply_object_policy
+from rbac.models import Policy
 from version_utils import rpm
 
 
@@ -308,18 +309,21 @@ def get_upgrade(obj: Cluster | HostProvider, order=None) -> list[Upgrade]:
         return res
 
 
-def re_apply_following_policies(obj: Cluster | HostProvider) -> None:
-    re_apply_object_policy(apply_object=obj)
+def re_apply_policy_for_upgrade(obj: Cluster | HostProvider) -> None:
+    obj_type_map = {obj: ContentType.objects.get_for_model(obj)}
 
     if isinstance(obj, Cluster):
         for service in ClusterObject.objects.filter(cluster=obj):
-            re_apply_object_policy(apply_object=service)
+            obj_type_map[service] = ContentType.objects.get_for_model(service)
             for component in ServiceComponent.objects.filter(cluster=obj, service=service):
-                re_apply_object_policy(apply_object=component)
-
+                obj_type_map[component] = ContentType.objects.get_for_model(component)
     elif isinstance(obj, HostProvider):
         for host in Host.objects.filter(provider=obj):
-            re_apply_object_policy(apply_object=host)
+            obj_type_map[host] = ContentType.objects.get_for_model(host)
+
+    for policy_object, content_type in obj_type_map.items():
+        for policy in Policy.objects.filter(object__object_id=policy_object.id, object__content_type=content_type):
+            policy.apply()
 
 
 def update_components_after_bundle_switch(cluster: Cluster, upgrade: Upgrade) -> None:
@@ -501,7 +505,6 @@ def do_upgrade(
         task_id = task.id
 
     obj.refresh_from_db()
-    re_apply_following_policies(obj=obj)
 
     return {"id": obj.id, "upgradable": bool(get_upgrade(obj)), "task_id": task_id}
 
@@ -532,5 +535,7 @@ def bundle_switch(obj: Cluster | HostProvider, upgrade: Upgrade) -> None:
         if isinstance(obj, Cluster):
             update_components_after_bundle_switch(obj, upgrade)
 
+    obj.refresh_from_db()
+    re_apply_policy_for_upgrade(obj=obj)
     logger.info("upgrade %s OK to version %s", obj_ref(obj), obj.prototype.version)
     post_event(event="upgrade", obj=obj, details={"type": "version", "value": str(obj.prototype.version)})

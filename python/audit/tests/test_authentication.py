@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from audit.models import AuditSession, AuditSessionLoginResult
-from cm.models import ADCM, Bundle, ConfigLog, ObjectConfig, Prototype
 from django.urls import reverse
 from rbac.models import User
 
@@ -20,26 +19,7 @@ from adcm.tests.base import BaseTestCase
 
 class TestAuthenticationAudit(BaseTestCase):
     def setUp(self) -> None:
-        bundle: Bundle = Bundle.objects.create(
-            name="ADCM",
-            version="1.0",
-        )
-        prototype: Prototype = Prototype.objects.create(bundle=bundle, type="adcm")
-        object_config: ObjectConfig = ObjectConfig.objects.create(current=0, previous=0)
-        config_log = ConfigLog.objects.create(
-            obj_ref=object_config,
-            config={},
-            attr={"ldap_integration": {"active": False}},
-        )
-        object_config.current = config_log.pk
-        object_config.save(update_fields=["current"])
-
-        ADCM.objects.create(prototype=prototype, config=object_config)
-        self.admin: User = User.objects.create_superuser(
-            username="admin",
-            email="admin@arenadata.io",
-            password="admin",
-        )
+        self.admin: User = User.objects.get(username="admin")
         self.disabled_user: User = User.objects.create_user(
             username="disabled_user",
             password="disabled_user",

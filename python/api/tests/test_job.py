@@ -20,7 +20,6 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from rbac.models import Policy, Role
-from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
 
@@ -194,7 +193,6 @@ class TestJobAPI(BaseTestCase):
         cluster_prototype = Prototype.objects.get(bundle=bundle, type="cluster")
         cluster = Cluster.objects.create(name="test_cluster", prototype=cluster_prototype)
 
-        init_roles()
         role = Role.objects.get(name="Cluster Administrator")
         policy = Policy.objects.create(name="test_policy", role=role)
         policy.user.add(self.no_rights_user)
