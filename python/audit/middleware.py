@@ -55,7 +55,10 @@ class LoginMiddleware:
         return user, result
 
     @staticmethod
-    def _process_login_attempts(user: RBACUser | User, result: AuditSessionLoginResult) -> HttpResponseForbidden | None:
+    def _process_login_attempts(  # pylint: disable=too-many-branches
+        user: RBACUser | User,
+        result: AuditSessionLoginResult,
+    ) -> HttpResponseForbidden | None:
         user = user if isinstance(user, RBACUser) else user.user
         config_log = None
         login_attempt_limit = None
