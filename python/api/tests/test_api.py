@@ -39,7 +39,6 @@ from cm.tests.utils import (
 from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
-from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
@@ -58,8 +57,6 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 class TestAPI(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
-
-        init_roles()
 
         self.files_dir = settings.BASE_DIR / "python" / "cm" / "tests" / "files"
         self.bundle_adh_name = "adh.1.5.tar"

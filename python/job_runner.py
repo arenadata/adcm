@@ -19,10 +19,6 @@ import sys
 from functools import partial
 from pathlib import Path
 
-from django.conf import settings
-from django.db.transaction import atomic, on_commit
-
-import adcm.init_django  # pylint: disable=unused-import # noqa: F401
 import cm.job
 from cm.ansible_plugin import finish_check
 from cm.api import get_hc, save_hc
@@ -32,6 +28,11 @@ from cm.models import JobLog, JobStatus, LogStorage, Prototype, ServiceComponent
 from cm.status_api import Event, post_event
 from cm.upgrade import bundle_revert, bundle_switch
 from cm.utils import get_env_with_venv_path
+from django.conf import settings
+from django.db.transaction import atomic, on_commit
+from rbac.roles import re_apply_policy_for_jobs
+
+import adcm.init_django  # pylint: disable=unused-import # noqa: F401
 
 
 def open_file(root, tag, job_id):
@@ -192,6 +193,7 @@ def run_internal(job: JobLog) -> None:
             if script != "hc_apply":
                 switch_hc(task=job.task, action=job.action)
 
+            re_apply_policy_for_jobs(action_object=job.task.task_object, task=job.task)
     except AdcmEx as e:
         err_file.write(e.msg)
         cm.job.set_job_status(job_id=job.id, status=JobStatus.FAILED, event=event)
