@@ -19,6 +19,8 @@ import sys
 from functools import partial
 from pathlib import Path
 
+import adcm.init_django  # pylint: disable=unused-import
+
 import cm.job
 from cm.ansible_plugin import finish_check
 from cm.api import get_hc, save_hc
@@ -31,8 +33,6 @@ from cm.utils import get_env_with_venv_path
 from django.conf import settings
 from django.db.transaction import atomic, on_commit
 from rbac.roles import re_apply_policy_for_jobs
-
-import adcm.init_django  # pylint: disable=unused-import # noqa: F401
 
 
 def open_file(root, tag, job_id):
