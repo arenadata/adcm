@@ -1,6 +1,6 @@
 ---
 
-version: 5
+version: 6
 
 roles:
     - name: Add host
@@ -1442,6 +1442,20 @@ roles:
         - View host-components hidden
         - View service config
 
+    - name: Edit cluster
+      description: The ability to change cluster name, description
+      type: hidden
+      module_name: rbac.roles
+      class_name: ObjectRole
+      parametrized_by:
+        - cluster
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - change
+
     - name: Cluster Administrator
       type: role
       parametrized_by:
@@ -1459,6 +1473,7 @@ roles:
         - Add service hidden
         - Create service
         - Delete host
+        - Edit cluster
         - Edit cluster config
         - Edit component config
         - Edit config
