@@ -188,13 +188,13 @@ class Role(Model):  # pylint: disable=too-many-instance-attributes
 
         return self.__obj__.filter()
 
-    def apply(self, policy: "Policy", user: User, group: Group, obj=None):
+    def apply(self, policy: "Policy", obj=None) -> None:
         """apply policy to user and/or group"""
 
         if self.__obj__ is None:
             self.__obj__ = self.get_role_obj()
 
-        return self.__obj__.apply(policy, self, user, group, obj)
+        self.__obj__.apply(policy=policy, role=self, param_obj=obj)
 
     def get_permissions(self, role: "Role" = None):
         """Recursively get permissions of role and all her children"""
@@ -305,20 +305,12 @@ class Policy(Model):
 
     @atomic
     def apply_without_deletion(self):
-        for user in self.user.order_by("id"):
-            self.role.apply(self, user, None)
-
-        for group in self.group.all():
-            self.role.apply(self, None, group=group)
+        self.role.apply(policy=self)
 
     @atomic
     def apply(self):
         self.remove_permissions()
-        for user in self.user.all():
-            self.role.apply(self, user, None)
-
-        for group in self.group.all():
-            self.role.apply(self, None, group=group)
+        self.role.apply(policy=self)
 
 
 def get_objects_for_policy(obj: ADCMEntity) -> dict[ADCMEntity, ContentType]:

@@ -104,7 +104,7 @@ class PolicyBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-att
                 bundle=Bundle.objects.get(name="test_cluster_for_cluster_admin_role"), type=ObjectType.SERVICE
             )
             .exclude(pk=self.service_6_proto.pk)
-            .order_by("name")
+            .order_by("id")
             .values_list("pk", flat=True)
         )
         service_ids = []
@@ -122,12 +122,12 @@ class PolicyBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-att
         return service_ids
 
     def get_host_components(self) -> list[dict]:
-        host_pks = [host.pk for host in Host.objects.all()]
-        services = list(ClusterObject.objects.all())
+        host_pks = [host.pk for host in Host.objects.order_by("id")]
+        services = list(ClusterObject.objects.order_by("id"))
         hc_data = []
 
         for host_pk, service in zip(host_pks, services):
-            for component in ServiceComponent.objects.filter(service=service):
+            for component in ServiceComponent.objects.filter(service=service).order_by("id"):
                 hc_data.append({"component_id": component.pk, "host_id": host_pk, "service_id": service.pk})
 
         response: Response = self.client.post(
