@@ -49,7 +49,8 @@ def get_env_with_venv_path(venv: str, existing_env: dict | None = None) -> dict:
     if existing_env is None:
         existing_env = os.environ.copy()
 
-    existing_env["PATH"] = f"/adcm/venv/{venv}/bin:{existing_env['PATH']}"
+    if venv != "default":
+        existing_env["PATH"] = f"/adcm/venv/{venv}/bin:{existing_env['PATH']}"
 
     return existing_env
 

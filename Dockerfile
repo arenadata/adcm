@@ -26,11 +26,9 @@ RUN apk update && \
 ENV PATH="/root/.local/bin:$PATH"
 COPY pyproject.toml /adcm/
 RUN python -m venv /adcm/venv/2.9 && \
-    python -m venv /adcm/venv/default &&  \
     poetry config virtualenvs.create false && \
     poetry -C /adcm install --no-root && \
     cp -r /usr/local/lib/python3.10/site-packages /adcm/venv/2.9/lib/python3.10 && \
-    cp -r /usr/local/lib/python3.10/site-packages /adcm/venv/default/lib/python3.10 && \
     . /adcm/venv/2.9/bin/activate && \
     pip install git+https://github.com/arenadata/ansible.git@v2.9.27-p1 && \
     deactivate
