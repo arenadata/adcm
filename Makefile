@@ -56,4 +56,4 @@ lint:
 
 lint_docker:
 	docker run -i --rm -e DJANGO_SETTINGS_MODULE=adcm.settings $(APP_IMAGE):$(APP_TAG) \
-	sh -c "cd /adcm && poetry install --no-root --with test && apk add make && make lint"
+	sh -c "cd /adcm && poetry install --no-root --with lint && apk add make && make lint"

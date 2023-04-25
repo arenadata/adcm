@@ -43,10 +43,10 @@ uwsgi = "*"
 version-utils = "*"
 yspec = "*"
 
-[tool.poetry.group.test]
+[tool.poetry.group.lint]
 optional = true
 
-[tool.poetry.group.test.dependencies]
+[tool.poetry.group.lint.dependencies]
 autoflake = "*"
 black = "*"
 flake8 = "*"
