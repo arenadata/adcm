@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider4
-  version: 1
-
-- type: host
-  name: host4
-  version: 1

@@ -37,27 +37,6 @@ unittests_postgresql: describe
 	sh -c "poetry -C /adcm install --no-root && /adcm/python/manage.py test /adcm/python -v 2"
 	docker stop postgres && docker rm postgres && docker network rm adcm
 
-pytest:
-	docker pull hub.adsw.io/library/functest:3.10.6.slim.buster-x64
-	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host \
-	-v $(CURDIR)/:/adcm -w /adcm/ \
-	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
-	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" -e ALLURE_TESTPLAN_PATH="${ALLURE_TESTPLAN_PATH}" \
-	hub.adsw.io/library/functest:3.10.6.slim.buster-x64 /bin/sh -e \
-	./pytest.sh ${PYTEST_MARK_KEY} ${PYTEST_MARK_VALUE} ${PYTEST_EXPRESSION_KEY} ${PYTEST_EXPRESSION_VALUE} \
-	--adcm-image="hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))" \
-
-pytest_release:
-	docker pull hub.adsw.io/library/functest:3.10.6.slim.buster.firefox-x64
-	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host \
-	-v $(CURDIR)/:/adcm -v ${LDAP_CONF_FILE}:${LDAP_CONF_FILE} -w /adcm/ \
-	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
-	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" -e ALLURE_TESTPLAN_PATH="${ALLURE_TESTPLAN_PATH}" \
-	hub.adsw.io/library/functest:3.10.6.slim.buster.firefox-x64 /bin/sh -e \
-	./pytest.sh --adcm-image="hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))" --ldap-conf ${LDAP_CONF_FILE} \
-	${PYTEST_MARK_KEY} ${PYTEST_MARK_VALUE} ${PYTEST_EXPRESSION_KEY} ${PYTEST_EXPRESSION_VALUE}
-
-
 ng_tests:
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64 ./ng_test.sh

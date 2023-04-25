@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider32
-  version: 1
-
-- type: host
-  name: host32
-  version: 1

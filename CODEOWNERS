@@ -3,7 +3,6 @@
 /os/ @aas @k.shestakov @d.skrynnik @tsd
 /python/ @aas @k.shestakov @d.skrynnik @tsd
 /spec/ @aas @ke
-/tests/ @aas @aer @v.chudasov
 /web/ @v.remizov @d.bardin @k.fedorenko
 .dockerignore @aas @k.shestakov
 .gitignore @aas @k.shestakov
@@ -17,7 +16,6 @@ Dockerfile @aas @k.shestakov
 init-user-db.sh @aas @k.shestakov
 LICENSE @aas @ke
 license_checker.py @aas @k.shestakov
-Makefile @aas @k.shestakov @aer
-pyproject.toml @aas @k.shestakov @aer
-pytest.sh @aas @k.shestakov @aer @v.chudasov
+Makefile @aas @k.shestakov
+pyproject.toml @aas @k.shestakov
 README.md @aas @k.shestakov @aer @v.chudasov @d.skrynnik @tsd @ke @k.fedorenko

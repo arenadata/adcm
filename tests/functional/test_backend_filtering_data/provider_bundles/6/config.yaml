@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider6
-  version: 1
-
-- type: host
-  name: host6
-  version: 1
