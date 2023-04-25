@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider43
-  version: 1
-
-- type: host
-  name: host43
-  version: 1

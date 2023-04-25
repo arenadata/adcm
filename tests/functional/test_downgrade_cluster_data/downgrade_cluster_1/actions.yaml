@@ -1,9 +1,0 @@
-- name: Succeed action
-  hosts: localhost
-  connection: local
-  gather_facts: no
-
-  tasks:
-    - name: Print hostvars
-      debug:
-        msg: "{{ hostvars }}"

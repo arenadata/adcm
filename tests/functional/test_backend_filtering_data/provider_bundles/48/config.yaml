@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider48
-  version: 1
-
-- type: host
-  name: host48
-  version: 1

@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider15
-  version: 1
-
-- type: host
-  name: host15
-  version: 1

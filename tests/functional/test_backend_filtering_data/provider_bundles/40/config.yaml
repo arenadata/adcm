@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider40
-  version: 1
-
-- type: host
-  name: host40
-  version: 1

@@ -24,9 +24,6 @@ config.json
 /pdf/
 /reports/*
 /run/
-/tests/data/log
-/tests/db_test.db
-/tests/fixture.db
 /web/node_modules/
 /web/yarn.lock
 /web/src/assets/config.json

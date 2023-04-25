@@ -1,9 +1,0 @@
-- type: service
-  name: test2
-  version: ver2
-  config:
-    param1:
-      default:bluh
-      type: string
-    param2:
-      type: string

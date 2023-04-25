@@ -1,5 +1,0 @@
-description: Attempt to save HC map with only B.Y on 1 host - should succeed
-positive: True
-hc_map:
-  first_host:
-    - service_2.component_2_1

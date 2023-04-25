@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider17
-  version: 1
-
-- type: host
-  name: host17
-  version: 1

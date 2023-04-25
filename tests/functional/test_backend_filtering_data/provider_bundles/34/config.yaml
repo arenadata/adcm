@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider34
-  version: 1
-
-- type: host
-  name: host34
-  version: 1

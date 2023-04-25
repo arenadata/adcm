@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider25
-  version: 1
-
-- type: host
-  name: host25
-  version: 1

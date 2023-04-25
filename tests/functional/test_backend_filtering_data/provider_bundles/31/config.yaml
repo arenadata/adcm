@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider31
-  version: 1
-
-- type: host
-  name: host31
-  version: 1
