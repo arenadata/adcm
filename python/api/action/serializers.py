@@ -137,7 +137,7 @@ class StackActionDetailSerializer(StackActionSerializer):
             action_config, attr = get_jinja_config(action=action, obj=self.context["objects"][action.prototype_type])
         else:
             action_config = PrototypeConfig.objects.filter(prototype=action.prototype, action=action).order_by("id")
-            _, _, _, attr = get_prototype_config(proto=action.prototype, action=action)
+            _, _, _, attr = get_prototype_config(prototype=action.prototype, action=action)
 
         self.context["prototype"] = action.prototype
         conf = ConfigSerializerUI(instance=action_config, many=True, context=self.context, read_only=True)
@@ -161,7 +161,7 @@ class ActionUISerializer(ActionDetailSerializer):
             action_config, attr = get_jinja_config(action=action, obj=self.context["objects"][action.prototype_type])
         else:
             action_config = PrototypeConfig.objects.filter(prototype=action.prototype, action=action).order_by("id")
-            _, _, _, attr = get_prototype_config(proto=action.prototype, action=action)
+            _, _, _, attr = get_prototype_config(prototype=action.prototype, action=action)
 
         get_action_variant(obj=self.context["obj"], config=action_config)
         conf = ConfigSerializerUI(instance=action_config, many=True, context=self.context, read_only=True)

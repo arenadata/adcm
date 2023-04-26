@@ -94,7 +94,7 @@ def init_object_config(proto: Prototype, obj: Any) -> ObjectConfig | None:
 
 
 def get_prototype_config(
-    proto: Prototype, action: Action = None, obj: type[ADCMEntity] = None
+    prototype: Prototype, action: Action = None, obj: type[ADCMEntity] = None
 ) -> tuple[dict, dict, dict, dict]:
     spec = {}
     flat_spec = OrderedDict()
@@ -106,8 +106,10 @@ def get_prototype_config(
         proto_conf, _ = get_jinja_config(action=action, obj=obj)
         proto_conf_group = [config for config in proto_conf if config.type == "group"]
     else:
-        proto_conf = PrototypeConfig.objects.filter(prototype=proto, action=action).order_by("id")
-        proto_conf_group = PrototypeConfig.objects.filter(prototype=proto, action=action, type="group").order_by("id")
+        proto_conf = PrototypeConfig.objects.filter(prototype=prototype, action=action).order_by("id")
+        proto_conf_group = PrototypeConfig.objects.filter(prototype=prototype, action=action, type="group").order_by(
+            "id"
+        )
 
     for conf in proto_conf_group:
         spec[conf.name] = {}
@@ -120,10 +122,10 @@ def get_prototype_config(
         if conf.subname == "":
             if conf.type != "group":
                 spec[conf.name] = obj_to_dict(conf, flist)
-                config[conf.name] = get_default(conf, proto)
+                config[conf.name] = get_default(conf, prototype)
         else:
             spec[conf.name][conf.subname] = obj_to_dict(conf, flist)
-            config[conf.name][conf.subname] = get_default(conf, proto)
+            config[conf.name][conf.subname] = get_default(conf, prototype)
 
     return spec, flat_spec, config, attr
 
@@ -140,18 +142,19 @@ def make_object_config(obj: ADCMEntity, prototype: Prototype) -> None:
 
 def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements # noqa: C901
     obj: ADCMEntity,
-    new_proto: Prototype,
-    old_proto: Prototype,
+    new_prototype: Prototype,
+    old_prototype: Prototype,
 ) -> None:
     # process objects without config
     if not obj.config:
-        make_object_config(obj, new_proto)
+        make_object_config(obj=obj, prototype=new_prototype)
+
         return
 
     config_log = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-    _, old_spec, _, _ = get_prototype_config(old_proto)
-    new_unflat_spec, new_spec, _, _ = get_prototype_config(new_proto)
-    old_conf = to_flat_dict(config_log.config, old_spec)
+    _, old_spec, _, _ = get_prototype_config(prototype=old_prototype)
+    new_unflat_spec, new_spec, _, _ = get_prototype_config(prototype=new_prototype)
+    old_conf = to_flat_dict(config=config_log.config, spec=old_spec)
 
     def is_new_default(_key):
         if not new_spec[_key].default:
@@ -159,7 +162,7 @@ def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many
 
         if old_spec[_key].default:
             if _key in old_conf:
-                return bool(get_default(old_spec[_key], old_proto) == old_conf[_key])
+                return bool(get_default(conf=old_spec[_key], prototype=old_prototype) == old_conf[_key])
             else:
                 return True
 
@@ -192,11 +195,11 @@ def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many
 
         if key in old_spec:
             if is_new_default(key):
-                new_conf[key] = get_default(new_spec[key], new_proto)
+                new_conf[key] = get_default(conf=new_spec[key], prototype=new_prototype)
             else:
-                new_conf[key] = old_conf.get(key, get_default(new_spec[key], new_proto))
+                new_conf[key] = old_conf.get(key, get_default(conf=new_spec[key], prototype=new_prototype))
         else:
-            new_conf[key] = get_default(new_spec[key], new_proto)
+            new_conf[key] = get_default(conf=new_spec[key], prototype=new_prototype)
 
     # go from flat config to 2-level dictionary
     unflat_conf = {}
@@ -218,8 +221,8 @@ def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many
         if key in inactive_groups:
             attr[key] = {"active": False}
 
-    save_obj_config(obj.config, unflat_conf, attr, "upgrade")
-    process_file_type(obj, new_unflat_spec, unflat_conf)
+    save_obj_config(obj_conf=obj.config, conf=unflat_conf, attr=attr, desc="upgrade")
+    process_file_type(obj=obj, spec=new_unflat_spec, conf=unflat_conf)
 
 
 def restore_cluster_config(obj_conf, version, desc=""):
@@ -642,7 +645,7 @@ def get_adcm_config(section=None):
 
 def get_default(  # pylint: disable=too-many-branches  # noqa: C901
     conf: PrototypeConfig,
-    proto: Prototype | None = None,
+    prototype: Prototype | None = None,
 ) -> Any:
     value = conf.default
     if conf.default == "":
@@ -685,22 +688,22 @@ def get_default(  # pylint: disable=too-many-branches  # noqa: C901
                     value = str(value)
 
     elif conf.type == "file":
-        if proto:
+        if prototype:
             if conf.default:
                 value = read_bundle_file(
-                    proto=proto,
+                    proto=prototype,
                     fname=conf.default,
-                    bundle_hash=proto.bundle.hash,
+                    bundle_hash=prototype.bundle.hash,
                     ref=f'config key "{conf.name}/{conf.subname}" default file',
                 )
     elif conf.type == "secretfile":
-        if proto:
+        if prototype:
             if conf.default:
                 value = ansible_encrypt_and_format(
                     msg=read_bundle_file(
-                        proto=proto,
+                        proto=prototype,
                         fname=conf.default,
-                        bundle_hash=proto.bundle.hash,
+                        bundle_hash=prototype.bundle.hash,
                         ref=f'config key "{conf.name}/{conf.subname}" default file',
                     ),
                 )

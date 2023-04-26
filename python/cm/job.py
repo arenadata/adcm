@@ -250,7 +250,7 @@ def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster
 
 def check_action_config(action: Action, obj: type[ADCMEntity], conf: dict, attr: dict) -> tuple[dict, dict]:
     proto = action.prototype
-    spec, flat_spec, _, _ = get_prototype_config(proto=proto, action=action, obj=obj)
+    spec, flat_spec, _, _ = get_prototype_config(prototype=proto, action=action, obj=obj)
     if not spec:
         return {}, {}
 

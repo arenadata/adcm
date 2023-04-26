@@ -37,7 +37,7 @@ from cm.utils import obj_ref
 
 
 def check_config(obj: ADCMEntity) -> bool:  # pylint: disable=too-many-branches # noqa: C901
-    spec, _, _, _ = get_prototype_config(proto=obj.prototype)
+    spec, _, _, _ = get_prototype_config(prototype=obj.prototype)
     conf, attr = get_obj_config(obj=obj)
     for key, value in spec.items():  # pylint: disable=too-many-nested-blocks
         if "required" in value:

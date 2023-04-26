@@ -95,7 +95,7 @@ class TestInventory(BaseTestCase):
 
         self.assertDictEqual(conf, {"global": None})
 
-        mock_get_prototype_config.assert_called_once_with(proto={})
+        mock_get_prototype_config.assert_called_once_with(prototype={})
         mock_process_config.assert_called_once_with(obj=obj_mock, spec={}, old_conf={})
 
     @patch("cm.inventory.process_config_and_attr")

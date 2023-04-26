@@ -62,11 +62,11 @@ from rbac.roles import apply_policy_for_new_config
 from version_utils import rpm
 
 
-def check_license(proto: Prototype) -> None:
-    if proto.license == "unaccepted":
+def check_license(prototype: Prototype) -> None:
+    if prototype.license == "unaccepted":
         raise_adcm_ex(
             "LICENSE_ERROR",
-            f'License for prototype "{proto.name}" {proto.type} {proto.version} is not accepted',
+            f'License for prototype "{prototype.name}" {prototype.type} {prototype.version} is not accepted',
         )
 
 
@@ -475,7 +475,7 @@ def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> ClusterObject:
     if proto.type != "service":
         raise_adcm_ex(code="OBJ_TYPE_ERROR", msg=f"Prototype type should be service, not {proto.type}")
 
-    check_license(proto=proto)
+    check_license(prototype=proto)
     check_service_requires(cluster=cluster, proto=proto)
     if not proto.shared:
         if cluster.prototype.bundle != proto.bundle:

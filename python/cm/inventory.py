@@ -53,7 +53,7 @@ def process_config_and_attr(obj: ADCMEntity, conf: dict, attr: dict | None = Non
         else:
             prototype = obj.prototype
 
-        spec, _, _, _ = get_prototype_config(proto=prototype)
+        spec, _, _, _ = get_prototype_config(prototype=prototype)
 
     new_config = process_config(obj=obj, spec=spec, old_conf=conf)
 
