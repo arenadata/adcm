@@ -1,21 +1,20 @@
-/conf/ @aas @k.shestakov @d.skrynnik @tsd
-/go/ @aas @aer @d.skrynnik
-/os/ @aas @k.shestakov @d.skrynnik @tsd
-/python/ @aas @k.shestakov @d.skrynnik @tsd
-/spec/ @aas @ke
-/web/ @v.remizov @d.bardin @k.fedorenko
-.dockerignore @aas @k.shestakov
-.gitignore @aas @k.shestakov
-.gitlab-ci.yaml @aas @k.shestakov
-.pre-commit-config.yaml @aas @k.shestakov
-CODEOWNERS @aas @v.remizov
-config.json @aas @k.shestakov
-COPYRIGHT @aas @ke
-docker-compose.yml @aas @k.shestakov
-Dockerfile @aas @k.shestakov
-init-user-db.sh @aas @k.shestakov
-LICENSE @aas @ke
+.dockerignore @aas @v.remizov @k.shestakov
+.gitignore @aas @k.shestakov @d.skrynnik @tsd @v.remizov @d.bardin @k.fedorenko
+.gitlab-ci.yaml @aas @v.remizov @k.shestakov
+.pre-commit-config.yaml @aas @k.shestakov @d.skrynnik @tsd @v.remizov @d.bardin @k.fedorenko
+/conf/* @aas @k.shestakov @d.skrynnik @tsd
+/go/* @aas @k.shestakov @d.skrynnik @tsd @aer
+/os/* @aas @k.shestakov @d.skrynnik @tsd
+/python/* @aas @k.shestakov @d.skrynnik @tsd
+/spec/* @aas @k.shestakov @d.skrynnik @tsd
+/web/* @v.remizov @d.bardin @k.fedorenko
+CODEOWNERS @aas @v.remizov @k.shestakov
+COPYRIGHT @aas @v.remizov @k.shestakov
+Dockerfile @aas @v.remizov @k.shestakov
+LICENSE @aas @v.remizov @k.shestakov
+Makefile @aas @k.shestakov @d.skrynnik @tsd
+README.md @aas @k.shestakov @d.skrynnik @tsd @v.remizov @d.bardin @k.fedorenko
+config.json @aas @v.remizov @k.shestakov
+docker-compose.yml @aas @v.remizov @k.shestakov
 license_checker.py @aas @k.shestakov
-Makefile @aas @k.shestakov
-pyproject.toml @aas @k.shestakov
-README.md @aas @k.shestakov @aer @v.chudasov @d.skrynnik @tsd @ke @k.fedorenko
+pyproject.toml @aas @k.shestakov @d.skrynnik @tsd
