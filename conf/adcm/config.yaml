@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 2.5
+  version: 2.6
 
   actions:
     run_ldap_sync:
@@ -264,6 +264,7 @@
           display_name: "Login attempt limit"
           description: "The number of login attempts allowed before user account is locked out"
           type: integer
+          min: 1
           default: 5
         - name: "block_time"
           display_name: "Blocking time period"
