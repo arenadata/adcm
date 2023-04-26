@@ -143,6 +143,8 @@ class ClusterBundle(GenericUIView):
     queryset = Prototype.objects.filter(type="service")
     serializer_class = ServicePrototypeSerializer
     serializer_class_ui = BundleServiceUIPrototypeSerializer
+    ordering_fields = ("id", "name", "display_name", "version")
+    ordering = ["id"]
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
@@ -150,7 +152,7 @@ class ClusterBundle(GenericUIView):
         bundle = self.get_queryset().filter(bundle=cluster.prototype.bundle)
         shared = self.get_queryset().filter(shared=True).exclude(bundle=cluster.prototype.bundle)
         serializer = self.get_serializer(
-            list(chain(bundle, shared)),
+            list(chain(self.filter_queryset(queryset=bundle), self.filter_queryset(queryset=shared))),
             many=True,
             context={"request": request, "cluster": cluster},
         )
