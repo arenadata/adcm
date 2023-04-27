@@ -38,6 +38,8 @@ class ClusterPrototypeUIViewSet(
 ):  # pylint: disable=too-many-ancestors
     permission_classes = (IsAuthenticated,)
     serializer_class = PrototypeUISerializer
+    ordering_fields = ("id", "name", "display_name")
+    ordering = ["id"]
 
     def get_queryset(self):
         return self.get_distinct_queryset(queryset=Prototype.objects.filter(type=ObjectType.CLUSTER))
@@ -48,6 +50,8 @@ class ProviderPrototypeUIViewSet(
 ):  # pylint: disable=too-many-ancestors
     permission_classes = (IsAuthenticated,)
     serializer_class = PrototypeUISerializer
+    ordering_fields = ("id", "name", "display_name")
+    ordering = ["id"]
 
     def get_queryset(self):
         return self.get_distinct_queryset(queryset=Prototype.objects.filter(type=ObjectType.PROVIDER))
