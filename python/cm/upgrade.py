@@ -335,8 +335,8 @@ def revert_object(obj: ADCMEntity, old_proto: Prototype) -> None:
 
     obj.prototype = old_proto
 
-    if "config" in obj.before_upgrade:
-        config_log = ConfigLog.objects.get(id=obj.before_upgrade["config"])
+    if "config_id" in obj.before_upgrade:
+        config_log = ConfigLog.objects.get(id=obj.before_upgrade["config_id"])
         obj.config.current = 0
         save_obj_config(obj_conf=obj.config, conf=config_log.config, attr=config_log.attr, desc="revert_upgrade")
     else:
@@ -414,7 +414,9 @@ def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-m
 def set_before_upgrade(obj: ADCMEntity) -> None:
     obj.before_upgrade["state"] = obj.state
     if obj.config:
-        obj.before_upgrade["config"] = obj.config.current
+        obj.before_upgrade["config_id"] = obj.config.current
+        config_log = ConfigLog.objects.get(id=obj.config.current)
+        obj.before_upgrade["config"] = config_log.config
 
     if isinstance(obj, Cluster):
         hc_map = []
