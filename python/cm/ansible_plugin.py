@@ -15,6 +15,7 @@
 import fcntl
 import json
 from collections import defaultdict
+from copy import deepcopy
 
 # isort: off
 from ansible.errors import AnsibleError
@@ -40,6 +41,7 @@ from cm.models import (
     JobStatus,
     LogStorage,
     Prototype,
+    PrototypeConfig,
     ServiceComponent,
 )
 from cm.status_api import post_event
@@ -373,8 +375,10 @@ def change_hc(job_id, cluster_id, operations):  # pylint: disable=too-many-branc
     file_descriptor.close()
 
 
-def update_config(obj: ADCMEntity, conf: dict) -> dict | int | str:
+def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> dict | int | str:
     config_log = ConfigLog.objects.get(id=obj.config.current)
+    new_config = deepcopy(config_log.config)
+    new_attr = config_log.attr if config_log.attr is not None else {}
 
     for keys, value in conf.items():
         keys_list = keys.split("/")
@@ -384,11 +388,24 @@ def update_config(obj: ADCMEntity, conf: dict) -> dict | int | str:
             subkey = keys_list[1]
 
         if subkey:
-            config_log.config[key][subkey] = value
+            new_config[key][subkey] = value
         else:
-            config_log.config[key] = value
+            new_config[key] = value
 
-    set_object_config(obj=obj, config=config_log.config)
+        if key in attr:
+            prototype_conf = PrototypeConfig.objects.filter(name=key, prototype=obj.prototype, type="group")
+
+            if not prototype_conf or "activatable" not in prototype_conf.first().limits:
+                raise AnsibleError("'active' key should be used only with activatable group")
+
+            new_attr.update(attr)
+
+    for key in attr.keys():
+        for subkey, value in config_log.config[key].items():
+            if not new_config[key] or subkey not in new_config[key]:
+                new_config[key][subkey] = value
+
+    set_object_config(obj=obj, config=new_config, attr=new_attr)
 
     if len(conf) == 1:
         return list(conf.values())[0]
@@ -396,34 +413,34 @@ def update_config(obj: ADCMEntity, conf: dict) -> dict | int | str:
     return conf
 
 
-def set_cluster_config(cluster_id: int, config: dict):
+def set_cluster_config(cluster_id: int, config: dict, attr: dict) -> dict | int | str:
     obj = Cluster.obj.get(id=cluster_id)
 
-    return update_config(obj, config)
+    return update_config(obj=obj, conf=config, attr=attr)
 
 
-def set_host_config(host_id: int, config: dict):
+def set_host_config(host_id: int, config: dict, attr: dict) -> dict | int | str:
     obj = Host.obj.get(id=host_id)
 
-    return update_config(obj, config)
+    return update_config(obj=obj, conf=config, attr=attr)
 
 
-def set_provider_config(provider_id: int, config: dict):
+def set_provider_config(provider_id: int, config: dict, attr: dict) -> dict | int | str:
     obj = HostProvider.obj.get(id=provider_id)
 
-    return update_config(obj, config)
+    return update_config(obj=obj, conf=config, attr=attr)
 
 
-def set_service_config_by_name(cluster_id: int, service_name: str, config: dict):
+def set_service_config_by_name(cluster_id: int, service_name: str, config: dict, attr: dict) -> dict | int | str:
     obj = get_service_by_name(cluster_id, service_name)
 
-    return update_config(obj, config)
+    return update_config(obj=obj, conf=config, attr=attr)
 
 
-def set_service_config(cluster_id: int, service_id: int, config: dict):
+def set_service_config(cluster_id: int, service_id: int, config: dict, attr: dict) -> dict | int | str:
     obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type="service")
 
-    return update_config(obj, config)
+    return update_config(obj=obj, conf=config, attr=attr)
 
 
 def set_component_config_by_name(
@@ -432,16 +449,17 @@ def set_component_config_by_name(
     component_name: str,
     service_name: str,
     config: dict,
+    attr: dict,
 ):
     obj = get_component_by_name(cluster_id, service_id, component_name, service_name)
 
-    return update_config(obj, config)
+    return update_config(obj=obj, conf=config, attr=attr)
 
 
-def set_component_config(component_id: int, config: dict):
+def set_component_config(component_id: int, config: dict, attr: dict):
     obj = ServiceComponent.obj.get(id=component_id)
 
-    return update_config(obj, config)
+    return update_config(obj=obj, conf=config, attr=attr)
 
 
 def check_missing_ok(obj: ADCMEntity, multi_state: str, missing_ok):
