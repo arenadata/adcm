@@ -39,7 +39,7 @@ class ClusterPrototypeUIViewSet(
     permission_classes = (IsAuthenticated,)
     serializer_class = PrototypeUISerializer
     ordering_fields = ("id", "name", "display_name")
-    ordering = ["id"]
+    ordering = ["display_name"]
 
     def get_queryset(self):
         return self.get_distinct_queryset(queryset=Prototype.objects.filter(type=ObjectType.CLUSTER))
@@ -51,7 +51,7 @@ class ProviderPrototypeUIViewSet(
     permission_classes = (IsAuthenticated,)
     serializer_class = PrototypeUISerializer
     ordering_fields = ("id", "name", "display_name")
-    ordering = ["id"]
+    ordering = ["display_name"]
 
     def get_queryset(self):
         return self.get_distinct_queryset(queryset=Prototype.objects.filter(type=ObjectType.PROVIDER))
