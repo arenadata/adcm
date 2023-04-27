@@ -346,13 +346,58 @@ def check_component_requires(comp: StagePrototype) -> None:
 
         if req_comp and comp == req_comp:
             raise_adcm_ex(
-                code="COMPONENT_CONSTRAINT_ERROR",
+                code="REQUIRES_ERROR",
                 msg=f"Component can not require themself in requires of component "
                 f'"{comp.name}" of {proto_ref(comp.parent)}',
             )
 
     comp.requires = req_list
     comp.save()
+
+
+def re_check_cyclic() -> None:
+    for service in StagePrototype.objects.filter(type="service"):
+        check_cyclic_requires(proto=service)
+
+    for comp in StagePrototype.objects.filter(type="component"):
+        check_cyclic_requires(proto=comp)
+
+
+def check_cyclic_requires(
+    proto: StagePrototype, require_dict: dict | None = None, already_checked: list | None = None
+) -> None:
+    if require_dict is None:
+        require_dict = {}
+
+    if already_checked is None:
+        already_checked = []
+
+    if proto in already_checked:
+        raise_adcm_ex(code="REQUIRES_ERROR", msg=f"Cyclic requires in {proto_ref(prototype=proto)}")
+
+    already_checked.append(proto)
+
+    for require in proto.requires:
+        req_service = StagePrototype.obj.get(type="service", name=require["service"])
+
+        if req_service.name not in require_dict:
+            require_dict[req_service.name] = {"components": {}, "service": req_service}
+
+        req_comp = None
+        if require.get("component"):
+            req_comp = StagePrototype.obj.get(
+                type="component",
+                name=require["component"],
+                parent=req_service,
+            )
+            if req_comp.name not in require_dict[req_service.name]["components"]:
+                require_dict[req_service.name]["components"][req_comp.name] = req_comp
+
+        if req_service.requires:
+            check_cyclic_requires(proto=req_service, require_dict=require_dict, already_checked=already_checked)
+
+        if req_comp and req_comp.requires:
+            check_cyclic_requires(proto=req_comp, require_dict=require_dict, already_checked=already_checked)
 
 
 def check_services_requires() -> None:
@@ -366,7 +411,7 @@ def check_services_requires() -> None:
 
             if service == req_service:
                 raise_adcm_ex(
-                    code="SERVICE_CONSTRAINT_ERROR",
+                    code="REQUIRES_ERROR",
                     msg=f'Service can not require themself "{service.name}" of {proto_ref(prototype=service.parent)}',
                 )
 
@@ -374,7 +419,7 @@ def check_services_requires() -> None:
         service.save(update_fields=["requires"])
 
 
-def check_bound_component(comp):
+def check_bound_component(comp: StagePrototype) -> None:
     if not comp.bound_to:
         return
 
@@ -389,10 +434,10 @@ def check_bound_component(comp):
         )
 
 
-def re_check_components():
+def re_check_components() -> None:
     for comp in StagePrototype.objects.filter(type="component"):
-        check_component_requires(comp)
-        check_bound_component(comp)
+        check_component_requires(comp=comp)
+        check_bound_component(comp=comp)
 
 
 def check_variant_host(args, ref):
@@ -419,7 +464,7 @@ def check_variant_host(args, ref):
             check_variant_host(i["args"], ref)
 
 
-def re_check_config():  # pylint: disable=too-many-branches # noqa: C901
+def re_check_config() -> None:  # pylint: disable=too-many-branches
     sp_service = None
     same_stage_prototype_config = None
 
@@ -494,6 +539,7 @@ def second_pass():
     check_services_requires()
     re_check_actions()
     re_check_components()
+    re_check_cyclic()
     re_check_config()
 
 
