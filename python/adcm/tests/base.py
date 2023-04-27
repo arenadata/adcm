@@ -134,6 +134,47 @@ class BaseTestCase(TestCase):
         )
         self.client.defaults["Authorization"] = f"Token {response.data['token']}"
 
+    def get_new_user(self, password: str) -> User:
+        response: Response = self.client.post(
+            path=reverse(viewname="rbac:user-list"),
+            data={"username": "new_user", "password": password},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        return User.objects.get(pk=response.json()["id"])
+
+    def get_role_data(self, role_name: str) -> dict:
+        response: Response = self.client.get(
+            path=reverse(viewname="rbac:role-list"),
+            data={"ordering": "name", "type": "role", "view": "interface"},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        return [role_data for role_data in response.json()["results"] if role_data["name"] == role_name][0]
+
+    def create_policy(self, role_name: str, user_pk: int) -> None:
+        role_data = self.get_role_data(role_name=role_name)
+        object_type = role_data["parametrized_by_type"][0]
+        obj = getattr(self, object_type)
+
+        response: Response = self.client.post(
+            path=reverse(viewname="rbac:policy-list"),
+            data={
+                "name": f"test_policy_{object_type}_admin",
+                "role": {"id": role_data["id"]},
+                "user": [{"id": user_pk}],
+                "group": [],
+                "object": [{"name": obj.name, "type": object_type, "id": obj.pk}],
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
     def upload_bundle(self, path: Path) -> None:
         with open(path, encoding=settings.ENCODING_UTF_8) as f:
             response: Response = self.client.post(

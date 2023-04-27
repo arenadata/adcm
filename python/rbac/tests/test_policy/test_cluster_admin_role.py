@@ -31,7 +31,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.create_policy(role_name="Cluster Administrator")
+        self.create_policy(role_name="Cluster Administrator", user_pk=self.new_user.pk)
 
         self.another_user_log_in(username=self.new_user.username, password=self.new_user_password)
 

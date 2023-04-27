@@ -315,7 +315,10 @@ class Policy(Model):
 
 def get_objects_for_policy(obj: ADCMEntity) -> dict[ADCMEntity, ContentType]:
     obj_type_map = {}
-    obj_type = obj.prototype.type
+    if hasattr(obj, "prototype"):
+        obj_type = obj.prototype.type
+    else:
+        obj_type = None
 
     if obj_type == "component":
         object_list = [obj, obj.service, obj.cluster]

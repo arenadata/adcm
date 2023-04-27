@@ -22,9 +22,8 @@ from cm.models import (
 )
 from django.conf import settings
 from django.urls import reverse
-from rbac.models import User
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+from rest_framework.status import HTTP_201_CREATED
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -159,44 +158,3 @@ class PolicyBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-att
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         return HostProvider.objects.get(pk=response.json()["id"])
-
-    def get_new_user(self, password: str) -> User:
-        response: Response = self.client.post(
-            path=reverse(viewname="rbac:user-list"),
-            data={"username": "new_user", "password": password},
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        return User.objects.get(pk=response.json()["id"])
-
-    def get_role_data(self, role_name: str) -> dict:
-        response: Response = self.client.get(
-            path=reverse(viewname="rbac:role-list"),
-            data={"ordering": "name", "type": "role", "view": "interface"},
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-
-        return [role_data for role_data in response.json()["results"] if role_data["name"] == role_name][0]
-
-    def create_policy(self, role_name: str) -> None:
-        role_data = self.get_role_data(role_name=role_name)
-        object_type = role_data["parametrized_by_type"][0]
-        obj = getattr(self, object_type)
-
-        response: Response = self.client.post(
-            path=reverse(viewname="rbac:policy-list"),
-            data={
-                "name": f"test_policy_{object_type}_admin",
-                "role": {"id": role_data["id"]},
-                "user": [{"id": self.new_user.pk}],
-                "group": [],
-                "object": [{"name": obj.name, "type": object_type, "id": obj.pk}],
-            },
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
