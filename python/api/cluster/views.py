@@ -144,7 +144,7 @@ class ClusterBundle(GenericUIView):
     serializer_class = ServicePrototypeSerializer
     serializer_class_ui = BundleServiceUIPrototypeSerializer
     ordering_fields = ("id", "name", "display_name", "version")
-    ordering = ["id"]
+    ordering = ["display_name"]
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
