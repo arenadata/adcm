@@ -26,6 +26,7 @@ from cm.models import ConfigLog, GroupConfig, Host, ObjectConfig
 from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import CharFilter, FilterSet
 from guardian.mixins import PermissionListMixin
+from rbac.models import re_apply_object_policy
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.mixins import (
     CreateModelMixin,
@@ -259,6 +260,7 @@ class GroupConfigViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):
 
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
+        re_apply_object_policy(apply_object=obj)
 
         return Response(serializer.data, status=HTTP_201_CREATED, headers=headers)
 

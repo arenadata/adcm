@@ -26,7 +26,7 @@ class PolicyWithProviderAdminRole(PolicyBaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.create_policy(role_name="Provider Administrator")
+        self.create_policy(role_name="Provider Administrator", user_pk=self.new_user.pk)
 
     def test_policy_with_provider_admin_role(self):
         required_perms = {perm.codename for perm in self.new_user.user_permissions.all()}
