@@ -437,6 +437,13 @@ class ADCMEntity(ADCMModel):
             cause=cause,
         ).first()
 
+    def requires_service_name(self, service_name: str) -> bool:
+        for item in self.requires:
+            if item.get("service") == service_name:
+                return True
+
+        return False
+
     def __str__(self):
         own_name = getattr(self, "name", None)
         fqdn = getattr(self, "fqdn", None)
@@ -877,13 +884,6 @@ class ServiceComponent(ADCMEntity):
     @property
     def is_maintenance_mode_available(self) -> bool:
         return self.cluster.prototype.allow_maintenance_mode
-
-    def requires_service_name(self, service_name: str) -> bool:
-        for item in self.requires:
-            if item.get("service") == service_name:
-                return True
-
-        return False
 
     class Meta:
         unique_together = (("cluster", "service", "prototype"),)
