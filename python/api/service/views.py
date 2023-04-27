@@ -148,9 +148,17 @@ class ServiceDetailView(PermissionListMixin, DetailView):
 
         if any(
             service_component.requires_service_name(service_name=instance.name)
-            for service_component in ServiceComponent.objects.filter(cluster=instance.cluster)
+            for service_component in ServiceComponent.objects.filter(cluster=instance.cluster).exclude(service=instance)
         ):
-            raise_adcm_ex("SERVICE_CONFLICT", "Another service component requires component of this service")
+            raise_adcm_ex(
+                code="SERVICE_CONFLICT", msg="Another service component requires this service or its component"
+            )
+
+        if any(
+            service.requires_service_name(service_name=instance.name)
+            for service in ClusterObject.objects.filter(cluster=instance.cluster)
+        ):
+            raise_adcm_ex(code="SERVICE_CONFLICT", msg="Another service requires this service or its component")
 
         cancel_locking_tasks(obj=instance, obj_deletion=True)
         if delete_action and (host_components_exists or instance.state != "created"):
