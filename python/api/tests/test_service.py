@@ -316,6 +316,17 @@ class TestServiceAPI(BaseTestCase):
             verbose=False,
         )
 
+    def test_cyclic_requires_fail(self):
+        path = Path(settings.BASE_DIR, "python/api/tests/files/bundle_cluster_requires_fail.tar")
+        self.upload_bundle(path=path)
+
+        response: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": path.name},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
     def test_delete_service_with_requires_fail(self):
         host = self.get_host(bundle_path="python/api/tests/files/bundle_test_provider_concern.tar")
         cluster = self.get_cluster(bundle_path="python/api/tests/files/bundle_cluster_requires.tar")

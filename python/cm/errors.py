@@ -75,6 +75,7 @@ ERRORS = {
     "FOREIGN_HOST": ("host is not belong to the cluster", HTTP_409_CONFLICT, ERR),
     "COMPONENT_CONFLICT": ("duplicate component on host in cluster", HTTP_409_CONFLICT, ERR),
     "COMPONENT_CONSTRAINT_ERROR": ("component constraint error", HTTP_409_CONFLICT, ERR),
+    "REQUIRES_ERROR": ("Incorrect requires definition", HTTP_409_CONFLICT, ERR),
     "BUNDLE_CONFIG_ERROR": ("bundle config error", HTTP_409_CONFLICT, ERR),
     "BUNDLE_CONFLICT": ("bundle conflict error", HTTP_409_CONFLICT, ERR),
     "INVALID_ROLE_SPEC": ("role specification error", HTTP_409_CONFLICT, ERR),
