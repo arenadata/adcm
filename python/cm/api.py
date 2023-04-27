@@ -574,12 +574,11 @@ def update_obj_config(obj_conf: ObjectConfig, conf: dict, attr: dict, desc: str 
     return config_log
 
 
-def set_object_config(obj: ADCMEntity, config: dict) -> ConfigLog:
-    old_conf = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-    new_conf = process_json_config(proto=obj.prototype, obj=obj, new_config=config, new_attr=old_conf.attr)
+def set_object_config(obj: ADCMEntity, config: dict, attr: dict) -> ConfigLog:
+    new_conf = process_json_config(proto=obj.prototype, obj=obj, new_config=config, new_attr=attr)
 
     with atomic():
-        config_log = save_obj_config(obj_conf=obj.config, conf=new_conf, attr=old_conf.attr, desc="ansible update")
+        config_log = save_obj_config(obj_conf=obj.config, conf=new_conf, attr=attr, desc="ansible update")
         update_hierarchy_issues(obj=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
