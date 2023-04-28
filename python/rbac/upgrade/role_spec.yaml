@@ -982,19 +982,6 @@ roles:
               codenames:
                 - delete
 
-    - name: View ADCM settings
-      description: View purely adcm config
-      type: business
-      module_name: rbac.roles
-      class_name: ModelRole
-      any_category: false
-      apps:
-        - label: cm
-          models:
-            - name: adcm
-              codenames:
-                - view_settings_of
-
     - name: Edit ADCM settings
       description: Edit purely adcm config
       type: business
@@ -1006,7 +993,6 @@ roles:
           models:
             - name: adcm
               codenames:
-                - view_settings_of
                 - change_settings_of
             - name: objectconfig
               codenames:

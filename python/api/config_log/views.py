@@ -45,12 +45,6 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
 
         return super().get_serializer_class()
 
-    def get_queryset(self, *args, **kwargs):
-        if self.request.user.has_perm("cm.view_settings_of_adcm"):
-            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
-        else:
-            return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
-
     @audit
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
