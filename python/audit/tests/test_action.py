@@ -227,12 +227,6 @@ class TestActionAudit(BaseTestCase):
         )
 
     def test_host_denied(self):
-        adcm_role = Role.objects.get(name="View ADCM settings")
-        adcm_policy = Policy.objects.create(name="test_adcm_policy", role=adcm_role)
-        adcm_policy.user.add(self.no_rights_user)
-        adcm_policy.add_object(self.adcm)
-        adcm_policy.apply()
-
         host = Host.objects.create(
             fqdn="test_host",
             prototype=Prototype.objects.create(bundle=self.bundle, type="host"),

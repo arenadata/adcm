@@ -82,8 +82,10 @@ def has_config_perm(user, action_type, object_type, obj):
     model = type_to_model(object_type)
     if user.has_perm(f"cm.{action_type}_config_of_{model}", obj):
         return True
+
     if model == "adcm" and user.has_perm(f"cm.{action_type}_settings_of_{model}"):
         return True
+
     return False
 
 
@@ -114,12 +116,6 @@ class ConfigHistoryView(PermissionListMixin, GenericUIView):
     permission_required = ["cm.view_configlog"]
     ordering = ["id"]
 
-    def get_queryset(self, *args, **kwargs):
-        if self.request.user.has_perm("cm.view_settings_of_adcm"):
-            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
-        else:
-            return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
-
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         obj, object_config = get_obj(object_type, object_id)
@@ -149,12 +145,6 @@ class ConfigVersionView(PermissionListMixin, GenericUIView):
     serializer_class = ConfigObjectConfigSerializer
     permission_required = ["cm.view_configlog"]
     ordering = ["id"]
-
-    def get_queryset(self, *args, **kwargs):
-        if self.request.user.has_perm("cm.view_settings_of_adcm"):
-            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
-        else:
-            return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, version = get_object_type_id_version(**kwargs)
@@ -193,12 +183,6 @@ class ConfigHistoryRestoreView(PermissionListMixin, GenericUIView):
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ["cm.view_configlog"]
     ordering = ["id"]
-
-    def get_queryset(self, *args, **kwargs):
-        if self.request.user.has_perm("cm.view_settings_of_adcm"):
-            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
-        else:
-            return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
 
     @audit
     def patch(self, request, *args, **kwargs):  # pylint: disable=unused-argument
