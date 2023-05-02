@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""RBAC Role classes"""
-
 from cm.errors import raise_adcm_ex
 from cm.models import (
     Action,
@@ -28,7 +26,8 @@ from cm.models import (
 )
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
-from django.db import transaction
+from django.db import connection
+from django.db.transaction import atomic
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from rbac.models import (
     Permission,
@@ -63,8 +62,6 @@ class AbstractRole:
 
 
 class ModelRole(AbstractRole):
-    """This Role apply Django model level permissions"""
-
     def apply(self, policy: Policy, role: Role, param_obj=None) -> None:
         for perm in role.get_permissions():
             for group in policy.group.all():
@@ -78,20 +75,66 @@ class ModelRole(AbstractRole):
                 policy.model_perm.add(policy_permission)
 
 
-def assign_user_or_group_perm(policy: Policy, perm: Permission, obj) -> None:
-    with transaction.atomic():
-        for user in policy.user.all():
-            uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
-            policy.user_object_perm.add(uop)
+def assign_user_or_group_perm(policy: Policy, permission: Permission, obj) -> None:
+    row_template = (obj.pk, ContentType.objects.get_for_model(model=obj).pk, permission.pk)
+    user_rows = [(*row_template, user_pk) for user_pk in policy.user.values_list("pk", flat=True)]
+    group_rows = [(*row_template, group_pk) for group_pk in policy.group.values_list("pk", flat=True)]
 
-        for group in policy.group.all():
-            gop = GroupObjectPermission.objects.assign_perm(perm, group, obj)
-            policy.group_object_perm.add(gop)
+    if not any((user_rows, group_rows)):
+        return
+
+    cursor = connection.cursor()
+    with atomic():
+        if user_rows:
+            # Placeholder not used because we need to support Postgres and SQLite and I didn't find a way to use
+            # placeholder for list of multiple tuples for SQLite so used string formatting
+
+            query_str = (
+                "INSERT INTO guardian_userobjectpermission (object_pk, content_type_id, permission_id, user_id) VALUES"
+            )
+            for row in user_rows:
+                query_str = f"{query_str} {row},"
+
+            query_str = f"{query_str[:-1]} ON CONFLICT DO NOTHING RETURNING id;"
+            cursor.execute(query_str)
+
+            rows = [
+                (policy.pk, user_object_permission_id)
+                for user_object_permission_id in {item[0] for item in cursor.fetchall()}
+            ]
+            if rows:
+                query_str = "INSERT INTO rbac_policy_user_object_perm (policy_id, userobjectpermission_id) VALUES"
+                for row in rows:
+                    query_str = f"{query_str} {row},"
+
+                query_str = f"{query_str[:-1]} ON CONFLICT DO NOTHING;"
+                cursor.execute(query_str)
+
+        if group_rows:
+            query_str = (
+                "INSERT INTO guardian_groupobjectpermission "
+                "(object_pk, content_type_id, permission_id, group_id) VALUES"
+            )
+            for row in group_rows:
+                query_str = f"{query_str} {row},"
+
+            query_str = f"{query_str[:-1]} ON CONFLICT DO NOTHING RETURNING id;"
+            cursor.execute(query_str)
+
+            rows = [
+                (policy.pk, group_object_permission_id)
+                for group_object_permission_id in {item[0] for item in cursor.fetchall()}
+            ]
+            if rows:
+                query_str = "INSERT INTO rbac_policy_group_object_perm (policy_id, groupobjectpermission_id) VALUES"
+                for row in rows:
+                    query_str = f"{query_str} {row},"
+
+                query_str = f"{query_str[:-1]} ON CONFLICT DO NOTHING;"
+                cursor.execute(query_str)
 
 
 class ObjectRole(AbstractRole):
-    """This Role apply django-guardian object level permissions"""
-
     def filter(self):
         if "model" not in self.params:
             return None
@@ -102,10 +145,9 @@ class ObjectRole(AbstractRole):
         return model.objects.filter(**self.params["filter"])
 
     def apply(self, policy: Policy, role: Role, param_obj=None) -> None:
-        """Apply Role to User and/or Group"""
         for obj in policy.get_objects(param_obj):
             for perm in role.get_permissions():
-                assign_user_or_group_perm(policy=policy, perm=perm, obj=obj)
+                assign_user_or_group_perm(policy=policy, permission=perm, obj=obj)
 
 
 def get_host_objects(obj):
@@ -144,7 +186,7 @@ class ActionRole(AbstractRole):
         action = Action.obj.get(id=self.params["action_id"])
         assign_user_or_group_perm(
             policy=policy,
-            perm=get_perm_for_model(model=Action),
+            permission=get_perm_for_model(model=Action),
             obj=action,
         )
         for obj in policy.get_objects(param_obj):
@@ -152,9 +194,9 @@ class ActionRole(AbstractRole):
                 if action.host_action and perm.content_type == ContentType.objects.get_for_model(Host):
                     hosts = get_host_objects(obj)
                     for host in hosts:
-                        assign_user_or_group_perm(policy=policy, perm=perm, obj=host)
+                        assign_user_or_group_perm(policy=policy, permission=perm, obj=host)
                     continue
-                assign_user_or_group_perm(policy=policy, perm=perm, obj=obj)
+                assign_user_or_group_perm(policy=policy, permission=perm, obj=obj)
 
 
 class TaskRole(AbstractRole):
@@ -179,22 +221,22 @@ def get_perm_for_model(model, action: str = "view") -> Permission:
 
 
 def apply_jobs(task: TaskLog, policy: Policy) -> None:
-    assign_user_or_group_perm(policy=policy, perm=get_perm_for_model(model=TaskLog), obj=task)
+    assign_user_or_group_perm(policy=policy, permission=get_perm_for_model(model=TaskLog), obj=task)
     assign_user_or_group_perm(
         policy=policy,
-        perm=get_perm_for_model(model=TaskLog, action="change"),
+        permission=get_perm_for_model(model=TaskLog, action="change"),
         obj=task,
     )
     for job in JobLog.objects.filter(task=task):
         assign_user_or_group_perm(
             policy=policy,
-            perm=get_perm_for_model(model=JobLog),
+            permission=get_perm_for_model(model=JobLog),
             obj=job,
         )
         for log in LogStorage.objects.filter(job=job):
             assign_user_or_group_perm(
                 policy=policy,
-                perm=get_perm_for_model(model=LogStorage),
+                permission=get_perm_for_model(model=LogStorage),
                 obj=log,
             )
 
@@ -276,7 +318,7 @@ def apply_policy_for_new_config(config_object: ADCMEntity, config_log: ConfigLog
                 ):
                     assign_user_or_group_perm(
                         policy=policy,
-                        perm=get_perm_for_model(model=ConfigLog),
+                        permission=get_perm_for_model(model=ConfigLog),
                         obj=config_log,
                     )
 
@@ -298,7 +340,7 @@ def apply_policy_for_new_config(config_object: ADCMEntity, config_log: ConfigLog
                 if group_obj_perm in policy.group_object_perm.all() and model_view_gop:
                     assign_user_or_group_perm(
                         policy=policy,
-                        perm=get_perm_for_model(model=ConfigLog),
+                        permission=get_perm_for_model(model=ConfigLog),
                         obj=config_log,
                     )
 
@@ -316,24 +358,24 @@ class ConfigRole(AbstractRole):
 
             for perm in role.get_permissions():
                 if perm.content_type.model == "objectconfig":
-                    assign_user_or_group_perm(policy=policy, perm=perm, obj=obj.config)
+                    assign_user_or_group_perm(policy=policy, permission=perm, obj=obj.config)
                     for config_group in config_groups:
                         assign_user_or_group_perm(
                             policy=policy,
-                            perm=perm,
+                            permission=perm,
                             obj=config_group.config,
                         )
 
                 if perm.content_type.model == "configlog":
                     for config in obj.config.configlog_set.all():
-                        assign_user_or_group_perm(policy=policy, perm=perm, obj=config)
+                        assign_user_or_group_perm(policy=policy, permission=perm, obj=config)
                     for config_group in config_groups:
                         for config in config_group.config.configlog_set.all():
-                            assign_user_or_group_perm(policy=policy, perm=perm, obj=config)
+                            assign_user_or_group_perm(policy=policy, permission=perm, obj=config)
 
                 if perm.content_type.model == "groupconfig":
                     for config_group in config_groups:
-                        assign_user_or_group_perm(policy=policy, perm=perm, obj=config_group)
+                        assign_user_or_group_perm(policy=policy, permission=perm, obj=config_group)
 
 
 class ParentRole(AbstractRole):
@@ -389,7 +431,7 @@ class ParentRole(AbstractRole):
 
                 assign_user_or_group_perm(
                     policy=policy,
-                    perm=Permission.objects.get(codename="view_cluster"),
+                    permission=Permission.objects.get(codename="view_cluster"),
                     obj=obj.cluster,
                 )
             elif obj.prototype.type == "component":
@@ -403,12 +445,12 @@ class ParentRole(AbstractRole):
 
                 assign_user_or_group_perm(
                     policy=policy,
-                    perm=Permission.objects.get(codename="view_cluster"),
+                    permission=Permission.objects.get(codename="view_cluster"),
                     obj=obj.cluster,
                 )
                 assign_user_or_group_perm(
                     policy=policy,
-                    perm=Permission.objects.get(codename="view_clusterobject"),
+                    permission=Permission.objects.get(codename="view_clusterobject"),
                     obj=obj.service,
                 )
             elif obj.prototype.type == "provider":

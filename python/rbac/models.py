@@ -20,6 +20,7 @@ from django.contrib.auth.models import Permission
 from django.contrib.auth.models import User as AuthUser
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.db import connection
 from django.db.models import (
     CASCADE,
     SET_NULL,
@@ -260,24 +261,84 @@ class Policy(Model):
     group_object_perm = ManyToManyField(GroupObjectPermission, blank=True)
 
     def remove_permissions(self):
+        cursor = connection.cursor()
         with atomic():
-            for policy_permission in self.model_perm.order_by("id"):
-                if policy_permission.policy_set.count() <= 1:
-                    if policy_permission.user:
-                        policy_permission.user.user_permissions.remove(policy_permission.permission)
+            cursor.execute(
+                """
+                    DELETE FROM auth_user_user_permissions WHERE permission_id IN (
+                        SELECT permission_id FROM rbac_policypermission WHERE user_id IS NOT NULL AND id IN (
+                            SELECT policypermission_id FROM rbac_policy_model_perm WHERE (
+                                SELECT COUNT(DISTINCT policy_id) FROM rbac_policy_model_perm WHERE policy_id = %s
+                            ) <= 1
+                        )
+                    );
+                """,
+                [self.pk],
+            )
 
-                    if policy_permission.group:
-                        policy_permission.group.permissions.remove(policy_permission.permission)
+            cursor.execute(
+                """
+                    DELETE FROM auth_group_permissions WHERE permission_id IN (
+                        SELECT permission_id FROM rbac_policypermission WHERE group_id IS NOT NULL AND id IN (
+                            SELECT policypermission_id FROM rbac_policy_model_perm WHERE (
+                                SELECT COUNT(DISTINCT policy_id) FROM rbac_policy_model_perm WHERE policy_id = %s
+                            ) <= 1
+                        )
+                    );
+                """,
+                [self.pk],
+            )
 
-                policy_permission.policy_set.remove(self)
+            cursor.execute(
+                """
+                    DELETE FROM rbac_policy_model_perm WHERE policy_id = %s;
+                """,
+                [self.pk],
+            )
 
-            for uop in self.user_object_perm.order_by("id"):
-                if uop.policy_set.count() <= 1:
-                    uop.delete()
+            cursor.execute(
+                """
+                    DELETE FROM guardian_userobjectpermission WHERE id IN (
+                        SELECT userobjectpermission_id FROM rbac_policy_user_object_perm WHERE (
+                            SELECT COUNT(DISTINCT policy_id) FROM rbac_policy_user_object_perm WHERE policy_id = %s
+                        ) <= 1
+                    );
+                """,
+                [self.pk],
+            )
 
-            for gop in self.group_object_perm.order_by("id"):
-                if gop.policy_set.count() <= 1:
-                    gop.delete()
+            cursor.execute(
+                """
+                    DELETE FROM rbac_policy_user_object_perm WHERE userobjectpermission_id IN (
+                        SELECT userobjectpermission_id FROM rbac_policy_user_object_perm WHERE (
+                            SELECT COUNT(DISTINCT policy_id) FROM rbac_policy_user_object_perm WHERE policy_id = %s
+                        ) <= 1
+                    );
+                """,
+                [self.pk],
+            )
+
+            cursor.execute(
+                """
+                    DELETE FROM guardian_groupobjectpermission WHERE id IN (
+                        SELECT groupobjectpermission_id FROM rbac_policy_group_object_perm WHERE (
+                            SELECT COUNT(DISTINCT policy_id) FROM rbac_policy_user_object_perm WHERE policy_id = %s
+                        ) <= 1
+                    );
+                """,
+                [self.pk],
+            )
+
+            cursor.execute(
+                """
+                    DELETE FROM rbac_policy_group_object_perm WHERE groupobjectpermission_id IN (
+                        SELECT groupobjectpermission_id FROM rbac_policy_group_object_perm WHERE (
+                            SELECT COUNT(DISTINCT policy_id) FROM rbac_policy_group_object_perm WHERE policy_id = %s
+                        ) <= 1
+                    );
+                """,
+                [self.pk],
+            )
 
     def add_object(self, obj):
         policy_object = PolicyObject(object=obj)
