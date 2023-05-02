@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=wrong-import-order,wrong-import-position
-# ruff: noqa: E402,F401
 
 from __future__ import absolute_import, division, print_function
 
@@ -21,6 +20,7 @@ import sys
 from ansible.errors import AnsibleError
 
 sys.path.append("/adcm/python")
+import adcm.init_django  # pylint: disable=unused-import
 from cm.ansible_plugin import (
     ContextActionModule,
     set_cluster_config,
@@ -31,8 +31,6 @@ from cm.ansible_plugin import (
     set_service_config,
     set_service_config_by_name,
 )
-
-import adcm.init_django  # pylint: disable=unused-import
 
 ANSIBLE_METADATA = {"metadata_version": "1.1", "supported_by": "Arenadata"}
 DOCUMENTATION = r"""
