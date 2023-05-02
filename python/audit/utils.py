@@ -89,7 +89,7 @@ def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs) -> Model | 
             if getattr(view, "queryset") is None:
                 raise TypeError from e
 
-            if len(view.queryset.all()) == 1:
+            if view.queryset.count() == 1:
                 deleted_obj = view.queryset.all()[0]
             elif "pk" in view.kwargs:
                 deleted_obj = view.queryset.get(pk=view.kwargs["pk"])

@@ -11,8 +11,6 @@
 # limitations under the License.
 # pylint: disable=wrong-import-order
 
-import time
-from unittest import skip
 
 from cm.hierarchy import HierarchyError, Tree
 from cm.tests.utils import (
@@ -150,23 +148,6 @@ def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements
 
 
 class HierarchyTest(BaseTestCase):
-    @skip("run as needed to check if performance remains the same")
-    def test_build_tree_performance(self):
-        """
-        Un-skip it for manual performance testing after changes to cm/hierarchy.py
-        average ~0.025 seconds per single build
-        """
-        hierarchy_objects = generate_hierarchy()
-
-        start = time.time()
-        counter = 0
-        for obj in hierarchy_objects.values():
-            Tree(obj)
-            counter += 1
-        duration = time.time() - start
-
-        print(f"\n\n Average tree build is {duration / counter} seconds")
-
     def test_get_node(self):
         """Test function `hierarchy.Tree.get_node()` AND if tree was built correctly"""
         hierarchy_objects = generate_hierarchy()
