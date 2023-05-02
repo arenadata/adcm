@@ -659,7 +659,6 @@ def get_default(  # pylint: disable=too-many-branches  # noqa: C901
             value = ansible_encrypt_and_format(msg=conf.default)
     elif conf.type in settings.STACK_COMPLEX_FIELD_TYPES:
         if isinstance(conf.default, str):
-            conf.default = conf.default.replace("'", '"')
             value = json.loads(s=conf.default)
         else:
             value = conf.default
