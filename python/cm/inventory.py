@@ -44,6 +44,7 @@ class HcAclAction:
 
 
 MAINTENANCE_MODE = "maintenance_mode"
+NEEDED_BEFORE_UPGRADE = ("state", "config")
 
 
 def process_config_and_attr(obj: ADCMEntity, conf: dict, attr: dict | None = None, spec: dict | None = None):
@@ -146,7 +147,7 @@ def get_cluster_variables(cluster: Cluster, cluster_config: dict = None) -> dict
         "edition": cluster.prototype.bundle.edition,
         "state": cluster.state,
         "multi_state": cluster.multi_state,
-        "before_upgrade": cluster.before_upgrade,
+        "before_upgrade": {key: value for key, value in cluster.before_upgrade.items() if key in NEEDED_BEFORE_UPGRADE},
     }
 
     imports = get_import(cluster=cluster)
@@ -165,6 +166,7 @@ def get_service_variables(service: ClusterObject, service_config: dict = None) -
         "config": service_config or get_obj_config(service),
         MAINTENANCE_MODE: service.maintenance_mode == MaintenanceMode.ON,
         "display_name": service.display_name,
+        "before_upgrade": {key: value for key, value in service.before_upgrade.items() if key in NEEDED_BEFORE_UPGRADE},
     }
 
 
@@ -176,6 +178,9 @@ def get_component_variables(component: ServiceComponent, component_config: dict 
         "multi_state": component.multi_state,
         MAINTENANCE_MODE: component.maintenance_mode == MaintenanceMode.ON,
         "display_name": component.display_name,
+        "before_upgrade": {
+            key: value for key, value in component.before_upgrade.items() if key in NEEDED_BEFORE_UPGRADE
+        },
     }
 
 
@@ -188,7 +193,9 @@ def get_provider_variables(provider: HostProvider, provider_config: dict = None)
         "host_prototype_id": host_proto.id,
         "state": provider.state,
         "multi_state": provider.multi_state,
-        "before_upgrade": provider.before_upgrade,
+        "before_upgrade": {
+            key: value for key, value in provider.before_upgrade.items() if key in NEEDED_BEFORE_UPGRADE
+        },
     }
 
 
