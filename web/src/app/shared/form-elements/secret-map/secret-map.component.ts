@@ -76,7 +76,7 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
 
   onBlur(index): void {
     const controlValue = { key: this.dummyControl.value[index].key, value: this.dummyControl.value[index].value };
-    this.items.at(index).setValue( controlValue);
+    this.items.at(index).setValue(controlValue);
   }
 
   onFocus(): void {
