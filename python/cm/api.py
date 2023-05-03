@@ -28,7 +28,6 @@ from cm.issue import (
     check_bound_components,
     check_component_constraint,
     check_hc_requires,
-    check_service_requires,
     update_hierarchy_issues,
     update_issue_after_deleting,
 )
@@ -476,7 +475,6 @@ def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> ClusterObject:
         raise_adcm_ex(code="OBJ_TYPE_ERROR", msg=f"Prototype type should be service, not {proto.type}")
 
     check_license(prototype=proto)
-    check_service_requires(cluster=cluster, proto=proto)
     if not proto.shared:
         if cluster.prototype.bundle != proto.bundle:
             raise_adcm_ex(

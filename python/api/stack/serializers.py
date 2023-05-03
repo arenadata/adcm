@@ -172,7 +172,7 @@ class PrototypeUISerializer(PrototypeSerializer, PrototypeSerializerMixin):
 
     @staticmethod
     def get_requires(obj: Prototype) -> list[RequiresUISchema] | None:
-        return get_requires(prototype=obj)
+        return get_requires(prototype=obj, adding_service=True)
 
 
 class PrototypeDetailSerializer(PrototypeSerializer, PrototypeSerializerMixin):
@@ -310,7 +310,7 @@ class BundleServiceUIPrototypeSerializer(ServicePrototypeSerializer):
 
     @staticmethod
     def get_requires(obj: Prototype) -> list[RequiresUISchema] | None:
-        return get_requires(prototype=obj)
+        return get_requires(prototype=obj, adding_service=True)
 
 
 class ADCMPrototypeSerializer(PrototypeSerializer):

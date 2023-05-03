@@ -355,51 +355,6 @@ def check_component_requires(comp: StagePrototype) -> None:
     comp.save()
 
 
-def re_check_cyclic() -> None:
-    for service in StagePrototype.objects.filter(type="service"):
-        check_cyclic_requires(proto=service)
-
-    for comp in StagePrototype.objects.filter(type="component"):
-        check_cyclic_requires(proto=comp)
-
-
-def check_cyclic_requires(
-    proto: StagePrototype, require_dict: dict | None = None, already_checked: list | None = None
-) -> None:
-    if require_dict is None:
-        require_dict = {}
-
-    if already_checked is None:
-        already_checked = []
-
-    if proto in already_checked:
-        raise_adcm_ex(code="REQUIRES_ERROR", msg=f"Cyclic requires in {proto_ref(prototype=proto)}")
-
-    already_checked.append(proto)
-
-    for require in proto.requires:
-        req_service = StagePrototype.obj.get(type="service", name=require["service"])
-
-        if req_service.name not in require_dict:
-            require_dict[req_service.name] = {"components": {}, "service": req_service}
-
-        req_comp = None
-        if require.get("component"):
-            req_comp = StagePrototype.obj.get(
-                type="component",
-                name=require["component"],
-                parent=req_service,
-            )
-            if req_comp.name not in require_dict[req_service.name]["components"]:
-                require_dict[req_service.name]["components"][req_comp.name] = req_comp
-
-        if req_service.requires:
-            check_cyclic_requires(proto=req_service, require_dict=require_dict, already_checked=already_checked)
-
-        if req_comp and req_comp.requires:
-            check_cyclic_requires(proto=req_comp, require_dict=require_dict, already_checked=already_checked)
-
-
 def check_services_requires() -> None:
     for service in StagePrototype.objects.filter(type="service"):
         if not service.requires:
@@ -539,7 +494,6 @@ def second_pass():
     check_services_requires()
     re_check_actions()
     re_check_components()
-    re_check_cyclic()
     re_check_config()
 
 
