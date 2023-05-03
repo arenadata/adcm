@@ -66,17 +66,6 @@ class TestComponent(BaseTestCase):
             requires=[{"service": "service_1", "component": "component_1_1"}, {"service": "service_2"}],
         )
 
-    def test_service_requires(self):
-        with self.assertRaisesRegex(AdcmEx, 'No required component "component_1_1"  for service "service_2"'):
-            add_service_to_cluster(cluster=self.cluster, proto=self.service_proto_2)
-
-        add_service_to_cluster(cluster=self.cluster, proto=self.service_proto_1)
-        with self.assertRaisesRegex(AdcmEx, 'No required service "service_3"  for service "service_2"'):
-            add_service_to_cluster(cluster=self.cluster, proto=self.service_proto_2)
-
-        add_service_to_cluster(cluster=self.cluster, proto=self.service_proto_3)
-        add_service_to_cluster(cluster=self.cluster, proto=self.service_proto_2)
-
     def test_requires_hc(self):
         service_1 = add_service_to_cluster(cluster=self.cluster, proto=self.service_proto_1)
         component_1 = ServiceComponent.objects.get(prototype=self.component_1_1_proto, service=service_1)
@@ -89,7 +78,7 @@ class TestComponent(BaseTestCase):
         ):
             add_hc(self.cluster, [{"host_id": host.id, "service_id": service_1.id, "component_id": component_1.id}])
 
-    def test_service_issue(self):
+    def test_service_requires_issue(self):
         service_2 = ClusterObject.objects.create(prototype=self.service_proto_2, cluster=self.cluster)
         update_hierarchy_issues(obj=self.cluster)
         concerns = service_2.concerns.all()

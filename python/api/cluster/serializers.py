@@ -360,9 +360,6 @@ class HCComponentSerializer(ComponentShortSerializer):
 
     @staticmethod
     def get_requires(obj: ServiceComponent) -> list[RequiresUISchema] | None:
-        if not obj.prototype.requires:
-            return None
-
         return get_requires(prototype=obj.prototype)
 
 

@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from cm.api import load_mm_objects
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
@@ -301,7 +300,13 @@ def get_maintenance_mode_response(  # noqa: C901
     )
 
 
-def process_requires(proto: Prototype, comp_dict: dict) -> dict:
+def process_requires(
+    proto: Prototype, comp_dict: dict, checked_object: list | None = None, adding_service: bool = False
+) -> dict:
+    if checked_object is None:
+        checked_object = []
+    checked_object.append(proto)
+
     for require in proto.requires:
         req_service = Prototype.obj.get(type="service", name=require["service"], bundle=proto.bundle)
 
@@ -317,22 +322,24 @@ def process_requires(proto: Prototype, comp_dict: dict) -> dict:
             )
             comp_dict[req_service.name]["components"][req_comp.name] = req_comp
 
-        if req_service.requires:
-            process_requires(proto=req_service, comp_dict=comp_dict)
+        if req_service.requires and req_service not in checked_object:
+            process_requires(
+                proto=req_service, comp_dict=comp_dict, checked_object=checked_object, adding_service=adding_service
+            )
 
-        if req_comp and req_comp.requires:
-            process_requires(proto=req_comp, comp_dict=comp_dict)
+        if req_comp and req_comp.requires and req_comp not in checked_object and not adding_service:
+            process_requires(proto=req_comp, comp_dict=comp_dict, checked_object=checked_object)
 
     return comp_dict
 
 
-def get_requires(prototype: Prototype) -> list[RequiresUISchema] | None:
+def get_requires(prototype: Prototype, adding_service: bool = False) -> list[RequiresUISchema] | None:
     if not prototype.requires:
         return None
 
     proto_dict = {}
+    proto_dict = process_requires(proto=prototype, comp_dict=proto_dict, adding_service=adding_service)
 
-    proto_dict = process_requires(proto=prototype, comp_dict=proto_dict)
     out = []
 
     for service_name, params in proto_dict.items():
