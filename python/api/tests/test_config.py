@@ -18,7 +18,7 @@ from cm.models import ADCM, ConfigLog
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -268,7 +268,7 @@ class TestADCMConfigMinMaxPassLengthAPI(BaseTestCase):
         config_log.config["auth_policy"]["max_password_length"] = 1
         config_log.config["auth_policy"]["min_password_length"] = 2
         config_log.config["global"]["adcm_url"] = "http://127.0.0.1:8000"
-        config_log.save(update_fields=["config", "attr"])
+        config_log.save(update_fields=["config"])
 
         response: Response = self.client.post(
             path=reverse("config-history", kwargs={"adcm_pk": adcm.pk}),
@@ -282,3 +282,97 @@ class TestADCMConfigMinMaxPassLengthAPI(BaseTestCase):
             response.data["desc"],
             '"min_password_length" must be less or equal than "max_password_length"',
         )
+
+
+class ADCMSettingsTestCase(BaseTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.adcm = ADCM.objects.first()
+        self.another_user_log_in(username=self.no_rights_user_username, password=self.no_rights_user_password)
+
+    def test_retrieve_config_current_success(self):
+        response: Response = self.client.get(path=reverse(viewname="config-current", kwargs={"adcm_pk": self.adcm.pk}))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["id"], self.adcm.config.current)
+
+    def test_retrieve_config_history_success(self):
+        response: Response = self.client.get(path=reverse(viewname="config-history", kwargs={"adcm_pk": self.adcm.pk}))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertTrue(response.json())
+
+    def test_retrieve_config_history_by_history_version_success(self):
+        config_log = ConfigLog.objects.get(obj_ref=self.adcm.config)
+        config_log.config["global"]["adcm_url"] = "http://127.0.0.1:8000"
+        config_log.save(update_fields=["config"])
+
+        self.login()
+        response: Response = self.client.post(
+            path=reverse(viewname="config-history", kwargs={"adcm_pk": self.adcm.pk}),
+            data={"config": config_log.config, "attr": config_log.attr},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        self.adcm.refresh_from_db()
+
+        self.another_user_log_in(username=self.no_rights_user_username, password=self.no_rights_user_password)
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="config-history-version",
+                kwargs={"adcm_pk": self.adcm.pk, "version": self.adcm.config.previous},
+            )
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["id"], self.adcm.config.previous)
+
+    def test_retrieve_config_previous_success(self):
+        config_log = ConfigLog.objects.get(obj_ref=self.adcm.config)
+        config_log.config["global"]["adcm_url"] = "http://127.0.0.1:8000"
+        config_log.save(update_fields=["config"])
+
+        self.login()
+        response: Response = self.client.post(
+            path=reverse(viewname="config-history", kwargs={"adcm_pk": self.adcm.pk}),
+            data={"config": config_log.config, "attr": config_log.attr},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        self.another_user_log_in(username=self.no_rights_user_username, password=self.no_rights_user_password)
+        response: Response = self.client.get(path=reverse("config-previous", kwargs={"adcm_pk": self.adcm.pk}))
+
+        self.adcm.refresh_from_db()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["id"], self.adcm.config.previous)
+
+    def test_retrieve_config_by_pk_success(self):
+        response: Response = self.client.get(
+            path=reverse(viewname="object-config", kwargs={"adcm_pk": self.adcm.pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertTrue(response.json())
+
+    def test_list_config_log_success(self):
+        response: Response = self.client.get(
+            path=reverse(viewname="config-log-list"),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+
+    def test_list_config_log_by_pk_success(self):
+        config_log = ConfigLog.objects.get(obj_ref=self.adcm.config)
+        response: Response = self.client.get(
+            path=reverse(viewname="config-log-detail", kwargs={"pk": config_log.pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertTrue(response.json())

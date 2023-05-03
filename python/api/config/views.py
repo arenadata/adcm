@@ -22,8 +22,9 @@ from api.utils import check_obj, create, update
 from audit.utils import audit
 from cm.adcm_config import ansible_encrypt_and_format, ui_config
 from cm.errors import AdcmEx
-from cm.models import ConfigLog, ObjectConfig, get_model_by_type
+from cm.models import ConfigLog, ObjectConfig, ObjectType, get_model_by_type
 from django.conf import settings
+from django.db.models.query import QuerySet
 from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
 from rest_framework.exceptions import PermissionDenied
@@ -116,6 +117,12 @@ class ConfigHistoryView(PermissionListMixin, GenericUIView):
     permission_required = ["cm.view_configlog"]
     ordering = ["id"]
 
+    def get_queryset(self, *args, **kwargs) -> QuerySet:
+        if self.request.user.is_authenticated and self.kwargs.get("object_type") == ObjectType.ADCM:
+            return ConfigLog.objects.all()
+
+        return super().get_queryset(*args, **kwargs)
+
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         obj, object_config = get_obj(object_type, object_id)
@@ -145,6 +152,12 @@ class ConfigVersionView(PermissionListMixin, GenericUIView):
     serializer_class = ConfigObjectConfigSerializer
     permission_required = ["cm.view_configlog"]
     ordering = ["id"]
+
+    def get_queryset(self, *args, **kwargs) -> QuerySet:
+        if self.request.user.is_authenticated and self.kwargs.get("object_type") == ObjectType.ADCM:
+            return ConfigLog.objects.all()
+
+        return super().get_queryset(*args, **kwargs)
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, version = get_object_type_id_version(**kwargs)
