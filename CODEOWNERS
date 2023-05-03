@@ -2,12 +2,12 @@
 .gitignore @aas @k.shestakov @d.skrynnik @tsd @v.remizov @d.bardin @k.fedorenko
 .gitlab-ci.yaml @aas @v.remizov @k.shestakov
 .pre-commit-config.yaml @aas @k.shestakov @d.skrynnik @tsd @v.remizov @d.bardin @k.fedorenko
-**/conf @aas @k.shestakov @d.skrynnik @tsd
-**/go @aas @k.shestakov @d.skrynnik @tsd @aer
-**/os @aas @k.shestakov @d.skrynnik @tsd
-**/python @aas @k.shestakov @d.skrynnik @tsd
-**/spec @aas @k.shestakov @d.skrynnik @tsd
-**/web @v.remizov @d.bardin @k.fedorenko
+/conf/ @aas @k.shestakov @d.skrynnik @tsd
+/go/ @aas @k.shestakov @d.skrynnik @tsd @aer
+/os/ @aas @k.shestakov @d.skrynnik @tsd
+/python/ @aas @k.shestakov @d.skrynnik @tsd
+/spec/ @aas @k.shestakov @d.skrynnik @tsd
+/web/ @v.remizov @d.bardin @k.fedorenko
 CODEOWNERS @aas @v.remizov @k.shestakov
 COPYRIGHT @aas @v.remizov @k.shestakov
 Dockerfile @aas @v.remizov @k.shestakov
