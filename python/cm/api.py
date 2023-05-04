@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 # pylint: disable=too-many-lines
 
 import json
@@ -54,9 +53,10 @@ from cm.models import (
 )
 from cm.status_api import api_request, post_event
 from cm.utils import obj_ref
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
 from django.db.transaction import atomic, on_commit
-from rbac.models import re_apply_object_policy
+from rbac.models import Policy, re_apply_object_policy
 from rbac.roles import apply_policy_for_new_config
 from version_utils import rpm
 
@@ -739,8 +739,21 @@ def save_hc(
     for host_component_item in host_component_list:
         service_set.add(host_component_item.service)
 
-    for service in service_set:
-        re_apply_object_policy(apply_object=service)
+    if service_set:
+        service_list = list(service_set)
+        cluster = service_list[0]
+        for policy in Policy.objects.filter(
+            object__object_id=cluster.id,
+            object__content_type=ContentType.objects.get_for_model(cluster),
+        ):
+            policy.apply()
+
+        service_content_type = ContentType.objects.get_for_model(service_list[0])
+        for service in service_list:
+            for policy in Policy.objects.filter(
+                object__object_id=service.id, object__content_type=service_content_type
+            ):
+                policy.apply()
 
     return host_component_list
 

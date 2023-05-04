@@ -45,7 +45,7 @@ class PolicyBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-att
             name="service_6_manual_add",
             type=ObjectType.SERVICE,
         )
-        service_ids = self.get_services()
+        service_ids = self.get_service_ids()
         self.last_service_pk = service_ids[-1]
         self.host_component = self.get_host_components()
         self.last_component_pk = self.host_component[-1]["component_id"]
@@ -97,7 +97,7 @@ class PolicyBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-att
 
             self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-    def get_services(self) -> list[int]:
+    def get_service_ids(self) -> list[int]:
         service_proto_pks = (
             Prototype.objects.filter(
                 bundle=Bundle.objects.get(name="test_cluster_for_cluster_admin_role"), type=ObjectType.SERVICE
