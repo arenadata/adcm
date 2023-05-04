@@ -47,30 +47,46 @@ export class BaseMapListDirective extends FieldDirective implements OnInit, OnCh
 
   ngOnInit() {
     if (!Object.keys(this.field.value || {}).length) this.control.setValue('');
+
     this.reload();
     this.items.valueChanges.pipe(
       this.takeUntil()
-    ).subscribe((a: { key: string; value: string }[]) => this.prepare(a));
+    ).subscribe((a: { key: string; value: string }[]) => {
+      this.prepare(a)
+    });
   }
 
   prepare(a: { key: string; value: string }[]) {
-    let value = this.asList ? a.map(b => b.value).filter(c => c) : a.length ? a.reduce((p, c) => ({
-      ...p,
-      [c.key]: c.value
-    }), {}) : null;
+    let value = this.asList ? 
+      a.map(b => b.value).filter(c => c) : 
+      a.length && a.length > 0 ? 
+        a.reduce((p, c) => ({
+          ...p,
+          [c.key]: c.value
+        }), {}) : 
+        null;
+
     if (value && this.asList) value = (value as Array<string>).length ? value : null;
     this.control.setValue(value);
     this.control.markAsTouched();
   }
 
   reload() {
-    this.items.reset([]);
-    this.items.controls = [];
-    const fieldValue = this.field.value ? { ...(this.field.value as Object) } : {};
-    Object.keys(fieldValue).forEach(a => this.items.push(this.fb.group({
-      key: [{ value: a, disabled: this.control.disabled }, Validators.required],
-      value: [{ value: fieldValue[a], disabled: this.control.disabled }],
-    })));
+    const fieldValue = this.field.value ? { ...(this.field.value as Object) } : null;
+
+    if (!fieldValue) {
+      this.items.clear();
+    } else {
+      this.items.reset([]);
+      this.items.controls = [];
+
+      Object.keys(fieldValue).forEach(a => this.items.push(
+        this.fb.group({
+          key: [{ value: a, disabled: this.control.disabled }, Validators.required],
+          value: [{ value: fieldValue[a], disabled: this.control.disabled }],
+        })
+      ));
+    }
   }
 
   add() {

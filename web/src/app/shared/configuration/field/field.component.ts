@@ -94,6 +94,7 @@ export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
     const field = this.currentFormGroup.controls[this.options.name];
     const defaultValue = this.options.default;
     const type = this.options.type;
+    
     if (field) {
       if (type === 'json') {
         field.setValue(defaultValue === null ? '' : JSON.stringify(defaultValue, undefined, 4));
