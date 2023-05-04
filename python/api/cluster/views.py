@@ -331,12 +331,15 @@ class HostComponentList(GenericUIView):
     serializer_class_ui = HostComponentUISerializer
     serializer_class_post = HostComponentSaveSerializer
     permission_classes = (IsAuthenticated,)
+    ordering_fields = ("id",)
     ordering = ["id"]
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         check_custom_perm(request.user, "view_host_components_of", "cluster", cluster, "view_hostcomponent")
-        hostcomponent = self.get_queryset().prefetch_related("service", "component", "host").filter(cluster=cluster)
+        hostcomponent = self.filter_queryset(
+            queryset=self.get_queryset().prefetch_related("service", "component", "host").filter(cluster=cluster)
+        )
         if self._is_for_ui():
             ui_hc = HostComponent()
             setattr(ui_hc, "hc", hostcomponent)  # because pylint disable invalid-name not working here somehow
