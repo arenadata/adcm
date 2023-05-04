@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { FormControl } from '@angular/forms';
-import { Prototype, StackBase } from '@app/core/types';
+import { Prototype, PrototypeList, StackBase } from '@app/core/types';
 import { of } from 'rxjs';
 import {filter, map, switchMap, tap} from 'rxjs/operators';
 import { EventHelper } from '@app/adwp';
@@ -80,11 +80,15 @@ export class BundlesComponent extends InputComponent implements OnInit {
       .valueChanges.pipe(
         this.takeUntil(),
         tap((elementName) => this.elementName = elementName),
-        switchMap((elementName) => (elementName ? this.service.getPrototype(this.typeName, { page: 0, limit: 500, ordering: '-version', display_name: elementName }) : of([])))
+        switchMap(() => (this.service.getPrototype(this.typeName, { page: 0, limit: 500, ordering: '-version' }) || of([])))
       )
       .subscribe((elements) => {
-        this.versions = elements.filter((element) => element.display_name === this.elementName);
-        this.selectOne(this.versions, 'bundle_id');
+        this.versions = elements
+          .filter((element) => element.display_name === this.elementName)
+          .sort((a, b) =>
+            b.version.localeCompare(a.version, undefined, { numeric: true })
+          );
+        this.selectOne(this.versions, "bundle_id");
         this.loadedBundle = null;
       });
 
@@ -112,11 +116,11 @@ export class BundlesComponent extends InputComponent implements OnInit {
   }
 
   getBundles() {
-    const offset = (this.page - 1) * this.limit;
-    const params = { fields: 'display_name', distinct: 1, ordering: 'display_name', limit: this.limit, offset };
-    this.service.getPrototype(this.typeName, params).subscribe((bundles) => {
-      this.bundles = [...new Map([...this.bundles, ...bundles].map((item) => [item["display_name"], item])).values()];
-      this.selectOne(bundles, 'display_name');
+    this.service.getPrototypeList(this.typeName).subscribe((response: any) => {
+      this.bundles = response.map((item: PrototypeList) => ({
+        display_name: item.display_name
+      })).sort((a, b) => a.display_name.localeCompare(b.display_name, undefined, { numeric: true }));
+      this.selectOne(this.bundles, 'display_name');
     });
   }
 

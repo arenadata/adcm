@@ -27,11 +27,17 @@ const getProto = () =>
     .fill(0)
     .map((_, i) => ({ bundle_id: i, display_name: `bundle_${i}`, version: `0.0${i}`, bundle_edition: 'community' }));
 
+const getProtoList = () =>
+  Array(COUNT_DATA)
+    .fill(0)
+    .map((_, i) => ({ display_name: `bundle_${i}`, versions: [{ prototype_id: Number(`0.${i}`), version: `0.0${i}`}] }));
+
 describe('Form control :: bundle component', () => {
   let component: BundlesComponent;
   let fixture: ComponentFixture<BundlesComponent>;
   let aService = {
     getPrototype: () => of(getProto()),
+    getPrototypeList: () => of(getProtoList()),
     upload: () => of([uploadBundle]),
   };
 

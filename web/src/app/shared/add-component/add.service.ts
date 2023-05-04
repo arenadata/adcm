@@ -20,7 +20,7 @@ import { catchError, concatAll, concatMap, filter, map, switchMap, tap } from 'r
 import { StackInfo, StackService } from '@app/core/services';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ApiService } from '@app/core/api';
-import {Host, License, Prototype, ServicePrototype, StackBase, TypeName} from '@app/core/types';
+import { Host, License, Prototype, PrototypeListResult, ServicePrototype, StackBase, TypeName } from '@app/core/types';
 import { DialogComponent } from '@app/shared/components/dialog.component';
 import { GenName } from './naming';
 import { MainService } from '@app/shared/configuration/main/main.service';
@@ -214,6 +214,12 @@ export class AddService implements IAddService {
 
   getPrototype(name: StackInfo, param: { [key: string]: string | number }): Observable<Prototype[]> {
     return this.stack.fromStack(name, param);
+  }
+
+  getPrototypeList(name: StackInfo) {
+    return this.api.get(`${environment.apiUI}stack/${name}/?limit=500&ordering=display_name`).pipe(
+      map((response: PrototypeListResult) => response.results)
+    )
   }
 
   getProtoServiceForCurrentCluster() {
