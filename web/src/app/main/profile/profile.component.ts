@@ -87,14 +87,26 @@ export class ProfileComponent extends BaseDirective implements OnInit, OnDestroy
       this.takeUntil()
     );
 
-    this.getGlobalSettings().subscribe((resp) => {
-      this.passMinLength = resp.config['auth_policy'].min_password_length;
-      this.passMaxLength = resp.config['auth_policy'].max_password_length;
+    this.getGlobalSettings()
+      .subscribe((resp) => {
+        this.passMinLength = resp.config['auth_policy'].min_password_length;
+        this.passMaxLength = resp.config['auth_policy'].max_password_length;
 
-      this.cpForm.controls['password'].setValidators(this.passwordValidators);
-      this.cpForm.controls['confirm_password'].setValidators(this.passwordValidators);
-      this.cpForm.updateValueAndValidity();
-    })
+        this.setFormValidators();
+      },
+      (err) => {
+        console.error(`[ERROR]: Can't load global config`);
+        this.passMinLength = 12;
+        this.passMaxLength = 128;
+
+        this.setFormValidators();
+      })
+  }
+
+  setFormValidators() {
+    this.cpForm.controls['password'].setValidators(this.passwordValidators);
+    this.cpForm.controls['confirm_password'].setValidators(this.passwordValidators);
+    this.cpForm.updateValueAndValidity();
   }
 
   changePassword() {
