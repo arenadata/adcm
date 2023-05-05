@@ -16,7 +16,7 @@ import json
 import os
 import re
 import warnings
-from copy import deepcopy
+from copy import copy, deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -474,7 +474,7 @@ def save_upgrade(prototype: StagePrototype, config: dict, bundle_hash: str) -> N
         if "scripts" in item:
             upgrade.action = save_upgrade_action(
                 prototype=prototype,
-                config=item,
+                config=copy(item),
                 bundle_hash=bundle_hash,
                 upgrade=upgrade,
             )
