@@ -24,6 +24,7 @@ type logger struct {
 	I        logWrapper
 	W        logWrapper
 	E        logWrapper
+	C        logWrapper
 	level    *int
 	levelMap map[string]int
 }
@@ -90,10 +91,11 @@ func initLog(logFile string, level string) {
 	logg = logger{}
 	var out logWriter
 	logg.levelMap = map[string]int{
-		"debug":   DEBUG,
-		"info":    INFO,
-		"warning": WARN,
-		"error":   ERR,
+		"DEBUG":    DEBUG,
+		"INFO":     INFO,
+		"WARNING":  WARN,
+		"ERROR":    ERR,
+		"CRITICAL": CRIT,
 	}
 	logLevel, err := logg.decodeLogLevel(level)
 	if err != nil {
@@ -110,6 +112,7 @@ func initLog(logFile string, level string) {
 	logg.I = newLog(out, &logLevel, INFO, "[INFO]  ")
 	logg.W = newLog(out, &logLevel, WARN, "[WARN]  ")
 	logg.E = newLog(out, &logLevel, ERR, "[ERROR] ")
+	logg.C = newLog(out, &logLevel, CRIT, "[CRITICAL] ")
 }
 
 func newLog(out logWriter, current *int, level int, tag string) logWrapper {
@@ -170,4 +173,15 @@ func (w *fileWriter) ReopenLogFile() {
 	if err != nil {
 		log.Fatalf("error opening log file %s: %v", w.filename, err)
 	}
+}
+
+func GetLogLevel() string {
+	const defaultLogLevel = "ERROR"
+
+	logLevel, ok := os.LookupEnv("LOG_LEVEL")
+	if !ok {
+		return defaultLogLevel
+	}
+
+	return logLevel
 }

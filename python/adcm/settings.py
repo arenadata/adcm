@@ -11,6 +11,7 @@
 # limitations under the License.
 
 import json
+import logging
 import os
 import string
 import sys
@@ -198,6 +199,8 @@ ADWP_EVENT_SERVER = {
     "SECRET_KEY": ADCM_TOKEN,
 }
 
+LOG_LEVEL = os.getenv("LOG_LEVEL", logging.getLevelName(logging.ERROR))
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -214,21 +217,18 @@ LOGGING = {
     },
     "handlers": {
         "adcm_file": {
-            "level": "DEBUG",
             "filters": ["require_debug_false"],
             "formatter": "adcm",
             "class": "logging.FileHandler",
             "filename": LOG_FILE,
         },
         "adcm_debug_file": {
-            "level": "DEBUG",
             "filters": ["require_debug_false"],
             "formatter": "adcm",
             "class": "logging.FileHandler",
             "filename": BASE_DIR / "data/log/adcm_debug.log",
         },
         "background_task_file_handler": {
-            "level": "DEBUG",
             "formatter": "adcm",
             "class": "logging.handlers.TimedRotatingFileHandler",
             "filename": BASE_DIR / "data/log/cron_task.log",
@@ -236,7 +236,6 @@ LOGGING = {
             "backupCount": 10,
         },
         "audit_file_handler": {
-            "level": "DEBUG",
             "class": "logging.handlers.TimedRotatingFileHandler",
             "filename": BASE_DIR / "data/log/audit.log",
             "when": "midnight",
@@ -246,22 +245,22 @@ LOGGING = {
     "loggers": {
         "adcm": {
             "handlers": ["adcm_file"],
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
             "propagate": True,
         },
         "django": {
             "handlers": ["adcm_debug_file"],
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
             "propagate": True,
         },
         "background_tasks": {
             "handlers": ["background_task_file_handler"],
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
             "propagate": True,
         },
         "audit": {
             "handlers": ["audit_file_handler"],
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
             "propagate": True,
         },
     },
