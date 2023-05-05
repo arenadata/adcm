@@ -111,6 +111,7 @@ yarn install
     Use `-v /opt/adcm:/adcm/data:Z` for SELinux
 
 ## Running ADCM using client PostgreSQL DB
+_PostgreSQL must be version 11 or newer - JSONB field used_
 
 1. Start container:
    ```shell
