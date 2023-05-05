@@ -29,7 +29,7 @@ from adcm.tests.base import BaseTestCase
 mock_issue_check_map = {
     ConcernCause.CONFIG: lambda x: False,
     ConcernCause.IMPORT: lambda x: True,
-    ConcernCause.SERVICE: lambda x: True,
+    ConcernCause.SERVICE: lambda x: False,
     ConcernCause.HOSTCOMPONENT: lambda x: True,
     ConcernCause.REQUIREMENT: lambda x: True,
 }
@@ -108,6 +108,15 @@ class CreateIssueTest(BaseTestCase):
         new_service_issues = [i.id for i in new_service.concerns.all()]
 
         self.assertIn(cluster_issue.id, new_service_issues)
+
+    def test_required_service_issue(self):
+        service_prototype = Prototype.objects.create(
+            type="service", bundle=self.cluster.prototype.bundle, required=True, name="required service"
+        )
+        update_hierarchy_issues(obj=self.cluster)
+        cluster_issue = self.cluster.concerns.filter(cause=ConcernCause.SERVICE).first()
+        self.assertEqual(cluster_issue.cause, ConcernCause.SERVICE)
+        self.assertEqual(cluster_issue.reason["placeholder"]["target"]["name"], service_prototype.name)
 
 
 class RemoveIssueTest(BaseTestCase):

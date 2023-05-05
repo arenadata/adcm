@@ -1884,18 +1884,12 @@ class MessageTemplate(ADCMModel):
 
     @classmethod
     def _prototype_placeholder(cls, _, **kwargs) -> dict:
-        service = kwargs.get("source")
-        proto = None
+        proto = kwargs.get("target")
 
-        for require in service.prototype.requires:
-            try:
-                ClusterObject.objects.get(prototype__name=require["service"], cluster=service.cluster)
-            except ClusterObject.DoesNotExist:
-                proto = Prototype.objects.get(name=require["service"], type="service", bundle=service.prototype.bundle)
-                break
         if proto:
             return {
                 "id": proto.id,
+                "type": "prototype",
                 "name": proto.display_name or proto.name,
             }
 

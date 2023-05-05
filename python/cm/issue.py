@@ -335,9 +335,35 @@ def _gen_issue_name(obj: ADCMEntity, cause: ConcernCause) -> str:
     return f"{obj} has issue with {cause.value}"
 
 
+def get_kwargs_for_issue(msg_name: KnownNames, source: ADCMEntity) -> dict:
+    kwargs = {"source": source}
+    target = None
+
+    if msg_name == KnownNames.REQUIRED_SERVICE_ISSUE:
+        bundle = source.prototype.bundle
+        for proto in Prototype.objects.filter(bundle=bundle, type="service", required=True):
+            try:
+                ClusterObject.objects.get(cluster=source, prototype=proto)
+            except ClusterObject.DoesNotExist:
+                target = proto
+                break
+
+    elif msg_name == KnownNames.UNSATISFIED_REQUIREMENT_ISSUE:
+        for require in source.prototype.requires:
+            try:
+                ClusterObject.objects.get(prototype__name=require["service"], cluster=source.cluster)
+            except ClusterObject.DoesNotExist:
+                target = Prototype.objects.get(name=require["service"], type="service", bundle=source.prototype.bundle)
+                break
+
+    kwargs["target"] = target
+    return kwargs
+
+
 def _create_concern_item(obj: ADCMEntity, issue_cause: ConcernCause) -> ConcernItem:
     msg_name = _issue_template_map[issue_cause]
-    reason = MessageTemplate.get_message_from_template(name=msg_name.value, source=obj)
+    kwargs = get_kwargs_for_issue(msg_name=msg_name, source=obj)
+    reason = MessageTemplate.get_message_from_template(name=msg_name.value, **kwargs)
     issue_name = _gen_issue_name(obj=obj, cause=issue_cause)
     issue = ConcernItem.objects.create(
         type=ConcernType.ISSUE,
