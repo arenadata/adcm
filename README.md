@@ -160,3 +160,13 @@ yarn install
    -e DB_PASS="DATABASE_USER_PASSWORD" -e MIGRATION_MODE=0
    --name adcm hub.arenadata.io/adcm/adcm:latest
    ```
+
+## Set log level
+1. add `-e` option to `docker run` command:
+   ```shell
+   docker run ... -e LOG_LEVEL="INFO"
+   ```
+   
+   valid choices are: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
+
+   defaults to `ERROR`
