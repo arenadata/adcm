@@ -270,4 +270,5 @@
           display_name: "Blocking time period"
           description: "Defines a period (in min) of inactivity after which old failed login attempts will be cleared"
           type: integer
+          min: 1
           default: 5
