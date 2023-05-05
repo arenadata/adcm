@@ -1,4 +1,4 @@
-import {Component, OnChanges, OnInit, ViewChild} from '@angular/core';
+import {Component, ElementRef, OnChanges, OnInit, QueryList, ViewChild, ViewChildren} from '@angular/core';
 import { BaseMapListDirective } from "@app/shared/form-elements/map.component";
 import {FormArray, FormControl, FormGroup, Validators} from "@angular/forms";
 import { TValue } from "@app/shared/configuration/types";
@@ -10,7 +10,7 @@ import {ErrorStateMatcher} from "@angular/material/core";
   styleUrls: ['../map.component.scss', './secret-map.component.scss']
 })
 export class SecretMapComponent extends BaseMapListDirective implements OnInit, OnChanges {
-  @ViewChild("secretInput") secretInput;
+  @ViewChildren("secretInput") secretInput: QueryList<ElementRef>;
 
   dummy = '********';
   dummyLength = this.dummy.length;
@@ -75,12 +75,15 @@ export class SecretMapComponent extends BaseMapListDirective implements OnInit, 
   }
 
   onBlur(index): void {
-    const controlValue = { key: this.dummyControl.value[index].key, value: this.dummyControl.value[index].value };
+    const controlValue = { 
+      key: this.dummyControl.value[index].key, 
+      value: this.dummyControl.value[index].value !== this.dummy ? this.dummyControl.value[index].value : this.control.value[this.dummyControl.value[index].key]
+    };
     this.items.at(index).setValue(controlValue);
   }
 
-  onFocus(): void {
-    this.secretInput.nativeElement.setSelectionRange(this.dummyLength, this.dummyLength);
+  onFocus(index): void {
+    this.secretInput.get(index).nativeElement.value = '';
   }
 
   validate() {
