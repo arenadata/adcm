@@ -156,7 +156,7 @@ class BaseTestCase(TestCase):
 
         return [role_data for role_data in response.json()["results"] if role_data["name"] == role_name][0]
 
-    def create_policy(self, role_name: str, user_pk: int) -> None:
+    def create_policy(self, role_name: str, user_pk: int) -> int:
         role_data = self.get_role_data(role_name=role_name)
         object_type = role_data["parametrized_by_type"][0]
         obj = getattr(self, object_type)
@@ -174,6 +174,8 @@ class BaseTestCase(TestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        return response.json()["id"]
 
     def upload_bundle(self, path: Path) -> None:
         with open(path, encoding=settings.ENCODING_UTF_8) as f:

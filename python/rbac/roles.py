@@ -27,6 +27,7 @@ from cm.models import (
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db import connection
+from django.db.models import QuerySet
 from django.db.transaction import atomic
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from rbac.models import (
@@ -40,8 +41,6 @@ from rbac.models import (
 
 
 class AbstractRole:
-    """Abstract class for custom Role handlers"""
-
     class Meta:
         abstract = True
 
@@ -51,13 +50,13 @@ class AbstractRole:
     def apply(self, policy: Policy, role: Role, param_obj=None) -> None:
         """
         This method should apply Role to User and/or Group.
-        Generaly this means that you should assign permissions from Role to User and/or Group
+        Generally it means you should assign permissions from Role to User and/or Group
         and save links to these permissions in Policy model.
         If Role is parametrized_by_type than parametrized objects should be obtained from
-        Policy.object field.
+        `Policy.object` field.
         Optional parameter param_obj can be used to specify the object in complex cases
-        (see ParentRole below)
         """
+
         raise NotImplementedError("You must provide apply method")
 
 
@@ -135,14 +134,16 @@ def assign_user_or_group_perm(policy: Policy, permission: Permission, obj) -> No
 
 
 class ObjectRole(AbstractRole):
-    def filter(self):
+    def filter(self) -> QuerySet | None:
         if "model" not in self.params:
             return None
+
         try:
-            model = apps.get_model(self.params["app_name"], self.params["model"])
+            return apps.get_model(self.params["app_name"], self.params["model"]).objects.filter(**self.params["filter"])
         except LookupError as e:
             raise_adcm_ex("ROLE_FILTER_ERROR", str(e))
-        return model.objects.filter(**self.params["filter"])
+
+        return None
 
     def apply(self, policy: Policy, role: Role, param_obj=None) -> None:
         for obj in policy.get_objects(param_obj):
@@ -170,19 +171,17 @@ def get_host_objects(obj):
 
 
 class ActionRole(AbstractRole):
-    """This Role apply permissions to run ADCM action"""
-
-    def filter(self):
+    def filter(self) -> QuerySet | None:
         if "model" not in self.params:
             return None
         try:
-            model = apps.get_model(self.params["app_name"], self.params["model"])
+            return apps.get_model(self.params["app_name"], self.params["model"]).objects.filter(**self.params["filter"])
         except LookupError as e:
             raise_adcm_ex("ROLE_FILTER_ERROR", str(e))
-        return model.objects.filter(**self.params["filter"])
+
+        return None
 
     def apply(self, policy: Policy, role: Role, param_obj=None) -> None:
-        """Apply Role to User and/or Group"""
         action = Action.obj.get(id=self.params["action_id"])
         assign_user_or_group_perm(
             policy=policy,
@@ -195,7 +194,9 @@ class ActionRole(AbstractRole):
                     hosts = get_host_objects(obj)
                     for host in hosts:
                         assign_user_or_group_perm(policy=policy, permission=perm, obj=host)
+
                     continue
+
                 assign_user_or_group_perm(policy=policy, permission=perm, obj=obj)
 
 
@@ -204,6 +205,7 @@ class TaskRole(AbstractRole):
         task = TaskLog.objects.filter(id=self.params["task_id"]).first()
         if not task:
             role.delete()
+
             return
 
         for obj in policy.get_objects(param_obj):
@@ -217,6 +219,7 @@ def get_perm_for_model(model, action: str = "view") -> Permission:
     content_type = ContentType.objects.get_for_model(model=model)
     codename = f"{action}_{model.__name__.lower()}"
     perm, _ = Permission.objects.get_or_create(content_type=content_type, codename=codename)
+
     return perm
 
 
@@ -241,7 +244,7 @@ def apply_jobs(task: TaskLog, policy: Policy) -> None:
             )
 
 
-def re_apply_policy_for_jobs(action_object, task):  # noqa: C901
+def re_apply_policy_for_jobs(action_object, task):
     obj_type_map = get_objects_for_policy(action_object)
     object_model = action_object.__class__.__name__.lower()
     task_role, _ = Role.objects.get_or_create(
@@ -296,7 +299,7 @@ def re_apply_policy_for_jobs(action_object, task):  # noqa: C901
                     apply_jobs(task=task, policy=policy)
 
 
-def apply_policy_for_new_config(config_object: ADCMEntity, config_log: ConfigLog) -> None:  # noqa: C901
+def apply_policy_for_new_config(config_object: ADCMEntity, config_log: ConfigLog) -> None:
     obj_type_map = get_objects_for_policy(obj=config_object)
     object_model = config_object.__class__.__name__.lower()
 
@@ -346,8 +349,6 @@ def apply_policy_for_new_config(config_object: ADCMEntity, config_log: ConfigLog
 
 
 class ConfigRole(AbstractRole):
-    """This Role apply permission to view and add config object"""
-
     def apply(self, policy: Policy, role: Role, param_obj=None) -> None:
         for obj in policy.get_objects(param_obj=param_obj):
             if obj.config is None:
@@ -379,11 +380,8 @@ class ConfigRole(AbstractRole):
 
 
 class ParentRole(AbstractRole):
-    """This Role is used for complex Roles that can include other Roles"""
-
     @staticmethod
     def find_and_apply(obj: ADCMEntity, policy: Policy, role: Role) -> None:
-        """Find Role of appropriate type and apply it to specified object"""
         for child_role in role.child.filter(class_name__in=("ObjectRole", "TaskRole", "ConfigRole")):
             if obj.prototype.type in child_role.parametrized_by_type:
                 child_role.apply(policy=policy, obj=obj)
@@ -393,7 +391,7 @@ class ParentRole(AbstractRole):
             if obj.prototype == action.prototype:
                 child_role.apply(policy=policy, obj=obj)
 
-    def apply(  # noqa: C901
+    def apply(
         self,
         policy: Policy,
         role: Role,
