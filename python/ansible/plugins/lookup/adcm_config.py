@@ -16,13 +16,6 @@ import sys
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 
-try:
-    from __main__ import display  # pylint: disable=unused-import
-except ImportError:
-    from ansible.utils.display import Display  # pylint: disable=ungrouped-imports
-
-    display = Display()
-
 sys.path.append("/adcm/python")
 from cm.ansible_plugin import (
     set_cluster_config,

@@ -269,11 +269,11 @@ class Policy(Model):
                         SELECT permission_id FROM rbac_policypermission WHERE user_id IS NOT NULL AND id IN (
                             SELECT policypermission_id FROM rbac_policy_model_perm WHERE (
                                 SELECT COUNT(DISTINCT policy_id) FROM rbac_policy_model_perm WHERE policy_id = %s
-                            ) = 1
+                            ) = 1 AND policy_id = %s
                         )
                     );
                 """,
-                [self.pk],
+                [self.pk, self.pk],
             )
 
             cursor.execute(
@@ -282,11 +282,11 @@ class Policy(Model):
                         SELECT permission_id FROM rbac_policypermission WHERE group_id IS NOT NULL AND id IN (
                             SELECT policypermission_id FROM rbac_policy_model_perm WHERE (
                                 SELECT COUNT(DISTINCT policy_id) FROM rbac_policy_model_perm WHERE policy_id = %s
-                            ) = 1
+                            ) = 1 AND policy_id = %s
                         )
                     );
                 """,
-                [self.pk],
+                [self.pk, self.pk],
             )
 
             cursor.execute(
@@ -301,10 +301,10 @@ class Policy(Model):
                     DELETE FROM guardian_userobjectpermission WHERE id IN (
                         SELECT userobjectpermission_id FROM rbac_policy_user_object_perm WHERE (
                             SELECT COUNT(DISTINCT policy_id) FROM rbac_policy_user_object_perm WHERE policy_id = %s
-                        ) = 1
+                        ) = 1 AND policy_id = %s
                     );
                 """,
-                [self.pk],
+                [self.pk, self.pk],
             )
 
             cursor.execute(
@@ -312,10 +312,10 @@ class Policy(Model):
                     DELETE FROM rbac_policy_user_object_perm WHERE userobjectpermission_id IN (
                         SELECT userobjectpermission_id FROM rbac_policy_user_object_perm WHERE (
                             SELECT COUNT(DISTINCT policy_id) FROM rbac_policy_user_object_perm WHERE policy_id = %s
-                        ) = 1
+                        ) = 1 AND policy_id = %s
                     );
                 """,
-                [self.pk],
+                [self.pk, self.pk],
             )
 
             cursor.execute(
@@ -323,10 +323,10 @@ class Policy(Model):
                     DELETE FROM guardian_groupobjectpermission WHERE id IN (
                         SELECT groupobjectpermission_id FROM rbac_policy_group_object_perm WHERE (
                             SELECT COUNT(DISTINCT policy_id) FROM rbac_policy_group_object_perm WHERE policy_id = %s
-                        ) = 1
+                        ) = 1 AND policy_id = %s
                     );
                 """,
-                [self.pk],
+                [self.pk, self.pk],
             )
 
             cursor.execute(
@@ -334,10 +334,10 @@ class Policy(Model):
                     DELETE FROM rbac_policy_group_object_perm WHERE groupobjectpermission_id IN (
                         SELECT groupobjectpermission_id FROM rbac_policy_group_object_perm WHERE (
                             SELECT COUNT(DISTINCT policy_id) FROM rbac_policy_group_object_perm WHERE policy_id = %s
-                        ) = 1
+                        ) = 1 AND policy_id = %s
                     );
                 """,
-                [self.pk],
+                [self.pk, self.pk],
             )
 
     def add_object(self, obj):
