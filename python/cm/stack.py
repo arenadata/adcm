@@ -23,7 +23,9 @@ from typing import Any
 import ruyaml
 import yaml
 import yspec.checker
-from cm.adcm_config import check_config_type, proto_ref, read_bundle_file
+from cm.adcm_config.checks import check_config_type
+from cm.adcm_config.config import read_bundle_file
+from cm.adcm_config.utils import proto_ref
 from cm.checker import FormatError, check, round_trip_load
 from cm.errors import raise_adcm_ex
 from cm.logger import logger
@@ -186,7 +188,7 @@ def get_config_files(path: Path) -> list[tuple[Path, Path]]:
     return conf_list
 
 
-def check_adcm_config(conf_file: Path) -> Any:  # noqa: C901
+def check_adcm_config(conf_file: Path) -> Any:
     warnings.simplefilter(action="error", category=ReusedAnchorWarning)
     schema_file = Path(settings.CODE_DIR, "cm", "adcm_schema.yaml")
 
@@ -786,7 +788,7 @@ def get_yspec(proto: StagePrototype | Prototype, bundle_hash: str, conf: dict, n
     return schema
 
 
-def save_prototype_config(  # noqa: C901
+def save_prototype_config(
     proto: StagePrototype,
     proto_conf: dict,
     bundle_hash: str,
@@ -816,7 +818,7 @@ def save_prototype_config(  # noqa: C901
 
         return source
 
-    def process_limits(_conf: dict, _name: str, _subname: str) -> dict:  # noqa: C901
+    def process_limits(_conf: dict, _name: str, _subname: str) -> dict:
         opt = {}
         if _conf["type"] == "option":
             opt = {"option": _conf["option"]}

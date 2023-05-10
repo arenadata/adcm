@@ -12,7 +12,7 @@
 
 from api.config.serializers import ConfigSerializerUI
 from api.utils import UrlField, check_obj, hlink
-from cm.adcm_config import get_action_variant, get_prototype_config, ui_config
+from cm.adcm_config.config import get_action_variant, get_prototype_config, ui_config
 from cm.errors import raise_adcm_ex
 from cm.models import Cluster, GroupConfig, HostProvider, PrototypeConfig, Upgrade
 from rest_framework.reverse import reverse

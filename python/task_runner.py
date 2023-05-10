@@ -20,7 +20,7 @@ import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-import adcm.init_django  # pylint: disable=unused-import # noqa: F401
+import adcm.init_django  # pylint: disable=unused-import
 
 from cm.errors import AdcmEx
 from cm.job import finish_task, re_prepare_job
@@ -84,7 +84,7 @@ def run_job(task_id, job_id, err_file):
         )
         res = proc.wait()
         return res
-    except Exception:  # pylint: disable=broad-except # noqa: BLE001
+    except Exception:  # pylint: disable=broad-except
         logger.error("exception running job %s", job_id)
         return 1
 
@@ -102,7 +102,7 @@ def set_log_body(job):
         LogStorage.objects.filter(job=job, name=log_storage.name, type=log_storage.type).update(body=body)
 
 
-def run_task(task_id: int, args: str | None = None) -> None:  # noqa: C901  # pylint: disable=too-many-statements
+def run_task(task_id: int, args: str | None = None) -> None:  # pylint: disable=too-many-statements
     logger.debug("task_runner.py called as: %s", sys.argv)
     try:
         task = TaskLog.objects.get(id=task_id)

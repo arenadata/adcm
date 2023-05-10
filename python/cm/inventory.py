@@ -13,7 +13,7 @@
 import json
 from itertools import chain
 
-from cm.adcm_config import get_prototype_config, process_config
+from cm.adcm_config.config import get_prototype_config, process_config
 from cm.logger import logger
 from cm.models import (
     ADCM,
@@ -273,7 +273,7 @@ def get_provider_config(provider_id) -> dict:
     return {"provider": get_provider_variables(provider)}
 
 
-def get_host_groups(  # noqa: C901  # pylint: disable=too-many-branches
+def get_host_groups(  # pylint: disable=too-many-branches
     cluster: Cluster,
     delta: dict | None = None,
     action_host: Host | None = None,

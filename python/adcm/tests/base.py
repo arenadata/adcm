@@ -134,10 +134,10 @@ class BaseTestCase(TestCase):
         )
         self.client.defaults["Authorization"] = f"Token {response.data['token']}"
 
-    def get_new_user(self, password: str) -> User:
+    def get_new_user(self, username: str, password: str) -> User:
         response: Response = self.client.post(
             path=reverse(viewname="rbac:user-list"),
-            data={"username": "new_user", "password": password},
+            data={"username": username, "password": password},
             content_type=APPLICATION_JSON,
         )
 

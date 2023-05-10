@@ -12,7 +12,7 @@
 
 from api.concern.serializers import ConcernItemSerializer
 from api.serializers import StringListSerializer
-from cm.adcm_config import get_main_info
+from cm.adcm_config.config import get_main_info
 from cm.models import ADCM
 from rest_framework.serializers import (
     CharField,

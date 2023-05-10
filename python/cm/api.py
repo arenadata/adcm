@@ -14,7 +14,7 @@
 import json
 from functools import partial, wraps
 
-from cm.adcm_config import (
+from cm.adcm_config.config import (
     init_object_config,
     process_json_config,
     read_bundle_file,
@@ -87,7 +87,7 @@ def version_in(version: str, ver: PrototypeImport) -> bool:
     return True
 
 
-def load_service_map():  # noqa: C901
+def load_service_map():
     comps = {}
     hosts = {}
     hc_map = {}
@@ -780,7 +780,7 @@ def get_bind(cluster, service, source_cluster, source_service):
         return None
 
 
-def get_import(cluster, service=None):  # noqa: C901
+def get_import(cluster, service=None):
     def get_export(_cluster, _service, _pi):
         exports = []
         export_proto = {}
@@ -893,7 +893,7 @@ def get_bind_obj(cluster, service):
     return obj
 
 
-def multi_bind(cluster, service, bind_list):  # noqa: C901
+def multi_bind(cluster, service, bind_list):
     # pylint: disable=too-many-locals,too-many-statements
 
     def get_prototype_import(import_pk, _import_obj):
@@ -992,7 +992,7 @@ def multi_bind(cluster, service, bind_list):  # noqa: C901
     return get_import(cluster, service)
 
 
-def bind(cluster, service, export_cluster, export_service_pk):  # noqa: C901
+def bind(cluster, service, export_cluster, export_service_pk):
     # pylint: disable=too-many-branches
 
     """

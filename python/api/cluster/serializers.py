@@ -25,7 +25,7 @@ from api.utils import (
     get_requires,
 )
 from api.validators import StartMidEndValidator
-from cm.adcm_config import get_main_info
+from cm.adcm_config.config import get_main_info
 from cm.api import add_cluster, add_hc, bind, multi_bind
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues

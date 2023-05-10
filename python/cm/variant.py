@@ -192,7 +192,7 @@ VARIANT_HOST_FUNC = {
 }
 
 
-def var_host_solver(cluster, func_map, args):  # noqa: C901
+def var_host_solver(cluster, func_map, args):
     def check_key(key, _args):
         if not isinstance(_args, dict):
             err("CONFIG_VARIANT_ERROR", "predicate item should be a map")
@@ -248,7 +248,7 @@ def variant_host(**kwargs):
     return res
 
 
-def variant_host_in_cluster(**kwargs):  # noqa: C901
+def variant_host_in_cluster(**kwargs):
     out = []
     cluster = get_cluster(obj=kwargs["obj"])
     if cluster is None:

@@ -25,7 +25,7 @@ from django.views import View
 from rest_framework.response import Response
 
 
-def get_audit_operation_and_object(  # noqa: C901
+def get_audit_operation_and_object(
     view: View,
     response: Response,
     deleted_obj: Model,

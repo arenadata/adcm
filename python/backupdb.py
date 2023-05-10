@@ -21,7 +21,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.migrations.executor import MigrationExecutor
 
-import adcm.init_django  # pylint: disable=unused-import # noqa: F401
+import adcm.init_django  # pylint: disable=unused-import
 from cm.logger import logger
 
 

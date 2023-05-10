@@ -12,7 +12,7 @@
 # limitations under the License.
 # pylint: disable=wrong-import-order
 
-import adcm.init_django  # pylint: disable=unused-import # noqa: F401
+import adcm.init_django  # pylint: disable=unused-import
 import api.urls
 
 

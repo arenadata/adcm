@@ -169,7 +169,7 @@ class ContextActionModule(ActionBase):
     def _do_host_from_provider(self, task_vars, context):
         raise NotImplementedError
 
-    def run(self, tmp=None, task_vars=None):  # pylint: disable=too-many-branches # noqa: C901
+    def run(self, tmp=None, task_vars=None):  # pylint: disable=too-many-branches
         self._check_mandatory()
         obj_type = self._task.args["type"]
         job_id = task_vars["job"]["id"]

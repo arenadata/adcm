@@ -13,7 +13,7 @@
 import json
 from pathlib import Path
 
-from cm.adcm_config import ansible_decrypt
+from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import delete_host_provider
 from cm.bundle import delete_bundle
 from cm.errors import AdcmEx

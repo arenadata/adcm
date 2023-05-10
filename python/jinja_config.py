@@ -35,7 +35,7 @@ def _get_attr(config: dict) -> dict:
     return attr
 
 
-def _get_limits(config: dict, root_path: Path) -> dict:  # noqa: C901
+def _get_limits(config: dict, root_path: Path) -> dict:
     # pylint: disable=too-many-branches
     limits = {}
 

@@ -117,7 +117,7 @@ class PaginatedView(GenericUIView):
 
         return url
 
-    def get_page(self, obj, request, context=None):  # noqa: C901
+    def get_page(self, obj, request, context=None):
         if not context:
             context = {}
 

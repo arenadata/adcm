@@ -10,18 +10,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP
-from audit.utils import mark_deleted_audit_object
-from django.db.models.signals import post_delete
+import re
+
+from cm.errors import raise_adcm_ex
+from django.db.models.signals import pre_save
 from django.dispatch import receiver
-from rbac.models import Group, Policy, Role, User
-from rest_framework.authtoken.models import Token
+from rbac.models import Group, OriginType
 
 
-@receiver(post_delete, sender=User)
-@receiver(post_delete, sender=Group)
-@receiver(post_delete, sender=Policy)
-@receiver(post_delete, sender=Role)
-@receiver(post_delete, sender=Token)
-def mark_deleted_audit_object_handler(sender, instance, **kwargs):  # pylint: disable=unused-argument
-    mark_deleted_audit_object(instance, object_type=MODEL_TO_AUDIT_OBJECT_TYPE_MAP[sender])
+@receiver(signal=pre_save, sender=Group)
+def handle_name_type_display_name(sender, instance, **kwargs):  # pylint: disable=unused-argument
+    if kwargs["raw"]:
+        return
+
+    base_group_name_pattern = re.compile(rf'(?P<base_name>.*?)(?: \[(?:{"|".join(OriginType.values)})\]|$)')
+    match = base_group_name_pattern.match(instance.name)
+    if match and match.group("base_name"):
+        instance.name = f"{match.group('base_name')} [{instance.type}]"
+        instance.display_name = match.group("base_name")
+    else:
+        raise_adcm_ex(code="GROUP_CONFLICT", msg=f"Check regex. Data: `{instance.name}`")

@@ -12,7 +12,7 @@
 
 from api.config.serializers import ConfigSerializerUI
 from api.utils import get_api_url_kwargs
-from cm.adcm_config import get_action_variant, get_prototype_config
+from cm.adcm_config.config import get_action_variant, get_prototype_config
 from cm.models import Action, PrototypeConfig, SubAction
 from jinja_config import get_jinja_config
 from rest_framework.reverse import reverse

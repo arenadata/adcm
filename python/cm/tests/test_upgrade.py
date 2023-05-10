@@ -11,7 +11,7 @@
 # limitations under the License.
 # pylint: disable=wrong-import-order
 
-from cm.adcm_config import save_obj_config, switch_config
+from cm.adcm_config.config import save_obj_config, switch_config
 from cm.api import (
     add_cluster,
     add_hc,

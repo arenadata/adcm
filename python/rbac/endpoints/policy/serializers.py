@@ -12,8 +12,8 @@
 
 import jsonschema
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from rbac.endpoints.serializers import BaseRelatedSerializer
 from rbac.models import Group, Policy, Role, RoleTypes, User
-from rbac.utils import BaseRelatedSerializer
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import (

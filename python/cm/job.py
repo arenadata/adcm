@@ -30,8 +30,8 @@ from audit.models import (
     AuditLogOperationResult,
     AuditLogOperationType,
 )
-from cm.adcm_config import (
-    check_attr,
+from cm.adcm_config.checks import check_attr
+from cm.adcm_config.config import (
     check_config_spec,
     get_prototype_config,
     process_config_spec,
@@ -291,7 +291,7 @@ def cook_comp_key(name, subname):
     return f"{name}.{subname}"
 
 
-def cook_delta(  # pylint: disable=too-many-branches # noqa: C901
+def cook_delta(  # pylint: disable=too-many-branches
     cluster: Cluster,
     new_hc: list[tuple[ClusterObject, Host, ServiceComponent]],
     action_hc: list[dict],
@@ -613,7 +613,7 @@ def prepare_context(
     return context
 
 
-def prepare_job_config(  # noqa: C901
+def prepare_job_config(
     action: Action,
     sub_action: SubAction,
     job_id: int,

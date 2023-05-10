@@ -12,7 +12,7 @@
 
 from unittest.mock import Mock, call, patch
 
-from cm.adcm_config import process_config
+from cm.adcm_config.config import process_config
 from cm.models import ADCM, ConfigLog
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType

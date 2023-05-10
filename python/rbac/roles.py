@@ -94,7 +94,11 @@ def assign_user_or_group_perm(policy: Policy, permission: Permission, obj) -> No
             for row in user_rows:
                 query_str = f"{query_str} {row},"
 
-            query_str = f"{query_str[:-1]} ON CONFLICT DO NOTHING RETURNING id;"
+            query_str = (
+                f"{query_str[:-1]} ON CONFLICT (user_id, permission_id, object_pk) DO UPDATE SET "
+                "object_pk=EXCLUDED.object_pk, content_type_id=EXCLUDED.content_type_id, "
+                "permission_id=EXCLUDED.permission_id, user_id=EXCLUDED.user_id RETURNING id;"
+            )
             cursor.execute(query_str)
 
             rows = [
@@ -117,7 +121,11 @@ def assign_user_or_group_perm(policy: Policy, permission: Permission, obj) -> No
             for row in group_rows:
                 query_str = f"{query_str} {row},"
 
-            query_str = f"{query_str[:-1]} ON CONFLICT DO NOTHING RETURNING id;"
+            query_str = (
+                f"{query_str[:-1]} ON CONFLICT (group_id, permission_id, object_pk) DO UPDATE SET "
+                "object_pk=EXCLUDED.object_pk, content_type_id=EXCLUDED.content_type_id, "
+                "permission_id=EXCLUDED.permission_id, group_id=EXCLUDED.group_id RETURNING id;"
+            )
             cursor.execute(query_str)
 
             rows = [
@@ -151,25 +159,6 @@ class ObjectRole(AbstractRole):
                 assign_user_or_group_perm(policy=policy, permission=perm, obj=obj)
 
 
-def get_host_objects(obj):
-    object_type = obj.prototype.type
-    host_list = []
-    if object_type == "cluster":
-        for host in Host.obj.filter(cluster=obj):
-            host_list.append(host)
-    elif object_type == "service":
-        for hostcomponent in HostComponent.obj.filter(cluster=obj.cluster, service=obj):
-            host_list.append(hostcomponent.host)
-    elif object_type == "component":
-        for hostcomponent in HostComponent.obj.filter(cluster=obj.cluster, service=obj.service, component=obj):
-            host_list.append(hostcomponent.host)
-    elif object_type == "provider":
-        for host in Host.obj.filter(provider=obj):
-            host_list.append(host)
-
-    return host_list
-
-
 class ActionRole(AbstractRole):
     def filter(self) -> QuerySet | None:
         if "model" not in self.params:
@@ -183,15 +172,34 @@ class ActionRole(AbstractRole):
 
     def apply(self, policy: Policy, role: Role, param_obj=None) -> None:
         action = Action.obj.get(id=self.params["action_id"])
+        permission, _ = Permission.objects.get_or_create(
+            content_type=ContentType.objects.get_for_model(model=Action),
+            codename=f"view_{Action.__name__.lower()}",
+        )
         assign_user_or_group_perm(
             policy=policy,
-            permission=get_perm_for_model(model=Action),
+            permission=permission,
             obj=action,
         )
         for obj in policy.get_objects(param_obj):
             for perm in role.get_permissions():
                 if action.host_action and perm.content_type == ContentType.objects.get_for_model(Host):
-                    hosts = get_host_objects(obj)
+                    hosts = []
+                    if obj.prototype.type == "cluster":
+                        for host in Host.obj.filter(cluster=obj):
+                            hosts.append(host)
+                    elif obj.prototype.type == "service":
+                        for hostcomponent in HostComponent.obj.filter(cluster=obj.cluster, service=obj):
+                            hosts.append(hostcomponent.host)
+                    elif obj.prototype.type == "component":
+                        for hostcomponent in HostComponent.obj.filter(
+                            cluster=obj.cluster, service=obj.service, component=obj
+                        ):
+                            hosts.append(hostcomponent.host)
+                    elif obj.prototype.type == "provider":
+                        for host in Host.obj.filter(provider=obj):
+                            hosts.append(host)
+
                     for host in hosts:
                         assign_user_or_group_perm(policy=policy, permission=perm, obj=host)
 
@@ -215,33 +223,33 @@ class TaskRole(AbstractRole):
         return
 
 
-def get_perm_for_model(model, action: str = "view") -> Permission:
-    content_type = ContentType.objects.get_for_model(model=model)
-    codename = f"{action}_{model.__name__.lower()}"
-    perm, _ = Permission.objects.get_or_create(content_type=content_type, codename=codename)
-
-    return perm
-
-
 def apply_jobs(task: TaskLog, policy: Policy) -> None:
-    assign_user_or_group_perm(policy=policy, permission=get_perm_for_model(model=TaskLog), obj=task)
-    assign_user_or_group_perm(
-        policy=policy,
-        permission=get_perm_for_model(model=TaskLog, action="change"),
-        obj=task,
+    view_tasklog_permission, _ = Permission.objects.get_or_create(
+        content_type=ContentType.objects.get_for_model(model=TaskLog),
+        codename=f"view_{TaskLog.__name__.lower()}",
     )
+    assign_user_or_group_perm(policy=policy, permission=view_tasklog_permission, obj=task)
+
+    change_tasklog_permission, _ = Permission.objects.get_or_create(
+        content_type=ContentType.objects.get_for_model(model=TaskLog),
+        codename=f"change_{TaskLog.__name__.lower()}",
+    )
+    assign_user_or_group_perm(policy=policy, permission=change_tasklog_permission, obj=task)
+
+    view_joblog_permission, _ = Permission.objects.get_or_create(
+        content_type=ContentType.objects.get_for_model(model=JobLog),
+        codename=f"view_{JobLog.__name__.lower()}",
+    )
+    view_logstorage_permission, _ = Permission.objects.get_or_create(
+        content_type=ContentType.objects.get_for_model(model=LogStorage),
+        codename=f"view_{LogStorage.__name__.lower()}",
+    )
+
     for job in JobLog.objects.filter(task=task):
-        assign_user_or_group_perm(
-            policy=policy,
-            permission=get_perm_for_model(model=JobLog),
-            obj=job,
-        )
+        assign_user_or_group_perm(policy=policy, permission=view_joblog_permission, obj=job)
+
         for log in LogStorage.objects.filter(job=job):
-            assign_user_or_group_perm(
-                policy=policy,
-                permission=get_perm_for_model(model=LogStorage),
-                obj=log,
-            )
+            assign_user_or_group_perm(policy=policy, permission=view_logstorage_permission, obj=log)
 
 
 def re_apply_policy_for_jobs(action_object, task):
@@ -302,6 +310,10 @@ def re_apply_policy_for_jobs(action_object, task):
 def apply_policy_for_new_config(config_object: ADCMEntity, config_log: ConfigLog) -> None:
     obj_type_map = get_objects_for_policy(obj=config_object)
     object_model = config_object.__class__.__name__.lower()
+    permission, _ = Permission.objects.get_or_create(
+        content_type=ContentType.objects.get_for_model(model=ConfigLog),
+        codename=f"view_{ConfigLog.__name__.lower()}",
+    )
 
     for obj, content_type in obj_type_map.items():
         for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=content_type):
@@ -321,7 +333,7 @@ def apply_policy_for_new_config(config_object: ADCMEntity, config_log: ConfigLog
                 ):
                     assign_user_or_group_perm(
                         policy=policy,
-                        permission=get_perm_for_model(model=ConfigLog),
+                        permission=permission,
                         obj=config_log,
                     )
 
@@ -341,11 +353,7 @@ def apply_policy_for_new_config(config_object: ADCMEntity, config_log: ConfigLog
                     continue
 
                 if group_obj_perm in policy.group_object_perm.all() and model_view_gop:
-                    assign_user_or_group_perm(
-                        policy=policy,
-                        permission=get_perm_for_model(model=ConfigLog),
-                        obj=config_log,
-                    )
+                    assign_user_or_group_perm(policy=policy, permission=permission, obj=config_log)
 
 
 class ConfigRole(AbstractRole):

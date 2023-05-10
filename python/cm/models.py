@@ -301,13 +301,8 @@ class ConfigLog(ADCMModel):
     __error_code__ = "CONFIG_NOT_FOUND"
 
     @transaction.atomic()
-    def save(self, *args, **kwargs):  # pylint: disable=too-many-locals,too-many-statements # noqa: C901
-        """Saving config and updating config groups"""
-
+    def save(self, *args, **kwargs):  # pylint: disable=too-many-locals,too-many-statements
         def update_config(origin: dict, renovator: dict, _group_keys: dict) -> None:
-            """
-            Updating the original config with a check for the presence of keys in the original
-            """
             for key, value in _group_keys.items():
                 if key in renovator:
                     if isinstance(value, Mapping):
@@ -318,16 +313,12 @@ class ConfigLog(ADCMModel):
                             origin[key] = renovator[key]
 
         def update_attr(origin: dict, renovator: dict, _group_keys: dict) -> None:
-            """
-            Updating the original config with a check for the presence of keys in the original
-            """
             for key, value in _group_keys.items():
                 if key in renovator and isinstance(value, Mapping):
                     if value["value"] is not None and value["value"]:
                         origin[key] = renovator[key]
 
         def clean_attr(attrs: dict, _spec: dict) -> None:
-            """Clean attr after upgrade cluster"""
             extra_fields = []
 
             for key in attrs.keys():
@@ -339,8 +330,6 @@ class ConfigLog(ADCMModel):
                 attrs.pop(field)
 
         def clean_group_keys(_group_keys, _spec):
-            """Clean group_keys after update cluster"""
-
             correct_group_keys = {}
             for field, info in _spec.items():
                 if info["type"] == "group":
@@ -1300,7 +1289,7 @@ class Action(AbstractAction):
 
         return state_allowed and multi_state_allowed
 
-    def get_start_impossible_reason(self, obj: ADCMEntity) -> str | None:  # noqa: C901
+    def get_start_impossible_reason(self, obj: ADCMEntity) -> str | None:
         # pylint: disable=too-many-branches, too-many-return-statements
 
         if obj.prototype.type == "adcm":
@@ -1554,7 +1543,7 @@ class TaskLog(ADCMModel):
         self.save()
         lock.delete()
 
-    def cancel(self, event_queue: "cm.status_api.Event" = None, obj_deletion=False):  # noqa: F821
+    def cancel(self, event_queue: "cm.status_api.Event" = None, obj_deletion=False):
         """
         Cancel running task process
         task status will be updated in separate process of task runner
@@ -1619,7 +1608,7 @@ class JobLog(ADCMModel):
             target=self.task.task_object,
         )
 
-    def cancel(self, event_queue: "cm.status_api.Event" = None):  # noqa: F821
+    def cancel(self, event_queue: "cm.status_api.Event" = None):
         if not self.sub_action.allowed_to_terminate:
             event_queue.clear_state()
             raise AdcmEx("JOB_TERMINATION_ERROR", f"Job #{self.pk} can not be terminated")

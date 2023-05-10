@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from typing import Any, Mapping
 
 import yspec.checker
@@ -20,7 +21,6 @@ from django.conf import settings
 
 
 def check_agreement_group_attr(group_keys: dict, custom_group_keys: dict, spec: dict) -> None:
-    """Check agreement group_keys and custom_group_keys"""
     flat_group_keys = group_keys_to_flat(origin=group_keys, spec=spec)
     flat_custom_group_keys = group_keys_to_flat(origin=custom_group_keys, spec=spec)
     for key, value in flat_custom_group_keys.items():
@@ -29,7 +29,6 @@ def check_agreement_group_attr(group_keys: dict, custom_group_keys: dict, spec: 
 
 
 def check_group_keys_attr(attr: dict, spec: dict, group_config: GroupConfig) -> None:
-    """Check attr for group config"""
     if "group_keys" not in attr:
         raise_adcm_ex(code="ATTRIBUTE_ERROR", msg='`attr` must contain "group_keys" key')
 
@@ -39,7 +38,7 @@ def check_group_keys_attr(attr: dict, spec: dict, group_config: GroupConfig) -> 
     check_agreement_group_attr(group_keys=group_keys, custom_group_keys=custom_group_keys, spec=spec)
 
 
-def check_attr(  # noqa: C901  # pylint: disable=too-many-branches
+def check_attr(  # pylint: disable=too-many-branches
     proto: Prototype,
     obj,
     attr: dict,
@@ -104,7 +103,6 @@ def check_attr(  # noqa: C901  # pylint: disable=too-many-branches
 
 
 def check_structure_for_group_attr(group_keys: dict, spec: dict, key_name: str) -> None:
-    """Check structure for `group_keys` and `custom_group_keys` field in attr"""
     flat_group_attr = group_keys_to_flat(origin=group_keys, spec=spec)
     for key, value in flat_group_attr.items():
         if key not in spec:
@@ -213,7 +211,7 @@ def _check_str(value: Any, idx: Any, key: str, subkey: str, ref: str, label: str
         )
 
 
-def check_config_type(  # noqa: C901  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+def check_config_type(  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
     proto: Prototype,
     key: str,
     subkey: str,
