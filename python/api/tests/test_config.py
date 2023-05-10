@@ -13,7 +13,7 @@
 from copy import deepcopy
 from pathlib import Path
 
-from cm.adcm_config import ansible_decrypt
+from cm.adcm_config.ansible import ansible_decrypt
 from cm.models import ADCM, ConfigLog
 from django.conf import settings
 from django.urls import reverse

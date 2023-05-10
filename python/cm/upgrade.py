@@ -12,13 +12,13 @@
 
 import functools
 
-from cm.adcm_config import (
+from cm.adcm_config.config import (
     init_object_config,
     make_object_config,
-    proto_ref,
     save_obj_config,
     switch_config,
 )
+from cm.adcm_config.utils import proto_ref
 from cm.api import (
     add_components_to_service,
     add_service_to_cluster,
@@ -347,7 +347,7 @@ def revert_object(obj: ADCMEntity, old_proto: Prototype) -> None:
     obj.save()
 
 
-def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-many-locals # noqa: C901
+def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-many-locals
     upgraded_bundle = obj.prototype.bundle
     old_bundle = Bundle.objects.get(pk=obj.before_upgrade["bundle_id"])
     old_proto = Prototype.objects.filter(bundle=old_bundle, name=old_bundle.name).first()

@@ -140,7 +140,7 @@ def make_object_config(obj: ADCMEntity, prototype: Prototype) -> None:
         obj.save()
 
 
-def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements # noqa: C901
+def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     obj: ADCMEntity,
     new_prototype: Prototype,
     old_prototype: Prototype,
@@ -277,7 +277,7 @@ def save_file_type(obj, key, subkey, value):
     return filename
 
 
-def process_file_type(obj: Any, spec: dict, conf: dict):  # noqa: C901
+def process_file_type(obj: Any, spec: dict, conf: dict):
     # pylint: disable=too-many-branches,disable=too-many-nested-blocks
 
     for key in conf:
@@ -320,7 +320,7 @@ def process_file_type(obj: Any, spec: dict, conf: dict):  # noqa: C901
                     save_file_type(obj, key, subkey, value)
 
 
-def process_secret_params(spec, conf):  # noqa: C901
+def process_secret_params(spec, conf):
     for key in conf:  # pylint: disable=too-many-nested-blocks
         if "type" in spec[key]:
             if spec[key]["type"] in {"password", "secrettext", "secretfile"} and conf[key]:
@@ -380,7 +380,7 @@ def process_secretmap(spec: dict, conf: dict) -> dict:
     return conf
 
 
-def process_config(  # pylint: disable=too-many-branches # noqa: C901
+def process_config(  # pylint: disable=too-many-branches
     obj: ADCMEntity,
     spec: dict,
     old_conf: dict,
@@ -481,7 +481,7 @@ def get_action_variant(obj, config):
                 conf.limits["source"]["value"] = get_variant(obj, config_log.config, conf.limits)
 
 
-def restore_read_only(obj, spec, conf, old_conf):  # pylint: disable=too-many-branches # noqa: C901
+def restore_read_only(obj, spec, conf, old_conf):  # pylint: disable=too-many-branches
     # Do not remove!
     # This patch fix old error when sometimes group config values can be lost
     # during bundle upgrade
@@ -549,7 +549,7 @@ def process_json_config(
     return new_config
 
 
-def check_config_spec(  # noqa: C901
+def check_config_spec(
     proto: Prototype,
     obj: ADCMEntity | Action,
     spec: dict,
@@ -643,7 +643,7 @@ def get_adcm_config(section=None):
     return current_configlog.attr.get(section, None), current_configlog.config.get(section, None)
 
 
-def get_default(  # pylint: disable=too-many-branches  # noqa: C901
+def get_default(  # pylint: disable=too-many-branches
     conf: PrototypeConfig,
     prototype: Prototype | None = None,
 ) -> Any:

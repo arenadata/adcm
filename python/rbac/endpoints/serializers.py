@@ -10,14 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.apps import AppConfig
+from rest_framework.serializers import ValidationError
+
+from adcm.serializers import EmptySerializer
 
 
-class RBACConfig(AppConfig):
-    name = "rbac"
-    verbose_name = "Arenadata Web Platform role-based access control"
+class BaseRelatedSerializer(EmptySerializer):
+    def to_internal_value(self, data):
+        data = super().to_internal_value(data)
+        if "id" not in data:
+            raise ValidationError("This field may not be empty.")
 
-    def ready(self):
-        from rbac.signals import (  # pylint: disable=import-outside-toplevel,unused-import
-            handle_name_type_display_name,
-        )
+        return data["id"]

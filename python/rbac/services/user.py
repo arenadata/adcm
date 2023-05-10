@@ -191,8 +191,8 @@ def create(
             profile=profile,
             is_active=is_active,
         )
-    except IntegrityError as exc:
-        raise_adcm_ex("USER_CREATE_ERROR", msg=f"User creation failed with error {exc}")
+    except IntegrityError as e:
+        raise_adcm_ex("USER_CREATE_ERROR", msg=f"User creation failed with error {e}")
 
     if not User:
         raise_adcm_ex("USER_CREATE_ERROR", msg="User creation failed")

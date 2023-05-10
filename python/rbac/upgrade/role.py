@@ -10,119 +10,113 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Init or upgrade RBAC roles and permissions"""
-import hashlib
+from hashlib import sha256
 
-import cm.checker
-import ruyaml
+from cm.checker import FormatError, check
 from cm.errors import raise_adcm_ex
+from cm.logger import logger
 from cm.models import Action, Bundle, Host, ProductCategory, get_model_by_type
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from rbac import log
-from rbac.models import Permission, Role, RoleMigration, RoleTypes, re_apply_all_polices
+from rbac.models import Permission, Policy, Role, RoleMigration, RoleTypes
 from rbac.settings import api_settings
+from ruyaml import round_trip_load
+from ruyaml.parser import ParserError
+from ruyaml.scanner import ScannerError
 
 
-def upgrade(data: dict):
-    """Upgrade roles and user permissions"""
+def upgrade(data: dict) -> None:
     new_roles = {}
-    for role in data["roles"]:
-        new_roles[role["name"]] = upgrade_role(role, data)
+    for role_data in data["roles"]:
+        new_roles[role_data["name"]] = upgrade_role(role_data=role_data)
 
-    for role in data["roles"]:
-        role_obj = new_roles[role["name"]]
+    for role_data in data["roles"]:
+        role_obj = new_roles[role_data["name"]]
         task_roles = []
         for child in role_obj.child.order_by("id"):
             if child.class_name == "TaskRole":
                 task_roles.append(child)
+
         role_obj.child.clear()
-        if "child" not in role:
+        if "child" not in role_data:
             continue
-        for child in role["child"]:
+
+        for child in role_data["child"]:
             child_role = new_roles[child]
             role_obj.child.add(child_role)
+
         role_obj.child.add(*task_roles)
         role_obj.save()
 
 
-def find_role(name: str, roles: list):
-    """search role in role list by name"""
-    for role in roles:
-        if role["name"] == name:
-            return role
-    return raise_adcm_ex("INVALID_ROLE_SPEC", f'child role "{name}" is absent')
+def get_role_permissions(role_data: dict) -> list[Permission]:
+    all_permissions = []
+    if "apps" not in role_data:
+        return all_permissions
 
-
-def check_roles_child(data: dict):
-    """Check if role child name are exist in specification file"""
-    for role in data["roles"]:
-        if "child" in role:
-            for child in role["child"]:
-                find_role(child, data["roles"])
-
-
-def get_role_permissions(role: dict, data: dict) -> list[Permission]:  # pylint: disable=unused-argument
-    """Retrieve all role's permissions"""
-
-    all_perm = []
-    if "apps" not in role:
-        return []
-
-    for app in role["apps"]:
+    for app in role_data["apps"]:
         for model in app["models"]:
             content_type = None
             try:
                 content_type = ContentType.objects.get(app_label=app["label"], model=model["name"])
             except ContentType.DoesNotExist:
-                msg = 'no model "{}" in application "{}"'
-                raise_adcm_ex("INVALID_ROLE_SPEC", msg.format(model["name"], app["label"]))
+                raise_adcm_ex(
+                    code="INVALID_ROLE_SPEC", msg=f'no model "{model["name"]}" in application "{app["label"]}"'
+                )
 
             for code in model["codenames"]:
                 codename = f"{code}_{model['name']}"
                 try:
-                    perm = Permission.objects.get(content_type=content_type, codename=codename)
+                    permission = Permission.objects.get(content_type=content_type, codename=codename)
                 except Permission.DoesNotExist:
-                    perm = Permission(content_type=content_type, codename=codename)
-                    perm.save()
+                    permission = Permission(content_type=content_type, codename=codename)
+                    permission.save()
 
-                if perm not in all_perm:
-                    all_perm.append(perm)
+                if permission not in all_permissions:
+                    all_permissions.append(permission)
 
-    return all_perm
+    return all_permissions
 
 
-def upgrade_role(role: dict, data: dict) -> Role:
-    """Upgrade single role"""
-    perm_list = get_role_permissions(role, data["roles"])
+def upgrade_role(role_data: dict) -> Role:
+    perm_list = get_role_permissions(role_data=role_data)
     try:
-        new_role = Role.objects.get(name=role["name"], built_in=True)
+        new_role = Role.objects.get(name=role_data["name"], built_in=True)
         new_role.permissions.clear()
     except Role.DoesNotExist:
-        new_role = Role(name=role["name"])
+        new_role = Role(name=role_data["name"])
         new_role.save()
-    new_role.module_name = role["module_name"]
-    new_role.class_name = role["class_name"]
-    if "init_params" in role:
-        new_role.init_params = role["init_params"]
-    if "description" in role:
-        new_role.description = role["description"]
-    if "display_name" in role:
-        new_role.display_name = role["display_name"]
+
+    new_role.module_name = role_data["module_name"]
+    new_role.class_name = role_data["class_name"]
+    if "init_params" in role_data:
+        new_role.init_params = role_data["init_params"]
+
+    if "description" in role_data:
+        new_role.description = role_data["description"]
+
+    if "display_name" in role_data:
+        new_role.display_name = role_data["display_name"]
     else:
-        new_role.display_name = role["name"]
-    if "parametrized_by" in role:
-        new_role.parametrized_by_type = role["parametrized_by"]
-    if "type" in role:
-        new_role.type = role["type"]
+        new_role.display_name = role_data["name"]
+
+    if "parametrized_by" in role_data:
+        new_role.parametrized_by_type = role_data["parametrized_by"]
+
+    if "type" in role_data:
+        new_role.type = role_data["type"]
+
     for perm in perm_list:
         new_role.permissions.add(perm)
-    for category_value in role.get("category", []):
+
+    for category_value in role_data.get("category", []):
         category = ProductCategory.objects.get(value=category_value)
         new_role.category.add(category)
-    new_role.any_category = role.get("any_category", False)
+
+    new_role.any_category = role_data.get("any_category", False)
     new_role.save()
+
     return new_role
 
 
@@ -130,122 +124,111 @@ def get_role_spec(data: str, schema: str) -> dict:
     """
     Read and parse roles specification from role_spec.yaml file.
     Specification file structure is checked against role_schema.yaml file.
-    (see https://github.com/arenadata/yspec for details about schema syntaxis)
+    (see https://github.com/arenadata/yspec for details about schema syntax)
     """
 
     try:
-        with open(data, encoding=settings.ENCODING_UTF_8) as f:
-            data = ruyaml.round_trip_load(f)
+        with open(file=data, encoding=settings.ENCODING_UTF_8) as f:
+            data = round_trip_load(stream=f)
     except FileNotFoundError:
-        raise_adcm_ex("INVALID_ROLE_SPEC", f'Can not open role file "{data}"')
-    except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
-        raise_adcm_ex("INVALID_ROLE_SPEC", f'YAML decode "{data}" error: {e}')
+        raise_adcm_ex(code="INVALID_ROLE_SPEC", msg=f'Can not open role file "{data}"')
 
-    with open(schema, encoding=settings.ENCODING_UTF_8) as f:
-        rules = ruyaml.round_trip_load(f)
+    except (ParserError, ScannerError, NotImplementedError) as e:
+        raise_adcm_ex(code="INVALID_ROLE_SPEC", msg=f'YAML decode "{data}" error: {e}')
+
+    with open(file=schema, encoding=settings.ENCODING_UTF_8) as f:
+        rules = round_trip_load(stream=f)
 
     try:
-        cm.checker.check(data, rules)
-    except cm.checker.FormatError as e:
+        check(data=data, rules=rules)
+    except FormatError as e:
         args = ""
         if e.errors:
             for error in e.errors:
                 if "Input data for" in error.message:
                     continue
 
-                args += f"line {error.line}: {error}\n"
+                args = f"{args}line {error.line}: {error}\n"
 
-        raise_adcm_ex("INVALID_ROLE_SPEC", f"line {e.line} error: {e}", args)
+        raise_adcm_ex(code="INVALID_ROLE_SPEC", msg=f"line {e.line} error: {e}", args=args)
 
     return data
 
 
-def get_perm(content_type, codename, name=None):
-    if name:
-        perm, _ = Permission.objects.get_or_create(
-            content_type=content_type,
-            codename=codename,
-            name=name,
-        )
-    else:
-        perm, _ = Permission.objects.get_or_create(
-            content_type=content_type,
-            codename=codename,
-        )
-
-    return perm
-
-
-def prepare_hidden_roles(bundle: Bundle):
-    """Prepares hidden roles"""
-
+def prepare_hidden_roles(bundle: Bundle) -> dict:
     hidden_roles = {}
 
-    for act in Action.objects.filter(prototype__bundle=bundle):
-        name_prefix = f"{act.prototype.type} action:".title()
-        name = f"{name_prefix} {act.display_name}"
-        model = get_model_by_type(act.prototype.type)
+    for action in Action.objects.filter(prototype__bundle=bundle):
+        name_prefix = f"{action.prototype.type} action:".title()
+        name = f"{name_prefix} {action.display_name}"
+        model = get_model_by_type(action.prototype.type)
 
-        if act.prototype.type == "component":
-            serv_name = f"service_{act.prototype.parent.name}_"
+        if action.prototype.type == "component":
+            serv_name = f"service_{action.prototype.parent.name}_"
         else:
             serv_name = ""
 
         role_name = (
             f"{bundle.name}_{bundle.version}_{bundle.edition}_{serv_name}"
-            f"{act.prototype.type}_{act.prototype.display_name}_{act.name}"
+            f"{action.prototype.type}_{action.prototype.display_name}_{action.name}"
         )
         role, _ = Role.objects.get_or_create(
             name=role_name,
             display_name=role_name,
-            description=f"run action {act.name} of {act.prototype.type} {act.prototype.display_name}",
+            description=f"run action {action.name} of {action.prototype.type} {action.prototype.display_name}",
             bundle=bundle,
             type=RoleTypes.HIDDEN,
             module_name="rbac.roles",
             class_name="ActionRole",
             init_params={
-                "action_id": act.id,
+                "action_id": action.id,
                 "app_name": "cm",
                 "model": model.__name__,
                 "filter": {
-                    "prototype__name": act.prototype.name,
-                    "prototype__type": act.prototype.type,
+                    "prototype__name": action.prototype.name,
+                    "prototype__type": action.prototype.type,
                     "prototype__bundle_id": bundle.id,
                 },
             },
-            parametrized_by_type=[act.prototype.type],
+            parametrized_by_type=[action.prototype.type],
         )
         role.save()
 
         if bundle.category:
             role.category.add(bundle.category)
 
-        content_type = ContentType.objects.get_for_model(model)
-        model_name = model.__name__.lower()
-        role.permissions.add(get_perm(content_type, f"view_{model_name}"))
+        content_type = ContentType.objects.get_for_model(model=model)
+        permission, _ = Permission.objects.get_or_create(
+            content_type=content_type,
+            codename=f"view_{model.__name__.lower()}",
+        )
+        role.permissions.add(permission)
 
         if name not in hidden_roles:
-            hidden_roles[name] = {"parametrized_by_type": act.prototype.type, "children": []}
+            hidden_roles[name] = {"parametrized_by_type": action.prototype.type, "children": []}
 
         hidden_roles[name]["children"].append(role)
-        action_name_hash = hashlib.sha256(act.name.encode(settings.ENCODING_UTF_8)).hexdigest()
+        action_name_hash = sha256(action.name.encode(settings.ENCODING_UTF_8)).hexdigest()
 
-        if act.host_action:
-            ct_host = ContentType.objects.get_for_model(Host)
-            role.permissions.add(get_perm(ct_host, "view_host"))
-            role.permissions.add(
-                get_perm(ct_host, f"run_action_{action_name_hash}", f"Can run {action_name_hash} actions"),
+        action_permission, _ = Permission.objects.get_or_create(
+            content_type=content_type,
+            codename=f"run_action_{action_name_hash}",
+            name=f"Can run {action_name_hash} actions",
+        )
+        role.permissions.add(action_permission)
+        if action.host_action:
+            permission, _ = Permission.objects.get_or_create(
+                content_type=ContentType.objects.get_for_model(Host),
+                codename="view_host",
             )
-        else:
-            role.permissions.add(
-                get_perm(content_type, f"run_action_{action_name_hash}", f"Can run {action_name_hash} actions"),
-            )
+            role.permissions.add(permission)
 
     return hidden_roles
 
 
-def update_built_in_roles(bundle: Bundle, business_role: Role, parametrized_by_type: list, built_in_roles: dict):
-    """Add action role to built-in roles"""
+def update_built_in_roles(
+    bundle: Bundle, business_role: Role, parametrized_by_type: list, built_in_roles: dict
+) -> None:
     if "cluster" in parametrized_by_type:
         if bundle.category:
             business_role.category.add(bundle.category)
@@ -253,6 +236,7 @@ def update_built_in_roles(bundle: Bundle, business_role: Role, parametrized_by_t
     elif "service" in parametrized_by_type or "component" in parametrized_by_type:
         if bundle.category:
             business_role.category.add(bundle.category)
+
         built_in_roles["Cluster Administrator"].child.add(business_role)
         built_in_roles["Service Administrator"].child.add(business_role)
     elif "provider" in parametrized_by_type:
@@ -263,15 +247,13 @@ def update_built_in_roles(bundle: Bundle, business_role: Role, parametrized_by_t
 
 
 @transaction.atomic
-def prepare_action_roles(bundle: Bundle):
-    """Prepares action roles"""
-
+def prepare_action_roles(bundle: Bundle) -> None:
     built_in_roles = {
         "Cluster Administrator": Role.objects.get(name="Cluster Administrator"),
         "Provider Administrator": Role.objects.get(name="Provider Administrator"),
         "Service Administrator": Role.objects.get(name="Service Administrator"),
     }
-    hidden_roles = prepare_hidden_roles(bundle)
+    hidden_roles = prepare_hidden_roles(bundle=bundle)
     for business_role_name, business_role_params in hidden_roles.items():
         if business_role_params["parametrized_by_type"] == "component":
             parametrized_by_type = ["service", "component"]
@@ -289,28 +271,33 @@ def prepare_action_roles(bundle: Bundle):
         )
 
         if is_created:
-            log.info('Create business permission "%s"', business_role_name)
+            logger.info('Create business permission "%s"', business_role_name)
 
         business_role.child.add(*business_role_params["children"])
-        update_built_in_roles(bundle, business_role, parametrized_by_type, built_in_roles)
+        update_built_in_roles(
+            bundle=bundle,
+            business_role=business_role,
+            parametrized_by_type=parametrized_by_type,
+            built_in_roles=built_in_roles,
+        )
 
 
-def update_all_bundle_roles():
-    for bundle in Bundle.objects.exclude(name="ADCM"):
-        prepare_action_roles(bundle)
-        msg = f'Prepare roles for "{bundle.name}" bundle.'
-        log.info(msg)
+def init_roles() -> str:
+    role_data = get_role_spec(data=api_settings.ROLE_SPEC, schema=api_settings.ROLE_SCHEMA)
+    for role in role_data["roles"]:
+        if "child" not in role:
+            continue
 
+        break_flag = False
+        for child_name in role["child"]:
+            for child_role in role_data["roles"]:
+                if child_role["name"] == child_name:
+                    break_flag = True
 
-def init_roles():
-    """
-    Init or upgrade roles and permissions in DB
-    To run upgrade call
-    manage.py upgraderole
-    """
+                    break
 
-    role_data = get_role_spec(api_settings.ROLE_SPEC, api_settings.ROLE_SCHEMA)
-    check_roles_child(role_data)
+            if not break_flag:
+                raise_adcm_ex("INVALID_ROLE_SPEC", f'child role "{child_name}" is absent')
 
     role_migration = RoleMigration.objects.last()
     if role_migration is None:
@@ -318,13 +305,19 @@ def init_roles():
 
     if role_data["version"] > role_migration.version:
         with transaction.atomic():
-            upgrade(role_data)
+            upgrade(data=role_data)
             role_migration.version = role_data["version"]
             role_migration.save()
-            update_all_bundle_roles()
-            re_apply_all_polices()
+
+            for bundle in Bundle.objects.exclude(name="ADCM"):
+                prepare_action_roles(bundle=bundle)
+                logger.info('Prepare roles for "%s" bundle.', bundle.name)
+
+            for policy in Policy.objects.all():
+                policy.apply()
+
+            logger.info("Roles are upgraded to version %s", role_migration.version)
             msg = f"Roles are upgraded to version {role_migration.version}"
-            log.info(msg)
     else:
         msg = f"Roles are already at version {role_migration.version}"
 

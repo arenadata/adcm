@@ -11,7 +11,7 @@
 # limitations under the License.
 # pylint: disable=wrong-import-order
 
-from cm.adcm_config import check_value_unselected_field
+from cm.adcm_config.checks import check_value_unselected_field
 from cm.errors import AdcmEx
 from cm.models import GroupConfig
 from cm.tests.utils import gen_cluster, gen_config, gen_prototype_config

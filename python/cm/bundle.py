@@ -19,7 +19,7 @@ import tarfile
 from collections.abc import Iterable
 from pathlib import Path
 
-from cm.adcm_config import init_object_config, switch_config
+from cm.adcm_config.config import init_object_config, switch_config
 from cm.adcm_config.utils import proto_ref
 from cm.errors import raise_adcm_ex
 from cm.logger import logger
@@ -793,7 +793,7 @@ def copy_stage(bundle_hash, bundle_proto):
     return bundle
 
 
-def update_bundle_from_stage(  # noqa: C901
+def update_bundle_from_stage(
     bundle,
 ):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     for stage_prototype in StagePrototype.objects.order_by("id"):

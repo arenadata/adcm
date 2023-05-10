@@ -16,7 +16,7 @@ import re
 from contextlib import contextmanager, suppress
 
 import ldap
-from cm.adcm_config import ansible_decrypt
+from cm.adcm_config.ansible import ansible_decrypt
 from cm.errors import raise_adcm_ex
 from cm.logger import logger
 from cm.models import ADCM, ConfigLog

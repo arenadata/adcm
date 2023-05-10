@@ -15,7 +15,7 @@ from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializ
 from api.serializers import StringListSerializer
 from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions
 from api.validators import HostUniqueValidator, StartMidEndValidator
-from cm.adcm_config import get_main_info
+from cm.adcm_config.config import get_main_info
 from cm.api import add_host
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
 from cm.models import Action, Host, HostProvider, MaintenanceMode, Prototype

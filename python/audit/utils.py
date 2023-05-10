@@ -69,7 +69,7 @@ def _get_view_and_request(args) -> tuple[GenericAPIView, Request]:
     return view, request
 
 
-def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs) -> Model | None:  # noqa: C901
+def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs) -> Model | None:
     # pylint: disable=too-many-branches
 
     try:
@@ -117,7 +117,7 @@ def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs) -> Model | 
     return deleted_obj
 
 
-def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:  # noqa: C901
+def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
     serializer_class = None
     if isinstance(current_obj, Group):
         serializer_class = GroupAuditSerializer
@@ -157,7 +157,7 @@ def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:  # noqa: C
     return object_changes
 
 
-def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | None, Model | None]:  # noqa: C901
+def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | None, Model | None]:
     # pylint: disable=too-many-branches
 
     prev_data = None
@@ -204,10 +204,10 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
     return prev_data, current_obj
 
 
-def audit(func):  # noqa: C901
+def audit(func):
     # pylint: disable=too-many-statements
     @wraps(func)
-    def wrapped(*args, **kwargs):  # noqa: C901
+    def wrapped(*args, **kwargs):
         # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 
         audit_operation: AuditOperation
@@ -349,15 +349,6 @@ def audit(func):  # noqa: C901
         return res
 
     return wrapped
-
-
-def mark_deleted_audit_object(instance, object_type: str):
-    audit_objs = []
-    for audit_obj in AuditObject.objects.filter(object_id=instance.pk, object_type=object_type):
-        audit_obj.is_deleted = True
-        audit_objs.append(audit_obj)
-
-    AuditObject.objects.bulk_update(objs=audit_objs, fields=["is_deleted"])
 
 
 def make_audit_log(operation_type, result, operation_status):

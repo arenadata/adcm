@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.adcm_config import get_prototype_config, proto_ref
+from cm.adcm_config.config import get_prototype_config
+from cm.adcm_config.utils import proto_ref
 from cm.errors import AdcmEx
 from cm.hierarchy import Tree
 from cm.logger import logger
@@ -36,7 +37,7 @@ from cm.models import (
 from cm.utils import obj_ref
 
 
-def check_config(obj: ADCMEntity) -> bool:  # pylint: disable=too-many-branches # noqa: C901
+def check_config(obj: ADCMEntity) -> bool:  # pylint: disable=too-many-branches
     spec, _, _, _ = get_prototype_config(prototype=obj.prototype)
     conf, attr = get_obj_config(obj=obj)
     for key, value in spec.items():  # pylint: disable=too-many-nested-blocks

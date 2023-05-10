@@ -13,12 +13,8 @@
 from typing import Any
 
 from api.utils import CommonAPIURL, get_api_url_kwargs
-from cm.adcm_config import (
-    get_default,
-    group_is_activatable,
-    restore_cluster_config,
-    ui_config,
-)
+from cm.adcm_config.config import get_default, restore_cluster_config, ui_config
+from cm.adcm_config.utils import group_is_activatable
 from cm.api import update_obj_config
 from cm.errors import raise_adcm_ex
 from cm.models import ConfigLog, PrototypeConfig

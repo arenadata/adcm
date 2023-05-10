@@ -12,32 +12,13 @@
 
 from django.apps import AppConfig
 
-WATCHED_CM_MODELS = (
-    "group-config",
-    "group-config-hosts",
-    "adcm-concerns",
-    "cluster-concerns",
-    "cluster-object-concerns",
-    "service-component-concerns",
-    "host-provider-concerns",
-    "host-concerns",
-)
-WATCHED_RBAC_MODELS = (
-    "user",
-    "group",
-    "policy",
-    "role",
-)
-
 
 class CmConfig(AppConfig):
     name = "cm"
 
     def ready(self):
-        # pylint: disable-next=import-outside-toplevel,unused-import
-        from cm.signals import (
+        from cm.signals import (  # pylint: disable=import-outside-toplevel,unused-import
             m2m_change,
-            mark_deleted_audit_object_handler,
             model_change,
             model_delete,
             rename_audit_object,

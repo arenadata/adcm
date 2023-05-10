@@ -20,10 +20,10 @@ import cm.checker
 import ruyaml
 from django.conf import settings
 
-import adcm.init_django  # pylint: disable=unused-import # noqa: F401
+import adcm.init_django  # pylint: disable=unused-import
 
 
-def check_config(data_file, schema_file, print_ok=True):  # pylint: disable=too-many-return-statements # noqa: C901
+def check_config(data_file, schema_file, print_ok=True):  # pylint: disable=too-many-return-statements
     rules = ruyaml.round_trip_load(
         open(schema_file, encoding=settings.ENCODING_UTF_8),  # pylint: disable=consider-using-with
     )

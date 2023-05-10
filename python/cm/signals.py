@@ -10,43 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import casestyle
 from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP, AuditObject
-from audit.utils import mark_deleted_audit_object
-from cm.models import (
-    ADCM,
-    ADCMEntity,
-    Bundle,
-    Cluster,
-    ClusterObject,
-    GroupConfig,
-    Host,
-    HostProvider,
-    Prototype,
-    ServiceComponent,
-)
+from casestyle import kebabcase
+from cm.models import ADCMEntity, Cluster, GroupConfig, Host
 from cm.status_api import post_event
-from django.db import transaction
 from django.db.models.signals import m2m_changed, post_delete, post_save, pre_save
+from django.db.transaction import on_commit
 from django.dispatch import receiver
 from rbac.models import Group, Policy, Role, User
 
 
-@receiver(post_delete, sender=Cluster)
-@receiver(post_delete, sender=ClusterObject)
-@receiver(post_delete, sender=ServiceComponent)
-@receiver(post_delete, sender=Host)
-@receiver(post_delete, sender=HostProvider)
-@receiver(post_delete, sender=Bundle)
-@receiver(post_delete, sender=ADCM)
-@receiver(post_delete, sender=Prototype)
-def mark_deleted_audit_object_handler(sender, instance, **kwargs) -> None:  # pylint: disable=unused-argument
-    mark_deleted_audit_object(instance=instance, object_type=MODEL_TO_AUDIT_OBJECT_TYPE_MAP[sender])
-
-
-@receiver(pre_save, sender=Cluster)
-@receiver(pre_save, sender=Group)
-@receiver(pre_save, sender=Policy)
+@receiver(signal=pre_save, sender=Cluster)
+@receiver(signal=pre_save, sender=Group)
+@receiver(signal=pre_save, sender=Policy)
 def rename_audit_object(sender, instance, **kwargs) -> None:
     if kwargs["raw"]:
         return
@@ -65,7 +41,7 @@ def rename_audit_object(sender, instance, **kwargs) -> None:
     audit_obj.save(update_fields=["object_name"])
 
 
-@receiver(pre_save, sender=Host)
+@receiver(signal=pre_save, sender=Host)
 def rename_audit_object_host(sender, instance, **kwargs) -> None:
     if kwargs["raw"]:
         return
@@ -84,57 +60,50 @@ def rename_audit_object_host(sender, instance, **kwargs) -> None:
     audit_obj.save(update_fields=["object_name"])
 
 
-def get_names(sender, **kwargs):
-    """getting model name, module name and object"""
-    if hasattr(sender, "get_endpoint"):
-        name = sender.get_endpoint()
-    else:
-        name = casestyle.kebabcase(sender.__name__)
-    return name, sender.__module__, kwargs["instance"]
-
-
-def _post_event(action: str, module: str, obj, model_name: str | None = None) -> None:
-    transaction.on_commit(
-        lambda: post_event(event=action, obj=obj, details={"module": module, "model_name": model_name}),
-    )
-
-
-@receiver(post_save, sender=User)
-@receiver(post_save, sender=Group)
-@receiver(post_save, sender=Policy)
-@receiver(post_save, sender=Role)
-@receiver(post_save, sender=GroupConfig)
+@receiver(signal=post_save, sender=User)
+@receiver(signal=post_save, sender=Group)
+@receiver(signal=post_save, sender=Policy)
+@receiver(signal=post_save, sender=Role)
+@receiver(signal=post_save, sender=GroupConfig)
 def model_change(sender, **kwargs):
     if kwargs["raw"]:
         return
-
-    _, module, obj = get_names(sender, **kwargs)
 
     action = "update"
     if kwargs.get("created"):
         action = "create"
 
-    _post_event(action=action, module=module, obj=obj)
+    on_commit(
+        lambda: post_event(
+            event=action, obj=kwargs["instance"], details={"module": sender.__module__, "model_name": None}
+        ),
+    )
 
 
-@receiver(post_delete, sender=User)
-@receiver(post_delete, sender=Group)
-@receiver(post_delete, sender=Policy)
-@receiver(post_delete, sender=Role)
-@receiver(post_delete, sender=GroupConfig)
+@receiver(signal=post_delete, sender=User)
+@receiver(signal=post_delete, sender=Group)
+@receiver(signal=post_delete, sender=Policy)
+@receiver(signal=post_delete, sender=Role)
+@receiver(signal=post_delete, sender=GroupConfig)
 def model_delete(sender, **kwargs):
-    _, module, obj = get_names(sender, **kwargs)
-    _post_event(action="delete", module=module, obj=obj)
+    on_commit(
+        lambda: post_event(
+            event="delete", obj=kwargs["instance"], details={"module": sender.__module__, "model_name": None}
+        ),
+    )
 
 
-@receiver(m2m_changed, sender=GroupConfig)
-@receiver(m2m_changed, sender=ADCMEntity.concerns.through)
-@receiver(m2m_changed, sender=Policy)
-@receiver(m2m_changed, sender=Role)
-@receiver(m2m_changed, sender=User)
-@receiver(m2m_changed, sender=Group)
+@receiver(signal=m2m_changed, sender=GroupConfig)
+@receiver(signal=m2m_changed, sender=ADCMEntity.concerns.through)
+@receiver(signal=m2m_changed, sender=Policy)
+@receiver(signal=m2m_changed, sender=Role)
+@receiver(signal=m2m_changed, sender=User)
+@receiver(signal=m2m_changed, sender=Group)
 def m2m_change(sender, **kwargs):
-    name, module, obj = get_names(sender, **kwargs)
+    if hasattr(sender, "get_endpoint"):
+        name = sender.get_endpoint()
+    else:
+        name = kebabcase(sender.__name__)
 
     if kwargs["action"] == "post_add":
         action = "add"
@@ -143,4 +112,8 @@ def m2m_change(sender, **kwargs):
     else:
         return
 
-    _post_event(action=action, module=module, obj=obj, model_name=name)
+    on_commit(
+        lambda: post_event(
+            event=action, obj=kwargs["instance"], details={"module": sender.__module__, "model_name": name}
+        ),
+    )

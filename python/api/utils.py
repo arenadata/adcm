@@ -201,7 +201,7 @@ def fix_ordering(field, view):
     return fix
 
 
-def get_maintenance_mode_response(  # noqa: C901
+def get_maintenance_mode_response(
     obj: Host | ClusterObject | ServiceComponent,
     serializer: Serializer,
 ) -> Response:

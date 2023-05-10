@@ -187,7 +187,7 @@ class Command(BaseCommand):
                 "info",
             )
 
-        except Exception as e:  # pylint: disable=broad-except # noqa: BLE001
+        except Exception as e:  # pylint: disable=broad-except
             make_audit_log("config", AuditLogOperationResult.FAIL, "completed")
             self.__log("Error in ConfigLog rotation", "warning")
             self.__log(e, "exception")
@@ -211,7 +211,7 @@ class Command(BaseCommand):
             return True
         return False
 
-    def __run_joblog_rotation(self):  # noqa: C901
+    def __run_joblog_rotation(self):
         try:  # pylint: disable=too-many-nested-blocks
             days_delta_db = self.config["job"]["log_rotation_in_db"]
             days_delta_fs = self.config["job"]["log_rotation_on_fs"]
@@ -257,7 +257,7 @@ class Command(BaseCommand):
                     make_audit_log("task", AuditLogOperationResult.SUCCESS, "launched")
                     make_audit_log("task", AuditLogOperationResult.SUCCESS, "completed")
                 self.__log("fs JobLog rotated", "info")
-        except Exception as e:  # pylint: disable=broad-except # noqa: BLE001
+        except Exception as e:  # pylint: disable=broad-except
             make_audit_log("task", AuditLogOperationResult.FAIL, "completed")
             self.__log("Error in JobLog rotation", "warning")
             self.__log(e, "exception")

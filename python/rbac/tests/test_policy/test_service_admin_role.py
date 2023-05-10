@@ -30,7 +30,7 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase):
         super().setUp()
 
         self.new_user_password = "new_user_password"
-        self.new_user = self.get_new_user(password=self.new_user_password)
+        self.new_user = self.get_new_user(username="new_user", password=self.new_user_password)
 
         self.cluster_bundle = self.upload_and_load_bundle(
             path=settings.BASE_DIR / "python" / "rbac" / "tests" / "files" / "service_admin_cluster.tar"

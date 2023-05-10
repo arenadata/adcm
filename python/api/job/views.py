@@ -47,7 +47,7 @@ VIEW_TASKLOG_PERMISSION = "cm.view_tasklog"
 VIEW_JOBLOG_PERMISSION = "cm.view_joblog"
 
 
-def get_task_download_archive_name(task: TaskLog) -> str:  # noqa: C901
+def get_task_download_archive_name(task: TaskLog) -> str:
     archive_name = f"{task.pk}.tar.gz"
 
     if not task.action:

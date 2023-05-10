@@ -20,7 +20,8 @@ from api.config.serializers import (
 )
 from api.utils import check_obj, create, update
 from audit.utils import audit
-from cm.adcm_config import ansible_encrypt_and_format, ui_config
+from cm.adcm_config.ansible import ansible_encrypt_and_format
+from cm.adcm_config.config import ui_config
 from cm.errors import AdcmEx
 from cm.models import ConfigLog, ObjectConfig, ObjectType, get_model_by_type
 from django.conf import settings

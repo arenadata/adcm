@@ -33,7 +33,7 @@ class PolicyBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-att
         super().setUp()
 
         self.new_user_password = "new_user_password"
-        self.new_user = self.get_new_user(password=self.new_user_password)
+        self.new_user = self.get_new_user(username="new_user", password=self.new_user_password)
         self.cluster = self.create_cluster()
         self.provider = self.get_provider()
         host_ids = self.create_hosts()
