@@ -28,16 +28,16 @@ export class RbacRoleFormComponent extends RbacFormDirective<RbacRoleModel> impl
     return this.form.get('category');
   }
 
-  rbacBeforeSave(value: RbacRoleModel): RbacRoleModel {
-    let categories = value?.category;
-    const permissions = value.child;
+  rbacBeforeSave(form: FormGroup): RbacRoleModel {
+    let categories = form.value?.category;
+    const permissions = form.value.child;
 
-    if (!value?.category?.length) {
+    if (!form.value?.category?.length) {
       categories = permissions.reduce((acc, cur) => [...acc, ...cur.category], []);
     }
 
     return {
-      ...value,
+      ...form.value,
       category: categories
     };
   }

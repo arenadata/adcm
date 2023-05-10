@@ -69,8 +69,8 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
     this.form.markAllAsTouched();
   }
 
-  rbacBeforeSave(value): RbacPolicyModel {
-    return RbacPolicyFormComponent.EXPORT_TO_JSON(value);
+  rbacBeforeSave(form: FormGroup): RbacPolicyModel {
+    return RbacPolicyFormComponent.EXPORT_TO_JSON(form.value);
   }
 
   private _fillForm(value: RbacPolicyModel): void {
