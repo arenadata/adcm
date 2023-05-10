@@ -11,14 +11,13 @@
 # limitations under the License.
 
 
-from rbac.endpoints.fields import PasswordField
 from rbac.models import User
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import CharField, ModelSerializer
 
 
 class MeUserSerializer(ModelSerializer):
-    password = PasswordField(trim_whitespace=False, required=False)
-    current_password = PasswordField(trim_whitespace=False, required=False)
+    password = CharField(trim_whitespace=False, required=False, write_only=True)
+    current_password = CharField(trim_whitespace=False, required=False)
 
     class Meta:
         model = User

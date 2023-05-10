@@ -11,7 +11,6 @@
 # limitations under the License.
 
 
-from rbac.endpoints.fields import PasswordField
 from rbac.models import Group, User
 from rbac.services.user import create, update
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
@@ -77,8 +76,8 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
         default="",
     )
     is_superuser = BooleanField(default=False)
-    password = PasswordField(trim_whitespace=False)
-    current_password = PasswordField(trim_whitespace=False, required=False)
+    password = CharField(trim_whitespace=False, write_only=True)
+    current_password = CharField(trim_whitespace=False, required=False)
     url = HyperlinkedIdentityField(view_name="rbac:user-detail")
     profile = JSONField(required=False, default="")
     group = UserGroupSerializer(many=True, required=False, source="groups")
