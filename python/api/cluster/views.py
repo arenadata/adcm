@@ -250,18 +250,24 @@ class ClusterUpgrade(GenericUIView):
     permission_classes = (IsAuthenticated,)
     ordering = ["id"]
 
-    def get_ordering(self):
+    def get_ordering(self) -> list | None:
         order = AdcmOrderingFilter()
-        return order.get_ordering(self.request, self.get_queryset(), self)
+        return order.get_ordering(request=self.request, queryset=self.get_queryset(), view=self)
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
-        cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
-        check_custom_perm(request.user, "view_upgrade_of", "cluster", cluster)
-        update_hierarchy_issues(cluster)
-        obj = get_upgrade(cluster, self.get_ordering())
-        serializer = self.serializer_class(obj, many=True, context={"cluster_id": cluster.id, "request": request})
+        cluster = get_object_for_user(
+            user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["cluster_id"]
+        )
+        check_custom_perm(user=request.user, action_type="view_upgrade_of", model="cluster", obj=cluster)
+        update_hierarchy_issues(obj=cluster)
+        upgrade_list = get_upgrade(obj=cluster, order=self.get_ordering())
+        serializer = self.serializer_class(
+            instance=upgrade_list,
+            many=True,
+            context={"cluster_id": cluster.id, "request": request, "upgradable": bool(upgrade_list)},
+        )
 
-        return Response(serializer.data)
+        return Response(data=serializer.data)
 
 
 class ClusterUpgradeDetail(GenericUIView):

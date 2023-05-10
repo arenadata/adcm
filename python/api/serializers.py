@@ -14,7 +14,7 @@ from api.config.serializers import ConfigSerializerUI
 from api.utils import UrlField, check_obj, hlink
 from cm.adcm_config import get_action_variant, get_prototype_config, ui_config
 from cm.errors import raise_adcm_ex
-from cm.models import Cluster, GroupConfig, HostProvider, PrototypeConfig
+from cm.models import Cluster, GroupConfig, HostProvider, PrototypeConfig, Upgrade
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (
     BooleanField,
@@ -41,7 +41,7 @@ class UpgradeSerializer(EmptySerializer):
     max_version = CharField(required=False)
     min_strict = BooleanField(required=False)
     max_strict = BooleanField(required=False)
-    upgradable = BooleanField(required=False)
+    upgradable = SerializerMethodField()
     license = CharField(required=False)
     license_url = hlink("bundle-license", "bundle_id", "bundle_pk")
     from_edition = JSONField(required=False)
@@ -76,6 +76,9 @@ class UpgradeSerializer(EmptySerializer):
             get_action_variant(obj, action_conf)
         conf = ConfigSerializerUI(action_conf, many=True, context=self.context, read_only=True)
         return {"attr": attr, "config": conf.data}
+
+    def get_upgradable(self, instance: Upgrade) -> bool:  # pylint: disable=unused-argument
+        return self.context.get("upgradable", False)
 
 
 class ClusterUpgradeSerializer(UpgradeSerializer):
