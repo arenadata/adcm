@@ -39,7 +39,9 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
         Validators.maxLength(150),
         Validators.pattern('^[a-zA-Z0-9_.-\/]*$')
       ]),
-      password: new FormControl(null, this.passwordValidators),
+      password: new FormControl(null, [
+        CustomValidators.required
+      ]),
       first_name: new FormControl(null, [
         CustomValidators.required,
         Validators.minLength(2),
@@ -61,7 +63,9 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
       group: new FormControl([])
     }),
     confirm: new FormGroup({
-      password: new FormControl('', this.passwordValidators)
+      password: new FormControl(null, [
+        CustomValidators.required
+      ])
     })
   }, { validators: passwordsConfirmValidator });
 
@@ -71,7 +75,6 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
 
   get passwordValidators() {
     return [
-      CustomValidators.required,
       Validators.minLength(this.passMinLength || 3),
       Validators.maxLength(this.passMaxLength || 128),
       Validators.pattern(new RegExp(/^[\s\S]*$/u))
@@ -91,20 +94,43 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
       this.passMinLength = resp.config['auth_policy'].min_password_length;
       this.passMaxLength = resp.config['auth_policy'].max_password_length;
 
-      const userForm: Partial<FormGroup> = this.form.controls.user;
-      const confirmForm: Partial<FormGroup> = this.form.controls.confirm;
-      userForm.controls['password'].setValidators(this.passwordValidators);
-      confirmForm.controls['password'].setValidators(this.passwordValidators);
-      this.form.updateValueAndValidity();
-
       this._setValue(this.value);
       this._initPasswordConfirmSubscription();
       this.form.markAllAsTouched();
     })
   }
 
-  rbacBeforeSave(value: any): Partial<RbacUserModel> {
-    return value.user;
+  rbacBeforeSave(form: FormGroup): Partial<RbacUserModel> {
+    return this.getDirtyValues(form);
+  }
+
+  getDirtyValues(data) {
+    const user = data?.controls['user']?.controls;
+    const result = {};
+
+    Object.keys(user).forEach((key) => {
+      if (user[key].dirty) {
+        result[key] = user[key]?.value;
+      }
+    })
+
+    return result;
+  }
+
+  /** Add password length validators only if we are going to change it
+   * because password length rules could be changed anytime
+   */
+  onFocus() {
+    this.clearPasswordControlIfFocusIn();
+    this.addPasswordValidators();
+  }
+
+  addPasswordValidators() {
+    const userForm: Partial<FormGroup> = this.form.controls.user;
+    const confirmForm: Partial<FormGroup> = this.form.controls.confirm;
+    userForm.controls['password'].setValidators(this.passwordValidators);
+    confirmForm.controls['password'].setValidators(this.passwordValidators);
+    this.form.updateValueAndValidity();
   }
 
   /**
