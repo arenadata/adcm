@@ -156,9 +156,9 @@ class ActionModule(ActionBase):
         group = {"title": group_title, "success_msg": group_success_msg, "fail_msg": group_fail_msg}
 
         check = {
-            "title": title,
+            "title": title.replace("\x00", ""),
             "result": result,
-            "message": msg,
+            "message": msg.replace("\x00", ""),
         }
 
         logger.debug(
