@@ -37,6 +37,7 @@ from cm.models import (
     ClusterBind,
     ClusterObject,
     ConfigLog,
+    GroupConfig,
     Host,
     HostComponent,
     HostProvider,
@@ -415,8 +416,12 @@ def set_before_upgrade(obj: ADCMEntity) -> None:
     obj.before_upgrade["state"] = obj.state
     if obj.config:
         obj.before_upgrade["config_id"] = obj.config.current
-        config_log = ConfigLog.objects.get(id=obj.config.current)
-        obj.before_upgrade["config"] = config_log.config
+
+    if groups := GroupConfig.objects.filter(object_id=obj.id, object_type=ContentType.objects.get_for_model(obj)):
+        obj.before_upgrade["groups"] = {}
+
+        for group in groups:
+            obj.before_upgrade["groups"][group.name] = {"group_config_id": group.config.current}
 
     if isinstance(obj, Cluster):
         hc_map = []

@@ -32,6 +32,7 @@ from cm.models import (
     PrototypeExport,
     PrototypeImport,
     ServiceComponent,
+    get_default_before_upgrade,
     get_object_cluster,
 )
 from django.conf import settings
@@ -44,7 +45,6 @@ class HcAclAction:
 
 
 MAINTENANCE_MODE = "maintenance_mode"
-NEEDED_BEFORE_UPGRADE = ("state", "config")
 
 
 def process_config_and_attr(obj: ADCMEntity, conf: dict, attr: dict | None = None, spec: dict | None = None):
@@ -138,7 +138,27 @@ def get_obj_config(obj) -> dict:
     return process_config_and_attr(obj=obj, conf=config_log.config, attr=config_log.attr)
 
 
-def get_cluster_variables(cluster: Cluster, cluster_config: dict = None) -> dict:
+def get_before_upgrade(obj: ADCMEntity, host: Host | None) -> dict:
+    if obj.before_upgrade == get_default_before_upgrade():
+        return obj.before_upgrade
+
+    config_log = None
+    if host is not None:
+        group = host.group_config.filter(
+            object_id=obj.id, object_type=ContentType.objects.get_for_model(model=obj)
+        ).first()
+
+        if group and obj.before_upgrade.get("groups") and group.name in obj.before_upgrade["groups"]:
+            config_log = ConfigLog.objects.filter(
+                id=obj.before_upgrade["groups"][group.name]["group_config_id"]
+            ).first()
+    else:
+        config_log = ConfigLog.objects.filter(id=obj.before_upgrade.get("config_id")).first()
+
+    return {"state": obj.before_upgrade.get("state"), "config": config_log.config if config_log else None}
+
+
+def get_cluster_variables(cluster: Cluster, cluster_config: dict | None = None, host: Host | None = None) -> dict:
     result = {
         "config": cluster_config or get_obj_config(cluster),
         "name": cluster.name,
@@ -147,7 +167,7 @@ def get_cluster_variables(cluster: Cluster, cluster_config: dict = None) -> dict
         "edition": cluster.prototype.bundle.edition,
         "state": cluster.state,
         "multi_state": cluster.multi_state,
-        "before_upgrade": {key: value for key, value in cluster.before_upgrade.items() if key in NEEDED_BEFORE_UPGRADE},
+        "before_upgrade": get_before_upgrade(obj=cluster, host=host),
     }
 
     imports = get_import(cluster=cluster)
@@ -157,7 +177,7 @@ def get_cluster_variables(cluster: Cluster, cluster_config: dict = None) -> dict
     return result
 
 
-def get_service_variables(service: ClusterObject, service_config: dict = None) -> dict:
+def get_service_variables(service: ClusterObject, service_config: dict | None = None, host: Host | None = None) -> dict:
     return {
         "id": service.id,
         "version": service.prototype.version,
@@ -166,11 +186,13 @@ def get_service_variables(service: ClusterObject, service_config: dict = None) -
         "config": service_config or get_obj_config(service),
         MAINTENANCE_MODE: service.maintenance_mode == MaintenanceMode.ON,
         "display_name": service.display_name,
-        "before_upgrade": {key: value for key, value in service.before_upgrade.items() if key in NEEDED_BEFORE_UPGRADE},
+        "before_upgrade": get_before_upgrade(obj=service, host=host),
     }
 
 
-def get_component_variables(component: ServiceComponent, component_config: dict = None) -> dict:
+def get_component_variables(
+    component: ServiceComponent, component_config: dict | None = None, host: Host | None = None
+) -> dict:
     return {
         "component_id": component.id,
         "config": component_config or get_obj_config(component),
@@ -178,13 +200,13 @@ def get_component_variables(component: ServiceComponent, component_config: dict 
         "multi_state": component.multi_state,
         MAINTENANCE_MODE: component.maintenance_mode == MaintenanceMode.ON,
         "display_name": component.display_name,
-        "before_upgrade": {
-            key: value for key, value in component.before_upgrade.items() if key in NEEDED_BEFORE_UPGRADE
-        },
+        "before_upgrade": get_before_upgrade(obj=component, host=host),
     }
 
 
-def get_provider_variables(provider: HostProvider, provider_config: dict = None) -> dict:
+def get_provider_variables(
+    provider: HostProvider, provider_config: dict | None = None, host: Host | None = None
+) -> dict:
     host_proto = Prototype.objects.get(bundle=provider.prototype.bundle, type="host")
     return {
         "config": provider_config or get_obj_config(provider),
@@ -193,9 +215,7 @@ def get_provider_variables(provider: HostProvider, provider_config: dict = None)
         "host_prototype_id": host_proto.id,
         "state": provider.state,
         "multi_state": provider.multi_state,
-        "before_upgrade": {
-            key: value for key, value in provider.before_upgrade.items() if key in NEEDED_BEFORE_UPGRADE
-        },
+        "before_upgrade": get_before_upgrade(obj=provider, host=host),
     }
 
 
@@ -215,18 +235,24 @@ def get_host_vars(host: Host, obj: type[ADCMEntity]) -> dict:
 
     if isinstance(obj, Cluster):
         variables.update(
-            {"cluster": get_cluster_variables(cluster=obj, cluster_config=get_group_config(obj=obj, host=host))}
+            {
+                "cluster": get_cluster_variables(
+                    cluster=obj,
+                    cluster_config=get_group_config(obj=obj, host=host),
+                    host=host,
+                )
+            }
         )
         variables.update({"services": {}})
         for service in ClusterObject.objects.filter(cluster=obj):
             variables["services"][service.prototype.name] = get_service_variables(
                 service=service,
                 service_config=get_group_config(obj=service, host=host),
+                host=host,
             )
             for component in ServiceComponent.objects.filter(cluster=obj, service=service):
                 variables["services"][service.prototype.name][component.prototype.name] = get_component_variables(
-                    component=component,
-                    component_config=get_group_config(obj=component, host=host),
+                    component=component, component_config=get_group_config(obj=component, host=host), host=host
                 )
 
     elif isinstance(obj, (ClusterObject, ServiceComponent)):
@@ -236,17 +262,25 @@ def get_host_vars(host: Host, obj: type[ADCMEntity]) -> dict:
             variables["services"][service.prototype.name] = get_service_variables(
                 service=service,
                 service_config=get_group_config(obj=service, host=host),
+                host=host,
             )
             for component in ServiceComponent.objects.filter(cluster=obj.cluster, service=service):
                 variables["services"][service.prototype.name][component.prototype.name] = get_component_variables(
                     component=component,
                     component_config=get_group_config(obj=component, host=host),
+                    host=host,
                 )
 
     else:
         obj: HostProvider
         variables.update(
-            {"provider": get_provider_variables(provider=obj, provider_config=get_group_config(obj=obj, host=host))},
+            {
+                "provider": get_provider_variables(
+                    provider=obj,
+                    provider_config=get_group_config(obj=obj, host=host),
+                    host=host,
+                )
+            },
         )
 
     return variables
