@@ -23,7 +23,7 @@ from audit.utils import audit
 from cm.adcm_config.ansible import ansible_encrypt_and_format
 from cm.adcm_config.config import ui_config
 from cm.errors import AdcmEx
-from cm.models import ConfigLog, ObjectConfig, ObjectType, get_model_by_type
+from cm.models import ConfigLog, ObjectConfig, get_model_by_type
 from django.conf import settings
 from django.db.models.query import QuerySet
 from guardian.mixins import PermissionListMixin
@@ -119,10 +119,7 @@ class ConfigHistoryView(PermissionListMixin, GenericUIView):
     ordering = ["id"]
 
     def get_queryset(self, *args, **kwargs) -> QuerySet:
-        if self.request.user.is_authenticated and self.kwargs.get("object_type") == ObjectType.ADCM:
-            return ConfigLog.objects.all()
-
-        return super().get_queryset(*args, **kwargs)
+        return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
@@ -155,10 +152,7 @@ class ConfigVersionView(PermissionListMixin, GenericUIView):
     ordering = ["id"]
 
     def get_queryset(self, *args, **kwargs) -> QuerySet:
-        if self.request.user.is_authenticated and self.kwargs.get("object_type") == ObjectType.ADCM:
-            return ConfigLog.objects.all()
-
-        return super().get_queryset(*args, **kwargs)
+        return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, version = get_object_type_id_version(**kwargs)
