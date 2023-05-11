@@ -741,19 +741,18 @@ def save_hc(
 
     if service_set:
         service_list = list(service_set)
-        cluster = service_list[0]
-        for policy in Policy.objects.filter(
-            object__object_id=cluster.id,
-            object__content_type=ContentType.objects.get_for_model(cluster),
-        ):
-            policy.apply()
-
-        service_content_type = ContentType.objects.get_for_model(service_list[0])
+        service_content_type = ContentType.objects.get_for_model(model=service_list[0])
         for service in service_list:
             for policy in Policy.objects.filter(
-                object__object_id=service.id, object__content_type=service_content_type
+                object__object_id=service.pk, object__content_type=service_content_type
             ):
                 policy.apply()
+
+        for policy in Policy.objects.filter(
+            object__object_id=service_list[0].cluster.pk,
+            object__content_type=ContentType.objects.get_for_model(model=service_list[0].cluster),
+        ):
+            policy.apply()
 
     return host_component_list
 
