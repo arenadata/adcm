@@ -23,3 +23,6 @@ class ObjectConfigViewSet(PermissionListMixin, ReadOnlyModelViewSet):  # pylint:
     permission_classes = (DjangoObjectPermissions,)
     permission_required = ["cm.view_objectconfig"]
     ordering = ["id"]
+
+    def get_queryset(self, *args, **kwargs):
+        return super().get_queryset(*args, **kwargs) | ObjectConfig.objects.filter(adcm__isnull=False)

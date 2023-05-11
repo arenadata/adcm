@@ -368,6 +368,21 @@ class ADCMSettingsTestCase(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
 
+    def test_superuser_list_config_log_success(self):
+        self.login()
+        self.upload_bundle_create_cluster_config_log(
+            bundle_path=Path(
+                settings.BASE_DIR,
+                "python/api/tests/files/bundle_test_password.tar",
+            ),
+        )
+        response: Response = self.client.get(
+            path=reverse(viewname="config-log-list"),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 2)
+
     def test_list_config_log_by_pk_success(self):
         config_log = ConfigLog.objects.get(obj_ref=self.adcm.config)
         response: Response = self.client.get(

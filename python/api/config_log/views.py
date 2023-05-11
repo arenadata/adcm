@@ -31,6 +31,7 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
     RetrieveModelMixin,
     GenericUIViewSet,
 ):
+    queryset = ConfigLog.objects.all()
     serializer_class = ConfigLogSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
     permission_required = ["cm.view_configlog"]
@@ -39,10 +40,7 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
     ordering = ["id"]
 
     def get_queryset(self, *args, **kwargs):
-        if self.request.user.is_authenticated:
-            return ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
-
-        return super().get_queryset(*args, **kwargs)
+        return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
 
     def get_serializer_class(self):
         if self.is_for_ui():
