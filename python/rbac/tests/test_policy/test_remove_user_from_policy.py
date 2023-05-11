@@ -22,9 +22,6 @@ APPLICATION_JSON = "application/json"
 
 class RemoveUserFromPolicyTestCase(PolicyBaseTestCase):
     # pylint: disable=too-many-instance-attributes
-
-    databases = ["default"]
-
     def setUp(self) -> None:
         super().setUp()
 
