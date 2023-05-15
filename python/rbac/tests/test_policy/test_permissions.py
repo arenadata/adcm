@@ -22,7 +22,7 @@ class RemovePermissionsTestCase(PolicyBaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.create_policy(role_name="Cluster Administrator", user_pk=self.new_user.pk)
+        self.create_policy(role_name="Cluster Administrator", obj=self.cluster, user_pk=self.new_user.pk)
         self.policy = Policy.objects.first()
         self.policy.group.add(RBACGroup.objects.create(name="test_group_1"))
 
@@ -70,6 +70,6 @@ class RemovePermissionsTestCase(PolicyBaseTestCase):
 
 class AssignPermissionsTestCase(PolicyBaseTestCase):
     def test_assign_permissions(self):
-        self.create_policy(role_name="Cluster Administrator", user_pk=self.new_user.pk)
+        self.create_policy(role_name="Cluster Administrator", obj=self.cluster, user_pk=self.new_user.pk)
 
         self.assertTrue(UserObjectPermission.objects.all())

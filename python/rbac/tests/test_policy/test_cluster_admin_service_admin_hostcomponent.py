@@ -27,8 +27,8 @@ class ClusterAdminServiceAdminHostcomponentTestCase(PolicyBaseTestCase):
         self.new_user_2 = self.get_new_user(username="new_user_2", password=self.new_user_password)
         self.service = ClusterObject.objects.get(prototype__name="service_1")
 
-        self.create_policy(role_name="Cluster Administrator", user_pk=self.new_user.pk)
-        self.create_policy(role_name="Service Administrator", user_pk=self.new_user_2.pk)
+        self.create_policy(role_name="Cluster Administrator", obj=self.cluster, user_pk=self.new_user.pk)
+        self.create_policy(role_name="Service Administrator", obj=self.service, user_pk=self.new_user_2.pk)
 
     def test_cluster_admin_can_change_host_config(self):
         response: Response = self.client.post(

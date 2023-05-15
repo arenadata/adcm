@@ -48,11 +48,13 @@ class DeletePolicyTestCase(PolicyBaseTestCase):
         provider_role.child.add(provider_action_role)
         cluster_role.child.add(cluster_action_role)
 
-        provider_policy_pk = self.create_policy(role_name=provider_role_name, user_pk=self.new_user.pk)
+        provider_policy_pk = self.create_policy(
+            role_name=provider_role_name, obj=self.provider, user_pk=self.new_user.pk
+        )
         provider_perms = {perm.codename for perm in self.new_user.user_permissions.all()}
         provider_perms.update({perm.permission.codename for perm in self.new_user.userobjectpermission_set.all()})
 
-        self.create_policy(role_name=cluster_role_name, user_pk=self.new_user.pk)
+        self.create_policy(role_name=cluster_role_name, obj=self.cluster, user_pk=self.new_user.pk)
         cluster_perms = {perm.codename for perm in self.new_user.user_permissions.all()}
         cluster_perms.update({perm.permission.codename for perm in self.new_user.userobjectpermission_set.all()})
         cluster_perms = cluster_perms - provider_perms

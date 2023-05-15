@@ -16,7 +16,19 @@ from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
 
-from cm.models import ADCM, Bundle, Cluster, ConfigLog, Prototype
+from cm.models import (
+    ADCM,
+    ADCMEntity,
+    Bundle,
+    Cluster,
+    ClusterObject,
+    ConfigLog,
+    Host,
+    HostProvider,
+    ObjectType,
+    Prototype,
+    ServiceComponent,
+)
 from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -30,7 +42,7 @@ APPLICATION_JSON = "application/json"
 
 
 class BaseTestCase(TestCase):
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
     def setUp(self) -> None:
         self.test_user_username = "test_user"
@@ -134,10 +146,14 @@ class BaseTestCase(TestCase):
         )
         self.client.defaults["Authorization"] = f"Token {response.data['token']}"
 
-    def get_new_user(self, username: str, password: str) -> User:
+    def get_new_user(self, username: str, password: str, group_pk: int | None = None) -> User:
+        data = {"username": username, "password": password}
+        if group_pk:
+            data["group"] = [{"id": group_pk}]
+
         response: Response = self.client.post(
             path=reverse(viewname="rbac:user-list"),
-            data={"username": username, "password": password},
+            data=data,
             content_type=APPLICATION_JSON,
         )
 
@@ -156,19 +172,23 @@ class BaseTestCase(TestCase):
 
         return [role_data for role_data in response.json()["results"] if role_data["name"] == role_name][0]
 
-    def create_policy(self, role_name: str, user_pk: int) -> int:
+    def create_policy(
+        self,
+        role_name: str,
+        obj: ADCMEntity,
+        user_pk: int | None = None,
+        group_pk: int | None = None,
+    ) -> int:
         role_data = self.get_role_data(role_name=role_name)
-        object_type = role_data["parametrized_by_type"][0]
-        obj = getattr(self, object_type)
 
         response: Response = self.client.post(
             path=reverse(viewname="rbac:policy-list"),
             data={
-                "name": f"test_policy_{object_type}_admin",
+                "name": f"test_policy_{obj.prototype.type}_{obj.pk}_admin",
                 "role": {"id": role_data["id"]},
-                "user": [{"id": user_pk}],
-                "group": [],
-                "object": [{"name": obj.name, "type": object_type, "id": obj.pk}],
+                "user": [{"id": user_pk}] if user_pk else [],
+                "group": [{"id": group_pk}] if group_pk else [],
+                "object": [{"name": obj.name, "type": obj.prototype.type, "id": obj.pk}],
             },
             content_type=APPLICATION_JSON,
         )
@@ -201,19 +221,105 @@ class BaseTestCase(TestCase):
 
         return self.load_bundle(path=path)
 
+    def create_cluster(self, bundle_pk: int, name: str) -> Cluster:
+        response: Response = self.client.post(
+            path=reverse(viewname="cluster"),
+            data={
+                "prototype_id": Prototype.objects.get(bundle_id=bundle_pk, type=ObjectType.CLUSTER).pk,
+                "name": name,
+                "display_name": name,
+                "bundle_id": bundle_pk,
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        return Cluster.objects.get(pk=response.json()["id"])
+
+    def create_service(self, cluster_pk: int, name: str) -> ClusterObject:
+        response = self.client.post(
+            path=reverse(viewname="service", kwargs={"cluster_id": cluster_pk}),
+            data={"prototype_id": Prototype.objects.get(name=name).pk},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        return ClusterObject.objects.get(pk=response.json()["id"])
+
     def upload_bundle_create_cluster_config_log(
         self, bundle_path: Path, cluster_name: str = "test-cluster"
     ) -> tuple[Bundle, Cluster, ConfigLog]:
         bundle = self.upload_and_load_bundle(path=bundle_path)
-
-        cluster_prototype = Prototype.objects.get(bundle_id=bundle.pk, type="cluster")
-        cluster_response: Response = self.client.post(
-            path=reverse("cluster"),
-            data={"name": cluster_name, "prototype_id": cluster_prototype.pk},
-        )
-        cluster = Cluster.objects.get(pk=cluster_response.data["id"])
+        cluster = self.create_cluster(bundle_pk=bundle.pk, name=cluster_name)
 
         return bundle, cluster, ConfigLog.objects.get(obj_ref=cluster.config)
+
+    def create_provider(self, bundle_path: Path, name: str) -> HostProvider:
+        bundle = self.upload_and_load_bundle(path=bundle_path)
+
+        response: Response = self.client.post(
+            path=reverse(viewname="provider"),
+            data={
+                "prototype_id": Prototype.objects.get(bundle=bundle, type=ObjectType.PROVIDER).pk,
+                "name": name,
+                "display_name": name,
+                "bundle_id": bundle.pk,
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        return HostProvider.objects.get(pk=response.json()["id"])
+
+    def create_host_in_cluster(self, provider_pk: int, name: str, cluster_pk: int) -> Host:
+        response: Response = self.client.post(
+            path=reverse(viewname="host", kwargs={"provider_id": provider_pk}),
+            data={"fqdn": name},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        host = Host.objects.get(pk=response.json()["id"])
+
+        response: Response = self.client.post(
+            path=reverse(viewname="host", kwargs={"cluster_id": cluster_pk}),
+            data={"host_id": host.pk},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        return host
+
+    def add_host_to_cluster(self, cluster_pk: int, host_pk: int) -> None:
+        response: Response = self.client.post(
+            path=reverse(viewname="host", kwargs={"cluster_id": cluster_pk}),
+            data={"host_id": host_pk},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    @staticmethod
+    def get_hostcomponent_data(service_pk: int, host_pk: int) -> list[dict[str, int]]:
+        hostcomponent_data = []
+        for component in ServiceComponent.objects.filter(service_id=service_pk):
+            hostcomponent_data.append({"component_id": component.pk, "host_id": host_pk, "service_id": service_pk})
+
+        return hostcomponent_data
+
+    def create_hostcomponent(self, cluster_pk: int, hostcomponent_data: list[dict[str, int]]):
+        response: Response = self.client.post(
+            path=reverse(viewname="host-component", kwargs={"cluster_id": cluster_pk}),
+            data={"cluster_id": cluster_pk, "hc": hostcomponent_data},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     @staticmethod
     def get_random_str_num(length: int) -> str:

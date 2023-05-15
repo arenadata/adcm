@@ -38,9 +38,9 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase):
         self.cluster_pk = self.get_cluster_pk()
         self.host_pk = self.get_host_pk()
         self.service = self.get_service()
-        self.add_host_to_cluster()
+        self.add_host_to_cluster(cluster_pk=self.cluster_pk, host_pk=self.host_pk)
 
-        self.create_policy(role_name="Service Administrator", user_pk=self.new_user.pk)
+        self.create_policy(role_name="Service Administrator", obj=self.service, user_pk=self.new_user.pk)
         self.another_user_log_in(username=self.new_user.username, password=self.new_user_password)
 
         self.group_config_pk = self.get_group_config_pk()
@@ -84,15 +84,6 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase):
             content_type=APPLICATION_JSON,
         )
         return response.json()["id"]
-
-    def add_host_to_cluster(self):
-        response: Response = self.client.post(
-            path=reverse(viewname="host", kwargs={"cluster_id": self.cluster_pk}),
-            data={"host_id": self.host_pk},
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     def get_service(self):
         response = self.client.post(

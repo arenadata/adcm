@@ -97,7 +97,7 @@ class TestAPI(BaseTestCase):
 
         return response.json()["results"][0]["bundle_id"], response.json()["results"][0]["id"]
 
-    def create_host(self, fqdn: str, name: str | None = None) -> tuple[int, int, int]:
+    def get_host_in_cluster(self, fqdn: str, name: str | None = None) -> tuple[int, int, int]:
         name = name or uuid4().hex
 
         response: Response = self.client.get(reverse("host-prototype-list"))
@@ -327,7 +327,7 @@ class TestAPI(BaseTestCase):
         cluster_id = response.json()["id"]
         this_cluster_host_url = reverse("host", kwargs={"cluster_id": cluster_id})
 
-        ssh_bundle_id, _, host_id = self.create_host(host)
+        ssh_bundle_id, _, host_id = self.get_host_in_cluster(host)
 
         response: Response = self.client.post(this_cluster_host_url, {})
 
@@ -487,7 +487,7 @@ class TestAPI(BaseTestCase):
         self.upload_and_load_bundle(path=self.files_dir / self.bundle_ssh_name)
 
         adh_bundle_id, cluster_proto = self.get_cluster_proto_id()
-        ssh_bundle_id, _, host_id = self.create_host(self.host)
+        ssh_bundle_id, _, host_id = self.get_host_in_cluster(self.host)
         service_proto_id = self.get_service_proto_id()
         response: Response = self.client.post(
             reverse("cluster"),

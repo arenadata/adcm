@@ -31,7 +31,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.create_policy(role_name="Cluster Administrator", user_pk=self.new_user.pk)
+        self.create_policy(role_name="Cluster Administrator", obj=self.cluster, user_pk=self.new_user.pk)
 
         self.another_user_log_in(username=self.new_user.username, password=self.new_user_password)
 
@@ -454,7 +454,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         self.client.post(path=reverse("rbac:logout"))
         self.login()
 
-        self.create_policy(role_name="Provider Administrator", user_pk=self.new_user.pk)
+        self.create_policy(role_name="Provider Administrator", obj=self.provider, user_pk=self.new_user.pk)
 
         required_perms = {perm.codename for perm in self.new_user.user_permissions.all()}
         required_perms.update({perm.permission.codename for perm in self.new_user.userobjectpermission_set.all()})

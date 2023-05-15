@@ -213,9 +213,12 @@ class Policy(Model):
     user_object_perm = ManyToManyField(UserObjectPermission, blank=True)
     group_object_perm = ManyToManyField(GroupObjectPermission, blank=True)
 
-    def remove_permissions(self):  # pylint: disable=too-many-branches
+    def remove_permissions(self):  # pylint: disable=too-many-branches,too-many-statements
         # Placeholder in some places not used because we need to support Postgres and SQLite and I didn't find a way
         # to use placeholder for list of multiple values for SQLite so used string formatting
+        user_pks = self.user.values_list("pk", flat=True)
+        group_pks = self.group.values_list("pk", flat=True)
+
         cursor = connection.cursor()
         with atomic():
             cursor.execute(
@@ -245,23 +248,25 @@ class Policy(Model):
             if permission_ids_to_delete:
                 permission_ids_to_delete_str = get_query_tuple_str(tuple_items=permission_ids_to_delete)
 
-                cursor.execute(
-                    f"""
-                        DELETE FROM auth_user_user_permissions WHERE permission_id IN (
-                            SELECT permission_id FROM rbac_policypermission WHERE user_id IS NOT NULL 
-                            AND id IN {permission_ids_to_delete_str}
-                        );
-                    """,
-                )
+                if user_pks:
+                    cursor.execute(
+                        f"""
+                            DELETE FROM auth_user_user_permissions WHERE permission_id IN (
+                                SELECT permission_id FROM rbac_policypermission WHERE user_id IS NOT NULL 
+                                AND id IN {permission_ids_to_delete_str}
+                            ) AND user_id IN {get_query_tuple_str(tuple_items=tuple(user_pks))};
+                        """,
+                    )
 
-                cursor.execute(
-                    f"""
-                        DELETE FROM auth_group_permissions WHERE permission_id IN (
-                            SELECT permission_id FROM rbac_policypermission WHERE group_id IS NOT NULL 
-                            AND id IN {permission_ids_to_delete_str}
-                        );
-                    """,
-                )
+                if group_pks:
+                    cursor.execute(
+                        f"""
+                            DELETE FROM auth_group_permissions WHERE permission_id IN (
+                                SELECT permission_id FROM rbac_policypermission WHERE group_id IS NOT NULL 
+                                AND id IN {permission_ids_to_delete_str}
+                            ) AND group_id IN {get_query_tuple_str(tuple_items=tuple(group_pks))};
+                        """,
+                    )
 
                 cursor.execute(
                     """

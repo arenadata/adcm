@@ -184,17 +184,6 @@ class TestClusterAudit(BaseTestCase):
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.object_changes, {})
 
-    def create_cluster(self, bundle_id: int, name: str, prototype_id: int):
-        return self.client.post(
-            path=reverse("cluster"),
-            data={
-                "bundle_id": bundle_id,
-                "display_name": f"{name}_display",
-                "name": name,
-                "prototype_id": prototype_id,
-            },
-        )
-
     def get_sc(self) -> HostComponent:
         service_component_prototype = Prototype.objects.create(bundle=self.bundle, type="component")
 
@@ -252,28 +241,21 @@ class TestClusterAudit(BaseTestCase):
         policy.apply()
 
     def test_create(self):
-        response: Response = self.create_cluster(
-            bundle_id=self.bundle.pk,
-            name=self.test_cluster_name,
-            prototype_id=self.cluster_prototype.pk,
-        )
+        cluster = self.create_cluster(bundle_pk=self.bundle.pk, name=self.test_cluster_name)
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_log(
             log=log,
             obj_name=self.test_cluster_name,
-            obj=Cluster.objects.get(pk=response.data["id"]),
+            obj=cluster,
             obj_type=AuditObjectType.CLUSTER,
             operation_name="Cluster created",
             operation_type=AuditLogOperationType.CREATE,
         )
 
-        self.create_cluster(
-            bundle_id=self.bundle.pk,
-            name=self.test_cluster_name,
-            prototype_id=self.cluster_prototype.pk,
-        )
+        with self.assertRaises(AssertionError):
+            self.create_cluster(bundle_pk=self.bundle.pk, name=self.test_cluster_name)
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -284,16 +266,11 @@ class TestClusterAudit(BaseTestCase):
         )
 
     def test_create_denied(self):
-        with self.no_rights_user_logged_in:
-            response: Response = self.create_cluster(
-                bundle_id=self.bundle.pk,
-                name=self.test_cluster_name,
-                prototype_id=self.cluster_prototype.pk,
-            )
+        with self.no_rights_user_logged_in, self.assertRaises(AssertionError):
+            self.create_cluster(bundle_pk=self.bundle.pk, name=self.test_cluster_name)
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_no_obj(
             log=log,
             operation_result=AuditLogOperationResult.DENIED,
@@ -332,17 +309,8 @@ class TestClusterAudit(BaseTestCase):
             data={"bundle_file": provider_bundle_filename},
         )
 
-        cluster_prototype = Prototype.objects.create(bundle_id=cluster_bundle_response.data["id"], type="cluster")
-        cluster_1_response: Response = self.create_cluster(
-            bundle_id=cluster_bundle_response.data["id"],
-            name="new-test-cluster-1",
-            prototype_id=cluster_prototype.pk,
-        )
-        self.create_cluster(
-            bundle_id=cluster_bundle_response.data["id"],
-            name="new_test_cluster_2",
-            prototype_id=cluster_prototype.pk,
-        )
+        cluster_1 = self.create_cluster(bundle_pk=cluster_bundle_response.data["id"], name="new-test-cluster-1")
+        self.create_cluster(bundle_pk=cluster_bundle_response.data["id"], name="new_test_cluster_2")
 
         provider_prototype = Prototype.objects.create(bundle_id=provider_bundle_response.data["id"], type="provider")
         provider_response: Response = self.client.post(
@@ -372,7 +340,7 @@ class TestClusterAudit(BaseTestCase):
         )
 
         self.client.post(
-            path=reverse("host", kwargs={"cluster_id": cluster_1_response.data["id"]}),
+            path=reverse("host", kwargs={"cluster_id": cluster_1.pk}),
             data={"host_id": host_1_response.data["id"]},
             content_type=APPLICATION_JSON,
         )
@@ -384,10 +352,10 @@ class TestClusterAudit(BaseTestCase):
         )
         service = ClusterObject.objects.create(
             prototype=service_prototype,
-            cluster_id=cluster_1_response.data["id"],
+            cluster_id=cluster_1.pk,
         )
         self.client.post(
-            path=reverse("service", kwargs={"cluster_id": cluster_1_response.data["id"]}),
+            path=reverse("service", kwargs={"cluster_id": cluster_1.pk}),
             data={
                 "service_id": service.pk,
                 "prototype_id": service_prototype.pk,
@@ -397,7 +365,7 @@ class TestClusterAudit(BaseTestCase):
 
         self.assertFalse(AuditObject.objects.filter(is_deleted=True))
 
-        self.client.delete(path=reverse("cluster-details", kwargs={"cluster_id": cluster_1_response.data["id"]}))
+        self.client.delete(path=reverse("cluster-details", kwargs={"cluster_id": cluster_1.pk}))
 
         self.assertEqual(AuditObject.objects.filter(is_deleted=True).count(), 1)
 

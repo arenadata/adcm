@@ -55,10 +55,14 @@ class RemoveUserFromPolicyTestCase(PolicyBaseTestCase):
         new_user_2_role.child.add(edit_service_config_role)
 
         self.edit_cluster_config_policy_pk = self.create_policy(
-            role_name=self.new_user_role_name, user_pk=self.new_user.pk
+            role_name=self.new_user_role_name,
+            obj=self.cluster,
+            user_pk=self.new_user.pk,
         )
         self.edit_service_config_policy_pk = self.create_policy(
-            role_name=self.new_user_2_role_name, user_pk=self.new_user_2.pk
+            role_name=self.new_user_2_role_name,
+            obj=self.service,
+            user_pk=self.new_user_2.pk,
         )
 
         self.new_user_perms = {perm.codename for perm in self.new_user.user_permissions.all()}
