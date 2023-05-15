@@ -18,7 +18,7 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import Bundle, Cluster, HostProvider, Prototype
+from cm.models import Bundle, Cluster, HostProvider, ObjectType, Prototype
 from django.urls import reverse
 from rbac.models import Policy, Role, RoleTypes, User
 from rest_framework.response import Response
@@ -38,11 +38,12 @@ class TestPolicyAudit(BaseTestCase):
         prototype = Prototype.objects.create(bundle=bundle, type="cluster")
         self.cluster_name = "test_cluster"
         self.cluster = Cluster.objects.create(name=self.cluster_name, prototype=prototype)
+        role_name = "test_role"
         self.role = Role.objects.create(
-            name="test_role",
-            display_name="test_role",
+            name=role_name,
+            display_name=role_name,
             type=RoleTypes.ROLE,
-            parametrized_by_type=["cluster", "provider"],
+            parametrized_by_type=[ObjectType.CLUSTER, ObjectType.PROVIDER],
             module_name="rbac.roles",
             class_name="ObjectRole",
         )
