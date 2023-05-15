@@ -1,6 +1,6 @@
 ---
 
-version: 6
+version: 7
 
 roles:
     - name: Add host
@@ -1498,15 +1498,20 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       child:
-        - Get provider object
+        - Accept license
+        - Add bundle
+        - Add host
+        - Add host to provider
+        - Edit config
+        - Edit host config
+        - Edit provider config
         - Get host object
-        - Edit provider configurations
-        - Edit host configurations
-        - Upgrade provider bundle
-        - Create host
-        - Remove hosts
-        - Upload bundle
+        - Get provider object
         - Remove bundle
+        - Remove hosts
+        - Upgrade provider bundle
+        - View host config
+        - View provider config
 
     - name: Manage cluster Maintenance mode
       description: the ability to enable / disable the "MM"
