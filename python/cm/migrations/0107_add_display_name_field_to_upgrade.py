@@ -17,7 +17,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("cm", "0105_auto_20230220_0800"),
+        ("cm", "0106_set_nginx_rotate_config_to_defaults"),
     ]
 
     operations = [

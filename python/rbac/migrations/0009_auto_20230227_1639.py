@@ -17,7 +17,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("rbac", "0007_auto_20230124_0849"),
+        ("rbac", "0008_auto_20230320_1312"),
     ]
 
     operations = [

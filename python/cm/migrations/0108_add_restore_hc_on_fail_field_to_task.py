@@ -17,7 +17,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("cm", "0107_set_nginx_rotate_config_to_defaults"),
+        ("cm", "0107_add_display_name_field_to_upgrade"),
     ]
 
     operations = [
