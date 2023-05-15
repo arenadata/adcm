@@ -128,8 +128,6 @@ WSGI_APPLICATION = "adcm.wsgi.application"
 LOGIN_URL = "/api/v1/auth/login/"
 LOGIN_REDIRECT_URL = "/admin/intro/"
 
-SOCIAL_AUTH_USER_MODEL = "rbac.User"
-
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_AUTHENTICATION_CLASSES": (
