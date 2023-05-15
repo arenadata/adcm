@@ -15,7 +15,7 @@ from pathlib import Path
 from cm.models import Action, ConfigLog, ObjectType, ServiceComponent
 from django.conf import settings
 from django.urls import reverse
-from rbac.models import Group, Role, RoleTypes
+from rbac.models import Group
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
@@ -211,17 +211,15 @@ class ActionsPolicyTestCase(BaseTestCase):
         )
 
         user_1_role_name = "user_1_role"
-        user_1_role = Role.objects.create(
-            name=user_1_role_name,
-            display_name=user_1_role_name,
-            type=RoleTypes.ROLE,
-            module_name="rbac.roles",
-            class_name="ParentRole",
+        self.create_role(
+            role_name=user_1_role_name,
             parametrized_by_type=[ObjectType.CLUSTER, ObjectType.SERVICE, ObjectType.COMPONENT, ObjectType.HOST],
+            children_names=[
+                "Cluster Action: Cluster ready for host",
+                "Service Action: Service ready for host",
+                "Component Action: Component ready for host",
+            ],
         )
-        user_1_role.child.add(Role.objects.get(name="Cluster Action: Cluster ready for host"))
-        user_1_role.child.add(Role.objects.get(name="Service Action: Service ready for host"))
-        user_1_role.child.add(Role.objects.get(name="Component Action: Component ready for host"))
 
         self.create_policy(
             role_name=user_1_role_name,

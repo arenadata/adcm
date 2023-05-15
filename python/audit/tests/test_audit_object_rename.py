@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from audit.models import AuditLog
 from cm.models import (
     Bundle,
@@ -18,6 +19,7 @@ from cm.models import (
     HostProvider,
     MaintenanceMode,
     ObjectConfig,
+    ObjectType,
     Prototype,
 )
 from django.urls import reverse
@@ -54,11 +56,12 @@ class TestAuditObjectRename(BaseTestCase):
         )
 
         self.group = Group.objects.create(name="test_group")
+        role_name = "test_role"
         self.role = Role.objects.create(
-            name="test_role",
-            display_name="test_role",
+            name=role_name,
+            display_name=role_name,
             type=RoleTypes.ROLE,
-            parametrized_by_type=["cluster"],
+            parametrized_by_type=[ObjectType.CLUSTER],
             module_name="rbac.roles",
             class_name="ObjectRole",
         )

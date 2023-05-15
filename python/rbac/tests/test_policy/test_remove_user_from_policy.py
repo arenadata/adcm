@@ -12,7 +12,6 @@
 
 from cm.models import ClusterObject, ObjectType
 from django.urls import reverse
-from rbac.roles import Role, RoleTypes
 from rbac.tests.test_policy.base import PolicyBaseTestCase
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
@@ -29,30 +28,18 @@ class RemoveUserFromPolicyTestCase(PolicyBaseTestCase):
         self.new_user_2 = self.get_new_user(username="new_user_2", password="new_user_2_password")
 
         self.new_user_role_name = "new_user_role"
-        new_user_role = Role.objects.create(
-            name=self.new_user_role_name,
-            display_name=self.new_user_role_name,
-            type=RoleTypes.ROLE,
-            module_name="rbac.roles",
-            class_name="ParentRole",
+        self.create_role(
+            role_name=self.new_user_role_name,
             parametrized_by_type=[ObjectType.CLUSTER],
+            children_names=["Edit cluster configurations"],
         )
 
         self.new_user_2_role_name = "new_user_2_role"
-        new_user_2_role = Role.objects.create(
-            name=self.new_user_2_role_name,
-            display_name=self.new_user_2_role_name,
-            type=RoleTypes.ROLE,
-            module_name="rbac.roles",
-            class_name="ParentRole",
+        self.create_role(
+            role_name=self.new_user_2_role_name,
             parametrized_by_type=[ObjectType.SERVICE],
+            children_names=["Edit service configurations"],
         )
-
-        edit_cluster_config_role = Role.objects.get(name="Edit cluster configurations")
-        edit_service_config_role = Role.objects.get(name="Edit service configurations")
-
-        new_user_role.child.add(edit_cluster_config_role)
-        new_user_2_role.child.add(edit_service_config_role)
 
         self.edit_cluster_config_policy_pk = self.create_policy(
             role_name=self.new_user_role_name,
