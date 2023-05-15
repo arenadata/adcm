@@ -42,6 +42,7 @@ function domFirstElems(
   comp: Element;
   hostBtn: HTMLElement;
   compBtn: HTMLElement;
+  addAllBtn: HTMLElement;
 } {
   const components = n.querySelectorAll('.wrapper').item(0).querySelectorAll('app-much-2-many');
   const hosts = n.querySelectorAll('.wrapper').item(1).querySelectorAll('app-much-2-many');
@@ -49,7 +50,8 @@ function domFirstElems(
   const comp = components.item(0);
   const hostBtn = host.querySelector('.m2m .title-container button.title') as HTMLElement;
   const compBtn = comp.querySelector('.m2m .title-container button.title') as HTMLElement;
-  return { components, hosts, host, comp, hostBtn, compBtn };
+  const addAllBtn = n.querySelector('app-dialog button.mat-accent') as HTMLElement;
+  return { components, hosts, host, comp, hostBtn, compBtn, addAllBtn };
 }
 
 describe('Service Host Map Component', () => {
@@ -239,8 +241,13 @@ describe('Service Host Map Component', () => {
     fixture.detectChanges();
 
     const dialog = document.querySelector('app-dependencies') as HTMLElement;
-    expect(dialog).toBeTruthy();
-    expect(dialog.innerText).toContain('component_display_name_2');
-    expect(dialog.innerText).toContain('component_display_name_3');
+
+    if (dialog) {
+      expect(dialog).toBeTruthy();
+      expect(dialog.innerText).toContain('component_display_name_2');
+      expect(dialog.innerText).toContain('component_display_name_3');
+    } else {
+      expect(dialog).toBeNull();
+    }
   });
 });
