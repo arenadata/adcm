@@ -10,22 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import (
-    Bundle,
-    Cluster,
-    ClusterObject,
-    Host,
-    HostProvider,
-    ObjectType,
-    Prototype,
-    ServiceComponent,
-)
+from cm.models import Bundle, ClusterObject, Host, ObjectType, Prototype
 from django.conf import settings
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from adcm.tests.base import BaseTestCase
 
 
 class PolicyBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-attributes
@@ -34,12 +22,19 @@ class PolicyBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-att
 
         self.new_user_password = "new_user_password"
         self.new_user = self.get_new_user(username="new_user", password=self.new_user_password)
-        self.cluster = self.create_cluster()
-        self.provider = self.get_provider()
-        host_ids = self.create_hosts()
-        self.first_host_pk = host_ids[0]
-        self.last_host_pk = host_ids[-1]
-        self.add_hosts_to_cluster(host_ids=host_ids)
+        bundle = self.upload_and_load_bundle(
+            path=(
+                settings.BASE_DIR / "python" / "rbac" / "tests" / "files" / "test_cluster_for_cluster_admin_role.tar"
+            ),
+        )
+        self.cluster = self.create_cluster(bundle_pk=bundle.pk, name="Test Cluster")
+        self.provider = self.create_provider(
+            bundle_path=settings.BASE_DIR / "python" / "rbac" / "tests" / "files" / "provider.tar",
+            name="Test Provider",
+        )
+        host_pks = self.create_hosts()
+        self.first_host_pk = host_pks[0]
+        self.last_host_pk = host_pks[-1]
         self.service_6_proto = Prototype.objects.get(
             bundle=Bundle.objects.get(name="test_cluster_for_cluster_admin_role"),
             name="service_6_manual_add",
@@ -50,111 +45,36 @@ class PolicyBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-att
         self.host_component = self.get_host_components()
         self.last_component_pk = self.host_component[-1]["component_id"]
 
-    def create_cluster(self) -> Cluster:
-        bundle = self.upload_and_load_bundle(
-            path=settings.BASE_DIR / "python" / "rbac" / "tests" / "files" / "test_cluster_for_cluster_admin_role.tar"
-        )
-
-        response: Response = self.client.post(
-            path=reverse(viewname="cluster"),
-            data={
-                "prototype_id": Prototype.objects.get(bundle=bundle, type=ObjectType.CLUSTER).pk,
-                "name": "Test Cluster",
-                "display_name": "Test Cluster",
-                "bundle_id": bundle.pk,
-            },
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        return Cluster.objects.get(pk=response.json()["id"])
-
     def create_hosts(self) -> list[int]:
         host_ids = []
 
         for host_num in range(5):
-            fqdn = f"host-{host_num}"
-
-            response: Response = self.client.post(
-                path=reverse(viewname="host", kwargs={"provider_id": self.provider.pk}),
-                data={"fqdn": fqdn},
-                content_type=APPLICATION_JSON,
-            )
-
-            self.assertEqual(response.status_code, HTTP_201_CREATED)
-            host_ids.append(response.json()["id"])
+            name = f"host-{host_num}"
+            host = self.create_host_in_cluster(provider_pk=self.provider.pk, name=name, cluster_pk=self.cluster.pk)
+            host_ids.append(host.pk)
 
         return host_ids
 
-    def add_hosts_to_cluster(self, host_ids: list[int]) -> None:
-        for host_id in host_ids:
-            response: Response = self.client.post(
-                path=reverse(viewname="host", kwargs={"cluster_id": self.cluster.pk}),
-                data={"host_id": host_id},
-                content_type=APPLICATION_JSON,
-            )
-
-            self.assertEqual(response.status_code, HTTP_201_CREATED)
-
     def get_service_ids(self) -> list[int]:
-        service_proto_pks = (
-            Prototype.objects.filter(
-                bundle=Bundle.objects.get(name="test_cluster_for_cluster_admin_role"), type=ObjectType.SERVICE
-            )
-            .exclude(pk=self.service_6_proto.pk)
-            .order_by("id")
-            .values_list("pk", flat=True)
-        )
+        service_prototypes = Prototype.objects.filter(
+            bundle=Bundle.objects.get(name="test_cluster_for_cluster_admin_role"), type=ObjectType.SERVICE
+        ).exclude(pk=self.service_6_proto.pk)
         service_ids = []
 
-        for service_proto_pk in service_proto_pks:
-            response = self.client.post(
-                path=reverse(viewname="service", kwargs={"cluster_id": self.cluster.pk}),
-                data={"prototype_id": service_proto_pk},
-                content_type=APPLICATION_JSON,
-            )
-
-            self.assertEqual(response.status_code, HTTP_201_CREATED)
-            service_ids.append(response.json()["id"])
+        for service_prototype in service_prototypes:
+            service = self.create_service(cluster_pk=self.cluster.pk, name=service_prototype.name)
+            service_ids.append(service.pk)
 
         return service_ids
 
     def get_host_components(self) -> list[dict]:
         host_pks = [host.pk for host in Host.objects.order_by("id")]
         services = list(ClusterObject.objects.order_by("id"))
-        hc_data = []
+        hostcomponent_data = []
 
         for host_pk, service in zip(host_pks, services):
-            for component in ServiceComponent.objects.filter(service=service).order_by("id"):
-                hc_data.append({"component_id": component.pk, "host_id": host_pk, "service_id": service.pk})
+            hostcomponent_data.extend(self.get_hostcomponent_data(service_pk=service.pk, host_pk=host_pk))
 
-        response: Response = self.client.post(
-            path=reverse(viewname="host-component", kwargs={"cluster_id": self.cluster.pk}),
-            data={"cluster_id": self.cluster.pk, "hc": hc_data},
-            content_type=APPLICATION_JSON,
-        )
+        self.create_hostcomponent(cluster_pk=self.cluster.pk, hostcomponent_data=hostcomponent_data)
 
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        return hc_data
-
-    def get_provider(self) -> HostProvider:
-        bundle = self.upload_and_load_bundle(
-            path=settings.BASE_DIR / "python" / "rbac" / "tests" / "files" / "provider.tar",
-        )
-
-        response: Response = self.client.post(
-            path=reverse(viewname="provider"),
-            data={
-                "prototype_id": Prototype.objects.get(bundle=bundle, type=ObjectType.PROVIDER).pk,
-                "name": "Test Provider",
-                "display_name": "Test Provider",
-                "bundle_id": bundle.pk,
-            },
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        return HostProvider.objects.get(pk=response.json()["id"])
+        return hostcomponent_data

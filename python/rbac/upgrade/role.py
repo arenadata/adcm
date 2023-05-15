@@ -208,20 +208,22 @@ def prepare_hidden_roles(bundle: Bundle) -> dict:
             hidden_roles[name] = {"parametrized_by_type": action.prototype.type, "children": []}
 
         hidden_roles[name]["children"].append(role)
-        action_name_hash = sha256(action.name.encode(settings.ENCODING_UTF_8)).hexdigest()
 
+        if action.host_action:
+            content_type = ContentType.objects.get_for_model(model=Host)
+            permission, _ = Permission.objects.get_or_create(
+                content_type=content_type,
+                codename="view_host",
+            )
+            role.permissions.add(permission)
+
+        action_name_hash = sha256(action.name.encode(settings.ENCODING_UTF_8)).hexdigest()
         action_permission, _ = Permission.objects.get_or_create(
             content_type=content_type,
             codename=f"run_action_{action_name_hash}",
             name=f"Can run {action_name_hash} actions",
         )
         role.permissions.add(action_permission)
-        if action.host_action:
-            permission, _ = Permission.objects.get_or_create(
-                content_type=ContentType.objects.get_for_model(Host),
-                codename="view_host",
-            )
-            role.permissions.add(permission)
 
     return hidden_roles
 
