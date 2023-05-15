@@ -143,7 +143,7 @@ def check_value_unselected_field(
     new_attr: dict,
     group_keys: dict,
     spec: dict,
-    obj: type[ADCMEntity] | Action,
+    obj: ADCMEntity | Action,
 ) -> None:
     """
     Check value unselected field
@@ -181,13 +181,12 @@ def check_value_unselected_field(
                 obj=obj,
             )
         else:
-            if spec[group_key]["type"] in {"list", "map", "secretmap", "string", "structure"}:
-                if config_is_ro(obj=obj, key=group_key, limits=spec[group_key]["limits"]) or _check_empty_values(
-                    key=group_key,
-                    current=current_config,
-                    new=new_config,
-                ):
-                    continue
+            if _check_empty_values(key=group_key, current=current_config, new=new_config):
+                continue
+            if spec[group_key]["type"] in {"list", "map", "secretmap", "string", "structure"} and config_is_ro(
+                obj=obj, key=group_key, limits=spec[group_key]["limits"]
+            ):
+                continue
 
             if (
                 not group_value
