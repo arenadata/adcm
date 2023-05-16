@@ -118,7 +118,7 @@ class ServiceDetailView(PermissionListMixin, DetailView):
         return queryset
 
     @audit
-    def delete(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def delete(self, request, *args, **kwargs):  # pylint: disable=unused-argument, too-many-branches
         instance: ClusterObject = self.get_object()
         delete_action = Action.objects.filter(
             prototype=instance.prototype,
@@ -146,19 +146,20 @@ class ServiceDetailView(PermissionListMixin, DetailView):
         if TaskLog.objects.filter(action=delete_action, status=JobStatus.RUNNING).exists():
             raise_adcm_ex("SERVICE_DELETE_ERROR", "Service is deleting now")
 
-        if any(
-            service_component.requires_service_name(service_name=instance.name)
-            for service_component in ServiceComponent.objects.filter(cluster=instance.cluster).exclude(service=instance)
-        ):
-            raise_adcm_ex(
-                code="SERVICE_CONFLICT", msg="Another service component requires this service or its component"
-            )
+        for component in ServiceComponent.objects.filter(cluster=instance.cluster).exclude(service=instance):
+            if component.requires_service_name(service_name=instance.name):
+                raise_adcm_ex(
+                    code="SERVICE_CONFLICT",
+                    msg=f"Component {component.name} of service {component.service.display_name}"
+                    f" requires this service or its component",
+                )
 
-        if any(
-            service.requires_service_name(service_name=instance.name)
-            for service in ClusterObject.objects.filter(cluster=instance.cluster)
-        ):
-            raise_adcm_ex(code="SERVICE_CONFLICT", msg="Another service requires this service or its component")
+        for service in ClusterObject.objects.filter(cluster=instance.cluster):
+            if service.requires_service_name(service_name=instance.name):
+                raise_adcm_ex(
+                    code="SERVICE_CONFLICT",
+                    msg=f"Service {service.display_name} requires this service or its component",
+                )
 
         cancel_locking_tasks(obj=instance, obj_deletion=True)
         if delete_action and (host_components_exists or instance.state != "created"):
