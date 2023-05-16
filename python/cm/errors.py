@@ -11,7 +11,8 @@
 # limitations under the License.
 
 from cm.logger import logger
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import APIException, ValidationError
+from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_401_UNAUTHORIZED,
@@ -227,6 +228,7 @@ ERRORS = {
         HTTP_400_BAD_REQUEST,
         ERR,
     ),
+    "BAD_REQUEST": ("Bad request", HTTP_400_BAD_REQUEST, ERR),
 }
 
 
@@ -284,10 +286,26 @@ def raise_adcm_ex(code, msg="", args=""):
     raise AdcmEx(code, msg=msg, args=args)
 
 
-def custom_drf_exception_handler(exc, context):
+def custom_drf_exception_handler(exc: Exception, context) -> Response | None:
     if isinstance(exc, OverflowError):
-        # This is an error with DB mostly. For example SqlLite can"t handle 64bit numbers.
+        # This is an error with DB mostly. For example SQLite can't handle 64-bit numbers.
         # So we have to handle this right and rise HTTP 400, instead of HTTP 500
-        return exception_handler(AdcmEx("OVERFLOW"), context)
 
-    return exception_handler(exc, context)
+        return exception_handler(exc=AdcmEx(code="OVERFLOW"), context=context)
+
+    if isinstance(exc, ValidationError) and isinstance(exc.detail, dict):
+        msg = ""
+        for field_name, error in exc.detail.items():
+            if isinstance(error, list):
+                if isinstance(error[0], dict):
+                    for err_type, err in error[0].items():
+                        msg = f"{msg}{err_type} - {err[0]};"
+                else:
+                    msg = f"{msg}{field_name} - {error[0]};"
+            else:
+                for err_type, err in error.items():
+                    msg = f"{msg}{err_type} - {err[0]};"
+
+        return exception_handler(exc=AdcmEx(code="BAD_REQUEST", msg=msg), context=context)
+
+    return exception_handler(exc=exc, context=context)

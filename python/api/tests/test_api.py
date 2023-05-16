@@ -332,7 +332,7 @@ class TestAPI(BaseTestCase):
         response: Response = self.client.post(this_cluster_host_url, {})
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json()["host_id"], ["This field is required."])
+        self.assertEqual(response.json()["desc"], "host_id - This field is required.;")
 
         response: Response = self.client.post(this_cluster_host_url, {"host_id": 100500})
 

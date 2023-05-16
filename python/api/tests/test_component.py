@@ -66,7 +66,7 @@ class TestComponentAPI(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertIn("maintenance_mode", response.data)
+        self.assertIn(response.json()["desc"], 'maintenance_mode - "wrong" is not a valid choice.;')
 
     def test_change_maintenance_mode_on_no_action_success(self):
         response: Response = self.client.post(

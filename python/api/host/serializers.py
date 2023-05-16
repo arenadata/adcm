@@ -48,7 +48,7 @@ class HostSerializer(EmptySerializer):
                 start=settings.ALLOWED_HOST_FQDN_START_CHARS,
                 mid=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
                 end=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
-                err_code="WRONG_NAME",
+                err_code="BAD_REQUEST",
                 err_msg="Wrong FQDN.",
             ),
         ],
