@@ -63,7 +63,7 @@ class TestHostAPI(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertIn("maintenance_mode", response.data)
+        self.assertIn(response.json()["desc"], 'maintenance_mode - "wrong" is not a valid choice.;')
 
     def test_change_mm_to_changing_fail(self):
         response: Response = self.client.post(

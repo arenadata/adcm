@@ -82,10 +82,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
 
         err = response.json()
         if "code" in err:
-            self.assertEqual(err["code"], "WRONG_NAME")
-        else:
-            self.assertIn("fqdn", err)
-            self.assertEqual(err["fqdn"], ["Ensure this field has no more than 253 characters."])
+            self.assertEqual(err["code"], "BAD_REQUEST")
 
         self.host.refresh_from_db()
         self.assertEqual(self.host.fqdn, expected_fqdn)
@@ -186,7 +183,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json()["code"], "WRONG_NAME")
+        self.assertEqual(response.json()["code"], "BAD_REQUEST")
 
         response: Response = self.client.post(
             host_url,
@@ -210,9 +207,10 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(
             response.json(),
             {
-                "prototype_id": ["This field is required."],
-                "provider_id": ["This field is required."],
-                "fqdn": ["This field is required."],
+                "code": "BAD_REQUEST",
+                "level": "error",
+                "desc": "prototype_id - This field is required.;provider_id - "
+                "This field is required.;fqdn - This field is required.;",
             },
         )
 
@@ -319,7 +317,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json()["code"], "WRONG_NAME")
+        self.assertEqual(response.json()["code"], "BAD_REQUEST")
 
     def test_host_update_not_created_state_wrong_fqdn_fail(self):
         self.host.state = "active"
@@ -332,7 +330,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json()["code"], "WRONG_NAME")
+        self.assertEqual(response.json()["code"], "BAD_REQUEST")
 
     def test_host_create_duplicated_fqdn_fail(self):
         response = self.client.post(
@@ -404,7 +402,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
                 self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
                 err = response.json()
                 if "code" in err:
-                    self.assertEqual(err["code"], "WRONG_NAME")
+                    self.assertEqual(err["code"], "BAD_REQUEST")
                 else:
                     self.assertIn("fqdn", err)
                     self.assertEqual(err["fqdn"], ["Ensure this field has no more than 253 characters."])
