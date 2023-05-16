@@ -75,6 +75,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
 
   get passwordValidators() {
     return [
+      ... !this.value ? [Validators.required] : [],
       Validators.minLength(this.passMinLength || 3),
       Validators.maxLength(this.passMaxLength || 128),
       Validators.pattern(new RegExp(/^[\s\S]*$/u))
@@ -109,7 +110,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
     const result = {};
 
     Object.keys(user).forEach((key) => {
-      if (user[key].dirty) {
+      if (user[key].dirty && user[key].value !== '') {
         result[key] = user[key]?.value;
       }
     })
@@ -162,7 +163,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
       // ToDo(lihih) the "adwp-list" should not change the composition of the original model.
       //  Now he adds the "checked" key to the model
       this._updateAndSetValueForForm(this.userForm);
-      this.confirmForm.setValue({ password: this.value.password });
+      this.confirmForm.setValue({ password: '******' }); // read commentary inside _updateAndSetValueForForm
       this.form.get('user.username').disable();
 
       if (type === 'ldap' || value?.is_active === false) {
@@ -213,6 +214,8 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
     Object.keys(formValue).forEach((prop) => {
       if (!form.controls.hasOwnProperty(prop)) delete formValue[prop];
     })
+
+    formValue.password = '******'; // password will not be provided from backend, but we still need to use it in formControl
 
     form.setValue(formValue);
   }
