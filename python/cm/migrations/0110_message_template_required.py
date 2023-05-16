@@ -18,7 +18,7 @@ data = [
     {
         "name": "required service issue",
         "template": {
-            "message": "${source} require service ${target} to be installed.",
+            "message": "${source} require service ${target} to be installed",
             "placeholder": {
                 "source": {"type": "adcm_entity"},
                 "target": {"type": "prototype"},

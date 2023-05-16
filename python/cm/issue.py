@@ -184,25 +184,28 @@ def check_hc(cluster: Cluster) -> bool:
 
 def check_hc_requires(shc_list: list[tuple[ClusterObject, Host, ServiceComponent]]) -> None:
     for serv_host_comp in [i for i in shc_list if i[2].prototype.requires or i[0].prototype.requires]:
-        for require in [*serv_host_comp[2].prototype.requires, *serv_host_comp[0].prototype.requires]:
+        for require in serv_host_comp[2].prototype.requires:
             ref = f'component "{serv_host_comp[2].prototype.name}" of service "{serv_host_comp[0].prototype.name}"'
+            req_comp = require.get("component")
 
-            if not ClusterObject.objects.filter(prototype__name=require["service"]).exists():
+            if not ClusterObject.objects.filter(prototype__name=require["service"]).exists() and not req_comp:
                 raise AdcmEx(
                     code="COMPONENT_CONSTRAINT_ERROR", msg=f"No required service {require['service']} for {ref}"
                 )
 
-            if not require.get("component"):
+            if not req_comp:
                 continue
 
             if not any(
                 {
-                    (shc[0].prototype.name == require["service"] and shc[2].prototype.name == require["component"])
+                    (shc[0].prototype.name == require["service"] and shc[2].prototype.name == req_comp)
                     for shc in shc_list
                 }
             ):
-                msg = f'No required component "{require["component"]}" of service "{require["service"]}" for {ref}'
-                raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=msg)
+                raise AdcmEx(
+                    code="COMPONENT_CONSTRAINT_ERROR",
+                    msg=f'No required component "{req_comp}" of service "{require["service"]}" for {ref}',
+                )
 
 
 def check_bound_components(shc_list: list[tuple[ClusterObject, Host, ServiceComponent]]) -> None:
