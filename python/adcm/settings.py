@@ -70,7 +70,7 @@ if CONFIG_FILE.is_file():
 else:
     ADCM_VERSION = "2019.02.07.00"
 
-DEBUG = False
+DEBUG = os.getenv("DEBUG") in {"1", "True", "true"}
 ALLOWED_HOSTS = ["*"]
 INSTALLED_APPS = [
     "rbac",  # keep it above 'django.contrib.auth' in order to keep "createsuperuser" working
@@ -80,7 +80,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "drf_yasg",
     "rest_framework",
     "api.apps.APIConfig",
     "rest_framework.authtoken",
@@ -100,8 +99,9 @@ MIDDLEWARE = [
     "audit.middleware.LoginMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "csp.middleware.CSPMiddleware",
 ]
+if not DEBUG:
+    MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 
 CSP_DEFAULT_SRC = ["'self'"]
 CSP_FRAME_ANCESTORS = ["'none'"]
@@ -193,79 +193,78 @@ STATIC_ROOT = BASE_DIR / "wwwroot/static/"
 STATIC_URL = "/static/"
 
 ADWP_EVENT_SERVER = {
-    # path to json file with Event Server secret token
     "SECRETS_FILE": SECRETS_FILE,
-    # URL of Event Server REST API
     "API_URL": "http://localhost:8020/api/v1",
     "SECRET_KEY": ADCM_TOKEN,
 }
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", logging.getLevelName(logging.ERROR))
 
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "filters": {
-        "require_debug_false": {
-            "()": "django.utils.log.RequireDebugFalse",
+if not DEBUG:
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "filters": {
+            "require_debug_false": {
+                "()": "django.utils.log.RequireDebugFalse",
+            },
         },
-    },
-    "formatters": {
-        "adcm": {
-            "format": "{asctime} {levelname} {module} {message}",
-            "style": "{",
+        "formatters": {
+            "adcm": {
+                "format": "{asctime} {levelname} {module} {message}",
+                "style": "{",
+            },
         },
-    },
-    "handlers": {
-        "adcm_file": {
-            "filters": ["require_debug_false"],
-            "formatter": "adcm",
-            "class": "logging.FileHandler",
-            "filename": LOG_FILE,
+        "handlers": {
+            "adcm_file": {
+                "filters": ["require_debug_false"],
+                "formatter": "adcm",
+                "class": "logging.FileHandler",
+                "filename": LOG_FILE,
+            },
+            "adcm_debug_file": {
+                "filters": ["require_debug_false"],
+                "formatter": "adcm",
+                "class": "logging.FileHandler",
+                "filename": BASE_DIR / "data/log/adcm_debug.log",
+            },
+            "background_task_file_handler": {
+                "formatter": "adcm",
+                "class": "logging.handlers.TimedRotatingFileHandler",
+                "filename": BASE_DIR / "data/log/cron_task.log",
+                "when": "midnight",
+                "backupCount": 10,
+            },
+            "audit_file_handler": {
+                "class": "logging.handlers.TimedRotatingFileHandler",
+                "filename": BASE_DIR / "data/log/audit.log",
+                "when": "midnight",
+                "backupCount": 10,
+            },
         },
-        "adcm_debug_file": {
-            "filters": ["require_debug_false"],
-            "formatter": "adcm",
-            "class": "logging.FileHandler",
-            "filename": BASE_DIR / "data/log/adcm_debug.log",
+        "loggers": {
+            "adcm": {
+                "handlers": ["adcm_file"],
+                "level": LOG_LEVEL,
+                "propagate": True,
+            },
+            "django": {
+                "handlers": ["adcm_debug_file"],
+                "level": LOG_LEVEL,
+                "propagate": True,
+            },
+            "background_tasks": {
+                "handlers": ["background_task_file_handler"],
+                "level": LOG_LEVEL,
+                "propagate": True,
+            },
+            "audit": {
+                "handlers": ["audit_file_handler"],
+                "level": LOG_LEVEL,
+                "propagate": True,
+            },
         },
-        "background_task_file_handler": {
-            "formatter": "adcm",
-            "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": BASE_DIR / "data/log/cron_task.log",
-            "when": "midnight",
-            "backupCount": 10,
-        },
-        "audit_file_handler": {
-            "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": BASE_DIR / "data/log/audit.log",
-            "when": "midnight",
-            "backupCount": 10,
-        },
-    },
-    "loggers": {
-        "adcm": {
-            "handlers": ["adcm_file"],
-            "level": LOG_LEVEL,
-            "propagate": True,
-        },
-        "django": {
-            "handlers": ["adcm_debug_file"],
-            "level": LOG_LEVEL,
-            "propagate": True,
-        },
-        "background_tasks": {
-            "handlers": ["background_task_file_handler"],
-            "level": LOG_LEVEL,
-            "propagate": True,
-        },
-        "audit": {
-            "handlers": ["audit_file_handler"],
-            "level": LOG_LEVEL,
-            "propagate": True,
-        },
-    },
-}
+    }
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
