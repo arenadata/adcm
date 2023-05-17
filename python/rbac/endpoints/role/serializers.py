@@ -20,11 +20,11 @@ from rest_framework.serializers import ModelSerializer
 
 class RoleChildSerializer(BaseRelatedSerializer):
     id = PrimaryKeyRelatedField(queryset=Role.objects.all())
-    url = HyperlinkedIdentityField(view_name="rbac:role-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:role-detail")
 
 
 class RoleSerializer(FlexFieldsSerializerMixin, ModelSerializer):
-    url = HyperlinkedIdentityField(view_name="rbac:role-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:role-detail")
     child = RoleChildSerializer(many=True)
     name = RegexField(r"^[^\n]*$", max_length=160, required=False, allow_blank=True)
     display_name = RegexField(r"^[^\n]*$", max_length=160, required=True)

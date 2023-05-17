@@ -56,14 +56,14 @@ class TestActionAPI(BaseTestCase):
 
     def test_retrieve(self):
         response: Response = self.client.get(
-            reverse("action-detail", kwargs={"action_pk": self.action.pk}),
+            reverse(viewname="v1:action-detail", kwargs={"action_pk": self.action.pk}),
         )
 
         self.assertEqual(response.data["id"], self.action.pk)
 
     def test_list(self):
         response: Response = self.client.get(
-            reverse("object-action", kwargs={"adcm_pk": self.adcm.pk}),
+            reverse(viewname="v1:object-action", kwargs={"adcm_pk": self.adcm.pk}),
         )
 
         action = Action.objects.create(
@@ -83,14 +83,14 @@ class TestActionAPI(BaseTestCase):
         )
         with open(file=path, encoding=settings.ENCODING_UTF_8) as f:
             response: Response = self.client.post(
-                path=reverse("upload-bundle"),
+                path=reverse(viewname="v1:upload-bundle"),
                 data={"file": f},
             )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": path.name},
         )
 
@@ -104,14 +104,14 @@ class TestActionAPI(BaseTestCase):
         )
         with open(file=path, encoding=settings.ENCODING_UTF_8) as f:
             response: Response = self.client.post(
-                path=reverse("upload-bundle"),
+                path=reverse(viewname="v1:upload-bundle"),
                 data={"file": f},
             )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": path.name},
         )
 
@@ -124,14 +124,14 @@ class TestActionAPI(BaseTestCase):
         )
         with open(file=path, encoding=settings.ENCODING_UTF_8) as f:
             response: Response = self.client.post(
-                path=reverse("upload-bundle"),
+                path=reverse(viewname="v1:upload-bundle"),
                 data={"file": f},
             )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": path.name},
         )
 
@@ -147,7 +147,7 @@ class TestActionAPI(BaseTestCase):
 
         cluster_prototype = Prototype.objects.get(bundle=bundle, type="cluster")
         cluster_response: Response = self.client.post(
-            path=reverse("cluster"),
+            path=reverse(viewname="v1:cluster"),
             data={"name": "test_cluster", "prototype_id": cluster_prototype.pk},
         )
         cluster = Cluster.objects.get(pk=cluster_response.data["id"])
@@ -161,14 +161,16 @@ class TestActionAPI(BaseTestCase):
         action.save(update_fields=["state_available"])
 
         response: Response = self.client.get(
-            path=reverse("object-action-details", kwargs={"cluster_id": cluster.pk, "action_id": action.pk}),
+            path=reverse(
+                viewname="v1:object-action-details", kwargs={"cluster_id": cluster.pk, "action_id": action.pk}
+            ),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertTrue(response.data["config"])
 
         response: Response = self.client.get(
-            path=f'{reverse("object-action", kwargs={"cluster_id": cluster.pk})}?view=interface',
+            path=f'{reverse(viewname="v1:object-action", kwargs={"cluster_id": cluster.pk})}?view=interface',
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

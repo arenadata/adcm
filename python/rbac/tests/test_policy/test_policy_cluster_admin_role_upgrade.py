@@ -44,7 +44,7 @@ class PolicyWithClusterAdminRoleUpgradeTestCase(PolicyBaseTestCase):
         )
         response: Response = self.client.post(
             path=reverse(
-                "do-cluster-upgrade",
+                viewname="v1:do-cluster-upgrade",
                 kwargs={"cluster_id": self.cluster.pk, "upgrade_id": Upgrade.objects.first().pk},
             ),
         )
@@ -54,7 +54,7 @@ class PolicyWithClusterAdminRoleUpgradeTestCase(PolicyBaseTestCase):
     def test_policy_with_cluster_admin_role_upgrade(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="object-action",
+                viewname="v1:object-action",
                 kwargs={"service_id": self.last_service_pk, "object_type": "service"},
             ),
         )
@@ -67,7 +67,7 @@ class PolicyWithClusterAdminRoleUpgradeTestCase(PolicyBaseTestCase):
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             response: Response = self.client.post(
                 path=reverse(
-                    viewname="run-task",
+                    viewname="v1:run-task",
                     kwargs={"service_id": self.last_service_pk, "action_id": action_upgrade_pk},
                 ),
                 content_type=APPLICATION_JSON,
@@ -76,14 +76,14 @@ class PolicyWithClusterAdminRoleUpgradeTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response: Response = self.client.get(
-            path=reverse(viewname="component-details", kwargs={"component_id": self.component_upgrade.pk}),
+            path=reverse(viewname="v1:component-details", kwargs={"component_id": self.component_upgrade.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response: Response = self.client.get(
             path=reverse(
-                viewname="config-current",
+                viewname="v1:config-current",
                 kwargs={"component_id": self.component_upgrade.pk, "object_type": "component", "version": "current"},
             ),
         )
@@ -92,7 +92,7 @@ class PolicyWithClusterAdminRoleUpgradeTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                viewname="config-history",
+                viewname="v1:config-history",
                 kwargs={"component_id": self.component_upgrade.pk, "object_type": "component"},
             ),
             data={"config": {"float": 3.3}},
@@ -103,7 +103,7 @@ class PolicyWithClusterAdminRoleUpgradeTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.get(
             path=reverse(
-                viewname="object-action",
+                viewname="v1:object-action",
                 kwargs={"component_id": self.component_upgrade.pk, "object_type": "component"},
             ),
         )
@@ -114,7 +114,7 @@ class PolicyWithClusterAdminRoleUpgradeTestCase(PolicyBaseTestCase):
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             response: Response = self.client.post(
                 path=reverse(
-                    viewname="run-task",
+                    viewname="v1:run-task",
                     kwargs={"component_id": self.component_upgrade.pk, "action_id": response.json()[0]["id"]},
                 ),
                 content_type=APPLICATION_JSON,

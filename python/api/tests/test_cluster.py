@@ -68,14 +68,14 @@ class TestClusterAPI(BaseTestCase):
             ),
         )
         response: Response = self.client.get(
-            path=reverse("cluster-upgrade", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-upgrade", kwargs={"cluster_id": self.cluster.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_ordering_id_success(self):
         response: Response = self.client.get(
-            path=reverse("cluster-service-prototype", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-service-prototype", kwargs={"cluster_id": self.cluster.pk}),
             data={"ordering": "id"},
         )
         response_json = response.json()
@@ -89,7 +89,7 @@ class TestClusterAPI(BaseTestCase):
 
     def test_ordering_id_reverse_success(self):
         response: Response = self.client.get(
-            path=reverse("cluster-service-prototype", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-service-prototype", kwargs={"cluster_id": self.cluster.pk}),
             data={"ordering": "-id"},
         )
         response_json = response.json()
@@ -103,7 +103,7 @@ class TestClusterAPI(BaseTestCase):
 
     def test_ordering_name_success(self):
         response: Response = self.client.get(
-            path=reverse("cluster-service-prototype", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-service-prototype", kwargs={"cluster_id": self.cluster.pk}),
             data={"ordering": "name"},
         )
         response_json = response.json()
@@ -117,7 +117,7 @@ class TestClusterAPI(BaseTestCase):
 
     def test_ordering_name_reverse_success(self):
         response: Response = self.client.get(
-            path=reverse("cluster-service-prototype", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-service-prototype", kwargs={"cluster_id": self.cluster.pk}),
             data={"ordering": "-name"},
         )
         response_json = response.json()
@@ -131,7 +131,7 @@ class TestClusterAPI(BaseTestCase):
 
     def test_ordering_display_name_success(self):
         response: Response = self.client.get(
-            path=reverse("cluster-service-prototype", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-service-prototype", kwargs={"cluster_id": self.cluster.pk}),
             data={"ordering": "display_name"},
         )
         response_json = response.json()
@@ -145,7 +145,7 @@ class TestClusterAPI(BaseTestCase):
 
     def test_ordering_display_name_reverse_success(self):
         response: Response = self.client.get(
-            path=reverse("cluster-service-prototype", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-service-prototype", kwargs={"cluster_id": self.cluster.pk}),
             data={"ordering": "-display_name"},
         )
         response_json = response.json()
@@ -159,7 +159,7 @@ class TestClusterAPI(BaseTestCase):
 
     def test_ordering_version_success(self):
         response: Response = self.client.get(
-            path=reverse("cluster-service-prototype", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-service-prototype", kwargs={"cluster_id": self.cluster.pk}),
             data={"ordering": "version"},
         )
         response_json = response.json()
@@ -173,7 +173,7 @@ class TestClusterAPI(BaseTestCase):
 
     def test_ordering_version_reverse_success(self):
         response: Response = self.client.get(
-            path=reverse("cluster-service-prototype", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-service-prototype", kwargs={"cluster_id": self.cluster.pk}),
             data={"ordering": "-version"},
         )
         response_json = response.json()

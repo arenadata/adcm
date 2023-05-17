@@ -67,7 +67,7 @@ class TestConfigLogAudit(BaseTestCase):
 
     def test_create(self):
         self.client.post(
-            path=reverse("config-log-list"),
+            path=reverse(viewname="v1:config-log-list"),
             data={"obj_ref": self.config.pk, "config": "{}"},
         )
 
@@ -83,7 +83,7 @@ class TestConfigLogAudit(BaseTestCase):
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("config-log-list"),
+                path=reverse(viewname="v1:config-log-list"),
                 data={"obj_ref": self.config.pk, "config": "{}"},
             )
 

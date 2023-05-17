@@ -88,7 +88,7 @@ class TestJob(BaseTestCase):
         bundle_id = self.upload_and_load_bundle(path=Path(self.files_dir, self.multijob_bundle)).pk
 
         return self.client.post(
-            path=reverse("cluster"),
+            path=reverse(viewname="v1:cluster"),
             data={
                 "prototype_id": Prototype.objects.get(name=self.multijob_cluster_name).pk,
                 "name": self.multijob_cluster_name,
@@ -100,7 +100,7 @@ class TestJob(BaseTestCase):
 
     def get_cluster_action(self, cluster_id: int, action_name: str) -> tuple[Response, dict | None]:
         response: Response = self.client.get(
-            path=reverse("object-action", kwargs={"cluster_id": cluster_id, "object_type": "cluster"}),
+            path=reverse(viewname="v1:object-action", kwargs={"cluster_id": cluster_id, "object_type": "cluster"}),
             content_type=APPLICATION_JSON,
         )
 
@@ -630,7 +630,7 @@ class TestJob(BaseTestCase):
 
         with patch("cm.models.os.kill") as kill_mock:
             response: Response = self.client.put(
-                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}),
+                path=reverse(viewname="v1:joblog-cancel", kwargs={"job_pk": job["id"]}),
                 content_type=APPLICATION_JSON,
             )
 
@@ -666,7 +666,7 @@ class TestJob(BaseTestCase):
 
         with patch("cm.models.os.kill") as kill_mock:
             response: Response = self.client.put(
-                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}),
+                path=reverse(viewname="v1:joblog-cancel", kwargs={"job_pk": job["id"]}),
                 content_type=APPLICATION_JSON,
             )
 
@@ -702,7 +702,7 @@ class TestJob(BaseTestCase):
 
         with patch("cm.models.os.kill") as kill_mock:
             response: Response = self.client.put(
-                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}),
+                path=reverse(viewname="v1:joblog-cancel", kwargs={"job_pk": job["id"]}),
                 content_type=APPLICATION_JSON,
             )
 
@@ -738,7 +738,7 @@ class TestJob(BaseTestCase):
 
         with patch("cm.models.os.kill") as kill_mock:
             response: Response = self.client.put(
-                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}),
+                path=reverse(viewname="v1:joblog-cancel", kwargs={"job_pk": job["id"]}),
                 content_type=APPLICATION_JSON,
             )
 
@@ -774,7 +774,7 @@ class TestJob(BaseTestCase):
 
         with patch("cm.models.os.kill") as kill_mock:
             response: Response = self.client.put(
-                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}),
+                path=reverse(viewname="v1:joblog-cancel", kwargs={"job_pk": job["id"]}),
                 content_type=APPLICATION_JSON,
             )
 
@@ -810,7 +810,7 @@ class TestJob(BaseTestCase):
 
         with patch("cm.models.os.kill") as kill_mock:
             response: Response = self.client.put(
-                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}),
+                path=reverse(viewname="v1:joblog-cancel", kwargs={"job_pk": job["id"]}),
                 content_type=APPLICATION_JSON,
             )
 
@@ -845,7 +845,7 @@ class TestJob(BaseTestCase):
 
         with patch("cm.models.os.kill") as kill_mock:
             response: Response = self.client.put(
-                path=reverse("joblog-cancel", kwargs={"job_pk": job["id"]}),
+                path=reverse(viewname="v1:joblog-cancel", kwargs={"job_pk": job["id"]}),
                 content_type=APPLICATION_JSON,
             )
 

@@ -195,7 +195,7 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
         bundle = check_obj(Bundle, kwargs["bundle_pk"], "BUNDLE_NOT_FOUND")
         proto = Prototype.objects.filter(bundle=bundle, name=bundle.name).first()
         body = get_license(proto)
-        url = reverse(viewname="accept-license", kwargs={"prototype_pk": proto.pk}, request=request)
+        url = reverse(viewname="v1:accept-license", kwargs={"prototype_pk": proto.pk}, request=request)
 
         return Response({"license": proto.license, "accept": url, "text": body})
 
@@ -241,7 +241,7 @@ class PrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
     def license(request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         prototype = check_obj(Prototype, kwargs["prototype_pk"], "PROTOTYPE_NOT_FOUND")
         body = get_license(prototype)
-        url = reverse(viewname="accept-license", kwargs={"prototype_pk": prototype.pk}, request=request)
+        url = reverse(viewname="v1:accept-license", kwargs={"prototype_pk": prototype.pk}, request=request)
 
         return Response({"license": prototype.license, "accept": url, "text": body})
 

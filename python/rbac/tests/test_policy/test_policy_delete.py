@@ -47,7 +47,7 @@ class DeletePolicyTestCase(PolicyBaseTestCase):
         cluster_perms.add("view_action")
 
         response: Response = self.client.delete(
-            path=reverse(viewname="rbac:policy-detail", kwargs={"pk": provider_policy_pk}),
+            path=reverse(viewname="v1:rbac:policy-detail", kwargs={"pk": provider_policy_pk}),
         )
 
         user_perms = {perm.codename for perm in self.new_user.user_permissions.all()}

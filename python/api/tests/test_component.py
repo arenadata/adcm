@@ -61,7 +61,7 @@ class TestComponentAPI(BaseTestCase):
 
     def test_change_maintenance_mode_wrong_name_fail(self):
         response: Response = self.client.post(
-            path=reverse("component-maintenance-mode", kwargs={"component_id": self.component.pk}),
+            path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
             data={"maintenance_mode": "wrong"},
         )
 
@@ -70,7 +70,7 @@ class TestComponentAPI(BaseTestCase):
 
     def test_change_maintenance_mode_on_no_action_success(self):
         response: Response = self.client.post(
-            path=reverse("component-maintenance-mode", kwargs={"component_id": self.component.pk}),
+            path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
         )
 
@@ -90,14 +90,14 @@ class TestComponentAPI(BaseTestCase):
 
         cluster_prototype = Prototype.objects.get(bundle=bundle, type="cluster")
         cluster_response: Response = self.client.post(
-            path=reverse("cluster"),
+            path=reverse(viewname="v1:cluster"),
             data={"name": "test-cluster", "prototype_id": cluster_prototype.pk},
         )
         cluster = Cluster.objects.get(pk=cluster_response.data["id"])
 
         service_prototype = Prototype.objects.get(bundle=bundle, type="service")
         service_response: Response = self.client.post(
-            path=reverse("service", kwargs={"cluster_id": cluster.pk}),
+            path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": service_prototype.pk},
         )
         service = ClusterObject.objects.get(pk=service_response.data["id"])
@@ -110,7 +110,7 @@ class TestComponentAPI(BaseTestCase):
         self.assertFalse(component_1.concerns.exists())
 
         response: Response = self.client.post(
-            path=reverse("component-maintenance-mode", kwargs={"component_id": component_2.pk}),
+            path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": component_2.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
         )
 
@@ -133,7 +133,7 @@ class TestComponentAPI(BaseTestCase):
 
         with patch("api.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
-                path=reverse("component-maintenance-mode", kwargs={"component_id": self.component.pk}),
+                path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
             )
 
@@ -158,7 +158,7 @@ class TestComponentAPI(BaseTestCase):
 
         with patch("api.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
-                path=reverse("component-maintenance-mode", kwargs={"component_id": self.component.pk}),
+                path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
             )
 
@@ -173,7 +173,7 @@ class TestComponentAPI(BaseTestCase):
         self.component.save()
 
         response: Response = self.client.post(
-            path=reverse("component-maintenance-mode", kwargs={"component_id": self.component.pk}),
+            path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
             data={"maintenance_mode": MaintenanceMode.OFF},
         )
 
@@ -196,7 +196,7 @@ class TestComponentAPI(BaseTestCase):
 
         with patch("api.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
-                path=reverse("component-maintenance-mode", kwargs={"component_id": self.component.pk}),
+                path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
                 data={"maintenance_mode": MaintenanceMode.OFF},
             )
 
@@ -221,7 +221,7 @@ class TestComponentAPI(BaseTestCase):
 
         with patch("api.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
-                path=reverse("component-maintenance-mode", kwargs={"component_id": self.component.pk}),
+                path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
                 data={"maintenance_mode": MaintenanceMode.OFF},
             )
 
@@ -236,14 +236,14 @@ class TestComponentAPI(BaseTestCase):
         self.component.save()
 
         response: Response = self.client.post(
-            path=reverse("component-maintenance-mode", kwargs={"component_id": self.component.pk}),
+            path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
         response: Response = self.client.post(
-            path=reverse("component-maintenance-mode", kwargs={"component_id": self.component.pk}),
+            path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
             data={"maintenance_mode": MaintenanceMode.OFF},
         )
 

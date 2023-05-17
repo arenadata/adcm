@@ -37,8 +37,8 @@ class TestRoleAudit(BaseTestCase):
             type=RoleTypes.BUSINESS,
         )
         self.role = Role.objects.create(name="test_role_2", built_in=False)
-        self.list_name = "rbac:role-list"
-        self.detail_name = "rbac:role-detail"
+        self.list_name = "v1:rbac:role-list"
+        self.detail_name = "v1:rbac:role-detail"
         self.role_created_str = "Role created"
         self.role_updated_str = "Role updated"
 
@@ -93,7 +93,7 @@ class TestRoleAudit(BaseTestCase):
 
     def test_create(self):
         response: Response = self.client.post(
-            path=reverse(self.list_name),
+            path=reverse(viewname=self.list_name),
             data={
                 "display_name": self.role_display_name,
                 "child": [{"id": self.child.pk}],
@@ -114,7 +114,7 @@ class TestRoleAudit(BaseTestCase):
         )
 
         self.client.post(
-            path=reverse(self.list_name),
+            path=reverse(viewname=self.list_name),
             data={
                 "display_name": self.role_display_name,
                 "child": [{"id": self.child.pk}],
@@ -136,7 +136,7 @@ class TestRoleAudit(BaseTestCase):
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse(self.list_name),
+                path=reverse(viewname=self.list_name),
                 data={
                     "display_name": self.role_display_name,
                     "child": [{"id": self.child.pk}],
@@ -158,7 +158,7 @@ class TestRoleAudit(BaseTestCase):
 
     def test_delete(self):
         self.client.delete(
-            path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
+            path=reverse(viewname=self.detail_name, kwargs={"pk": self.role.pk}),
             content_type=APPLICATION_JSON,
         )
 
@@ -176,7 +176,7 @@ class TestRoleAudit(BaseTestCase):
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
+                path=reverse(viewname=self.detail_name, kwargs={"pk": self.role.pk}),
                 content_type=APPLICATION_JSON,
             )
 
@@ -196,7 +196,7 @@ class TestRoleAudit(BaseTestCase):
         new_display_name = "new_display_name"
         prev_display_name = self.role.display_name
         self.client.put(
-            path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
+            path=reverse(viewname=self.detail_name, kwargs={"pk": self.role.pk}),
             data={
                 "display_name": new_display_name,
                 "child": [{"id": self.child.pk}],
@@ -220,7 +220,7 @@ class TestRoleAudit(BaseTestCase):
     def test_update_put_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.put(
-                path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
+                path=reverse(viewname=self.detail_name, kwargs={"pk": self.role.pk}),
                 data={
                     "display_name": "new_display_name",
                     "child": [{"id": self.child.pk}],
@@ -242,7 +242,7 @@ class TestRoleAudit(BaseTestCase):
         new_display_name = "new_display_name"
         prev_display_name = self.role.display_name
         self.client.patch(
-            path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
+            path=reverse(viewname=self.detail_name, kwargs={"pk": self.role.pk}),
             data={
                 "display_name": "new_display_name",
                 "child": [{"id": self.child.pk}],
@@ -266,7 +266,7 @@ class TestRoleAudit(BaseTestCase):
     def test_update_patch_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
-                path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
+                path=reverse(viewname=self.detail_name, kwargs={"pk": self.role.pk}),
                 data={
                     "display_name": "new_display_name",
                     "child": [{"id": self.child.pk}],
@@ -286,7 +286,7 @@ class TestRoleAudit(BaseTestCase):
 
     def test_update_patch_failed(self):
         response: Response = self.client.patch(
-            path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
+            path=reverse(viewname=self.detail_name, kwargs={"pk": self.role.pk}),
             data={
                 "display_name": "new_display_name",
                 "child": [{"id": -1}],

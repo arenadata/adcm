@@ -18,7 +18,7 @@ from rest_framework.serializers import HyperlinkedIdentityField, ModelSerializer
 
 
 class ConfigLogSerializer(ModelSerializer):
-    url = HyperlinkedIdentityField(view_name="config-log-detail")
+    url = HyperlinkedIdentityField(view_name="v1:config-log-detail")
 
     class Meta:
         model = ConfigLog

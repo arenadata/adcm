@@ -88,22 +88,22 @@ class GroupConfigsHyperlinkedIdentityField(serializers.HyperlinkedIdentityField)
 
 class GroupConfigSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
     object_type = ObjectTypeField()
-    url = serializers.HyperlinkedIdentityField(view_name="group-config-detail")
+    url = serializers.HyperlinkedIdentityField(view_name="v1:group-config-detail")
     hosts = serializers.HyperlinkedRelatedField(
-        view_name="group-config-host-list",
+        view_name="v1:group-config-host-list",
         read_only=True,
         lookup_url_kwarg="parent_lookup_group_config",
         source="*",
     )
     config = MultiHyperlinkedRelatedField(
-        "group-config-config-detail",
+        "v1:group-config-config-detail",
         "parent_lookup_group_config",
         lookup_field="config_id",
         lookup_url_kwarg="pk",
         source="*",
     )
     host_candidate = serializers.HyperlinkedRelatedField(
-        view_name="group-config-host-candidate-list",
+        view_name="v1:group-config-host-candidate-list",
         read_only=True,
         lookup_url_kwarg="parent_lookup_group_config",
         source="*",
@@ -143,7 +143,7 @@ class GroupConfigSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializ
 
 class GroupConfigHostSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Host.objects.all())
-    url = MultiHyperlinkedIdentityField("group-config-host-detail", "parent_lookup_group_config", "host_id")
+    url = MultiHyperlinkedIdentityField("v1:group-config-host-detail", "parent_lookup_group_config", "host_id")
 
     class Meta:
         model = Host
@@ -176,12 +176,14 @@ class GroupConfigHostSerializer(serializers.ModelSerializer):
 class GroupConfigHostCandidateSerializer(GroupConfigHostSerializer):
     """Serializer for host candidate"""
 
-    url = MultiHyperlinkedIdentityField("group-config-host-candidate-detail", "parent_lookup_group_config", "host_id")
+    url = MultiHyperlinkedIdentityField(
+        "v1:group-config-host-candidate-detail", "parent_lookup_group_config", "host_id"
+    )
 
 
 class GroupConfigConfigSerializer(serializers.ModelSerializer):
     current = MultiHyperlinkedRelatedField(
-        "group-config-config-log-detail",
+        "v1:group-config-config-log-detail",
         "parent_lookup_obj_ref__group_config",
         "parent_lookup_obj_ref",
         lookup_field="current",
@@ -190,7 +192,7 @@ class GroupConfigConfigSerializer(serializers.ModelSerializer):
     )
     current_id = serializers.IntegerField(source="current")
     previous = MultiHyperlinkedRelatedField(
-        "group-config-config-log-detail",
+        "v1:group-config-config-log-detail",
         "parent_lookup_obj_ref__group_config",
         "parent_lookup_obj_ref",
         lookup_field="previous",
@@ -199,7 +201,7 @@ class GroupConfigConfigSerializer(serializers.ModelSerializer):
     )
     previous_id = serializers.IntegerField(source="previous")
     history = serializers.SerializerMethodField()
-    url = MultiHyperlinkedIdentityField("group-config-config-detail", "parent_lookup_group_config", "pk")
+    url = MultiHyperlinkedIdentityField("v1:group-config-config-detail", "parent_lookup_group_config", "pk")
 
     class Meta:
         model = ObjectConfig
@@ -220,7 +222,7 @@ class GroupConfigConfigSerializer(serializers.ModelSerializer):
 
 class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
     url = MultiHyperlinkedRelatedField(
-        "group-config-config-log-detail",
+        "v1:group-config-config-log-detail",
         "parent_lookup_obj_ref__group_config",
         "parent_lookup_obj_ref",
         source="*",

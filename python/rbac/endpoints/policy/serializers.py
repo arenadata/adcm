@@ -89,21 +89,21 @@ class ObjectField(JSONField):
 
 class PolicyRoleSerializer(BaseRelatedSerializer):
     id = PrimaryKeyRelatedField(queryset=Role.objects.all())
-    url = HyperlinkedIdentityField(view_name="rbac:role-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:role-detail")
 
 
 class PolicyUserSerializer(BaseRelatedSerializer):
     id = PrimaryKeyRelatedField(queryset=User.objects.all())
-    url = HyperlinkedIdentityField(view_name="rbac:user-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:user-detail")
 
 
 class PolicyGroupSerializer(BaseRelatedSerializer):
     id = PrimaryKeyRelatedField(queryset=Group.objects.all())
-    url = HyperlinkedIdentityField(view_name="rbac:group-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:group-detail")
 
 
 class PolicySerializer(FlexFieldsSerializerMixin, ModelSerializer):
-    url = HyperlinkedIdentityField(view_name="rbac:policy-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:policy-detail")
     name = RegexField(r"^[^\n]*$", max_length=160)
     object = ObjectField(required=True)
     built_in = BooleanField(read_only=True)

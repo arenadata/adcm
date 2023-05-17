@@ -57,7 +57,7 @@ class HostSerializer(EmptySerializer):
     state = CharField(read_only=True)
     maintenance_mode = ChoiceField(choices=MaintenanceMode.choices, read_only=True)
     is_maintenance_mode_available = BooleanField(read_only=True)
-    url = ObjectURL(read_only=True, view_name="host-details")
+    url = ObjectURL(read_only=True, view_name="v1:host-details")
 
     @staticmethod
     def validate_prototype_id(prototype_id):
@@ -79,10 +79,10 @@ class HostSerializer(EmptySerializer):
 class HostDetailSerializer(HostSerializer):
     bundle_id = IntegerField(read_only=True)
     status = SerializerMethodField()
-    config = CommonAPIURL(view_name="object-config")
-    action = CommonAPIURL(view_name="object-action")
+    config = CommonAPIURL(view_name="v1:object-config")
+    action = CommonAPIURL(view_name="v1:object-action")
     prototype = HyperlinkedIdentityField(
-        view_name="host-prototype-detail",
+        view_name="v1:host-prototype-detail",
         lookup_field="pk",
         lookup_url_kwarg="prototype_pk",
     )
@@ -158,7 +158,7 @@ class HostStatusSerializer(EmptySerializer):
 
 
 class HostUISerializer(HostSerializer):
-    action = CommonAPIURL(view_name="object-action")
+    action = CommonAPIURL(view_name="v1:object-action")
     cluster_name = SerializerMethodField()
     prototype_version = SerializerMethodField()
     prototype_name = SerializerMethodField()

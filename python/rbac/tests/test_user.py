@@ -43,7 +43,7 @@ class BaseUserTestCase(BaseTestCase):
 class UserTestCase(BaseUserTestCase):
     def test_create_success(self):
         response: Response = self.client.post(
-            reverse("rbac:user-list"),
+            path=reverse(viewname="v1:rbac:user-list"),
             data={
                 "username": "test_user_new",
                 "password": self.get_random_str_num(
@@ -55,7 +55,9 @@ class UserTestCase(BaseUserTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     def test_filter_success(self):
-        response: Response = self.client.get(reverse("rbac:user-list"), {"type": OriginType.LOCAL})
+        response: Response = self.client.get(
+            path=reverse(viewname="v1:rbac:user-list"), data={"type": OriginType.LOCAL}
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 5)
@@ -63,20 +65,22 @@ class UserTestCase(BaseUserTestCase):
         self.test_user.type = OriginType.LDAP
         self.test_user.save(update_fields=["type"])
 
-        response: Response = self.client.get(reverse("rbac:user-list"), {"type": OriginType.LOCAL})
+        response: Response = self.client.get(
+            path=reverse(viewname="v1:rbac:user-list"), data={"type": OriginType.LOCAL}
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 4)
 
     def test_failed_login_attempts(self):
-        self.client.post(path=reverse("rbac:logout"))
+        self.client.post(path=reverse(viewname="v1:rbac:logout"))
 
         self.config_log.config["auth_policy"]["login_attempt_limit"] = 2
         self.config_log.config["auth_policy"]["block_time"] = 1
         self.config_log.save(update_fields=["config"])
 
         response: Response = self.client.post(
-            path=reverse("rbac:token"),
+            path=reverse(viewname="v1:rbac:token"),
             data={"username": self.test_user_username, "password": "wrong_password"},
         )
 
@@ -87,7 +91,7 @@ class UserTestCase(BaseUserTestCase):
         self.assertIsNone(self.test_user.blocked_at)
 
         response: Response = self.client.post(
-            path=reverse("rbac:token"),
+            path=reverse(viewname="v1:rbac:token"),
             data={"username": self.test_user_username, "password": "wrong_password"},
         )
 
@@ -98,7 +102,7 @@ class UserTestCase(BaseUserTestCase):
         self.assertIsNotNone(self.test_user.blocked_at)
 
         response: Response = self.client.post(
-            path=reverse("rbac:token"),
+            path=reverse(viewname="v1:rbac:token"),
             data={"username": self.test_user_username, "password": "wrong_password"},
         )
 
@@ -115,7 +119,7 @@ class UserTestCase(BaseUserTestCase):
         self.test_user.save(update_fields=["blocked_at"])
 
         response: Response = self.client.post(
-            path=reverse("rbac:token"),
+            path=reverse(viewname="v1:rbac:token"),
             data={"username": self.test_user_username, "password": "wrong_password"},
         )
 
@@ -130,7 +134,7 @@ class UserTestCase(BaseUserTestCase):
         self.test_user.save(update_fields=["blocked_at"])
 
         response: Response = self.client.post(
-            path=reverse("rbac:token"),
+            path=reverse(viewname="v1:rbac:token"),
             data={"username": self.test_user_username, "password": self.test_user_password},
         )
 
@@ -141,10 +145,10 @@ class UserTestCase(BaseUserTestCase):
         self.assertIsNone(self.test_user.blocked_at)
 
     def test_reset_failed_login_attempts_not_superuser_fail(self):
-        self.client.post(path=reverse("rbac:logout"))
+        self.client.post(path=reverse(viewname="v1:rbac:logout"))
 
         response: Response = self.client.post(
-            path=reverse("rbac:token"),
+            path=reverse(viewname="v1:rbac:token"),
             data={"username": self.test_user_username, "password": "wrong_password"},
         )
 
@@ -158,7 +162,7 @@ class UserTestCase(BaseUserTestCase):
             Permission.objects.get(codename="add_user", content_type=ContentType.objects.get_for_model(User)),
         )
         response: Response = self.client.post(
-            path=reverse("rbac:token"),
+            path=reverse(viewname="v1:rbac:token"),
             data={
                 "username": self.no_rights_user_username,
                 "password": self.no_rights_user_password,
@@ -169,7 +173,7 @@ class UserTestCase(BaseUserTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response: Response = self.client.post(
-            path=reverse("rbac:user-reset-failed-login-attempts", kwargs={"pk": self.test_user.pk}),
+            path=reverse(viewname="v1:rbac:user-reset-failed-login-attempts", kwargs={"pk": self.test_user.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -183,17 +187,17 @@ class UserTestCase(BaseUserTestCase):
     def test_reset_failed_login_attempts_wrong_user_fail(self):
         user_pks = User.objects.all().values_list("pk", flat=True).order_by("-pk")
         response: Response = self.client.post(
-            path=reverse("rbac:user-reset-failed-login-attempts", kwargs={"pk": user_pks[0] + 1}),
+            path=reverse(viewname="v1:rbac:user-reset-failed-login-attempts", kwargs={"pk": user_pks[0] + 1}),
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["error"], f"User with ID {user_pks[0] + 1} was not found.")
 
     def test_reset_failed_login_attempts_success(self):
-        self.client.post(path=reverse("rbac:logout"))
+        self.client.post(path=reverse(viewname="v1:rbac:logout"))
 
         response: Response = self.client.post(
-            path=reverse("rbac:token"),
+            path=reverse(viewname="v1:rbac:token"),
             data={"username": self.test_user_username, "password": "wrong_password"},
         )
 
@@ -206,7 +210,7 @@ class UserTestCase(BaseUserTestCase):
         self.login()
 
         response: Response = self.client.post(
-            path=reverse("rbac:user-reset-failed-login-attempts", kwargs={"pk": self.test_user.pk}),
+            path=reverse(viewname="v1:rbac:user-reset-failed-login-attempts", kwargs={"pk": self.test_user.pk}),
         )
 
         self.test_user.refresh_from_db()
@@ -220,7 +224,7 @@ class UserTestCase(BaseUserTestCase):
         self.test_user.save(update_fields=["type"])
 
         response: Response = self.client.patch(
-            reverse(viewname="rbac:me"),
+            reverse(viewname="v1:rbac:me"),
             data={"profile": {"test_profile_key": "test_profile_value"}},
             content_type=APPLICATION_JSON,
         )
@@ -232,7 +236,7 @@ class UserTestCase(BaseUserTestCase):
         self.test_user.save(update_fields=["type"])
 
         response: Response = self.client.patch(
-            reverse(viewname="rbac:user-detail", kwargs={"pk": self.test_user.pk}),
+            reverse(viewname="v1:rbac:user-detail", kwargs={"pk": self.test_user.pk}),
             data={"profile": {"test_profile_key": "test_profile_value"}},
             content_type=APPLICATION_JSON,
         )
@@ -243,7 +247,7 @@ class UserTestCase(BaseUserTestCase):
 class UserPasswordTestCase(BaseUserTestCase):
     def test_create_shorter_than_min_password_fail(self):
         response: Response = self.client.post(
-            reverse("rbac:user-list"),
+            path=reverse(viewname="v1:rbac:user-list"),
             data={
                 "username": "test_user_new",
                 "password": self.get_random_str_num(
@@ -257,7 +261,7 @@ class UserPasswordTestCase(BaseUserTestCase):
 
     def test_create_longer_than_max_password_fail(self):
         response: Response = self.client.post(
-            reverse("rbac:user-list"),
+            path=reverse(viewname="v1:rbac:user-list"),
             data={
                 "username": "test_user_new",
                 "password": self.get_random_str_num(
@@ -271,7 +275,7 @@ class UserPasswordTestCase(BaseUserTestCase):
 
     def test_update_longer_than_max_password_fail(self):
         response: Response = self.client.patch(
-            reverse("rbac:user-detail", kwargs={"pk": self.test_user.pk}),
+            path=reverse(viewname="v1:rbac:user-detail", kwargs={"pk": self.test_user.pk}),
             data={
                 "password": self.get_random_str_num(
                     length=self.config_log.config["auth_policy"]["max_password_length"] + 1,
@@ -285,7 +289,7 @@ class UserPasswordTestCase(BaseUserTestCase):
 
     def test_update_password_success(self):
         response: Response = self.client.patch(
-            reverse("rbac:user-detail", kwargs={"pk": self.test_user.pk}),
+            path=reverse(viewname="v1:rbac:user-detail", kwargs={"pk": self.test_user.pk}),
             data={
                 "password": self.get_random_str_num(
                     length=self.config_log.config["auth_policy"]["max_password_length"] - 1,
@@ -302,7 +306,7 @@ class UserPasswordTestCase(BaseUserTestCase):
         self.test_user.save(update_fields=["is_superuser"])
 
         response: Response = self.client.patch(
-            reverse("rbac:me"),
+            path=reverse(viewname="v1:rbac:me"),
             data={"password": "new_pass"},
             content_type=APPLICATION_JSON,
         )
@@ -316,7 +320,7 @@ class UserPasswordTestCase(BaseUserTestCase):
     def test_change_password_success(self):
         new_pass = "new_very_long_pass"
         response: Response = self.client.patch(
-            reverse(viewname="rbac:me"),
+            path=reverse(viewname="v1:rbac:me"),
             data={"password": new_pass, "current_password": self.test_user_password},
             content_type=APPLICATION_JSON,
         )
@@ -324,7 +328,7 @@ class UserPasswordTestCase(BaseUserTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response: Response = self.client.post(
-            reverse(viewname="token"),
+            path=reverse(viewname="v1:token"),
             data={"username": self.test_user_username, "password": new_pass},
         )
 
@@ -337,7 +341,7 @@ class UserPasswordTestCase(BaseUserTestCase):
         config_log.config["global"]["adcm_url"] = "http://127.0.0.1:8000"
 
         response: Response = self.client.post(
-            path=reverse("config-history", kwargs={"adcm_pk": adcm.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"adcm_pk": adcm.pk}),
             params={"view": "interface"},
             data={"config": config_log.config, "attr": config_log.attr},
             content_type=APPLICATION_JSON,
@@ -346,7 +350,7 @@ class UserPasswordTestCase(BaseUserTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response: Response = self.client.post(
-            reverse("rbac:user-list"),
+            path=reverse(viewname="v1:rbac:user-list"),
             data={
                 "username": "test_config_username",
                 "password": "test_pass",
@@ -365,7 +369,7 @@ class UserPasswordTestCase(BaseUserTestCase):
 
         new_pass = "new_pass"
         response: Response = self.client.patch(
-            reverse(viewname="rbac:me"),
+            path=reverse(viewname="v1:rbac:me"),
             data={"password": new_pass, "current_password": self.test_user_password},
             content_type=APPLICATION_JSON,
         )
@@ -379,7 +383,7 @@ class UserPasswordTestCase(BaseUserTestCase):
 
         new_pass = "new_very_long_pass"
         response: Response = self.client.patch(
-            reverse(viewname="rbac:user-detail", kwargs={"pk": self.test_user.pk}),
+            path=reverse(viewname="v1:rbac:user-detail", kwargs={"pk": self.test_user.pk}),
             data={"password": new_pass},
             content_type=APPLICATION_JSON,
         )
@@ -390,7 +394,7 @@ class UserPasswordTestCase(BaseUserTestCase):
     def test_admin_change_password_user_via_user_endpoint_success(self):
         new_pass = "new_very_long_pass"
         response: Response = self.client.patch(
-            reverse(viewname="rbac:user-detail", kwargs={"pk": self.test_user.pk}),
+            path=reverse(viewname="v1:rbac:user-detail", kwargs={"pk": self.test_user.pk}),
             data={"password": new_pass},
             content_type=APPLICATION_JSON,
         )
@@ -399,7 +403,7 @@ class UserPasswordTestCase(BaseUserTestCase):
 
     def test_update_shorter_than_min_password_fail(self):
         response: Response = self.client.patch(
-            reverse("rbac:me"),
+            path=reverse(viewname="v1:rbac:me"),
             data={
                 "password": self.get_random_str_num(
                     length=self.config_log.config["auth_policy"]["min_password_length"] - 1,

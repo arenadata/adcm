@@ -125,7 +125,7 @@ class LoginMiddleware:
         if request.method == "POST" and request.path in {
             "/api/v1/rbac/token/",
             "/api/v1/token/",
-            "/api/v1/auth/login/",
+            "/auth/login/",
         }:
             try:
                 username = json.loads(request.body.decode(settings.ENCODING_UTF_8)).get("username")

@@ -43,19 +43,19 @@ class ComponentSerializer(EmptySerializer):
     description = CharField(read_only=True)
     state = CharField(read_only=True)
     prototype_id = IntegerField(required=True, help_text="id of component prototype")
-    url = ObjectURL(read_only=True, view_name="component-details")
+    url = ObjectURL(read_only=True, view_name="v1:component-details")
     maintenance_mode = CharField(read_only=True)
     is_maintenance_mode_available = BooleanField(read_only=True)
 
 
 class ComponentUISerializer(ComponentSerializer):
-    action = CommonAPIURL(read_only=True, view_name="object-action")
+    action = CommonAPIURL(read_only=True, view_name="v1:object-action")
     version = SerializerMethodField()
     status = SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
     hostcomponent = HyperlinkedIdentityField(
-        view_name="host-component", lookup_field="cluster_id", lookup_url_kwarg="cluster_id"
+        view_name="v1:host-component", lookup_field="cluster_id", lookup_url_kwarg="cluster_id"
     )
 
     @staticmethod
@@ -73,7 +73,7 @@ class ComponentShortSerializer(ComponentSerializer):
     bound_to = JSONField(read_only=True)
     bundle_id = IntegerField(read_only=True)
     prototype = HyperlinkedIdentityField(
-        view_name="component-prototype-detail",
+        view_name="v1:component-prototype-detail",
         lookup_field="pk",
         lookup_url_kwarg="prototype_pk",
     )
@@ -86,17 +86,17 @@ class ComponentDetailSerializer(ComponentSerializer):
     bundle_id = IntegerField(read_only=True)
     monitoring = CharField(read_only=True)
     status = SerializerMethodField()
-    action = CommonAPIURL(read_only=True, view_name="object-action")
-    config = CommonAPIURL(read_only=True, view_name="object-config")
+    action = CommonAPIURL(read_only=True, view_name="v1:object-action")
+    config = CommonAPIURL(read_only=True, view_name="v1:object-config")
     prototype = HyperlinkedIdentityField(
-        view_name="component-prototype-detail",
+        view_name="v1:component-prototype-detail",
         lookup_field="pk",
         lookup_url_kwarg="prototype_pk",
     )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
-    group_config = GroupConfigsHyperlinkedIdentityField(view_name="group-config-list")
+    group_config = GroupConfigsHyperlinkedIdentityField(view_name="v1:group-config-list")
 
     @staticmethod
     def get_status(obj: ServiceComponent) -> int:
@@ -119,7 +119,7 @@ class ComponentDetailUISerializer(ComponentDetailSerializer):
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     main_info = SerializerMethodField()
     hostcomponent = HyperlinkedIdentityField(
-        view_name="host-component", lookup_field="cluster_id", lookup_url_kwarg="cluster_id"
+        view_name="v1:host-component", lookup_field="cluster_id", lookup_url_kwarg="cluster_id"
     )
 
     def get_actions(self, obj):

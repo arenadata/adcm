@@ -62,7 +62,7 @@ class RemoveUserFromPolicyTestCase(PolicyBaseTestCase):
 
     def test_remove_user_from_policy(self):
         response: Response = self.client.patch(
-            path=reverse(viewname="rbac:policy-detail", kwargs={"pk": self.edit_cluster_config_policy_pk}),
+            path=reverse(viewname="v1:rbac:policy-detail", kwargs={"pk": self.edit_cluster_config_policy_pk}),
             data={
                 "user": [{"id": self.new_user_2.pk}],
                 "object": [{"name": self.cluster.name, "type": ObjectType.CLUSTER, "id": self.cluster.pk}],
@@ -73,7 +73,7 @@ class RemoveUserFromPolicyTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response: Response = self.client.patch(
-            path=reverse(viewname="rbac:policy-detail", kwargs={"pk": self.edit_service_config_policy_pk}),
+            path=reverse(viewname="v1:rbac:policy-detail", kwargs={"pk": self.edit_service_config_policy_pk}),
             data={
                 "user": [{"id": self.new_user.pk}],
                 "object": [{"name": self.service.name, "type": ObjectType.SERVICE, "id": self.service.pk}],

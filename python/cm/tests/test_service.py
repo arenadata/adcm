@@ -40,7 +40,9 @@ class TestService(BaseTestCase):
     def test_delete(self):
         self.service.state = "updated"
         self.service.save(update_fields=["state"])
-        url = reverse("service-details", kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk})
+        url = reverse(
+            viewname="v1:service-details", kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk}
+        )
 
         response: Response = self.client.delete(path=url, content_type=APPLICATION_JSON)
 
@@ -136,7 +138,7 @@ class TestService(BaseTestCase):
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.ON)
 
         self.client.post(
-            path=reverse("component-maintenance-mode", kwargs={"component_id": component_2.pk}),
+            path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": component_2.pk}),
             data={"maintenance_mode": MaintenanceMode.OFF},
             content_type=APPLICATION_JSON,
         )

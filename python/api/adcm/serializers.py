@@ -36,8 +36,8 @@ class ADCMRetrieveSerializer(HyperlinkedModelSerializer):
     )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
-    action = HyperlinkedIdentityField(view_name="object-action", lookup_url_kwarg="adcm_pk")
-    config = HyperlinkedIdentityField(view_name="object-config", lookup_url_kwarg="adcm_pk")
+    action = HyperlinkedIdentityField(view_name="v1:object-action", lookup_url_kwarg="adcm_pk")
+    config = HyperlinkedIdentityField(view_name="v1:object-config", lookup_url_kwarg="adcm_pk")
 
     class Meta:
         model = ADCM
@@ -65,8 +65,8 @@ class ADCMUISerializer(HyperlinkedModelSerializer):
     )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
-    action = HyperlinkedIdentityField(view_name="object-action", lookup_url_kwarg="adcm_pk")
-    config = HyperlinkedIdentityField(view_name="object-config", lookup_url_kwarg="adcm_pk")
+    action = HyperlinkedIdentityField(view_name="v1:object-action", lookup_url_kwarg="adcm_pk")
+    config = HyperlinkedIdentityField(view_name="v1:object-config", lookup_url_kwarg="adcm_pk")
     main_info = SerializerMethodField()
 
     class Meta:

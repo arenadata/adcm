@@ -93,7 +93,7 @@ class BaseTestCase(TestCase):
 
     def login(self):
         response: Response = self.client.post(
-            path=reverse("rbac:token"),
+            path=reverse(viewname="v1:rbac:token"),
             data={"username": self.test_user_username, "password": self.test_user_password},
             content_type=APPLICATION_JSON,
         )
@@ -102,9 +102,9 @@ class BaseTestCase(TestCase):
     @property
     @contextmanager
     def no_rights_user_logged_in(self):
-        self.client.post(path=reverse("rbac:logout"))
+        self.client.post(path=reverse(viewname="v1:rbac:logout"))
         response: Response = self.client.post(
-            path=reverse("rbac:token"),
+            path=reverse(viewname="v1:rbac:token"),
             data={
                 "username": self.no_rights_user_username,
                 "password": self.no_rights_user_password,
@@ -119,9 +119,9 @@ class BaseTestCase(TestCase):
 
     @contextmanager
     def another_user_logged_in(self, username: str, password: str):
-        self.client.post(path=reverse("rbac:logout"))
+        self.client.post(path=reverse(viewname="v1:rbac:logout"))
         response: Response = self.client.post(
-            path=reverse("rbac:token"),
+            path=reverse(viewname="v1:rbac:token"),
             data={
                 "username": username,
                 "password": password,
@@ -135,9 +135,9 @@ class BaseTestCase(TestCase):
         self.login()
 
     def another_user_log_in(self, username: str, password: str):
-        self.client.post(path=reverse("rbac:logout"))
+        self.client.post(path=reverse(viewname="v1:rbac:logout"))
         response: Response = self.client.post(
-            path=reverse("rbac:token"),
+            path=reverse(viewname="v1:rbac:token"),
             data={
                 "username": username,
                 "password": password,
@@ -152,7 +152,7 @@ class BaseTestCase(TestCase):
             data["group"] = [{"id": group_pk}]
 
         response: Response = self.client.post(
-            path=reverse(viewname="rbac:user-list"),
+            path=reverse(viewname="v1:rbac:user-list"),
             data=data,
             content_type=APPLICATION_JSON,
         )
@@ -163,7 +163,7 @@ class BaseTestCase(TestCase):
 
     def get_role_data(self, role_name: str) -> dict:
         response: Response = self.client.get(
-            path=reverse(viewname="rbac:role-list"),
+            path=reverse(viewname="v1:rbac:role-list"),
             data={"name": role_name, "type": "role", "view": "interface"},
             content_type=APPLICATION_JSON,
         )
@@ -182,7 +182,7 @@ class BaseTestCase(TestCase):
         role_data = self.get_role_data(role_name=role_name)
 
         response: Response = self.client.post(
-            path=reverse(viewname="rbac:policy-list"),
+            path=reverse(viewname="v1:rbac:policy-list"),
             data={
                 "name": f"test_policy_{obj.prototype.type}_{obj.pk}_admin",
                 "role": {"id": role_data["id"]},
@@ -212,7 +212,7 @@ class BaseTestCase(TestCase):
         }
         for child_name in children_names:
             response: Response = self.client.get(
-                path=reverse(viewname="rbac:role-list"),
+                path=reverse(viewname="v1:rbac:role-list"),
                 data={"name": child_name},
                 content_type=APPLICATION_JSON,
             )
@@ -222,7 +222,7 @@ class BaseTestCase(TestCase):
             request_data["child"].append({"id": response.json()["results"][0]["id"]})
 
         response: Response = self.client.post(
-            path=reverse("rbac:role-list"),
+            path=reverse(viewname="v1:rbac:role-list"),
             data=request_data,
             content_type=APPLICATION_JSON,
         )
@@ -234,7 +234,7 @@ class BaseTestCase(TestCase):
     def upload_bundle(self, path: Path) -> None:
         with open(path, encoding=settings.ENCODING_UTF_8) as f:
             response: Response = self.client.post(
-                path=reverse("upload-bundle"),
+                path=reverse(viewname="v1:upload-bundle"),
                 data={"file": f},
             )
 
@@ -242,7 +242,7 @@ class BaseTestCase(TestCase):
 
     def load_bundle(self, path: Path) -> Bundle:
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": path.name},
         )
 
@@ -257,7 +257,7 @@ class BaseTestCase(TestCase):
 
     def create_cluster(self, bundle_pk: int, name: str) -> Cluster:
         response: Response = self.client.post(
-            path=reverse(viewname="cluster"),
+            path=reverse(viewname="v1:cluster"),
             data={
                 "prototype_id": Prototype.objects.get(bundle_id=bundle_pk, type=ObjectType.CLUSTER).pk,
                 "name": name,
@@ -273,7 +273,7 @@ class BaseTestCase(TestCase):
 
     def create_service(self, cluster_pk: int, name: str) -> ClusterObject:
         response = self.client.post(
-            path=reverse(viewname="service", kwargs={"cluster_id": cluster_pk}),
+            path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster_pk}),
             data={"prototype_id": Prototype.objects.get(name=name).pk},
             content_type=APPLICATION_JSON,
         )
@@ -294,7 +294,7 @@ class BaseTestCase(TestCase):
         bundle = self.upload_and_load_bundle(path=bundle_path)
 
         response: Response = self.client.post(
-            path=reverse(viewname="provider"),
+            path=reverse(viewname="v1:provider"),
             data={
                 "prototype_id": Prototype.objects.get(bundle=bundle, type=ObjectType.PROVIDER).pk,
                 "name": name,
@@ -310,7 +310,7 @@ class BaseTestCase(TestCase):
 
     def create_host_in_cluster(self, provider_pk: int, name: str, cluster_pk: int) -> Host:
         response: Response = self.client.post(
-            path=reverse(viewname="host", kwargs={"provider_id": provider_pk}),
+            path=reverse(viewname="v1:host", kwargs={"provider_id": provider_pk}),
             data={"fqdn": name},
             content_type=APPLICATION_JSON,
         )
@@ -320,7 +320,7 @@ class BaseTestCase(TestCase):
         host = Host.objects.get(pk=response.json()["id"])
 
         response: Response = self.client.post(
-            path=reverse(viewname="host", kwargs={"cluster_id": cluster_pk}),
+            path=reverse(viewname="v1:host", kwargs={"cluster_id": cluster_pk}),
             data={"host_id": host.pk},
             content_type=APPLICATION_JSON,
         )
@@ -331,7 +331,7 @@ class BaseTestCase(TestCase):
 
     def add_host_to_cluster(self, cluster_pk: int, host_pk: int) -> None:
         response: Response = self.client.post(
-            path=reverse(viewname="host", kwargs={"cluster_id": cluster_pk}),
+            path=reverse(viewname="v1:host", kwargs={"cluster_id": cluster_pk}),
             data={"host_id": host_pk},
             content_type=APPLICATION_JSON,
         )
@@ -348,7 +348,7 @@ class BaseTestCase(TestCase):
 
     def create_hostcomponent(self, cluster_pk: int, hostcomponent_data: list[dict[str, int]]):
         response: Response = self.client.post(
-            path=reverse(viewname="host-component", kwargs={"cluster_id": cluster_pk}),
+            path=reverse(viewname="v1:host-component", kwargs={"cluster_id": cluster_pk}),
             data={"cluster_id": cluster_pk, "hc": hostcomponent_data},
             content_type=APPLICATION_JSON,
         )

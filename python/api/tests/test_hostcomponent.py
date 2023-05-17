@@ -43,7 +43,7 @@ class TestHostComponentOrdering(BaseTestCase):
 
         match entity_type:
             case ObjectType.CLUSTER:
-                viewname = "cluster"
+                viewname = "v1:cluster"
                 data = {
                     "prototype_id": Prototype.objects.get(type=ObjectType.CLUSTER).pk,
                     "name": "Test cluster name",
@@ -51,7 +51,7 @@ class TestHostComponentOrdering(BaseTestCase):
                     "bundle_id": bundle.pk,
                 }
             case ObjectType.PROVIDER:
-                viewname = "provider"
+                viewname = "v1:provider"
                 data = {
                     "prototype_id": Prototype.objects.get(type=ObjectType.PROVIDER).pk,
                     "name": "Test provider name",
@@ -59,7 +59,7 @@ class TestHostComponentOrdering(BaseTestCase):
                     "bundle_id": bundle.pk,
                 }
             case ObjectType.SERVICE:
-                viewname = "service"
+                viewname = "v1:service"
                 data = {"prototype_id": Prototype.objects.get(type=ObjectType.SERVICE).pk}
 
         response: Response = self.client.post(
@@ -80,7 +80,7 @@ class TestHostComponentOrdering(BaseTestCase):
 
         for host_num in range(count):
             response: Response = self.client.post(
-                path=reverse(viewname="host", kwargs={"provider_id": provider_pk}),
+                path=reverse(viewname="v1:host", kwargs={"provider_id": provider_pk}),
                 data={"fqdn": f"testhost{host_num}"},
                 content_type=APPLICATION_JSON,
             )
@@ -88,7 +88,7 @@ class TestHostComponentOrdering(BaseTestCase):
             host_pk = response.json()["id"]
 
             response: Response = self.client.post(
-                path=reverse(viewname="host", kwargs={"cluster_id": self.cluster_pk}),
+                path=reverse(viewname="v1:host", kwargs={"cluster_id": self.cluster_pk}),
                 data={"host_id": host_pk},
                 content_type=APPLICATION_JSON,
             )
@@ -113,7 +113,7 @@ class TestHostComponentOrdering(BaseTestCase):
         ]
 
         response: Response = self.client.post(
-            path=reverse(viewname="host-component", kwargs={"cluster_id": self.cluster_pk}),
+            path=reverse(viewname="v1:host-component", kwargs={"cluster_id": self.cluster_pk}),
             data={"cluster_id": self.cluster_pk, "hc": hc_data},
             content_type=APPLICATION_JSON,
         )
@@ -121,7 +121,7 @@ class TestHostComponentOrdering(BaseTestCase):
 
     def test_hostcomponent_ordering_not_specified_success(self):
         response: Response = self.client.get(
-            path=reverse(viewname="host-component", kwargs={"cluster_id": self.cluster_pk}),
+            path=reverse(viewname="v1:host-component", kwargs={"cluster_id": self.cluster_pk}),
             content_type=APPLICATION_JSON,
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -132,7 +132,7 @@ class TestHostComponentOrdering(BaseTestCase):
 
     def test_hostcomponent_ordering_id_ascending_success(self):
         response: Response = self.client.get(
-            path=reverse(viewname="host-component", kwargs={"cluster_id": self.cluster_pk}),
+            path=reverse(viewname="v1:host-component", kwargs={"cluster_id": self.cluster_pk}),
             data={"ordering": "id"},
             content_type=APPLICATION_JSON,
         )
@@ -144,7 +144,7 @@ class TestHostComponentOrdering(BaseTestCase):
 
     def test_hostcomponent_ordering_id_descending_success(self):
         response: Response = self.client.get(
-            path=reverse(viewname="host-component", kwargs={"cluster_id": self.cluster_pk}),
+            path=reverse(viewname="v1:host-component", kwargs={"cluster_id": self.cluster_pk}),
             data={"ordering": "-id"},
             content_type=APPLICATION_JSON,
         )

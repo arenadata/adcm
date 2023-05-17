@@ -220,7 +220,7 @@ class ActionAllowTest(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                "run-task",
+                viewname="v1:run-task",
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "host_id": self.host_1.pk,
@@ -236,7 +236,7 @@ class ActionAllowTest(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                "run-task",
+                viewname="v1:run-task",
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "host_id": self.host_2.pk,
@@ -253,7 +253,7 @@ class ActionAllowTest(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                "run-task",
+                viewname="v1:run-task",
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "host_id": self.host_1.pk,
@@ -269,7 +269,7 @@ class ActionAllowTest(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                "run-task",
+                viewname="v1:run-task",
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "host_id": self.host_3.pk,
@@ -286,7 +286,7 @@ class ActionAllowTest(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                "run-task",
+                viewname="v1:run-task",
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "host_id": self.host_1.pk,
@@ -299,7 +299,7 @@ class ActionAllowTest(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                "run-task",
+                viewname="v1:run-task",
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "host_id": self.host_3.pk,
@@ -313,7 +313,7 @@ class ActionAllowTest(BaseTestCase):
     def test_component_mm_affects_service_actions_success(self):
         response: Response = self.client.get(
             path=reverse(
-                "object-action",
+                viewname="v1:object-action",
                 kwargs={
                     "cluster_id": self.cluster_2.pk,
                     "service_id": self.service_2_robot.pk,
@@ -329,7 +329,7 @@ class ActionAllowTest(BaseTestCase):
 
         response: Response = self.client.get(
             path=reverse(
-                "object-action",
+                viewname="v1:object-action",
                 kwargs={
                     "cluster_id": self.cluster_2.pk,
                     "service_id": self.service_2_robot.pk,
@@ -347,7 +347,7 @@ class ActionAllowTest(BaseTestCase):
     def test_component_mm_affects_cluster_actions_success(self):
         response: Response = self.client.get(
             path=reverse(
-                "object-action",
+                viewname="v1:object-action",
                 kwargs={
                     "cluster_id": self.cluster_2.pk,
                     "object_type": "cluster",
@@ -362,7 +362,7 @@ class ActionAllowTest(BaseTestCase):
 
         response: Response = self.client.get(
             path=reverse(
-                "object-action",
+                viewname="v1:object-action",
                 kwargs={
                     "cluster_id": self.cluster_2.pk,
                     "object_type": "cluster",
@@ -379,7 +379,7 @@ class ActionAllowTest(BaseTestCase):
     def test_service_mm_affects_cluster_actions_success(self):
         response: Response = self.client.get(
             path=reverse(
-                "object-action",
+                viewname="v1:object-action",
                 kwargs={
                     "cluster_id": self.cluster_2.pk,
                     "object_type": "cluster",
@@ -394,7 +394,7 @@ class ActionAllowTest(BaseTestCase):
 
         response: Response = self.client.get(
             path=reverse(
-                "object-action",
+                viewname="v1:object-action",
                 kwargs={
                     "cluster_id": self.cluster_2.pk,
                     "object_type": "cluster",

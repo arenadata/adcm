@@ -68,13 +68,13 @@ class TestServiceAPI(BaseTestCase):
         )
         provider_prototype = Prototype.objects.get(bundle=provider_bundle, type="provider")
         provider_response: Response = self.client.post(
-            path=reverse("provider"),
+            path=reverse(viewname="v1:provider"),
             data={"name": "test_provider", "prototype_id": provider_prototype.pk},
         )
         provider = HostProvider.objects.get(pk=provider_response.data["id"])
 
         host_response: Response = self.client.post(
-            path=reverse("host", kwargs={"provider_id": provider.pk}),
+            path=reverse(viewname="v1:host", kwargs={"provider_id": provider.pk}),
             data={"fqdn": "test-host"},
         )
 
@@ -84,7 +84,7 @@ class TestServiceAPI(BaseTestCase):
         cluster_bundle = self.upload_and_load_bundle(path=Path(settings.BASE_DIR, bundle_path))
         cluster_prototype = Prototype.objects.get(bundle_id=cluster_bundle.pk, type="cluster")
         cluster_response: Response = self.client.post(
-            path=reverse("cluster"),
+            path=reverse(viewname="v1:cluster"),
             data={"name": "test-cluster", "prototype_id": cluster_prototype.pk},
         )
 
@@ -92,7 +92,7 @@ class TestServiceAPI(BaseTestCase):
 
     def test_change_maintenance_mode_wrong_name_fail(self):
         response: Response = self.client.post(
-            path=reverse("service-maintenance-mode", kwargs={"service_id": self.service.pk}),
+            path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
             data={"maintenance_mode": "wrong"},
         )
 
@@ -101,7 +101,7 @@ class TestServiceAPI(BaseTestCase):
 
     def test_change_maintenance_mode_on_no_action_success(self):
         response: Response = self.client.post(
-            path=reverse("service-maintenance-mode", kwargs={"service_id": self.service.pk}),
+            path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
         )
 
@@ -122,7 +122,7 @@ class TestServiceAPI(BaseTestCase):
 
         with patch("api.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
-                path=reverse("service-maintenance-mode", kwargs={"service_id": self.service.pk}),
+                path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
             )
 
@@ -147,7 +147,7 @@ class TestServiceAPI(BaseTestCase):
 
         with patch("api.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
-                path=reverse("service-maintenance-mode", kwargs={"service_id": self.service.pk}),
+                path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
             )
 
@@ -162,7 +162,7 @@ class TestServiceAPI(BaseTestCase):
         self.service.save()
 
         response: Response = self.client.post(
-            path=reverse("service-maintenance-mode", kwargs={"service_id": self.service.pk}),
+            path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
             data={"maintenance_mode": MaintenanceMode.OFF},
         )
 
@@ -185,7 +185,7 @@ class TestServiceAPI(BaseTestCase):
 
         with patch("api.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
-                path=reverse("service-maintenance-mode", kwargs={"service_id": self.service.pk}),
+                path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
                 data={"maintenance_mode": MaintenanceMode.OFF},
             )
 
@@ -210,7 +210,7 @@ class TestServiceAPI(BaseTestCase):
 
         with patch("api.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
-                path=reverse("service-maintenance-mode", kwargs={"service_id": self.service.pk}),
+                path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
                 data={"maintenance_mode": MaintenanceMode.OFF},
             )
 
@@ -225,14 +225,14 @@ class TestServiceAPI(BaseTestCase):
         self.service.save()
 
         response: Response = self.client.post(
-            path=reverse("service-maintenance-mode", kwargs={"service_id": self.service.pk}),
+            path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
         response: Response = self.client.post(
-            path=reverse("service-maintenance-mode", kwargs={"service_id": self.service.pk}),
+            path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
             data={"maintenance_mode": MaintenanceMode.OFF},
         )
 
@@ -240,7 +240,7 @@ class TestServiceAPI(BaseTestCase):
 
     def test_delete_without_action(self):
         response: Response = self.client.delete(
-            path=reverse("service-details", kwargs={"service_id": self.service.pk}),
+            path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
@@ -250,7 +250,7 @@ class TestServiceAPI(BaseTestCase):
 
         with patch("api.service.views.delete_service"), patch("api.service.views.start_task") as start_task_mock:
             response: Response = self.client.delete(
-                path=reverse("service-details", kwargs={"service_id": self.service.pk}),
+                path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
@@ -281,7 +281,7 @@ class TestServiceAPI(BaseTestCase):
 
         with patch("api.service.views.delete_service"), patch("api.service.views.start_task") as start_task_mock:
             response: Response = self.client.delete(
-                path=reverse("service-details", kwargs={"service_id": self.service.pk}),
+                path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
@@ -302,7 +302,7 @@ class TestServiceAPI(BaseTestCase):
 
         with patch("api.service.views.delete_service"), patch("api.service.views.start_task") as start_task_mock:
             response: Response = self.client.delete(
-                path=reverse("service-details", kwargs={"service_id": self.service.pk}),
+                path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
@@ -323,20 +323,20 @@ class TestServiceAPI(BaseTestCase):
         host = self.get_host(bundle_path="python/api/tests/files/bundle_test_provider_concern.tar")
         cluster = self.get_cluster(bundle_path="python/api/tests/files/bundle_cluster_requires.tar")
         self.client.post(
-            path=reverse("host", kwargs={"cluster_id": cluster.pk}),
+            path=reverse(viewname="v1:host", kwargs={"cluster_id": cluster.pk}),
             data={"host_id": host.pk},
         )
 
         service_1_prototype = Prototype.objects.get(name="service_1", type="service")
         service_1_response: Response = self.client.post(
-            path=reverse("service", kwargs={"cluster_id": cluster.pk}),
+            path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": service_1_prototype.pk},
         )
         service_1 = ClusterObject.objects.get(pk=service_1_response.data["id"])
 
         service_2_prototype = Prototype.objects.get(name="service_2", type="service")
         service_2_response: Response = self.client.post(
-            path=reverse("service", kwargs={"cluster_id": cluster.pk}),
+            path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": service_2_prototype.pk},
         )
         service_2 = ClusterObject.objects.get(pk=service_2_response.data["id"])
@@ -345,7 +345,7 @@ class TestServiceAPI(BaseTestCase):
         component_1_1 = ServiceComponent.objects.get(service=service_1, prototype__name="component_1")
 
         self.client.post(
-            path=reverse("host-component", kwargs={"cluster_id": cluster.pk}),
+            path=reverse(viewname="v1:host-component", kwargs={"cluster_id": cluster.pk}),
             data={
                 "hc": [
                     {"service_id": service_2.pk, "component_id": component_2_1.pk, "host_id": host.pk},
@@ -355,7 +355,9 @@ class TestServiceAPI(BaseTestCase):
             content_type=APPLICATION_JSON,
         )
 
-        response: Response = self.client.delete(path=reverse("service-details", kwargs={"service_id": service_1.pk}))
+        response: Response = self.client.delete(
+            path=reverse(viewname="v1:service-details", kwargs={"service_id": service_1.pk})
+        )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
@@ -365,7 +367,7 @@ class TestServiceAPI(BaseTestCase):
 
         with patch("api.service.views.delete_service"):
             response: Response = self.client.delete(
-                path=reverse("service-details", kwargs={"service_id": self.service.pk}),
+                path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -382,7 +384,7 @@ class TestServiceAPI(BaseTestCase):
 
         with patch("api.service.views.delete_service"):
             response: Response = self.client.delete(
-                path=reverse("service-details", kwargs={"service_id": self.service.pk}),
+                path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -399,7 +401,7 @@ class TestServiceAPI(BaseTestCase):
 
         with patch("api.service.views.delete_service"):
             response: Response = self.client.delete(
-                path=reverse("service-details", kwargs={"service_id": self.service.pk}),
+                path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
@@ -408,13 +410,13 @@ class TestServiceAPI(BaseTestCase):
         host = self.get_host(bundle_path="python/api/tests/files/bundle_test_provider.tar")
         cluster = self.get_cluster(bundle_path="python/api/tests/files/with_action_dependent_component.tar")
         self.client.post(
-            path=reverse("host", kwargs={"cluster_id": cluster.pk}),
+            path=reverse(viewname="v1:host", kwargs={"cluster_id": cluster.pk}),
             data={"host_id": host.pk},
         )
 
         service_with_component_prototype = Prototype.objects.get(name="with_component", type="service")
         service_with_component_response: Response = self.client.post(
-            path=reverse("service", kwargs={"cluster_id": cluster.pk}),
+            path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": service_with_component_prototype.pk},
         )
         service_with_component = ClusterObject.objects.get(pk=service_with_component_response.data["id"])
@@ -424,7 +426,7 @@ class TestServiceAPI(BaseTestCase):
             type="service",
         )
         service_with_dependent_component_response: Response = self.client.post(
-            path=reverse("service", kwargs={"cluster_id": cluster.pk}),
+            path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": service_with_dependent_component_prototype.pk},
         )
         service_with_dependent_component = ClusterObject.objects.get(
@@ -435,7 +437,7 @@ class TestServiceAPI(BaseTestCase):
         component_with_dependent_component = ServiceComponent.objects.get(service=service_with_dependent_component)
 
         self.client.post(
-            path=reverse("host-component", kwargs={"cluster_id": cluster.pk}),
+            path=reverse(viewname="v1:host-component", kwargs={"cluster_id": cluster.pk}),
             data={
                 "hc": [
                     {"service_id": service_with_component.pk, "component_id": component.pk, "host_id": host.pk},
@@ -450,7 +452,7 @@ class TestServiceAPI(BaseTestCase):
         )
 
         response: Response = self.client.delete(
-            path=reverse("service-details", kwargs={"service_id": service_with_component.pk}),
+            path=reverse(viewname="v1:service-details", kwargs={"service_id": service_with_component.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -458,7 +460,7 @@ class TestServiceAPI(BaseTestCase):
         HostComponent.objects.all().delete()
 
         response: Response = self.client.delete(
-            path=reverse("service-details", kwargs={"service_id": service_with_dependent_component.pk}),
+            path=reverse(viewname="v1:service-details", kwargs={"service_id": service_with_dependent_component.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)

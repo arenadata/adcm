@@ -25,23 +25,23 @@ class TestAuditAPI(BaseTestCase):
         login_time = AuditSession.objects.first().login_time
         login_time_before = login_time - timedelta(minutes=1)
         response: Response = self.client.get(
-            reverse("audit:auditsession-list"),
-            {"login_time_before": login_time_before.isoformat()},
+            path=reverse(viewname="v1:audit:auditsession-list"),
+            data={"login_time_before": login_time_before.isoformat()},
         )
 
         self.assertEqual(response.data["count"], 0)
 
         login_time_after = login_time + timedelta(minutes=1)
         response: Response = self.client.get(
-            reverse("audit:auditsession-list"),
-            {"login_time_after": login_time_after.isoformat()},
+            path=reverse(viewname="v1:audit:auditsession-list"),
+            data={"login_time_after": login_time_after.isoformat()},
         )
 
         self.assertEqual(response.data["count"], 0)
 
         response: Response = self.client.get(
-            reverse("audit:auditsession-list"),
-            {"login_time_after": login_time_before.isoformat(), "login_time_before": login_time_after.isoformat()},
+            path=reverse(viewname="v1:audit:auditsession-list"),
+            data={"login_time_after": login_time_before.isoformat(), "login_time_before": login_time_after.isoformat()},
         )
 
         self.assertEqual(response.data["count"], 1)
@@ -49,7 +49,7 @@ class TestAuditAPI(BaseTestCase):
     def test_filter_operations_operation_time(self):
         adcm = ADCM.objects.first()
         self.client.post(
-            path=reverse("config-history", kwargs={"adcm_pk": adcm.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"adcm_pk": adcm.pk}),
             data={"config": {}},
             content_type=APPLICATION_JSON,
         )
@@ -57,8 +57,8 @@ class TestAuditAPI(BaseTestCase):
         operation_time_before = operation_time - timedelta(minutes=1)
 
         response: Response = self.client.get(
-            reverse("audit:auditlog-list"),
-            {"operation_time_before": operation_time_before.isoformat()},
+            path=reverse(viewname="v1:audit:auditlog-list"),
+            data={"operation_time_before": operation_time_before.isoformat()},
         )
 
         self.assertEqual(response.data["count"], 0)
@@ -66,15 +66,15 @@ class TestAuditAPI(BaseTestCase):
         operation_time_after = operation_time + timedelta(minutes=1)
 
         response: Response = self.client.get(
-            reverse("audit:auditlog-list"),
-            {"operation_time_after": operation_time_after.isoformat()},
+            path=reverse(viewname="v1:audit:auditlog-list"),
+            data={"operation_time_after": operation_time_after.isoformat()},
         )
 
         self.assertEqual(response.data["count"], 0)
 
         response: Response = self.client.get(
-            reverse("audit:auditlog-list"),
-            {
+            path=reverse(viewname="v1:audit:auditlog-list"),
+            data={
                 "operation_time_after": operation_time_before.isoformat(),
                 "operation_time_before": operation_time_after.isoformat(),
             },

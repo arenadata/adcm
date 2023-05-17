@@ -286,12 +286,12 @@ class TestClusterAudit(BaseTestCase):
             encoding=settings.ENCODING_UTF_8,
         ) as f:
             self.client.post(
-                path=reverse("upload-bundle"),
+                path=reverse(viewname="v1:upload-bundle"),
                 data={"file": f},
             )
 
         cluster_bundle_response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": cluster_bundle_filename},
         )
 
@@ -300,12 +300,12 @@ class TestClusterAudit(BaseTestCase):
             encoding=settings.ENCODING_UTF_8,
         ) as f:
             self.client.post(
-                path=reverse("upload-bundle"),
+                path=reverse(viewname="v1:upload-bundle"),
                 data={"file": f},
             )
 
         provider_bundle_response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": provider_bundle_filename},
         )
 
@@ -314,7 +314,7 @@ class TestClusterAudit(BaseTestCase):
 
         provider_prototype = Prototype.objects.create(bundle_id=provider_bundle_response.data["id"], type="provider")
         provider_response: Response = self.client.post(
-            path=reverse("provider"),
+            path=reverse(viewname="v1:provider"),
             data={
                 "name": "new_test_provider",
                 "prototype_id": provider_prototype.pk,
@@ -323,7 +323,7 @@ class TestClusterAudit(BaseTestCase):
 
         host_prototype = Prototype.objects.create(bundle_id=provider_bundle_response.data["id"], type="host")
         host_1_response: Response = self.client.post(
-            path=reverse("host"),
+            path=reverse(viewname="v1:host"),
             data={
                 "prototype_id": host_prototype.pk,
                 "provider_id": provider_response.data["id"],
@@ -331,7 +331,7 @@ class TestClusterAudit(BaseTestCase):
             },
         )
         self.client.post(
-            path=reverse("host"),
+            path=reverse(viewname="v1:host"),
             data={
                 "prototype_id": host_prototype.pk,
                 "provider_id": provider_response.data["id"],
@@ -340,7 +340,7 @@ class TestClusterAudit(BaseTestCase):
         )
 
         self.client.post(
-            path=reverse("host", kwargs={"cluster_id": cluster_1.pk}),
+            path=reverse(viewname="v1:host", kwargs={"cluster_id": cluster_1.pk}),
             data={"host_id": host_1_response.data["id"]},
             content_type=APPLICATION_JSON,
         )
@@ -355,7 +355,7 @@ class TestClusterAudit(BaseTestCase):
             cluster_id=cluster_1.pk,
         )
         self.client.post(
-            path=reverse("service", kwargs={"cluster_id": cluster_1.pk}),
+            path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster_1.pk}),
             data={
                 "service_id": service.pk,
                 "prototype_id": service_prototype.pk,
@@ -365,12 +365,12 @@ class TestClusterAudit(BaseTestCase):
 
         self.assertFalse(AuditObject.objects.filter(is_deleted=True))
 
-        self.client.delete(path=reverse("cluster-details", kwargs={"cluster_id": cluster_1.pk}))
+        self.client.delete(path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": cluster_1.pk}))
 
         self.assertEqual(AuditObject.objects.filter(is_deleted=True).count(), 1)
 
     def test_delete(self):
-        self.client.delete(path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}))
+        self.client.delete(path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -384,7 +384,7 @@ class TestClusterAudit(BaseTestCase):
         )
 
         response: Response = self.client.delete(
-            path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk}),
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -394,7 +394,7 @@ class TestClusterAudit(BaseTestCase):
 
     def test_delete_failed(self):
         cluster_pks = ClusterObject.objects.all().values_list("pk", flat=True).order_by("-pk")
-        res = self.client.delete(path=reverse("cluster-details", kwargs={"cluster_id": cluster_pks[0] + 1}))
+        res = self.client.delete(path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": cluster_pks[0] + 1}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -404,7 +404,7 @@ class TestClusterAudit(BaseTestCase):
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+                path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -420,7 +420,7 @@ class TestClusterAudit(BaseTestCase):
         self.add_no_rights_user_cluster_view_rights()
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+                path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -434,7 +434,7 @@ class TestClusterAudit(BaseTestCase):
 
     def test_update(self):
         self.client.patch(
-            path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk}),
             data={
                 "display_name": "test_cluster_another_display_name",
                 "name": self.test_cluster_name,
@@ -467,7 +467,7 @@ class TestClusterAudit(BaseTestCase):
     def test_update_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
-                path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+                path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk}),
                 data={"display_name": "test_cluster_another_display_name"},
                 content_type=APPLICATION_JSON,
             )
@@ -483,7 +483,7 @@ class TestClusterAudit(BaseTestCase):
 
     def test_bind_unbind_empty_data(self):
         self.client.post(
-            path=reverse("cluster-bind", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-bind", kwargs={"cluster_id": self.cluster.pk}),
             data={},
             content_type=APPLICATION_JSON,
         )
@@ -501,7 +501,7 @@ class TestClusterAudit(BaseTestCase):
         )
 
         self.client.delete(
-            path=reverse("cluster-bind-details", kwargs={"cluster_id": self.cluster.pk, "bind_id": 411}),
+            path=reverse(viewname="v1:cluster-bind-details", kwargs={"cluster_id": self.cluster.pk, "bind_id": 411}),
             content_type=APPLICATION_JSON,
         )
 
@@ -520,7 +520,7 @@ class TestClusterAudit(BaseTestCase):
     def test_bind_unbind_cluster_to_cluster(self):
         cluster, _ = self.get_cluster_service_for_bind()
         self.client.post(
-            path=reverse("cluster-bind", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-bind", kwargs={"cluster_id": self.cluster.pk}),
             data={
                 "export_cluster_id": cluster.pk,
                 "export_service_id": None,
@@ -541,7 +541,9 @@ class TestClusterAudit(BaseTestCase):
 
         bind = ClusterBind.objects.first()
         self.client.delete(
-            path=reverse("cluster-bind-details", kwargs={"cluster_id": self.cluster.pk, "bind_id": bind.pk}),
+            path=reverse(
+                viewname="v1:cluster-bind-details", kwargs={"cluster_id": self.cluster.pk, "bind_id": bind.pk}
+            ),
             content_type=APPLICATION_JSON,
         )
 
@@ -559,7 +561,7 @@ class TestClusterAudit(BaseTestCase):
     def test_bind_unbind_service_to_cluster(self):
         cluster, service = self.get_cluster_service_for_bind()
         self.client.post(
-            path=reverse("cluster-bind", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-bind", kwargs={"cluster_id": self.cluster.pk}),
             data={
                 "export_cluster_id": cluster.pk,
                 "export_service_id": service.pk,
@@ -580,7 +582,9 @@ class TestClusterAudit(BaseTestCase):
 
         bind = ClusterBind.objects.first()
         self.client.delete(
-            path=reverse("cluster-bind-details", kwargs={"cluster_id": self.cluster.pk, "bind_id": bind.pk}),
+            path=reverse(
+                viewname="v1:cluster-bind-details", kwargs={"cluster_id": self.cluster.pk, "bind_id": bind.pk}
+            ),
             content_type=APPLICATION_JSON,
         )
 
@@ -599,7 +603,7 @@ class TestClusterAudit(BaseTestCase):
         cluster, service = self.get_cluster_service_for_bind()
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("cluster-bind", kwargs={"cluster_id": self.cluster.pk}),
+                path=reverse(viewname="v1:cluster-bind", kwargs={"cluster_id": self.cluster.pk}),
                 data={
                     "export_cluster_id": cluster.pk,
                     "export_service_id": service.pk,
@@ -617,7 +621,7 @@ class TestClusterAudit(BaseTestCase):
         )
 
         self.client.post(
-            path=reverse("cluster-bind", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-bind", kwargs={"cluster_id": self.cluster.pk}),
             data={
                 "export_cluster_id": cluster.pk,
                 "export_service_id": service.pk,
@@ -629,7 +633,7 @@ class TestClusterAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
                 path=reverse(
-                    "cluster-bind-details",
+                    viewname="v1:cluster-bind-details",
                     kwargs={"cluster_id": self.cluster.pk, "bind_id": bind.pk},
                 ),
                 content_type=APPLICATION_JSON,
@@ -646,7 +650,7 @@ class TestClusterAudit(BaseTestCase):
 
     def test_update_config(self):
         self.client.post(
-            path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"cluster_id": self.cluster.pk}),
             data={"config": {}},
             content_type=APPLICATION_JSON,
         )
@@ -658,7 +662,7 @@ class TestClusterAudit(BaseTestCase):
     def test_update_config_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+                path=reverse(viewname="v1:config-history", kwargs={"cluster_id": self.cluster.pk}),
                 data={"config": {}},
                 content_type=APPLICATION_JSON,
             )
@@ -674,7 +678,7 @@ class TestClusterAudit(BaseTestCase):
 
     def test_add_host_success_and_fail(self):
         self.client.post(
-            path=reverse("host", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:host", kwargs={"cluster_id": self.cluster.pk}),
             data={"host_id": self.host.pk},
             content_type=APPLICATION_JSON,
         )
@@ -691,7 +695,7 @@ class TestClusterAudit(BaseTestCase):
         )
 
         self.client.post(
-            path=reverse("host", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:host", kwargs={"cluster_id": self.cluster.pk}),
             data={"host_id": 10000},
             content_type=APPLICATION_JSON,
         )
@@ -711,7 +715,7 @@ class TestClusterAudit(BaseTestCase):
     def test_add_host_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("host", kwargs={"cluster_id": self.cluster.pk}),
+                path=reverse(viewname="v1:host", kwargs={"cluster_id": self.cluster.pk}),
                 data={"host_id": self.host.pk},
                 content_type=APPLICATION_JSON,
             )
@@ -728,7 +732,7 @@ class TestClusterAudit(BaseTestCase):
     def test_update_host_config(self):
         self.client.post(
             path=reverse(
-                "config-history",
+                viewname="v1:config-history",
                 kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
             ),
             data={"config": {}},
@@ -754,7 +758,7 @@ class TestClusterAudit(BaseTestCase):
         self.host.save(update_fields=["cluster"])
         self.client.patch(
             path=reverse(
-                "host-details",
+                viewname="v1:host-details",
                 kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
             ),
             data=data,
@@ -775,7 +779,7 @@ class TestClusterAudit(BaseTestCase):
         )
         self.client.patch(
             path=reverse(
-                "host-details",
+                viewname="v1:host-details",
                 kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
             ),
             data={"fqdn": "new-test-fqdn"},
@@ -796,7 +800,7 @@ class TestClusterAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
                 path=reverse(
-                    "config-history",
+                    viewname="v1:config-history",
                     kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
                 ),
                 data={"config": {}},
@@ -822,7 +826,7 @@ class TestClusterAudit(BaseTestCase):
         self.host.save(update_fields=["cluster"])
 
         self.client.post(
-            path=reverse("host-component", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:host-component", kwargs={"cluster_id": self.cluster.pk}),
             data={
                 "hc": [
                     {
@@ -852,7 +856,7 @@ class TestClusterAudit(BaseTestCase):
 
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("host-component", kwargs={"cluster_id": self.cluster.pk}),
+                path=reverse(viewname="v1:host-component", kwargs={"cluster_id": self.cluster.pk}),
                 data={
                     "hc": [
                         {
@@ -876,7 +880,7 @@ class TestClusterAudit(BaseTestCase):
 
     def test_import(self):
         self.client.post(
-            path=reverse("cluster-import", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-import", kwargs={"cluster_id": self.cluster.pk}),
             data={"bind": []},
             content_type=APPLICATION_JSON,
         )
@@ -895,7 +899,7 @@ class TestClusterAudit(BaseTestCase):
     def test_import_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("cluster-import", kwargs={"cluster_id": self.cluster.pk}),
+                path=reverse(viewname="v1:cluster-import", kwargs={"cluster_id": self.cluster.pk}),
                 data={"bind": []},
                 content_type=APPLICATION_JSON,
             )
@@ -912,7 +916,7 @@ class TestClusterAudit(BaseTestCase):
     def test_add_service(self):
         cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_3")
         self.client.post(
-            path=reverse("service", kwargs={"cluster_id": cluster.pk}),
+            path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
             data={
                 "service_id": self.service.pk,
                 "prototype_id": self.service_prototype.pk,
@@ -934,7 +938,7 @@ class TestClusterAudit(BaseTestCase):
     def test_add_service_via_data(self):
         cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_3")
         self.client.post(
-            path=reverse("service"),
+            path=reverse(viewname="v1:service"),
             data={
                 "cluster_id": cluster.pk,
                 "service_id": self.service.pk,
@@ -958,7 +962,7 @@ class TestClusterAudit(BaseTestCase):
         cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_3")
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("service", kwargs={"cluster_id": cluster.pk}),
+                path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
                 data={
                     "service_id": self.service.pk,
                     "prototype_id": self.service_prototype.pk,
@@ -983,7 +987,7 @@ class TestClusterAudit(BaseTestCase):
     def test_add_service_failed(self):
         cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_3")
         response: Response = self.client.post(
-            path=reverse("service", kwargs={"cluster_id": cluster.pk}),
+            path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": "some-string"},
             content_type=APPLICATION_JSON,
         )
@@ -1004,7 +1008,7 @@ class TestClusterAudit(BaseTestCase):
     def test_delete_service(self):
         self.client.delete(
             path=reverse(
-                "service-details",
+                viewname="v1:service-details",
                 kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
             ),
             content_type=APPLICATION_JSON,
@@ -1025,7 +1029,7 @@ class TestClusterAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
                 path=reverse(
-                    "service-details",
+                    viewname="v1:service-details",
                     kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
                 ),
                 content_type=APPLICATION_JSON,
@@ -1044,7 +1048,7 @@ class TestClusterAudit(BaseTestCase):
         cluster, _ = self.get_cluster_service_for_bind()
         self.client.post(
             path=reverse(
-                "service-bind",
+                viewname="v1:service-bind",
                 kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
             ),
             data={"export_cluster_id": cluster.pk},
@@ -1065,7 +1069,7 @@ class TestClusterAudit(BaseTestCase):
         bind = ClusterBind.objects.first()
         self.client.delete(
             path=reverse(
-                "service-bind-details",
+                viewname="v1:service-bind-details",
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "service_id": self.service.pk,
@@ -1090,7 +1094,7 @@ class TestClusterAudit(BaseTestCase):
         cluster, service = self.get_cluster_service_for_bind()
         self.client.post(
             path=reverse(
-                "service-bind",
+                viewname="v1:service-bind",
                 kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
             ),
             data={"export_cluster_id": cluster.pk, "export_service_id": service.pk},
@@ -1111,7 +1115,7 @@ class TestClusterAudit(BaseTestCase):
         bind = ClusterBind.objects.first()
         self.client.delete(
             path=reverse(
-                "service-bind-details",
+                viewname="v1:service-bind-details",
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "service_id": self.service.pk,
@@ -1137,7 +1141,7 @@ class TestClusterAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
                 path=reverse(
-                    "service-bind",
+                    viewname="v1:service-bind",
                     kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
                 ),
                 data={"export_cluster_id": cluster.pk},
@@ -1160,7 +1164,7 @@ class TestClusterAudit(BaseTestCase):
 
         self.client.post(
             path=reverse(
-                "service-bind",
+                viewname="v1:service-bind",
                 kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
             ),
             data={"export_cluster_id": cluster.pk},
@@ -1171,7 +1175,7 @@ class TestClusterAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
                 reverse(
-                    "service-bind-details",
+                    viewname="v1:service-bind-details",
                     kwargs={
                         "cluster_id": self.cluster.pk,
                         "service_id": self.service.pk,
@@ -1200,7 +1204,7 @@ class TestClusterAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
                 path=reverse(
-                    "service-bind",
+                    viewname="v1:service-bind",
                     kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
                 ),
                 data={"export_cluster_id": cluster.pk, "export_service_id": service.pk},
@@ -1223,7 +1227,7 @@ class TestClusterAudit(BaseTestCase):
 
         self.client.post(
             path=reverse(
-                "service-bind",
+                viewname="v1:service-bind",
                 kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
             ),
             data={"export_cluster_id": cluster.pk, "export_service_id": service.pk},
@@ -1234,7 +1238,7 @@ class TestClusterAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
                 reverse(
-                    "service-bind-details",
+                    viewname="v1:service-bind-details",
                     kwargs={
                         "cluster_id": self.cluster.pk,
                         "service_id": self.service.pk,
@@ -1262,7 +1266,7 @@ class TestClusterAudit(BaseTestCase):
         component, _ = self.get_component()
         self.client.post(
             path=reverse(
-                "config-history",
+                viewname="v1:config-history",
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "service_id": self.service.pk,
@@ -1289,7 +1293,7 @@ class TestClusterAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
                 path=reverse(
-                    "config-history",
+                    viewname="v1:config-history",
                     kwargs={
                         "cluster_id": self.cluster.pk,
                         "service_id": self.service.pk,
@@ -1324,7 +1328,7 @@ class TestClusterAudit(BaseTestCase):
         self.service.save(update_fields=["config"])
         self.client.post(
             path=reverse(
-                "config-history",
+                viewname="v1:config-history",
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "service_id": self.service.pk,
@@ -1356,7 +1360,7 @@ class TestClusterAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
                 path=reverse(
-                    "config-history",
+                    viewname="v1:config-history",
                     kwargs={
                         "cluster_id": self.cluster.pk,
                         "service_id": self.service.pk,
@@ -1383,7 +1387,7 @@ class TestClusterAudit(BaseTestCase):
     def test_service_import(self):
         self.client.post(
             path=reverse(
-                "service-import",
+                viewname="v1:service-import",
                 kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
             ),
             data={"bind": []},
@@ -1405,7 +1409,7 @@ class TestClusterAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
                 path=reverse(
-                    "service-import",
+                    viewname="v1:service-import",
                     kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
                 ),
                 data={"bind": []},
@@ -1429,7 +1433,7 @@ class TestClusterAudit(BaseTestCase):
     def test_cluster_config_restore(self):
         self.client.patch(
             path=reverse(
-                "config-history-version-restore",
+                viewname="v1:config-history-version-restore",
                 kwargs={"cluster_id": self.cluster.pk, "version": self.config_log.pk},
             ),
             content_type=APPLICATION_JSON,
@@ -1443,7 +1447,7 @@ class TestClusterAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
                 path=reverse(
-                    "config-history-version-restore",
+                    viewname="v1:config-history-version-restore",
                     kwargs={"cluster_id": self.cluster.pk, "version": self.config_log.pk},
                 ),
                 content_type=APPLICATION_JSON,
@@ -1466,7 +1470,7 @@ class TestClusterAudit(BaseTestCase):
     def test_host_config_restore(self):
         self.client.patch(
             path=reverse(
-                "config-history-version-restore",
+                viewname="v1:config-history-version-restore",
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "host_id": self.host.pk,
@@ -1491,7 +1495,7 @@ class TestClusterAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
                 path=reverse(
-                    "config-history-version-restore",
+                    viewname="v1:config-history-version-restore",
                     kwargs={
                         "cluster_id": self.cluster.pk,
                         "host_id": self.host.pk,
@@ -1519,7 +1523,7 @@ class TestClusterAudit(BaseTestCase):
         component, config_log = self.get_component()
         self.client.patch(
             path=reverse(
-                "config-history-version-restore",
+                viewname="v1:config-history-version-restore",
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "service_id": self.service.pk,
@@ -1546,7 +1550,7 @@ class TestClusterAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
                 path=reverse(
-                    "config-history-version-restore",
+                    viewname="v1:config-history-version-restore",
                     kwargs={
                         "cluster_id": self.cluster.pk,
                         "service_id": self.service.pk,
@@ -1581,7 +1585,7 @@ class TestClusterAudit(BaseTestCase):
         self.service.save(update_fields=["config"])
         self.client.patch(
             path=reverse(
-                "config-history-version-restore",
+                viewname="v1:config-history-version-restore",
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "service_id": self.service.pk,
@@ -1613,7 +1617,7 @@ class TestClusterAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
                 path=reverse(
-                    "config-history-version-restore",
+                    viewname="v1:config-history-version-restore",
                     kwargs={
                         "cluster_id": self.cluster.pk,
                         "service_id": self.service.pk,
@@ -1645,7 +1649,9 @@ class TestClusterAudit(BaseTestCase):
             state_available="any",
         )
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(path=reverse("run-task", kwargs={"cluster_id": self.cluster.pk, "action_id": action.pk}))
+            self.client.post(
+                path=reverse(viewname="v1:run-task", kwargs={"cluster_id": self.cluster.pk, "action_id": action.pk})
+            )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -1676,7 +1682,7 @@ class TestClusterAudit(BaseTestCase):
         ):
             self.client.post(
                 path=reverse(
-                    "do-cluster-upgrade",
+                    viewname="v1:do-cluster-upgrade",
                     kwargs={"cluster_id": self.cluster.pk, "upgrade_id": upgrade.pk},
                 ),
             )
@@ -1703,7 +1709,7 @@ class TestClusterAudit(BaseTestCase):
         ):
             self.client.post(
                 path=reverse(
-                    "do-cluster-upgrade",
+                    viewname="v1:do-cluster-upgrade",
                     kwargs={"cluster_id": self.cluster.pk, "upgrade_id": upgrade.pk},
                 ),
             )
@@ -1719,7 +1725,7 @@ class TestClusterAudit(BaseTestCase):
     def test_do_upgrade_no_upgrade(self):
         self.client.post(
             path=reverse(
-                "do-cluster-upgrade",
+                viewname="v1:do-cluster-upgrade",
                 kwargs={"cluster_id": self.cluster.pk, "upgrade_id": 1},
             ),
         )

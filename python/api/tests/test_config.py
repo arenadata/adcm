@@ -35,7 +35,7 @@ class TestConfigPasswordAPI(BaseTestCase):
         password_value = self.config_log.config["password"]
 
         response: Response = self.client.post(
-            path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"cluster_id": self.cluster.pk}),
             params={"view": "interface"},
             data={"config": {"password": password_value}},
             content_type=APPLICATION_JSON,
@@ -51,7 +51,7 @@ class TestConfigPasswordAPI(BaseTestCase):
         password_value = "new_test_password"
 
         response: Response = self.client.post(
-            path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"cluster_id": self.cluster.pk}),
             params={"view": "interface"},
             data={"config": {"password": password_value}},
             content_type=APPLICATION_JSON,
@@ -65,7 +65,7 @@ class TestConfigPasswordAPI(BaseTestCase):
 
     def test_post_wrong_password_fail(self):
         response: Response = self.client.post(
-            path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"cluster_id": self.cluster.pk}),
             params={"view": "interface"},
             data={"config": {"password": self.config_log.config["password"][:-1]}},
             content_type=APPLICATION_JSON,
@@ -90,7 +90,7 @@ class TestConfigSecrettextAPI(BaseTestCase):
         secrettext_value = self.config_log.config["secrettext"]
 
         response: Response = self.client.post(
-            path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"cluster_id": self.cluster.pk}),
             params={"view": "interface"},
             data={"config": {"secrettext": secrettext_value}},
             content_type=APPLICATION_JSON,
@@ -106,7 +106,7 @@ class TestConfigSecrettextAPI(BaseTestCase):
         secrettext_value = "secrettext"
 
         response: Response = self.client.post(
-            path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"cluster_id": self.cluster.pk}),
             params={"view": "interface"},
             data={"config": {"secrettext": secrettext_value}},
             content_type=APPLICATION_JSON,
@@ -120,7 +120,7 @@ class TestConfigSecrettextAPI(BaseTestCase):
 
     def test_post_wrong_secrettext_fail(self):
         response: Response = self.client.post(
-            path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"cluster_id": self.cluster.pk}),
             params={"view": "interface"},
             data={"config": {"secrettext": self.config_log.config["secrettext"][:-1]}},
             content_type=APPLICATION_JSON,
@@ -145,7 +145,7 @@ class TestConfigSecretfileAPI(BaseTestCase):
         secretfile_value = self.config_log.config["secretfile"]
 
         response: Response = self.client.post(
-            path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"cluster_id": self.cluster.pk}),
             params={"view": "interface"},
             data={"config": {"secretfile": secretfile_value}},
             content_type=APPLICATION_JSON,
@@ -161,7 +161,7 @@ class TestConfigSecretfileAPI(BaseTestCase):
         secretfile_value = "new_test_secretfile_data"
 
         response: Response = self.client.post(
-            path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"cluster_id": self.cluster.pk}),
             params={"view": "interface"},
             data={"config": {"secretfile": secretfile_value}},
             content_type=APPLICATION_JSON,
@@ -175,7 +175,7 @@ class TestConfigSecretfileAPI(BaseTestCase):
 
     def test_post_wrong_secretfile_fail(self):
         response: Response = self.client.post(
-            path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"cluster_id": self.cluster.pk}),
             params={"view": "interface"},
             data={"config": {"secretfile": self.config_log.config["secretfile"][:-1]}},
             content_type=APPLICATION_JSON,
@@ -200,7 +200,7 @@ class TestConfigSecretmapAPI(BaseTestCase):
         secretmap_value = self.config_log.config["secretmap"]
 
         response: Response = self.client.post(
-            path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"cluster_id": self.cluster.pk}),
             params={"view": "interface"},
             data={"config": {"secretmap": secretmap_value}},
             content_type=APPLICATION_JSON,
@@ -216,7 +216,7 @@ class TestConfigSecretmapAPI(BaseTestCase):
         secretmap_value = {"key": "new_test_secretmap_value"}
 
         response: Response = self.client.post(
-            path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"cluster_id": self.cluster.pk}),
             params={"view": "interface"},
             data={"config": {"secretmap": secretmap_value}},
             content_type=APPLICATION_JSON,
@@ -233,7 +233,7 @@ class TestConfigSecretmapAPI(BaseTestCase):
         secretmap_value["key"] = secretmap_value["key"][:-1]
 
         response: Response = self.client.post(
-            path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"cluster_id": self.cluster.pk}),
             params={"view": "interface"},
             data={"config": {"secretmap": secretmap_value}},
             content_type=APPLICATION_JSON,
@@ -247,7 +247,7 @@ class TestConfigSecretmapAPI(BaseTestCase):
 
     def test_post_null_secretmap_success(self):
         response: Response = self.client.post(
-            path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"cluster_id": self.cluster.pk}),
             params={"view": "interface"},
             data={"config": {"secretmap": None}},
             content_type=APPLICATION_JSON,
@@ -271,7 +271,7 @@ class TestADCMConfigMinMaxPassLengthAPI(BaseTestCase):
         config_log.save(update_fields=["config"])
 
         response: Response = self.client.post(
-            path=reverse("config-history", kwargs={"adcm_pk": adcm.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"adcm_pk": adcm.pk}),
             params={"view": "interface"},
             data={"config": config_log.config, "attr": config_log.attr},
             content_type=APPLICATION_JSON,
@@ -292,13 +292,17 @@ class ADCMSettingsTestCase(BaseTestCase):
         self.another_user_log_in(username=self.no_rights_user_username, password=self.no_rights_user_password)
 
     def test_retrieve_config_current_success(self):
-        response: Response = self.client.get(path=reverse(viewname="config-current", kwargs={"adcm_pk": self.adcm.pk}))
+        response: Response = self.client.get(
+            path=reverse(viewname="v1:config-current", kwargs={"adcm_pk": self.adcm.pk})
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["id"], self.adcm.config.current)
 
     def test_retrieve_config_history_success(self):
-        response: Response = self.client.get(path=reverse(viewname="config-history", kwargs={"adcm_pk": self.adcm.pk}))
+        response: Response = self.client.get(
+            path=reverse(viewname="v1:config-history", kwargs={"adcm_pk": self.adcm.pk})
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertTrue(response.json())
@@ -310,7 +314,7 @@ class ADCMSettingsTestCase(BaseTestCase):
 
         self.login()
         response: Response = self.client.post(
-            path=reverse(viewname="config-history", kwargs={"adcm_pk": self.adcm.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"adcm_pk": self.adcm.pk}),
             data={"config": config_log.config, "attr": config_log.attr},
             content_type=APPLICATION_JSON,
         )
@@ -322,7 +326,7 @@ class ADCMSettingsTestCase(BaseTestCase):
         self.another_user_log_in(username=self.no_rights_user_username, password=self.no_rights_user_password)
         response: Response = self.client.get(
             path=reverse(
-                viewname="config-history-version",
+                viewname="v1:config-history-version",
                 kwargs={"adcm_pk": self.adcm.pk, "version": self.adcm.config.previous},
             )
         )
@@ -337,7 +341,7 @@ class ADCMSettingsTestCase(BaseTestCase):
 
         self.login()
         response: Response = self.client.post(
-            path=reverse(viewname="config-history", kwargs={"adcm_pk": self.adcm.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"adcm_pk": self.adcm.pk}),
             data={"config": config_log.config, "attr": config_log.attr},
             content_type=APPLICATION_JSON,
         )
@@ -345,7 +349,9 @@ class ADCMSettingsTestCase(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         self.another_user_log_in(username=self.no_rights_user_username, password=self.no_rights_user_password)
-        response: Response = self.client.get(path=reverse("config-previous", kwargs={"adcm_pk": self.adcm.pk}))
+        response: Response = self.client.get(
+            path=reverse(viewname="v1:config-previous", kwargs={"adcm_pk": self.adcm.pk})
+        )
 
         self.adcm.refresh_from_db()
 
@@ -354,7 +360,7 @@ class ADCMSettingsTestCase(BaseTestCase):
 
     def test_retrieve_config_by_pk_success(self):
         response: Response = self.client.get(
-            path=reverse(viewname="object-config", kwargs={"adcm_pk": self.adcm.pk}),
+            path=reverse(viewname="v1:object-config", kwargs={"adcm_pk": self.adcm.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -362,7 +368,7 @@ class ADCMSettingsTestCase(BaseTestCase):
 
     def test_list_config_log_success(self):
         response: Response = self.client.get(
-            path=reverse(viewname="config-log-list"),
+            path=reverse(viewname="v1:config-log-list"),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -377,7 +383,7 @@ class ADCMSettingsTestCase(BaseTestCase):
             ),
         )
         response: Response = self.client.get(
-            path=reverse(viewname="config-log-list"),
+            path=reverse(viewname="v1:config-log-list"),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -386,7 +392,7 @@ class ADCMSettingsTestCase(BaseTestCase):
     def test_list_config_log_by_pk_success(self):
         config_log = ConfigLog.objects.get(obj_ref=self.adcm.config)
         response: Response = self.client.get(
-            path=reverse(viewname="config-log-detail", kwargs={"pk": config_log.pk}),
+            path=reverse(viewname="v1:config-log-detail", kwargs={"pk": config_log.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
