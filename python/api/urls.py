@@ -11,23 +11,9 @@
 # limitations under the License.
 
 from api import docs, views
-from django.urls import include, path, re_path, register_converter
-from drf_yasg.openapi import Info, License
-from drf_yasg.views import get_schema_view as get_yasg_schema_view
+from django.urls import include, path, register_converter
 from rbac.endpoints import token
-from rest_framework.permissions import AllowAny
 from rest_framework.schemas import get_schema_view
-
-SchemaView = get_yasg_schema_view(
-    Info(
-        title="ADCM API",
-        default_version="v1",
-        description="ArenaData Cluster Manager API",
-        license=License(name="Apache 2.0 License"),
-    ),
-    public=True,
-    permission_classes=[AllowAny],
-)
 
 register_converter(views.NameConverter, "name")
 schema_view = get_schema_view(title="ArenaData Chapel API", patterns=[path("api/v1/", include("api.urls"))])
@@ -55,7 +41,4 @@ urlpatterns = [
     path("docs/", docs.docs_html),
     path("rbac/", include(("rbac.urls", "rbac"))),
     path("token/", token.GetAuthToken.as_view(), name="token"),
-    re_path(r"^swagger(?P<format>\.json|\.yaml)$", SchemaView.without_ui(cache_timeout=0), name="schema-json"),
-    re_path(r"^swagger/$", SchemaView.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
-    re_path(r"^redoc/$", SchemaView.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
 ]

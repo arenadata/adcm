@@ -30,9 +30,4 @@ urlpatterns = [
         LogStorageViewSet.as_view({"get": "download"}),
         name="joblog-download",
     ),
-    path(
-        "<int:job_pk>/log/<int:log_pk>/download/<name:tag>/<name:level>/<name:log_format>/",
-        LogStorageViewSet.as_view({"get": "logfile"}),
-        name="joblog-file",
-    ),
 ]
