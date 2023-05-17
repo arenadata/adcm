@@ -59,38 +59,42 @@ class TestJobAPI(BaseTestCase):
         )
 
     def test_list(self):
-        response: Response = self.client.get(path=reverse("joblog-list"))
+        response: Response = self.client.get(path=reverse(viewname="v1:joblog-list"))
 
         self.assertEqual(len(response.data["results"]), 2)
 
     def test_list_filter_action_id(self):
-        response: Response = self.client.get(reverse("joblog-list"), {"action_id": self.action.pk})
+        response: Response = self.client.get(
+            path=reverse(viewname="v1:joblog-list"), data={"action_id": self.action.pk}
+        )
 
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["id"], self.job_2.pk)
 
     def test_list_filter_task_id(self):
-        response: Response = self.client.get(reverse("joblog-list"), {"task_id": self.task.pk})
+        response: Response = self.client.get(path=reverse(viewname="v1:joblog-list"), data={"task_id": self.task.pk})
 
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["id"], self.job_2.pk)
 
     def test_list_filter_pid(self):
-        response: Response = self.client.get(reverse("joblog-list"), {"pid": self.job_1.pid})
+        response: Response = self.client.get(path=reverse(viewname="v1:joblog-list"), data={"pid": self.job_1.pid})
 
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["pid"], self.job_1.pid)
 
     def test_list_filter_status(self):
-        response: Response = self.client.get(reverse("joblog-list"), {"status": self.job_1.status})
+        response: Response = self.client.get(
+            path=reverse(viewname="v1:joblog-list"), data={"status": self.job_1.status}
+        )
 
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["status"], self.job_1.status)
 
     def test_list_filter_start_date(self):
         response: Response = self.client.get(
-            reverse("joblog-list"),
-            {"start_date": self.job_1.start_date.isoformat()},
+            path=reverse(viewname="v1:joblog-list"),
+            data={"start_date": self.job_1.start_date.isoformat()},
         )
 
         self.assertEqual(len(response.data["results"]), 1)
@@ -98,50 +102,50 @@ class TestJobAPI(BaseTestCase):
 
     def test_list_filter_finish_date(self):
         response: Response = self.client.get(
-            reverse("joblog-list"),
-            {"finish_date": self.job_2.finish_date.isoformat()},
+            path=reverse(viewname="v1:joblog-list"),
+            data={"finish_date": self.job_2.finish_date.isoformat()},
         )
 
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["id"], self.job_2.pk)
 
     def test_list_ordering_status(self):
-        response: Response = self.client.get(reverse("joblog-list"), {"ordering": "status"})
+        response: Response = self.client.get(path=reverse(viewname="v1:joblog-list"), data={"ordering": "status"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.job_1.pk)
         self.assertEqual(response.data["results"][1]["id"], self.job_2.pk)
 
     def test_list_ordering_status_reverse(self):
-        response: Response = self.client.get(reverse("joblog-list"), {"ordering": "-status"})
+        response: Response = self.client.get(path=reverse(viewname="v1:joblog-list"), data={"ordering": "-status"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.job_2.pk)
         self.assertEqual(response.data["results"][1]["id"], self.job_1.pk)
 
     def test_list_ordering_start_date(self):
-        response: Response = self.client.get(reverse("joblog-list"), {"ordering": "start_date"})
+        response: Response = self.client.get(path=reverse(viewname="v1:joblog-list"), data={"ordering": "start_date"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.job_1.pk)
         self.assertEqual(response.data["results"][1]["id"], self.job_2.pk)
 
     def test_list_ordering_start_date_reverse(self):
-        response: Response = self.client.get(reverse("joblog-list"), {"ordering": "-start_date"})
+        response: Response = self.client.get(path=reverse(viewname="v1:joblog-list"), data={"ordering": "-start_date"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.job_2.pk)
         self.assertEqual(response.data["results"][1]["id"], self.job_1.pk)
 
     def test_list_ordering_finish_date(self):
-        response: Response = self.client.get(reverse("joblog-list"), {"ordering": "finish_date"})
+        response: Response = self.client.get(path=reverse(viewname="v1:joblog-list"), data={"ordering": "finish_date"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.job_1.pk)
         self.assertEqual(response.data["results"][1]["id"], self.job_2.pk)
 
     def test_list_ordering_finish_date_reverse(self):
-        response: Response = self.client.get(reverse("joblog-list"), {"ordering": "-finish_date"})
+        response: Response = self.client.get(path=reverse(viewname="v1:joblog-list"), data={"ordering": "-finish_date"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.job_2.pk)
@@ -149,7 +153,7 @@ class TestJobAPI(BaseTestCase):
 
     def test_retrieve(self):
         response: Response = self.client.get(
-            reverse("joblog-detail", kwargs={"job_pk": self.job_2.pk}),
+            path=reverse(viewname="v1:joblog-detail", kwargs={"job_pk": self.job_2.pk}),
         )
 
         self.assertEqual(response.data["id"], self.job_2.pk)
@@ -168,7 +172,7 @@ class TestJobAPI(BaseTestCase):
 
         with patch("cm.job.run_task"):
             response: Response = self.client.post(
-                path=reverse("run-task", kwargs={"cluster_id": cluster.pk, "action_id": action.pk}),
+                path=reverse(viewname="v1:run-task", kwargs={"cluster_id": cluster.pk, "action_id": action.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -176,7 +180,7 @@ class TestJobAPI(BaseTestCase):
         job = JobLog.objects.get(action=action)
 
         response: Response = self.client.get(
-            reverse("joblog-detail", kwargs={"job_pk": job.pk}),
+            path=reverse(viewname="v1:joblog-detail", kwargs={"job_pk": job.pk}),
         )
 
         self.assertEqual(len(response.data["log_files"]), 2)
@@ -202,17 +206,17 @@ class TestJobAPI(BaseTestCase):
         with self.no_rights_user_logged_in:
             with patch("cm.job.run_task"):
                 self.client.post(
-                    path=reverse("run-task", kwargs={"cluster_id": cluster.pk, "action_id": action.pk}),
+                    path=reverse(viewname="v1:run-task", kwargs={"cluster_id": cluster.pk, "action_id": action.pk}),
                 )
 
-            response: Response = self.client.get(reverse("joblog-list"))
+            response: Response = self.client.get(path=reverse(viewname="v1:joblog-list"))
 
             self.assertIn(
                 JobLog.objects.get(action=action).pk,
                 {job_data["id"] for job_data in response.data["results"]},
             )
 
-            response: Response = self.client.get(reverse("tasklog-list"))
+            response: Response = self.client.get(path=reverse(viewname="v1:tasklog-list"))
 
             self.assertIn(
                 TaskLog.objects.get(action=action).pk,

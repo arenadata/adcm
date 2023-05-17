@@ -26,17 +26,17 @@ from adcm.serializers import EmptySerializer
 
 class GroupUserSerializer(EmptySerializer):
     id = IntegerField()
-    url = HyperlinkedIdentityField(view_name="rbac:user-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:user-detail")
 
 
 class UserGroupSerializer(EmptySerializer):
     id = IntegerField()
-    url = HyperlinkedIdentityField(view_name="rbac:group-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:group-detail")
 
 
 class ExpandedUserSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     group = UserGroupSerializer(many=True, source="groups")
-    url = HyperlinkedIdentityField(view_name="rbac:user-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:user-detail")
 
     class Meta:
         model = User
@@ -69,7 +69,7 @@ class GroupSerializer(FlexFieldsSerializerMixin, Serializer):
     name = RegexField(r"^[^\n]+$", max_length=100, source="name_to_display")
     description = CharField(max_length=255, allow_blank=True, required=False, default="")
     user = GroupUserSerializer(many=True, required=False, source="user_set")
-    url = HyperlinkedIdentityField(view_name="rbac:group-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:group-detail")
     built_in = BooleanField(read_only=True)
     type = CharField(read_only=True)
 

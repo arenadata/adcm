@@ -89,7 +89,7 @@ class StackActionSerializer(EmptySerializer):
 
 
 class ActionSerializer(StackActionSerializer):
-    url = HostActionDetailURL(read_only=True, view_name="object-action-details")
+    url = HostActionDetailURL(read_only=True, view_name="v1:object-action-details")
 
 
 class ActionShort(EmptySerializer):
@@ -97,7 +97,7 @@ class ActionShort(EmptySerializer):
     display_name = CharField(required=False)
     config = SerializerMethodField()
     hostcomponentmap = JSONField(read_only=False)
-    run = ActionDetailURL(read_only=True, view_name="run-task")
+    run = ActionDetailURL(read_only=True, view_name="v1:run-task")
 
     def get_config(self, obj):
         context = self.context
@@ -152,7 +152,7 @@ class StackActionDetailSerializer(StackActionSerializer):
 
 
 class ActionDetailSerializer(StackActionDetailSerializer):
-    run = HostActionDetailURL(read_only=True, view_name="run-task")
+    run = HostActionDetailURL(read_only=True, view_name="v1:run-task")
 
 
 class ActionUISerializer(ActionDetailSerializer):

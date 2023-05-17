@@ -48,8 +48,8 @@ class TestPolicyAudit(BaseTestCase):
             class_name="ObjectRole",
         )
         self.policy = Policy.objects.create(name="test_policy_2", built_in=False)
-        self.list_name = "rbac:policy-list"
-        self.detail_name = "rbac:policy-detail"
+        self.list_name = "v1:rbac:policy-list"
+        self.detail_name = "v1:rbac:policy-detail"
         self.policy_updated_str = "Policy updated"
         self.provider = HostProvider.objects.create(
             name="test_provider",
@@ -107,7 +107,7 @@ class TestPolicyAudit(BaseTestCase):
 
     def test_create(self):
         response: Response = self.client.post(
-            path=reverse(self.list_name),
+            path=reverse(viewname=self.list_name),
             data={
                 "name": self.name,
                 "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
@@ -132,7 +132,7 @@ class TestPolicyAudit(BaseTestCase):
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse(self.list_name),
+                path=reverse(viewname=self.list_name),
                 data={
                     "name": self.name,
                     "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
@@ -156,7 +156,7 @@ class TestPolicyAudit(BaseTestCase):
 
     def test_delete(self):
         self.client.delete(
-            path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
+            path=reverse(viewname=self.detail_name, kwargs={"pk": self.policy.pk}),
             content_type=APPLICATION_JSON,
         )
 
@@ -174,7 +174,7 @@ class TestPolicyAudit(BaseTestCase):
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
+                path=reverse(viewname=self.detail_name, kwargs={"pk": self.policy.pk}),
                 content_type=APPLICATION_JSON,
             )
 
@@ -194,7 +194,7 @@ class TestPolicyAudit(BaseTestCase):
         new_test_description = "new_test_description"
         prev_description = self.policy.description
         self.client.put(
-            path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
+            path=reverse(viewname=self.detail_name, kwargs={"pk": self.policy.pk}),
             data={
                 "name": self.policy.name,
                 "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
@@ -237,7 +237,7 @@ class TestPolicyAudit(BaseTestCase):
     def test_update_put_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.put(
-                path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
+                path=reverse(viewname=self.detail_name, kwargs={"pk": self.policy.pk}),
                 data={
                     "name": self.policy.name,
                     "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
@@ -262,7 +262,7 @@ class TestPolicyAudit(BaseTestCase):
         new_test_description = "new_test_description"
         prev_description = self.policy.description
         self.client.patch(
-            path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
+            path=reverse(viewname=self.detail_name, kwargs={"pk": self.policy.pk}),
             data={
                 "object": [
                     {"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"},
@@ -312,7 +312,7 @@ class TestPolicyAudit(BaseTestCase):
     def test_update_patch_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
-                path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
+                path=reverse(viewname=self.detail_name, kwargs={"pk": self.policy.pk}),
                 data={
                     "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
                     "role": {"id": self.role.pk},
@@ -335,7 +335,7 @@ class TestPolicyAudit(BaseTestCase):
     def test_update_patch_failed(self):
         try:
             self.client.patch(
-                path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
+                path=reverse(viewname=self.detail_name, kwargs={"pk": self.policy.pk}),
                 data={
                     "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
                     "role": {},

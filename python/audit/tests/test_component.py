@@ -114,7 +114,7 @@ class TestComponentAudit(BaseTestCase):
 
     def test_update_config(self):
         self.client.post(
-            path=reverse("config-history", kwargs={"component_id": self.component.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"component_id": self.component.pk}),
             data={"config": {}},
             content_type=APPLICATION_JSON,
         )
@@ -126,7 +126,7 @@ class TestComponentAudit(BaseTestCase):
     def test_restore_config(self):
         self.client.patch(
             path=reverse(
-                "config-history-version-restore",
+                viewname="v1:config-history-version-restore",
                 kwargs={"component_id": self.component.pk, "version": self.config_log.pk},
             ),
             content_type=APPLICATION_JSON,
@@ -140,7 +140,7 @@ class TestComponentAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
                 path=reverse(
-                    "config-history-version-restore",
+                    viewname="v1:config-history-version-restore",
                     kwargs={"component_id": self.component.pk, "version": self.config_log.pk},
                 ),
                 content_type=APPLICATION_JSON,
@@ -158,7 +158,7 @@ class TestComponentAudit(BaseTestCase):
     def test_update_config_via_service(self):
         self.client.post(
             path=reverse(
-                "config-history",
+                viewname="v1:config-history",
                 kwargs={"service_id": self.service.pk, "component_id": self.component.pk},
             ),
             data={"config": {}},
@@ -173,7 +173,7 @@ class TestComponentAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
                 path=reverse(
-                    "config-history",
+                    viewname="v1:config-history",
                     kwargs={"service_id": self.service.pk, "component_id": self.component.pk},
                 ),
                 data={"config": {}},
@@ -192,7 +192,7 @@ class TestComponentAudit(BaseTestCase):
     def test_restore_config_via_service(self):
         self.client.patch(
             path=reverse(
-                "config-history-version-restore",
+                viewname="v1:config-history-version-restore",
                 kwargs={
                     "service_id": self.service.pk,
                     "component_id": self.component.pk,
@@ -210,7 +210,7 @@ class TestComponentAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
                 path=reverse(
-                    "config-history-version-restore",
+                    viewname="v1:config-history-version-restore",
                     kwargs={
                         "service_id": self.service.pk,
                         "component_id": self.component.pk,
@@ -239,7 +239,7 @@ class TestComponentAudit(BaseTestCase):
         with patch(self.api_create_str, return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
-                    "run-task",
+                    viewname="v1:run-task",
                     kwargs={
                         "component_id": self.component.pk,
                         "action_id": action.pk,
@@ -254,7 +254,7 @@ class TestComponentAudit(BaseTestCase):
         with patch(self.api_create_str, return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
-                    "run-task",
+                    viewname="v1:run-task",
                     kwargs={
                         "service_id": self.service.pk,
                         "component_id": self.component.pk,
@@ -270,7 +270,7 @@ class TestComponentAudit(BaseTestCase):
         with patch(self.api_create_str, return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
-                    "run-task",
+                    viewname="v1:run-task",
                     kwargs={
                         "cluster_id": self.cluster.pk,
                         "service_id": self.service.pk,
@@ -286,7 +286,7 @@ class TestComponentAudit(BaseTestCase):
 
     def test_change_maintenance_mode(self):
         self.client.post(
-            path=reverse("component-maintenance-mode", kwargs={"component_id": self.component.pk}),
+            path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
         )
 
@@ -301,7 +301,7 @@ class TestComponentAudit(BaseTestCase):
     def test_change_maintenance_mode_via_service(self):
         self.client.post(
             path=reverse(
-                "component-maintenance-mode",
+                viewname="v1:component-maintenance-mode",
                 kwargs={"service_id": self.service.pk, "component_id": self.component.pk},
             ),
             data={"maintenance_mode": MaintenanceMode.ON},
@@ -318,7 +318,7 @@ class TestComponentAudit(BaseTestCase):
     def test_change_maintenance_mode_via_cluster(self):
         self.client.post(
             path=reverse(
-                "component-maintenance-mode",
+                viewname="v1:component-maintenance-mode",
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "service_id": self.service.pk,
@@ -338,7 +338,7 @@ class TestComponentAudit(BaseTestCase):
 
     def test_change_maintenance_mode_failed(self):
         self.client.post(
-            path=reverse("component-maintenance-mode", kwargs={"component_id": self.component.pk}),
+            path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
             data={"maintenance_mode": MaintenanceMode.CHANGING},
         )
 
@@ -353,7 +353,7 @@ class TestComponentAudit(BaseTestCase):
     def test_change_maintenance_mode_denied(self):
         with self.no_rights_user_logged_in:
             self.client.post(
-                path=reverse("component-maintenance-mode", kwargs={"component_id": self.component.pk}),
+                path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
             )
 

@@ -43,9 +43,9 @@ class ConfigVersionURL(HyperlinkedIdentityField):
 
 
 class HistoryCurrentPreviousConfigSerializer(EmptySerializer):
-    history = CommonAPIURL(read_only=True, view_name="config-history")
-    current = CommonAPIURL(read_only=True, view_name="config-current")
-    previous = CommonAPIURL(read_only=True, view_name="config-previous")
+    history = CommonAPIURL(read_only=True, view_name="v1:config-history")
+    current = CommonAPIURL(read_only=True, view_name="v1:config-current")
+    previous = CommonAPIURL(read_only=True, view_name="v1:config-previous")
 
 
 class ConfigObjectConfigSerializer(EmptySerializer):
@@ -104,7 +104,7 @@ class ObjectConfigRestoreSerializer(ConfigObjectConfigSerializer):
 
 
 class ConfigHistorySerializer(FlexFieldsSerializerMixin, ConfigObjectConfigSerializer):
-    url = ConfigVersionURL(read_only=True, view_name="config-history-version")
+    url = ConfigVersionURL(read_only=True, view_name="v1:config-history-version")
 
 
 class ConfigSerializer(EmptySerializer):

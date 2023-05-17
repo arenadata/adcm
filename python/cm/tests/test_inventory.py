@@ -561,7 +561,7 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                "run-task",
+                viewname="v1:run-task",
                 kwargs={
                     "cluster_id": self.cluster_hc_acl.pk,
                     "object_type": "cluster",
@@ -626,7 +626,7 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                "run-task",
+                viewname="v1:run-task",
                 kwargs={
                     "cluster_id": self.cluster_hc_acl.pk,
                     "object_type": "cluster",
@@ -674,7 +674,7 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                "run-task",
+                viewname="v1:run-task",
                 kwargs={
                     "cluster_id": self.cluster_target_group.pk,
                     "host_id": self.host_target_group_1.pk,
@@ -709,7 +709,7 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                "run-task",
+                viewname="v1:run-task",
                 kwargs={
                     "cluster_id": self.cluster_target_group.pk,
                     "host_id": self.host_target_group_2.pk,

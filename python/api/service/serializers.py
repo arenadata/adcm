@@ -55,7 +55,7 @@ class ServiceSerializer(EmptySerializer):
     display_name = CharField(read_only=True)
     state = CharField(read_only=True)
     prototype_id = IntegerField(required=True, help_text="id of service prototype")
-    url = ObjectURL(read_only=True, view_name="service-details")
+    url = ObjectURL(read_only=True, view_name="v1:service-details")
     maintenance_mode = CharField(read_only=True)
     is_maintenance_mode_available = BooleanField(read_only=True)
 
@@ -75,14 +75,14 @@ class ServiceSerializer(EmptySerializer):
 
 
 class ServiceUISerializer(ServiceSerializer):
-    action = CommonAPIURL(read_only=True, view_name="object-action")
+    action = CommonAPIURL(read_only=True, view_name="v1:object-action")
     name = CharField(read_only=True)
     version = SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
     status = SerializerMethodField()
     hostcomponent = HyperlinkedIdentityField(
-        view_name="host-component", lookup_field="cluster_id", lookup_url_kwarg="cluster_id"
+        view_name="v1:host-component", lookup_field="cluster_id", lookup_url_kwarg="cluster_id"
     )
 
     @staticmethod
@@ -113,20 +113,20 @@ class ServiceDetailSerializer(ServiceSerializer):
     requires = JSONField(read_only=True)
     status = SerializerMethodField()
     monitoring = CharField(read_only=True)
-    action = CommonAPIURL(read_only=True, view_name="object-action")
-    config = CommonAPIURL(read_only=True, view_name="object-config")
-    component = ObjectURL(read_only=True, view_name="component")
-    imports = ObjectURL(read_only=True, view_name="service-import")
-    bind = ObjectURL(read_only=True, view_name="service-bind")
+    action = CommonAPIURL(read_only=True, view_name="v1:object-action")
+    config = CommonAPIURL(read_only=True, view_name="v1:object-config")
+    component = ObjectURL(read_only=True, view_name="v1:component")
+    imports = ObjectURL(read_only=True, view_name="v1:service-import")
+    bind = ObjectURL(read_only=True, view_name="v1:service-bind")
     prototype = HyperlinkedRelatedField(
         read_only=True,
-        view_name="service-prototype-detail",
+        view_name="v1:service-prototype-detail",
         lookup_url_kwarg="prototype_pk",
     )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
-    group_config = GroupConfigsHyperlinkedIdentityField(view_name="group-config-list")
+    group_config = GroupConfigsHyperlinkedIdentityField(view_name="v1:group-config-list")
 
     @staticmethod
     def get_status(obj: ClusterObject) -> int:
@@ -141,7 +141,7 @@ class ServiceDetailUISerializer(ServiceDetailSerializer):
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     main_info = SerializerMethodField()
     hostcomponent = HyperlinkedIdentityField(
-        view_name="host-component", lookup_field="cluster_id", lookup_url_kwarg="cluster_id"
+        view_name="v1:host-component", lookup_field="cluster_id", lookup_url_kwarg="cluster_id"
     )
 
     def get_actions(self, obj):
@@ -186,7 +186,7 @@ class ServiceBindUrlFields(HyperlinkedIdentityField):
 
 
 class ServiceBindSerializer(BindSerializer):
-    url = ServiceBindUrlFields(read_only=True, view_name="service-bind-details")
+    url = ServiceBindUrlFields(read_only=True, view_name="v1:service-bind-details")
 
 
 class ServiceBindPostSerializer(EmptySerializer):

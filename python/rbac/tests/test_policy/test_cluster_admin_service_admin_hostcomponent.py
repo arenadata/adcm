@@ -32,7 +32,7 @@ class ClusterAdminServiceAdminHostcomponentTestCase(PolicyBaseTestCase):
 
     def test_cluster_admin_can_change_host_config(self):
         response: Response = self.client.post(
-            path=reverse(viewname="host", kwargs={"provider_id": self.provider.pk}),
+            path=reverse(viewname="v1:host", kwargs={"provider_id": self.provider.pk}),
             data={"fqdn": "new-host"},
             content_type=APPLICATION_JSON,
         )
@@ -41,7 +41,7 @@ class ClusterAdminServiceAdminHostcomponentTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response: Response = self.client.post(
-            path=reverse(viewname="host", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:host", kwargs={"cluster_id": self.cluster.pk}),
             data={"host_id": host.pk},
             content_type=APPLICATION_JSON,
         )
@@ -54,7 +54,7 @@ class ClusterAdminServiceAdminHostcomponentTestCase(PolicyBaseTestCase):
 
         component = ServiceComponent.objects.get(prototype__name="component_1_1")
         response: Response = self.client.post(
-            path=reverse(viewname="host-component", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:host-component", kwargs={"cluster_id": self.cluster.pk}),
             data={
                 "cluster_id": self.cluster.pk,
                 "hc": [{"component_id": component.pk, "host_id": host.pk, "service_id": self.service.pk}],
@@ -70,7 +70,7 @@ class ClusterAdminServiceAdminHostcomponentTestCase(PolicyBaseTestCase):
 
         with self.another_user_logged_in(username=self.new_user.username, password=self.new_user_password):
             response: Response = self.client.post(
-                path=reverse(viewname="config-history", kwargs={"host_id": host.pk}),
+                path=reverse(viewname="v1:config-history", kwargs={"host_id": host.pk}),
                 data={"config": {"string": "new_string"}},
                 content_type=APPLICATION_JSON,
             )

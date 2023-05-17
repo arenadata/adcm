@@ -87,7 +87,7 @@ class GroupPolicyTestCase(BaseTestCase):
 
     def get_new_group(self, name: str) -> Group:
         response: Response = self.client.post(
-            path=reverse(viewname="rbac:group-list"),
+            path=reverse(viewname="v1:rbac:group-list"),
             data={"name": name},
             content_type=APPLICATION_JSON,
         )
@@ -105,7 +105,7 @@ class GroupPolicyTestCase(BaseTestCase):
 
         with self.another_user_logged_in(username=self.user_1.username, password=self.user_1_password):
             response: Response = self.client.post(
-                path=reverse(viewname="config-history", kwargs={"service_id": self.main_with_components_service.pk}),
+                path=reverse(viewname="v1:config-history", kwargs={"service_id": self.main_with_components_service.pk}),
                 data={"config": config_log.config},
                 content_type=APPLICATION_JSON,
             )
@@ -148,7 +148,7 @@ class DeleteServicePolicyTestCase(BaseTestCase):
 
     def test_user_can_update_service_config_after_undelete(self):
         response = self.client.delete(
-            path=reverse(viewname="service-details", kwargs={"service_id": self.main_with_components_service.pk}),
+            path=reverse(viewname="v1:service-details", kwargs={"service_id": self.main_with_components_service.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
@@ -156,7 +156,7 @@ class DeleteServicePolicyTestCase(BaseTestCase):
         main_with_components_service = self.create_service(cluster_pk=self.cluster.pk, name="main_with_components")
 
         response: Response = self.client.patch(
-            path=reverse(viewname="rbac:policy-detail", kwargs={"pk": self.service_admin_policy_pk}),
+            path=reverse(viewname="v1:rbac:policy-detail", kwargs={"pk": self.service_admin_policy_pk}),
             data={
                 "object": [
                     {
@@ -179,7 +179,7 @@ class DeleteServicePolicyTestCase(BaseTestCase):
 
         with self.another_user_logged_in(username=self.user_1.username, password=self.user_1_password):
             response: Response = self.client.post(
-                path=reverse(viewname="config-history", kwargs={"service_id": main_with_components_service.pk}),
+                path=reverse(viewname="v1:config-history", kwargs={"service_id": main_with_components_service.pk}),
                 data={"config": config_log.config},
                 content_type=APPLICATION_JSON,
             )
@@ -241,7 +241,7 @@ class ActionsPolicyTestCase(BaseTestCase):
         action = Action.objects.get(display_name="Cluster ready for host")
         with self.another_user_logged_in(username=self.user_1.username, password=self.user_1_password):
             response: Response = self.client.post(
-                path=reverse("run-task", kwargs={"host_id": self.host_1.pk, "action_id": action.pk}),
+                path=reverse(viewname="v1:run-task", kwargs={"host_id": self.host_1.pk, "action_id": action.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)

@@ -10,13 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf.urls import include
-from django.urls import path
+from django.apps import AppConfig
 
-urlpatterns = [
-    path("social/", include("social_django.urls", namespace="social")),
-    path("auth/", include("rest_framework.urls", namespace="rest_framework")),
-    path("api/v1/", include(("api.urls", "api"), namespace="v1")),
-    path("api/v2/", include(("api_v2.urls", "api_v2"), namespace="v2")),
-    path("api/ui/", include("api_ui.urls")),
-]
+
+class ApiV2Config(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "api_v2"

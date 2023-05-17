@@ -125,7 +125,9 @@ class TestActionAudit(BaseTestCase):
         config_log.save(update_fields=["attr"])
 
         with patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(path=reverse("run-task", kwargs={"adcm_pk": self.adcm.pk, "action_id": self.action.pk}))
+            self.client.post(
+                path=reverse(viewname="v1:run-task", kwargs={"adcm_pk": self.adcm.pk, "action_id": self.action.pk})
+            )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -140,7 +142,7 @@ class TestActionAudit(BaseTestCase):
         )
 
         with patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(path=reverse("run-task", kwargs={"adcm_pk": 999, "action_id": self.action.pk}))
+            self.client.post(path=reverse(viewname="v1:run-task", kwargs={"adcm_pk": 999, "action_id": self.action.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -173,7 +175,7 @@ class TestActionAudit(BaseTestCase):
         with patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
-                    "run-task",
+                    viewname="v1:run-task",
                     kwargs={
                         "cluster_id": cluster.pk,
                         "service_id": service.pk,
@@ -203,7 +205,7 @@ class TestActionAudit(BaseTestCase):
         ):
             response: Response = self.client.post(
                 path=reverse(
-                    "run-task",
+                    viewname="v1:run-task",
                     kwargs={
                         "cluster_id": cluster.pk,
                         "service_id": service.pk,
@@ -245,12 +247,12 @@ class TestActionAudit(BaseTestCase):
         component_policy.apply()
 
         paths = [
-            reverse("run-task", kwargs={"adcm_pk": self.adcm.pk, "action_id": self.action.pk}),
-            reverse("run-task", kwargs={"cluster_id": cluster.pk, "action_id": self.action.pk}),
-            reverse("run-task", kwargs={"host_id": host.pk, "action_id": self.action.pk}),
-            reverse("run-task", kwargs={"component_id": component.pk, "action_id": self.action.pk}),
+            reverse(viewname="v1:run-task", kwargs={"adcm_pk": self.adcm.pk, "action_id": self.action.pk}),
+            reverse(viewname="v1:run-task", kwargs={"cluster_id": cluster.pk, "action_id": self.action.pk}),
+            reverse(viewname="v1:run-task", kwargs={"host_id": host.pk, "action_id": self.action.pk}),
+            reverse(viewname="v1:run-task", kwargs={"component_id": component.pk, "action_id": self.action.pk}),
             reverse(
-                "run-task",
+                viewname="v1:run-task",
                 kwargs={
                     "service_id": service.pk,
                     "component_id": component.pk,
@@ -258,7 +260,7 @@ class TestActionAudit(BaseTestCase):
                 },
             ),
             reverse(
-                "run-task",
+                viewname="v1:run-task",
                 kwargs={
                     "cluster_id": cluster.pk,
                     "service_id": service.pk,

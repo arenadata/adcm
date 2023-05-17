@@ -50,7 +50,7 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase):
             path=settings.BASE_DIR / "python" / "rbac" / "tests" / "files" / "service_admin_provider.tar"
         )
         response: Response = self.client.post(
-            path=reverse(viewname="provider"),
+            path=reverse(viewname="v1:provider"),
             data={
                 "prototype_id": Prototype.objects.get(bundle=provider_bundle, type=ObjectType.PROVIDER).pk,
                 "name": "test_provider",
@@ -65,7 +65,7 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase):
 
     def get_host_pk(self):
         response: Response = self.client.post(
-            path=reverse(viewname="host", kwargs={"provider_id": self.get_provider_pk()}),
+            path=reverse(viewname="v1:host", kwargs={"provider_id": self.get_provider_pk()}),
             data={"fqdn": "test-host"},
             content_type=APPLICATION_JSON,
         )
@@ -75,7 +75,7 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase):
 
     def get_cluster_pk(self):
         response: Response = self.client.post(
-            path=reverse(viewname="cluster"),
+            path=reverse(viewname="v1:cluster"),
             data={
                 "prototype_id": Prototype.objects.get(bundle=self.cluster_bundle, type=ObjectType.CLUSTER).pk,
                 "name": "test_cluster",
@@ -87,7 +87,7 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase):
 
     def get_service(self):
         response = self.client.post(
-            path=reverse(viewname="service", kwargs={"cluster_id": self.cluster_pk}),
+            path=reverse(viewname="v1:service", kwargs={"cluster_id": self.cluster_pk}),
             data={"prototype_id": Prototype.objects.get(bundle=self.cluster_bundle, type=ObjectType.SERVICE).pk},
             content_type=APPLICATION_JSON,
         )
@@ -95,7 +95,7 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase):
 
     def create_host_component(self):
         response: Response = self.client.post(
-            path=reverse(viewname="host-component", kwargs={"cluster_id": self.cluster_pk}),
+            path=reverse(viewname="v1:host-component", kwargs={"cluster_id": self.cluster_pk}),
             data={
                 "cluster_id": self.cluster_pk,
                 "hc": [
@@ -113,7 +113,7 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase):
 
     def get_group_config_pk(self) -> int:
         response: Response = self.client.post(
-            path=reverse("group-config-list"),
+            path=reverse(viewname="v1:group-config-list"),
             data={
                 "name": "service_group_config",
                 "object_id": self.service.pk,
@@ -128,7 +128,7 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase):
 
     def test_retrieve_config_group_success(self):
         response: Response = self.client.get(
-            path=reverse("group-config-detail", kwargs={"pk": self.group_config_pk}),
+            path=reverse(viewname="v1:group-config-detail", kwargs={"pk": self.group_config_pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

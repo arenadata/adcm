@@ -27,44 +27,44 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
 
     def test_no_rights_user_have_no_access(self):  # pylint: disable=too-many-statements
         response: Response = self.client.get(
-            path=reverse(viewname="cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         response: Response = self.client.get(
-            path=reverse(viewname="service-details", kwargs={"service_id": self.last_service_pk}),
+            path=reverse(viewname="v1:service-details", kwargs={"service_id": self.last_service_pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         response: Response = self.client.get(
-            path=reverse(viewname="component-details", kwargs={"component_id": self.last_component_pk}),
+            path=reverse(viewname="v1:component-details", kwargs={"component_id": self.last_component_pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         response: Response = self.client.get(
-            path=reverse(viewname="provider-details", kwargs={"provider_id": self.provider.pk}),
+            path=reverse(viewname="v1:provider-details", kwargs={"provider_id": self.provider.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         response: Response = self.client.get(
-            path=reverse(viewname="host-details", kwargs={"host_id": self.last_host_pk}),
+            path=reverse(viewname="v1:host-details", kwargs={"host_id": self.last_host_pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         response: Response = self.client.get(
-            path=reverse(viewname="host", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:host", kwargs={"cluster_id": self.cluster.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         response: Response = self.client.get(
             path=reverse(
-                viewname="config-current",
+                viewname="v1:config-current",
                 kwargs={"cluster_id": self.cluster.pk, "object_type": "cluster", "version": "current"},
             ),
         )
@@ -73,7 +73,7 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.get(
             path=reverse(
-                viewname="config-current",
+                viewname="v1:config-current",
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "service_id": self.last_service_pk,
@@ -87,7 +87,7 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.get(
             path=reverse(
-                viewname="config-current",
+                viewname="v1:config-current",
                 kwargs={"component_id": self.last_component_pk, "object_type": "component", "version": "current"},
             ),
         )
@@ -96,7 +96,7 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.get(
             path=reverse(
-                viewname="config-current",
+                viewname="v1:config-current",
                 kwargs={"provider_id": self.provider.pk, "object_type": "provider", "version": "current"},
             ),
         )
@@ -104,7 +104,7 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         response: Response = self.client.get(
-            path=reverse(viewname="object-action", kwargs={"cluster_id": self.cluster.pk, "object_type": "cluster"}),
+            path=reverse(viewname="v1:object-action", kwargs={"cluster_id": self.cluster.pk, "object_type": "cluster"}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -112,7 +112,7 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.get(
             path=reverse(
-                viewname="object-action", kwargs={"service_id": self.last_service_pk, "object_type": "service"}
+                viewname="v1:object-action", kwargs={"service_id": self.last_service_pk, "object_type": "service"}
             ),
         )
 
@@ -121,7 +121,7 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.get(
             path=reverse(
-                viewname="object-action", kwargs={"component_id": self.last_component_pk, "object_type": "component"}
+                viewname="v1:object-action", kwargs={"component_id": self.last_component_pk, "object_type": "component"}
             ),
         )
 
@@ -129,14 +129,14 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
         self.assertEqual(response.json(), [])
 
         response: Response = self.client.get(
-            path=reverse(viewname="object-action", kwargs={"provider_id": self.provider.pk}),
+            path=reverse(viewname="v1:object-action", kwargs={"provider_id": self.provider.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json(), [])
 
         response: Response = self.client.post(
-            path=reverse(viewname="host-component", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:host-component", kwargs={"cluster_id": self.cluster.pk}),
             data={
                 "cluster_id": self.cluster.pk,
                 "hc": [
@@ -153,7 +153,9 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         response: Response = self.client.post(
-            path=reverse(viewname="config-history", kwargs={"cluster_id": self.cluster.pk, "object_type": "cluster"}),
+            path=reverse(
+                viewname="v1:config-history", kwargs={"cluster_id": self.cluster.pk, "object_type": "cluster"}
+            ),
             data={"config": {"float": 3.3}},
             content_type=APPLICATION_JSON,
         )
@@ -162,7 +164,7 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                viewname="config-history",
+                viewname="v1:config-history",
                 kwargs={"cluster_id": self.cluster.pk, "service_id": self.last_service_pk, "object_type": "service"},
             ),
             data={"config": {"float": 3.3}},
@@ -173,7 +175,7 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                viewname="config-history",
+                viewname="v1:config-history",
                 kwargs={"component_id": self.last_component_pk, "object_type": "component"},
             ),
             data={"config": {"float": 3.3}},
@@ -183,7 +185,7 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         response: Response = self.client.post(
-            path=reverse(viewname="config-history", kwargs={"provider_id": self.provider.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"provider_id": self.provider.pk}),
             data={"config": {"string": "new_string"}},
             content_type=APPLICATION_JSON,
         )
@@ -192,7 +194,7 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                viewname="config-history",
+                viewname="v1:config-history",
                 kwargs={"host_id": self.last_host_pk, "object_type": "host"},
             ),
             data={"config": {"string": "new_string"}},
@@ -203,7 +205,7 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                viewname="config-history",
+                viewname="v1:config-history",
                 kwargs={"cluster_id": self.cluster.pk, "host_id": self.last_host_pk, "object_type": "host"},
             ),
             data={"attr": {}, "config": {"string": "new_string"}},
@@ -213,7 +215,7 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         response = self.client.post(
-            path=reverse(viewname="service", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:service", kwargs={"cluster_id": self.cluster.pk}),
             data={
                 "prototype_id": self.service_6_proto.pk,
             },
@@ -224,7 +226,7 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
 
         response = self.client.delete(
             path=reverse(
-                viewname="service-details",
+                viewname="v1:service-details",
                 kwargs={"cluster_id": self.cluster.pk, "service_id": self.last_service_pk},
             ),
             content_type=APPLICATION_JSON,
@@ -233,7 +235,7 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         response = self.client.post(
-            path=reverse(viewname="service-maintenance-mode", kwargs={"service_id": self.last_service_pk}),
+            path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.last_service_pk}),
             data={
                 "maintenance_mode": MaintenanceMode.ON,
             },
@@ -243,7 +245,7 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         response = self.client.post(
-            path=reverse(viewname="component-maintenance-mode", kwargs={"component_id": self.last_component_pk}),
+            path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.last_component_pk}),
             data={
                 "maintenance_mode": MaintenanceMode.ON,
             },
@@ -253,7 +255,7 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         response = self.client.post(
-            path=reverse(viewname="host-maintenance-mode", kwargs={"host_id": self.last_host_pk}),
+            path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.last_host_pk}),
             data={
                 "maintenance_mode": MaintenanceMode.ON,
             },

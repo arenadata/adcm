@@ -63,14 +63,14 @@ class PolicyWithProviderAdminRole(PolicyBaseTestCase):
         )
 
         response: Response = self.client.get(
-            path=reverse(viewname="provider-details", kwargs={"provider_id": self.provider.pk}),
+            path=reverse(viewname="v1:provider-details", kwargs={"provider_id": self.provider.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["name"], self.provider.name)
 
         response: Response = self.client.get(
-            path=reverse(viewname="object-config", kwargs={"provider_id": self.provider.pk}),
+            path=reverse(viewname="v1:object-config", kwargs={"provider_id": self.provider.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -78,7 +78,7 @@ class PolicyWithProviderAdminRole(PolicyBaseTestCase):
         new_string = "new_string"
 
         response: Response = self.client.post(
-            path=reverse(viewname="config-history", kwargs={"provider_id": self.provider.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"provider_id": self.provider.pk}),
             data={"config": {"string": new_string}},
             content_type=APPLICATION_JSON,
         )
@@ -90,7 +90,7 @@ class PolicyWithProviderAdminRole(PolicyBaseTestCase):
         self.assertEqual(config_log.config["string"], new_string)
 
         response: Response = self.client.get(
-            path=reverse(viewname="object-action", kwargs={"provider_id": self.provider.pk}),
+            path=reverse(viewname="v1:object-action", kwargs={"provider_id": self.provider.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -99,7 +99,7 @@ class PolicyWithProviderAdminRole(PolicyBaseTestCase):
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             response: Response = self.client.post(
                 path=reverse(
-                    viewname="run-task",
+                    viewname="v1:run-task",
                     kwargs={"provider_id": self.provider.pk, "action_id": response.json()[0]["id"]},
                 ),
                 content_type=APPLICATION_JSON,
@@ -108,7 +108,7 @@ class PolicyWithProviderAdminRole(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response: Response = self.client.post(
-            path=reverse("host", kwargs={"provider_id": self.provider.pk}),
+            path=reverse(viewname="v1:host", kwargs={"provider_id": self.provider.pk}),
             data={"fqdn": "test-host"},
         )
 
@@ -116,13 +116,13 @@ class PolicyWithProviderAdminRole(PolicyBaseTestCase):
 
         host_pk = response.json()["id"]
 
-        response: Response = self.client.get(path=reverse("host-details", kwargs={"host_id": host_pk}))
+        response: Response = self.client.get(path=reverse(viewname="v1:host-details", kwargs={"host_id": host_pk}))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["id"], host_pk)
 
         response: Response = self.client.get(
-            path=reverse(viewname="object-config", kwargs={"host_id": host_pk}),
+            path=reverse(viewname="v1:object-config", kwargs={"host_id": host_pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -130,7 +130,7 @@ class PolicyWithProviderAdminRole(PolicyBaseTestCase):
         new_string = "new_string"
 
         response: Response = self.client.post(
-            path=reverse(viewname="config-history", kwargs={"host_id": host_pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"host_id": host_pk}),
             data={"config": {"string": new_string}},
             content_type=APPLICATION_JSON,
         )
@@ -142,7 +142,7 @@ class PolicyWithProviderAdminRole(PolicyBaseTestCase):
         self.assertEqual(config_log.config["string"], new_string)
 
         response: Response = self.client.get(
-            path=reverse(viewname="object-action", kwargs={"host_id": host_pk}),
+            path=reverse(viewname="v1:object-action", kwargs={"host_id": host_pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -151,7 +151,7 @@ class PolicyWithProviderAdminRole(PolicyBaseTestCase):
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             response: Response = self.client.post(
                 path=reverse(
-                    viewname="run-task",
+                    viewname="v1:run-task",
                     kwargs={"host_id": host.pk, "action_id": response.json()[0]["id"]},
                 ),
                 content_type=APPLICATION_JSON,
@@ -159,7 +159,7 @@ class PolicyWithProviderAdminRole(PolicyBaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        response: Response = self.client.delete(path=reverse("host-details", kwargs={"host_id": host.pk}))
+        response: Response = self.client.delete(path=reverse(viewname="v1:host-details", kwargs={"host_id": host.pk}))
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         with self.assertRaises(ObjectDoesNotExist):

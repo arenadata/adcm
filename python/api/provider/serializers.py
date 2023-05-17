@@ -40,7 +40,7 @@ class ProviderSerializer(EmptySerializer):
     description = CharField(required=False)
     state = CharField(read_only=True)
     before_upgrade = JSONField(read_only=True)
-    url = HyperlinkedIdentityField(view_name="provider-details", lookup_field="id", lookup_url_kwarg="provider_id")
+    url = HyperlinkedIdentityField(view_name="v1:provider-details", lookup_field="id", lookup_url_kwarg="provider_id")
 
     @staticmethod
     def validate_prototype_id(prototype_id):
@@ -63,28 +63,32 @@ class ProviderDetailSerializer(ProviderSerializer):
     license = CharField(read_only=True)
     bundle_id = IntegerField(read_only=True)
     prototype = HyperlinkedIdentityField(
-        view_name="provider-prototype-detail",
+        view_name="v1:provider-prototype-detail",
         lookup_field="pk",
         lookup_url_kwarg="prototype_pk",
     )
-    config = CommonAPIURL(view_name="object-config")
-    action = CommonAPIURL(view_name="object-action")
-    upgrade = HyperlinkedIdentityField(view_name="provider-upgrade", lookup_field="id", lookup_url_kwarg="provider_id")
-    host = ObjectURL(read_only=True, view_name="host")
+    config = CommonAPIURL(view_name="v1:object-config")
+    action = CommonAPIURL(view_name="v1:object-action")
+    upgrade = HyperlinkedIdentityField(
+        view_name="v1:provider-upgrade", lookup_field="id", lookup_url_kwarg="provider_id"
+    )
+    host = ObjectURL(read_only=True, view_name="v1:host")
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
-    group_config = GroupConfigsHyperlinkedIdentityField(view_name="group-config-list")
+    group_config = GroupConfigsHyperlinkedIdentityField(view_name="v1:group-config-list")
 
 
 class ProviderUISerializer(ProviderSerializer):
     edition = CharField(read_only=True)
     locked = BooleanField(read_only=True)
-    action = CommonAPIURL(view_name="object-action")
+    action = CommonAPIURL(view_name="v1:object-action")
     prototype_version = SerializerMethodField()
     prototype_name = SerializerMethodField()
     prototype_display_name = SerializerMethodField()
-    upgrade = HyperlinkedIdentityField(view_name="provider-upgrade", lookup_field="id", lookup_url_kwarg="provider_id")
+    upgrade = HyperlinkedIdentityField(
+        view_name="v1:provider-upgrade", lookup_field="id", lookup_url_kwarg="provider_id"
+    )
     upgradable = SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
 

@@ -100,7 +100,7 @@ class TestProviderAudit(BaseTestCase):
 
     def test_create(self):
         response: Response = self.client.post(
-            path=reverse("provider"),
+            path=reverse(viewname="v1:provider"),
             data={
                 "name": self.name,
                 "prototype_id": self.prototype.pk,
@@ -121,7 +121,7 @@ class TestProviderAudit(BaseTestCase):
         self.assertEqual(log.object_changes, {})
 
         self.client.post(
-            path=reverse("provider"),
+            path=reverse(viewname="v1:provider"),
             data={
                 "name": self.name,
                 "prototype_id": self.prototype.id,
@@ -141,7 +141,7 @@ class TestProviderAudit(BaseTestCase):
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("provider"),
+                path=reverse(viewname="v1:provider"),
                 data={
                     "name": self.name,
                     "prototype_id": self.prototype.pk,
@@ -164,7 +164,7 @@ class TestProviderAudit(BaseTestCase):
             name="test_provider",
             prototype=self.prototype,
         )
-        self.client.delete(path=reverse("provider-details", kwargs={"provider_id": provider.pk}))
+        self.client.delete(path=reverse(viewname="v1:provider-details", kwargs={"provider_id": provider.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -182,7 +182,7 @@ class TestProviderAudit(BaseTestCase):
         )
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse("provider-details", kwargs={"provider_id": provider.pk}),
+                path=reverse(viewname="v1:provider-details", kwargs={"provider_id": provider.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -209,7 +209,7 @@ class TestProviderAudit(BaseTestCase):
 
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse("provider-details", kwargs={"provider_id": provider.pk}),
+                path=reverse(viewname="v1:provider-details", kwargs={"provider_id": provider.pk}),
                 content_type=APPLICATION_JSON,
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -235,7 +235,7 @@ class TestProviderAudit(BaseTestCase):
             provider=provider,
         )
 
-        self.client.delete(path=reverse("provider-details", kwargs={"provider_id": provider.pk}))
+        self.client.delete(path=reverse(viewname="v1:provider-details", kwargs={"provider_id": provider.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -255,7 +255,7 @@ class TestProviderAudit(BaseTestCase):
         config.save(update_fields=["current"])
 
         self.client.post(
-            path=reverse("config-history", kwargs={"provider_id": provider.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"provider_id": provider.pk}),
             data={"config": {}},
             content_type=APPLICATION_JSON,
         )
@@ -271,7 +271,7 @@ class TestProviderAudit(BaseTestCase):
 
         response: Response = self.client.patch(
             path=reverse(
-                "config-history-version-restore",
+                viewname="v1:config-history-version-restore",
                 kwargs={"provider_id": provider.pk, "version": config_log.pk},
             ),
             content_type=APPLICATION_JSON,
@@ -294,7 +294,7 @@ class TestProviderAudit(BaseTestCase):
         ConfigLog.objects.create(obj_ref=config, config="{}")
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("config-history", kwargs={"provider_id": provider.pk}),
+                path=reverse(viewname="v1:config-history", kwargs={"provider_id": provider.pk}),
                 data={"config": {}},
                 content_type=APPLICATION_JSON,
             )
@@ -312,7 +312,7 @@ class TestProviderAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
                 path=reverse(
-                    "config-history-version-restore",
+                    viewname="v1:config-history-version-restore",
                     kwargs={"provider_id": provider.pk, "version": 1},
                 ),
                 content_type=APPLICATION_JSON,
@@ -340,7 +340,9 @@ class TestProviderAudit(BaseTestCase):
             state_available="any",
         )
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(path=reverse("run-task", kwargs={"provider_id": provider.pk, "action_id": action.pk}))
+            self.client.post(
+                path=reverse(viewname="v1:run-task", kwargs={"provider_id": provider.pk, "action_id": action.pk})
+            )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -368,7 +370,7 @@ class TestProviderAudit(BaseTestCase):
         with patch("api.provider.views.create", return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
-                    "do-provider-upgrade",
+                    viewname="v1:do-provider-upgrade",
                     kwargs={"provider_id": provider.pk, "upgrade_id": upgrade.pk},
                 ),
             )

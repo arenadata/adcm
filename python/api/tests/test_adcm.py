@@ -29,7 +29,7 @@ class TestADCM(BaseTestCase):
             "url": f"http://testserver/api/v1/adcm/{adcm.id}/",
         }
 
-        response: Response = self.client.get(reverse("adcm-list"))
+        response: Response = self.client.get(reverse(viewname="v1:adcm-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
@@ -53,7 +53,7 @@ class TestADCM(BaseTestCase):
             "main_info": None,
         }
 
-        response: Response = self.client.get(f"{reverse('adcm-list')}?view=interface")
+        response: Response = self.client.get(f"{reverse(viewname='v1:adcm-list')}?view=interface")
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
@@ -76,7 +76,7 @@ class TestADCM(BaseTestCase):
             "locked": adcm.locked,
         }
 
-        response: Response = self.client.get(reverse("adcm-detail", kwargs={"adcm_pk": adcm.id}))
+        response: Response = self.client.get(reverse(viewname="v1:adcm-detail", kwargs={"adcm_pk": adcm.id}))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertDictEqual(response.json(), test_data)
@@ -99,7 +99,9 @@ class TestADCM(BaseTestCase):
             "main_info": None,
         }
 
-        response: Response = self.client.get(f"{reverse('adcm-detail', kwargs={'adcm_pk': adcm.id})}?view=interface")
+        response: Response = self.client.get(
+            f"{reverse(viewname='v1:adcm-detail', kwargs={'adcm_pk': adcm.id})}?view=interface"
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertDictEqual(response.json(), test_data)

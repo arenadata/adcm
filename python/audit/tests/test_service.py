@@ -120,7 +120,7 @@ class TestServiceAudit(BaseTestCase):
     def test_create(self):
         cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_2")
         self.client.post(
-            path=reverse("service"),
+            path=reverse(viewname="v1:service"),
             data={
                 "cluster_id": cluster.pk,
                 "prototype_id": self.service_prototype.pk,
@@ -142,7 +142,7 @@ class TestServiceAudit(BaseTestCase):
         )
 
         self.client.post(
-            path=reverse("service"),
+            path=reverse(viewname="v1:service"),
             data={
                 "cluster_id": cluster.pk,
                 "prototype_id": self.service_prototype.pk,
@@ -187,7 +187,7 @@ class TestServiceAudit(BaseTestCase):
 
     def test_update_config(self):
         self.client.post(
-            path=reverse("config-history", kwargs={"service_id": self.service.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"service_id": self.service.pk}),
             data={"config": {}},
             content_type=APPLICATION_JSON,
         )
@@ -208,7 +208,7 @@ class TestServiceAudit(BaseTestCase):
     def test_update_config_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("config-history", kwargs={"service_id": self.service.pk}),
+                path=reverse(viewname="v1:config-history", kwargs={"service_id": self.service.pk}),
                 data={"config": {}},
                 content_type=APPLICATION_JSON,
             )
@@ -230,7 +230,7 @@ class TestServiceAudit(BaseTestCase):
     def test_restore_config(self):
         self.client.patch(
             path=reverse(
-                "config-history-version-restore",
+                viewname="v1:config-history-version-restore",
                 kwargs={"service_id": self.service.pk, "version": self.config_log.pk},
             ),
             content_type=APPLICATION_JSON,
@@ -253,7 +253,7 @@ class TestServiceAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
                 path=reverse(
-                    "config-history-version-restore",
+                    viewname="v1:config-history-version-restore",
                     kwargs={"service_id": self.service.pk, "version": 1},
                 ),
                 content_type=APPLICATION_JSON,
@@ -275,7 +275,7 @@ class TestServiceAudit(BaseTestCase):
 
     def test_delete(self):
         self.client.delete(
-            path=reverse("service-details", kwargs={"service_id": self.service.pk}),
+            path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             content_type=APPLICATION_JSON,
         )
 
@@ -293,7 +293,7 @@ class TestServiceAudit(BaseTestCase):
         )
 
         response: Response = self.client.delete(
-            path=reverse("service-details", kwargs={"service_id": self.service.pk}),
+            path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             content_type=APPLICATION_JSON,
         )
 
@@ -318,7 +318,7 @@ class TestServiceAudit(BaseTestCase):
 
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse("service-details", kwargs={"service_id": self.service.pk}),
+                path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
                 content_type=APPLICATION_JSON,
             )
 
@@ -344,17 +344,17 @@ class TestServiceAudit(BaseTestCase):
             encoding=settings.ENCODING_UTF_8,
         ) as f:
             self.client.post(
-                path=reverse("upload-bundle"),
+                path=reverse(viewname="v1:upload-bundle"),
                 data={"file": f},
             )
 
         self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": bundle_filename},
         )
 
         response: Response = self.client.post(
-            path=reverse("cluster"),
+            path=reverse(viewname="v1:cluster"),
             data={
                 "name": "Cluster name",
                 "prototype_id": Prototype.objects.get(name="importer_cluster").pk,
@@ -363,7 +363,7 @@ class TestServiceAudit(BaseTestCase):
 
         cluster = Cluster.objects.get(pk=response.data["id"])
         response: Response = self.client.post(
-            path=reverse("service"),
+            path=reverse(viewname="v1:service"),
             data={
                 "cluster_id": response.data["id"],
                 "prototype_id": Prototype.objects.get(name="importer_service").pk,
@@ -375,7 +375,7 @@ class TestServiceAudit(BaseTestCase):
         username = "new_user"
         password = self.get_random_str_num(length=12)
         response: Response = self.client.post(
-            path=reverse("rbac:user-list"),
+            path=reverse(viewname="v1:rbac:user-list"),
             data={
                 "username": username,
                 "password": password,
@@ -388,7 +388,7 @@ class TestServiceAudit(BaseTestCase):
 
         user = User.objects.get(pk=response.data["id"])
         response: Response = self.client.post(
-            path=reverse("rbac:role-list"),
+            path=reverse(viewname="v1:rbac:role-list"),
             data={
                 "display_name": "rolename",
                 "type": "role",
@@ -401,7 +401,7 @@ class TestServiceAudit(BaseTestCase):
 
         created_role = Role.objects.get(pk=response.data["id"])
         self.client.post(
-            path=reverse("rbac:policy-list"),
+            path=reverse(viewname="v1:rbac:policy-list"),
             data={
                 "name": "policy_name",
                 "role": {"id": created_role.pk},
@@ -414,7 +414,7 @@ class TestServiceAudit(BaseTestCase):
 
         with self.another_user_logged_in(username=username, password=password):
             response: Response = self.client.delete(
-                path=reverse("service-details", kwargs={"service_id": service.pk}),
+                path=reverse(viewname="v1:service-details", kwargs={"service_id": service.pk}),
                 content_type=APPLICATION_JSON,
             )
 
@@ -434,7 +434,7 @@ class TestServiceAudit(BaseTestCase):
 
     def test_import(self):
         self.client.post(
-            path=reverse("service-import", kwargs={"service_id": self.service.pk}),
+            path=reverse(viewname="v1:service-import", kwargs={"service_id": self.service.pk}),
             data={"bind": []},
             content_type=APPLICATION_JSON,
         )
@@ -455,7 +455,7 @@ class TestServiceAudit(BaseTestCase):
     def test_import_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("service-import", kwargs={"service_id": self.service.pk}),
+                path=reverse(viewname="v1:service-import", kwargs={"service_id": self.service.pk}),
                 data={"bind": []},
                 content_type=APPLICATION_JSON,
             )
@@ -477,7 +477,7 @@ class TestServiceAudit(BaseTestCase):
     def test_bind_unbind_cluster_to_service(self):
         _, cluster = self.get_service_and_cluster()
         self.client.post(
-            path=reverse("service-bind", kwargs={"service_id": self.service.pk}),
+            path=reverse(viewname="v1:service-bind", kwargs={"service_id": self.service.pk}),
             data={"export_cluster_id": cluster.pk},
             content_type=APPLICATION_JSON,
         )
@@ -497,7 +497,9 @@ class TestServiceAudit(BaseTestCase):
 
         bind = ClusterBind.objects.first()
         self.client.delete(
-            path=reverse("service-bind-details", kwargs={"service_id": self.service.pk, "bind_id": bind.pk}),
+            path=reverse(
+                viewname="v1:service-bind-details", kwargs={"service_id": self.service.pk, "bind_id": bind.pk}
+            ),
             content_type=APPLICATION_JSON,
         )
 
@@ -517,7 +519,7 @@ class TestServiceAudit(BaseTestCase):
     def test_bind_unbind_service_to_service(self):
         service, cluster = self.get_service_and_cluster()
         self.client.post(
-            path=reverse("service-bind", kwargs={"service_id": self.service.pk}),
+            path=reverse(viewname="v1:service-bind", kwargs={"service_id": self.service.pk}),
             data={"export_cluster_id": cluster.pk, "export_service_id": service.pk},
             content_type=APPLICATION_JSON,
         )
@@ -537,7 +539,9 @@ class TestServiceAudit(BaseTestCase):
 
         bind = ClusterBind.objects.first()
         self.client.delete(
-            path=reverse("service-bind-details", kwargs={"service_id": self.service.pk, "bind_id": bind.pk}),
+            path=reverse(
+                viewname="v1:service-bind-details", kwargs={"service_id": self.service.pk, "bind_id": bind.pk}
+            ),
             content_type=APPLICATION_JSON,
         )
 
@@ -558,7 +562,7 @@ class TestServiceAudit(BaseTestCase):
         _, cluster = self.get_service_and_cluster()
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("service-bind", kwargs={"service_id": self.service.pk}),
+                path=reverse(viewname="v1:service-bind", kwargs={"service_id": self.service.pk}),
                 data={"export_cluster_id": cluster.pk},
                 content_type=APPLICATION_JSON,
             )
@@ -578,7 +582,7 @@ class TestServiceAudit(BaseTestCase):
         )
 
         self.client.post(
-            path=reverse("service-bind", kwargs={"service_id": self.service.pk}),
+            path=reverse(viewname="v1:service-bind", kwargs={"service_id": self.service.pk}),
             data={"export_cluster_id": cluster.pk},
             content_type=APPLICATION_JSON,
         )
@@ -586,7 +590,7 @@ class TestServiceAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
                 path=reverse(
-                    "service-bind-details",
+                    viewname="v1:service-bind-details",
                     kwargs={"service_id": self.service.pk, "bind_id": bind.pk},
                 ),
                 content_type=APPLICATION_JSON,
@@ -609,7 +613,9 @@ class TestServiceAudit(BaseTestCase):
     def test_action_launch(self):
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
-                path=reverse("run-task", kwargs={"service_id": self.service.pk, "action_id": self.action.pk}),
+                path=reverse(
+                    viewname="v1:run-task", kwargs={"service_id": self.service.pk, "action_id": self.action.pk}
+                ),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -619,7 +625,7 @@ class TestServiceAudit(BaseTestCase):
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
-                    "run-task",
+                    viewname="v1:run-task",
                     kwargs={
                         "cluster_id": self.cluster.pk,
                         "service_id": self.service.pk,
@@ -634,7 +640,7 @@ class TestServiceAudit(BaseTestCase):
 
     def test_change_maintenance_mode(self):
         self.client.post(
-            path=reverse("service-maintenance-mode", kwargs={"service_id": self.service.pk}),
+            path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
         )
 
@@ -655,7 +661,7 @@ class TestServiceAudit(BaseTestCase):
     def test_change_maintenance_mode_via_cluster(self):
         self.client.post(
             path=reverse(
-                "service-maintenance-mode",
+                viewname="v1:service-maintenance-mode",
                 kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
             ),
             data={"maintenance_mode": MaintenanceMode.ON},
@@ -677,7 +683,7 @@ class TestServiceAudit(BaseTestCase):
 
     def test_change_maintenance_mode_failed(self):
         self.client.post(
-            path=reverse("service-maintenance-mode", kwargs={"service_id": self.service.pk}),
+            path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
             data={"maintenance_mode": MaintenanceMode.CHANGING},
         )
 
@@ -697,7 +703,7 @@ class TestServiceAudit(BaseTestCase):
     def test_change_maintenance_mode_denied(self):
         with self.no_rights_user_logged_in:
             self.client.post(
-                path=reverse("service-maintenance-mode", kwargs={"service_id": self.service.pk}),
+                path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
             )
 

@@ -181,12 +181,12 @@ class TestHostAudit(BaseTestCase):
         self.assertEqual(log.object_changes, {})
 
     def test_create(self):
-        response: Response = self.client.post(path=reverse("host"), data={})
+        response: Response = self.client.post(path=reverse(viewname="v1:host"), data={})
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
         response: Response = self.client.post(
-            path=reverse("host"),
+            path=reverse(viewname="v1:host"),
             data={
                 "prototype_id": self.host_prototype.pk,
                 "provider_id": self.provider.pk,
@@ -199,7 +199,7 @@ class TestHostAudit(BaseTestCase):
         self.check_host_created_log(log=log, response=response)
 
         self.client.post(
-            path=reverse("host"),
+            path=reverse(viewname="v1:host"),
             data={
                 "prototype_id": self.host_prototype.id,
                 "provider_id": self.provider.id,
@@ -220,7 +220,7 @@ class TestHostAudit(BaseTestCase):
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("host"),
+                path=reverse(viewname="v1:host"),
                 data={
                     "prototype_id": self.host_prototype.pk,
                     "provider_id": self.provider.pk,
@@ -234,7 +234,7 @@ class TestHostAudit(BaseTestCase):
         self.check_denied(log=log)
 
     def test_delete(self):
-        self.client.delete(path=reverse("host-details", kwargs={"host_id": self.host.pk}))
+        self.client.delete(path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -246,7 +246,7 @@ class TestHostAudit(BaseTestCase):
 
         self.client.delete(
             path=reverse(
-                "host-details",
+                viewname="v1:host-details",
                 kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
             ),
         )
@@ -267,7 +267,7 @@ class TestHostAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             self.client.delete(
                 path=reverse(
-                    "host-details",
+                    viewname="v1:host-details",
                     kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
                 ),
             )
@@ -288,7 +288,7 @@ class TestHostAudit(BaseTestCase):
         cluster_pks = Cluster.objects.all().values_list("pk", flat=True).order_by("-pk")
         self.client.delete(
             path=reverse(
-                "host-details",
+                viewname="v1:host-details",
                 kwargs={"cluster_id": cluster_pks[0] + 1, "host_id": self.host.pk},
             ),
         )
@@ -305,7 +305,7 @@ class TestHostAudit(BaseTestCase):
         host_pks = Host.objects.all().values_list("pk", flat=True).order_by("-pk")
         self.client.delete(
             path=reverse(
-                "host-details",
+                viewname="v1:host-details",
                 kwargs={"cluster_id": self.cluster.pk, "host_id": host_pks[0] + 1},
             ),
         )
@@ -322,7 +322,9 @@ class TestHostAudit(BaseTestCase):
 
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
-            response: Response = self.client.delete(path=reverse("host-details", kwargs={"host_id": self.host.pk}))
+            response: Response = self.client.delete(
+                path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk})
+            )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -333,7 +335,7 @@ class TestHostAudit(BaseTestCase):
         self.host.cluster = self.cluster
         self.host.save(update_fields=["cluster"])
 
-        self.client.delete(path=reverse("host-details", kwargs={"host_id": self.host.pk}))
+        self.client.delete(path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -341,7 +343,7 @@ class TestHostAudit(BaseTestCase):
 
     def test_delete_via_provider(self):
         self.client.delete(
-            path=reverse("host-details", kwargs={"host_id": self.host.pk, "provider_id": self.provider.pk}),
+            path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk, "provider_id": self.provider.pk}),
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -352,7 +354,7 @@ class TestHostAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
                 path=reverse(
-                    "host-details",
+                    viewname="v1:host-details",
                     kwargs={"host_id": self.host.pk, "provider_id": self.provider.pk},
                 ),
             )
@@ -367,7 +369,7 @@ class TestHostAudit(BaseTestCase):
         self.host.save(update_fields=["cluster"])
 
         self.client.delete(
-            path=reverse("host-details", kwargs={"host_id": self.host.pk, "provider_id": self.provider.pk}),
+            path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk, "provider_id": self.provider.pk}),
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -376,7 +378,7 @@ class TestHostAudit(BaseTestCase):
 
     def test_create_via_provider(self):
         response: Response = self.client.post(
-            path=reverse("host", kwargs={"provider_id": self.provider.pk}),
+            path=reverse(viewname="v1:host", kwargs={"provider_id": self.provider.pk}),
             data={"fqdn": self.fqdn},
         )
 
@@ -387,7 +389,7 @@ class TestHostAudit(BaseTestCase):
     def test_create_via_provider_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("host", kwargs={"provider_id": self.provider.pk}),
+                path=reverse(viewname="v1:host", kwargs={"provider_id": self.provider.pk}),
                 data={"fqdn": self.fqdn},
             )
 
@@ -398,7 +400,7 @@ class TestHostAudit(BaseTestCase):
 
     def test_update_config_and_restore(self):
         self.client.post(
-            path=reverse("config-history", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"host_id": self.host.pk}),
             data={"config": {}},
             content_type=APPLICATION_JSON,
         )
@@ -409,7 +411,7 @@ class TestHostAudit(BaseTestCase):
 
         response: Response = self.client.patch(
             path=reverse(
-                "config-history-version-restore",
+                viewname="v1:config-history-version-restore",
                 kwargs={"host_id": self.host.pk, "version": self.config_log.pk},
             ),
             content_type=APPLICATION_JSON,
@@ -422,7 +424,7 @@ class TestHostAudit(BaseTestCase):
 
     def test_update_host(self):
         self.client.patch(
-            path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}),
             data={
                 "description": "Such wow new description",
                 "fqdn": "new-test-fqdn",
@@ -442,7 +444,7 @@ class TestHostAudit(BaseTestCase):
         )
 
         self.client.patch(
-            path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}),
             data={"fqdn": "/*-/*-"},
             content_type=APPLICATION_JSON,
         )
@@ -458,7 +460,7 @@ class TestHostAudit(BaseTestCase):
     def test_update_and_restore_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("config-history", kwargs={"host_id": self.host.pk}),
+                path=reverse(viewname="v1:config-history", kwargs={"host_id": self.host.pk}),
                 data={"config": {}},
                 content_type=APPLICATION_JSON,
             )
@@ -471,7 +473,7 @@ class TestHostAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
                 path=reverse(
-                    "config-history-version-restore",
+                    viewname="v1:config-history-version-restore",
                     kwargs={"host_id": self.host.pk, "version": 1},
                 ),
                 content_type=APPLICATION_JSON,
@@ -485,7 +487,7 @@ class TestHostAudit(BaseTestCase):
     def test_update_and_restore_via_provider(self):
         self.client.post(
             path=reverse(
-                "config-history",
+                viewname="v1:config-history",
                 kwargs={"provider_id": self.provider.pk, "host_id": self.host.pk},
             ),
             data={"config": {}},
@@ -498,7 +500,7 @@ class TestHostAudit(BaseTestCase):
 
         response: Response = self.client.patch(
             path=reverse(
-                "config-history-version-restore",
+                viewname="v1:config-history-version-restore",
                 kwargs={
                     "provider_id": self.provider.pk,
                     "host_id": self.host.pk,
@@ -517,7 +519,7 @@ class TestHostAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
                 path=reverse(
-                    "config-history",
+                    viewname="v1:config-history",
                     kwargs={"provider_id": self.provider.pk, "host_id": self.host.pk},
                 ),
                 data={"config": {}},
@@ -532,7 +534,7 @@ class TestHostAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
                 path=reverse(
-                    "config-history-version-restore",
+                    viewname="v1:config-history-version-restore",
                     kwargs={"provider_id": self.provider.pk, "host_id": self.host.pk, "version": 1},
                 ),
                 content_type=APPLICATION_JSON,
@@ -551,7 +553,9 @@ class TestHostAudit(BaseTestCase):
             state_available="any",
         )
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(path=reverse("run-task", kwargs={"host_id": self.host.pk, "action_id": action.pk}))
+            self.client.post(
+                path=reverse(viewname="v1:run-task", kwargs={"host_id": self.host.pk, "action_id": action.pk})
+            )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -560,7 +564,7 @@ class TestHostAudit(BaseTestCase):
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
-                    "run-task",
+                    viewname="v1:run-task",
                     kwargs={
                         "provider_id": self.provider.pk,
                         "host_id": self.host.pk,
@@ -577,7 +581,7 @@ class TestHostAudit(BaseTestCase):
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
-                    "run-task",
+                    viewname="v1:run-task",
                     kwargs={
                         "cluster_id": self.host.cluster.pk,
                         "host_id": self.host.pk,
@@ -595,7 +599,7 @@ class TestHostAudit(BaseTestCase):
         self.host.save(update_fields=["cluster"])
 
         self.client.post(
-            path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
         )
 
@@ -613,7 +617,7 @@ class TestHostAudit(BaseTestCase):
 
         self.client.post(
             path=reverse(
-                "host-maintenance-mode",
+                viewname="v1:host-maintenance-mode",
                 kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
             ),
             data={"maintenance_mode": MaintenanceMode.ON},
@@ -633,7 +637,7 @@ class TestHostAudit(BaseTestCase):
 
         self.client.post(
             path=reverse(
-                "host-maintenance-mode",
+                viewname="v1:host-maintenance-mode",
                 kwargs={"provider_id": self.provider.pk, "host_id": self.host.pk},
             ),
             data={"maintenance_mode": MaintenanceMode.ON},
@@ -649,7 +653,7 @@ class TestHostAudit(BaseTestCase):
 
     def test_change_maintenance_mode_failed(self):
         self.client.post(
-            path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
             data={"maintenance_mode": MaintenanceMode.CHANGING},
         )
 
@@ -667,7 +671,7 @@ class TestHostAudit(BaseTestCase):
 
         with self.no_rights_user_logged_in:
             self.client.post(
-                path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+                path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
             )
 
@@ -682,7 +686,9 @@ class TestHostAudit(BaseTestCase):
 
         with self.no_rights_user_logged_in:
             self.client.post(
-                path=reverse("host-maintenance-mode", kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk}),
+                path=reverse(
+                    viewname="v1:host-maintenance-mode", kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk}
+                ),
                 data={"maintenance_mode": MaintenanceMode.ON},
             )
 

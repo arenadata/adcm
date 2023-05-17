@@ -71,7 +71,7 @@ class TestBundle(BaseTestCase):
         )
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": bundle_filename},
         )
 
@@ -90,7 +90,7 @@ class TestBundle(BaseTestCase):
         )
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": bundle_filename},
         )
 
@@ -109,7 +109,7 @@ class TestBundle(BaseTestCase):
         )
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": bundle_filename},
         )
 
@@ -127,7 +127,7 @@ class TestBundle(BaseTestCase):
         )
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": bundle_filename},
         )
 
@@ -146,7 +146,7 @@ class TestBundle(BaseTestCase):
         )
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": bundle_filename},
         )
 
@@ -156,49 +156,55 @@ class TestBundle(BaseTestCase):
     def test_load_servicemap(self):
         with patch("api.stack.views.load_service_map"):
             response: Response = self.client.put(
-                path=reverse("load-servicemap"),
+                path=reverse(viewname="v1:load-servicemap"),
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_list(self):
-        response: Response = self.client.get(path=reverse("bundle-list"))
+        response: Response = self.client.get(path=reverse(viewname="v1:bundle-list"))
 
         self.assertEqual(len(response.data["results"]), 2)
 
     def test_list_filter_name(self):
-        response: Response = self.client.get(reverse("bundle-list"), {"name": self.bundle_1.name})
+        response: Response = self.client.get(reverse(viewname="v1:bundle-list"), data={"name": self.bundle_1.name})
 
         self.assertEqual(response.data["results"][0]["id"], self.bundle_1.pk)
 
     def test_list_filter_version(self):
-        response: Response = self.client.get(reverse("bundle-list"), {"version": self.bundle_1.version})
+        response: Response = self.client.get(
+            reverse(viewname="v1:bundle-list"), data={"version": self.bundle_1.version}
+        )
 
         self.assertEqual(response.data["results"][0]["id"], self.bundle_1.pk)
 
     def test_list_ordering_name(self):
-        response: Response = self.client.get(reverse("bundle-list"), {"ordering": "name"})
+        response: Response = self.client.get(path=reverse(viewname="v1:bundle-list"), data={"ordering": "name"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.bundle_1.pk)
         self.assertEqual(response.data["results"][1]["id"], self.bundle_2.pk)
 
     def test_list_ordering_name_reverse(self):
-        response: Response = self.client.get(reverse("bundle-list"), {"ordering": "-name"})
+        response: Response = self.client.get(path=reverse(viewname="v1:bundle-list"), data={"ordering": "-name"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.bundle_2.pk)
         self.assertEqual(response.data["results"][1]["id"], self.bundle_1.pk)
 
     def test_list_ordering_version_order(self):
-        response: Response = self.client.get(reverse("bundle-list"), {"ordering": "version_order"})
+        response: Response = self.client.get(
+            path=reverse(viewname="v1:bundle-list"), data={"ordering": "version_order"}
+        )
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.bundle_1.pk)
         self.assertEqual(response.data["results"][1]["id"], self.bundle_2.pk)
 
     def test_list_ordering_version_order_reverse(self):
-        response: Response = self.client.get(reverse("bundle-list"), {"ordering": "-version_order"})
+        response: Response = self.client.get(
+            path=reverse(viewname="v1:bundle-list"), data={"ordering": "-version_order"}
+        )
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.bundle_2.pk)
@@ -206,7 +212,7 @@ class TestBundle(BaseTestCase):
 
     def test_retrieve(self):
         response: Response = self.client.get(
-            path=reverse("bundle-detail", kwargs={"bundle_pk": self.bundle_2.pk}),
+            path=reverse(viewname="v1:bundle-detail", kwargs={"bundle_pk": self.bundle_2.pk}),
         )
 
         self.assertEqual(response.data["id"], self.bundle_2.pk)
@@ -214,7 +220,7 @@ class TestBundle(BaseTestCase):
     def test_delete(self):
         with patch("cm.bundle.shutil.rmtree"):
             self.client.delete(
-                path=reverse("bundle-detail", kwargs={"bundle_pk": self.bundle_2.pk}),
+                path=reverse(viewname="v1:bundle-detail", kwargs={"bundle_pk": self.bundle_2.pk}),
             )
 
         self.assertFalse(Bundle.objects.filter(pk=self.bundle_2.pk))
@@ -222,7 +228,7 @@ class TestBundle(BaseTestCase):
     def test_update(self):
         with patch("api.stack.views.update_bundle"):
             response: Response = self.client.put(
-                path=reverse("bundle-update", kwargs={"bundle_pk": self.bundle_1.pk}),
+                path=reverse(viewname="v1:bundle-update", kwargs={"bundle_pk": self.bundle_1.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -230,14 +236,14 @@ class TestBundle(BaseTestCase):
     def test_license(self):
         with patch("api.stack.views.get_license", return_value="license body"):
             response: Response = self.client.get(
-                path=reverse("bundle-license", kwargs={"bundle_pk": self.bundle_1.pk}),
+                path=reverse(viewname="v1:bundle-license", kwargs={"bundle_pk": self.bundle_1.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_accept_license(self):
         response: Response = self.client.put(
-            path=reverse("accept-license", kwargs={"bundle_pk": self.bundle_1.pk}),
+            path=reverse(viewname="v1:accept-license", kwargs={"bundle_pk": self.bundle_1.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -247,7 +253,7 @@ class TestBundle(BaseTestCase):
 
         self.upload_bundle(path=test_bundle_path)
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": test_bundle_path.name},
         )
 
@@ -259,7 +265,7 @@ class TestBundle(BaseTestCase):
         self.upload_bundle(path=Path(self.files_dir, bundle_filename))
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": bundle_filename},
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -270,7 +276,7 @@ class TestBundle(BaseTestCase):
         self.upload_bundle(path=Path(self.files_dir, bundle_filename))
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": bundle_filename},
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -281,7 +287,7 @@ class TestBundle(BaseTestCase):
         self.upload_bundle(path=Path(self.files_dir, bundle_filename))
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": bundle_filename},
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -292,7 +298,7 @@ class TestBundle(BaseTestCase):
         self.upload_bundle(path=Path(self.files_dir, bundle_filename))
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": bundle_filename},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -302,7 +308,7 @@ class TestBundle(BaseTestCase):
         self.upload_bundle(path=Path(self.files_dir, bundle_filename))
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": bundle_filename},
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -313,7 +319,7 @@ class TestBundle(BaseTestCase):
         self.upload_bundle(path=Path(self.files_dir, bundle_filename))
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": bundle_filename},
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)

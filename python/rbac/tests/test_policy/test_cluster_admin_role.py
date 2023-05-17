@@ -93,13 +93,13 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         )
 
         response: Response = self.client.get(
-            path=reverse(viewname="cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response: Response = self.client.patch(
-            path=reverse(viewname="cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk}),
             data={"name": "Test Cluster"},
             content_type=APPLICATION_JSON,
         )
@@ -107,32 +107,32 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response: Response = self.client.get(
-            path=reverse(viewname="service-details", kwargs={"service_id": self.last_service_pk}),
+            path=reverse(viewname="v1:service-details", kwargs={"service_id": self.last_service_pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response: Response = self.client.get(
-            path=reverse(viewname="component-details", kwargs={"component_id": self.last_component_pk}),
+            path=reverse(viewname="v1:component-details", kwargs={"component_id": self.last_component_pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response: Response = self.client.get(
-            path=reverse(viewname="host-details", kwargs={"host_id": self.last_host_pk}),
+            path=reverse(viewname="v1:host-details", kwargs={"host_id": self.last_host_pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response: Response = self.client.get(
-            path=reverse(viewname="host", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:host", kwargs={"cluster_id": self.cluster.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response: Response = self.client.get(
             path=reverse(
-                viewname="config-current",
+                viewname="v1:config-current",
                 kwargs={"cluster_id": self.cluster.pk, "object_type": "cluster", "version": "current"},
             ),
         )
@@ -141,7 +141,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.get(
             path=reverse(
-                viewname="config-current",
+                viewname="v1:config-current",
                 kwargs={
                     "cluster_id": self.cluster.pk,
                     "service_id": self.last_service_pk,
@@ -155,7 +155,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.get(
             path=reverse(
-                viewname="config-current",
+                viewname="v1:config-current",
                 kwargs={"component_id": self.last_component_pk, "object_type": "component", "version": "current"},
             ),
         )
@@ -164,7 +164,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.get(
             path=reverse(
-                viewname="config-current",
+                viewname="v1:config-current",
                 kwargs={"host_id": self.last_host_pk, "object_type": "host", "version": "current"},
             ),
         )
@@ -172,7 +172,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response: Response = self.client.get(
-            path=reverse(viewname="object-action", kwargs={"cluster_id": self.cluster.pk, "object_type": "cluster"}),
+            path=reverse(viewname="v1:object-action", kwargs={"cluster_id": self.cluster.pk, "object_type": "cluster"}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -180,7 +180,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.get(
             path=reverse(
-                viewname="object-action", kwargs={"service_id": self.last_service_pk, "object_type": "service"}
+                viewname="v1:object-action", kwargs={"service_id": self.last_service_pk, "object_type": "service"}
             ),
         )
 
@@ -189,7 +189,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.get(
             path=reverse(
-                viewname="object-action", kwargs={"component_id": self.last_component_pk, "object_type": "component"}
+                viewname="v1:object-action", kwargs={"component_id": self.last_component_pk, "object_type": "component"}
             ),
         )
 
@@ -197,7 +197,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         self.assertTrue(response.json())
 
         response: Response = self.client.post(
-            path=reverse(viewname="host-component", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:host-component", kwargs={"cluster_id": self.cluster.pk}),
             data={
                 "cluster_id": self.cluster.pk,
                 "hc": [
@@ -214,7 +214,9 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response: Response = self.client.post(
-            path=reverse(viewname="config-history", kwargs={"cluster_id": self.cluster.pk, "object_type": "cluster"}),
+            path=reverse(
+                viewname="v1:config-history", kwargs={"cluster_id": self.cluster.pk, "object_type": "cluster"}
+            ),
             data={"config": {"float": 3.3}},
             content_type=APPLICATION_JSON,
         )
@@ -223,7 +225,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                viewname="config-history",
+                viewname="v1:config-history",
                 kwargs={"cluster_id": self.cluster.pk, "service_id": self.last_service_pk, "object_type": "service"},
             ),
             data={"config": {"float": 3.3}},
@@ -234,7 +236,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                viewname="config-history",
+                viewname="v1:config-history",
                 kwargs={"component_id": self.last_component_pk, "object_type": "component"},
             ),
             data={"config": {"float": 3.3}},
@@ -245,7 +247,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                viewname="config-history",
+                viewname="v1:config-history",
                 kwargs={"host_id": self.last_host_pk, "object_type": "host"},
             ),
             data={"config": {"string": "new_string"}},
@@ -256,7 +258,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                viewname="config-history",
+                viewname="v1:config-history",
                 kwargs={"cluster_id": self.cluster.pk, "host_id": self.last_host_pk, "object_type": "host"},
             ),
             data={"config": {"string": "new_string"}},
@@ -266,7 +268,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response = self.client.post(
-            path=reverse(viewname="service", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:service", kwargs={"cluster_id": self.cluster.pk}),
             data={
                 "prototype_id": self.service_6_proto.pk,
             },
@@ -277,7 +279,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
 
         response = self.client.delete(
             path=reverse(
-                viewname="service-details",
+                viewname="v1:service-details",
                 kwargs={"cluster_id": self.cluster.pk, "service_id": response.json()["id"]},
             ),
             content_type=APPLICATION_JSON,
@@ -286,7 +288,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         response = self.client.post(
-            path=reverse(viewname="service-maintenance-mode", kwargs={"service_id": self.last_service_pk}),
+            path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.last_service_pk}),
             data={
                 "maintenance_mode": MaintenanceMode.ON,
             },
@@ -296,7 +298,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response = self.client.post(
-            path=reverse(viewname="component-maintenance-mode", kwargs={"component_id": self.last_component_pk}),
+            path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.last_component_pk}),
             data={
                 "maintenance_mode": MaintenanceMode.ON,
             },
@@ -306,7 +308,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response = self.client.post(
-            path=reverse(viewname="host-maintenance-mode", kwargs={"host_id": self.last_host_pk}),
+            path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.last_host_pk}),
             data={
                 "maintenance_mode": MaintenanceMode.ON,
             },
@@ -316,7 +318,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response = self.client.post(
-            path=reverse(viewname="host-maintenance-mode", kwargs={"host_id": self.last_host_pk}),
+            path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.last_host_pk}),
             data={
                 "maintenance_mode": MaintenanceMode.OFF,
             },
@@ -326,7 +328,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response: Response = self.client.get(
-            path=reverse(viewname="object-action", kwargs={"host_id": self.last_host_pk}),
+            path=reverse(viewname="v1:object-action", kwargs={"host_id": self.last_host_pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -335,7 +337,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             response: Response = self.client.post(
                 path=reverse(
-                    viewname="run-task",
+                    viewname="v1:run-task",
                     kwargs={"host_id": self.last_host_pk, "action_id": response.json()[0]["id"]},
                 ),
                 content_type=APPLICATION_JSON,
@@ -345,7 +347,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.delete(
             path=reverse(
-                viewname="host-details",
+                viewname="v1:host-details",
                 kwargs={"host_id": self.first_host_pk, "cluster_id": self.cluster.pk},
             ),
             content_type=APPLICATION_JSON,
@@ -355,7 +357,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.get(
             path=reverse(
-                viewname="config-current",
+                viewname="v1:config-current",
                 kwargs={"host_id": self.first_host_pk, "object_type": "host", "version": "current"},
             ),
         )
@@ -364,7 +366,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(
-                viewname="config-history",
+                viewname="v1:config-history",
                 kwargs={"cluster_id": self.cluster.pk, "host_id": self.first_host_pk, "object_type": "host"},
             ),
             data={"config": {"string": "new_string"}},
@@ -374,7 +376,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         response: Response = self.client.get(
-            path=reverse(viewname="object-action", kwargs={"host_id": self.first_host_pk}),
+            path=reverse(viewname="v1:object-action", kwargs={"host_id": self.first_host_pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -386,7 +388,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             response: Response = self.client.post(
                 path=reverse(
-                    viewname="run-task",
+                    viewname="v1:run-task",
                     kwargs={"host_id": self.first_host_pk, "action_id": first_host_action.pk},
                 ),
                 content_type=APPLICATION_JSON,
@@ -451,7 +453,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
             },
         )
 
-        self.client.post(path=reverse("rbac:logout"))
+        self.client.post(path=reverse(viewname="v1:rbac:logout"))
         self.login()
 
         self.create_policy(role_name="Provider Administrator", obj=self.provider, user_pk=self.new_user.pk)

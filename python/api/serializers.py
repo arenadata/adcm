@@ -87,8 +87,8 @@ class ClusterUpgradeSerializer(UpgradeSerializer):
             return {"cluster_id": self.context["cluster_id"], "upgrade_id": obj.id}
 
     hostcomponentmap = SerializerMethodField()
-    url = MyUrlField(read_only=True, view_name="cluster-upgrade-details")
-    do = MyUrlField(read_only=True, view_name="do-cluster-upgrade")
+    url = MyUrlField(read_only=True, view_name="v1:cluster-upgrade-details")
+    do = MyUrlField(read_only=True, view_name="v1:do-cluster-upgrade")
 
     def get_hostcomponentmap(self, instance):
         if instance.action:
@@ -101,8 +101,8 @@ class ProviderUpgradeSerializer(UpgradeSerializer):
         def get_kwargs(self, obj):
             return {"provider_id": self.context["provider_id"], "upgrade_id": obj.id}
 
-    url = MyUrlField(read_only=True, view_name="provider-upgrade-details")
-    do = MyUrlField(read_only=True, view_name="do-provider-upgrade")
+    url = MyUrlField(read_only=True, view_name="v1:provider-upgrade-details")
+    do = MyUrlField(read_only=True, view_name="v1:do-provider-upgrade")
 
 
 class DoUpgradeSerializer(EmptySerializer):

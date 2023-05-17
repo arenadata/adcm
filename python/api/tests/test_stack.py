@@ -32,7 +32,7 @@ class TestPrototypeAPI(BaseTestCase):
         cluster_prototype = Prototype.objects.get(bundle=bundle, type="cluster")
 
         response: Response = self.client.get(
-            path=reverse("cluster-prototype-detail", kwargs={"prototype_pk": cluster_prototype.pk}),
+            path=reverse(viewname="v1:cluster-prototype-detail", kwargs={"prototype_pk": cluster_prototype.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

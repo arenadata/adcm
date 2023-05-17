@@ -69,7 +69,7 @@ class TestTaskAudit(BaseTestCase):
 
     def test_cancel(self):
         with patch("api.job.views.cancel_task"):
-            self.client.put(path=reverse("tasklog-cancel", kwargs={"task_pk": self.task.pk}))
+            self.client.put(path=reverse(viewname="v1:tasklog-cancel", kwargs={"task_pk": self.task.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -84,7 +84,7 @@ class TestTaskAudit(BaseTestCase):
     def test_cancel_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.put(
-                path=reverse("tasklog-cancel", kwargs={"task_pk": self.task.pk}),
+                path=reverse(viewname="v1:tasklog-cancel", kwargs={"task_pk": self.task.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -100,7 +100,7 @@ class TestTaskAudit(BaseTestCase):
 
     def test_restart(self):
         with patch("api.job.views.restart_task"):
-            self.client.put(path=reverse("tasklog-restart", kwargs={"task_pk": self.task.pk}))
+            self.client.put(path=reverse(viewname="v1:tasklog-restart", kwargs={"task_pk": self.task.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -115,7 +115,7 @@ class TestTaskAudit(BaseTestCase):
     def test_restart_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.put(
-                path=reverse("tasklog-restart", kwargs={"task_pk": self.task.pk}),
+                path=reverse(viewname="v1:tasklog-restart", kwargs={"task_pk": self.task.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -133,7 +133,7 @@ class TestTaskAudit(BaseTestCase):
         task_pks = TaskLog.objects.all().values_list("pk", flat=True).order_by("-pk")
         with patch("api.job.views.restart_task"):
             response: Response = self.client.put(
-                path=reverse("tasklog-restart", kwargs={"task_pk": task_pks[0] + 1}),
+                path=reverse(viewname="v1:tasklog-restart", kwargs={"task_pk": task_pks[0] + 1}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

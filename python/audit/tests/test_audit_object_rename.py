@@ -70,7 +70,7 @@ class TestAuditObjectRename(BaseTestCase):
     def test_cluster_rename(self):
         new_test_cluster_name = "new-test-cluster-name"
         self.client.patch(
-            path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk}),
             data={"description": "test_cluster_description"},
             content_type=APPLICATION_JSON,
         )
@@ -81,7 +81,7 @@ class TestAuditObjectRename(BaseTestCase):
         self.assertEqual(audit_object_cluster.object_name, self.cluster.name)
 
         self.client.post(
-            path=reverse("config-history", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"host_id": self.host.pk}),
             data={"config": {}},
             content_type=APPLICATION_JSON,
         )
@@ -92,7 +92,7 @@ class TestAuditObjectRename(BaseTestCase):
         self.assertEqual(audit_object_host.object_name, self.host.fqdn)
 
         self.client.patch(
-            path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk}),
             data={"name": new_test_cluster_name},
             content_type=APPLICATION_JSON,
         )
@@ -106,7 +106,7 @@ class TestAuditObjectRename(BaseTestCase):
     def test_host_rename(self):
         new_test_host_fqdn = "new-test-host-fqdn"
         self.client.post(
-            path=reverse("config-history", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"host_id": self.host.pk}),
             data={"config": {}},
             content_type=APPLICATION_JSON,
         )
@@ -117,7 +117,7 @@ class TestAuditObjectRename(BaseTestCase):
         self.assertEqual(audit_object_host.object_name, self.host.fqdn)
 
         self.client.patch(
-            path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk}),
             data={"description": "test_cluster_description"},
             content_type=APPLICATION_JSON,
         )
@@ -128,7 +128,7 @@ class TestAuditObjectRename(BaseTestCase):
         self.assertEqual(audit_object_cluster.object_name, self.cluster.name)
 
         self.client.patch(
-            path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}),
             data={"fqdn": new_test_host_fqdn, "maintenance_mode": MaintenanceMode.ON},
             content_type=APPLICATION_JSON,
         )
@@ -142,7 +142,7 @@ class TestAuditObjectRename(BaseTestCase):
     def test_group_rename(self):
         new_test_group_name = "new_test_group_name"
         self.client.patch(
-            path=reverse("rbac:group-detail", kwargs={"pk": self.group.pk}),
+            path=reverse(viewname="v1:rbac:group-detail", kwargs={"pk": self.group.pk}),
             data={
                 "description": "test_group_description",
                 "user": [{"id": self.test_user.pk}],
@@ -156,7 +156,7 @@ class TestAuditObjectRename(BaseTestCase):
         self.assertEqual(audit_object_group.object_name, self.group.name)
 
         self.client.patch(
-            path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk}),
             data={"description": "test_cluster_description"},
             content_type=APPLICATION_JSON,
         )
@@ -167,7 +167,7 @@ class TestAuditObjectRename(BaseTestCase):
         self.assertEqual(audit_object_cluster.object_name, self.cluster.name)
 
         self.client.patch(
-            path=reverse("rbac:group-detail", kwargs={"pk": self.group.pk}),
+            path=reverse(viewname="v1:rbac:group-detail", kwargs={"pk": self.group.pk}),
             data={
                 "name": new_test_group_name,
                 "user": [{"id": self.test_user.pk}],
@@ -184,7 +184,7 @@ class TestAuditObjectRename(BaseTestCase):
     def test_policy_rename(self):
         new_test_policy_name = "new_test_policy_name"
         self.client.patch(
-            path=reverse("rbac:policy-detail", kwargs={"pk": self.policy.pk}),
+            path=reverse(viewname="v1:rbac:policy-detail", kwargs={"pk": self.policy.pk}),
             data={
                 "object": [
                     {
@@ -206,7 +206,7 @@ class TestAuditObjectRename(BaseTestCase):
         self.assertEqual(audit_object_policy.object_name, self.policy.name)
 
         self.client.patch(
-            path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+            path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk}),
             data={"description": "test_cluster_description"},
             content_type=APPLICATION_JSON,
         )
@@ -217,7 +217,7 @@ class TestAuditObjectRename(BaseTestCase):
         self.assertEqual(audit_object_cluster.object_name, self.cluster.name)
 
         self.client.patch(
-            path=reverse("rbac:policy-detail", kwargs={"pk": self.policy.pk}),
+            path=reverse(viewname="v1:rbac:policy-detail", kwargs={"pk": self.policy.pk}),
             data={
                 "object": [
                     {

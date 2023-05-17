@@ -50,7 +50,7 @@ class TestCluster(BaseTestCase):
 
     def test_cluster_update_duplicate_name_fail(self):
         new_cluster = Cluster.objects.create(name="new_name", prototype=self.prototype)
-        url = reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
+        url = reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk})
 
         response = self.client.patch(path=url, data={"name": new_cluster.name}, content_type=APPLICATION_JSON)
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
@@ -64,7 +64,7 @@ class TestCluster(BaseTestCase):
 
     def test_cluster_create_duplicate_name_fail(self):
         response = self.client.post(
-            path=reverse("cluster"),
+            path=reverse(viewname="v1:cluster"),
             data={"name": self.cluster.name, "prototype_id": self.cluster.prototype.pk},
             content_type=APPLICATION_JSON,
         )
@@ -73,7 +73,7 @@ class TestCluster(BaseTestCase):
         self.assertEqual(response.json()["desc"], f'Cluster with name "{self.cluster.name}" already exists')
 
     def test_cluster_create_name_validation(self):
-        url = reverse("cluster")
+        url = reverse(viewname="v1:cluster")
         amount_of_clusters = Cluster.objects.count()
         for name in self.invalid_names:
             with self.subTest("invalid", name=name):
@@ -97,7 +97,7 @@ class TestCluster(BaseTestCase):
                 self.assertEqual(response.json()["name"], name)
 
     def test_cluster_update_name_validation(self):
-        url = reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
+        url = reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk})
         with self.another_user_logged_in(username="admin", password="admin"):
             for name in self.valid_names:
                 with self.subTest("correct-patch", name=name):
@@ -122,7 +122,7 @@ class TestCluster(BaseTestCase):
                     self.assertEqual(response.json()["code"], "BAD_REQUEST")
 
     def test_cluster_name_update_in_different_states(self):
-        url = reverse(viewname="cluster-details", kwargs={"cluster_id": self.cluster.pk})
+        url = reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk})
 
         self.cluster.state = "created"
         self.cluster.save(update_fields=["state"])

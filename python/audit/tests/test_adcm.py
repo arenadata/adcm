@@ -82,7 +82,7 @@ class TestADCMAudit(BaseTestCase):
         self.config_log.save(update_fields=["config"])
 
         self.client.post(
-            path=reverse("config-history", kwargs={"adcm_pk": self.adcm.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"adcm_pk": self.adcm.pk}),
             data={"config": self.config_log.config, "attr": self.config_log.attr},
             content_type=APPLICATION_JSON,
         )
@@ -98,7 +98,7 @@ class TestADCMAudit(BaseTestCase):
 
         response: Response = self.client.patch(
             path=reverse(
-                "config-history-version-restore",
+                viewname="v1:config-history-version-restore",
                 kwargs={"adcm_pk": self.adcm.pk, "version": self.config_log.pk},
             ),
             content_type=APPLICATION_JSON,
@@ -118,7 +118,7 @@ class TestADCMAudit(BaseTestCase):
     def test_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("config-history", kwargs={"adcm_pk": self.adcm.pk}),
+                path=reverse(viewname="v1:config-history", kwargs={"adcm_pk": self.adcm.pk}),
                 data={"config": {}},
                 content_type=APPLICATION_JSON,
             )

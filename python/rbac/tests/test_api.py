@@ -281,7 +281,7 @@ class ApiTests(BaseTestCase):
     def test_create_policy(self):
         for request_data, response_data in self.policy_data:
             response: Response = self.client.post(
-                path=reverse("rbac:policy-list"),
+                path=reverse(viewname="v1:rbac:policy-list"),
                 data=request_data,
                 content_type=APPLICATION_JSON,
             )
@@ -292,7 +292,7 @@ class ApiTests(BaseTestCase):
     def test_create_role(self):
         for request_data, response_data in self.role_data:
             response = self.client.post(
-                path=reverse("rbac:role-list"),
+                path=reverse(viewname="v1:rbac:role-list"),
                 data=request_data,
                 format="json",
                 content_type=APPLICATION_JSON,
@@ -306,7 +306,7 @@ class ApiTests(BaseTestCase):
         policy = Policy.objects.create(name="Test policy", role=role, built_in=False)
         policy.user.add(self.test_user)
 
-        path = reverse("rbac:policy-detail", kwargs={"pk": policy.pk})
+        path = reverse(viewname="v1:rbac:policy-detail", kwargs={"pk": policy.pk})
         data_valid = {
             "id": policy.pk,
             "name": policy.name,

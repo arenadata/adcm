@@ -81,7 +81,7 @@ class TestAdcmConfig(BaseTestCase):
         self.apply_edit_adcm_settings_policy()
         with self.another_user_logged_in(username=self.no_rights_user_username, password=self.no_rights_user_password):
             response: Response = self.client.post(
-                path=reverse("config-history", kwargs={"adcm_pk": self.adcm.pk}),
+                path=reverse(viewname="v1:config-history", kwargs={"adcm_pk": self.adcm.pk}),
                 data={"config": self.config_log.config, "attr": self.config_log.attr},
                 content_type=APPLICATION_JSON,
             )
@@ -91,7 +91,7 @@ class TestAdcmConfig(BaseTestCase):
     def test_change_adcm_settings_without_permission_fail(self):
         with self.another_user_logged_in(username=self.no_rights_user_username, password=self.no_rights_user_password):
             response: Response = self.client.post(
-                path=reverse("config-history", kwargs={"adcm_pk": self.adcm.pk}),
+                path=reverse(viewname="v1:config-history", kwargs={"adcm_pk": self.adcm.pk}),
                 data={"config": self.config_log.config, "attr": self.config_log.attr},
                 content_type=APPLICATION_JSON,
             )
@@ -102,7 +102,7 @@ class TestAdcmConfig(BaseTestCase):
         self.apply_edit_adcm_settings_policy()
         with self.another_user_logged_in(username=self.no_rights_user_username, password=self.no_rights_user_password):
             response: Response = self.client.post(
-                path=reverse("config-log-list"),
+                path=reverse(viewname="v1:config-log-list"),
                 data={"obj_ref": self.adcm.config.pk, "config": self.config_log.config, "attr": self.config_log.attr},
                 content_type=APPLICATION_JSON,
             )
@@ -112,7 +112,7 @@ class TestAdcmConfig(BaseTestCase):
     def test_change_adcm_settings_without_permission_via_config_log_fail(self):
         with self.another_user_logged_in(username=self.no_rights_user_username, password=self.no_rights_user_password):
             response: Response = self.client.post(
-                path=reverse("config-log-list"),
+                path=reverse(viewname="v1:config-log-list"),
                 data={"obj_ref": self.adcm.config.pk, "config": self.config_log.config, "attr": self.config_log.attr},
                 content_type=APPLICATION_JSON,
             )

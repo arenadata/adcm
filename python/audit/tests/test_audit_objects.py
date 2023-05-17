@@ -67,7 +67,7 @@ class TestAuditObjects(BaseTestCase):
 
     def test_cluster_flow(self):
         response: Response = self.client.post(
-            path=reverse("provider"),
+            path=reverse(viewname="v1:provider"),
             data={"prototype_id": self.provider_proto.id, "name": "Provider"},
         )
 
@@ -76,7 +76,7 @@ class TestAuditObjects(BaseTestCase):
         provider_id = response.data["id"]
 
         response: Response = self.client.post(
-            path=reverse("host", args=[provider_id]),
+            path=reverse(viewname="v1:host", args=[provider_id]),
             data={"prototype_id": self.host_proto.id, "fqdn": "test-fqdn"},
         )
 
@@ -85,7 +85,7 @@ class TestAuditObjects(BaseTestCase):
         host_id = response.data["id"]
 
         response: Response = self.client.post(
-            path=reverse("cluster"),
+            path=reverse(viewname="v1:cluster"),
             data={"prototype_id": self.cluster_proto.id, "name": "Cluster"},
         )
 
@@ -99,7 +99,7 @@ class TestAuditObjects(BaseTestCase):
         self.assertFalse(cluster_ao.is_deleted)
 
         response: Response = self.client.post(
-            path=reverse("service"),
+            path=reverse(viewname="v1:service"),
             data={"cluster_id": cluster_id, "prototype_id": self.service_proto.id},
         )
 
@@ -108,7 +108,7 @@ class TestAuditObjects(BaseTestCase):
         service_id = response.data["id"]
 
         response: Response = self.client.post(
-            path=reverse("host", kwargs={"cluster_id": cluster_id}),
+            path=reverse(viewname="v1:host", kwargs={"cluster_id": cluster_id}),
             data={"host_id": host_id},
         )
 
@@ -120,13 +120,13 @@ class TestAuditObjects(BaseTestCase):
         self.assertFalse(cluster_ao.is_deleted)
 
         response: Response = self.client.delete(
-            path=reverse("service-details", kwargs={"cluster_id": cluster_id, "service_id": service_id}),
+            path=reverse(viewname="v1:service-details", kwargs={"cluster_id": cluster_id, "service_id": service_id}),
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         response: Response = self.client.delete(
-            path=reverse("host-details", kwargs={"cluster_id": cluster_id, "host_id": host_id}),
+            path=reverse(viewname="v1:host-details", kwargs={"cluster_id": cluster_id, "host_id": host_id}),
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
@@ -135,7 +135,7 @@ class TestAuditObjects(BaseTestCase):
 
         self.assertFalse(cluster_ao.is_deleted)
 
-        response: Response = self.client.delete(path=reverse("cluster-details", args=[cluster_id]))
+        response: Response = self.client.delete(path=reverse(viewname="v1:cluster-details", args=[cluster_id]))
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.assertEqual(AuditObject.objects.filter(**filter_kwargs).count(), 1)
@@ -148,7 +148,7 @@ class TestAuditObjects(BaseTestCase):
 
     def test_provider_flow(self):
         response: Response = self.client.post(
-            path=reverse("provider"),
+            path=reverse(viewname="v1:provider"),
             data={"prototype_id": self.provider_proto.id, "name": "Provider"},
         )
 
@@ -157,7 +157,7 @@ class TestAuditObjects(BaseTestCase):
         provider_id = response.data["id"]
 
         response: Response = self.client.post(
-            path=reverse("host", args=[provider_id]),
+            path=reverse(viewname="v1:host", args=[provider_id]),
             data={"prototype_id": self.host_proto.id, "fqdn": "test-fqdn"},
         )
 
@@ -169,14 +169,14 @@ class TestAuditObjects(BaseTestCase):
         self.assertEqual(AuditObject.objects.filter(is_deleted=True).count(), 0)
 
         response: Response = self.client.post(
-            reverse("config-history", kwargs={"provider_id": provider_id}),
+            path=reverse(viewname="v1:config-history", kwargs={"provider_id": provider_id}),
             data={"config": json.dumps({"param": 42})},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response: Response = self.client.post(
-            reverse("config-history", kwargs={"host_id": host_id}),
+            path=reverse(viewname="v1:config-history", kwargs={"host_id": host_id}),
             data={"config": json.dumps({"param": 42})},
         )
 
@@ -184,11 +184,11 @@ class TestAuditObjects(BaseTestCase):
         self.assertEqual(AuditObject.objects.count(), 2)
         self.assertEqual(AuditObject.objects.filter(is_deleted=True).count(), 0)
 
-        response: Response = self.client.delete(reverse("host-details", args=[host_id]))
+        response: Response = self.client.delete(path=reverse(viewname="v1:host-details", args=[host_id]))
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        response: Response = self.client.delete(reverse("provider-details", args=[provider_id]))
+        response: Response = self.client.delete(path=reverse(viewname="v1:provider-details", args=[provider_id]))
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.assertEqual(AuditObject.objects.count(), 2)

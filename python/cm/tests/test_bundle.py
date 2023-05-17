@@ -92,7 +92,7 @@ class TestBundle(BaseTestCase):
         config_log.config["secretfile"] = "new content"
 
         response: Response = self.client.post(
-            path=reverse("config-log-list"),
+            path=reverse(viewname="v1:config-log-list"),
             data={"obj_ref": cluster.config.pk, "config": json.dumps(config_log.config)},
         )
 
@@ -113,7 +113,7 @@ class TestBundle(BaseTestCase):
         secretfile_bundle_content = "aaa"
         secretfile_group_bundle_content = "bbb"
         response: Response = self.client.post(
-            path=reverse("config-history", kwargs={"cluster_id": cluster.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"cluster_id": cluster.pk}),
             params={"view": "interface"},
             data={
                 "config": {
@@ -143,7 +143,9 @@ class TestBundle(BaseTestCase):
 
         self.assertEqual(secretfile_bundle_content, secret_file_content)
 
-        response: Response = self.client.get(path=reverse("config-current", kwargs={"cluster_id": cluster.pk}))
+        response: Response = self.client.get(
+            path=reverse(viewname="v1:config-current", kwargs={"cluster_id": cluster.pk})
+        )
 
         self.assertIn(settings.ANSIBLE_VAULT_HEADER, response.data["config"]["secretfile"])
         self.assertEqual(ansible_decrypt(msg=response.data["config"]["secretfile"]), secretfile_bundle_content)
@@ -167,7 +169,7 @@ class TestBundle(BaseTestCase):
         config_log.config["secretmap"]["key"] = "new value"
 
         response: Response = self.client.post(
-            path=reverse("config-log-list"),
+            path=reverse(viewname="v1:config-log-list"),
             data={"obj_ref": cluster.config.pk, "config": json.dumps(config_log.config)},
         )
 
@@ -220,7 +222,7 @@ class TestBundle(BaseTestCase):
         self.upload_bundle(path=path)
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": path.name},
         )
 

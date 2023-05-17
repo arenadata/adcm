@@ -88,6 +88,7 @@ INSTALLED_APPS = [
     "guardian",
     "cm.apps.CmConfig",
     "audit",
+    "api_v2",
 ]
 
 MIDDLEWARE = [
@@ -125,7 +126,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "adcm.wsgi.application"
-LOGIN_URL = "/api/v1/auth/login/"
+LOGIN_URL = "/auth/login/"
 LOGIN_REDIRECT_URL = "/admin/intro/"
 
 REST_FRAMEWORK = {
@@ -143,6 +144,8 @@ REST_FRAMEWORK = {
         "rest_framework.filters.SearchFilter",
     ],
     "EXCEPTION_HANDLER": "cm.errors.custom_drf_exception_handler",
+    "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.NamespaceVersioning",
+    "DEFAULT_VERSION": "v1",
 }
 
 DB_PASS = os.getenv("DB_PASS")

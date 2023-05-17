@@ -31,8 +31,8 @@ class TestUserAudit(BaseTestCase):
         super().setUp()
 
         self.username = "test_username"
-        self.list_name = "rbac:user-list"
-        self.detail_name = "rbac:user-detail"
+        self.list_name = "v1:rbac:user-list"
+        self.detail_name = "v1:rbac:user-detail"
         self.user_created_str = "User created"
 
     def check_log(
@@ -59,7 +59,7 @@ class TestUserAudit(BaseTestCase):
 
     def test_create(self):
         response: Response = self.client.post(
-            path=reverse(self.list_name),
+            path=reverse(viewname=self.list_name),
             data={
                 "username": self.username,
                 "password": "test_password",
@@ -80,7 +80,7 @@ class TestUserAudit(BaseTestCase):
         self.assertEqual(log.object_changes, {})
 
         self.client.post(
-            path=reverse(self.list_name),
+            path=reverse(viewname=self.list_name),
             data={
                 "username": self.username,
                 "password": "test_pass",
@@ -100,7 +100,7 @@ class TestUserAudit(BaseTestCase):
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse(self.list_name),
+                path=reverse(viewname=self.list_name),
                 data={
                     "username": self.username,
                     "password": "test_pass",
@@ -120,7 +120,7 @@ class TestUserAudit(BaseTestCase):
 
     def test_delete(self):
         self.client.delete(
-            path=reverse(self.detail_name, kwargs={"pk": self.no_rights_user.pk}),
+            path=reverse(viewname=self.detail_name, kwargs={"pk": self.no_rights_user.pk}),
             content_type=APPLICATION_JSON,
         )
 
@@ -140,7 +140,7 @@ class TestUserAudit(BaseTestCase):
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse(self.detail_name, kwargs={"pk": self.test_user.pk}),
+                path=reverse(viewname=self.detail_name, kwargs={"pk": self.test_user.pk}),
                 content_type=APPLICATION_JSON,
             )
 
@@ -163,7 +163,7 @@ class TestUserAudit(BaseTestCase):
         prev_is_superuser = self.test_user.is_superuser
         new_test_first_name = "test_first_name"
         self.client.put(
-            path=reverse(self.detail_name, kwargs={"pk": self.test_user.pk}),
+            path=reverse(viewname=self.detail_name, kwargs={"pk": self.test_user.pk}),
             data={
                 "username": self.test_user_username,
                 "password": self.test_user_password,
@@ -195,7 +195,7 @@ class TestUserAudit(BaseTestCase):
     def test_update_put_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.put(
-                path=reverse(self.detail_name, kwargs={"pk": self.test_user.pk}),
+                path=reverse(viewname=self.detail_name, kwargs={"pk": self.test_user.pk}),
                 data={
                     "username": self.test_user_username,
                     "password": self.test_user_password,
@@ -213,7 +213,7 @@ class TestUserAudit(BaseTestCase):
         prev_first_name = self.test_user.first_name
         new_test_first_name = "test_first_name"
         self.client.patch(
-            path=reverse(self.detail_name, kwargs={"pk": self.test_user.pk}),
+            path=reverse(viewname=self.detail_name, kwargs={"pk": self.test_user.pk}),
             data={"first_name": new_test_first_name},
             content_type=APPLICATION_JSON,
         )
@@ -233,7 +233,7 @@ class TestUserAudit(BaseTestCase):
     def test_update_patch_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
-                path=reverse(self.detail_name, kwargs={"pk": self.test_user.pk}),
+                path=reverse(viewname=self.detail_name, kwargs={"pk": self.test_user.pk}),
                 data={"first_name": "test_first_name"},
                 content_type=APPLICATION_JSON,
             )
@@ -245,7 +245,7 @@ class TestUserAudit(BaseTestCase):
 
     def test_reset_failed_login_attempts_success(self):
         response: Response = self.client.post(
-            path=reverse("rbac:user-reset-failed-login-attempts", kwargs={"pk": self.test_user.pk}),
+            path=reverse(viewname="v1:rbac:user-reset-failed-login-attempts", kwargs={"pk": self.test_user.pk}),
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -261,7 +261,7 @@ class TestUserAudit(BaseTestCase):
     def test_reset_failed_login_attempts_fail(self):
         user_pks = User.objects.all().values_list("pk", flat=True).order_by("-pk")
         response: Response = self.client.post(
-            path=reverse("rbac:user-reset-failed-login-attempts", kwargs={"pk": user_pks[0] + 1}),
+            path=reverse(viewname="v1:rbac:user-reset-failed-login-attempts", kwargs={"pk": user_pks[0] + 1}),
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -278,7 +278,7 @@ class TestUserAudit(BaseTestCase):
     def test_reset_failed_login_attempts_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("rbac:user-reset-failed-login-attempts", kwargs={"pk": self.test_user.pk}),
+                path=reverse(viewname="v1:rbac:user-reset-failed-login-attempts", kwargs={"pk": self.test_user.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
