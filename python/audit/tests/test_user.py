@@ -180,12 +180,10 @@ class TestUserAudit(BaseTestCase):
             user=self.test_user,
             object_changes={
                 "current": {
-                    "password": "******",
                     "first_name": new_test_first_name,
                     "is_superuser": self.test_user.is_superuser,
                 },
                 "previous": {
-                    "password": "******",
                     "first_name": prev_first_name,
                     "is_superuser": prev_is_superuser,
                 },

@@ -11,8 +11,6 @@
 # limitations under the License.
 
 from cm.errors import raise_adcm_ex
-from django.conf import settings
-from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
@@ -23,14 +21,10 @@ from rest_framework.authtoken.models import Token
 
 
 def _set_password(user: User, value: str) -> None:
-    if value is Empty or value == settings.PASSWORD_MASK:
-        return
-
     if not value:
         raise_adcm_ex("USER_UPDATE_ERROR", msg="Password could not be empty")
 
-    new_password = make_password(value)
-    if user.password == new_password:
+    if value is Empty or user.check_password(value):
         return
 
     user.set_password(value)

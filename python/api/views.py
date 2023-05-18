@@ -12,7 +12,6 @@
 
 from cm.stack import NAME_REGEX
 from django.conf import settings
-from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.routers import APIRootView
@@ -61,7 +60,6 @@ class ADCMInfo(APIView):
     permission_classes = (AllowAny,)
 
     @staticmethod
-    @ensure_csrf_cookie
     def get(request):  # pylint: disable=unused-argument
         return Response(
             {
