@@ -9,12 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from audit.utils import audit
 from rest_framework.permissions import (
     DjangoModelPermissions,
     DjangoObjectPermissions,
     IsAuthenticated,
 )
+
+VIEW_CLUSTER_PERM = "cm.view_cluster"
 
 
 class DjangoObjectPermissionsAudit(DjangoObjectPermissions):

@@ -68,7 +68,7 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
 )
 
-VIEW_CLUSTER_PERM = "cm.view_cluster"
+from adcm.permissions import VIEW_CLUSTER_PERM
 
 
 def get_obj_conf(cluster_id, service_id):

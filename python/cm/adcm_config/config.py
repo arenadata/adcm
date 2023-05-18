@@ -718,7 +718,6 @@ def get_default(  # pylint: disable=too-many-branches
 
 
 def get_main_info(obj: ADCMEntity | None) -> str | None:
-    """Return __main_info for object"""
     if obj.config is None:
         return None
 
