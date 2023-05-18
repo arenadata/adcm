@@ -102,9 +102,12 @@ class LoginMiddleware:
                     user.failed_login_attempts = 1
                     user.blocked_at = None
             else:
-                if user.last_failed_login_at and (
-                    user.last_failed_login_at + timedelta(minutes=block_time_minutes)
-                ) < datetime.now(tz=ZoneInfo(settings.TIME_ZONE)):
+                if (
+                    user.last_failed_login_at
+                    and (user.last_failed_login_at + timedelta(minutes=block_time_minutes))
+                    < datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
+                    and user.failed_login_attempts == 0
+                ):
                     user.failed_login_attempts = 1
                 else:
                     user.failed_login_attempts += 1
