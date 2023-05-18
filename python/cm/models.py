@@ -1969,3 +1969,8 @@ class ConcernItem(ADCMModel):
         for entity in self.related_objects:
             entity.remove_from_concerns(self)
         return super().delete(using, keep_parents)
+
+
+class ClusterStatus(models.TextChoices):
+    UP = "up", "up"
+    DOWN = "down", "down"
