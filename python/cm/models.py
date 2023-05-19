@@ -1668,6 +1668,8 @@ class LogStorage(ADCMModel):
     type = models.CharField(max_length=1000, choices=LOG_TYPE)
     format = models.CharField(max_length=1000, choices=FORMAT_TYPE)
 
+    __error_code__ = "LOG_NOT_FOUND"
+
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["job"], condition=models.Q(type="check"), name="unique_check_job"),

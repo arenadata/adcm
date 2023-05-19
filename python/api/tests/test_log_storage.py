@@ -17,7 +17,7 @@ from cm.models import JobLog, LogStorage
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
 from adcm.tests.base import BaseTestCase
 
@@ -133,3 +133,14 @@ class TestTaskAPI(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_download_forbiden(self):
+        with self.no_rights_user_logged_in:
+            response: Response = self.client.get(
+                path=reverse(
+                    viewname="v1:joblog-download", kwargs={"job_pk": self.job.pk, "log_pk": self.log_storage_1.pk}
+                ),
+            )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["code"], "LOG_NOT_FOUND")

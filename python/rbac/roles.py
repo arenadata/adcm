@@ -252,8 +252,8 @@ def apply_jobs(task: TaskLog, policy: Policy) -> None:
             assign_user_or_group_perm(policy=policy, permission=view_logstorage_permission, obj=log)
 
 
-def re_apply_policy_for_jobs(action_object, task):
-    obj_type_map = get_objects_for_policy(action_object)
+def re_apply_policy_for_jobs(action_object: ADCMEntity, task: TaskLog) -> None:
+    obj_type_map = get_objects_for_policy(obj=action_object)
     object_model = action_object.__class__.__name__.lower()
     task_role, _ = Role.objects.get_or_create(
         name=f"View role for task {task.id}",
