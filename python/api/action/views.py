@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import hashlib
 from itertools import compress
 
@@ -32,7 +33,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-VIEW_ACTION_PERM = "cm.view_action"
+from adcm.permissions import VIEW_ACTION_PERM
 
 
 def get_object_type_id(**kwargs) -> tuple[str, int, int]:

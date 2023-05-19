@@ -1172,8 +1172,6 @@ def get_any():
 
 
 class AbstractAction(ADCMModel):
-    """Abstract base class for both Action and StageAction"""
-
     prototype = None
 
     name = models.CharField(max_length=1000)
