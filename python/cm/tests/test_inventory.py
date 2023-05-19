@@ -129,7 +129,7 @@ class TestInventory(BaseTestCase):
         }
         self.assertDictEqual(res, test_res)
 
-        mock_get_obj_config.assert_called_once_with(self.cluster)
+        mock_get_obj_config.assert_called_once_with(obj=self.cluster)
         mock_get_import.assert_called_once_with(cluster=self.cluster)
 
     @patch("cm.inventory.get_obj_config")
@@ -150,7 +150,7 @@ class TestInventory(BaseTestCase):
         }
 
         self.assertDictEqual(config, test_config)
-        mock_get_obj_config.assert_called_once_with(self.provider)
+        mock_get_obj_config.assert_called_once_with(obj=self.provider)
 
     @patch("cm.inventory.get_obj_config")
     def test_get_host_groups(self, mock_get_obj_config):
@@ -173,7 +173,7 @@ class TestInventory(BaseTestCase):
 
         self.assertDictEqual(cluster_hosts, test_cluster_hosts)
         mock_get_hosts.assert_called_once()
-        mock_get_cluster_config.assert_called_once_with(self.cluster)
+        mock_get_cluster_config.assert_called_once_with(cluster=self.cluster)
 
     @patch("cm.inventory.get_hosts")
     def test_get_provider_hosts(self, mock_get_hosts):
@@ -210,7 +210,7 @@ class TestInventory(BaseTestCase):
             },
         }
         self.assertDictEqual(groups, test_groups)
-        mock_get_hosts.assert_called_once_with([self.host], self.host)
+        mock_get_hosts.assert_called_once_with(host_list=[self.host], obj=self.host)
 
     @patch("json.dump")
     @patch("cm.inventory.open")
@@ -549,29 +549,13 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
 
         return hc_request_data
 
-    def test_groups_remove_host_not_in_mm_success(self):
-        self.host_hc_acl_3.maintenance_mode = MaintenanceMode.ON
-        self.host_hc_acl_3.save()
-
-        # remove: hc_c1_h2
-        hc_request_data = self._get_hc_request_data(self.hc_c1_h1, self.hc_c1_h3, self.hc_c2_h1, self.hc_c2_h2)
-
+    def get_inventory_data(self, data: dict, kwargs: dict) -> dict:
         self.assertEqual(TaskLog.objects.count(), 0)
         self.assertEqual(JobLog.objects.count(), 0)
 
         response: Response = self.client.post(
-            path=reverse(
-                viewname="v1:run-task",
-                kwargs={
-                    "cluster_id": self.cluster_hc_acl.pk,
-                    "object_type": "cluster",
-                    "action_id": self.action_hc_acl.pk,
-                },
-            ),
-            data={
-                "hc": hc_request_data,
-                "verbose": False,
-            },
+            path=reverse(viewname="v1:run-task", kwargs=kwargs),
+            data=data,
             content_type=APPLICATION_JSON,
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -584,6 +568,24 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         inventory_file = settings.RUN_DIR / str(job.pk) / "inventory.json"
         with open(file=inventory_file, encoding=settings.ENCODING_UTF_8) as f:
             inventory_data = loads(s=f.read())["all"]["children"]
+
+        return inventory_data
+
+    def test_groups_remove_host_not_in_mm_success(self):
+        self.host_hc_acl_3.maintenance_mode = MaintenanceMode.ON
+        self.host_hc_acl_3.save()
+
+        # remove: hc_c1_h2
+        hc_request_data = self._get_hc_request_data(self.hc_c1_h1, self.hc_c1_h3, self.hc_c2_h1, self.hc_c2_h2)
+
+        inventory_data = self.get_inventory_data(
+            data={"hc": hc_request_data, "verbose": False},
+            kwargs={
+                "cluster_id": self.cluster_hc_acl.pk,
+                "object_type": "cluster",
+                "action_id": self.action_hc_acl.pk,
+            },
+        )
 
         target_key_remove = (
             f"{ClusterObject.objects.get(pk=self.hc_c1_h2['service_id']).prototype.name}"
@@ -621,34 +623,14 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         # remove: hc_c1_h3
         hc_request_data = self._get_hc_request_data(self.hc_c1_h1, self.hc_c1_h2, self.hc_c2_h1, self.hc_c2_h2)
 
-        self.assertEqual(TaskLog.objects.count(), 0)
-        self.assertEqual(JobLog.objects.count(), 0)
-
-        response: Response = self.client.post(
-            path=reverse(
-                viewname="v1:run-task",
-                kwargs={
-                    "cluster_id": self.cluster_hc_acl.pk,
-                    "object_type": "cluster",
-                    "action_id": self.action_hc_acl.pk,
-                },
-            ),
-            data={
-                "hc": hc_request_data,
-                "verbose": False,
+        inventory_data = self.get_inventory_data(
+            data={"hc": hc_request_data, "verbose": False},
+            kwargs={
+                "cluster_id": self.cluster_hc_acl.pk,
+                "object_type": "cluster",
+                "action_id": self.action_hc_acl.pk,
             },
-            content_type=APPLICATION_JSON,
         )
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        task = TaskLog.objects.last()
-        job = JobLog.objects.last()
-
-        re_prepare_job(task=task, job=job)
-
-        inventory_file = settings.RUN_DIR / str(job.pk) / "inventory.json"
-        with open(file=inventory_file, encoding=settings.ENCODING_UTF_8) as f:
-            inventory_data = loads(s=f.read())["all"]["children"]
 
         target_key_remove = (
             f"{ClusterObject.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"
@@ -657,7 +639,7 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         )
 
         self.assertIn(target_key_remove, inventory_data)
-        self.assertIn(self.host_hc_acl_3.fqdn, inventory_data[target_key_remove]["hosts"])
+        self.assertNotIn(self.host_hc_acl_3.fqdn, inventory_data[target_key_remove]["hosts"])
 
         remove_keys = [key for key in inventory_data if key.endswith(f".{HcAclAction.REMOVE}")]
         self.assertEqual(len(remove_keys), 1)
@@ -665,38 +647,70 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         mm_keys = [key for key in inventory_data if key.endswith(f".{HcAclAction.REMOVE}.{MAINTENANCE_MODE}")]
         self.assertEqual(len(mm_keys), 1)
 
+    def test_vars_in_mm_group(self):
+        self.host_target_group_1.maintenance_mode = MaintenanceMode.ON
+        self.host_target_group_1.save()
+
+        groups = [
+            gen_group(name="cluster", object_id=self.cluster_target_group.id, model_name="cluster"),
+            gen_group(name="service_1", object_id=self.service_target_group.id, model_name="clusterobject"),
+        ]
+
+        for group in groups:
+            group.hosts.add(self.host_target_group_1)
+            update_obj_config(
+                obj_conf=group.config,
+                conf={"some_string": group.name, "float": 0.1},
+                attr={"group_keys": {"some_string": True, "float": False}},
+            )
+
+        inventory_data = self.get_inventory_data(
+            data={"verbose": False},
+            kwargs={
+                "cluster_id": self.cluster_target_group.pk,
+                "object_type": "cluster",
+                "action_id": Action.objects.get(name="not_host_action").id,
+            },
+        )
+
+        self.assertDictEqual(
+            inventory_data["service_1_target_group.component_1_target_group.maintenance_mode"]["hosts"][
+                "host_target_group_1"
+            ]["cluster"]["config"],
+            {"some_string": "cluster", "float": 0.1},
+        )
+        self.assertDictEqual(
+            inventory_data["service_1_target_group.component_1_target_group.maintenance_mode"]["hosts"][
+                "host_target_group_1"
+            ]["services"]["service_1_target_group"]["config"],
+            {"some_string": "service_1", "float": 0.1},
+        )
+        self.assertDictEqual(
+            inventory_data["service_1_target_group.component_1_target_group.maintenance_mode"]["hosts"][
+                "host_target_group_1"
+            ]["services"]["service_1_target_group"]["component_1_target_group"]["config"],
+            {"some_string": "some_string", "float": 0.1},
+        )
+        self.assertDictEqual(
+            inventory_data["service_1_target_group.component_1_target_group.maintenance_mode"]["vars"]["cluster"][
+                "config"
+            ],
+            {"some_string": "some_string", "float": 0.1},
+        )
+
     def test_host_in_target_group_hostaction_on_host_in_mm_success(self):
         self.host_target_group_1.maintenance_mode = MaintenanceMode.ON
         self.host_target_group_1.save()
 
-        self.assertEqual(TaskLog.objects.count(), 0)
-        self.assertEqual(JobLog.objects.count(), 0)
-
-        response: Response = self.client.post(
-            path=reverse(
-                viewname="v1:run-task",
-                kwargs={
-                    "cluster_id": self.cluster_target_group.pk,
-                    "host_id": self.host_target_group_1.pk,
-                    "object_type": "host",
-                    "action_id": self.action_target_group.pk,
-                },
-            ),
-            data={
-                "verbose": False,
+        target_hosts_data = self.get_inventory_data(
+            data={"verbose": False},
+            kwargs={
+                "cluster_id": self.cluster_target_group.pk,
+                "host_id": self.host_target_group_1.pk,
+                "object_type": "host",
+                "action_id": self.action_target_group.pk,
             },
-            content_type=APPLICATION_JSON,
-        )
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        task = TaskLog.objects.last()
-        job = JobLog.objects.last()
-
-        re_prepare_job(task=task, job=job)
-
-        inventory_file = settings.RUN_DIR / str(job.pk) / "inventory.json"
-        with open(file=inventory_file, encoding=settings.ENCODING_UTF_8) as f:
-            target_hosts_data = loads(s=f.read())["all"]["children"]["target"]["hosts"]
+        )["target"]["hosts"]
 
         self.assertIn(self.host_target_group_1.fqdn, target_hosts_data)
 
@@ -704,33 +718,14 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         self.host_target_group_2.maintenance_mode = MaintenanceMode.OFF
         self.host_target_group_2.save()
 
-        self.assertEqual(TaskLog.objects.count(), 0)
-        self.assertEqual(JobLog.objects.count(), 0)
-
-        response: Response = self.client.post(
-            path=reverse(
-                viewname="v1:run-task",
-                kwargs={
-                    "cluster_id": self.cluster_target_group.pk,
-                    "host_id": self.host_target_group_2.pk,
-                    "object_type": "host",
-                    "action_id": self.action_target_group.pk,
-                },
-            ),
-            data={
-                "verbose": False,
+        target_hosts_data = self.get_inventory_data(
+            data={"verbose": False},
+            kwargs={
+                "cluster_id": self.cluster_target_group.pk,
+                "host_id": self.host_target_group_2.pk,
+                "object_type": "host",
+                "action_id": self.action_target_group.pk,
             },
-            content_type=APPLICATION_JSON,
-        )
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        task = TaskLog.objects.last()
-        job = JobLog.objects.last()
-
-        re_prepare_job(task=task, job=job)
-
-        inventory_file = settings.RUN_DIR / str(job.pk) / "inventory.json"
-        with open(file=inventory_file, encoding=settings.ENCODING_UTF_8) as f:
-            target_hosts_data = loads(s=f.read())["all"]["children"]["target"]["hosts"]
+        )["target"]["hosts"]
 
         self.assertIn(self.host_target_group_2.fqdn, target_hosts_data)
