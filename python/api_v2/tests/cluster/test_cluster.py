@@ -13,49 +13,16 @@
 from typing import Callable
 from unittest.mock import patch
 
-from cm.models import Bundle, Cluster, ClusterStatus, ObjectType, Prototype
+from api_v2.tests.cluster.base import ClusterBaseTestCase
+from cm.models import Cluster, ClusterStatus
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from adcm.tests.base import APPLICATION_JSON
 
 
-class TestCluster(BaseTestCase):
-    # pylint: disable=too-many-instance-attributes
-
-    def setUp(self) -> None:
-        super().setUp()
-
-        bundle_1 = Bundle.objects.create()
-        self.cluster_1_prototype_name = "test_cluster_1_prototype"
-        self.cluster_1_prototype = Prototype.objects.create(
-            bundle=bundle_1,
-            name=self.cluster_1_prototype_name,
-            type=ObjectType.CLUSTER,
-            version="1",
-        )
-
-        self.cluster_2_prototype_name = "test_cluster_2_prototype"
-        self.cluster_2_prototype = Prototype.objects.create(
-            bundle=bundle_1,
-            name=self.cluster_2_prototype_name,
-            type=ObjectType.CLUSTER,
-            version="1",
-        )
-        Prototype.objects.create(
-            bundle=bundle_1,
-            name=self.cluster_2_prototype_name,
-            type=ObjectType.CLUSTER,
-            version="2",
-        )
-
-        self.cluster_1_name = "test_cluster_1"
-        self.cluster_1 = Cluster.objects.create(prototype=self.cluster_1_prototype, name=self.cluster_1_name)
-
-        self.cluster_2_name = "test_cluster_2"
-        self.cluster_2 = Cluster.objects.create(prototype=self.cluster_2_prototype, name=self.cluster_2_name)
-
+class TestCluster(ClusterBaseTestCase):
     def get_cluster_status_mock(self) -> Callable:
         def inner(cluster: Cluster) -> int:
             if cluster.pk == self.cluster_1.pk:

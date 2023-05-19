@@ -17,6 +17,7 @@ from rest_framework.permissions import (
     IsAuthenticated,
 )
 
+VIEW_ACTION_PERM = "cm.view_action"
 VIEW_CLUSTER_PERM = "cm.view_cluster"
 
 

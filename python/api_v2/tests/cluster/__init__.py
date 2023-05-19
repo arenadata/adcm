@@ -9,15 +9,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from api_v2.action.views import ActionViewSet
-from api_v2.cluster.views import ClusterViewSet
-from rest_framework_nested.routers import NestedSimpleRouter, SimpleRouter
-
-router = SimpleRouter()
-router.register(prefix="", viewset=ClusterViewSet)
-
-action_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="cluster")
-action_router.register(prefix="actions", viewset=ActionViewSet)
-
-urlpatterns = [*router.urls, *action_router.urls]
