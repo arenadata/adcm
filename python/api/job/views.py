@@ -45,6 +45,7 @@ from adcm.utils import str_remove_non_alnum
 
 VIEW_TASKLOG_PERMISSION = "cm.view_tasklog"
 VIEW_JOBLOG_PERMISSION = "cm.view_joblog"
+VIEW_LOGSTORAGE_PERMISSION = "cm.view_logstorage"
 
 
 def get_task_download_archive_name(task: TaskLog) -> str:
@@ -260,14 +261,13 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
     @action(methods=["get"], detail=True)
     def download(self, request: Request, job_pk: int, log_pk: int):  # pylint: disable=unused-argument
         # self is necessary for audit
-
-        job = JobLog.obj.get(id=job_pk)
-        log_storage = LogStorage.obj.get(pk=log_pk, job=job)
-
+        log_storage = get_object_for_user(
+            user=request.user, perms=VIEW_LOGSTORAGE_PERMISSION, klass=LogStorage, id=log_pk, job__id=job_pk
+        )
         if log_storage.type in {"stdout", "stderr"}:
-            filename = f"{job.id}-{log_storage.name}-{log_storage.type}.{log_storage.format}"
+            filename = f"{job_pk}-{log_storage.name}-{log_storage.type}.{log_storage.format}"
         else:
-            filename = f"{job.id}-{log_storage.name}.{log_storage.format}"
+            filename = f"{job_pk}-{log_storage.name}.{log_storage.format}"
 
         filename = re.sub(r"\s+", "_", filename)
         if log_storage.format == "txt":
