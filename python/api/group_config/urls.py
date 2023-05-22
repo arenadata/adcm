@@ -18,9 +18,9 @@ from api.group_config.views import (
     GroupConfigHostViewSet,
     GroupConfigViewSet,
 )
-from rest_framework_extensions.routers import ExtendedDefaultRouter as DefaultRouter
+from rest_framework_extensions.routers import ExtendedSimpleRouter as SimpleRouter
 
-router = DefaultRouter()
+router = SimpleRouter()
 
 root = router.register(r"", GroupConfigViewSet, basename="group-config")
 root.register(

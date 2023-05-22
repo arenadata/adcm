@@ -10,10 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.views import APIRoot
-from django.urls import include, path
+from rest_framework.routers import APIRootView
 
-urlpatterns = [
-    path("", APIRoot.as_view(), name="api-root-v2"),
-    path("clusters/", include("api_v2.cluster.urls")),
-]
+
+class APIRoot(APIRootView):
+    api_root_dict = {
+        "clusters": "cluster-list",
+    }

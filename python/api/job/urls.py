@@ -12,22 +12,22 @@
 
 from api.job.views import JobViewSet, LogStorageViewSet
 from django.urls import path
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import SimpleRouter
 
-router = DefaultRouter()
-router.register("", JobViewSet)
+router = SimpleRouter()
+router.register("", JobViewSet, basename="joblog")
 
 urlpatterns = [
     *router.urls,
-    path("<int:job_pk>/log/", LogStorageViewSet.as_view({"get": "list"}), name="joblog-list"),
+    path("<int:job_pk>/log/", LogStorageViewSet.as_view({"get": "list"}), name="logstorage-list"),
     path(
         "<int:job_pk>/log/<int:log_pk>/",
         LogStorageViewSet.as_view({"get": "retrieve"}),
-        name="joblog-detail",
+        name="logstorage-detail",
     ),
     path(
         "<int:job_pk>/log/<int:log_pk>/download/",
         LogStorageViewSet.as_view({"get": "download"}),
-        name="joblog-download",
+        name="logstorage-download",
     ),
 ]

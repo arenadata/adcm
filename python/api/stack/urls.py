@@ -26,9 +26,9 @@ from api.stack.views import (
     load_servicemap_view,
 )
 from django.urls import path
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import SimpleRouter
 
-router = DefaultRouter()
+router = SimpleRouter()
 router.register("bundle", BundleViewSet)
 router.register("prototype", PrototypeViewSet)
 router.register("action", ProtoActionViewSet)
