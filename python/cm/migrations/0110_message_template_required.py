@@ -14,18 +14,16 @@
 
 from django.db import migrations
 
-data = [
-    {
-        "name": "required service issue",
-        "template": {
-            "message": "${source} require service ${target} to be installed",
-            "placeholder": {
-                "source": {"type": "adcm_entity"},
-                "target": {"type": "prototype"},
-            },
+data = {
+    "name": "required service issue",
+    "template": {
+        "message": "${source} require service ${target} to be installed",
+        "placeholder": {
+            "source": {"type": "adcm_entity"},
+            "target": {"type": "prototype"},
         },
     },
-]
+}
 
 reversed_data = [
     {
@@ -42,8 +40,10 @@ reversed_data = [
 
 def insert_message_templates(apps, schema_editor):
     message_template = apps.get_model("cm", "MessageTemplate")
-    message_template.objects.filter(name="required service issue").delete()
-    message_template.objects.bulk_create([message_template(**kwargs) for kwargs in data])
+    required_msg = message_template.objects.get(name="required service issue")
+    required_msg.template["message"] = data["template"]["message"]
+    required_msg.template["placeholder"] = data["template"]["placeholder"]
+    required_msg.save()
 
 
 def insert_message_templates_revert(apps, schema_editor):
