@@ -139,3 +139,11 @@ class TestCluster(ClusterBaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.assertFalse(Cluster.objects.filter(pk=self.cluster_1.pk).exists())
+
+    def test_service_prototypes_success(self):
+        response: Response = self.client.get(
+            path=reverse(viewname="v2:cluster-service-prototypes", kwargs={"pk": self.cluster_1.pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()), 1)

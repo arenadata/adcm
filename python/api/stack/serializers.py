@@ -13,7 +13,6 @@
 from api.action.serializers import StackActionDetailSerializer
 from api.config.serializers import ConfigSerializer
 from api.serializers import UpgradeSerializer
-from api.utils import get_requires
 from cm.models import Bundle, ClusterObject, Prototype
 from cm.schemas import RequiresUISchema
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
@@ -30,6 +29,7 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
+from adcm.utils import get_requires
 
 
 class UploadBundleSerializer(EmptySerializer):
