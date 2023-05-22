@@ -10,12 +10,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any
+
 from api_v2.concern.serializers import ConcernSerializer
 from cm.adcm_config.config import get_main_info
-from cm.models import Cluster
+from cm.models import Cluster, Prototype
 from cm.status_api import get_cluster_status
 from cm.upgrade import get_upgrade
-from rest_framework.serializers import CharField, ModelSerializer, SerializerMethodField
+from rest_framework.serializers import (
+    BooleanField,
+    CharField,
+    ModelSerializer,
+    SerializerMethodField,
+)
+
+from adcm.utils import get_requires
 
 
 class ClusterGetSerializer(ModelSerializer):
@@ -65,3 +74,16 @@ class ClusterPatchSerializer(ModelSerializer):
     class Meta:
         model = Cluster
         fields = ["name"]
+
+
+class ServicePrototypeSerializer(ModelSerializer):
+    is_required = BooleanField(source="required")
+    depend_on = SerializerMethodField()
+
+    class Meta:
+        model = Prototype
+        fields = ["id", "name", "display_name", "version", "is_required", "depend_on", "is_license_accepted"]
+
+    @staticmethod
+    def get_depend_on(prototype: Prototype) -> list[dict[str, list[dict[str, Any]] | Any]] | None:
+        return get_requires(prototype=prototype)

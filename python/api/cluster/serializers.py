@@ -16,14 +16,7 @@ from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializ
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.host.serializers import HostSerializer
 from api.serializers import DoUpgradeSerializer, StringListSerializer
-from api.utils import (
-    CommonAPIURL,
-    ObjectURL,
-    UrlField,
-    check_obj,
-    filter_actions,
-    get_requires,
-)
+from api.utils import CommonAPIURL, ObjectURL, UrlField, check_obj, filter_actions
 from api.validators import StartMidEndValidator
 from cm.adcm_config.config import get_main_info
 from cm.api import add_cluster, add_hc, bind, multi_bind
@@ -49,6 +42,7 @@ from rest_framework.serializers import (
 from rest_framework.validators import UniqueValidator
 
 from adcm.serializers import EmptySerializer
+from adcm.utils import get_requires
 
 
 def get_cluster_id(obj):

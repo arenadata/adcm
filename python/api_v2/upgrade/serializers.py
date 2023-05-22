@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import LICENSE_STATE, Upgrade
+from cm.models import Upgrade
 from rest_framework.serializers import (
     BooleanField,
     JSONField,
@@ -30,7 +30,7 @@ class UpgradeListSerializer(ModelSerializer):
 
     @staticmethod
     def get_is_license_accepted(upgrade: Upgrade) -> bool:
-        return upgrade.bundle.prototype_set.filter(type="cluster").first().license == LICENSE_STATE[1][0]
+        return upgrade.bundle.prototype_set.filter(type="cluster").first().is_license_accepted
 
 
 class UpgradeRetrieveSerializer(ModelSerializer):
