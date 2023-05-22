@@ -10,7 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Bundle, Cluster, ObjectType, Prototype
+from cm.models import (
+    Action,
+    ActionType,
+    Bundle,
+    Cluster,
+    ClusterObject,
+    Host,
+    HostComponent,
+    ObjectType,
+    Prototype,
+    ServiceComponent,
+)
 
 from adcm.tests.base import BaseTestCase
 
@@ -21,7 +32,7 @@ class ClusterBaseTestCase(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.bundle = Bundle.objects.create()
+        self.bundle = Bundle.objects.create(name="test_cluster_1_prototype")
         self.cluster_1_prototype_name = "test_cluster_1_prototype"
         self.cluster_1_prototype = Prototype.objects.create(
             bundle=self.bundle,
@@ -49,3 +60,27 @@ class ClusterBaseTestCase(BaseTestCase):
 
         self.cluster_2_name = "test_cluster_2"
         self.cluster_2 = Cluster.objects.create(prototype=self.cluster_2_prototype, name=self.cluster_2_name)
+
+        self.action = Action.objects.create(
+            name="test_action",
+            prototype=self.cluster_1_prototype,
+            type=ActionType.JOB,
+        )
+        self.service = ClusterObject.objects.create(
+            cluster=self.cluster_1, prototype=Prototype.objects.create(bundle=self.bundle, type=ObjectType.SERVICE)
+        )
+        self.host = Host.objects.create(
+            fqdn="test-host",
+            prototype=Prototype.objects.create(bundle=self.bundle, type=ObjectType.HOST),
+        )
+        self.component = ServiceComponent.objects.create(
+            prototype=Prototype.objects.create(bundle=self.bundle, type=ObjectType.COMPONENT),
+            cluster=self.cluster_1,
+            service=self.service,
+        )
+        self.hostcomponent = HostComponent.objects.create(
+            cluster=self.cluster_1,
+            host=self.host,
+            service=self.service,
+            component=self.component,
+        )
