@@ -27,6 +27,7 @@ from cm.issue import (
     check_bound_components,
     check_component_constraint,
     check_hc_requires,
+    check_service_requires,
     update_hierarchy_issues,
     update_issue_after_deleting,
 )
@@ -651,6 +652,7 @@ def check_hc(cluster: Cluster, hc_in: list[dict]) -> list[tuple[ClusterObject, H
         check_component_constraint(
             cluster=cluster, service_prototype=service.prototype, hc_in=[i for i in host_comp_list if i[0] == service]
         )
+        check_service_requires(cluster=cluster, proto=service.prototype)
 
     check_hc_requires(shc_list=host_comp_list)
     check_bound_components(shc_list=host_comp_list)
