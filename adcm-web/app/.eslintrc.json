@@ -1,0 +1,96 @@
+{
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["react", "prettier", "@typescript-eslint", "react-hooks", "react-refresh", "spellcheck"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:react/recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react-hooks/recommended",
+    "plugin:react/jsx-runtime",
+    "plugin:prettier/recommended",
+    "plugin:storybook/recommended",
+    "prettier"
+  ],
+  "rules": {
+    "react-refresh/only-export-components": "warn",
+    "object-curly-spacing": [2, "always"],
+    "quotes": ["error", "single"],
+    "semi": ["warn", "always"],
+    "comma-dangle": ["error", "always-multiline"],
+    "space-before-function-paren": ["error", { "anonymous": "always", "named": "never", "asyncArrow": "always" }],
+    "react/jsx-max-props-per-line": [1, { "when": "multiline" }],
+    "spellcheck/spell-checker": [
+      "warn",
+      {
+        "skipWords": [
+          "acc",
+          "adcm",
+          "api",
+          "axios",
+          "cancelable",
+          "cancelled",
+          "cancelling",
+          "checkbox",
+          "checkboxes",
+          "cn",
+          "ctx",
+          "dataset",
+          "datetime",
+          "debounce",
+          "debounced",
+          "deletable",
+          "dropdown",
+          "guid",
+          "href",
+          "io",
+          "mouseenter",
+          "mouseleave",
+          "mousemove",
+          "mouseup",
+          "nanoid",
+          "noopener",
+          "noreferrer",
+          "num",
+          "path",
+          "pathname",
+          "perf",
+          "pid",
+          "qs",
+          "queueing",
+          "readonly",
+          "rect",
+          "redux",
+          "resize",
+          "rp",
+          "schemas",
+          "searchable",
+          "ssl",
+          "sql",
+          "str",
+          "svg",
+          "textarea",
+          "toggler",
+          "td",
+          "th",
+          "tooltip",
+          "ttl",
+          "unmount",
+          "uri"
+        ]
+      }
+    ],
+    "no-console": [
+      "error",
+      {
+        "allow": ["info", "warn", "error"]
+      }
+    ],
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "varsIgnorePattern": "React"
+      }
+    ]
+  }
+}

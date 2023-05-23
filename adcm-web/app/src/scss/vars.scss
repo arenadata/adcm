@@ -1,0 +1,13 @@
+:root {
+  // colors
+  --color-xblack: #110F12;
+  --color-xgreen: #00A872;
+  --color-xgreen-saturated: #00D2A0;
+  --color-xwhite: #fff;
+
+  // sizes:
+  --z-index-spinner: 10;
+  --z-index-dialog: 100;
+  --z-index-popover: calc(var(--z-index-dialog) + 1);
+  --z-index-notifications: var(--z-index-popover);
+}
