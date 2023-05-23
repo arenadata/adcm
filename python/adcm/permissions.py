@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from audit.utils import audit
+from cm.errors import AdcmEx
 from rest_framework.permissions import (
     DjangoModelPermissions,
     DjangoObjectPermissions,
@@ -37,3 +38,19 @@ class IsAuthenticatedAudit(IsAuthenticated):
     @audit
     def has_permission(self, request, view):
         return super().has_permission(request, view)
+
+
+class SuperuserOnlyMixin:
+    not_superuser_error_code = None
+
+    def get_queryset(self, *args, **kwargs):
+        if getattr(self, "swagger_fake_view", False):
+            return self.queryset.model.objects.none()
+
+        if not self.request.user.is_superuser:
+            if self.not_superuser_error_code:
+                raise AdcmEx(self.not_superuser_error_code)
+
+            return self.queryset.model.objects.none()
+
+        return super().get_queryset(*args, **kwargs)
