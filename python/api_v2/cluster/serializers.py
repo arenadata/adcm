@@ -14,7 +14,7 @@ from typing import Any
 
 from api_v2.concern.serializers import ConcernSerializer
 from cm.adcm_config.config import get_main_info
-from cm.models import Cluster, Prototype
+from cm.models import Cluster, HostComponent, Prototype
 from cm.status_api import get_cluster_status
 from cm.upgrade import get_upgrade
 from rest_framework.serializers import (
@@ -87,3 +87,15 @@ class ServicePrototypeSerializer(ModelSerializer):
     @staticmethod
     def get_depend_on(prototype: Prototype) -> list[dict[str, list[dict[str, Any]] | Any]] | None:
         return get_requires(prototype=prototype)
+
+
+class HostComponentListSerializer(ModelSerializer):
+    class Meta:
+        model = HostComponent
+        fields = ["service", "host", "component", "cluster"]
+
+
+class HostComponentPostSerializer(ModelSerializer):
+    class Meta:
+        model = HostComponent
+        fields = ["service", "host", "component", "cluster"]
