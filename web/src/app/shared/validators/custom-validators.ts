@@ -9,7 +9,7 @@ export class CustomValidators {
       return error;
     }
 
-    if (typeof value === 'string' && value.length === 0) {
+    if (typeof value === 'string' && value.trim() === '') {
       return error;
     }
 
