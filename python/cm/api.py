@@ -648,14 +648,14 @@ def make_host_comp_list(cluster: Cluster, hc_in: list[dict]) -> list[tuple[Clust
 def check_hc(cluster: Cluster, hc_in: list[dict]) -> list[tuple[ClusterObject, Host, ServiceComponent]]:
     check_sub_key(hc_in=hc_in)
     host_comp_list = make_host_comp_list(cluster=cluster, hc_in=hc_in)
+
+    check_hc_requires(shc_list=host_comp_list)
+    check_bound_components(shc_list=host_comp_list)
     for service in ClusterObject.objects.filter(cluster=cluster):
         check_component_constraint(
             cluster=cluster, service_prototype=service.prototype, hc_in=[i for i in host_comp_list if i[0] == service]
         )
         check_service_requires(cluster=cluster, proto=service.prototype)
-
-    check_hc_requires(shc_list=host_comp_list)
-    check_bound_components(shc_list=host_comp_list)
     check_maintenance_mode(cluster=cluster, host_comp_list=host_comp_list)
 
     return host_comp_list
