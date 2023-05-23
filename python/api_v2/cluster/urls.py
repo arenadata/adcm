@@ -10,9 +10,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.cluster.views import ClusterViewSet
-from rest_framework_nested.routers import SimpleRouter
+from api_v2.action.views import ActionViewSet
+from api_v2.cluster.views import ClusterViewSet, MappingViewSet
+from api_v2.upgrade.views import UpgradeViewSet
+from rest_framework_nested.routers import NestedSimpleRouter, SimpleRouter
 
 router = SimpleRouter()
 router.register(prefix="", viewset=ClusterViewSet)
-urlpatterns = router.urls
+
+action_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="cluster")
+action_router.register(prefix="actions", viewset=ActionViewSet)
+
+upgrade_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="cluster")
+upgrade_router.register(prefix="upgrades", viewset=UpgradeViewSet)
+
+mapping_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="cluster")
+mapping_router.register(prefix="mapping", viewset=MappingViewSet, basename="mapping")
+
+urlpatterns = [*router.urls, *action_router.urls, *upgrade_router.urls, *mapping_router.urls]

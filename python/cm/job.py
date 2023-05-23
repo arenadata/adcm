@@ -59,6 +59,7 @@ from cm.issue import (
     check_bound_components,
     check_component_constraint,
     check_hc_requires,
+    check_service_requires,
     update_hierarchy_issues,
 )
 from cm.logger import logger
@@ -386,11 +387,12 @@ def check_constraints_for_upgrade(cluster, upgrade, host_comp_list):
             try:
                 prototype = Prototype.objects.get(name=service.name, type="service", bundle=upgrade.bundle)
                 check_component_constraint(
-                    cluster,
-                    prototype,
-                    [i for i in host_comp_list if i[0] == service],
-                    cluster.prototype.bundle,
+                    cluster=cluster,
+                    service_prototype=prototype,
+                    hc_in=[i for i in host_comp_list if i[0] == service],
+                    old_bundle=cluster.prototype.bundle,
                 )
+                check_service_requires(cluster=cluster, proto=prototype)
             except Prototype.DoesNotExist:
                 pass
 

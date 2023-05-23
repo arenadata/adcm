@@ -17,7 +17,7 @@ from cm.models import JobLog, LogStorage
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
 from adcm.tests.base import BaseTestCase
 
@@ -46,14 +46,14 @@ class TestTaskAPI(BaseTestCase):
 
     def test_list(self):
         response: Response = self.client.get(
-            path=reverse(viewname="v1:joblog-list", kwargs={"job_pk": self.job.pk}),
+            path=reverse(viewname="v1:logstorage-list", kwargs={"job_pk": self.job.pk}),
         )
 
         self.assertEqual(len(response.data["results"]), 2)
 
     def test_list_filter_name(self):
         response: Response = self.client.get(
-            path=reverse(viewname="v1:joblog-list", kwargs={"job_pk": self.job.pk}),
+            path=reverse(viewname="v1:logstorage-list", kwargs={"job_pk": self.job.pk}),
             data={"name": self.log_storage_1.name},
         )
 
@@ -62,7 +62,7 @@ class TestTaskAPI(BaseTestCase):
 
     def test_list_filter_type(self):
         response: Response = self.client.get(
-            path=reverse(viewname="v1:joblog-list", kwargs={"job_pk": self.job.pk}),
+            path=reverse(viewname="v1:logstorage-list", kwargs={"job_pk": self.job.pk}),
             data={"type": self.log_storage_2.type},
         )
 
@@ -71,7 +71,7 @@ class TestTaskAPI(BaseTestCase):
 
     def test_list_filter_format(self):
         response: Response = self.client.get(
-            path=reverse(viewname="v1:joblog-list", kwargs={"job_pk": self.job.pk}),
+            path=reverse(viewname="v1:logstorage-list", kwargs={"job_pk": self.job.pk}),
             data={"format": self.log_storage_2.format},
         )
 
@@ -80,7 +80,7 @@ class TestTaskAPI(BaseTestCase):
 
     def test_list_ordering_id(self):
         response: Response = self.client.get(
-            path=reverse(viewname="v1:joblog-list", kwargs={"job_pk": self.job.pk}),
+            path=reverse(viewname="v1:logstorage-list", kwargs={"job_pk": self.job.pk}),
             data={"ordering": "id"},
         )
 
@@ -90,7 +90,7 @@ class TestTaskAPI(BaseTestCase):
 
     def test_list_ordering_id_reverse(self):
         response: Response = self.client.get(
-            path=reverse(viewname="v1:joblog-list", kwargs={"job_pk": self.job.pk}),
+            path=reverse(viewname="v1:logstorage-list", kwargs={"job_pk": self.job.pk}),
             data={"ordering": "-id"},
         )
 
@@ -100,7 +100,7 @@ class TestTaskAPI(BaseTestCase):
 
     def test_list_ordering_name(self):
         response: Response = self.client.get(
-            path=reverse(viewname="v1:joblog-list", kwargs={"job_pk": self.job.pk}),
+            path=reverse(viewname="v1:logstorage-list", kwargs={"job_pk": self.job.pk}),
             data={"ordering": "name"},
         )
 
@@ -110,7 +110,7 @@ class TestTaskAPI(BaseTestCase):
 
     def test_list_ordering_name_reverse(self):
         response: Response = self.client.get(
-            path=reverse(viewname="v1:joblog-list", kwargs={"job_pk": self.job.pk}),
+            path=reverse(viewname="v1:logstorage-list", kwargs={"job_pk": self.job.pk}),
             data={"ordering": "-name"},
         )
 
@@ -120,7 +120,9 @@ class TestTaskAPI(BaseTestCase):
 
     def test_retrieve(self):
         response: Response = self.client.get(
-            path=reverse(viewname="v1:joblog-detail", kwargs={"job_pk": self.job.pk, "log_pk": self.log_storage_1.pk}),
+            path=reverse(
+                viewname="v1:logstorage-detail", kwargs={"job_pk": self.job.pk, "log_pk": self.log_storage_1.pk}
+            ),
         )
 
         self.assertEqual(response.data["id"], self.log_storage_1.pk)
@@ -128,8 +130,19 @@ class TestTaskAPI(BaseTestCase):
     def test_download(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="v1:joblog-download", kwargs={"job_pk": self.job.pk, "log_pk": self.log_storage_1.pk}
+                viewname="v1:logstorage-download", kwargs={"job_pk": self.job.pk, "log_pk": self.log_storage_1.pk}
             ),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_download_forbiden(self):
+        with self.no_rights_user_logged_in:
+            response: Response = self.client.get(
+                path=reverse(
+                    viewname="v1:logstorage-download", kwargs={"job_pk": self.job.pk, "log_pk": self.log_storage_1.pk}
+                ),
+            )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["code"], "LOG_NOT_FOUND")

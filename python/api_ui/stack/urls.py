@@ -13,9 +13,9 @@
 from api_ui.stack.root import StackUIRoot
 from api_ui.stack.views import ClusterPrototypeUIViewSet, ProviderPrototypeUIViewSet
 from django.urls import path
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import SimpleRouter
 
-router = DefaultRouter()
+router = SimpleRouter()
 router.register("cluster", ClusterPrototypeUIViewSet, basename="cluster")
 router.register("provider", ProviderPrototypeUIViewSet, basename="provider")
 

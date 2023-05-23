@@ -247,12 +247,12 @@ class JobRetrieveSerializer(HyperlinkedModelSerializer):
                     "format": log_storage.format,
                     "id": log_storage.pk,
                     "url": reverse(
-                        "v1:joblog-detail",
+                        "v1:logstorage-detail",
                         kwargs={"job_pk": obj.pk, "log_pk": log_storage.pk},
                         request=self.context["request"],
                     ),
                     "download_url": reverse(
-                        "v1:joblog-download",
+                        "v1:logstorage-download",
                         kwargs={"job_pk": obj.pk, "log_pk": log_storage.pk},
                         request=self.context["request"],
                     ),
@@ -316,7 +316,7 @@ class LogStorageSerializer(LogStorageRetrieveSerializer):
 
     def get_url(self, obj):
         return reverse(
-            "v1:joblog-detail",
+            "v1:logstorage-detail",
             kwargs={"job_pk": obj.job_id, "log_pk": obj.id},
             request=self.context["request"],
         )

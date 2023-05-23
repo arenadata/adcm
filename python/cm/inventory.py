@@ -129,7 +129,7 @@ def get_import(cluster: Cluster) -> dict:  # pylint: disable=too-many-branches
     return imports
 
 
-def get_obj_config(obj) -> dict:
+def get_obj_config(obj: ADCMEntity) -> dict:
     if obj.config is None:
         return {}
 
@@ -160,7 +160,7 @@ def get_before_upgrade(obj: ADCMEntity, host: Host | None) -> dict:
 
 def get_cluster_variables(cluster: Cluster, cluster_config: dict | None = None, host: Host | None = None) -> dict:
     result = {
-        "config": cluster_config or get_obj_config(cluster),
+        "config": cluster_config or get_obj_config(obj=cluster),
         "name": cluster.name,
         "id": cluster.id,
         "version": cluster.prototype.version,
@@ -183,7 +183,7 @@ def get_service_variables(service: ClusterObject, service_config: dict | None = 
         "version": service.prototype.version,
         "state": service.state,
         "multi_state": service.multi_state,
-        "config": service_config or get_obj_config(service),
+        "config": service_config or get_obj_config(obj=service),
         MAINTENANCE_MODE: service.maintenance_mode == MaintenanceMode.ON,
         "display_name": service.display_name,
         "before_upgrade": get_before_upgrade(obj=service, host=host),
@@ -195,7 +195,7 @@ def get_component_variables(
 ) -> dict:
     return {
         "component_id": component.id,
-        "config": component_config or get_obj_config(component),
+        "config": component_config or get_obj_config(obj=component),
         "state": component.state,
         "multi_state": component.multi_state,
         MAINTENANCE_MODE: component.maintenance_mode == MaintenanceMode.ON,
@@ -209,7 +209,7 @@ def get_provider_variables(
 ) -> dict:
     host_proto = Prototype.objects.get(bundle=provider.prototype.bundle, type="host")
     return {
-        "config": provider_config or get_obj_config(provider),
+        "config": provider_config or get_obj_config(obj=provider),
         "name": provider.name,
         "id": provider.id,
         "host_prototype_id": host_proto.id,
@@ -224,11 +224,11 @@ def get_group_config(obj: ADCMEntity, host: Host) -> dict | None:
     group_config = None
     if group:
         conf, attr = group.get_config_and_attr()
-        group_config = process_config_and_attr(group, conf, attr)
+        group_config = process_config_and_attr(obj=group, conf=conf, attr=attr)
     return group_config
 
 
-def get_host_vars(host: Host, obj: type[ADCMEntity]) -> dict:
+def get_host_vars(host: Host, obj: ADCMEntity) -> dict:
     variables = {}
     if not host.group_config.exists():
         return variables
@@ -302,9 +302,9 @@ def get_cluster_config(cluster: Cluster) -> dict:
     return result
 
 
-def get_provider_config(provider_id) -> dict:
+def get_provider_config(provider_id: int) -> dict:
     provider = HostProvider.objects.get(id=provider_id)
-    return {"provider": get_provider_variables(provider)}
+    return {"provider": get_provider_variables(provider=provider)}
 
 
 def get_host_groups(  # pylint: disable=too-many-branches
@@ -329,15 +329,18 @@ def get_host_groups(  # pylint: disable=too-many-branches
             (f"{hostcomponent.service.prototype.name}", hostcomponent.service),
         )
 
-        for key, adcm_object in key_object_pairs:
+        for key, _ in key_object_pairs:
             if hostcomponent.host.maintenance_mode == MaintenanceMode.ON:
                 key = f"{key}.{MAINTENANCE_MODE}"
 
             if key not in groups:
                 groups[key] = {"hosts": {}}
 
-            groups[key]["hosts"][hostcomponent.host.fqdn] = get_obj_config(hostcomponent.host)
-            groups[key]["hosts"][hostcomponent.host.fqdn].update(get_host_vars(hostcomponent.host, adcm_object))
+            groups[key]["hosts"][hostcomponent.host.fqdn] = get_obj_config(obj=hostcomponent.host)
+            groups[key]["hosts"][hostcomponent.host.fqdn].update(get_host_vars(host=hostcomponent.host, obj=cluster))
+
+            if MAINTENANCE_MODE in key:
+                groups[key]["vars"] = get_cluster_config(cluster=cluster)
 
     for hc_acl_action in delta:
         for key in delta[hc_acl_action]:
@@ -349,8 +352,8 @@ def get_host_groups(  # pylint: disable=too-many-branches
             for fqdn in delta[hc_acl_action][key]:
                 host = delta[hc_acl_action][key][fqdn]
 
-                if host.maintenance_mode != MaintenanceMode.ON or hc_acl_action == HcAclAction.REMOVE:
-                    groups[lkey]["hosts"][host.fqdn] = get_obj_config(host)
+                if host.maintenance_mode != MaintenanceMode.ON:
+                    groups[lkey]["hosts"][host.fqdn] = get_obj_config(obj=host)
 
                 if hc_acl_action == HcAclAction.REMOVE and host.maintenance_mode == MaintenanceMode.ON:
                     remove_maintenance_mode_group_name = f"{lkey}.{MAINTENANCE_MODE}"
@@ -358,13 +361,13 @@ def get_host_groups(  # pylint: disable=too-many-branches
                     if remove_maintenance_mode_group_name not in groups:
                         groups[remove_maintenance_mode_group_name] = {"hosts": {}}
 
-                    groups[remove_maintenance_mode_group_name]["hosts"][host.fqdn] = get_obj_config(host)
+                    groups[remove_maintenance_mode_group_name]["hosts"][host.fqdn] = get_obj_config(obj=host)
 
     return groups
 
 
 def get_hosts(
-    host_list: list[Host], obj: type[ADCMEntity], action_host: list[Host] | None = None, include_mm_hosts: bool = False
+    host_list: list[Host], obj: ADCMEntity, action_host: list[Host] | None = None, include_mm_hosts: bool = False
 ) -> dict:
     group = {}
     for host in host_list:
@@ -384,26 +387,31 @@ def get_hosts(
     return group
 
 
-def get_cluster_hosts(cluster, action_host=None):
+def get_cluster_hosts(cluster: Cluster, action_host: list[Host] | None = None) -> dict:
     return {
         "CLUSTER": {
-            "hosts": get_hosts(Host.objects.filter(cluster=cluster), cluster, action_host),
-            "vars": get_cluster_config(cluster),
+            "hosts": get_hosts(host_list=Host.objects.filter(cluster=cluster), obj=cluster, action_host=action_host),
+            "vars": get_cluster_config(cluster=cluster),
         },
     }
 
 
-def get_provider_hosts(provider, action_host=None):
+def get_provider_hosts(provider: HostProvider, action_host: list[Host] | None = None) -> dict:
     return {
         "PROVIDER": {
-            "hosts": get_hosts(Host.objects.filter(provider=provider), provider, action_host),
+            "hosts": get_hosts(host_list=Host.objects.filter(provider=provider), obj=provider, action_host=action_host),
         },
     }
 
 
-def get_host(host_id):
+def get_host(host_id: int) -> dict:
     host = Host.objects.get(id=host_id)
-    groups = {"HOST": {"hosts": get_hosts([host], host), "vars": get_provider_config(host.provider.id)}}
+    groups = {
+        "HOST": {
+            "hosts": get_hosts(host_list=[host], obj=host),
+            "vars": get_provider_config(provider_id=host.provider.id),
+        }
+    }
     return groups
 
 
@@ -420,7 +428,7 @@ def get_target_host(host_id: int) -> dict:
 
 
 def get_inventory_data(
-    obj: type[ADCMEntity],
+    obj: ADCMEntity,
     action: Action,
     action_host: list[Host] | None = None,
     delta: dict | None = None,
@@ -429,7 +437,7 @@ def get_inventory_data(
         delta = {}
 
     inventory_data = {"all": {"children": {}}}
-    cluster = get_object_cluster(obj)
+    cluster = get_object_cluster(obj=obj)
 
     if cluster:
         inventory_data["all"]["children"].update(get_cluster_hosts(cluster=cluster, action_host=action_host))

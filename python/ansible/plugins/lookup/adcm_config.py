@@ -17,6 +17,8 @@ from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 
 sys.path.append("/adcm/python")
+
+import adcm.init_django  # pylint: disable=unused-import
 from cm.ansible_plugin import (
     set_cluster_config,
     set_host_config,
@@ -25,8 +27,6 @@ from cm.ansible_plugin import (
     set_service_config_by_name,
 )
 from cm.logger import logger
-
-import adcm.init_django  # pylint: disable=unused-import
 
 DOCUMENTATION = """
     lookup: file

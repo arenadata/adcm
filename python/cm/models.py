@@ -265,6 +265,10 @@ class Prototype(ADCMModel):
     class Meta:
         unique_together = (("bundle", "type", "parent", "name", "version"),)
 
+    @property
+    def is_license_accepted(self) -> bool:
+        return self.license == LICENSE_STATE[1][0]
+
 
 class ObjectConfig(ADCMModel):
     current = models.PositiveIntegerField()
@@ -1172,8 +1176,6 @@ def get_any():
 
 
 class AbstractAction(ADCMModel):
-    """Abstract base class for both Action and StageAction"""
-
     prototype = None
 
     name = models.CharField(max_length=1000)
@@ -1667,6 +1669,8 @@ class LogStorage(ADCMModel):
     body = models.TextField(blank=True, null=True)
     type = models.CharField(max_length=1000, choices=LOG_TYPE)
     format = models.CharField(max_length=1000, choices=FORMAT_TYPE)
+
+    __error_code__ = "LOG_NOT_FOUND"
 
     class Meta:
         constraints = [

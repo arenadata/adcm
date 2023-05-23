@@ -11,8 +11,8 @@
 # limitations under the License.
 
 from api.job.views import TaskViewSet
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import SimpleRouter
 
-router = DefaultRouter()
+router = SimpleRouter()
 router.register("", TaskViewSet)
 urlpatterns = router.urls

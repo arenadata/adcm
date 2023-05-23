@@ -11,8 +11,8 @@
 # limitations under the License.
 
 from rbac.endpoints.role.views import RoleViewSet
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import SimpleRouter
 
-router = DefaultRouter()
+router = SimpleRouter()
 router.register(r"", RoleViewSet, basename="role")
 urlpatterns = router.urls

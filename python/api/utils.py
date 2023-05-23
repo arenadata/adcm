@@ -26,7 +26,6 @@ from cm.models import (
     PrototypeConfig,
     ServiceComponent,
 )
-from cm.schemas import RequiresUISchema
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.http.request import QueryDict
@@ -333,40 +332,6 @@ def process_requires(
     return comp_dict
 
 
-def get_requires(prototype: Prototype, adding_service: bool = False) -> list[RequiresUISchema] | None:
-    if not prototype.requires:
-        return None
-
-    proto_dict = {}
-    proto_dict = process_requires(proto=prototype, comp_dict=proto_dict, adding_service=adding_service)
-
-    out = []
-
-    for service_name, params in proto_dict.items():
-        comp_out = []
-        service = params["service"]
-        for comp_name in params["components"]:
-            comp = params["components"][comp_name]
-            comp_out.append(
-                {
-                    "prototype_id": comp.id,
-                    "name": comp_name,
-                    "display_name": comp.display_name,
-                },
-            )
-
-        out.append(
-            {
-                "prototype_id": service.id,
-                "name": service_name,
-                "display_name": service.display_name,
-                "components": comp_out,
-            },
-        )
-
-    return out
-
-
 class CommonAPIURL(HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, _format):
         kwargs = get_api_url_kwargs(obj, request)
@@ -414,19 +379,3 @@ class AdcmFilterBackend(drf_filters.DjangoFilterBackend):
             "queryset": queryset,
             "request": request,
         }
-
-
-class SuperuserOnlyMixin:
-    not_superuser_error_code = None
-
-    def get_queryset(self, *args, **kwargs):
-        if getattr(self, "swagger_fake_view", False):
-            return self.queryset.model.objects.none()
-
-        if not self.request.user.is_superuser:
-            if self.not_superuser_error_code:
-                raise AdcmEx(self.not_superuser_error_code)
-
-            return self.queryset.model.objects.none()
-
-        return super().get_queryset(*args, **kwargs)

@@ -184,8 +184,12 @@ def check_hc(cluster: Cluster) -> bool:
 
 def check_hc_requires(shc_list: list[tuple[ClusterObject, Host, ServiceComponent]]) -> None:
     for serv_host_comp in [i for i in shc_list if i[2].prototype.requires or i[0].prototype.requires]:
-        for require in serv_host_comp[2].prototype.requires:
-            ref = f'component "{serv_host_comp[2].prototype.name}" of service "{serv_host_comp[0].prototype.name}"'
+        for require in [*serv_host_comp[2].prototype.requires, *serv_host_comp[0].prototype.requires]:
+            if require in serv_host_comp[2].prototype.requires:
+                ref = f'component "{serv_host_comp[2].prototype.name}" of service "{serv_host_comp[0].prototype.name}"'
+            else:
+                ref = f'service "{serv_host_comp[0].prototype.name}"'
+
             req_comp = require.get("component")
 
             if not ClusterObject.objects.filter(prototype__name=require["service"]).exists() and not req_comp:
