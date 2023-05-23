@@ -51,7 +51,7 @@ export class RbacRoleFormComponent extends RbacFormDirective<RbacRoleModel> impl
         CustomValidators.required,
         Validators.minLength(2),
         Validators.maxLength(160),
-        Validators.pattern('^[a-zA-Z0-9()<>{},._/-\\s]*$')
+        Validators.pattern('[a-zA-Z0-9_]+.*$')
       ]),
       any_category: new FormControl(null),
       built_in: new FormControl(null),

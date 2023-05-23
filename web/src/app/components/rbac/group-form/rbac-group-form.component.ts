@@ -21,7 +21,7 @@ export class RbacGroupFormComponent extends RbacFormDirective<RbacGroupModel> {
       CustomValidators.required,
       Validators.minLength(2),
       Validators.maxLength(150),
-      Validators.pattern('^[a-zA-Z0-9()<>{},._-\\s]*$')
+      Validators.pattern('[a-zA-Z0-9_]+.*$')
     ]),
     description: new FormControl(null),
     user: new FormControl([]),
