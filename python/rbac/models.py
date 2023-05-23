@@ -276,22 +276,12 @@ class Policy(Model):
                 )
 
                 cursor.execute(
-                    """
-                        SELECT policypermission_id FROM rbac_policy_model_perm WHERE (
-                            SELECT COUNT(DISTINCT policy_id) FROM rbac_policy_model_perm WHERE policy_id = %s
-                        ) = 1 AND policy_id = %s;
+                    f"""
+                        DELETE FROM rbac_policypermission WHERE 
+                        (user_id IS NOT NULL OR group_id IS NOT NULL) AND id 
+                        IN {get_query_tuple_str(tuple_items=permission_ids_to_delete)};
                     """,
-                    [self.pk, self.pk],
                 )
-                permission_ids_to_delete = tuple(item[0] for item in cursor.fetchall())
-                if permission_ids_to_delete:
-                    cursor.execute(
-                        f"""
-                            DELETE FROM rbac_policypermission WHERE 
-                            (user_id IS NOT NULL OR group_id IS NOT NULL) AND id 
-                            IN {get_query_tuple_str(tuple_items=permission_ids_to_delete)};
-                        """,
-                    )
 
             cursor.execute(
                 """
