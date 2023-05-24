@@ -19,7 +19,6 @@ from api.component.serializers import (
     ComponentStatusSerializer,
     ComponentUISerializer,
 )
-from api.utils import check_custom_perm, get_object_for_user
 from audit.utils import audit
 from cm.api import update_mm_objects
 from cm.models import Cluster, ClusterObject, HostComponent, ServiceComponent
@@ -31,6 +30,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
+from adcm.permissions import check_custom_perm, get_object_for_user
 from adcm.utils import get_maintenance_mode_response
 
 

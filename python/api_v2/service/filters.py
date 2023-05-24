@@ -10,29 +10,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ADCMEntityStatus, Cluster
-from cm.status_api import get_cluster_status
+from cm.models import ADCMEntityStatus, ClusterObject, ObjectType
+from cm.status_api import get_service_status
 from django.db.models import QuerySet
 from django_filters.rest_framework import CharFilter, ChoiceFilter, FilterSet
 
 
-class ClusterFilter(FilterSet):
-    status = ChoiceFilter(label="Cluster status", choices=ADCMEntityStatus.choices, method="filter_status")
-    prototype_name = CharFilter(label="Cluster prototype name", method="filter_prototype_name")
+class ServiceFilter(FilterSet):
+    name = CharFilter(label="Service name", method="filter_name")
+    status = ChoiceFilter(label="Service status", choices=ADCMEntityStatus.choices, method="filter_status")
 
     class Meta:
-        model = Cluster
-        fields = ("name", "status", "prototype_name")
+        model = ClusterObject
+        fields = ["name", "status"]
 
     @staticmethod
     def filter_status(queryset: QuerySet, name: str, value: str) -> QuerySet:  # pylint: disable=unused-argument
         if value == ADCMEntityStatus.UP:
-            exclude_pks = {cluster.pk for cluster in queryset if get_cluster_status(cluster=cluster) != 0}
+            exclude_pks = {service.pk for service in queryset if get_service_status(service=service) != 0}
         else:
-            exclude_pks = {cluster.pk for cluster in queryset if get_cluster_status(cluster=cluster) == 0}
+            exclude_pks = {service.pk for service in queryset if get_service_status(service=service) == 0}
 
         return queryset.exclude(pk__in=exclude_pks)
 
     @staticmethod
-    def filter_prototype_name(queryset: QuerySet, name: str, value: str) -> QuerySet:  # pylint: disable=unused-argument
-        return queryset.filter(prototype__name=value)
+    def filter_name(queryset: QuerySet, name: str, value: str) -> QuerySet:  # pylint: disable=unused-argument
+        return queryset.filter(prototype__type=ObjectType.SERVICE, prototype__name=value)

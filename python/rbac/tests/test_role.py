@@ -13,7 +13,6 @@
 import hashlib
 import json
 
-from api.utils import PermissionDenied, check_custom_perm
 from cm.api import add_host_to_cluster
 from cm.errors import AdcmEx
 from cm.models import (
@@ -40,8 +39,10 @@ from rbac.services.policy import policy_create
 from rbac.services.role import role_create
 from rbac.tests.test_base import RBACBaseTestCase
 from rbac.upgrade.role import prepare_action_roles
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.status import HTTP_404_NOT_FOUND
 
+from adcm.permissions import check_custom_perm
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 

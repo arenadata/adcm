@@ -10,35 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.errors import AdcmEx
 from cm.models import Action, ADCMEntity, ConcernType, PrototypeConfig
-from django.core.exceptions import ObjectDoesNotExist
 from django.http.request import QueryDict
 from django_filters import rest_framework as drf_filters
-from guardian.shortcuts import get_objects_for_user
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.serializers import HyperlinkedIdentityField
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST
-
-
-def get_object_for_user(user, perms, klass, **kwargs):
-    try:
-        queryset = get_objects_for_user(user, perms, klass)
-
-        return queryset.get(**kwargs)
-    except ObjectDoesNotExist:
-        model = klass
-        if not hasattr(klass, "_default_manager"):
-            model = klass.model
-
-        error_code = "NO_MODEL_ERROR_CODE"
-        if hasattr(model, "__error_code__"):
-            error_code = model.__error_code__
-
-        raise AdcmEx(error_code) from None
 
 
 def check_obj(model, req, error=None):  # pylint: disable=unused-argument
@@ -52,16 +31,6 @@ def check_obj(model, req, error=None):  # pylint: disable=unused-argument
 
 def hlink(view, lookup, lookup_url):
     return HyperlinkedIdentityField(view_name=view, lookup_field=lookup, lookup_url_kwarg=lookup_url)
-
-
-def check_custom_perm(user, action_type, model, obj, second_perm=None):
-    if user.has_perm(f"cm.{action_type}_{model}", obj):
-        return
-
-    if second_perm is not None and user.has_perm(f"cm.{second_perm}"):
-        return
-
-    raise PermissionDenied()
 
 
 def save(serializer, code, **kwargs):

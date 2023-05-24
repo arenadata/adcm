@@ -22,7 +22,7 @@ from api.host.serializers import (
     HostUpdateSerializer,
     ProvideHostSerializer,
 )
-from api.utils import check_custom_perm, create, get_object_for_user
+from api.utils import create
 from audit.utils import audit
 from cm.api import (
     add_host_to_cluster,
@@ -58,7 +58,13 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from adcm.permissions import VIEW_CLUSTER_PERM, VIEW_HOST_PERM, VIEW_PROVIDER_PERM
+from adcm.permissions import (
+    VIEW_CLUSTER_PERM,
+    VIEW_HOST_PERM,
+    VIEW_PROVIDER_PERM,
+    check_custom_perm,
+    get_object_for_user,
+)
 from adcm.utils import get_maintenance_mode_response
 
 
