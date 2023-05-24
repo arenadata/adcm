@@ -14,15 +14,7 @@ from typing import Callable
 from unittest.mock import patch
 
 from api_v2.tests.cluster.base import ClusterBaseTestCase
-from cm.models import (
-    Cluster,
-    ClusterObject,
-    ClusterStatus,
-    Host,
-    ObjectType,
-    Prototype,
-    ServiceComponent,
-)
+from cm.models import Cluster, ClusterStatus
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
@@ -151,52 +143,6 @@ class TestCluster(ClusterBaseTestCase):
     def test_service_prototypes_success(self):
         response: Response = self.client.get(
             path=reverse(viewname="v2:cluster-service-prototypes", kwargs={"pk": self.cluster_1.pk}),
-        )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 1)
-
-    def test_list_mapping_success(self):
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:mapping-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-        )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
-
-    def test_create_mapping_success(self):
-        service = ClusterObject.objects.create(
-            cluster=self.cluster_1, prototype=Prototype.objects.create(bundle=self.bundle, type=ObjectType.SERVICE)
-        )
-        host = Host.objects.create(
-            fqdn="test-host-new",
-            prototype=Prototype.objects.create(bundle=self.bundle, type=ObjectType.HOST),
-        )
-        component = ServiceComponent.objects.create(
-            prototype=Prototype.objects.create(bundle=self.bundle, type=ObjectType.COMPONENT),
-            cluster=self.cluster_1,
-            service=self.service,
-        )
-
-        response: Response = self.client.post(
-            path=reverse(viewname="v2:mapping-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data={"service": service.pk, "host": host.pk, "component": component.pk},
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-    def test_mapping_hosts_success(self):
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:mapping-hosts", kwargs={"cluster_pk": self.cluster_1.pk}),
-        )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 1)
-
-    def test_mapping_components_success(self):
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:mapping-components", kwargs={"cluster_pk": self.cluster_1.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

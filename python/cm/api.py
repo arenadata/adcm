@@ -266,27 +266,6 @@ def delete_host_provider(provider, cancel_tasks=True):
     logger.info("host provider #%s is deleted", provider_pk)
 
 
-def add_host_to_cluster(cluster, host):
-    if host.cluster:
-        if host.cluster.pk != cluster.pk:
-            raise_adcm_ex("FOREIGN_HOST", f"Host #{host.pk} belong to cluster #{host.cluster.pk}")
-        else:
-            raise_adcm_ex("HOST_CONFLICT")
-
-    with atomic():
-        host.cluster = cluster
-        host.save()
-        host.add_to_concerns(CTX.lock)
-        update_hierarchy_issues(host)
-        re_apply_object_policy(cluster)
-
-    post_event(event="add", obj=host, details={"type": "cluster", "value": str(cluster.pk)})
-    load_service_map()
-    logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)
-
-    return host
-
-
 def get_cluster_and_host(cluster_pk, fqdn, host_pk):
     cluster = Cluster.obj.get(pk=cluster_pk)
     host = None
@@ -1068,3 +1047,24 @@ def check_multi_bind(actual_import, cluster, service, export_cluster, export_ser
         else:
             if source_proto == export_cluster.prototype:
                 raise_adcm_ex("BIND_ERROR", f"can not multi bind {proto_ref(source_proto)} to {obj_ref(cluster)}")
+
+
+def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
+    if host.cluster:
+        if host.cluster.pk != cluster.pk:
+            raise_adcm_ex("FOREIGN_HOST", f"Host #{host.pk} belong to cluster #{host.cluster.pk}")
+        else:
+            raise_adcm_ex("HOST_CONFLICT")
+
+    with atomic():
+        host.cluster = cluster
+        host.save()
+        host.add_to_concerns(CTX.lock)
+        update_hierarchy_issues(host)
+        re_apply_object_policy(cluster)
+
+    post_event(event="add", obj=host, details={"type": "cluster", "value": str(cluster.pk)})
+    load_service_map()
+    logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)
+
+    return host
