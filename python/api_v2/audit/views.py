@@ -54,7 +54,7 @@ class AuditLogViewSet(ReadOnlyModelViewSet):
     filterset_class = AuditLogListFilter
     pagination_class = LimitOffsetPagination
 
-    def get_queryset(self, *args, **kwargs) -> QuerySet:
+    def get_queryset(self, *args, **kwargs) -> QuerySet:  # pylint: disable=unused-argument
         return filter_objects_within_time_range(self.queryset, self.request.query_params)
 
     def list(self, request, *args, **kwargs):

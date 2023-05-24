@@ -19,14 +19,7 @@ from api.provider.serializers import (
     ProviderUISerializer,
 )
 from api.serializers import ProviderUpgradeSerializer
-from api.utils import (
-    AdcmFilterBackend,
-    AdcmOrderingFilter,
-    check_custom_perm,
-    check_obj,
-    create,
-    get_object_for_user,
-)
+from api.utils import AdcmFilterBackend, AdcmOrderingFilter, check_obj, create
 from audit.utils import audit
 from cm.api import delete_host_provider
 from cm.issue import update_hierarchy_issues
@@ -36,6 +29,8 @@ from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
 from rest_framework import permissions, status
 from rest_framework.response import Response
+
+from adcm.permissions import check_custom_perm, get_object_for_user
 
 
 class ProviderList(PermissionListMixin, PaginatedView):

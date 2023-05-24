@@ -1975,6 +1975,6 @@ class ConcernItem(ADCMModel):
         return super().delete(using, keep_parents)
 
 
-class ClusterStatus(models.TextChoices):
+class ADCMEntityStatus(models.TextChoices):
     UP = "up", "up"
     DOWN = "down", "down"

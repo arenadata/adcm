@@ -14,7 +14,7 @@ from typing import Callable
 from unittest.mock import patch
 
 from api_v2.tests.cluster.base import ClusterBaseTestCase
-from cm.models import Cluster, ClusterStatus
+from cm.models import ADCMEntityStatus, Cluster
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
@@ -68,7 +68,7 @@ class TestCluster(ClusterBaseTestCase):
         with patch("api_v2.cluster.filters.get_cluster_status", new_callable=self.get_cluster_status_mock):
             response: Response = self.client.get(
                 path=reverse(viewname="v2:cluster-list"),
-                data={"status": ClusterStatus.UP},
+                data={"status": ADCMEntityStatus.UP},
             )
 
             self.assertEqual(response.status_code, HTTP_200_OK)
@@ -79,7 +79,7 @@ class TestCluster(ClusterBaseTestCase):
         with patch("api_v2.cluster.filters.get_cluster_status", new_callable=self.get_cluster_status_mock):
             response: Response = self.client.get(
                 path=reverse(viewname="v2:cluster-list"),
-                data={"status": ClusterStatus.DOWN},
+                data={"status": ADCMEntityStatus.DOWN},
             )
 
             self.assertEqual(response.status_code, HTTP_200_OK)

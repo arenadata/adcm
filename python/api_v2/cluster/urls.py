@@ -13,22 +13,28 @@
 from api_v2.action.views import ActionViewSet
 from api_v2.cluster.views import ClusterViewSet, MappingViewSet
 from api_v2.host.views import HostViewSet
+from api_v2.service.views import ServiceViewSet
 from api_v2.upgrade.views import UpgradeViewSet
 from rest_framework_nested.routers import NestedSimpleRouter, SimpleRouter
 
-router = SimpleRouter()
-router.register(prefix="", viewset=ClusterViewSet)
+CLUSTER_ROUTER_PREFIX = ""
 
-cluster_action_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="cluster")
+router = SimpleRouter()
+router.register(prefix=CLUSTER_ROUTER_PREFIX, viewset=ClusterViewSet)
+
+cluster_action_router = NestedSimpleRouter(parent_router=router, parent_prefix=CLUSTER_ROUTER_PREFIX, lookup="cluster")
 cluster_action_router.register(prefix="actions", viewset=ActionViewSet)
 
-upgrade_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="cluster")
+upgrade_router = NestedSimpleRouter(parent_router=router, parent_prefix=CLUSTER_ROUTER_PREFIX, lookup="cluster")
 upgrade_router.register(prefix="upgrades", viewset=UpgradeViewSet)
 
-mapping_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="cluster")
+mapping_router = NestedSimpleRouter(parent_router=router, parent_prefix=CLUSTER_ROUTER_PREFIX, lookup="cluster")
 mapping_router.register(prefix="mapping", viewset=MappingViewSet, basename="mapping")
 
-host_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="cluster")
+service_router = NestedSimpleRouter(parent_router=router, parent_prefix=CLUSTER_ROUTER_PREFIX, lookup="cluster")
+service_router.register(prefix="services", viewset=ServiceViewSet)
+
+host_router = NestedSimpleRouter(parent_router=router, parent_prefix=CLUSTER_ROUTER_PREFIX, lookup="cluster")
 host_router.register(prefix="hosts", viewset=HostViewSet)
 
 host_action_router = NestedSimpleRouter(parent_router=host_router, parent_prefix="hosts", lookup="host")
@@ -39,6 +45,7 @@ urlpatterns = [
     *cluster_action_router.urls,
     *upgrade_router.urls,
     *mapping_router.urls,
+    *service_router.urls,
     *host_router.urls,
     *host_action_router.urls,
 ]
