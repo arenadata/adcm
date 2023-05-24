@@ -22,11 +22,11 @@ from api.group_config.serializers import (
 )
 from audit.utils import audit
 from cm.errors import AdcmEx
-from cm.models import ConfigLog, GroupConfig, Host, ObjectConfig
+from cm.models import ADCMEntity, ConfigLog, GroupConfig, Host, ObjectConfig
 from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import CharFilter, FilterSet
 from guardian.mixins import PermissionListMixin
-from rbac.models import re_apply_object_policy
+from rbac.models import User, re_apply_object_policy
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.mixins import (
     CreateModelMixin,
@@ -46,7 +46,7 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 from adcm.permissions import DjangoObjectPermissionsAudit
 
 
-def has_config_perm(user, action_type, obj):
+def has_config_perm(user: User, action_type: str, obj: ADCMEntity) -> bool:
     model = type(obj).__name__.lower()
     if user.has_perm(f"cm.{action_type}_config_of_{model}", obj):
         return True
@@ -54,8 +54,8 @@ def has_config_perm(user, action_type, obj):
     return False
 
 
-def check_config_perm(user, action_type, obj):
-    if not has_config_perm(user, action_type, obj):
+def check_config_perm(user: User, action_type: str, obj: ADCMEntity) -> None:
+    if not has_config_perm(user=user, action_type=action_type, obj=obj):
         raise PermissionDenied()
 
 
@@ -235,6 +235,7 @@ class GroupConfigConfigLogViewSet(
 
     @audit
     def create(self, request, *args, **kwargs):
+        check_config_perm(self.request.user, "change", self.get_serializer_context()["obj_ref"])
         return super().create(request, *args, **kwargs)
 
 
