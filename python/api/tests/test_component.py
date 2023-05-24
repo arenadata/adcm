@@ -131,7 +131,7 @@ class TestComponentAPI(BaseTestCase):
         )
         action = Action.objects.create(prototype=self.component.prototype, name=settings.ADCM_TURN_ON_MM_ACTION_NAME)
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
@@ -156,7 +156,7 @@ class TestComponentAPI(BaseTestCase):
         self.component.maintenance_mode = MaintenanceMode.ON
         self.component.save()
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
@@ -194,7 +194,7 @@ class TestComponentAPI(BaseTestCase):
         )
         action = Action.objects.create(prototype=self.component.prototype, name=settings.ADCM_TURN_OFF_MM_ACTION_NAME)
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
                 data={"maintenance_mode": MaintenanceMode.OFF},
@@ -219,7 +219,7 @@ class TestComponentAPI(BaseTestCase):
         self.component.maintenance_mode = MaintenanceMode.OFF
         self.component.save()
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
                 data={"maintenance_mode": MaintenanceMode.OFF},

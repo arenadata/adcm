@@ -19,7 +19,7 @@ from api_v2.cluster.serializers import (
     HostComponentPostSerializer,
     ServicePrototypeSerializer,
 )
-from api_v2.host.serializers import HostSerializer
+from api_v2.host.serializers import HostMappingSerializer
 from api_v2.service_component.serializers import ServiceComponentSerializer
 from cm.models import Cluster, HostComponent, ObjectType, Prototype
 from guardian.mixins import PermissionListMixin
@@ -105,7 +105,7 @@ class MappingViewSet(  # pylint:disable=too-many-ancestors
         if not cluster:
             return Response(data=f'Cluster with pk "{kwargs["cluster_pk"]}" not found', status=HTTP_404_NOT_FOUND)
 
-        serializer = HostSerializer(
+        serializer = HostMappingSerializer(
             instance=[service_component.host for service_component in self.queryset.filter(cluster_id=cluster.pk)],
             many=True,
         )

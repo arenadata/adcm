@@ -20,6 +20,8 @@ from rest_framework.permissions import (
 
 VIEW_ACTION_PERM = "cm.view_action"
 VIEW_CLUSTER_PERM = "cm.view_cluster"
+VIEW_HOST_PERM = "cm.view_host"
+VIEW_PROVIDER_PERM = "cm.view_hostprovider"
 
 
 class DjangoObjectPermissionsAudit(DjangoObjectPermissions):

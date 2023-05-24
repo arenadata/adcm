@@ -120,7 +120,7 @@ class TestServiceAPI(BaseTestCase):
         )
         action = Action.objects.create(prototype=self.service.prototype, name=settings.ADCM_TURN_ON_MM_ACTION_NAME)
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
@@ -145,7 +145,7 @@ class TestServiceAPI(BaseTestCase):
         self.service.maintenance_mode = MaintenanceMode.ON
         self.service.save()
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
@@ -183,7 +183,7 @@ class TestServiceAPI(BaseTestCase):
         )
         action = Action.objects.create(prototype=self.service.prototype, name=settings.ADCM_TURN_OFF_MM_ACTION_NAME)
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
                 data={"maintenance_mode": MaintenanceMode.OFF},
@@ -208,7 +208,7 @@ class TestServiceAPI(BaseTestCase):
         self.service.maintenance_mode = MaintenanceMode.OFF
         self.service.save()
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
                 data={"maintenance_mode": MaintenanceMode.OFF},
