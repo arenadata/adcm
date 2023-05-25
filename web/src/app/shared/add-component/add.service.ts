@@ -158,9 +158,9 @@ export class AddService implements IAddService {
       if (o.license_url && o.license === 'unaccepted') {
         return this.service.acceptServiceLicense(o)
           .pipe(
-            switchMap(() => this.cluster.addServices({prototype_id: o.prototype_id}))
+            switchMap(() => this.cluster.addServices({ prototype_id: o.prototype_id }))
           )
-      } else return this.cluster.addServices({prototype_id: o.prototype_id});
+      } else return this.cluster.addServices({ prototype_id: o.prototype_id });
     }))
   }
 
@@ -177,7 +177,7 @@ export class AddService implements IAddService {
             result.accept.indexOf("/license")
           ) as unknown as number;
 
-          if (serviceObj[prototype_id].license === 'absent') {
+          if (!serviceObj[prototype_id].license || serviceObj[prototype_id].license === 'absent') {
             return this.cluster.addServices({ prototype_id })
           }
 
