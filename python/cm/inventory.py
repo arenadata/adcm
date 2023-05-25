@@ -336,11 +336,10 @@ def get_host_groups(  # pylint: disable=too-many-branches
             if key not in groups:
                 groups[key] = {"hosts": {}}
 
-            groups[key]["hosts"][hostcomponent.host.fqdn] = get_obj_config(obj=hostcomponent.host)
-            groups[key]["hosts"][hostcomponent.host.fqdn].update(get_host_vars(host=hostcomponent.host, obj=cluster))
-
-            if MAINTENANCE_MODE in key:
-                groups[key]["vars"] = get_cluster_config(cluster=cluster)
+                groups[key]["hosts"][hostcomponent.host.fqdn] = get_obj_config(obj=hostcomponent.host)
+                groups[key]["hosts"][hostcomponent.host.fqdn].update(
+                    get_host_vars(host=hostcomponent.host, obj=cluster)
+                )
 
     for hc_acl_action in delta:
         for key in delta[hc_acl_action]:
@@ -362,6 +361,9 @@ def get_host_groups(  # pylint: disable=too-many-branches
                         groups[remove_maintenance_mode_group_name] = {"hosts": {}}
 
                     groups[remove_maintenance_mode_group_name]["hosts"][host.fqdn] = get_obj_config(obj=host)
+                    groups[remove_maintenance_mode_group_name]["hosts"][host.fqdn].update(
+                        get_host_vars(host=host, obj=cluster)
+                    )
 
     return groups
 

@@ -691,12 +691,6 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
             ]["services"]["service_1_target_group"]["component_1_target_group"]["config"],
             {"some_string": "some_string", "float": 0.1},
         )
-        self.assertDictEqual(
-            inventory_data["service_1_target_group.component_1_target_group.maintenance_mode"]["vars"]["cluster"][
-                "config"
-            ],
-            {"some_string": "some_string", "float": 0.1},
-        )
 
     def test_host_in_target_group_hostaction_on_host_in_mm_success(self):
         self.host_target_group_1.maintenance_mode = MaintenanceMode.ON
