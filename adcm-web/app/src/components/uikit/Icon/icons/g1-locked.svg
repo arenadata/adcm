@@ -1,0 +1,6 @@
+<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect x="8.5" y="11.7941" width="15.9412" height="11.7059" rx="0.5" stroke="currentColor"/>
+<path d="M20.7059 11.4118V9C20.7059 7.34315 19.3628 6 17.7059 6H15.2354C13.5785 6 12.2354 7.34315 12.2354 9V11.4118" stroke="currentColor"/>
+<line x1="16.4412" y1="16.5883" x2="16.4412" y2="20.8236" stroke="currentColor"/>
+<circle cx="16.4707" cy="16.5882" r="1.05882" fill="currentColor"/>
+</svg>
