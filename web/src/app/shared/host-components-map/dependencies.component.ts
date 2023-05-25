@@ -17,8 +17,8 @@ import { IRequires } from '@app/core/types';
   template: `
     <ul>
       <li *ngFor="let item of items">
-        {{ item.display_name }}
-        <app-dependencies [components]="item.components"></app-dependencies>
+        {{ item?.display_name }}
+        <app-dependencies [components]="item?.components"></app-dependencies>
       </li>
     </ul>
   `,
@@ -27,8 +27,10 @@ import { IRequires } from '@app/core/types';
 export class DependenciesComponent implements OnInit {
   // by dialog window
   model: IRequires[];
-  @Input() components: IRequires[];
   items: IRequires[];
+
+  @Input() components: IRequires[];
+
   ngOnInit(): void {
     this.items = this.model || this.components;
   }
