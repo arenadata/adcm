@@ -15,6 +15,7 @@ from unittest.mock import patch
 
 from cm.api import add_service_to_cluster
 from cm.models import (
+    Action,
     ADCMEntityStatus,
     ClusterObject,
     MaintenanceMode,
@@ -38,6 +39,8 @@ class TestServiceAPI(BaseTestCase):
 
         for service_proto in Prototype.objects.filter(type=ObjectType.SERVICE, name__in={"service_1", "service_2"}):
             self.last_created_service = add_service_to_cluster(cluster=self.cluster, proto=service_proto)
+
+        self.action = Action.objects.filter(prototype=self.last_created_service.prototype).first()
 
     def get_service_status_mock(self) -> Callable:
         def inner(service: ClusterObject) -> int:
@@ -127,6 +130,50 @@ class TestServiceAPI(BaseTestCase):
                 kwargs={"cluster_pk": self.cluster.pk, "pk": self.last_created_service.pk},
             ),
             data={"maintenance_mode": MaintenanceMode.ON},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_action_list_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                "v2:action-list",
+                kwargs={"cluster_pk": self.cluster.pk, "service_pk": self.last_created_service.pk},
+            ),
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertGreater(len(response.json()), 0)
+
+    def test_action_retrieve_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                "v2:action-detail",
+                kwargs={
+                    "cluster_pk": self.cluster.pk,
+                    "service_pk": self.last_created_service.pk,
+                    "pk": self.action.pk,
+                },
+            ),
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertTrue(response.json())
+
+    def test_action_run_success(self):
+        response: Response = self.client.post(
+            path=reverse(
+                "v2:action-run",
+                kwargs={
+                    "cluster_pk": self.cluster.pk,
+                    "service_pk": self.last_created_service.pk,
+                    "pk": self.action.pk,
+                },
+            ),
+            data={"host_component_map": {}, "config": {}, "attr": {}, "is_verbose": False},
             content_type=APPLICATION_JSON,
         )
 

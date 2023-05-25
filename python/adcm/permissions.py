@@ -30,6 +30,8 @@ VIEW_SERVICE_PERM = "cm.view_clusterobject"
 VIEW_ACTION_PERM = "cm.view_action"
 CHANGE_MM_PERM = "change_maintenance_mode"
 ADD_SERVICE_PERM = "add_service_to"
+RUN_ACTION_PERM_PREFIX = "cm.run_action_"
+ADD_TASK_PERM = "cm.add_task"
 VIEW_HOST_PERM = "cm.view_host"
 VIEW_PROVIDER_PERM = "cm.view_hostprovider"
 
