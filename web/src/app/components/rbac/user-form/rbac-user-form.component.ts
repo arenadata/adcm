@@ -26,6 +26,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
   private _isFirstTouch = true;
   passMinLength = null;
   passMaxLength = null;
+  dummyValue = '******';
   form: FormGroup = new FormGroup({
     user: new FormGroup({
       id: new FormControl(null),
@@ -126,6 +127,24 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
     this.addPasswordValidators();
   }
 
+  onBlur() {
+    if (this.title === 'Add') return;
+    
+    const controls = [this.userForm.get('password'), this.confirmForm.get('password')];
+    const [pwdControl, confirmControl] = controls;
+
+    if (pwdControl.value || confirmControl.value) return;
+
+    if (!this._isFirstTouch) {
+      controls.forEach((control) => {
+        control.setValue(this.dummyValue);
+        control.markAsUntouched();
+      })
+    }
+
+    this._isFirstTouch = true;
+  }
+
   addPasswordValidators() {
     const userForm: Partial<FormGroup> = this.form.controls.user;
     const confirmForm: Partial<FormGroup> = this.form.controls.confirm;
@@ -163,7 +182,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
       // ToDo(lihih) the "adwp-list" should not change the composition of the original model.
       //  Now he adds the "checked" key to the model
       this._updateAndSetValueForForm(this.userForm);
-      this.confirmForm.setValue({ password: '******' }); // read commentary inside _updateAndSetValueForForm
+      this.confirmForm.setValue({ password: this.dummyValue }); // read commentary inside _updateAndSetValueForForm
       this.form.get('user.username').disable();
 
       if (type === 'ldap' || value?.is_active === false) {
@@ -215,7 +234,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
       if (!form.controls.hasOwnProperty(prop)) delete formValue[prop];
     })
 
-    formValue.password = '******'; // password will not be provided from backend, but we still need to use it in formControl
+    formValue.password = this.dummyValue; // password will not be provided from backend, but we still need to use it in formControl
 
     form.setValue(formValue);
   }
