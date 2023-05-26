@@ -33,14 +33,23 @@ export class RootComponent implements OnInit {
 
   init() {
     if (this.value) {
-      if (this.options.type === 'list' && Array.isArray(this.value)) (this.value as IValue[]).map((x, i) => this.add(['', x]));
-      else if (typeof this.value === 'object' && Array.isArray(this.options)) {
-        this.options.forEach(({ name }) => {
-          this.add([name, this.value[name]]);
+      if (Array.isArray(this.value)) {
+        this.value.forEach((value, index) => {
+          this.itemRules.forEach((key) => {
+            if (!value[key.name]) {
+              value[key.name] = key.type === 'string' ? '' : key.type === 'integer' ? 0 : null;
+            }
+          })
         })
-      } 
+      }
+
+      if (this.options.type === 'list' && Array.isArray(this.value)) {
+        (this.value as IValue[]).forEach((x, i) => this.add(['', x]));
+      } else if (typeof this.value === 'object') {
+        Object.keys(this.value).forEach((x) => this.add([x, this.value[x]]));
+      }
     } else if (this.options.type === 'dict' && Array.isArray(this.options.options)) {
-      this.options.options.map((x) => this.add([x.name, '']));
+      this.options.options.forEach((x) => this.add([x.name, '']));
     }
   }
 
