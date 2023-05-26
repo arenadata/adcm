@@ -13,6 +13,7 @@
 from api_v2.action.views import ClusterActionViewSet as CommonActionViewSet
 from api_v2.action.views import ServiceActionViewSet
 from api_v2.cluster.views import ClusterViewSet, MappingViewSet
+from api_v2.config.views import ConfigLogViewSet
 from api_v2.host.views import HostViewSet
 from api_v2.service.views import ServiceViewSet
 from api_v2.upgrade.views import UpgradeViewSet
@@ -49,6 +50,12 @@ host_router.register(prefix=HOST_ROUTER_PREFIX, viewset=HostViewSet)
 host_action_router = NestedSimpleRouter(parent_router=host_router, parent_prefix=HOST_ROUTER_PREFIX, lookup="host")
 host_action_router.register(prefix=ACTION_ROUTER_PREFIX, viewset=CommonActionViewSet)
 
+cluster_config_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="cluster")
+cluster_config_router.register(prefix="configs", viewset=ConfigLogViewSet, basename="cluster-config")
+
+service_config_router = NestedSimpleRouter(parent_router=service_router, parent_prefix="services", lookup="service")
+service_config_router.register(prefix="configs", viewset=ConfigLogViewSet, basename="service-config")
+
 urlpatterns = [
     *router.urls,
     *cluster_action_router.urls,
@@ -58,4 +65,6 @@ urlpatterns = [
     *service_action_router.urls,
     *host_router.urls,
     *host_action_router.urls,
+    *cluster_config_router.urls,
+    *service_config_router.urls,
 ]

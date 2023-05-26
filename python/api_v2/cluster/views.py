@@ -12,22 +12,23 @@
 
 from api_v2.cluster.filters import ClusterFilter
 from api_v2.cluster.serializers import (
-    ClusterGetSerializer,
-    ClusterPatchSerializer,
-    ClusterPostSerializer,
+    ClusterCreateSerializer,
+    ClusterSerializer,
+    ClusterUpdateSerializer,
     HostComponentListSerializer,
     HostComponentPostSerializer,
     ServicePrototypeSerializer,
 )
 from api_v2.host.serializers import HostMappingSerializer
 from api_v2.service_component.serializers import ServiceComponentSerializer
+from cm.api import add_cluster
 from cm.models import Cluster, HostComponent, ObjectType, Prototype
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.mixins import CreateModelMixin, ListModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_404_NOT_FOUND
+from rest_framework.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from adcm.permissions import VIEW_CLUSTER_PERM, DjangoModelPermissionsAudit
@@ -35,22 +36,33 @@ from adcm.permissions import VIEW_CLUSTER_PERM, DjangoModelPermissionsAudit
 
 class ClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=too-many-ancestors
     queryset = Cluster.objects.all()
-    serializer_class = ClusterGetSerializer
+    serializer_class = ClusterSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_CLUSTER_PERM]
     filterset_class = ClusterFilter
 
     def get_serializer_class(self):
         if self.action == "create":
-            return ClusterPostSerializer
+            return ClusterCreateSerializer
 
-        if self.action == "partial_update":
-            return ClusterPatchSerializer
+        if self.action in ("update", "partial_update"):
+            return ClusterUpdateSerializer
 
         if self.action == "service_prototypes":
             return ServicePrototypeSerializer
 
         return self.serializer_class
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        cluster = add_cluster(
+            prototype=serializer.validated_data["prototype"],
+            name=serializer.validated_data["name"],
+            description=serializer.validated_data["description"],
+        )
+
+        return Response(data=ClusterSerializer(cluster).data, status=HTTP_201_CREATED)
 
     @action(methods=["get"], detail=True)
     def service_prototypes(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument

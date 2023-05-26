@@ -175,14 +175,14 @@ def update_mm_objects(func):
     return wrapper
 
 
-def add_cluster(proto, name, desc=""):
-    if proto.type != "cluster":
-        raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be cluster, not {proto.type}")
+def add_cluster(prototype: Prototype, name: str, description: str = "") -> Cluster:
+    if prototype.type != "cluster":
+        raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be cluster, not {prototype.type}")
 
-    check_license(proto)
+    check_license(prototype)
     with atomic():
-        cluster = Cluster.objects.create(prototype=proto, name=name, description=desc)
-        obj_conf = init_object_config(proto, cluster)
+        cluster = Cluster.objects.create(prototype=prototype, name=name, description=description)
+        obj_conf = init_object_config(prototype, cluster)
         cluster.config = obj_conf
         cluster.save()
         update_hierarchy_issues(cluster)
@@ -514,7 +514,7 @@ def accept_license(proto: Prototype) -> None:
     Prototype.objects.filter(license_hash=proto.license_hash, license="unaccepted").update(license="accepted")
 
 
-def update_obj_config(obj_conf: ObjectConfig, conf: dict, attr: dict, desc: str = "") -> ConfigLog:
+def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, description: str = "") -> ConfigLog:
     if not isinstance(attr, dict):
         raise_adcm_ex("INVALID_CONFIG_UPDATE", "attr should be a map")
 
@@ -534,13 +534,13 @@ def update_obj_config(obj_conf: ObjectConfig, conf: dict, attr: dict, desc: str 
     new_conf = process_json_config(
         proto=proto,
         obj=group or obj,
-        new_config=conf,
+        new_config=config,
         current_config=old_conf.config,
         new_attr=attr,
         current_attr=old_conf.attr,
     )
     with atomic():
-        config_log = save_obj_config(obj_conf=obj_conf, conf=new_conf, attr=attr, desc=desc)
+        config_log = save_obj_config(obj_conf=obj_conf, conf=new_conf, attr=attr, desc=description)
         update_hierarchy_issues(obj=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
