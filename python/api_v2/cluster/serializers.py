@@ -27,7 +27,7 @@ from rest_framework.serializers import (
 from adcm.utils import get_requires
 
 
-class ClusterGetSerializer(ModelSerializer):
+class ClusterSerializer(ModelSerializer):
     status = SerializerMethodField()
     prototype_name = CharField(source="prototype.name")
     prototype_version = CharField(source="prototype.version")
@@ -64,13 +64,13 @@ class ClusterGetSerializer(ModelSerializer):
         return get_main_info(obj=cluster)
 
 
-class ClusterPostSerializer(ModelSerializer):
+class ClusterCreateSerializer(ModelSerializer):
     class Meta:
         model = Cluster
         fields = ["prototype", "name", "description"]
 
 
-class ClusterPatchSerializer(ModelSerializer):
+class ClusterUpdateSerializer(ModelSerializer):
     class Meta:
         model = Cluster
         fields = ["name"]

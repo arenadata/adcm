@@ -13,7 +13,7 @@
 from typing import Callable
 from unittest.mock import patch
 
-from api_v2.tests.cluster.base import ClusterBaseTestCase
+from api_v2.tests.base import BaseTestCaseAPI
 from cm.models import ADCMEntityStatus, Cluster
 from django.urls import reverse
 from rest_framework.response import Response
@@ -22,7 +22,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CON
 from adcm.tests.base import APPLICATION_JSON
 
 
-class TestCluster(ClusterBaseTestCase):
+class TestCluster(BaseTestCaseAPI):
     def get_cluster_status_mock(self) -> Callable:
         def inner(cluster: Cluster) -> int:
             if cluster.pk == self.cluster_1.pk:
@@ -49,7 +49,7 @@ class TestCluster(ClusterBaseTestCase):
     def test_filter_by_name_success(self):
         response: Response = self.client.get(
             path=reverse(viewname="v2:cluster-list"),
-            data={"name": self.cluster_1_name},
+            data={"name": self.cluster_1.name},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -89,7 +89,7 @@ class TestCluster(ClusterBaseTestCase):
     def test_filter_by_prototype_name_success(self):
         response: Response = self.client.get(
             path=reverse(viewname="v2:cluster-list"),
-            data={"prototype_name": self.cluster_1_prototype_name},
+            data={"prototype_name": self.cluster_1.prototype.name},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -109,7 +109,7 @@ class TestCluster(ClusterBaseTestCase):
         response: Response = self.client.post(
             path=reverse(viewname="v2:cluster-list"),
             data={
-                "prototype": self.cluster_1_prototype.pk,
+                "prototype": self.cluster_1.prototype.pk,
                 "name": "new_test_cluster",
                 "description": "Test cluster description",
             },

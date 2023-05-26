@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from api.base_view import GenericUIViewSet
-from api.config.views import check_config_perm
 from api.config_log.serializers import ConfigLogSerializer, UIConfigLogSerializer
 from audit.utils import audit
 from cm.models import ConfigLog
@@ -21,7 +20,7 @@ from rest_framework import status
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.response import Response
 
-from adcm.permissions import DjangoObjectPermissionsAudit
+from adcm.permissions import DjangoObjectPermissionsAudit, check_config_perm
 
 
 class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
@@ -56,7 +55,7 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
         # check custom permissions
         obj = serializer.validated_data["obj_ref"].object
         object_type = ContentType.objects.get_for_model(obj).model
-        check_config_perm(request.user, "change", object_type, obj)
+        check_config_perm(user=request.user, action_type="change", model=object_type, obj=obj)
 
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)

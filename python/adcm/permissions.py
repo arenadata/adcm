@@ -14,6 +14,7 @@ from typing import Any, Sequence
 
 from audit.utils import audit
 from cm.errors import AdcmEx
+from cm.models import ADCMEntity
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Model
@@ -34,6 +35,7 @@ RUN_ACTION_PERM_PREFIX = "cm.run_action_"
 ADD_TASK_PERM = "cm.add_task"
 VIEW_HOST_PERM = "cm.view_host"
 VIEW_PROVIDER_PERM = "cm.view_hostprovider"
+VIEW_CONFIG_PERM = "cm.view_configlog"
 
 
 class DjangoObjectPermissionsAudit(DjangoObjectPermissions):
@@ -92,6 +94,16 @@ def check_custom_perm(user: User, action_type: str, model: str, obj: Any, second
         return
 
     if second_perm is not None and user.has_perm(f"cm.{second_perm}"):
+        return
+
+    raise PermissionDenied()
+
+
+def check_config_perm(user: User, action_type: str, model: str, obj: ADCMEntity) -> None:
+    if user.has_perm(f"cm.{action_type}_config_of_{model}", obj):
+        return
+
+    if model == "adcm" and user.has_perm(f"cm.{action_type}_settings_of_{model}"):
         return
 
     raise PermissionDenied()
