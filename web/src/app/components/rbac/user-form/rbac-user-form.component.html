@@ -3,11 +3,11 @@
   <div class="rbac-user-form__password">
     <adwp-input [form]="userForm"
                 label='Password' controlName='password' type="password"
-                (focusin)="onFocus()" 
+                (focusin)="onFocus()" (focusout)="onBlur()"
                 [hidden]="_isUserNotActive(value)"></adwp-input>
     <adwp-input [form]="confirmForm"
                 label='Confirm password' controlName='password' type="password"
-                (focusin)="onFocus()" 
+                (focusin)="onFocus()" (focusout)="onBlur()"
                 [hidden]="_isUserNotActive(value)"></adwp-input>
   </div>
   <div class="row" [formGroup]="userForm">
