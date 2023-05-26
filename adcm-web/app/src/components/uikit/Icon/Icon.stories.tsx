@@ -17,9 +17,8 @@ export default {
     },
     size: {
       description: 'Size',
-      defaultValue: 'medium',
-      options: ['small', 'medium', 'large'],
-      control: { type: 'radio' },
+      defaultValue: 32,
+      control: { type: 'number' },
     },
   },
 } as Meta<typeof Icon>;
@@ -42,5 +41,5 @@ export const IconsList: Story = {
 };
 
 IconsList.args = {
-  size: 'medium',
+  size: 32,
 };

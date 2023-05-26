@@ -10,6 +10,12 @@
       ],
       "@constants": [
         "./constants"
+      ],
+      "@uikit": [
+        "./components/uikit/index"
+      ],
+      "@uikit/*": [
+        "./components/uikit/*"
       ]
     }
   }
