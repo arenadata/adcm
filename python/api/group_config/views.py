@@ -27,7 +27,7 @@ from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import CharFilter, FilterSet
 from guardian.mixins import PermissionListMixin
 from rbac.models import re_apply_object_policy
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework.mixins import (
     CreateModelMixin,
     DestroyModelMixin,
@@ -43,20 +43,7 @@ from rest_framework.status import (
 from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
-from adcm.permissions import DjangoObjectPermissionsAudit
-
-
-def has_config_perm(user, action_type, obj):
-    model = type(obj).__name__.lower()
-    if user.has_perm(f"cm.{action_type}_config_of_{model}", obj):
-        return True
-
-    return False
-
-
-def check_config_perm(user, action_type, obj):
-    if not has_config_perm(user, action_type, obj):
-        raise PermissionDenied()
+from adcm.permissions import DjangoObjectPermissionsAudit, check_config_perm
 
 
 class GroupConfigFilterSet(FilterSet):
@@ -235,6 +222,9 @@ class GroupConfigConfigLogViewSet(
 
     @audit
     def create(self, request, *args, **kwargs):
+        obj = self.get_serializer_context()["obj_ref"].object
+        model = type(obj).__name__.lower()
+        check_config_perm(user=self.request.user, action_type="change", model=model, obj=obj)
         return super().create(request, *args, **kwargs)
 
 
@@ -256,7 +246,8 @@ class GroupConfigViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):
 
         model = serializer.validated_data["object_type"].model_class()
         obj = model.obj.get(id=serializer.validated_data["object_id"])
-        check_config_perm(self.request.user, "change", obj)
+        model = type(obj).__name__.lower()
+        check_config_perm(user=self.request.user, action_type="change", model=model, obj=obj)
 
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
@@ -268,8 +259,8 @@ class GroupConfigViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
-
-        check_config_perm(self.request.user, "change", instance.object)
+        model = type(instance.object).__name__.lower()
+        check_config_perm(user=self.request.user, action_type="change", model=model, obj=instance.object)
 
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
@@ -286,7 +277,8 @@ class GroupConfigViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):
     @audit
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        check_config_perm(self.request.user, "change", instance.object)
+        model = type(instance.object).__name__.lower()
+        check_config_perm(user=self.request.user, action_type="change", model=model, obj=instance.object)
         self.perform_destroy(instance)
 
         return Response(status=HTTP_204_NO_CONTENT)

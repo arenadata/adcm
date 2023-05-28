@@ -143,6 +143,8 @@ def get_before_upgrade(obj: ADCMEntity, host: Host | None) -> dict:
         return obj.before_upgrade
 
     config_log = None
+    config = None
+
     if host is not None:
         group = host.group_config.filter(
             object_id=obj.id, object_type=ContentType.objects.get_for_model(model=obj)
@@ -155,7 +157,16 @@ def get_before_upgrade(obj: ADCMEntity, host: Host | None) -> dict:
     else:
         config_log = ConfigLog.objects.filter(id=obj.before_upgrade.get("config_id")).first()
 
-    return {"state": obj.before_upgrade.get("state"), "config": config_log.config if config_log else None}
+    if config_log:
+        if not obj.before_upgrade.get("bundle_id"):
+            bundle_id = obj.cluster.before_upgrade["bundle_id"]
+        else:
+            bundle_id = obj.before_upgrade["bundle_id"]
+        old_proto = Prototype.objects.filter(name=obj.prototype.name, bundle_id=bundle_id).first()
+        old_spec, _, _, _ = get_prototype_config(prototype=old_proto)
+        config = process_config_and_attr(obj=obj, conf=config_log.config, attr=config_log.attr, spec=old_spec)
+
+    return {"state": obj.before_upgrade.get("state"), "config": config}
 
 
 def get_cluster_variables(cluster: Cluster, cluster_config: dict | None = None, host: Host | None = None) -> dict:
@@ -339,9 +350,6 @@ def get_host_groups(  # pylint: disable=too-many-branches
             groups[key]["hosts"][hostcomponent.host.fqdn] = get_obj_config(obj=hostcomponent.host)
             groups[key]["hosts"][hostcomponent.host.fqdn].update(get_host_vars(host=hostcomponent.host, obj=cluster))
 
-            if MAINTENANCE_MODE in key:
-                groups[key]["vars"] = get_cluster_config(cluster=cluster)
-
     for hc_acl_action in delta:
         for key in delta[hc_acl_action]:
             lkey = f"{key}.{hc_acl_action}"
@@ -362,6 +370,9 @@ def get_host_groups(  # pylint: disable=too-many-branches
                         groups[remove_maintenance_mode_group_name] = {"hosts": {}}
 
                     groups[remove_maintenance_mode_group_name]["hosts"][host.fqdn] = get_obj_config(obj=host)
+                    groups[remove_maintenance_mode_group_name]["hosts"][host.fqdn].update(
+                        get_host_vars(host=host, obj=cluster)
+                    )
 
     return groups
 

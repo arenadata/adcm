@@ -341,7 +341,7 @@ class TestInventory(BaseTestCase):
                 field_type="string",
                 group_customization=True,
             )
-        update_obj_config(self.cluster.config, conf={"some_string": "some_string"}, attr={})
+        update_obj_config(self.cluster.config, config={"some_string": "some_string"}, attr={})
         service_1 = gen_service(
             self.cluster,
             prototype=service_pt_1,
@@ -660,7 +660,7 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
             group.hosts.add(self.host_target_group_1)
             update_obj_config(
                 obj_conf=group.config,
-                conf={"some_string": group.name, "float": 0.1},
+                config={"some_string": group.name, "float": 0.1},
                 attr={"group_keys": {"some_string": True, "float": False}},
             )
 
@@ -689,12 +689,6 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
             inventory_data["service_1_target_group.component_1_target_group.maintenance_mode"]["hosts"][
                 "host_target_group_1"
             ]["services"]["service_1_target_group"]["component_1_target_group"]["config"],
-            {"some_string": "some_string", "float": 0.1},
-        )
-        self.assertDictEqual(
-            inventory_data["service_1_target_group.component_1_target_group.maintenance_mode"]["vars"]["cluster"][
-                "config"
-            ],
             {"some_string": "some_string", "float": 0.1},
         )
 

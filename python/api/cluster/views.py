@@ -35,14 +35,7 @@ from api.stack.serializers import (
     ImportSerializer,
     ServicePrototypeSerializer,
 )
-from api.utils import (
-    AdcmOrderingFilter,
-    check_custom_perm,
-    check_obj,
-    create,
-    get_object_for_user,
-    update,
-)
+from api.utils import AdcmOrderingFilter, check_obj, create, update
 from audit.utils import audit
 from cm.api import delete_cluster, get_import, unbind
 from cm.errors import AdcmEx
@@ -68,7 +61,7 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
 )
 
-from adcm.permissions import VIEW_CLUSTER_PERM
+from adcm.permissions import VIEW_CLUSTER_PERM, check_custom_perm, get_object_for_user
 
 
 def get_obj_conf(cluster_id, service_id):

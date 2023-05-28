@@ -13,16 +13,8 @@
 from typing import Callable
 from unittest.mock import patch
 
-from api_v2.tests.cluster.base import ClusterBaseTestCase
-from cm.models import (
-    Cluster,
-    ClusterObject,
-    ClusterStatus,
-    Host,
-    ObjectType,
-    Prototype,
-    ServiceComponent,
-)
+from api_v2.tests.base import BaseTestCaseAPI
+from cm.models import ADCMEntityStatus, Cluster
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
@@ -30,7 +22,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CON
 from adcm.tests.base import APPLICATION_JSON
 
 
-class TestCluster(ClusterBaseTestCase):
+class TestCluster(BaseTestCaseAPI):
     def get_cluster_status_mock(self) -> Callable:
         def inner(cluster: Cluster) -> int:
             if cluster.pk == self.cluster_1.pk:
@@ -57,7 +49,7 @@ class TestCluster(ClusterBaseTestCase):
     def test_filter_by_name_success(self):
         response: Response = self.client.get(
             path=reverse(viewname="v2:cluster-list"),
-            data={"name": self.cluster_1_name},
+            data={"name": self.cluster_1.name},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -76,7 +68,7 @@ class TestCluster(ClusterBaseTestCase):
         with patch("api_v2.cluster.filters.get_cluster_status", new_callable=self.get_cluster_status_mock):
             response: Response = self.client.get(
                 path=reverse(viewname="v2:cluster-list"),
-                data={"status": ClusterStatus.UP},
+                data={"status": ADCMEntityStatus.UP},
             )
 
             self.assertEqual(response.status_code, HTTP_200_OK)
@@ -87,7 +79,7 @@ class TestCluster(ClusterBaseTestCase):
         with patch("api_v2.cluster.filters.get_cluster_status", new_callable=self.get_cluster_status_mock):
             response: Response = self.client.get(
                 path=reverse(viewname="v2:cluster-list"),
-                data={"status": ClusterStatus.DOWN},
+                data={"status": ADCMEntityStatus.DOWN},
             )
 
             self.assertEqual(response.status_code, HTTP_200_OK)
@@ -97,7 +89,7 @@ class TestCluster(ClusterBaseTestCase):
     def test_filter_by_prototype_name_success(self):
         response: Response = self.client.get(
             path=reverse(viewname="v2:cluster-list"),
-            data={"prototype_name": self.cluster_1_prototype_name},
+            data={"prototype_name": self.cluster_1.prototype.name},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -117,7 +109,7 @@ class TestCluster(ClusterBaseTestCase):
         response: Response = self.client.post(
             path=reverse(viewname="v2:cluster-list"),
             data={
-                "prototype": self.cluster_1_prototype.pk,
+                "prototype": self.cluster_1.prototype.pk,
                 "name": "new_test_cluster",
                 "description": "Test cluster description",
             },
@@ -151,52 +143,6 @@ class TestCluster(ClusterBaseTestCase):
     def test_service_prototypes_success(self):
         response: Response = self.client.get(
             path=reverse(viewname="v2:cluster-service-prototypes", kwargs={"pk": self.cluster_1.pk}),
-        )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 1)
-
-    def test_list_mapping_success(self):
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:mapping-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-        )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
-
-    def test_create_mapping_success(self):
-        service = ClusterObject.objects.create(
-            cluster=self.cluster_1, prototype=Prototype.objects.create(bundle=self.bundle, type=ObjectType.SERVICE)
-        )
-        host = Host.objects.create(
-            fqdn="test-host-new",
-            prototype=Prototype.objects.create(bundle=self.bundle, type=ObjectType.HOST),
-        )
-        component = ServiceComponent.objects.create(
-            prototype=Prototype.objects.create(bundle=self.bundle, type=ObjectType.COMPONENT),
-            cluster=self.cluster_1,
-            service=self.service,
-        )
-
-        response: Response = self.client.post(
-            path=reverse(viewname="v2:mapping-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data={"service": service.pk, "host": host.pk, "component": component.pk},
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-    def test_mapping_hosts_success(self):
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:mapping-hosts", kwargs={"cluster_pk": self.cluster_1.pk}),
-        )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 1)
-
-    def test_mapping_components_success(self):
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:mapping-components", kwargs={"cluster_pk": self.cluster_1.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

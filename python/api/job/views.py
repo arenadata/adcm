@@ -24,7 +24,6 @@ from api.job.serializers import (
     TaskRetrieveSerializer,
     TaskSerializer,
 )
-from api.utils import check_custom_perm, get_object_for_user
 from audit.utils import audit
 from cm.job import cancel_task, restart_task
 from cm.models import ActionType, JobLog, JobStatus, LogStorage, TaskLog
@@ -41,6 +40,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
+from adcm.permissions import check_custom_perm, get_object_for_user
 from adcm.utils import str_remove_non_alnum
 
 VIEW_TASKLOG_PERMISSION = "cm.view_tasklog"

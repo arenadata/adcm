@@ -10,16 +10,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any, Sequence
+
 from audit.utils import audit
 from cm.errors import AdcmEx
+from cm.models import ADCMEntity
+from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Model
+from guardian.shortcuts import get_objects_for_user
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import (
     DjangoModelPermissions,
     DjangoObjectPermissions,
     IsAuthenticated,
 )
 
-VIEW_ACTION_PERM = "cm.view_action"
 VIEW_CLUSTER_PERM = "cm.view_cluster"
+VIEW_SERVICE_PERM = "cm.view_clusterobject"
+VIEW_ACTION_PERM = "cm.view_action"
+CHANGE_MM_PERM = "change_maintenance_mode"
+ADD_SERVICE_PERM = "add_service_to"
+RUN_ACTION_PERM_PREFIX = "cm.run_action_"
+ADD_TASK_PERM = "cm.add_task"
+VIEW_HOST_PERM = "cm.view_host"
+VIEW_PROVIDER_PERM = "cm.view_hostprovider"
+VIEW_CONFIG_PERM = "cm.view_configlog"
 
 
 class DjangoObjectPermissionsAudit(DjangoObjectPermissions):
@@ -54,3 +70,40 @@ class SuperuserOnlyMixin:
             return self.queryset.model.objects.none()
 
         return super().get_queryset(*args, **kwargs)
+
+
+def get_object_for_user(user: User, perms: str | Sequence[str], klass: type[Model], **kwargs) -> Any:
+    try:
+        queryset = get_objects_for_user(user, perms, klass)
+
+        return queryset.get(**kwargs)
+    except ObjectDoesNotExist:
+        model = klass
+        if not hasattr(klass, "_default_manager"):
+            model = klass.model
+
+        error_code = "NO_MODEL_ERROR_CODE"
+        if hasattr(model, "__error_code__"):
+            error_code = model.__error_code__
+
+        raise AdcmEx(error_code) from None
+
+
+def check_custom_perm(user: User, action_type: str, model: str, obj: Any, second_perm=None) -> None:
+    if user.has_perm(f"cm.{action_type}_{model}", obj):
+        return
+
+    if second_perm is not None and user.has_perm(f"cm.{second_perm}"):
+        return
+
+    raise PermissionDenied()
+
+
+def check_config_perm(user: User, action_type: str, model: str, obj: ADCMEntity) -> None:
+    if user.has_perm(f"cm.{action_type}_config_of_{model}", obj):
+        return
+
+    if model == "adcm" and user.has_perm(f"cm.{action_type}_settings_of_{model}"):
+        return
+
+    raise PermissionDenied()

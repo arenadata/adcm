@@ -93,7 +93,7 @@ class TestHostAPI(BaseTestCase):
             state_available="any",
         )
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
@@ -118,7 +118,7 @@ class TestHostAPI(BaseTestCase):
         self.host.maintenance_mode = MaintenanceMode.ON
         self.host.save(update_fields=["maintenance_mode"])
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
@@ -153,7 +153,7 @@ class TestHostAPI(BaseTestCase):
             name=settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
         )
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
                 data={"maintenance_mode": MaintenanceMode.OFF},
@@ -178,7 +178,7 @@ class TestHostAPI(BaseTestCase):
         self.host.maintenance_mode = MaintenanceMode.OFF
         self.host.save(update_fields=["maintenance_mode"])
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
                 data={"maintenance_mode": MaintenanceMode.OFF},
@@ -329,7 +329,7 @@ class TestHostAPI(BaseTestCase):
             data={"host_id": host.pk},
         )
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": host.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
