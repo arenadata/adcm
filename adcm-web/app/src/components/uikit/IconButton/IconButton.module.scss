@@ -1,0 +1,46 @@
+:global {
+  body.theme-dark {
+    --icon-button-color: var(--color-xgray-light);
+    --icon-button-color-hover: var(--color-xwhite-off);
+    --icon-button-color-active: var(--color-xgreen-saturated);
+    --icon-button-color-disabled: var(--color-xdark);
+  }
+  body.theme-light {
+    --icon-button-color: var(--color-xgray-light);
+    --icon-button-color-hover: var(--color-xdark);
+    --icon-button-color-active: var(--color-xgreen);
+    --icon-button-color-disabled: var(--color-popup-light);
+  }
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 250ms, background 250ms, border-color 250ms;
+
+  padding: 0;
+  border: none;
+  background: none;
+  outline: none;
+
+  color: var(--icon-button-color);
+
+  &:hover {
+    color: var(--icon-button-color-hover);
+  }
+
+  &:active,
+  &:global(.is-active) {
+    color: var(--icon-button-color-active);
+  }
+
+  &:active {
+    transition: 0s;
+  }
+  &[disabled] {
+    cursor: not-allowed;
+    color: var(--icon-button-color-disabled);
+  }
+}

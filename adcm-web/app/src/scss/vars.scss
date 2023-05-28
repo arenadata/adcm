@@ -1,9 +1,29 @@
 :root {
   // colors
+  --color-added-text: #5A5A5A;
+
   --color-xblack: #110F12;
+
+  --color-xdark: #353E47;
+  --color-xdark-new: #323239;
+  --color-xdark-plate20: rgba(112, 122, 131, 0.2);
+
+  --color-xgray-light: #757B81;
+  --color-xgray-lighter: #C4C4C4;
+
   --color-xgreen: #00A872;
+  --color-dark-green: #0A9266;
   --color-xgreen-saturated: #00D2A0;
+  --color-presson-light: #00C787;
+
+  --color-xred: #C64A6F;
+  --color-red-30: #EEC9D4;
+  --color-dark-red: #6F213A;
+
+  --color-popup-light: #CEDBE2;
+
   --color-xwhite: #fff;
+  --color-xwhite-off: #FCFCFD;
 
   // sizes:
   --z-index-spinner: 10;

@@ -4,9 +4,12 @@
   grid-template-columns: repeat(10, 1fr);
   gap: 20px;
   max-width: 600px;
+  align-items: start;
 
   &__item {
     font-size: 10px;
+    line-height: 1.3em;
+    white-space: nowrap;
     text-align: center;
     cursor: pointer;
     position: relative;
