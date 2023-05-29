@@ -3,13 +3,13 @@
     --icon-button-color: var(--color-xgray-light);
     --icon-button-color-hover: var(--color-xwhite-off);
     --icon-button-color-active: var(--color-xgreen-saturated);
-    --icon-button-color-disabled: var(--color-xdark);
+    --icon-button-color-disabled: var(--color-xgray-reading);
   }
   body.theme-light {
     --icon-button-color: var(--color-xgray-light);
     --icon-button-color-hover: var(--color-xdark);
     --icon-button-color-active: var(--color-xgreen);
-    --icon-button-color-disabled: var(--color-popup-light);
+    --icon-button-color-disabled: var(--color-xgray-lighter);
   }
 }
 

@@ -1,0 +1,9 @@
+.inputNumberArrows {
+  display: flex;
+  flex-direction: column;
+  margin: auto 8px auto 0;
+
+  &__arrowUp {
+    transform: rotate(180deg);
+  }
+}
