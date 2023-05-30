@@ -323,8 +323,9 @@ export class FieldService {
 
         const checkType = (formData: resultTypes | IOutput, elementProperties: Partial<IFieldStack>): resultTypes => {
           const { type } = elementProperties;
-          if (type === 'structure') return replaceEmptyObjectWithNull(runYspecParse(formData, elementProperties));
-          else if (type === 'group') {
+          if (type === 'structure') {
+            return replaceEmptyObjectWithNull(runYspecParse(formData, elementProperties));
+          } else if (type === 'group') {
             return this.checkValue(runParse(formData as IOutput, elementProperties.name), type);
           } else if (type === 'option') {
             const optionValueType = elementProperties?.limits?.option ? typeof Object.values(elementProperties?.limits?.option)[0] : typeof elementProperties?.default;

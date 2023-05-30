@@ -59,10 +59,21 @@ export class RootComponent implements OnInit {
 
   reload(value: TValue) {
     this.value = value;
-    this.controls = [];
+    this.controls.length = 0;
+
     if (Array.isArray(this.form.controls)) {
-      this.form.controls.forEach((v, i) => (this.form as FormArray).removeAt(i));
+      while (this.form.controls.length > 0) {
+        (this.form as FormArray).removeAt(0);
+      }
+    } else if (this.form.controls && typeof this.form.controls === 'object') {
+      Object.keys(this.form.controls).forEach((key) => {
+        while (this.form.controls[key]?.controls.length > 0) {
+          (this.form.controls[key] as FormArray).removeAt(0);
+        }
+        (this.form as FormGroup).removeControl(key);
+      })
     }
+
     this.init();
   }
 
@@ -73,6 +84,7 @@ export class RootComponent implements OnInit {
       ? this.scheme.addControlsDict(name, value, this.form as FormArray, this.itemRules as IYContainer[])
       : this.scheme.addControls(name, value, this.form, this.rules, this.options.type as TNReq);
     this.controls = [...this.controls, item];
+    this.form.updateValueAndValidity();
   }
 
   showControls() {
@@ -83,6 +95,7 @@ export class RootComponent implements OnInit {
     if (Array.isArray(this.form.controls)) {
       (this.form as FormArray).removeAt(+name);
       this.controls = this.controls.filter((a, i) => (a.name ? a.name !== name : i !== +name));
+      this.form.updateValueAndValidity();
     }
   }
 
