@@ -129,7 +129,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
 
   onBlur() {
     if (this.title === 'Add') return;
-    
+
     const controls = [this.userForm.get('password'), this.confirmForm.get('password')];
     const [pwdControl, confirmControl] = controls;
 
@@ -138,10 +138,12 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
     if (!this._isFirstTouch) {
       controls.forEach((control) => {
         control.setValue(this.dummyValue);
+        control.clearValidators();
         control.markAsUntouched();
       })
     }
 
+    this.form.updateValueAndValidity();
     this._isFirstTouch = true;
   }
 
