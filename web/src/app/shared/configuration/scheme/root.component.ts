@@ -35,7 +35,7 @@ export class RootComponent implements OnInit {
     if (this.value) {
       if (Array.isArray(this.value)) {
         this.value.forEach((value, index) => {
-          this.itemRules.forEach((key) => {
+          this.itemRules?.forEach((key) => {
             if (!value[key.name]) {
               value[key.name] = key.type === 'string' ? '' : key.type === 'integer' ? 0 : null;
             }
