@@ -82,6 +82,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     this.worker$ = service.worker$.pipe(distinctUntilChanged());
 
     service.worker$.subscribe((data) => {
+      this.service.changeService(data.current.typeName);
       this.getConfigUrlFromWorker();
       this._getConfig(data.current.config).subscribe();
     });
