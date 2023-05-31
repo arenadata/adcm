@@ -1,5 +1,6 @@
 export const allowIconsNames = [
   //
+  'check',
   'chevron',
   'eye',
   'eye-crossed',
