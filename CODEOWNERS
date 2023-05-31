@@ -5,15 +5,15 @@
 /python/ @aas @d.skrynnik @tsd @a.starovoitov
 /spec/ @aas @d.skrynnik @tsd
 /web/ @v.remizov @d.bardin @k.fedorenko
-.dockerignore @aas @v.remizov
+.dockerignore @aas @v.remizov @d.skrynnik @tsd
 .gitignore @aas @d.skrynnik @tsd @v.remizov @d.bardin @k.fedorenko
-.gitlab-ci.yaml @aas @v.remizov
+.gitlab-ci.yaml @aas @v.remizov @d.skrynnik @tsd
 .pre-commit-config.yaml @aas @d.skrynnik @tsd @v.remizov @d.bardin @k.fedorenko
-CODEOWNERS @aas @v.remizov @tsd
-COPYRIGHT @aas @v.remizov
-Dockerfile @aas @v.remizov
-LICENSE @aas @v.remizov
-license_checker.py @aas
+CODEOWNERS @aas @v.remizov @tsd @d.skrynnik
+COPYRIGHT @aas @v.remizov @d.skrynnik @tsd
+Dockerfile @aas @v.remizov @d.skrynnik @tsd
+LICENSE @aas @v.remizov @d.skrynnik @tsd
+license_checker.py @aas @d.skrynnik @tsd
 Makefile @aas @d.skrynnik @tsd
 pyproject.toml @aas @d.skrynnik @tsd
 README.md @aas @d.skrynnik @tsd @v.remizov @d.bardin @k.fedorenko @a.starovoitov
