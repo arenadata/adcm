@@ -13,7 +13,8 @@
 from api_v2.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
 from api_v2.config.utils import get_schema
 from cm.api import update_obj_config
-from cm.models import Cluster, ClusterObject, ConfigLog
+from cm.models import Cluster, ClusterObject, ConfigLog, GroupConfig
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import ObjectDoesNotExist
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
@@ -37,9 +38,10 @@ class ConfigLogViewSet(
     def get_parent_object(self) -> ClusterObject | ClusterObject | None:
         parent_object = None
 
-        if "cluster_pk" in self.kwargs and "service_pk" in self.kwargs:
-            cluster = Cluster.objects.get(id=self.kwargs.get("cluster_pk"))
-            parent_object = ClusterObject.objects.get(id=self.kwargs.get("service_pk"), cluster=cluster)
+        if "config_group_pk" in self.kwargs:
+            parent_object = GroupConfig.objects.get(id=self.kwargs.get("config_group_pk"))
+        elif "service_pk" in self.kwargs:
+            parent_object = ClusterObject.objects.get(id=self.kwargs.get("service_pk"))
         elif "cluster_pk" in self.kwargs:
             parent_object = Cluster.objects.get(id=self.kwargs.get("cluster_pk"))
 
@@ -66,7 +68,12 @@ class ConfigLogViewSet(
 
     def create(self, request, *args, **kwargs):
         parent_object = self.get_parent_object()
-        check_config_perm(user=request.user, action_type="change", model="cluster", obj=parent_object)
+        check_config_perm(
+            user=request.user,
+            action_type="change",
+            model=ContentType.objects.get_for_model(model=parent_object).model,
+            obj=parent_object,
+        )
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         initial_data = serializer.initial_data

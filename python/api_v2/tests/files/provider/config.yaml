@@ -1,0 +1,8 @@
+---
+- type: provider
+  name: provider
+  version: &version '1.0'
+
+- type: host
+  name: host
+  version: *version

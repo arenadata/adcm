@@ -194,21 +194,21 @@ def add_cluster(prototype: Prototype, name: str, description: str = "") -> Clust
     return cluster
 
 
-def add_host(proto, provider, fqdn, desc=""):
-    if proto.type != "host":
-        raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be host, not {proto.type}")
+def add_host(prototype: Prototype, provider: HostProvider, fqdn: str, description: str = ""):
+    if prototype.type != "host":
+        raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be host, not {prototype.type}")
 
-    check_license(proto)
-    if proto.bundle != provider.prototype.bundle:
+    check_license(prototype)
+    if prototype.bundle != provider.prototype.bundle:
         raise_adcm_ex(
             "FOREIGN_HOST",
-            f"Host prototype bundle #{proto.bundle.pk} does not match with "
+            f"Host prototype bundle #{prototype.bundle.pk} does not match with "
             f"host provider bundle #{provider.prototype.bundle.pk}",
         )
 
     with atomic():
-        host = Host.objects.create(prototype=proto, provider=provider, fqdn=fqdn, description=desc)
-        obj_conf = init_object_config(proto, host)
+        host = Host.objects.create(prototype=prototype, provider=provider, fqdn=fqdn, description=description)
+        obj_conf = init_object_config(prototype, host)
         host.config = obj_conf
         host.save()
         host.add_to_concerns(CTX.lock)
@@ -223,14 +223,14 @@ def add_host(proto, provider, fqdn, desc=""):
     return host
 
 
-def add_host_provider(proto, name, desc=""):
-    if proto.type != "provider":
-        raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be provider, not {proto.type}")
+def add_host_provider(prototype: Prototype, name: str, description: str = ""):
+    if prototype.type != "provider":
+        raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be provider, not {prototype.type}")
 
-    check_license(proto)
+    check_license(prototype)
     with atomic():
-        provider = HostProvider.objects.create(prototype=proto, name=name, description=desc)
-        obj_conf = init_object_config(proto, provider)
+        provider = HostProvider.objects.create(prototype=prototype, name=name, description=description)
+        obj_conf = init_object_config(prototype, provider)
         provider.config = obj_conf
         provider.save()
         provider.add_to_concerns(CTX.lock)

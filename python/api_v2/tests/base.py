@@ -9,36 +9,50 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from cm.models import Action, Cluster, ConfigLog, Prototype
+from cm.api import add_cluster, add_host, add_host_provider, add_host_to_cluster
+from cm.bundle import prepare_bundle
+from cm.models import ADCM, Cluster, ConfigLog, Host, ObjectType, Prototype
 from django.conf import settings
-from rest_framework.response import Response
-from rest_framework.reverse import reverse
-from rest_framework.status import HTTP_201_CREATED
-
-from adcm.tests.base import BaseTestCase
+from init_db import init
+from rbac.upgrade.role import init_roles
+from rest_framework.test import APITestCase
 
 
-class BaseTestCaseAPI(BaseTestCase):
+class BaseAPITestCase(APITestCase):  # pylint: disable=too-many-instance-attributes
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        init_roles()
+        init()
+
+        adcm = ADCM.objects.first()
+        config_log = ConfigLog.objects.get(obj_ref=adcm.config)
+        config_log.config["auth_policy"]["max_password_length"] = 20
+        config_log.save(update_fields=["config"])
+
     def setUp(self) -> None:
-        super().setUp()
+        self.client.login(username="admin", password="admin")
 
-        bundle_file_1 = settings.BASE_DIR / "python" / "api_v2" / "tests" / "files" / "cluster_one.tar"
-        bundle_file_2 = settings.BASE_DIR / "python" / "api_v2" / "tests" / "files" / "cluster_two.tar"
-        self.bundle_1 = self.upload_and_load_bundle(path=bundle_file_1)
-        self.bundle_2 = self.upload_and_load_bundle(path=bundle_file_2)
-        self.cluster_1 = self.create_cluster(bundle_pk=self.bundle_1.pk, name="cluster")
-        self.cluster_1_config = ConfigLog.objects.get(id=self.cluster_1.config.current)
-        self.cluster_1_action = Action.objects.filter(prototype=self.cluster_1.prototype).first()
-        self.cluster_2 = self.create_cluster(bundle_pk=self.bundle_2.pk, name="cluster_2")
+        cluster_bundle_1_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "files" / "cluster_one"
+        cluster_bundle_2_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "files" / "cluster_two"
+        provider_bundle_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "files" / "provider"
 
-    def create_cluster(self, bundle_pk: int, name: str) -> Cluster:
-        response: Response = self.client.post(
-            path=reverse(viewname="v2:cluster-list"),
-            data={
-                "prototype": Prototype.objects.filter(bundle_id=bundle_pk, type="cluster").first().pk,
-                "name": name,
-                "description": name,
-            },
-        )
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-        return Cluster.objects.get(pk=response.json()["id"])
+        self.bundle_1 = prepare_bundle(bundle_file="cluster_1", bundle_hash="cluster_1", path=cluster_bundle_1_path)
+        self.bundle_2 = prepare_bundle(bundle_file="cluster_2", bundle_hash="cluster_2", path=cluster_bundle_2_path)
+        self.provider_bundle = prepare_bundle(bundle_file="provider", bundle_hash="provider", path=provider_bundle_path)
+        self.cluster_1_prototype = Prototype.objects.filter(bundle=self.bundle_1, type=ObjectType.CLUSTER).first()
+        self.cluster_1 = add_cluster(prototype=self.cluster_1_prototype, name="cluster_1", description="cluster_1")
+        self.cluster_2_prototype = Prototype.objects.filter(bundle=self.bundle_2, type=ObjectType.CLUSTER).first()
+        self.cluster_2 = add_cluster(prototype=self.cluster_2_prototype, name="cluster_2", description="cluster_2")
+        self.provider_prototype = Prototype.objects.filter(
+            bundle=self.provider_bundle, type=ObjectType.PROVIDER
+        ).first()
+        self.provider = add_host_provider(prototype=self.provider_prototype, name="provider", description="provider")
+        self.host_prototype = Prototype.objects.filter(bundle=self.provider_bundle, type=ObjectType.HOST).first()
+
+    def add_host(self, fqdn: str):
+        return add_host(prototype=self.host_prototype, provider=self.provider, fqdn=fqdn, description=fqdn)
+
+    @staticmethod
+    def add_host_to_cluster(cluster: Cluster, host: Host):
+        return add_host_to_cluster(cluster=cluster, host=host)

@@ -1,0 +1,38 @@
+---
+- type: cluster
+  name: cluster_one
+  version: &version '1.0'
+  edition: community
+  config_group_customization: true
+  config: &config
+    - name: string
+      type: string
+      required: false
+      default: string
+    - name: group
+      type: group
+      subs:
+        - name: string
+          type: string
+          required: false
+          default: string
+  actions:
+    action: &action
+      type: job
+      script: ./playbook.yaml
+      script_type: ansible
+      states:
+        available: any
+
+- name: service
+  type: service
+  version: *version
+  config: *config
+  actions:
+    action: *action
+  components:
+    component:
+      constraint: [ 0, + ]
+      config: *config
+      actions:
+        action: *action
