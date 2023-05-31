@@ -1082,11 +1082,11 @@ class GroupConfig(ADCMModel):
 
         return hosts.exclude(group_config__in=self.object.group_config.all())
 
-    def check_host_candidate(self, host):
-        if self.hosts.filter(pk=host.pk).exists():
+    def check_host_candidate(self, host_ids: list[int]):
+        if self.hosts.filter(pk__in=host_ids).exists():
             raise AdcmEx("GROUP_CONFIG_HOST_EXISTS")
 
-        if host not in self.host_candidate():
+        if set(host_ids).difference({host.pk for host in self.host_candidate()}):
             raise AdcmEx("GROUP_CONFIG_HOST_ERROR")
 
     def preparing_file_type_field(self, config=None):

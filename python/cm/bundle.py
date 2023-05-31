@@ -62,10 +62,7 @@ STAGE = (
 )
 
 
-def load_bundle(bundle_file: str) -> None:
-    logger.info('loading bundle file "%s" ...', bundle_file)
-    bundle_hash, path = process_file(bundle_file=bundle_file)
-
+def prepare_bundle(bundle_file: str, bundle_hash: str, path: Path) -> Bundle:
     try:
         check_stage()
         process_bundle(path=path, bundle_hash=bundle_hash)
@@ -89,6 +86,12 @@ def load_bundle(bundle_file: str) -> None:
     except Exception:
         clear_stage()
         raise
+
+
+def load_bundle(bundle_file: str) -> Bundle:
+    logger.info('loading bundle file "%s" ...', bundle_file)
+    bundle_hash, path = process_file(bundle_file=bundle_file)
+    return prepare_bundle(bundle_file=bundle_file, bundle_hash=bundle_hash, path=path)
 
 
 def update_bundle(bundle):

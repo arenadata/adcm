@@ -146,6 +146,7 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "cm.errors.custom_drf_exception_handler",
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.NamespaceVersioning",
     "DEFAULT_VERSION": "v1",
+    "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }
 
 DB_PASS = os.getenv("DB_PASS")

@@ -17,6 +17,7 @@ from rest_framework.serializers import (
     CharField,
     ChoiceField,
     ModelSerializer,
+    PrimaryKeyRelatedField,
     SerializerMethodField,
 )
 
@@ -73,3 +74,12 @@ class HostChangeMaintenanceModeSerializer(ModelSerializer):
     class Meta:
         model = Host
         fields = ["maintenance_mode"]
+
+
+class HostGroupConfigSerializer(ModelSerializer):
+    id = PrimaryKeyRelatedField(queryset=Host.objects.all())
+
+    class Meta:
+        model = Host
+        fields = ["id", "name"]
+        extra_kwargs = {"name": {"read_only": True}}

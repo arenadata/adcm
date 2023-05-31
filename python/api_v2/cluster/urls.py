@@ -14,6 +14,7 @@ from api_v2.action.views import ClusterActionViewSet as CommonActionViewSet
 from api_v2.action.views import ServiceActionViewSet
 from api_v2.cluster.views import ClusterViewSet, MappingViewSet
 from api_v2.config.views import ConfigLogViewSet
+from api_v2.group_config.views import GroupConfigViewSet
 from api_v2.host.views import HostViewSet
 from api_v2.service.views import ServiceViewSet
 from api_v2.upgrade.views import UpgradeViewSet
@@ -50,11 +51,28 @@ host_router.register(prefix=HOST_ROUTER_PREFIX, viewset=HostViewSet)
 host_action_router = NestedSimpleRouter(parent_router=host_router, parent_prefix=HOST_ROUTER_PREFIX, lookup="host")
 host_action_router.register(prefix=ACTION_ROUTER_PREFIX, viewset=CommonActionViewSet)
 
-cluster_config_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="cluster")
+cluster_config_router = NestedSimpleRouter(parent_router=router, parent_prefix=CLUSTER_ROUTER_PREFIX, lookup="cluster")
 cluster_config_router.register(prefix="configs", viewset=ConfigLogViewSet, basename="cluster-config")
 
-service_config_router = NestedSimpleRouter(parent_router=service_router, parent_prefix="services", lookup="service")
+service_config_router = NestedSimpleRouter(
+    parent_router=service_router, parent_prefix=SERVICE_ROUTER_PREFIX, lookup="service"
+)
 service_config_router.register(prefix="configs", viewset=ConfigLogViewSet, basename="service-config")
+
+cluster_group_config_router = NestedSimpleRouter(
+    parent_router=router, parent_prefix=CLUSTER_ROUTER_PREFIX, lookup="cluster"
+)
+cluster_group_config_router.register(
+    prefix="config-groups", viewset=GroupConfigViewSet, basename="cluster-config-group"
+)
+
+cluster_group_config_config_router = NestedSimpleRouter(
+    parent_router=cluster_group_config_router, parent_prefix="config-groups", lookup="config_group"
+)
+cluster_group_config_config_router.register(
+    prefix="config", viewset=ConfigLogViewSet, basename="cluster-config-group-config"
+)
+
 
 urlpatterns = [
     *router.urls,
@@ -67,4 +85,6 @@ urlpatterns = [
     *host_action_router.urls,
     *cluster_config_router.urls,
     *service_config_router.urls,
+    *cluster_group_config_router.urls,
+    *cluster_group_config_config_router.urls,
 ]

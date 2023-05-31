@@ -83,7 +83,7 @@ class GroupConfigHostViewSet(
         if serializer.is_valid(raise_exception=True):
             group_config = GroupConfig.obj.get(id=self.kwargs.get("parent_lookup_group_config"))
             host = serializer.validated_data["id"]
-            group_config.check_host_candidate(host=host)
+            group_config.check_host_candidate(host_ids=[host.pk])
             group_config.hosts.add(host)
             serializer = self.get_serializer(instance=host)
 
