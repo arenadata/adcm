@@ -3981,6 +3981,7 @@ __metadata:
     prettier: ^2.8.8
     prop-types: ^15.8.1
     react: ^18.2.0
+    react-collapsed: ^4.0.2
     react-dom: ^18.2.0
     react-merge-refs: ^2.0.2
     react-router-dom: ^6.11.2
@@ -10591,6 +10592,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-collapsed@npm:^4.0.2":
+  version: 4.0.2
+  resolution: "react-collapsed@npm:4.0.2"
+  dependencies:
+    tiny-warning: ^1.0.3
+  peerDependencies:
+    react: ^16.9.0 || ^17 || ^18
+    react-dom: ^16.9.0 || ^17 || ^18
+  checksum: 77648dd51d746842326a5268cfb48290df225e11b13de587313603fb8452703ba34ea4b32afa8bf386067e179212ce670adca09c5d29943ea74d8c0e43b20430
+  languageName: node
+  linkType: hard
+
 "react-colorful@npm:^5.1.2":
   version: 5.6.1
   resolution: "react-colorful@npm:5.6.1"
@@ -12040,6 +12053,13 @@ __metadata:
     readable-stream: ~2.3.6
     xtend: ~4.0.1
   checksum: beb0f338aa2931e5660ec7bf3ad949e6d2e068c31f4737b9525e5201b824ac40cac6a337224856b56bd1ddd866334bbfb92a9f57cd6f66bc3f18d3d86fc0fe50
+  languageName: node
+  linkType: hard
+
+"tiny-warning@npm:^1.0.3":
+  version: 1.0.3
+  resolution: "tiny-warning@npm:1.0.3"
+  checksum: da62c4acac565902f0624b123eed6dd3509bc9a8d30c06e017104bedcf5d35810da8ff72864400ad19c5c7806fc0a8323c68baf3e326af7cb7d969f846100d71
   languageName: node
   linkType: hard
 

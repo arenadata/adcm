@@ -1,0 +1,40 @@
+:global {
+  body.theme-dark {
+    --page-section-title-color: var(--color-xgreen-saturated);
+    --page-section-has-errors-title-color: var(--color-xred);
+  }
+
+  body.theme-light {
+    --page-section-title-color: var(--color-xdark);
+  }
+}
+
+.pageSection {
+  &:not(:last-child) {
+    margin-bottom: var(--base-margin-v);
+  }
+
+  &_hasErrors {
+    .pageSection__title {
+      color: var(--page-section-has-errors-title-color);
+    }
+  }
+
+  &__title {
+    color: var(--page-section-title-color);
+    cursor: pointer;
+    display: inline-block;
+  }
+
+  &:not(&_isOpen) &__arrow {
+    transform: rotate(-90deg);
+  }
+
+  &__arrow {
+    margin-left: 4px;
+  }
+
+  &__collapseBody {
+    padding-top: var(--base-margin-v);
+  }
+}
