@@ -36,4 +36,7 @@
   --z-index-dialog: 100;
   --z-index-popover: calc(var(--z-index-dialog) + 1);
   --z-index-notifications: var(--z-index-popover);
+
+  // margins
+  --base-margin-v: 20px;
 }
