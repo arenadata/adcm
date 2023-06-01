@@ -19,8 +19,8 @@ from api_v2.cluster.serializers import (
     HostComponentPostSerializer,
     ServicePrototypeSerializer,
 )
+from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.host.serializers import HostMappingSerializer
-from api_v2.service_component.serializers import ServiceComponentSerializer
 from cm.api import add_cluster
 from cm.models import Cluster, HostComponent, ObjectType, Prototype
 from guardian.mixins import PermissionListMixin
@@ -31,7 +31,11 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
-from adcm.permissions import VIEW_CLUSTER_PERM, DjangoModelPermissionsAudit
+from adcm.permissions import (
+    VIEW_CLUSTER_PERM,
+    VIEW_HC_PERM,
+    DjangoModelPermissionsAudit,
+)
 
 
 class ClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=too-many-ancestors
@@ -85,7 +89,7 @@ class MappingViewSet(  # pylint:disable=too-many-ancestors
     queryset = HostComponent.objects.all()
     serializer_class = HostComponentListSerializer
     permission_classes = [DjangoModelPermissionsAudit]
-    permission_required = ["cm.view_hostcomponent"]
+    permission_required = [VIEW_HC_PERM]
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -130,7 +134,7 @@ class MappingViewSet(  # pylint:disable=too-many-ancestors
         if not cluster:
             return Response(data=f'Cluster with pk "{kwargs["cluster_pk"]}" not found', status=HTTP_404_NOT_FOUND)
 
-        serializer = ServiceComponentSerializer(
+        serializer = ComponentMappingSerializer(
             instance=[service_component.component for service_component in self.queryset.filter(cluster_id=cluster.pk)],
             many=True,
         )

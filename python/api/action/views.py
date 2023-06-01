@@ -20,7 +20,7 @@ from api.action.serializers import (
 )
 from api.base_view import GenericUIView
 from api.job.serializers import RunTaskRetrieveSerializer
-from api.utils import AdcmFilterBackend, create, filter_actions
+from api.utils import AdcmFilterBackend, create
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import Action, Host, HostComponent, TaskLog, get_model_by_type
@@ -34,6 +34,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from adcm.permissions import VIEW_ACTION_PERM, get_object_for_user
+from adcm.utils import filter_actions
 
 
 def get_object_type_id(**kwargs) -> tuple[str, int, int]:

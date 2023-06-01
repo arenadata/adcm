@@ -76,6 +76,12 @@ class HostChangeMaintenanceModeSerializer(ModelSerializer):
         fields = ["maintenance_mode"]
 
 
+class HostShortSerializer(ModelSerializer):
+    class Meta:
+        model = Host
+        fields = ["id", "fqdn"]
+
+
 class HostGroupConfigSerializer(ModelSerializer):
     id = PrimaryKeyRelatedField(queryset=Host.objects.all())
 

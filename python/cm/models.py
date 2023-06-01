@@ -1976,5 +1976,5 @@ class ConcernItem(ADCMModel):
 
 
 class ADCMEntityStatus(models.TextChoices):
-    UP = "up", "up"
-    DOWN = "down", "down"
+    UP = "UP", "UP"
+    DOWN = "DOWN", "DOWN"

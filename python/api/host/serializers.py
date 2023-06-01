@@ -13,7 +13,7 @@
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
-from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions
+from api.utils import CommonAPIURL, ObjectURL, check_obj
 from api.validators import HostUniqueValidator, StartMidEndValidator
 from cm.adcm_config.config import get_main_info
 from cm.api import add_host
@@ -32,6 +32,7 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
+from adcm.utils import filter_actions
 
 
 class HostSerializer(EmptySerializer):

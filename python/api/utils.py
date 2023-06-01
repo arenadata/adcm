@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Action, ADCMEntity, ConcernType, PrototypeConfig
 from django.http.request import QueryDict
 from django_filters import rest_framework as drf_filters
 from rest_framework.filters import OrderingFilter
@@ -48,20 +47,6 @@ def create(serializer, **kwargs):
 
 def update(serializer, **kwargs):
     return save(serializer, HTTP_200_OK, **kwargs)
-
-
-def filter_actions(obj: ADCMEntity, actions_set: list[Action]):
-    """Filter out actions that are not allowed to run on object at that moment"""
-    if obj.concerns.filter(type=ConcernType.LOCK).exists():
-        return []
-
-    allowed = []
-    for action in actions_set:
-        if action.allowed(obj):
-            allowed.append(action)
-            action.config = PrototypeConfig.objects.filter(prototype=action.prototype, action=action).order_by("id")
-
-    return allowed
 
 
 def get_api_url_kwargs(obj, request, no_obj_type=False):
