@@ -13,6 +13,7 @@
 from typing import Callable
 from unittest.mock import patch
 
+from api_v2.tests.base import BaseAPITestCase
 from cm.api import add_service_to_cluster
 from cm.models import (
     Action,
@@ -22,29 +23,27 @@ from cm.models import (
     ObjectType,
     Prototype,
 )
-from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
-
-class TestServiceAPI(BaseTestCase):
+class TestServiceAPI(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        bundle_file = settings.BASE_DIR / "python" / "api_v2" / "tests" / "files" / "test_services_bundle.tar"
-        _, self.cluster, _ = self.upload_bundle_create_cluster_config_log(bundle_path=bundle_file)
+        add_service_to_cluster(
+            cluster=self.cluster_1, proto=Prototype.objects.get(type=ObjectType.SERVICE, name="service_1")
+        )
+        self.service_2 = add_service_to_cluster(
+            cluster=self.cluster_1, proto=Prototype.objects.get(type=ObjectType.SERVICE, name="service_2")
+        )
 
-        for service_proto in Prototype.objects.filter(type=ObjectType.SERVICE, name__in={"service_1", "service_2"}):
-            self.last_created_service = add_service_to_cluster(cluster=self.cluster, proto=service_proto)
-
-        self.action = Action.objects.filter(prototype=self.last_created_service.prototype).first()
+        self.action = Action.objects.filter(prototype=self.service_2.prototype).first()
 
     def get_service_status_mock(self) -> Callable:
         def inner(service: ClusterObject) -> int:
-            if service.pk == self.last_created_service.pk:
+            if service.pk == self.service_2.pk:
                 return 0
 
             return 32
@@ -53,7 +52,7 @@ class TestServiceAPI(BaseTestCase):
 
     def test_list_success(self):
         response: Response = self.client.get(
-            path=reverse("v2:clusterobject-list", kwargs={"cluster_pk": self.cluster.pk}), content_type=APPLICATION_JSON
+            path=reverse("v2:clusterobject-list", kwargs={"cluster_pk": self.cluster_1.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -61,41 +60,33 @@ class TestServiceAPI(BaseTestCase):
 
     def test_retrieve_success(self):
         response: Response = self.client.get(
-            path=reverse(
-                "v2:clusterobject-detail", kwargs={"cluster_pk": self.cluster.pk, "pk": self.last_created_service.pk}
-            ),
-            content_type=APPLICATION_JSON,
+            path=reverse("v2:clusterobject-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["id"], self.last_created_service.pk)
+        self.assertEqual(response.json()["id"], self.service_2.pk)
 
     def test_delete_success(self):
         response: Response = self.client.delete(
-            path=reverse(
-                "v2:clusterobject-detail", kwargs={"cluster_pk": self.cluster.pk, "pk": self.last_created_service.pk}
-            ),
-            content_type=APPLICATION_JSON,
+            path=reverse("v2:clusterobject-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-        self.assertFalse(ClusterObject.objects.filter(pk=self.last_created_service.pk).exists())
+        self.assertFalse(ClusterObject.objects.filter(pk=self.service_2.pk).exists())
 
     def test_create_success(self):
         manual_add_service_proto = Prototype.objects.get(type=ObjectType.SERVICE, name="service_3_manual_add")
         response: Response = self.client.post(
-            path=reverse("v2:clusterobject-list", kwargs={"cluster_pk": self.cluster.pk}),
+            path=reverse("v2:clusterobject-list", kwargs={"cluster_pk": self.cluster_1.pk}),
             data={"prototype": manual_add_service_proto.pk},
-            content_type=APPLICATION_JSON,
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     def test_filter_by_name_success(self):
         response: Response = self.client.get(
-            path=reverse("v2:clusterobject-list", kwargs={"cluster_pk": self.cluster.pk}),
+            path=reverse("v2:clusterobject-list", kwargs={"cluster_pk": self.cluster_1.pk}),
             data={"name": "service_1"},
-            content_type=APPLICATION_JSON,
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -104,20 +95,18 @@ class TestServiceAPI(BaseTestCase):
     def test_filter_by_status_success(self):
         with patch("api_v2.service.filters.get_service_status", new_callable=self.get_service_status_mock):
             response: Response = self.client.get(
-                path=reverse("v2:clusterobject-list", kwargs={"cluster_pk": self.cluster.pk}),
+                path=reverse("v2:clusterobject-list", kwargs={"cluster_pk": self.cluster_1.pk}),
                 data={"status": ADCMEntityStatus.UP},
-                content_type=APPLICATION_JSON,
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["results"]), 1)
-        self.assertEqual(response.json()["results"][0]["id"], self.last_created_service.pk)
+        self.assertEqual(response.json()["results"][0]["id"], self.service_2.pk)
 
     def test_limit_offset_success(self):
         response: Response = self.client.get(
-            path=reverse("v2:clusterobject-list", kwargs={"cluster_pk": self.cluster.pk}),
+            path=reverse("v2:clusterobject-list", kwargs={"cluster_pk": self.cluster_1.pk}),
             data={"limit": 1, "offset": 1},
-            content_type=APPLICATION_JSON,
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -127,10 +116,9 @@ class TestServiceAPI(BaseTestCase):
         response: Response = self.client.post(
             path=reverse(
                 "v2:clusterobject-maintenance-mode",
-                kwargs={"cluster_pk": self.cluster.pk, "pk": self.last_created_service.pk},
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk},
             ),
             data={"maintenance_mode": MaintenanceMode.ON},
-            content_type=APPLICATION_JSON,
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -138,10 +126,9 @@ class TestServiceAPI(BaseTestCase):
     def test_action_list_success(self):
         response: Response = self.client.get(
             path=reverse(
-                "v2:action-list",
-                kwargs={"cluster_pk": self.cluster.pk, "service_pk": self.last_created_service.pk},
+                "v2:clusterobject-action-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "clusterobject_pk": self.service_2.pk},
             ),
-            content_type=APPLICATION_JSON,
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -150,14 +137,13 @@ class TestServiceAPI(BaseTestCase):
     def test_action_retrieve_success(self):
         response: Response = self.client.get(
             path=reverse(
-                "v2:action-detail",
+                "v2:clusterobject-action-detail",
                 kwargs={
-                    "cluster_pk": self.cluster.pk,
-                    "service_pk": self.last_created_service.pk,
+                    "cluster_pk": self.cluster_1.pk,
+                    "clusterobject_pk": self.service_2.pk,
                     "pk": self.action.pk,
                 },
             ),
-            content_type=APPLICATION_JSON,
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -166,15 +152,14 @@ class TestServiceAPI(BaseTestCase):
     def test_action_run_success(self):
         response: Response = self.client.post(
             path=reverse(
-                "v2:action-run",
+                "v2:clusterobject-action-run",
                 kwargs={
-                    "cluster_pk": self.cluster.pk,
-                    "service_pk": self.last_created_service.pk,
+                    "cluster_pk": self.cluster_1.pk,
+                    "clusterobject_pk": self.service_2.pk,
                     "pk": self.action.pk,
                 },
             ),
             data={"host_component_map": {}, "config": {}, "attr": {}, "is_verbose": False},
-            content_type=APPLICATION_JSON,
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

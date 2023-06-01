@@ -13,7 +13,7 @@
 from api_v2.concern.serializers import ConcernSerializer
 from cm.adcm_config.config import get_main_info
 from cm.models import ClusterObject, MaintenanceMode
-from cm.status_api import get_service_status
+from cm.status_api import get_obj_status
 from rest_framework.serializers import (
     CharField,
     ChoiceField,
@@ -43,8 +43,8 @@ class ServiceRetrieveSerializer(ModelSerializer):
             "main_info",
         ]
 
-    def get_status(self, instance: ClusterObject) -> int:
-        return get_service_status(service=instance)
+    def get_status(self, instance: ClusterObject) -> str:
+        return get_obj_status(obj=instance)
 
     def get_main_info(self, instance: ClusterObject) -> str | None:
         return get_main_info(obj=instance)

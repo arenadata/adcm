@@ -50,9 +50,9 @@ class BaseAPITestCase(APITestCase):  # pylint: disable=too-many-instance-attribu
         self.provider = add_host_provider(prototype=self.provider_prototype, name="provider", description="provider")
         self.host_prototype = Prototype.objects.filter(bundle=self.provider_bundle, type=ObjectType.HOST).first()
 
-    def add_host(self, fqdn: str):
+    def add_host(self, fqdn: str) -> Host:
         return add_host(prototype=self.host_prototype, provider=self.provider, fqdn=fqdn, description=fqdn)
 
     @staticmethod
-    def add_host_to_cluster(cluster: Cluster, host: Host):
+    def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
         return add_host_to_cluster(cluster=cluster, host=host)

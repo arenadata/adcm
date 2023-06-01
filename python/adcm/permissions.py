@@ -35,6 +35,8 @@ RUN_ACTION_PERM_PREFIX = "cm.run_action_"
 ADD_TASK_PERM = "cm.add_task"
 VIEW_HOST_PERM = "cm.view_host"
 VIEW_PROVIDER_PERM = "cm.view_hostprovider"
+VIEW_COMPONENT_PERM = "cm.view_servicecomponent"
+VIEW_HC_PERM = "cm.view_hostcomponent"
 VIEW_CONFIG_PERM = "cm.view_configlog"
 VIEW_GROUP_CONFIG_PERM = "cm.view_groupconfig"
 

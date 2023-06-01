@@ -24,15 +24,34 @@
       states:
         available: any
 
-- name: service
+- name: service_1
   type: service
   version: *version
   config: *config
   actions:
     action: *action
   components:
-    component:
+    component_1:
       constraint: [ 0, + ]
       config: *config
       actions:
-        action: *action
+        action_1_comp_1: *action
+        action_2_comp_1: *action
+    component_2:
+      constraint: [ 0, + ]
+      config: *config
+      actions:
+        action_1_comp_2: *action
+
+- name: service_2
+  type: service
+  version: *version
+  config: *config
+  actions:
+    action_1_service_2: *action
+    action_2_service_2: *action
+
+- name: service_3_manual_add
+  type: service
+  version: *version
+  config: *config
