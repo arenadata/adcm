@@ -1,32 +1,48 @@
 :root {
   // colors
+  --color-adcmx: #73858F;
   --color-added-text: #5A5A5A;
 
   --color-xblack: #110F12;
 
+  --color-xblue: #1997E8;
+
   --color-xdark: #353E47;
   --color-xdark-new: #323239;
+  --color-xdark-new-20: rgba(50, 50, 57, 0.2);
   --color-xdark-new-50: rgba(50, 50, 57, 0.5);
+  --color-xdark-new-full: #252429;
   --color-xdark-plate10: rgba(112, 122, 131, 0.1);
   --color-xdark-plate20: rgba(112, 122, 131, 0.2);
 
   --color-xgray-light: #757B81;
   --color-xgray-lighter: #C4C4C4;
-  --color-xgray-light-60: rgba(227, 234, 238, 0.6);
+  --color-xgray-darker: #565B61;
+  --color-xgray-alt:  #E3EAEE;
+  --color-xgray-alt-20: rgba(227, 234, 238, 0.2);
+  --color-xgray-alt-50: rgba(227, 234, 238, 0.5);
+  --color-xgray-alt-60: rgba(227, 234, 238, 0.6);
   --color-xgray-reading: #545E68;
-  --color-adcmx: #73858F;
 
   --color-xgreen: #00A872;
   --color-dark-green: #0A9266;
   --color-xgreen-saturated: #00D2A0;
+  --color-xgreen-saturated15: rgba(0, 210, 160, 0.15);
   --color-presson-light: #00C787;
 
   --color-xred: #C64A6F;
+  --color-xred-light: #F35081;
   --color-red-10: rgba(198, 74, 111, 0.1);
   --color-red-30: #EEC9D4;
   --color-dark-red: #6F213A;
 
+  --color-navy: #1A1B21;
+
   --color-popup-light: #CEDBE2;
+
+  --color-stroke-light: #D9DEF3;
+
+  --color-yellow-light: #F5CB32;
 
   --color-xwhite: #FFF;
   --color-xwhite-off: #FCFCFD;

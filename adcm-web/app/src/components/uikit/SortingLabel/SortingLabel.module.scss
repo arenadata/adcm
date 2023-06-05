@@ -1,0 +1,18 @@
+.sortingLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+
+  &__arrow {
+    color: var(--color-gray-light);
+
+    &_desc {
+      transform: rotate(180deg);
+    }
+  }
+
+  &:not(:global(.is-sorted)):not(:hover) &__arrow {
+    visibility: hidden;
+  }
+}

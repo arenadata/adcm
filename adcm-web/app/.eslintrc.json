@@ -67,6 +67,7 @@
           "searchable",
           "ssl",
           "sql",
+          "statusable",
           "str",
           "svg",
           "textarea",

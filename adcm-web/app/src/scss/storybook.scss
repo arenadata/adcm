@@ -4,16 +4,19 @@
 
 body.theme-dark {
   --body-background: var(--color-xblack);
+  --body-color: var(--color-xwhite-off);
 }
 
 body.theme-light {
   --body-background: var(--color-xwhite);
+  --body-color: var(--color-xdark);
 }
 
 body {
   min-height: 100vh;
   box-sizing: border-box;
   background-color: var(--body-background);
+  color: var(--body-color);
 }
 
 h1 {
