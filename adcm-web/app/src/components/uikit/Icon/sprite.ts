@@ -1,5 +1,6 @@
 export const allowIconsNames = [
   //
+  'arrow-sorting',
   'check',
   'chevron',
   'eye',

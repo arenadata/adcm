@@ -1,0 +1,32 @@
+.tableCell {
+  &_oneLine {
+    white-space: nowrap;
+  }
+
+  &__inner {
+    padding: var(--table-cell-padding);
+  }
+
+  &_align-left {
+    text-align: left;
+  }
+  &_align-right {
+    text-align: right;
+  }
+  &_align-center {
+    text-align: center;
+  }
+
+  &_iconOnly > &__inner {
+    display: flex;
+    gap: 4px;
+  }
+}
+
+.tableHeadCellCheckbox {
+  &__chevron {
+    position: absolute;
+    margin-top: 5px;
+    margin-left: 13px;
+  }
+}
