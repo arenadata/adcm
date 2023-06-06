@@ -1,0 +1,32 @@
+.copyButton {
+  min-width: 56px;
+  height: 18px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--button-copy-bg);
+  color: var(--button-copy-text);
+  cursor: pointer;
+  z-index: 1;
+
+  transition: color 250ms, background 250ms;
+
+  font-family: inherit;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 14px;
+
+  &:hover {
+    background: var(--color-blue);
+    color: var(--button-copied-text);
+  }
+
+  &:global(.isCopied) {
+    background: var(--color-green);
+    color: var(--button-copied-text);
+
+    &:hover {
+      background: var(--color-green);
+    }
+  }
+}
