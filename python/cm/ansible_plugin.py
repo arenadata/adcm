@@ -48,7 +48,7 @@ from cm.status_api import post_event
 from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from rbac.models import Policy, Role, RoleTypes
+from rbac.models import Policy, Role
 from rbac.roles import assign_user_or_group_perm
 
 MSG_NO_CONFIG = (
@@ -549,19 +549,7 @@ def log_check(job_id: int, group_data: dict, check_data: dict) -> CheckLog:
         log_group_check(**group_data)
 
     log_storage, _ = LogStorage.objects.get_or_create(job=job, name="ansible", type="check", format="json")
-
-    task_role = Role.objects.filter(
-        name=f"View role for task {job.task.id}",
-        display_name=f"View role for task {job.task.id}",
-        description="View tasklog object with following joblog and logstorage",
-        type=RoleTypes.HIDDEN,
-        module_name="rbac.roles",
-        class_name="TaskRole",
-        init_params={
-            "task_id": job.task.id,
-        },
-        parametrized_by_type=[job.task.task_object.prototype.type],
-    ).first()
+    task_role = Role.objects.filter(name=f"View role for task {job.task.id}", built_in=True).first()
 
     if task_role:
         view_logstorage_permission, _ = Permission.objects.get_or_create(
