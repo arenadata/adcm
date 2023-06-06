@@ -105,6 +105,7 @@
   overflow: hidden;
   width: 100%;
   text-align: left;
+  box-sizing: border-box;
 
   &__row_noData:not(:only-child) {
     display: none !important;
@@ -114,18 +115,19 @@
     padding: 0;
 
     font-size: 14px;
-    font-weight: 500;
     line-height: 20px;
   }
 
   th {
     color: var(--table-th-color);
     --table-cell-padding: 12px 20px;
+    font-weight: 500;
   }
   td {
     color: var(--table-tr-color);
     background: var(--table-tr-background);
     transition: background-color 250ms, color 250ms;
+    font-weight: 400;
   }
 
   tr :global(.text-link) {
@@ -153,7 +155,7 @@
   &_secondary {
     border: none;
     border-spacing: 0 var(--table-border-spacing);
-
+    border-collapse: separate;
 
     th {
       & > div {
@@ -173,6 +175,30 @@
         &:last-child {
           border-top-right-radius: var(--table-border-radius);
           border-bottom-right-radius: var(--table-border-radius);
+        }
+
+        // safari hack:
+        @media not all and (min-resolution:.001dpcm) {
+          @supports (-webkit-appearance:none) {
+            /**
+              Safari can't render box-shadow for <TR> (Chrome anf Mozilla can!)
+              Alter way: render borders for TD
+              Bat Chrome bad rendered border styles for last TD, (wrapper for table is overflow, and last border is hide)
+              Use normal one-line styles for BRO-wsers,
+              And use ugly hack for this piece of shit
+             */
+            & {
+              box-sizing: border-box;
+              border-top: 1px solid var(--table-tr-border, transparent);
+              border-bottom: 1px solid var(--table-tr-border, transparent);
+              &:first-child {
+                border-left: 1px solid var(--table-tr-border, transparent);
+              }
+              &:last-child {
+                border-right: 1px solid var(--table-tr-border, transparent);
+              }
+            }
+          }
         }
       }
     }

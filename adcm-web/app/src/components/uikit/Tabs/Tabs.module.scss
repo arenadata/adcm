@@ -1,0 +1,96 @@
+:global {
+  body.theme-dark {
+    // primary
+    --tabs-block-border-primary: var(--color-xdark);
+
+    --tab-color-primary: var(--color-xgray-light);
+    --tab-color-hover-primary: var(--color-xwhite-off);
+    --tab-color-active-primary: var(--color-xgreen-saturated);
+
+    // secondary
+    --tab-color-secondary: var(--color-xgray-light);
+    --tab-color-hover-secondary: var(--color-xwhite-off);
+    --tab-color-active-secondary: var(--color-xwhite-off);
+    --tab-background-active-secondary: var(--color-new-light);
+    --tab-border-active-secondary: var(--color-xdark);
+  }
+
+  body.theme-light {
+    // primary
+    --tabs-block-border-primary: var(--color-stroke-light);
+
+    --tab-color-primary: var(--color-xgray-light);
+    --tab-color-hover-primary: var(--color-xdark);
+    --tab-color-active-primary: var(--color-xgreen);
+
+    // secondary
+    --tab-color-secondary: var(--color-xgray-light);
+    --tab-color-hover-secondary: var(--color-xdark);
+    --tab-color-active-secondary: var(--color-xdark);
+    --tab-background-active-secondary: var(--color-popup-light);
+    --tab-border-active-secondary: var(--color-stroke-light);
+  }
+}
+
+.tabsBlock {
+  display: flex;
+  align-items: center;
+
+  &_primary {
+    border-bottom: 1px solid var(--tabs-block-border-primary);
+    padding: 0 40px;
+
+    --tab-color: var(--tab-color-primary);
+
+    .tab {
+      font-weight: 500;
+      font-size: 18px;
+      line-height: 21px;
+      color: var(--tab-color);
+      transition: color 250ms, border-bottom-color 250ms;
+      padding: 15px 20px;
+
+      border-bottom: 2px solid var(--tab-border, transparent);
+
+      margin-bottom: -1px;
+
+      &:hover {
+        --tab-color: var(--tab-color-hover-primary);
+        --tab-border: var(--tab-color);
+      }
+
+      &:global(.active) {
+        --tab-color: var(--tab-color-active-primary);
+        --tab-border: var(--tab-color);
+      }
+    }
+  }
+
+
+  &_secondary {
+    --tab-color: var(--tab-color-secondary);
+    .tab {
+      font-weight: 500;
+      font-size: 15px;
+      line-height: 18px;
+
+      border: 1px solid var(--tab-border, transparent);
+      background: var(--tab-background);
+      color: var(--tab-color);
+
+      transition: color 250ms, background-color 250ms, border 250ms;
+      padding: 7px 11px;
+      border-radius: 5px;
+
+      &:hover {
+        --tab-color: var(--tab-color-hover-secondary);
+      }
+
+      &:global(.active) {
+        --tab-color: var(--tab-color-active-secondary);
+        --tab-background: var(--tab-background-active-secondary);
+        --tab-border: var(--tab-border-active-secondary);
+      }
+    }
+  }
+}
