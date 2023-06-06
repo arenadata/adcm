@@ -210,34 +210,39 @@ export class UpgradesDirective extends BaseDirective {
         ).subscribe();
       }
 
-      this.getPrototype(this.inputData.bundle_id).subscribe(res => {
-        oldVersionAcceptedEntities = res
-          .filter(
-            (item) =>
-              (item.type === 'cluster' || item.type === 'service') &&
-              item.license === 'accepted'
-          )
-          .map((item) => item.name);
+      this.getClusterServices().subscribe(res => {
+        const addedServices = res.map((service) => service.name);
 
-        this.needLicenseAcceptance = res
-        .filter(
-          (item) =>
-            (item.type === 'service' || item.type === 'cluster') &&
-            item.bundle_id === this.inputData.bundle_id &&
-            item.license === 'unaccepted' &&
-            oldVersionAcceptedEntities.includes(item.name)
-        )
-          .map((item) => ({
-            prototype_id: item.id,
-            entity_name: item.name,
-            license: item.license,
-            license_url: item.license_url,
-          }));
-        if (this.hasHostComponent) {
-          this.checkHostComponents();
-        } else {
-          this.prepare();
-        }
+        this.getPrototype(this.inputData.bundle_id).subscribe(res => {
+          oldVersionAcceptedEntities = [...new Set(res
+            .filter(
+              (item) =>
+                item.type === 'cluster' || item.type === 'service' &&
+                item.license === 'accepted'
+            )
+            .map((item) => item.name))];
+
+          this.needLicenseAcceptance = res
+            .filter(
+              (item) =>
+                (item.type === 'service' || item.type === 'cluster') &&
+                item.bundle_id === this.inputData.bundle_id &&
+                item.license === 'unaccepted' &&
+                (oldVersionAcceptedEntities.includes(item.name) ||
+                addedServices.includes(item.name))
+            )
+            .map((item) => ({
+              prototype_id: item.id,
+              entity_name: item.name,
+              license: item.license,
+              license_url: item.license_url,
+            }));
+          if (this.hasHostComponent) {
+            this.checkHostComponents();
+          } else {
+            this.prepare();
+          }
+        })
       })
     } else {
       this.prepare();
