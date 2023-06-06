@@ -7,8 +7,15 @@ body {
 
 .text-link {
   transition: color 250ms;
+  font-weight: 500;
   &:hover {
-    color: var(--color-xgreen) !important;
+    color: var(--text-link) !important;
+  }
+  body.theme-dark & {
+    --text-link: var(--color-xgreen-saturated)
+  }
+  body.theme-light & {
+    --text-link: var(--color-xgreen)
   }
 }
 

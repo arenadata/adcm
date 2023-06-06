@@ -1,7 +1,6 @@
 :global {
   body.theme-dark {
     --page-section-title-color: var(--color-xgreen-saturated);
-    --page-section-has-errors-title-color: var(--color-xred);
   }
 
   body.theme-light {
@@ -16,7 +15,7 @@
 
   &_hasErrors {
     .pageSection__title {
-      color: var(--page-section-has-errors-title-color);
+      color: var(--color-xred);
     }
   }
 
