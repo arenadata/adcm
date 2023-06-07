@@ -9,14 +9,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from api_v2.prototype.views import AcceptLicenseViewSet, PrototypeViewSet
+from rest_framework.routers import SimpleRouter
+from rest_framework_nested.routers import NestedSimpleRouter
 
-from api_v2.views import APIRoot
-from django.urls import include, path
+router = SimpleRouter()
+router.register("", PrototypeViewSet)
 
-urlpatterns = [
-    path("", APIRoot.as_view(), name="api-root-v2"),
-    path("clusters/", include("api_v2.cluster.urls")),
-    path("bundles/", include("api_v2.bundle.urls")),
-    path("prototypes/", include("api_v2.prototype.urls")),
-    path("audit/", include(("api_v2.audit.urls", "audit"))),
-]
+prototype_license_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="prototype")
+prototype_license_router.register(prefix="license", viewset=AcceptLicenseViewSet, basename="license")
+
+urlpatterns = [*router.urls, *prototype_license_router.urls]

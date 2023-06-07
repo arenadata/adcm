@@ -17,4 +17,6 @@ class APIRoot(APIRootView):
     api_root_dict = {
         "clusters": "cluster-list",
         "audit": "audit:root",
+        "bundles": "bundle-list",
+        "prototypes": "prototype-list",
     }

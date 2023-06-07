@@ -57,7 +57,7 @@ class AuditLogViewSet(ReadOnlyModelViewSet):
     def get_queryset(self, *args, **kwargs) -> QuerySet:  # pylint: disable=unused-argument
         return filter_objects_within_time_range(self.queryset, self.request.query_params)
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         if not AuditLogListFilter(data=self.request.query_params, queryset=self.queryset).is_valid():
             return Response(self.request.query_params, status=HTTP_400_BAD_REQUEST)
         return super().list(request, *args, **kwargs)
