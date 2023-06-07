@@ -13,15 +13,12 @@ from api_v2.bundle.filters import BundleFilter
 from api_v2.bundle.serializers import BundleListSerializer, UploadBundleSerializer
 from api_v2.bundle.utils import upload_file
 from cm.bundle import delete_bundle, load_bundle
-from cm.errors import AdcmEx
 from cm.models import Bundle
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
-    HTTP_404_NOT_FOUND,
-    HTTP_409_CONFLICT,
 )
 from rest_framework.viewsets import ModelViewSet
 
@@ -29,7 +26,7 @@ from adcm.permissions import VIEW_ACTION_PERM, DjangoModelPermissionsAudit
 
 
 class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = Bundle.objects.all()
+    queryset = Bundle.objects.exclude(name="ADCM").prefetch_related("prototype_set")
     serializer_class = BundleListSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_ACTION_PERM]
@@ -38,25 +35,19 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
     ordering = ["-date"]
 
     def create(self, request, *args, **kwargs) -> Response:
-        serializer = self.get_serializer_class()(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
-            return Response(serializer.errors, status=HTTP_409_CONFLICT)
-        try:
-            file = upload_file(request)
-            bundle = load_bundle(file)
-            bundle.save()
-        except Exception:  # pylint: disable=broad-except
-            return Response(status=HTTP_409_CONFLICT)
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+        bundle_file = upload_file(request=request)
+        load_bundle(bundle_file=str(bundle_file))
+
         return Response(status=HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs) -> Response:
         bundle = self.get_object()
-        try:
-            delete_bundle(bundle)
-        except AdcmEx:
-            return Response(status=HTTP_400_BAD_REQUEST)
-        except FileNotFoundError:
-            return Response(status=HTTP_404_NOT_FOUND)
+        delete_bundle(bundle=bundle)
+
         return Response(status=HTTP_204_NO_CONTENT)
 
     def get_serializer_class(self):

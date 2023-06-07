@@ -9,14 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.prototype.views import AcceptLicenseViewSet, PrototypeViewSet
+from api_v2.prototype.views import PrototypeViewSet
 from rest_framework.routers import SimpleRouter
-from rest_framework_nested.routers import NestedSimpleRouter
 
 router = SimpleRouter()
 router.register("", PrototypeViewSet)
 
-prototype_license_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="prototype")
-prototype_license_router.register(prefix="license", viewset=AcceptLicenseViewSet, basename="license")
-
-urlpatterns = [*router.urls, *prototype_license_router.urls]
+urlpatterns = router.urls

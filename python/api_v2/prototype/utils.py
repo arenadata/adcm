@@ -14,23 +14,14 @@ from cm.errors import raise_adcm_ex
 from cm.models import Prototype
 
 
-def check_obj(model, req):
-    if isinstance(req, dict):
-        kwargs = req
-    else:
-        kwargs = {"id": req}
-
-    return model.obj.get(**kwargs)
-
-
-def accept_license(proto: Prototype) -> None:
-    if not proto.license_path:
+def accept_license(prototype: Prototype) -> None:
+    if not prototype.license_path:
         raise_adcm_ex("LICENSE_ERROR", "This bundle has no license")
 
-    if proto.license == "absent":
+    if prototype.license == "absent":
         raise_adcm_ex("LICENSE_ERROR", "This bundle has no license")
 
-    Prototype.objects.filter(license_hash=proto.license_hash, license="unaccepted").update(license="accepted")
+    Prototype.objects.filter(license_hash=prototype.license_hash, license="unaccepted").update(license="accepted")
 
 
 def get_license_text(proto: Prototype) -> str | None:

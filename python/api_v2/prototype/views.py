@@ -11,7 +11,6 @@
 # limitations under the License.
 from api_v2.prototype.filters import PrototypeFilter
 from api_v2.prototype.serializers import (
-    LicenseUpdateSerializer,
     PrototypeListSerializer,
     PrototypeTypeSerializer,
 )
@@ -19,48 +18,22 @@ from api_v2.prototype.utils import accept_license
 from cm.models import Prototype
 from django.db.models import QuerySet
 from rest_framework.decorators import action
-from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
-from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import VIEW_CLUSTER_PERM, DjangoModelPermissionsAudit
 
 
-class AcceptLicenseViewSet(RetrieveModelMixin, ListModelMixin, GenericViewSet):  # pylint: disable=too-many-ancestors
-    permission_classes = [DjangoModelPermissionsAudit]
-    permission_required = [VIEW_CLUSTER_PERM]
-    lookup_url_kwarg = "prototype_pk"
-
-    def get_serializer_class(self):
-        if self.request.method == "POST":
-            return LicenseUpdateSerializer
-        return PrototypeListSerializer
-
-    def get_queryset(self, *args, **kwargs):  # pylint: disable=unused-argument
-        return Prototype.objects.filter(pk=self.kwargs.get("prototype_prototype_id"))
-
-    def list(self, request: Request, *args, **kwargs):  # pylint: disable=unused-argument
-        proto = self.get_queryset(request, *args, **kwargs).first()
-        return Response(
-            data={"status": proto.license, "path": proto.license_path, "hash": proto.license_hash}, status=HTTP_200_OK
-        )
-
-    @action(methods=["post"], detail=False)
-    def accept(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        proto = self.get_queryset(request, *args, **kwargs).first()
-        accept_license(proto)
-        return Response(status=HTTP_200_OK)
-
-
 class PrototypeViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = Prototype.objects.all()
+    queryset = Prototype.objects.exclude(type="adcm").select_related("bundle")
     serializer_class = PrototypeListSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_CLUSTER_PERM]
     filterset_class = PrototypeFilter
-    lookup_url_kwarg = "prototype_id"
+    ordering_fields = ["name", "bundle"]
+    ordering = ["name"]
 
     def get_serializer_class(self):
         if self.action == "versions":
@@ -77,6 +50,12 @@ class PrototypeViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
     def versions(self, request):  # pylint: disable=unused-argument
         queryset = self.filter_queryset(self.get_queryset())
         return Response(data=self.get_serializer(queryset, many=True).data)
+
+    @action(methods=["post"], detail=True, url_path="license/accept", url_name="accept-license")
+    def accept(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        prototype = self.get_object()
+        accept_license(prototype=prototype)
+        return Response(status=HTTP_200_OK)
 
     @staticmethod
     def get_distinct_queryset(queryset: QuerySet) -> QuerySet:

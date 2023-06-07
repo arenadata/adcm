@@ -1,10 +1,10 @@
 ---
 - type: cluster
-  name: cluster_with_license_one
-  license: EULA.txt
-  version: &version '1.5'
+  name: cluster_one
+  version: &version '1.0'
   edition: community
   config_group_customization: true
+  license: EULA.txt
   config: &config
     - name: string
       type: string
@@ -29,6 +29,7 @@
   type: service
   version: *version
   config: *config
+  license: EULA.txt
   actions:
     action: *action
   components:
