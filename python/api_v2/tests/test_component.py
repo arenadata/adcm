@@ -49,7 +49,7 @@ class TestComponentAPI(BaseAPITestCase):
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
-                    "pk": self.service_1.pk,
+                    "pk": self.component_1.pk,
                 },
             ),
         )
