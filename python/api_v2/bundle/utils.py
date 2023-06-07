@@ -10,13 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.views import APIRoot
-from django.urls import include, path
+from pathlib import Path
 
-urlpatterns = [
-    path("", APIRoot.as_view(), name="api-root-v2"),
-    path("clusters/", include("api_v2.cluster.urls")),
-    path("bundles/", include("api_v2.bundle.urls")),
-    path("prototypes/", include("api_v2.prototype.urls")),
-    path("audit/", include(("api_v2.audit.urls", "audit"))),
-]
+from rest_framework.request import Request
+
+from adcm import settings
+
+
+def upload_file(request: Request) -> Path:
+    file_data = request.data["file"]
+    file_path = Path(settings.DOWNLOAD_DIR, file_data.name)
+    with open(file_path, "wb+") as f:
+        for chunk in file_data.chunks():
+            f.write(chunk)
+    return file_path

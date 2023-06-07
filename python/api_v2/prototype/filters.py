@@ -10,13 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.views import APIRoot
-from django.urls import include, path
+from cm.models import ObjectType, Prototype
+from django_filters import ChoiceFilter
+from django_filters.rest_framework import FilterSet
 
-urlpatterns = [
-    path("", APIRoot.as_view(), name="api-root-v2"),
-    path("clusters/", include("api_v2.cluster.urls")),
-    path("bundles/", include("api_v2.bundle.urls")),
-    path("prototypes/", include("api_v2.prototype.urls")),
-    path("audit/", include(("api_v2.audit.urls", "audit"))),
-]
+
+class PrototypeFilter(FilterSet):
+    type = ChoiceFilter(choices=ObjectType.choices)
+
+    class Meta:
+        model = Prototype
+        fields = [
+            "type",
+        ]
