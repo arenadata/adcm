@@ -1,6 +1,5 @@
 **/*.git*
 **/.*
-**/tests/
 data
 venv
 web
