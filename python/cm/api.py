@@ -390,6 +390,7 @@ def delete_service(service: ClusterObject) -> None:
     logger.info("service #%s is deleted", service_pk)
 
 
+@atomic
 def delete_cluster(cluster, cancel_tasks=True):
     if cancel_tasks:
         cancel_locking_tasks(cluster, obj_deletion=True)
