@@ -10,15 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 from unittest.mock import patch
-from zoneinfo import ZoneInfo
 
 from cm.models import ADCM, Action, ActionType, Cluster, JobLog, Prototype, TaskLog
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
+from django.utils import timezone
 from rbac.models import Policy, Role
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
@@ -40,19 +40,19 @@ class TestJobAPI(BaseTestCase):
         self.task = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=ContentType.objects.get(app_label="cm", model="adcm"),
-            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
-            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
             action=self.action,
         )
         self.job_1 = JobLog.objects.create(
             status="created",
-            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
-            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)) + timedelta(days=1),
+            start_date=timezone.now(),
+            finish_date=timezone.now() + timedelta(days=1),
         )
         self.job_2 = JobLog.objects.create(
             status="failed",
-            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)) + timedelta(days=1),
-            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)) + timedelta(days=2),
+            start_date=timezone.now() + timedelta(days=1),
+            finish_date=timezone.now() + timedelta(days=2),
             action=self.action,
             task=self.task,
             pid=self.job_1.pid + 1,

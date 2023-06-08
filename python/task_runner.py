@@ -17,8 +17,6 @@ import signal
 import subprocess
 import sys
 import time
-from datetime import datetime
-from zoneinfo import ZoneInfo
 
 import adcm.init_django  # pylint: disable=unused-import
 
@@ -29,6 +27,7 @@ from cm.models import JobLog, JobStatus, LogStorage, TaskLog
 from cm.utils import get_env_with_venv_path
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
 
 TASK_ID = 0
 
@@ -141,7 +140,7 @@ def run_task(task_id: int, args: str | None = None) -> None:  # pylint: disable=
 
         task.refresh_from_db()
         re_prepare_job(task, job)
-        job.start_date = datetime.now(tz=ZoneInfo("UTC"))
+        job.start_date = timezone.now()
         job.save()
         res = run_job(task.id, job.id, err_file)
         set_log_body(job)

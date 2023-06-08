@@ -10,14 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import timedelta
 
 from cm.models import ADCM, ConfigLog
-from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
+from django.utils import timezone
 from rbac.models import OriginType, User
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -113,7 +112,7 @@ class UserTestCase(BaseUserTestCase):
         self.assertIsNotNone(self.test_user.blocked_at)
 
         self.test_user.refresh_from_db()
-        self.test_user.blocked_at = datetime.now(tz=ZoneInfo(settings.TIME_ZONE)) - timedelta(
+        self.test_user.blocked_at = timezone.now() - timedelta(
             minutes=self.config_log.config["auth_policy"]["block_time"]
         )
         self.test_user.save(update_fields=["blocked_at"])

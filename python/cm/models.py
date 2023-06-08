@@ -20,11 +20,9 @@ import signal
 import time
 from collections.abc import Iterable, Mapping
 from copy import deepcopy
-from datetime import datetime
 from enum import Enum
 from itertools import chain
 from typing import Optional
-from zoneinfo import ZoneInfo
 
 from cm.errors import AdcmEx
 from cm.logger import logger
@@ -36,6 +34,7 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
+from django.utils import timezone
 
 
 def validate_line_break_character(value: str) -> None:
@@ -1576,7 +1575,7 @@ class TaskLog(ADCMModel):
             raise AdcmEx("NO_JOBS_RUNNING", "no jobs running")
 
         self.status = JobStatus.ABORTED
-        self.finish_date = datetime.now(tz=ZoneInfo("UTC"))
+        self.finish_date = timezone.now()
         self.save(update_fields=["status", "finish_date"])
 
         if event_queue:

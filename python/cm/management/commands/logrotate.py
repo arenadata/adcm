@@ -244,7 +244,7 @@ class Command(BaseCommand):
                     if not name.startswith("."):  # a line of code is used for development
                         path = settings.RUN_DIR / name
                         try:
-                            m_time = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.utc)
+                            m_time = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.get_current_timezone())
                             if timezone.now() - m_time > timedelta(days=days_delta_fs):
                                 is_deleted = True
                                 if os.path.isdir(path):
