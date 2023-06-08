@@ -34,6 +34,7 @@ export const allowIconsNames = [
   'g2-audit',
   'g2-bundles',
   'g2-c-created',
+  'g2-close',
   'g2-cluster3',
   'g2-commands',
   'g2-configuration',

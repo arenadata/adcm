@@ -15,6 +15,8 @@
     "test": "jest"
   },
   "dependencies": {
+    "@floating-ui/dom": "^1.2.9",
+    "@floating-ui/react": "^0.24.2",
     "@types/react-copy-to-clipboard": "^5.0.4",
     "@types/react-syntax-highlighter": "^15.5.7",
     "classnames": "^2.3.2",

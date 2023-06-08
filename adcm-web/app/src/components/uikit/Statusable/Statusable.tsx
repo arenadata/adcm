@@ -1,8 +1,8 @@
 import React from 'react';
-import { Size } from '@uikit/utils/types';
 import cn from 'classnames';
-import s from './Statusable.module.scss';
 import { BaseStatus } from './Statusable.types';
+import { Size } from '@uikit/types/size.types';
+import s from './Statusable.module.scss';
 
 interface StatusableProps extends React.HTMLAttributes<HTMLDivElement> {
   status: BaseStatus;

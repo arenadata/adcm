@@ -22,6 +22,7 @@ export const IconButton: Story = {
     icon: 'g1-imports',
     size: 32,
     disabled: false,
+    variant: 'primary',
   },
   render: (args) => {
     return (

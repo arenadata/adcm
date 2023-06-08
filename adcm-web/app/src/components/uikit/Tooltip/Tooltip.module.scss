@@ -1,0 +1,27 @@
+:global {
+  body.theme-dark {
+    --tooltip-background: var(--color-xdark-new);
+    --tooltip-color: var(--color-xwhite-off);
+    --tooltip-shadow: 0px 20px 20px rgba(2, 1, 17, 0.2);
+  }
+  body.theme-light {
+    --tooltip-background: var(--color-popup-light);
+    --tooltip-color: var(--color-xdark);
+    --tooltip-shadow: 0px 20px 20px rgba(199, 196, 226, 0.2);
+  }
+}
+
+.tooltip {
+  pointer-events: none;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 7px;
+  width: max-content;
+
+  background: var(--tooltip-background);
+  color: var(--tooltip-color);
+  box-shadow: var(--tooltip-shadow);
+  z-index: var(--z-index-tooltip);
+}
