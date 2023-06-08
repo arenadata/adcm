@@ -28,10 +28,10 @@ class TestGroupConfig(BaseAPITestCase):
             object_id=self.cluster_1.pk,
         )
         self.host_fqdn = "host"
-        self.host = self.add_host(fqdn=self.host_fqdn)
+        self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn=self.host_fqdn)
         self.cluster_1_group_config.hosts.add(self.host)
         self.new_host_fqdn = "new_host"
-        self.new_host = self.add_host(fqdn=self.new_host_fqdn)
+        self.new_host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn=self.new_host_fqdn)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.new_host)
 
     def test_list_success(self):

@@ -19,19 +19,9 @@ from rest_framework.serializers import ModelSerializer
 from adcm.serializers import EmptySerializer
 
 
-class LicenseUpdateSerializer(ModelSerializer):
-    status = CharField(source="license")
-
-    class Meta:
-        model = Prototype
-        fields = ("status",)
-
-
 class PrototypeListSerializer(ModelSerializer):
     license = SerializerMethodField()
     bundle_id = IntegerField(source="bundle.id")
-    ordering = ["name"]
-    ordering_fields = ("name", "bundle")
 
     class Meta:
         model = Prototype
