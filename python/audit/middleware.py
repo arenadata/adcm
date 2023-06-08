@@ -10,9 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
-from datetime import datetime, timedelta
 from json.decoder import JSONDecodeError
-from zoneinfo import ZoneInfo
 
 from audit.cef_logger import cef_logger
 from audit.models import AuditSession, AuditSessionLoginResult
@@ -21,6 +19,7 @@ from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.http.response import HttpResponseForbidden
 from django.urls import resolve
+from django.utils import timezone
 from rbac.models import User as RBACUser
 
 
@@ -82,8 +81,8 @@ class LoginMiddleware:
 
         if result == AuditSessionLoginResult.SUCCESS:
             if user.blocked_at:
-                user_blocked_till = user.blocked_at + timedelta(minutes=block_time_minutes)
-                user_block_period_past = user_blocked_till < datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
+                user_blocked_till = user.blocked_at + timezone.timedelta(minutes=block_time_minutes)
+                user_block_period_past = user_blocked_till < timezone.now()
                 if not user_block_period_past:
                     return forbidden_response
 
@@ -94,8 +93,8 @@ class LoginMiddleware:
             return None
         else:
             if user.blocked_at:
-                user_blocked_till = user.blocked_at + timedelta(minutes=block_time_minutes)
-                user_block_period_past = user_blocked_till < datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
+                user_blocked_till = user.blocked_at + timezone.timedelta(minutes=block_time_minutes)
+                user_block_period_past = user_blocked_till < timezone.now()
                 if not user_block_period_past:
                     return forbidden_response
                 else:
@@ -104,18 +103,17 @@ class LoginMiddleware:
             else:
                 if (
                     user.last_failed_login_at
-                    and (user.last_failed_login_at + timedelta(minutes=block_time_minutes))
-                    < datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
+                    and (user.last_failed_login_at + timezone.timedelta(minutes=block_time_minutes)) < timezone.now()
                     and user.failed_login_attempts == 0
                 ):
                     user.failed_login_attempts = 1
                 else:
                     user.failed_login_attempts += 1
 
-                user.last_failed_login_at = datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
+                user.last_failed_login_at = timezone.now()
 
             if user.failed_login_attempts >= login_attempt_limit:
-                user.blocked_at = datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
+                user.blocked_at = timezone.now()
                 user.save(update_fields=["failed_login_attempts", "blocked_at", "last_failed_login_at"])
 
                 return forbidden_response

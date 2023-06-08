@@ -10,12 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import timedelta
 
 from cm.models import JobLog, LogStorage
-from django.conf import settings
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
@@ -28,8 +27,8 @@ class TestTaskAPI(BaseTestCase):
 
         self.job = JobLog.objects.create(
             status="created",
-            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
-            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)) + timedelta(days=1),
+            start_date=timezone.now(),
+            finish_date=timezone.now() + timedelta(days=1),
         )
         self.log_storage_1 = LogStorage.objects.create(
             name="log_storage_1",

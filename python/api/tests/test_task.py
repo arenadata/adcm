@@ -10,9 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from unittest.mock import patch
-from zoneinfo import ZoneInfo
 
 from cm.models import (
     ADCM,
@@ -24,9 +23,9 @@ from cm.models import (
     Prototype,
     TaskLog,
 )
-from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
@@ -53,23 +52,23 @@ class TestTaskAPI(BaseTestCase):
         self.task_1 = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=adcm_object_type,
-            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
-            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)) + timedelta(days=1),
+            start_date=timezone.now(),
+            finish_date=timezone.now() + timedelta(days=1),
             status="created",
         )
         self.task_2 = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=adcm_object_type,
-            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)) + timedelta(days=1),
-            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)) + timedelta(days=2),
+            start_date=timezone.now() + timedelta(days=1),
+            finish_date=timezone.now() + timedelta(days=2),
             action=self.action,
             status="failed",
             pid=self.task_1.pid + 1,
         )
         JobLog.objects.create(
             status="created",
-            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
-            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)) + timedelta(days=1),
+            start_date=timezone.now(),
+            finish_date=timezone.now() + timedelta(days=1),
             task=self.task_2,
         )
 

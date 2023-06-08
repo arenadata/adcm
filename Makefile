@@ -25,17 +25,15 @@ build_base:
 build: describe buildss buildjs build_base
 
 unittests_sqlite: describe
-	docker run -i --rm -v $(CURDIR)/data:/adcm/data -e DJANGO_SETTINGS_MODULE=adcm.settings $(APP_IMAGE):$(APP_TAG) \
-	sh -c "poetry -C /adcm install --no-root && /adcm/python/manage.py test /adcm/python -v 2"
+	poetry install --no-root
+	poetry run python/manage.py test python -v 2
 
 unittests_postgresql: describe
-	docker network create adcm
-	docker run -d -e POSTGRES_PASSWORD="postgres" --network=adcm --name postgres postgres:14
-	docker run -i --rm --network=adcm -v $(CURDIR)/data:/adcm/data -e DJANGO_SETTINGS_MODULE=adcm.settings \
-	-e DB_HOST="postgres" -e DB_PORT=5432 -e DB_NAME="postgres" -e DB_USER="postgres" -e DB_PASS="postgres" \
-	$(APP_IMAGE):$(APP_TAG) \
-	sh -c "poetry -C /adcm install --no-root && /adcm/python/manage.py test /adcm/python -v 2"
-	docker stop postgres && docker rm postgres && docker network rm adcm
+	docker run -d --rm -e POSTGRES_PASSWORD="postgres" --name postgres -p 5500:5432 postgres:14
+	export DB_HOST="localhost" DB_PORT="5500" DB_NAME="postgres" DB_PASS="postgres" DB_USER="postgres"
+	poetry install --no-root
+	poetry run python/manage.py test python -v 2
+	docker stop postgres
 
 ng_tests:
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64

@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
 from audit.models import (
     AuditLog,
@@ -20,9 +19,9 @@ from audit.models import (
     AuditObjectType,
 )
 from cm.models import ADCM, Action, ConfigLog, TaskLog
-from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
+from django.utils import timezone
 from rbac.models import User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
@@ -47,8 +46,8 @@ class TestADCMAudit(BaseTestCase):
         self.task = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=ContentType.objects.get(app_label="cm", model="adcm"),
-            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
-            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
             action=self.action,
         )
         self.adcm_conf_updated_str = "ADCM configuration updated"
