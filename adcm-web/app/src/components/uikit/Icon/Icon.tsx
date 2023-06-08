@@ -1,7 +1,7 @@
 import React from 'react';
 import cn from 'classnames';
 import { allowIconsNames, IconsNames } from './sprite';
-import { Size } from '../utils/types';
+import { Size } from '@uikit/types/size.types';
 
 allowIconsNames.forEach(async (name) => {
   await import(`./icons/${name}.svg`);
