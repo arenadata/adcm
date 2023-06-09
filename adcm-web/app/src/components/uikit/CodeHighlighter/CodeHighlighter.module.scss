@@ -1,8 +1,5 @@
 :global {
   body.theme-dark {
-    --button-copy-text: var(--color-xwhite-off);
-    --button-copied-text: var(--color-xdark);
-    --button-copy-bg: var(--color-xgray-darker);
     --code-highlite-text: var(--color-xwhite-off);
     --code-highlite-background: #29292d;
     --code-highlite-background-hover:var(--color-xdark-new-50);
@@ -13,9 +10,6 @@
     --code-highlite-scrollbar-thumb: var(--color-xdark);
   }
   body.theme-light {
-    --button-copy-text: var(--color-xdark);
-    --button-copied-text: var(--color-xwhite-off);
-    --button-copy-bg: var(--color-xgray-alt);
     --code-highlite-text: var(--color-xdark);
     --code-highlite-background: var(--color-xgray-alt-50);
     --code-highlite-background-hover: var(--color-xwhite);
@@ -24,7 +18,6 @@
     --code-highlite-numbers: #c1bfbf;
     --code-highlite-numbers-background: var(--color-xgray-alt);
     --code-highlite-scrollbar-thumb: var(--color-xgray-alt);
-
   }
 }
 
@@ -51,7 +44,7 @@
         }
       }
       &:hover + .code-pre {
-        border-color: var(--color-blue);
+        border-color: var(--color-xblue);
 
         & .code-wrapper__code-lines {
           background: var(--code-highlite-background-hover);
@@ -76,7 +69,8 @@
   text-align: left;
   overflow: hidden;
   color: var(--code-highlite-text);
-  transition: border-color 250ms, background 250ms;
+  transition: border-color 250ms;
+
   &:hover {
     & .code-wrapper {
       box-shadow: var(--code-highlite-shadow);
@@ -110,6 +104,7 @@
   display: flex;
   flex-direction: column;
   position: relative;
+  transition: background 250ms;
 
   span {
     white-space: pre;

@@ -42,7 +42,7 @@ export default {
   },
 } as Meta<typeof CodeHighlighter>;
 
-export const ComponentStory: Story = {
+export const CodeHighlighterExample: Story = {
   args: {
     language: 'bash',
     code: ansibleText,

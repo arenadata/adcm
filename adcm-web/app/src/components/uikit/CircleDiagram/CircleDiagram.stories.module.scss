@@ -1,0 +1,29 @@
+:global {
+  body.theme-dark {
+    --diagram-example-color: var(--color-xwhite-off);
+  }
+
+  body.theme-light {
+    --diagram-example-color: var(--color-xdark);
+  }
+}
+
+.diagramExampleClass_green {
+  color: var(--color-xgreen);
+}
+
+.diagramExampleClass_yellow {
+  color: var(--color-yellow-light);
+}
+
+.diagramExample {
+  color: var(--diagram-example-color);
+
+  &__radioGroup {
+    margin-top: 50px;
+    input {
+      margin-left: 20px;
+    }
+  }
+}
+
