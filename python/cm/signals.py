@@ -15,7 +15,6 @@ from casestyle import kebabcase
 from cm.models import ADCMEntity, Cluster, GroupConfig, Host
 from cm.status_api import post_event
 from django.db.models.signals import m2m_changed, post_delete, post_save, pre_save
-from django.db.transaction import on_commit
 from django.dispatch import receiver
 from rbac.models import Group, Policy, Role, User
 
@@ -73,11 +72,7 @@ def model_change(sender, **kwargs):
     if kwargs.get("created"):
         action = "create"
 
-    on_commit(
-        lambda: post_event(
-            event=action, obj=kwargs["instance"], details={"module": sender.__module__, "model_name": None}
-        ),
-    )
+    post_event(event=action, obj=kwargs["instance"], details={"module": sender.__module__, "model_name": None})
 
 
 @receiver(signal=post_delete, sender=User)
@@ -86,11 +81,7 @@ def model_change(sender, **kwargs):
 @receiver(signal=post_delete, sender=Role)
 @receiver(signal=post_delete, sender=GroupConfig)
 def model_delete(sender, **kwargs):
-    on_commit(
-        lambda: post_event(
-            event="delete", obj=kwargs["instance"], details={"module": sender.__module__, "model_name": None}
-        ),
-    )
+    post_event(event="delete", obj=kwargs["instance"], details={"module": sender.__module__, "model_name": None})
 
 
 @receiver(signal=m2m_changed, sender=GroupConfig)
@@ -112,8 +103,4 @@ def m2m_change(sender, **kwargs):
     else:
         return
 
-    on_commit(
-        lambda: post_event(
-            event=action, obj=kwargs["instance"], details={"module": sender.__module__, "model_name": name}
-        ),
-    )
+    post_event(event=action, obj=kwargs["instance"], details={"module": sender.__module__, "model_name": name})
