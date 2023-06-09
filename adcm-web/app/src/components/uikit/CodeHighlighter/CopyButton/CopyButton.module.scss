@@ -1,3 +1,17 @@
+:global {
+  body.theme-dark {
+    --button-copy-text: var(--color-xwhite-off);
+    --button-copied-text: var(--color-xdark);
+    --button-copy-bg: var(--color-xgray-darker);
+  }
+
+  body.theme-light {
+    --button-copy-text: var(--color-xdark);
+    --button-copied-text: var(--color-xwhite-off);
+    --button-copy-bg: var(--color-xgray-alt);
+  }
+}
+
 .copyButton {
   min-width: 56px;
   height: 18px;
@@ -17,16 +31,16 @@
   line-height: 14px;
 
   &:hover {
-    background: var(--color-blue);
+    background: var(--color-xblue);
     color: var(--button-copied-text);
   }
 
   &:global(.isCopied) {
-    background: var(--color-green);
+    background: var(--color-xgreen-saturated);
     color: var(--button-copied-text);
 
     &:hover {
-      background: var(--color-green);
+      background: var(--color-xgreen-saturated);
     }
   }
 }
