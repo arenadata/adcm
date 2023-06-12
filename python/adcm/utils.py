@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
+from typing import Any, Iterable
 
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import load_mm_objects
@@ -19,12 +19,15 @@ from cm.job import start_task
 from cm.models import (
     ADCM,
     Action,
+    ADCMEntity,
     ClusterObject,
+    ConcernType,
     ConfigLog,
     Host,
     HostComponent,
     MaintenanceMode,
     Prototype,
+    PrototypeConfig,
     ServiceComponent,
 )
 from django.conf import settings
@@ -294,3 +297,17 @@ def get_maintenance_mode_response(
         data={"error": f'Unknown {obj_name} maintenance mode "{obj.maintenance_mode}"'},
         status=HTTP_400_BAD_REQUEST,
     )
+
+
+def filter_actions(obj: ADCMEntity, actions: Iterable[Action]):
+    """Filter out actions that are not allowed to run on object at that moment"""
+    if obj.concerns.filter(type=ConcernType.LOCK).exists():
+        return []
+
+    allowed = []
+    for action in actions:
+        if action.allowed(obj):
+            allowed.append(action)
+            action.config = PrototypeConfig.objects.filter(prototype=action.prototype, action=action).order_by("id")
+
+    return allowed

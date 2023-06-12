@@ -15,7 +15,7 @@ from typing import Any
 from api_v2.concern.serializers import ConcernSerializer
 from cm.adcm_config.config import get_main_info
 from cm.models import Cluster, HostComponent, Prototype
-from cm.status_api import get_cluster_status
+from cm.status_api import get_obj_status
 from cm.upgrade import get_upgrade
 from rest_framework.serializers import (
     BooleanField,
@@ -52,8 +52,8 @@ class ClusterSerializer(ModelSerializer):
         ]
 
     @staticmethod
-    def get_status(cluster: Cluster) -> int:
-        return get_cluster_status(cluster=cluster)
+    def get_status(cluster: Cluster) -> str:
+        return get_obj_status(obj=cluster)
 
     @staticmethod
     def get_is_upgradable(cluster: Cluster) -> bool:

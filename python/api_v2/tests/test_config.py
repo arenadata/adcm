@@ -10,15 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.tests.base import BaseTestCaseAPI
+from api_v2.tests.base import BaseAPITestCase
+from cm.models import ConfigLog, GroupConfig
+from django.contrib.contenttypes.models import ContentType
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-from adcm.tests.base import APPLICATION_JSON
 
+class TestClusterConfig(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
 
-class TestConfig(BaseTestCaseAPI):
+        self.cluster_1_config = ConfigLog.objects.get(id=self.cluster_1.config.current)
+
     def test_list_success(self):
         response: Response = self.client.get(
             path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk})
@@ -60,9 +65,7 @@ class TestConfig(BaseTestCaseAPI):
             "description": "new config",
         }
         response: Response = self.client.post(
-            path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data=data,
-            content_type=APPLICATION_JSON,
+            path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk}), data=data
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -118,3 +121,69 @@ class TestConfig(BaseTestCaseAPI):
             },
         ]
         self.assertListEqual(response.json(), data)
+
+
+class TestClusterGroupConfig(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.cluster_1_group_config = GroupConfig.objects.create(
+            name="group_config",
+            object_type=ContentType.objects.get_for_model(self.cluster_1),
+            object_id=self.cluster_1.pk,
+        )
+        self.cluster_1_group_config_config = ConfigLog.objects.get(pk=self.cluster_1_group_config.config.current)
+
+    def test_list_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:cluster-config-group-config-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "config_group_pk": self.cluster_1_group_config.pk},
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+
+    def test_retrieve_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:cluster-config-group-config-detail",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "config_group_pk": self.cluster_1_group_config.pk,
+                    "pk": self.cluster_1_group_config_config.pk,
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        attr = {
+            "custom_group_keys": {"group": {"fields": {"string": True}, "value": True}, "string": True},
+            "group_keys": {"group": {"fields": {"string": False}, "value": None}, "string": False},
+        }
+        self.assertDictEqual(response.json()["attr"], attr)
+
+    def test_create_success(self):
+        data = {
+            "config": {"string": "new string", "group": {"string": "new string"}},
+            "attr": {
+                "custom_group_keys": {"group": {"fields": {"string": True}, "value": True}, "string": True},
+                "group_keys": {"group": {"fields": {"string": True}, "value": None}, "string": True},
+            },
+            "description": "new config",
+        }
+
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:cluster-config-group-config-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "config_group_pk": self.cluster_1_group_config.pk},
+            ),
+            data=data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response_data = response.json()
+        self.assertDictEqual(response_data["config"], data["config"])
+        self.assertDictEqual(response_data["attr"], data["attr"])
+        self.assertEqual(response_data["description"], data["description"])
+        self.assertEqual(response_data["is_current"], True)

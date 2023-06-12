@@ -20,11 +20,9 @@ import signal
 import time
 from collections.abc import Iterable, Mapping
 from copy import deepcopy
-from datetime import datetime
 from enum import Enum
 from itertools import chain
 from typing import Optional
-from zoneinfo import ZoneInfo
 
 from cm.errors import AdcmEx
 from cm.logger import logger
@@ -36,6 +34,7 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
+from django.utils import timezone
 
 
 def validate_line_break_character(value: str) -> None:
@@ -1082,11 +1081,11 @@ class GroupConfig(ADCMModel):
 
         return hosts.exclude(group_config__in=self.object.group_config.all())
 
-    def check_host_candidate(self, host):
-        if self.hosts.filter(pk=host.pk).exists():
+    def check_host_candidate(self, host_ids: list[int]):
+        if self.hosts.filter(pk__in=host_ids).exists():
             raise AdcmEx("GROUP_CONFIG_HOST_EXISTS")
 
-        if host not in self.host_candidate():
+        if set(host_ids).difference({host.pk for host in self.host_candidate()}):
             raise AdcmEx("GROUP_CONFIG_HOST_ERROR")
 
     def preparing_file_type_field(self, config=None):
@@ -1576,7 +1575,7 @@ class TaskLog(ADCMModel):
             raise AdcmEx("NO_JOBS_RUNNING", "no jobs running")
 
         self.status = JobStatus.ABORTED
-        self.finish_date = datetime.now(tz=ZoneInfo("UTC"))
+        self.finish_date = timezone.now()
         self.save(update_fields=["status", "finish_date"])
 
         if event_queue:
@@ -1976,5 +1975,5 @@ class ConcernItem(ADCMModel):
 
 
 class ADCMEntityStatus(models.TextChoices):
-    UP = "up", "up"
-    DOWN = "down", "down"
+    UP = "UP", "UP"
+    DOWN = "DOWN", "DOWN"

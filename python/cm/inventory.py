@@ -142,9 +142,8 @@ def get_before_upgrade(obj: ADCMEntity, host: Host | None) -> dict:
     if obj.before_upgrade == get_default_before_upgrade():
         return obj.before_upgrade
 
-    config_log = None
-    config = None
-
+    config, group_object = None, None
+    config_log = ConfigLog.objects.filter(id=obj.before_upgrade.get("config_id")).first()
     if host is not None:
         group = host.group_config.filter(
             object_id=obj.id, object_type=ContentType.objects.get_for_model(model=obj)
@@ -154,8 +153,7 @@ def get_before_upgrade(obj: ADCMEntity, host: Host | None) -> dict:
             config_log = ConfigLog.objects.filter(
                 id=obj.before_upgrade["groups"][group.name]["group_config_id"]
             ).first()
-    else:
-        config_log = ConfigLog.objects.filter(id=obj.before_upgrade.get("config_id")).first()
+            group_object = group
 
     if config_log:
         if not obj.before_upgrade.get("bundle_id"):
@@ -164,7 +162,9 @@ def get_before_upgrade(obj: ADCMEntity, host: Host | None) -> dict:
             bundle_id = obj.before_upgrade["bundle_id"]
         old_proto = Prototype.objects.filter(name=obj.prototype.name, bundle_id=bundle_id).first()
         old_spec, _, _, _ = get_prototype_config(prototype=old_proto)
-        config = process_config_and_attr(obj=obj, conf=config_log.config, attr=config_log.attr, spec=old_spec)
+        config = process_config_and_attr(
+            obj=group_object or obj, conf=config_log.config, attr=config_log.attr, spec=old_spec
+        )
 
     return {"state": obj.before_upgrade.get("state"), "config": config}
 

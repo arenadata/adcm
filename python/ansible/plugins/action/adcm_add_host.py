@@ -86,7 +86,7 @@ class ActionModule(ActionBase):
         try:
             provider = HostProvider.obj.get(pk=provider_pk)
             proto = Prototype.objects.get(bundle=provider.prototype.bundle, type="host")
-            host = add_host(proto=proto, provider=provider, fqdn=fqdn, desc=desc)
+            host = add_host(prototype=proto, provider=provider, fqdn=fqdn, description=desc)
         except AdcmEx as e:
             raise AnsibleError(f"{e.code}:{e.msg}") from e
 

@@ -13,16 +13,14 @@
 from typing import Callable
 from unittest.mock import patch
 
-from api_v2.tests.base import BaseTestCaseAPI
+from api_v2.tests.base import BaseAPITestCase
 from cm.models import ADCMEntityStatus, Cluster
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
-from adcm.tests.base import APPLICATION_JSON
 
-
-class TestCluster(BaseTestCaseAPI):
+class TestCluster(BaseAPITestCase):
     def get_cluster_status_mock(self) -> Callable:
         def inner(cluster: Cluster) -> int:
             if cluster.pk == self.cluster_1.pk:
@@ -113,7 +111,6 @@ class TestCluster(BaseTestCaseAPI):
                 "name": "new_test_cluster",
                 "description": "Test cluster description",
             },
-            content_type=APPLICATION_JSON,
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -123,7 +120,6 @@ class TestCluster(BaseTestCaseAPI):
         response: Response = self.client.patch(
             path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
             data={"name": new_test_cluster_name},
-            content_type=APPLICATION_JSON,
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -146,4 +142,4 @@ class TestCluster(BaseTestCaseAPI):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(len(response.json()), 3)

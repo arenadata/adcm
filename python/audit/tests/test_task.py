@@ -12,7 +12,6 @@
 
 from datetime import datetime
 from unittest.mock import patch
-from zoneinfo import ZoneInfo
 
 from audit.models import (
     AuditLog,
@@ -21,9 +20,9 @@ from audit.models import (
     AuditObjectType,
 )
 from cm.models import ADCM, TaskLog
-from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
+from django.utils import timezone
 from rbac.models import User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_404_NOT_FOUND
@@ -39,8 +38,8 @@ class TestTaskAudit(BaseTestCase):
         self.task = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=ContentType.objects.get(app_label="cm", model="adcm"),
-            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
-            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
         )
         self.task_restarted_str = "Task restarted"
 

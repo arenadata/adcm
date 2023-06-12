@@ -24,7 +24,7 @@ from adcm.tests.base import APPLICATION_JSON
 class TestAction(ClusterBaseTestCase):
     def test_list_cluster_actions_success(self):
         response: Response = self.client.get(
-            path=reverse(viewname="v2:action-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            path=reverse(viewname="v2:cluster-action-list", kwargs={"cluster_pk": self.cluster_1.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -32,7 +32,7 @@ class TestAction(ClusterBaseTestCase):
 
     def test_list_cluster_actions_no_actions_cluster_success(self):
         response: Response = self.client.get(
-            path=reverse(viewname="v2:action-list", kwargs={"cluster_pk": self.cluster_2.pk}),
+            path=reverse(viewname="v2:cluster-action-list", kwargs={"cluster_pk": self.cluster_2.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -41,14 +41,16 @@ class TestAction(ClusterBaseTestCase):
     def test_list_cluster_actions_wrong_cluster_fail(self):
         cluster_pks = Cluster.objects.all().values_list("pk", flat=True).order_by("-pk")
         response: Response = self.client.get(
-            path=reverse(viewname="v2:action-list", kwargs={"cluster_pk": cluster_pks[0] + 1}),
+            path=reverse(viewname="v2:cluster-action-list", kwargs={"cluster_pk": cluster_pks[0] + 1}),
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_retrieve_cluster_action_success(self):
         response: Response = self.client.get(
-            path=reverse(viewname="v2:action-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.action.pk}),
+            path=reverse(
+                viewname="v2:cluster-action-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.action.pk}
+            ),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -56,7 +58,9 @@ class TestAction(ClusterBaseTestCase):
     def test_run_cluster_action_success(self):
         with patch("api_v2.action.views.start_task"):
             response: Response = self.client.post(
-                path=reverse(viewname="v2:action-run", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.action.pk}),
+                path=reverse(
+                    viewname="v2:cluster-action-run", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.action.pk}
+                ),
                 data={
                     "host_component_map": [
                         {
@@ -78,7 +82,7 @@ class TestAction(ClusterBaseTestCase):
     def test_list_host_actions_success(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:action-list",
+                viewname="v2:host-action-list",
                 kwargs={"cluster_pk": self.cluster_1.pk, "host_pk": self.host.pk},
             ),
         )
@@ -89,7 +93,7 @@ class TestAction(ClusterBaseTestCase):
     def test_retrieve_host_action_success(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:action-detail",
+                viewname="v2:host-action-detail",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "host_pk": self.host.pk,
@@ -104,7 +108,7 @@ class TestAction(ClusterBaseTestCase):
         with patch("api_v2.action.views.start_task"):
             response: Response = self.client.post(
                 path=reverse(
-                    viewname="v2:action-run",
+                    viewname="v2:host-action-run",
                     kwargs={"cluster_pk": self.cluster_1.pk, "host_pk": self.host.pk, "pk": self.action.pk},
                 ),
                 data={

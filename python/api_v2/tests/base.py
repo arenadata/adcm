@@ -9,36 +9,105 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from cm.models import Action, Cluster, ConfigLog, Prototype
+import tarfile
+from pathlib import Path
+from shutil import rmtree
+
+from api_v2.prototype.utils import accept_license
+from cm.api import add_cluster, add_host, add_host_provider, add_host_to_cluster
+from cm.bundle import prepare_bundle, process_file
+from cm.models import (
+    ADCM,
+    Bundle,
+    Cluster,
+    ConfigLog,
+    Host,
+    HostProvider,
+    ObjectType,
+    Prototype,
+)
 from django.conf import settings
-from rest_framework.response import Response
-from rest_framework.reverse import reverse
-from rest_framework.status import HTTP_201_CREATED
-
-from adcm.tests.base import BaseTestCase
+from init_db import init
+from rbac.upgrade.role import init_roles
+from rest_framework.test import APITestCase
 
 
-class BaseTestCaseAPI(BaseTestCase):
+class BaseAPITestCase(APITestCase):  # pylint: disable=too-many-instance-attributes
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        init_roles()
+        init()
+
+        adcm = ADCM.objects.first()
+        config_log = ConfigLog.objects.get(obj_ref=adcm.config)
+        config_log.config["auth_policy"]["max_password_length"] = 20
+        config_log.save(update_fields=["config"])
+
     def setUp(self) -> None:
-        super().setUp()
+        self.client.login(username="admin", password="admin")
 
-        bundle_file_1 = settings.BASE_DIR / "python" / "api_v2" / "tests" / "files" / "cluster_one.tar"
-        bundle_file_2 = settings.BASE_DIR / "python" / "api_v2" / "tests" / "files" / "cluster_two.tar"
-        self.bundle_1 = self.upload_and_load_bundle(path=bundle_file_1)
-        self.bundle_2 = self.upload_and_load_bundle(path=bundle_file_2)
-        self.cluster_1 = self.create_cluster(bundle_pk=self.bundle_1.pk, name="cluster")
-        self.cluster_1_config = ConfigLog.objects.get(id=self.cluster_1.config.current)
-        self.cluster_1_action = Action.objects.filter(prototype=self.cluster_1.prototype).first()
-        self.cluster_2 = self.create_cluster(bundle_pk=self.bundle_2.pk, name="cluster_2")
+        cluster_bundle_1_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_one"
+        cluster_bundle_2_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_two"
+        provider_bundle_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "provider"
 
-    def create_cluster(self, bundle_pk: int, name: str) -> Cluster:
-        response: Response = self.client.post(
-            path=reverse(viewname="v2:cluster-list"),
-            data={
-                "prototype": Prototype.objects.filter(bundle_id=bundle_pk, type="cluster").first().pk,
-                "name": name,
-                "description": name,
-            },
+        self.bundle_1 = self.add_bundle(source_dir=cluster_bundle_1_path)
+        self.bundle_2 = self.add_bundle(source_dir=cluster_bundle_2_path)
+        self.provider_bundle = self.add_bundle(source_dir=provider_bundle_path)
+
+        self.cluster_1 = self.add_cluster(bundle=self.bundle_1, name="cluster_1", description="cluster_1")
+        self.cluster_2 = self.add_cluster(bundle=self.bundle_2, name="cluster_2", description="cluster_2")
+        self.provider = self.add_provider(bundle=self.provider_bundle, name="provider", description="provider")
+
+    def tearDown(self) -> None:
+        dirs_to_clear = (
+            *Path(settings.BUNDLE_DIR).iterdir(),
+            *Path(settings.DOWNLOAD_DIR).iterdir(),
+            *Path(settings.FILE_DIR).iterdir(),
+            *Path(settings.LOG_DIR).iterdir(),
+            *Path(settings.RUN_DIR).iterdir(),
+            *Path(settings.VAR_DIR).iterdir(),
         )
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-        return Cluster.objects.get(pk=response.json()["id"])
+
+        for item in dirs_to_clear:
+            if item.is_dir():
+                rmtree(item)
+            else:
+                if item.name != ".gitkeep":
+                    item.unlink()
+
+    @staticmethod
+    def prepare_bundle_file(source_dir: Path) -> str:
+        bundle_file = f"{source_dir.name}.tar"
+        with tarfile.open(settings.DOWNLOAD_DIR / bundle_file, "w") as tar:
+            for file in source_dir.iterdir():
+                tar.add(name=file, arcname=file.name)
+
+        return bundle_file
+
+    def add_bundle(self, source_dir: Path) -> Bundle:
+        bundle_file = self.prepare_bundle_file(source_dir=source_dir)
+        bundle_hash, path = process_file(bundle_file=bundle_file)
+        return prepare_bundle(bundle_file=bundle_file, bundle_hash=bundle_hash, path=path)
+
+    @staticmethod
+    def add_cluster(bundle: Bundle, name: str, description: str = "") -> Cluster:
+        prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.CLUSTER).first()
+        if prototype.license_path is not None:
+            accept_license(prototype=prototype)
+            prototype.refresh_from_db(fields=["license"])
+        return add_cluster(prototype=prototype, name=name, description=description)
+
+    @staticmethod
+    def add_provider(bundle: Bundle, name: str, description: str = "") -> HostProvider:
+        prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.PROVIDER).first()
+        return add_host_provider(prototype=prototype, name=name, description=description)
+
+    @staticmethod
+    def add_host(bundle: Bundle, provider: HostProvider, fqdn: str, description: str = "") -> Host:
+        prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.HOST).first()
+        return add_host(prototype=prototype, provider=provider, fqdn=fqdn, description=description)
+
+    @staticmethod
+    def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
+        return add_host_to_cluster(cluster=cluster, host=host)

@@ -16,5 +16,7 @@ from django.urls import include, path
 urlpatterns = [
     path("", APIRoot.as_view(), name="api-root-v2"),
     path("clusters/", include("api_v2.cluster.urls")),
+    path("bundles/", include("api_v2.bundle.urls")),
+    path("prototypes/", include("api_v2.prototype.urls")),
     path("audit/", include(("api_v2.audit.urls", "audit"))),
 ]

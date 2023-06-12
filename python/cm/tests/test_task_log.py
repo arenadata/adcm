@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
-from zoneinfo import ZoneInfo
 
 from api.job.views import (
     get_task_download_archive_file_handler,
@@ -38,6 +36,7 @@ from cm.tests.utils import (
 from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
@@ -102,8 +101,8 @@ class TaskLogLockTest(BaseTestCase):
         task = TaskLog.objects.create(
             task_object=cluster,
             action=action,
-            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
-            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
         )
         cluster_2 = Cluster.objects.create(
             prototype=Prototype.objects.create(
@@ -139,8 +138,8 @@ class TaskLogLockTest(BaseTestCase):
         )
         JobLog.objects.create(
             task=task,
-            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
-            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
             sub_action=SubAction.objects.create(
                 action=Action.objects.create(
                     display_name="test_subaction_job_1",
@@ -152,8 +151,8 @@ class TaskLogLockTest(BaseTestCase):
         )
         JobLog.objects.create(
             task=task,
-            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
-            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
             sub_action=SubAction.objects.create(
                 action=Action.objects.create(
                     display_name="test_subaction_job_2",
@@ -165,8 +164,8 @@ class TaskLogLockTest(BaseTestCase):
         )
         JobLog.objects.create(
             task=task,
-            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
-            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
             sub_action=SubAction.objects.create(
                 action=Action.objects.create(
                     display_name="test_subaction_job_3",
@@ -178,8 +177,8 @@ class TaskLogLockTest(BaseTestCase):
         )
         job_no_files = JobLog.objects.create(
             task=task,
-            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
-            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
             sub_action=SubAction.objects.create(
                 action=Action.objects.create(
                     display_name="test_subaction_job_4",
@@ -219,13 +218,13 @@ class TaskLogLockTest(BaseTestCase):
         task = TaskLog.objects.create(
             task_object=cluster,
             action=action,
-            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
-            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
         )
         JobLog.objects.create(
             task=task,
-            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
-            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
             sub_action=SubAction.objects.create(
                 name="test_subaction_1",
                 action=action,
@@ -234,8 +233,8 @@ class TaskLogLockTest(BaseTestCase):
         )
         JobLog.objects.create(
             task=task,
-            start_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
-            finish_date=datetime.now(tz=ZoneInfo(settings.TIME_ZONE)),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
             sub_action=SubAction.objects.create(name="test_subaction_2", action=action),
         )
         file_handler = get_task_download_archive_file_handler(task)

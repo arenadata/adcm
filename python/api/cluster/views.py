@@ -39,7 +39,6 @@ from api.utils import AdcmOrderingFilter, check_obj, create, update
 from audit.utils import audit
 from cm.api import delete_cluster, get_import, unbind
 from cm.errors import AdcmEx
-from cm.issue import update_hierarchy_issues
 from cm.models import (
     Cluster,
     ClusterBind,
@@ -252,7 +251,6 @@ class ClusterUpgrade(GenericUIView):
             user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["cluster_id"]
         )
         check_custom_perm(user=request.user, action_type="view_upgrade_of", model="cluster", obj=cluster)
-        update_hierarchy_issues(obj=cluster)
         upgrade_list = get_upgrade(obj=cluster, order=self.get_ordering())
         serializer = self.serializer_class(
             instance=upgrade_list,

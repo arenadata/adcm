@@ -177,6 +177,10 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
           ];
         });
     }
+
+    this.getAddedServices()
+      .pipe(this.takeUntil())
+      .subscribe((res) => this.addedServices = res.map((service) => service.prototype_id));
   }
 
   /** host only */
