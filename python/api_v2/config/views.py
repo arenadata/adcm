@@ -13,7 +13,7 @@
 from api_v2.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
 from api_v2.config.utils import get_schema
 from cm.api import update_obj_config
-from cm.models import Cluster, ClusterObject, ConfigLog, GroupConfig
+from cm.models import Cluster, ClusterObject, ConfigLog, GroupConfig, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import ObjectDoesNotExist
 from guardian.mixins import PermissionListMixin
@@ -35,17 +35,22 @@ class ConfigLogViewSet(
     permission_required = [VIEW_CONFIG_PERM]
     ordering = ["-id"]
 
-    def get_parent_object(self) -> ClusterObject | ClusterObject | None:
-        parent_object = None
+    def get_parent_object(self) -> Cluster | ClusterObject | ServiceComponent | GroupConfig | None:
+        # `if` order is significant. see api_v2/cluster/urls.py::urlpatterns
 
         if "config_group_pk" in self.kwargs:
-            parent_object = GroupConfig.objects.get(id=self.kwargs.get("config_group_pk"))
-        elif "service_pk" in self.kwargs:
-            parent_object = ClusterObject.objects.get(id=self.kwargs.get("service_pk"))
-        elif "cluster_pk" in self.kwargs:
-            parent_object = Cluster.objects.get(id=self.kwargs.get("cluster_pk"))
+            return GroupConfig.objects.get(id=self.kwargs.get("config_group_pk"))
 
-        return parent_object
+        if "servicecomponent_pk" in self.kwargs:
+            return ServiceComponent.objects.get(pk=self.kwargs["servicecomponent_pk"])
+
+        if "service_pk" in self.kwargs:
+            return ClusterObject.objects.get(id=self.kwargs.get("service_pk"))
+
+        if "cluster_pk" in self.kwargs:
+            return Cluster.objects.get(id=self.kwargs.get("cluster_pk"))
+
+        raise ObjectDoesNotExist("Can't get parent object: no appropriate kwargs provided")
 
     def get_queryset(self, *args, **kwargs):
         try:
