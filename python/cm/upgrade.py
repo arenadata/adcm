@@ -531,4 +531,9 @@ def bundle_switch(obj: Cluster | HostProvider, upgrade: Upgrade) -> None:
 
     logger.info("upgrade %s OK to version %s", obj_ref(obj=obj), obj.prototype.version)
 
-    post_event(event="upgrade", obj=obj, details={"type": "version", "value": str(obj.prototype.version)})
+    post_event(
+        event="upgrade",
+        object_id=obj.pk,
+        object_type=obj.prototype.type,
+        details={"type": "version", "value": str(obj.prototype.version)},
+    )

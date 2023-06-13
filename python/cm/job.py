@@ -172,7 +172,9 @@ def prepare_task(
     with atomic():
         # pylint: disable=too-many-locals
         if cluster:
-            on_commit(func=partial(post_event, event="change_hostcomponentmap", obj=cluster))
+            on_commit(
+                func=partial(post_event, event="change_hostcomponentmap", object_id=cluster.pk, object_type="cluster")
+            )
 
         task = create_task(
             action=action,
@@ -852,7 +854,9 @@ def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:  # pyli
 
     with atomic():
         if cluster := get_object_cluster(obj=obj):
-            on_commit(func=partial(post_event, event="change_hostcomponentmap", obj=cluster))
+            on_commit(
+                func=partial(post_event, event="change_hostcomponentmap", object_id=cluster.pk, object_type="cluster")
+            )
 
         set_action_state(
             action=action,
@@ -927,7 +931,8 @@ def log_custom(job_id, name, log_format, body):
     log_storage = LogStorage.objects.create(job=job, name=name, type="custom", format=log_format, body=body)
     post_event(
         event="add_job_log",
-        obj=job,
+        object_id=job.pk,
+        object_type="job",
         details={
             "id": log_storage.pk,
             "type": log_storage.type,
