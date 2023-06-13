@@ -187,7 +187,7 @@ def add_cluster(prototype: Prototype, name: str, description: str = "") -> Clust
         cluster.save()
         update_hierarchy_issues(cluster)
 
-    post_event(event="create", obj=cluster)
+    post_event(event="create", object_id=cluster.pk, object_type="cluster")
     load_service_map()
     logger.info("cluster #%s %s is added", cluster.pk, cluster.name)
 
@@ -216,7 +216,9 @@ def add_host(prototype: Prototype, provider: HostProvider, fqdn: str, descriptio
         re_apply_object_policy(provider)
 
     CTX.event.send_state()
-    post_event(event="create", obj=host, details={"type": "provider", "value": str(provider.pk)})
+    post_event(
+        event="create", object_id=host.pk, object_type="host", details={"type": "provider", "value": str(provider.pk)}
+    )
     load_service_map()
     logger.info("host #%s %s is added", host.pk, host.fqdn)
 
@@ -237,7 +239,7 @@ def add_host_provider(prototype: Prototype, name: str, description: str = ""):
         update_hierarchy_issues(provider)
 
     CTX.event.send_state()
-    post_event(event="create", obj=provider)
+    post_event(event="create", object_id=provider.pk, object_type="provider")
     logger.info("host provider #%s %s is added", provider.pk, provider.name)
 
     return provider
@@ -261,7 +263,7 @@ def delete_host_provider(provider, cancel_tasks=True):
         cancel_locking_tasks(provider, obj_deletion=True)
 
     provider_pk = provider.pk
-    post_event(event="delete", obj=provider)
+    post_event(event="delete", object_id=provider.pk, object_type="provider")
     provider.delete()
     logger.info("host provider #%s is deleted", provider_pk)
 
@@ -315,7 +317,7 @@ def delete_host(host, cancel_tasks=True):
         cancel_locking_tasks(obj=host, obj_deletion=True)
 
     host_pk = host.pk
-    post_event(event="delete", obj=host)
+    post_event(event="delete", object_id=host.pk, object_type="host")
     host.delete()
     load_service_map()
     update_issue_after_deleting()
@@ -358,7 +360,11 @@ def delete_service_by_pk(service_pk):
 
     service = ClusterObject.obj.get(pk=service_pk)
     with atomic():
-        on_commit(func=partial(post_event, event="change_hostcomponentmap", obj=service.cluster))
+        on_commit(
+            func=partial(
+                post_event, event="change_hostcomponentmap", object_id=service.cluster.pk, object_type="cluster"
+            )
+        )
         _clean_up_related_hc(service=service)
         ClusterBind.objects.filter(source_service=service).delete()
         delete_service(service=service)
@@ -373,7 +379,11 @@ def delete_service_by_name(service_name, cluster_pk):
 
     service = ClusterObject.obj.get(cluster__pk=cluster_pk, prototype__name=service_name)
     with atomic():
-        on_commit(func=partial(post_event, event="change_hostcomponentmap", obj=service.cluster))
+        on_commit(
+            func=partial(
+                post_event, event="change_hostcomponentmap", object_id=service.cluster.pk, object_type="cluster"
+            )
+        )
         _clean_up_related_hc(service=service)
         ClusterBind.objects.filter(source_service=service).delete()
         delete_service(service=service)
@@ -381,7 +391,7 @@ def delete_service_by_name(service_name, cluster_pk):
 
 def delete_service(service: ClusterObject) -> None:
     service_pk = service.pk
-    post_event(event="delete", obj=service)
+    post_event(event="delete", object_id=service.pk, object_type="service")
     service.delete()
     update_issue_after_deleting()
     update_hierarchy_issues(service.cluster)
@@ -405,7 +415,7 @@ def delete_cluster(cluster, cancel_tasks=True):
         MaintenanceMode.OFF,
         ", ".join(host_pks),
     )
-    post_event(event="delete", obj=cluster)
+    post_event(event="delete", object_id=cluster.pk, object_type="cluster")
     cluster.delete()
     update_issue_after_deleting()
     load_service_map()
@@ -434,7 +444,9 @@ def remove_host_from_cluster(host: Host) -> Host:
         re_apply_object_policy(apply_object=cluster)
 
     CTX.event.send_state()
-    post_event(event="remove", obj=host, details={"type": "cluster", "value": str(cluster.pk)})
+    post_event(
+        event="remove", object_id=host.pk, object_type="host", details={"type": "cluster", "value": str(cluster.pk)}
+    )
     load_service_map()
 
     return host
@@ -446,7 +458,12 @@ def unbind(cbind):
     check_import_default(import_obj, export_obj)
 
     with atomic():
-        post_event(event="delete", obj=cbind, details={"type": "cluster", "value": str(cbind.cluster.pk)})
+        post_event(
+            event="delete",
+            object_id=cbind.pk,
+            object_type="cbind",
+            details={"type": "cluster", "value": str(cbind.cluster.pk)},
+        )
         cbind.delete()
         update_hierarchy_issues(cbind.cluster)
 
@@ -473,7 +490,9 @@ def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> ClusterObject:
         update_hierarchy_issues(obj=cluster)
         re_apply_object_policy(apply_object=cluster)
 
-    post_event(event="add", obj=service, details={"type": "cluster", "value": str(cluster.pk)})
+    post_event(
+        event="add", object_id=service.pk, object_type="service", details={"type": "cluster", "value": str(cluster.pk)}
+    )
     load_service_map()
     logger.info(
         "service #%s %s is added to cluster #%s %s",
@@ -546,9 +565,19 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
     if group is not None:
-        post_event(event="change_config", obj=group, details={"type": "version", "value": str(config_log.pk)})
+        post_event(
+            event="change_config",
+            object_id=group.pk,
+            object_type="group-config",
+            details={"type": "version", "value": str(config_log.pk)},
+        )
     else:
-        post_event(event="change_config", obj=obj, details={"type": "version", "value": str(config_log.pk)})
+        post_event(
+            event="change_config",
+            object_id=obj.pk,
+            object_type=obj.prototype.type,
+            details={"type": "version", "value": str(config_log.pk)},
+        )
 
     return config_log
 
@@ -561,7 +590,12 @@ def set_object_config(obj: ADCMEntity, config: dict, attr: dict) -> ConfigLog:
         update_hierarchy_issues(obj=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
-    post_event(event="change_config", obj=obj, details={"type": "version", "value": str(config_log.pk)})
+    post_event(
+        event="change_config",
+        object_id=obj.pk,
+        object_type=obj.prototype.type,
+        details={"type": "version", "value": str(config_log.pk)},
+    )
     return config_log
 
 
@@ -743,7 +777,9 @@ def add_hc(cluster: Cluster, hc_in: list[dict]) -> list[HostComponent]:
     host_comp_list = check_hc(cluster=cluster, hc_in=hc_in)
 
     with atomic():
-        on_commit(func=partial(post_event, event="change_hostcomponentmap", obj=cluster))
+        on_commit(
+            func=partial(post_event, event="change_hostcomponentmap", object_id=cluster.pk, object_type="cluster")
+        )
         new_hc = save_hc(cluster=cluster, host_comp_list=host_comp_list)
 
     return new_hc
@@ -1064,7 +1100,9 @@ def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
         update_hierarchy_issues(host)
         re_apply_object_policy(cluster)
 
-    post_event(event="add", obj=host, details={"type": "cluster", "value": str(cluster.pk)})
+    post_event(
+        event="add", object_id=host.pk, object_type="host", details={"type": "cluster", "value": str(cluster.pk)}
+    )
     load_service_map()
     logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)
 
