@@ -1,0 +1,49 @@
+:global {
+  body.theme-dark {
+    --anchor-bar-link-color: var(--color-xgray-light);
+    --anchor-bar-link-color-hover: var(--color-xwhite-off);
+    --anchor-bar-link-color-active: var(--color-xgreen-saturated);
+  }
+
+  body.theme-light {
+    --anchor-bar-link-color: var(--color-xgray-light);
+    --anchor-bar-link-color-hover: var(--color-xdark);
+    --anchor-bar-link-color-active: var(--color-xgreen);
+  }
+}
+
+.anchorBar {
+  position: relative;
+
+  &__list {
+    position: sticky;
+    top: 20px;
+  }
+
+  &__link {
+    display: block;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 16px;
+    padding: 6px 8px;
+
+    color: var(--anchor-bar-link-color);
+    border-left: 1px solid currentColor;
+
+    transition: color 250ms, border-bottom-color 250ms;
+
+    &:hover {
+      color: var(--anchor-bar-link-color-hover);
+      border-color: currentColor;
+    }
+
+    &_default {
+      border-color: transparent;
+    }
+
+    &_default_active {
+      color: var(--anchor-bar-link-color-active);
+      border-color: currentColor;
+    }
+  }
+}
