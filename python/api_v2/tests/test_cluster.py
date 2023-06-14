@@ -14,10 +14,15 @@ from typing import Callable
 from unittest.mock import patch
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.models import ADCMEntityStatus, Cluster
+from cm.models import Action, ADCMEntityStatus, Cluster
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_404_NOT_FOUND,
+)
 
 
 class TestCluster(BaseAPITestCase):
@@ -143,3 +148,57 @@ class TestCluster(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 3)
+
+
+class TestClusterActions(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.cluster_action = Action.objects.get(prototype=self.cluster_1.prototype, name="action")
+
+    def test_list_cluster_actions_success(self):
+        response: Response = self.client.get(
+            path=reverse(viewname="v2:cluster-action-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()), 1)
+
+    def test_list_cluster_actions_no_actions_cluster_success(self):
+        response: Response = self.client.get(
+            path=reverse(viewname="v2:cluster-action-list", kwargs={"cluster_pk": self.cluster_2.pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertListEqual(response.json(), [])
+
+    def test_list_cluster_actions_wrong_cluster_fail(self):
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:cluster-action-list", kwargs={"cluster_pk": self.get_non_existent_pk(model=Cluster)}
+            ),
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_retrieve_cluster_action_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:cluster-action-detail",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action.pk},
+            ),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_run_cluster_action_success(self):
+        with patch("api_v2.action.views.start_task"):
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="v2:cluster-action-run",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action.pk},
+                ),
+                data={"host_component_map": {}, "config": {}, "attr": {}, "is_verbose": False},
+            )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)

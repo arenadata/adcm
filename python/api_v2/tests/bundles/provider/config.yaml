@@ -6,3 +6,11 @@
 - type: host
   name: host
   version: *version
+  actions:
+    host_action:
+      display_name: "host_action"
+      type: job
+      script: ./playbook.yaml
+      script_type: ansible
+      states:
+        available: any

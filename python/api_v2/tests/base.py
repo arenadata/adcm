@@ -18,6 +18,7 @@ from cm.api import add_cluster, add_host, add_host_provider, add_host_to_cluster
 from cm.bundle import prepare_bundle, process_file
 from cm.models import (
     ADCM,
+    ADCMEntity,
     Bundle,
     Cluster,
     ConfigLog,
@@ -111,3 +112,10 @@ class BaseAPITestCase(APITestCase):  # pylint: disable=too-many-instance-attribu
     @staticmethod
     def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
         return add_host_to_cluster(cluster=cluster, host=host)
+
+    @staticmethod
+    def get_non_existent_pk(model: type[ADCMEntity]):
+        try:
+            return model.objects.order_by("-pk").first().pk + 1
+        except model.DoesNotExist:
+            return 1

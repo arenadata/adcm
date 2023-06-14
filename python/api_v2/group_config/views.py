@@ -14,7 +14,6 @@ from api_v2.group_config.serializers import GroupConfigSerializer
 from api_v2.host.serializers import HostGroupConfigSerializer
 from cm.models import GroupConfig
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import ObjectDoesNotExist
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
@@ -34,19 +33,15 @@ class GroupConfigViewSet(PermissionListMixin, ModelViewSet, GetParentObjectMixin
     ordering = ["id"]
 
     def get_queryset(self, *args, **kwargs):
-        try:
-            parent_object = self.get_parent_object()
-        except ObjectDoesNotExist as error:
-            raise NotFound from error
+        parent_object = self.get_parent_object()
+        if parent_object is None:
+            raise NotFound
 
-        queryset = super().get_queryset(*args, **kwargs)
-
-        if parent_object:
-            return queryset.filter(
-                object_id=parent_object.pk, object_type=ContentType.objects.get_for_model(model=parent_object)
-            )
-
-        return queryset
+        return (
+            super()
+            .get_queryset(*args, **kwargs)
+            .filter(object_id=parent_object.pk, object_type=ContentType.objects.get_for_model(model=parent_object))
+        )
 
     def create(self, request: Request, *args, **kwargs):
         parent_object = self.get_parent_object()

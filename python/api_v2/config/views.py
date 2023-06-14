@@ -15,7 +15,6 @@ from api_v2.config.utils import get_schema
 from cm.api import update_obj_config
 from cm.models import ConfigLog
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import ObjectDoesNotExist
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
@@ -37,14 +36,13 @@ class ConfigLogViewSet(
     ordering = ["-id"]
 
     def get_queryset(self, *args, **kwargs):
-        try:
-            parent_object = self.get_parent_object()
-        except ObjectDoesNotExist as error:
-            raise NotFound from error
+        parent_object = self.get_parent_object()
+        if parent_object is None:
+            raise NotFound
 
         queryset = super().get_queryset(*args, **kwargs)
 
-        if parent_object and parent_object.config:
+        if parent_object.config:
             return queryset.filter(obj_ref=parent_object.config)
 
         return queryset
