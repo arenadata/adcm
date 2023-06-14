@@ -16,10 +16,9 @@ import json
 import subprocess
 from collections.abc import Hashable
 from configparser import ConfigParser
-from datetime import datetime
+from functools import partial
 from pathlib import Path
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
@@ -29,8 +28,8 @@ from audit.models import (
     AuditLogOperationResult,
     AuditLogOperationType,
 )
-from cm.adcm_config import (
-    check_attr,
+from cm.adcm_config.checks import check_attr
+from cm.adcm_config.config import (
     check_config_spec,
     get_prototype_config,
     process_config_spec,
@@ -57,7 +56,8 @@ from cm.inventory import (
 from cm.issue import (
     check_bound_components,
     check_component_constraint,
-    check_component_requires,
+    check_hc_requires,
+    check_service_requires,
     update_hierarchy_issues,
 )
 from cm.logger import logger
@@ -89,8 +89,9 @@ from cm.status_api import post_event
 from cm.utils import get_env_with_venv_path
 from cm.variant import process_variant
 from django.conf import settings
-from django.db import transaction
 from django.db.models import JSONField
+from django.db.transaction import atomic, on_commit
+from django.utils import timezone
 from rbac.roles import re_apply_policy_for_jobs
 
 
@@ -115,7 +116,7 @@ def start_task(
     return task
 
 
-def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster, hosts: list[Host]):
+def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster | None, hosts: list[Host]) -> None:
     provider = None
     if obj.prototype.type == "provider":
         provider = obj
@@ -150,34 +151,51 @@ def prepare_task(
     hosts: list[Host],
     verbose: bool,
 ) -> TaskLog:  # pylint: disable=too-many-locals
-    cluster = get_object_cluster(obj)
-    check_action_state(action, obj, cluster)
-    _, spec = check_action_config(action, obj, conf, attr)
+    cluster = get_object_cluster(obj=obj)
+    check_action_state(action=action, task_object=obj, cluster=cluster)
+    _, spec = check_action_config(action=action, obj=obj, conf=conf, attr=attr)
     if conf and not spec:
-        raise_adcm_ex("CONFIG_VALUE_ERROR", "Absent config in action prototype")
+        raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg="Absent config in action prototype")
 
-    check_action_hosts(action, obj, cluster, hosts)
-    old_hc = get_hc(cluster)
-    host_map, post_upgrade_hc = check_hostcomponentmap(cluster, action, hostcomponent)
+    check_action_hosts(action=action, obj=obj, cluster=cluster, hosts=hosts)
+    old_hc = get_hc(cluster=cluster)
+    host_map, post_upgrade_hc = check_hostcomponentmap(cluster=cluster, action=action, new_hc=hostcomponent)
 
     if hasattr(action, "upgrade") and not action.hostcomponentmap:
-        check_constraints_for_upgrade(cluster, action.upgrade, get_actual_hc(cluster))
+        check_constraints_for_upgrade(
+            cluster=cluster, upgrade=action.upgrade, host_comp_list=get_actual_hc(cluster=cluster)
+        )
 
     if not attr:
         attr = {}
 
-    with transaction.atomic():  # pylint: disable=too-many-locals
-        task = create_task(action, obj, conf, attr, old_hc, hosts, verbose, post_upgrade_hc)
+    with atomic():
+        # pylint: disable=too-many-locals
+        if cluster:
+            on_commit(
+                func=partial(post_event, event="change_hostcomponentmap", object_id=cluster.pk, object_type="cluster")
+            )
+
+        task = create_task(
+            action=action,
+            obj=obj,
+            conf=conf,
+            attr=attr,
+            hostcomponent=old_hc,
+            hosts=hosts,
+            verbose=verbose,
+            post_upgrade_hc=post_upgrade_hc,
+        )
         if host_map or (hasattr(action, "upgrade") and host_map is not None):
-            save_hc(cluster, host_map)
+            save_hc(cluster=cluster, host_comp_list=host_map)
 
         if conf:
-            new_conf = process_config_and_attr(task, conf, attr, spec)
-            process_file_type(task, spec, conf)
+            new_conf = process_config_and_attr(obj=task, conf=conf, attr=attr, spec=spec)
+            process_file_type(obj=task, spec=spec, conf=conf)
             task.config = new_conf
             task.save()
 
-    re_apply_policy_for_jobs(obj, task)
+    re_apply_policy_for_jobs(action_object=obj, task=task)
 
     return task
 
@@ -199,7 +217,7 @@ def cancel_task(task: TaskLog):
     task.cancel(CTX.event)
 
 
-def get_host_object(action: Action, cluster: Cluster) -> ADCMEntity | None:
+def get_host_object(action: Action, cluster: Cluster | None) -> ADCMEntity | None:
     obj = None
     if action.prototype.type == "service":
         obj = ClusterObject.obj.get(cluster=cluster, prototype=action.prototype)
@@ -211,30 +229,30 @@ def get_host_object(action: Action, cluster: Cluster) -> ADCMEntity | None:
     return obj
 
 
-def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster):
+def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster | None) -> None:
     if action.host_action:
-        obj = get_host_object(action, cluster)
+        obj = get_host_object(action=action, cluster=cluster)
     else:
         obj = task_object
 
     if obj.concerns.filter(type=ConcernType.LOCK).exists():
-        raise_adcm_ex("LOCK_ERROR", f"object {obj} is locked")
+        raise_adcm_ex(code="LOCK_ERROR", msg=f"object {obj} is locked")
 
     if (
         action.name not in settings.ADCM_SERVICE_ACTION_NAMES_SET
         and obj.concerns.filter(type=ConcernType.ISSUE).exists()
     ):
-        raise_adcm_ex("ISSUE_INTEGRITY_ERROR", f"object {obj} has issues")
+        raise_adcm_ex(code="ISSUE_INTEGRITY_ERROR", msg=f"object {obj} has issues")
 
-    if action.allowed(obj):
+    if action.allowed(obj=obj):
         return
 
-    raise_adcm_ex("TASK_ERROR", "action is disabled")
+    raise_adcm_ex(code="TASK_ERROR", msg="action is disabled")
 
 
-def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict) -> tuple[dict, dict]:
+def check_action_config(action: Action, obj: type[ADCMEntity], conf: dict, attr: dict) -> tuple[dict, dict]:
     proto = action.prototype
-    spec, flat_spec, _, _ = get_prototype_config(proto, action)
+    spec, flat_spec, _, _ = get_prototype_config(prototype=proto, action=action, obj=obj)
     if not spec:
         return {}, {}
 
@@ -275,7 +293,7 @@ def cook_comp_key(name, subname):
     return f"{name}.{subname}"
 
 
-def cook_delta(  # pylint: disable=too-many-branches # noqa: C901
+def cook_delta(  # pylint: disable=too-many-branches
     cluster: Cluster,
     new_hc: list[tuple[ClusterObject, Host, ServiceComponent]],
     action_hc: list[dict],
@@ -328,36 +346,38 @@ def cook_delta(  # pylint: disable=too-many-branches # noqa: C901
     return delta
 
 
-def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: list[dict]):
+def check_hostcomponentmap(
+    cluster: Cluster | None, action: Action, new_hc: list[dict]
+) -> tuple[list[tuple[ClusterObject, Host, ServiceComponent]] | None, list]:
     if not action.hostcomponentmap:
         return None, []
 
     if not new_hc:
-        raise_adcm_ex("TASK_ERROR", "hc is required")
+        raise_adcm_ex(code="TASK_ERROR", msg="hc is required")
 
     if not cluster:
-        raise_adcm_ex("TASK_ERROR", "Only cluster objects can have action with hostcomponentmap")
+        raise_adcm_ex(code="TASK_ERROR", msg="Only cluster objects can have action with hostcomponentmap")
 
     for host_comp in new_hc:
         if not hasattr(action, "upgrade"):
             host = Host.obj.get(id=host_comp.get("host_id", 0))
             if host.concerns.filter(type=ConcernType.LOCK).exists():
-                raise_adcm_ex("LOCK_ERROR", f"object {host} is locked")
+                raise_adcm_ex(code="LOCK_ERROR", msg=f"object {host} is locked")
 
             if host.concerns.filter(type=ConcernType.ISSUE).exists():
-                raise_adcm_ex("ISSUE_INTEGRITY_ERROR", f"object {host} has issues")
+                raise_adcm_ex(code="ISSUE_INTEGRITY_ERROR", msg=f"object {host} has issues")
 
-    post_upgrade_hc, clear_hc = check_upgrade_hc(action, new_hc)
+    post_upgrade_hc, clear_hc = check_upgrade_hc(action=action, new_hc=new_hc)
 
-    old_hc = get_old_hc(get_hc(cluster))
+    old_hc = get_old_hc(saved_hostcomponent=get_hc(cluster=cluster))
     if not hasattr(action, "upgrade"):
-        prepared_hc_list = check_hc(cluster, clear_hc)
+        prepared_hc_list = check_hc(cluster=cluster, hc_in=clear_hc)
     else:
-        check_sub_key(clear_hc)
-        prepared_hc_list = make_host_comp_list(cluster, clear_hc)
-        check_constraints_for_upgrade(cluster, action.upgrade, prepared_hc_list)
+        check_sub_key(hc_in=clear_hc)
+        prepared_hc_list = make_host_comp_list(cluster=cluster, hc_in=clear_hc)
+        check_constraints_for_upgrade(cluster=cluster, upgrade=action.upgrade, host_comp_list=prepared_hc_list)
 
-    cook_delta(cluster, prepared_hc_list, action.hostcomponentmap, old_hc)
+    cook_delta(cluster=cluster, new_hc=prepared_hc_list, action_hc=action.hostcomponentmap, old=old_hc)
 
     return prepared_hc_list, post_upgrade_hc
 
@@ -368,17 +388,18 @@ def check_constraints_for_upgrade(cluster, upgrade, host_comp_list):
             try:
                 prototype = Prototype.objects.get(name=service.name, type="service", bundle=upgrade.bundle)
                 check_component_constraint(
-                    cluster,
-                    prototype,
-                    [i for i in host_comp_list if i[0] == service],
-                    cluster.prototype.bundle,
+                    cluster=cluster,
+                    service_prototype=prototype,
+                    hc_in=[i for i in host_comp_list if i[0] == service],
+                    old_bundle=cluster.prototype.bundle,
                 )
+                check_service_requires(cluster=cluster, proto=prototype)
             except Prototype.DoesNotExist:
                 pass
 
-        check_component_requires(host_comp_list)
-        check_bound_components(host_comp_list)
-        check_maintenance_mode(cluster, host_comp_list)
+        check_hc_requires(shc_list=host_comp_list)
+        check_bound_components(shc_list=host_comp_list)
+        check_maintenance_mode(cluster=cluster, host_comp_list=host_comp_list)
     except AdcmEx as e:
         if e.code == "COMPONENT_CONSTRAINT_ERROR":
             e.msg = (
@@ -595,7 +616,7 @@ def prepare_context(
     return context
 
 
-def prepare_job_config(  # noqa: C901
+def prepare_job_config(
     action: Action,
     sub_action: SubAction,
     job_id: int,
@@ -696,7 +717,7 @@ def create_task(
     obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
     conf: dict,
     attr: dict,
-    hostcomponent: list[HostComponent],
+    hostcomponent: list[dict],
     hosts: list[Host],
     verbose: bool,
     post_upgrade_hc: list[dict],
@@ -710,8 +731,8 @@ def create_task(
         hosts=hosts,
         post_upgrade_hc_map=post_upgrade_hc,
         verbose=verbose,
-        start_date=datetime.now(tz=ZoneInfo("UTC")),
-        finish_date=datetime.now(tz=ZoneInfo("UTC")),
+        start_date=timezone.now(),
+        finish_date=timezone.now(),
         status=JobStatus.CREATED,
         selector=get_selector(obj, action),
     )
@@ -728,8 +749,8 @@ def create_task(
             action=action,
             sub_action=sub_action,
             log_files=action.log_files,
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
             status=JobStatus.CREATED,
             selector=get_selector(obj, action),
         )
@@ -804,10 +825,9 @@ def set_action_state(
 
 
 def restore_hc(task: TaskLog, action: Action, status: str):
-    if status not in {JobStatus.FAILED, JobStatus.ABORTED}:
-        return
-
-    if not action.hostcomponentmap:
+    if any(
+        (status not in {JobStatus.FAILED, JobStatus.ABORTED}, not action.hostcomponentmap, not task.restore_hc_on_fail)
+    ):
         return
 
     cluster = get_object_cluster(task.task_object)
@@ -827,17 +847,29 @@ def restore_hc(task: TaskLog, action: Action, status: str):
     save_hc(cluster, host_comp_list)
 
 
-def finish_task(task: TaskLog, job: JobLog | None, status: str):
+def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:  # pylint: disable=too-many-locals
     action = task.action
     obj = task.task_object
-    state, multi_state_set, multi_state_unset = get_state(action, job, status)
+    state, multi_state_set, multi_state_unset = get_state(action=action, job=job, status=status)
 
-    with transaction.atomic():
-        set_action_state(action, task, obj, state, multi_state_set, multi_state_unset)
-        restore_hc(task, action, status)
+    with atomic():
+        if cluster := get_object_cluster(obj=obj):
+            on_commit(
+                func=partial(post_event, event="change_hostcomponentmap", object_id=cluster.pk, object_type="cluster")
+            )
+
+        set_action_state(
+            action=action,
+            task=task,
+            obj=obj,
+            state=state,
+            multi_state_set=multi_state_set,
+            multi_state_unset=multi_state_unset,
+        )
+        restore_hc(task=task, action=action, status=status)
         task.unlock_affected()
-        set_task_status(task, status, CTX.event)
-        update_hierarchy_issues(obj)
+        set_task_status(task=task, status=status, event=CTX.event)
+        update_hierarchy_issues(obj=obj)
 
     upgrade = Upgrade.objects.filter(action=action).first()
     if upgrade:
@@ -899,7 +931,8 @@ def log_custom(job_id, name, log_format, body):
     log_storage = LogStorage.objects.create(job=job, name=name, type="custom", format=log_format, body=body)
     post_event(
         event="add_job_log",
-        obj=job,
+        object_id=job.pk,
+        object_type="job",
         details={
             "id": log_storage.pk,
             "type": log_storage.type,
@@ -971,14 +1004,14 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
 
 def set_task_status(task: TaskLog, status: str, event):
     task.status = status
-    task.finish_date = datetime.now(tz=ZoneInfo("UTC"))
+    task.finish_date = timezone.now()
     task.save()
     event.set_task_status(task=task, status=status)
 
 
 def set_job_status(job_id: int, status: str, event, pid: int = 0):
     job_query = JobLog.objects.filter(id=job_id)
-    job_query.update(status=status, pid=pid, finish_date=datetime.now(tz=ZoneInfo("UTC")))
+    job_query.update(status=status, pid=pid, finish_date=timezone.now())
     job = job_query.first()
 
     if status == JobStatus.RUNNING:

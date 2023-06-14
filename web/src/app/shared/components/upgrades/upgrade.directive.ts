@@ -201,7 +201,7 @@ export class UpgradesDirective extends BaseDirective {
   }
 
   checkServicesAndPrepare() {
-    let oldVersionAcceptedServices;
+    let oldVersionAcceptedEntities;
 
     if (this.type === 'cluster') {
       if (!this.add.Cluster) {
@@ -211,18 +211,32 @@ export class UpgradesDirective extends BaseDirective {
       }
 
       this.getClusterServices().subscribe(res => {
-        oldVersionAcceptedServices = res.map(service => service.name);
+        const addedServices = res.map((service) => service.name);
 
-        this.getPrototypeServices().subscribe(res => {
-          this.needLicenseAcceptance = res.results
-            .filter((service) => service.bundle_id === this.inputData.bundle_id && oldVersionAcceptedServices.includes(service.name) && service.license === 'unaccepted')
-            .map((i) => ({
-              prototype_id: i.id,
-              service_name: i.name,
-              license: i.license,
-              license_url: i.license_url,
+        this.getPrototype(this.inputData.bundle_id).subscribe(res => {
+          oldVersionAcceptedEntities = [...new Set(res
+            .filter(
+              (item) =>
+                item.type === 'cluster' || item.type === 'service' &&
+                item.license === 'accepted'
+            )
+            .map((item) => item.name))];
+
+          this.needLicenseAcceptance = res
+            .filter(
+              (item) =>
+                (item.type === 'service' || item.type === 'cluster') &&
+                item.bundle_id === this.inputData.bundle_id &&
+                item.license === 'unaccepted' &&
+                (oldVersionAcceptedEntities.includes(item.name) ||
+                addedServices.includes(item.name))
+            )
+            .map((item) => ({
+              prototype_id: item.id,
+              entity_name: item.name,
+              license: item.license,
+              license_url: item.license_url,
             }));
-
           if (this.hasHostComponent) {
             this.checkHostComponents();
           } else {
@@ -240,8 +254,8 @@ export class UpgradesDirective extends BaseDirective {
 
     return from(this.needLicenseAcceptance)
       .pipe(
-        tap((service) => licenseObj[service.prototype_id] = { service_name: service.service_name, license: service.license }),
-        concatMap((service) => this.api.get<License>(`/api/v1/stack/prototype/${service.prototype_id}/license/`).pipe()),
+        tap((entity) => licenseObj[entity.prototype_id] = { entity_name: entity.entity_name, license: entity.license }),
+        concatMap((entity) => this.api.get<License>(`/api/v1/stack/prototype/${entity.prototype_id}/license/`).pipe()),
         concatMap((result) => {
           const prototype_id = result.accept.substring(
             result.accept.lastIndexOf("prototype/") + 10,
@@ -251,7 +265,7 @@ export class UpgradesDirective extends BaseDirective {
           return this.dialog
             .open(DialogComponent, {
               data: {
-                title: `Accept license agreement ${licenseObj[prototype_id].service_name}`,
+                title: `Accept license agreement ${licenseObj[prototype_id].entity_name}`,
                 text: result.text,
                 closeOnGreenButtonCLick: true,
                 controls: { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] },

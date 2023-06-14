@@ -141,7 +141,7 @@ class TestBundleAudit(BaseTestCase):
     def test_upload_fail(self):
         with open(self.test_bundle_path, encoding=settings.ENCODING_UTF_8) as f:
             self.client.post(
-                path=reverse("upload-bundle"),
+                path=reverse(viewname="v1:upload-bundle"),
                 data={"no_file": f},
             )
 
@@ -153,7 +153,7 @@ class TestBundleAudit(BaseTestCase):
         with open(self.test_bundle_path, encoding=settings.ENCODING_UTF_8) as f:
             with self.no_rights_user_logged_in:
                 response: Response = self.client.post(
-                    path=reverse("upload-bundle"),
+                    path=reverse(viewname="v1:upload-bundle"),
                     data={"file": f},
                 )
 
@@ -165,7 +165,7 @@ class TestBundleAudit(BaseTestCase):
     def test_load(self):
         self.upload_bundle_and_check()
         self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": self.test_bundle_filename},
         )
 
@@ -175,7 +175,7 @@ class TestBundleAudit(BaseTestCase):
 
     def test_load_failed(self):
         self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": "something wrong"},
         )
 
@@ -184,7 +184,7 @@ class TestBundleAudit(BaseTestCase):
         self.check_log_load_no_obj(log=log, operation_result=AuditLogOperationResult.FAIL, user=self.test_user)
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle": "something wrong"},
         )
 
@@ -198,7 +198,7 @@ class TestBundleAudit(BaseTestCase):
 
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("load-bundle"),
+                path=reverse(viewname="v1:load-bundle"),
                 data={"bundle_file": self.test_bundle_path.name},
             )
 
@@ -218,7 +218,7 @@ class TestBundleAudit(BaseTestCase):
     def test_update(self):
         with patch("api.stack.views.update_bundle"):
             self.client.put(
-                path=reverse("bundle-update", kwargs={"bundle_pk": self.bundle.pk}),
+                path=reverse(viewname="v1:bundle-update", kwargs={"bundle_pk": self.bundle.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -237,7 +237,7 @@ class TestBundleAudit(BaseTestCase):
     def test_update_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.put(
-                path=reverse("bundle-update", kwargs={"bundle_pk": self.bundle.pk}),
+                path=reverse(viewname="v1:bundle-update", kwargs={"bundle_pk": self.bundle.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -246,7 +246,7 @@ class TestBundleAudit(BaseTestCase):
         self.check_log_denied(log=log, operation_name="Bundle updated", operation_type=AuditLogOperationType.UPDATE)
 
     def test_license_accepted(self):
-        self.client.put(path=reverse("accept-license", kwargs={"bundle_pk": self.bundle.pk}))
+        self.client.put(path=reverse(viewname="v1:accept-license", kwargs={"bundle_pk": self.bundle.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -263,7 +263,9 @@ class TestBundleAudit(BaseTestCase):
 
     def test_license_accepted_denied(self):
         with self.no_rights_user_logged_in:
-            response: Response = self.client.put(path=reverse("accept-license", kwargs={"bundle_pk": self.bundle.pk}))
+            response: Response = self.client.put(
+                path=reverse(viewname="v1:accept-license", kwargs={"bundle_pk": self.bundle.pk})
+            )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -275,7 +277,7 @@ class TestBundleAudit(BaseTestCase):
         )
 
     def test_prototype_license_accepted(self):
-        self.client.put(path=reverse("accept-license", kwargs={"prototype_pk": self.prototype.pk}))
+        self.client.put(path=reverse(viewname="v1:accept-license", kwargs={"prototype_pk": self.prototype.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
         self.check_prototype_licence(log, AuditLogOperationResult.SUCCESS, self.test_user)
@@ -283,7 +285,7 @@ class TestBundleAudit(BaseTestCase):
     def test_prototype_license_accepted_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.put(
-                path=reverse("accept-license", kwargs={"prototype_pk": self.prototype.pk}),
+                path=reverse(viewname="v1:accept-license", kwargs={"prototype_pk": self.prototype.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -293,7 +295,7 @@ class TestBundleAudit(BaseTestCase):
 
     def test_delete(self):
         with patch("api.stack.views.delete_bundle"):
-            self.client.delete(path=reverse("bundle-detail", kwargs={"bundle_pk": self.bundle.pk}))
+            self.client.delete(path=reverse(viewname="v1:bundle-detail", kwargs={"bundle_pk": self.bundle.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -302,7 +304,7 @@ class TestBundleAudit(BaseTestCase):
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse("bundle-detail", kwargs={"bundle_pk": self.bundle.pk}),
+                path=reverse(viewname="v1:bundle-detail", kwargs={"bundle_pk": self.bundle.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -315,14 +317,16 @@ class TestBundleAudit(BaseTestCase):
             prototype=Prototype.objects.create(bundle=self.bundle, type="cluster"),
             name="test_cluster",
         )
-        self.client.delete(path=reverse("bundle-detail", kwargs={"bundle_pk": self.bundle.pk}))
+        self.client.delete(path=reverse(viewname="v1:bundle-detail", kwargs={"bundle_pk": self.bundle.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_log_deleted(log=log, operation_result=AuditLogOperationResult.FAIL)
 
     def test_get_unauthorized(self):
-        self.client.post(path=reverse("rbac:logout"))
-        response: Response = self.client.get(path=reverse("bundle-detail", kwargs={"bundle_pk": self.bundle.pk}))
+        self.client.post(path=reverse(viewname="v1:rbac:logout"))
+        response: Response = self.client.get(
+            path=reverse(viewname="v1:bundle-detail", kwargs={"bundle_pk": self.bundle.pk})
+        )
 
         self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)

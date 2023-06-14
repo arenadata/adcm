@@ -10,22 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=wrong-import-order,wrong-import-position
-# ruff: noqa: E402,F401
 
 import sys
 
 from ansible.errors import AnsibleError
-
 from ansible.plugins.lookup import LookupBase
 
-try:
-    from __main__ import display  # pylint: disable=unused-import
-except ImportError:
-    from ansible.utils.display import Display  # pylint: disable=ungrouped-imports
-
-    display = Display()
-
 sys.path.append("/adcm/python")
+
 import adcm.init_django  # pylint: disable=unused-import
 from cm.ansible_plugin import (
     set_cluster_config,
@@ -79,15 +71,20 @@ class LookupModule(LookupBase):
             raise AnsibleError(msg.format(len(terms)))
 
         conf = {terms[1]: terms[2]}
+        attr = {}
 
         if terms[0] == "service":
             if "cluster" not in variables:
                 raise AnsibleError("there is no cluster in hostvars")
             cluster = variables["cluster"]
             if "service_name" in kwargs:
-                res = set_service_config_by_name(cluster["id"], kwargs["service_name"], conf)
+                res = set_service_config_by_name(
+                    cluster_id=cluster["id"], service_name=kwargs["service_name"], config=conf, attr=attr
+                )
             elif "job" in variables and "service_id" in variables["job"]:
-                res = set_service_config(cluster["id"], variables["job"]["service_id"], conf)
+                res = set_service_config(
+                    cluster_id=cluster["id"], service_id=variables["job"]["service_id"], config=conf, attr=attr
+                )
             else:
                 msg = "no service_id in job or service_name and service_version in params"
                 raise AnsibleError(msg)
@@ -95,16 +92,16 @@ class LookupModule(LookupBase):
             if "cluster" not in variables:
                 raise AnsibleError("there is no cluster in hostvars")
             cluster = variables["cluster"]
-            res = set_cluster_config(cluster["id"], conf)
+            res = set_cluster_config(cluster_id=cluster["id"], config=conf, attr=attr)
         elif terms[0] == "provider":
             if "provider" not in variables:
                 raise AnsibleError("there is no host provider in hostvars")
             provider = variables["provider"]
-            res = set_provider_config(provider["id"], conf)
+            res = set_provider_config(provider_id=provider["id"], config=conf, attr=attr)
         elif terms[0] == "host":
             if "adcm_hostid" not in variables:
                 raise AnsibleError("there is no adcm_hostid in hostvars")
-            res = set_host_config(variables["adcm_hostid"], conf)
+            res = set_host_config(host_id=variables["adcm_hostid"], config=conf, attr=attr)
         else:
             raise AnsibleError(f"unknown object type: {terms[0]}")
 

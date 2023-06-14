@@ -19,7 +19,7 @@ import sys
 from datetime import datetime
 
 from ansible.parsing.vault import VaultAES256, VaultSecret
-from cm.adcm_config import save_file_type
+from cm.adcm_config.config import save_file_type
 from cm.errors import AdcmEx
 from cm.models import (
     Bundle,
@@ -390,7 +390,7 @@ def set_old_password(password):
 
 
 @atomic
-def load(file_path):  # noqa: C901
+def load(file_path):
     """
     Loading and creating objects from JSON file
 

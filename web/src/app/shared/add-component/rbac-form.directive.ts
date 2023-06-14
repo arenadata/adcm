@@ -14,6 +14,8 @@ import { clearEmptyField } from '@app/core/types';
 import { BaseFormDirective } from '@app/shared/add-component/base-form.directive';
 import { take } from 'rxjs/operators';
 import { Params } from '@angular/router';
+import { IConfig } from "@app/shared/configuration/types";
+import { FormGroup } from '@angular/forms';
 
 @Directive({
   selector: '[appRbacForm]',
@@ -40,12 +42,12 @@ export class RbacFormDirective<T extends { url: string } = { url: string }> exte
     }
   }
 
-  rbacBeforeSave(value: T): Partial<T> {
-    return value;
+  rbacBeforeSave(form: FormGroup): Partial<T> {
+    return form.value;
   }
 
   save(): void {
-    const data = clearEmptyField(this.rbacBeforeSave(this.form.value));
+    const data = clearEmptyField(this.rbacBeforeSave(this.form));
 
     if (this.value) {
       this.service
@@ -63,4 +65,9 @@ export class RbacFormDirective<T extends { url: string } = { url: string }> exte
   updateFilter(key: string, value: string): void {
     this.filter = { ...this.filter, [key]: value?.trim() };
   }
+
+  getGlobalSettings() {
+    return this.api.get<IConfig>('/api/v1/adcm/1/config/current/?noview')
+  }
+
 }

@@ -37,7 +37,6 @@ urlpatterns = [
     path("concern/", include("api.concern.urls")),
     path("audit/", include(("audit.urls", "audit"))),
     path("schema/", schema_view),
-    path("auth/", include("rest_framework.urls", namespace="rest_framework")),
     path("docs/md/", docs.docs_md),
     path("docs/", docs.docs_html),
     path("rbac/", include(("rbac.urls", "rbac"))),

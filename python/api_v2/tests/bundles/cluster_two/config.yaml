@@ -1,0 +1,27 @@
+---
+- type: cluster
+  name: cluster_two
+  version: &version '1.0'
+  edition: community
+  config_group_customization: true
+  config: &config
+    - name: string
+      type: string
+      required: false
+      default: string
+    - name: group
+      type: group
+      subs:
+        - name: string
+          type: string
+          required: false
+          default: string
+
+- name: service
+  type: service
+  version: *version
+  config: *config
+  components:
+    component:
+      constraint: [ 0, + ]
+      config: *config

@@ -2,7 +2,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,11 +31,12 @@ func checkADCMUserToken(hub Hub, token string) bool {
 	if !ok {
 		return checkADCMAuth(token)
 	}
+
 	if time.Now().Before(val) {
 		return true
-	} else {
-		return checkADCMAuth(token)
 	}
+
+	return checkADCMAuth(token)
 }
 
 func djangoAuth(r *http.Request, hub Hub) bool {
@@ -47,25 +48,20 @@ func djangoAuth(r *http.Request, hub Hub) bool {
 	return hub.AdcmApi.checkSessionAuth(sessionId.Value)
 }
 
-func wsTokenAuth(w http.ResponseWriter, r *http.Request, hub Hub) bool {
-	h, ok := r.Header["Sec-Websocket-Protocol"]
-	if !ok {
-		ErrOut4(w, r, "AUTH_ERROR", "no \"Sec-WebSocket-Protocol\" header")
+func canAuthWithWebSocketHeaderCredentials(r *http.Request, hub Hub) bool {
+	header, ok := r.Header["Sec-Websocket-Protocol"]
+	if !ok || len(header) < 1 {
 		return false
 	}
-	if len(h) < 1 {
-		ErrOut4(w, r, "AUTH_ERROR", "no token")
+
+	// we expect that `header[0]` is something like "adcm, sometoken"
+	splittedHeader := strings.Split(header[0], ",")
+	if len(splittedHeader) < 2 {
+		// format is not the one we've expected
 		return false
 	}
-	token := ""
-	for _, i := range strings.Split(h[0], ",") {
-		token = strings.Trim(i, " ")
-	}
-	if !checkADCMUserToken(hub, token) {
-		ErrOut4(w, r, "AUTH_ERROR", "invalid token")
-		return false
-	}
-	return true
+
+	return checkADCMUserToken(hub, strings.Trim(splittedHeader[1], " "))
 }
 
 func getAuthorizationToken(r *http.Request) string {

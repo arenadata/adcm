@@ -20,7 +20,7 @@ import { catchError, concatAll, concatMap, filter, map, switchMap, tap } from 'r
 import { StackInfo, StackService } from '@app/core/services';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ApiService } from '@app/core/api';
-import {Host, License, Prototype, ServicePrototype, StackBase, TypeName} from '@app/core/types';
+import { Host, License, Prototype, PrototypeListResult, ServicePrototype, StackBase, TypeName } from '@app/core/types';
 import { DialogComponent } from '@app/shared/components/dialog.component';
 import { GenName } from './naming';
 import { MainService } from '@app/shared/configuration/main/main.service';
@@ -158,9 +158,9 @@ export class AddService implements IAddService {
       if (o.license_url && o.license === 'unaccepted') {
         return this.service.acceptServiceLicense(o)
           .pipe(
-            switchMap(() => this.cluster.addServices({prototype_id: o.prototype_id}))
+            switchMap(() => this.cluster.addServices({ prototype_id: o.prototype_id }))
           )
-      } else return this.cluster.addServices({prototype_id: o.prototype_id});
+      } else return this.cluster.addServices({ prototype_id: o.prototype_id });
     }))
   }
 
@@ -177,7 +177,7 @@ export class AddService implements IAddService {
             result.accept.indexOf("/license")
           ) as unknown as number;
 
-          if (serviceObj[prototype_id].license === 'absent') {
+          if (!serviceObj[prototype_id].license || serviceObj[prototype_id].license === 'absent') {
             return this.cluster.addServices({ prototype_id })
           }
 
@@ -214,6 +214,12 @@ export class AddService implements IAddService {
 
   getPrototype(name: StackInfo, param: { [key: string]: string | number }): Observable<Prototype[]> {
     return this.stack.fromStack(name, param);
+  }
+
+  getPrototypeList(name: StackInfo) {
+    return this.api.get(`${environment.apiUI}stack/${name}/?limit=500&ordering=display_name`).pipe(
+      map((response: PrototypeListResult) => response.results)
+    )
   }
 
   getProtoServiceForCurrentCluster() {

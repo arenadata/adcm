@@ -52,17 +52,17 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         self.upload_and_load_bundle(path=Path(settings.BASE_DIR, "python", "cm", "tests", "files", "ssh.1.0.tar"))
         self.provider = HostProvider.objects.create(
             name="test_provider",
-            prototype=Prototype.objects.all()[1],
+            prototype=Prototype.objects.filter(type="provider").first(),
         )
         self.host = Host.objects.create(
             fqdn="test-fqdn",
-            prototype=Prototype.objects.all()[0],
+            prototype=Prototype.objects.filter(type="host").first(),
             provider=self.provider,
             maintenance_mode=MaintenanceMode.ON,
         )
 
     def get_host_proto_id(self):
-        response: Response = self.client.get(reverse("host-prototype-list"))
+        response: Response = self.client.get(reverse(viewname="v1:host-prototype-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
@@ -70,7 +70,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
             return host["bundle_id"], host["id"]
 
     def get_host_provider_proto_id(self):
-        response: Response = self.client.get(reverse("provider-prototype-list"))
+        response: Response = self.client.get(reverse(viewname="v1:provider-prototype-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
@@ -82,10 +82,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
 
         err = response.json()
         if "code" in err:
-            self.assertEqual(err["code"], "WRONG_NAME")
-        else:
-            self.assertIn("fqdn", err)
-            self.assertEqual(err["fqdn"], ["Ensure this field has no more than 253 characters."])
+            self.assertEqual(err["code"], "BAD_REQUEST")
 
         self.host.refresh_from_db()
         self.assertEqual(self.host.fqdn, expected_fqdn)
@@ -100,7 +97,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
     def check_maintenance_mode_can_be_changed(self, host: Host):
         new_mm = MaintenanceMode.ON if host.maintenance_mode == MaintenanceMode.OFF else MaintenanceMode.OFF
         response = self.client.put(
-            path=reverse("host-details", args=[host.pk]),
+            path=reverse(viewname="v1:host-details", args=[host.pk]),
             data={
                 "fqdn": host.fqdn,
                 "maintenance_mode": new_mm,
@@ -116,7 +113,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
 
         new_mm = MaintenanceMode.ON if new_mm == MaintenanceMode.OFF else MaintenanceMode.OFF
         response = self.client.patch(
-            path=reverse("host-details", args=[host.pk]),
+            path=reverse(viewname="v1:host-details", args=[host.pk]),
             data={"maintenance_mode": new_mm},
             content_type=APPLICATION_JSON,
         )
@@ -126,7 +123,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
 
     def test_host(self):  # pylint: disable=too-many-statements
         host = "test.server.net"
-        host_url = reverse("host")
+        host_url = reverse(viewname="v1:host")
 
         ssh_bundle_id, host_proto = self.get_host_proto_id()
 
@@ -142,7 +139,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
 
         _, provider_proto = self.get_host_provider_proto_id()
         response: Response = self.client.post(
-            path=reverse("provider"),
+            path=reverse(viewname="v1:provider"),
             data={"name": "DF1", "prototype_id": provider_proto},
         )
 
@@ -186,7 +183,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json()["code"], "WRONG_NAME")
+        self.assertEqual(response.json()["code"], "BAD_REQUEST")
 
         response: Response = self.client.post(
             host_url,
@@ -197,7 +194,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
 
         host_id = response.json()["id"]
 
-        this_host_url = reverse("host-details", kwargs={"host_id": host_id})
+        this_host_url = reverse(viewname="v1:host-details", kwargs={"host_id": host_id})
 
         response: Response = self.client.get(this_host_url)
 
@@ -210,9 +207,10 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(
             response.json(),
             {
-                "prototype_id": ["This field is required."],
-                "provider_id": ["This field is required."],
-                "fqdn": ["This field is required."],
+                "code": "BAD_REQUEST",
+                "level": "error",
+                "desc": "prototype_id - This field is required.;provider_id - "
+                "This field is required.;fqdn - This field is required.;",
             },
         )
 
@@ -238,17 +236,23 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.assertEqual(response.json()["code"], "HOST_NOT_FOUND")
 
-        response: Response = self.client.delete(path=reverse("bundle-detail", kwargs={"bundle_pk": ssh_bundle_id}))
+        response: Response = self.client.delete(
+            path=reverse(viewname="v1:bundle-detail", kwargs={"bundle_pk": ssh_bundle_id})
+        )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "BUNDLE_CONFLICT")
 
-        response: Response = self.client.delete(path=reverse("provider-details", kwargs={"provider_id": provider_id}))
+        response: Response = self.client.delete(
+            path=reverse(viewname="v1:provider-details", kwargs={"provider_id": provider_id})
+        )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         self.provider.delete()
-        response: Response = self.client.delete(path=reverse("bundle-detail", kwargs={"bundle_pk": ssh_bundle_id}))
+        response: Response = self.client.delete(
+            path=reverse(viewname="v1:bundle-detail", kwargs={"bundle_pk": ssh_bundle_id})
+        )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
@@ -256,7 +260,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         new_test_fqdn = "new-test-fqdn"
 
         response: Response = self.client.patch(
-            path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}),
             data={"fqdn": new_test_fqdn, "maintenance_mode": MaintenanceMode.ON},
             content_type=APPLICATION_JSON,
         )
@@ -270,7 +274,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         self.host.save(update_fields=["state"])
 
         response: Response = self.client.patch(
-            path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}),
             data={"fqdn": self.host.fqdn, "maintenance_mode": MaintenanceMode.ON},
             content_type=APPLICATION_JSON,
         )
@@ -282,7 +286,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         self.host.save(update_fields=["state"])
 
         response: Response = self.client.patch(
-            path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}),
             data={"fqdn": "new-test-fqdn", "maintenance_mode": MaintenanceMode.ON},
             content_type=APPLICATION_JSON,
         )
@@ -303,7 +307,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         self.host.save(update_fields=["state", "cluster"])
 
         response: Response = self.client.patch(
-            path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}),
             data={"fqdn": "new-test-fqdn", "maintenance_mode": MaintenanceMode.ON},
             content_type=APPLICATION_JSON,
         )
@@ -313,30 +317,30 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
 
     def test_host_update_wrong_fqdn_fail(self):
         response: Response = self.client.patch(
-            path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}),
             data={"fqdn": ".new_test_fqdn"},
             content_type=APPLICATION_JSON,
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json()["code"], "WRONG_NAME")
+        self.assertEqual(response.json()["code"], "BAD_REQUEST")
 
     def test_host_update_not_created_state_wrong_fqdn_fail(self):
         self.host.state = "active"
         self.host.save(update_fields=["state"])
 
         response: Response = self.client.patch(
-            path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}),
             data={"fqdn": ".new_test_fqdn"},
             content_type=APPLICATION_JSON,
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json()["code"], "WRONG_NAME")
+        self.assertEqual(response.json()["code"], "BAD_REQUEST")
 
     def test_host_create_duplicated_fqdn_fail(self):
         response = self.client.post(
-            path=reverse("host"),
+            path=reverse(viewname="v1:host"),
             data={
                 "fqdn": self.host.fqdn,
                 "provider_id": self.host.provider.pk,
@@ -359,7 +363,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         )
 
         response = self.client.put(
-            path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}),
             data={
                 "fqdn": fqdn,
                 "provider_id": self.host.provider.pk,
@@ -373,7 +377,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.json()["desc"], "duplicate host")
 
         response = self.client.patch(
-            path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}),
             data={
                 "fqdn": fqdn,
                 "provider_id": self.host.provider.pk,
@@ -387,7 +391,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.json()["desc"], "duplicate host")
 
     def test_host_create_fqdn_validation(self):
-        url = reverse("host")
+        url = reverse(viewname="v1:host")
         amount_of_hosts = Host.objects.count()
         extra_payload = {
             "prototype_id": self.host.prototype.pk,
@@ -404,7 +408,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
                 self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
                 err = response.json()
                 if "code" in err:
-                    self.assertEqual(err["code"], "WRONG_NAME")
+                    self.assertEqual(err["code"], "BAD_REQUEST")
                 else:
                     self.assertIn("fqdn", err)
                     self.assertEqual(err["fqdn"], ["Ensure this field has no more than 253 characters."])
@@ -433,7 +437,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         for value in self.incorrect_values:
             with self.subTest("incorrect-put", fqdn=value):
                 response: Response = self.client.put(
-                    path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+                    path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}),
                     data={"fqdn": value, **default_values},
                     content_type=APPLICATION_JSON,
                 )
@@ -441,7 +445,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
 
             with self.subTest("incorrect-patch", fqdn=value):
                 response: Response = self.client.patch(
-                    path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+                    path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}),
                     data={"fqdn": value},
                     content_type=APPLICATION_JSON,
                 )
@@ -450,7 +454,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
         for value in self.correct_values:
             with self.subTest("correct-put", fqdn=value):
                 response: Response = self.client.put(
-                    path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+                    path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}),
                     data={"fqdn": value, **default_values},
                     content_type=APPLICATION_JSON,
                 )
@@ -460,7 +464,7 @@ class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
             self.host.save()
             with self.subTest("correct-patch", fqdn=value):
                 response: Response = self.client.patch(
-                    path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+                    path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}),
                     data={"fqdn": value},
                     content_type=APPLICATION_JSON,
                 )

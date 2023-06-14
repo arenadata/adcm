@@ -9,11 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import string
 
 from cm.models import Bundle, Cluster, Prototype
 from django.urls import reverse
-from init_db import init
 from rest_framework import status
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
@@ -22,7 +22,6 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 class TestCluster(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
-        init()
 
         self.allowed_name_chars_start_end = f"{string.ascii_letters}{string.digits}"
         self.allowed_name_chars_middle = f"{self.allowed_name_chars_start_end}-. _"
@@ -51,7 +50,7 @@ class TestCluster(BaseTestCase):
 
     def test_cluster_update_duplicate_name_fail(self):
         new_cluster = Cluster.objects.create(name="new_name", prototype=self.prototype)
-        url = reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
+        url = reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk})
 
         response = self.client.patch(path=url, data={"name": new_cluster.name}, content_type=APPLICATION_JSON)
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
@@ -65,7 +64,7 @@ class TestCluster(BaseTestCase):
 
     def test_cluster_create_duplicate_name_fail(self):
         response = self.client.post(
-            path=reverse("cluster"),
+            path=reverse(viewname="v1:cluster"),
             data={"name": self.cluster.name, "prototype_id": self.cluster.prototype.pk},
             content_type=APPLICATION_JSON,
         )
@@ -74,7 +73,7 @@ class TestCluster(BaseTestCase):
         self.assertEqual(response.json()["desc"], f'Cluster with name "{self.cluster.name}" already exists')
 
     def test_cluster_create_name_validation(self):
-        url = reverse("cluster")
+        url = reverse(viewname="v1:cluster")
         amount_of_clusters = Cluster.objects.count()
         for name in self.invalid_names:
             with self.subTest("invalid", name=name):
@@ -84,7 +83,7 @@ class TestCluster(BaseTestCase):
                     content_type=APPLICATION_JSON,
                 )
                 self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-                self.assertEqual(response.json()["code"], "WRONG_NAME")
+                self.assertEqual(response.json()["code"], "BAD_REQUEST")
                 self.assertEqual(Cluster.objects.count(), amount_of_clusters)
 
         for name in self.valid_names:
@@ -98,7 +97,7 @@ class TestCluster(BaseTestCase):
                 self.assertEqual(response.json()["name"], name)
 
     def test_cluster_update_name_validation(self):
-        url = reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
+        url = reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk})
         with self.another_user_logged_in(username="admin", password="admin"):
             for name in self.valid_names:
                 with self.subTest("correct-patch", name=name):
@@ -115,39 +114,38 @@ class TestCluster(BaseTestCase):
                 with self.subTest("incorrect-patch", name=name):
                     response = self.client.patch(path=url, data={"name": name}, content_type=APPLICATION_JSON)
                     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-                    self.assertEqual(response.json()["code"], "WRONG_NAME")
+                    self.assertEqual(response.json()["code"], "BAD_REQUEST")
 
                 with self.subTest("incorrect-put", name=name):
                     response = self.client.put(path=url, data={"name": name}, content_type=APPLICATION_JSON)
                     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-                    self.assertEqual(response.json()["code"], "WRONG_NAME")
+                    self.assertEqual(response.json()["code"], "BAD_REQUEST")
 
     def test_cluster_name_update_in_different_states(self):
-        state_created = "created"
-        state_another = "another state"
-        valid_name = self.valid_names[0]
-        url = reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
+        url = reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk})
 
-        self.cluster.state = state_created
-        self.cluster.save()
+        self.cluster.state = "created"
+        self.cluster.save(update_fields=["state"])
 
         with self.another_user_logged_in(username="admin", password="admin"):
             for method in ("patch", "put"):
                 response = getattr(self.client, method)(
                     path=url,
-                    data={"name": valid_name},
+                    data={"name": self.valid_names[0]},
                     content_type=APPLICATION_JSON,
                 )
-                self.assertEqual(response.status_code, status.HTTP_200_OK)
-                self.assertEqual(response.json()["name"], valid_name)
 
-            self.cluster.state = state_another
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+                self.assertEqual(response.json()["name"], self.valid_names[0])
+
+            self.cluster.state = "another state"
             self.cluster.save()
 
             for method in ("patch", "put"):
                 response = getattr(self.client, method)(
                     path=url,
-                    data={"name": valid_name},
+                    data={"name": self.valid_names[0]},
                     content_type=APPLICATION_JSON,
                 )
+
                 self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

@@ -10,9 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from unittest.mock import patch
-from zoneinfo import ZoneInfo
 
 from cm.models import (
     ADCM,
@@ -26,6 +25,7 @@ from cm.models import (
 )
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
@@ -41,14 +41,10 @@ class TestTaskAPI(BaseTestCase):
             name="test_cluster",
             prototype=Prototype.objects.create(bundle=bundle, type="cluster"),
         )
-        self.adcm_prototype = Prototype.objects.create(bundle=bundle, type="adcm")
-        self.adcm = ADCM.objects.create(
-            prototype=self.adcm_prototype,
-            name="ADCM",
-        )
+        self.adcm = ADCM.objects.first()
         self.action = Action.objects.create(
             display_name="test_adcm_action",
-            prototype=self.adcm_prototype,
+            prototype=self.adcm.prototype,
             type=ActionType.JOB,
             state_available="any",
         )
@@ -56,47 +52,49 @@ class TestTaskAPI(BaseTestCase):
         self.task_1 = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=adcm_object_type,
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")) + timedelta(days=1),
+            start_date=timezone.now(),
+            finish_date=timezone.now() + timedelta(days=1),
             status="created",
         )
         self.task_2 = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=adcm_object_type,
-            start_date=datetime.now(tz=ZoneInfo("UTC")) + timedelta(days=1),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")) + timedelta(days=2),
+            start_date=timezone.now() + timedelta(days=1),
+            finish_date=timezone.now() + timedelta(days=2),
             action=self.action,
             status="failed",
             pid=self.task_1.pid + 1,
         )
         JobLog.objects.create(
             status="created",
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")) + timedelta(days=1),
+            start_date=timezone.now(),
+            finish_date=timezone.now() + timedelta(days=1),
             task=self.task_2,
         )
 
     def test_list(self):
-        response: Response = self.client.get(path=reverse("tasklog-list"))
+        response: Response = self.client.get(path=reverse(viewname="v1:tasklog-list"))
 
         self.assertEqual(len(response.data["results"]), 2)
 
     def test_list_filter_action_id(self):
-        response: Response = self.client.get(reverse("tasklog-list"), {"action_id": self.action.pk})
+        response: Response = self.client.get(
+            path=reverse(viewname="v1:tasklog-list"), data={"action_id": self.action.pk}
+        )
 
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["id"], self.task_2.pk)
 
     def test_list_filter_pid(self):
-        response: Response = self.client.get(reverse("tasklog-list"), {"pid": self.task_1.pid})
+        response: Response = self.client.get(path=reverse(viewname="v1:tasklog-list"), data={"pid": self.task_1.pid})
 
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["pid"], self.task_1.pid)
 
     def test_list_filter_status(self):
         response: Response = self.client.get(
-            reverse("tasklog-list"),
-            {"status": self.task_1.status},
+            path=reverse(viewname="v1:tasklog-list"),
+            data={"status": self.task_1.status},
         )
 
         self.assertEqual(len(response.data["results"]), 1)
@@ -104,8 +102,8 @@ class TestTaskAPI(BaseTestCase):
 
     def test_list_filter_start_date(self):
         response: Response = self.client.get(
-            reverse("tasklog-list"),
-            {"start_date": self.task_1.start_date.isoformat()},
+            path=reverse(viewname="v1:tasklog-list"),
+            data={"start_date": self.task_1.start_date.isoformat()},
         )
 
         self.assertEqual(len(response.data["results"]), 1)
@@ -113,50 +111,52 @@ class TestTaskAPI(BaseTestCase):
 
     def test_list_filter_finish_date(self):
         response: Response = self.client.get(
-            reverse("tasklog-list"),
-            {"finish_date": self.task_2.finish_date.isoformat()},
+            path=reverse(viewname="v1:tasklog-list"),
+            data={"finish_date": self.task_2.finish_date.isoformat()},
         )
 
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["id"], self.task_2.pk)
 
     def test_list_ordering_status(self):
-        response: Response = self.client.get(reverse("tasklog-list"), {"ordering": "status"})
+        response: Response = self.client.get(path=reverse(viewname="v1:tasklog-list"), data={"ordering": "status"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.task_1.pk)
         self.assertEqual(response.data["results"][1]["id"], self.task_2.pk)
 
     def test_list_ordering_status_reverse(self):
-        response: Response = self.client.get(reverse("tasklog-list"), {"ordering": "-status"})
+        response: Response = self.client.get(path=reverse(viewname="v1:tasklog-list"), data={"ordering": "-status"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.task_2.pk)
         self.assertEqual(response.data["results"][1]["id"], self.task_1.pk)
 
     def test_list_ordering_start_date(self):
-        response: Response = self.client.get(reverse("tasklog-list"), {"ordering": "start_date"})
+        response: Response = self.client.get(path=reverse(viewname="v1:tasklog-list"), data={"ordering": "start_date"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.task_1.pk)
         self.assertEqual(response.data["results"][1]["id"], self.task_2.pk)
 
     def test_list_ordering_start_date_reverse(self):
-        response: Response = self.client.get(reverse("tasklog-list"), {"ordering": "-start_date"})
+        response: Response = self.client.get(path=reverse(viewname="v1:tasklog-list"), data={"ordering": "-start_date"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.task_2.pk)
         self.assertEqual(response.data["results"][1]["id"], self.task_1.pk)
 
     def test_list_ordering_finish_date(self):
-        response: Response = self.client.get(reverse("tasklog-list"), {"ordering": "finish_date"})
+        response: Response = self.client.get(path=reverse(viewname="v1:tasklog-list"), data={"ordering": "finish_date"})
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.task_1.pk)
         self.assertEqual(response.data["results"][1]["id"], self.task_2.pk)
 
     def test_list_ordering_finish_date_reverse(self):
-        response: Response = self.client.get(reverse("tasklog-list"), {"ordering": "-finish_date"})
+        response: Response = self.client.get(
+            path=reverse(viewname="v1:tasklog-list"), data={"ordering": "-finish_date"}
+        )
 
         self.assertEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], self.task_2.pk)
@@ -164,7 +164,7 @@ class TestTaskAPI(BaseTestCase):
 
     def test_retrieve(self):
         response: Response = self.client.get(
-            reverse("tasklog-detail", kwargs={"task_pk": self.task_2.pk}),
+            path=reverse(viewname="v1:tasklog-detail", kwargs={"task_pk": self.task_2.pk}),
         )
 
         self.assertEqual(response.data["id"], self.task_2.pk)
@@ -176,7 +176,7 @@ class TestTaskAPI(BaseTestCase):
     def test_restart(self):
         with patch("api.job.views.restart_task"):
             response: Response = self.client.put(
-                reverse("tasklog-restart", kwargs={"task_pk": self.task_1.pk}),
+                path=reverse(viewname="v1:tasklog-restart", kwargs={"task_pk": self.task_1.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -184,7 +184,7 @@ class TestTaskAPI(BaseTestCase):
     def test_cancel(self):
         with patch("api.job.views.cancel_task"):
             response: Response = self.client.put(
-                reverse("tasklog-cancel", kwargs={"task_pk": self.task_1.pk}),
+                path=reverse(viewname="v1:tasklog-cancel", kwargs={"task_pk": self.task_1.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -192,7 +192,7 @@ class TestTaskAPI(BaseTestCase):
     def test_download(self):
         with patch("api.job.views.get_task_download_archive_file_handler"):
             response: Response = self.client.get(
-                reverse("tasklog-download", kwargs={"task_pk": self.task_1.pk}),
+                path=reverse(viewname="v1:tasklog-download", kwargs={"task_pk": self.task_1.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -200,8 +200,8 @@ class TestTaskAPI(BaseTestCase):
     def test_run(self):
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             response: Response = self.client.post(
-                reverse(
-                    "run-task",
+                path=reverse(
+                    viewname="v1:run-task",
                     kwargs={"cluster_id": self.cluster.pk, "action_id": self.action.pk},
                 ),
             )

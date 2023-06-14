@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import hashlib
 from itertools import compress
 
@@ -19,7 +20,7 @@ from api.action.serializers import (
 )
 from api.base_view import GenericUIView
 from api.job.serializers import RunTaskRetrieveSerializer
-from api.utils import AdcmFilterBackend, create, filter_actions, get_object_for_user
+from api.utils import AdcmFilterBackend, create
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import Action, Host, HostComponent, TaskLog, get_model_by_type
@@ -32,7 +33,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-VIEW_ACTION_PERM = "cm.view_action"
+from adcm.permissions import VIEW_ACTION_PERM, get_object_for_user
+from adcm.utils import filter_actions
 
 
 def get_object_type_id(**kwargs) -> tuple[str, int, int]:

@@ -13,7 +13,7 @@
 import json
 from pathlib import Path
 
-from cm.adcm_config import ansible_decrypt
+from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import delete_host_provider
 from cm.bundle import delete_bundle
 from cm.errors import AdcmEx
@@ -29,7 +29,7 @@ from django.db import IntegrityError
 from django.db.transaction import TransactionManagementError
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED
+from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -75,13 +75,13 @@ class TestBundle(BaseTestCase):
             ),
         )
 
-        with open(Path(settings.BUNDLE_DIR, bundle.hash, "secretfile"), encoding=settings.ENCODING_UTF_8) as f:
+        with open(file=Path(settings.BUNDLE_DIR, bundle.hash, "secretfile"), encoding=settings.ENCODING_UTF_8) as f:
             secret_file_bundle_content = f.read()
 
         self.assertNotIn(settings.ANSIBLE_VAULT_HEADER, secret_file_bundle_content)
 
         with open(
-            Path(settings.FILE_DIR, f"cluster.{cluster.pk}.secretfile."),
+            file=Path(settings.FILE_DIR, f"cluster.{cluster.pk}.secretfile."),
             encoding=settings.ENCODING_UTF_8,
         ) as f:
             secret_file_content = f.read()
@@ -92,7 +92,7 @@ class TestBundle(BaseTestCase):
         config_log.config["secretfile"] = "new content"
 
         response: Response = self.client.post(
-            path=reverse("config-log-list"),
+            path=reverse(viewname="v1:config-log-list"),
             data={"obj_ref": cluster.config.pk, "config": json.dumps(config_log.config)},
         )
 
@@ -113,7 +113,7 @@ class TestBundle(BaseTestCase):
         secretfile_bundle_content = "aaa"
         secretfile_group_bundle_content = "bbb"
         response: Response = self.client.post(
-            path=reverse("config-history", kwargs={"cluster_id": cluster.pk}),
+            path=reverse(viewname="v1:config-history", kwargs={"cluster_id": cluster.pk}),
             params={"view": "interface"},
             data={
                 "config": {
@@ -136,14 +136,16 @@ class TestBundle(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         with open(
-            Path(settings.FILE_DIR, f"cluster.{cluster.pk}.secretfile."),
+            file=Path(settings.FILE_DIR, f"cluster.{cluster.pk}.secretfile."),
             encoding=settings.ENCODING_UTF_8,
         ) as f:
             secret_file_content = f.read()
 
         self.assertEqual(secretfile_bundle_content, secret_file_content)
 
-        response: Response = self.client.get(path=reverse("config-current", kwargs={"cluster_id": cluster.pk}))
+        response: Response = self.client.get(
+            path=reverse(viewname="v1:config-current", kwargs={"cluster_id": cluster.pk})
+        )
 
         self.assertIn(settings.ANSIBLE_VAULT_HEADER, response.data["config"]["secretfile"])
         self.assertEqual(ansible_decrypt(msg=response.data["config"]["secretfile"]), secretfile_bundle_content)
@@ -167,7 +169,7 @@ class TestBundle(BaseTestCase):
         config_log.config["secretmap"]["key"] = "new value"
 
         response: Response = self.client.post(
-            path=reverse("config-log-list"),
+            path=reverse(viewname="v1:config-log-list"),
             data={"obj_ref": cluster.config.pk, "config": json.dumps(config_log.config)},
         )
 
@@ -214,3 +216,19 @@ class TestBundle(BaseTestCase):
             delete_host_provider(provider)
         except AdcmEx as e:
             self.assertEqual(e.code, "PROVIDER_CONFLICT")
+
+    def test_duplicate_component_name_fail(self):
+        path = Path(self.files_dir, "test_duplicate_component_name.tar")
+        self.upload_bundle(path=path)
+
+        response: Response = self.client.post(
+            path=reverse(viewname="v1:load-bundle"),
+            data={"bundle_file": path.name},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["desc"],
+            "Display name for component within one service must be unique."
+            ' Incorrect definition of component "component_2" 3.0',
+        )

@@ -16,13 +16,14 @@ from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializ
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.host.serializers import HostSerializer
 from api.serializers import DoUpgradeSerializer, StringListSerializer
-from api.utils import CommonAPIURL, ObjectURL, UrlField, check_obj, filter_actions
+from api.utils import CommonAPIURL, ObjectURL, UrlField, check_obj
 from api.validators import StartMidEndValidator
-from cm.adcm_config import get_main_info
+from cm.adcm_config.config import get_main_info
 from cm.api import add_cluster, add_hc, bind, multi_bind
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
+from cm.schemas import RequiresUISchema
 from cm.status_api import get_cluster_status, get_hc_status
 from cm.upgrade import get_upgrade
 from django.conf import settings
@@ -41,6 +42,7 @@ from rest_framework.serializers import (
 from rest_framework.validators import UniqueValidator
 
 from adcm.serializers import EmptySerializer
+from adcm.utils import filter_actions, get_requires
 
 
 def get_cluster_id(obj):
@@ -69,7 +71,7 @@ class ClusterSerializer(Serializer):
                 start=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
                 mid=settings.ALLOWED_CLUSTER_NAME_MID_CHARS,
                 end=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
-                err_code="WRONG_NAME",
+                err_code="BAD_REQUEST",
                 err_msg="Wrong cluster name.",
             ),
         ],
@@ -77,7 +79,7 @@ class ClusterSerializer(Serializer):
     description = CharField(help_text="Cluster description", required=False)
     state = CharField(read_only=True)
     before_upgrade = JSONField(read_only=True)
-    url = HyperlinkedIdentityField(view_name="cluster-details", lookup_field="id", lookup_url_kwarg="cluster_id")
+    url = HyperlinkedIdentityField(view_name="v1:cluster-details", lookup_field="id", lookup_url_kwarg="cluster_id")
 
     @staticmethod
     def validate_prototype_id(prototype_id):
@@ -102,34 +104,36 @@ class ClusterDetailSerializer(ClusterSerializer):
     bundle_id = IntegerField(read_only=True)
     edition = CharField(read_only=True)
     license = CharField(read_only=True)
-    action = CommonAPIURL(view_name="object-action")
-    service = ObjectURL(view_name="service")
-    host = ObjectURL(view_name="host")
+    action = CommonAPIURL(view_name="v1:object-action")
+    service = ObjectURL(view_name="v1:service")
+    host = ObjectURL(view_name="v1:host")
     hostcomponent = HyperlinkedIdentityField(
-        view_name="host-component",
+        view_name="v1:host-component",
         lookup_field="id",
         lookup_url_kwarg="cluster_id",
     )
     status = SerializerMethodField()
-    status_url = HyperlinkedIdentityField(view_name="cluster-status", lookup_field="id", lookup_url_kwarg="cluster_id")
-    config = CommonAPIURL(view_name="object-config")
+    status_url = HyperlinkedIdentityField(
+        view_name="v1:cluster-status", lookup_field="id", lookup_url_kwarg="cluster_id"
+    )
+    config = CommonAPIURL(view_name="v1:object-config")
     serviceprototype = HyperlinkedIdentityField(
-        view_name="cluster-service-prototype",
+        view_name="v1:cluster-service-prototype",
         lookup_field="id",
         lookup_url_kwarg="cluster_id",
     )
-    upgrade = HyperlinkedIdentityField(view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id")
-    imports = HyperlinkedIdentityField(view_name="cluster-import", lookup_field="id", lookup_url_kwarg="cluster_id")
-    bind = HyperlinkedIdentityField(view_name="cluster-bind", lookup_field="id", lookup_url_kwarg="cluster_id")
+    upgrade = HyperlinkedIdentityField(view_name="v1:cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id")
+    imports = HyperlinkedIdentityField(view_name="v1:cluster-import", lookup_field="id", lookup_url_kwarg="cluster_id")
+    bind = HyperlinkedIdentityField(view_name="v1:cluster-bind", lookup_field="id", lookup_url_kwarg="cluster_id")
     prototype = HyperlinkedRelatedField(
-        view_name="cluster-prototype-detail",
+        view_name="v1:cluster-prototype-detail",
         read_only=True,
         lookup_url_kwarg="prototype_pk",
     )
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
-    group_config = GroupConfigsHyperlinkedIdentityField(view_name="group-config-list")
+    group_config = GroupConfigsHyperlinkedIdentityField(view_name="v1:group-config-list")
 
     @staticmethod
     def get_status(obj: Cluster) -> int:
@@ -137,12 +141,12 @@ class ClusterDetailSerializer(ClusterSerializer):
 
 
 class ClusterUISerializer(ClusterDetailSerializer):
-    action = CommonAPIURL(view_name="object-action")
+    action = CommonAPIURL(view_name="v1:object-action")
     edition = CharField(read_only=True)
     prototype_version = SerializerMethodField()
     prototype_name = SerializerMethodField()
     prototype_display_name = SerializerMethodField()
-    upgrade = HyperlinkedIdentityField(view_name="cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id")
+    upgrade = HyperlinkedIdentityField(view_name="v1:cluster-upgrade", lookup_field="id", lookup_url_kwarg="cluster_id")
     upgradable = SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
@@ -179,7 +183,7 @@ class ClusterUpdateSerializer(EmptySerializer):
                 start=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
                 mid=settings.ALLOWED_CLUSTER_NAME_MID_CHARS,
                 end=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
-                err_code="WRONG_NAME",
+                err_code="BAD_REQUEST",
                 err_msg="Wrong cluster name.",
             ),
         ],
@@ -339,73 +343,20 @@ class HCComponentSerializer(ComponentShortSerializer):
     requires = SerializerMethodField()
 
     @staticmethod
-    def get_service_state(obj):
+    def get_service_state(obj: ServiceComponent) -> str:
         return obj.service.state
 
     @staticmethod
-    def get_service_name(obj):
+    def get_service_name(obj: ServiceComponent) -> str:
         return obj.service.prototype.name
 
     @staticmethod
-    def get_service_display_name(obj):
+    def get_service_display_name(obj: ServiceComponent) -> str:
         return obj.service.prototype.display_name
 
     @staticmethod
-    def get_requires(obj):  # noqa: C901
-        if not obj.prototype.requires:
-            return None
-
-        comp_list = {}
-
-        def process_requires(req_list):
-            for require in req_list:
-                _comp = Prototype.obj.get(
-                    type="component",
-                    name=require["component"],
-                    parent__name=require["service"],
-                    parent__bundle_id=obj.prototype.bundle_id,
-                )
-                if _comp == obj.prototype:
-                    return
-
-                if _comp.name not in comp_list:
-                    comp_list[_comp.name] = {"components": {}, "service": _comp.parent}
-
-                if _comp.name in comp_list[_comp.name]["components"]:
-                    return
-
-                comp_list[_comp.name]["components"][_comp.name] = _comp
-                if _comp.requires:
-                    process_requires(_comp.requires)
-
-        process_requires(obj.requires)
-        out = []
-        for service_name, params in comp_list.items():
-            comp_out = []
-            service = params["service"]
-            for comp_name in params["components"]:
-                comp = params["components"][comp_name]
-                comp_out.append(
-                    {
-                        "prototype_id": comp.id,
-                        "name": comp_name,
-                        "display_name": comp.display_name,
-                    },
-                )
-
-            if not comp_out:
-                continue
-
-            out.append(
-                {
-                    "prototype_id": service.id,
-                    "name": service_name,
-                    "display_name": service.display_name,
-                    "components": comp_out,
-                },
-            )
-
-        return out
+    def get_requires(obj: ServiceComponent) -> list[RequiresUISchema] | None:
+        return get_requires(prototype=obj.prototype)
 
 
 class BindSerializer(EmptySerializer):

@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=wrong-import-order,wrong-import-position
-# ruff: noqa: E402,F401
 
 from __future__ import absolute_import, division, print_function
 
@@ -157,9 +156,9 @@ class ActionModule(ActionBase):
         group = {"title": group_title, "success_msg": group_success_msg, "fail_msg": group_fail_msg}
 
         check = {
-            "title": title,
+            "title": title.replace("\x00", ""),
             "result": result,
-            "message": msg,
+            "message": msg.replace("\x00", ""),
         }
 
         logger.debug(

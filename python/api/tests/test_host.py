@@ -58,16 +58,16 @@ class TestHostAPI(BaseTestCase):
 
     def test_change_mm_wrong_name_fail(self):
         response: Response = self.client.post(
-            path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
             data={"maintenance_mode": "wrong"},
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertIn("maintenance_mode", response.data)
+        self.assertIn(response.json()["desc"], 'maintenance_mode - "wrong" is not a valid choice.;')
 
     def test_change_mm_to_changing_fail(self):
         response: Response = self.client.post(
-            path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
             data={"maintenance_mode": MaintenanceMode.CHANGING},
         )
 
@@ -75,7 +75,7 @@ class TestHostAPI(BaseTestCase):
 
     def test_change_mm_on_no_action_success(self):
         response: Response = self.client.post(
-            path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
         )
 
@@ -93,9 +93,9 @@ class TestHostAPI(BaseTestCase):
             state_available="any",
         )
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
-                path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+                path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
             )
 
@@ -118,9 +118,9 @@ class TestHostAPI(BaseTestCase):
         self.host.maintenance_mode = MaintenanceMode.ON
         self.host.save(update_fields=["maintenance_mode"])
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
-                path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+                path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
             )
 
@@ -135,7 +135,7 @@ class TestHostAPI(BaseTestCase):
         self.host.save(update_fields=["maintenance_mode"])
 
         response: Response = self.client.post(
-            path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
             data={"maintenance_mode": MaintenanceMode.OFF},
         )
 
@@ -153,9 +153,9 @@ class TestHostAPI(BaseTestCase):
             name=settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
         )
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
-                path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+                path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
                 data={"maintenance_mode": MaintenanceMode.OFF},
             )
 
@@ -178,9 +178,9 @@ class TestHostAPI(BaseTestCase):
         self.host.maintenance_mode = MaintenanceMode.OFF
         self.host.save(update_fields=["maintenance_mode"])
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
-                path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+                path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
                 data={"maintenance_mode": MaintenanceMode.OFF},
             )
 
@@ -195,14 +195,14 @@ class TestHostAPI(BaseTestCase):
         self.host.save(update_fields=["maintenance_mode"])
 
         response: Response = self.client.post(
-            path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
         response: Response = self.client.post(
-            path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
             data={"maintenance_mode": MaintenanceMode.OFF},
         )
 
@@ -225,13 +225,13 @@ class TestHostAPI(BaseTestCase):
 
         provider_prototype = Prototype.objects.get(bundle=provider_bundle, type="provider")
         provider_response: Response = self.client.post(
-            path=reverse("provider"),
+            path=reverse(viewname="v1:provider"),
             data={"name": "test_provider", "prototype_id": provider_prototype.pk},
         )
         provider = HostProvider.objects.get(pk=provider_response.data["id"])
 
         host_response: Response = self.client.post(
-            path=reverse("host", kwargs={"provider_id": provider.pk}),
+            path=reverse(viewname="v1:host", kwargs={"provider_id": provider.pk}),
             data={"fqdn": "test-host"},
         )
         host = Host.objects.get(pk=host_response.data["id"])
@@ -240,14 +240,14 @@ class TestHostAPI(BaseTestCase):
 
         cluster_prototype = Prototype.objects.get(bundle_id=cluster_bundle.pk, type="cluster")
         cluster_response: Response = self.client.post(
-            path=reverse("cluster"),
+            path=reverse(viewname="v1:cluster"),
             data={"name": "test-cluster", "prototype_id": cluster_prototype.pk},
         )
         cluster = Cluster.objects.get(pk=cluster_response.data["id"])
 
         service_prototype = Prototype.objects.get(name="test_service", type="service")
         service_response: Response = self.client.post(
-            path=reverse("service", kwargs={"cluster_id": cluster.pk}),
+            path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": service_prototype.pk},
         )
         service = ClusterObject.objects.get(pk=service_response.data["id"])
@@ -257,12 +257,12 @@ class TestHostAPI(BaseTestCase):
         self.assertFalse(cluster.concerns.exists())
 
         self.client.post(
-            path=reverse("host", kwargs={"cluster_id": cluster.pk}),
+            path=reverse(viewname="v1:host", kwargs={"cluster_id": cluster.pk}),
             data={"host_id": host.pk},
         )
 
         self.client.post(
-            path=reverse("host-component", kwargs={"cluster_id": cluster.pk}),
+            path=reverse(viewname="v1:host-component", kwargs={"cluster_id": cluster.pk}),
             data={"hc": [{"service_id": service.pk, "component_id": component.pk, "host_id": host.pk}]},
             content_type=APPLICATION_JSON,
         )
@@ -270,7 +270,7 @@ class TestHostAPI(BaseTestCase):
         self.assertTrue(cluster.concerns.exists())
 
         self.client.post(
-            path=reverse("host-maintenance-mode", kwargs={"host_id": host.pk}),
+            path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": host.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
         )
 
@@ -281,7 +281,7 @@ class TestHostAPI(BaseTestCase):
         self.host.save(update_fields=["cluster"])
 
         response: Response = self.client.post(
-            path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
         )
 
@@ -292,7 +292,7 @@ class TestHostAPI(BaseTestCase):
         self.cluster_prototype.save(update_fields=["allow_maintenance_mode"])
 
         response: Response = self.client.post(
-            path=reverse("host-maintenance-mode", kwargs={"host_id": self.host.pk}),
+            path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
         )
 
@@ -309,29 +309,29 @@ class TestHostAPI(BaseTestCase):
 
         cluster_prototype = Prototype.objects.get(bundle_id=bundle.pk, type="cluster")
         cluster_response: Response = self.client.post(
-            path=reverse("cluster"),
+            path=reverse(viewname="v1:cluster"),
             data={"name": "test-cluster", "prototype_id": cluster_prototype.pk},
         )
         cluster = Cluster.objects.get(pk=cluster_response.data["id"])
 
         self.client.post(
-            path=reverse("provider"),
+            path=reverse(viewname="v1:provider"),
             data={"name": "test_provider", "prototype_id": self.provider_prototype.pk},
         )
         host_response: Response = self.client.post(
-            path=reverse("host", kwargs={"provider_id": self.host_provider.pk}),
+            path=reverse(viewname="v1:host", kwargs={"provider_id": self.host_provider.pk}),
             data={"fqdn": "test-host"},
         )
         host = Host.objects.get(pk=host_response.data["id"])
 
         self.client.post(
-            path=reverse("host", kwargs={"cluster_id": cluster.pk}),
+            path=reverse(viewname="v1:host", kwargs={"cluster_id": cluster.pk}),
             data={"host_id": host.pk},
         )
 
-        with patch("api.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
-                path=reverse("host-maintenance-mode", kwargs={"host_id": host.pk}),
+                path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": host.pk}),
                 data={"maintenance_mode": MaintenanceMode.ON},
             )
 

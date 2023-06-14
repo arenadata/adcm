@@ -28,16 +28,16 @@ export class RbacRoleFormComponent extends RbacFormDirective<RbacRoleModel> impl
     return this.form.get('category');
   }
 
-  rbacBeforeSave(value: RbacRoleModel): RbacRoleModel {
-    let categories = value?.category;
-    const permissions = value.child;
+  rbacBeforeSave(form: FormGroup): RbacRoleModel {
+    let categories = form.value?.category;
+    const permissions = form.value.child;
 
-    if (!value?.category?.length) {
+    if (!form.value?.category?.length) {
       categories = permissions.reduce((acc, cur) => [...acc, ...cur.category], []);
     }
 
     return {
-      ...value,
+      ...form.value,
       category: categories
     };
   }
@@ -51,7 +51,7 @@ export class RbacRoleFormComponent extends RbacFormDirective<RbacRoleModel> impl
         CustomValidators.required,
         Validators.minLength(2),
         Validators.maxLength(160),
-        Validators.pattern('^[a-zA-Z0-9()<>{},._/-\\s]*$')
+        Validators.pattern('[a-zA-Z0-9_]+.*$')
       ]),
       any_category: new FormControl(null),
       built_in: new FormControl(null),

@@ -25,6 +25,7 @@ import { RbacUserService } from '../../services/rbac-user.service';
 import { RbacUserFormComponent } from '../../components/rbac/user-form/rbac-user-form.component';
 import { IFilter } from "../../shared/configuration/tools/filter/filter.component";
 import { BehaviorSubject } from "rxjs";
+import { ResetLoginAttemptsButtonComponent } from '@app/shared/reset-login-attempts-button/reset-login-attempts-button.component';
 
 const groupNameMapper = (user: RbacUserModel) => {
   return user.group.map((group) => group.name).join(', ');
@@ -68,6 +69,13 @@ export class UsersComponent extends RbacEntityListDirective<RbacUserModel> imple
       label: 'Type',
       sort: 'type',
       value: (row) => row.type,
+    },
+    {
+      label: '',
+      type: 'component',
+      className: 'reset-column',
+      headerClassName: 'reset-column',
+      component: ResetLoginAttemptsButtonComponent,
     }
   ] as IColumns<RbacUserModel>;
 
@@ -127,5 +135,4 @@ export class UsersComponent extends RbacEntityListDirective<RbacUserModel> imple
   isRowInactive = (value) => {
     return value?.is_active === false;
   }
-
 }

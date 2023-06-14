@@ -10,8 +10,98 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.adcm_config import ansible_decrypt
-from cm.models import ADCM, ConfigLog
+from typing import Any, Iterable
+
+from cm.adcm_config.ansible import ansible_decrypt
+from cm.api import load_mm_objects
+from cm.issue import update_hierarchy_issues, update_issue_after_deleting
+from cm.job import start_task
+from cm.models import (
+    ADCM,
+    Action,
+    ADCMEntity,
+    ClusterObject,
+    ConcernType,
+    ConfigLog,
+    Host,
+    HostComponent,
+    MaintenanceMode,
+    Prototype,
+    PrototypeConfig,
+    ServiceComponent,
+)
+from django.conf import settings
+from rest_framework.response import Response
+from rest_framework.serializers import Serializer
+from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
+
+
+def _change_mm_via_action(
+    prototype: Prototype,
+    action_name: str,
+    obj: Host | ClusterObject | ServiceComponent,
+    serializer: Serializer,
+) -> Serializer:
+    action = Action.objects.filter(prototype=prototype, name=action_name).first()
+    if action:
+        start_task(
+            action=action,
+            obj=obj,
+            conf={},
+            attr={},
+            hostcomponent=[],
+            hosts=[],
+            verbose=False,
+        )
+        serializer.validated_data["maintenance_mode"] = MaintenanceMode.CHANGING
+
+    return serializer
+
+
+def _update_mm_hierarchy_issues(obj: Host | ClusterObject | ServiceComponent) -> None:
+    if isinstance(obj, Host):
+        update_hierarchy_issues(obj.provider)
+
+    providers = {host_component.host.provider for host_component in HostComponent.objects.filter(cluster=obj.cluster)}
+    for provider in providers:
+        update_hierarchy_issues(provider)
+
+    update_hierarchy_issues(obj.cluster)
+    update_issue_after_deleting()
+    load_mm_objects()
+
+
+def process_requires(
+    proto: Prototype, comp_dict: dict, checked_object: list | None = None, adding_service: bool = False
+) -> dict:
+    if checked_object is None:
+        checked_object = []
+    checked_object.append(proto)
+
+    for require in proto.requires:
+        req_service = Prototype.obj.get(type="service", name=require["service"], bundle=proto.bundle)
+
+        if req_service.name not in comp_dict:
+            comp_dict[req_service.name] = {"components": {}, "service": req_service}
+
+        req_comp = None
+        if require.get("component"):
+            req_comp = Prototype.obj.get(
+                type="component",
+                name=require["component"],
+                parent=req_service,
+            )
+            comp_dict[req_service.name]["components"][req_comp.name] = req_comp
+
+        if req_service.requires and req_service not in checked_object:
+            process_requires(
+                proto=req_service, comp_dict=comp_dict, checked_object=checked_object, adding_service=adding_service
+            )
+
+        if req_comp and req_comp.requires and req_comp not in checked_object and not adding_service:
+            process_requires(proto=req_comp, comp_dict=comp_dict, checked_object=checked_object)
+
+    return comp_dict
 
 
 def get_obj_type(obj_type: str) -> str:
@@ -71,3 +161,153 @@ def has_yandex_oauth() -> bool:
 
 def has_google_oauth() -> bool:
     return all(get_google_oauth())
+
+
+def get_requires(
+    prototype: Prototype,
+    adding_service: bool = False,
+) -> list[dict[str, list[dict[str, Any]] | Any]] | None:
+    if not prototype.requires:
+        return None
+
+    proto_dict = {}
+    proto_dict = process_requires(proto=prototype, comp_dict=proto_dict, adding_service=adding_service)
+
+    out = []
+
+    for service_name, params in proto_dict.items():
+        comp_out = []
+        service = params["service"]
+        for comp_name in params["components"]:
+            comp = params["components"][comp_name]
+            comp_out.append(
+                {
+                    "prototype_id": comp.id,
+                    "name": comp_name,
+                    "display_name": comp.display_name,
+                },
+            )
+
+        out.append(
+            {
+                "prototype_id": service.id,
+                "name": service_name,
+                "display_name": service.display_name,
+                "components": comp_out,
+            },
+        )
+
+    return out
+
+
+def get_maintenance_mode_response(
+    obj: Host | ClusterObject | ServiceComponent,
+    serializer: Serializer,
+) -> Response:
+    # pylint: disable=too-many-branches
+
+    turn_on_action_name = settings.ADCM_TURN_ON_MM_ACTION_NAME
+    turn_off_action_name = settings.ADCM_TURN_OFF_MM_ACTION_NAME
+    prototype = obj.prototype
+    if isinstance(obj, Host):
+        obj_name = "host"
+        turn_on_action_name = settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME
+        turn_off_action_name = settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME
+        prototype = obj.cluster.prototype
+    elif isinstance(obj, ClusterObject):
+        obj_name = "service"
+    elif isinstance(obj, ServiceComponent):
+        obj_name = "component"
+    else:
+        obj_name = "obj"
+
+    service_has_hc = None
+    if obj_name == "service":
+        service_has_hc = HostComponent.objects.filter(service=obj).exists()
+
+    component_has_hc = None
+    if obj_name == "component":
+        component_has_hc = HostComponent.objects.filter(component=obj).exists()
+
+    if obj.maintenance_mode_attr == MaintenanceMode.CHANGING:
+        return Response(
+            data={
+                "code": "MAINTENANCE_MODE",
+                "level": "error",
+                "desc": "Maintenance mode is changing now",
+            },
+            status=HTTP_409_CONFLICT,
+        )
+
+    if obj.maintenance_mode_attr == MaintenanceMode.OFF:
+        if serializer.validated_data["maintenance_mode"] == MaintenanceMode.OFF:
+            return Response(
+                data={
+                    "code": "MAINTENANCE_MODE",
+                    "level": "error",
+                    "desc": "Maintenance mode already off",
+                },
+                status=HTTP_409_CONFLICT,
+            )
+
+        if obj_name == "host" or service_has_hc or component_has_hc:
+            serializer = _change_mm_via_action(
+                prototype=prototype,
+                action_name=turn_on_action_name,
+                obj=obj,
+                serializer=serializer,
+            )
+        else:
+            obj.maintenance_mode = MaintenanceMode.ON
+            serializer.validated_data["maintenance_mode"] = MaintenanceMode.ON
+
+        serializer.save()
+        _update_mm_hierarchy_issues(obj=obj)
+
+        return Response()
+
+    if obj.maintenance_mode_attr == MaintenanceMode.ON:
+        if serializer.validated_data["maintenance_mode"] == MaintenanceMode.ON:
+            return Response(
+                data={
+                    "code": "MAINTENANCE_MODE",
+                    "level": "error",
+                    "desc": "Maintenance mode already on",
+                },
+                status=HTTP_409_CONFLICT,
+            )
+
+        if obj_name == "host" or service_has_hc or component_has_hc:
+            serializer = _change_mm_via_action(
+                prototype=prototype,
+                action_name=turn_off_action_name,
+                obj=obj,
+                serializer=serializer,
+            )
+        else:
+            obj.maintenance_mode = MaintenanceMode.OFF
+            serializer.validated_data["maintenance_mode"] = MaintenanceMode.OFF
+
+        serializer.save()
+        _update_mm_hierarchy_issues(obj=obj)
+
+        return Response()
+
+    return Response(
+        data={"error": f'Unknown {obj_name} maintenance mode "{obj.maintenance_mode}"'},
+        status=HTTP_400_BAD_REQUEST,
+    )
+
+
+def filter_actions(obj: ADCMEntity, actions: Iterable[Action]):
+    """Filter out actions that are not allowed to run on object at that moment"""
+    if obj.concerns.filter(type=ConcernType.LOCK).exists():
+        return []
+
+    allowed = []
+    for action in actions:
+        if action.allowed(obj):
+            allowed.append(action)
+            action.config = PrototypeConfig.objects.filter(prototype=action.prototype, action=action).order_by("id")
+
+    return allowed

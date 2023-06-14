@@ -13,7 +13,7 @@
         try_files $uri $uri/ /index.html;
     }
 
-    location /swagger {
+    location /auth {
         uwsgi_pass  django;
         uwsgi_read_timeout 300s;
         uwsgi_send_timeout 300s;

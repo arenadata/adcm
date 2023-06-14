@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from dataclasses import dataclass
 
 from audit.cases.common import get_audit_object_from_resp, get_or_create_audit_obj
@@ -19,6 +20,7 @@ from audit.models import (
     AuditObjectType,
     AuditOperation,
 )
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Model
 from django.views import View
 from rest_framework.response import Response
@@ -42,13 +44,20 @@ def _rbac_case(
             obj = data.deleted_obj
         else:
             operation_type = AuditLogOperationType.UPDATE
-            obj = AUDIT_OBJECT_TYPE_TO_MODEL_MAP[obj_type].objects.get(pk=data.obj_pk)
+            try:
+                obj = AUDIT_OBJECT_TYPE_TO_MODEL_MAP[obj_type].objects.get(pk=data.obj_pk)
+            except ObjectDoesNotExist:
+                obj = None
 
-        audit_object = get_or_create_audit_obj(
-            object_id=data.obj_pk,
-            object_name=obj.name if obj_type != AuditObjectType.USER else obj.username,
-            object_type=obj_type,
-        )
+        if obj:
+            audit_object = get_or_create_audit_obj(
+                object_id=str(data.obj_pk),
+                object_name=obj.name if obj_type != AuditObjectType.USER else obj.username,
+                object_type=obj_type,
+            )
+        else:
+            audit_object = None
+
     else:
         operation_type = AuditLogOperationType.CREATE
         audit_object = get_audit_object_from_resp(
@@ -122,12 +131,15 @@ def rbac_case(
                 response=response,
             )
 
-        case ["rbac", "user", user_pk]:
+        case ["rbac", "user", user_pk] | ["rbac", "user", user_pk, "reset_failed_login_attempts"]:
             data = RbacCaseData(view=view, deleted_obj=deleted_obj, obj_pk=user_pk)
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.USER,
                 response=response,
                 data=data,
             )
+
+            if view.action == "reset_failed_login_attempts":
+                audit_operation.name = "User login attempts reset"
 
     return audit_operation, audit_object

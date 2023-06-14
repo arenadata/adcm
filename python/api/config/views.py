@@ -20,15 +20,18 @@ from api.config.serializers import (
 )
 from api.utils import check_obj, create, update
 from audit.utils import audit
-from cm.adcm_config import ansible_encrypt_and_format, ui_config
+from cm.adcm_config.ansible import ansible_encrypt_and_format
+from cm.adcm_config.config import ui_config
 from cm.errors import AdcmEx
 from cm.models import ConfigLog, ObjectConfig, get_model_by_type
 from django.conf import settings
+from django.db.models.query import QuerySet
 from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from adcm.permissions import check_config_perm
 
 
 def get_config_version(queryset, objconf, version) -> ConfigLog:
@@ -75,23 +78,6 @@ def get_object_type_id_version(**kwargs):
     return object_type, object_id, version
 
 
-def has_config_perm(user, action_type, object_type, obj):
-    """
-    Checks permission to view/change config of any object
-    """
-    model = type_to_model(object_type)
-    if user.has_perm(f"cm.{action_type}_config_of_{model}", obj):
-        return True
-    if model == "adcm" and user.has_perm(f"cm.{action_type}_settings_of_{model}"):
-        return True
-    return False
-
-
-def check_config_perm(user, action_type, object_type, obj):
-    if not has_config_perm(user, action_type, object_type, obj):
-        raise PermissionDenied()
-
-
 class ConfigView(GenericUIView):
     queryset = ConfigLog.objects.all()
     serializer_class = HistoryCurrentPreviousConfigSerializer
@@ -114,11 +100,8 @@ class ConfigHistoryView(PermissionListMixin, GenericUIView):
     permission_required = ["cm.view_configlog"]
     ordering = ["id"]
 
-    def get_queryset(self, *args, **kwargs):
-        if self.request.user.has_perm("cm.view_settings_of_adcm"):
-            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
-        else:
-            return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
+    def get_queryset(self, *args, **kwargs) -> QuerySet:
+        return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
@@ -132,7 +115,7 @@ class ConfigHistoryView(PermissionListMixin, GenericUIView):
     def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         obj, object_config = get_obj(object_type, object_id)
-        check_config_perm(request.user, "change", object_type, obj)
+        check_config_perm(user=request.user, action_type="change", model=type_to_model(object_type), obj=obj)
         try:
             config_log = self.get_queryset().get(obj_ref=object_config, id=object_config.current)
         except ConfigLog.DoesNotExist:
@@ -150,11 +133,8 @@ class ConfigVersionView(PermissionListMixin, GenericUIView):
     permission_required = ["cm.view_configlog"]
     ordering = ["id"]
 
-    def get_queryset(self, *args, **kwargs):
-        if self.request.user.has_perm("cm.view_settings_of_adcm"):
-            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
-        else:
-            return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
+    def get_queryset(self, *args, **kwargs) -> QuerySet:
+        return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, version = get_object_type_id_version(**kwargs)
@@ -194,17 +174,11 @@ class ConfigHistoryRestoreView(PermissionListMixin, GenericUIView):
     permission_required = ["cm.view_configlog"]
     ordering = ["id"]
 
-    def get_queryset(self, *args, **kwargs):
-        if self.request.user.has_perm("cm.view_settings_of_adcm"):
-            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
-        else:
-            return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
-
     @audit
     def patch(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         object_type, object_id, version = get_object_type_id_version(**kwargs)
         obj, object_config = get_obj(object_type, object_id)
-        check_config_perm(request.user, "change", object_type, obj)
+        check_config_perm(user=request.user, action_type="change", model=type_to_model(object_type), obj=obj)
         config_log = get_config_version(self.get_queryset(), object_config, version)
         serializer = self.get_serializer(config_log, data=request.data)
 

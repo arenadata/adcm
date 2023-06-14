@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=wrong-import-order,wrong-import-position
-# ruff: noqa: E402,F401
 
 from __future__ import absolute_import, division, print_function
 
@@ -87,7 +86,7 @@ class ActionModule(ActionBase):
         try:
             provider = HostProvider.obj.get(pk=provider_pk)
             proto = Prototype.objects.get(bundle=provider.prototype.bundle, type="host")
-            host = add_host(proto=proto, provider=provider, fqdn=fqdn, desc=desc)
+            host = add_host(prototype=proto, provider=provider, fqdn=fqdn, description=desc)
         except AdcmEx as e:
             raise AnsibleError(f"{e.code}:{e.msg}") from e
 

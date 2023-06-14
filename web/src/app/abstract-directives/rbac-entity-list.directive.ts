@@ -78,9 +78,11 @@ export abstract class RbacEntityListDirective<T extends Entity> extends AdwpList
   showForm(data: RowEventData): void {
     const { url } = data.row;
     if (url) {
-      this.entityService.getByUrl(data.row.url).pipe(this.takeUntil()).subscribe((entity) => {
-        this.addButton.showForm(this.entityService.model(entity));
-      });
+      this.entityService.getByUrl(data.row.url)
+        .pipe(this.takeUntil())
+        .subscribe((entity) => {
+          this.addButton.showForm(this.entityService.model(entity));
+        });
     }
   }
 

@@ -55,8 +55,8 @@ def create(
     """Create Group"""
     try:
         group = models.Group.objects.create(name=name_to_display, description=description)
-    except IntegrityError as exc:
-        raise_adcm_ex("GROUP_CREATE_ERROR", msg=f"Group creation failed with error {exc}")
+    except IntegrityError as e:
+        raise_adcm_ex("GROUP_CREATE_ERROR", msg=f"Group creation failed with error {e}")
     _update_users(group, user_set or [])
     return group
 
@@ -77,7 +77,7 @@ def update(
     set_not_empty_attr(group, partial, "description", description, "")
     try:
         group.save()
-    except IntegrityError as exc:
-        raise_adcm_ex("GROUP_CONFLICT", msg=f"Group update failed with error {exc}")
+    except IntegrityError as e:
+        raise_adcm_ex("GROUP_CONFLICT", msg=f"Group update failed with error {e}")
     _update_users(group, user_set)
     return group

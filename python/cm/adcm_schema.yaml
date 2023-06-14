@@ -48,6 +48,7 @@ service_object:
     shared: boolean
     components: components_dict
     required: boolean
+    requires: service_req_list
     monitoring: monitoring
     config_group_customization: boolean
 
@@ -121,13 +122,23 @@ comp_req_list:
   match: list
   item: comp_req_item
 
+service_req_list:
+  match: list
+  item: service_req_item
+
 comp_req_item:
   match: dict
   items:
     service: string
     component: string
+
+service_req_item:
+  match: dict
+  items:
+    service: string
+    component: string
   required_items:
-    - component
+    - service
 
 constraint_list:
   match: list
@@ -174,6 +185,7 @@ upgrade_obj: &common_upgrade_object
   match: dict
   items: &common_upgrade_object_items
     name: version_rule
+    display_name: string
     description: string
     versions: version_dict
     states: states_dict

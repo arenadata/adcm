@@ -12,15 +12,16 @@
 
 from cm.stack import NAME_REGEX
 from django.conf import settings
-from rest_framework import permissions, routers
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.routers import APIRootView
 from rest_framework.views import APIView
 
 from adcm.utils import has_google_oauth, has_yandex_oauth
 
 
-class APIRoot(routers.APIRootView):
-    permission_classes = (permissions.AllowAny,)
+class APIRoot(APIRootView):
+    permission_classes = (AllowAny,)
     api_root_dict = {
         "adcm": "adcm-list",
         "audit": "audit:root",
@@ -56,7 +57,7 @@ class NameConverter:
 
 
 class ADCMInfo(APIView):
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (AllowAny,)
 
     @staticmethod
     def get(request):  # pylint: disable=unused-argument

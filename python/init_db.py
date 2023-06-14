@@ -18,7 +18,7 @@ from secrets import token_hex
 
 from django.conf import settings
 
-import adcm.init_django  # pylint: disable=unused-import # noqa: F401
+import adcm.init_django  # pylint: disable=unused-import
 from cm.bundle import load_adcm
 from cm.issue import update_hierarchy_issues
 from cm.job import abort_all

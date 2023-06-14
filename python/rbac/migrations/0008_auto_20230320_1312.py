@@ -28,10 +28,25 @@ def fix_permission_for_run_action(apps, schema_editor) -> None:
             role = permission.role_set.first()
             action_id = role.init_params["action_id"]
             action = action_model.objects.get(id=action_id)
+
             action_name_hash = hashlib.sha256(action.name.encode(settings.ENCODING_UTF_8)).hexdigest()
-            permission.codename = f"run_action_{action_name_hash}"
-            permission.name = f"Can run {action_name_hash} actions"
-            permission.save(update_fields=["codename", "name"])
+            new_codename = f"run_action_{action_name_hash}"
+            new_name = f"Can run {action_name_hash} actions"
+
+            try:
+                similar_permission = permission_model.objects.get(
+                    codename=new_codename, content_type=permission.content_type
+                )
+            except permission_model.DoesNotExist:
+                similar_permission = None
+
+            if similar_permission is not None:
+                similar_permission.role_set.add(*permission.role_set.all())
+                permission.delete()
+            else:
+                permission.codename = new_codename
+                permission.name = new_name
+                permission.save(update_fields=["codename", "name"])
         else:
             permission_ids_for_delete.append(permission.id)
 

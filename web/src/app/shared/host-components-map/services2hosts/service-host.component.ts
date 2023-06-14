@@ -21,6 +21,7 @@ import { getSelected, TakeService } from '../take.service';
 import { CompTile, HostTile, IRawHosComponent, Post, StatePost, Tile } from '../types';
 import { ApiService } from "@app/core/api";
 import { Observable } from "rxjs";
+import { IServiceComponent } from '@app/models/service-component';
 
 @Component({
   selector: 'app-service-host',
@@ -36,6 +37,8 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
     ['host', []],
     ['compo', []],
   ]);
+
+  addedServices: number[];
 
   form = new FormGroup({});
 
@@ -106,6 +109,10 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
     return this.api.get(`api/v1/cluster/${this.cluster.id}/hostcomponent/`);
   }
 
+  getAddedServices(): Observable<any> {
+    return this.api.get(`api/v1/cluster/${this.cluster.id}/service/`);
+  }
+
   socketListener(m: EventMessage) {
     const isCurrent = (type: string, id: number) => type === 'cluster' && id === this.cluster?.id;
     if (
@@ -170,6 +177,10 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
           ];
         });
     }
+
+    this.getAddedServices()
+      .pipe(this.takeUntil())
+      .subscribe((res) => this.addedServices = res.map((service) => service.prototype_id));
   }
 
   /** host only */
@@ -209,6 +220,13 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
       this.service.setRelations(raw.hc, this.Components, this.Hosts, this.actionParameters);
       this.service.fillHost(this.Hosts, this.actionParameters);
     }
+
+    if (this.cluster?.id) {
+      this.getAddedServices()
+        .pipe(this.takeUntil())
+        .subscribe((res) => this.addedServices = res.map((service) => service.prototype_id));
+    }
+
     this.service.formFill(this.Components, this.Hosts, this.form);
   }
 
@@ -226,7 +244,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
       link: getSelected(this.Components),
       selected: getSelected(this.Hosts),
     };
-    this.service.next(host, stream, this.Components, this.Hosts, this.statePost, this.loadPost, this.form);
+    this.service.next(host, stream, this.Components, this.Hosts, this.statePost, this.loadPost, this.form, this.addedServices);
   }
 
   selectService(component: CompTile) {
@@ -235,7 +253,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
       link: getSelected(this.Hosts),
       selected: getSelected(this.Components),
     };
-    this.service.next(component, stream, this.Components, this.Hosts, this.statePost, this.loadPost, this.form);
+    this.service.next(component, stream, this.Components, this.Hosts, this.statePost, this.loadPost, this.form, this.addedServices);
   }
 
   save() {

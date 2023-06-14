@@ -22,12 +22,12 @@ func main() {
 		"/adcm/data/var/secrets.json",
 		"Path to json config with secrets")
 	logFile := flag.String("logfile", "", "log file name (with full path)")
-	logLevel := flag.String("loglevel", "debug", "logging level (debug | info | warning | error)")
 	help := flag.Bool("help", false, "Print usage")
 	flag.Parse()
 	if *help {
 		flag.PrintDefaults()
 		os.Exit(0)
 	}
-	status.Start(status.ReadSecret(fileAuthKey), *logFile, *logLevel)
+
+	status.Start(status.ReadSecret(fileAuthKey), *logFile, status.GetLogLevel())
 }

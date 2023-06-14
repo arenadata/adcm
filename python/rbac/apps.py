@@ -10,17 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""RBAC Django application"""
-
 from django.apps import AppConfig
 
 
 class RBACConfig(AppConfig):
-    """RBAC app config"""
-
     name = "rbac"
     verbose_name = "Arenadata Web Platform role-based access control"
 
     def ready(self):
-        # pylint: disable-next=import-outside-toplevel,unused-import
-        from cm.signals import mark_deleted_audit_object_handler  # noqa: F401
+        from rbac.signals import (  # pylint: disable=import-outside-toplevel,unused-import
+            handle_name_type_display_name,
+        )

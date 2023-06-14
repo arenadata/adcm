@@ -14,6 +14,7 @@ from api.action.serializers import StackActionDetailSerializer
 from api.config.serializers import ConfigSerializer
 from api.serializers import UpgradeSerializer
 from cm.models import Bundle, ClusterObject, Prototype
+from cm.schemas import RequiresUISchema
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.serializers import (
     BooleanField,
@@ -28,6 +29,7 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
+from adcm.utils import get_requires
 
 
 class UploadBundleSerializer(EmptySerializer):
@@ -39,8 +41,10 @@ class LoadBundleSerializer(EmptySerializer):
 
 
 class BundleSerializer(HyperlinkedModelSerializer):
-    license_url = HyperlinkedIdentityField(view_name="bundle-license", lookup_field="pk", lookup_url_kwarg="bundle_pk")
-    update = HyperlinkedIdentityField(view_name="bundle-update", lookup_field="pk", lookup_url_kwarg="bundle_pk")
+    license_url = HyperlinkedIdentityField(
+        view_name="v1:bundle-license", lookup_field="pk", lookup_url_kwarg="bundle_pk"
+    )
+    update = HyperlinkedIdentityField(view_name="v1:bundle-update", lookup_field="pk", lookup_url_kwarg="bundle_pk")
     license = SerializerMethodField()
 
     class Meta:
@@ -79,7 +83,7 @@ class BundleSerializer(HyperlinkedModelSerializer):
 
 class PrototypeSerializer(HyperlinkedModelSerializer):
     license_url = HyperlinkedIdentityField(
-        view_name="prototype-license",
+        view_name="v1:prototype-license",
         lookup_field="pk",
         lookup_url_kwarg="prototype_pk",
     )
@@ -100,6 +104,7 @@ class PrototypeSerializer(HyperlinkedModelSerializer):
             "display_name",
             "version",
             "required",
+            "requires",
             "description",
             "bundle_edition",
             "url",
@@ -143,6 +148,7 @@ class PrototypeUISerializer(PrototypeSerializer, PrototypeSerializerMixin):
     service_name = SerializerMethodField(read_only=True)
     service_display_name = SerializerMethodField(read_only=True)
     service_id = SerializerMethodField(read_only=True)
+    requires = SerializerMethodField(read_only=True)
 
     class Meta:
         model = Prototype
@@ -166,6 +172,10 @@ class PrototypeUISerializer(PrototypeSerializer, PrototypeSerializerMixin):
         read_only_fields = fields
         extra_kwargs = {"url": {"lookup_url_kwarg": "prototype_pk"}}
 
+    @staticmethod
+    def get_requires(obj: Prototype) -> list[RequiresUISchema] | None:
+        return get_requires(prototype=obj, adding_service=True)
+
 
 class PrototypeDetailSerializer(PrototypeSerializer, PrototypeSerializerMixin):
     constraint = SerializerMethodField()
@@ -180,6 +190,7 @@ class PrototypeDetailSerializer(PrototypeSerializer, PrototypeSerializerMixin):
         fields = (
             *PrototypeSerializer.Meta.fields,
             "constraint",
+            "requires",
             "actions",
             "config",
             "service_name",
@@ -232,9 +243,17 @@ class ComponentPrototypeSerializer(PrototypeSerializer):
         read_only_fields = fields
 
 
+class ComponentPrototypeUISerializer(ComponentPrototypeSerializer):
+    requires = SerializerMethodField()
+
+    @staticmethod
+    def get_requires(obj: Prototype) -> list[RequiresUISchema] | None:
+        return get_requires(prototype=obj)
+
+
 class ServicePrototypeSerializer(PrototypeSerializer):
     url = HyperlinkedIdentityField(
-        view_name="service-prototype-detail",
+        view_name="v1:service-prototype-detail",
         lookup_field="pk",
         lookup_url_kwarg="prototype_pk",
     )
@@ -272,6 +291,7 @@ class ServiceDetailPrototypeSerializer(ServicePrototypeSerializer):
 
 class BundleServiceUIPrototypeSerializer(ServicePrototypeSerializer):
     selected = SerializerMethodField()
+    requires = SerializerMethodField(read_only=True)
 
     class Meta:
         model = Prototype
@@ -290,10 +310,14 @@ class BundleServiceUIPrototypeSerializer(ServicePrototypeSerializer):
         except ClusterObject.DoesNotExist:
             return False
 
+    @staticmethod
+    def get_requires(obj: Prototype) -> list[RequiresUISchema] | None:
+        return get_requires(prototype=obj, adding_service=True)
+
 
 class ADCMPrototypeSerializer(PrototypeSerializer):
     url = HyperlinkedIdentityField(
-        view_name="adcm-prototype-detail",
+        view_name="v1:adcm-prototype-detail",
         lookup_field="pk",
         lookup_url_kwarg="prototype_pk",
     )
@@ -309,7 +333,7 @@ class ADCMPrototypeSerializer(PrototypeSerializer):
 
 class ClusterPrototypeSerializer(FlexFieldsSerializerMixin, PrototypeSerializer):
     url = HyperlinkedIdentityField(
-        view_name="cluster-prototype-detail",
+        view_name="v1:cluster-prototype-detail",
         lookup_field="pk",
         lookup_url_kwarg="prototype_pk",
     )
@@ -326,7 +350,7 @@ class ClusterPrototypeSerializer(FlexFieldsSerializerMixin, PrototypeSerializer)
 class HostPrototypeSerializer(PrototypeSerializer):
     monitoring = CharField(read_only=True)
     url = HyperlinkedIdentityField(
-        view_name="host-prototype-detail",
+        view_name="v1:host-prototype-detail",
         lookup_field="pk",
         lookup_url_kwarg="prototype_pk",
     )
@@ -343,7 +367,7 @@ class HostPrototypeSerializer(PrototypeSerializer):
 
 class ProviderPrototypeSerializer(FlexFieldsSerializerMixin, PrototypeSerializer):
     url = HyperlinkedIdentityField(
-        view_name="provider-prototype-detail",
+        view_name="v1:provider-prototype-detail",
         lookup_field="pk",
         lookup_url_kwarg="prototype_pk",
     )

@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider13
-  version: 1
-
-- type: host
-  name: host13
-  version: 1

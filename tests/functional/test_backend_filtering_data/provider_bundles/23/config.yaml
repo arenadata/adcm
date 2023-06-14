@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider23
-  version: 1
-
-- type: host
-  name: host23
-  version: 1

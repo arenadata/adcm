@@ -11,6 +11,7 @@
 # limitations under the License.
 
 import json
+import logging
 import os
 import string
 import sys
@@ -36,9 +37,10 @@ DOWNLOAD_DIR = Path(STACK_DIR, "data", "download")
 RUN_DIR = BASE_DIR / "data" / "run"
 FILE_DIR = STACK_DIR / "data" / "file"
 LOG_DIR = BASE_DIR / "data" / "log"
+VAR_DIR = BASE_DIR / "data" / "var"
 LOG_FILE = LOG_DIR / "adcm.log"
-SECRETS_FILE = BASE_DIR / "data" / "var" / "secrets.json"
-ADCM_TOKEN_FILE = BASE_DIR / "data/var/adcm_token"
+SECRETS_FILE = VAR_DIR / "secrets.json"
+ADCM_TOKEN_FILE = VAR_DIR / "adcm_token"
 PYTHON_SITE_PACKAGES = Path(
     sys.exec_prefix,
     f"lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages",
@@ -69,7 +71,7 @@ if CONFIG_FILE.is_file():
 else:
     ADCM_VERSION = "2019.02.07.00"
 
-DEBUG = False
+DEBUG = os.getenv("DEBUG") in {"1", "True", "true"}
 ALLOWED_HOSTS = ["*"]
 INSTALLED_APPS = [
     "rbac",  # keep it above 'django.contrib.auth' in order to keep "createsuperuser" working
@@ -79,15 +81,14 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "drf_yasg",
     "rest_framework",
     "api.apps.APIConfig",
-    "corsheaders",
     "rest_framework.authtoken",
     "social_django",
     "guardian",
     "cm.apps.CmConfig",
     "audit",
+    "api_v2",
 ]
 
 MIDDLEWARE = [
@@ -96,11 +97,16 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "audit.middleware.AuditLoginMiddleware",
+    "audit.middleware.LoginMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
 ]
+if not DEBUG:
+    MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
+
+CSP_DEFAULT_SRC = ["'self'"]
+CSP_FRAME_ANCESTORS = ["'none'"]
+CSP_STYLE_SRC = ["'self'", "'unsafe-inline'"]
 
 ROOT_URLCONF = "adcm.urls"
 
@@ -121,7 +127,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "adcm.wsgi.application"
-LOGIN_URL = "/api/v1/auth/login/"
+LOGIN_URL = "/auth/login/"
 LOGIN_REDIRECT_URL = "/admin/intro/"
 
 REST_FRAMEWORK = {
@@ -139,6 +145,9 @@ REST_FRAMEWORK = {
         "rest_framework.filters.SearchFilter",
     ],
     "EXCEPTION_HANDLER": "cm.errors.custom_drf_exception_handler",
+    "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.NamespaceVersioning",
+    "DEFAULT_VERSION": "v1",
+    "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }
 
 DB_PASS = os.getenv("DB_PASS")
@@ -168,15 +177,6 @@ else:
 
 DATABASES = {"default": DB_DEFAULT}
 
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
-]
-
 AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.ModelBackend",
     "guardian.backends.ObjectPermissionBackend",
@@ -195,87 +195,78 @@ STATIC_ROOT = BASE_DIR / "wwwroot/static/"
 STATIC_URL = "/static/"
 
 ADWP_EVENT_SERVER = {
-    # path to json file with Event Server secret token
     "SECRETS_FILE": SECRETS_FILE,
-    # URL of Event Server REST API
     "API_URL": "http://localhost:8020/api/v1",
     "SECRET_KEY": ADCM_TOKEN,
 }
 
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "filters": {
-        "require_debug_false": {
-            "()": "django.utils.log.RequireDebugFalse",
+LOG_LEVEL = os.getenv("LOG_LEVEL", logging.getLevelName(logging.ERROR))
+
+if not DEBUG:
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "filters": {
+            "require_debug_false": {
+                "()": "django.utils.log.RequireDebugFalse",
+            },
         },
-    },
-    "formatters": {
-        "adwp": {
-            "format": "{asctime} {levelname} {module} {message}",
-            "style": "{",
+        "formatters": {
+            "adcm": {
+                "format": "{asctime} {levelname} {module} {message}",
+                "style": "{",
+            },
         },
-        "simple_formatter": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
-    },
-    "handlers": {
-        "file": {
-            "level": "DEBUG",
-            "filters": ["require_debug_false"],
-            "formatter": "adwp",
-            "class": "logging.FileHandler",
-            "filename": BASE_DIR / "data/log/adcm_debug.log",
+        "handlers": {
+            "adcm_file": {
+                "filters": ["require_debug_false"],
+                "formatter": "adcm",
+                "class": "logging.FileHandler",
+                "filename": LOG_FILE,
+            },
+            "adcm_debug_file": {
+                "filters": ["require_debug_false"],
+                "formatter": "adcm",
+                "class": "logging.FileHandler",
+                "filename": BASE_DIR / "data/log/adcm_debug.log",
+            },
+            "background_task_file_handler": {
+                "formatter": "adcm",
+                "class": "logging.handlers.TimedRotatingFileHandler",
+                "filename": BASE_DIR / "data/log/cron_task.log",
+                "when": "midnight",
+                "backupCount": 10,
+            },
+            "audit_file_handler": {
+                "class": "logging.handlers.TimedRotatingFileHandler",
+                "filename": BASE_DIR / "data/log/audit.log",
+                "when": "midnight",
+                "backupCount": 10,
+            },
         },
-        "adwp_file": {
-            "level": "DEBUG",
-            "formatter": "adwp",
-            "class": "logging.FileHandler",
-            "filename": BASE_DIR / "data/log/adwp.log",
+        "loggers": {
+            "adcm": {
+                "handlers": ["adcm_file"],
+                "level": LOG_LEVEL,
+                "propagate": True,
+            },
+            "django": {
+                "handlers": ["adcm_debug_file"],
+                "level": LOG_LEVEL,
+                "propagate": True,
+            },
+            "background_tasks": {
+                "handlers": ["background_task_file_handler"],
+                "level": LOG_LEVEL,
+                "propagate": True,
+            },
+            "audit": {
+                "handlers": ["audit_file_handler"],
+                "level": LOG_LEVEL,
+                "propagate": True,
+            },
         },
-        "background_task_file_handler": {
-            "level": "DEBUG",
-            "formatter": "simple_formatter",
-            "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": BASE_DIR / "data/log/cron_task.log",
-            "when": "midnight",
-            "backupCount": 10,
-        },
-        "audit_file_handler": {
-            "level": "DEBUG",
-            "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": BASE_DIR / "data/log/audit.log",
-            "when": "midnight",
-            "backupCount": 10,
-        },
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["file"],
-            "level": "DEBUG",
-            "propagate": True,
-        },
-        "django.template": {
-            "level": "ERROR",
-        },
-        "django.utils.autoreload": {
-            "level": "INFO",
-        },
-        "django_auth_ldap": {
-            "handlers": ["file"],
-            "level": "DEBUG",
-            "propagate": True,
-        },
-        "background_tasks": {
-            "handlers": ["background_task_file_handler"],
-            "level": "DEBUG",
-            "propagate": True,
-        },
-        "audit": {
-            "handlers": ["audit_file_handler"],
-            "level": "DEBUG",
-            "propagate": True,
-        },
-    },
-}
+    }
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
@@ -303,6 +294,7 @@ ADCM_MM_ACTION_FORBIDDEN_PROPS_SET = {"config", "hc_acl", "ui_options"}
 
 STACK_COMPLEX_FIELD_TYPES = {"json", "structure", "list", "map", "secretmap"}
 STACK_NUMERIC_FIELD_TYPES = {"integer", "float"}
+SECURE_PARAM_TYPES = {"password", "secrettext"}
 TEMPLATE_CONFIG_DELETE_FIELDS = {"yspec", "option", "activatable", "active", "read_only", "writable", "subs"}
 
 EMPTY_REQUEST_STATUS_CODE = 32

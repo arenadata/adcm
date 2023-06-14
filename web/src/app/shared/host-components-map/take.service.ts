@@ -76,11 +76,13 @@ const findDependencies = (c: CompTile, cs: CompTile[]): CompTile[] => {
 const checkDependencies = (c: CompTile, cs: CompTile[]): void =>
   findDependencies(c, cs).forEach((a) => (a.limit = a.limit ? [...a.limit, 'depend'] : ['depend']));
 
-const checkRequires = (component: CompTile, cs: CompTile[]): IRequires[] =>
-  component.requires.reduce<IRequires[]>(
-    (p, c) => (c.components.every((a) => cs.some((b) => b.prototype_id === a.prototype_id)) ? p : [...p, c]),
-    []
+const checkRequiredComponents = (chosenComponent: CompTile, availableComponents: CompTile[]): IRequires[] =>
+  chosenComponent.requires.reduce<IRequires[]>((p, currentRequire) => 
+    (currentRequire.components.every((requireComponent) => availableComponents.some((availableComponent) => availableComponent.prototype_id === requireComponent.prototype_id)) ? p : [...p, currentRequire]), []
   );
+
+const checkRequiredServices = (chosenComponent: CompTile, addedServices: number[]): IRequires[] => 
+  chosenComponent.requires.reduce<IRequires[]>((p, currentRequire) => (addedServices.includes(currentRequire.prototype_id) ? p : [...p, currentRequire]), []);
 
 //#endregion
 @Injectable()
@@ -258,12 +260,13 @@ export class TakeService {
     hs: HostTile[],
     state: StatePost,
     load: StatePost,
-    form: FormGroup
+    form: FormGroup,
+    addedServices: number[]
   ) {
     stream.linkSource.forEach((s) => (s.isLink = false));
     if (stream.selected) stream.selected.isSelected = false;
 
-    if (stream.link) this.handleLink(stream.link, target, state, cs, hs, load, form);
+    if (stream.link) this.handleLink(stream.link, target, state, cs, hs, load, form, addedServices);
     else if (stream.selected !== target) {
       target.isSelected = true;
       target.relations.forEach(
@@ -279,7 +282,8 @@ export class TakeService {
     cs: CompTile[],
     hs: HostTile[],
     load: StatePost,
-    form: FormGroup
+    form: FormGroup,
+    addedServices: number[]
   ) {
     const isComp = target instanceof CompTile;
     const component = (isComp ? target : link) as CompTile;
@@ -291,7 +295,10 @@ export class TakeService {
     } else if (checkConstraint(component.limit, component.relations.length)) {
       if (!checkActions(host.id, component, 'add', load)) return;
       if (component.requires?.length) {
-        const requires = checkRequires(component, cs);
+        const requiredComponents = checkRequiredComponents(component, cs);
+        const requiredServices = checkRequiredServices(component, addedServices);
+        const requires = [...new Set(requiredServices.concat(requiredComponents))]
+
         if (requires.length) {
           this.dialog4Requires(requires);
           return;
@@ -316,7 +323,7 @@ export class TakeService {
           title: 'This component cannot be installed without the following dependencies.',
           component: DependenciesComponent,
           model,
-          controls: ['Install All', 'It is clear'],
+          controls: ['Add All', 'Cancel'],
         },
       })
       .beforeClosed()

@@ -11,7 +11,7 @@
 # limitations under the License.
 # pylint: disable=wrong-import-order
 
-from cm.adcm_config import check_value_unselected_field
+from cm.adcm_config.checks import check_value_unselected_field
 from cm.errors import AdcmEx
 from cm.models import GroupConfig
 from cm.tests.utils import gen_cluster, gen_config, gen_prototype_config
@@ -91,35 +91,34 @@ class TestUnselectedFields(BaseTestCase):
             "json": None,
         }
         check_value_unselected_field(
-            self.cluster_config,
-            config_with_empty_values,
-            self.cluster_attr,
-            self.new_attr,
-            self.group_keys,
-            self.spec,
-            self.cluster,
+            current_config=self.cluster_config,
+            new_config=config_with_empty_values,
+            current_attr=self.cluster_attr,
+            new_attr=self.new_attr,
+            group_keys=self.group_keys,
+            spec=self.spec,
+            obj=self.cluster,
         )
 
         check_value_unselected_field(
-            config_with_empty_values,
-            self.cluster_config,
-            self.cluster_attr,
-            self.new_attr,
-            self.group_keys,
-            self.spec,
-            self.cluster,
+            current_config=config_with_empty_values,
+            new_config=self.cluster_config,
+            current_attr=self.cluster_attr,
+            new_attr=self.new_attr,
+            group_keys=self.group_keys,
+            spec=self.spec,
+            obj=self.cluster,
         )
         new_config = {"list": None, "string": None, "map": None, "structure": None, "json": {}}
-        with self.assertRaisesRegex(AdcmEx, r"Value of `json` field is different in current and new config."):
-            check_value_unselected_field(
-                self.cluster_config,
-                new_config,
-                self.cluster_attr,
-                self.new_attr,
-                self.group_keys,
-                self.spec,
-                self.cluster,
-            )
+        check_value_unselected_field(
+            current_config=self.cluster_config,
+            new_config=new_config,
+            current_attr=self.cluster_attr,
+            new_attr=self.new_attr,
+            group_keys=self.group_keys,
+            spec=self.spec,
+            obj=self.cluster,
+        )
 
         new_config = {
             "list": None,
@@ -130,13 +129,13 @@ class TestUnselectedFields(BaseTestCase):
         }
         with self.assertRaisesRegex(AdcmEx, r"Value of `structure` field is different in current and new config."):
             check_value_unselected_field(
-                self.cluster_config,
-                new_config,
-                self.cluster_attr,
-                self.new_attr,
-                self.group_keys,
-                self.spec,
-                self.cluster,
+                current_config=self.cluster_config,
+                new_config=new_config,
+                current_attr=self.cluster_attr,
+                new_attr=self.new_attr,
+                group_keys=self.group_keys,
+                spec=self.spec,
+                obj=self.cluster,
             )
 
     def test_unequal_values(self):

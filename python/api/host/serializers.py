@@ -13,9 +13,9 @@
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
-from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions
+from api.utils import CommonAPIURL, ObjectURL, check_obj
 from api.validators import HostUniqueValidator, StartMidEndValidator
-from cm.adcm_config import get_main_info
+from cm.adcm_config.config import get_main_info
 from cm.api import add_host
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
 from cm.models import Action, Host, HostProvider, MaintenanceMode, Prototype
@@ -32,6 +32,7 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
+from adcm.utils import filter_actions
 
 
 class HostSerializer(EmptySerializer):
@@ -48,7 +49,7 @@ class HostSerializer(EmptySerializer):
                 start=settings.ALLOWED_HOST_FQDN_START_CHARS,
                 mid=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
                 end=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
-                err_code="WRONG_NAME",
+                err_code="BAD_REQUEST",
                 err_msg="Wrong FQDN.",
             ),
         ],
@@ -57,7 +58,7 @@ class HostSerializer(EmptySerializer):
     state = CharField(read_only=True)
     maintenance_mode = ChoiceField(choices=MaintenanceMode.choices, read_only=True)
     is_maintenance_mode_available = BooleanField(read_only=True)
-    url = ObjectURL(read_only=True, view_name="host-details")
+    url = ObjectURL(read_only=True, view_name="v1:host-details")
 
     @staticmethod
     def validate_prototype_id(prototype_id):
@@ -79,10 +80,10 @@ class HostSerializer(EmptySerializer):
 class HostDetailSerializer(HostSerializer):
     bundle_id = IntegerField(read_only=True)
     status = SerializerMethodField()
-    config = CommonAPIURL(view_name="object-config")
-    action = CommonAPIURL(view_name="object-action")
+    config = CommonAPIURL(view_name="v1:object-config")
+    action = CommonAPIURL(view_name="v1:object-action")
     prototype = HyperlinkedIdentityField(
-        view_name="host-prototype-detail",
+        view_name="v1:host-prototype-detail",
         lookup_field="pk",
         lookup_url_kwarg="prototype_pk",
     )
@@ -158,7 +159,7 @@ class HostStatusSerializer(EmptySerializer):
 
 
 class HostUISerializer(HostSerializer):
-    action = CommonAPIURL(view_name="object-action")
+    action = CommonAPIURL(view_name="v1:object-action")
     cluster_name = SerializerMethodField()
     prototype_version = SerializerMethodField()
     prototype_name = SerializerMethodField()

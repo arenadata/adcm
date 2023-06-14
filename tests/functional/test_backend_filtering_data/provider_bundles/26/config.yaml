@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider26
-  version: 1
-
-- type: host
-  name: host26
-  version: 1

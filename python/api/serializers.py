@@ -12,9 +12,9 @@
 
 from api.config.serializers import ConfigSerializerUI
 from api.utils import UrlField, check_obj, hlink
-from cm.adcm_config import get_action_variant, get_prototype_config, ui_config
+from cm.adcm_config.config import get_action_variant, get_prototype_config, ui_config
 from cm.errors import raise_adcm_ex
-from cm.models import Cluster, GroupConfig, HostProvider, PrototypeConfig
+from cm.models import Cluster, GroupConfig, HostProvider, PrototypeConfig, Upgrade
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (
     BooleanField,
@@ -34,13 +34,14 @@ from adcm.serializers import EmptySerializer
 class UpgradeSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     name = CharField(required=False)
+    display_name = CharField(read_only=True)
     bundle_id = IntegerField(read_only=True)
     description = CharField(required=False)
     min_version = CharField(required=False)
     max_version = CharField(required=False)
     min_strict = BooleanField(required=False)
     max_strict = BooleanField(required=False)
-    upgradable = BooleanField(required=False)
+    upgradable = SerializerMethodField()
     license = CharField(required=False)
     license_url = hlink("bundle-license", "bundle_id", "bundle_pk")
     from_edition = JSONField(required=False)
@@ -76,6 +77,9 @@ class UpgradeSerializer(EmptySerializer):
         conf = ConfigSerializerUI(action_conf, many=True, context=self.context, read_only=True)
         return {"attr": attr, "config": conf.data}
 
+    def get_upgradable(self, instance: Upgrade) -> bool:  # pylint: disable=unused-argument
+        return self.context.get("upgradable", False)
+
 
 class ClusterUpgradeSerializer(UpgradeSerializer):
     class MyUrlField(UrlField):
@@ -83,8 +87,8 @@ class ClusterUpgradeSerializer(UpgradeSerializer):
             return {"cluster_id": self.context["cluster_id"], "upgrade_id": obj.id}
 
     hostcomponentmap = SerializerMethodField()
-    url = MyUrlField(read_only=True, view_name="cluster-upgrade-details")
-    do = MyUrlField(read_only=True, view_name="do-cluster-upgrade")
+    url = MyUrlField(read_only=True, view_name="v1:cluster-upgrade-details")
+    do = MyUrlField(read_only=True, view_name="v1:do-cluster-upgrade")
 
     def get_hostcomponentmap(self, instance):
         if instance.action:
@@ -97,8 +101,8 @@ class ProviderUpgradeSerializer(UpgradeSerializer):
         def get_kwargs(self, obj):
             return {"provider_id": self.context["provider_id"], "upgrade_id": obj.id}
 
-    url = MyUrlField(read_only=True, view_name="provider-upgrade-details")
-    do = MyUrlField(read_only=True, view_name="do-provider-upgrade")
+    url = MyUrlField(read_only=True, view_name="v1:provider-upgrade-details")
+    do = MyUrlField(read_only=True, view_name="v1:do-provider-upgrade")
 
 
 class DoUpgradeSerializer(EmptySerializer):

@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from rbac.models import Group, User
-from rbac.services import user as user_services
+from rbac.services.user import create, update
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.fields import (
     BooleanField,
@@ -31,26 +32,19 @@ from rest_framework.serializers import (
 from adcm.serializers import EmptySerializer
 
 
-class PasswordField(CharField):
-    """Text field with content masking for passwords"""
-
-    def to_representation(self, value):
-        return user_services.PW_MASK
-
-
 class UserGroupSerializer(EmptySerializer):
     id = IntegerField()
-    url = HyperlinkedIdentityField(view_name="rbac:group-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:group-detail")
 
 
 class GroupUserSerializer(EmptySerializer):
     id = IntegerField()
-    url = HyperlinkedIdentityField(view_name="rbac:user-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:user-detail")
 
 
 class ExpandedGroupSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     user = GroupUserSerializer(many=True, source="user_set")
-    url = HyperlinkedIdentityField(view_name="rbac:group-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:group-detail")
     name = CharField(max_length=150, source="group.display_name")
     type = CharField(read_only=True, source="group.type")
 
@@ -82,13 +76,15 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
         default="",
     )
     is_superuser = BooleanField(default=False)
-    password = PasswordField(trim_whitespace=False)
-    url = HyperlinkedIdentityField(view_name="rbac:user-detail")
+    password = CharField(trim_whitespace=False, write_only=True)
+    current_password = CharField(trim_whitespace=False, required=False)
+    url = HyperlinkedIdentityField(view_name="v1:rbac:user-detail")
     profile = JSONField(required=False, default="")
     group = UserGroupSerializer(many=True, required=False, source="groups")
     built_in = BooleanField(read_only=True)
     type = CharField(read_only=True)
     is_active = BooleanField(required=False, default=True)
+    failed_login_attempts = IntegerField(read_only=True)
 
     class Meta:
         expandable_fields = {"group": (ExpandedGroupSerializer, {"many": True, "source": "groups"})}
@@ -96,10 +92,16 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
     def update(self, instance, validated_data):
         context_user = self.context["request"].user
 
-        return user_services.update(instance, context_user, partial=self.partial, **validated_data)
+        return update(
+            user=instance,
+            context_user=context_user,
+            partial=self.partial,
+            need_current_password=False,
+            **validated_data,
+        )
 
     def create(self, validated_data):
-        return user_services.create(**validated_data)
+        return create(**validated_data)
 
 
 class UserAuditSerializer(ModelSerializer):

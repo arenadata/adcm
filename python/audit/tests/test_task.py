@@ -12,7 +12,6 @@
 
 from datetime import datetime
 from unittest.mock import patch
-from zoneinfo import ZoneInfo
 
 from audit.models import (
     AuditLog,
@@ -20,9 +19,10 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import ADCM, Bundle, Prototype, TaskLog
+from cm.models import ADCM, TaskLog
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
+from django.utils import timezone
 from rbac.models import User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_404_NOT_FOUND
@@ -34,14 +34,12 @@ class TestTaskAudit(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle, type="adcm")
-        self.adcm = ADCM.objects.create(prototype=prototype, name="ADCM")
+        self.adcm = ADCM.objects.first()
         self.task = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=ContentType.objects.get(app_label="cm", model="adcm"),
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
         )
         self.task_restarted_str = "Task restarted"
 
@@ -70,7 +68,7 @@ class TestTaskAudit(BaseTestCase):
 
     def test_cancel(self):
         with patch("api.job.views.cancel_task"):
-            self.client.put(path=reverse("tasklog-cancel", kwargs={"task_pk": self.task.pk}))
+            self.client.put(path=reverse(viewname="v1:tasklog-cancel", kwargs={"task_pk": self.task.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -85,7 +83,7 @@ class TestTaskAudit(BaseTestCase):
     def test_cancel_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.put(
-                path=reverse("tasklog-cancel", kwargs={"task_pk": self.task.pk}),
+                path=reverse(viewname="v1:tasklog-cancel", kwargs={"task_pk": self.task.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -101,7 +99,7 @@ class TestTaskAudit(BaseTestCase):
 
     def test_restart(self):
         with patch("api.job.views.restart_task"):
-            self.client.put(path=reverse("tasklog-restart", kwargs={"task_pk": self.task.pk}))
+            self.client.put(path=reverse(viewname="v1:tasklog-restart", kwargs={"task_pk": self.task.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -116,7 +114,7 @@ class TestTaskAudit(BaseTestCase):
     def test_restart_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.put(
-                path=reverse("tasklog-restart", kwargs={"task_pk": self.task.pk}),
+                path=reverse(viewname="v1:tasklog-restart", kwargs={"task_pk": self.task.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -134,7 +132,7 @@ class TestTaskAudit(BaseTestCase):
         task_pks = TaskLog.objects.all().values_list("pk", flat=True).order_by("-pk")
         with patch("api.job.views.restart_task"):
             response: Response = self.client.put(
-                path=reverse("tasklog-restart", kwargs={"task_pk": task_pks[0] + 1}),
+                path=reverse(viewname="v1:tasklog-restart", kwargs={"task_pk": task_pks[0] + 1}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

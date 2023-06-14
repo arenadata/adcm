@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
 from audit.models import (
     AuditLog,
@@ -23,6 +22,7 @@ from audit.models import (
     AuditSessionLoginResult,
 )
 from django.urls import reverse
+from django.utils import timezone
 from init_db import init as init_adcm
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
@@ -72,7 +72,7 @@ class TestAuditViews(BaseTestCase):
             object_changes=self.object_changes_first,
         )
         AuditLog.objects.filter(pk=self.audit_log_first.pk).update(
-            operation_time=datetime.strptime(self.date_first, date_fmt).astimezone(tz=ZoneInfo("UTC")),
+            operation_time=datetime.strptime(self.date_first, date_fmt).astimezone(tz=timezone.get_current_timezone()),
         )
         self.audit_log_second = AuditLog.objects.create(
             audit_object=self.audit_object_second,
@@ -83,7 +83,7 @@ class TestAuditViews(BaseTestCase):
             object_changes=self.object_changes_second,
         )
         AuditLog.objects.filter(pk=self.audit_log_second.pk).update(
-            operation_time=datetime.strptime(self.date_second, date_fmt).astimezone(tz=ZoneInfo("UTC")),
+            operation_time=datetime.strptime(self.date_second, date_fmt).astimezone(tz=timezone.get_current_timezone()),
         )
 
         self.login_details_first = {"login": {"details": "first"}}
@@ -100,19 +100,23 @@ class TestAuditViews(BaseTestCase):
             login_details=self.login_details_second,
         )
         AuditSession.objects.filter(pk=self.audit_session_second.pk).update(
-            login_time=datetime.strptime(self.date_second, date_fmt).astimezone(tz=ZoneInfo("UTC")),
+            login_time=datetime.strptime(self.date_second, date_fmt).astimezone(tz=timezone.get_current_timezone()),
         )
 
     def test_audit_operations_visibility_superuser(self):
         with self.another_user_logged_in(username="admin", password="admin"):
-            response: Response = self.client.get(path=reverse("audit:auditlog-list"), content_type=APPLICATION_JSON)
+            response: Response = self.client.get(
+                path=reverse(viewname="v1:audit:auditlog-list"), content_type=APPLICATION_JSON
+            )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], AuditLog.objects.count())
 
     def test_audit_operations_visibility_regular_user(self):
         with self.another_user_logged_in(username=self.no_rights_user_username, password=self.no_rights_user_password):
-            response: Response = self.client.get(path=reverse("audit:auditlog-list"), content_type=APPLICATION_JSON)
+            response: Response = self.client.get(
+                path=reverse(viewname="v1:audit:auditlog-list"), content_type=APPLICATION_JSON
+            )
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.assertEqual(response.json()["code"], "AUDIT_OPERATIONS_FORBIDDEN")
@@ -120,7 +124,7 @@ class TestAuditViews(BaseTestCase):
     def test_audit_logins_visibility_superuser(self):
         with self.another_user_logged_in(username="admin", password="admin"):
             response: Response = self.client.get(
-                path=reverse("audit:auditsession-list"),
+                path=reverse(viewname="v1:audit:auditsession-list"),
                 content_type=APPLICATION_JSON,
             )
 
@@ -130,7 +134,7 @@ class TestAuditViews(BaseTestCase):
     def test_audit_logins_visibility_regular_user(self):
         with self.another_user_logged_in(username=self.no_rights_user_username, password=self.no_rights_user_password):
             response: Response = self.client.get(
-                path=reverse("audit:auditsession-list"),
+                path=reverse(viewname="v1:audit:auditsession-list"),
                 content_type=APPLICATION_JSON,
             )
 
@@ -140,7 +144,7 @@ class TestAuditViews(BaseTestCase):
     def test_filter_audit_operations_by_object_type(self):
         with self.another_user_logged_in(username="admin", password="admin"):
             response: Response = self.client.get(
-                path=reverse("audit:auditlog-list"),
+                path=reverse(viewname="v1:audit:auditlog-list"),
                 data={"object_type": self.audit_log_first.audit_object.object_type},
                 content_type=APPLICATION_JSON,
             )
@@ -151,7 +155,7 @@ class TestAuditViews(BaseTestCase):
     def test_filter_audit_operations_by_object_name(self):
         with self.another_user_logged_in(username="admin", password="admin"):
             response: Response = self.client.get(
-                path=reverse("audit:auditlog-list"),
+                path=reverse(viewname="v1:audit:auditlog-list"),
                 data={"object_name": self.audit_log_first.audit_object.object_name},
                 content_type=APPLICATION_JSON,
             )
@@ -162,7 +166,7 @@ class TestAuditViews(BaseTestCase):
     def test_filter_audit_operations_by_operation_type(self):
         with self.another_user_logged_in(username="admin", password="admin"):
             response: Response = self.client.get(
-                path=reverse("audit:auditlog-list"),
+                path=reverse(viewname="v1:audit:auditlog-list"),
                 data={"operation_type": self.audit_log_first.operation_type},
                 content_type=APPLICATION_JSON,
             )
@@ -173,7 +177,7 @@ class TestAuditViews(BaseTestCase):
     def test_filter_audit_operations_by_operation_name(self):
         with self.another_user_logged_in(username="admin", password="admin"):
             response: Response = self.client.get(
-                path=reverse("audit:auditlog-list"),
+                path=reverse(viewname="v1:audit:auditlog-list"),
                 data={"operation_name": self.audit_log_first.operation_name},
                 content_type=APPLICATION_JSON,
             )
@@ -184,7 +188,7 @@ class TestAuditViews(BaseTestCase):
     def test_filter_audit_operations_by_operation_date(self):
         with self.another_user_logged_in(username="admin", password="admin"):
             response: Response = self.client.get(
-                path=reverse("audit:auditlog-list"),
+                path=reverse(viewname="v1:audit:auditlog-list"),
                 data={"operation_date": self.date_first_filter},
                 content_type=APPLICATION_JSON,
             )
@@ -195,7 +199,7 @@ class TestAuditViews(BaseTestCase):
     def test_filter_audit_operations_by_username(self):
         with self.another_user_logged_in(username="admin", password="admin"):
             response: Response = self.client.get(
-                path=reverse("audit:auditlog-list"),
+                path=reverse(viewname="v1:audit:auditlog-list"),
                 data={"username": self.audit_log_first.user.username},
                 content_type=APPLICATION_JSON,
             )
@@ -206,7 +210,7 @@ class TestAuditViews(BaseTestCase):
     def test_filter_audit_logins_by_username(self):
         with self.another_user_logged_in(username="admin", password="admin"):
             response: Response = self.client.get(
-                path=reverse("audit:auditsession-list"),
+                path=reverse(viewname="v1:audit:auditsession-list"),
                 data={"username": self.audit_session_second.user.username},
                 content_type=APPLICATION_JSON,
             )
@@ -217,7 +221,7 @@ class TestAuditViews(BaseTestCase):
     def test_filter_audit_logins_by_login_result(self):
         with self.another_user_logged_in(username="admin", password="admin"):
             response: Response = self.client.get(
-                path=reverse("audit:auditsession-list"),
+                path=reverse(viewname="v1:audit:auditsession-list"),
                 data={"login_result": self.audit_session_second.login_result},
                 content_type=APPLICATION_JSON,
             )
@@ -228,7 +232,7 @@ class TestAuditViews(BaseTestCase):
     def test_filter_audit_logins_by_login_date(self):
         with self.another_user_logged_in(username="admin", password="admin"):
             response: Response = self.client.get(
-                path=reverse("audit:auditsession-list"),
+                path=reverse(viewname="v1:audit:auditsession-list"),
                 data={"login_date": self.date_second_filter},
                 content_type=APPLICATION_JSON,
             )

@@ -24,7 +24,6 @@ from api.job.serializers import (
     TaskRetrieveSerializer,
     TaskSerializer,
 )
-from api.utils import check_custom_perm, get_object_for_user
 from audit.utils import audit
 from cm.job import cancel_task, restart_task
 from cm.models import ActionType, JobLog, JobStatus, LogStorage, TaskLog
@@ -41,13 +40,15 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
+from adcm.permissions import check_custom_perm, get_object_for_user
 from adcm.utils import str_remove_non_alnum
 
 VIEW_TASKLOG_PERMISSION = "cm.view_tasklog"
 VIEW_JOBLOG_PERMISSION = "cm.view_joblog"
+VIEW_LOGSTORAGE_PERMISSION = "cm.view_logstorage"
 
 
-def get_task_download_archive_name(task: TaskLog) -> str:  # noqa: C901
+def get_task_download_archive_name(task: TaskLog) -> str:
     archive_name = f"{task.pk}.tar.gz"
 
     if not task.action:
@@ -260,14 +261,13 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
     @action(methods=["get"], detail=True)
     def download(self, request: Request, job_pk: int, log_pk: int):  # pylint: disable=unused-argument
         # self is necessary for audit
-
-        job = JobLog.obj.get(id=job_pk)
-        log_storage = LogStorage.obj.get(pk=log_pk, job=job)
-
+        log_storage = get_object_for_user(
+            user=request.user, perms=VIEW_LOGSTORAGE_PERMISSION, klass=LogStorage, id=log_pk, job__id=job_pk
+        )
         if log_storage.type in {"stdout", "stderr"}:
-            filename = f"{job.id}-{log_storage.name}-{log_storage.type}.{log_storage.format}"
+            filename = f"{job_pk}-{log_storage.name}-{log_storage.type}.{log_storage.format}"
         else:
-            filename = f"{job.id}-{log_storage.name}.{log_storage.format}"
+            filename = f"{job_pk}-{log_storage.name}.{log_storage.format}"
 
         filename = re.sub(r"\s+", "_", filename)
         if log_storage.format == "txt":

@@ -39,24 +39,24 @@ class TestPrototypeAPI(BaseTestCase):
         )
 
     def test_list(self):
-        response: Response = self.client.get(path=reverse("prototype-list"))
+        response: Response = self.client.get(path=reverse(viewname="v1:prototype-list"))
 
-        self.assertEqual(len(response.data["results"]), 2)
+        self.assertEqual(len(response.data["results"]), 3)
 
     def test_adcm_list(self):
-        response: Response = self.client.get(path=reverse("adcm-prototype-list"))
+        response: Response = self.client.get(path=reverse(viewname="v1:adcm-prototype-list"))
 
-        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["count"], 2)
 
     def test_list_filter_name(self):
-        response: Response = self.client.get(reverse("prototype-list"), {"name": "test_prototype_2"})
+        response: Response = self.client.get(reverse(viewname="v1:prototype-list"), data={"name": "test_prototype_2"})
 
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["id"], self.prototype_2.pk)
 
     def test_list_filter_bundle_id(self):
         response: Response = self.client.get(
-            reverse("prototype-list"),
+            reverse(viewname="v1:prototype-list"),
             {"bundle_id": self.bundle_1.pk},
         )
 
@@ -65,7 +65,7 @@ class TestPrototypeAPI(BaseTestCase):
 
     def test_adcm_list_filter_bundle_id(self):
         response: Response = self.client.get(
-            reverse("adcm-prototype-list"),
+            reverse(viewname="v1:adcm-prototype-list"),
             {"bundle_id": self.bundle_1.pk},
         )
 
@@ -73,43 +73,43 @@ class TestPrototypeAPI(BaseTestCase):
         self.assertEqual(response.data["results"][0]["id"], self.prototype_1.pk)
 
     def test_list_ordering_display_name(self):
-        response: Response = self.client.get(reverse("prototype-list"), {"ordering": "display_name"})
+        response: Response = self.client.get(reverse(viewname="v1:prototype-list"), data={"ordering": "display_name"})
 
-        self.assertEqual(len(response.data["results"]), 2)
-        self.assertEqual(response.data["results"][0]["id"], self.prototype_1.pk)
-        self.assertEqual(response.data["results"][1]["id"], self.prototype_2.pk)
+        self.assertEqual(len(response.data["results"]), 3)
+        self.assertEqual(response.data["results"][1]["id"], self.prototype_1.pk)
+        self.assertEqual(response.data["results"][2]["id"], self.prototype_2.pk)
 
     def test_list_ordering_display_name_reverse(self):
-        response: Response = self.client.get(reverse("prototype-list"), {"ordering": "-display_name"})
+        response: Response = self.client.get(reverse(viewname="v1:prototype-list"), data={"ordering": "-display_name"})
 
-        self.assertEqual(len(response.data["results"]), 2)
+        self.assertEqual(len(response.data["results"]), 3)
         self.assertEqual(response.data["results"][0]["id"], self.prototype_2.pk)
         self.assertEqual(response.data["results"][1]["id"], self.prototype_1.pk)
 
     def test_list_ordering_version_order(self):
-        response: Response = self.client.get(reverse("prototype-list"), {"ordering": "version_order"})
+        response: Response = self.client.get(reverse(viewname="v1:prototype-list"), data={"ordering": "version_order"})
 
-        self.assertEqual(len(response.data["results"]), 2)
-        self.assertEqual(response.data["results"][0]["id"], self.prototype_1.pk)
-        self.assertEqual(response.data["results"][1]["id"], self.prototype_2.pk)
+        self.assertEqual(len(response.data["results"]), 3)
+        self.assertEqual(response.data["results"][1]["id"], self.prototype_1.pk)
+        self.assertEqual(response.data["results"][2]["id"], self.prototype_2.pk)
 
     def test_list_ordering_version_order_reverse(self):
-        response: Response = self.client.get(reverse("prototype-list"), {"ordering": "-version_order"})
+        response: Response = self.client.get(reverse(viewname="v1:prototype-list"), data={"ordering": "-version_order"})
 
-        self.assertEqual(len(response.data["results"]), 2)
+        self.assertEqual(len(response.data["results"]), 3)
         self.assertEqual(response.data["results"][0]["id"], self.prototype_2.pk)
         self.assertEqual(response.data["results"][1]["id"], self.prototype_1.pk)
 
     def test_retrieve(self):
         response: Response = self.client.get(
-            reverse("prototype-detail", kwargs={"prototype_pk": self.prototype_2.pk}),
+            reverse(viewname="v1:prototype-detail", kwargs={"prototype_pk": self.prototype_2.pk}),
         )
 
         self.assertEqual(response.data["id"], self.prototype_2.pk)
 
     def test_adcm_retrieve(self):
         response: Response = self.client.get(
-            reverse("adcm-prototype-detail", kwargs={"prototype_pk": self.prototype_1.pk}),
+            reverse(viewname="v1:adcm-prototype-detail", kwargs={"prototype_pk": self.prototype_1.pk}),
         )
 
         self.assertEqual(response.data["id"], self.prototype_1.pk)

@@ -22,5 +22,22 @@ export interface StackBase {
   bundle_edition: string;
 }
 
+export interface PrototypeListResult {
+  count: number;
+  next: any;
+  previous: any;
+  results: PrototypeList[];
+}
+
+export interface PrototypeList {
+  display_name: string;
+  versions: Version[];
+}
+
+export interface Version {
+  prototype_id: number;
+  version: string;
+}
+
 export type Prototype = StackBase & {bundle_id: number};
 export type ServicePrototype = StackBase & {selected: boolean};

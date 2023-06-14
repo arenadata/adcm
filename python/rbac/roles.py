@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""RBAC Role classes"""
-
 from cm.errors import raise_adcm_ex
 from cm.models import (
     Action,
@@ -28,189 +26,234 @@ from cm.models import (
 )
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
-from django.db import transaction
+from django.db import connection
+from django.db.models import QuerySet
+from django.db.transaction import atomic
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from rbac.models import (
-    Group,
     Permission,
     Policy,
     PolicyPermission,
     Role,
     RoleTypes,
-    User,
     get_objects_for_policy,
 )
 
 
 class AbstractRole:
-    """Abstract class for custom Role handlers"""
-
     class Meta:
         abstract = True
 
     def __init__(self, **kwargs):
         self.params = kwargs
 
-    def apply(self, policy: Policy, role: Role, user: User, group: Group, param_obj=None):
+    def apply(self, policy: Policy, role: Role, param_obj=None) -> None:
         """
         This method should apply Role to User and/or Group.
-        Generaly this means that you should assign permissions from Role to User and/or Group
+        Generally it means you should assign permissions from Role to User and/or Group
         and save links to these permissions in Policy model.
         If Role is parametrized_by_type than parametrized objects should be obtained from
-        Policy.object field.
+        `Policy.object` field.
         Optional parameter param_obj can be used to specify the object in complex cases
-        (see ParentRole below)
         """
+
         raise NotImplementedError("You must provide apply method")
 
 
 class ModelRole(AbstractRole):
-    """This Role apply Django model level permissions"""
-
-    def apply(self, policy: Policy, role: Role, user: User, group: Group, param_obj=None):
+    def apply(self, policy: Policy, role: Role, param_obj=None) -> None:
         for perm in role.get_permissions():
-            if group is not None:
+            for group in policy.group.all():
                 group.permissions.add(perm)
                 policy_permission, _ = PolicyPermission.objects.get_or_create(group=group, permission=perm)
                 policy.model_perm.add(policy_permission)
 
-            if user is not None:
+            for user in policy.user.all():
                 user.user_permissions.add(perm)
                 policy_permission, _ = PolicyPermission.objects.get_or_create(user=user, permission=perm)
                 policy.model_perm.add(policy_permission)
 
 
-def assign_user_or_group_perm(user: User | None, group: Group | None, policy: Policy, perm: Permission, obj) -> None:
-    with transaction.atomic():
-        if user is not None:
-            uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
-            policy.user_object_perm.add(uop)
+def assign_user_or_group_perm(policy: Policy, permission: Permission, obj) -> None:
+    row_template = (obj.pk, ContentType.objects.get_for_model(model=obj).pk, permission.pk)
+    user_rows = [(*row_template, user_pk) for user_pk in policy.user.values_list("pk", flat=True)]
+    group_rows = [(*row_template, group_pk) for group_pk in policy.group.values_list("pk", flat=True)]
 
-        if group is not None:
-            gop = GroupObjectPermission.objects.assign_perm(perm, group, obj)
-            policy.group_object_perm.add(gop)
+    if not any((user_rows, group_rows)):
+        return
+
+    cursor = connection.cursor()
+    with atomic():
+        if user_rows:
+            # Placeholder not used because we need to support Postgres and SQLite and I didn't find a way to use
+            # placeholder for list of multiple tuples for SQLite so used string formatting
+
+            query_str = (
+                "INSERT INTO guardian_userobjectpermission (object_pk, content_type_id, permission_id, user_id) VALUES"
+            )
+            for row in user_rows:
+                query_str = f"{query_str} {row},"
+
+            query_str = (
+                f"{query_str[:-1]} ON CONFLICT (user_id, permission_id, object_pk) DO UPDATE SET "
+                "object_pk=EXCLUDED.object_pk, content_type_id=EXCLUDED.content_type_id, "
+                "permission_id=EXCLUDED.permission_id, user_id=EXCLUDED.user_id RETURNING id;"
+            )
+            cursor.execute(query_str)
+
+            rows = [
+                (policy.pk, user_object_permission_id)
+                for user_object_permission_id in {item[0] for item in cursor.fetchall()}
+            ]
+            if rows:
+                query_str = "INSERT INTO rbac_policy_user_object_perm (policy_id, userobjectpermission_id) VALUES"
+                for row in rows:
+                    query_str = f"{query_str} {row},"
+
+                query_str = f"{query_str[:-1]} ON CONFLICT DO NOTHING;"
+                cursor.execute(query_str)
+
+        if group_rows:
+            query_str = (
+                "INSERT INTO guardian_groupobjectpermission "
+                "(object_pk, content_type_id, permission_id, group_id) VALUES"
+            )
+            for row in group_rows:
+                query_str = f"{query_str} {row},"
+
+            query_str = (
+                f"{query_str[:-1]} ON CONFLICT (group_id, permission_id, object_pk) DO UPDATE SET "
+                "object_pk=EXCLUDED.object_pk, content_type_id=EXCLUDED.content_type_id, "
+                "permission_id=EXCLUDED.permission_id, group_id=EXCLUDED.group_id RETURNING id;"
+            )
+            cursor.execute(query_str)
+
+            rows = [
+                (policy.pk, group_object_permission_id)
+                for group_object_permission_id in {item[0] for item in cursor.fetchall()}
+            ]
+            if rows:
+                query_str = "INSERT INTO rbac_policy_group_object_perm (policy_id, groupobjectpermission_id) VALUES"
+                for row in rows:
+                    query_str = f"{query_str} {row},"
+
+                query_str = f"{query_str[:-1]} ON CONFLICT DO NOTHING;"
+                cursor.execute(query_str)
 
 
 class ObjectRole(AbstractRole):
-    """This Role apply django-guardian object level permissions"""
-
-    def filter(self):
+    def filter(self) -> QuerySet | None:
         if "model" not in self.params:
             return None
+
         try:
-            model = apps.get_model(self.params["app_name"], self.params["model"])
+            return apps.get_model(self.params["app_name"], self.params["model"]).objects.filter(**self.params["filter"])
         except LookupError as e:
             raise_adcm_ex("ROLE_FILTER_ERROR", str(e))
-        return model.objects.filter(**self.params["filter"])
 
-    def apply(self, policy: Policy, role: Role, user: User, group: Group, param_obj=None):
-        """Apply Role to User and/or Group"""
+        return None
+
+    def apply(self, policy: Policy, role: Role, param_obj=None) -> None:
         for obj in policy.get_objects(param_obj):
             for perm in role.get_permissions():
-                assign_user_or_group_perm(user=user, group=group, policy=policy, perm=perm, obj=obj)
-
-
-def get_host_objects(obj):
-    object_type = obj.prototype.type
-    host_list = []
-    if object_type == "cluster":
-        for host in Host.obj.filter(cluster=obj):
-            host_list.append(host)
-    elif object_type == "service":
-        for hostcomponent in HostComponent.obj.filter(cluster=obj.cluster, service=obj):
-            host_list.append(hostcomponent.host)
-    elif object_type == "component":
-        for hostcomponent in HostComponent.obj.filter(cluster=obj.cluster, service=obj.service, component=obj):
-            host_list.append(hostcomponent.host)
-    elif object_type == "provider":
-        for host in Host.obj.filter(provider=obj):
-            host_list.append(host)
-
-    return host_list
+                assign_user_or_group_perm(policy=policy, permission=perm, obj=obj)
 
 
 class ActionRole(AbstractRole):
-    """This Role apply permissions to run ADCM action"""
-
-    def filter(self):
+    def filter(self) -> QuerySet | None:
         if "model" not in self.params:
             return None
         try:
-            model = apps.get_model(self.params["app_name"], self.params["model"])
+            return apps.get_model(self.params["app_name"], self.params["model"]).objects.filter(**self.params["filter"])
         except LookupError as e:
             raise_adcm_ex("ROLE_FILTER_ERROR", str(e))
-        return model.objects.filter(**self.params["filter"])
 
-    def apply(self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None):
-        """Apply Role to User and/or Group"""
+        return None
+
+    def apply(self, policy: Policy, role: Role, param_obj=None) -> None:
         action = Action.obj.get(id=self.params["action_id"])
+        permission, _ = Permission.objects.get_or_create(
+            content_type=ContentType.objects.get_for_model(model=Action),
+            codename=f"view_{Action.__name__.lower()}",
+        )
         assign_user_or_group_perm(
-            user=user,
-            group=group,
             policy=policy,
-            perm=get_perm_for_model(model=Action),
+            permission=permission,
             obj=action,
         )
         for obj in policy.get_objects(param_obj):
             for perm in role.get_permissions():
                 if action.host_action and perm.content_type == ContentType.objects.get_for_model(Host):
-                    hosts = get_host_objects(obj)
+                    hosts = []
+                    if obj.prototype.type == "cluster":
+                        for host in Host.obj.filter(cluster=obj):
+                            hosts.append(host)
+                    elif obj.prototype.type == "service":
+                        for hostcomponent in HostComponent.obj.filter(cluster=obj.cluster, service=obj):
+                            hosts.append(hostcomponent.host)
+                    elif obj.prototype.type == "component":
+                        for hostcomponent in HostComponent.obj.filter(
+                            cluster=obj.cluster, service=obj.service, component=obj
+                        ):
+                            hosts.append(hostcomponent.host)
+                    elif obj.prototype.type == "provider":
+                        for host in Host.obj.filter(provider=obj):
+                            hosts.append(host)
+
                     for host in hosts:
-                        assign_user_or_group_perm(user=user, group=group, policy=policy, perm=perm, obj=host)
+                        assign_user_or_group_perm(policy=policy, permission=perm, obj=host)
+
                     continue
-                assign_user_or_group_perm(user=user, group=group, policy=policy, perm=perm, obj=obj)
+
+                assign_user_or_group_perm(policy=policy, permission=perm, obj=obj)
 
 
 class TaskRole(AbstractRole):
-    def apply(self, policy: Policy, role: Role, user: User, group: Group, param_obj: ADCMEntity = None) -> None:
+    def apply(self, policy: Policy, role: Role, param_obj: ADCMEntity = None) -> None:
         task = TaskLog.objects.filter(id=self.params["task_id"]).first()
         if not task:
             role.delete()
+
             return
 
         for obj in policy.get_objects(param_obj):
             if obj == task.task_object:
-                apply_jobs(task=task, policy=policy, user=user, group=group)
+                apply_jobs(task=task, policy=policy)
 
         return
 
 
-def get_perm_for_model(model, action: str = "view") -> Permission:
-    content_type = ContentType.objects.get_for_model(model=model)
-    codename = f"{action}_{model.__name__.lower()}"
-    perm, _ = Permission.objects.get_or_create(content_type=content_type, codename=codename)
-    return perm
-
-
-def apply_jobs(task: TaskLog, policy: Policy, user: User | None = None, group: Group | None = None) -> None:
-    assign_user_or_group_perm(user=user, group=group, policy=policy, perm=get_perm_for_model(model=TaskLog), obj=task)
-    assign_user_or_group_perm(
-        user=user,
-        group=group,
-        policy=policy,
-        perm=get_perm_for_model(model=TaskLog, action="change"),
-        obj=task,
+def apply_jobs(task: TaskLog, policy: Policy) -> None:
+    view_tasklog_permission, _ = Permission.objects.get_or_create(
+        content_type=ContentType.objects.get_for_model(model=TaskLog),
+        codename=f"view_{TaskLog.__name__.lower()}",
     )
+    assign_user_or_group_perm(policy=policy, permission=view_tasklog_permission, obj=task)
+
+    change_tasklog_permission, _ = Permission.objects.get_or_create(
+        content_type=ContentType.objects.get_for_model(model=TaskLog),
+        codename=f"change_{TaskLog.__name__.lower()}",
+    )
+    assign_user_or_group_perm(policy=policy, permission=change_tasklog_permission, obj=task)
+
+    view_joblog_permission, _ = Permission.objects.get_or_create(
+        content_type=ContentType.objects.get_for_model(model=JobLog),
+        codename=f"view_{JobLog.__name__.lower()}",
+    )
+    view_logstorage_permission, _ = Permission.objects.get_or_create(
+        content_type=ContentType.objects.get_for_model(model=LogStorage),
+        codename=f"view_{LogStorage.__name__.lower()}",
+    )
+
     for job in JobLog.objects.filter(task=task):
-        assign_user_or_group_perm(
-            user=user,
-            group=group,
-            policy=policy,
-            perm=get_perm_for_model(model=JobLog),
-            obj=job,
-        )
+        assign_user_or_group_perm(policy=policy, permission=view_joblog_permission, obj=job)
+
         for log in LogStorage.objects.filter(job=job):
-            assign_user_or_group_perm(
-                user=user,
-                group=group,
-                policy=policy,
-                perm=get_perm_for_model(model=LogStorage),
-                obj=log,
-            )
+            assign_user_or_group_perm(policy=policy, permission=view_logstorage_permission, obj=log)
 
 
-def re_apply_policy_for_jobs(action_object, task):  # noqa: C901
-    obj_type_map = get_objects_for_policy(action_object)
+def re_apply_policy_for_jobs(action_object: ADCMEntity, task: TaskLog) -> None:
+    obj_type_map = get_objects_for_policy(obj=action_object)
     object_model = action_object.__class__.__name__.lower()
     task_role, _ = Role.objects.get_or_create(
         name=f"View role for task {task.id}",
@@ -242,7 +285,7 @@ def re_apply_policy_for_jobs(action_object, task):  # noqa: C901
                     obj=action_object,
                 ):
                     policy.role.child.add(task_role)
-                    apply_jobs(task=task, policy=policy, user=user)
+                    apply_jobs(task=task, policy=policy)
 
             for group in policy.group.all():
                 try:
@@ -261,12 +304,16 @@ def re_apply_policy_for_jobs(action_object, task):  # noqa: C901
 
                 if group_obj_perm in policy.group_object_perm.all() and model_view_gop:
                     policy.role.child.add(task_role)
-                    apply_jobs(task=task, policy=policy, group=group)
+                    apply_jobs(task=task, policy=policy)
 
 
-def apply_policy_for_new_config(config_object: ADCMEntity, config_log: ConfigLog) -> None:  # noqa: C901
+def apply_policy_for_new_config(config_object: ADCMEntity, config_log: ConfigLog) -> None:
     obj_type_map = get_objects_for_policy(obj=config_object)
     object_model = config_object.__class__.__name__.lower()
+    permission, _ = Permission.objects.get_or_create(
+        content_type=ContentType.objects.get_for_model(model=ConfigLog),
+        codename=f"view_{ConfigLog.__name__.lower()}",
+    )
 
     for obj, content_type in obj_type_map.items():
         for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=content_type):
@@ -285,10 +332,8 @@ def apply_policy_for_new_config(config_object: ADCMEntity, config_log: ConfigLog
                     obj=config_object,
                 ):
                     assign_user_or_group_perm(
-                        user=user,
-                        group=None,
                         policy=policy,
-                        perm=get_perm_for_model(model=ConfigLog),
+                        permission=permission,
                         obj=config_log,
                     )
 
@@ -308,19 +353,11 @@ def apply_policy_for_new_config(config_object: ADCMEntity, config_log: ConfigLog
                     continue
 
                 if group_obj_perm in policy.group_object_perm.all() and model_view_gop:
-                    assign_user_or_group_perm(
-                        user=None,
-                        group=group,
-                        policy=policy,
-                        perm=get_perm_for_model(model=ConfigLog),
-                        obj=config_log,
-                    )
+                    assign_user_or_group_perm(policy=policy, permission=permission, obj=config_log)
 
 
 class ConfigRole(AbstractRole):
-    """This Role apply permission to view and add config object"""
-
-    def apply(self, policy: Policy, role: Role, user: User, group: Group, param_obj=None):  # noqa: C901
+    def apply(self, policy: Policy, role: Role, param_obj=None) -> None:
         for obj in policy.get_objects(param_obj=param_obj):
             if obj.config is None:
                 continue
@@ -330,86 +367,77 @@ class ConfigRole(AbstractRole):
 
             for perm in role.get_permissions():
                 if perm.content_type.model == "objectconfig":
-                    assign_user_or_group_perm(user=user, group=group, policy=policy, perm=perm, obj=obj.config)
+                    assign_user_or_group_perm(policy=policy, permission=perm, obj=obj.config)
                     for config_group in config_groups:
                         assign_user_or_group_perm(
-                            user=user,
-                            group=group,
                             policy=policy,
-                            perm=perm,
+                            permission=perm,
                             obj=config_group.config,
                         )
 
                 if perm.content_type.model == "configlog":
                     for config in obj.config.configlog_set.all():
-                        assign_user_or_group_perm(user=user, group=group, policy=policy, perm=perm, obj=config)
+                        assign_user_or_group_perm(policy=policy, permission=perm, obj=config)
                     for config_group in config_groups:
                         for config in config_group.config.configlog_set.all():
-                            assign_user_or_group_perm(user=user, group=group, policy=policy, perm=perm, obj=config)
+                            assign_user_or_group_perm(policy=policy, permission=perm, obj=config)
 
                 if perm.content_type.model == "groupconfig":
                     for config_group in config_groups:
-                        assign_user_or_group_perm(user=user, group=group, policy=policy, perm=perm, obj=config_group)
+                        assign_user_or_group_perm(policy=policy, permission=perm, obj=config_group)
 
 
 class ParentRole(AbstractRole):
-    """This Role is used for complex Roles that can include other Roles"""
-
     @staticmethod
-    def find_and_apply(obj: ADCMEntity, policy: Policy, role: Role, user: User, group: Group = None) -> None:
-        """Find Role of appropriate type and apply it to specified object"""
+    def find_and_apply(obj: ADCMEntity, policy: Policy, role: Role) -> None:
         for child_role in role.child.filter(class_name__in=("ObjectRole", "TaskRole", "ConfigRole")):
             if obj.prototype.type in child_role.parametrized_by_type:
-                child_role.apply(policy=policy, user=user, group=group, obj=obj)
+                child_role.apply(policy=policy, obj=obj)
 
         for child_role in role.child.filter(class_name="ActionRole"):
             action = Action.obj.get(id=child_role.init_params["action_id"])
             if obj.prototype == action.prototype:
-                child_role.apply(policy=policy, user=user, group=group, obj=obj)
+                child_role.apply(policy=policy, obj=obj)
 
-    def apply(  # noqa: C901
+    def apply(
         self,
         policy: Policy,
         role: Role,
-        user: User,
-        group: Group = None,
         param_obj=None,
     ):  # pylint: disable=too-many-branches, too-many-nested-blocks
         for child_role in role.child.filter(class_name__in=("ModelRole", "ParentRole")):
-            child_role.apply(policy=policy, user=user, group=group, obj=param_obj)
+            child_role.apply(policy=policy, obj=param_obj)
 
         parametrized_by = set()
         for child_role in role.child.all():
             parametrized_by.update(set(child_role.parametrized_by_type))
 
         for obj in policy.get_objects(param_obj=param_obj):
-            self.find_and_apply(obj=obj, policy=policy, role=role, user=user, group=group)
+            self.find_and_apply(obj=obj, policy=policy, role=role)
 
             if obj.prototype.type == "cluster":
                 if "service" in parametrized_by or "component" in parametrized_by:
                     for service in ClusterObject.obj.filter(cluster=obj):
-                        self.find_and_apply(obj=service, policy=policy, role=role, user=user, group=group)
+                        self.find_and_apply(obj=service, policy=policy, role=role)
                         if "component" in parametrized_by:
                             for comp in ServiceComponent.obj.filter(service=service):
-                                self.find_and_apply(obj=comp, policy=policy, role=role, user=user, group=group)
+                                self.find_and_apply(obj=comp, policy=policy, role=role)
 
                 if "host" in parametrized_by:
                     for host in Host.obj.filter(cluster=obj):
-                        self.find_and_apply(obj=host, policy=policy, role=role, user=user, group=group)
+                        self.find_and_apply(obj=host, policy=policy, role=role)
             elif obj.prototype.type == "service":
                 if "component" in parametrized_by:
                     for comp in ServiceComponent.obj.filter(service=obj):
-                        self.find_and_apply(obj=comp, policy=policy, role=role, user=user, group=group)
+                        self.find_and_apply(obj=comp, policy=policy, role=role)
 
                 if "host" in parametrized_by:
                     for hostcomponent in HostComponent.obj.filter(cluster=obj.cluster, service=obj):
-                        self.find_and_apply(obj=hostcomponent.host, policy=policy, role=role, user=user, group=group)
+                        self.find_and_apply(obj=hostcomponent.host, policy=policy, role=role)
 
                 assign_user_or_group_perm(
-                    user=user,
-                    group=group,
                     policy=policy,
-                    perm=Permission.objects.get(codename="view_cluster"),
+                    permission=Permission.objects.get(codename="view_cluster"),
                     obj=obj.cluster,
                 )
             elif obj.prototype.type == "component":
@@ -419,23 +447,19 @@ class ParentRole(AbstractRole):
                         service=obj.service,
                         component=obj,
                     ):
-                        self.find_and_apply(obj=hostcomponent.host, policy=policy, role=role, user=user, group=group)
+                        self.find_and_apply(obj=hostcomponent.host, policy=policy, role=role)
 
                 assign_user_or_group_perm(
-                    user=user,
-                    group=group,
                     policy=policy,
-                    perm=Permission.objects.get(codename="view_cluster"),
+                    permission=Permission.objects.get(codename="view_cluster"),
                     obj=obj.cluster,
                 )
                 assign_user_or_group_perm(
-                    user=user,
-                    group=group,
                     policy=policy,
-                    perm=Permission.objects.get(codename="view_clusterobject"),
+                    permission=Permission.objects.get(codename="view_clusterobject"),
                     obj=obj.service,
                 )
             elif obj.prototype.type == "provider":
                 if "host" in parametrized_by:
                     for host in Host.obj.filter(provider=obj):
-                        self.find_and_apply(obj=host, policy=policy, role=role, user=user, group=group)
+                        self.find_and_apply(obj=host, policy=policy, role=role)

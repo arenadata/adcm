@@ -13,7 +13,6 @@
 
 from datetime import datetime
 from unittest.mock import patch
-from zoneinfo import ZoneInfo
 
 from audit.models import (
     AuditLog,
@@ -30,13 +29,13 @@ from cm.models import (
     ClusterObject,
     ConfigLog,
     Host,
-    ObjectConfig,
     Prototype,
     ServiceComponent,
     TaskLog,
 )
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
+from django.utils import timezone
 from rbac.models import Policy, Role, User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
@@ -49,29 +48,18 @@ class TestActionAudit(BaseTestCase):
         super().setUp()
 
         self.bundle = Bundle.objects.create()
-        adcm_prototype = Prototype.objects.create(bundle=self.bundle, type="adcm")
-        self.config = ObjectConfig.objects.create(current=0, previous=0)
-        config_log = ConfigLog.objects.create(
-            obj_ref=self.config,
-            config="{}",
-            attr={"ldap_integration": {"active": True}},
-        )
-        self.config.current = config_log.pk
-        self.config.save(update_fields=["current"])
-
-        self.adcm_name = "ADCM"
-        self.adcm = ADCM.objects.create(prototype=adcm_prototype, name=self.adcm_name, config=self.config)
+        self.adcm = ADCM.objects.first()
         self.action = Action.objects.create(
             display_name="test_adcm_action",
-            prototype=adcm_prototype,
+            prototype=self.adcm.prototype,
             type="job",
             state_available="any",
         )
         self.task = TaskLog.objects.create(
             object_id=self.adcm.pk,
             object_type=ContentType.objects.get(app_label="cm", model="adcm"),
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
             action=self.action,
         )
         self.action_create_view = "api.action.views.create"
@@ -97,7 +85,7 @@ class TestActionAudit(BaseTestCase):
             ),
             cluster=cluster,
             service=service,
-            config=self.config,
+            config=self.adcm.config,
         )
 
         return cluster, service, component
@@ -131,15 +119,21 @@ class TestActionAudit(BaseTestCase):
         self.assertEqual(log.object_changes, {})
 
     def test_adcm_launch(self):
+        config_log = ConfigLog.objects.get(obj_ref=self.adcm.config)
+        config_log.attr["ldap_integration"]["active"] = True
+        config_log.save(update_fields=["attr"])
+
         with patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(path=reverse("run-task", kwargs={"adcm_pk": self.adcm.pk, "action_id": self.action.pk}))
+            self.client.post(
+                path=reverse(viewname="v1:run-task", kwargs={"adcm_pk": self.adcm.pk, "action_id": self.action.pk})
+            )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_obj_updated(
             log=log,
             obj_pk=self.adcm.pk,
-            obj_name=self.adcm_name,
+            obj_name=self.adcm.name,
             obj_type=AuditObjectType.ADCM,
             operation_name=f"{self.action.display_name} action launched",
             operation_result=AuditLogOperationResult.SUCCESS,
@@ -147,14 +141,14 @@ class TestActionAudit(BaseTestCase):
         )
 
         with patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(path=reverse("run-task", kwargs={"adcm_pk": 999, "action_id": self.action.pk}))
+            self.client.post(path=reverse(viewname="v1:run-task", kwargs={"adcm_pk": 999, "action_id": self.action.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_obj_updated(
             log=log,
             obj_pk=self.adcm.pk,
-            obj_name=self.adcm_name,
+            obj_name=self.adcm.name,
             obj_type=AuditObjectType.ADCM,
             operation_name=f"{self.action.display_name} action launched",
             operation_result=AuditLogOperationResult.DENIED,
@@ -169,7 +163,7 @@ class TestActionAudit(BaseTestCase):
         self.check_obj_updated(
             log=log,
             obj_pk=self.adcm.pk,
-            obj_name=self.adcm_name,
+            obj_name=self.adcm.name,
             obj_type=AuditObjectType.ADCM,
             operation_name=f"{self.action.display_name} action completed",
             operation_result=AuditLogOperationResult.FAIL,
@@ -180,7 +174,7 @@ class TestActionAudit(BaseTestCase):
         with patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
-                    "run-task",
+                    viewname="v1:run-task",
                     kwargs={
                         "cluster_id": cluster.pk,
                         "service_id": service.pk,
@@ -210,7 +204,7 @@ class TestActionAudit(BaseTestCase):
         ):
             response: Response = self.client.post(
                 path=reverse(
-                    "run-task",
+                    viewname="v1:run-task",
                     kwargs={
                         "cluster_id": cluster.pk,
                         "service_id": service.pk,
@@ -234,12 +228,6 @@ class TestActionAudit(BaseTestCase):
         )
 
     def test_host_denied(self):
-        adcm_role = Role.objects.get(name="View ADCM settings")
-        adcm_policy = Policy.objects.create(name="test_adcm_policy", role=adcm_role)
-        adcm_policy.user.add(self.no_rights_user)
-        adcm_policy.add_object(self.adcm)
-        adcm_policy.apply()
-
         host = Host.objects.create(
             fqdn="test_host",
             prototype=Prototype.objects.create(bundle=self.bundle, type="host"),
@@ -258,12 +246,12 @@ class TestActionAudit(BaseTestCase):
         component_policy.apply()
 
         paths = [
-            reverse("run-task", kwargs={"adcm_pk": self.adcm.pk, "action_id": self.action.pk}),
-            reverse("run-task", kwargs={"cluster_id": cluster.pk, "action_id": self.action.pk}),
-            reverse("run-task", kwargs={"host_id": host.pk, "action_id": self.action.pk}),
-            reverse("run-task", kwargs={"component_id": component.pk, "action_id": self.action.pk}),
+            reverse(viewname="v1:run-task", kwargs={"adcm_pk": self.adcm.pk, "action_id": self.action.pk}),
+            reverse(viewname="v1:run-task", kwargs={"cluster_id": cluster.pk, "action_id": self.action.pk}),
+            reverse(viewname="v1:run-task", kwargs={"host_id": host.pk, "action_id": self.action.pk}),
+            reverse(viewname="v1:run-task", kwargs={"component_id": component.pk, "action_id": self.action.pk}),
             reverse(
-                "run-task",
+                viewname="v1:run-task",
                 kwargs={
                     "service_id": service.pk,
                     "component_id": component.pk,
@@ -271,7 +259,7 @@ class TestActionAudit(BaseTestCase):
                 },
             ),
             reverse(
-                "run-task",
+                viewname="v1:run-task",
                 kwargs={
                     "cluster_id": cluster.pk,
                     "service_id": service.pk,

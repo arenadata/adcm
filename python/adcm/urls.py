@@ -11,27 +11,12 @@
 # limitations under the License.
 
 from django.conf.urls import include
-from django.urls import path, re_path
-from drf_yasg import openapi
-from drf_yasg.views import get_schema_view
-from rest_framework import permissions
-
-SchemaView = get_schema_view(
-    openapi.Info(
-        title="ADCM API",
-        default_version="v1",
-        description="ArenaData Cluster Manager API",
-        license=openapi.License(name="Apache 2.0 License"),
-    ),
-    public=True,
-    permission_classes=[permissions.AllowAny],
-)
+from django.urls import path
 
 urlpatterns = [
     path("social/", include("social_django.urls", namespace="social")),
-    path("api/v1/", include("api.urls")),
+    path("auth/", include("rest_framework.urls", namespace="rest_framework")),
+    path("api/v1/", include(("api.urls", "api"), namespace="v1")),
+    path("api/v2/", include(("api_v2.urls", "api_v2"), namespace="v2")),
     path("api/ui/", include("api_ui.urls")),
-    re_path(r"^swagger(?P<format>\.json|\.yaml)$", SchemaView.without_ui(cache_timeout=0), name="schema-json"),
-    re_path(r"^swagger/$", SchemaView.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
-    re_path(r"^redoc/$", SchemaView.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
 ]

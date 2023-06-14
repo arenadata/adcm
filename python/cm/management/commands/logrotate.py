@@ -187,7 +187,7 @@ class Command(BaseCommand):
                 "info",
             )
 
-        except Exception as e:  # pylint: disable=broad-except # noqa: BLE001
+        except Exception as e:  # pylint: disable=broad-except
             make_audit_log("config", AuditLogOperationResult.FAIL, "completed")
             self.__log("Error in ConfigLog rotation", "warning")
             self.__log(e, "exception")
@@ -211,7 +211,7 @@ class Command(BaseCommand):
             return True
         return False
 
-    def __run_joblog_rotation(self):  # noqa: C901
+    def __run_joblog_rotation(self):
         try:  # pylint: disable=too-many-nested-blocks
             days_delta_db = self.config["job"]["log_rotation_in_db"]
             days_delta_fs = self.config["job"]["log_rotation_on_fs"]
@@ -244,7 +244,7 @@ class Command(BaseCommand):
                     if not name.startswith("."):  # a line of code is used for development
                         path = settings.RUN_DIR / name
                         try:
-                            m_time = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.utc)
+                            m_time = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.get_current_timezone())
                             if timezone.now() - m_time > timedelta(days=days_delta_fs):
                                 is_deleted = True
                                 if os.path.isdir(path):
@@ -257,7 +257,7 @@ class Command(BaseCommand):
                     make_audit_log("task", AuditLogOperationResult.SUCCESS, "launched")
                     make_audit_log("task", AuditLogOperationResult.SUCCESS, "completed")
                 self.__log("fs JobLog rotated", "info")
-        except Exception as e:  # pylint: disable=broad-except # noqa: BLE001
+        except Exception as e:  # pylint: disable=broad-except
             make_audit_log("task", AuditLogOperationResult.FAIL, "completed")
             self.__log("Error in JobLog rotation", "warning")
             self.__log(e, "exception")

@@ -33,10 +33,23 @@ export class RootComponent implements OnInit {
 
   init() {
     if (this.value) {
-      if (this.options.type === 'list' && Array.isArray(this.value)) (this.value as IValue[]).map((x, i) => this.add(['', x]));
-      else if (typeof this.value === 'object') Object.keys(this.value).map((x) => this.add([x, this.value[x]]));
+      if (Array.isArray(this.value)) {
+        this.value.forEach((value, index) => {
+          this.itemRules?.forEach((key) => {
+            if (!value[key.name]) {
+              value[key.name] = key.type === 'string' ? '' : key.type === 'integer' ? 0 : null;
+            }
+          })
+        })
+      }
+
+      if (this.options.type === 'list' && Array.isArray(this.value)) {
+        (this.value as IValue[]).forEach((x, i) => this.add(['', x]));
+      } else if (typeof this.value === 'object') {
+        Object.keys(this.value).forEach((x) => this.add([x, this.value[x]]));
+      }
     } else if (this.options.type === 'dict' && Array.isArray(this.options.options)) {
-      this.options.options.map((x) => this.add([x.name, '']));
+      this.options.options.forEach((x) => this.add([x.name, '']));
     }
   }
 
@@ -46,10 +59,21 @@ export class RootComponent implements OnInit {
 
   reload(value: TValue) {
     this.value = value;
-    this.controls = [];
+    this.controls.length = 0;
+
     if (Array.isArray(this.form.controls)) {
-      this.form.controls.forEach((v, i) => (this.form as FormArray).removeAt(i));
+      while (this.form.controls.length > 0) {
+        (this.form as FormArray).removeAt(0);
+      }
+    } else if (this.form.controls && typeof this.form.controls === 'object') {
+      Object.keys(this.form.controls).forEach((key) => {
+        while (this.form.controls[key]?.controls.length > 0) {
+          (this.form.controls[key] as FormArray).removeAt(0);
+        }
+        (this.form as FormGroup).removeControl(key);
+      })
     }
+
     this.init();
   }
 
@@ -60,6 +84,7 @@ export class RootComponent implements OnInit {
       ? this.scheme.addControlsDict(name, value, this.form as FormArray, this.itemRules as IYContainer[])
       : this.scheme.addControls(name, value, this.form, this.rules, this.options.type as TNReq);
     this.controls = [...this.controls, item];
+    this.form.updateValueAndValidity();
   }
 
   showControls() {
@@ -70,6 +95,7 @@ export class RootComponent implements OnInit {
     if (Array.isArray(this.form.controls)) {
       (this.form as FormArray).removeAt(+name);
       this.controls = this.controls.filter((a, i) => (a.name ? a.name !== name : i !== +name));
+      this.form.updateValueAndValidity();
     }
   }
 

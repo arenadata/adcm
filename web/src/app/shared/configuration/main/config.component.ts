@@ -25,7 +25,7 @@ import { EventMessage, SocketState } from '@app/core/store';
 import { SocketListenerDirective } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
 import { BehaviorSubject, Observable, of, Subscription } from 'rxjs';
-import { catchError, finalize, tap} from 'rxjs/operators';
+import { catchError, finalize, tap, distinctUntilChanged } from 'rxjs/operators';
 
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
@@ -36,7 +36,6 @@ import { WorkerInstance } from '@app/core/services/cluster.service';
 import { ActivatedRoute } from '@angular/router';
 import { AttributeService } from '@app/shared/configuration/attributes/attribute.service';
 import * as deepmerge from 'deepmerge';
-import { environment } from '@env/environment';
 
 @Component({
   selector: 'app-config-form',
@@ -52,6 +51,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   historyShow = false;
   isLock = false;
   isLoading = false;
+  isLoadingHistory = false;
   attributeUniqId: string = null;
 
   worker$: Observable<WorkerInstance>;
@@ -79,27 +79,12 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   ) {
     super(socket);
     this.isGroupConfig = route.snapshot.data['isGroupConfig'];
-    this.worker$ = service.worker$.pipe(this.takeUntil());
+    this.worker$ = service.worker$.pipe(distinctUntilChanged());
 
     service.worker$.subscribe((data) => {
-      /**
-       * TODO: fix this bullshit.
-       * It's dirty hack condition. We shouldn't compare page url from browser and api url from config
-       * we have to take pathname from urls, cut last slashes, cut /api/v1/ substring. It's incorrect and very ugly
-       */
-      try {
-        const configPageUrl = new URL(window.location.href).pathname.replace(/\/$/, '');
-        const configDataUrl = new URL(data?.current?.config).pathname.replace(/\/$/, '').replace(environment.apiRoot, '/');
-        if (configPageUrl === configDataUrl) {
-          this.getConfigUrlFromWorker();
-          if (data?.current?.config && !this.isLoading) {
-            this.service.changeService(data.current.typeName);
-            this._getConfig(data.current.config).subscribe();
-          }
-        }
-      } catch (e) {
-        return;
-      }
+      this.service.changeService(data.current.typeName);
+      this.getConfigUrlFromWorker();
+      this._getConfig(data.current.config).subscribe();
     });
   }
 
@@ -129,10 +114,13 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     this.filter(this.tools.filterParams);
     this.cd.detectChanges();
 
-    if (!this.isGroupConfig) {
-      this.service.getHistoryList(this.configUrl, this.rawConfig.value.id).subscribe((h) => {
+    if (!this.isGroupConfig && !this.isLoadingHistory) {
+      this.isLoadingHistory = true;
+      this.service.getHistoryList(this.configUrl).subscribe((h) => {
         this.historyComponent.compareConfig = h;
-        this.tools.disabledHistory = !h.length;
+        this.historyComponent.currentVersion = this.rawConfig.value.id;
+        this.tools.disabledHistory = !h.length || h.length === 1;
+        this.isLoadingHistory = false;
         this.cd.detectChanges();
       });
     }
@@ -212,7 +200,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   }
 
   compareVersion(ids: number[]): void {
-    if (ids) this.service.compareConfig(ids, this.fields.dataOptions, this.historyComponent.compareConfig);
+    if (ids) this.service.compareConfig(ids, this.fields.dataOptions, this.historyComponent.compareConfig, this.configUrl);
   }
 
   reset(): void {

@@ -202,12 +202,14 @@ export class ListFactory {
       component: MaintenanceModeButtonComponent,
       instanceTaken: (componentRef: ComponentRef<MaintenanceModeButtonComponent<T>>) => {
         componentRef.instance.type = type;
-        componentRef.instance.onClick
-        .subscribe(({event, value}) => {
-          listDirective.maintenanceModeToggle(event, value);
-          event.stopPropagation();
-          event.preventDefault();
-        });
+        if (componentRef.instance.onClick.observers.length < 1) {
+          componentRef.instance.onClick
+          .subscribe(({event, value}) => {
+            listDirective.maintenanceModeToggle(event, value);
+            event.stopPropagation();
+            event.preventDefault();
+          });
+        }
       }
     };
   }

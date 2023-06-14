@@ -19,7 +19,8 @@ import tarfile
 from collections.abc import Iterable
 from pathlib import Path
 
-from cm.adcm_config import init_object_config, proto_ref, switch_config
+from cm.adcm_config.config import init_object_config, switch_config
+from cm.adcm_config.utils import proto_ref
 from cm.errors import raise_adcm_ex
 from cm.logger import logger
 from cm.models import (
@@ -61,10 +62,7 @@ STAGE = (
 )
 
 
-def load_bundle(bundle_file: str) -> None:
-    logger.info('loading bundle file "%s" ...', bundle_file)
-    bundle_hash, path = process_file(bundle_file=bundle_file)
-
+def prepare_bundle(bundle_file: str, bundle_hash: str, path: Path) -> Bundle:
     try:
         check_stage()
         process_bundle(path=path, bundle_hash=bundle_hash)
@@ -82,12 +80,18 @@ def load_bundle(bundle_file: str) -> None:
         ProductCategory.re_collect()
         bundle.refresh_from_db()
         prepare_action_roles(bundle=bundle)
-        post_event(event="create", obj=bundle)
+        post_event(event="create", object_id=bundle.pk, object_type="bundle")
 
         return bundle
     except Exception:
         clear_stage()
         raise
+
+
+def load_bundle(bundle_file: str) -> Bundle:
+    logger.info('loading bundle file "%s" ...', bundle_file)
+    bundle_hash, path = process_file(bundle_file=bundle_file)
+    return prepare_bundle(bundle_file=bundle_file, bundle_hash=bundle_hash, path=path)
 
 
 def update_bundle(bundle):
@@ -327,21 +331,25 @@ def re_check_actions():
                 )
 
 
-def check_component_requires(comp):
+def check_component_requires(comp: StagePrototype) -> None:
     if not comp.requires:
         return
 
     req_list = comp.requires
     for i, item in enumerate(req_list):
+        req_comp = None
         if "service" in item:
             service = StagePrototype.obj.get(name=item["service"], type="service")
         else:
             service = comp.parent
             req_list[i]["service"] = comp.parent.name
-        req_comp = StagePrototype.obj.get(name=item["component"], type="component", parent=service)
-        if comp == req_comp:
+
+        if "component" in item:
+            req_comp = StagePrototype.obj.get(name=item["component"], type="component", parent=service)
+
+        if req_comp and comp == req_comp:
             raise_adcm_ex(
-                code="COMPONENT_CONSTRAINT_ERROR",
+                code="REQUIRES_ERROR",
                 msg=f"Component can not require themself in requires of component "
                 f'"{comp.name}" of {proto_ref(comp.parent)}',
             )
@@ -350,7 +358,26 @@ def check_component_requires(comp):
     comp.save()
 
 
-def check_bound_component(comp):
+def check_services_requires() -> None:
+    for service in StagePrototype.objects.filter(type="service"):
+        if not service.requires:
+            continue
+
+        req_list = service.requires
+        for item in req_list:
+            req_service = StagePrototype.obj.get(name=item["service"], type="service")
+
+            if service == req_service:
+                raise_adcm_ex(
+                    code="REQUIRES_ERROR",
+                    msg=f'Service can not require themself "{service.name}" of {proto_ref(prototype=service.parent)}',
+                )
+
+        service.requires = req_list
+        service.save(update_fields=["requires"])
+
+
+def check_bound_component(comp: StagePrototype) -> None:
     if not comp.bound_to:
         return
 
@@ -365,10 +392,10 @@ def check_bound_component(comp):
         )
 
 
-def re_check_components():
+def re_check_components() -> None:
     for comp in StagePrototype.objects.filter(type="component"):
-        check_component_requires(comp)
-        check_bound_component(comp)
+        check_component_requires(comp=comp)
+        check_bound_component(comp=comp)
 
 
 def check_variant_host(args, ref):
@@ -395,7 +422,7 @@ def check_variant_host(args, ref):
             check_variant_host(i["args"], ref)
 
 
-def re_check_config():  # pylint: disable=too-many-branches # noqa: C901
+def re_check_config() -> None:  # pylint: disable=too-many-branches
     sp_service = None
     same_stage_prototype_config = None
 
@@ -467,6 +494,7 @@ def re_check_config():  # pylint: disable=too-many-branches # noqa: C901
 
 
 def second_pass():
+    check_services_requires()
     re_check_actions()
     re_check_components()
     re_check_config()
@@ -484,6 +512,7 @@ def copy_stage_prototype(stage_prototypes, bundle):
                 "name",
                 "version",
                 "required",
+                "requires",
                 "shared",
                 "license_path",
                 "license_hash",
@@ -515,6 +544,7 @@ def copy_stage_upgrade(stage_upgrades, bundle):
             Upgrade,
             (
                 "name",
+                "display_name",
                 "description",
                 "min_version",
                 "max_version",
@@ -766,7 +796,7 @@ def copy_stage(bundle_hash, bundle_proto):
     return bundle
 
 
-def update_bundle_from_stage(  # noqa: C901
+def update_bundle_from_stage(
     bundle,
 ):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     for stage_prototype in StagePrototype.objects.order_by("id"):
@@ -957,6 +987,7 @@ def update_bundle_from_stage(  # noqa: C901
             Upgrade,
             (
                 "name",
+                "display_name",
                 "description",
                 "min_version",
                 "max_version",
@@ -1011,7 +1042,7 @@ def delete_bundle(bundle):
                 bundle.version,
             )
 
-    post_event(event="delete", obj=bundle)
+    post_event(event="delete", object_id=bundle.pk, object_type="bundle")
     bundle.delete()
 
     for role in Role.objects.filter(class_name="ParentRole"):

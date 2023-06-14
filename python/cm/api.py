@@ -9,26 +9,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 # pylint: disable=too-many-lines
 
 import json
-from functools import wraps
+from functools import partial, wraps
 
-from cm.adcm_config import (
-    check_and_process_json_config,
+from cm.adcm_config.config import (
     init_object_config,
-    obj_ref,
-    proto_ref,
+    process_json_config,
     read_bundle_file,
     save_obj_config,
 )
+from cm.adcm_config.utils import proto_ref
 from cm.api_context import CTX
 from cm.errors import raise_adcm_ex
 from cm.issue import (
     check_bound_components,
     check_component_constraint,
-    check_component_requires,
+    check_hc_requires,
+    check_service_requires,
     update_hierarchy_issues,
     update_issue_after_deleting,
 )
@@ -54,18 +53,20 @@ from cm.models import (
     TaskLog,
 )
 from cm.status_api import api_request, post_event
+from cm.utils import obj_ref
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
-from django.db import transaction
-from rbac.models import re_apply_object_policy
+from django.db.transaction import atomic, on_commit
+from rbac.models import Policy, re_apply_object_policy
 from rbac.roles import apply_policy_for_new_config
 from version_utils import rpm
 
 
-def check_license(proto: Prototype) -> None:
-    if proto.license == "unaccepted":
+def check_license(prototype: Prototype) -> None:
+    if prototype.license == "unaccepted":
         raise_adcm_ex(
             "LICENSE_ERROR",
-            f'License for prototype "{proto.name}" {proto.type} {proto.version} is not accepted',
+            f'License for prototype "{prototype.name}" {prototype.type} {prototype.version} is not accepted',
         )
 
 
@@ -87,7 +88,7 @@ def version_in(version: str, ver: PrototypeImport) -> bool:
     return True
 
 
-def load_service_map():  # noqa: C901
+def load_service_map():
     comps = {}
     hosts = {}
     hc_map = {}
@@ -174,40 +175,40 @@ def update_mm_objects(func):
     return wrapper
 
 
-def add_cluster(proto, name, desc=""):
-    if proto.type != "cluster":
-        raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be cluster, not {proto.type}")
+def add_cluster(prototype: Prototype, name: str, description: str = "") -> Cluster:
+    if prototype.type != "cluster":
+        raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be cluster, not {prototype.type}")
 
-    check_license(proto)
-    with transaction.atomic():
-        cluster = Cluster.objects.create(prototype=proto, name=name, description=desc)
-        obj_conf = init_object_config(proto, cluster)
+    check_license(prototype)
+    with atomic():
+        cluster = Cluster.objects.create(prototype=prototype, name=name, description=description)
+        obj_conf = init_object_config(prototype, cluster)
         cluster.config = obj_conf
         cluster.save()
         update_hierarchy_issues(cluster)
 
-    post_event(event="create", obj=cluster)
+    post_event(event="create", object_id=cluster.pk, object_type="cluster")
     load_service_map()
     logger.info("cluster #%s %s is added", cluster.pk, cluster.name)
 
     return cluster
 
 
-def add_host(proto, provider, fqdn, desc=""):
-    if proto.type != "host":
-        raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be host, not {proto.type}")
+def add_host(prototype: Prototype, provider: HostProvider, fqdn: str, description: str = ""):
+    if prototype.type != "host":
+        raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be host, not {prototype.type}")
 
-    check_license(proto)
-    if proto.bundle != provider.prototype.bundle:
+    check_license(prototype)
+    if prototype.bundle != provider.prototype.bundle:
         raise_adcm_ex(
             "FOREIGN_HOST",
-            f"Host prototype bundle #{proto.bundle.pk} does not match with "
+            f"Host prototype bundle #{prototype.bundle.pk} does not match with "
             f"host provider bundle #{provider.prototype.bundle.pk}",
         )
 
-    with transaction.atomic():
-        host = Host.objects.create(prototype=proto, provider=provider, fqdn=fqdn, description=desc)
-        obj_conf = init_object_config(proto, host)
+    with atomic():
+        host = Host.objects.create(prototype=prototype, provider=provider, fqdn=fqdn, description=description)
+        obj_conf = init_object_config(prototype, host)
         host.config = obj_conf
         host.save()
         host.add_to_concerns(CTX.lock)
@@ -215,28 +216,30 @@ def add_host(proto, provider, fqdn, desc=""):
         re_apply_object_policy(provider)
 
     CTX.event.send_state()
-    post_event(event="create", obj=host, details={"type": "provider", "value": str(provider.pk)})
+    post_event(
+        event="create", object_id=host.pk, object_type="host", details={"type": "provider", "value": str(provider.pk)}
+    )
     load_service_map()
     logger.info("host #%s %s is added", host.pk, host.fqdn)
 
     return host
 
 
-def add_host_provider(proto, name, desc=""):
-    if proto.type != "provider":
-        raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be provider, not {proto.type}")
+def add_host_provider(prototype: Prototype, name: str, description: str = ""):
+    if prototype.type != "provider":
+        raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be provider, not {prototype.type}")
 
-    check_license(proto)
-    with transaction.atomic():
-        provider = HostProvider.objects.create(prototype=proto, name=name, description=desc)
-        obj_conf = init_object_config(proto, provider)
+    check_license(prototype)
+    with atomic():
+        provider = HostProvider.objects.create(prototype=prototype, name=name, description=description)
+        obj_conf = init_object_config(prototype, provider)
         provider.config = obj_conf
         provider.save()
         provider.add_to_concerns(CTX.lock)
         update_hierarchy_issues(provider)
 
     CTX.event.send_state()
-    post_event(event="create", obj=provider)
+    post_event(event="create", object_id=provider.pk, object_type="provider")
     logger.info("host provider #%s %s is added", provider.pk, provider.name)
 
     return provider
@@ -260,30 +263,9 @@ def delete_host_provider(provider, cancel_tasks=True):
         cancel_locking_tasks(provider, obj_deletion=True)
 
     provider_pk = provider.pk
-    post_event(event="delete", obj=provider)
+    post_event(event="delete", object_id=provider.pk, object_type="provider")
     provider.delete()
     logger.info("host provider #%s is deleted", provider_pk)
-
-
-def add_host_to_cluster(cluster, host):
-    if host.cluster:
-        if host.cluster.pk != cluster.pk:
-            raise_adcm_ex("FOREIGN_HOST", f"Host #{host.pk} belong to cluster #{host.cluster.pk}")
-        else:
-            raise_adcm_ex("HOST_CONFLICT")
-
-    with transaction.atomic():
-        host.cluster = cluster
-        host.save()
-        host.add_to_concerns(CTX.lock)
-        update_hierarchy_issues(host)
-        re_apply_object_policy(cluster)
-
-    post_event(event="add", obj=host, details={"type": "cluster", "value": str(cluster.pk)})
-    load_service_map()
-    logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)
-
-    return host
 
 
 def get_cluster_and_host(cluster_pk, fqdn, host_pk):
@@ -335,7 +317,7 @@ def delete_host(host, cancel_tasks=True):
         cancel_locking_tasks(obj=host, obj_deletion=True)
 
     host_pk = host.pk
-    post_event(event="delete", obj=host)
+    post_event(event="delete", object_id=host.pk, object_type="host")
     host.delete()
     load_service_map()
     update_issue_after_deleting()
@@ -376,9 +358,14 @@ def delete_service_by_pk(service_pk):
     This is intended for use in adcm_delete_service ansible plugin only
     """
 
-    with transaction.atomic():
-        service = ClusterObject.obj.get(pk=service_pk)
-        _clean_up_related_hc(service)
+    service = ClusterObject.obj.get(pk=service_pk)
+    with atomic():
+        on_commit(
+            func=partial(
+                post_event, event="change_hostcomponentmap", object_id=service.cluster.pk, object_type="cluster"
+            )
+        )
+        _clean_up_related_hc(service=service)
         ClusterBind.objects.filter(source_service=service).delete()
         delete_service(service=service)
 
@@ -390,16 +377,21 @@ def delete_service_by_name(service_name, cluster_pk):
     This is intended for use in adcm_delete_service ansible plugin only
     """
 
-    with transaction.atomic():
-        service = ClusterObject.obj.get(cluster__pk=cluster_pk, prototype__name=service_name)
-        _clean_up_related_hc(service)
+    service = ClusterObject.obj.get(cluster__pk=cluster_pk, prototype__name=service_name)
+    with atomic():
+        on_commit(
+            func=partial(
+                post_event, event="change_hostcomponentmap", object_id=service.cluster.pk, object_type="cluster"
+            )
+        )
+        _clean_up_related_hc(service=service)
         ClusterBind.objects.filter(source_service=service).delete()
         delete_service(service=service)
 
 
 def delete_service(service: ClusterObject) -> None:
     service_pk = service.pk
-    post_event(event="delete", obj=service)
+    post_event(event="delete", object_id=service.pk, object_type="service")
     service.delete()
     update_issue_after_deleting()
     update_hierarchy_issues(service.cluster)
@@ -408,6 +400,7 @@ def delete_service(service: ClusterObject) -> None:
     logger.info("service #%s is deleted", service_pk)
 
 
+@atomic
 def delete_cluster(cluster, cancel_tasks=True):
     if cancel_tasks:
         cancel_locking_tasks(cluster, obj_deletion=True)
@@ -422,7 +415,7 @@ def delete_cluster(cluster, cancel_tasks=True):
         MaintenanceMode.OFF,
         ", ".join(host_pks),
     )
-    post_event(event="delete", obj=cluster)
+    post_event(event="delete", object_id=cluster.pk, object_type="cluster")
     cluster.delete()
     update_issue_after_deleting()
     load_service_map()
@@ -437,7 +430,7 @@ def remove_host_from_cluster(host: Host) -> Host:
     if cluster.state == "upgrading":
         return raise_adcm_ex(code="HOST_CONFLICT", msg="It is forbidden to delete host from cluster in upgrade mode")
 
-    with transaction.atomic():
+    with atomic():
         host.maintenance_mode = MaintenanceMode.OFF
         host.cluster = None
         host.save()
@@ -451,7 +444,9 @@ def remove_host_from_cluster(host: Host) -> Host:
         re_apply_object_policy(apply_object=cluster)
 
     CTX.event.send_state()
-    post_event(event="remove", obj=host, details={"type": "cluster", "value": str(cluster.pk)})
+    post_event(
+        event="remove", object_id=host.pk, object_type="host", details={"type": "cluster", "value": str(cluster.pk)}
+    )
     load_service_map()
 
     return host
@@ -462,35 +457,42 @@ def unbind(cbind):
     export_obj = get_bind_obj(cbind.source_cluster, cbind.source_service)
     check_import_default(import_obj, export_obj)
 
-    with transaction.atomic():
-        post_event(event="delete", obj=cbind, details={"type": "cluster", "value": str(cbind.cluster.pk)})
+    with atomic():
+        post_event(
+            event="delete",
+            object_id=cbind.pk,
+            object_type="cbind",
+            details={"type": "cluster", "value": str(cbind.cluster.pk)},
+        )
         cbind.delete()
         update_hierarchy_issues(cbind.cluster)
 
 
-def add_service_to_cluster(cluster, proto):
+def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> ClusterObject:
     if proto.type != "service":
-        raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be service, not {proto.type}")
+        raise_adcm_ex(code="OBJ_TYPE_ERROR", msg=f"Prototype type should be service, not {proto.type}")
 
-    check_license(proto)
+    check_license(prototype=proto)
     if not proto.shared:
         if cluster.prototype.bundle != proto.bundle:
             raise_adcm_ex(
-                "SERVICE_CONFLICT",
-                f"{proto_ref(proto)} does not belong to bundle "
+                code="SERVICE_CONFLICT",
+                msg=f"{proto_ref(prototype=proto)} does not belong to bundle "
                 f'"{cluster.prototype.bundle.name}" {cluster.prototype.version}',
             )
 
-    with transaction.atomic():
+    with atomic():
         service = ClusterObject.objects.create(cluster=cluster, prototype=proto)
         obj_conf = init_object_config(proto=proto, obj=service)
         service.config = obj_conf
         service.save(update_fields=["config"])
         add_components_to_service(cluster=cluster, service=service)
-        update_hierarchy_issues(obj=service)
+        update_hierarchy_issues(obj=cluster)
         re_apply_object_policy(apply_object=cluster)
 
-    post_event(event="add", obj=service, details={"type": "cluster", "value": str(cluster.pk)})
+    post_event(
+        event="add", object_id=service.pk, object_type="service", details={"type": "cluster", "value": str(cluster.pk)}
+    )
     load_service_map()
     logger.info(
         "service #%s %s is added to cluster #%s %s",
@@ -503,13 +505,13 @@ def add_service_to_cluster(cluster, proto):
     return service
 
 
-def add_components_to_service(cluster, service):
+def add_components_to_service(cluster: Cluster, service: ClusterObject) -> None:
     for comp in Prototype.objects.filter(type="component", parent=service.prototype):
         service_component = ServiceComponent.objects.create(cluster=cluster, service=service, prototype=comp)
-        obj_conf = init_object_config(comp, service_component)
+        obj_conf = init_object_config(proto=comp, obj=service_component)
         service_component.config = obj_conf
-        service_component.save()
-        update_hierarchy_issues(service_component)
+        service_component.save(update_fields=["config"])
+        update_hierarchy_issues(obj=service_component)
 
 
 def get_license(proto: Prototype) -> str | None:
@@ -532,7 +534,7 @@ def accept_license(proto: Prototype) -> None:
     Prototype.objects.filter(license_hash=proto.license_hash, license="unaccepted").update(license="accepted")
 
 
-def update_obj_config(obj_conf: ObjectConfig, conf: dict, attr: dict, desc: str = "") -> ConfigLog:
+def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, description: str = "") -> ConfigLog:
     if not isinstance(attr, dict):
         raise_adcm_ex("INVALID_CONFIG_UPDATE", "attr should be a map")
 
@@ -549,41 +551,55 @@ def update_obj_config(obj_conf: ObjectConfig, conf: dict, attr: dict, desc: str 
         proto = obj.prototype
 
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
-    new_conf = check_and_process_json_config(
+    new_conf = process_json_config(
         proto=proto,
         obj=group or obj,
-        new_config=conf,
+        new_config=config,
         current_config=old_conf.config,
         new_attr=attr,
         current_attr=old_conf.attr,
     )
-    with transaction.atomic():
-        config_log = save_obj_config(obj_conf=obj_conf, conf=new_conf, attr=attr, desc=desc)
+    with atomic():
+        config_log = save_obj_config(obj_conf=obj_conf, conf=new_conf, attr=attr, desc=description)
         update_hierarchy_issues(obj=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
     if group is not None:
-        post_event(event="change_config", obj=group, details={"type": "version", "value": str(config_log.pk)})
+        post_event(
+            event="change_config",
+            object_id=group.pk,
+            object_type="group-config",
+            details={"type": "version", "value": str(config_log.pk)},
+        )
     else:
-        post_event(event="change_config", obj=obj, details={"type": "version", "value": str(config_log.pk)})
+        post_event(
+            event="change_config",
+            object_id=obj.pk,
+            object_type=obj.prototype.type,
+            details={"type": "version", "value": str(config_log.pk)},
+        )
 
     return config_log
 
 
-def set_object_config(obj: ADCMEntity, config: dict) -> ConfigLog:
-    old_conf = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-    new_conf = check_and_process_json_config(proto=obj.prototype, obj=obj, new_config=config, new_attr=old_conf.attr)
+def set_object_config(obj: ADCMEntity, config: dict, attr: dict) -> ConfigLog:
+    new_conf = process_json_config(proto=obj.prototype, obj=obj, new_config=config, new_attr=attr)
 
-    with transaction.atomic():
-        config_log = save_obj_config(obj_conf=obj.config, conf=new_conf, attr=old_conf.attr, desc="ansible update")
+    with atomic():
+        config_log = save_obj_config(obj_conf=obj.config, conf=new_conf, attr=attr, desc="ansible update")
         update_hierarchy_issues(obj=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
-    post_event(event="change_config", obj=obj, details={"type": "version", "value": str(config_log.pk)})
+    post_event(
+        event="change_config",
+        object_id=obj.pk,
+        object_type=obj.prototype.type,
+        details={"type": "version", "value": str(config_log.pk)},
+    )
     return config_log
 
 
-def get_hc(cluster):
+def get_hc(cluster: Cluster | None) -> list[dict] | None:
     if not cluster:
         return None
 
@@ -623,7 +639,7 @@ def check_sub_key(hc_in):
             raise_adcm_ex("INVALID_INPUT", f"duplicate ({item}) in host service list")
 
 
-def make_host_comp_list(cluster, hc_in):
+def make_host_comp_list(cluster: Cluster, hc_in: list[dict]) -> list[tuple[ClusterObject, Host, ServiceComponent]]:
     host_comp_list = []
     for item in hc_in:
         host = Host.obj.get(pk=item["host_id"])
@@ -643,20 +659,25 @@ def make_host_comp_list(cluster, hc_in):
     return host_comp_list
 
 
-def check_hc(cluster, hc_in):
-    check_sub_key(hc_in)
-    host_comp_list = make_host_comp_list(cluster, hc_in)
-    for service in ClusterObject.objects.filter(cluster=cluster):
-        check_component_constraint(cluster, service.prototype, [i for i in host_comp_list if i[0] == service])
+def check_hc(cluster: Cluster, hc_in: list[dict]) -> list[tuple[ClusterObject, Host, ServiceComponent]]:
+    check_sub_key(hc_in=hc_in)
+    host_comp_list = make_host_comp_list(cluster=cluster, hc_in=hc_in)
 
-    check_component_requires(host_comp_list)
-    check_bound_components(host_comp_list)
-    check_maintenance_mode(cluster, host_comp_list)
+    check_hc_requires(shc_list=host_comp_list)
+    check_bound_components(shc_list=host_comp_list)
+    for service in ClusterObject.objects.filter(cluster=cluster):
+        check_component_constraint(
+            cluster=cluster, service_prototype=service.prototype, hc_in=[i for i in host_comp_list if i[0] == service]
+        )
+        check_service_requires(cluster=cluster, proto=service.prototype)
+    check_maintenance_mode(cluster=cluster, host_comp_list=host_comp_list)
 
     return host_comp_list
 
 
-def check_maintenance_mode(cluster, host_comp_list):
+def check_maintenance_mode(
+    cluster: Cluster, host_comp_list: list[tuple[ClusterObject, Host, ServiceComponent]]
+) -> None:
     for service, host, comp in host_comp_list:
         try:
             HostComponent.objects.get(cluster=cluster, service=service, host=host, component=comp)
@@ -665,7 +686,7 @@ def check_maintenance_mode(cluster, host_comp_list):
                 raise_adcm_ex("INVALID_HC_HOST_IN_MM")
 
 
-def still_existed_hc(cluster, host_comp_list):
+def still_existed_hc(cluster: Cluster, host_comp_list: list[tuple[ClusterObject, Host, ServiceComponent]]) -> list:
     result = []
     for service, host, comp in host_comp_list:
         try:
@@ -677,7 +698,9 @@ def still_existed_hc(cluster, host_comp_list):
     return result
 
 
-def save_hc(cluster, host_comp_list):
+def save_hc(
+    cluster: Cluster, host_comp_list: list[tuple[ClusterObject, Host, ServiceComponent]]
+) -> list[HostComponent]:
     # pylint: disable=too-many-locals
 
     hc_queryset = HostComponent.objects.filter(cluster=cluster).order_by("id")
@@ -721,7 +744,6 @@ def save_hc(cluster, host_comp_list):
         host_component_list.append(host_component)
 
     CTX.event.send_state()
-    post_event(event="change_hostcomponentmap", obj=cluster)
     update_hierarchy_issues(cluster)
 
     for provider in {host.provider for host in Host.objects.filter(cluster=cluster)}:
@@ -733,16 +755,32 @@ def save_hc(cluster, host_comp_list):
     for host_component_item in host_component_list:
         service_set.add(host_component_item.service)
 
-    for service in service_set:
-        re_apply_object_policy(apply_object=service)
+    if service_set:
+        service_list = list(service_set)
+        service_content_type = ContentType.objects.get_for_model(model=service_list[0])
+        for service in service_list:
+            for policy in Policy.objects.filter(
+                object__object_id=service.pk, object__content_type=service_content_type
+            ):
+                policy.apply()
+
+        for policy in Policy.objects.filter(
+            object__object_id=service_list[0].cluster.pk,
+            object__content_type=ContentType.objects.get_for_model(model=service_list[0].cluster),
+        ):
+            policy.apply()
 
     return host_component_list
 
 
-def add_hc(cluster, hc_in):
-    host_comp_list = check_hc(cluster, hc_in)
-    with transaction.atomic():
-        new_hc = save_hc(cluster, host_comp_list)
+def add_hc(cluster: Cluster, hc_in: list[dict]) -> list[HostComponent]:
+    host_comp_list = check_hc(cluster=cluster, hc_in=hc_in)
+
+    with atomic():
+        on_commit(
+            func=partial(post_event, event="change_hostcomponentmap", object_id=cluster.pk, object_type="cluster")
+        )
+        new_hc = save_hc(cluster=cluster, host_comp_list=host_comp_list)
 
     return new_hc
 
@@ -759,7 +797,7 @@ def get_bind(cluster, service, source_cluster, source_service):
         return None
 
 
-def get_import(cluster, service=None):  # noqa: C901
+def get_import(cluster, service=None):
     def get_export(_cluster, _service, _pi):
         exports = []
         export_proto = {}
@@ -872,7 +910,7 @@ def get_bind_obj(cluster, service):
     return obj
 
 
-def multi_bind(cluster, service, bind_list):  # noqa: C901
+def multi_bind(cluster, service, bind_list):
     # pylint: disable=too-many-locals,too-many-statements
 
     def get_prototype_import(import_pk, _import_obj):
@@ -941,7 +979,7 @@ def multi_bind(cluster, service, bind_list):  # noqa: C901
         )
         new_bind[cook_key(export_cluster, export_co)] = prototype_import, cluster_bind, export_obj
 
-    with transaction.atomic():
+    with atomic():
         for key, value in old_bind.items():
             if key in new_bind:
                 continue
@@ -971,7 +1009,7 @@ def multi_bind(cluster, service, bind_list):  # noqa: C901
     return get_import(cluster, service)
 
 
-def bind(cluster, service, export_cluster, export_service_pk):  # noqa: C901
+def bind(cluster, service, export_cluster, export_service_pk):
     # pylint: disable=too-many-branches
 
     """
@@ -1046,3 +1084,26 @@ def check_multi_bind(actual_import, cluster, service, export_cluster, export_ser
         else:
             if source_proto == export_cluster.prototype:
                 raise_adcm_ex("BIND_ERROR", f"can not multi bind {proto_ref(source_proto)} to {obj_ref(cluster)}")
+
+
+def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
+    if host.cluster:
+        if host.cluster.pk != cluster.pk:
+            raise_adcm_ex("FOREIGN_HOST", f"Host #{host.pk} belong to cluster #{host.cluster.pk}")
+        else:
+            raise_adcm_ex("HOST_CONFLICT")
+
+    with atomic():
+        host.cluster = cluster
+        host.save()
+        host.add_to_concerns(CTX.lock)
+        update_hierarchy_issues(host)
+        re_apply_object_policy(cluster)
+
+    post_event(
+        event="add", object_id=host.pk, object_type="host", details={"type": "cluster", "value": str(cluster.pk)}
+    )
+    load_service_map()
+    logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)
+
+    return host

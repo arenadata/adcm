@@ -16,7 +16,8 @@ import re
 from contextlib import contextmanager, suppress
 
 import ldap
-from cm.adcm_config import ansible_decrypt
+from cm.adcm_config.ansible import ansible_decrypt
+from cm.errors import raise_adcm_ex
 from cm.logger import logger
 from cm.models import ADCM, ConfigLog
 from django.contrib.auth.models import Group as DjangoGroup
@@ -80,9 +81,13 @@ def is_tls(ldap_uri: str) -> bool:
 
 def get_ldap_config() -> dict | None:
     adcm_object = ADCM.objects.first()
+    if not adcm_object:
+        return None
+
     current_configlog = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
     if current_configlog.attr["ldap_integration"]["active"]:
         return current_configlog.config["ldap_integration"]
+
     return None
 
 
@@ -264,7 +269,7 @@ class CustomLDAPBackend(LDAPBackend):
                     conn=conn,
                 )
             if err_msg:
-                raise RuntimeError(err_msg)
+                raise_adcm_ex(code="GROUP_CONFLICT", msg=err_msg)
 
             for ldap_group_name in ldap_group_names:
                 group, _ = Group.objects.get_or_create(name=f"{ldap_group_name} [ldap]", type=OriginType.LDAP)

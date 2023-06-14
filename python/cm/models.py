@@ -20,11 +20,9 @@ import signal
 import time
 from collections.abc import Iterable, Mapping
 from copy import deepcopy
-from datetime import datetime
 from enum import Enum
 from itertools import chain
 from typing import Optional
-from zoneinfo import ZoneInfo
 
 from cm.errors import AdcmEx
 from cm.logger import logger
@@ -36,6 +34,7 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
+from django.utils import timezone
 
 
 def validate_line_break_character(value: str) -> None:
@@ -265,6 +264,10 @@ class Prototype(ADCMModel):
     class Meta:
         unique_together = (("bundle", "type", "parent", "name", "version"),)
 
+    @property
+    def is_license_accepted(self) -> bool:
+        return self.license == LICENSE_STATE[1][0]
+
 
 class ObjectConfig(ADCMModel):
     current = models.PositiveIntegerField()
@@ -301,13 +304,8 @@ class ConfigLog(ADCMModel):
     __error_code__ = "CONFIG_NOT_FOUND"
 
     @transaction.atomic()
-    def save(self, *args, **kwargs):  # pylint: disable=too-many-locals,too-many-statements # noqa: C901
-        """Saving config and updating config groups"""
-
+    def save(self, *args, **kwargs):  # pylint: disable=too-many-locals,too-many-statements
         def update_config(origin: dict, renovator: dict, _group_keys: dict) -> None:
-            """
-            Updating the original config with a check for the presence of keys in the original
-            """
             for key, value in _group_keys.items():
                 if key in renovator:
                     if isinstance(value, Mapping):
@@ -318,16 +316,12 @@ class ConfigLog(ADCMModel):
                             origin[key] = renovator[key]
 
         def update_attr(origin: dict, renovator: dict, _group_keys: dict) -> None:
-            """
-            Updating the original config with a check for the presence of keys in the original
-            """
             for key, value in _group_keys.items():
                 if key in renovator and isinstance(value, Mapping):
                     if value["value"] is not None and value["value"]:
                         origin[key] = renovator[key]
 
         def clean_attr(attrs: dict, _spec: dict) -> None:
-            """Clean attr after upgrade cluster"""
             extra_fields = []
 
             for key in attrs.keys():
@@ -339,8 +333,6 @@ class ConfigLog(ADCMModel):
                 attrs.pop(field)
 
         def clean_group_keys(_group_keys, _spec):
-            """Clean group_keys after update cluster"""
-
             correct_group_keys = {}
             for field, info in _spec.items():
                 if info["type"] == "group":
@@ -437,6 +429,13 @@ class ADCMEntity(ADCMModel):
             cause=cause,
         ).first()
 
+    def requires_service_name(self, service_name: str) -> bool:
+        for item in self.requires:
+            if item.get("service") == service_name:
+                return True
+
+        return False
+
     def __str__(self):
         own_name = getattr(self, "name", None)
         fqdn = getattr(self, "fqdn", None)
@@ -511,6 +510,7 @@ class ADCMEntity(ADCMModel):
 class Upgrade(ADCMModel):
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
     name = models.CharField(max_length=1000, blank=True)
+    display_name = models.CharField(max_length=1000, blank=True)
     description = models.TextField(blank=True)
     min_version = models.CharField(max_length=1000)
     max_version = models.CharField(max_length=1000)
@@ -729,6 +729,10 @@ class ClusterObject(ADCMEntity):
         return self.prototype.description
 
     @property
+    def requires(self) -> list:
+        return self.prototype.requires
+
+    @property
     def monitoring(self):
         return self.prototype.monitoring
 
@@ -872,13 +876,6 @@ class ServiceComponent(ADCMEntity):
     @property
     def is_maintenance_mode_available(self) -> bool:
         return self.cluster.prototype.allow_maintenance_mode
-
-    def requires_service_name(self, service_name: str) -> bool:
-        for item in self.requires:
-            if item.get("service") == service_name:
-                return True
-
-        return False
 
     class Meta:
         unique_together = (("cluster", "service", "prototype"),)
@@ -1084,11 +1081,11 @@ class GroupConfig(ADCMModel):
 
         return hosts.exclude(group_config__in=self.object.group_config.all())
 
-    def check_host_candidate(self, host):
-        if self.hosts.filter(pk=host.pk).exists():
+    def check_host_candidate(self, host_ids: list[int]):
+        if self.hosts.filter(pk__in=host_ids).exists():
             raise AdcmEx("GROUP_CONFIG_HOST_EXISTS")
 
-        if host not in self.host_candidate():
+        if set(host_ids).difference({host.pk for host in self.host_candidate()}):
             raise AdcmEx("GROUP_CONFIG_HOST_ERROR")
 
     def preparing_file_type_field(self, config=None):
@@ -1178,8 +1175,6 @@ def get_any():
 
 
 class AbstractAction(ADCMModel):
-    """Abstract base class for both Action and StageAction"""
-
     prototype = None
 
     name = models.CharField(max_length=1000)
@@ -1295,7 +1290,7 @@ class Action(AbstractAction):
 
         return state_allowed and multi_state_allowed
 
-    def get_start_impossible_reason(self, obj: ADCMEntity) -> str | None:  # noqa: C901
+    def get_start_impossible_reason(self, obj: ADCMEntity) -> str | None:
         # pylint: disable=too-many-branches, too-many-return-statements
 
         if obj.prototype.type == "adcm":
@@ -1513,6 +1508,7 @@ class TaskLog(ADCMModel):
     attr = models.JSONField(default=dict)
     hostcomponentmap = models.JSONField(null=True, default=None)
     post_upgrade_hc_map = models.JSONField(null=True, default=None)
+    restore_hc_on_fail = models.BooleanField(default=True)
     hosts = models.JSONField(null=True, default=None)
     verbose = models.BooleanField(default=False)
     start_date = models.DateTimeField()
@@ -1548,7 +1544,7 @@ class TaskLog(ADCMModel):
         self.save()
         lock.delete()
 
-    def cancel(self, event_queue: "cm.status_api.Event" = None, obj_deletion=False):  # noqa: F821
+    def cancel(self, event_queue: "cm.status_api.Event" = None, obj_deletion=False):
         """
         Cancel running task process
         task status will be updated in separate process of task runner
@@ -1579,7 +1575,7 @@ class TaskLog(ADCMModel):
             raise AdcmEx("NO_JOBS_RUNNING", "no jobs running")
 
         self.status = JobStatus.ABORTED
-        self.finish_date = datetime.now(tz=ZoneInfo("UTC"))
+        self.finish_date = timezone.now()
         self.save(update_fields=["status", "finish_date"])
 
         if event_queue:
@@ -1608,12 +1604,12 @@ class JobLog(ADCMModel):
 
     def cook_reason(self):
         return MessageTemplate.get_message_from_template(
-            MessageTemplate.KnownNames.LOCKED_BY_JOB.value,
+            KnownNames.LOCKED_BY_JOB.value,
             job=self,
             target=self.task.task_object,
         )
 
-    def cancel(self, event_queue: "cm.status_api.Event" = None):  # noqa: F821
+    def cancel(self, event_queue: "cm.status_api.Event" = None):
         if not self.sub_action.allowed_to_terminate:
             event_queue.clear_state()
             raise AdcmEx("JOB_TERMINATION_ERROR", f"Job #{self.pk} can not be terminated")
@@ -1673,6 +1669,8 @@ class LogStorage(ADCMModel):
     type = models.CharField(max_length=1000, choices=LOG_TYPE)
     format = models.CharField(max_length=1000, choices=FORMAT_TYPE)
 
+    __error_code__ = "LOG_NOT_FOUND"
+
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["job"], condition=models.Q(type="check"), name="unique_check_job"),
@@ -1713,6 +1711,7 @@ class StagePrototype(ADCMModel):
 
 class StageUpgrade(ADCMModel):
     name = models.CharField(max_length=1000, blank=True)
+    display_name = models.CharField(max_length=1000, blank=True)
     description = models.TextField(blank=True)
     min_version = models.CharField(max_length=1000)
     max_version = models.CharField(max_length=1000)
@@ -1774,6 +1773,28 @@ class StagePrototypeImport(ADCMModel):
         unique_together = (("prototype", "name"),)
 
 
+class KnownNames(Enum):
+    LOCKED_BY_JOB = "locked by running job on target"  # kwargs=(job, target)
+    CONFIG_ISSUE = "object config issue"  # kwargs=(source, )
+    REQUIRED_SERVICE_ISSUE = "required service issue"  # kwargs=(source, )
+    REQUIRED_IMPORT_ISSUE = "required import issue"  # kwargs=(source, )
+    HOST_COMPONENT_ISSUE = "host component issue"  # kwargs=(source, )
+    UNSATISFIED_REQUIREMENT_ISSUE = "unsatisfied service requirement"  # kwargs=(source, )
+
+
+class PlaceHolderType(Enum):
+    ACTION = "action"
+    JOB = "job"
+    ADCM_ENTITY = "adcm_entity"
+    ADCM = "adcm"
+    CLUSTER = "cluster"
+    SERVICE = "service"
+    COMPONENT = "component"
+    PROVIDER = "provider"
+    HOST = "host"
+    PROTOTYPE = "prototype"
+
+
 class MessageTemplate(ADCMModel):
     """
     Templates for `ConcernItem.reason
@@ -1791,35 +1812,13 @@ class MessageTemplate(ADCMModel):
     placeholder fill functions have unified interface:
       @classmethod
       def _func(cls, placeholder_name, **kwargs) -> dict
-
-    TODO: load from bundle
-    TODO: check consistency on creation
-    TODO: separate JSON processing logic from model
     """
 
     name = models.CharField(max_length=1000, unique=True)
     template = models.JSONField()
 
-    class KnownNames(Enum):
-        LOCKED_BY_JOB = "locked by running job on target"  # kwargs=(job, target)
-        CONFIG_ISSUE = "object config issue"  # kwargs=(source, )
-        REQUIRED_SERVICE_ISSUE = "required service issue"  # kwargs=(source, )
-        REQUIRED_IMPORT_ISSUE = "required import issue"  # kwargs=(source, )
-        HOST_COMPONENT_ISSUE = "host component issue"  # kwargs=(source, )
-
-    class PlaceHolderType(Enum):
-        ACTION = "action"
-        ADCM_ENTITY = "adcm_entity"
-        ADCM = "adcm"
-        CLUSTER = "cluster"
-        SERVICE = "service"
-        COMPONENT = "component"
-        PROVIDER = "provider"
-        HOST = "host"
-        JOB = "job"
-
     @classmethod
-    def get_message_from_template(cls, name: str, **kwargs) -> dict:
+    def get_message_from_template(cls, name: KnownNames, **kwargs) -> dict:
         """Find message template by its name and fill placeholders"""
 
         tpl = cls.obj.get(name=name).template
@@ -1847,37 +1846,52 @@ class MessageTemplate(ADCMModel):
     @classmethod
     def _fill_placeholder(cls, ph_name: str, ph_data: dict, **ph_source_data) -> dict:
         type_map = {
-            cls.PlaceHolderType.ACTION.value: cls._action_placeholder,
-            cls.PlaceHolderType.ADCM_ENTITY.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.ADCM.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.CLUSTER.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.SERVICE.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.COMPONENT.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.PROVIDER.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.HOST.value: cls._adcm_entity_placeholder,
-            cls.PlaceHolderType.JOB.value: cls._job_placeholder,
+            PlaceHolderType.ACTION.value: cls._action_placeholder,
+            PlaceHolderType.ADCM_ENTITY.value: cls._adcm_entity_placeholder,
+            PlaceHolderType.ADCM.value: cls._adcm_entity_placeholder,
+            PlaceHolderType.CLUSTER.value: cls._adcm_entity_placeholder,
+            PlaceHolderType.SERVICE.value: cls._adcm_entity_placeholder,
+            PlaceHolderType.COMPONENT.value: cls._adcm_entity_placeholder,
+            PlaceHolderType.PROVIDER.value: cls._adcm_entity_placeholder,
+            PlaceHolderType.HOST.value: cls._adcm_entity_placeholder,
+            PlaceHolderType.JOB.value: cls._job_placeholder,
+            PlaceHolderType.PROTOTYPE.value: cls._prototype_placeholder,
         }
         return type_map[ph_data["type"]](ph_name, **ph_source_data)
 
     @classmethod
     def _action_placeholder(cls, _, **kwargs) -> dict:
         action = kwargs.get("action")
-        assert action
         target = kwargs.get("target")
-        assert target
+        if not target or not action:
+            return {}
 
         ids = target.get_id_chain()
         ids["action"] = action.pk
         return {
-            "type": cls.PlaceHolderType.ACTION.value,
+            "type": PlaceHolderType.ACTION.value,
             "name": action.display_name,
             "ids": ids,
         }
 
     @classmethod
+    def _prototype_placeholder(cls, _, **kwargs) -> dict:
+        proto = kwargs.get("target")
+
+        if proto:
+            return {
+                "id": proto.id,
+                "type": "prototype",
+                "name": proto.display_name or proto.name,
+            }
+
+        return {}
+
+    @classmethod
     def _adcm_entity_placeholder(cls, ph_name, **kwargs) -> dict:
         obj = kwargs.get(ph_name)
-        assert obj
+        if not obj:
+            return {}
 
         return {
             "type": obj.prototype.type,
@@ -1888,11 +1902,13 @@ class MessageTemplate(ADCMModel):
     @classmethod
     def _job_placeholder(cls, _, **kwargs) -> dict:
         job = kwargs.get("job")
-        assert job
         action = job.sub_action or job.action
 
+        if not job:
+            return {}
+
         return {
-            "type": cls.PlaceHolderType.JOB.value,
+            "type": PlaceHolderType.JOB.value,
             "name": action.display_name or action.name,
             "ids": job.id,
         }
@@ -1910,6 +1926,7 @@ class ConcernCause(models.TextChoices):
     HOSTCOMPONENT = "host-component", "host-component"
     IMPORT = "import", "import"
     SERVICE = "service", "service"
+    REQUIREMENT = "requirement", "requirement"
 
 
 class ConcernItem(ADCMModel):
@@ -1955,3 +1972,8 @@ class ConcernItem(ADCMModel):
         for entity in self.related_objects:
             entity.remove_from_concerns(self)
         return super().delete(using, keep_parents)
+
+
+class ADCMEntityStatus(models.TextChoices):
+    UP = "UP", "UP"
+    DOWN = "DOWN", "DOWN"

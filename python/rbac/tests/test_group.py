@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.errors import AdcmEx
 from django.contrib.auth.models import Group as AuthGroup
 from rbac.models import Group, OriginType
 
@@ -19,8 +20,8 @@ from adcm.tests.base import BaseTestCase
 class GroupTestCase(BaseTestCase):
     def test_group_creation_blank(self):
         with self.assertRaisesRegex(
-            RuntimeError,
-            r"Check regex. Data: ",
+            expected_exception=AdcmEx,
+            expected_regex="Check regex. Data: ",
             msg="group creation with no args is not allowed",
         ):
             Group.objects.create()
@@ -47,7 +48,6 @@ class GroupTestCase(BaseTestCase):
             self.assertFalse(AuthGroup.objects.filter(pk=base_group_pk).first())
 
     def test_group_name_type_mutation(self):
-        """test for pre_save signal"""
         group = Group.objects.create(name="test_group_name")
         auth_group = AuthGroup.objects.get(pk=group.group_ptr_id)
 

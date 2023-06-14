@@ -11,9 +11,9 @@
 # limitations under the License.
 
 from api.config_log.views import ConfigLogViewSet
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import SimpleRouter
 
-router = DefaultRouter()
-router.register(r"", ConfigLogViewSet, basename="config-log")
+router = SimpleRouter()
+router.register("", ConfigLogViewSet, basename="config-log")
 
 urlpatterns = router.urls

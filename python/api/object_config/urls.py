@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import SimpleRouter
 
 from .views import ObjectConfigViewSet
 
-router = DefaultRouter()
+router = SimpleRouter()
 router.register("", ObjectConfigViewSet, basename="config")
 
 urlpatterns = router.urls

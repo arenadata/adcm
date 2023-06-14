@@ -20,7 +20,7 @@ from tarfile import TarFile
 
 from audit.models import AuditLog, AuditLogOperationResult, AuditObject, AuditSession
 from audit.utils import make_audit_log
-from cm.adcm_config import get_adcm_config
+from cm.adcm_config.config import get_adcm_config
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.models import Count, Q
@@ -58,7 +58,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         try:
             self.__handle()
-        except Exception as e:  # pylint: disable=broad-except # noqa: BLE001
+        except Exception as e:  # pylint: disable=broad-except
             make_audit_log("audit", AuditLogOperationResult.FAIL, "completed")
             self.__log(e, "exception")
 

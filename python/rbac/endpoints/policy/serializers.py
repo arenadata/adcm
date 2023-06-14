@@ -12,8 +12,8 @@
 
 import jsonschema
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from rbac.endpoints.serializers import BaseRelatedSerializer
 from rbac.models import Group, Policy, Role, RoleTypes, User
-from rbac.utils import BaseRelatedSerializer
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import (
@@ -89,21 +89,21 @@ class ObjectField(JSONField):
 
 class PolicyRoleSerializer(BaseRelatedSerializer):
     id = PrimaryKeyRelatedField(queryset=Role.objects.all())
-    url = HyperlinkedIdentityField(view_name="rbac:role-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:role-detail")
 
 
 class PolicyUserSerializer(BaseRelatedSerializer):
     id = PrimaryKeyRelatedField(queryset=User.objects.all())
-    url = HyperlinkedIdentityField(view_name="rbac:user-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:user-detail")
 
 
 class PolicyGroupSerializer(BaseRelatedSerializer):
     id = PrimaryKeyRelatedField(queryset=Group.objects.all())
-    url = HyperlinkedIdentityField(view_name="rbac:group-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:group-detail")
 
 
 class PolicySerializer(FlexFieldsSerializerMixin, ModelSerializer):
-    url = HyperlinkedIdentityField(view_name="rbac:policy-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:policy-detail")
     name = RegexField(r"^[^\n]*$", max_length=160)
     object = ObjectField(required=True)
     built_in = BooleanField(read_only=True)

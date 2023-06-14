@@ -11,7 +11,8 @@
 # limitations under the License.
 
 from cm.logger import logger
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import APIException, ValidationError
+from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_401_UNAUTHORIZED,
@@ -75,6 +76,7 @@ ERRORS = {
     "FOREIGN_HOST": ("host is not belong to the cluster", HTTP_409_CONFLICT, ERR),
     "COMPONENT_CONFLICT": ("duplicate component on host in cluster", HTTP_409_CONFLICT, ERR),
     "COMPONENT_CONSTRAINT_ERROR": ("component constraint error", HTTP_409_CONFLICT, ERR),
+    "REQUIRES_ERROR": ("Incorrect requires definition", HTTP_409_CONFLICT, ERR),
     "BUNDLE_CONFIG_ERROR": ("bundle config error", HTTP_409_CONFLICT, ERR),
     "BUNDLE_CONFLICT": ("bundle conflict error", HTTP_409_CONFLICT, ERR),
     "INVALID_ROLE_SPEC": ("role specification error", HTTP_409_CONFLICT, ERR),
@@ -217,6 +219,16 @@ ERRORS = {
     "USER_UPDATE_ERROR": ("Error during process of user updating", HTTP_400_BAD_REQUEST, ERR),
     "USER_DELETE_ERROR": ("Built-in user could not be deleted", HTTP_405_METHOD_NOT_ALLOWED, ERR),
     "JOB_TERMINATION_ERROR": ("Can't terminate job", HTTP_409_CONFLICT, ERR),
+    "USER_PASSWORD_TOO_SHORT_ERROR": ("This password is shorter than min password length", HTTP_400_BAD_REQUEST, ERR),
+    "USER_PASSWORD_TOO_LONG_ERROR": ("This password is longer than max password length", HTTP_400_BAD_REQUEST, ERR),
+    "USER_PASSWORD_TOO_COMMON_ERROR": ("This password is too common", HTTP_400_BAD_REQUEST, ERR),
+    "USER_PASSWORD_ENTIRELY_NUMERIC_ERROR": ("This password is entirely numeric", HTTP_400_BAD_REQUEST, ERR),
+    "USER_PASSWORD_CURRENT_PASSWORD_REQUIRED_ERROR": (
+        'Field "current_password" should be filled and match user current password',
+        HTTP_400_BAD_REQUEST,
+        ERR,
+    ),
+    "BAD_REQUEST": ("Bad request", HTTP_400_BAD_REQUEST, ERR),
 }
 
 
@@ -274,10 +286,26 @@ def raise_adcm_ex(code, msg="", args=""):
     raise AdcmEx(code, msg=msg, args=args)
 
 
-def custom_drf_exception_handler(exc, context):
+def custom_drf_exception_handler(exc: Exception, context) -> Response | None:
     if isinstance(exc, OverflowError):
-        # This is an error with DB mostly. For example SqlLite can"t handle 64bit numbers.
+        # This is an error with DB mostly. For example SQLite can't handle 64-bit numbers.
         # So we have to handle this right and rise HTTP 400, instead of HTTP 500
-        return exception_handler(AdcmEx("OVERFLOW"), context)
 
-    return exception_handler(exc, context)
+        return exception_handler(exc=AdcmEx(code="OVERFLOW"), context=context)
+
+    if isinstance(exc, ValidationError) and isinstance(exc.detail, dict):
+        msg = ""
+        for field_name, error in exc.detail.items():
+            if isinstance(error, list):
+                if isinstance(error[0], dict):
+                    for err_type, err in error[0].items():
+                        msg = f"{msg}{err_type} - {err[0]};"
+                else:
+                    msg = f"{msg}{field_name} - {error[0]};"
+            else:
+                for err_type, err in error.items():
+                    msg = f"{msg}{err_type} - {err[0]};"
+
+        return exception_handler(exc=AdcmEx(code="BAD_REQUEST", msg=msg), context=context)
+
+    return exception_handler(exc=exc, context=context)

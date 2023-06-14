@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 2.4
+  version: 2.6
 
   actions:
     run_ldap_sync:
@@ -46,9 +46,6 @@
           required: false
           ui_options:
             no_confirm: true
-        - name: "whitelisted_domains"
-          type: list
-          required: false
     - name: "yandex_oauth"
       display_name: "Yandex Auth"
       type: "group"
@@ -247,3 +244,31 @@
             CA certificate path in ADCM container volume.
           type: string
           required: false
+    - name: "auth_policy"
+      display_name: "Authentication policy"
+      type: "group"
+      subs:
+        - name: "min_password_length"
+          display_name: "Minimum password length"
+          type: integer
+          default: 12
+          min: 1
+          max: 128
+        - name: "max_password_length"
+          display_name: "Maximum password length"
+          type: integer
+          default: 128
+          min: 1
+          max: 128
+        - name: "login_attempt_limit"
+          display_name: "Login attempt limit"
+          description: "The number of login attempts allowed before user account is locked out"
+          type: integer
+          min: 1
+          default: 5
+        - name: "block_time"
+          display_name: "Blocking time period"
+          description: "Defines a period (in min) of inactivity after which old failed login attempts will be cleared"
+          type: integer
+          min: 1
+          default: 5

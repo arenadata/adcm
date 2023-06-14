@@ -111,6 +111,7 @@ yarn install
     Use `-v /opt/adcm:/adcm/data:Z` for SELinux
 
 ## Running ADCM using client PostgreSQL DB
+_PostgreSQL must be version 11 or newer - JSONB field used_
 
 1. Start container:
    ```shell
@@ -160,3 +161,13 @@ yarn install
    -e DB_PASS="DATABASE_USER_PASSWORD" -e MIGRATION_MODE=0
    --name adcm hub.arenadata.io/adcm/adcm:latest
    ```
+
+## Set log level
+1. add `-e` option to `docker run` command:
+   ```shell
+   docker run ... -e LOG_LEVEL="INFO"
+   ```
+   
+   valid choices are: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
+
+   defaults to `ERROR`

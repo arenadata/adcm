@@ -10,13 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.adcm_config import get_prototype_config, obj_ref, proto_ref
+from cm.adcm_config.config import get_prototype_config
+from cm.adcm_config.utils import proto_ref
 from cm.errors import AdcmEx
-from cm.errors import raise_adcm_ex as err
 from cm.hierarchy import Tree
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
+    Bundle,
     Cluster,
     ClusterBind,
     ClusterObject,
@@ -26,21 +27,24 @@ from cm.models import (
     ConfigLog,
     Host,
     HostComponent,
+    KnownNames,
     MessageTemplate,
     ObjectType,
     Prototype,
     PrototypeImport,
+    ServiceComponent,
 )
+from cm.utils import obj_ref
 
 
-def check_config(obj):  # pylint: disable=too-many-branches # noqa: C901
-    spec, _, _, _ = get_prototype_config(obj.prototype)
-    conf, attr = get_obj_config(obj)
+def check_config(obj: ADCMEntity) -> bool:  # pylint: disable=too-many-branches
+    spec, _, _, _ = get_prototype_config(prototype=obj.prototype)
+    conf, attr = get_obj_config(obj=obj)
     for key, value in spec.items():  # pylint: disable=too-many-nested-blocks
         if "required" in value:
             if value["required"]:
                 if key in conf and conf[key] is None:
-                    logger.debug("required config key %s of %s is missing", key, obj_ref(obj))
+                    logger.debug("required config key %s of %s is missing", key, obj_ref(obj=obj))
                     return False
         else:
             if key in attr:
@@ -49,32 +53,32 @@ def check_config(obj):  # pylint: disable=too-many-branches # noqa: C901
             for subkey in value:
                 if value[subkey]["required"]:
                     if key not in conf:
-                        logger.debug("required config group %s of %s is missing", key, obj_ref(obj))
+                        logger.debug("required config group %s of %s is missing", key, obj_ref(obj=obj))
                         return False
                     if subkey in conf[key]:
                         if conf[key][subkey] is None:
                             msg = "required config value for key %s/%s of %s is missing"
-                            logger.debug(msg, key, subkey, obj_ref(obj))
+                            logger.debug(msg, key, subkey, obj_ref(obj=obj))
                             return False
                     else:
                         msg = "required config key %s/%s of %s is missing"
-                        logger.debug(msg, key, subkey, obj_ref(obj))
+                        logger.debug(msg, key, subkey, obj_ref(obj=obj))
                         return False
     return True
 
 
-def check_required_services(cluster):
+def check_required_services(cluster: Cluster) -> bool:
     bundle = cluster.prototype.bundle
     for proto in Prototype.objects.filter(bundle=bundle, type="service", required=True):
         try:
             ClusterObject.objects.get(cluster=cluster, prototype=proto)
         except ClusterObject.DoesNotExist:
-            logger.debug("required service %s of %s is missing", proto_ref(proto), obj_ref(cluster))
+            logger.debug("required service %s of %s is missing", proto_ref(prototype=proto), obj_ref(obj=cluster))
             return False
     return True
 
 
-def check_required_import(obj: [Cluster, ClusterObject]):
+def check_required_import(obj: [Cluster, ClusterObject]) -> bool:
     if obj.prototype.type == ObjectType.CLUSTER:
         cluster = obj
         service = None
@@ -82,40 +86,72 @@ def check_required_import(obj: [Cluster, ClusterObject]):
         service = obj
         cluster = obj.cluster
     else:
-        raise TypeError(f"Could not check import for {obj}")
-    res, _ = do_check_import(cluster, service)
+        raise AdcmEx(code="ISSUE_INTEGRITY_ERROR", msg=f"Could not check import for {obj}")
+
+    res, _ = do_check_import(cluster=cluster, service=service)
     return res
 
 
-def do_check_import(cluster, service=None):
-    def check_import(_pi):
-        if not _pi.required:
-            return True, "NOT_REQUIRED"
+def check_service_requires(cluster: Cluster, proto: Prototype) -> None:
+    if not proto.requires:
+        return
 
-        import_exist = (False, None)
-        for cluster_bind in ClusterBind.objects.filter(cluster=cluster):
-            if cluster_bind.source_cluster and cluster_bind.source_cluster.prototype.name == _pi.name:
-                import_exist = (True, "CLUSTER_IMPORTED")
+    for require in proto.requires:
+        req_service = ClusterObject.objects.filter(prototype__name=require["service"], cluster=cluster)
+        obj_prototype = Prototype.objects.filter(name=require["service"], type="service")
 
-            if cluster_bind.source_service and cluster_bind.source_service.prototype.name == _pi.name:
-                import_exist = (True, "SERVICE_IMPORTED")
+        if comp_name := require.get("component"):
+            req_obj = ServiceComponent.objects.filter(
+                prototype__name=comp_name, service=req_service.first(), cluster=cluster
+            )
+            obj_prototype = Prototype.objects.filter(name=comp_name, type="component", parent=obj_prototype.first())
+        else:
+            req_obj = req_service
 
-        return import_exist
+        if not req_obj.exists():
+            raise AdcmEx(
+                code="SERVICE_CONFLICT",
+                msg=f"No required {proto_ref(prototype=obj_prototype.first())} for {proto_ref(prototype=proto)}",
+            )
 
-    res = (True, None)
+
+def check_requires(service: ClusterObject) -> bool:
+    try:
+        check_service_requires(cluster=service.cluster, proto=service.prototype)
+    except AdcmEx:
+        logger.debug("requirements not satisfied for %s", proto_ref(prototype=service.prototype))
+
+        return False
+
+    return True
+
+
+def do_check_import(cluster: Cluster, service: ClusterObject | None = None) -> tuple[bool, str | None]:
+    import_exist = (True, None)
     proto = cluster.prototype
+
     if service:
         proto = service.prototype
 
     for prototype_import in PrototypeImport.objects.filter(prototype=proto):
-        res = check_import(prototype_import)
-        if not res[0]:
-            return res
+        if not prototype_import.required:
+            return True, "NOT_REQUIRED"
 
-    return res
+        import_exist = (False, None)
+        for cluster_bind in ClusterBind.objects.filter(cluster=cluster):
+            if cluster_bind.source_cluster and cluster_bind.source_cluster.prototype.name == prototype_import.name:
+                import_exist = (True, "CLUSTER_IMPORTED")
+
+            if cluster_bind.source_service and cluster_bind.source_service.prototype.name == prototype_import.name:
+                import_exist = (True, "SERVICE_IMPORTED")
+
+        if not import_exist[0]:
+            break
+
+    return import_exist
 
 
-def check_hc(cluster):  # noqa: C901
+def check_hc(cluster: Cluster) -> bool:
     shc_list = []
     for hostcomponent in HostComponent.objects.filter(cluster=cluster):
         shc_list.append((hostcomponent.service, hostcomponent.host, hostcomponent.component))
@@ -126,75 +162,77 @@ def check_hc(cluster):  # noqa: C901
                 const = comp.constraint
                 if len(const) == 2 and const[0] == 0:
                     continue
-                logger.debug("void host components for %s", proto_ref(service.prototype))
+                logger.debug("void host components for %s", proto_ref(prototype=service.prototype))
                 return False
 
     for service in ClusterObject.objects.filter(cluster=cluster):
         try:
-            check_component_constraint(cluster, service.prototype, [i for i in shc_list if i[0] == service])
+            check_component_constraint(
+                cluster=cluster, service_prototype=service.prototype, hc_in=[i for i in shc_list if i[0] == service]
+            )
         except AdcmEx:
             return False
 
     try:
-        check_component_requires(shc_list)
-        check_bound_components(shc_list)
+        check_hc_requires(shc_list=shc_list)
+        check_bound_components(shc_list=shc_list)
     except AdcmEx:
         return False
 
     return True
 
 
-def check_component_requires(shc_list):
-    def get_components_with_requires():
-        return [i for i in shc_list if i[2].prototype.requires]
+def check_hc_requires(shc_list: list[tuple[ClusterObject, Host, ServiceComponent]]) -> None:
+    for serv_host_comp in [i for i in shc_list if i[2].prototype.requires or i[0].prototype.requires]:
+        for require in [*serv_host_comp[2].prototype.requires, *serv_host_comp[0].prototype.requires]:
+            if require in serv_host_comp[2].prototype.requires:
+                ref = f'component "{serv_host_comp[2].prototype.name}" of service "{serv_host_comp[0].prototype.name}"'
+            else:
+                ref = f'service "{serv_host_comp[0].prototype.name}"'
 
-    def check_component_req(service, component):
-        for _shc in shc_list:
-            if _shc[0].prototype.name == service and _shc[2].prototype.name == component:
-                return True
+            req_comp = require.get("component")
 
-        return False
+            if not ClusterObject.objects.filter(prototype__name=require["service"]).exists() and not req_comp:
+                raise AdcmEx(
+                    code="COMPONENT_CONSTRAINT_ERROR", msg=f"No required service {require['service']} for {ref}"
+                )
 
-    for shc in get_components_with_requires():
-        for requre in shc[2].prototype.requires:
-            if not check_component_req(requre["service"], requre["component"]):
-                ref = f'component "{shc[2].prototype.name}" of service "{shc[0].prototype.name}"'
-                msg = 'no required component "{}" of service "{}" for {}'
-                err("COMPONENT_CONSTRAINT_ERROR", msg.format(requre["component"], requre["service"], ref))
+            if not req_comp:
+                continue
+
+            if not any(
+                {
+                    (shc[0].prototype.name == require["service"] and shc[2].prototype.name == req_comp)
+                    for shc in shc_list
+                }
+            ):
+                raise AdcmEx(
+                    code="COMPONENT_CONSTRAINT_ERROR",
+                    msg=f'No required component "{req_comp}" of service "{require["service"]}" for {ref}',
+                )
 
 
-def check_bound_components(shc_list):
-    def get_components_bound_to():
-        return [i for i in shc_list if i[2].prototype.bound_to]
-
-    def component_on_host(component, host):
-        return [i for i in shc_list if i[1] == host and i[2].prototype == component]
-
-    def bound_host_components(service, comp):
-        return [i for i in shc_list if i[0].prototype.name == service and i[2].prototype.name == comp]
-
-    def check_bound_component(component):
+def check_bound_components(shc_list: list[tuple[ClusterObject, Host, ServiceComponent]]) -> None:
+    for shc in [i for i in shc_list if i[2].prototype.bound_to]:
+        component = shc[2].prototype
         service = component.bound_to["service"]
         comp_name = component.bound_to["component"]
         ref = f'component "{comp_name}" of service "{service}"'
-        bound_hc = bound_host_components(service, comp_name)
+        bound_hc = [i for i in shc_list if i[0].prototype.name == service and i[2].prototype.name == comp_name]
         if not bound_hc:
             msg = f'bound service "{service}", component "{comp_name}" not in hc for {ref}'
-            err("COMPONENT_CONSTRAINT_ERROR", msg)
+            raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=msg)
         for shc in bound_hc:
-            if not component_on_host(component, shc[1]):
-                msg = 'No bound component "{}" on host "{}" for {}'
-                err("COMPONENT_CONSTRAINT_ERROR", msg.format(component.name, shc[1].fqdn, ref))
-
-    for shc in get_components_bound_to():
-        check_bound_component(shc[2].prototype)
+            if not [i for i in shc_list if i[1] == shc[1] and i[2].prototype == component]:
+                msg = f'No bound component "{component.name}" on host "{shc[1].fqdn}" for {ref}'
+                raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=msg)
 
 
-def get_obj_config(obj):
+def get_obj_config(obj: ADCMEntity) -> tuple[dict, dict]:
     if obj.config is None:
         return {}, {}
 
-    config_log = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
+    config_log = ConfigLog.obj.get(obj_ref=obj.config, id=obj.config.current)
     attr = config_log.attr
     if not attr:
         attr = {}
@@ -202,49 +240,54 @@ def get_obj_config(obj):
     return config_log.config, attr
 
 
-def check_component_constraint(cluster, service_prototype, hc_in, old_bundle=None):  # noqa: C901
+def check_component_constraint(
+    cluster: Cluster, service_prototype: Prototype, hc_in: list, old_bundle: Bundle | None = None
+) -> None:
     ref = f"in host component list for {service_prototype.type} {service_prototype.name}"
     all_host = Host.objects.filter(cluster=cluster)
 
-    def cc_err(msg):
-        raise AdcmEx("COMPONENT_CONSTRAINT_ERROR", msg)
+    def check_min(count: int, constraint: int, comp: ServiceComponent) -> None:
+        if count < constraint:
+            raise AdcmEx(
+                code="COMPONENT_CONSTRAINT_ERROR",
+                msg=f'less then {constraint} required component "{comp.name}" ({count}) {ref}',
+            )
 
-    def check_min(count, const, comp):
-        if count < const:
-            msg = 'less then {} required component "{}" ({}) {}'
-            cc_err(msg.format(const, comp.name, count, ref))
+    def check_max(count: int, constraint: int, comp: ServiceComponent) -> None:
+        if count > constraint:
+            raise AdcmEx(
+                code="COMPONENT_CONSTRAINT_ERROR",
+                msg=f'amount ({count}) of component "{comp.name}" more then maximum ({constraint}) {ref}',
+            )
 
-    def check_max(count, const, comp):
-        if count > const:
-            msg = 'amount ({}) of component "{}" more then maximum ({}) {}'
-            cc_err(msg.format(count, comp.name, const, ref))
-
-    def check_odd(count, const, comp):
+    def check_odd(count: int, constraint: str, comp: ServiceComponent) -> None:
         if count % 2 == 0:
-            msg = 'amount ({}) of component "{}" should be odd ({}) {}'
-            cc_err(msg.format(count, comp.name, const, ref))
+            raise AdcmEx(
+                code="COMPONENT_CONSTRAINT_ERROR",
+                msg=f'amount ({count}) of component "{comp.name}" should be odd ({constraint}) {ref}',
+            )
 
-    def check(comp, const):
+    def check(comp: ServiceComponent, constraint: list) -> None:
         count = 0
         for _, _, component in hc_in:
             if comp.name == component.prototype.name:
                 count += 1
 
-        if isinstance(const[0], int):
-            check_min(count, const[0], comp)
-            if len(const) < 2:
-                check_max(count, const[0], comp)
+        if isinstance(constraint[0], int):
+            check_min(count=count, constraint=constraint[0], comp=comp)
+            if len(constraint) < 2:
+                check_max(count=count, constraint=constraint[0], comp=comp)
 
-        if len(const) > 1:
-            if isinstance(const[1], int):
-                check_max(count, const[1], comp)
-            elif const[1] == "odd" and count:
-                check_odd(count, const[1], comp)
+        if len(constraint) > 1:
+            if isinstance(constraint[1], int):
+                check_max(count=count, constraint=constraint[1], comp=comp)
+            elif constraint[1] == "odd" and count:
+                check_odd(count=count, constraint=constraint[1], comp=comp)
 
-        if const[0] == "+":
-            check_min(count, len(all_host), comp)
-        elif const[0] == "odd":
-            check_odd(count, const[0], comp)
+        if constraint[0] == "+":
+            check_min(count=count, constraint=len(all_host), comp=comp)
+        elif constraint[0] == "odd":
+            check_odd(count=count, constraint=constraint[0], comp=comp)
 
     for component_prototype in Prototype.objects.filter(parent=service_prototype, type="component"):
         if old_bundle:
@@ -263,7 +306,7 @@ def check_component_constraint(cluster, service_prototype, hc_in, old_bundle=Non
             except Prototype.DoesNotExist:
                 continue
 
-        check(component_prototype, component_prototype.constraint)
+        check(comp=component_prototype, constraint=component_prototype.constraint)
 
 
 _issue_check_map = {
@@ -271,6 +314,7 @@ _issue_check_map = {
     ConcernCause.IMPORT: check_required_import,
     ConcernCause.SERVICE: check_required_services,
     ConcernCause.HOSTCOMPONENT: check_hc,
+    ConcernCause.REQUIREMENT: check_requires,
 }
 _prototype_issue_map = {
     ObjectType.ADCM: (),
@@ -280,16 +324,17 @@ _prototype_issue_map = {
         ConcernCause.SERVICE,
         ConcernCause.HOSTCOMPONENT,
     ),
-    ObjectType.SERVICE: (ConcernCause.CONFIG, ConcernCause.IMPORT),
+    ObjectType.SERVICE: (ConcernCause.CONFIG, ConcernCause.IMPORT, ConcernCause.REQUIREMENT),
     ObjectType.COMPONENT: (ConcernCause.CONFIG,),
     ObjectType.PROVIDER: (ConcernCause.CONFIG,),
     ObjectType.HOST: (ConcernCause.CONFIG,),
 }
 _issue_template_map = {
-    ConcernCause.CONFIG: MessageTemplate.KnownNames.CONFIG_ISSUE,
-    ConcernCause.IMPORT: MessageTemplate.KnownNames.REQUIRED_IMPORT_ISSUE,
-    ConcernCause.SERVICE: MessageTemplate.KnownNames.REQUIRED_SERVICE_ISSUE,
-    ConcernCause.HOSTCOMPONENT: MessageTemplate.KnownNames.HOST_COMPONENT_ISSUE,
+    ConcernCause.CONFIG: KnownNames.CONFIG_ISSUE,
+    ConcernCause.IMPORT: KnownNames.REQUIRED_IMPORT_ISSUE,
+    ConcernCause.SERVICE: KnownNames.REQUIRED_SERVICE_ISSUE,
+    ConcernCause.HOSTCOMPONENT: KnownNames.HOST_COMPONENT_ISSUE,
+    ConcernCause.REQUIREMENT: KnownNames.UNSATISFIED_REQUIREMENT_ISSUE,
 }
 
 
@@ -298,10 +343,36 @@ def _gen_issue_name(obj: ADCMEntity, cause: ConcernCause) -> str:
     return f"{obj} has issue with {cause.value}"
 
 
+def get_kwargs_for_issue(msg_name: KnownNames, source: ADCMEntity) -> dict:
+    kwargs = {"source": source}
+    target = None
+
+    if msg_name == KnownNames.REQUIRED_SERVICE_ISSUE:
+        bundle = source.prototype.bundle
+        for proto in Prototype.objects.filter(bundle=bundle, type="service", required=True):
+            try:
+                ClusterObject.objects.get(cluster=source, prototype=proto)
+            except ClusterObject.DoesNotExist:
+                target = proto
+                break
+
+    elif msg_name == KnownNames.UNSATISFIED_REQUIREMENT_ISSUE:
+        for require in source.prototype.requires:
+            try:
+                ClusterObject.objects.get(prototype__name=require["service"], cluster=source.cluster)
+            except ClusterObject.DoesNotExist:
+                target = Prototype.objects.get(name=require["service"], type="service", bundle=source.prototype.bundle)
+                break
+
+    kwargs["target"] = target
+    return kwargs
+
+
 def _create_concern_item(obj: ADCMEntity, issue_cause: ConcernCause) -> ConcernItem:
     msg_name = _issue_template_map[issue_cause]
-    reason = MessageTemplate.get_message_from_template(msg_name.value, source=obj)
-    issue_name = _gen_issue_name(obj, issue_cause)
+    kwargs = get_kwargs_for_issue(msg_name=msg_name, source=obj)
+    reason = MessageTemplate.get_message_from_template(name=msg_name.value, **kwargs)
+    issue_name = _gen_issue_name(obj=obj, cause=issue_cause)
     issue = ConcernItem.objects.create(
         type=ConcernType.ISSUE,
         name=issue_name,
@@ -314,21 +385,21 @@ def _create_concern_item(obj: ADCMEntity, issue_cause: ConcernCause) -> ConcernI
 
 def create_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
     """Create newly discovered issue and add it to linked objects concerns"""
-    issue = obj.get_own_issue(issue_cause)
+    issue = obj.get_own_issue(cause=issue_cause)
     if issue is None:
-        issue = _create_concern_item(obj, issue_cause)
-    if issue.name != _gen_issue_name(obj, issue_cause):
+        issue = _create_concern_item(obj=obj, issue_cause=issue_cause)
+    if issue.name != _gen_issue_name(obj=obj, cause=issue_cause):
         issue.delete()
-        issue = _create_concern_item(obj, issue_cause)
+        issue = _create_concern_item(obj=obj, issue_cause=issue_cause)
     tree = Tree(obj)
-    affected_nodes = tree.get_directly_affected(tree.built_from)
+    affected_nodes = tree.get_directly_affected(node=tree.built_from)
     for node in affected_nodes:
-        node.value.add_to_concerns(issue)
+        node.value.add_to_concerns(item=issue)
 
 
 def remove_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
     """Remove outdated issue from other's concerns"""
-    issue = obj.get_own_issue(issue_cause)
+    issue = obj.get_own_issue(cause=issue_cause)
     if not issue:
         return
     issue.delete()
@@ -339,25 +410,25 @@ def recheck_issues(obj: ADCMEntity) -> None:
     issue_causes = _prototype_issue_map.get(obj.prototype.type, [])
     for issue_cause in issue_causes:
         if not _issue_check_map[issue_cause](obj):
-            create_issue(obj, issue_cause)
+            create_issue(obj=obj, issue_cause=issue_cause)
         else:
-            remove_issue(obj, issue_cause)
+            remove_issue(obj=obj, issue_cause=issue_cause)
 
 
-def update_hierarchy_issues(obj: ADCMEntity):
+def update_hierarchy_issues(obj: ADCMEntity) -> None:
     """Update issues on all directly connected objects"""
     tree = Tree(obj)
-    affected_nodes = tree.get_directly_affected(tree.built_from)
+    affected_nodes = tree.get_directly_affected(node=tree.built_from)
     for node in affected_nodes:
         node_value = node.value
-        recheck_issues(node_value)
+        recheck_issues(obj=node_value)
 
 
-def update_issue_after_deleting():
+def update_issue_after_deleting() -> None:
     """Remove issues which have no owners after object deleting"""
     for concern in ConcernItem.objects.exclude(type=ConcernType.LOCK):
-        tree = Tree(concern.owner)
-        affected = {node.value for node in tree.get_directly_affected(tree.built_from)}
+        tree = Tree(obj=concern.owner)
+        affected = {node.value for node in tree.get_directly_affected(node=tree.built_from)}
         related = set(concern.related_objects)  # pylint: disable=consider-using-set-comprehension
         if concern.owner is None:
             concern_str = str(concern)
@@ -365,4 +436,4 @@ def update_issue_after_deleting():
             logger.info("Deleted %s", concern_str)
         elif related != affected:
             for object_moved_out_hierarchy in related.difference(affected):
-                object_moved_out_hierarchy.remove_from_concerns(concern)
+                object_moved_out_hierarchy.remove_from_concerns(item=concern)

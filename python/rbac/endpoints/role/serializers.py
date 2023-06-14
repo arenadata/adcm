@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rbac.endpoints.serializers import BaseRelatedSerializer
 from rbac.models import Role
-from rbac.utils import BaseRelatedSerializer
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.fields import RegexField, SerializerMethodField
 from rest_framework.relations import HyperlinkedIdentityField, PrimaryKeyRelatedField
@@ -20,11 +20,11 @@ from rest_framework.serializers import ModelSerializer
 
 class RoleChildSerializer(BaseRelatedSerializer):
     id = PrimaryKeyRelatedField(queryset=Role.objects.all())
-    url = HyperlinkedIdentityField(view_name="rbac:role-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:role-detail")
 
 
 class RoleSerializer(FlexFieldsSerializerMixin, ModelSerializer):
-    url = HyperlinkedIdentityField(view_name="rbac:role-detail")
+    url = HyperlinkedIdentityField(view_name="v1:rbac:role-detail")
     child = RoleChildSerializer(many=True)
     name = RegexField(r"^[^\n]*$", max_length=160, required=False, allow_blank=True)
     display_name = RegexField(r"^[^\n]*$", max_length=160, required=True)

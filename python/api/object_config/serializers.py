@@ -43,7 +43,7 @@ class ObjectConfigSerializer(ModelSerializer):
     history = SerializerMethodField()
     current = VersionConfigLogURL(read_only=True)
     previous = VersionConfigLogURL(read_only=True)
-    url = HyperlinkedIdentityField(view_name="config-detail")
+    url = HyperlinkedIdentityField(view_name="v1:config-detail")
 
     class Meta:
         model = ObjectConfig

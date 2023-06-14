@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider38
-  version: 1
-
-- type: host
-  name: host38
-  version: 1

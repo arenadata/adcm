@@ -21,7 +21,7 @@ export class RbacGroupFormComponent extends RbacFormDirective<RbacGroupModel> {
       CustomValidators.required,
       Validators.minLength(2),
       Validators.maxLength(150),
-      Validators.pattern('^[a-zA-Z0-9()<>{},._-\\s]*$')
+      Validators.pattern('[a-zA-Z0-9_]+.*$')
     ]),
     description: new FormControl(null),
     user: new FormControl([]),
@@ -35,7 +35,7 @@ export class RbacGroupFormComponent extends RbacFormDirective<RbacGroupModel> {
   }
 
   _checkType() {
-    if (this.value.type === 'ldap') {
+    if (this?.value?.type === 'ldap') {
       this.form.controls.name.disable();
       this.form.controls.description.disable();
       this.form.controls.user.disable();

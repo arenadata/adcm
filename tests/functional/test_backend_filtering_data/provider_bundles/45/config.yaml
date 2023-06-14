@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider45
-  version: 1
-
-- type: host
-  name: host45
-  version: 1

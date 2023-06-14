@@ -17,10 +17,8 @@ import signal
 import subprocess
 import sys
 import time
-from datetime import datetime
-from zoneinfo import ZoneInfo
 
-import adcm.init_django  # pylint: disable=unused-import # noqa: F401
+import adcm.init_django  # pylint: disable=unused-import
 
 from cm.errors import AdcmEx
 from cm.job import finish_task, re_prepare_job
@@ -29,6 +27,7 @@ from cm.models import JobLog, JobStatus, LogStorage, TaskLog
 from cm.utils import get_env_with_venv_path
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
 
 TASK_ID = 0
 
@@ -84,7 +83,7 @@ def run_job(task_id, job_id, err_file):
         )
         res = proc.wait()
         return res
-    except Exception:  # pylint: disable=broad-except # noqa: BLE001
+    except Exception:  # pylint: disable=broad-except
         logger.error("exception running job %s", job_id)
         return 1
 
@@ -102,7 +101,7 @@ def set_log_body(job):
         LogStorage.objects.filter(job=job, name=log_storage.name, type=log_storage.type).update(body=body)
 
 
-def run_task(task_id, args=None):  # noqa: C901
+def run_task(task_id: int, args: str | None = None) -> None:  # pylint: disable=too-many-statements
     logger.debug("task_runner.py called as: %s", sys.argv)
     try:
         task = TaskLog.objects.get(id=task_id)
@@ -112,7 +111,9 @@ def run_task(task_id, args=None):  # noqa: C901
         return
 
     task.pid = os.getpid()
-    task.save()
+    task.restore_hc_on_fail = True
+    task.save(update_fields=["pid", "restore_hc_on_fail"])
+
     jobs = JobLog.objects.filter(task_id=task.id).order_by("id")
     if not jobs:
         logger.error("no jobs for task %s", task.id)
@@ -139,7 +140,7 @@ def run_task(task_id, args=None):  # noqa: C901
 
         task.refresh_from_db()
         re_prepare_job(task, job)
-        job.start_date = datetime.now(tz=ZoneInfo("UTC"))
+        job.start_date = timezone.now()
         job.save()
         res = run_job(task.id, job.id, err_file)
         set_log_body(job)

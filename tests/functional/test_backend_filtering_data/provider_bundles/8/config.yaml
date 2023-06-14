@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider8
-  version: 1
-
-- type: host
-  name: host8
-  version: 1

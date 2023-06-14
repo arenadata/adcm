@@ -85,7 +85,7 @@ class TestComponent(BaseTestCase):
 
     def test_maintenance_mode_by_service(self):
         self.client.post(
-            path=reverse("service-maintenance-mode", kwargs={"service_id": self.service.pk}),
+            path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
             data={"maintenance_mode": MaintenanceMode.ON},
             content_type=APPLICATION_JSON,
         )

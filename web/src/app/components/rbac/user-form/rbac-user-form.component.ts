@@ -24,20 +24,10 @@ export const passwordsConfirmValidator: ValidatorFn = (control: AbstractControl)
 })
 export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
   private _isFirstTouch = true;
-
-  isDisabled = (value) => {
-    return value?.type === 'ldap';
-  };
-
-  get userForm(): FormGroup {
-    return this.form.get('user') as FormGroup;
-  }
-
-  get confirmForm(): FormGroup {
-    return this.form.get('confirm') as FormGroup;
-  }
-
-  form = new FormGroup({
+  passMinLength = null;
+  passMaxLength = null;
+  dummyValue = '******';
+  form: FormGroup = new FormGroup({
     user: new FormGroup({
       id: new FormControl(null),
       is_superuser: new FormControl(null),
@@ -51,21 +41,19 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
         Validators.pattern('^[a-zA-Z0-9_.-\/]*$')
       ]),
       password: new FormControl(null, [
-        CustomValidators.required,
-        Validators.minLength(2),
-        Validators.maxLength(128)
+        CustomValidators.required
       ]),
       first_name: new FormControl(null, [
         CustomValidators.required,
         Validators.minLength(2),
         Validators.maxLength(150),
-        Validators.pattern('^[a-zA-Z\\s]*$')
+        Validators.pattern('^[a-zA-Z\S]*$')
       ]),
       last_name: new FormControl(null, [
         CustomValidators.required,
         Validators.minLength(2),
         Validators.maxLength(150),
-        Validators.pattern('^[a-zA-Z\\s]*$')
+        Validators.pattern('^[a-zA-Z\S]*$')
       ]),
       email: new FormControl(null, [
         CustomValidators.required,
@@ -76,22 +64,95 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
       group: new FormControl([])
     }),
     confirm: new FormGroup({
-      password: new FormControl('', [
-        CustomValidators.required,
-        Validators.minLength(5),
-        Validators.maxLength(128)
+      password: new FormControl(null, [
+        CustomValidators.required
       ])
     })
   }, { validators: passwordsConfirmValidator });
 
-  ngOnInit(): void {
-    this._setValue(this.value);
-    this._initPasswordConfirmSubscription();
-    this.form.markAllAsTouched();
+  isDisabled = (value) => {
+    return value?.type === 'ldap';
+  };
+
+  get passwordValidators() {
+    return [
+      ... !this.value ? [Validators.required] : [],
+      Validators.minLength(this.passMinLength || 3),
+      Validators.maxLength(this.passMaxLength || 128),
+      Validators.pattern(new RegExp(/^[\s\S]*$/u))
+    ]
   }
 
-  rbacBeforeSave(value: any): Partial<RbacUserModel> {
-    return value.user;
+  get userForm(): FormGroup {
+    return this.form.get('user') as FormGroup;
+  }
+
+  get confirmForm(): FormGroup {
+    return this.form.get('confirm') as FormGroup;
+  }
+
+  ngOnInit(): void {
+    this.getGlobalSettings().subscribe((resp) => {
+      this.passMinLength = resp.config['auth_policy'].min_password_length;
+      this.passMaxLength = resp.config['auth_policy'].max_password_length;
+
+      this._setValue(this.value);
+      this._initPasswordConfirmSubscription();
+      this.form.markAllAsTouched();
+    })
+  }
+
+  rbacBeforeSave(form: FormGroup): Partial<RbacUserModel> {
+    return this.getDirtyValues(form);
+  }
+
+  getDirtyValues(data) {
+    const user = data?.controls['user']?.controls;
+    const result = {};
+
+    Object.keys(user).forEach((key) => {
+      if (user[key].dirty && user[key].value !== '') {
+        result[key] = user[key]?.value;
+      }
+    })
+
+    return result;
+  }
+
+  /** Add password length validators only if we are going to change it
+   * because password length rules could be changed anytime
+   */
+  onFocus() {
+    this.clearPasswordControlIfFocusIn();
+    this.addPasswordValidators();
+  }
+
+  onBlur() {
+    if (this.title === 'Add') return;
+
+    const controls = [this.userForm.get('password'), this.confirmForm.get('password')];
+    const [pwdControl, confirmControl] = controls;
+
+    if (pwdControl.value || confirmControl.value) return;
+
+    if (!this._isFirstTouch) {
+      controls.forEach((control) => {
+        control.setValue(this.dummyValue);
+        control.clearValidators();
+        control.markAsUntouched();
+      })
+    }
+
+    this.form.updateValueAndValidity();
+    this._isFirstTouch = true;
+  }
+
+  addPasswordValidators() {
+    const userForm: Partial<FormGroup> = this.form.controls.user;
+    const confirmForm: Partial<FormGroup> = this.form.controls.confirm;
+    userForm.controls['password'].setValidators(this.passwordValidators);
+    confirmForm.controls['password'].setValidators(this.passwordValidators);
+    this.form.updateValueAndValidity();
   }
 
   /**
@@ -123,7 +184,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
       // ToDo(lihih) the "adwp-list" should not change the composition of the original model.
       //  Now he adds the "checked" key to the model
       this._updateAndSetValueForForm(this.userForm);
-      this.confirmForm.setValue({ password: this.value.password });
+      this.confirmForm.setValue({ password: this.dummyValue }); // read commentary inside _updateAndSetValueForForm
       this.form.get('user.username').disable();
 
       if (type === 'ldap' || value?.is_active === false) {
@@ -174,6 +235,8 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
     Object.keys(formValue).forEach((prop) => {
       if (!form.controls.hasOwnProperty(prop)) delete formValue[prop];
     })
+
+    formValue.password = this.dummyValue; // password will not be provided from backend, but we still need to use it in formControl
 
     form.setValue(formValue);
   }

@@ -12,14 +12,16 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatSelectionList, MatSelectionListChange } from '@angular/material/list';
 import { SelectOption } from '@app/core/types';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { BaseFormDirective } from './base-form.directive';
-import {finalize} from "rxjs/operators";
+import { filter, finalize, switchMap } from "rxjs/operators";
+import { DialogComponent } from '../components/dialog.component';
+import { DependenciesComponent } from '../host-components-map/dependencies.component';
 
 @Component({
   selector: 'app-add-service',
   template: `
-    <ng-container *ngIf="options$ | async as protos">
+    <ng-container *ngIf="options as protos">
       <mat-selection-list #listServices (selectionChange)="selectAll($event)">
         <mat-list-option *ngIf="protos.length">All</mat-list-option>
         <mat-list-option *ngFor="let proto of protos" [value]="proto">
@@ -38,12 +40,18 @@ import {finalize} from "rxjs/operators";
   `
 })
 export class ServiceComponent extends BaseFormDirective implements OnInit {
-  options$: Observable<SelectOption[]>;
+  options: SelectOption[];
+  addedServices: any[] = [];
+  addedRequires: any[] = [];
+
   @ViewChild('listServices')
   private listServices: MatSelectionList;
 
   ngOnInit() {
-    this.options$ = this.service.getProtoServiceForCurrentCluster();
+    this.service.getProtoServiceForCurrentCluster()
+      .subscribe((options) => {
+        this.options = options
+      });
   }
 
 
@@ -54,17 +62,92 @@ export class ServiceComponent extends BaseFormDirective implements OnInit {
     }
   }
 
-  save() {
-    const result = this.listServices.selectedOptions.selected.filter(a => a.value).map(a => ({
-      prototype_id: +a.value.id,
-      service_name: a.value.name,
-      license: a.value.license,
-      license_url: a.value.license_url,
-    }));
-    this.service
-      .addServiceInCluster(result)
+  addServiceToList(services, unshift?: boolean) {
+    if (!services?.length || services?.length === 0) return;
+
+    services.forEach((service) => {
+      const selectedService = this.options.filter((option: any) => option?.id === service)[0] as any;
+
+      if (!selectedService) return;
+
+      if (unshift) {
+        if (!this.addedRequires?.find((options) => selectedService?.id === options?.id)) {
+          this.addedRequires.unshift(selectedService);
+        }
+      } else {
+        if (!this.addedServices?.find((options) => selectedService?.id === options?.id)) {
+          this.addedServices.push(selectedService);
+        }
+      }
+
+      if (selectedService?.requires?.length > 0) {
+        this.addServiceToList(selectedService.requires.map((require) => require.prototype_id), true);
+      }
+    })
+
+  }
+
+  buildServicesList() {
+    const selected = this.listServices.selectedOptions.selected.filter(a => a.value).map((service) => service.value.id);
+
+    this.addServiceToList(selected);
+
+    this.addedRequires = this.addedRequires.filter((service) => {
+      return !this.addedServices.includes(service);
+    } );
+
+    return selected;
+  }
+
+  requestApprove(requires) {
+    if (requires.length === 0) return of(true);
+
+    return this.dialog
+      .open(DialogComponent, {
+        data: {
+          title: 'This service cannot be added without the following dependencies.',
+          component: DependenciesComponent,
+          model: requires.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })),
+          controls: ['Add All', 'Cancel'],
+        },
+      })
+      .beforeClosed()
       .pipe(
-        finalize(() => this.dialog.closeAll()))
-      .subscribe();
+        filter((a) => a),
+        switchMap(() =>{
+          return of(true)
+        })
+      )
+  }
+
+  save() {
+    const selectedServices = this.buildServicesList();
+
+    if (selectedServices.length === 0) {
+      this.dialog.closeAll();
+      return;
+    }
+
+    const result = [...this.addedRequires, ...this.addedServices]?.map((options) => ({
+      prototype_id: +options.id,
+      service_name: options.name,
+      license: options.license,
+      license_url: options.license_url,
+    }))
+
+    this.requestApprove(this.addedRequires)
+      .pipe(
+        finalize(() => {
+          this.addedServices = this.addedServices.filter((service) => service.prototype_id);
+          this.addedRequires = []
+        })
+      )
+      .subscribe(() => {
+        this.service
+        .addServiceInCluster(result)
+        .pipe(
+          finalize(() => this.dialog.closeAll()))
+        .subscribe();
+      })
   }
 }

@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from api.base_view import GenericUIViewSet
-from api.config.views import check_config_perm
 from api.config_log.serializers import ConfigLogSerializer, UIConfigLogSerializer
 from audit.utils import audit
 from cm.models import ConfigLog
@@ -21,7 +20,7 @@ from rest_framework import status
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.response import Response
 
-from adcm.permissions import DjangoObjectPermissionsAudit
+from adcm.permissions import DjangoObjectPermissionsAudit, check_config_perm
 
 
 class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
@@ -39,17 +38,14 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
     ordering_fields = ("id",)
     ordering = ["id"]
 
+    def get_queryset(self, *args, **kwargs):
+        return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
+
     def get_serializer_class(self):
         if self.is_for_ui():
             return UIConfigLogSerializer
 
         return super().get_serializer_class()
-
-    def get_queryset(self, *args, **kwargs):
-        if self.request.user.has_perm("cm.view_settings_of_adcm"):
-            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
-        else:
-            return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
 
     @audit
     def create(self, request, *args, **kwargs):
@@ -59,8 +55,9 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
         # check custom permissions
         obj = serializer.validated_data["obj_ref"].object
         object_type = ContentType.objects.get_for_model(obj).model
-        check_config_perm(request.user, "change", object_type, obj)
+        check_config_perm(user=request.user, action_type="change", model=object_type, obj=obj)
 
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
+
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)

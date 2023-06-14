@@ -1,7 +1,0 @@
-description: Attempt to save HC map with A.X on first host and B.Y on second host - should succeed
-positive: True
-hc_map:
-  first_host:
-    - service_1.component_1_1
-  second_host:
-    - service_2.component_2_1

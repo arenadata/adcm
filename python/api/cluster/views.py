@@ -35,18 +35,10 @@ from api.stack.serializers import (
     ImportSerializer,
     ServicePrototypeSerializer,
 )
-from api.utils import (
-    AdcmOrderingFilter,
-    check_custom_perm,
-    check_obj,
-    create,
-    get_object_for_user,
-    update,
-)
+from api.utils import AdcmOrderingFilter, check_obj, create, update
 from audit.utils import audit
 from cm.api import delete_cluster, get_import, unbind
 from cm.errors import AdcmEx
-from cm.issue import update_hierarchy_issues
 from cm.models import (
     Cluster,
     ClusterBind,
@@ -68,7 +60,7 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
 )
 
-VIEW_CLUSTER_PERM = "cm.view_cluster"
+from adcm.permissions import VIEW_CLUSTER_PERM, check_custom_perm, get_object_for_user
 
 
 def get_obj_conf(cluster_id, service_id):
@@ -143,6 +135,8 @@ class ClusterBundle(GenericUIView):
     queryset = Prototype.objects.filter(type="service")
     serializer_class = ServicePrototypeSerializer
     serializer_class_ui = BundleServiceUIPrototypeSerializer
+    ordering_fields = ("id", "name", "display_name", "version")
+    ordering = ["display_name"]
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
@@ -150,7 +144,7 @@ class ClusterBundle(GenericUIView):
         bundle = self.get_queryset().filter(bundle=cluster.prototype.bundle)
         shared = self.get_queryset().filter(shared=True).exclude(bundle=cluster.prototype.bundle)
         serializer = self.get_serializer(
-            list(chain(bundle, shared)),
+            list(chain(self.filter_queryset(queryset=bundle), self.filter_queryset(queryset=shared))),
             many=True,
             context={"request": request, "cluster": cluster},
         )
@@ -248,18 +242,23 @@ class ClusterUpgrade(GenericUIView):
     permission_classes = (IsAuthenticated,)
     ordering = ["id"]
 
-    def get_ordering(self):
+    def get_ordering(self) -> list | None:
         order = AdcmOrderingFilter()
-        return order.get_ordering(self.request, self.get_queryset(), self)
+        return order.get_ordering(request=self.request, queryset=self.get_queryset(), view=self)
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
-        cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
-        check_custom_perm(request.user, "view_upgrade_of", "cluster", cluster)
-        update_hierarchy_issues(cluster)
-        obj = get_upgrade(cluster, self.get_ordering())
-        serializer = self.serializer_class(obj, many=True, context={"cluster_id": cluster.id, "request": request})
+        cluster = get_object_for_user(
+            user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["cluster_id"]
+        )
+        check_custom_perm(user=request.user, action_type="view_upgrade_of", model="cluster", obj=cluster)
+        upgrade_list = get_upgrade(obj=cluster, order=self.get_ordering())
+        serializer = self.serializer_class(
+            instance=upgrade_list,
+            many=True,
+            context={"cluster_id": cluster.id, "request": request, "upgradable": bool(upgrade_list)},
+        )
 
-        return Response(serializer.data)
+        return Response(data=serializer.data)
 
 
 class ClusterUpgradeDetail(GenericUIView):
@@ -329,12 +328,15 @@ class HostComponentList(GenericUIView):
     serializer_class_ui = HostComponentUISerializer
     serializer_class_post = HostComponentSaveSerializer
     permission_classes = (IsAuthenticated,)
+    ordering_fields = ("id",)
     ordering = ["id"]
 
     def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         check_custom_perm(request.user, "view_host_components_of", "cluster", cluster, "view_hostcomponent")
-        hostcomponent = self.get_queryset().prefetch_related("service", "component", "host").filter(cluster=cluster)
+        hostcomponent = self.filter_queryset(
+            queryset=self.get_queryset().prefetch_related("service", "component", "host").filter(cluster=cluster)
+        )
         if self._is_for_ui():
             ui_hc = HostComponent()
             setattr(ui_hc, "hc", hostcomponent)  # because pylint disable invalid-name not working here somehow

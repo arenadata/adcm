@@ -11,7 +11,7 @@
 # limitations under the License.
 # pylint: disable=wrong-import-order
 
-from cm.adcm_config import save_obj_config, switch_config
+from cm.adcm_config.config import save_obj_config, switch_config
 from cm.api import (
     add_cluster,
     add_hc,
@@ -495,7 +495,7 @@ class TestUpgrade(BaseTestCase):
         new_component_node.delete()
 
         upgrade = cook_upgrade(bundle_2)
-        do_upgrade(cluster, upgrade, {}, {}, [])
+        do_upgrade(obj=cluster, upgrade=upgrade, config={}, attr={}, hostcomponent=[])
         host_component_2 = HostComponent.objects.get(cluster=cluster, service=service, component=service_component_1)
 
         self.assertEqual(host_component_2.component.id, service_component_1.id)

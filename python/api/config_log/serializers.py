@@ -14,11 +14,11 @@ from api.serializers import UIConfigField
 from cm.api import update_obj_config
 from cm.models import ConfigLog
 from django.db.transaction import atomic
-from rest_framework import serializers
+from rest_framework.serializers import HyperlinkedIdentityField, ModelSerializer
 
 
-class ConfigLogSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name="config-log-detail")
+class ConfigLogSerializer(ModelSerializer):
+    url = HyperlinkedIdentityField(view_name="v1:config-log-detail")
 
     class Meta:
         model = ConfigLog
@@ -26,7 +26,7 @@ class ConfigLogSerializer(serializers.ModelSerializer):
         extra_kwargs = {"config": {"required": True}}
 
     @atomic
-    def create(self, validated_data):
+    def create(self, validated_data: dict) -> ConfigLog:
         object_config = validated_data.get("obj_ref")
         config = validated_data.get("config")
         attr = validated_data.get("attr", {})

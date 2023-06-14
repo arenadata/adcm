@@ -31,7 +31,7 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestHC(BaseTestCase):
-    def test_action_hc_simple(self):  # pylint: disable=too-many-locals # noqa: C901
+    def test_action_hc_simple(self):  # pylint: disable=too-many-locals
         bundle_1 = cook_cluster_bundle("1.0")
         cluster = cook_cluster(bundle_1, "Test1")
         bundle_2 = cook_provider_bundle("1.0")
@@ -144,14 +144,14 @@ class TestHC(BaseTestCase):
         )
         with open(test_bundle_path, encoding=settings.ENCODING_UTF_8) as f:
             response: Response = self.client.post(
-                path=reverse("upload-bundle"),
+                path=reverse(viewname="v1:upload-bundle"),
                 data={"file": f},
             )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": test_bundle_filename},
         )
 
@@ -162,7 +162,7 @@ class TestHC(BaseTestCase):
         service_prototype = Prototype.objects.get(bundle=bundle, type="service")
 
         response: Response = self.client.post(
-            path=reverse("cluster"),
+            path=reverse(viewname="v1:cluster"),
             data={
                 "bundle_id": bundle.pk,
                 "display_name": "test_cluster_display_name",
@@ -175,7 +175,7 @@ class TestHC(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response: Response = self.client.post(
-            path=reverse("service", kwargs={"cluster_id": cluster_pk}),
+            path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster_pk}),
             data={
                 "prototype_id": service_prototype.pk,
             },
@@ -185,7 +185,7 @@ class TestHC(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response: Response = self.client.get(
-            path=f'{reverse("host-component", kwargs={"cluster_id": cluster_pk})}?view=interface',
+            path=f'{reverse(viewname="v1:host-component", kwargs={"cluster_id": cluster_pk})}?view=interface',
             extra={"view": "interface"},
         )
 

@@ -10,91 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-from cm.api import load_mm_objects
-from cm.errors import AdcmEx
-from cm.issue import update_hierarchy_issues, update_issue_after_deleting
-from cm.job import start_task
-from cm.models import (
-    Action,
-    ADCMEntity,
-    ClusterObject,
-    ConcernType,
-    Host,
-    HostComponent,
-    MaintenanceMode,
-    Prototype,
-    PrototypeConfig,
-    ServiceComponent,
-)
-from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
 from django.http.request import QueryDict
 from django_filters import rest_framework as drf_filters
-from guardian.shortcuts import get_objects_for_user
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework.serializers import HyperlinkedIdentityField, Serializer
-from rest_framework.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_400_BAD_REQUEST,
-    HTTP_409_CONFLICT,
-)
-
-
-def _change_mm_via_action(
-    prototype: Prototype,
-    action_name: str,
-    obj: Host | ClusterObject | ServiceComponent,
-    serializer: Serializer,
-) -> Serializer:
-    action = Action.objects.filter(prototype=prototype, name=action_name).first()
-    if action:
-        start_task(
-            action=action,
-            obj=obj,
-            conf={},
-            attr={},
-            hostcomponent=[],
-            hosts=[],
-            verbose=False,
-        )
-        serializer.validated_data["maintenance_mode"] = MaintenanceMode.CHANGING
-
-    return serializer
-
-
-def _update_mm_hierarchy_issues(obj: Host | ClusterObject | ServiceComponent) -> None:
-    if isinstance(obj, Host):
-        update_hierarchy_issues(obj.provider)
-
-    providers = {host_component.host.provider for host_component in HostComponent.objects.filter(cluster=obj.cluster)}
-    for provider in providers:
-        update_hierarchy_issues(provider)
-
-    update_hierarchy_issues(obj.cluster)
-    update_issue_after_deleting()
-    load_mm_objects()
-
-
-def get_object_for_user(user, perms, klass, **kwargs):
-    try:
-        queryset = get_objects_for_user(user, perms, klass)
-
-        return queryset.get(**kwargs)
-    except ObjectDoesNotExist:
-        model = klass
-        if not hasattr(klass, "_default_manager"):
-            model = klass.model
-
-        error_code = "NO_MODEL_ERROR_CODE"
-        if hasattr(model, "__error_code__"):
-            error_code = model.__error_code__
-
-        raise AdcmEx(error_code) from None
+from rest_framework.serializers import HyperlinkedIdentityField
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 
 
 def check_obj(model, req, error=None):  # pylint: disable=unused-argument
@@ -108,16 +30,6 @@ def check_obj(model, req, error=None):  # pylint: disable=unused-argument
 
 def hlink(view, lookup, lookup_url):
     return HyperlinkedIdentityField(view_name=view, lookup_field=lookup, lookup_url_kwarg=lookup_url)
-
-
-def check_custom_perm(user, action_type, model, obj, second_perm=None):
-    if user.has_perm(f"cm.{action_type}_{model}", obj):
-        return
-
-    if second_perm is not None and user.has_perm(f"cm.{second_perm}"):
-        return
-
-    raise PermissionDenied()
 
 
 def save(serializer, code, **kwargs):
@@ -135,20 +47,6 @@ def create(serializer, **kwargs):
 
 def update(serializer, **kwargs):
     return save(serializer, HTTP_200_OK, **kwargs)
-
-
-def filter_actions(obj: ADCMEntity, actions_set: list[Action]):
-    """Filter out actions that are not allowed to run on object at that moment"""
-    if obj.concerns.filter(type=ConcernType.LOCK).exists():
-        return []
-
-    allowed = []
-    for action in actions_set:
-        if action.allowed(obj):
-            allowed.append(action)
-            action.config = PrototypeConfig.objects.filter(prototype=action.prototype, action=action).order_by("id")
-
-    return allowed
 
 
 def get_api_url_kwargs(obj, request, no_obj_type=False):
@@ -201,105 +99,6 @@ def fix_ordering(field, view):
     return fix
 
 
-def get_maintenance_mode_response(  # noqa: C901
-    obj: Host | ClusterObject | ServiceComponent,
-    serializer: Serializer,
-) -> Response:
-    # pylint: disable=too-many-branches
-
-    turn_on_action_name = settings.ADCM_TURN_ON_MM_ACTION_NAME
-    turn_off_action_name = settings.ADCM_TURN_OFF_MM_ACTION_NAME
-    prototype = obj.prototype
-    if isinstance(obj, Host):
-        obj_name = "host"
-        turn_on_action_name = settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME
-        turn_off_action_name = settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME
-        prototype = obj.cluster.prototype
-    elif isinstance(obj, ClusterObject):
-        obj_name = "service"
-    elif isinstance(obj, ServiceComponent):
-        obj_name = "component"
-    else:
-        obj_name = "obj"
-
-    service_has_hc = None
-    if obj_name == "service":
-        service_has_hc = HostComponent.objects.filter(service=obj).exists()
-
-    component_has_hc = None
-    if obj_name == "component":
-        component_has_hc = HostComponent.objects.filter(component=obj).exists()
-
-    if obj.maintenance_mode_attr == MaintenanceMode.CHANGING:
-        return Response(
-            data={
-                "code": "MAINTENANCE_MODE",
-                "level": "error",
-                "desc": "Maintenance mode is changing now",
-            },
-            status=HTTP_409_CONFLICT,
-        )
-
-    if obj.maintenance_mode_attr == MaintenanceMode.OFF:
-        if serializer.validated_data["maintenance_mode"] == MaintenanceMode.OFF:
-            return Response(
-                data={
-                    "code": "MAINTENANCE_MODE",
-                    "level": "error",
-                    "desc": "Maintenance mode already off",
-                },
-                status=HTTP_409_CONFLICT,
-            )
-
-        if obj_name == "host" or service_has_hc or component_has_hc:
-            serializer = _change_mm_via_action(
-                prototype=prototype,
-                action_name=turn_on_action_name,
-                obj=obj,
-                serializer=serializer,
-            )
-        else:
-            obj.maintenance_mode = MaintenanceMode.ON
-            serializer.validated_data["maintenance_mode"] = MaintenanceMode.ON
-
-        serializer.save()
-        _update_mm_hierarchy_issues(obj=obj)
-
-        return Response()
-
-    if obj.maintenance_mode_attr == MaintenanceMode.ON:
-        if serializer.validated_data["maintenance_mode"] == MaintenanceMode.ON:
-            return Response(
-                data={
-                    "code": "MAINTENANCE_MODE",
-                    "level": "error",
-                    "desc": "Maintenance mode already on",
-                },
-                status=HTTP_409_CONFLICT,
-            )
-
-        if obj_name == "host" or service_has_hc or component_has_hc:
-            serializer = _change_mm_via_action(
-                prototype=prototype,
-                action_name=turn_off_action_name,
-                obj=obj,
-                serializer=serializer,
-            )
-        else:
-            obj.maintenance_mode = MaintenanceMode.OFF
-            serializer.validated_data["maintenance_mode"] = MaintenanceMode.OFF
-
-        serializer.save()
-        _update_mm_hierarchy_issues(obj=obj)
-
-        return Response()
-
-    return Response(
-        data={"error": f'Unknown {obj_name} maintenance mode "{obj.maintenance_mode}"'},
-        status=HTTP_400_BAD_REQUEST,
-    )
-
-
 class CommonAPIURL(HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, _format):
         kwargs = get_api_url_kwargs(obj, request)
@@ -347,19 +146,3 @@ class AdcmFilterBackend(drf_filters.DjangoFilterBackend):
             "queryset": queryset,
             "request": request,
         }
-
-
-class SuperuserOnlyMixin:
-    not_superuser_error_code = None
-
-    def get_queryset(self, *args, **kwargs):
-        if getattr(self, "swagger_fake_view", False):
-            return self.queryset.model.objects.none()
-
-        if not self.request.user.is_superuser:
-            if self.not_superuser_error_code:
-                raise AdcmEx(self.not_superuser_error_code)
-
-            return self.queryset.model.objects.none()
-
-        return super().get_queryset(*args, **kwargs)

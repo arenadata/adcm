@@ -82,7 +82,7 @@ class TestGroupConfigAudit(BaseTestCase):
         config_id: int,
     ) -> Response:
         return self.client.post(
-            path=reverse("group-config-list"),
+            path=reverse(viewname="v1:group-config-list"),
             data={
                 "name": name,
                 "object_id": object_id,
@@ -191,7 +191,7 @@ class TestGroupConfigAudit(BaseTestCase):
 
     def test_create_for_cluster_failed(self):
         response: Response = self.client.post(
-            path=reverse("group-config-list"),
+            path=reverse(viewname="v1:group-config-list"),
             data={
                 "name": self.name,
                 "object_type": AuditObjectType.CLUSTER,
@@ -317,7 +317,7 @@ class TestGroupConfigAudit(BaseTestCase):
         )
 
     def test_delete(self):
-        self.client.delete(path=reverse("group-config-detail", kwargs={"pk": self.group_config.pk}))
+        self.client.delete(path=reverse(viewname="v1:group-config-detail", kwargs={"pk": self.group_config.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -335,7 +335,7 @@ class TestGroupConfigAudit(BaseTestCase):
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse("group-config-detail", kwargs={"pk": self.group_config.pk}),
+                path=reverse(viewname="v1:group-config-detail", kwargs={"pk": self.group_config.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -574,14 +574,14 @@ class TestGroupConfigOperationName(BaseTestCase):
         )
         with open(test_bundle_path, encoding=settings.ENCODING_UTF_8) as f:
             response: Response = self.client.post(
-                path=reverse("upload-bundle"),
+                path=reverse(viewname="v1:upload-bundle"),
                 data={"file": f},
             )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response: Response = self.client.post(
-            path=reverse("load-bundle"),
+            path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": test_bundle_filename},
         )
         bundle_id = response.data["id"]
@@ -590,7 +590,7 @@ class TestGroupConfigOperationName(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response: Response = self.client.post(
-            path=reverse("cluster"),
+            path=reverse(viewname="v1:cluster"),
             data={
                 "prototype_id": prototype_id,
                 "name": "Magnificent Zambezi",
@@ -604,7 +604,7 @@ class TestGroupConfigOperationName(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response: Response = self.client.post(
-            path=reverse("group-config-list"),
+            path=reverse(viewname="v1:group-config-list"),
             data={"name": "groupname", "object_type": "cluster", "object_id": cluster_id},
         )
         self.group_config_id = response.data["id"]

@@ -1,3 +1,62 @@
+[tool.poetry]
+name = "adcm"
+version = "0.1.0"
+description = "ArenaData Cluster Manager"
+authors = [""]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+ansible = { git = "https://github.com/arenadata/ansible.git", branch = "v2.8.8-p6" }
+apache-libcloud = "*"
+attr = "*"
+casestyle = "*"
+coreapi = "*"
+cryptography = "*"
+Django = "^3.2"
+django-auth-ldap = "*"
+django-csp = "*"
+django-filter = "*"
+django-guardian = "*"
+djangorestframework = "*"
+drf-extensions = "*"
+drf-flex-fields = "*"
+drf-nested-routers = "*"
+googleapis-common-protos = "*"
+grpcio = "*"
+jinja2 = "2.11.3"
+jmespath = "*"
+jsonschema = "*"
+lxml = "*"
+markupsafe = "1.1.1"
+mitogen = "*"
+multipledispatch = "*"
+psycopg2-binary = "*"
+pycryptodome = "*"
+pydantic = "*"
+requests-toolbelt = "*"
+rstr = "*"
+ruyaml = "*"
+social-auth-app-django = "*"
+uwsgi = "*"
+version-utils = "*"
+yspec = "*"
+
+[tool.poetry.group.lint]
+optional = true
+
+[tool.poetry.group.lint.dependencies]
+autoflake = "*"
+black = "*"
+flake8 = "*"
+isort = "*"
+pylint = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.black]
 line-length = 120
 

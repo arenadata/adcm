@@ -1,9 +1,0 @@
-
----
-- type: provider
-  name: provider52
-  version: 1
-
-- type: host
-  name: host52
-  version: 1

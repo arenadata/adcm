@@ -43,7 +43,13 @@ export class RbacUserService implements EntityAbstractService {
 
   getList(param?: Params): Observable<RbacUserModel[]> {
     return this.api.get<ListResult<RbacUserModel>>(`${environment.apiRoot}rbac/user/`, param)
-      .pipe(map((list) => list.results));
+      .pipe(
+        map((list) => list.results.filter(({ is_active }) => is_active)),
+      );
+  }
+
+  resetLoginAttemps(id: number): Observable<any> {
+    return this.api.post(`${environment.apiRoot}rbac/user/${id}/reset_failed_login_attempts/`, {});
   }
 
 }

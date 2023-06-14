@@ -69,8 +69,8 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
     this.form.markAllAsTouched();
   }
 
-  rbacBeforeSave(value): RbacPolicyModel {
-    return RbacPolicyFormComponent.EXPORT_TO_JSON(value);
+  rbacBeforeSave(form: FormGroup): RbacPolicyModel {
+    return RbacPolicyFormComponent.EXPORT_TO_JSON(form.value);
   }
 
   private _fillForm(value: RbacPolicyModel): void {
@@ -108,7 +108,7 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
             CustomValidators.required,
             Validators.maxLength(255),
             Validators.minLength(2),
-            Validators.pattern('^[a-zA-Z0-9()<>{},._-\\s]*$')
+            Validators.pattern('[a-zA-Z0-9_]+.*$')
           ]),
           description: new FormControl(null),
           role: roleControl,

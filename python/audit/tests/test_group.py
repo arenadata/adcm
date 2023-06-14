@@ -33,8 +33,8 @@ class TestGroupAudit(BaseTestCase):
         self.name = "test_group"
         self.description = "test_description"
         self.group = Group.objects.create(name="test_group_2", description=self.description)
-        self.list_name = "rbac:group-list"
-        self.detail_name = "rbac:group-detail"
+        self.list_name = "v1:rbac:group-list"
+        self.detail_name = "v1:rbac:group-detail"
         self.group_created_str = "Group created"
         self.group_updated_str = "Group updated"
 
@@ -63,7 +63,7 @@ class TestGroupAudit(BaseTestCase):
 
     def test_create(self):
         response: Response = self.client.post(
-            path=reverse(self.list_name),
+            path=reverse(viewname=self.list_name),
             data={"name": self.name},
         )
 
@@ -82,7 +82,7 @@ class TestGroupAudit(BaseTestCase):
         self.assertIsInstance(log.object_changes, dict)
 
         self.client.post(
-            path=reverse(self.list_name),
+            path=reverse(viewname=self.list_name),
             data={"name": self.name},
         )
 
@@ -99,7 +99,7 @@ class TestGroupAudit(BaseTestCase):
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse(self.list_name),
+                path=reverse(viewname=self.list_name),
                 data={"name": self.name},
             )
 
@@ -116,7 +116,7 @@ class TestGroupAudit(BaseTestCase):
 
     def test_delete(self):
         self.client.delete(
-            path=reverse(self.detail_name, kwargs={"pk": self.group.pk}),
+            path=reverse(viewname=self.detail_name, kwargs={"pk": self.group.pk}),
             content_type=APPLICATION_JSON,
         )
 
@@ -133,7 +133,7 @@ class TestGroupAudit(BaseTestCase):
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
-                path=reverse(self.detail_name, kwargs={"pk": self.group.pk}),
+                path=reverse(viewname=self.detail_name, kwargs={"pk": self.group.pk}),
                 content_type=APPLICATION_JSON,
             )
 
@@ -152,7 +152,7 @@ class TestGroupAudit(BaseTestCase):
         new_description = "new_test_description"
         prev_description = self.group.description
         self.client.put(
-            path=reverse(self.detail_name, kwargs={"pk": self.group.pk}),
+            path=reverse(viewname=self.detail_name, kwargs={"pk": self.group.pk}),
             data={
                 "name": self.group.name,
                 "description": new_description,
@@ -177,7 +177,7 @@ class TestGroupAudit(BaseTestCase):
     def test_update_put_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.put(
-                path=reverse(self.detail_name, kwargs={"pk": self.group.pk}),
+                path=reverse(viewname=self.detail_name, kwargs={"pk": self.group.pk}),
                 data={
                     "name": self.group.name,
                     "display_name": "new_display_name",
@@ -199,7 +199,7 @@ class TestGroupAudit(BaseTestCase):
     def test_update_patch(self):
         new_description = "new_test_description"
         self.client.patch(
-            path=reverse(self.detail_name, kwargs={"pk": self.group.pk}),
+            path=reverse(viewname=self.detail_name, kwargs={"pk": self.group.pk}),
             data={
                 "description": new_description,
                 "user": [{"id": self.test_user.pk}],
@@ -224,7 +224,7 @@ class TestGroupAudit(BaseTestCase):
     def test_update_patch_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
-                path=reverse(self.detail_name, kwargs={"pk": self.group.pk}),
+                path=reverse(viewname=self.detail_name, kwargs={"pk": self.group.pk}),
                 data={"display_name": "new_display_name"},
                 content_type=APPLICATION_JSON,
             )

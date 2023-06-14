@@ -1,8 +1,0 @@
----
-- hosts: localhost
-  gather_facts: false
-  connection: local
-  tasks:
-    - adcm_state:
-        type: "provider"
-        state: "ifeelgood!"

@@ -136,3 +136,8 @@ a.active .mat-list-item-content {
 .choice-column {
   max-width: 40px;
 }
+
+.reset-column {
+  display: flex;
+  justify-content: flex-end;
+}

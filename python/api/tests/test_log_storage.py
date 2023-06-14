@@ -10,13 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import timedelta
 
 from cm.models import JobLog, LogStorage
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
 from adcm.tests.base import BaseTestCase
 
@@ -27,8 +27,8 @@ class TestTaskAPI(BaseTestCase):
 
         self.job = JobLog.objects.create(
             status="created",
-            start_date=datetime.now(tz=ZoneInfo("UTC")),
-            finish_date=datetime.now(tz=ZoneInfo("UTC")) + timedelta(days=1),
+            start_date=timezone.now(),
+            finish_date=timezone.now() + timedelta(days=1),
         )
         self.log_storage_1 = LogStorage.objects.create(
             name="log_storage_1",
@@ -45,15 +45,15 @@ class TestTaskAPI(BaseTestCase):
 
     def test_list(self):
         response: Response = self.client.get(
-            path=reverse("joblog-list", kwargs={"job_pk": self.job.pk}),
+            path=reverse(viewname="v1:logstorage-list", kwargs={"job_pk": self.job.pk}),
         )
 
         self.assertEqual(len(response.data["results"]), 2)
 
     def test_list_filter_name(self):
         response: Response = self.client.get(
-            reverse("joblog-list", kwargs={"job_pk": self.job.pk}),
-            {"name": self.log_storage_1.name},
+            path=reverse(viewname="v1:logstorage-list", kwargs={"job_pk": self.job.pk}),
+            data={"name": self.log_storage_1.name},
         )
 
         self.assertEqual(len(response.data["results"]), 1)
@@ -61,8 +61,8 @@ class TestTaskAPI(BaseTestCase):
 
     def test_list_filter_type(self):
         response: Response = self.client.get(
-            reverse("joblog-list", kwargs={"job_pk": self.job.pk}),
-            {"type": self.log_storage_2.type},
+            path=reverse(viewname="v1:logstorage-list", kwargs={"job_pk": self.job.pk}),
+            data={"type": self.log_storage_2.type},
         )
 
         self.assertEqual(len(response.data["results"]), 1)
@@ -70,8 +70,8 @@ class TestTaskAPI(BaseTestCase):
 
     def test_list_filter_format(self):
         response: Response = self.client.get(
-            reverse("joblog-list", kwargs={"job_pk": self.job.pk}),
-            {"format": self.log_storage_2.format},
+            path=reverse(viewname="v1:logstorage-list", kwargs={"job_pk": self.job.pk}),
+            data={"format": self.log_storage_2.format},
         )
 
         self.assertEqual(len(response.data["results"]), 1)
@@ -79,8 +79,8 @@ class TestTaskAPI(BaseTestCase):
 
     def test_list_ordering_id(self):
         response: Response = self.client.get(
-            reverse("joblog-list", kwargs={"job_pk": self.job.pk}),
-            {"ordering": "id"},
+            path=reverse(viewname="v1:logstorage-list", kwargs={"job_pk": self.job.pk}),
+            data={"ordering": "id"},
         )
 
         self.assertEqual(len(response.data["results"]), 2)
@@ -89,8 +89,8 @@ class TestTaskAPI(BaseTestCase):
 
     def test_list_ordering_id_reverse(self):
         response: Response = self.client.get(
-            reverse("joblog-list", kwargs={"job_pk": self.job.pk}),
-            {"ordering": "-id"},
+            path=reverse(viewname="v1:logstorage-list", kwargs={"job_pk": self.job.pk}),
+            data={"ordering": "-id"},
         )
 
         self.assertEqual(len(response.data["results"]), 2)
@@ -99,8 +99,8 @@ class TestTaskAPI(BaseTestCase):
 
     def test_list_ordering_name(self):
         response: Response = self.client.get(
-            reverse("joblog-list", kwargs={"job_pk": self.job.pk}),
-            {"ordering": "name"},
+            path=reverse(viewname="v1:logstorage-list", kwargs={"job_pk": self.job.pk}),
+            data={"ordering": "name"},
         )
 
         self.assertEqual(len(response.data["results"]), 2)
@@ -109,8 +109,8 @@ class TestTaskAPI(BaseTestCase):
 
     def test_list_ordering_name_reverse(self):
         response: Response = self.client.get(
-            reverse("joblog-list", kwargs={"job_pk": self.job.pk}),
-            {"ordering": "-name"},
+            path=reverse(viewname="v1:logstorage-list", kwargs={"job_pk": self.job.pk}),
+            data={"ordering": "-name"},
         )
 
         self.assertEqual(len(response.data["results"]), 2)
@@ -119,14 +119,29 @@ class TestTaskAPI(BaseTestCase):
 
     def test_retrieve(self):
         response: Response = self.client.get(
-            reverse("joblog-detail", kwargs={"job_pk": self.job.pk, "log_pk": self.log_storage_1.pk}),
+            path=reverse(
+                viewname="v1:logstorage-detail", kwargs={"job_pk": self.job.pk, "log_pk": self.log_storage_1.pk}
+            ),
         )
 
         self.assertEqual(response.data["id"], self.log_storage_1.pk)
 
     def test_download(self):
         response: Response = self.client.get(
-            reverse("joblog-download", kwargs={"job_pk": self.job.pk, "log_pk": self.log_storage_1.pk}),
+            path=reverse(
+                viewname="v1:logstorage-download", kwargs={"job_pk": self.job.pk, "log_pk": self.log_storage_1.pk}
+            ),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_download_forbiden(self):
+        with self.no_rights_user_logged_in:
+            response: Response = self.client.get(
+                path=reverse(
+                    viewname="v1:logstorage-download", kwargs={"job_pk": self.job.pk, "log_pk": self.log_storage_1.pk}
+                ),
+            )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["code"], "LOG_NOT_FOUND")

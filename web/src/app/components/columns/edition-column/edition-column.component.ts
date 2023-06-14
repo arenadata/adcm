@@ -14,6 +14,7 @@ import { IBundle } from '@app/models/bundle';
       </button>
     </ng-container>
   `,
+  styleUrls: ['./edition-column.component.scss']
 })
 export class EditionColumnComponent implements AdwpCellComponent<IBundle> {
 

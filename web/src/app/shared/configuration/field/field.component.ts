@@ -94,6 +94,7 @@ export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
     const field = this.currentFormGroup.controls[this.options.name];
     const defaultValue = this.options.default;
     const type = this.options.type;
+
     if (field) {
       if (type === 'json') {
         field.setValue(defaultValue === null ? '' : JSON.stringify(defaultValue, undefined, 4));
@@ -115,7 +116,9 @@ export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
       } else if (type === 'structure') {
         this.options.value = defaultValue;
         (this.inputControl as SchemeComponent).reload();
-      } else field.setValue(defaultValue);
+      } else {
+        field.setValue(defaultValue);
+      }
 
       this.options.value = field.value;
       this.form.updateValueAndValidity();

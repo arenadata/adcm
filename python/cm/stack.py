@@ -9,26 +9,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=line-too-long,too-many-statements
+# pylint: disable=line-too-long,too-many-statements, too-many-lines
 
 import hashlib
 import json
 import os
 import re
 import warnings
-from copy import deepcopy
+from copy import copy, deepcopy
 from pathlib import Path
 from typing import Any
 
 import ruyaml
 import yaml
 import yspec.checker
-from cm.adcm_config import (
-    check_config_type,
-    proto_ref,
-    read_bundle_file,
-    type_is_complex,
-)
+from cm.adcm_config.checks import check_config_type
+from cm.adcm_config.config import read_bundle_file
+from cm.adcm_config.utils import proto_ref
 from cm.checker import FormatError, check, round_trip_load
 from cm.errors import raise_adcm_ex
 from cm.logger import logger
@@ -191,7 +188,7 @@ def get_config_files(path: Path) -> list[tuple[Path, Path]]:
     return conf_list
 
 
-def check_adcm_config(conf_file: Path) -> Any:  # noqa: C901
+def check_adcm_config(conf_file: Path) -> Any:
     warnings.simplefilter(action="error", category=ReusedAnchorWarning)
     schema_file = Path(settings.CODE_DIR, "cm", "adcm_schema.yaml")
 
@@ -270,6 +267,7 @@ def save_prototype(path: Path, conf: dict, def_type: str, bundle_hash: str) -> S
     proto = StagePrototype(name=conf["name"], type=def_type, path=path, version=conf["version"])
 
     dict_to_obj(dictionary=conf, key="required", obj=proto)
+    dict_to_obj(dictionary=conf, key="requires", obj=proto)
     dict_to_obj(dictionary=conf, key="shared", obj=proto)
     dict_to_obj(dictionary=conf, key="monitoring", obj=proto)
     dict_to_obj(dictionary=conf, key="display_name", obj=proto)
@@ -289,7 +287,7 @@ def save_prototype(path: Path, conf: dict, def_type: str, bundle_hash: str) -> S
         if def_type not in {"cluster", "service", "provider"}:
             raise_adcm_ex(
                 code="INVALID_OBJECT_DEFINITION",
-                msg=f"Invalid license definition in {proto_ref(proto)}. "
+                msg=f"Invalid license definition in {proto_ref(prototype=proto)}. "
                 f"License can be placed in cluster, service or provider",
             )
 
@@ -318,7 +316,7 @@ def check_component_constraint(proto, name, conf):
     if len(conf["constraint"]) > 2:
         raise_adcm_ex(
             code="INVALID_COMPONENT_DEFINITION",
-            msg=f'constraint of component "{name}" in {proto_ref(proto)} should have only 1 or 2 elements',
+            msg=f'constraint of component "{name}" in {proto_ref(prototype=proto)} should have only 1 or 2 elements',
         )
 
 
@@ -330,7 +328,7 @@ def save_components(proto: StagePrototype, conf: dict, bundle_hash: str) -> None
 
     for comp_name in conf["components"]:
         component_conf = conf["components"][comp_name]
-        validate_name(comp_name, f'Component name "{comp_name}" of {ref}')
+        validate_name(name=comp_name, error_message=f'Component name "{comp_name}" of {ref}')
         component = StagePrototype(
             type="component",
             parent=proto,
@@ -340,26 +338,27 @@ def save_components(proto: StagePrototype, conf: dict, bundle_hash: str) -> None
             adcm_min_version=proto.adcm_min_version,
         )
 
-        dict_to_obj(component_conf, "description", component)
-        dict_to_obj(component_conf, "display_name", component)
-        dict_to_obj(component_conf, "monitoring", component)
+        dict_to_obj(dictionary=component_conf, key="description", obj=component)
+        dict_to_obj(dictionary=component_conf, key="display_name", obj=component)
+        dict_to_obj(dictionary=component_conf, key="monitoring", obj=component)
 
-        fix_display_name(component_conf, component)
-        check_component_constraint(proto, comp_name, component_conf)
+        fix_display_name(conf=component_conf, obj=component)
+        check_display_name(obj=component)
+        check_component_constraint(proto=proto, name=comp_name, conf=component_conf)
 
-        dict_to_obj(component_conf, "params", component)
-        dict_to_obj(component_conf, "constraint", component)
-        dict_to_obj(component_conf, "requires", component)
-        dict_to_obj(component_conf, "venv", component)
-        dict_to_obj(component_conf, "bound_to", component)
+        dict_to_obj(dictionary=component_conf, key="params", obj=component)
+        dict_to_obj(dictionary=component_conf, key="constraint", obj=component)
+        dict_to_obj(dictionary=component_conf, key="requires", obj=component)
+        dict_to_obj(dictionary=component_conf, key="venv", obj=component)
+        dict_to_obj(dictionary=component_conf, key="bound_to", obj=component)
 
-        process_config_group_customization(component_conf, component)
+        process_config_group_customization(actual_config=component_conf, obj=component)
 
-        dict_to_obj(component_conf, "config_group_customization", component)
+        dict_to_obj(dictionary=component_conf, key="config_group_customization", obj=component)
         component.save()
 
         save_actions(prototype=component, config=component_conf, bundle_hash=bundle_hash)
-        save_prototype_config(component, component_conf, bundle_hash)
+        save_prototype_config(proto=component, proto_conf=component_conf, bundle_hash=bundle_hash)
 
 
 def check_upgrade(prototype: StagePrototype, config: dict) -> None:
@@ -370,24 +369,25 @@ def check_upgrade(prototype: StagePrototype, config: dict) -> None:
 
 def check_upgrade_scripts(prototype: StagePrototype, config: dict, label: str) -> None:
     ref = proto_ref(prototype=prototype)
+    obj_ref = f"{label} of {ref}".capitalize()
+    is_hc_acl_present = bool(config.get("hc_acl", False))
     count = 0
 
     if "scripts" in config:
         for action in config["scripts"]:
-            if action["script_type"] == "internal":
+            if check_internal_script(
+                config=action,
+                allowed_scripts=("bundle_switch",),
+                is_hc_acl_present=is_hc_acl_present,
+                obj_ref=obj_ref,
+                err_code="INVALID_UPGRADE_DEFINITION",
+            ):
                 count += 1
 
                 if count > 1:
                     raise_adcm_ex(
                         code="INVALID_UPGRADE_DEFINITION",
                         msg=f'Script with script_type "internal" must be unique in {label} of {ref}',
-                    )
-
-                if action["script"] != "bundle_switch":
-                    raise_adcm_ex(
-                        code="INVALID_UPGRADE_DEFINITION",
-                        msg=f'Script with script_type "internal" should be marked '
-                        f'as "bundle_switch" in {label} of {ref}',
                     )
 
         if count == 0:
@@ -461,6 +461,7 @@ def save_upgrade(prototype: StagePrototype, config: dict, bundle_hash: str) -> N
     for item in config["upgrade"]:
         check_upgrade(prototype=prototype, config=item)
         upgrade = StageUpgrade(name=item["name"])
+        upgrade.display_name = item.get("display_name", item["name"])
         set_version(upgrade, item)
         dict_to_obj(item, "description", upgrade)
         if "states" in item:
@@ -475,7 +476,7 @@ def save_upgrade(prototype: StagePrototype, config: dict, bundle_hash: str) -> N
         if "scripts" in item:
             upgrade.action = save_upgrade_action(
                 prototype=prototype,
-                config=item,
+                config=copy(item),
                 bundle_hash=bundle_hash,
                 upgrade=upgrade,
             )
@@ -502,7 +503,7 @@ def save_export(proto: StagePrototype, conf: dict) -> None:
         stage_prototype_export.save()
 
 
-def get_config_groups(proto, action=None):
+def get_config_groups(proto: StagePrototype, action: StageAction | None = None) -> dict:
     groups = {}
     for stage_prototype_config in StagePrototypeConfig.objects.filter(prototype=proto, action=action):
         if stage_prototype_config.subname != "":
@@ -511,12 +512,12 @@ def get_config_groups(proto, action=None):
     return groups
 
 
-def check_default_import(proto, conf):
-    ref = proto_ref(proto)
+def check_default_import(proto: StagePrototype, conf: dict) -> None:
+    ref = proto_ref(prototype=proto)
     if "default" not in conf:
         return
 
-    groups = get_config_groups(proto)
+    groups = get_config_groups(proto=proto)
     for key in conf["default"]:
         if key not in groups:
             raise_adcm_ex(code="INVALID_OBJECT_DEFINITION", msg=f'No import default group "{key}" in config ({ref})')
@@ -628,26 +629,63 @@ def save_upgrade_action(
     return save_action(proto=prototype, config=config, bundle_hash=bundle_hash, action_name=name)
 
 
-def check_internal_script(config: dict, name: str, ref: str) -> None:
-    if config["script_type"] == "internal" and config["script"] != "bundle_revert":
+def check_internal_script(
+    config: dict,
+    allowed_scripts: tuple[str, ...],
+    is_hc_acl_present: bool,
+    obj_ref: str,
+    err_code: str = "INVALID_OBJECT_DEFINITION",
+) -> bool:
+    if config["script_type"] != "internal":
+        return False
+
+    hc_apply = "hc_apply"
+
+    allowed_scripts = {*allowed_scripts, hc_apply}
+
+    if config["script"] not in allowed_scripts:
         raise_adcm_ex(
-            code="INVALID_OBJECT_DEFINITION",
-            msg=f"Action {name} of {ref} uses script_type `internal` without `bundle_revert` script",
+            code=err_code,
+            msg=f"{obj_ref}: only `{allowed_scripts}` internal scripts allowed here, got `{config['script']}`",
         )
+
+    if config["script"] == hc_apply and not is_hc_acl_present:
+        raise_adcm_ex(
+            code=err_code,
+            msg=f"{obj_ref}: `{hc_apply}` requires `hc_acl` declaration",
+        )
+
+    if config["script"] == hc_apply:
+        return False
+
+    return True
 
 
 def save_actions(prototype: StagePrototype, config: dict, bundle_hash: str) -> None:
     if not in_dict(dictionary=config, key="actions"):
         return
 
+    prototype_ref = proto_ref(prototype=prototype)
     for name in sorted(config["actions"]):
         action_config = config["actions"][name]
+        is_hc_acl_present = bool(action_config.get("hc_acl", False))
+        obj_ref = f"Action {name} of {prototype_ref}"
 
         if action_config["type"] == settings.JOB_TYPE:
-            check_internal_script(config=action_config, name=name, ref=proto_ref(prototype=prototype))
+            check_internal_script(
+                config=action_config,
+                allowed_scripts=("bundle_revert",),
+                is_hc_acl_present=is_hc_acl_present,
+                obj_ref=obj_ref,
+            )
         else:
             for subaction_config in action_config["scripts"]:
-                check_internal_script(config=subaction_config, name=name, ref=proto_ref(prototype=prototype))
+                check_internal_script(
+                    config=subaction_config,
+                    allowed_scripts=("bundle_revert",),
+                    is_hc_acl_present=is_hc_acl_present,
+                    obj_ref=obj_ref,
+                )
 
         save_action(proto=prototype, config=action_config, bundle_hash=bundle_hash, action_name=name)
 
@@ -750,7 +788,7 @@ def get_yspec(proto: StagePrototype | Prototype, bundle_hash: str, conf: dict, n
     return schema
 
 
-def save_prototype_config(  # noqa: C901
+def save_prototype_config(
     proto: StagePrototype,
     proto_conf: dict,
     bundle_hash: str,
@@ -760,7 +798,7 @@ def save_prototype_config(  # noqa: C901
         return
 
     conf_dict = proto_conf["config"]
-    ref = proto_ref(proto)
+    ref = proto_ref(prototype=proto)
 
     def check_variant(_conf: dict) -> dict:  # pylint: disable=unused-argument
         vtype = _conf["source"]["type"]
@@ -780,7 +818,7 @@ def save_prototype_config(  # noqa: C901
 
         return source
 
-    def process_limits(_conf: dict, _name: str, _subname: str) -> dict:  # noqa: C901
+    def process_limits(_conf: dict, _name: str, _subname: str) -> dict:
         opt = {}
         if _conf["type"] == "option":
             opt = {"option": _conf["option"]}
@@ -838,7 +876,7 @@ def save_prototype_config(  # noqa: C901
         if "default" in _conf:
             check_config_type(proto, _name, _subname, _conf, _conf["default"], bundle_hash)
 
-        if type_is_complex(_conf["type"]):
+        if _conf["type"] in settings.STACK_COMPLEX_FIELD_TYPES:
             dict_json_to_obj(_conf, "default", stage_prototype_config)
         else:
             dict_to_obj(_conf, "default", stage_prototype_config)
@@ -896,14 +934,28 @@ def validate_name(name: str, error_message: str) -> None:
         )
 
 
-def fix_display_name(conf, obj):
+def check_display_name(obj: StagePrototype) -> None:
+    another_comps = (
+        StagePrototype.objects.filter(type="component", display_name=obj.display_name, parent=obj.parent)
+        .exclude(id=obj.id)
+        .exists()
+    )
+
+    if another_comps:
+        raise_adcm_ex(
+            code="WRONG_NAME",
+            msg=f"Display name for component within one service must be unique. Incorrect definition of {proto_ref(prototype=obj)}",
+        )
+
+
+def fix_display_name(conf: dict, obj: StagePrototype) -> None:
     if isinstance(conf, dict) and "display_name" in conf:
         return
 
     obj.display_name = obj.name
 
 
-def in_dict(dictionary, key):
+def in_dict(dictionary: dict, key: str) -> bool:
     if not isinstance(dictionary, dict):
         return False
 
