@@ -13,7 +13,7 @@
 from api_v2.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
 from api_v2.config.utils import get_schema
 from cm.api import update_obj_config
-from cm.models import Cluster, ClusterObject, ConfigLog, GroupConfig, ServiceComponent
+from cm.models import ConfigLog
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import ObjectDoesNotExist
 from guardian.mixins import PermissionListMixin
@@ -24,33 +24,17 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rest_framework.viewsets import GenericViewSet
 
+from adcm.mixins import GetParentObjectMixin
 from adcm.permissions import VIEW_CONFIG_PERM, check_config_perm
 
 
 class ConfigLogViewSet(
-    PermissionListMixin, ListModelMixin, CreateModelMixin, RetrieveModelMixin, GenericViewSet
+    PermissionListMixin, ListModelMixin, CreateModelMixin, RetrieveModelMixin, GenericViewSet, GetParentObjectMixin
 ):  # pylint: disable=too-many-ancestors
     queryset = ConfigLog.objects.select_related("obj_ref").all()
     serializer_class = ConfigLogSerializer
     permission_required = [VIEW_CONFIG_PERM]
     ordering = ["-id"]
-
-    def get_parent_object(self) -> Cluster | ClusterObject | ServiceComponent | GroupConfig | None:
-        # `if` order is significant. see api_v2/cluster/urls.py::urlpatterns
-
-        if "config_group_pk" in self.kwargs:
-            return GroupConfig.objects.get(id=self.kwargs.get("config_group_pk"))
-
-        if "servicecomponent_pk" in self.kwargs:
-            return ServiceComponent.objects.get(pk=self.kwargs["servicecomponent_pk"])
-
-        if "service_pk" in self.kwargs:
-            return ClusterObject.objects.get(id=self.kwargs.get("service_pk"))
-
-        if "cluster_pk" in self.kwargs:
-            return Cluster.objects.get(id=self.kwargs.get("cluster_pk"))
-
-        raise ObjectDoesNotExist("Can't get parent object: no appropriate kwargs provided")
 
     def get_queryset(self, *args, **kwargs):
         try:
