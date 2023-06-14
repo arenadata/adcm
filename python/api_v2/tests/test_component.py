@@ -37,7 +37,7 @@ class TestComponentAPI(BaseAPITestCase):
     def test_list(self):
         response: Response = self.client.get(
             path=reverse(
-                "v2:servicecomponent-list",
+                "v2:component-list",
                 kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
             ),
         )
@@ -48,7 +48,7 @@ class TestComponentAPI(BaseAPITestCase):
     def test_retrieve_success(self):
         response: Response = self.client.get(
             path=reverse(
-                "v2:servicecomponent-detail",
+                "v2:component-detail",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -63,7 +63,7 @@ class TestComponentAPI(BaseAPITestCase):
     def test_delete_success(self):
         response: Response = self.client.delete(
             path=reverse(
-                "v2:servicecomponent-detail",
+                "v2:component-detail",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -78,11 +78,11 @@ class TestComponentAPI(BaseAPITestCase):
     def test_action_list_success(self):
         response: Response = self.client.get(
             path=reverse(
-                "v2:servicecomponent-action-list",
+                "v2:component-action-list",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
-                    "servicecomponent_pk": self.component_1.pk,
+                    "component_pk": self.component_1.pk,
                 },
             ),
         )
@@ -93,11 +93,11 @@ class TestComponentAPI(BaseAPITestCase):
     def test_action_retrieve_success(self):
         response: Response = self.client.get(
             path=reverse(
-                "v2:servicecomponent-action-detail",
+                "v2:component-action-detail",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
-                    "servicecomponent_pk": self.component_1.pk,
+                    "component_pk": self.component_1.pk,
                     "pk": self.action_1.pk,
                 },
             ),
@@ -109,11 +109,11 @@ class TestComponentAPI(BaseAPITestCase):
     def test_action_run_success(self):
         response: Response = self.client.post(
             path=reverse(
-                "v2:servicecomponent-action-run",
+                "v2:component-action-run",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
-                    "servicecomponent_pk": self.component_1.pk,
+                    "component_pk": self.component_1.pk,
                     "pk": self.action_1.pk,
                 },
             ),
@@ -125,7 +125,7 @@ class TestComponentAPI(BaseAPITestCase):
     def test_change_mm(self):
         response: Response = self.client.post(
             path=reverse(
-                "v2:servicecomponent-maintenance-mode",
+                "v2:component-maintenance-mode",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,

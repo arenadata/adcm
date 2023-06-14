@@ -65,6 +65,7 @@ class ClusterBaseTestCase(BaseTestCase):
             name="test_action",
             prototype=self.cluster_1_prototype,
             type=ActionType.JOB,
+            state_available="any",
         )
         self.service = ClusterObject.objects.create(
             cluster=self.cluster_1, prototype=Prototype.objects.create(bundle=self.bundle, type=ObjectType.SERVICE)

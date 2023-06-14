@@ -289,7 +289,7 @@ class TestComponentConfig(BaseAPITestCase):
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
-                    "servicecomponent_pk": self.component_1.pk,
+                    "component_pk": self.component_1.pk,
                 },
             )
         )
@@ -311,7 +311,7 @@ class TestComponentConfig(BaseAPITestCase):
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
-                    "servicecomponent_pk": self.component_1.pk,
+                    "component_pk": self.component_1.pk,
                     "pk": self.component_1_initial_config.pk,
                 },
             )
@@ -340,7 +340,7 @@ class TestComponentConfig(BaseAPITestCase):
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
-                    "servicecomponent_pk": self.component_1.pk,
+                    "component_pk": self.component_1.pk,
                 },
             ),
             data=data,
@@ -359,7 +359,7 @@ class TestComponentConfig(BaseAPITestCase):
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
-                    "servicecomponent_pk": self.component_1.pk,
+                    "component_pk": self.component_1.pk,
                 },
             )
         )

@@ -10,30 +10,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Cluster, ClusterObject, GroupConfig, ServiceComponent
+from contextlib import suppress
+
+from cm.models import Cluster, ClusterObject, GroupConfig, Host, ServiceComponent
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import ObjectDoesNotExist
 
 
 class GetParentObjectMixin:
-    def get_parent_object(self) -> GroupConfig | Cluster | ClusterObject | ServiceComponent | None:
+    def get_parent_object(self) -> GroupConfig | Cluster | ClusterObject | ServiceComponent | Host | None:
         parent_object = None
 
-        if "config_group_pk" in self.kwargs:
-            parent_object = GroupConfig.objects.get(id=self.kwargs["config_group_pk"])
+        with suppress(ObjectDoesNotExist):
+            if all(lookup in self.kwargs for lookup in ("component_pk", "service_pk", "cluster_pk")):
+                parent_object = ServiceComponent.objects.get(
+                    pk=self.kwargs["component_pk"],
+                    cluster_id=self.kwargs["cluster_pk"],
+                    service_id=self.kwargs["service_pk"],
+                )
 
-        elif all(lookup in self.kwargs for lookup in ("servicecomponent_pk", "service_pk", "cluster_pk")) or all(
-            lookup in self.kwargs for lookup in ("component_pk", "service_pk", "cluster_pk")
-        ):
-            parent_object = ServiceComponent.objects.get(
-                pk=self.kwargs.get("servicecomponent_pk") or self.kwargs.get("component_pk"),
-                cluster=Cluster.objects.get(pk=self.kwargs["cluster_pk"]),
-                service=ClusterObject.objects.get(pk=self.kwargs["service_pk"]),
-            )
+            elif "cluster_pk" in self.kwargs and "service_pk" in self.kwargs:
+                parent_object = ClusterObject.objects.get(
+                    pk=self.kwargs["service_pk"], cluster_id=self.kwargs["cluster_pk"]
+                )
 
-        elif "cluster_pk" in self.kwargs and "service_pk" in self.kwargs:
-            cluster = Cluster.objects.get(id=self.kwargs["cluster_pk"])
-            parent_object = ClusterObject.objects.get(id=self.kwargs["service_pk"], cluster=cluster)
+            elif "cluster_pk" in self.kwargs and "host_pk" in self.kwargs:
+                parent_object = Host.objects.get(pk=self.kwargs["host_pk"])
 
-        elif "cluster_pk" in self.kwargs:
-            parent_object = Cluster.objects.get(id=self.kwargs["cluster_pk"])
+            elif "cluster_pk" in self.kwargs:
+                parent_object = Cluster.objects.get(pk=self.kwargs["cluster_pk"])
+
+            if "config_group_pk" in self.kwargs:
+                parent_object = GroupConfig.objects.get(
+                    pk=self.kwargs["config_group_pk"],
+                    object_id=parent_object.pk,
+                    object_type=ContentType.objects.get_for_model(model=parent_object),
+                )
 
         return parent_object
