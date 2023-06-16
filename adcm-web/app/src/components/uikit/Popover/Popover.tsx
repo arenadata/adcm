@@ -5,24 +5,20 @@ import {
   FloatingFocusManager,
   FloatingPortal,
   offset,
-  OffsetOptions,
   shift,
   useDismiss,
   useFloating,
   useInteractions,
   useRole,
 } from '@floating-ui/react';
-import { Placement } from '@floating-ui/dom';
-import { getRefWidth } from '@uikit/Popover/utils';
+import { getWidthStyles } from '@uikit/Popover/Popover.utils';
 import { useForwardRef } from '@uikit/hooks/useForwardRef';
 import { ChildWithRef } from '@uikit/types/element.types';
+import { PopoverOptions } from '@uikit/Popover/Popover.types';
 
-export interface PopoverProps {
+export interface PopoverProps extends PopoverOptions {
   isOpen: boolean;
   onOpenChange: (_isOpen: boolean) => void;
-  placement?: Placement;
-  offset?: OffsetOptions;
-  isDependencyParentWidth?: boolean;
   triggerRef: React.RefObject<HTMLElement>;
   children: ChildWithRef;
 }
@@ -33,7 +29,7 @@ const Popover: React.FC<PopoverProps> = ({
   triggerRef,
   placement = 'bottom-start',
   offset: offsetValue = 10,
-  isDependencyParentWidth = false,
+  dependencyWidth,
 }) => {
   const { refs, floatingStyles, context } = useFloating({
     placement,
@@ -55,8 +51,10 @@ const Popover: React.FC<PopoverProps> = ({
   const popoverPanel = React.Children.only(children);
   const ref = useForwardRef(refs.setFloating, children.ref);
   const panelStyle = { ...(children.props.style ?? {}), ...floatingStyles };
-  if (isDependencyParentWidth) {
-    panelStyle.width = getRefWidth(triggerRef);
+  if (dependencyWidth) {
+    Object.entries(getWidthStyles(dependencyWidth, triggerRef)).forEach(([cssProperty, value]) => {
+      panelStyle[cssProperty] = value;
+    });
   }
 
   return (

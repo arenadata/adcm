@@ -88,12 +88,17 @@
         "allow": ["info", "warn", "error"]
       }
     ],
-    "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "no-unused-vars": ["error", {
+      "varsIgnorePattern": "React",
+      "argsIgnorePattern": "^_",
+      "ignoreRestSiblings": true
+    }],
     "@typescript-eslint/no-unused-vars": [
       "error",
       {
         "varsIgnorePattern": "React",
-        "argsIgnorePattern": "^_"
+        "argsIgnorePattern": "^_",
+        "ignoreRestSiblings": true
       }
     ]
   }
