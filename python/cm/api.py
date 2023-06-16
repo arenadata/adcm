@@ -749,7 +749,9 @@ def add_hc(cluster: Cluster, hc_in: list[dict]) -> list[HostComponent]:
     return new_hc
 
 
-def get_bind(cluster, service, source_cluster, source_service):
+def get_bind(
+    cluster: Cluster, service: ClusterObject | None, source_cluster: Cluster, source_service: ClusterObject | None
+):
     try:
         return ClusterBind.objects.get(
             cluster=cluster,
@@ -761,50 +763,56 @@ def get_bind(cluster, service, source_cluster, source_service):
         return None
 
 
-def get_import(cluster, service=None):
-    def get_export(_cluster, _service, _pi):
-        exports = []
-        export_proto = {}
-        for prototype_export in PrototypeExport.objects.filter(prototype__name=_pi.name):
-            # Merge all export groups of prototype to one export
-            if prototype_export.prototype.pk in export_proto:
-                continue
+def get_export(cluster: Cluster, service: ClusterObject | None, proto_import: PrototypeImport):
+    exports = []
+    export_proto = {}
+    for prototype_export in PrototypeExport.objects.filter(prototype__name=proto_import.name):
+        # Merge all export groups of prototype to one export
+        if export_proto.get(prototype_export.prototype.pk):
+            continue
 
-            export_proto[prototype_export.prototype.pk] = True
-            if not version_in(prototype_export.prototype.version, _pi):
-                continue
+        export_proto[prototype_export.prototype.pk] = True
+        if not version_in(version=prototype_export.prototype.version, ver=proto_import):
+            continue
 
-            if prototype_export.prototype.type == "cluster":
-                for cls in Cluster.objects.filter(prototype=prototype_export.prototype):
-                    bound = get_bind(_cluster, _service, cls, None)
-                    exports.append(
-                        {
-                            "obj_name": cls.name,
-                            "bundle_name": cls.prototype.display_name,
-                            "bundle_version": cls.prototype.version,
-                            "id": {"cluster_id": cls.pk},
-                            "binded": bool(bound),
-                            "bind_id": getattr(bound, "id", None),
-                        },
-                    )
-            elif prototype_export.prototype.type == "service":
-                for service in ClusterObject.objects.filter(prototype=prototype_export.prototype):
-                    bound = get_bind(_cluster, _service, service.cluster, service)
-                    exports.append(
-                        {
-                            "obj_name": service.cluster.name + "/" + service.prototype.display_name,
-                            "bundle_name": service.prototype.display_name,
-                            "bundle_version": service.prototype.version,
-                            "id": {"cluster_id": service.cluster.pk, "service_id": service.pk},
-                            "binded": bool(bound),
-                            "bind_id": getattr(bound, "id", None),
-                        },
-                    )
-            else:
-                raise_adcm_ex("BIND_ERROR", f"unexpected export type: {prototype_export.prototype.type}")
+        if prototype_export.prototype.type == "cluster":
+            for export_cls in Cluster.objects.filter(prototype=prototype_export.prototype):
+                bound = get_bind(cluster=cluster, service=service, source_cluster=export_cls, source_service=None)
+                exports.append(
+                    {
+                        "obj_name": export_cls.name,
+                        "bundle_name": export_cls.prototype.display_name,
+                        "bundle_version": export_cls.prototype.version,
+                        "id": {"cluster_id": export_cls.pk},
+                        "binded": bool(bound),
+                        "bind_id": getattr(bound, "id", None),
+                    },
+                )
+        elif prototype_export.prototype.type == "service":
+            for export_service in ClusterObject.objects.filter(prototype=prototype_export.prototype):
+                bound = get_bind(
+                    cluster=cluster,
+                    service=service,
+                    source_cluster=export_service.cluster,
+                    source_service=export_service,
+                )
+                exports.append(
+                    {
+                        "obj_name": export_service.cluster.name + "/" + export_service.prototype.display_name,
+                        "bundle_name": export_service.prototype.display_name,
+                        "bundle_version": export_service.prototype.version,
+                        "id": {"cluster_id": export_service.cluster.pk, "service_id": export_service.pk},
+                        "binded": bool(bound),
+                        "bind_id": getattr(bound, "id", None),
+                    },
+                )
+        else:
+            raise_adcm_ex("BIND_ERROR", f"unexpected export type: {prototype_export.prototype.type}")
 
-        return exports
+    return exports
 
+
+def get_import(cluster: Cluster, service: ClusterObject | None = None):
     imports = []
     proto = cluster.prototype
     if service:
@@ -824,34 +832,34 @@ def get_import(cluster, service=None):
     return imports
 
 
-def check_bind_post(bind_list):
+def check_bind_post(bind_list: list) -> None:
     if not isinstance(bind_list, list):
-        raise_adcm_ex("BIND_ERROR", "bind should be an array")
+        raise_adcm_ex(code="BIND_ERROR", msg="bind should be an array")
 
     for bind_item in bind_list:
         if not isinstance(bind_item, dict):
-            raise_adcm_ex("BIND_ERROR", "bind item should be a map")
+            raise_adcm_ex(code="BIND_ERROR", msg="bind item should be a map")
 
         if "import_id" not in bind_item:
-            raise_adcm_ex("BIND_ERROR", 'bind item does not have required "import_id" key')
+            raise_adcm_ex(code="BIND_ERROR", msg='bind item does not have required "import_id" key')
 
         if not isinstance(bind_item["import_id"], int):
-            raise_adcm_ex("BIND_ERROR", 'bind item "import_id" value should be integer')
+            raise_adcm_ex(code="BIND_ERROR", msg='bind item "import_id" value should be integer')
 
         if "export_id" not in bind_item:
-            raise_adcm_ex("BIND_ERROR", 'bind item does not have required "export_id" key')
+            raise_adcm_ex(code="BIND_ERROR", msg='bind item does not have required "export_id" key')
 
         if not isinstance(bind_item["export_id"], dict):
-            raise_adcm_ex("BIND_ERROR", 'bind item "export_id" value should be a map')
+            raise_adcm_ex(code="BIND_ERROR", msg='bind item "export_id" value should be a map')
 
         if "cluster_id" not in bind_item["export_id"]:
-            raise_adcm_ex("BIND_ERROR", 'bind item export_id does not have required "cluster_id" key')
+            raise_adcm_ex(code="BIND_ERROR", msg='bind item export_id does not have required "cluster_id" key')
 
         if not isinstance(bind_item["export_id"]["cluster_id"], int):
-            raise_adcm_ex("BIND_ERROR", 'bind item export_id "cluster_id" value should be integer')
+            raise_adcm_ex(code="BIND_ERROR", msg='bind item export_id "cluster_id" value should be integer')
 
 
-def check_import_default(import_obj, export_obj):
+def check_import_default(import_obj: Cluster | ClusterObject, export_obj: Cluster | ClusterObject):
     prototype_import = PrototypeImport.objects.get(prototype=import_obj.prototype, name=export_obj.prototype.name)
     if not prototype_import.default:
         return
@@ -866,7 +874,7 @@ def check_import_default(import_obj, export_obj):
                 raise_adcm_ex("BIND_ERROR", f'Default import "{name}" for {obj_ref(import_obj)} is inactive')
 
 
-def get_bind_obj(cluster, service):
+def get_bind_obj(cluster: Cluster, service: ClusterObject | None) -> Cluster | ClusterObject:
     obj = cluster
     if service:
         obj = service
@@ -874,65 +882,68 @@ def get_bind_obj(cluster, service):
     return obj
 
 
-def multi_bind(cluster, service, bind_list):
+def cook_key(cluster: Cluster, service: ClusterObject | None) -> str:
+    if service:
+        return f"{cluster.pk}.{service.pk}"
+
+    return str(cluster.pk)
+
+
+def get_export_service(bound: dict, export_cluster: Cluster) -> ClusterObject | None:
+    export_co = None
+    if "service_id" in bound["export_id"]:
+        export_co = ClusterObject.obj.get(id=bound["export_id"]["service_id"])
+        if export_co.cluster != export_cluster:
+            raise_adcm_ex(
+                "BIND_ERROR",
+                f"export {obj_ref(obj=export_co)} is not belong to {obj_ref(obj=export_cluster)}",
+            )
+
+    return export_co
+
+
+def get_prototype_import(import_pk: int, import_obj: Cluster | ClusterObject) -> PrototypeImport:
+    proto_import = PrototypeImport.obj.get(id=import_pk)
+    if proto_import.prototype != import_obj.prototype:
+        raise_adcm_ex("BIND_ERROR", f"Import #{import_pk} does not belong to {obj_ref(obj=import_obj)}")
+
+    return proto_import
+
+
+def multi_bind(cluster: Cluster, service: ClusterObject | None, bind_list: list[dict]):
     # pylint: disable=too-many-locals,too-many-statements
 
-    def get_prototype_import(import_pk, _import_obj):
-        _pi = PrototypeImport.obj.get(id=import_pk)
-        if _pi.prototype != _import_obj.prototype:
-            raise_adcm_ex("BIND_ERROR", f"Import #{import_pk} does not belong to {obj_ref(_import_obj)}")
-
-        return _pi
-
-    def get_export_service(_b, _export_cluster):
-        _export_co = None
-        if "service_id" in _b["export_id"]:
-            _export_co = ClusterObject.obj.get(id=_b["export_id"]["service_id"])
-            if _export_co.cluster != _export_cluster:
-                raise_adcm_ex(
-                    "BIND_ERROR",
-                    f"export {obj_ref(_export_co)} is not belong to {obj_ref(_export_cluster)}",
-                )
-
-        return _export_co
-
-    def cook_key(_cluster, _service):
-        if _service:
-            return f"{_cluster.pk}.{_service.pk}"
-
-        return str(_cluster.pk)
-
-    check_bind_post(bind_list)
-    import_obj = get_bind_obj(cluster, service)
+    check_bind_post(bind_list=bind_list)
+    import_obj = get_bind_obj(cluster=cluster, service=service)
     old_bind = {}
     cluster_bind_list = ClusterBind.objects.filter(cluster=cluster, service=service)
     for cluster_bind in cluster_bind_list:
-        old_bind[cook_key(cluster_bind.source_cluster, cluster_bind.source_service)] = cluster_bind
+        old_bind[cook_key(cluster=cluster_bind.source_cluster, service=cluster_bind.source_service)] = cluster_bind
 
     new_bind = {}
     for bind_item in bind_list:
-        prototype_import = get_prototype_import(bind_item["import_id"], import_obj)
+        prototype_import = get_prototype_import(import_pk=bind_item["import_id"], import_obj=import_obj)
         export_cluster = Cluster.obj.get(id=bind_item["export_id"]["cluster_id"])
         export_obj = export_cluster
-        export_co = get_export_service(bind_item, export_cluster)
+        export_co = get_export_service(bound=bind_item, export_cluster=export_cluster)
         if export_co:
             export_obj = export_co
 
-        if cook_key(export_cluster, export_co) in new_bind:
+        if cook_key(cluster=export_cluster, service=export_co) in new_bind:
             raise_adcm_ex("BIND_ERROR", "Bind list has duplicates")
 
         if prototype_import.name != export_obj.prototype.name:
             raise_adcm_ex(
                 "BIND_ERROR",
-                f'Export {obj_ref(export_obj)} does not match import name "{prototype_import.name}"',
+                f'Export {obj_ref(obj=export_obj)} does not match import name "{prototype_import.name}"',
             )
 
-        if not version_in(export_obj.prototype.version, prototype_import):
+        if not version_in(version=export_obj.prototype.version, ver=prototype_import):
             raise_adcm_ex(
                 "BIND_ERROR",
-                f'Import "{export_obj.prototype.name}" of { proto_ref(prototype_import.prototype)} '
+                f'Import "{export_obj.prototype.name}" of { proto_ref(prototype=prototype_import.prototype)} '
                 f"versions ({prototype_import.min_version}, {prototype_import.max_version}) does not match export "
-                f"version: {export_obj.prototype.version} ({obj_ref(export_obj)})",
+                f"version: {export_obj.prototype.version} ({obj_ref(obj=export_obj)})",
             )
 
         cluster_bind = ClusterBind(
@@ -941,17 +952,17 @@ def multi_bind(cluster, service, bind_list):
             source_cluster=export_cluster,
             source_service=export_co,
         )
-        new_bind[cook_key(export_cluster, export_co)] = prototype_import, cluster_bind, export_obj
+        new_bind[cook_key(cluster=export_cluster, service=export_co)] = prototype_import, cluster_bind, export_obj
 
     with atomic():
         for key, value in old_bind.items():
             if key in new_bind:
                 continue
 
-            export_obj = get_bind_obj(value.source_cluster, value.source_service)
-            check_import_default(import_obj, export_obj)
+            export_obj = get_bind_obj(cluster=value.source_cluster, service=value.source_service)
+            check_import_default(import_obj=import_obj, export_obj=export_obj)
             value.delete()
-            logger.info("unbind %s from %s", obj_ref(export_obj), obj_ref(import_obj))
+            logger.info("unbind %s from %s", obj_ref(export_obj), obj_ref(obj=import_obj))
 
         for key, value in new_bind.items():
             if key in old_bind:
@@ -959,21 +970,23 @@ def multi_bind(cluster, service, bind_list):
 
             prototype_import, cluster_bind, export_obj = value
             check_multi_bind(
-                prototype_import,
-                cluster,
-                service,
-                cluster_bind.source_cluster,
-                cluster_bind.source_service,
+                actual_import=prototype_import,
+                cluster=cluster,
+                service=service,
+                export_cluster=cluster_bind.source_cluster,
+                export_service=cluster_bind.source_service,
             )
             cluster_bind.save()
-            logger.info("bind %s to %s", obj_ref(export_obj), obj_ref(import_obj))
+            logger.info("bind %s to %s", obj_ref(obj=export_obj), obj_ref(obj=import_obj))
 
-        update_hierarchy_issues(cluster)
+        update_hierarchy_issues(obj=cluster)
 
-    return get_import(cluster, service)
+    return get_import(cluster=cluster, service=service)
 
 
-def bind(cluster, service, export_cluster, export_service_pk):
+def bind(
+    cluster: Cluster, service: ClusterObject | None, export_cluster: Cluster, export_service_pk: int | None
+) -> dict:
     # pylint: disable=too-many-branches
 
     """
@@ -986,12 +999,12 @@ def bind(cluster, service, export_cluster, export_service_pk):
     if export_service_pk:
         export_service = ClusterObject.obj.get(cluster=export_cluster, id=export_service_pk)
         if not PrototypeExport.objects.filter(prototype=export_service.prototype):
-            raise_adcm_ex("BIND_ERROR", f"{obj_ref(export_service)} do not have exports")
+            raise_adcm_ex(code="BIND_ERROR", msg=f"{obj_ref(export_service)} do not have exports")
 
         name = export_service.prototype.name
     else:
         if not PrototypeExport.objects.filter(prototype=export_cluster.prototype):
-            raise_adcm_ex("BIND_ERROR", f"{obj_ref(export_cluster)} does not have exports")
+            raise_adcm_ex(code="BIND_ERROR", msg=f"{obj_ref(export_cluster)} does not have exports")
 
         name = export_cluster.prototype.name
 
@@ -1003,10 +1016,10 @@ def bind(cluster, service, export_cluster, export_service_pk):
     try:
         prototype_import = PrototypeImport.obj.get(prototype=import_obj.prototype, name=name)
     except MultipleObjectsReturned:
-        raise_adcm_ex("BIND_ERROR", "Old api does not support multi bind. Go to /api/v1/.../import/")
+        raise_adcm_ex(code="BIND_ERROR", msg="Old api does not support multi bind. Go to /api/v1/.../import/")
 
     bind_list = []
-    for imp in get_import(cluster, service):
+    for imp in get_import(cluster=cluster, service=service):
         for exp in imp["exports"]:
             if exp["binded"]:
                 bind_list.append({"import_id": imp["id"], "export_id": exp["id"]})
@@ -1017,7 +1030,7 @@ def bind(cluster, service, export_cluster, export_service_pk):
 
     bind_list.append(item)
 
-    multi_bind(cluster, service, bind_list)
+    multi_bind(cluster=cluster, service=service, bind_list=bind_list)
     res = {
         "export_cluster_id": export_cluster.pk,
         "export_cluster_name": export_cluster.name,
