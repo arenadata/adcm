@@ -11,8 +11,7 @@
 # limitations under the License.
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.api import add_service_to_cluster
-from cm.models import Action, MaintenanceMode, ObjectType, Prototype, ServiceComponent
+from cm.models import Action, MaintenanceMode, ServiceComponent
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
@@ -22,10 +21,7 @@ class TestComponentAPI(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = add_service_to_cluster(
-            cluster=self.cluster_1,
-            proto=Prototype.objects.get(type=ObjectType.SERVICE, name="service_1", bundle=self.bundle_1),
-        )
+        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
         self.component_1 = ServiceComponent.objects.get(
             prototype__name="component_1", service=self.service_1, cluster=self.cluster_1
         )

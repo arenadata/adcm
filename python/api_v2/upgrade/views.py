@@ -30,7 +30,7 @@ from adcm.permissions import VIEW_CLUSTER_PERM, DjangoModelPermissionsAudit
 
 
 class UpgradeViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
-    queryset = Upgrade.objects.all()
+    queryset = Upgrade.objects.all().select_related("action")
     serializer_class = UpgradeListSerializer
     permission_classes = [DjangoModelPermissionsAudit]
 

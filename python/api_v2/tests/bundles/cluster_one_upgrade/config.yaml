@@ -12,6 +12,22 @@
         max: '2.0'
       states:
         available: any
+    - name: upgrade_via_action
+      versions:
+        min: '1.0'
+        max: '2.0'
+      states:
+        available: any
+      scripts:
+        - name: pre_upgrade_something
+          script: ./playbook.yaml
+          script_type: ansible
+        - name: bundle_upgrade
+          script_type: internal
+          script: bundle_switch
+        - name: post_upgrade_something
+          script: ./playbook.yaml
+          script_type: ansible
   config: &config
     - name: string
       type: string

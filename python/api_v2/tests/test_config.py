@@ -11,8 +11,7 @@
 # limitations under the License.
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.api import add_service_to_cluster
-from cm.models import ConfigLog, GroupConfig, ObjectType, Prototype, ServiceComponent
+from cm.models import ConfigLog, GroupConfig, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -194,9 +193,7 @@ class TestServiceConfig(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = add_service_to_cluster(
-            cluster=self.cluster_1, proto=Prototype.objects.get(type=ObjectType.SERVICE, name="service_1")
-        )
+        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
         self.service_1_initial_config = ConfigLog.objects.get(pk=self.service_1.config.current)
 
     def test_list_success(self):
@@ -274,9 +271,7 @@ class TestComponentConfig(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = add_service_to_cluster(
-            cluster=self.cluster_1, proto=Prototype.objects.get(type=ObjectType.SERVICE, name="service_1")
-        )
+        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
         self.component_1 = ServiceComponent.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
         )
