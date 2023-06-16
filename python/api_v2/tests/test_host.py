@@ -17,7 +17,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 
-class TestHost(BaseAPITestCase):
+class TestClusterHost(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -26,36 +26,43 @@ class TestHost(BaseAPITestCase):
     def test_list_success(self):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         response: Response = self.client.get(
-            path=reverse(viewname="v2:host-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
 
     def test_retrieve_success(self):
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         response: Response = self.client.get(
-            path=reverse(viewname="v2:host-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host.pk}),
+            path=reverse(
+                viewname="v2:host-cluster-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host.pk}
+            ),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["id"], self.host.pk)
 
     def test_create_success(self):
+        host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_second")
         response: Response = self.client.post(
-            path=reverse(viewname="v2:host-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data=[{"host_id": self.host.pk}],
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"hosts": [self.host.pk, host_2.pk]},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         self.host.refresh_from_db()
+        host_2.refresh_from_db()
         self.assertEqual(self.host.cluster, self.cluster_1)
+        self.assertEqual(host_2.cluster, self.cluster_1)
 
     def test_maintenance_mode(self):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         response: Response = self.client.post(
             path=reverse(
-                viewname="v2:host-maintenance-mode", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host.pk}
+                viewname="v2:host-cluster-maintenance-mode",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host.pk},
             ),
             data={"maintenance_mode": MaintenanceMode.ON},
         )
@@ -74,7 +81,7 @@ class TestHostActions(BaseAPITestCase):
     def test_list_success(self):
         response: Response = self.client.get(
             path=reverse(
-                "v2:host-action-list",
+                "v2:host-cluster-action-list",
                 kwargs={"cluster_pk": self.cluster_1.pk, "host_pk": self.host.pk},
             ),
         )
@@ -85,7 +92,7 @@ class TestHostActions(BaseAPITestCase):
     def test_retrieve_success(self):
         response: Response = self.client.get(
             path=reverse(
-                "v2:host-action-detail",
+                "v2:host-cluster-action-detail",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "host_pk": self.host.pk,
@@ -100,7 +107,7 @@ class TestHostActions(BaseAPITestCase):
     def test_run_success(self):
         response: Response = self.client.post(
             path=reverse(
-                "v2:host-action-run",
+                "v2:host-cluster-action-run",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "host_pk": self.host.pk,

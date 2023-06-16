@@ -9,10 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from api_v2.host.views import HostViewSet
-from rest_framework.routers import SimpleRouter
+from rest_framework_nested.routers import SimpleRouter
 
 router = SimpleRouter()
-router.register("", HostViewSet)
+router.register(prefix="", viewset=HostViewSet)
 
 urlpatterns = router.urls

@@ -15,7 +15,7 @@ from api_v2.cluster.views import ClusterViewSet, MappingViewSet
 from api_v2.component.views import ComponentViewSet
 from api_v2.config.views import ConfigLogViewSet
 from api_v2.group_config.views import GroupConfigViewSet
-from api_v2.host.views import HostViewSet
+from api_v2.host.views import HostClusterViewSet
 from api_v2.imports.views import ClusterImportViewSet, ServiceImportViewSet
 from api_v2.service.views import ServiceViewSet
 from api_v2.upgrade.views import UpgradeViewSet
@@ -112,10 +112,10 @@ component_group_config_config_router.register(
 
 # host
 host_router = NestedSimpleRouter(parent_router=cluster_router, parent_prefix=CLUSTER_PREFIX, lookup="cluster")
-host_router.register(prefix=HOST_PREFIX, viewset=HostViewSet)
+host_router.register(prefix=HOST_PREFIX, viewset=HostClusterViewSet, basename="host-cluster")
 
 host_action_router = NestedSimpleRouter(parent_router=host_router, parent_prefix=HOST_PREFIX, lookup="host")
-host_action_router.register(prefix=ACTION_PREFIX, viewset=ActionViewSet, basename="host-action")
+host_action_router.register(prefix=ACTION_PREFIX, viewset=ActionViewSet, basename="host-cluster-action")
 
 # other
 upgrade_router = NestedSimpleRouter(parent_router=cluster_router, parent_prefix=CLUSTER_PREFIX, lookup="cluster")

@@ -21,4 +21,5 @@ urlpatterns = [
     path("hosts/", include("api_v2.host.urls")),
     path("hostproviders/", include("api_v2.hostprovider.urls")),
     path("audit/", include(("api_v2.audit.urls", "audit"))),
+    path("hosts/", include("api_v2.host.urls")),
 ]

@@ -308,7 +308,7 @@ def remove_host_from_cluster_by_pk(cluster_pk, fqdn, host_pk):
     remove_host_from_cluster(host)
 
 
-def delete_host(host, cancel_tasks=True):
+def delete_host(host: Host, cancel_tasks: bool = True) -> None:
     cluster = host.cluster
     if cluster:
         raise_adcm_ex(code="HOST_CONFLICT", msg=f'Host #{host.pk} "{host.fqdn}" belong to {obj_ref(cluster)}')
