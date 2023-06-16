@@ -5,7 +5,7 @@ import Icon, { IconProps } from '@uikit/Icon/Icon';
 import s from './IconButton.module.scss';
 
 type IconButtonVariant = 'primary' | 'secondary';
-interface IconButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
+export interface IconButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
   icon: IconsNames;
   size?: IconProps['size'];
   variant?: IconButtonVariant;

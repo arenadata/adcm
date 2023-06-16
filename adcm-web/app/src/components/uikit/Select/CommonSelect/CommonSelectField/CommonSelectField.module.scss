@@ -1,0 +1,7 @@
+.commonSelectField {
+  cursor: pointer;
+
+  &:global(:not(.is-active)) button > svg {
+    transform: rotate(-90deg);
+  }
+}

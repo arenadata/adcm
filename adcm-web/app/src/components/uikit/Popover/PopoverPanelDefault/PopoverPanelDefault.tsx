@@ -1,10 +1,12 @@
 import React from 'react';
 import { PopoverPanelProps } from '@uikit/Popover/Popover.types';
+import cn from 'classnames';
+import s from './PopoverPanelDefault.module.scss';
 
 const PopoverPanelDefault = React.forwardRef<HTMLDivElement, PopoverPanelProps>(
-  ({ children, className, ...style }, ref) => {
+  ({ children, className, ...props }, ref) => {
     return (
-      <div ref={ref} style={style} className={className}>
+      <div ref={ref} {...props} className={cn(className, s.popoverPanelDefault)}>
         {children}
       </div>
     );

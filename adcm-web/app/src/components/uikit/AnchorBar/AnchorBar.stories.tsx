@@ -77,7 +77,7 @@ export default {
   argTypes: {},
 } as Meta<typeof AnchorBar>;
 
-export const CircleDiagramExample: Story = {
+export const PageWithAnchorBar: Story = {
   render: () => {
     return <PageWithAnchorBarExample />;
   },

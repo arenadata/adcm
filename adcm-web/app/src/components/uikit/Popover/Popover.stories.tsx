@@ -32,7 +32,7 @@ export default {
   },
 } as Meta<typeof Popover>;
 
-const EasyPopoverExample: React.FC<PopoverProps> = ({ isDependencyParentWidth, placement, offset }) => {
+const EasyPopoverExample: React.FC<PopoverProps> = ({ dependencyWidth, placement, offset }) => {
   const [isOpen, setIsOpen] = useState(false);
   const localRef = useRef(null);
 
@@ -49,7 +49,7 @@ const EasyPopoverExample: React.FC<PopoverProps> = ({ isDependencyParentWidth, p
         isOpen={isOpen}
         onOpenChange={setIsOpen}
         triggerRef={localRef}
-        isDependencyParentWidth={isDependencyParentWidth}
+        dependencyWidth={dependencyWidth}
         placement={placement}
         offset={offset}
       >
@@ -64,14 +64,14 @@ export const EasyPopover: Story = {
   args: {
     placement: 'bottom',
     offset: 8,
-    isDependencyParentWidth: true,
+    dependencyWidth: 'min-parent',
   },
   render: (args) => {
     return <EasyPopoverExample {...args} />;
   },
 };
 
-const PopoverPopoverExample: React.FC = () => {
+const PopoverInPopoverExample: React.FC = () => {
   const [isPrimaryOpen, setIsPrimaryOpen] = useState(false);
   const primaryRef = useRef(null);
   const handlePrimaryClick = () => {
@@ -111,6 +111,6 @@ const PopoverPopoverExample: React.FC = () => {
 
 export const PopoverInPopover: Story = {
   render: () => {
-    return <PopoverPopoverExample />;
+    return <PopoverInPopoverExample />;
   },
 };
