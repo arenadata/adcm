@@ -9,16 +9,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from cm.models import HostProvider
+from django_filters.rest_framework import CharFilter, FilterSet
 
-from api_v2.views import APIRoot
-from django.urls import include, path
 
-urlpatterns = [
-    path("", APIRoot.as_view(), name="api-root-v2"),
-    path("clusters/", include("api_v2.cluster.urls")),
-    path("bundles/", include("api_v2.bundle.urls")),
-    path("prototypes/", include("api_v2.prototype.urls")),
-    path("hosts/", include("api_v2.host.urls")),
-    path("hostproviders/", include("api_v2.hostprovider.urls")),
-    path("audit/", include(("api_v2.audit.urls", "audit"))),
-]
+class HostProviderFilter(FilterSet):
+    hostprovider_name = CharFilter(field_name="name", label="Hostprovider name")
+    type = CharFilter(field_name="prototype__type", label="Hostprovider type")
+    state = CharFilter(field_name="state", label="Hostprovider state")
+
+    class Meta:
+        model = HostProvider
+        fields = [
+            "hostprovider_name",
+            "state",
+            "type",
+        ]
