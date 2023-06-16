@@ -39,6 +39,9 @@ VIEW_COMPONENT_PERM = "cm.view_servicecomponent"
 VIEW_HC_PERM = "cm.view_hostcomponent"
 VIEW_CONFIG_PERM = "cm.view_configlog"
 VIEW_GROUP_CONFIG_PERM = "cm.view_groupconfig"
+VIEW_IMPORT_PERM = "view_import_of"
+CHANGE_IMPORT_PERM = "change_import_of"
+VIEW_CLUSTER_BIND = "view_clusterbind"
 
 
 class DjangoObjectPermissionsAudit(DjangoObjectPermissions):
