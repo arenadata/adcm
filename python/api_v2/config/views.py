@@ -40,12 +40,10 @@ class ConfigLogViewSet(
         if parent_object is None:
             raise NotFound
 
-        queryset = super().get_queryset(*args, **kwargs)
+        if not parent_object.config:
+            return self.queryset.none()
 
-        if parent_object.config:
-            return queryset.filter(obj_ref=parent_object.config)
-
-        return queryset
+        return super().get_queryset(*args, **kwargs).filter(obj_ref=parent_object.config)
 
     def get_serializer_class(self):
         if self.action == "list":

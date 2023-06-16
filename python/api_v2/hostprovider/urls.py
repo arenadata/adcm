@@ -9,10 +9,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from api_v2.action.views import ActionViewSet
 from api_v2.hostprovider.views import HostProviderViewSet
-from rest_framework.routers import SimpleRouter
+from rest_framework_nested.routers import NestedSimpleRouter, SimpleRouter
 
 router = SimpleRouter()
 router.register("", HostProviderViewSet)
 
-urlpatterns = router.urls
+hostprovider_action_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="provider")
+hostprovider_action_router.register(prefix="actions", viewset=ActionViewSet, basename="provider-action")
+
+urlpatterns = [*router.urls, *hostprovider_action_router.urls]

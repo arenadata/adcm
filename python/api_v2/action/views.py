@@ -77,7 +77,7 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
                 actions=self.filter_queryset(queryset=self.get_queryset()),
             ),
         )
-        serializer = self.get_serializer_class()(instance=allowed_actions, many=True, context={"request": request})
+        serializer = self.get_serializer_class()(instance=allowed_actions, many=True, context={"obj": parent_object})
 
         return Response(data=serializer.data)
 

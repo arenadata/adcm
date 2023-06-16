@@ -31,7 +31,7 @@ from adcm.permissions import (
 )
 
 
-class ImportViewSet(ModelViewSet):
+class ImportViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
     permission_classes = [IsAuthenticated]
     ordering = ["id"]
 
@@ -67,14 +67,14 @@ class ImportViewSet(ModelViewSet):
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
-class ClusterImportViewSet(ImportViewSet):
+class ClusterImportViewSet(ImportViewSet):  # pylint: disable=too-many-ancestors
     def get_object_and_check_perm(self, request, **kwargs):
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_pk"])
         check_custom_perm(request.user, VIEW_IMPORT_PERM, "cluster", cluster, VIEW_CLUSTER_BIND)
         return cluster
 
 
-class ServiceImportViewSet(ImportViewSet):
+class ServiceImportViewSet(ImportViewSet):  # pylint: disable=too-many-ancestors
     def get_object_and_check_perm(self, request, **kwargs):
         service = get_object_for_user(request.user, VIEW_SERVICE_PERM, ClusterObject, id=kwargs["clusterobject_pk"])
         check_custom_perm(request.user, VIEW_IMPORT_PERM, "clusterobject", service, VIEW_CLUSTER_BIND)
