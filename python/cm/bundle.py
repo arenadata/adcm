@@ -80,7 +80,7 @@ def prepare_bundle(bundle_file: str, bundle_hash: str, path: Path) -> Bundle:
         ProductCategory.re_collect()
         bundle.refresh_from_db()
         prepare_action_roles(bundle=bundle)
-        post_event(event="create", obj=bundle)
+        post_event(event="create", object_id=bundle.pk, object_type="bundle")
 
         return bundle
     except Exception:
@@ -1042,7 +1042,7 @@ def delete_bundle(bundle):
                 bundle.version,
             )
 
-    post_event(event="delete", obj=bundle)
+    post_event(event="delete", object_id=bundle.pk, object_type="bundle")
     bundle.delete()
 
     for role in Role.objects.filter(class_name="ParentRole"):
