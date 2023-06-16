@@ -130,7 +130,7 @@ class TestServiceAPI(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertGreater(len(response.json()), 0)
+        self.assertEqual(len(response.json()), 2)
 
     def test_action_retrieve_success(self):
         response: Response = self.client.get(

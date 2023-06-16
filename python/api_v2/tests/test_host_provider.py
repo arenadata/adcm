@@ -11,8 +11,9 @@
 # limitations under the License.
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.models import HostProvider
+from cm.models import Action, HostProvider
 from django.conf import settings
+from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -90,3 +91,49 @@ class TestHostProvider(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+
+class TestProviderActions(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.action = Action.objects.get(prototype=self.provider.prototype, name="provider_action")
+
+    def test_action_list_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:provider-action-list",
+                kwargs={"provider_pk": self.provider.pk},
+            ),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()), 1)
+
+    def test_action_retrieve_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:provider-action-detail",
+                kwargs={
+                    "provider_pk": self.provider.pk,
+                    "pk": self.action.pk,
+                },
+            ),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertTrue(response.json())
+
+    def test_action_run_success(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:provider-action-run",
+                kwargs={
+                    "provider_pk": self.provider.pk,
+                    "pk": self.action.pk,
+                },
+            ),
+            data={"host_component_map": {}, "config": {}, "attr": {}, "is_verbose": False},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)

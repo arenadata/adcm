@@ -12,7 +12,14 @@
 
 from contextlib import suppress
 
-from cm.models import Cluster, ClusterObject, GroupConfig, Host, ServiceComponent
+from cm.models import (
+    Cluster,
+    ClusterObject,
+    GroupConfig,
+    Host,
+    HostProvider,
+    ServiceComponent,
+)
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import ObjectDoesNotExist
 
@@ -39,6 +46,9 @@ class GetParentObjectMixin:
 
             elif "cluster_pk" in self.kwargs:
                 parent_object = Cluster.objects.get(pk=self.kwargs["cluster_pk"])
+
+            elif "provider_pk" in self.kwargs:
+                parent_object = HostProvider.objects.get(pk=self.kwargs["provider_pk"])
 
             if "config_group_pk" in self.kwargs:
                 parent_object = GroupConfig.objects.get(
