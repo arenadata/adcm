@@ -15,10 +15,10 @@ from api_v2.tests.base import BaseAPITestCase
 from cm.models import ObjectType, Prototype
 from django.conf import settings
 from rest_framework.reverse import reverse
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 
 
-class TestBundlePrototype(BaseAPITestCase):
+class TestPrototype(BaseAPITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 
@@ -30,11 +30,13 @@ class TestBundlePrototype(BaseAPITestCase):
 
         self.cluster_1_prototype: Prototype = self.bundle_1.prototype_set.filter(type=ObjectType.CLUSTER).first()
 
+        self.prototype_ids = list(Prototype.objects.exclude(name="ADCM").values_list("pk", flat=True))
+
     def test_list_success(self):
         response = self.client.get(path=reverse(viewname="v2:prototype-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 12)
+        self.assertEqual(response.json()["count"], len(self.prototype_ids))
 
     def test_versions_cluster_success(self):
         response = self.client.get(
@@ -53,6 +55,13 @@ class TestBundlePrototype(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["id"], self.cluster_1_prototype.pk)
 
+    def test_retrieve_not_found_fail(self):
+        response = self.client.get(
+            path=reverse(viewname="v2:prototype-detail", kwargs={"pk": max(self.prototype_ids) + 1})
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
     def test_accept_license_success(self):
         response = self.client.post(
             path=reverse(viewname="v2:prototype-accept-license", kwargs={"pk": self.cluster_1_prototype.pk})
@@ -61,3 +70,11 @@ class TestBundlePrototype(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.cluster_1_prototype.refresh_from_db(fields=["license"])
         self.assertEqual(self.cluster_1_prototype.license, "accepted")
+
+    def test_accept_non_existing_license_fail(self):
+        prototype_without_license = Prototype.objects.exclude(name="ADCM").filter(license="absent").first()
+        response = self.client.post(
+            path=reverse(viewname="v2:prototype-accept-license", kwargs={"pk": prototype_without_license.pk})
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
