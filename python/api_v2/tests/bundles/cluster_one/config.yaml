@@ -5,6 +5,7 @@
   edition: community
   config_group_customization: true
   license: EULA.txt
+  allow_maintenance_mode: true
   config: &config
     - name: string
       type: string

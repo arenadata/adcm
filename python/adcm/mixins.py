@@ -35,7 +35,7 @@ class GetParentObjectMixin:
                 )
 
             elif "cluster_pk" in self.kwargs and "host_pk" in self.kwargs:
-                parent_object = Host.objects.get(pk=self.kwargs["host_pk"])
+                parent_object = Host.objects.get(pk=self.kwargs["host_pk"], cluster_id=self.kwargs["cluster_pk"])
 
             elif "cluster_pk" in self.kwargs:
                 parent_object = Cluster.objects.get(pk=self.kwargs["cluster_pk"])
