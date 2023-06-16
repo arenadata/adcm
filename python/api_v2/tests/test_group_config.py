@@ -11,8 +11,7 @@
 # limitations under the License.
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.api import add_hc, add_service_to_cluster
-from cm.models import GroupConfig, ObjectType, Prototype, ServiceComponent
+from cm.models import GroupConfig, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -45,9 +44,7 @@ class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = add_service_to_cluster(
-            cluster=self.cluster_1, proto=Prototype.objects.get(type=ObjectType.SERVICE, name="service_1")
-        )
+        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
         self.service_1_group_config = GroupConfig.objects.create(
             name="service_1_group_config",
             object_type=ContentType.objects.get_for_model(self.service_1),
@@ -62,9 +59,9 @@ class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):
         self.component_1 = ServiceComponent.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
         )
-        add_hc(
+        self.add_hostcomponent_map(
             cluster=self.cluster_1,
-            hc_in=[
+            hc_map=[
                 {
                     "host_id": self.host_for_service.pk,
                     "service_id": self.service_1.pk,
@@ -281,9 +278,9 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_for_component"
         )
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_for_component)
-        add_hc(
+        self.add_hostcomponent_map(
             cluster=self.cluster_1,
-            hc_in=[
+            hc_map=[
                 {
                     "host_id": self.host_for_component.pk,
                     "service_id": self.service_1.pk,

@@ -14,7 +14,6 @@ from typing import Callable
 from unittest.mock import patch
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.api import add_service_to_cluster
 from cm.models import (
     Action,
     ADCMEntityStatus,
@@ -32,13 +31,8 @@ class TestServiceAPI(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        add_service_to_cluster(
-            cluster=self.cluster_1, proto=Prototype.objects.get(type=ObjectType.SERVICE, name="service_1")
-        )
-        self.service_2 = add_service_to_cluster(
-            cluster=self.cluster_1, proto=Prototype.objects.get(type=ObjectType.SERVICE, name="service_2")
-        )
-
+        self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.service_2 = self.add_service_to_cluster(service_name="service_2", cluster=self.cluster_1)
         self.action = Action.objects.filter(prototype=self.service_2.prototype).first()
 
     def get_service_status_mock(self) -> Callable:
