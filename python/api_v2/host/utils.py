@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api_v2.host.serializers import HostChangeMaintenanceModeSerializer
 from cm.adcm_config.config import init_object_config
 from cm.api import check_license, load_service_map
 from cm.api_context import CTX
@@ -19,6 +20,11 @@ from cm.models import Cluster, Host, HostProvider, Prototype
 from cm.status_api import post_event
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
+
+from adcm.permissions import check_custom_perm
+from adcm.utils import get_maintenance_mode_response
 
 
 def add_new_host_and_map_it(provider: HostProvider, fqdn: str, cluster: Cluster | None = None) -> Host:
@@ -67,3 +73,26 @@ def map_list_of_hosts(hosts, cluster):
     re_apply_object_policy(cluster)
     load_service_map()
     return hosts
+
+
+def maintenance_mode(request, **kwargs):
+    host = Host.obj.filter(pk=kwargs["pk"]).first()
+    check_custom_perm(user=request.user, action_type="change_maintenance_mode", model="host", obj=host)
+
+    serializer = HostChangeMaintenanceModeSerializer(instance=host, data=request.data)
+    serializer.is_valid(raise_exception=True)
+    if not host.is_maintenance_mode_available:
+        return Response(
+            data={
+                "code": "MAINTENANCE_MODE_NOT_AVAILABLE",
+                "level": "error",
+                "desc": "Maintenance mode is not available",
+            },
+            status=HTTP_409_CONFLICT,
+        )
+
+    response: Response = get_maintenance_mode_response(obj=host, serializer=serializer)
+    if response.status_code == HTTP_200_OK:
+        response.data = serializer.data
+
+    return response

@@ -10,10 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api_v2.config.views import ConfigLogViewSet
 from api_v2.host.views import HostViewSet
-from rest_framework_nested.routers import SimpleRouter
+from rest_framework_nested.routers import NestedSimpleRouter, SimpleRouter
 
-router = SimpleRouter()
-router.register(prefix="", viewset=HostViewSet)
+host_router = SimpleRouter()
+host_router.register(prefix="", viewset=HostViewSet)
 
-urlpatterns = router.urls
+host_config_router = NestedSimpleRouter(parent_router=host_router, parent_prefix="", lookup="host")
+host_config_router.register(prefix="configs", viewset=ConfigLogViewSet, basename="host-config")
+
+
+urlpatterns = [
+    *host_router.urls,
+    *host_config_router.urls,
+]
