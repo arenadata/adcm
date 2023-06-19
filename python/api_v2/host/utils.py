@@ -39,11 +39,15 @@ def add_new_host_and_map_it(provider: HostProvider, fqdn: str, cluster: Cluster 
             re_apply_object_policy(apply_object=cluster)
 
     CTX.event.send_state()
-    post_event(event="create", obj=host, details={"type": "provider", "value": str(provider.pk)})
+    post_event(
+        event="create", object_id=host.pk, object_type="host", details={"type": "provider", "value": str(provider.pk)}
+    )
     load_service_map()
     logger.info("host #%s %s is added", host.pk, host.fqdn)
     if cluster:
-        post_event(event="add", obj=host, details={"type": "cluster", "value": str(cluster.pk)})
+        post_event(
+            event="add", object_id=host.pk, object_type="host", details={"type": "cluster", "value": str(cluster.pk)}
+        )
         logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)
 
     return host
@@ -55,7 +59,9 @@ def map_list_of_hosts(hosts, cluster):
         host.save(update_fields=["cluster"])
         host.add_to_concerns(CTX.lock)
         update_hierarchy_issues(host)
-        post_event(event="add", obj=host, details={"type": "cluster", "value": str(cluster.pk)})
+        post_event(
+            event="add", object_id=host.pk, object_type="host", details={"type": "cluster", "value": str(cluster.pk)}
+        )
         logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)
 
     re_apply_object_policy(cluster)
