@@ -204,7 +204,7 @@ def get_maintenance_mode_response(
     obj: Host | ClusterObject | ServiceComponent,
     serializer: Serializer,
 ) -> Response:
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches, too-many-return-statements
 
     turn_on_action_name = settings.ADCM_TURN_ON_MM_ACTION_NAME
     turn_off_action_name = settings.ADCM_TURN_OFF_MM_ACTION_NAME
@@ -213,6 +213,17 @@ def get_maintenance_mode_response(
         obj_name = "host"
         turn_on_action_name = settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME
         turn_off_action_name = settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME
+
+        if not obj.cluster:
+            return Response(
+                data={
+                    "code": "MAINTENANCE_MODE_NOT_AVAILABLE",
+                    "level": "error",
+                    "desc": "Maintenance mode is not available",
+                },
+                status=HTTP_409_CONFLICT,
+            )
+
         prototype = obj.cluster.prototype
     elif isinstance(obj, ClusterObject):
         obj_name = "service"

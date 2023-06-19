@@ -18,11 +18,15 @@ from api_v2.host.serializers import (
     HostSerializer,
     HostUpdateSerializer,
 )
-from api_v2.host.utils import add_new_host_and_map_it, map_list_of_hosts
+from api_v2.host.utils import (
+    add_new_host_and_map_it,
+    maintenance_mode,
+    map_list_of_hosts,
+)
 from cm.api import add_host_to_cluster, delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
-from cm.models import Cluster, Host, MaintenanceMode
+from cm.models import Cluster, Host
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -31,9 +35,7 @@ from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
-    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
-    HTTP_409_CONFLICT,
 )
 from rest_framework.viewsets import ModelViewSet
 
@@ -44,7 +46,6 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from adcm.utils import get_maintenance_mode_response
 
 
 class HostViewSet(PermissionListMixin, ModelViewSet):
@@ -58,9 +59,10 @@ class HostViewSet(PermissionListMixin, ModelViewSet):
     def get_serializer_class(self):
         if self.action == "create":
             return HostCreateSerializer
-
-        if self.action in ("update", "partial_update"):
+        elif self.action in ("update", "partial_update"):
             return HostUpdateSerializer
+        elif self.action == "maintenance_mode":
+            return HostChangeMaintenanceModeSerializer
 
         return self.serializer_class
 
@@ -118,6 +120,10 @@ class HostViewSet(PermissionListMixin, ModelViewSet):
     def update(self, request, *args, **kwargs):
         return self._host_update(request, *args, **kwargs)
 
+    @action(methods=["post"], detail=True, url_path="maintenance-mode")
+    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        return maintenance_mode(request=request, **kwargs)
+
 
 class HostClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=too-many-ancestors
     serializer_class = ClusterHostSerializer
@@ -170,28 +176,6 @@ class HostClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=t
         remove_host_from_cluster(host=host)
         return Response(status=HTTP_204_NO_CONTENT)
 
-    @action(methods=["post"], detail=True)
+    @action(methods=["post"], detail=True, url_path="maintenance-mode")
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        host = Host.objects.filter(pk=kwargs["pk"]).first()
-        if not host:
-            return Response(data=f'Host with pk "{kwargs["pk"]}" not found', status=HTTP_404_NOT_FOUND)
-
-        if not request.user.has_perm(perm="cm.change_maintenance_mode_host", obj=host):
-            return Response(
-                data="Current user has no permission to change host maintenance_mode",
-                status=HTTP_403_FORBIDDEN,
-            )
-
-        serializer = self.get_serializer(instance=host, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        if (
-            serializer.validated_data.get("maintenance_mode") == MaintenanceMode.ON
-            and not host.is_maintenance_mode_available
-        ):
-            return Response(data="MAINTENANCE_MODE_NOT_AVAILABLE", status=HTTP_409_CONFLICT)
-
-        response: Response = get_maintenance_mode_response(obj=host, serializer=serializer)
-        if response.status_code == HTTP_200_OK:
-            response.data = serializer.data
-
-        return response
+        return maintenance_mode(request=request, **kwargs)
