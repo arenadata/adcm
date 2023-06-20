@@ -27,6 +27,7 @@ from cm.bundle import prepare_bundle, process_file
 from cm.models import (
     ADCM,
     ADCMEntity,
+    ADCMModel,
     Bundle,
     Cluster,
     ClusterObject,
@@ -141,7 +142,7 @@ class BaseAPITestCase(APITestCase):  # pylint: disable=too-many-instance-attribu
         return add_hc(cluster=cluster, hc_in=hc_map)
 
     @staticmethod
-    def get_non_existent_pk(model: type[ADCMEntity]):
+    def get_non_existent_pk(model: type[ADCMEntity] | type[ADCMModel]):
         try:
             return model.objects.order_by("-pk").first().pk + 1
         except model.DoesNotExist:
