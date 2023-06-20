@@ -39,7 +39,6 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
-    MaintenanceMode,
     ServiceComponent,
 )
 from cm.status_api import make_ui_host_status
@@ -308,10 +307,7 @@ class HostMaintenanceModeView(GenericUIView):
 
         serializer = self.get_serializer(instance=host, data=request.data)
         serializer.is_valid(raise_exception=True)
-        if (
-            serializer.validated_data.get("maintenance_mode") == MaintenanceMode.ON
-            and not host.is_maintenance_mode_available
-        ):
+        if not host.is_maintenance_mode_available:
             return Response(data="MAINTENANCE_MODE_NOT_AVAILABLE", status=HTTP_409_CONFLICT)
 
         response: Response = get_maintenance_mode_response(obj=host, serializer=serializer)

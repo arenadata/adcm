@@ -32,16 +32,6 @@ from django.conf import settings
 from requests import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-MODEL_OBJ_TYPE_MAP = {
-    "ClusterObject": "service",
-    "ServiceComponent": "component",
-    "HostProvider": "provider",
-    "ClusterBind": "cbind",
-    "JobLog": "job",
-    "TaskLog": "task",
-    "GroupConfig": "group-config",
-}
-
 
 class Event:
     def __init__(self):
@@ -100,21 +90,18 @@ def api_request(method: str, url: str, data: dict = None) -> Response | None:
         return None
 
 
-def post_event(event: str, obj, details: dict = None) -> Response | None:
+def post_event(event: str, object_id: int | None, object_type: str, details: dict = None) -> Response | None:
+    if object_id is None:
+        return None
+
     if details is None:
         details = {"type": None, "value": None}
-
-    class_name = obj.__class__.__name__
-    obj_type = MODEL_OBJ_TYPE_MAP.get(class_name, class_name.lower())
-
-    if details.get("model_name"):
-        obj_type = details.pop("model_name")
 
     data = {
         "event": event,
         "object": {
-            "type": obj_type,
-            "id": int(obj.id),
+            "type": object_type,
+            "id": object_id,
             "details": details,
         },
     }
@@ -123,41 +110,52 @@ def post_event(event: str, obj, details: dict = None) -> Response | None:
 
 
 def set_job_status(job: JobLog, status: str) -> Response | None:
-    return post_event(event="change_job_status", obj=job, details={"type": "status", "value": status})
+    return post_event(
+        event="change_job_status", object_id=job.pk, object_type="job", details={"type": "status", "value": status}
+    )
 
 
 def set_task_status(task: TaskLog, status: str) -> Response | None:
-    return post_event(event="change_job_status", obj=task, details={"type": "status", "value": status})
+    return post_event(
+        event="change_job_status", object_id=task.pk, object_type="task", details={"type": "status", "value": status}
+    )
 
 
 def set_obj_state(obj: ADCMEntity, state: str) -> Response | None:
     if not hasattr(obj, "prototype"):
         return None
 
-    obj_type = obj.prototype.type
-    if obj_type == "adcm":
+    object_type = obj.prototype.type
+    if object_type == "adcm":
         return None
 
-    if obj_type not in {"cluster", "service", "host", "provider", "component"}:
-        logger.error("Unknown object type: '%s'", obj_type)
+    if object_type not in {"cluster", "service", "host", "provider", "component"}:
+        logger.error("Unknown object type: '%s'", object_type)
         return None
 
-    return post_event(event="change_state", obj=obj, details={"type": "state", "value": state})
+    return post_event(
+        event="change_state", object_id=obj.pk, object_type=object_type, details={"type": "state", "value": state}
+    )
 
 
 def change_obj_multi_state(obj: ADCMEntity, multi_state: str) -> Response | None:
     if not hasattr(obj, "prototype"):
         return None
 
-    obj_type = obj.prototype.type
-    if obj_type == "adcm":
+    object_type = obj.prototype.type
+    if object_type == "adcm":
         return None
 
-    if obj_type not in {"cluster", "service", "host", "provider", "component"}:
-        logger.error("Unknown object type: '%s'", obj_type)
+    if object_type not in {"cluster", "service", "host", "provider", "component"}:
+        logger.error("Unknown object type: '%s'", object_type)
         return None
 
-    return post_event(event="change_state", obj=obj, details={"type": "multi_state", "value": multi_state})
+    return post_event(
+        event="change_state",
+        object_id=obj.pk,
+        object_type=object_type,
+        details={"type": "multi_state", "value": multi_state},
+    )
 
 
 def get_raw_status(url: str) -> int:

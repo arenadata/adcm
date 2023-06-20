@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any
+
 from cm.models import Upgrade
 from rest_framework.serializers import (
     BooleanField,
@@ -34,8 +36,8 @@ class UpgradeListSerializer(ModelSerializer):
 
 
 class UpgradeRetrieveSerializer(ModelSerializer):
-    is_allow_to_terminate = BooleanField(source="action.allow_to_terminate")
-    host_component_map_rules = JSONField(source="action.hostcomponentmap")
+    is_allow_to_terminate = SerializerMethodField()
+    host_component_map_rules = SerializerMethodField()
     disclaimer = SerializerMethodField()
 
     class Meta:
@@ -43,8 +45,25 @@ class UpgradeRetrieveSerializer(ModelSerializer):
         fields = ["is_allow_to_terminate", "host_component_map_rules", "disclaimer"]
 
     @staticmethod
-    def get_disclaimer(upgrade: Upgrade) -> str:
-        return upgrade.action.ui_options.get("disclaimer") or ""
+    def get_disclaimer(instance: Upgrade) -> str:
+        if instance.action:
+            return instance.action.ui_options.get("disclaimer", "")
+
+        return ""
+
+    @staticmethod
+    def get_is_allow_to_terminate(instance: Upgrade) -> bool:
+        if instance.action:
+            return instance.action.allow_to_terminate
+
+        return False
+
+    @staticmethod
+    def get_host_component_map_rules(instance: Upgrade) -> Any:
+        if instance.action:
+            return instance.action.hostcomponentmap
+
+        return []
 
 
 class UpgradeRunSerializer(EmptySerializer):

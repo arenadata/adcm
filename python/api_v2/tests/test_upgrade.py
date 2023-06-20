@@ -10,30 +10,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from unittest.mock import patch
 
-from api_v2.tests.cluster.base import ClusterBaseTestCase
+from api_v2.tests.base import BaseAPITestCase
 from cm.models import Upgrade
+from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
-from adcm.tests.base import APPLICATION_JSON
 
-
-class TestUpgrade(ClusterBaseTestCase):
+class TestUpgrade(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.upgrade = Upgrade.objects.create(
-            name="test_upgrade",
-            bundle=self.bundle,
-            min_version="1",
-            max_version="99",
-            state_available="any",
-            action=self.action,
+        cluster_bundle_1_upgrade_path = (
+            settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_one_upgrade"
         )
+        bundle_upgrade = self.add_bundle(source_dir=cluster_bundle_1_upgrade_path)
+
+        self.upgrade = Upgrade.objects.get(
+            name="upgrade",
+            bundle=bundle_upgrade,
+        )
+        self.upgrade_via_action = Upgrade.objects.get(name="upgrade_via_action", bundle=bundle_upgrade)
 
     def test_list_upgrades_success(self):
         response: Response = self.client.get(
@@ -41,13 +41,12 @@ class TestUpgrade(ClusterBaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(len(response.json()), 2)
 
     def test_retrieve_success(self):
         response: Response = self.client.get(
             path=reverse(viewname="v2:upgrade-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.upgrade.pk}),
         )
-
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_run_success(self):
@@ -55,22 +54,14 @@ class TestUpgrade(ClusterBaseTestCase):
             response: Response = self.client.post(
                 path=reverse(
                     viewname="v2:upgrade-run",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.upgrade.pk},
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.upgrade_via_action.pk},
                 ),
                 data={
-                    "host_component_map": [
-                        {
-                            "id": self.hostcomponent.pk,
-                            "host_id": self.host.pk,
-                            "component_id": self.component.pk,
-                            "service_id": self.service.pk,
-                        },
-                    ],
-                    "config": {"additional_prop_1": {}},
+                    "host_component_map": [{}],
+                    "config": {},
                     "attr": {},
                     "is_verbose": True,
                 },
-                content_type=APPLICATION_JSON,
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

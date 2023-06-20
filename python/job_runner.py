@@ -100,7 +100,8 @@ def post_log(job_id, log_type, log_name):
     if log_storage:
         post_event(
             event="add_job_log",
-            obj=log_storage.job,
+            object_id=log_storage.job.pk,
+            object_type="job",
             details={
                 "id": log_storage.id,
                 "type": log_storage.type,
@@ -180,7 +181,14 @@ def run_internal(job: JobLog) -> None:
 
     try:
         with atomic():
-            on_commit(func=partial(post_event, event="change_hostcomponentmap", obj=job.task.task_object))
+            on_commit(
+                func=partial(
+                    post_event,
+                    event="change_hostcomponentmap",
+                    object_id=job.task.task_object.pk,
+                    object_type=job.task.task_object.prototype.type,
+                )
+            )
 
             if script == "bundle_switch":
                 bundle_switch(obj=job.task.task_object, upgrade=job.action.upgrade)

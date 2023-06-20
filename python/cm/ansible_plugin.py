@@ -561,7 +561,8 @@ def log_check(job_id: int, group_data: dict, check_data: dict) -> CheckLog:
 
     post_event(
         event="add_job_log",
-        obj=job,
+        object_id=job.pk,
+        object_type="job",
         details={
             "id": log_storage.pk,
             "type": log_storage.type,

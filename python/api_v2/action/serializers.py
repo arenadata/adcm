@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Action, Cluster
+from cm.models import Action
 from rest_framework.serializers import (
     BooleanField,
     JSONField,
@@ -29,9 +29,7 @@ class ActionListSerializer(ModelSerializer):
         fields = ["id", "name", "display_name", "start_impossible_reason"]
 
     def get_start_impossible_reason(self, action: Action) -> str | None:
-        return action.get_start_impossible_reason(
-            obj=Cluster.objects.filter(pk=self.context["request"].parser_context["kwargs"]["cluster_pk"]).first()
-        )
+        return action.get_start_impossible_reason(obj=self.context["obj"])
 
 
 class ActionRetrieveSerializer(ModelSerializer):

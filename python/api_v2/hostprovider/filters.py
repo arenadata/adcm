@@ -9,17 +9,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from cm.models import HostProvider
+from django_filters.rest_framework import CharFilter, FilterSet
 
-from rest_framework.routers import APIRootView
 
+class HostProviderFilter(FilterSet):
+    hostprovider_name = CharFilter(field_name="name", label="Hostprovider name")
+    type = CharFilter(field_name="prototype__type", label="Hostprovider type")
+    state = CharFilter(field_name="state", label="Hostprovider state")
 
-class APIRoot(APIRootView):
-    api_root_dict = {
-        "clusters": "cluster-list",
-        "audit": "audit:root",
-        "bundles": "bundle-list",
-        "hosts": "host-list",
-        "hostproviders": "hostprovider-list",
-        "prototypes": "prototype-list",
-        "hosts": "host-list",
-    }
+    class Meta:
+        model = HostProvider
+        fields = [
+            "hostprovider_name",
+            "state",
+            "type",
+        ]

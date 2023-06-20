@@ -15,6 +15,7 @@ from casestyle import kebabcase
 from cm.models import ADCMEntity, Cluster, GroupConfig, Host
 from cm.status_api import post_event
 from django.db.models.signals import m2m_changed, post_delete, post_save, pre_save
+from django.db.transaction import on_commit
 from django.dispatch import receiver
 from rbac.models import Group, Policy, Role, User
 
@@ -72,7 +73,14 @@ def model_change(sender, **kwargs):
     if kwargs.get("created"):
         action = "create"
 
-    post_event(event=action, obj=kwargs["instance"], details={"module": sender.__module__, "model_name": None})
+    on_commit(
+        lambda: post_event(
+            event=action,
+            object_id=kwargs["instance"].pk,
+            object_type=kebabcase(sender.__name__),
+            details={"module": sender.__module__, "model_name": None},
+        ),
+    )
 
 
 @receiver(signal=post_delete, sender=User)
@@ -81,7 +89,14 @@ def model_change(sender, **kwargs):
 @receiver(signal=post_delete, sender=Role)
 @receiver(signal=post_delete, sender=GroupConfig)
 def model_delete(sender, **kwargs):
-    post_event(event="delete", obj=kwargs["instance"], details={"module": sender.__module__, "model_name": None})
+    on_commit(
+        lambda: post_event(
+            event="delete",
+            object_id=kwargs["instance"].pk,
+            object_type=kebabcase(sender.__name__),
+            details={"module": sender.__module__, "model_name": None},
+        ),
+    )
 
 
 @receiver(signal=m2m_changed, sender=GroupConfig)
@@ -91,11 +106,6 @@ def model_delete(sender, **kwargs):
 @receiver(signal=m2m_changed, sender=User)
 @receiver(signal=m2m_changed, sender=Group)
 def m2m_change(sender, **kwargs):
-    if hasattr(sender, "get_endpoint"):
-        name = sender.get_endpoint()
-    else:
-        name = kebabcase(sender.__name__)
-
     if kwargs["action"] == "post_add":
         action = "add"
     elif kwargs["action"] == "post_remove":
@@ -103,4 +113,12 @@ def m2m_change(sender, **kwargs):
     else:
         return
 
-    post_event(event=action, obj=kwargs["instance"], details={"module": sender.__module__, "model_name": name})
+    object_type = kebabcase(sender.__name__)
+    on_commit(
+        lambda: post_event(
+            event=action,
+            object_id=kwargs["instance"].pk,
+            object_type=object_type,
+            details={"module": sender.__module__, "model_name": object_type},
+        ),
+    )

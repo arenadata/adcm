@@ -12,16 +12,28 @@
 import tarfile
 from pathlib import Path
 from shutil import rmtree
+from typing import TypedDict
 
 from api_v2.prototype.utils import accept_license
-from cm.api import add_cluster, add_host, add_host_provider, add_host_to_cluster
+from cm.api import (
+    add_cluster,
+    add_hc,
+    add_host,
+    add_host_provider,
+    add_host_to_cluster,
+    add_service_to_cluster,
+)
 from cm.bundle import prepare_bundle, process_file
 from cm.models import (
     ADCM,
+    ADCMEntity,
+    ADCMModel,
     Bundle,
     Cluster,
+    ClusterObject,
     ConfigLog,
     Host,
+    HostComponent,
     HostProvider,
     ObjectType,
     Prototype,
@@ -30,6 +42,12 @@ from django.conf import settings
 from init_db import init
 from rbac.upgrade.role import init_roles
 from rest_framework.test import APITestCase
+
+
+class HostComponentMapDictType(TypedDict):
+    host_id: int
+    service_id: int
+    component_id: int
 
 
 class BaseAPITestCase(APITestCase):  # pylint: disable=too-many-instance-attributes
@@ -111,3 +129,21 @@ class BaseAPITestCase(APITestCase):  # pylint: disable=too-many-instance-attribu
     @staticmethod
     def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
         return add_host_to_cluster(cluster=cluster, host=host)
+
+    @staticmethod
+    def add_service_to_cluster(service_name: str, cluster: Cluster) -> ClusterObject:
+        service_prototype = Prototype.objects.get(
+            type=ObjectType.SERVICE, name=service_name, bundle=cluster.prototype.bundle
+        )
+        return add_service_to_cluster(cluster=cluster, proto=service_prototype)
+
+    @staticmethod
+    def add_hostcomponent_map(cluster: Cluster, hc_map: list[HostComponentMapDictType]) -> list[HostComponent]:
+        return add_hc(cluster=cluster, hc_in=hc_map)
+
+    @staticmethod
+    def get_non_existent_pk(model: type[ADCMEntity] | type[ADCMModel]):
+        try:
+            return model.objects.order_by("-pk").first().pk + 1
+        except model.DoesNotExist:
+            return 1

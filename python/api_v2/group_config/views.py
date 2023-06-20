@@ -12,9 +12,8 @@
 
 from api_v2.group_config.serializers import GroupConfigSerializer
 from api_v2.host.serializers import HostGroupConfigSerializer
-from cm.models import Cluster, ClusterObject, GroupConfig
+from cm.models import GroupConfig
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import ObjectDoesNotExist
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
@@ -23,40 +22,26 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
 from rest_framework.viewsets import ModelViewSet
 
+from adcm.mixins import GetParentObjectMixin
 from adcm.permissions import VIEW_GROUP_CONFIG_PERM, check_config_perm
 
 
-class GroupConfigViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
+class GroupConfigViewSet(PermissionListMixin, ModelViewSet, GetParentObjectMixin):  # pylint: disable=too-many-ancestors
     queryset = GroupConfig.objects.all()
     serializer_class = GroupConfigSerializer
     permission_required = [VIEW_GROUP_CONFIG_PERM]
     ordering = ["id"]
 
-    def get_parent_object(self):
-        parent_object = None
-
-        if "cluster_pk" in self.kwargs and "service_pk" in self.kwargs:
-            cluster = Cluster.objects.get(id=self.kwargs.get("cluster_pk"))
-            parent_object = ClusterObject.objects.get(id=self.kwargs.get("service_pk"), cluster=cluster)
-        elif "cluster_pk" in self.kwargs:
-            parent_object = Cluster.objects.get(id=self.kwargs.get("cluster_pk"))
-
-        return parent_object
-
     def get_queryset(self, *args, **kwargs):
-        try:
-            parent_object = self.get_parent_object()
-        except ObjectDoesNotExist as error:
-            raise NotFound from error
+        parent_object = self.get_parent_object()
+        if parent_object is None:
+            raise NotFound
 
-        queryset = super().get_queryset(*args, **kwargs)
-
-        if parent_object:
-            return queryset.filter(
-                object_id=parent_object.pk, object_type=ContentType.objects.get_for_model(model=parent_object)
-            )
-
-        return queryset
+        return (
+            super()
+            .get_queryset(*args, **kwargs)
+            .filter(object_id=parent_object.pk, object_type=ContentType.objects.get_for_model(model=parent_object))
+        )
 
     def create(self, request: Request, *args, **kwargs):
         parent_object = self.get_parent_object()

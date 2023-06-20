@@ -18,5 +18,8 @@ urlpatterns = [
     path("clusters/", include("api_v2.cluster.urls")),
     path("bundles/", include("api_v2.bundle.urls")),
     path("prototypes/", include("api_v2.prototype.urls")),
+    path("hosts/", include("api_v2.host.urls")),
+    path("hostproviders/", include("api_v2.hostprovider.urls")),
     path("audit/", include(("api_v2.audit.urls", "audit"))),
+    path("hosts/", include("api_v2.host.urls")),
 ]

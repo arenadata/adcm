@@ -33,12 +33,16 @@ CHANGE_MM_PERM = "change_maintenance_mode"
 ADD_SERVICE_PERM = "add_service_to"
 RUN_ACTION_PERM_PREFIX = "cm.run_action_"
 ADD_TASK_PERM = "cm.add_task"
+ADD_HOST_TO = "add_host_to"
 VIEW_HOST_PERM = "cm.view_host"
 VIEW_PROVIDER_PERM = "cm.view_hostprovider"
 VIEW_COMPONENT_PERM = "cm.view_servicecomponent"
 VIEW_HC_PERM = "cm.view_hostcomponent"
 VIEW_CONFIG_PERM = "cm.view_configlog"
 VIEW_GROUP_CONFIG_PERM = "cm.view_groupconfig"
+VIEW_IMPORT_PERM = "view_import_of"
+CHANGE_IMPORT_PERM = "change_import_of"
+VIEW_CLUSTER_BIND = "view_clusterbind"
 
 
 class DjangoObjectPermissionsAudit(DjangoObjectPermissions):
