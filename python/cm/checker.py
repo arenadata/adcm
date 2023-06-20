@@ -78,7 +78,7 @@ def check_match_type(match, data, data_type, path, rule, parent=None):
         raise FormatError(path, msg, data, rule, parent)
 
 
-def match_none(data, rules, rule, path, parent=None, is_service=False):  # pylint: disable=unused-argument
+def match_none(data, rules, rule, path, parent=None):  # pylint: disable=unused-argument
     if data is not None:
         msg = "Object should be empty"
         if path:
@@ -87,45 +87,40 @@ def match_none(data, rules, rule, path, parent=None, is_service=False):  # pylin
         raise FormatError(path, msg, data, rule, parent)
 
 
-def match_any(data, rules, rule, path, parent=None, is_service=False):  # pylint: disable=unused-argument
+def match_any(data, rules, rule, path, parent=None):  # pylint: disable=unused-argument
     pass
 
 
-def match_list(data, rules, rule, path, parent=None, is_service=False):
+def match_list(data, rules, rule, path, parent=None):
     check_match_type("match_list", data, list, path, rule, parent)
     for i, item in enumerate(data):
-        process_rule(item, rules, rules[rule]["item"], path + [("Value of list index", i)], parent, is_service)
+        process_rule(item, rules, rules[rule]["item"], path + [("Value of list index", i)], parent)
 
     return True
 
 
-def match_dict(data, rules, rule, path, parent=None, is_service=False):
+def match_dict(data, rules, rule, path, parent=None):
     check_match_type("match_dict", data, dict, path, rule, parent)
-
-    if is_service is False:
-        is_service = data.get("type") == "service"
 
     if "required_items" in rules[rule]:
         for i in rules[rule]["required_items"]:
             if i not in data:
-                if is_service and i == "service":
-                    continue
-
                 raise FormatError(path, f'There is no required key "{i}" in map.', data, rule)
 
     for key in data:
         new_path = path + [("Value of map key", key)]
+
         if "items" in rules[rule] and key in rules[rule]["items"]:
-            process_rule(data[key], rules, rules[rule]["items"][key], new_path, data, is_service)
+            process_rule(data[key], rules, rules[rule]["items"][key], new_path, data)
         elif "default_item" in rules[rule]:
-            process_rule(data[key], rules, rules[rule]["default_item"], new_path, data, is_service)
+            process_rule(data[key], rules, rules[rule]["default_item"], new_path, data)
         else:
             msg = f'Map key "{key}" is not allowed here (rule "{rule}")'
 
             raise FormatError(path, msg, data, rule)
 
 
-def match_dict_key_selection(data, rules, rule, path, parent=None, is_service=False):
+def match_dict_key_selection(data, rules, rule, path, parent=None):
     check_match_type("dict_key_selection", data, dict, path, rule, parent)
     key = rules[rule]["selector"]
     if key not in data:
@@ -133,20 +128,20 @@ def match_dict_key_selection(data, rules, rule, path, parent=None, is_service=Fa
         raise FormatError(path, msg, data, rule, parent)
     value = data[key]
     if value in rules[rule]["variants"]:
-        process_rule(data, rules, rules[rule]["variants"][value], path, parent, is_service)
+        process_rule(data, rules, rules[rule]["variants"][value], path, parent)
     elif "default_variant" in rule:
-        process_rule(data, rules, rules[rule]["default_variant"], path, parent, is_service)
+        process_rule(data, rules, rules[rule]["default_variant"], path, parent)
     else:
         msg = f'Value "{value}" is not allowed for map key "{key}".'
         raise FormatError(path, msg, data, rule, parent)
 
 
-def match_one_of(data, rules, rule, path, parent=None, is_service=False):
+def match_one_of(data, rules, rule, path, parent=None):
     errors = []
     sub_errors = []
     for obj in rules[rule]["variants"]:
         try:
-            process_rule(data, rules, obj, path, parent, is_service)
+            process_rule(data, rules, obj, path, parent)
         except FormatError as e:
             if e.errors:
                 sub_errors += e.errors
@@ -157,14 +152,14 @@ def match_one_of(data, rules, rule, path, parent=None, is_service=False):
         raise FormatError(path, msg, data, rule, parent, caused_by=errors)
 
 
-def match_set(data, rules, rule, path, parent=None, is_service=False):  # pylint: disable=unused-argument
+def match_set(data, rules, rule, path, parent=None):  # pylint: disable=unused-argument
     if data not in rules[rule]["variants"]:
         msg = f'Value "{data}" not in set {rules[rule]["variants"]}'
         raise FormatError(path, msg, data, rule, parent=parent)
 
 
 def match_simple_type(obj_type):
-    def match(data, rules, rule, path, parent=None, is_service=False):  # pylint: disable=unused-argument
+    def match(data, rules, rule, path, parent=None):  # pylint: disable=unused-argument
         check_type(data, obj_type, path, rule, parent=parent)
 
     return match
@@ -195,7 +190,7 @@ def check_rule(rules):
     return True, ""
 
 
-def process_rule(data, rules, name, path=None, parent=None, is_service=False):
+def process_rule(data, rules, name, path=None, parent=None):
     if path is None:
         path = []
 
@@ -210,7 +205,7 @@ def process_rule(data, rules, name, path=None, parent=None, is_service=False):
     if match not in MATCH:
         raise SchemaError(f"Unknown match {match} from schema. Impossible to handle that.")
 
-    MATCH[match](data, rules, name, path=path, parent=parent, is_service=is_service)
+    MATCH[match](data, rules, name, path=path, parent=parent)
 
 
 def check(data, rules):
