@@ -1,0 +1,45 @@
+:global {
+  body.theme-dark {
+    --pagination-dots-color: var(--color-xgray-lighter);
+  }
+
+  body.theme-light {
+    --pagination-dots-color: var(--color-xgray-light);
+  }
+}
+
+.paginationWrapper {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+
+  &:not(:first-child) {
+    margin-top: var(--base-margin-v);
+  }
+  &:not(:last-child) {
+    margin-bottom: var(--base-margin-v);
+  }
+
+  & > div:last-of-type {
+    margin-left: auto;
+  }
+}
+
+.pagination__buttonWrapper {
+  display: flex;
+  align-items: center;
+}
+
+.pagination__select {
+  width: 124px
+}
+
+.pagination__selectLabel {
+  font-size: 13px;
+  font-weight: 500;
+  margin-right: 8px;
+
+  &:not(:first-of-type) {
+    margin-left: 16px;
+  }
+}

@@ -3,6 +3,7 @@ export const allowIconsNames = [
   'arrow-sorting',
   'check',
   'chevron',
+  'chevron-double',
   'eye',
   'eye-crossed',
   'g1-actions',

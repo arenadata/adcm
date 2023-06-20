@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { InputProps } from '@uikit/Input/Input';
 import SingleSelectPanel from '@uikit/Select/SingleSelect/SingleSelectPanel/SingleSelectPanel';
 import Popover from '@uikit/Popover/Popover';
@@ -38,6 +38,11 @@ function SelectComponent<T>(
     onChange?.(val);
   };
 
+  const selectedOptionLabel = useMemo(() => {
+    const currentOption = options.find(({ value: val }) => val === value);
+    return currentOption?.label ?? '';
+  }, [options, value]);
+
   return (
     <div>
       <CommonSelectField
@@ -45,7 +50,7 @@ function SelectComponent<T>(
         ref={ref}
         onClick={() => setIsOpen((prev) => !prev)}
         isOpen={isOpen}
-        defaultValue={(value ?? '').toString()}
+        value={selectedOptionLabel}
         containerRef={containerReference}
       />
       <Popover
