@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from api_v2.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
-from api_v2.config.utils import get_schema
+from api_v2.config.utils import get_config_schema
 from cm.api import update_obj_config
 from cm.models import ConfigLog
 from django.contrib.contenttypes.models import ContentType
@@ -71,8 +71,8 @@ class ConfigLogViewSet(
 
         return Response(data=self.get_serializer(config_log).data, status=HTTP_201_CREATED)
 
-    @action(methods=["get"], detail=True)
-    def schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        parent_object = self.get_parent_object()
-        schema = get_schema(parent_object=parent_object)
+    @action(methods=["get"], detail=True, url_path="schema", url_name="schema")
+    def config_schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        schema = get_config_schema(parent_object=self.get_parent_object())
+
         return Response(data=schema, status=HTTP_200_OK)
