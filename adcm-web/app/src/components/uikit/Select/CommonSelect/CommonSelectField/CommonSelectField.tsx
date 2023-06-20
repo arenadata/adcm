@@ -8,6 +8,7 @@ type CommonSelectFieldProps = Omit<InputProps, 'endAdornment' | 'startAdornment'
   onClick: () => void;
   isOpen: boolean;
 };
+
 const CommonSelectField = React.forwardRef<HTMLInputElement, CommonSelectFieldProps>(
   ({ className, onClick, isOpen, ...props }, ref) => {
     const classes = cn(className, s.commonSelectField, { 'is-active': isOpen });
@@ -15,15 +16,17 @@ const CommonSelectField = React.forwardRef<HTMLInputElement, CommonSelectFieldPr
       onClick?.();
     };
     return (
-      <Input
-        //
-        {...props}
-        className={classes}
-        endAdornment={<IconButton icon="chevron" onClick={handleClick} size={14} />}
-        readOnly={true}
-        ref={ref}
-        onClick={handleClick}
-      />
+      <>
+        <Input
+          //
+          {...props}
+          className={classes}
+          endAdornment={<IconButton icon="chevron" onClick={handleClick} size={12} />}
+          readOnly={true}
+          onClick={handleClick}
+          ref={ref}
+        />
+      </>
     );
   },
 );

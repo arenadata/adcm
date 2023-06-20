@@ -54,7 +54,7 @@ type SingleSelectExampleProps = {
   noneLabel?: string;
 };
 const SingleSelectExample: React.FC<SingleSelectExampleProps> = ({ isSearchable, noneLabel }) => {
-  const [value, setValue] = useState<number | null>(null);
+  const [value, setValue] = useState<number | null>(options[0].value);
 
   return (
     <div style={{ padding: 30, display: 'flex', alignItems: 'center' }}>
