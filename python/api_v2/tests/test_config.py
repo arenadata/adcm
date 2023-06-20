@@ -95,7 +95,7 @@ class TestClusterConfig(BaseAPITestCase):
                 "isActive": False,
                 "validation": {"isRequired": False, "minValue": None, "maxValue": None},
                 "options": [],
-                "child": [],
+                "children": [],
             },
             {
                 "name": "group",
@@ -106,18 +106,19 @@ class TestClusterConfig(BaseAPITestCase):
                 "isActive": False,
                 "validation": {"isRequired": True, "minValue": None, "maxValue": None},
                 "options": [],
-                "child": ["string"],
-            },
-            {
-                "name": "string",
-                "displayName": "string",
-                "type": "string",
-                "default": "string",
-                "isReadOnly": False,
-                "isActive": False,
-                "validation": {"isRequired": False, "minValue": None, "maxValue": None},
-                "options": [],
-                "child": [],
+                "children": [
+                    {
+                        "name": "string",
+                        "displayName": "string",
+                        "type": "string",
+                        "default": "string",
+                        "isReadOnly": False,
+                        "isActive": False,
+                        "validation": {"isRequired": False, "minValue": None, "maxValue": None},
+                        "options": [],
+                        "children": [],
+                    },
+                ],
             },
         ]
         self.assertListEqual(response.json(), data)
