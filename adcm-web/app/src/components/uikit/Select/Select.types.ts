@@ -9,18 +9,25 @@ export interface SelectOption<T = SelectValue> {
 export interface SingleSelectParams<T> {
   options: SelectOption<T>[];
   value: T | null;
-  onChange: (_value: T | null) => void;
+  onChange: (value: T | null) => void;
 }
 
-export interface SingleSelectOptions<T> extends SingleSelectParams<T> {
-  noneLabel?: string;
+interface CommonSelectParams {
   maxHeight?: number;
   isSearchable?: boolean;
   searchPlaceholder?: string;
 }
 
+export interface SingleSelectOptions<T> extends SingleSelectParams<T>, CommonSelectParams {
+  noneLabel?: string;
+}
+
 export interface MultiPropsParams<T> {
   options: SelectOption<T>[];
   value: T[];
-  onChange: (_value: T[]) => void;
+  onChange: (value: T[]) => void;
+}
+
+export interface MultiSelectOptions<T> extends MultiPropsParams<T>, CommonSelectParams {
+  checkAllLabel?: string;
 }

@@ -1,25 +1,17 @@
-import React, { useState } from 'react';
-import SearchInput from '@uikit/SearchInput/SearchInput';
-import { getFilteredOptions } from './SingleSelectSearchFilter.utils';
+import React from 'react';
 import s from './SingleSelectSearchFilter.module.scss';
 import { useSingleSelectContext } from '../SingleSelectContext/SingleSelect.context';
+import CommonSelectSearchFilter from '@uikit/Select/CommonSelect/CommonSelectSearchFilter/CommonSelectSearchFilter';
 
 const SingleSelectSearchFilter: React.FC = <T,>() => {
   const { originalOptions, setOptions, searchPlaceholder } = useSingleSelectContext<T>();
 
-  const [search, setSearch] = useState('');
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const searchStr = e.target.value;
-    setSearch(searchStr);
-    setOptions(getFilteredOptions(originalOptions, searchStr));
-  };
-
   return (
-    <SearchInput
+    <CommonSelectSearchFilter
+      originalOptions={originalOptions}
+      setOptions={setOptions}
+      searchPlaceholder={searchPlaceholder}
       className={s.singleSelectSearchFilter}
-      placeholder={searchPlaceholder}
-      value={search}
-      onChange={handleSearch}
     />
   );
 };

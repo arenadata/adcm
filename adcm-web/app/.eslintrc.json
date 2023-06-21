@@ -3,13 +3,10 @@
   "plugins": ["react", "prettier", "@typescript-eslint", "react-hooks", "react-refresh", "spellcheck"],
   "extends": [
     "eslint:recommended",
-    "plugin:react/recommended",
-    "plugin:@typescript-eslint/eslint-recommended",
     "plugin:@typescript-eslint/recommended",
     "plugin:react-hooks/recommended",
-    "plugin:react/jsx-runtime",
-    "plugin:prettier/recommended",
     "plugin:storybook/recommended",
+    "plugin:prettier/recommended",
     "prettier"
   ],
   "rules": {
@@ -86,19 +83,6 @@
       "error",
       {
         "allow": ["info", "warn", "error"]
-      }
-    ],
-    "no-unused-vars": ["error", {
-      "varsIgnorePattern": "React",
-      "argsIgnorePattern": "^_",
-      "ignoreRestSiblings": true
-    }],
-    "@typescript-eslint/no-unused-vars": [
-      "error",
-      {
-        "varsIgnorePattern": "React",
-        "argsIgnorePattern": "^_",
-        "ignoreRestSiblings": true
       }
     ]
   }

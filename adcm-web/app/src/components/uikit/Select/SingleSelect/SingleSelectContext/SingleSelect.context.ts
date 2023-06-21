@@ -2,7 +2,7 @@ import { SelectOption, SingleSelectOptions } from '@uikit/Select/Select.types';
 import React, { useContext } from 'react';
 
 export type SingleSelectContextOptions<T> = SingleSelectOptions<T> & {
-  setOptions: (_list: SelectOption<T>[]) => void;
+  setOptions: (list: SelectOption<T>[]) => void;
   originalOptions: SelectOption<T>[];
 };
 

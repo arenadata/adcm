@@ -18,6 +18,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       endAdornment = null,
       disabled,
       containerRef,
+      style,
       ...props
     },
     ref,
@@ -25,7 +26,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const { fieldClasses, fieldContentClasses: inputClasses } = useFieldStyles({ variant, hasError, disabled });
 
     return (
-      <div className={cn(className, fieldClasses)} ref={containerRef}>
+      <div className={cn(className, fieldClasses)} ref={containerRef} style={style}>
         {startAdornment}
         <input ref={ref} className={inputClasses} {...props} disabled={disabled} />
         {endAdornment}
