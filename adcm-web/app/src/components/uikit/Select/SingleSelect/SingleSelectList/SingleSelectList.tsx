@@ -11,6 +11,7 @@ const SingleSelectList = <T,>() => {
     value: selectedValue,
     onChange,
     noneLabel,
+    maxHeight,
   } = useSingleSelectContext<T>();
 
   const options = useMemo(() => {
@@ -29,7 +30,7 @@ const SingleSelectList = <T,>() => {
   }, [noneLabel, outerOptions]);
 
   return (
-    <ul>
+    <ul className={cn(s.singleSelectList, 'scroll')} style={{ maxHeight }}>
       {options.map(({ value, label, disabled }) => (
         <SingleSelectOptionsItem
           key={label.toString()}

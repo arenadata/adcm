@@ -1,11 +1,5 @@
 import { useMemo } from 'react';
-
-export interface PaginationDataItem {
-  key: string;
-  type: 'page' | 'decoration';
-  label: string;
-  pageNumber: number;
-}
+import { PaginationDataItem } from '@uikit/Pagination/Pagination.types';
 
 const DECORATION_STEP = 5;
 
@@ -50,7 +44,7 @@ interface Results {
 export function usePagination(params: UsePaginationParams): Results {
   const { pageNumber, totalItems, maxItems, isNextBtn, perPage } = params;
   const totalPages = Math.ceil(totalItems / perPage);
-  const hasNext = isNextBtn !== null ? isNextBtn : pageNumber < totalPages - 1;
+  const hasNext = typeof isNextBtn === 'boolean' ? isNextBtn : pageNumber < totalPages - 1;
   const hasPrev = pageNumber > 0;
 
   const decorationPrev = pageNumber - DECORATION_STEP >= 0 ? DECORATION_STEP : 0;

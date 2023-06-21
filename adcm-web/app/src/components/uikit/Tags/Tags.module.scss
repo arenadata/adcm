@@ -1,0 +1,42 @@
+:global {
+  body.theme-dark {
+    --tag-background: var(--color-new-light);
+    --tag-color: var(--color-xgray-lighter);
+
+    // hover
+    --tag-background-hover: var(--color-hijack);
+    --tag-color-hover: var(--color-xwhite-off);
+  }
+
+  body.theme-light {
+    --tag-background: var(--color-popup-light);
+    --tag-color: var(--color-xgray-light);
+
+    // hover
+    --tag-background-hover: var(--color-stroke-light);
+    --tag-color-hover: var(--color-xdark);
+  }
+}
+
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tag-gap, 8px);
+  padding: 6px;
+  transition: 250ms background-color, 250ms color;
+  background: var(--tag-background);
+  color: var(--tag-color);
+  border-radius: 5px;
+
+  &:hover {
+    background: var(--tag-background-hover);
+    color: var(--tag-color-hover);
+  }
+}

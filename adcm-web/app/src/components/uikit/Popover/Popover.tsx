@@ -18,7 +18,7 @@ import { PopoverOptions } from '@uikit/Popover/Popover.types';
 
 export interface PopoverProps extends PopoverOptions {
   isOpen: boolean;
-  onOpenChange: (_isOpen: boolean) => void;
+  onOpenChange: (isOpen: boolean) => void;
   triggerRef: React.RefObject<HTMLElement>;
   children: ChildWithRef;
 }
