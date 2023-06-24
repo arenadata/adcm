@@ -32,3 +32,4 @@ dist-ssr
 !.prettierrc.json
 !.storybook
 !.husky
+!.editorconfig

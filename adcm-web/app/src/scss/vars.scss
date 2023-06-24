@@ -34,6 +34,7 @@
   --color-presson-light: #00C787;
   --color-new-light: #2F3136;
   --color-stroke-light: #D9DEF3;
+  --color-background-light: #F3F3F3;
 
   --color-xred: #C64A6F;
   --color-xred-light: #F35081;
@@ -52,6 +53,8 @@
   --color-xwhite: #FFF;
   --color-xwhite-50: rgba(255, 255, 255, 0.5);
   --color-xwhite-off: #FCFCFD;
+
+  --text-default-color: var(--color-xgray-light);
 
   // sizes:
   --z-index-spinner: 10;

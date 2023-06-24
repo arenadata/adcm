@@ -16,6 +16,12 @@
       ],
       "@uikit/*": [
         "./components/uikit/*"
+      ],
+      "@layouts/*": [
+        "./components/layouts/*"
+      ],
+      "@commonComponents/*": [
+        "./components/common/*"
       ]
     }
   }
