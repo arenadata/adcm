@@ -47,10 +47,12 @@ export const allowIconsNames = [
   'g2-information',
   'g2-jobs',
   'g2-magnifying-glass',
+  'g2-moon',
   'g2-profile',
   'g2-provider',
   'g2-query',
   'g2-saved',
+  'g2-sun',
   'g2-user',
   'g2-users',
 ] as const;

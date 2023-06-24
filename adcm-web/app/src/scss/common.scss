@@ -5,6 +5,14 @@ body {
   line-height: 20px;
   font-weight: 400;
   font-family: 'Roboto', sans-serif;
+  background: var(--body-background);
+
+  &.theme-dark {
+    --body-background: var(--color-xblack)
+  }
+  &.theme-light {
+    --body-background: var(--color-xwhite-off)
+  }
 }
 
 .text-link {

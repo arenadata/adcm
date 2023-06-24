@@ -1,0 +1,25 @@
+
+.headerNotifications {
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0;
+
+  :global(.bell__marker) {
+    color: var(--bell-marker-color, transparent);
+  }
+
+  :global(.bell__holePatch) {
+    color: var(--bell-hole-patch, currentColor);
+  }
+
+  &_error {
+    --bell-hole-patch: transparent;
+    --bell-marker-color: var(--color-xred);
+  }
+
+  &_success {
+    --bell-hole-patch: transparent;
+    --bell-marker-color: var(--icon-button-color-active-primary);
+  }
+}

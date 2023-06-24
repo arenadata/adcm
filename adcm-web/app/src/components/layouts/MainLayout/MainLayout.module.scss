@@ -1,0 +1,30 @@
+:global {
+  body.theme-dark {
+    --left-sidebar-border: var(--color-xdark);
+  }
+
+  body.theme-light {
+    --left-sidebar-border: var(--color-stroke-light);
+  }
+}
+
+.mainLayout {
+  min-height: 100vh;
+  display: flex;
+
+  &__leftSidebarWrap {
+    position: relative;
+    border-right: 1px solid var(--left-sidebar-border);
+  }
+
+  &__leftSidebar {
+    position: sticky;
+    top: 0;
+  }
+
+  &__mainContent {
+    min-width: 0;
+    flex: 1;
+    padding: 20px 40px;
+  }
+}
