@@ -29,6 +29,15 @@ body {
   }
 }
 
+.green-text {
+  body.theme-dark & {
+    color: var(--color-xgreen-saturated);
+  }
+  body.theme-light & {
+    color: var(--color-xgreen)
+  }
+}
+
 @keyframes spin {
   100% {
     transform: rotate(360deg);

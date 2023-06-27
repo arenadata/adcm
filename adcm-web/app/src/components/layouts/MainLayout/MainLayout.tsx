@@ -1,9 +1,10 @@
 import React from 'react';
-import MainHeader from '@layouts/partials/MainHeader/MainHeader';
 import LeftSideBar from '@layouts/partials/LeftSideBar/LeftSideBar';
-import HeaderAdvancedInfo from '@layouts/partials/HeaderAdvancedInfo/HeaderAdvancedInfo';
 
 import s from './MainLayout.module.scss';
+import PageHeader from '@layouts/partials/PageHeader/PageHeader';
+import MainHeader from '@layouts/partials/MainHeader/MainHeader';
+import HeaderAdvancedInfo from '@layouts/partials/HeaderAdvancedInfo/HeaderAdvancedInfo';
 
 const MainLayout: React.FC<React.PropsWithChildren> = ({ children }) => {
   return (
@@ -15,6 +16,7 @@ const MainLayout: React.FC<React.PropsWithChildren> = ({ children }) => {
         <MainHeader>
           <HeaderAdvancedInfo />
         </MainHeader>
+        <PageHeader />
         {children}
       </div>
     </div>
