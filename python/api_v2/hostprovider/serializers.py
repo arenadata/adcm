@@ -58,3 +58,9 @@ class HostProviderCreateSerializer(ModelSerializer):
     class Meta:
         model = HostProvider
         fields = ["prototype", "name", "description"]
+
+
+class HostProviderSerializerForHosts(ModelSerializer):
+    class Meta:
+        model = HostProvider
+        fields = ["id", "name", "display_name"]

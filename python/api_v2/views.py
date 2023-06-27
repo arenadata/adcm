@@ -21,5 +21,4 @@ class APIRoot(APIRootView):
         "hosts": "host-list",
         "hostproviders": "hostprovider-list",
         "prototypes": "prototype-list",
-        "hosts": "host-list",
     }
