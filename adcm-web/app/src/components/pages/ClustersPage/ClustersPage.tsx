@@ -1,11 +1,11 @@
 import React from 'react';
 
-const ClustersPage: React.FC = () => {
+const ClusterPage: React.FC = () => {
   return (
     <div>
-      <h1>Clusters page</h1>
+      <h1>Clusters Page</h1>
     </div>
   );
 };
 
-export default ClustersPage;
+export default ClusterPage;

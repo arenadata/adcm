@@ -13,6 +13,7 @@ import PrivateResource from '@commonComponents/PrivateResource/PrivateResource';
 import MainLayout from '@layouts/MainLayout/MainLayout';
 import ProfilePage from '@pages/ProfilePage/ProfilePage';
 import SettingsPage from '@pages/SettingsPage/SettingsPage';
+import ClusterOverview from '@pages/ClustersPage/ClusterOverview/ClusterOverview';
 
 function App() {
   return (
@@ -30,7 +31,15 @@ function App() {
           }
         >
           <Route index element={<Navigate to="/clusters" replace />} />
-          <Route path="/clusters" element={<ClustersPage />} />
+
+          <Route path="/clusters">
+            <Route index element={<ClustersPage />} />
+            <Route path="/clusters/:clusterName">
+              <Route index element={<Navigate to="overview" replace />} />
+              <Route path="/clusters/:clusterName/overview" element={<ClusterOverview />} />
+            </Route>
+          </Route>
+
           <Route path="/hostproviders" element={<HostProvidersPage />} />
           <Route path="/hosts" element={<HostsPage />} />
           <Route path="/jobs" element={<JobsPage />} />

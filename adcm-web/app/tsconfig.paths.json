@@ -22,6 +22,15 @@
       ],
       "@commonComponents/*": [
         "./components/common/*"
+      ],
+      "@hooks": [
+        "./hooks/index"
+      ],
+      "@hooks/*": [
+        "./hooks/*"
+      ],
+      "@routes/*": [
+        "./routes/*"
       ]
     }
   }
