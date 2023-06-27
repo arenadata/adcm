@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from api_v2.hostprovider.filters import HostProviderFilter
 from api_v2.hostprovider.serializers import (
     HostProviderCreateSerializer,
@@ -42,7 +41,7 @@ class HostProviderViewSet(ModelViewSet):  # pylint:disable=too-many-ancestors
 
         return self.serializer_class
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=HTTP_409_CONFLICT)
