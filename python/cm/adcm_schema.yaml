@@ -791,7 +791,6 @@ action_hc_acl_dict:
   required_items:
     - component
     - action
-    - service
 
 hc_acl_action:
   match: set
