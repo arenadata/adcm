@@ -50,7 +50,7 @@ const options = [
 ];
 
 type SingleSelectExampleProps = {
-  isSearchable: boolean;
+  isSearchable?: boolean;
   noneLabel?: string;
 };
 const SingleSelectExample: React.FC<SingleSelectExampleProps> = ({ isSearchable, noneLabel }) => {
