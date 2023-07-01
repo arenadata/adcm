@@ -88,6 +88,7 @@ class HostUpdateSerializer(ModelSerializer):
     fqdn = CharField(
         max_length=253,
         help_text="fully qualified domain name",
+        required=False,
         validators=[
             HostUniqueValidator(queryset=Host.objects.all()),
             StartMidEndValidator(
@@ -103,7 +104,7 @@ class HostUpdateSerializer(ModelSerializer):
     class Meta:
         model = Host
         fields = ["fqdn", "cluster"]
-        extra_kwargs = {"fqdn": {"allow_null": True}, "cluster": {"allow_null": True}}
+        extra_kwargs = {"cluster": {"required": False}}
 
     def validate_cluster(self, cluster):
         if not cluster:

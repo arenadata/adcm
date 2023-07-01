@@ -10,5 +10,4 @@ data/
 **/__pycache__/
 config.json
 go/bin/
-poetry.lock
 wwwroot/

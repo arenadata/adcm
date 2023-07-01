@@ -48,6 +48,7 @@ from adcm.permissions import (
 )
 
 
+# pylint:disable-next=too-many-ancestors
 class HostViewSet(PermissionListMixin, ModelViewSet):
     queryset = Host.objects.prefetch_related("provider", "concerns").all()
     serializer_class = HostSerializer
@@ -83,7 +84,7 @@ class HostViewSet(PermissionListMixin, ModelViewSet):
         delete_host(host=host)
         return Response(status=HTTP_204_NO_CONTENT)
 
-    def _host_update(self, request, *args, partial=False, **kwargs):
+    def _host_update(self, request, *args, partial=False, **kwargs):  # pylint: disable=unused-argument
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         valid = serializer.validated_data
@@ -140,7 +141,7 @@ class HostClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=t
 
         return self.serializer_class
 
-    def get_queryset(self):
+    def get_queryset(self, *args, **kwargs):  # pylint: disable=unused-argument
         return Host.objects.filter(cluster=self.kwargs["cluster_pk"])
 
     def create(self, request, *args, **kwargs):

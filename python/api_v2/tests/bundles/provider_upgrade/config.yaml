@@ -1,0 +1,36 @@
+---
+- type: provider
+  name: provider
+  version: &version '2.0'
+  upgrade:
+    - name: upgrade
+      versions:
+        min: '1.0'
+        max: '2.0'
+      states:
+        available: any
+    - name: upgrade_via_action
+      versions:
+        min: '1.0'
+        max: '2.0'
+      states:
+        available: any
+
+  actions:
+    provider_action:
+      type: job
+      script: ./playbook.yaml
+      script_type: ansible
+      states:
+        available: any
+- type: host
+  name: host
+  version: *version
+  actions:
+    host_action:
+      display_name: "host_action"
+      type: job
+      script: ./playbook.yaml
+      script_type: ansible
+      states:
+        available: any

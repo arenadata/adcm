@@ -309,25 +309,28 @@ def update_obj(dest, source, fields):
         setattr(dest, f, getattr(source, f))
 
 
-def re_check_actions():
-    for act in StageAction.objects.order_by("id"):
-        if not act.hostcomponentmap:
+def re_check_actions() -> None:
+    for action in StageAction.objects.select_related("prototype").order_by("id"):
+        if not action.hostcomponentmap:
             continue
 
-        hostcomponent = act.hostcomponentmap
-        ref = f'in hc_acl of action "{act.name}" of {proto_ref(act.prototype)}'
-        for item in hostcomponent:
-            stage_proto = StagePrototype.objects.filter(type="service", name=item["service"]).first()
-            if not stage_proto:
+        ref = f'in hc_acl of action "{action.name}" of {proto_ref(action.prototype)}'
+
+        for item in action.hostcomponentmap:
+            if action.prototype.type != "service" and "service" not in item:
+                raise_adcm_ex(code="INVALID_ACTION_DEFINITION", msg=f'"service" filed is required {ref}')
+
+            prototype = StagePrototype.objects.filter(type="service", name=item["service"]).first()
+            if not prototype:
                 raise_adcm_ex(
                     code="INVALID_ACTION_DEFINITION",
                     msg=f'Unknown service "{item["service"]}" {ref}',
                 )
 
-            if not StagePrototype.objects.filter(parent=stage_proto, type="component", name=item["component"]):
+            if not StagePrototype.objects.filter(parent=prototype, type="component", name=item["component"]).exists():
                 raise_adcm_ex(
                     code="INVALID_ACTION_DEFINITION",
-                    msg=f'Unknown component "{item["component"]}" of service "{stage_proto.name}" {ref}',
+                    msg=f'Unknown component "{item["component"]}" of service "{prototype.name}" {ref}',
                 )
 
 

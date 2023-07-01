@@ -12,7 +12,9 @@
 from api_v2.action.views import ActionViewSet
 from api_v2.config.views import ConfigLogViewSet
 from api_v2.hostprovider.views import HostProviderViewSet
-from rest_framework_nested.routers import NestedSimpleRouter, SimpleRouter
+from api_v2.upgrade.views import UpgradeViewSet
+from rest_framework.routers import SimpleRouter
+from rest_framework_nested.routers import NestedSimpleRouter
 
 router = SimpleRouter()
 router.register("", HostProviderViewSet)
@@ -23,4 +25,12 @@ hostprovider_action_router.register(prefix="actions", viewset=ActionViewSet, bas
 hostprovider_config_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="provider")
 hostprovider_config_router.register(prefix="configs", viewset=ConfigLogViewSet, basename="provider-config")
 
-urlpatterns = [*router.urls, *hostprovider_action_router.urls, *hostprovider_config_router.urls]
+hostprovider_upgrade_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")
+hostprovider_upgrade_router.register(prefix="upgrades", viewset=UpgradeViewSet)
+
+urlpatterns = [
+    *router.urls,
+    *hostprovider_action_router.urls,
+    *hostprovider_config_router.urls,
+    *hostprovider_upgrade_router.urls,
+]
