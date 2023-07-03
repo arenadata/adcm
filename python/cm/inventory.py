@@ -347,7 +347,10 @@ def get_host_groups(  # pylint: disable=too-many-branches
             if key not in groups:
                 groups[key] = {"hosts": {}}
 
-            groups[key]["hosts"][hostcomponent.host.fqdn] = get_obj_config(obj=hostcomponent.host)
+            if MAINTENANCE_MODE in key:
+                groups[key]["vars"] = get_cluster_config(cluster=cluster)
+
+            update_host_dict(hosts_group=groups[key]["hosts"], host=hostcomponent.host)
             groups[key]["hosts"][hostcomponent.host.fqdn].update(get_host_vars(host=hostcomponent.host, obj=cluster))
 
     for hc_acl_action in delta:
@@ -369,12 +372,19 @@ def get_host_groups(  # pylint: disable=too-many-branches
                     if remove_maintenance_mode_group_name not in groups:
                         groups[remove_maintenance_mode_group_name] = {"hosts": {}}
 
-                    groups[remove_maintenance_mode_group_name]["hosts"][host.fqdn] = get_obj_config(obj=host)
+                    update_host_dict(hosts_group=groups[remove_maintenance_mode_group_name]["hosts"], host=host)
                     groups[remove_maintenance_mode_group_name]["hosts"][host.fqdn].update(
                         get_host_vars(host=host, obj=cluster)
                     )
 
     return groups
+
+
+def update_host_dict(hosts_group: dict, host: Host) -> None:
+    hosts_group[host.fqdn] = get_obj_config(obj=host)
+    hosts_group[host.fqdn]["adcm_hostid"] = host.id
+    hosts_group[host.fqdn]["state"] = host.state
+    hosts_group[host.fqdn]["multi_state"] = host.multi_state
 
 
 def get_hosts(
@@ -388,10 +398,7 @@ def get_hosts(
         if skip_mm_host or skip_host_not_in_action_host:
             continue
 
-        group[host.fqdn] = get_obj_config(obj=host)
-        group[host.fqdn]["adcm_hostid"] = host.id
-        group[host.fqdn]["state"] = host.state
-        group[host.fqdn]["multi_state"] = host.multi_state
+        update_host_dict(hosts_group=group, host=host)
         if not isinstance(obj, Host):
             group[host.fqdn].update(get_host_vars(host=host, obj=obj))
 
