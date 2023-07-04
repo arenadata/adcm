@@ -6,6 +6,8 @@ import MainLogo from '@layouts/partials/MainLogo/MainLogo';
 import { useMediaQuery } from '@uikit/hooks/useMediaQuery';
 
 import s from './LeftSideBar.module.scss';
+import { useDispatch } from '@hooks';
+import { logout } from '@store/userSlice';
 
 const LeftSideBar: React.FC<HTMLAttributes<HTMLDivElement>> = ({ className }) => {
   const [isSlim, setIsSlim] = useState(false);
@@ -57,10 +59,9 @@ export default LeftSideBar;
 const LogoutMenuItem: React.FC<Omit<ComponentProps<typeof LeftBarMenuItem>, 'icon' | 'onClick' | 'children'>> = (
   props,
 ) => {
-  // TODO: uncommented after implement auth system
-  // const dispatch = useDispatch();
+  const dispatch = useDispatch();
   const handleLogout = () => {
-    // dispatch(logout());
+    dispatch(logout());
   };
 
   return (

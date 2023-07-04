@@ -1,0 +1,24 @@
+.formField {
+  &:global(.has-error) {
+    --labeled-field-label-color: var(--color-xred) !important;
+  }
+
+  &__marker_info {
+    transition: 250ms visibility;
+  }
+  &__marker + &__marker {
+    margin-inline-start: 4px;
+  }
+
+  &:not(:hover):not(:focus-within) {
+    .formField__marker_info {
+      visibility: hidden;
+    }
+  }
+}
+
+.formFieldsContainer {
+  .formField:not(:last-child) {
+    margin-bottom: 32px;
+  }
+}

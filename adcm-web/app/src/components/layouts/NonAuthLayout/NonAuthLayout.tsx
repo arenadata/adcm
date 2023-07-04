@@ -8,8 +8,10 @@ import s from './NonAuthLayout.module.scss';
 const NonAuthLayout: React.FC<React.PropsWithChildren> = ({ children }) => {
   return (
     <div className={s.nonAuthLayout}>
-      <MainHeader />
-      <MainLogo />
+      <div>
+        <MainHeader />
+        <MainLogo />
+      </div>
       {children}
       <Copyright />
     </div>

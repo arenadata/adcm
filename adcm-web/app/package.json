@@ -17,8 +17,8 @@
   "dependencies": {
     "@floating-ui/dom": "^1.2.9",
     "@floating-ui/react": "^0.24.2",
-    "@types/react-copy-to-clipboard": "^5.0.4",
-    "@types/react-syntax-highlighter": "^15.5.7",
+    "@reduxjs/toolkit": "^1.9.5",
+    "axios": "^1.4.0",
     "classnames": "^2.3.2",
     "date-fns": "^2.30.0",
     "react": "^18.2.0",
@@ -26,8 +26,10 @@
     "react-copy-to-clipboard": "^5.1.0",
     "react-dom": "^18.2.0",
     "react-merge-refs": "^2.0.2",
+    "react-redux": "^8.1.1",
     "react-router-dom": "^6.11.2",
-    "react-syntax-highlighter": "^15.5.0"
+    "react-syntax-highlighter": "^15.5.0",
+    "redux": "^4.2.1"
   },
   "devDependencies": {
     "@babel/core": "^7.21.8",
@@ -48,7 +50,9 @@
     "@testing-library/user-event": "^14.4.3",
     "@types/jest": "^29.5.2",
     "@types/react": "^18.0.28",
+    "@types/react-copy-to-clipboard": "^5.0.4",
     "@types/react-dom": "^18.0.11",
+    "@types/react-syntax-highlighter": "^15.5.7",
     "@typescript-eslint/eslint-plugin": "^5.57.1",
     "@typescript-eslint/parser": "^5.57.1",
     "@vitejs/plugin-react": "^4.0.0",
