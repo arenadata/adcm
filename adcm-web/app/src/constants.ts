@@ -8,3 +8,6 @@ export const defaultPerPagesList = [
   { value: 50, label: '50 per page' },
   { value: 100, label: '100 per page' },
 ];
+
+export const defaultDebounceDelay = 300;
+export const defaultSpinnerDelay = 300;

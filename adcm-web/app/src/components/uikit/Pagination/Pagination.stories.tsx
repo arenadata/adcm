@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import Pagination from '@uikit/Pagination/Pagination';
 import { Meta, StoryObj } from '@storybook/react';
-import { PaginationData, PaginationProps } from '@uikit/Pagination/Pagination.types';
+import { PaginationProps } from '@uikit/Pagination/Pagination.types';
 import { defaultPerPagesList } from '@constants';
+import { PaginationParams } from '@uikit/types/list.types';
 
 type Story = StoryObj<typeof Pagination>;
 
@@ -14,7 +15,7 @@ export default {
       defaultValue: 500,
     },
     pageData: {
-      defaultValue: { perPage: 10, pageNumber: 4 } as PaginationData,
+      defaultValue: { perPage: 10, pageNumber: 4 } as PaginationParams,
     },
     perPageItems: {
       defaultValue: defaultPerPagesList,
@@ -43,7 +44,7 @@ export const Paginations: Story = {
 const PaginationStory = ({ totalItems, pageData, perPageItems, isNextBtn, hidePerPage }: PaginationProps) => {
   const [curPageData, setCurPageData] = useState(pageData);
 
-  const handleOnChange = ({ perPage, pageNumber }: PaginationData) => {
+  const handleOnChange = ({ perPage, pageNumber }: PaginationParams) => {
     setCurPageData({ perPage, pageNumber });
   };
 

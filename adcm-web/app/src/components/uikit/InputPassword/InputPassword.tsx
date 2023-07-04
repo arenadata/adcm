@@ -17,6 +17,7 @@ const InputPassword = React.forwardRef<HTMLInputElement, InputPasswordProps>((pr
       ref={ref}
       endAdornment={
         <IconButton
+          type="button"
           icon={showPassword ? 'eye' : 'eye-crossed'}
           size={20}
           onClick={toggleShowPassword}

@@ -8,7 +8,6 @@ type ButtonVariant = 'primary' | 'secondary' | 'clear';
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   hasError?: boolean;
-
   iconLeft?: IconsNames;
   iconRight?: IconsNames;
 }

@@ -72,7 +72,7 @@ const Pagination = ({
 
   const setPerPage = (newPerPage: number | null) => {
     onChangeData({
-      perPage: newPerPage,
+      perPage: newPerPage as number,
       pageNumber: 0,
     });
   };

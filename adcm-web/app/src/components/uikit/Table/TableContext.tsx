@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { TableSelectedAllOptions } from './Table.types';
-import { SortingProps } from '@uikit/types/list.type';
+import { SortingProps } from '@uikit/types/list.types';
 
 type TableContextOptions = TableSelectedAllOptions & Partial<SortingProps>;
 

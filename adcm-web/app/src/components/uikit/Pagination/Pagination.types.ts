@@ -1,5 +1,6 @@
 import React from 'react';
 import { SelectOption } from '@uikit/Select/Select.types';
+import { PaginationParams } from '@uikit/types/list.types';
 
 export interface PaginationData {
   pageNumber: number;
@@ -7,10 +8,10 @@ export interface PaginationData {
 }
 
 export interface PaginationProps {
-  pageData: PaginationData;
+  pageData: PaginationParams;
   totalItems?: number;
   perPageItems?: SelectOption<number>[];
-  onChangeData: (paginationData: PaginationData) => void;
+  onChangeData: (paginationParams: PaginationParams) => void;
   hidePerPage?: boolean;
   frequencyComponent?: React.ReactNode;
   isNextBtn?: false | true | null;

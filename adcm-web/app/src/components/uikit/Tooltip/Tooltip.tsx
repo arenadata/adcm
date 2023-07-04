@@ -8,6 +8,7 @@ import {
   useFloating,
   useFocus,
   useHover,
+  useClick,
   useInteractions,
   useRole,
   OffsetOptions,
@@ -51,12 +52,13 @@ const Tooltip: React.FC<TooltipProps> = ({
   });
 
   const hover = useHover(context, { move: false });
+  const click = useClick(context);
   const focus = useFocus(context);
   const dismiss = useDismiss(context);
   // Role props for screen readers
   const role = useRole(context, { role: 'tooltip' });
 
-  const { getReferenceProps, getFloatingProps } = useInteractions([hover, focus, dismiss, role]);
+  const { getReferenceProps, getFloatingProps } = useInteractions([hover, focus, click, dismiss, role]);
 
   const ref = useForwardRef(refs.setReference, children.ref);
 
