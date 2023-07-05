@@ -89,9 +89,11 @@ INSTALLED_APPS = [
     "cm.apps.CmConfig",
     "audit",
     "api_v2",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -109,6 +111,9 @@ CSP_FRAME_ANCESTORS = ["'none'"]
 CSP_STYLE_SRC = ["'self'", "'unsafe-inline'"]
 
 ROOT_URLCONF = "adcm.urls"
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 TEMPLATES = [
     {
