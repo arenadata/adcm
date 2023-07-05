@@ -78,7 +78,7 @@ class HostViewSet(PermissionListMixin, ModelViewSet):
 
         return Response(data=HostSerializer(host).data, status=HTTP_201_CREATED)
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         host = self.get_object()
         check_custom_perm(request.user, "remove", "host", host)
         delete_host(host=host)

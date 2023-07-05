@@ -248,7 +248,8 @@ class TestBundle(BaseTestCase):
         self.assertEqual(response.data["code"], "INVALID_ACTION_DEFINITION")
         self.assertEqual(
             response.data["desc"],
-            '"service" filed is required in hc_acl of action "sleep" of cluster "hc_acl_in_cluster_without_service" 1.0',
+            '"service" filed is required in hc_acl of action "sleep" '
+            'of cluster "hc_acl_in_cluster_without_service" 1.0',
         )
 
     def test_upload_hc_acl_service_action_without_service_success(self):
