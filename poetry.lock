@@ -537,6 +537,21 @@ Django = ">=3.2"
 python-ldap = ">=3.1"
 
 [[package]]
+name = "django-cors-headers"
+version = "4.1.0"
+description = "django-cors-headers is a Django application for handling the server headers required for Cross-Origin Resource Sharing (CORS)."
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "django_cors_headers-4.1.0-py3-none-any.whl", hash = "sha256:88a4bfae24b6404dd0e0640203cb27704a2a57fd546a429e5d821dfa53dd1acf"},
+    {file = "django_cors_headers-4.1.0.tar.gz", hash = "sha256:36a8d7a6dee6a85f872fe5916cc878a36d0812043866355438dfeda0b20b6b78"},
+]
+
+[package.dependencies]
+Django = ">=3.2"
+
+[[package]]
 name = "django-csp"
 version = "3.7"
 description = "Django Content Security Policy support."
@@ -1936,4 +1951,4 @@ pyyaml = "*"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "b1c66eed922ccb989e54ca925b2a997b636ad5d21d825266bcdaf273fef4f8e5"
+content-hash = "1c2da145d4dd33cf39ce0923c0df748829b5f1b836dcdf6587fecac3edd49e55"
