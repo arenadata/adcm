@@ -67,7 +67,9 @@ class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         super().run(tmp, task_vars)
         msg = "You can remove host only in cluster or service context"
-        cluster_id = get_object_id_from_context(task_vars, "cluster_id", "cluster", "service", err_msg=msg)
+        cluster_id = get_object_id_from_context(
+            task_vars=task_vars, id_type="cluster_id", context_types=("cluster", "service"), err_msg=msg
+        )
         fqdn = self._task.args.get("fqdn", None)
         host_id = self._task.args.get("host_id", None)
 

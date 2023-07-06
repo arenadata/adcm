@@ -23,7 +23,7 @@ from ansible.utils.vars import merge_hash
 from ansible.plugins.action import ActionBase
 
 # isort: on
-from cm.api import add_hc, get_hc, set_object_config
+from cm.api import add_hc, get_hc, set_object_config_with_plugin
 from cm.api_context import CTX
 from cm.errors import AdcmEx
 from cm.errors import raise_adcm_ex as err
@@ -43,6 +43,7 @@ from cm.models import (
     Prototype,
     PrototypeConfig,
     ServiceComponent,
+    get_model_by_type,
 )
 from cm.status_api import post_event
 from django.conf import settings
@@ -97,33 +98,58 @@ def job_lock(job_id):
         return err("LOCK_ERROR", e)
 
 
-def check_context_type(task_vars, *context_type, err_msg=None):
+def check_context_type(task_vars: dict, context_types: tuple, err_msg: str | None = None) -> None:
     """
     Check context type. Check if inventory.json and config.json were passed
     and check if `context` exists in task variables, сheck if a context is of a given type.
     """
     if not task_vars:
         raise AnsibleError(MSG_NO_CONFIG)
+
     if "context" not in task_vars:
         raise AnsibleError(MSG_NO_CONTEXT)
+
     if not isinstance(task_vars["context"], dict):
         raise AnsibleError(MSG_NO_CONTEXT)
+
     context = task_vars["context"]
-    if context["type"] not in context_type:
+    if context["type"] not in context_types:
         if err_msg is None:
-            err_msg = MSG_WRONG_CONTEXT.format(", ".join(context_type), context["type"])
+            err_msg = MSG_WRONG_CONTEXT.format(", ".join(context_types), context["type"])
         raise AnsibleError(err_msg)
 
 
-def get_object_id_from_context(task_vars, id_type, *context_type, err_msg=None):
+def get_object_id_from_context(task_vars: dict, id_type: str, context_types: tuple, err_msg: str | None = None) -> int:
     """
     Get object id from context.
     """
-    check_context_type(task_vars, *context_type, err_msg=err_msg)
+    check_context_type(task_vars=task_vars, context_types=context_types, err_msg=err_msg)
     context = task_vars["context"]
     if id_type not in context:
         raise AnsibleError(MSG_WRONG_CONTEXT_ID.format(id_type))
     return context[id_type]
+
+
+def get_context_object(task_vars: dict, err_msg: str = None) -> ADCMEntity:
+    cluster_context_types = ("cluster", "service", "component")
+    context_types = []
+    obj_type = task_vars["context"]["type"]
+
+    if obj_type in cluster_context_types:
+        context_types.extend(cluster_context_types)
+        context_types.append("cluster")
+    else:
+        context_types.append(obj_type)
+
+    obj_pk = get_object_id_from_context(
+        task_vars=task_vars, id_type=f"{obj_type}_id", context_types=cluster_context_types, err_msg=err_msg
+    )
+    obj = get_model_by_type(object_type=obj_type).objects.filter(pk=obj_pk).first()
+
+    if not obj:
+        raise AnsibleError(f'Object of type "{obj_type}" with PK "{obj_pk}" does not exist')
+
+    return obj
 
 
 class ContextActionModule(ActionBase):
@@ -180,13 +206,13 @@ class ContextActionModule(ActionBase):
         file_descriptor = job_lock(job_id)
 
         if obj_type == "cluster":
-            check_context_type(task_vars, "cluster", "service", "component")
+            check_context_type(task_vars=task_vars, context_types=("cluster", "service", "component"))
             res = self._do_cluster(task_vars, {"cluster_id": self._get_job_var(task_vars, "cluster_id")})
         elif obj_type == "service" and "service_name" in self._task.args:
-            check_context_type(task_vars, "cluster", "service", "component")
+            check_context_type(task_vars=task_vars, context_types=("cluster", "service", "component"))
             res = self._do_service_by_name(task_vars, {"cluster_id": self._get_job_var(task_vars, "cluster_id")})
         elif obj_type == "service":
-            check_context_type(task_vars, "service", "component")
+            check_context_type(task_vars=task_vars, context_types=("service", "component"))
             res = self._do_service(
                 task_vars,
                 {
@@ -195,17 +221,17 @@ class ContextActionModule(ActionBase):
                 },
             )
         elif obj_type == "host" and "host_id" in self._task.args:
-            check_context_type(task_vars, "provider")
+            check_context_type(task_vars=task_vars, context_types=("provider",))
             res = self._do_host_from_provider(task_vars, {})
         elif obj_type == "host":
-            check_context_type(task_vars, "host")
+            check_context_type(task_vars=task_vars, context_types=("host",))
             res = self._do_host(task_vars, {"host_id": self._get_job_var(task_vars, "host_id")})
         elif obj_type == "provider":
-            check_context_type(task_vars, "provider", "host")
+            check_context_type(task_vars=task_vars, context_types=("provider", "host"))
             res = self._do_provider(task_vars, {"provider_id": self._get_job_var(task_vars, "provider_id")})
         elif obj_type == "component" and "component_name" in self._task.args:
             if "service_name" in self._task.args:
-                check_context_type(task_vars, "cluster", "service", "component")
+                check_context_type(task_vars=task_vars, context_types=("cluster", "service", "component"))
                 res = self._do_component_by_name(
                     task_vars,
                     {
@@ -214,7 +240,7 @@ class ContextActionModule(ActionBase):
                     },
                 )
             else:
-                check_context_type(task_vars, "cluster", "service", "component")
+                check_context_type(task_vars=task_vars, context_types=("cluster", "service", "component"))
                 if task_vars["job"].get("service_id", None) is None:
                     raise AnsibleError(MSG_NO_SERVICE_NAME)
                 res = self._do_component_by_name(
@@ -225,7 +251,7 @@ class ContextActionModule(ActionBase):
                     },
                 )
         elif obj_type == "component":
-            check_context_type(task_vars, "component")
+            check_context_type(task_vars=task_vars, context_types=("component",))
             res = self._do_component(task_vars, {"component_id": self._get_job_var(task_vars, "component_id")})
         else:
             raise AnsibleError(MSG_NO_ROUTE)
@@ -409,7 +435,7 @@ def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> dict | int | str:
             if not new_config[key] or subkey not in new_config[key]:
                 new_config[key][subkey] = value
 
-    set_object_config(obj=obj, config=new_config, attr=new_attr)
+    set_object_config_with_plugin(obj=obj, config=new_config, attr=new_attr)
 
     if len(conf) == 1:
         return list(conf.values())[0]

@@ -420,8 +420,7 @@ def update_hierarchy_issues(obj: ADCMEntity) -> None:
     tree = Tree(obj)
     affected_nodes = tree.get_directly_affected(node=tree.built_from)
     for node in affected_nodes:
-        node_value = node.value
-        recheck_issues(obj=node_value)
+        recheck_issues(obj=node.value)
 
 
 def update_issue_after_deleting() -> None:

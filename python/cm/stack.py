@@ -280,6 +280,7 @@ def save_prototype(path: Path, conf: dict, def_type: str, bundle_hash: str) -> S
 
     dict_to_obj(dictionary=conf, key="config_group_customization", obj=proto)
     dict_to_obj(dictionary=conf, key="allow_maintenance_mode", obj=proto)
+    dict_to_obj(dictionary=conf, key="allow_flags", obj=proto)
 
     fix_display_name(conf=conf, obj=proto)
     license_hash = get_license_hash(proto=proto, conf=conf, bundle_hash=bundle_hash)
@@ -355,6 +356,8 @@ def save_components(proto: StagePrototype, conf: dict, bundle_hash: str) -> None
         process_config_group_customization(actual_config=component_conf, obj=component)
 
         dict_to_obj(dictionary=component_conf, key="config_group_customization", obj=component)
+        dict_to_obj(dictionary=component_conf, key="allow_flags", obj=component)
+
         component.save()
 
         save_actions(prototype=component, config=component_conf, bundle_hash=bundle_hash)

@@ -255,6 +255,7 @@ class Prototype(ADCMModel):
     config_group_customization = models.BooleanField(default=False)
     venv = models.CharField(default="default", max_length=1000, blank=False)
     allow_maintenance_mode = models.BooleanField(default=False)
+    allow_flags = models.BooleanField(default=False)
 
     __error_code__ = "PROTOTYPE_NOT_FOUND"
 
@@ -1699,6 +1700,7 @@ class StagePrototype(ADCMModel):
     config_group_customization = models.BooleanField(default=False)
     venv = models.CharField(default="default", max_length=1000, blank=False)
     allow_maintenance_mode = models.BooleanField(default=False)
+    allow_flags = models.BooleanField(default=False)
 
     __error_code__ = "PROTOTYPE_NOT_FOUND"
 
@@ -1780,6 +1782,7 @@ class KnownNames(Enum):
     REQUIRED_IMPORT_ISSUE = "required import issue"  # kwargs=(source, )
     HOST_COMPONENT_ISSUE = "host component issue"  # kwargs=(source, )
     UNSATISFIED_REQUIREMENT_ISSUE = "unsatisfied service requirement"  # kwargs=(source, )
+    CONFIG_FLAG = "outdated configuration flag"  # kwargs=(source, )
 
 
 class PlaceHolderType(Enum):

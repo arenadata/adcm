@@ -526,6 +526,7 @@ def copy_stage_prototype(stage_prototypes, bundle):
                 "venv",
                 "config_group_customization",
                 "allow_maintenance_mode",
+                "allow_flags",
             ),
         )
         if proto.license_path:
@@ -681,6 +682,7 @@ def copy_stage_component(stage_components, stage_proto, prototype, bundle):
                 "description",
                 "adcm_min_version",
                 "config_group_customization",
+                "allow_flags",
                 "venv",
             ),
         )
@@ -821,6 +823,7 @@ def update_bundle_from_stage(
             prototype.venv = stage_prototype.venv
             prototype.config_group_customization = stage_prototype.config_group_customization
             prototype.allow_maintenance_mode = stage_prototype.allow_maintenance_mode
+            prototype.allow_flags = stage_prototype.allow_flags
         except Prototype.DoesNotExist:
             prototype = copy_obj(
                 stage_prototype,
@@ -842,6 +845,7 @@ def update_bundle_from_stage(
                     "venv",
                     "config_group_customization",
                     "allow_maintenance_mode",
+                    "allow_flags",
                 ),
             )
             prototype.bundle = bundle
