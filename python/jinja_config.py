@@ -117,7 +117,7 @@ def _normalize_config(config: dict, root_path: Path, name: str = "", subname: st
     return config_list
 
 
-def get_jinja_config(action: Action, obj: type[ADCMEntity]) -> tuple[list[PrototypeConfig], dict]:
+def get_jinja_config(action: Action, obj: ADCMEntity) -> tuple[list[PrototypeConfig], dict]:
     # pylint: disable=import-outside-toplevel, cyclic-import
     from cm.inventory import get_inventory_data
 

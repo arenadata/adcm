@@ -13,7 +13,14 @@ from pathlib import Path
 from typing import Mapping, Union
 
 from cm.errors import raise_adcm_ex
-from cm.models import Action, ADCMEntity, GroupConfig, Prototype, PrototypeConfig
+from cm.models import (
+    Action,
+    ADCMEntity,
+    GroupConfig,
+    Prototype,
+    PrototypeConfig,
+    StagePrototype,
+)
 from django.conf import settings
 
 
@@ -42,11 +49,11 @@ def group_keys_to_flat(origin: dict, spec: dict) -> dict:
     return result
 
 
-def proto_ref(prototype: Union["StagePrototype", "Prototype"]) -> str:
+def proto_ref(prototype: StagePrototype | Prototype) -> str:
     return f'{prototype.type} "{prototype.name}" {prototype.version}'
 
 
-def group_is_activatable(spec: "PrototypeConfig") -> bool:
+def group_is_activatable(spec: PrototypeConfig) -> bool:
     if spec.type != "group":
         return False
 

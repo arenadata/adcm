@@ -47,16 +47,36 @@ class HcAclAction:
 MAINTENANCE_MODE = "maintenance_mode"
 
 
-def process_config_and_attr(obj: ADCMEntity, conf: dict, attr: dict | None = None, spec: dict | None = None):
+def process_map(flat_spec: dict, config: dict) -> None:
+    for prototype_config in flat_spec.values():
+        if prototype_config.type == "map":
+            name = prototype_config.name
+            sub_name = prototype_config.subname
+            if sub_name:
+                if config[name][sub_name] is None:
+                    config[name][sub_name] = {}
+            else:
+                if config[name] is None:
+                    config[name] = {}
+
+
+def process_config_and_attr(
+    obj: Cluster | ClusterObject | ServiceComponent | HostProvider | Host | GroupConfig,
+    conf: dict,
+    attr: dict | None = None,
+    spec: dict | None = None,
+    flat_spec: dict | None = None,
+) -> dict:
     if not spec:
         if isinstance(obj, GroupConfig):
             prototype = obj.object.prototype
         else:
             prototype = obj.prototype
 
-        spec, _, _, _ = get_prototype_config(prototype=prototype)
+        spec, flat_spec, _, _ = get_prototype_config(prototype=prototype)
 
     new_config = process_config(obj=obj, spec=spec, old_conf=conf)
+    process_map(flat_spec=flat_spec, config=new_config)
 
     if attr:
         for key, value in attr.items():
@@ -129,7 +149,7 @@ def get_import(cluster: Cluster) -> dict:  # pylint: disable=too-many-branches
     return imports
 
 
-def get_obj_config(obj: ADCMEntity) -> dict:
+def get_obj_config(obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host) -> dict:
     if obj.config is None:
         return {}
 
@@ -161,9 +181,13 @@ def get_before_upgrade(obj: ADCMEntity, host: Host | None) -> dict:
         else:
             bundle_id = obj.before_upgrade["bundle_id"]
         old_proto = Prototype.objects.filter(name=obj.prototype.name, bundle_id=bundle_id).first()
-        old_spec, _, _, _ = get_prototype_config(prototype=old_proto)
+        old_spec, old_flat_spec, _, _ = get_prototype_config(prototype=old_proto)
         config = process_config_and_attr(
-            obj=group_object or obj, conf=config_log.config, attr=config_log.attr, spec=old_spec
+            obj=group_object or obj,
+            conf=config_log.config,
+            attr=config_log.attr,
+            spec=old_spec,
+            flat_spec=old_flat_spec,
         )
 
     return {"state": obj.before_upgrade.get("state"), "config": config}

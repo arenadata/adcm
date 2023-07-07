@@ -552,7 +552,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
 
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
     new_conf = process_json_config(
-        proto=proto,
+        prototype=proto,
         obj=group or obj,
         new_config=config,
         current_config=old_conf.config,
@@ -583,7 +583,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
 
 
 def set_object_config(obj: ADCMEntity, config: dict, attr: dict) -> ConfigLog:
-    new_conf = process_json_config(proto=obj.prototype, obj=obj, new_config=config, new_attr=attr)
+    new_conf = process_json_config(prototype=obj.prototype, obj=obj, new_config=config, new_attr=attr)
 
     with atomic():
         config_log = save_obj_config(obj_conf=obj.config, conf=new_conf, attr=attr, desc="ansible update")
