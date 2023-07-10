@@ -12,6 +12,12 @@
         max: '2.0'
       states:
         available: any
+    - name: upgrade_via_action
+      versions:
+        min: '1.0'
+        max: '2.0'
+      states:
+        available: any
   config: &config
     - name: string
       type: string

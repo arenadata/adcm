@@ -10,7 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Upgrade
+from typing import Any
+
+from api_v2.config.serializers import ConfigSerializerUI
+from cm.adcm_config.config import get_action_variant, get_prototype_config
+from cm.models import Cluster, HostProvider, PrototypeConfig, Upgrade
 from rest_framework.serializers import (
     BooleanField,
     JSONField,
@@ -22,29 +26,77 @@ from adcm.serializers import EmptySerializer
 
 
 class UpgradeListSerializer(ModelSerializer):
+    prototype_type = None
     is_license_accepted = SerializerMethodField()
 
     class Meta:
         model = Upgrade
         fields = ["id", "name", "display_name", "is_license_accepted"]
 
-    @staticmethod
-    def get_is_license_accepted(upgrade: Upgrade) -> bool:
-        return upgrade.bundle.prototype_set.filter(type="cluster").first().is_license_accepted
+    @classmethod
+    def get_is_license_accepted(cls, upgrade: Upgrade) -> bool:
+        return upgrade.bundle.prototype_set.filter(type=cls.prototype_type).first().is_license_accepted
+
+
+class ClusterUpgradeListSerializer(UpgradeListSerializer):
+    prototype_type = "cluster"
+
+
+class HostProviderUpgradeListSerializer(UpgradeListSerializer):
+    prototype_type = "provider"
 
 
 class UpgradeRetrieveSerializer(ModelSerializer):
-    is_allow_to_terminate = BooleanField(source="action.allow_to_terminate")
-    host_component_map_rules = JSONField(source="action.hostcomponentmap")
+    is_allow_to_terminate = SerializerMethodField()
+    host_component_map_rules = SerializerMethodField()
     disclaimer = SerializerMethodField()
+    config = SerializerMethodField()
 
     class Meta:
         model = Upgrade
-        fields = ["is_allow_to_terminate", "host_component_map_rules", "disclaimer"]
+        fields = ["is_allow_to_terminate", "host_component_map_rules", "disclaimer", "config"]
 
     @staticmethod
-    def get_disclaimer(upgrade: Upgrade) -> str:
-        return upgrade.action.ui_options.get("disclaimer") or ""
+    def get_disclaimer(instance: Upgrade) -> str:
+        if instance.action:
+            return instance.action.ui_options.get("disclaimer", "")
+
+        return ""
+
+    @staticmethod
+    def get_is_allow_to_terminate(instance: Upgrade) -> bool:
+        if instance.action:
+            return instance.action.allow_to_terminate
+
+        return False
+
+    @staticmethod
+    def get_host_component_map_rules(instance: Upgrade) -> Any:
+        if instance.action:
+            return instance.action.hostcomponentmap
+
+        return []
+
+    def get_config(self, instance):
+        if instance.action is None:
+            return {"attr": {}, "config": []}
+
+        if "cluster_id" in self.context:
+            obj = Cluster.obj.get(pk=self.context["cluster_id"])
+        elif "provider_id" in self.context:
+            obj = HostProvider.obj.get(pk=self.context["provider_id"])
+        else:
+            obj = None
+
+        action_conf = PrototypeConfig.objects.filter(
+            prototype=instance.action.prototype,
+            action=instance.action,
+        ).order_by("id")
+        *_, attr = get_prototype_config(instance.action.prototype, instance.action)
+        if obj:
+            get_action_variant(obj, action_conf)
+        conf = ConfigSerializerUI(action_conf, many=True, context=self.context, read_only=True)
+        return {"attr": attr, "config": conf.data}
 
 
 class UpgradeRunSerializer(EmptySerializer):

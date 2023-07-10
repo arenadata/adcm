@@ -29,7 +29,12 @@ from django.db import IntegrityError
 from django.db.transaction import TransactionManagementError
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_409_CONFLICT,
+)
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -231,4 +236,39 @@ class TestBundle(BaseTestCase):
             response.data["desc"],
             "Display name for component within one service must be unique."
             ' Incorrect definition of component "component_2" 3.0',
+        )
+
+    def test_upload_hc_acl_cluster_action_without_service_fail(self):
+        path = Path(self.files_dir, "test_cluster_hc_acl_without_service.tar")
+        self.upload_bundle(path=path)
+
+        response = self.client.post(path=reverse(viewname="v1:load-bundle"), data={"bundle_file": path.name})
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "INVALID_ACTION_DEFINITION")
+        self.assertEqual(
+            response.data["desc"],
+            '"service" filed is required in hc_acl of action "sleep" '
+            'of cluster "hc_acl_in_cluster_without_service" 1.0',
+        )
+
+    def test_upload_hc_acl_service_action_without_service_success(self):
+        path = Path(self.files_dir, "test_service_hc_acl_without_service.tar")
+        self.upload_bundle(path=path)
+
+        response = self.client.post(path=reverse(viewname="v1:load-bundle"), data={"bundle_file": path.name})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_upload_hc_acl_component_action_without_service_fail(self):
+        path = Path(self.files_dir, "test_component_hc_acl_without_service.tar")
+        self.upload_bundle(path=path)
+
+        response = self.client.post(path=reverse(viewname="v1:load-bundle"), data={"bundle_file": path.name})
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "INVALID_ACTION_DEFINITION")
+        self.assertEqual(
+            response.data["desc"],
+            '"service" filed is required in hc_acl of action "sleep" of component "component" 1.0',
         )

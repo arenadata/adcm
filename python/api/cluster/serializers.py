@@ -17,7 +17,6 @@ from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.host.serializers import HostSerializer
 from api.serializers import DoUpgradeSerializer, StringListSerializer
 from api.utils import CommonAPIURL, ObjectURL, UrlField, check_obj
-from api.validators import StartMidEndValidator
 from cm.adcm_config.config import get_main_info
 from cm.api import add_cluster, add_hc, bind, multi_bind
 from cm.errors import AdcmEx
@@ -26,6 +25,7 @@ from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 from cm.schemas import RequiresUISchema
 from cm.status_api import get_cluster_status, get_hc_status
 from cm.upgrade import get_upgrade
+from cm.validators import StartMidEndValidator
 from django.conf import settings
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (

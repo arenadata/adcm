@@ -200,9 +200,33 @@ export class UpgradesDirective extends BaseDirective {
     return flag ? this.api.get<{ text: string }>(item.license_url).pipe(map(a => a.text)) : of(item.description);
   }
 
-  checkServicesAndPrepare() {
-    let oldVersionAcceptedEntities;
+  preparePrototypesForUpgrade(addedServicesArray = null) {
+    this.getPrototype({
+      bundle_id: this.inputData.bundle_id,
+      license: 'unaccepted',
+      limit: 500,
+    }).subscribe((res) => {
+        this.needLicenseAcceptance = res
+        .filter((item) =>
+          addedServicesArray
+            ? item.type === 'cluster' || addedServicesArray.includes(item.name)
+            : item.type === 'provider'
+        )
+        .map((item) => ({
+          prototype_id: item.id,
+          entity_name: item.name,
+          license: item.license,
+          license_url: item.license_url,
+        }));
+        if (this.hasHostComponent) {
+          this.checkHostComponents();
+        } else {
+          this.prepare();
+        }
+    });
+  }
 
+  checkServicesAndPrepare() {
     if (this.type === 'cluster') {
       if (!this.add.Cluster) {
         this.getCluster().pipe(
@@ -211,41 +235,11 @@ export class UpgradesDirective extends BaseDirective {
       }
 
       this.getClusterServices().subscribe(res => {
-        const addedServices = res.map((service) => service.name);
-
-        this.getPrototype(this.inputData.bundle_id).subscribe(res => {
-          oldVersionAcceptedEntities = [...new Set(res
-            .filter(
-              (item) =>
-                item.type === 'cluster' || item.type === 'service' &&
-                item.license === 'accepted'
-            )
-            .map((item) => item.name))];
-
-          this.needLicenseAcceptance = res
-            .filter(
-              (item) =>
-                (item.type === 'service' || item.type === 'cluster') &&
-                item.bundle_id === this.inputData.bundle_id &&
-                item.license === 'unaccepted' &&
-                (oldVersionAcceptedEntities.includes(item.name) ||
-                addedServices.includes(item.name))
-            )
-            .map((item) => ({
-              prototype_id: item.id,
-              entity_name: item.name,
-              license: item.license,
-              license_url: item.license_url,
-            }));
-          if (this.hasHostComponent) {
-            this.checkHostComponents();
-          } else {
-            this.prepare();
-          }
-        })
-      })
+        const addedServicesToCluster = res.map((service) => service.name);
+        this.preparePrototypesForUpgrade(addedServicesToCluster);
+      });
     } else {
-      this.prepare();
+      this.preparePrototypesForUpgrade();
     }
   }
 

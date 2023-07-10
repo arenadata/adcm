@@ -42,6 +42,8 @@ social-auth-app-django = "*"
 uwsgi = "*"
 version-utils = "*"
 yspec = "*"
+six = "*"
+django-cors-headers = "*"
 
 [tool.poetry.group.lint]
 optional = true

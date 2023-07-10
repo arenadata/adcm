@@ -79,7 +79,7 @@ export class PasswordComponent extends FieldDirective implements OnInit, AfterVi
     }
 
     if (this.field.required && !this.field.value) {
-      this.hideDummy(false);
+      this.isHideDummy = true;
     }
 
     if (this.ConfirmPasswordField) this.ConfirmPasswordField.markAllAsTouched();
@@ -136,7 +136,7 @@ export class PasswordComponent extends FieldDirective implements OnInit, AfterVi
     if (this.field.read_only) return null;
     this.isHideDummy = true;
     this.cd.detectChanges();
-
+    
     if (isConfirmField) {
       this.conf.nativeElement.focus();
     } else {

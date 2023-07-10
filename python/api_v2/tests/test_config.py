@@ -11,11 +11,11 @@
 # limitations under the License.
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.models import ConfigLog, GroupConfig
+from cm.models import ConfigLog, GroupConfig, Host, HostProvider, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND
 
 
 class TestClusterConfig(BaseAPITestCase):
@@ -95,7 +95,7 @@ class TestClusterConfig(BaseAPITestCase):
                 "isActive": False,
                 "validation": {"isRequired": False, "minValue": None, "maxValue": None},
                 "options": [],
-                "child": [],
+                "children": [],
             },
             {
                 "name": "group",
@@ -106,18 +106,19 @@ class TestClusterConfig(BaseAPITestCase):
                 "isActive": False,
                 "validation": {"isRequired": True, "minValue": None, "maxValue": None},
                 "options": [],
-                "child": ["string"],
-            },
-            {
-                "name": "string",
-                "displayName": "string",
-                "type": "string",
-                "default": "string",
-                "isReadOnly": False,
-                "isActive": False,
-                "validation": {"isRequired": False, "minValue": None, "maxValue": None},
-                "options": [],
-                "child": [],
+                "children": [
+                    {
+                        "name": "string",
+                        "displayName": "string",
+                        "type": "string",
+                        "default": "string",
+                        "isReadOnly": False,
+                        "isActive": False,
+                        "validation": {"isRequired": False, "minValue": None, "maxValue": None},
+                        "options": [],
+                        "children": [],
+                    },
+                ],
             },
         ]
         self.assertListEqual(response.json(), data)
@@ -187,3 +188,351 @@ class TestClusterGroupConfig(BaseAPITestCase):
         self.assertDictEqual(response_data["attr"], data["attr"])
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["is_current"], True)
+
+
+class TestServiceConfig(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.service_1_initial_config = ConfigLog.objects.get(pk=self.service_1.config.current)
+
+    def test_list_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:service-config-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
+            )
+        )
+
+        data = {
+            "creation_time": self.service_1_initial_config.date.isoformat().replace("+00:00", "Z"),
+            "description": self.service_1_initial_config.description,
+            "id": self.service_1_initial_config.pk,
+            "is_current": True,
+        }
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertDictEqual(response.json()["results"][0], data)
+
+    def test_retrieve_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:service-config-detail",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "pk": self.service_1_initial_config.pk,
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        data = {
+            "attr": self.service_1_initial_config.attr,
+            "config": self.service_1_initial_config.config,
+            "creation_time": self.service_1_initial_config.date.isoformat().replace("+00:00", "Z"),
+            "description": self.service_1_initial_config.description,
+            "id": self.service_1_initial_config.pk,
+            "is_current": True,
+        }
+        self.assertDictEqual(response.json(), data)
+
+    def test_create_success(self):
+        data = {
+            "config": {"string": "new string", "group": {"string": "new string"}},
+            "attr": {},
+            "description": "new config",
+        }
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:service-config-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
+            ),
+            data=data,
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response_data = response.json()
+        self.assertDictEqual(response_data["config"], data["config"])
+        self.assertDictEqual(response_data["attr"], data["attr"])
+        self.assertEqual(response_data["description"], data["description"])
+        self.assertEqual(response_data["is_current"], True)
+
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:service-config-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
+            )
+        )
+        self.assertEqual(response.json()["count"], 2)
+
+
+class TestComponentConfig(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.component_1 = ServiceComponent.objects.get(
+            cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
+        )
+        self.component_1_initial_config = ConfigLog.objects.get(pk=self.component_1.config.current)
+
+    def test_list_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:component-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                },
+            )
+        )
+
+        data = {
+            "creation_time": self.component_1_initial_config.date.isoformat().replace("+00:00", "Z"),
+            "description": self.component_1_initial_config.description,
+            "id": self.component_1_initial_config.pk,
+            "is_current": True,
+        }
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertDictEqual(response.json()["results"][0], data)
+
+    def test_retrieve_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:component-config-detail",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                    "pk": self.component_1_initial_config.pk,
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        data = {
+            "attr": self.component_1_initial_config.attr,
+            "config": self.component_1_initial_config.config,
+            "creation_time": self.component_1_initial_config.date.isoformat().replace("+00:00", "Z"),
+            "description": self.component_1_initial_config.description,
+            "id": self.component_1_initial_config.pk,
+            "is_current": True,
+        }
+        self.assertDictEqual(response.json(), data)
+
+    def test_create_success(self):
+        data = {
+            "config": {"string": "new string", "group": {"string": "new string"}},
+            "attr": {},
+            "description": "new config",
+        }
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:component-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                },
+            ),
+            data=data,
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response_data = response.json()
+        self.assertDictEqual(response_data["config"], data["config"])
+        self.assertDictEqual(response_data["attr"], data["attr"])
+        self.assertEqual(response_data["description"], data["description"])
+        self.assertEqual(response_data["is_current"], True)
+
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:component-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                },
+            )
+        )
+        self.assertEqual(response.json()["count"], 2)
+
+
+class TestProviderConfig(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.provider_initial_config = ConfigLog.objects.get(pk=self.provider.config.current)
+
+    def test_list_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:provider-config-list",
+                kwargs={
+                    "provider_pk": self.provider.pk,
+                },
+            )
+        )
+
+        data = {
+            "creation_time": self.provider_initial_config.date.isoformat().replace("+00:00", "Z"),
+            "description": self.provider_initial_config.description,
+            "id": self.provider_initial_config.pk,
+            "is_current": True,
+        }
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertDictEqual(response.json()["results"][0], data)
+
+    def test_retrieve_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:provider-config-detail",
+                kwargs={
+                    "provider_pk": self.provider.pk,
+                    "pk": self.provider_initial_config.pk,
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        data = {
+            "attr": self.provider_initial_config.attr,
+            "config": self.provider_initial_config.config,
+            "creation_time": self.provider_initial_config.date.isoformat().replace("+00:00", "Z"),
+            "description": self.provider_initial_config.description,
+            "id": self.provider_initial_config.pk,
+            "is_current": True,
+        }
+        self.assertDictEqual(response.json(), data)
+
+    def test_retrieve_wrong_pk_fail(self):
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:provider-config-detail",
+                kwargs={
+                    "provider_pk": self.provider.pk,
+                    "pk": self.get_non_existent_pk(model=ConfigLog),
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_retrieve_wrong_provider_pk_fail(self):
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:provider-config-detail",
+                kwargs={
+                    "provider_pk": self.get_non_existent_pk(model=HostProvider),
+                    "pk": self.provider_initial_config.pk,
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_create_success(self):
+        data = {
+            "config": {"string": "new string"},
+            "attr": {},
+            "description": "new config",
+        }
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:provider-config-list",
+                kwargs={
+                    "provider_pk": self.provider.pk,
+                },
+            ),
+            data=data,
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response_data = response.json()
+        self.assertDictEqual(response_data["config"], data["config"])
+        self.assertDictEqual(response_data["attr"], data["attr"])
+        self.assertEqual(response_data["description"], data["description"])
+        self.assertEqual(response_data["is_current"], True)
+
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:provider-config-list",
+                kwargs={
+                    "provider_pk": self.provider.pk,
+                },
+            )
+        )
+        self.assertEqual(response.json()["count"], 2)
+
+
+class TestHostConfig(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host")
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
+        self.host_config = ConfigLog.objects.get(pk=self.host.config.current)
+
+    def test_list_success(self):
+        response: Response = self.client.get(
+            path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host.pk})
+        )
+
+        data = {
+            "creation_time": self.host_config.date.isoformat().replace("+00:00", "Z"),
+            "description": self.host_config.description,
+            "id": self.host_config.pk,
+            "is_current": True,
+        }
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertDictEqual(response.json()["results"][0], data)
+
+    def test_retrieve_success(self):
+        response: Response = self.client.get(
+            path=reverse(viewname="v2:host-config-detail", kwargs={"host_pk": self.host.pk, "pk": self.host_config.pk})
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        data = {
+            "attr": self.host_config.attr,
+            "config": self.host_config.config,
+            "creation_time": self.host_config.date.isoformat().replace("+00:00", "Z"),
+            "description": self.host_config.description,
+            "id": self.host_config.pk,
+            "is_current": True,
+        }
+        self.assertDictEqual(response.json(), data)
+
+    def test_create_success(self):
+        data = {
+            "config": {"string": "new string"},
+            "attr": {},
+            "description": "new config",
+        }
+        response: Response = self.client.post(
+            path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host.pk}),
+            data=data,
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response_data = response.json()
+        self.assertDictEqual(response_data["config"], data["config"])
+        self.assertDictEqual(response_data["attr"], data["attr"])
+        self.assertEqual(response_data["description"], data["description"])
+        self.assertEqual(response_data["is_current"], True)
+
+        response: Response = self.client.get(
+            path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host.pk})
+        )
+        self.assertEqual(response.json()["count"], 2)
+
+    def test_list_wrong_pk_fail(self):
+        response: Response = self.client.get(
+            path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.get_non_existent_pk(Host)})
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)

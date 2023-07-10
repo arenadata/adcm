@@ -9,10 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from api_v2.concern.serializers import ConcernSerializer
-from cm.models import Host, HostComponent, HostProvider, MaintenanceMode
+from cm.models import Cluster, Host, HostComponent, HostProvider, MaintenanceMode
 from cm.status_api import get_host_status
+from cm.validators import HostUniqueValidator, StartMidEndValidator
+from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     CharField,
     ChoiceField,
@@ -21,11 +22,20 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
+from adcm import settings
+from adcm.permissions import VIEW_CLUSTER_PERM, VIEW_PROVIDER_PERM
+
 
 class HostProviderSerializer(ModelSerializer):
     class Meta:
         model = HostProvider
-        fields = ["id", "name", "display_name"]
+        fields = ["id", "name"]
+
+
+class HostClusterSerializer(ModelSerializer):
+    class Meta:
+        model = Cluster
+        fields = ["id", "name"]
 
 
 class HostComponentSerializer(ModelSerializer):
@@ -40,8 +50,21 @@ class HostComponentSerializer(ModelSerializer):
 class HostSerializer(ModelSerializer):
     status = SerializerMethodField()
     provider = HostProviderSerializer()
-    components = HostComponentSerializer(source="hostcomponent_set", many=True)
     concerns = ConcernSerializer(many=True)
+    fqdn = CharField(
+        max_length=253,
+        help_text="fully qualified domain name",
+        validators=[
+            HostUniqueValidator(queryset=Host.objects.all()),
+            StartMidEndValidator(
+                start=settings.ALLOWED_HOST_FQDN_START_CHARS,
+                mid=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                end=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                err_code="BAD_REQUEST",
+                err_msg="Wrong FQDN.",
+            ),
+        ],
+    )
 
     class Meta:
         model = Host
@@ -51,7 +74,6 @@ class HostSerializer(ModelSerializer):
             "state",
             "status",
             "provider",
-            "components",
             "concerns",
             "is_maintenance_mode_available",
             "maintenance_mode",
@@ -60,6 +82,75 @@ class HostSerializer(ModelSerializer):
     @staticmethod
     def get_status(host: Host) -> int:
         return get_host_status(host=host)
+
+
+class HostUpdateSerializer(ModelSerializer):
+    fqdn = CharField(
+        max_length=253,
+        help_text="fully qualified domain name",
+        required=False,
+        validators=[
+            HostUniqueValidator(queryset=Host.objects.all()),
+            StartMidEndValidator(
+                start=settings.ALLOWED_HOST_FQDN_START_CHARS,
+                mid=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                end=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                err_code="BAD_REQUEST",
+                err_msg="Wrong FQDN.",
+            ),
+        ],
+    )
+
+    class Meta:
+        model = Host
+        fields = ["fqdn", "cluster"]
+        extra_kwargs = {"cluster": {"required": False}}
+
+    def validate_cluster(self, cluster):
+        if not cluster:
+            return cluster
+
+        if not self.context["request"].user.has_perm(perm=VIEW_CLUSTER_PERM, obj=cluster):
+            raise ValidationError("Current user has no permission to view this cluster")
+        if not self.context["request"].user.has_perm(perm="cm.map_host_to_cluster", obj=cluster):
+            raise ValidationError("Current user has no permission to map host to this cluster")
+
+        return cluster
+
+
+class HostCreateSerializer(HostUpdateSerializer):
+    class Meta:
+        model = Host
+        fields = ["provider", "fqdn", "cluster"]
+        extra_kwargs = {"fqdn": {"allow_null": False}}
+
+    def validate_provider(self, provider):
+        if not provider:
+            raise ValidationError("Missing required field provider")
+
+        if not self.context["request"].user.has_perm(perm=VIEW_PROVIDER_PERM, obj=provider):
+            raise ValidationError("Current user has no permission to view this provider")
+
+        return provider
+
+
+class ClusterHostSerializer(HostSerializer):
+    components = HostComponentSerializer(source="hostcomponent_set", many=True)
+
+    class Meta:
+        model = Host
+        fields = [*HostSerializer.Meta.fields, "components"]
+
+
+class ClusterHostCreateSerializer(ModelSerializer):
+    hosts = PrimaryKeyRelatedField(
+        queryset=Host.objects.select_related("cluster").filter(cluster__isnull=True), many=True
+    )
+
+    class Meta:
+        model = Host
+        fields = ["hosts", "fqdn"]
+        extra_kwargs = {"fqdn": {"read_only": True}}
 
 
 class HostMappingSerializer(ModelSerializer):

@@ -14,7 +14,6 @@ from typing import Callable
 from unittest.mock import patch
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.api import add_service_to_cluster
 from cm.models import (
     Action,
     ADCMEntityStatus,
@@ -32,13 +31,8 @@ class TestServiceAPI(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        add_service_to_cluster(
-            cluster=self.cluster_1, proto=Prototype.objects.get(type=ObjectType.SERVICE, name="service_1")
-        )
-        self.service_2 = add_service_to_cluster(
-            cluster=self.cluster_1, proto=Prototype.objects.get(type=ObjectType.SERVICE, name="service_2")
-        )
-
+        self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.service_2 = self.add_service_to_cluster(service_name="service_2", cluster=self.cluster_1)
         self.action = Action.objects.filter(prototype=self.service_2.prototype).first()
 
     def get_service_status_mock(self) -> Callable:
@@ -52,7 +46,7 @@ class TestServiceAPI(BaseAPITestCase):
 
     def test_list_success(self):
         response: Response = self.client.get(
-            path=reverse("v2:clusterobject-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -60,7 +54,9 @@ class TestServiceAPI(BaseAPITestCase):
 
     def test_retrieve_success(self):
         response: Response = self.client.get(
-            path=reverse("v2:clusterobject-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk}),
+            path=reverse(
+                viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk}
+            ),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -68,7 +64,9 @@ class TestServiceAPI(BaseAPITestCase):
 
     def test_delete_success(self):
         response: Response = self.client.delete(
-            path=reverse("v2:clusterobject-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk}),
+            path=reverse(
+                viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk}
+            ),
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
@@ -77,7 +75,7 @@ class TestServiceAPI(BaseAPITestCase):
     def test_create_success(self):
         manual_add_service_proto = Prototype.objects.get(type=ObjectType.SERVICE, name="service_3_manual_add")
         response: Response = self.client.post(
-            path=reverse("v2:clusterobject-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
             data={"prototype": manual_add_service_proto.pk},
         )
 
@@ -85,7 +83,7 @@ class TestServiceAPI(BaseAPITestCase):
 
     def test_filter_by_name_success(self):
         response: Response = self.client.get(
-            path=reverse("v2:clusterobject-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
             data={"name": "service_1"},
         )
 
@@ -95,7 +93,7 @@ class TestServiceAPI(BaseAPITestCase):
     def test_filter_by_status_success(self):
         with patch("api_v2.service.filters.get_service_status", new_callable=self.get_service_status_mock):
             response: Response = self.client.get(
-                path=reverse("v2:clusterobject-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+                path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
                 data={"status": ADCMEntityStatus.UP},
             )
 
@@ -105,7 +103,7 @@ class TestServiceAPI(BaseAPITestCase):
 
     def test_limit_offset_success(self):
         response: Response = self.client.get(
-            path=reverse("v2:clusterobject-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
             data={"limit": 1, "offset": 1},
         )
 
@@ -115,7 +113,7 @@ class TestServiceAPI(BaseAPITestCase):
     def test_change_mm(self):
         response: Response = self.client.post(
             path=reverse(
-                "v2:clusterobject-maintenance-mode",
+                viewname="v2:service-maintenance-mode",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk},
             ),
             data={"maintenance_mode": MaintenanceMode.ON},
@@ -126,21 +124,21 @@ class TestServiceAPI(BaseAPITestCase):
     def test_action_list_success(self):
         response: Response = self.client.get(
             path=reverse(
-                "v2:clusterobject-action-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "clusterobject_pk": self.service_2.pk},
+                viewname="v2:service-action-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_2.pk},
             ),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertGreater(len(response.json()), 0)
+        self.assertEqual(len(response.json()), 2)
 
     def test_action_retrieve_success(self):
         response: Response = self.client.get(
             path=reverse(
-                "v2:clusterobject-action-detail",
+                viewname="v2:service-action-detail",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
-                    "clusterobject_pk": self.service_2.pk,
+                    "service_pk": self.service_2.pk,
                     "pk": self.action.pk,
                 },
             ),
@@ -152,10 +150,10 @@ class TestServiceAPI(BaseAPITestCase):
     def test_action_run_success(self):
         response: Response = self.client.post(
             path=reverse(
-                "v2:clusterobject-action-run",
+                viewname="v2:service-action-run",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
-                    "clusterobject_pk": self.service_2.pk,
+                    "service_pk": self.service_2.pk,
                     "pk": self.action.pk,
                 },
             ),

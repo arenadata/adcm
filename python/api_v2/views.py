@@ -18,5 +18,8 @@ class APIRoot(APIRootView):
         "clusters": "cluster-list",
         "audit": "audit:root",
         "bundles": "bundle-list",
+        "hosts": "host-list",
+        "hostproviders": "hostprovider-list",
         "prototypes": "prototype-list",
+        "jobs": "joblog-list",
     }

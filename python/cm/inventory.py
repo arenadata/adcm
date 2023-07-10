@@ -47,16 +47,36 @@ class HcAclAction:
 MAINTENANCE_MODE = "maintenance_mode"
 
 
-def process_config_and_attr(obj: ADCMEntity, conf: dict, attr: dict | None = None, spec: dict | None = None):
+def process_map(flat_spec: dict, config: dict) -> None:
+    for prototype_config in flat_spec.values():
+        if prototype_config.type == "map":
+            name = prototype_config.name
+            sub_name = prototype_config.subname
+            if sub_name:
+                if config[name][sub_name] is None:
+                    config[name][sub_name] = {}
+            else:
+                if config[name] is None:
+                    config[name] = {}
+
+
+def process_config_and_attr(
+    obj: Cluster | ClusterObject | ServiceComponent | HostProvider | Host | GroupConfig,
+    conf: dict,
+    attr: dict | None = None,
+    spec: dict | None = None,
+    flat_spec: dict | None = None,
+) -> dict:
     if not spec:
         if isinstance(obj, GroupConfig):
             prototype = obj.object.prototype
         else:
             prototype = obj.prototype
 
-        spec, _, _, _ = get_prototype_config(prototype=prototype)
+        spec, flat_spec, _, _ = get_prototype_config(prototype=prototype)
 
     new_config = process_config(obj=obj, spec=spec, old_conf=conf)
+    process_map(flat_spec=flat_spec, config=new_config)
 
     if attr:
         for key, value in attr.items():
@@ -129,7 +149,7 @@ def get_import(cluster: Cluster) -> dict:  # pylint: disable=too-many-branches
     return imports
 
 
-def get_obj_config(obj: ADCMEntity) -> dict:
+def get_obj_config(obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host) -> dict:
     if obj.config is None:
         return {}
 
@@ -161,9 +181,13 @@ def get_before_upgrade(obj: ADCMEntity, host: Host | None) -> dict:
         else:
             bundle_id = obj.before_upgrade["bundle_id"]
         old_proto = Prototype.objects.filter(name=obj.prototype.name, bundle_id=bundle_id).first()
-        old_spec, _, _, _ = get_prototype_config(prototype=old_proto)
+        old_spec, old_flat_spec, _, _ = get_prototype_config(prototype=old_proto)
         config = process_config_and_attr(
-            obj=group_object or obj, conf=config_log.config, attr=config_log.attr, spec=old_spec
+            obj=group_object or obj,
+            conf=config_log.config,
+            attr=config_log.attr,
+            spec=old_spec,
+            flat_spec=old_flat_spec,
         )
 
     return {"state": obj.before_upgrade.get("state"), "config": config}
@@ -347,7 +371,10 @@ def get_host_groups(  # pylint: disable=too-many-branches
             if key not in groups:
                 groups[key] = {"hosts": {}}
 
-            groups[key]["hosts"][hostcomponent.host.fqdn] = get_obj_config(obj=hostcomponent.host)
+            if MAINTENANCE_MODE in key:
+                groups[key]["vars"] = get_cluster_config(cluster=cluster)
+
+            update_host_dict(hosts_group=groups[key]["hosts"], host=hostcomponent.host)
             groups[key]["hosts"][hostcomponent.host.fqdn].update(get_host_vars(host=hostcomponent.host, obj=cluster))
 
     for hc_acl_action in delta:
@@ -369,12 +396,19 @@ def get_host_groups(  # pylint: disable=too-many-branches
                     if remove_maintenance_mode_group_name not in groups:
                         groups[remove_maintenance_mode_group_name] = {"hosts": {}}
 
-                    groups[remove_maintenance_mode_group_name]["hosts"][host.fqdn] = get_obj_config(obj=host)
+                    update_host_dict(hosts_group=groups[remove_maintenance_mode_group_name]["hosts"], host=host)
                     groups[remove_maintenance_mode_group_name]["hosts"][host.fqdn].update(
                         get_host_vars(host=host, obj=cluster)
                     )
 
     return groups
+
+
+def update_host_dict(hosts_group: dict, host: Host) -> None:
+    hosts_group[host.fqdn] = get_obj_config(obj=host)
+    hosts_group[host.fqdn]["adcm_hostid"] = host.id
+    hosts_group[host.fqdn]["state"] = host.state
+    hosts_group[host.fqdn]["multi_state"] = host.multi_state
 
 
 def get_hosts(
@@ -388,10 +422,7 @@ def get_hosts(
         if skip_mm_host or skip_host_not_in_action_host:
             continue
 
-        group[host.fqdn] = get_obj_config(obj=host)
-        group[host.fqdn]["adcm_hostid"] = host.id
-        group[host.fqdn]["state"] = host.state
-        group[host.fqdn]["multi_state"] = host.multi_state
+        update_host_dict(hosts_group=group, host=host)
         if not isinstance(obj, Host):
             group[host.fqdn].update(get_host_vars(host=host, obj=obj))
 

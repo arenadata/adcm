@@ -76,7 +76,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
 
   get passwordValidators() {
     return [
-      ... !this.value ? [Validators.required] : [],
+      Validators.required,
       Validators.minLength(this.passMinLength || 3),
       Validators.maxLength(this.passMaxLength || 128),
       Validators.pattern(new RegExp(/^[\s\S]*$/u))
@@ -165,6 +165,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
     forms.forEach((form: AbstractControl) => {
       if (this._isFirstTouch) {
         form.get('password').setValue('');
+        form.get('password').markAsTouched();
         form.updateValueAndValidity();
       }
     });

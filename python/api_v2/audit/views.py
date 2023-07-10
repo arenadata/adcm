@@ -10,11 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from api_v2.audit.filters import AuditLogListFilter, AuditSessionListFilter
-from api_v2.audit.services import filter_objects_within_time_range
+from api_v2.audit.utils import filter_objects_within_time_range
 from audit.models import AuditLog, AuditSession, AuditSessionLoginResult
 from audit.serializers import AuditLogSerializer, AuditSessionSerializer
 from django.db.models import QuerySet
-from django.http import HttpResponseRedirect
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework.status import HTTP_400_BAD_REQUEST
@@ -35,16 +34,7 @@ class AuditSessionViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
         login_result = self.request.query_params.get("login_result", None)
         if login_result and login_result.casefold() in AuditSessionLoginResult.values:
             self.queryset = self.queryset.filter(login_result=login_result.casefold())
-        self.queryset = filter_objects_within_time_range(self.queryset, self.request.query_params)
-        return self.queryset
-
-    def list(self, request, *args, **kwargs):
-        if not AuditSessionListFilter(data=self.request.query_params, queryset=self.queryset).is_valid():
-            return Response(self.request.query_params, status=HTTP_400_BAD_REQUEST)
-        login_id = self.request.query_params.get("login", None)
-        if self.request.query_params.get("login", None):
-            return HttpResponseRedirect(f"{request.path}{login_id}/")
-        return super().list(request, *args, **kwargs)
+        return filter_objects_within_time_range(self.queryset, self.request.query_params)
 
 
 class AuditLogViewSet(ReadOnlyModelViewSet):
