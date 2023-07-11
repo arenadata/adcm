@@ -1,0 +1,76 @@
+:global {
+  body.theme-dark {
+    --calendar-month-switcher-header: var(--color-xwhite-off);
+    --calendar-month-switcher-header-button-border: var(--color-xdark);
+
+    --calendar-month-switcher-header-button-bg-hover: var(--color-xdark-new-50);
+    --calendar-month-switcher-header-button-color-hover: var(--color-xgray-lighter);
+
+    --calendar-month-switcher-header-button-color-active: var(--color-xwhite-off);
+    --calendar-month-switcher-header-button-bg-active: var(--color-xdark-new);
+    --calendar-month-switcher-header-button-border-active: transparent;
+  }
+
+  body.theme-light {
+    --calendar-month-switcher-header: var(--color-xdark);
+    --calendar-month-switcher-header-button-border: var(--color-xgray-lighter);
+
+    --calendar-month-switcher-header-button-bg-hover: var(--color-xgray-alt-60);
+    --calendar-month-switcher-header-button-color-hover: var(--color-xgray-light);
+
+    --calendar-month-switcher-header-button-color-active: var(--color-xdark);
+    --calendar-month-switcher-header-button-bg-active: var(--color-xgray-alt);
+    --calendar-month-switcher-header-button-border-active: transparent;
+  }
+}
+
+.datePickerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.monthButton {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 24px;
+  height: 24px;
+  font-weight: 300;
+  border: 1px solid var(--calendar-month-switcher-header-button-border);
+  border-radius: 5px;
+  background: none;
+  color: var(--color-xgray-light);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--calendar-month-switcher-header-button-bg-hover);
+    color: var(--calendar-month-switcher-header-button-color-hover);
+  }
+
+  &:active {
+    background: var(--calendar-month-switcher-header-button-bg-active);
+    color: var(--calendar-month-switcher-header-button-color-active);
+    border-color: var(--calendar-month-switcher-header-button-border-active);
+  }
+}
+
+.currentMonth {
+  grid-column-start: 2;
+  grid-column-end: 7;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 28px;
+  color: var(--calendar-month-switcher-header);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.prevMonth {
+  transform: rotate(90deg);
+}
+
+.nextMonth {
+  transform: rotate(-90deg);
+}
