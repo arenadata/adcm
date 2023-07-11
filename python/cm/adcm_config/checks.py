@@ -12,8 +12,8 @@
 
 from typing import Any, Mapping
 
-import yspec.checker
 from cm.adcm_config.utils import config_is_ro, group_keys_to_flat, proto_ref
+from cm.checker import FormatError, SchemaError, process_rule
 from cm.errors import raise_adcm_ex
 from cm.logger import logger
 from cm.models import Action, ADCMEntity, GroupConfig, Prototype
@@ -288,11 +288,11 @@ def check_config_type(  # pylint: disable=too-many-branches,too-many-statements,
     if spec["type"] == "structure":
         schema = spec["limits"]["yspec"]
         try:
-            yspec.checker.process_rule(data=value, rules=schema, name="root")
-        except yspec.checker.FormatError as e:
+            process_rule(data=value, rules=schema, name="root")
+        except FormatError as e:
             msg = tmpl1.format(f"yspec error: {str(e)} at block {e.data}")
             raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=msg)
-        except yspec.checker.SchemaError as e:
+        except SchemaError as e:
             raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=f"yspec error: {str(e)}")
 
     if spec["type"] == "boolean" and not isinstance(value, bool):

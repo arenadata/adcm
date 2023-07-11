@@ -22,11 +22,10 @@ from typing import Any
 
 import ruyaml
 import yaml
-import yspec.checker
 from cm.adcm_config.checks import check_config_type
 from cm.adcm_config.config import read_bundle_file
 from cm.adcm_config.utils import proto_ref
-from cm.checker import FormatError, check, round_trip_load
+from cm.checker import FormatError, check, check_rule, round_trip_load
 from cm.errors import raise_adcm_ex
 from cm.logger import logger
 from cm.models import (
@@ -784,7 +783,7 @@ def get_yspec(proto: StagePrototype | Prototype, bundle_hash: str, conf: dict, n
             msg=f'yspec file of config key "{name}/{subname}" yaml decode error: {e}',
         )
 
-    success, error = yspec.checker.check_rule(rules=schema)
+    success, error = check_rule(rules=schema)
     if not success:
         raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'yspec file of config key "{name}/{subname}" error: {error}')
 

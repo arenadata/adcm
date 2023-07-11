@@ -41,7 +41,6 @@ ruyaml = "*"
 social-auth-app-django = "*"
 uwsgi = "*"
 version-utils = "*"
-yspec = "*"
 six = "*"
 django-cors-headers = "*"
 
