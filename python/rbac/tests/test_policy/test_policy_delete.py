@@ -35,14 +35,16 @@ class DeletePolicyTestCase(PolicyBaseTestCase):
         )
 
         provider_policy_pk = self.create_policy(
-            role_name=provider_role_name, obj=self.provider, user_pk=self.new_user.pk
+            role_name=provider_role_name, obj=self.provider, group_pk=self.new_user_group.pk
         )
-        provider_perms = {perm.codename for perm in self.new_user.user_permissions.all()}
-        provider_perms.update({perm.permission.codename for perm in self.new_user.userobjectpermission_set.all()})
+        provider_perms = {perm.codename for perm in self.new_user_group.permissions.all()}
+        provider_perms.update(
+            {perm.permission.codename for perm in self.new_user_group.groupobjectpermission_set.all()}
+        )
 
-        self.create_policy(role_name=cluster_role_name, obj=self.cluster, user_pk=self.new_user.pk)
-        cluster_perms = {perm.codename for perm in self.new_user.user_permissions.all()}
-        cluster_perms.update({perm.permission.codename for perm in self.new_user.userobjectpermission_set.all()})
+        self.create_policy(role_name=cluster_role_name, obj=self.cluster, group_pk=self.new_user_group.pk)
+        cluster_perms = {perm.codename for perm in self.new_user_group.permissions.all()}
+        cluster_perms.update({perm.permission.codename for perm in self.new_user_group.groupobjectpermission_set.all()})
         cluster_perms = cluster_perms - provider_perms
         cluster_perms.add("view_action")
 
@@ -50,8 +52,8 @@ class DeletePolicyTestCase(PolicyBaseTestCase):
             path=reverse(viewname="v1:rbac:policy-detail", kwargs={"pk": provider_policy_pk}),
         )
 
-        user_perms = {perm.codename for perm in self.new_user.user_permissions.all()}
-        user_perms.update({perm.permission.codename for perm in self.new_user.userobjectpermission_set.all()})
+        group_perms = {perm.codename for perm in self.new_user_group.permissions.all()}
+        group_perms.update({perm.permission.codename for perm in self.new_user_group.groupobjectpermission_set.all()})
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-        self.assertSetEqual(user_perms, cluster_perms)
+        self.assertSetEqual(group_perms, cluster_perms)

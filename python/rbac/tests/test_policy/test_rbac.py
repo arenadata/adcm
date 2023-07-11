@@ -30,6 +30,9 @@ class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance
         super().setUp()
 
         self.user = User.objects.create(username="user", is_active=True, is_superuser=False)
+        self.group = Group.objects.create(name="test_group")
+        self.group.user_set.add(self.user)
+
         self.cluster = Cluster.objects.create(name="Cluster_1", prototype=self.clp)
         self.service_1 = ClusterObject.objects.create(cluster=self.cluster, prototype=self.sp_1)
         self.service_2 = ClusterObject.objects.create(cluster=self.cluster, prototype=self.sp_2)
@@ -67,38 +70,17 @@ class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance
         if hasattr(user, "_group_perm_cache"):
             delattr(user, "_group_perm_cache")
 
-    def test_model_policy(self):
-        policy = Policy.objects.create(name="MyPolicy", role=self.model_role())
-        policy.user.add(self.user)
-
-        self.assertNotIn(self.add_host_perm, self.user.user_permissions.all())
-        self.assertFalse(self.user.has_perm("cm.add_host"))
-        self.clear_perm_cache(self.user)
-
-        policy.apply()
-
-        self.assertIn(self.add_host_perm, self.user.user_permissions.all())
-        self.assertTrue(self.user.has_perm("cm.add_host"))
-
-        self.clear_perm_cache(self.user)
-        policy.apply()
-
-        self.assertTrue(self.user.has_perm("cm.add_host"))
-
     def test_model_policy4group(self):
-        group = Group.objects.create(name="group")
-        group.user_set.add(self.user)
-
         policy = Policy.objects.create(name="MyPolicy", role=self.model_role())
-        policy.group.add(group)
+        policy.group.add(self.group)
 
-        self.assertNotIn(self.add_host_perm, group.permissions.all())
+        self.assertNotIn(self.add_host_perm, self.group.permissions.all())
         self.assertFalse(self.user.has_perm("cm.add_host"))
 
         self.clear_perm_cache(self.user)
         policy.apply()
 
-        self.assertIn(self.add_host_perm, group.permissions.all())
+        self.assertIn(self.add_host_perm, self.group.permissions.all())
         self.assertTrue(self.user.has_perm("cm.add_host"))
 
         self.clear_perm_cache(self.user)
@@ -109,7 +91,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance
     def test_object_policy(self):
         cluster2 = Cluster.objects.create(name="Cluster_2", prototype=self.clp)
         policy = Policy.objects.create(name="MyPolicy", role=self.object_role_view_perm_cluster())
-        policy.user.add(self.user)
+        policy.group.add(self.group)
 
         self.assertFalse(self.user.has_perm("cm.view_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.view_cluster", cluster2))
@@ -120,11 +102,11 @@ class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance
         self.assertTrue(self.user.has_perm("cm.view_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.view_cluster", cluster2))
 
-    def test_object_policy_remove_user(self):
+    def test_object_policy_remove_group(self):
         cluster2 = Cluster.objects.create(name="Cluster_2", prototype=self.clp)
 
         policy = Policy.objects.create(name="MyPolicy", role=self.object_role())
-        policy.user.add(self.user)
+        policy.group.add(self.group)
         policy.add_object(self.cluster)
 
         self.assertFalse(self.user.has_perm("cm.view_cluster", self.cluster))
@@ -134,32 +116,15 @@ class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance
         self.assertTrue(self.user.has_perm("cm.view_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.view_cluster", cluster2))
 
-        policy.user.remove(self.user)
+        policy.group.remove(self.group)
         policy.apply()
 
         self.assertFalse(self.user.has_perm("cm.view_cluster", self.cluster))
-        self.assertFalse(self.user.has_perm("cm.view_cluster", cluster2))
-
-    def test_object_policy4group(self):
-        cluster2 = Cluster.objects.create(name="Cluster_2", prototype=self.clp)
-        group = Group.objects.create(name="group")
-        group.user_set.add(self.user)
-
-        policy = Policy.objects.create(name="MyPolicy", role=self.object_role())
-        policy.group.add(group)
-
-        policy.add_object(self.cluster)
-
-        self.assertFalse(self.user.has_perm("cm.view_cluster", self.cluster))
-
-        policy.apply()
-
-        self.assertTrue(self.user.has_perm("cm.view_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.view_cluster", cluster2))
 
     def test_parent_policy4cluster(self):
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component())
-        policy.user.add(self.user)
+        policy.group.add(self.group)
         policy.add_object(self.cluster)
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
@@ -178,7 +143,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance
 
     def test_parent_policy4service(self):
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component())
-        policy.user.add(self.user)
+        policy.group.add(self.group)
         policy.add_object(self.service_1)
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
@@ -198,7 +163,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance
 
     def test_parent_policy4service2(self):
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component())
-        policy.user.add(self.user)
+        policy.group.add(self.group)
         policy.add_object(self.service_2)
 
         self.assertFalse(self.user.has_perm("cm.view_cluster", self.cluster))
@@ -219,7 +184,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance
 
     def test_parent_policy4component(self):
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component())
-        policy.user.add(self.user)
+        policy.group.add(self.group)
         policy.add_object(self.component_11)
 
         self.assertFalse(self.user.has_perm("cm.view_cluster", self.cluster))
@@ -246,7 +211,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance
         add_host_to_cluster(self.cluster, host1)
         add_host_to_cluster(self.cluster, host2)
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_host())
-        policy.user.add(self.user)
+        policy.group.add(self.group)
         policy.add_object(self.cluster)
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
@@ -281,7 +246,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance
             ],
         )
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component_host())
-        policy.user.add(self.user)
+        policy.group.add(self.group)
         policy.add_object(self.service_1)
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
@@ -330,7 +295,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance
         )
 
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component_host())
-        policy.user.add(self.user)
+        policy.group.add(self.group)
         policy.add_object(self.component_21)
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
@@ -356,7 +321,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance
     def test_parent_policy4provider(self):
         provider, host1, host2 = self.get_hosts_and_provider()
         policy = Policy.objects.create(role=self.object_role_custom_perm_provider_host())
-        policy.user.add(self.user)
+        policy.group.add(self.group)
         policy.add_object(provider)
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_hostprovider", provider))
@@ -371,7 +336,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance
 
     def test_simple_parent_policy(self):
         policy = Policy.objects.create(role=self.model_role_view_cluster_service_component_perm())
-        policy.user.add(self.user)
+        policy.group.add(self.group)
 
         self.assertFalse(self.user.has_perm("cm.view_cluster"))
         self.assertFalse(self.user.has_perm("cm.view_clusterobject"))
@@ -388,7 +353,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance
         sp_3 = Prototype.obj.create(bundle=self.bundle_1, type="service", name="service_3")
 
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_service())
-        policy.user.add(self.user)
+        policy.group.add(self.group)
         policy.add_object(self.cluster)
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
@@ -420,7 +385,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance
         )
 
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component_host())
-        policy.user.add(self.user)
+        policy.group.add(self.group)
         policy.add_object(self.cluster)
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
@@ -459,7 +424,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance
             ],
         )
         policy = Policy.objects.create(role=self.object_role_custom_perm_service_component_host())
-        policy.user.add(self.user)
+        policy.group.add(self.group)
         policy.add_object(self.service_1)
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))

@@ -35,7 +35,7 @@ from cm.models import (
 )
 from django.conf import settings
 from django.urls import reverse
-from rbac.models import Policy, Role, User
+from rbac.models import Group, Policy, Role, User
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_201_CREATED,
@@ -312,7 +312,7 @@ class TestServiceAudit(BaseTestCase):
     def test_delete_denied(self):
         role = Role.objects.get(name="View service config")
         policy = Policy.objects.create(name="test_policy", role=role)
-        policy.user.add(self.no_rights_user)
+        policy.group.add(self.no_rights_user_group)
         policy.add_object(self.service)
         policy.apply()
 
@@ -387,6 +387,8 @@ class TestServiceAudit(BaseTestCase):
         )
 
         user = User.objects.get(pk=response.data["id"])
+        group = Group.objects.create(name="group")
+        group.user_set.add(user)
         response: Response = self.client.post(
             path=reverse(viewname="v1:rbac:role-list"),
             data={
@@ -405,8 +407,7 @@ class TestServiceAudit(BaseTestCase):
             data={
                 "name": "policy_name",
                 "role": {"id": created_role.pk},
-                "user": [{"id": user.pk}],
-                "group": [],
+                "group": [{"id": group.pk}],
                 "object": [{"name": service.name, "type": "service", "id": service.pk}],
             },
             content_type=APPLICATION_JSON,

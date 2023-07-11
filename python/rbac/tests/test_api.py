@@ -30,129 +30,135 @@ class ApiTests(BaseTestCase):
         self.policy_data = [
             (
                 {},
-                "name - This field is required.;object - This field is required.;role - This field is required.;",
+                "name - This field is required.;object - This field is required.;role - This field is required.;"
+                "group - This field is required.;",
             ),
             (
                 {"name": []},
                 (
                     "name - This value does not match the required pattern.;"
-                    "object - This field is required.;role - This field is required.;"
+                    "object - This field is required.;role - This field is required.;group - This field is required.;"
                 ),
             ),
             (
                 {"name": {}},
                 (
                     "name - This value does not match the required pattern.;"
-                    "object - This field is required.;role - This field is required.;"
+                    "object - This field is required.;role - This field is required.;group - This field is required.;"
                 ),
             ),
             (
                 {"name": None},
                 (
                     "name - This field may not be null.;object - This field is required.;"
-                    "role - This field is required.;"
+                    "role - This field is required.;group - This field is required.;"
                 ),
             ),
             (
                 {"name": "test", "role": None},
-                "object - This field is required.;role - This field may not be null.;",
+                "object - This field is required.;role - This field may not be null.;"
+                "group - This field is required.;",
             ),
             (
                 {"name": "test", "role": 1},
                 (
                     "object - This field is required.;non_field_errors - Invalid data. "
-                    "Expected a dictionary, but got int.;"
+                    "Expected a dictionary, but got int.;group - This field is required.;"
                 ),
             ),
             (
                 {"name": "test", "role": "string"},
                 (
                     "object - This field is required.;non_field_errors - Invalid data. "
-                    "Expected a dictionary, but got str.;"
+                    "Expected a dictionary, but got str.;group - This field is required.;"
                 ),
             ),
             (
                 {"name": "test", "role": []},
                 (
                     "object - This field is required.;non_field_errors - Invalid data. "
-                    "Expected a dictionary, but got list.;"
+                    "Expected a dictionary, but got list.;group - This field is required.;"
                 ),
             ),
             (
                 {"name": "test", "role": {}},
-                "object - This field is required.;id - This field is required.;",
+                "object - This field is required.;id - This field is required.;group - This field is required.;",
             ),
             (
                 {"name": "test", "role": {"id": None}},
-                "object - This field is required.;id - This field may not be null.;",
+                "object - This field is required.;id - This field may not be null.;group - This field is required.;",
             ),
             (
                 {"name": "test", "role": {"id": int_1000}},
-                f'object - This field is required.;id - Invalid pk "{int_1000}" - object does not exist.;',
+                f'object - This field is required.;id - Invalid pk "{int_1000}" - object does not exist.;'
+                f"group - This field is required.;",
             ),
             (
                 {"name": "test", "role": {"id": "string"}},
-                "object - This field is required.;id - Incorrect type. Expected pk value, received str.;",
+                "object - This field is required.;id - Incorrect type. Expected pk value, received str.;"
+                "group - This field is required.;",
             ),
             (
                 {"name": "test", "role": {"id": Role.objects.get(name="Create provider").pk}},
-                'object - This field is required.;role - Role with type "business" could not be used in policy;',
+                'object - This field is required.;role - Role with type "business" could not be used in policy;'
+                "group - This field is required.;",
             ),
             (
                 {"name": "test", "role": {"id": Role.objects.get(name="Add host").pk}},
-                'object - This field is required.;role - Role with type "hidden" could not be used in policy;',
+                'object - This field is required.;role - Role with type "hidden" could not be used in policy;'
+                "group - This field is required.;",
             ),
             (
-                {"name": "test", "role": {"id": cluster_adm_role_pk}, "user": None},
-                "object - This field is required.;user - This field may not be null.;",
+                {"name": "test", "role": {"id": cluster_adm_role_pk}, "group": None},
+                "object - This field is required.;group - This field may not be null.;",
             ),
             (
-                {"name": "test", "role": {"id": cluster_adm_role_pk}, "user": 1},
+                {"name": "test", "role": {"id": cluster_adm_role_pk}, "group": 1},
                 'object - This field is required.;non_field_errors - Expected a list of items but got type "int".;',
             ),
             (
-                {"name": "test", "role": {"id": cluster_adm_role_pk}, "user": "string"},
+                {"name": "test", "role": {"id": cluster_adm_role_pk}, "group": "string"},
                 'object - This field is required.;non_field_errors - Expected a list of items but got type "str".;',
             ),
             (
-                {"name": "test", "role": {"id": cluster_adm_role_pk}, "user": {}},
+                {"name": "test", "role": {"id": cluster_adm_role_pk}, "group": {}},
                 'object - This field is required.;non_field_errors - Expected a list of items but got type "dict".;',
             ),
             (
-                {"name": "test", "role": {"id": cluster_adm_role_pk}, "user": [1]},
+                {"name": "test", "role": {"id": cluster_adm_role_pk}, "group": [1]},
                 (
                     "object - This field is required.;non_field_errors - Invalid data. "
                     "Expected a dictionary, but got int.;"
                 ),
             ),
             (
-                {"name": "test", "role": {"id": cluster_adm_role_pk}, "user": ["string"]},
+                {"name": "test", "role": {"id": cluster_adm_role_pk}, "group": ["string"]},
                 (
                     "object - This field is required.;non_field_errors - Invalid data. "
                     "Expected a dictionary, but got str.;"
                 ),
             ),
             (
-                {"name": "test", "role": {"id": cluster_adm_role_pk}, "user": [{}]},
+                {"name": "test", "role": {"id": cluster_adm_role_pk}, "group": [{}]},
                 "object - This field is required.;id - This field is required.;",
             ),
             (
-                {"name": "test", "role": {"id": cluster_adm_role_pk}, "user": [{"id": None}]},
+                {"name": "test", "role": {"id": cluster_adm_role_pk}, "group": [{"id": None}]},
                 "object - This field is required.;id - This field may not be null.;",
             ),
             (
-                {"name": "test", "role": {"id": cluster_adm_role_pk}, "user": [{"id": "string"}]},
+                {"name": "test", "role": {"id": cluster_adm_role_pk}, "group": [{"id": "string"}]},
                 "object - This field is required.;id - Incorrect type. Expected pk value, received str.;",
             ),
             (
-                {"name": "test", "role": {"id": cluster_adm_role_pk}, "user": [{"id": int_1000}]},
+                {"name": "test", "role": {"id": cluster_adm_role_pk}, "group": [{"id": int_1000}]},
                 f'object - This field is required.;id - Invalid pk "{int_1000}" - object does not exist.;',
             ),
             (
                 {
                     "name": "test",
                     "role": {"id": cluster_adm_role_pk},
-                    "user": [{"id": self.test_user.pk}],
+                    "group": [{"id": self.test_user_group.pk}],
                     "object": None,
                 },
                 "object - This field may not be null.;",
@@ -161,7 +167,7 @@ class ApiTests(BaseTestCase):
                 {
                     "name": "test",
                     "role": {"id": cluster_adm_role_pk},
-                    "user": [{"id": self.test_user.pk}],
+                    "group": [{"id": self.test_user_group.pk}],
                     "object": 1,
                 },
                 "object - the field does not match the scheme;",
@@ -170,7 +176,7 @@ class ApiTests(BaseTestCase):
                 {
                     "name": "test",
                     "role": {"id": cluster_adm_role_pk},
-                    "user": [{"id": self.test_user.pk}],
+                    "group": [{"id": self.test_user_group.pk}],
                     "object": "string",
                 },
                 "object - the field does not match the scheme;",
@@ -179,7 +185,7 @@ class ApiTests(BaseTestCase):
                 {
                     "name": "test",
                     "role": {"id": cluster_adm_role_pk},
-                    "user": [{"id": self.test_user.pk}],
+                    "group": [{"id": self.test_user_group.pk}],
                     "object": {},
                 },
                 "object - the field does not match the scheme;",
@@ -188,7 +194,7 @@ class ApiTests(BaseTestCase):
                 {
                     "name": "test",
                     "role": {"id": cluster_adm_role_pk},
-                    "user": [{"id": self.test_user.pk}],
+                    "group": [{"id": self.test_user_group.pk}],
                     "object": [1],
                 },
                 "object - the field does not match the scheme;",
@@ -197,7 +203,7 @@ class ApiTests(BaseTestCase):
                 {
                     "name": "test",
                     "role": {"id": cluster_adm_role_pk},
-                    "user": [{"id": self.test_user.pk}],
+                    "group": [{"id": self.test_user_group.pk}],
                     "object": ["string"],
                 },
                 "object - the field does not match the scheme;",
@@ -206,7 +212,7 @@ class ApiTests(BaseTestCase):
                 {
                     "name": "test",
                     "role": {"id": cluster_adm_role_pk},
-                    "user": [{"id": self.test_user.pk}],
+                    "group": [{"id": self.test_user_group.pk}],
                     "object": [{}],
                 },
                 "object - the field does not match the scheme;",
@@ -215,7 +221,7 @@ class ApiTests(BaseTestCase):
                 {
                     "name": "test",
                     "role": {"id": cluster_adm_role_pk},
-                    "user": [{"id": self.test_user.pk}],
+                    "group": [{"id": self.test_user_group.pk}],
                     "object": [{"id": 1}],
                 },
                 "object - the field does not match the scheme;",
@@ -287,7 +293,7 @@ class ApiTests(BaseTestCase):
             )
 
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-            self.assertEqual(response.json()["desc"], response_data)
+            self.assertEqual(response_data, response.json()["desc"])
 
     def test_create_role(self):
         for request_data, response_data in self.role_data:
@@ -304,7 +310,7 @@ class ApiTests(BaseTestCase):
     def test_patch_empty_role_id(self):
         role = Role.objects.create(name="Test role", module_name="rbac.roles", class_name="ModelRole")
         policy = Policy.objects.create(name="Test policy", role=role, built_in=False)
-        policy.user.add(self.test_user)
+        policy.group.add(self.test_user_group)
 
         path = reverse(viewname="v1:rbac:policy-detail", kwargs={"pk": policy.pk})
         data_valid = {
@@ -315,6 +321,7 @@ class ApiTests(BaseTestCase):
             "role": {
                 "id": role.pk,
             },
+            "group": [{"id": self.test_user_group.pk}],
         }
         response = self.client.patch(path=path, data=data_valid, content_type=APPLICATION_JSON)
 

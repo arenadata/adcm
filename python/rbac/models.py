@@ -39,7 +39,7 @@ from django.db.models import (
     UniqueConstraint,
 )
 from django.db.transaction import atomic
-from guardian.models import GroupObjectPermission, UserObjectPermission
+from guardian.models import GroupObjectPermission
 from rbac.utils import get_query_tuple_str
 from rest_framework.exceptions import ValidationError
 
@@ -207,16 +207,13 @@ class Policy(Model):
     role = ForeignKey(Role, on_delete=SET_NULL, null=True)
     object = ManyToManyField(PolicyObject, blank=True)
     built_in = BooleanField(default=True)
-    user = ManyToManyField(User, blank=True)
-    group = ManyToManyField(Group, blank=True)
+    group = ManyToManyField(Group)
     model_perm = ManyToManyField(PolicyPermission, blank=True)
-    user_object_perm = ManyToManyField(UserObjectPermission, blank=True)
     group_object_perm = ManyToManyField(GroupObjectPermission, blank=True)
 
     def remove_permissions(self):  # pylint: disable=too-many-branches,too-many-statements
         # Placeholder in some places not used because we need to support Postgres and SQLite and I didn't find a way
         # to use placeholder for list of multiple values for SQLite so used string formatting
-        user_pks = self.user.values_list("pk", flat=True)
         group_pks = self.group.values_list("pk", flat=True)
 
         cursor = connection.cursor()
@@ -248,16 +245,6 @@ class Policy(Model):
             if permission_ids_to_delete:
                 permission_ids_to_delete_str = get_query_tuple_str(tuple_items=permission_ids_to_delete)
 
-                if user_pks:
-                    cursor.execute(
-                        f"""
-                            DELETE FROM auth_user_user_permissions WHERE permission_id IN (
-                                SELECT permission_id FROM rbac_policypermission WHERE user_id IS NOT NULL 
-                                AND id IN {permission_ids_to_delete_str}
-                            ) AND user_id IN {get_query_tuple_str(tuple_items=tuple(user_pks))};
-                        """,
-                    )
-
                 if group_pks:
                     cursor.execute(
                         f"""
@@ -281,47 +268,6 @@ class Policy(Model):
                         (user_id IS NOT NULL OR group_id IS NOT NULL) AND id 
                         IN {get_query_tuple_str(tuple_items=permission_ids_to_delete)};
                     """,
-                )
-
-            cursor.execute(
-                """
-                    SELECT userobjectpermission_id FROM rbac_policy_user_object_perm WHERE (
-                        SELECT COUNT(DISTINCT policy_id) FROM rbac_policy_user_object_perm WHERE policy_id = %s
-                    ) = 1 AND policy_id = %s;
-                """,
-                [self.pk, self.pk],
-            )
-            userobj_permission_ids_to_delete = {item[0] for item in cursor.fetchall()}
-            if userobj_permission_ids_to_delete:
-                cursor.execute(
-                    f"""
-                        SELECT userobjectpermission_id FROM rbac_policy_user_object_perm 
-                        WHERE userobjectpermission_id 
-                        in {get_query_tuple_str(tuple_items=userobj_permission_ids_to_delete)} 
-                        AND policy_id != {self.pk};
-                    """
-                )
-
-                userobj_permission_ids_to_keep = {item[0] for item in cursor.fetchall()}
-                if userobj_permission_ids_to_keep:
-                    userobj_permission_ids_to_delete = tuple(
-                        userobj_permission_ids_to_delete - userobj_permission_ids_to_keep
-                    )
-                else:
-                    userobj_permission_ids_to_delete = tuple(userobj_permission_ids_to_delete)
-
-            if userobj_permission_ids_to_delete:
-                userobj_permission_ids_to_delete_str = get_query_tuple_str(tuple_items=userobj_permission_ids_to_delete)
-
-                cursor.execute(
-                    f"""
-                        DELETE FROM rbac_policy_user_object_perm WHERE userobjectpermission_id 
-                        IN {userobj_permission_ids_to_delete_str};
-                    """,
-                )
-
-                cursor.execute(
-                    f"DELETE FROM guardian_userobjectpermission WHERE id IN {userobj_permission_ids_to_delete_str};",
                 )
 
             cursor.execute(

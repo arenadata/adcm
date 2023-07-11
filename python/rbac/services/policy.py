@@ -44,12 +44,11 @@ def _check_objects(role: Role, objects: list[ADCMEntity]) -> None:
 
 @atomic
 def policy_create(name: str, role: Role, built_in: bool = False, **kwargs) -> Policy | None:
-    users = kwargs.get("user", [])
     groups = kwargs.get("group", [])
-    if not users and not groups:
+    if not groups:
         raise_adcm_ex(
             "POLICY_INTEGRITY_ERROR",
-            msg="Role should be bind with some users or groups",
+            msg="Policy should contain at least one group",
         )
 
     objects = kwargs.get("object", [])
@@ -63,7 +62,6 @@ def policy_create(name: str, role: Role, built_in: bool = False, **kwargs) -> Po
             policy_object, _ = PolicyObject.objects.get_or_create(object_id=obj.id, content_type=content_type)
             policy.object.add(policy_object)
 
-        policy.user.add(*users)
         policy.group.add(*groups)
 
         policy.apply()
@@ -77,12 +75,11 @@ def policy_create(name: str, role: Role, built_in: bool = False, **kwargs) -> Po
 
 @atomic
 def policy_update(policy: Policy, **kwargs) -> Policy:
-    users = kwargs.get("user")
     groups = kwargs.get("group")
-    if not (users or policy.user.all()) and not (groups or policy.group.all()):
+    if groups is not None and not groups:
         raise_adcm_ex(
             "POLICY_INTEGRITY_ERROR",
-            msg="Role should be bind with some users or groups",
+            msg="Policy should contain at least one group",
         )
 
     role = kwargs.get("role")
@@ -99,11 +96,7 @@ def policy_update(policy: Policy, **kwargs) -> Policy:
     if role is not None:
         policy.role = role
 
-    if users is not None:
-        policy.user.clear()
-        policy.user.add(*users)
-
-    if groups is not None:
+    if groups:
         policy.group.clear()
         policy.group.add(*groups)
 
