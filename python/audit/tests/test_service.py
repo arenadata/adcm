@@ -102,7 +102,7 @@ class TestServiceAudit(BaseTestCase):
         self.assertEqual(log.operation_type, operation_type)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.user.username, user.username)
         self.assertEqual(log.object_changes, object_changes)
 
     def check_action_log(self, log: AuditLog) -> None:
@@ -304,7 +304,7 @@ class TestServiceAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.FAIL)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.user.username, self.test_user.username)
         self.assertEqual(log.object_changes, {})
 
         self.assertFalse(log.audit_object)

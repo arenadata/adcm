@@ -85,7 +85,7 @@ class TestHostAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.SUCCESS)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.user.username, self.test_user.username)
         self.assertEqual(log.object_changes, {})
 
     def check_host_updated_log(
@@ -111,7 +111,7 @@ class TestHostAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.user.username, user.username)
         self.assertEqual(log.object_changes, object_changes)
 
     def check_host_deleted_log(
@@ -131,7 +131,7 @@ class TestHostAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.DELETE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.user.username, user.username)
         self.assertEqual(log.object_changes, {})
 
     def check_cluster_updated_log(
@@ -157,7 +157,7 @@ class TestHostAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.user.username, user.username)
         self.assertEqual(log.object_changes, {})
 
     def check_denied(self, log: AuditLog) -> None:
@@ -166,7 +166,7 @@ class TestHostAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.DENIED)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.no_rights_user.pk)
+        self.assertEqual(log.user.username, self.no_rights_user.username)
         self.assertEqual(log.object_changes, {})
 
     def check_action_log(self, log: AuditLog) -> None:
@@ -214,7 +214,7 @@ class TestHostAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.FAIL)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.user.username, self.test_user.username)
         self.assertEqual(log.object_changes, {})
 
     def test_create_denied(self):

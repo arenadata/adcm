@@ -75,7 +75,7 @@ class TestLogrotate(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.DELETE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.SUCCESS)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.user.pk)
+        self.assertEqual(log.user.username, self.user.username)
 
     def test_logrotate(
         self,

@@ -22,12 +22,22 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
-from django.contrib.auth.models import User as DjangoUser
-from django.db import models
+from django.db.models import (
+    CASCADE,
+    BooleanField,
+    CharField,
+    DateTimeField,
+    ForeignKey,
+    JSONField,
+    Model,
+    PositiveBigIntegerField,
+    PositiveIntegerField,
+    TextChoices,
+)
 from rbac.models import Group, Policy, Role, User
 
 
-class AuditObjectType(models.TextChoices):
+class AuditObjectType(TextChoices):
     PROTOTYPE = "prototype", "prototype"
     CLUSTER = "cluster", "cluster"
     SERVICE = "service", "service"
@@ -42,47 +52,54 @@ class AuditObjectType(models.TextChoices):
     POLICY = "policy", "policy"
 
 
-class AuditLogOperationType(models.TextChoices):
+class AuditLogOperationType(TextChoices):
     CREATE = "create", "create"
     UPDATE = "update", "update"
     DELETE = "delete", "delete"
 
 
-class AuditLogOperationResult(models.TextChoices):
+class AuditLogOperationResult(TextChoices):
     SUCCESS = "success", "success"
     FAIL = "fail", "fail"
     DENIED = "denied", "denied"
 
 
-class AuditSessionLoginResult(models.TextChoices):
+class AuditSessionLoginResult(TextChoices):
     SUCCESS = "success", "success"
     WRONG_PASSWORD = "wrong password", "wrong password"
     ACCOUNT_DISABLED = "account disabled", "account disabled"
     USER_NOT_FOUND = "user not found", "user not found"
 
 
-class AuditObject(models.Model):
-    object_id = models.PositiveIntegerField()
-    object_name = models.CharField(max_length=2000)
-    object_type = models.CharField(max_length=2000, choices=AuditObjectType.choices)
-    is_deleted = models.BooleanField(default=False)
+class AuditObject(Model):
+    object_id = PositiveIntegerField()
+    object_name = CharField(max_length=2000)
+    object_type = CharField(max_length=2000, choices=AuditObjectType.choices)
+    is_deleted = BooleanField(default=False)
 
 
-class AuditLog(models.Model):
-    audit_object = models.ForeignKey(AuditObject, on_delete=models.CASCADE, null=True)
-    operation_name = models.CharField(max_length=2000)
-    operation_type = models.CharField(max_length=2000, choices=AuditLogOperationType.choices)
-    operation_result = models.CharField(max_length=2000, choices=AuditLogOperationResult.choices)
-    operation_time = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(DjangoUser, on_delete=models.CASCADE, null=True)
-    object_changes = models.JSONField(default=dict)
+class AuditUser(Model):
+    username = CharField(max_length=150, null=False, blank=False)
+    auth_user_id = PositiveBigIntegerField()
+    created_at = DateTimeField(null=True)
+    deleted_at = DateTimeField(null=True)
 
 
-class AuditSession(models.Model):
-    user = models.ForeignKey(DjangoUser, on_delete=models.CASCADE, null=True)
-    login_result = models.CharField(max_length=2000, choices=AuditSessionLoginResult.choices)
-    login_time = models.DateTimeField(auto_now_add=True)
-    login_details = models.JSONField(default=dict, null=True)
+class AuditLog(Model):
+    audit_object = ForeignKey(AuditObject, on_delete=CASCADE, null=True)
+    operation_name = CharField(max_length=2000)
+    operation_type = CharField(max_length=2000, choices=AuditLogOperationType.choices)
+    operation_result = CharField(max_length=2000, choices=AuditLogOperationResult.choices)
+    operation_time = DateTimeField(auto_now_add=True)
+    user = ForeignKey(AuditUser, on_delete=CASCADE, null=True)
+    object_changes = JSONField(default=dict)
+
+
+class AuditSession(Model):
+    user = ForeignKey(AuditUser, on_delete=CASCADE, null=True)
+    login_result = CharField(max_length=2000, choices=AuditSessionLoginResult.choices)
+    login_time = DateTimeField(auto_now_add=True)
+    login_details = JSONField(default=dict, null=True)
 
 
 @dataclass

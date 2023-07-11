@@ -11,13 +11,19 @@
 # limitations under the License.
 
 from datetime import datetime
+from pathlib import Path
+from secrets import token_hex
 
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
     AuditObjectType,
+    AuditSession,
+    AuditUser,
 )
+from cm.models import ObjectType, Prototype
+from django.conf import settings
 from django.urls import reverse
 from rbac.models import User
 from rest_framework.response import Response
@@ -54,8 +60,40 @@ class TestUserAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.user.username, user.username)
         self.assertEqual(log.object_changes, object_changes)
+
+    def _recreate_user(self, username: str) -> tuple[User, str]:
+        new_password = token_hex(nbytes=10)
+        User.objects.get(username=username).delete()
+
+        return self.get_new_user(username=username, password=new_password), new_password
+
+    def _make_audit_logs(self, username: str, password: str, bundle_pk: int) -> tuple[AuditLog, AuditSession]:
+        with self.another_user_logged_in(username=username, password=password):
+            self.client.post(
+                path=reverse(viewname="v1:rbac:token"),
+                data={
+                    "username": username,
+                    "password": password,
+                },
+                content_type=APPLICATION_JSON,
+            )
+            audit_session = AuditSession.objects.order_by("-pk").first()
+
+            self.client.post(
+                path=reverse(viewname="v1:cluster"),
+                data={
+                    "prototype_id": Prototype.objects.get(bundle_id=bundle_pk, type=ObjectType.CLUSTER).pk,
+                    "name": "test_cluster_name",
+                    "display_name": "test_cluster_display_name",
+                    "bundle_id": bundle_pk,
+                },
+                content_type=APPLICATION_JSON,
+            )
+            audit_log = AuditLog.objects.order_by("-pk").first()
+
+        return audit_log, audit_session
 
     def test_create(self):
         response: Response = self.client.post(
@@ -76,7 +114,7 @@ class TestUserAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.SUCCESS)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.user.username, self.test_user.username)
         self.assertEqual(log.object_changes, {})
 
         self.client.post(
@@ -94,7 +132,7 @@ class TestUserAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.FAIL)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.user.username, self.test_user.username)
         self.assertEqual(log.object_changes, {})
 
     def test_create_denied(self):
@@ -115,7 +153,7 @@ class TestUserAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.DENIED)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.no_rights_user.pk)
+        self.assertEqual(log.user.username, self.no_rights_user.username)
         self.assertEqual(log.object_changes, {})
 
     def test_delete(self):
@@ -134,7 +172,7 @@ class TestUserAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.DELETE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.SUCCESS)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.user.username, self.test_user.username)
         self.assertEqual(log.object_changes, {})
 
     def test_delete_denied(self):
@@ -155,7 +193,7 @@ class TestUserAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.DELETE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.DENIED)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.no_rights_user.pk)
+        self.assertEqual(log.user.username, self.no_rights_user.username)
         self.assertEqual(log.object_changes, {})
 
     def test_update_put(self):
@@ -270,7 +308,7 @@ class TestUserAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.FAIL)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.user.username, self.test_user.username)
         self.assertEqual(log.object_changes, {})
 
     def test_reset_failed_login_attempts_denied(self):
@@ -288,3 +326,35 @@ class TestUserAudit(BaseTestCase):
             user=self.no_rights_user,
             operation_name="User login attempts reset",
         )
+
+    def test_recreate_user_same_username_different_audit_users_success(self):
+        initial_audit_users_count = AuditUser.objects.count()
+        with self.another_user_logged_in(username="admin", password="admin"):
+            bundle = self.upload_and_load_bundle(
+                path=Path(settings.BASE_DIR, "python/audit/tests/files/test_cluster_bundle.tar")
+            )
+
+        username, password = "test_user_recreate_username", token_hex(10)
+        with self.another_user_logged_in(username="admin", password="admin"):
+            user = self.get_new_user(username=username, password=password)
+        self.assertEqual(AuditUser.objects.count(), initial_audit_users_count + 1)
+        old_user_pk = user.pk
+
+        audit_log_1, audit_session_1 = self._make_audit_logs(username=username, password=password, bundle_pk=bundle.pk)
+        audit_log_1_pk, audit_session_1_pk = audit_log_1.pk, audit_session_1.pk
+        self.assertEqual(audit_log_1.user.username, username)
+        self.assertEqual(audit_session_1.user.username, username)
+
+        with self.another_user_logged_in(username="admin", password="admin"):
+            new_user, new_password = self._recreate_user(username=username)
+        self.assertEqual(AuditUser.objects.count(), initial_audit_users_count + 2)
+        self.assertEqual(AuditUser.objects.filter(username=username).count(), 2)
+        self.assertNotEqual(old_user_pk, new_user.pk)
+        self.assertEqual(AuditLog.objects.get(pk=audit_log_1_pk).user.username, username)
+        self.assertEqual(AuditSession.objects.get(pk=audit_session_1_pk).user.username, username)
+
+        audit_log_2, audit_session_2 = self._make_audit_logs(
+            username=new_user.username, password=new_password, bundle_pk=bundle.pk
+        )
+        self.assertEqual(audit_log_2.user.username, new_user.username)
+        self.assertEqual(audit_session_2.user.username, new_user.username)

@@ -25,6 +25,7 @@ from audit.models import (
     AuditLogOperationType,
     AuditObject,
     AuditOperation,
+    AuditUser,
 )
 from cm.errors import AdcmEx
 from cm.models import (
@@ -329,16 +330,16 @@ def audit(func):
                 operation_result = AuditLogOperationResult.FAIL
 
             if isinstance(view.request.user, DjangoUser):
-                user = view.request.user
+                audit_user = AuditUser.objects.filter(username=view.request.user.username).order_by("-pk").first()
             else:
-                user = None
+                audit_user = None
 
             auditlog = AuditLog.objects.create(
                 audit_object=audit_object,
                 operation_name=operation_name,
                 operation_type=audit_operation.operation_type,
                 operation_result=operation_result,
-                user=user,
+                user=audit_user,
                 object_changes=object_changes,
             )
             cef_logger(audit_instance=auditlog, signature_id=resolve(request.path).route)
@@ -368,12 +369,11 @@ def make_audit_log(operation_type, result, operation_status):
         },
     }
     operation_name = operation_type_map[operation_type]["name"] + " " + operation_status
-    system_user = User.objects.get(username="system")
     audit_log = AuditLog.objects.create(
         audit_object=None,
         operation_name=operation_name,
         operation_type=operation_type_map[operation_type]["type"],
         operation_result=result,
-        user=system_user,
+        user=AuditUser.objects.get(username="system"),
     )
     cef_logger(audit_instance=audit_log, signature_id="Background operation", empty_resource=True)
