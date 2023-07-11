@@ -26,11 +26,13 @@ class PolicyWithProviderAdminRole(PolicyBaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.create_policy(role_name="Provider Administrator", obj=self.provider, user_pk=self.new_user.pk)
+        self.create_policy(role_name="Provider Administrator", obj=self.provider, group_pk=self.new_user_group.pk)
 
     def test_policy_with_provider_admin_role(self):
-        required_perms = {perm.codename for perm in self.new_user.user_permissions.all()}
-        required_perms.update({perm.permission.codename for perm in self.new_user.userobjectpermission_set.all()})
+        required_perms = {perm.codename for perm in self.new_user_group.permissions.all()}
+        required_perms.update(
+            {perm.permission.codename for perm in self.new_user_group.groupobjectpermission_set.all()}
+        )
 
         self.assertEqual(
             required_perms,

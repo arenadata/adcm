@@ -46,7 +46,7 @@ class TestAdcmConfig(BaseTestCase):
 
     def apply_edit_adcm_settings_policy(self):
         policy = Policy.objects.create(name="test_host_policy", role=Role.objects.get(name="Edit ADCM settings"))
-        policy.user.add(self.no_rights_user)
+        policy.group.add(self.no_rights_user_group)
         policy.add_object(obj=self.adcm)
         policy.apply()
 

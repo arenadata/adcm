@@ -118,8 +118,10 @@ class DeleteServicePolicyTestCase(BaseTestCase):
         super().setUp()
 
         self.user_1_password = "user_1_password"
-        self.user_1 = self.get_new_user(username="user_1", password=self.user_1_password)
-        user_2 = self.get_new_user(username="user_2", password="user_2_password")
+        self.user_1_group = Group.objects.create(name="user_1_group")
+        self.user_2_group = Group.objects.create(name="user_2_group")
+        self.user_1 = self.get_new_user(username="user_1", password=self.user_1_password, group_pk=self.user_1_group.pk)
+        self.get_new_user(username="user_2", password="user_2_password", group_pk=self.user_2_group.pk)
 
         self.cluster = self.get_cluster()
 
@@ -128,12 +130,12 @@ class DeleteServicePolicyTestCase(BaseTestCase):
         self.create_policy(
             role_name="Cluster Administrator",
             obj=self.cluster,
-            user_pk=self.user_1.pk,
+            group_pk=self.user_1_group.pk,
         )
         self.service_admin_policy_pk = self.create_policy(
             role_name="Service Administrator",
             obj=self.main_with_components_service,
-            user_pk=user_2.pk,
+            group_pk=self.user_2_group.pk,
         )
 
     def get_cluster(self):
@@ -192,7 +194,8 @@ class ActionsPolicyTestCase(BaseTestCase):
         super().setUp()
 
         self.user_1_password = "user_1_password"
-        self.user_1 = self.get_new_user(username="user_1", password=self.user_1_password)
+        self.user_1_group = Group.objects.create(name="user_1_group")
+        self.user_1 = self.get_new_user(username="user_1", password=self.user_1_password, group_pk=self.user_1_group.pk)
 
         cluster = self.get_cluster()
         action_service = self.create_service(cluster_pk=cluster.pk, name="actions_service")
@@ -224,7 +227,7 @@ class ActionsPolicyTestCase(BaseTestCase):
         self.create_policy(
             role_name=user_1_role_name,
             obj=cluster,
-            user_pk=self.user_1.pk,
+            group_pk=self.user_1_group.pk,
         )
 
     def get_cluster(self):

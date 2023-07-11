@@ -26,7 +26,7 @@ from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
-    HTTP_405_METHOD_NOT_ALLOWED,
+    HTTP_409_CONFLICT,
 )
 from rest_framework.viewsets import ModelViewSet
 
@@ -87,7 +87,7 @@ class RoleViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
         instance = self.get_object()
 
         if instance.built_in:
-            return Response(status=HTTP_405_METHOD_NOT_ALLOWED)
+            return Response(status=HTTP_409_CONFLICT)
 
         serializer = self.get_serializer(data=request.data, partial=partial)
 
@@ -102,7 +102,7 @@ class RoleViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.built_in:
-            return Response(status=HTTP_405_METHOD_NOT_ALLOWED)
+            return Response(status=HTTP_409_CONFLICT)
         return super().destroy(request, *args, **kwargs)
 
     @action(methods=["get"], detail=False)

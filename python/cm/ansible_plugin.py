@@ -50,7 +50,7 @@ from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from rbac.models import Policy, Role
-from rbac.roles import assign_user_or_group_perm
+from rbac.roles import assign_group_perm
 
 MSG_NO_CONFIG = (
     "There are no job related vars in inventory. It's mandatory for that module to have some"
@@ -583,7 +583,7 @@ def log_check(job_id: int, group_data: dict, check_data: dict) -> CheckLog:
             codename=f"view_{LogStorage.__name__.lower()}",
         )
         for policy in (policy for policy in Policy.objects.all() if task_role in policy.role.child.all()):
-            assign_user_or_group_perm(policy=policy, permission=view_logstorage_permission, obj=log_storage)
+            assign_group_perm(policy=policy, permission=view_logstorage_permission, obj=log_storage)
 
     post_event(
         event="add_job_log",

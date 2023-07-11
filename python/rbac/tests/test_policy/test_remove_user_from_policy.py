@@ -12,6 +12,7 @@
 
 from cm.models import ClusterObject, ObjectType
 from django.urls import reverse
+from rbac.models import Group
 from rbac.tests.test_policy.base import PolicyBaseTestCase
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
@@ -25,7 +26,11 @@ class RemoveUserFromPolicyTestCase(PolicyBaseTestCase):
         super().setUp()
 
         self.service = ClusterObject.objects.first()
-        self.new_user_2 = self.get_new_user(username="new_user_2", password="new_user_2_password")
+
+        self.new_user_2_group = Group.objects.create(name="new_user_2_group_name")
+        self.new_user_2 = self.get_new_user(
+            username="new_user_2", password="new_user_2_password", group_pk=self.new_user_2_group.pk
+        )
 
         self.new_user_role_name = "new_user_role"
         self.create_role(
@@ -44,27 +49,29 @@ class RemoveUserFromPolicyTestCase(PolicyBaseTestCase):
         self.edit_cluster_config_policy_pk = self.create_policy(
             role_name=self.new_user_role_name,
             obj=self.cluster,
-            user_pk=self.new_user.pk,
+            group_pk=self.new_user_group.pk,
         )
         self.edit_service_config_policy_pk = self.create_policy(
             role_name=self.new_user_2_role_name,
             obj=self.service,
-            user_pk=self.new_user_2.pk,
+            group_pk=self.new_user_2_group.pk,
         )
 
-        self.new_user_perms = {perm.codename for perm in self.new_user.user_permissions.all()}
-        self.new_user_perms.update({perm.permission.codename for perm in self.new_user.userobjectpermission_set.all()})
+        self.new_user_group_perms = {perm.codename for perm in self.new_user_group.permissions.all()}
+        self.new_user_group_perms.update(
+            {perm.permission.codename for perm in self.new_user_group.groupobjectpermission_set.all()}
+        )
 
-        self.new_user_2_perms = {perm.codename for perm in self.new_user_2.user_permissions.all()}
-        self.new_user_2_perms.update(
-            {perm.permission.codename for perm in self.new_user_2.userobjectpermission_set.all()}
+        self.new_user_2_group_perms = {perm.codename for perm in self.new_user_2_group.permissions.all()}
+        self.new_user_2_group_perms.update(
+            {perm.permission.codename for perm in self.new_user_2_group.groupobjectpermission_set.all()}
         )
 
     def test_remove_user_from_policy(self):
         response: Response = self.client.patch(
             path=reverse(viewname="v1:rbac:policy-detail", kwargs={"pk": self.edit_cluster_config_policy_pk}),
             data={
-                "user": [{"id": self.new_user_2.pk}],
+                "group": [{"id": self.new_user_2_group.pk}],
                 "object": [{"name": self.cluster.name, "type": ObjectType.CLUSTER, "id": self.cluster.pk}],
             },
             content_type=APPLICATION_JSON,
@@ -75,7 +82,7 @@ class RemoveUserFromPolicyTestCase(PolicyBaseTestCase):
         response: Response = self.client.patch(
             path=reverse(viewname="v1:rbac:policy-detail", kwargs={"pk": self.edit_service_config_policy_pk}),
             data={
-                "user": [{"id": self.new_user.pk}],
+                "group": [{"id": self.new_user_group.pk}],
                 "object": [{"name": self.service.name, "type": ObjectType.SERVICE, "id": self.service.pk}],
             },
             content_type=APPLICATION_JSON,
@@ -83,13 +90,15 @@ class RemoveUserFromPolicyTestCase(PolicyBaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        new_new_user_perms = {perm.codename for perm in self.new_user.user_permissions.all()}
-        new_new_user_perms.update({perm.permission.codename for perm in self.new_user.userobjectpermission_set.all()})
-
-        new_new_user_2_perms = {perm.codename for perm in self.new_user_2.user_permissions.all()}
-        new_new_user_2_perms.update(
-            {perm.permission.codename for perm in self.new_user_2.userobjectpermission_set.all()}
+        new_new_user_perms = {perm.codename for perm in self.new_user_group.permissions.all()}
+        new_new_user_perms.update(
+            {perm.permission.codename for perm in self.new_user_group.groupobjectpermission_set.all()}
         )
 
-        self.assertEqual(new_new_user_perms, self.new_user_2_perms)
-        self.assertEqual(new_new_user_2_perms, self.new_user_perms)
+        new_new_user_2_perms = {perm.codename for perm in self.new_user_2_group.permissions.all()}
+        new_new_user_2_perms.update(
+            {perm.permission.codename for perm in self.new_user_2_group.groupobjectpermission_set.all()}
+        )
+
+        self.assertEqual(new_new_user_perms, self.new_user_2_group_perms)
+        self.assertEqual(new_new_user_2_perms, self.new_user_group_perms)

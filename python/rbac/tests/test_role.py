@@ -659,7 +659,7 @@ class TestMMRoles(RBACBaseTestCase):
             )
 
     def test_mm_host_role(self):
-        policy_create(name="mm host policy", object=[self.host], role=self.mm_role_host, user=[self.test_user])
+        policy_create(name="mm host policy", object=[self.host], role=self.mm_role_host, group=[self.test_user_group])
         check_custom_perm(self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host)
 
         response = self.client.post(
@@ -675,7 +675,7 @@ class TestMMRoles(RBACBaseTestCase):
             name="mm cluster policy",
             object=[self.cluster],
             role=self.mm_role_cluster,
-            user=[self.test_user],
+            group=[self.test_user_group],
         )
         check_custom_perm(self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host)
         check_custom_perm(
@@ -715,7 +715,7 @@ class TestMMRoles(RBACBaseTestCase):
             name="mm cluster policy",
             object=[self.cluster],
             role=Role.objects.get(name="Cluster Administrator"),
-            user=[self.test_user],
+            group=[self.test_user_group],
         )
         check_custom_perm(self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host)
         check_custom_perm(

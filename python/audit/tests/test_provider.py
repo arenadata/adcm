@@ -203,7 +203,7 @@ class TestProviderAudit(BaseTestCase):
 
         role = Role.objects.get(name="View provider configurations")
         policy = Policy.objects.create(name="test_policy", role=role)
-        policy.user.add(self.no_rights_user)
+        policy.group.add(self.no_rights_user_group)
         policy.add_object(provider)
         policy.apply()
 

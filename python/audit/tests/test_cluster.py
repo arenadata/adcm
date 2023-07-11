@@ -236,7 +236,7 @@ class TestClusterAudit(BaseTestCase):
     def add_no_rights_user_cluster_view_rights(self) -> None:
         role = Role.objects.get(name="View cluster configurations")
         policy = Policy.objects.create(name="test_policy", role=role)
-        policy.user.add(self.no_rights_user)
+        policy.group.add(self.no_rights_user_group)
         policy.add_object(self.cluster)
         policy.apply()
 
