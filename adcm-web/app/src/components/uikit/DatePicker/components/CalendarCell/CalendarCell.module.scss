@@ -1,0 +1,72 @@
+:global {
+  body.theme-dark {
+    --date-picker-calendar-date: #3C3F47;
+    --date-picker-calendar-date-hover: var(--color-xwhite-off);
+    --date-picker-calendar-date-bg-hover: transparent;
+    --date-picker-calendar-date-border-color-hover: var(--color-xwhite-off);
+
+    --date-picker-calendar-this-month-day: var(--color-xgray-light);
+
+    --date-picker-calendar-selected-date-bg: var(--color-xgreen-saturated);
+    --date-picker-calendar-selected-date: var(--color-xdark);
+
+    --date-picker-calendar-today-color: var(--color-xwhite-off);
+  }
+
+  body.theme-light {
+    --date-picker-calendar-date: #CACFE5;
+    --date-picker-calendar-date-hover: var(--color-xdark);
+    --date-picker-calendar-date-bg-hover: var(--color-popup-light);
+    --date-picker-calendar-date-border-color-hover: var(--color-xdark);
+
+    --date-picker-calendar-this-month-day: var(--color-xgray-light);
+
+    --date-picker-calendar-selected-date-bg: var(--color-xgreen);
+    --date-picker-calendar-selected-date: var(--color-xwhite);
+
+    --date-picker-calendar-today-color: var(--color-xdark);
+  }
+}
+
+.calendarCell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 250ms, border-color 250ms, background-color 250ms;
+
+  &__date {
+    background: none;
+    color: var(--date-picker-calendar-date);
+  }
+
+  &__date:not(.calendarCell__selectedDate):hover {
+    border: 1px solid var(--date-picker-calendar-date-border-color-hover);
+    background: var(--date-picker-calendar-date-bg-hover);
+    color: var(--date-picker-calendar-date-hover);
+  }
+
+  &__thisMonth {
+    color: var(--date-picker-calendar-this-month-day);
+  }
+
+  &__selectedDate {
+    background: var(--date-picker-calendar-selected-date-bg);
+    color: var(--date-picker-calendar-selected-date);
+  }
+
+  &__today {
+    color: var(--date-picker-calendar-today-color);
+
+    &_selected {
+      border-color: transparent;
+      color: var(--date-picker-calendar-selected-date);
+    }
+  }
+}

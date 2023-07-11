@@ -1,0 +1,21 @@
+:global {
+  body.theme-dark {
+    --date-time-picker-panel-background: var(--color-xdark-new-full);
+  }
+  body.theme-light {
+    --date-time-picker-panel-background: var(--color-xgray-alt);
+  }
+}
+
+.datePicker {
+  &__panel {
+    box-sizing: border-box;
+    min-width: max-content;
+    border-radius: 8px !important;
+    background: var(--date-time-picker-panel-background) !important;
+  }
+
+  &:not(&_small) &__input {
+    min-width: 137px;
+  }
+}
