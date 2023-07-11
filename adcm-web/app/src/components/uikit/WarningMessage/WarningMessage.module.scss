@@ -1,0 +1,26 @@
+.warning {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 12px;
+  border: 1px solid var(--color-orangex);
+  border-radius: 4px;
+  width: fit-content;
+  box-sizing: border-box;
+
+  &__icon {
+    color: var(--color-orangex);
+    flex-shrink: 0;
+  }
+
+  &__text {
+    color: var(--color-xgray-lighter);
+    font-size: 15px;
+    max-height: 104px;
+    overflow: auto;
+
+    strong {
+        color: var(--color-xwhite-off);
+    }
+  }
+}
