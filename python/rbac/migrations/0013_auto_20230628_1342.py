@@ -48,7 +48,7 @@ def migrate_groups_to_users(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("rbac", "0011_user_last_failed_login_at"),
+        ("rbac", "0012_delete_inactive_users"),
     ]
 
     operations = [
