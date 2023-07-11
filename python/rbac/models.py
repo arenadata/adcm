@@ -77,11 +77,6 @@ class User(AuthUser):
     failed_login_attempts = SmallIntegerField(default=0)
     blocked_at = DateTimeField(null=True)
     last_failed_login_at = DateTimeField(null=True)
-
-    def delete(self, using=None, keep_parents=False):
-        self.is_active = False
-        self.save()
-
     type = CharField(max_length=1000, choices=OriginType.choices, null=False, default=OriginType.LOCAL)
 
     @property

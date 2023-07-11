@@ -20,6 +20,7 @@ from audit.models import (
     AuditObjectType,
     AuditSession,
     AuditSessionLoginResult,
+    AuditUser,
 )
 from django.urls import reverse
 from django.utils import timezone
@@ -68,7 +69,7 @@ class TestAuditViews(BaseTestCase):
             operation_name=self.operation_name_first,
             operation_type=AuditLogOperationType.CREATE,
             operation_result=AuditLogOperationResult.SUCCESS,
-            user=self.test_user,
+            user=AuditUser.objects.filter(username=self.test_user.username).order_by("-pk").first(),
             object_changes=self.object_changes_first,
         )
         AuditLog.objects.filter(pk=self.audit_log_first.pk).update(
@@ -79,7 +80,7 @@ class TestAuditViews(BaseTestCase):
             operation_name=self.operation_name_second,
             operation_type=AuditLogOperationType.UPDATE,
             operation_result=AuditLogOperationResult.FAIL,
-            user=self.no_rights_user,
+            user=AuditUser.objects.filter(username=self.no_rights_user.username).order_by("-pk").first(),
             object_changes=self.object_changes_second,
         )
         AuditLog.objects.filter(pk=self.audit_log_second.pk).update(
@@ -90,12 +91,12 @@ class TestAuditViews(BaseTestCase):
         self.login_details_second = {"login": {"details": "second"}}
 
         self.audit_session_first = AuditSession.objects.create(
-            user=self.test_user,
+            user=AuditUser.objects.filter(username=self.test_user).order_by("-pk").first(),
             login_result=AuditSessionLoginResult.SUCCESS,
             login_details=self.login_details_first,
         )
         self.audit_session_second = AuditSession.objects.create(
-            user=self.no_rights_user,
+            user=AuditUser.objects.filter(username=self.no_rights_user).order_by("-pk").first(),
             login_result=AuditSessionLoginResult.WRONG_PASSWORD,
             login_details=self.login_details_second,
         )

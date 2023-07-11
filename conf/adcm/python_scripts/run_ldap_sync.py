@@ -69,11 +69,11 @@ class SyncLDAP:
     @staticmethod
     def _deactivate_extra_users(ldap_usernames: set):
         django_usernames = set(
-            User.objects.filter(type=OriginType.LDAP, is_active=True).values_list("username", flat=True)
+            User.objects.filter(type=OriginType.LDAP).values_list("username", flat=True)
         )
         for username in django_usernames - ldap_usernames:
             user = User.objects.get(username__iexact=username)
-            sys.stdout.write(f"Deactivate user and his session: {user}\n")
+            sys.stdout.write(f"Delete user: {user}\n")
             user.delete()
 
     def unbind(self) -> None:
@@ -106,6 +106,7 @@ class SyncLDAP:
             ldap_groups = self.settings["GROUP_SEARCH"].execute(self.conn, {})
             self._sync_ldap_groups(ldap_groups)
             sys.stdout.write("Groups were synchronized\n")
+
         return ldap_groups
 
     def sync_users(self, ldap_groups: list) -> None:
@@ -114,11 +115,13 @@ class SyncLDAP:
             sys.stdout.write("No groups found. Aborting sync users\n")
             self._deactivate_extra_users(set())
             return
+
         group_filter = ""
         for group_dn, _ in ldap_groups:
             group_filter += f"(memberOf={group_dn})"
         if group_filter:
             group_filter = f"(|{group_filter})"
+
         self.settings["USER_SEARCH"].filterstr = (
             f"(&"
             f"(objectClass={self.settings['USER_OBJECT_CLASS']})"
@@ -126,6 +129,7 @@ class SyncLDAP:
             f"{group_filter})"
         )
         ldap_users = self.settings["USER_SEARCH"].execute(self.conn, {"user": "*"}, True)
+
         self._sync_ldap_users(ldap_users, ldap_groups)
         sys.stdout.write("Users were synchronized\n")
 
@@ -164,6 +168,8 @@ class SyncLDAP:
         ldap_group_names = [group[0].split(",")[0][3:] for group in ldap_groups]
         ldap_usernames = set()
         error_names = []
+        deleted_names: list[str] = []
+
         for cname, ldap_attributes in ldap_users:
             defaults = {}
             for field, ldap_name in self.settings["USER_ATTR_MAP"].items():
@@ -186,12 +192,13 @@ class SyncLDAP:
                 sys.stdout.write(f"Error creating user {username}: {e}\n")
                 continue
             else:
+                if not self._is_ldap_user_active(ldap_attrs=ldap_attributes):
+                    deleted_names.append(user.username)
+                    user.delete()
+                    continue
+
                 updated = False
-                user.is_active = False
-                if ldap_attributes.get("useraccountcontrol") and not hex(
-                    int(ldap_attributes["useraccountcontrol"][0])
-                ).endswith("2"):
-                    user.is_active = True
+
                 if created:
                     sys.stdout.write(f"Create user: {username}\n")
                     user.set_unusable_password()
@@ -221,8 +228,12 @@ class SyncLDAP:
                         except (IntegrityError, DataError, Group.DoesNotExist) as e:
                             sys.stdout.write(f"Error getting group {name}: {e}\n")
         self._deactivate_extra_users(ldap_usernames)
+
         msg = "Sync of users ended successfully."
-        msg = f"{msg} Couldn't synchronize users: {error_names}" if error_names else f"{msg}"
+        if error_names:
+            msg = f"{msg}{os.linesep}Couldn't synchronize users: {error_names}"
+        if deleted_names:
+            msg = f"{msg}{os.linesep}Deleted users (inactive in ldap): {deleted_names}"
         logger.debug(msg)
 
     def _process_user_ldap_groups(self, user: User, user_dn: str) -> None:
@@ -241,6 +252,14 @@ class SyncLDAP:
                 group = group_qs[0]
             group.user_set.add(user)
             sys.stdout.write(f"Add user {user} to group {ldap_group_name}\n")
+
+    @staticmethod
+    def _is_ldap_user_active(ldap_attrs: dict) -> bool:
+        target_attr = "useraccountcontrol"
+        if ldap_attrs.get(target_attr) and not hex(int(ldap_attrs[target_attr][0])).endswith("2"):
+            return True
+
+        return False
 
 
 if __name__ == "__main__":

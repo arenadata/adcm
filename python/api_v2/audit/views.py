@@ -9,10 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from api_v2.audit.filters import AuditLogListFilter, AuditSessionListFilter
+from api_v2.audit.serializers import AuditLogSerializer, AuditSessionSerializer
 from api_v2.audit.utils import filter_objects_within_time_range
 from audit.models import AuditLog, AuditSession, AuditSessionLoginResult
-from audit.serializers import AuditLogSerializer, AuditSessionSerializer
 from django.db.models import QuerySet
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response

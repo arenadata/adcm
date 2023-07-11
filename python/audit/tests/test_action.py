@@ -114,7 +114,7 @@ class TestActionAudit(BaseTestCase):
         self.assertIsInstance(log.operation_time, datetime)
 
         if log.user:
-            self.assertEqual(log.user.pk, user.pk)
+            self.assertEqual(log.user.username, user.username)
 
         self.assertEqual(log.object_changes, {})
 
