@@ -16,7 +16,7 @@ from cm.adcm_config.utils import config_is_ro, group_keys_to_flat, proto_ref
 from cm.checker import FormatError, SchemaError, process_rule
 from cm.errors import raise_adcm_ex
 from cm.logger import logger
-from cm.models import Action, ADCMEntity, GroupConfig, Prototype
+from cm.models import Action, ADCMEntity, GroupConfig, Prototype, StagePrototype
 from django.conf import settings
 
 
@@ -211,7 +211,7 @@ def _check_str(value: Any, idx: Any, key: str, subkey: str, ref: str, label: str
 
 
 def check_config_type(  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
-    proto: Prototype,
+    prototype: StagePrototype | Prototype,
     key: str,
     subkey: str,
     spec: dict,
@@ -219,7 +219,7 @@ def check_config_type(  # pylint: disable=too-many-branches,too-many-statements,
     default: bool = False,
     inactive: bool = False,
 ) -> None:
-    ref = proto_ref(prototype=proto)
+    ref = proto_ref(prototype=prototype)
     if default:
         label = "Default value"
     else:
