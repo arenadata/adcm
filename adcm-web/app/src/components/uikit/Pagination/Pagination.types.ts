@@ -4,7 +4,7 @@ import { PaginationParams } from '@uikit/types/list.types';
 
 export interface PaginationData {
   pageNumber: number;
-  perPage: number | null;
+  perPage: number;
 }
 
 export interface PaginationProps {

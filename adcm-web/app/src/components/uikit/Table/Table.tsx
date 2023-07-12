@@ -11,7 +11,11 @@ import s from './Table.module.scss';
 import { TableContext } from '@uikit/Table/TableContext';
 
 type TableVariants = 'primary' | 'secondary' | 'tertiary';
-export interface TableProps extends React.HTMLAttributes<HTMLDivElement>, SortingProps, TableSelectedAllOptions {
+
+export interface TableProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    Partial<SortingProps>,
+    TableSelectedAllOptions {
   columns: TableColumn[];
   children: React.ReactNode;
   variant?: TableVariants;

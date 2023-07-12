@@ -1,7 +1,7 @@
 export type SortDirection = 'asc' | 'desc';
 
-export interface SortParams<T extends string = string> {
-  sortBy: T;
+export interface SortParams {
+  sortBy: string;
   sortDirection: SortDirection;
 }
 
@@ -10,14 +10,7 @@ export interface PaginationParams {
   perPage: number;
 }
 
-export type ListState<F extends object, E extends string = string> = {
-  filter: F;
-  sortParams: SortParams<E>;
-  paginationParams: PaginationParams;
-  requestFrequency: number;
-};
-
-export interface SortingProps<T extends string = string> {
-  sortParams: SortParams<T>;
-  onSorting: (sortParams: SortParams<T>) => void;
+export interface SortingProps {
+  sortParams: SortParams;
+  onSorting: (sortParams: SortParams) => void;
 }

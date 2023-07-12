@@ -64,6 +64,17 @@ export class AxiosBasedHttpClient {
     }
   }
 
+  public async patch<T, D = unknown>(url: string, data?: D, options?: RequestOptions): Promise<Response<T>> {
+    try {
+      const axiosResponse = await this.axiosInstance.patch<T>(url, data, options || {});
+      const response = this.mapResponse<T>(axiosResponse);
+      return response;
+    } catch (axiosError) {
+      const error = this.mapError(axiosError as AxiosError);
+      throw error;
+    }
+  }
+
   public async delete<T>(url: string, options?: RequestOptions): Promise<Response<T>> {
     try {
       const axiosResponse = await this.axiosInstance.delete(url, options || {});
