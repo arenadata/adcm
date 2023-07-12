@@ -34,22 +34,31 @@ options:
     type: list
     elements: dict
     sample:
-      - component: datanode
-      - service: yarn
+      - type: service
+        service_name: hdfs
+      - type: component
+        service_name: service
+        component_name: component
+      - type: cluster 
 """
 
 EXAMPLES = r"""
 - adcm_change_flag:
   operation: up
   objects:
-    - service: hdfs
-    - service: yarn
+  - type: service
+    service_name: hdfs
+  - type: component
+    service_name: service
+    component_name: component
+  - type: cluster 
 
 - adcm_change_flag:
   operation: down
   objects:
-    - component: datanode
-    - service: yarn
+      - type: provider
+      - type: host
+        name: host_name
 """
 import sys
 from ansible.plugins.action import ActionBase
@@ -58,10 +67,9 @@ from ansible.errors import AnsibleError
 sys.path.append("/adcm/python")
 import adcm.init_django  # pylint: disable=unused-import
 
-
 from cm.ansible_plugin import get_context_object, check_context_type
 from cm.flag import update_flags, remove_flag
-from cm.models import ClusterObject, ServiceComponent, get_object_cluster
+from cm.models import ClusterObject, ServiceComponent, get_object_cluster, HostProvider, Host, ADCMEntity
 
 cluster_context_type = ("cluster", "service", "component")
 
@@ -79,7 +87,82 @@ class ActionModule(ActionBase):
 
         if "objects" in self._task.args:
             if not isinstance(self._task.args["objects"], list):
-                raise AnsibleError("'Objects' value must be list of services and/or components")
+                raise AnsibleError("'Objects' value should be list of objects")
+
+            if not self._task.args["objects"]:
+                raise AnsibleError("'Objects' value should not be empty")
+
+            for item in self._task.args["objects"]:
+                item_type = item.get("type")
+                if not item_type:
+                    raise AnsibleError(message="'type' argument is mandatory for all items in 'objects'")
+
+                if item_type == "component" and ("service_name" not in item or "component_name" not in item):
+                    raise AnsibleError(message="'service_name' and 'component_name' is mandatory for type 'component'")
+                if item_type == "service" and "service_name" not in item:
+                    raise AnsibleError(message="'service_name' is mandatory for type 'service'")
+
+    def _process_objects(self, task_vars: dict, objects: list, context_obj: ADCMEntity) -> None:
+        err_msg = "Type {} should be used in {} context only"
+        cluster = get_object_cluster(obj=context_obj)
+
+        for item in self._task.args["objects"]:
+            obj = None
+            item_type = item.get("type")
+
+            if item_type == "component":
+                check_context_type(
+                    task_vars=task_vars,
+                    context_types=cluster_context_type,
+                    err_msg=err_msg.format(item_type, cluster_context_type),
+                )
+
+                obj = ServiceComponent.objects.filter(
+                    cluster=cluster,
+                    prototype__name=item["component_name"],
+                    service__prototype__name=item["service_name"],
+                ).first()
+            elif item_type == "service":
+                check_context_type(
+                    task_vars=task_vars,
+                    context_types=cluster_context_type,
+                    err_msg=err_msg.format(item_type, cluster_context_type),
+                )
+
+                obj = ClusterObject.objects.filter(cluster=cluster, prototype__name=item["service_name"]).first()
+            elif item_type == "cluster":
+                check_context_type(
+                    task_vars=task_vars,
+                    context_types=cluster_context_type,
+                    err_msg=err_msg.format(item_type, cluster_context_type),
+                )
+
+                obj = cluster
+            elif item_type == "provider":
+                check_context_type(
+                    task_vars=task_vars,
+                    context_types=("provider", "host"),
+                    err_msg=err_msg.format(item_type, ("provider", "host")),
+                )
+
+                if isinstance(context_obj, HostProvider):
+                    obj = context_obj
+                elif isinstance(context_obj, Host):
+                    obj = context_obj.provider
+
+            elif item_type == "host":
+                check_context_type(
+                    task_vars=task_vars,
+                    context_types=("host",),
+                    err_msg=err_msg.format(item_type, "host"),
+                )
+
+                obj = context_obj
+
+            if not obj:
+                raise AnsibleError("'Objects' item must contain some objects in list")
+
+            objects.append(obj)
 
     def run(self, tmp=None, task_vars=None):
         super().run(tmp, task_vars)
@@ -92,26 +175,7 @@ class ActionModule(ActionBase):
         objects = []
         context_obj = get_context_object(task_vars=task_vars)
         if "objects" in self._task.args:
-            check_context_type(
-                task_vars=task_vars,
-                context_types=cluster_context_type,
-                err_msg="'Objects' parameter must be used in 'cluster', 'service' or 'component' context only",
-            )
-            cluster = get_object_cluster(obj=context_obj)
-
-            for item in self._task.args["objects"]:
-                obj = None
-                if "component" in item and "service" in item:
-                    obj = ServiceComponent.objects.filter(
-                        cluster=cluster, prototype__name=item["component"], service__prototype__name=item["service"]
-                    ).first()
-                elif "service" in item:
-                    obj = ClusterObject.objects.filter(cluster=cluster, prototype__name=item["service"]).first()
-
-                if not obj:
-                    raise AnsibleError("'Objects' item must contain service and/or component name")
-
-                objects.append(obj)
+            self._process_objects(objects=objects, context_obj=context_obj, task_vars=task_vars)
         else:
             objects.append(context_obj)
 
