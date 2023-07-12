@@ -1,5 +1,9 @@
 {
   "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
   "plugins": ["react", "prettier", "@typescript-eslint", "react-hooks", "react-refresh", "spellcheck"],
   "extends": [
     "eslint:recommended",
@@ -32,6 +36,8 @@
           "checkbox",
           "checkboxes",
           "cn",
+          "comparator",
+          "csrftoken",
           "ctx",
           "dataset",
           "datetime",
@@ -41,6 +47,7 @@
           "django",
           "dropdown",
           "guid",
+          "hljs",
           "hostprovider",
           "hostproviders",
           "href",
@@ -50,6 +57,7 @@
           "mousemove",
           "mouseup",
           "mql",
+          "multiline",
           "nanoid",
           "noopener",
           "noreferrer",
@@ -68,20 +76,23 @@
           "rp",
           "schemas",
           "searchable",
-          "ssl",
           "sql",
+          "ssl",
           "statusable",
           "str",
           "svg",
-          "textarea",
-          "toggler",
+          "svgr",
           "td",
+          "textarea",
           "th",
+          "toggler",
           "tooltip",
           "ttl",
           "unlink",
           "unmount",
-          "uri"
+          "uri",
+          "vite",
+          "xsrf"
         ]
       }
     ],

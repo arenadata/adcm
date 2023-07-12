@@ -1,3 +1,4 @@
+/* eslint-disable spellcheck/spell-checker */
 import Table, { TableProps } from './Table';
 import { Meta, StoryObj } from '@storybook/react';
 import { TableColumn } from '@uikit/Table/Table.types';

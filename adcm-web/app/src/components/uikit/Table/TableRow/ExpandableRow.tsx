@@ -28,7 +28,7 @@ const ExpandableRow = ({
   const rowClasses = cn(className, s.expandableRowMain, {
     [tableStyles.hovered]: isMainHovered || isExpandHovered,
     [s.expanded]: isExpanded,
-   });
+  });
 
   const expandedRowClasses = cn(s.expandableRowContent, { [tableStyles.hovered]: isMainHovered || isExpandHovered });
 

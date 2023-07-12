@@ -1,3 +1,4 @@
+/* eslint-disable spellcheck/spell-checker */
 import React from 'react';
 import { Meta, StoryObj } from '@storybook/react';
 import TabsBlock, { TabsBlockProps } from '@uikit/Tabs/TabsBlock';
@@ -118,7 +119,9 @@ const ClusterTabsExample: React.FC<TabsBlockProps> = (args) => {
         <Tab to="/overview">Overview</Tab>
         <Tab to="/services">Services</Tab>
         <Tab to="/hosts">Hosts</Tab>
-        <Tab to="/mapping"><Statusable status="unknown">Mapping</Statusable></Tab>
+        <Tab to="/mapping">
+          <Statusable status="unknown">Mapping</Statusable>
+        </Tab>
         <Tab to="/configuration">Configuration</Tab>
         <Tab to="/import">Import</Tab>
       </TabsBlock>

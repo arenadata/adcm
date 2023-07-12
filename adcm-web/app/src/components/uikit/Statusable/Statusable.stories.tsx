@@ -32,7 +32,7 @@ export const StatusableLink: Story = {
   render: ({ children, ...args }) => {
     return (
       <Statusable {...args}>
-        <a className="text-link" href="/some/urls" onClick={(e) => e.preventDefault()}>
+        <a className="text-link" href="/some/url" onClick={(e) => e.preventDefault()}>
           {children}
         </a>
       </Statusable>

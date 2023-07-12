@@ -1,3 +1,4 @@
+/* eslint-disable spellcheck/spell-checker */
 import CodeHighlighter from './CodeHighlighter';
 import { Meta, StoryObj } from '@storybook/react';
 

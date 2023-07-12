@@ -38,7 +38,10 @@ const DiagramExample = ({ totalCount, currentCount, colorClass }: CircleDiagramP
   return (
     <div className={s.diagramExample}>
       <CircleDiagram currentCount={currentCount} totalCount={totalCount} colorClass={prepColorClass} />
-      <div className={s.diagramExample__radioGroup} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentColor(e.target.value)}>
+      <div
+        className={s.diagramExample__radioGroup}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentColor(e.target.value)}
+      >
         <label>
           <input type="radio" value="green" name="color" /> Green color
         </label>
