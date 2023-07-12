@@ -46,6 +46,7 @@
           "deletable",
           "django",
           "dropdown",
+          "enum",
           "guid",
           "hljs",
           "hostprovider",
@@ -90,6 +91,7 @@
           "ttl",
           "unlink",
           "unmount",
+          "upgradable",
           "uri",
           "vite",
           "xsrf"

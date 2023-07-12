@@ -9,7 +9,7 @@ import {
   Draft,
 } from '@reduxjs/toolkit';
 import { StoreState, AppDispatch } from './store';
-import { ListState, PaginationParams, SortParams } from '@uikit/types/list.types';
+import { ListState, PaginationParams, SortParams } from '@models/table';
 
 type ThunkApiConfig = { state: StoreState; dispatch: AppDispatch };
 

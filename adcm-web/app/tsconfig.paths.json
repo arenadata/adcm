@@ -32,6 +32,9 @@
       "@models/*": [
         "./models/*"
       ],
+      "@models/adcm": [
+        "./models/adcm/index",
+      ],
       "@hooks": [
         "./hooks/index"
       ],

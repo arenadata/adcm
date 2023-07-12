@@ -17,11 +17,11 @@ export const structureTraversal = (
   keyHandler: DefaultHandler<string> = (k) => k,
 ): Structure => {
   if (Array.isArray(structure)) {
-    return structure.map((item) => structureTraversal(item, valueHandler));
+    return structure.map((item) => structureTraversal(item, valueHandler, keyHandler));
   }
   if (isObject(structure)) {
     return Object.entries(structure).reduce((res, [key, val]) => {
-      res[keyHandler(key)] = structureTraversal(val, valueHandler);
+      res[keyHandler(key)] = structureTraversal(val, valueHandler, keyHandler);
       return res;
     }, {} as Record<string, Structure>);
   }
