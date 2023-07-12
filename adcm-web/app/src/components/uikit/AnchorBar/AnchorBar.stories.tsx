@@ -1,3 +1,4 @@
+/* eslint-disable spellcheck/spell-checker */
 import AnchorBar, { AnchorList } from './AnchorBar';
 import { Meta, StoryObj } from '@storybook/react';
 import s from './AnchorBar.stories.module.scss';

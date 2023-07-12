@@ -9,6 +9,10 @@ export default {
 
 export const WarningMessageElement: Story = {
   render: (args) => {
-    return <WarningMessage {...args}>Warning message <strong>bold text</strong></WarningMessage>;
+    return (
+      <WarningMessage {...args}>
+        Warning message <strong>bold text</strong>
+      </WarningMessage>
+    );
   },
 };

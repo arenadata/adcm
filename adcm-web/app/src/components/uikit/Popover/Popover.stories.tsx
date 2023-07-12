@@ -1,3 +1,4 @@
+/* eslint-disable spellcheck/spell-checker */
 import React, { useRef, useState } from 'react';
 import { Meta, StoryObj } from '@storybook/react';
 import Popover, { PopoverProps } from './Popover';

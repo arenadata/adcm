@@ -1,4 +1,4 @@
-
+/* eslint-disable spellcheck/spell-checker */
 import { useState } from 'react';
 import Table from '@uikit/Table/Table';
 import TableCell from '@uikit/Table/TableCell/TableCell';
@@ -11,10 +11,8 @@ type Story = StoryObj<typeof ExpandableRowComponent>;
 export default {
   title: 'uikit/Table/ExpandableRow',
   component: ExpandableRowComponent,
-  argTypes: {
-  },
+  argTypes: {},
 } as Meta<typeof ExpandableRowComponent>;
-
 
 const columns = [
   {
@@ -67,11 +65,11 @@ const data = [
   },
 ];
 
-const longText = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
+const longText =
+  'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
 
 export const ExpandableRow: Story = {
-  args: {
-  },
+  args: {},
   render: (args) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [expandableRows, setExpandableRows] = useState<Record<number, boolean>>({
@@ -84,14 +82,20 @@ export const ExpandableRow: Story = {
       setExpandableRows({
         ...expandableRows,
         [id]: !expandableRows[id],
-      })
-    }
+      });
+    };
 
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     const handleSorting = () => {};
 
     return (
-      <Table variant='tertiary' {...args} columns={columns} sortParams={{ sortBy: 'id', sortDirection: 'asc'}} onSorting={handleSorting}>
+      <Table
+        variant="tertiary"
+        {...args}
+        columns={columns}
+        sortParams={{ sortBy: 'id', sortDirection: 'asc' }}
+        onSorting={handleSorting}
+      >
         {data.map((entity) => (
           <ExpandableRowComponent
             key={entity.id}
@@ -109,6 +113,7 @@ export const ExpandableRow: Story = {
             </TableCell>
           </ExpandableRowComponent>
         ))}
-    </Table>)
+      </Table>
+    );
   },
 };

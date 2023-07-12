@@ -32,16 +32,16 @@ export default {
   },
 } as Meta<typeof Pagination>;
 
-export const Paginations: Story = {
+export const PaginationStory: Story = {
   args: {
     pageData: { perPage: 10, pageNumber: 4 },
     totalItems: 145,
   },
 
-  render: (args) => <PaginationStory {...args} />,
+  render: (args) => <PaginationExample {...args} />,
 };
 
-const PaginationStory = ({ totalItems, pageData, perPageItems, isNextBtn, hidePerPage }: PaginationProps) => {
+const PaginationExample = ({ totalItems, pageData, perPageItems, isNextBtn, hidePerPage }: PaginationProps) => {
   const [curPageData, setCurPageData] = useState(pageData);
 
   const handleOnChange = ({ perPage, pageNumber }: PaginationParams) => {

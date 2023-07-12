@@ -17,8 +17,8 @@ const THEMES_CLASS = {
 const THEME_STORAGE_KEY = 'css_theme_name';
 
 const switchToTheme = (theme: THEME) => {
-  Object.entries(THEMES_CLASS).forEach(([tm, className]) => {
-    document.body.classList.toggle(className, tm === theme);
+  Object.entries(THEMES_CLASS).forEach(([themeName, className]) => {
+    document.body.classList.toggle(className, themeName === theme);
   });
 };
 
