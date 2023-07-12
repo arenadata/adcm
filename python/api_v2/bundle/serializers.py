@@ -23,7 +23,7 @@ class BundleListSerializer(ModelSerializer):
 
     class Meta:
         model = Bundle
-        fields = ("id", "name", "display_name", "version", "edition", "upload_time", "category")
+        fields = ("id", "name", "display_name", "version", "edition", "upload_time", "category", "signature_status")
 
     def get_display_name(self, instance) -> str | None:
         prototype = instance.prototype_set.filter(type__in=["adcm", "cluster", "provider"]).first()

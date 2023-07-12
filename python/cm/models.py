@@ -58,6 +58,11 @@ class MaintenanceMode(models.TextChoices):
     CHANGING = "CHANGING", "CHANGING"
 
 
+class SignatureState(models.TextChoices):
+    VERIFIED = "verified", "verified"
+    NOT_VERIFIED = "not verified", "not verified"
+
+
 LICENSE_STATE = (
     ("absent", "absent"),
     ("accepted", "accepted"),
@@ -182,6 +187,9 @@ class Bundle(ADCMModel):
     description = models.TextField(blank=True)
     date = models.DateTimeField(auto_now=True)
     category = models.ForeignKey("ProductCategory", on_delete=models.RESTRICT, null=True)
+    signature_status = models.CharField(
+        max_length=100, choices=SignatureState.choices, default=SignatureState.NOT_VERIFIED
+    )
 
     __error_code__ = "BUNDLE_NOT_FOUND"
 
