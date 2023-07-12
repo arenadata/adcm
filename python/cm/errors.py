@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from cm.logger import logger
+from django.conf import settings
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -182,6 +183,7 @@ ERRORS = {
         HTTP_400_BAD_REQUEST,
         ERR,
     ),
+    "NO_GPG_PUBLIC_KEY": (f"Gpg public key is not presented in {settings.GPG_PUBLIC_KEY}", HTTP_404_NOT_FOUND, ERR),
     "AUDIT_OPERATIONS_FORBIDDEN": (
         "access to audit of operations is forbidden",
         HTTP_403_FORBIDDEN,
