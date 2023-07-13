@@ -29,6 +29,7 @@ from cm.models import (
     Action,
     Bundle,
     Cluster,
+    ConfigLog,
     HostProvider,
     ProductCategory,
     Prototype,
@@ -247,9 +248,8 @@ def get_hash(bundle_file: str) -> str:
     return sha1.hexdigest()
 
 
-def load_adcm():
+def load_adcm(adcm_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.yaml")):
     check_stage()
-    adcm_file = Path(settings.BASE_DIR, "conf", "adcm", "config.yaml")
     conf = read_definition(conf_file=adcm_file)
     if not conf:
         logger.warning("Empty adcm config (%s)", adcm_file)
@@ -313,7 +313,15 @@ def upgrade_adcm(adcm, bundle):
     with transaction.atomic():
         adcm.prototype = new_proto
         adcm.save()
+        config_log_old = ConfigLog.objects.get(obj_ref=adcm.config, id=adcm.config.current)
         switch_config(adcm, new_proto, old_proto)
+        config_log_new = ConfigLog.objects.get(obj_ref=adcm.config, id=adcm.config.current)
+        if rpm.compare_versions("2.6", old_proto.version) > -1 and rpm.compare_versions(new_proto.version, "2.7") > -1:
+            config_log_new.config["audit_data_retention"].update(config_log_old.config["job_log"])
+            config_log_new.config["audit_data_retention"]["config_rotation_in_db"] = config_log_old.config[
+                "config_rotation"
+            ]
+            config_log_new.save(update_fields=["config"])
 
     logger.info(
         "upgrade adcm OK from version %s to %s",

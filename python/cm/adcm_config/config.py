@@ -152,6 +152,7 @@ def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many
         return
 
     config_log = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
+
     _, old_spec, _, _ = get_prototype_config(prototype=old_prototype)
     new_unflat_spec, new_spec, _, _ = get_prototype_config(prototype=new_prototype)
     old_conf = to_flat_dict(config=config_log.config, spec=old_spec)

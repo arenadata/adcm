@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 2.7
+  version: 2.6
 
   actions:
     run_ldap_sync:
@@ -46,8 +46,6 @@
           required: false
           ui_options:
             no_confirm: true
-      ui_options:
-        invisible: true
     - name: "yandex_oauth"
       display_name: "Yandex Auth"
       type: "group"
@@ -62,10 +60,38 @@
             no_confirm: true
       ui_options:
         invisible: true
+    - name: "job_log"
+      display_name: "Job Log"
+      type: "group"
+      subs:
+        - name: "log_rotation_on_fs"
+          display_name: "Log rotation from file system"
+          type: integer
+          required: false
+          default: 365
+          min: 0
+          description: |
+            You can set the time (number of days) after which the logs will be deleted from the file system.
+        - name: "log_rotation_in_db"
+          display_name: "Log rotation from database"
+          type: integer
+          required: false
+          default: 365
+          min: 0
+          description: |
+            You can set the time (number of days) after which the logs will be deleted from the database.
     - name: "ansible_settings"
       display_name: "Ansible Settings"
       type: "group"
       subs:
+        - name: "mitogen"
+          display_name: "Use Mitogen"
+          description: |
+            Mitogen for Ansible is a completely redesigned UNIX connection layer and module runtime for Ansible.
+          type: boolean
+          ui_options:
+            invisible: true
+          default: false
         - name: "forks"
           display_name: "Forks"
           description: |
@@ -100,44 +126,35 @@
             Compress the rotated files
           type: boolean
           default: false
-    - name: "audit_data_retention"
-      display_name: "Data retention policy"
+    - name: "config_rotation"
+      display_name: "Configuration rotation"
+      description: |
+        You can enable Clusters/Services/Components configurations deleting mechanism.
       type: "group"
       subs:
-        - name: "log_rotation_on_fs"
-          display_name: "Job log retention period from file system"
-          type: integer
-          required: false
-          default: 365
-          min: 0
-          description: |
-            You can set the time (number of days) after which the logs will be deleted from the file system.
-        - name: "log_rotation_in_db"
-          display_name: "Job log retention period from database"
-          type: integer
-          required: false
-          default: 365
-          min: 0
-          description: |
-            You can set the time (number of days) after which the logs will be deleted from the database.
         - name: "config_rotation_in_db"
-          display_name: "Objects configurations retention period"
+          display_name: "Objects configurations rotation period"
           type: integer
           required: false
           default: 0
           min: 0
           description: |
             You can set the time (number of days) after which the Objects configuration will be deleted from the database. 0 is infinite storing.
+
+    - name: "audit_data_retention"
+      display_name: "Audit data retention"
+      type: "group"
+      subs:
         - name: "retention_period"
-          display_name: "Audit data retention period"
+          display_name: "Retention period"
           description: |
             Data storage period (in days) for operations and authorizations in ADCM.
           type: integer
           default: 1825
         - name: "data_archiving"
-          display_name: "Enable audit data archiving"
+          display_name: "Enable archiving"
           description: |
-            Enable/disable archiving of data on operations and authorizations after the period specified in "Audit data retention period".
+            Enable/disable archiving of data on operations and authorizations after the period specified in "retention_period".
           type: boolean
           default: false
           required: no
