@@ -975,14 +975,6 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
     adcm_object = ADCM.objects.first()
     config_log = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
     adcm_conf = config_log.config
-    mitogen = adcm_conf["ansible_settings"]["mitogen"]
-
-    if mitogen:
-        config_parser["defaults"]["strategy"] = "mitogen_linear"
-        config_parser["defaults"]["strategy_plugins"] = str(
-            Path(settings.PYTHON_SITE_PACKAGES, "ansible_mitogen", "plugins", "strategy"),
-        )
-        config_parser["defaults"]["host_key_checking"] = "False"
 
     forks = adcm_conf["ansible_settings"]["forks"]
     config_parser["defaults"]["forks"] = str(forks)

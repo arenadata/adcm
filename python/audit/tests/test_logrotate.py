@@ -40,8 +40,7 @@ class TestLogrotate(BaseTestCase):
         attr = current_config_log.attr
         config.update(
             {
-                "job_log": {"log_rotation_on_fs": 1, "log_rotation_in_db": 1},
-                "config_rotation": {"config_rotation_in_db": 1},
+                "audit_data_retention": {"log_rotation_on_fs": 1, "log_rotation_in_db": 1, "config_rotation_in_db": 1},
                 "logrotate": {"size": "10M", "max_history": 10, "compress": False},
             }
         )
