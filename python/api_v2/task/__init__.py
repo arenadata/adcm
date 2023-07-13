@@ -9,18 +9,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from rest_framework.routers import APIRootView
-
-
-class APIRoot(APIRootView):
-    api_root_dict = {
-        "clusters": "cluster-list",
-        "audit": "audit:root",
-        "bundles": "bundle-list",
-        "hosts": "host-list",
-        "hostproviders": "hostprovider-list",
-        "prototypes": "prototype-list",
-        "jobs": "joblog-list",
-        "tasks": "tasklog-list",
-    }

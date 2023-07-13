@@ -9,18 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from api_v2.log_storage.views import LogStorageTaskViewSet
+from api_v2.task.views import TaskViewSet
+from rest_framework.routers import SimpleRouter
+from rest_framework_nested.routers import NestedSimpleRouter
 
-from rest_framework.routers import APIRootView
+router = SimpleRouter()
+router.register("", TaskViewSet)
 
+log_storage_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="task")
+log_storage_router.register(prefix="logs", viewset=LogStorageTaskViewSet, basename="log")
 
-class APIRoot(APIRootView):
-    api_root_dict = {
-        "clusters": "cluster-list",
-        "audit": "audit:root",
-        "bundles": "bundle-list",
-        "hosts": "host-list",
-        "hostproviders": "hostprovider-list",
-        "prototypes": "prototype-list",
-        "jobs": "joblog-list",
-        "tasks": "tasklog-list",
-    }
+urlpatterns = [*router.urls, *log_storage_router.urls]
