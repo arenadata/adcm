@@ -571,7 +571,7 @@ def prepare_job(
 
 
 def get_selector(obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host, action: Action) -> dict:
-    selector = {obj.prototype.type: {"id": obj.pk, "name": obj.display_name}}
+    selector = {obj.prototype.type: {"id": obj.pk, "name": obj.name, "display_name": obj.display_name}}
 
     if obj.prototype.type == ObjectType.SERVICE:
         selector[ObjectType.CLUSTER] = {"id": obj.cluster.pk, "name": obj.cluster.display_name}

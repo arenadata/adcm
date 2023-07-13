@@ -45,6 +45,9 @@ VIEW_GROUP_CONFIG_PERM = "cm.view_groupconfig"
 VIEW_IMPORT_PERM = "view_import_of"
 CHANGE_IMPORT_PERM = "change_import_of"
 VIEW_CLUSTER_BIND = "view_clusterbind"
+VIEW_TASKLOG_PERMISSION = "cm.view_tasklog"
+VIEW_JOBLOG_PERMISSION = "cm.view_joblog"
+VIEW_LOGSTORAGE_PERMISSION = "cm.view_logstorage"
 
 
 class DjangoObjectPermissionsAudit(DjangoObjectPermissions):

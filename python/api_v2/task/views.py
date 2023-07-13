@@ -10,11 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from api.base_view import GenericUIViewSet
-from api.job.views import VIEW_JOBLOG_PERMISSION
-from api_v2.job.serializers import JobRetrieveSerializer
-from api_v2.task.serializers import JobListSerializer
-from cm.models import JobLog, JobStatus
-from cm.status_api import Event
+from api.job.views import VIEW_TASKLOG_PERMISSION
+from api_v2.task.serializers import TaskListSerializer
+from cm.job import cancel_task
+from cm.models import TaskLog
 from rest_framework.decorators import action
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
@@ -24,25 +23,16 @@ from rest_framework.status import HTTP_200_OK
 from adcm.permissions import check_custom_perm, get_object_for_user
 
 
-class JobViewSet(
+class TaskViewSet(
     ListModelMixin, RetrieveModelMixin, CreateModelMixin, GenericUIViewSet
 ):  # pylint: disable=too-many-ancestors
-    queryset = JobLog.objects.select_related("task").all()
-    serializer_class = JobListSerializer
-
-    def get_serializer_class(self):
-        if self.action == "retrieve":
-            return JobRetrieveSerializer
-
-        return super().get_serializer_class()
+    queryset = TaskLog.objects.select_related("action").all()
+    serializer_class = TaskListSerializer
 
     @action(methods=["post"], detail=True)
     def terminate(self, request: Request, pk: int) -> Response:
-        job: JobLog = get_object_for_user(request.user, VIEW_JOBLOG_PERMISSION, JobLog, id=pk)
-        check_custom_perm(request.user, "change", JobLog, pk)
-
-        event = Event()
-        event.set_job_status(job=job, status=JobStatus.ABORTED.value)
-        job.cancel(event)
+        task = get_object_for_user(request.user, VIEW_TASKLOG_PERMISSION, TaskLog, id=pk)
+        check_custom_perm(request.user, "change", TaskLog, task)
+        cancel_task(task)
 
         return Response(status=HTTP_200_OK)
