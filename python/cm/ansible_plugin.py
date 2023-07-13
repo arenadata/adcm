@@ -131,18 +131,10 @@ def get_object_id_from_context(task_vars: dict, id_type: str, context_types: tup
 
 
 def get_context_object(task_vars: dict, err_msg: str = None) -> ADCMEntity:
-    cluster_context_types = ("cluster", "service", "component")
-    context_types = []
     obj_type = task_vars["context"]["type"]
 
-    if obj_type in cluster_context_types:
-        context_types.extend(cluster_context_types)
-        context_types.append("cluster")
-    else:
-        context_types.append(obj_type)
-
     obj_pk = get_object_id_from_context(
-        task_vars=task_vars, id_type=f"{obj_type}_id", context_types=cluster_context_types, err_msg=err_msg
+        task_vars=task_vars, id_type=f"{obj_type}_id", context_types=(obj_type,), err_msg=err_msg
     )
     obj = get_model_by_type(object_type=obj_type).objects.filter(pk=obj_pk).first()
 
