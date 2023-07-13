@@ -5,6 +5,7 @@ import s from './MainLayout.module.scss';
 import PageHeader from '@layouts/partials/PageHeader/PageHeader';
 import MainHeader from '@layouts/partials/MainHeader/MainHeader';
 import HeaderAdvancedInfo from '@layouts/partials/HeaderAdvancedInfo/HeaderAdvancedInfo';
+import NotificationsSideBar from '@layouts/partials/NotificationsSideBar/NotificationsSideBar';
 
 const MainLayout: React.FC<React.PropsWithChildren> = ({ children }) => {
   return (
@@ -19,6 +20,7 @@ const MainLayout: React.FC<React.PropsWithChildren> = ({ children }) => {
         <PageHeader />
         {children}
       </div>
+      <NotificationsSideBar />
     </div>
   );
 };
