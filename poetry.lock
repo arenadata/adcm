@@ -1860,21 +1860,7 @@ files = [
     {file = "wrapt-1.15.0.tar.gz", hash = "sha256:d06730c6aed78cee4126234cf2d071e01b44b915e725a6cb439a879ec9754a3a"},
 ]
 
-[[package]]
-name = "yspec"
-version = "0.1.0"
-description = "YAML structure validator"
-optional = false
-python-versions = "*"
-files = [
-    {file = "yspec-0.1.0-py3-none-any.whl", hash = "sha256:81d491c4d67f12401c032ef547a3965497b842a2af2181730c4d0989dd8e866a"},
-    {file = "yspec-0.1.0.tar.gz", hash = "sha256:c47258e639f50cde32de2c3f415f7c1ac4d2aab7a898699e3e107282fbd75e71"},
-]
-
-[package.dependencies]
-pyyaml = "*"
-
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "4d2fe2bf83159299b8c97bb1ded6a6fdb39be958b5d5e0756d7b610b6ed33fcf"
+content-hash = "99cb3fa962dcdec969b9f0199a710b893ae9e75314fa86b03d65f7ebcc81206d"
