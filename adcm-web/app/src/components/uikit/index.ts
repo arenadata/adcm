@@ -10,9 +10,13 @@ import Table from '@uikit/Table/Table';
 import TableRow from '@uikit/Table/TableRow/TableRow';
 import TableCell from '@uikit/Table/TableCell/TableCell';
 import type { TableColumn } from '@uikit/Table/Table.types';
+import Icon from './Icon/Icon';
+import type { IconsNames } from './Icon/sprite';
 
 export {
   Button,
+  Icon,
+  IconsNames,
   Pagination,
   PaginationData,
   SearchInput,

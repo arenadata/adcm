@@ -56,9 +56,11 @@ export const allowIconsNames = [
   'g2-sun',
   'g2-user',
   'g2-users',
+  'lamp',
   'marker-alert',
   'marker-check',
   'marker-info',
+  'triangle-alert',
 ] as const;
 
 export type IconsNames = (typeof allowIconsNames)[number];
