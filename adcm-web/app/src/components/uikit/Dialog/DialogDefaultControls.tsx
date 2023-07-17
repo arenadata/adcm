@@ -1,10 +1,17 @@
 import React from 'react';
 import Button from '@uikit/Button/Button';
 import ButtonGroup from '@uikit/ButtonGroup/ButtonGroup';
-import { DialogControlsOptions } from './Dialog.types';
 import s from './Dialog.module.scss';
 
-const DialogDefaultControls: React.FC<DialogControlsOptions> = ({
+export interface DialogDefaultControlsProps {
+  cancelButtonLabel?: string;
+  actionButtonLabel?: string;
+  isActionDisabled?: boolean;
+  onAction?: () => void;
+  onCancel?: () => void;
+}
+
+const DialogDefaultControls: React.FC<DialogDefaultControlsProps> = ({
   actionButtonLabel = 'Run',
   onAction,
   cancelButtonLabel = 'Cancel',

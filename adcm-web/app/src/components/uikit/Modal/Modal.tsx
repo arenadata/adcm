@@ -17,6 +17,7 @@ interface ModalProps extends ModalOptions {
   className?: string;
   style?: CSSProperties;
 }
+
 const Modal: React.FC<ModalProps> = ({
   isOpen,
   onOpenChange,

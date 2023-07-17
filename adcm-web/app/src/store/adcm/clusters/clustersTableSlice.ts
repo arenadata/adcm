@@ -1,7 +1,7 @@
 import { createListSlice, createAsyncThunk } from '@store/redux';
 import { ListState } from '@models/table';
 import { AdcmPrototypesApi } from '@api';
-import { AdcmClustersFilter } from '@models/adcm';
+import { AdcmClustersFilter, PrototypeType } from '@models/adcm';
 
 type AdcmClustersTableState = ListState<AdcmClustersFilter> & {
   relatedData: {
@@ -31,7 +31,7 @@ const createInitialState = (): AdcmClustersTableState => ({
 
 const loadPrototypeVersions = createAsyncThunk('adcm/clusters/loadPrototypeVersions', async (arg, thunkAPI) => {
   try {
-    const prototypeVersions = await AdcmPrototypesApi.getPrototypeVersions();
+    const prototypeVersions = await AdcmPrototypesApi.getPrototypeVersions({ type: PrototypeType.Cluster });
     return prototypeVersions;
   } catch (error) {
     return thunkAPI.rejectWithValue(error);

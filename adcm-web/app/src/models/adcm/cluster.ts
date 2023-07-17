@@ -46,6 +46,7 @@ export interface AdcmClustersFilter {
 }
 
 export interface CreateAdcmClusterPayload {
+  isLicenseAccepted: boolean;
   prototypeId: number;
   name: string;
   description: string;

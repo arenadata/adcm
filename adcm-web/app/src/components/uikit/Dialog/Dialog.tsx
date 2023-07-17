@@ -3,16 +3,16 @@ import Modal from '@uikit/Modal/Modal';
 import { ModalOptions } from '@uikit/Modal/Modal.types';
 import IconButton from '@uikit/IconButton/IconButton';
 import Text from '@uikit/Text/Text';
-import { DialogControlsOptions } from '@uikit/Dialog/Dialog.types';
-import DialogDefaultControls from '@uikit/Dialog/DialogDefaultControls';
+import DialogDefaultControls, { DialogDefaultControlsProps } from '@uikit/Dialog/DialogDefaultControls';
 import s from './Dialog.module.scss';
 
-export interface DialogProps extends ModalOptions, DialogControlsOptions {
+export interface DialogProps extends ModalOptions, DialogDefaultControlsProps {
   children: React.ReactNode;
   title?: React.ReactNode;
   dialogControls?: React.ReactNode;
   width?: string;
 }
+
 const Dialog: React.FC<DialogProps> = ({
   isOpen,
   onOpenChange,
@@ -32,7 +32,7 @@ const Dialog: React.FC<DialogProps> = ({
     onCancel?.();
   };
 
-  const handleIsOpenChange = (isOpen: boolean) => {
+  const handleOpenChange = (isOpen: boolean) => {
     // we can't open Dialog from Dialog, we can close Dialog only
     if (!isOpen) {
       handleClose();
@@ -42,7 +42,7 @@ const Dialog: React.FC<DialogProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onOpenChange={handleIsOpenChange}
+      onOpenChange={handleOpenChange}
       className={s.dialog}
       isDismissDisabled={isDismissDisabled}
       style={{ width }}

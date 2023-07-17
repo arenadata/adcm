@@ -1,4 +1,11 @@
 import Button from '@uikit/Button/Button';
+import Checkbox from './Checkbox/Checkbox';
+import Dialog from '@uikit/Dialog/Dialog';
+import DialogDefaultControls from '@uikit/Dialog/DialogDefaultControls';
+import type { DialogDefaultControlsProps } from '@uikit/Dialog/DialogDefaultControls';
+import Input from '@uikit/Input/Input';
+import FormField from '@uikit/FormField/FormField';
+import FormFieldsContainer from '@uikit/FormField/FormFieldsContainer';
 import Pagination from '@uikit/Pagination/Pagination';
 import type { PaginationData } from '@uikit/Pagination/Pagination.types';
 import SearchInput from '@uikit/SearchInput/SearchInput';
@@ -15,8 +22,15 @@ import type { IconsNames } from './Icon/sprite';
 
 export {
   Button,
+  Checkbox,
+  Dialog,
+  DialogDefaultControls,
+  DialogDefaultControlsProps,
   Icon,
   IconsNames,
+  Input,
+  FormField,
+  FormFieldsContainer,
   Pagination,
   PaginationData,
   SearchInput,
