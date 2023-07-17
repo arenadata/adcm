@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from api_v2.concern.serializers import ConcernSerializer
+from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from cm.models import Cluster, Host, HostComponent, HostProvider, MaintenanceMode
 from cm.status_api import get_host_status
 from cm.validators import HostUniqueValidator, StartMidEndValidator
@@ -29,7 +30,7 @@ from adcm.permissions import VIEW_CLUSTER_PERM, VIEW_PROVIDER_PERM
 class HostProviderSerializer(ModelSerializer):
     class Meta:
         model = HostProvider
-        fields = ["id", "name"]
+        fields = ["id", "name", "display_name"]
 
 
 class HostClusterSerializer(ModelSerializer):
@@ -50,6 +51,7 @@ class HostComponentSerializer(ModelSerializer):
 class HostSerializer(ModelSerializer):
     status = SerializerMethodField()
     provider = HostProviderSerializer()
+    prototype = PrototypeRelatedSerializer(read_only=True)
     concerns = ConcernSerializer(many=True)
     fqdn = CharField(
         max_length=253,
@@ -74,6 +76,7 @@ class HostSerializer(ModelSerializer):
             "state",
             "status",
             "provider",
+            "prototype",
             "concerns",
             "is_maintenance_mode_available",
             "maintenance_mode",

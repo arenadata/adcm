@@ -71,3 +71,9 @@ class PrototypeTypeSerializer(EmptySerializer):
         serializer = PrototypeVersionSerializer(instance=queryset, many=True)
 
         return serializer.data
+
+
+class PrototypeRelatedSerializer(ModelSerializer):
+    class Meta:
+        model = Prototype
+        fields = ("id", "name", "display_name", "type", "version")

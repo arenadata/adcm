@@ -13,13 +13,13 @@
 from typing import Any
 
 from api_v2.concern.serializers import ConcernSerializer
+from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from cm.adcm_config.config import get_main_info
 from cm.models import Cluster, HostComponent, Prototype
 from cm.status_api import get_obj_status
 from cm.upgrade import get_upgrade
 from rest_framework.serializers import (
     BooleanField,
-    CharField,
     ModelSerializer,
     SerializerMethodField,
 )
@@ -29,8 +29,7 @@ from adcm.utils import get_requires
 
 class ClusterSerializer(ModelSerializer):
     status = SerializerMethodField()
-    prototype_name = CharField(source="prototype.name")
-    prototype_version = CharField(source="prototype.version")
+    prototype = PrototypeRelatedSerializer(read_only=True)
     concerns = ConcernSerializer(many=True, read_only=True)
     is_upgradable = SerializerMethodField()
     main_info = SerializerMethodField()
@@ -43,8 +42,7 @@ class ClusterSerializer(ModelSerializer):
             "state",
             "multi_state",
             "status",
-            "prototype_name",
-            "prototype_version",
+            "prototype",
             "description",
             "concerns",
             "is_upgradable",

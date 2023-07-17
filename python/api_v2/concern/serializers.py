@@ -11,11 +11,16 @@
 # limitations under the License.
 
 from cm.models import ConcernItem
-from rest_framework.serializers import BooleanField, ModelSerializer
+from rest_framework.serializers import (
+    BooleanField,
+    ModelSerializer,
+    SerializerMethodField,
+)
 
 
 class ConcernSerializer(ModelSerializer):
     is_blocking = BooleanField(source="blocking")
+    reason = SerializerMethodField()
 
     class Meta:
         model = ConcernItem
@@ -24,3 +29,21 @@ class ConcernSerializer(ModelSerializer):
             "reason",
             "is_blocking",
         )
+
+    @staticmethod
+    def get_reason(instance: ConcernItem) -> dict:
+        reason = instance.reason
+
+        if "source" in reason["placeholder"]:
+            ids = reason["placeholder"]["source"].pop("ids")
+            reason["placeholder"]["source"]["id"] = ids[reason["placeholder"]["source"]["type"]]
+
+        if "target" in reason["placeholder"] and reason["placeholder"]["target"]["type"] != "prototype":
+            ids = reason["placeholder"]["target"].pop("ids")
+            reason["placeholder"]["target"]["id"] = ids[reason["placeholder"]["target"]["type"]]
+
+        if "job" in reason["placeholder"]:
+            ids = reason["placeholder"]["job"].pop("ids")
+            reason["placeholder"]["job"]["id"] = ids
+
+        return reason

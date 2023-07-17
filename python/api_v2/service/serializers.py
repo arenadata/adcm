@@ -11,11 +11,11 @@
 # limitations under the License.
 
 from api_v2.concern.serializers import ConcernSerializer
+from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from cm.adcm_config.config import get_main_info
 from cm.models import ClusterObject, MaintenanceMode
 from cm.status_api import get_obj_status
 from rest_framework.serializers import (
-    CharField,
     ChoiceField,
     ModelSerializer,
     SerializerMethodField,
@@ -23,7 +23,7 @@ from rest_framework.serializers import (
 
 
 class ServiceRetrieveSerializer(ModelSerializer):
-    prototype_version = CharField(read_only=True, source="prototype.version")
+    prototype = PrototypeRelatedSerializer(read_only=True)
     status = SerializerMethodField()
     concerns = ConcernSerializer(read_only=True, many=True)
     main_info = SerializerMethodField()
@@ -34,7 +34,7 @@ class ServiceRetrieveSerializer(ModelSerializer):
             "id",
             "name",
             "display_name",
-            "prototype_version",
+            "prototype",
             "status",
             "state",
             "concerns",
