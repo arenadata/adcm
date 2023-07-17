@@ -11,40 +11,58 @@
 # limitations under the License.
 
 from audit.models import AuditLog, AuditSession
-from rest_framework.serializers import CharField, IntegerField, ModelSerializer
+from rest_framework.fields import CharField, DateTimeField, SerializerMethodField
+from rest_framework.serializers import ModelSerializer
+
+
+class AuditSessionSerializer(ModelSerializer):
+    user = SerializerMethodField()
+    result = CharField(source="login_result")
+    time = DateTimeField(source="login_time")
+
+    class Meta:
+        model = AuditSession
+        fields = ("id", "user", "result", "time")
+
+    @staticmethod
+    def get_user(obj: AuditSession) -> dict:
+        return {"name": obj.user.username}
 
 
 class AuditLogSerializer(ModelSerializer):
-    object_id = IntegerField(read_only=True, source="audit_object.object_id", allow_null=True)
-    object_type = CharField(read_only=True, source="audit_object.object_type", allow_null=True)
-    object_name = CharField(read_only=True, source="audit_object.object_name", allow_null=True)
-    username = CharField(read_only=True, source="user.username", allow_null=True)
+    time = DateTimeField(source="operation_time")
+    name = CharField(read_only=True, source="operation_name")
+    type = CharField(read_only=True, source="operation_type")
+    result = CharField(read_only=True, source="operation_result")
+    user = SerializerMethodField()
+    object = SerializerMethodField()
 
     class Meta:
         model = AuditLog
         fields = [
             "id",
-            "object_id",
-            "object_type",
-            "object_name",
-            "operation_type",
-            "operation_name",
-            "operation_result",
-            "operation_time",
-            "username",
+            "name",
+            "type",
+            "result",
+            "time",
+            "object",
+            "user",
             "object_changes",
         ]
 
+    @staticmethod
+    def get_user(obj: AuditLog) -> dict | None:
+        if not obj.user:
+            return None
+        return {"name": obj.user.username}
 
-class AuditSessionSerializer(ModelSerializer):
-    username = CharField(source="user.username", read_only=True)
+    @staticmethod
+    def get_object(obj: AuditLog) -> dict | None:
+        if not obj.audit_object:
+            return None
 
-    class Meta:
-        model = AuditSession
-        fields = [
-            "id",
-            "username",
-            "login_result",
-            "login_time",
-            "login_details",
-        ]
+        return {
+            "id": obj.audit_object.object_id,
+            "type": obj.audit_object.object_type,
+            "name": obj.audit_object.object_name,
+        }
