@@ -39,8 +39,7 @@ export const useCreateClusterDialog = () => {
   }, [isOpen]);
 
   const isValid = useMemo(() => {
-    // return formData.productVersion !== null && formData.name;
-    return formData.name && formData.isUserAcceptedLicense;
+    return formData.productVersion !== null && formData.name && formData.isUserAcceptedLicense;
   }, [formData]);
 
   const handleClose = () => {
@@ -48,17 +47,16 @@ export const useCreateClusterDialog = () => {
   };
 
   const handleCreate = () => {
-    // if (formData.productVersion) {
-    dispatch(
-      createCluster({
-        name: formData.name,
-        description: formData.description,
-        prototypeId: 2,
-        isLicenseAccepted: formData.productVersion?.isLicenseAccepted ?? false,
-      }),
-    );
-
-    // }
+    if (formData.productVersion) {
+      dispatch(
+        createCluster({
+          name: formData.name,
+          description: formData.description,
+          prototypeId: formData.productVersion.id,
+          isLicenseAccepted: formData.productVersion?.isLicenseAccepted ?? false,
+        }),
+      );
+    }
   };
 
   const handleChangeFormData = (changes: Partial<CreateClusterFormData>) => {
