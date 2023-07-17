@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from api_v2.concern.serializers import ConcernSerializer
+from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from cm.adcm_config.config import get_main_info
 from cm.models import HostProvider
 from cm.upgrade import get_upgrade
@@ -20,10 +21,8 @@ from rest_framework.serializers import CharField, ModelSerializer, SerializerMet
 class HostProviderSerializer(ModelSerializer):
     type = CharField(source="prototype.type")
     state = CharField(read_only=True)
-    prototype_display_name = CharField(source="prototype.display_name")
-    prototype_name = CharField(source="prototype.name")
+    prototype = PrototypeRelatedSerializer(read_only=True)
     description = CharField(required=False)
-    prototype_version = CharField(source="prototype.version")
     is_upgradable = SerializerMethodField()
     main_info = SerializerMethodField()
     concerns = ConcernSerializer(read_only=True, many=True)
@@ -36,9 +35,7 @@ class HostProviderSerializer(ModelSerializer):
             "state",
             "multi_state",
             "type",
-            "prototype_name",
-            "prototype_display_name",
-            "prototype_version",
+            "prototype",
             "description",
             "concerns",
             "is_upgradable",

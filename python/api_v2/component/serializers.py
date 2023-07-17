@@ -14,6 +14,7 @@ from typing import Any
 
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.host.serializers import HostShortSerializer
+from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from cm.adcm_config.config import get_main_info
 from cm.models import (
     ConcernItem,
@@ -63,6 +64,7 @@ class ComponentMappingSerializer(ModelSerializer):
 class ComponentSerializer(ModelSerializer):
     status = SerializerMethodField()
     hosts = SerializerMethodField()
+    prototype = PrototypeRelatedSerializer(read_only=True)
     concerns = SerializerMethodField()
     main_info = SerializerMethodField()
 
@@ -74,6 +76,7 @@ class ComponentSerializer(ModelSerializer):
             "display_name",
             "status",
             "hosts",
+            "prototype",
             "concerns",
             "is_maintenance_mode_available",
             "maintenance_mode",
