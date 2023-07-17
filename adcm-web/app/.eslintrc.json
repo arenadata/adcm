@@ -26,6 +26,7 @@
       {
         "skipWords": [
           "acc",
+          "accessor",
           "adcm",
           "api",
           "arenadata",
@@ -44,6 +45,7 @@
           "debounce",
           "debounced",
           "deletable",
+          "dialogs",
           "django",
           "dropdown",
           "enum",

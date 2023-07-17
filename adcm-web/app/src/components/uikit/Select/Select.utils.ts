@@ -12,10 +12,12 @@ export const getOptionsFromEnum = <T extends string, TEnumValue extends string>(
   return options;
 };
 
-export const getOptionsFromArray = (s: string[]): SelectOption<string>[] => {
-  const options = s.map((value) => ({
-    label: getStatusLabel(value),
-    value: value,
+type LabelAccessor<T> = (item: T) => string;
+
+export const getOptionsFromArray = <T>(s: T[], labelAccessor: LabelAccessor<T>): SelectOption<T>[] => {
+  const options = s.map((item) => ({
+    label: getStatusLabel(labelAccessor(item)),
+    value: item,
   }));
 
   return options;

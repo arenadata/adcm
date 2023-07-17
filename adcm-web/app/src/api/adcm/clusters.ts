@@ -25,7 +25,13 @@ export class AdcmClustersApi {
   }
 
   public static async postCluster(payload: CreateAdcmClusterPayload) {
-    await httpClient.post('/api/v2/clusters/', payload);
+    const mockPayload = {
+      name: payload.name,
+      description: payload.description,
+      prototype: payload.prototypeId,
+    };
+
+    await httpClient.post('/api/v2/clusters/', mockPayload);
   }
 
   public static async getCluster(clusterId: number) {

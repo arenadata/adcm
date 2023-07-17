@@ -21,7 +21,7 @@ const ClustersTableFilters = () => {
   } = useStore();
 
   const prototypeNamesOptions = useMemo(() => {
-    return getOptionsFromArray(prototypeNames);
+    return getOptionsFromArray(prototypeNames, (x) => x);
   }, [prototypeNames]);
 
   const handleClusterNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {

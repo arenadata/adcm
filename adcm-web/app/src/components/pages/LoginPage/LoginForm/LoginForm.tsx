@@ -42,7 +42,7 @@ const LoginForm: React.FC = () => {
   return (
     <form onSubmit={handleSubmit} autoComplete="off">
       <FormFieldsContainer>
-        <FormField className={s.loginForm__field} label="User" error={errorMessage}>
+        <FormField label="User" error={errorMessage}>
           <Input
             value={username}
             type="text"
@@ -52,7 +52,7 @@ const LoginForm: React.FC = () => {
             autoComplete="username"
           />
         </FormField>
-        <FormField className={s.loginForm__field} label="Password" hasError={hasError}>
+        <FormField label="Password" hasError={hasError}>
           <InputPassword
             value={password}
             placeholder="Enter password"
