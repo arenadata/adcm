@@ -93,7 +93,10 @@ def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs) -> Model | 
             if view.queryset.count() == 1:
                 deleted_obj = view.queryset.all()[0]
             elif "pk" in view.kwargs:
-                deleted_obj = view.queryset.get(pk=view.kwargs["pk"])
+                try:
+                    deleted_obj = view.queryset.get(pk=int(view.kwargs["pk"]))
+                except ValueError:
+                    deleted_obj = None
             else:
                 deleted_obj = None
         except TypeError:
@@ -103,7 +106,7 @@ def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs) -> Model | 
                 deleted_obj = None
         except (IndexError, ObjectDoesNotExist):
             deleted_obj = None
-    except KeyError:
+    except (KeyError, ValueError):
         deleted_obj = None
     except PermissionDenied:
         if "cluster_id" in kwargs:
@@ -196,8 +199,12 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
 
     if serializer_class:
         model = view.get_queryset().model
-        current_obj = model.objects.filter(pk=pk).first()
-        prev_data = serializer_class(model.objects.filter(pk=pk).first()).data
+        try:
+            current_obj = model.objects.filter(pk=pk).first()
+            prev_data = serializer_class(model.objects.filter(pk=pk).first()).data
+        except ValueError:
+            current_obj = None
+            prev_data = None
 
         if current_obj:
             prev_data = serializer_class(current_obj).data
