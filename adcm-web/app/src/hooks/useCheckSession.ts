@@ -5,9 +5,7 @@ import { useStore } from '@hooks';
 
 export const useCheckSession = () => {
   const dispatch = useDispatch();
-  const {
-    user: { needCheckSession },
-  } = useStore();
+  const { needCheckSession } = useStore((s) => s.user);
 
   useEffect(() => {
     needCheckSession && dispatch(checkSession());
