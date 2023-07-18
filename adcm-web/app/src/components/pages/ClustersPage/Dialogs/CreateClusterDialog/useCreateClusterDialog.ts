@@ -25,14 +25,10 @@ export const useCreateClusterDialog = () => {
   const [formData, setFormData] = useState<CreateClusterFormData>(initialFormData);
 
   const {
-    adcm: {
-      createClusterDialog: {
-        isOpen,
-        relatedData,
-        relatedData: { isLoaded: isRelatedDataLoaded },
-      },
-    },
-  } = useStore();
+    isOpen,
+    relatedData,
+    relatedData: { isLoaded: isRelatedDataLoaded },
+  } = useStore((s) => s.adcm.createClusterDialog);
 
   useEffect(() => {
     setFormData(initialFormData);

@@ -11,9 +11,7 @@ import FormFieldsContainer from '@uikit/FormField/FormFieldsContainer';
 
 const LoginForm: React.FC = () => {
   const dispatch = useDispatch();
-  const {
-    user: { hasError, message },
-  } = useStore();
+  const { hasError, message } = useStore((s) => s.user);
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');

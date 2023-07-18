@@ -12,13 +12,9 @@ const ClustersTableFilters = () => {
   const dispatch = useDispatch();
 
   const {
-    adcm: {
-      clustersTable: {
-        filter,
-        relatedData: { prototypeNames },
-      },
-    },
-  } = useStore();
+    filter,
+    relatedData: { prototypeNames },
+  } = useStore((s) => s.adcm.clustersTable);
 
   const prototypeNamesOptions = useMemo(() => {
     return getOptionsFromArray(prototypeNames, (x) => x);

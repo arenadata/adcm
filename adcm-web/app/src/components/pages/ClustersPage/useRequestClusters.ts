@@ -6,11 +6,7 @@ import { defaultDebounceDelay } from '@constants';
 
 export const useRequestClusters = () => {
   const dispatch = useDispatch();
-  const {
-    adcm: {
-      clustersTable: { filter, paginationParams },
-    },
-  } = useStore();
+  const { filter, paginationParams } = useStore((s) => s.adcm.clustersTable);
 
   useEffect(() => {
     dispatch(loadRelatedData());

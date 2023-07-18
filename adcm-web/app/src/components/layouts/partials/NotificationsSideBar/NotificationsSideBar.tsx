@@ -36,9 +36,7 @@ const NotificationItem: React.FC<Notification> = (props) => {
 };
 
 const NotificationsSideBar: React.FC = () => {
-  const {
-    notifications: { notifications },
-  } = useStore();
+  const { notifications } = useStore((s) => s.notifications);
 
   return (
     <div className={s.notificationsSideBar}>

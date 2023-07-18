@@ -14,9 +14,7 @@ type RedirectLocationState = {
 };
 
 const LoginPage: React.FC = () => {
-  const {
-    user: { authState },
-  } = useStore();
+  const { authState } = useStore((s) => s.user);
 
   const location = useLocation();
   const from = (location.state as RedirectLocationState)?.from || '/';

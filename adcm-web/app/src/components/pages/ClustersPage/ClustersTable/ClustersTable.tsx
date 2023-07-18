@@ -5,11 +5,7 @@ import { useStore } from '@hooks';
 import { columns, clusterStatusesMap } from './ClustersTable.constants';
 
 const ClustersTable = () => {
-  const {
-    adcm: {
-      clusters: { clusters },
-    },
-  } = useStore();
+  const { clusters } = useStore((s) => s.adcm.clusters);
 
   return (
     <Table columns={columns}>
