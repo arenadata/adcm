@@ -318,9 +318,9 @@ def upgrade_adcm(adcm, bundle):
         config_log_new = ConfigLog.objects.get(obj_ref=adcm.config, id=adcm.config.current)
         if rpm.compare_versions("2.6", old_proto.version) > -1 and rpm.compare_versions(new_proto.version, "2.7") > -1:
             config_log_new.config["audit_data_retention"].update(config_log_old.config["job_log"])
-            config_log_new.config["audit_data_retention"]["config_rotation_in_db"] = config_log_old.config[
-                "config_rotation"
-            ]
+            config_log_new.config["audit_data_retention"]["config_rotation_in_db"] = config_log_old.config.get(
+                "config_rotation", config_log_new.config["audit_data_retention"]["config_rotation_in_db"]
+            )
             config_log_new.save(update_fields=["config"])
 
     logger.info(
