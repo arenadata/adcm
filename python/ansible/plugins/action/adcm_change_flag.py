@@ -68,7 +68,7 @@ sys.path.append("/adcm/python")
 import adcm.init_django  # pylint: disable=unused-import
 
 from cm.ansible_plugin import get_context_object, check_context_type
-from cm.flag import update_flags, remove_flag
+from cm.flag import remove_flag, update_object_flag
 from cm.models import ClusterObject, ServiceComponent, get_object_cluster, HostProvider, Host, ADCMEntity
 
 cluster_context_type = ("cluster", "service", "component")
@@ -181,7 +181,7 @@ class ActionModule(ActionBase):
 
         for obj in objects:
             if self._task.args["operation"] == "up":
-                update_flags(obj=obj, msg=msg)
+                update_object_flag(obj=obj, msg=msg)
             elif self._task.args["operation"] == "down":
                 remove_flag(obj=obj, msg=msg)
 
