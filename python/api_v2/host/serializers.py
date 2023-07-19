@@ -11,7 +11,14 @@
 # limitations under the License.
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
-from cm.models import Cluster, Host, HostComponent, HostProvider, MaintenanceMode
+from cm.models import (
+    Cluster,
+    Host,
+    HostComponent,
+    HostProvider,
+    MaintenanceMode,
+    ServiceComponent,
+)
 from cm.status_api import get_host_status
 from cm.validators import HostUniqueValidator, StartMidEndValidator
 from rest_framework.exceptions import ValidationError
@@ -39,13 +46,18 @@ class HostClusterSerializer(ModelSerializer):
         fields = ["id", "name"]
 
 
+class HCComponentNameSerializer(ModelSerializer):
+    class Meta:
+        model = ServiceComponent
+        fields = ["id", "name", "display_name"]
+
+
 class HostComponentSerializer(ModelSerializer):
-    name = CharField(source="component.name")
-    display_name = CharField(source="component.display_name")
+    component = HCComponentNameSerializer(read_only=True)
 
     class Meta:
         model = HostComponent
-        fields = ["id", "name", "display_name"]
+        fields = ["id", "component"]
 
 
 class HostSerializer(ModelSerializer):

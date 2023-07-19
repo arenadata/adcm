@@ -51,3 +51,9 @@ class ActionRunSerializer(EmptySerializer):
     config = JSONField()
     attr = JSONField()
     is_verbose = BooleanField()
+
+
+class ActionNameSerializer(ModelSerializer):
+    class Meta:
+        model = Action
+        fields = ["id", "name", "display_name"]

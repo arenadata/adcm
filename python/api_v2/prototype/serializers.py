@@ -11,6 +11,7 @@
 # limitations under the License.
 from typing import Dict
 
+from api_v2.bundle.serializers import BundleIdSerializer
 from api_v2.prototype.utils import get_license_text
 from cm.models import LICENSE_STATE, Prototype
 from rest_framework.fields import CharField, IntegerField, SerializerMethodField
@@ -21,7 +22,7 @@ from adcm.serializers import EmptySerializer
 
 class PrototypeListSerializer(ModelSerializer):
     license = SerializerMethodField()
-    bundle_id = IntegerField(source="bundle.id")
+    bundle = BundleIdSerializer(read_only=True)
 
     class Meta:
         model = Prototype
@@ -31,7 +32,7 @@ class PrototypeListSerializer(ModelSerializer):
             "display_name",
             "description",
             "type",
-            "bundle_id",
+            "bundle",
             "license",
         )
 
@@ -42,12 +43,12 @@ class PrototypeListSerializer(ModelSerializer):
 class PrototypeVersionSerializer(ModelSerializer):
     id = IntegerField(source="pk")
     version = CharField()
-    bundle_id = CharField()
+    bundle = BundleIdSerializer(read_only=True)
     is_license_accepted = SerializerMethodField()
 
     class Meta:
         model = Prototype
-        fields = ("id", "bundle_id", "version", "is_license_accepted")
+        fields = ("id", "bundle", "version", "is_license_accepted")
 
     def get_versions(self, obj: Prototype) -> Dict:
         return {

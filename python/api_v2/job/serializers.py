@@ -16,7 +16,7 @@ from rest_framework.fields import SerializerMethodField
 
 
 class JobRetrieveSerializer(JobListSerializer):
-    parent_task = TaskRetrieveByJobSerializer(source="task")
+    parent_task = TaskRetrieveByJobSerializer(source="task", allow_null=True)
     log_files = SerializerMethodField()
 
     class Meta:

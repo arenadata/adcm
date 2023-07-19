@@ -86,7 +86,7 @@ class MappingViewSet(  # pylint:disable=too-many-ancestors
     ListModelMixin,
     CreateModelMixin,
 ):
-    queryset = HostComponent.objects.all()
+    queryset = HostComponent.objects.select_related("service", "host", "component", "cluster").all()
     serializer_class = HostComponentListSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_HC_PERM]
