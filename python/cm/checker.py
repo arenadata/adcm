@@ -122,7 +122,7 @@ def match_dict(data, rules, rule, path, parent=None):
     if "required_items" in rules[rule] or "invisible_items" in rules[rule]:
         for i in rules[rule].get("required_items", []) + rules[rule].get("invisible_items", []):
             if i not in data:
-                raise FormatError(path, f'There is no required (or invisible) key "{i}" in map.', data, rule)
+                raise FormatError(path, f'There is no required key "{i}" in map.', data, rule)
 
     for key in data:
         new_path = path + [("Value of map key", key)]
