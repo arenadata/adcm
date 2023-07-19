@@ -10,11 +10,21 @@
   &_align-left {
     text-align: left;
   }
+
   &_align-right {
     text-align: right;
+
+    &.tableCell_iconOnly > .tableCell__inner {
+      justify-content: end;
+    }
   }
+
   &_align-center {
     text-align: center;
+
+    &.tableCell_iconOnly > .tableCell__inner {
+      justify-content: center;
+    }
   }
 
   &_iconOnly > &__inner {

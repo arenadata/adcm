@@ -1,4 +1,5 @@
 import Button from '@uikit/Button/Button';
+import ButtonGroup from './ButtonGroup/ButtonGroup';
 import Checkbox from './Checkbox/Checkbox';
 import Dialog from '@uikit/Dialog/Dialog';
 import DialogDefaultControls from '@uikit/Dialog/DialogDefaultControls';
@@ -16,21 +17,27 @@ import type { BaseStatus } from '@uikit/Statusable/Statusable.types';
 import Table from '@uikit/Table/Table';
 import TableRow from '@uikit/Table/TableRow/TableRow';
 import TableCell from '@uikit/Table/TableCell/TableCell';
+import type { TableCellProps } from './Table/TableCell/TableCell';
 import type { TableColumn } from '@uikit/Table/Table.types';
 import Icon from './Icon/Icon';
 import type { IconsNames } from './Icon/sprite';
+import IconButton from './IconButton/IconButton';
+import LabeledField from './LabeledField/LabeledField';
 
 export {
   Button,
+  ButtonGroup,
   Checkbox,
   Dialog,
   DialogDefaultControls,
   DialogDefaultControlsProps,
-  Icon,
-  IconsNames,
-  Input,
   FormField,
   FormFieldsContainer,
+  Icon,
+  IconButton,
+  IconsNames,
+  LabeledField,
+  Input,
   Pagination,
   PaginationData,
   SearchInput,
@@ -41,5 +48,6 @@ export {
   Table,
   TableRow,
   TableCell,
+  TableCellProps,
   TableColumn,
 };

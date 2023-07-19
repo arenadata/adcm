@@ -1,5 +1,5 @@
-import { getStatusLabel } from '@utils/humanisationUtils';
-import { SelectOption } from './Select.types';
+import { getStatusLabel } from '@utils/humanizationUtils';
+import type { SelectOption } from './Select.types';
 
 export const getOptionsFromEnum = <T extends string, TEnumValue extends string>(someEnum: {
   [key in T]: TEnumValue;
