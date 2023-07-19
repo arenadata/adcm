@@ -14,7 +14,7 @@ export class AdcmClustersApi {
     const queryParams = {
       name: filter.clusterName || undefined,
       status: filter.clusterStatus || undefined,
-      prototype_name: filter.prototypeName || undefined,
+      prototypeName: filter.prototypeName || undefined,
       offset: paginationParams.pageNumber * paginationParams.perPage,
       limit: paginationParams.perPage,
     };

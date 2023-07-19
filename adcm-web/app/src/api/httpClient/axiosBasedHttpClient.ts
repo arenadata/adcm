@@ -1,8 +1,9 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
+import qs from 'qs';
 import { RequestOptions, Response, RequestError } from './HttpClient';
 import { apiHost } from '@constants';
 import '@utils/objectUtils';
-import { snakeToCamelCase } from '@utils/stringUtils';
+import { camelToSnakeCase, snakeToCamelCase } from '@utils/stringUtils';
 import { structureTraversal } from '@utils/objectUtils';
 
 export class AxiosBasedHttpClient {
@@ -17,6 +18,22 @@ export class AxiosBasedHttpClient {
       },
       xsrfCookieName: 'csrftoken',
       xsrfHeaderName: 'X-CSRFToken',
+    });
+
+    // TODO: temporary solutions, while backend can't get normal camelCase
+    this.axiosInstance.interceptors.request.use((req) => {
+      if (!req.url) return req;
+
+      const [url, query] = req.url.split('?');
+      if (!query) return req;
+
+      const camelCaseQueryParams = qs.parse(query);
+
+      const snakeCaseQueryParams = structureTraversal(camelCaseQueryParams, undefined, camelToSnakeCase);
+
+      req.url = url + '?' + qs.stringify(snakeCaseQueryParams);
+
+      return req;
     });
 
     // TODO: temporary solutions, while backend can't send normal camelCase

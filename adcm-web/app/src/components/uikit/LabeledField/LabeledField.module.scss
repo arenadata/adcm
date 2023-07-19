@@ -22,6 +22,19 @@
     margin-inline-end: 8px;
   }
 
+  &_asRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .labeledField__labelWrap {
+      margin-bottom: 0;
+    }
+    .labeledField__label {
+      margin-inline-end: 0;
+    }
+  }
+
   &:hover,
   &:focus-within {
     --labeled-field-label-color: var(--labeled-field-label-color-hover);

@@ -160,6 +160,7 @@
     th {
       & > div {
         margin-bottom: calc(-1 * var(--table-border-spacing));
+        margin-top: calc(-1 * var(--table-border-spacing));
       }
     }
 
@@ -264,6 +265,10 @@
 
     tr {
       border-bottom: 1px solid var(--table-tr-border-tertiary);
+    }
+    td {
+      // work as min-height for table cell
+      height: 44px;
     }
   }
 }

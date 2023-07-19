@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { CreateAdcmClusterPayload, AdcmPrototypeVersions, PrototypeType } from '@models/adcm';
+import { CreateAdcmClusterPayload, AdcmPrototypeVersions, AdcmPrototypeType } from '@models/adcm';
 import { AdcmClustersApi, AdcmPrototypesApi } from '@api';
 import { refreshClusters } from '../clustersSlice';
 
@@ -42,7 +42,7 @@ const loadPrototypeVersions = createAsyncThunk(
   'adcm/clusters/createClusterDialog/loadPrototypeVersions',
   async (arg, thunkAPI) => {
     try {
-      const prototypeVersions = await AdcmPrototypesApi.getPrototypeVersions({ type: PrototypeType.Cluster });
+      const prototypeVersions = await AdcmPrototypesApi.getPrototypeVersions({ type: AdcmPrototypeType.Cluster });
       return prototypeVersions;
     } catch (error) {
       return thunkAPI.rejectWithValue(error);
