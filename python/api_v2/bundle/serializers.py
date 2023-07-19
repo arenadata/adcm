@@ -17,6 +17,12 @@ from rest_framework.serializers import ModelSerializer
 from adcm.serializers import EmptySerializer
 
 
+class BundleIdSerializer(ModelSerializer):
+    class Meta:
+        model = Bundle
+        fields = ["id"]
+
+
 class BundleListSerializer(ModelSerializer):
     display_name = SerializerMethodField()
     upload_time = DateTimeField(read_only=True, source="date")

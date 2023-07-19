@@ -62,3 +62,9 @@ class ServiceMaintenanceModeSerializer(ModelSerializer):
     class Meta:
         model = ClusterObject
         fields = ["maintenance_mode"]
+
+
+class ServiceNameSerializer(ModelSerializer):
+    class Meta:
+        model = ClusterObject
+        fields = ["id", "name", "display_name"]

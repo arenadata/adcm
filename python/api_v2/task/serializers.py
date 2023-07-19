@@ -12,6 +12,7 @@
 
 from datetime import timedelta
 
+from api_v2.action.serializers import ActionNameSerializer
 from cm.models import Action, JobLog, JobStatus, SubAction, TaskLog
 from rest_framework.fields import CharField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
@@ -72,6 +73,7 @@ class TaskSerializer(ModelSerializer):
     display_name = CharField(source="action.display_name")
     is_terminatable = SerializerMethodField()
     duration = SerializerMethodField()
+    action = ActionNameSerializer(read_only=True, allow_null=True)
     object = SerializerMethodField()
 
     class Meta:
@@ -80,6 +82,7 @@ class TaskSerializer(ModelSerializer):
             "id",
             "name",
             "display_name",
+            "action",
             "status",
             "start_date",
             "finish_date",
@@ -127,12 +130,15 @@ class TaskListSerializer(TaskSerializer):
 
 
 class TaskRetrieveByJobSerializer(TaskSerializer):
+    action = ActionNameSerializer(read_only=True, allow_null=True)
+
     class Meta:
         model = TaskLog
         fields = (
             "id",
             "name",
             "display_name",
+            "action",
             "status",
             "start_date",
             "finish_date",

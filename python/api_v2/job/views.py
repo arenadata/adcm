@@ -27,7 +27,7 @@ from adcm.permissions import check_custom_perm, get_object_for_user
 class JobViewSet(
     ListModelMixin, RetrieveModelMixin, CreateModelMixin, GenericUIViewSet
 ):  # pylint: disable=too-many-ancestors
-    queryset = JobLog.objects.select_related("task").all()
+    queryset = JobLog.objects.select_related("task__action").all()
     serializer_class = JobListSerializer
 
     def get_serializer_class(self):

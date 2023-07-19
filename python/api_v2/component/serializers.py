@@ -15,6 +15,7 @@ from typing import Any
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.host.serializers import HostShortSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
+from api_v2.service.serializers import ServiceNameSerializer
 from cm.adcm_config.config import get_main_info
 from cm.models import (
     ConcernItem,
@@ -27,7 +28,6 @@ from cm.models import (
 from cm.status_api import get_obj_status
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.serializers import (
-    CharField,
     ChoiceField,
     ModelSerializer,
     SerializerMethodField,
@@ -37,8 +37,7 @@ from adcm.utils import get_requires
 
 
 class ComponentMappingSerializer(ModelSerializer):
-    service_name = CharField(source="service.name")
-    service_display_name = CharField(source="service.display_name")
+    service = ServiceNameSerializer(read_only=True)
     depend_on = SerializerMethodField()
 
     class Meta:
@@ -50,10 +49,8 @@ class ComponentMappingSerializer(ModelSerializer):
             "is_maintenance_mode_available",
             "maintenance_mode",
             "constraint",
-            "service_id",
-            "service_name",
-            "service_display_name",
             "depend_on",
+            "service",
         ]
 
     @staticmethod
