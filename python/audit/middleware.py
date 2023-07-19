@@ -13,7 +13,7 @@ import json
 from json.decoder import JSONDecodeError
 
 from audit.cef_logger import cef_logger
-from audit.models import AuditSession, AuditSessionLoginResult
+from audit.models import AuditSession, AuditSessionLoginResult, AuditUser
 from cm.models import ADCM, ConfigLog
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
@@ -44,11 +44,16 @@ class LoginMiddleware:
                     result = AuditSessionLoginResult.ACCOUNT_DISABLED
                 else:
                     result = AuditSessionLoginResult.WRONG_PASSWORD
+
             except User.DoesNotExist:
                 result = AuditSessionLoginResult.USER_NOT_FOUND
                 user = None
 
-        auditsession = AuditSession.objects.create(user=user, login_result=result, login_details=details)
+        audit_user = None
+        if user is not None:
+            audit_user = AuditUser.objects.filter(username=user.username).order_by("-pk").first()
+
+        auditsession = AuditSession.objects.create(user=audit_user, login_result=result, login_details=details)
         cef_logger(audit_instance=auditsession, signature_id=resolve(request_path).route)
 
         return user, result

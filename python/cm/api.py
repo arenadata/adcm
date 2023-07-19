@@ -23,6 +23,7 @@ from cm.adcm_config.config import (
 from cm.adcm_config.utils import proto_ref
 from cm.api_context import CTX
 from cm.errors import raise_adcm_ex
+from cm.flag import update_object_flag
 from cm.issue import (
     check_bound_components,
     check_component_constraint,
@@ -552,7 +553,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
 
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
     new_conf = process_json_config(
-        proto=proto,
+        prototype=proto,
         obj=group or obj,
         new_config=config,
         current_config=old_conf.config,
@@ -562,6 +563,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
     with atomic():
         config_log = save_obj_config(obj_conf=obj_conf, conf=new_conf, attr=attr, desc=description)
         update_hierarchy_issues(obj=obj)
+        update_object_flag(obj=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
     if group is not None:
@@ -582,8 +584,8 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
     return config_log
 
 
-def set_object_config(obj: ADCMEntity, config: dict, attr: dict) -> ConfigLog:
-    new_conf = process_json_config(proto=obj.prototype, obj=obj, new_config=config, new_attr=attr)
+def set_object_config_with_plugin(obj: ADCMEntity, config: dict, attr: dict) -> ConfigLog:
+    new_conf = process_json_config(prototype=obj.prototype, obj=obj, new_config=config, new_attr=attr)
 
     with atomic():
         config_log = save_obj_config(obj_conf=obj.config, conf=new_conf, attr=attr, desc="ansible update")

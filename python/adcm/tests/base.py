@@ -33,7 +33,7 @@ from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
 from init_db import init
-from rbac.models import Role, RoleTypes, User
+from rbac.models import Group, Role, RoleTypes, User
 from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
@@ -53,6 +53,8 @@ class BaseTestCase(TestCase):
             password=self.test_user_password,
             is_superuser=True,
         )
+        self.test_user_group = Group.objects.create(name="simple_test_group")
+        self.test_user_group.user_set.add(self.test_user)
 
         self.no_rights_user_username = "no_rights_user"
         self.no_rights_user_password = "no_rights_user_password"
@@ -60,6 +62,8 @@ class BaseTestCase(TestCase):
             username="no_rights_user",
             password="no_rights_user_password",
         )
+        self.no_rights_user_group = Group.objects.create(name="no_right_group")
+        self.no_rights_user_group.user_set.add(self.no_rights_user)
 
         self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
         self.login()
@@ -176,7 +180,6 @@ class BaseTestCase(TestCase):
         self,
         role_name: str,
         obj: ADCMEntity,
-        user_pk: int | None = None,
         group_pk: int | None = None,
     ) -> int:
         role_data = self.get_role_data(role_name=role_name)
@@ -186,8 +189,7 @@ class BaseTestCase(TestCase):
             data={
                 "name": f"test_policy_{obj.prototype.type}_{obj.pk}_admin",
                 "role": {"id": role_data["id"]},
-                "user": [{"id": user_pk}] if user_pk else [],
-                "group": [{"id": group_pk}] if group_pk else [],
+                "group": [{"id": group_pk}],
                 "object": [{"name": obj.name, "type": obj.prototype.type, "id": obj.pk}],
             },
             content_type=APPLICATION_JSON,

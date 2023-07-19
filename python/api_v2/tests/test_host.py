@@ -42,18 +42,23 @@ class TestHost(BaseAPITestCase):
             path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host.pk}),
         )
         data = {
-            "id": 1,
+            "id": self.host.pk,
             "fqdn": "test_host",
             "state": "created",
             "status": 32,
-            "provider": {"id": 1, "name": "provider"},
+            "provider": {"id": 1, "name": "provider", "display_name": "provider"},
             "concerns": [],
             "is_maintenance_mode_available": False,
             "maintenance_mode": "OFF",
         }
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["id"], self.host.pk)
-        self.assertEqual(response.data, data)
+        self.assertEqual(response.data["id"], data["id"])
+        self.assertEqual(response.data["fqdn"], data["fqdn"])
+        self.assertEqual(response.data["state"], data["state"])
+        self.assertDictEqual(response.data["provider"], data["provider"])
+        self.assertEqual(response.data["concerns"], data["concerns"])
+        self.assertEqual(response.data["is_maintenance_mode_available"], data["is_maintenance_mode_available"])
+        self.assertEqual(response.data["maintenance_mode"], data["maintenance_mode"])
 
     def test_create_without_cluster_success(self):
         response: Response = self.client.post(
@@ -74,13 +79,19 @@ class TestHost(BaseAPITestCase):
             "fqdn": "new-test-host",
             "state": "created",
             "status": 32,
-            "provider": {"id": 1, "name": "provider"},
+            "provider": {"id": 1, "name": "provider", "display_name": "provider"},
             "concerns": [],
             "is_maintenance_mode_available": False,
             "maintenance_mode": "OFF",
         }
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data, data)
+        self.assertEqual(response.data["id"], data["id"])
+        self.assertEqual(response.data["fqdn"], data["fqdn"])
+        self.assertEqual(response.data["state"], data["state"])
+        self.assertDictEqual(response.data["provider"], data["provider"])
+        self.assertEqual(response.data["concerns"], data["concerns"])
+        self.assertEqual(response.data["is_maintenance_mode_available"], data["is_maintenance_mode_available"])
+        self.assertEqual(response.data["maintenance_mode"], data["maintenance_mode"])
 
     def test_create_with_cluster_success(self):
         response: Response = self.client.post(

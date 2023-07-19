@@ -153,7 +153,7 @@ def prepare_task(
 ) -> TaskLog:  # pylint: disable=too-many-locals
     cluster = get_object_cluster(obj=obj)
     check_action_state(action=action, task_object=obj, cluster=cluster)
-    _, spec = check_action_config(action=action, obj=obj, conf=conf, attr=attr)
+    _, spec, flat_spec = check_action_config(action=action, obj=obj, conf=conf, attr=attr)
     if conf and not spec:
         raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg="Absent config in action prototype")
 
@@ -190,7 +190,7 @@ def prepare_task(
             save_hc(cluster=cluster, host_comp_list=host_map)
 
         if conf:
-            new_conf = process_config_and_attr(obj=task, conf=conf, attr=attr, spec=spec)
+            new_conf = process_config_and_attr(obj=obj, conf=conf, attr=attr, spec=spec, flat_spec=flat_spec)
             process_file_type(obj=task, spec=spec, conf=conf)
             task.config = new_conf
             task.save()
@@ -250,11 +250,11 @@ def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster
     raise_adcm_ex(code="TASK_ERROR", msg="action is disabled")
 
 
-def check_action_config(action: Action, obj: type[ADCMEntity], conf: dict, attr: dict) -> tuple[dict, dict]:
+def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict) -> tuple[dict, dict, dict]:
     proto = action.prototype
     spec, flat_spec, _, _ = get_prototype_config(prototype=proto, action=action, obj=obj)
     if not spec:
-        return {}, {}
+        return {}, {}, {}
 
     if not conf:
         raise_adcm_ex("TASK_ERROR", "action config is required")
@@ -265,7 +265,7 @@ def check_action_config(action: Action, obj: type[ADCMEntity], conf: dict, attr:
 
     new_config = process_config_spec(obj=obj, spec=spec, new_config=conf)
 
-    return new_config, spec
+    return new_config, spec, flat_spec
 
 
 def add_to_dict(my_dict: dict, key: Hashable, subkey: Hashable, value: Any):
@@ -571,7 +571,7 @@ def prepare_job(
 
 
 def get_selector(obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host, action: Action) -> dict:
-    selector = {obj.prototype.type: {"id": obj.pk, "name": obj.display_name}}
+    selector = {obj.prototype.type: {"id": obj.pk, "name": obj.name, "display_name": obj.display_name}}
 
     if obj.prototype.type == ObjectType.SERVICE:
         selector[ObjectType.CLUSTER] = {"id": obj.cluster.pk, "name": obj.cluster.display_name}
@@ -975,14 +975,6 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
     adcm_object = ADCM.objects.first()
     config_log = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
     adcm_conf = config_log.config
-    mitogen = adcm_conf["ansible_settings"]["mitogen"]
-
-    if mitogen:
-        config_parser["defaults"]["strategy"] = "mitogen_linear"
-        config_parser["defaults"]["strategy_plugins"] = str(
-            Path(settings.PYTHON_SITE_PACKAGES, "ansible_mitogen", "plugins", "strategy"),
-        )
-        config_parser["defaults"]["host_key_checking"] = "False"
 
     forks = adcm_conf["ansible_settings"]["forks"]
     config_parser["defaults"]["forks"] = str(forks)

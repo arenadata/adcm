@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from cm.logger import logger
+from django.conf import settings
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -18,7 +19,6 @@ from rest_framework.status import (
     HTTP_401_UNAUTHORIZED,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
-    HTTP_405_METHOD_NOT_ALLOWED,
     HTTP_409_CONFLICT,
     HTTP_501_NOT_IMPLEMENTED,
 )
@@ -183,6 +183,7 @@ ERRORS = {
         HTTP_400_BAD_REQUEST,
         ERR,
     ),
+    "NO_GPG_PUBLIC_KEY": (f"Gpg public key is not presented in {settings.GPG_PUBLIC_KEY}", HTTP_404_NOT_FOUND, ERR),
     "AUDIT_OPERATIONS_FORBIDDEN": (
         "access to audit of operations is forbidden",
         HTTP_403_FORBIDDEN,
@@ -211,13 +212,13 @@ ERRORS = {
     ),
     "GROUP_CREATE_ERROR": ("Error during process of group creating", HTTP_409_CONFLICT, ERR),
     "GROUP_UPDATE_ERROR": ("Error during process of group updating", HTTP_400_BAD_REQUEST, ERR),
-    "GROUP_DELETE_ERROR": ("Built-in group could not be deleted", HTTP_405_METHOD_NOT_ALLOWED, ERR),
+    "GROUP_DELETE_ERROR": ("Built-in group could not be deleted", HTTP_409_CONFLICT, ERR),
     "POLICY_INTEGRITY_ERROR": ("Incorrect role or user list of policy", HTTP_400_BAD_REQUEST, ERR),
     "POLICY_CREATE_ERROR": ("Error during process of policy creating", HTTP_409_CONFLICT, ERR),
     "POLICY_UPDATE_ERROR": ("Error during process of policy updating", HTTP_409_CONFLICT, ERR),
     "USER_CREATE_ERROR": ("Error during process of user creating", HTTP_409_CONFLICT, ERR),
     "USER_UPDATE_ERROR": ("Error during process of user updating", HTTP_400_BAD_REQUEST, ERR),
-    "USER_DELETE_ERROR": ("Built-in user could not be deleted", HTTP_405_METHOD_NOT_ALLOWED, ERR),
+    "USER_DELETE_ERROR": ("Built-in user could not be deleted", HTTP_409_CONFLICT, ERR),
     "JOB_TERMINATION_ERROR": ("Can't terminate job", HTTP_409_CONFLICT, ERR),
     "USER_PASSWORD_TOO_SHORT_ERROR": ("This password is shorter than min password length", HTTP_400_BAD_REQUEST, ERR),
     "USER_PASSWORD_TOO_LONG_ERROR": ("This password is longer than max password length", HTTP_400_BAD_REQUEST, ERR),

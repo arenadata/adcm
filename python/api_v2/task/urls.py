@@ -9,18 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from api_v2.log_storage.views import LogStorageTaskViewSet
+from api_v2.task.views import TaskViewSet
+from rest_framework.routers import SimpleRouter
+from rest_framework_nested.routers import NestedSimpleRouter
 
-from pathlib import Path
+router = SimpleRouter()
+router.register("", TaskViewSet)
 
-from rest_framework.request import Request
+log_storage_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="task")
+log_storage_router.register(prefix="logs", viewset=LogStorageTaskViewSet, basename="log")
 
-from adcm import settings
-
-
-def upload_file(request: Request) -> Path:
-    file_data = request.data["file"]
-    file_path = Path(settings.DOWNLOAD_DIR, file_data.name)
-    with open(file_path, "wb+") as f:
-        for chunk in file_data.chunks():
-            f.write(chunk)
-    return file_path
+urlpatterns = [*router.urls, *log_storage_router.urls]

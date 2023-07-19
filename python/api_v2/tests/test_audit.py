@@ -44,7 +44,7 @@ class TestAudit(BaseAPITestCase):
         response = self.client.get(
             path=reverse(viewname="v2:audit:auditsession-list"),
         )
-        self.assertEqual(response.json()["results"][0]["login_details"], {"username": self.username})
+        self.assertEqual(response.json()["results"][0]["user"], {"name": self.username})
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_logins_time_filtering_success(self):
@@ -52,7 +52,7 @@ class TestAudit(BaseAPITestCase):
             path=reverse(viewname="v2:audit:auditsession-list"),
             data={"time_to": self.time_to, "time_from": self.time_from},
         )
-        self.assertEqual(response.json()["results"][0]["login_details"], {"username": self.username})
+        self.assertEqual(response.json()["results"][0]["user"], {"name": self.username})
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_logins_time_filtering_empty_list_success(self):
@@ -67,7 +67,7 @@ class TestAudit(BaseAPITestCase):
         response = self.client.get(
             path=reverse(viewname="v2:audit:auditsession-detail", kwargs={"pk": self.last_login_id})
         )
-        self.assertEqual(response.json()["login_details"]["username"], self.username)
+        self.assertEqual(response.json()["user"]["name"], self.username)
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_logins_retrieve_not_found_fail(self):

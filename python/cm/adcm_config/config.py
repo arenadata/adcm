@@ -94,7 +94,7 @@ def init_object_config(proto: Prototype, obj: Any) -> ObjectConfig | None:
 
 
 def get_prototype_config(
-    prototype: Prototype, action: Action = None, obj: type[ADCMEntity] = None
+    prototype: Prototype, action: Action = None, obj: ADCMEntity = None
 ) -> tuple[dict, dict, dict, dict]:
     spec = {}
     flat_spec = OrderedDict()
@@ -152,6 +152,7 @@ def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many
         return
 
     config_log = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
+
     _, old_spec, _, _ = get_prototype_config(prototype=old_prototype)
     new_unflat_spec, new_spec, _, _ = get_prototype_config(prototype=new_prototype)
     old_conf = to_flat_dict(config=config_log.config, spec=old_spec)
@@ -515,15 +516,15 @@ def restore_read_only(obj, spec, conf, old_conf):  # pylint: disable=too-many-br
 
 
 def process_json_config(
-    proto: Prototype,
+    prototype: Prototype,
     obj: ADCMEntity | Action,
     new_config: dict,
     current_config: dict = None,
     new_attr=None,
     current_attr=None,
 ) -> dict:
-    spec, flat_spec, _, _ = get_prototype_config(proto)
-    check_attr(proto, obj, new_attr, flat_spec, current_attr)
+    spec, flat_spec, _, _ = get_prototype_config(prototype=prototype)
+    check_attr(prototype, obj, new_attr, flat_spec, current_attr)
     group = None
 
     if isinstance(obj, GroupConfig):
@@ -542,8 +543,7 @@ def process_json_config(
         obj = group.object
 
     process_variant(obj, spec, new_config)
-    check_config_spec(proto=proto, obj=obj, spec=spec, flat_spec=flat_spec, conf=new_config, attr=new_attr)
-
+    check_config_spec(proto=prototype, obj=obj, spec=spec, flat_spec=flat_spec, conf=new_config, attr=new_attr)
     new_config = process_config_spec(obj=group or obj, spec=spec, new_config=new_config)
 
     return new_config
@@ -579,7 +579,7 @@ def check_config_spec(
     for key in spec:
         if "type" in spec[key] and spec[key]["type"] != "group":
             if key in conf:
-                check_config_type(proto=proto, key=key, subkey="", spec=spec[key], value=conf[key])
+                check_config_type(prototype=proto, key=key, subkey="", spec=spec[key], value=conf[key])
             elif key_is_required(obj=obj, key=key, subkey="", spec=spec):
                 raise_adcm_ex(code="CONFIG_KEY_ERROR", msg=f'There is no required key "{key}" in input config ({ref})')
 
@@ -608,7 +608,7 @@ def check_config_spec(
                 for subkey in spec[key]:
                     if subkey in conf[key]:
                         check_config_type(
-                            proto=proto,
+                            prototype=proto,
                             key=key,
                             subkey=subkey,
                             spec=spec[key][subkey],

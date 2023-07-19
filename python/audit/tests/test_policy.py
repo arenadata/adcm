@@ -81,7 +81,7 @@ class TestPolicyAudit(BaseTestCase):
         self.assertEqual(log.operation_type, operation_type)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.user.username, user.username)
         self.assertEqual(log.object_changes, object_changes)
 
     def check_log_update(
@@ -112,7 +112,7 @@ class TestPolicyAudit(BaseTestCase):
                 "name": self.name,
                 "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
                 "role": {"id": self.role.pk},
-                "user": [{"id": self.test_user.pk}],
+                "group": [{"id": self.test_user_group.pk}],
             },
             content_type=APPLICATION_JSON,
         )
@@ -137,7 +137,7 @@ class TestPolicyAudit(BaseTestCase):
                     "name": self.name,
                     "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
                     "role": {"id": self.role.pk},
-                    "user": [{"id": self.test_user.pk}],
+                    "group": [{"id": self.test_user_group.pk}],
                 },
                 content_type=APPLICATION_JSON,
             )
@@ -199,7 +199,7 @@ class TestPolicyAudit(BaseTestCase):
                 "name": self.policy.name,
                 "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
                 "role": {"id": self.role.pk},
-                "user": [{"id": self.test_user.pk}],
+                "group": [{"id": self.test_user_group.pk}],
                 "description": "new_test_description",
             },
             content_type=APPLICATION_JSON,
@@ -223,13 +223,13 @@ class TestPolicyAudit(BaseTestCase):
                             "type": "cluster",
                         },
                     ],
-                    "user": [self.test_user.username],
+                    "group": [self.test_user_group.name],
                 },
                 "previous": {
                     "description": prev_description,
                     "role": "",
                     "object": [],
-                    "user": [],
+                    "group": [],
                 },
             },
         )
@@ -242,7 +242,7 @@ class TestPolicyAudit(BaseTestCase):
                     "name": self.policy.name,
                     "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
                     "role": {"id": self.role.pk},
-                    "user": [{"id": self.test_user.pk}],
+                    "group": [{"id": self.test_user_group.pk}],
                     "description": "new_test_description",
                 },
                 content_type=APPLICATION_JSON,
@@ -269,8 +269,8 @@ class TestPolicyAudit(BaseTestCase):
                     {"id": self.provider.pk, "name": self.provider.name, "type": "provider"},
                 ],
                 "role": {"id": self.role.pk},
-                "user": [{"id": self.test_user.pk}],
-                "description": "new_test_description",
+                "group": [{"id": self.test_user_group.pk}],
+                "description": new_test_description,
             },
             content_type=APPLICATION_JSON,
         )
@@ -298,13 +298,13 @@ class TestPolicyAudit(BaseTestCase):
                             "type": "provider",
                         },
                     ],
-                    "user": [self.test_user.username],
+                    "group": [self.test_user_group.name],
                 },
                 "previous": {
                     "description": prev_description,
                     "role": "",
                     "object": [],
-                    "user": [],
+                    "group": [],
                 },
             },
         )
@@ -316,7 +316,7 @@ class TestPolicyAudit(BaseTestCase):
                 data={
                     "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
                     "role": {"id": self.role.pk},
-                    "user": [{"id": self.test_user.pk}],
+                    "group": [{"id": self.test_user_group.pk}],
                     "description": "new_test_description",
                 },
                 content_type=APPLICATION_JSON,
@@ -339,7 +339,7 @@ class TestPolicyAudit(BaseTestCase):
                 data={
                     "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
                     "role": {},
-                    "user": [{"id": self.test_user.pk}],
+                    "group": [{"id": self.test_user_group.pk}],
                     "description": "new_test_description",
                 },
                 content_type=APPLICATION_JSON,

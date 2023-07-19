@@ -17,13 +17,19 @@ from rest_framework.serializers import ModelSerializer
 from adcm.serializers import EmptySerializer
 
 
+class BundleIdSerializer(ModelSerializer):
+    class Meta:
+        model = Bundle
+        fields = ["id"]
+
+
 class BundleListSerializer(ModelSerializer):
     display_name = SerializerMethodField()
     upload_time = DateTimeField(read_only=True, source="date")
 
     class Meta:
         model = Bundle
-        fields = ("id", "name", "display_name", "version", "edition", "upload_time", "category")
+        fields = ("id", "name", "display_name", "version", "edition", "upload_time", "category", "signature_status")
 
     def get_display_name(self, instance) -> str | None:
         prototype = instance.prototype_set.filter(type__in=["adcm", "cluster", "provider"]).first()

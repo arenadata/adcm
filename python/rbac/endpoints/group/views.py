@@ -75,6 +75,9 @@ class GroupViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-ma
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.built_in:
-            raise_adcm_ex("GROUP_DELETE_ERROR")
+            raise_adcm_ex(code="GROUP_DELETE_ERROR")
+
+        if instance.policy_set.exists():
+            raise_adcm_ex(code="GROUP_DELETE_ERROR", msg="Group with policy should not be deleted")
 
         return super().destroy(request, args, kwargs)

@@ -22,11 +22,10 @@ from typing import Any
 
 import ruyaml
 import yaml
-import yspec.checker
 from cm.adcm_config.checks import check_config_type
 from cm.adcm_config.config import read_bundle_file
 from cm.adcm_config.utils import proto_ref
-from cm.checker import FormatError, check, round_trip_load
+from cm.checker import FormatError, check, check_rule, round_trip_load
 from cm.errors import raise_adcm_ex
 from cm.logger import logger
 from cm.models import (
@@ -280,6 +279,7 @@ def save_prototype(path: Path, conf: dict, def_type: str, bundle_hash: str) -> S
 
     dict_to_obj(dictionary=conf, key="config_group_customization", obj=proto)
     dict_to_obj(dictionary=conf, key="allow_maintenance_mode", obj=proto)
+    dict_to_obj(dictionary=conf, key="allow_flags", obj=proto)
 
     fix_display_name(conf=conf, obj=proto)
     license_hash = get_license_hash(proto=proto, conf=conf, bundle_hash=bundle_hash)
@@ -299,7 +299,7 @@ def save_prototype(path: Path, conf: dict, def_type: str, bundle_hash: str) -> S
     save_actions(prototype=proto, config=conf, bundle_hash=bundle_hash)
     save_upgrade(prototype=proto, config=conf, bundle_hash=bundle_hash)
     save_components(proto=proto, conf=conf, bundle_hash=bundle_hash)
-    save_prototype_config(proto=proto, proto_conf=conf, bundle_hash=bundle_hash)
+    save_prototype_config(prototype=proto, proto_conf=conf, bundle_hash=bundle_hash)
     save_export(proto=proto, conf=conf)
     save_import(proto=proto, conf=conf)
 
@@ -355,10 +355,12 @@ def save_components(proto: StagePrototype, conf: dict, bundle_hash: str) -> None
         process_config_group_customization(actual_config=component_conf, obj=component)
 
         dict_to_obj(dictionary=component_conf, key="config_group_customization", obj=component)
+        dict_to_obj(dictionary=component_conf, key="allow_flags", obj=component)
+
         component.save()
 
         save_actions(prototype=component, config=component_conf, bundle_hash=bundle_hash)
-        save_prototype_config(proto=component, proto_conf=component_conf, bundle_hash=bundle_hash)
+        save_prototype_config(prototype=component, proto_conf=component_conf, bundle_hash=bundle_hash)
 
 
 def check_upgrade(prototype: StagePrototype, config: dict) -> None:
@@ -760,15 +762,15 @@ def save_action(proto: StagePrototype, config: dict, bundle_hash: str, action_na
 
     action.save()
     save_sub_actions(conf=config, action=action)
-    save_prototype_config(proto=proto, proto_conf=config, bundle_hash=bundle_hash, action=action)
+    save_prototype_config(prototype=proto, proto_conf=config, bundle_hash=bundle_hash, action=action)
 
     return action
 
 
-def get_yspec(proto: StagePrototype | Prototype, bundle_hash: str, conf: dict, name: str, subname: str) -> Any:
+def get_yspec(prototype: StagePrototype | Prototype, bundle_hash: str, conf: dict, name: str, subname: str) -> Any:
     schema = None
     yspec_body = read_bundle_file(
-        proto=proto,
+        proto=prototype,
         fname=conf["yspec"],
         bundle_hash=bundle_hash,
         ref=f'yspec file of config key "{name}/{subname}":',
@@ -781,15 +783,128 @@ def get_yspec(proto: StagePrototype | Prototype, bundle_hash: str, conf: dict, n
             msg=f'yspec file of config key "{name}/{subname}" yaml decode error: {e}',
         )
 
-    success, error = yspec.checker.check_rule(rules=schema)
+    success, error = check_rule(rules=schema)
     if not success:
         raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'yspec file of config key "{name}/{subname}" error: {error}')
 
     return schema
 
 
+def check_variant(config: dict) -> dict:  # pylint: disable=unused-argument
+    vtype = config["source"]["type"]
+    source = {"type": vtype, "args": None}
+
+    if "strict" in config["source"]:
+        source["strict"] = config["source"]["strict"]
+    else:
+        source["strict"] = True
+
+    if vtype == "inline":
+        source["value"] = config["source"]["value"]
+    elif vtype in ("config", "builtin"):
+        source["name"] = config["source"]["name"]
+
+    if vtype == "builtin":
+        if "args" in config["source"]:
+            source["args"] = config["source"]["args"]
+
+    return source
+
+
+def process_limits(config: dict, name: str, subname: str, prototype: StagePrototype, bundle_hash: str) -> dict:
+    limits = {}
+
+    if config["type"] == "option":
+        limits = {"option": config["option"]}
+    elif config["type"] == "variant":
+        limits["source"] = check_variant(config=config)
+    elif config["type"] in settings.STACK_NUMERIC_FIELD_TYPES:
+        if "min" in config:
+            limits["min"] = config["min"]
+
+        if "max" in config:
+            limits["max"] = config["max"]
+
+    elif config["type"] == "structure":
+        limits["yspec"] = get_yspec(
+            prototype=prototype, bundle_hash=bundle_hash, conf=config, name=name, subname=subname
+        )
+    elif config["type"] == "group":
+        if "activatable" in config:
+            limits["activatable"] = config["activatable"]
+            limits["active"] = False
+
+            if "active" in config:
+                limits["active"] = config["active"]
+
+    if "read_only" in config and "writable" in config:
+        key_ref = f'(config key "{name}/{subname}" of {proto_ref(prototype=prototype)})'
+        msg = 'can not have "read_only" and "writable" simultaneously {}'
+        raise_adcm_ex(code="INVALID_CONFIG_DEFINITION", msg=msg.format(key_ref))
+
+    for label in ("read_only", "writable"):
+        if label in config:
+            limits[label] = config[label]
+
+    return limits
+
+
+def process_default(config: dict) -> None:
+    if config["type"] == "map":
+        config.setdefault("default", {})
+
+
+def cook_conf(
+    prototype: StagePrototype,
+    config: dict,
+    name: str,
+    subname: str,
+    bundle_hash: str,
+    action: StageAction | None = None,
+) -> None:
+    stage_prototype_config = StagePrototypeConfig(prototype=prototype, action=action, name=name, type=config["type"])
+
+    dict_to_obj(config, "description", stage_prototype_config)
+    dict_to_obj(config, "display_name", stage_prototype_config)
+    dict_to_obj(config, "required", stage_prototype_config)
+    dict_to_obj(config, "ui_options", stage_prototype_config)
+    dict_to_obj(config, "group_customization", stage_prototype_config)
+
+    config["limits"] = process_limits(
+        config=config, name=name, subname=subname, prototype=prototype, bundle_hash=bundle_hash
+    )
+    dict_to_obj(config, "limits", stage_prototype_config)
+
+    if "display_name" not in config:
+        if subname:
+            stage_prototype_config.display_name = subname
+        else:
+            stage_prototype_config.display_name = name
+
+    if "default" in config:
+        check_config_type(
+            prototype=prototype, key=name, subkey=subname, spec=config, value=config["default"], default=True
+        )
+
+    if config["type"] in settings.STACK_COMPLEX_FIELD_TYPES:
+        dict_json_to_obj(config, "default", stage_prototype_config)
+    else:
+        dict_to_obj(config, "default", stage_prototype_config)
+
+    if subname:
+        stage_prototype_config.subname = subname
+
+    try:
+        stage_prototype_config.save()
+    except IntegrityError:
+        raise_adcm_ex(
+            code="INVALID_CONFIG_DEFINITION",
+            msg=f"Duplicate config on {prototype.type} {prototype}, action {action}, with name {name} and subname {subname}",
+        )
+
+
 def save_prototype_config(
-    proto: StagePrototype,
+    prototype: StagePrototype,
     proto_conf: dict,
     bundle_hash: str,
     action: StageAction | None = None,
@@ -798,126 +913,60 @@ def save_prototype_config(
         return
 
     conf_dict = proto_conf["config"]
-    ref = proto_ref(prototype=proto)
-
-    def check_variant(_conf: dict) -> dict:  # pylint: disable=unused-argument
-        vtype = _conf["source"]["type"]
-        source = {"type": vtype, "args": None}
-        if "strict" in _conf["source"]:
-            source["strict"] = _conf["source"]["strict"]
-        else:
-            source["strict"] = True
-
-        if vtype == "inline":
-            source["value"] = _conf["source"]["value"]
-        elif vtype in ("config", "builtin"):
-            source["name"] = _conf["source"]["name"]
-        if vtype == "builtin":
-            if "args" in _conf["source"]:
-                source["args"] = _conf["source"]["args"]
-
-        return source
-
-    def process_limits(_conf: dict, _name: str, _subname: str) -> dict:
-        opt = {}
-        if _conf["type"] == "option":
-            opt = {"option": _conf["option"]}
-
-        elif _conf["type"] == "variant":
-            opt["source"] = check_variant(_conf=_conf)
-
-        elif _conf["type"] in settings.STACK_NUMERIC_FIELD_TYPES:
-            if "min" in _conf:
-                opt["min"] = _conf["min"]
-
-            if "max" in _conf:
-                opt["max"] = _conf["max"]
-
-        elif _conf["type"] == "structure":
-            opt["yspec"] = get_yspec(proto=proto, bundle_hash=bundle_hash, conf=_conf, name=_name, subname=_subname)
-
-        elif _conf["type"] == "group":
-            if "activatable" in _conf:
-                opt["activatable"] = _conf["activatable"]
-                opt["active"] = False
-
-                if "active" in _conf:
-                    opt["active"] = _conf["active"]
-
-        if "read_only" in _conf and "writable" in _conf:
-            key_ref = f'(config key "{_name}/{_subname}" of {ref})'
-            msg = 'can not have "read_only" and "writable" simultaneously {}'
-            raise_adcm_ex(code="INVALID_CONFIG_DEFINITION", msg=msg.format(key_ref))
-
-        for label in ("read_only", "writable"):
-            if label in _conf:
-                opt[label] = _conf[label]
-
-        return opt
-
-    def cook_conf(obj, _conf, _name, _subname):
-        stage_prototype_config = StagePrototypeConfig(prototype=obj, action=action, name=_name, type=_conf["type"])
-
-        dict_to_obj(_conf, "description", stage_prototype_config)
-        dict_to_obj(_conf, "display_name", stage_prototype_config)
-        dict_to_obj(_conf, "required", stage_prototype_config)
-        dict_to_obj(_conf, "ui_options", stage_prototype_config)
-        dict_to_obj(_conf, "group_customization", stage_prototype_config)
-
-        _conf["limits"] = process_limits(_conf, _name, _subname)
-        dict_to_obj(_conf, "limits", stage_prototype_config)
-
-        if "display_name" not in _conf:
-            if _subname:
-                stage_prototype_config.display_name = _subname
-            else:
-                stage_prototype_config.display_name = _name
-
-        if "default" in _conf:
-            check_config_type(proto, _name, _subname, _conf, _conf["default"], bundle_hash)
-
-        if _conf["type"] in settings.STACK_COMPLEX_FIELD_TYPES:
-            dict_json_to_obj(_conf, "default", stage_prototype_config)
-        else:
-            dict_to_obj(_conf, "default", stage_prototype_config)
-
-        if _subname:
-            stage_prototype_config.subname = _subname
-
-        try:
-            stage_prototype_config.save()
-        except IntegrityError:
-            raise_adcm_ex(
-                code="INVALID_CONFIG_DEFINITION",
-                msg=f"Duplicate config on {obj.type} {obj}, action {action}, with name {_name} and subname {_subname}",
-            )
+    ref = proto_ref(prototype=prototype)
 
     if isinstance(conf_dict, dict):
         for name, conf in conf_dict.items():
             if "type" in conf:
-                validate_name(name, f'Config key "{name}" of {ref}')
-                cook_conf(proto, conf, name, "")
+                validate_name(name=name, error_message=f'Config key "{name}" of {ref}')
+                cook_conf(
+                    prototype=prototype, config=conf, name=name, subname="", bundle_hash=bundle_hash, action=action
+                )
             else:
-                validate_name(name, f'Config group "{name}" of {ref}')
+                validate_name(name=name, error_message=f'Config group "{name}" of {ref}')
                 group_conf = {"type": "group", "required": False}
-                cook_conf(proto, group_conf, name, "")
+                cook_conf(
+                    prototype=prototype,
+                    config=group_conf,
+                    name=name,
+                    subname="",
+                    bundle_hash=bundle_hash,
+                    action=action,
+                )
+
                 for subname, subconf in conf.items():
                     err_msg = f'Config key "{name}/{subname}" of {ref}'
                     validate_name(name, err_msg)
                     validate_name(subname, err_msg)
-                    cook_conf(proto, subconf, name, subname)
+                    cook_conf(
+                        prototype=prototype,
+                        config=subconf,
+                        name=name,
+                        subname=subname,
+                        bundle_hash=bundle_hash,
+                        action=action,
+                    )
+
     elif isinstance(conf_dict, list):
         for conf in conf_dict:
             name = conf["name"]
             validate_name(name, f'Config key "{name}" of {ref}')
-            cook_conf(proto, conf, name, "")
+            cook_conf(prototype=prototype, config=conf, name=name, subname="", bundle_hash=bundle_hash, action=action)
+
             if conf["type"] == "group":
                 for subconf in conf["subs"]:
                     subname = subconf["name"]
                     err_msg = f'Config key "{name}/{subname}" of {ref}'
                     validate_name(name, err_msg)
                     validate_name(subname, err_msg)
-                    cook_conf(proto, subconf, name, subname)
+                    cook_conf(
+                        prototype=prototype,
+                        config=subconf,
+                        name=name,
+                        subname=subname,
+                        bundle_hash=bundle_hash,
+                        action=action,
+                    )
 
 
 def validate_name(name: str, error_message: str) -> None:
@@ -980,13 +1029,10 @@ def dict_to_obj(dictionary, key, obj, obj_key=None):
             setattr(obj, obj_key, dictionary[key])
 
 
-def dict_json_to_obj(dictionary: dict, key: str, obj: StagePrototypeConfig, obj_key: str = "") -> None:
-    if obj_key == "":
-        obj_key = key
-
+def dict_json_to_obj(dictionary: dict, key: str, obj: StagePrototypeConfig) -> None:
     if isinstance(dictionary, dict):
         if key in dictionary:
-            setattr(obj, obj_key, json.dumps(dictionary[key]))
+            setattr(obj, key, json.dumps(dictionary[key]))
 
 
 def _deep_get(deep_dict: dict, *nested_keys: str, default: Any) -> Any:

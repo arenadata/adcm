@@ -1,0 +1,274 @@
+-
+
+  type: adcm
+  name: ADCM
+  version: 2.6
+
+  actions:
+    run_ldap_sync:
+      type: job
+      script_type: python
+      script: python_scripts/run_ldap_sync.py
+      display_name: Run LDAP sync
+      allow_in_maintenance_mode: true
+      states:
+        available: any
+    test_ldap_connection:
+      type: job
+      script_type: python
+      script: python_scripts/testing_ldap_connection.py
+      display_name: Test LDAP connection
+      allow_to_terminate: true
+      allow_in_maintenance_mode: true
+      states:
+        available: any
+
+  config:
+    - name: "global"
+      display_name: "Global Options"
+      type: "group"
+      subs:
+        - name: "adcm_url"
+          display_name: "ADCM's URL"
+          description: |
+            We have to know ADCM's Url to send information from host. We try to guess that information from url you enter in browser.
+            But if your network has more complicated structure and we guess wrong, please fix that here.
+          type: string
+    - name: "google_oauth"
+      display_name: "Google Auth"
+      type: "group"
+      subs:
+        - name: "client_id"
+          type: string
+          required: false
+        - name: "secret"
+          type: password
+          required: false
+          ui_options:
+            no_confirm: true
+    - name: "yandex_oauth"
+      display_name: "Yandex Auth"
+      type: "group"
+      subs:
+        - name: "client_id"
+          type: string
+          required: false
+        - name: "secret"
+          type: password
+          required: false
+          ui_options:
+            no_confirm: true
+      ui_options:
+        invisible: true
+    - name: "job_log"
+      display_name: "Job Log"
+      type: "group"
+      subs:
+        - name: "log_rotation_on_fs"
+          display_name: "Log rotation from file system"
+          type: integer
+          required: false
+          default: 365
+          min: 0
+          description: |
+            You can set the time (number of days) after which the logs will be deleted from the file system.
+        - name: "log_rotation_in_db"
+          display_name: "Log rotation from database"
+          type: integer
+          required: false
+          default: 365
+          min: 0
+          description: |
+            You can set the time (number of days) after which the logs will be deleted from the database.
+    - name: "ansible_settings"
+      display_name: "Ansible Settings"
+      type: "group"
+      subs:
+        - name: "mitogen"
+          display_name: "Use Mitogen"
+          description: |
+            Mitogen for Ansible is a completely redesigned UNIX connection layer and module runtime for Ansible.
+          type: boolean
+          ui_options:
+            invisible: true
+          default: false
+        - name: "forks"
+          display_name: "Forks"
+          description: |
+            This is the default number of parallel processes to spawn when communicating with remote hosts.
+          type: integer
+          default: 5
+          min: 1
+          max: 100
+    - name: "logrotate"
+      display_name: "Nginx Server Logrotate"
+      type: "group"
+      activatable: true
+      ui_options:
+        invisible: true
+      subs:
+        - name: size
+          display_name: "Max file size"
+          description: |
+            Specifies the allowed size the log file can reach before it is archived
+          type: string
+          default: 10M
+        - name: max_history
+          display_name: "Max files history"
+          description: |
+            Controls the maximum number of archive files to keep
+          type: integer
+          default: 10
+          min: 1
+        - name: compress
+          display_name: "Enable compression"
+          description: |
+            Compress the rotated files
+          type: boolean
+          default: false
+    - name: "config_rotation"
+      display_name: "Configuration rotation"
+      description: |
+        You can enable Clusters/Services/Components configurations deleting mechanism.
+      type: "group"
+      subs:
+        - name: "config_rotation_in_db"
+          display_name: "Objects configurations rotation period"
+          type: integer
+          required: false
+          default: 0
+          min: 0
+          description: |
+            You can set the time (number of days) after which the Objects configuration will be deleted from the database. 0 is infinite storing.
+
+    - name: "audit_data_retention"
+      display_name: "Audit data retention"
+      type: "group"
+      subs:
+        - name: "retention_period"
+          display_name: "Retention period"
+          description: |
+            Data storage period (in days) for operations and authorizations in ADCM.
+          type: integer
+          default: 1825
+        - name: "data_archiving"
+          display_name: "Enable archiving"
+          description: |
+            Enable/disable archiving of data on operations and authorizations after the period specified in "retention_period".
+          type: boolean
+          default: false
+          required: no
+    - name: "ldap_integration"
+      display_name: "LDAP integration"
+      type: "group"
+      activatable: true
+      active: false
+      subs:
+        - name: "ldap_uri"
+          display_name: "LDAP URI"
+          description: |
+            The URI of the LDAP server.
+          type: string
+        - name: "ldap_user"
+          display_name: "Bind DN"
+          description: |
+            The distinguished name (DN) of the user that is used to connect to the LDAP server. For example: "cn=admin,dc=ad,dc=ranger-test".
+          type: string
+        - name: "ldap_password"
+          display_name: "Bind Password"
+          description: |
+            Password for access to the LDAP server of the user specified in the "LDAP User" field.
+          type: password
+        - name: "user_search_base"
+          display_name: "User search base"
+          description: |
+            The distinguished name (DN) of the directory object from which to search for entries. For example: "ou=Peoples,dc=ad,dc=ranger-test".
+          type: string
+        - name: "user_search_filter"
+          display_name: "User search filter"
+          description: |
+            Additional filter constraining the users selected for syncing.
+          type: string
+          required: false
+        - name: "user_object_class"
+          display_name: "User object class"
+          description: |
+            Object class to identify user entries.
+          type: string
+          default: "user"
+        - name: "user_name_attribute"
+          display_name: "User name attribute"
+          description: |
+            Attribute from user entry that would be treated as user name.
+          type: string
+          default: "sAMAccountName"
+        - name: "group_search_base"
+          display_name: "Group search base"
+          description: |
+            The distinguished name (DN) of the directory object from which to search for entries. For example: "ou=Groups,dc=ad,dc=ranger-test".
+          type: string
+          required: false
+        - name: "group_search_filter"
+          display_name: "Group search filter"
+          description: |
+            Additional filter constraining the groups selected for syncing.
+          type: string
+          required: false
+        - name: "group_object_class"
+          display_name: "Group object class"
+          description: |
+            Object class to identify group entries.
+          type: string
+          default: "group"
+        - name: "group_name_attribute"
+          display_name: "Group name attribute"
+          description: |
+            Attribute from group entry that would be treated as group name.
+          type: string
+          default: "cn"
+        - name: "group_member_attribute_name"
+          display_name: "Group member attribute name"
+          description: |
+            Attribute from group entry that is list of members.
+          type: string
+          default: "member"
+        - name: "sync_interval"
+          display_name: "Sync interval"
+          description: |
+            Amount of time in minutes that group memberships and user distinguished names are synchronized between AD and ADCM.
+          type: integer
+          default: 60
+        - name: "tls_ca_cert_file"
+          display_name: "TLS CA certificate file path"
+          description: |
+            CA certificate path in ADCM container volume.
+          type: string
+          required: false
+    - name: "auth_policy"
+      display_name: "Authentication policy"
+      type: "group"
+      subs:
+        - name: "min_password_length"
+          display_name: "Minimum password length"
+          type: integer
+          default: 12
+          min: 1
+          max: 128
+        - name: "max_password_length"
+          display_name: "Maximum password length"
+          type: integer
+          default: 128
+          min: 1
+          max: 128
+        - name: "login_attempt_limit"
+          display_name: "Login attempt limit"
+          description: "The number of login attempts allowed before user account is locked out"
+          type: integer
+          min: 1
+          default: 5
+        - name: "block_time"
+          display_name: "Blocking time period"
+          description: "Defines a period (in min) of inactivity after which old failed login attempts will be cleared"
+          type: integer
+          min: 1
+          default: 5

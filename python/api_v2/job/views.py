@@ -9,24 +9,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from api.base_view import GenericUIViewSet
 from api.job.views import VIEW_JOBLOG_PERMISSION
-from api_v2.job.serializers import JobListSerializer, JobRetrieveSerializer
+from api_v2.job.serializers import JobRetrieveSerializer
+from api_v2.task.serializers import JobListSerializer
 from cm.models import JobLog, JobStatus
 from cm.status_api import Event
 from rest_framework.decorators import action
+from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
-from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import check_custom_perm, get_object_for_user
 
 
-class JobViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = JobLog.objects.select_related("task").all()
+class JobViewSet(
+    ListModelMixin, RetrieveModelMixin, CreateModelMixin, GenericUIViewSet
+):  # pylint: disable=too-many-ancestors
+    queryset = JobLog.objects.select_related("task__action").all()
     serializer_class = JobListSerializer
-    http_method_names = ["get", "post"]
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -35,9 +37,9 @@ class JobViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
         return super().get_serializer_class()
 
     @action(methods=["post"], detail=True)
-    def terminate(self, request: Request, job_pk: int) -> Response:
-        job: JobLog = get_object_for_user(request.user, VIEW_JOBLOG_PERMISSION, JobLog, id=job_pk)
-        check_custom_perm(request.user, "change", JobLog, job_pk)
+    def terminate(self, request: Request, pk: int) -> Response:
+        job: JobLog = get_object_for_user(request.user, VIEW_JOBLOG_PERMISSION, JobLog, id=pk)
+        check_custom_perm(request.user, "change", JobLog, pk)
 
         event = Event()
         event.set_job_status(job=job, status=JobStatus.ABORTED.value)

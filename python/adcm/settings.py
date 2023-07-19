@@ -34,13 +34,15 @@ STACK_DIR = os.getenv("ADCM_STACK_DIR", BASE_DIR)
 BUNDLE_DIR = STACK_DIR / "data" / "bundle"
 CODE_DIR = BASE_DIR / "python"
 DOWNLOAD_DIR = Path(STACK_DIR, "data", "download")
-RUN_DIR = BASE_DIR / "data" / "run"
+DATA_DIR = BASE_DIR / "data"
+RUN_DIR = DATA_DIR / "run"
 FILE_DIR = STACK_DIR / "data" / "file"
-LOG_DIR = BASE_DIR / "data" / "log"
-VAR_DIR = BASE_DIR / "data" / "var"
+LOG_DIR = DATA_DIR / "log"
+VAR_DIR = DATA_DIR / "var"
 LOG_FILE = LOG_DIR / "adcm.log"
 SECRETS_FILE = VAR_DIR / "secrets.json"
 ADCM_TOKEN_FILE = VAR_DIR / "adcm_token"
+GPG_PUBLIC_KEY = VAR_DIR / "gpg_key.pub"
 PYTHON_SITE_PACKAGES = Path(
     sys.exec_prefix,
     f"lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages",

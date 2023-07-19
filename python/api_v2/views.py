@@ -22,4 +22,5 @@ class APIRoot(APIRootView):
         "hostproviders": "hostprovider-list",
         "prototypes": "prototype-list",
         "jobs": "joblog-list",
+        "tasks": "tasklog-list",
     }

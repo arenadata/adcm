@@ -71,7 +71,10 @@ class ActionModule(ActionBase):
         super().run(tmp, task_vars)
 
         provider_pk = get_object_id_from_context(
-            task_vars, "provider_id", "provider", err_msg="You can add host only in host provider context"
+            task_vars=task_vars,
+            id_type="provider_id",
+            context_types=("provider",),
+            err_msg="You can add host only in host provider context",
         )
         if "fqdn" not in self._task.args:
             raise AnsibleError("fqdn is mandatory args of adcm_add_host")

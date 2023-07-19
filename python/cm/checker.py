@@ -14,6 +14,19 @@
 
 import ruyaml
 
+MATCH_DICT_RESERVED_DIRECTIVES = ("invisible_items",)
+
+
+def _check_match_dict_reserved(data, rules, rule, path, parent=None):
+    if any(directive in rules[rule] for directive in MATCH_DICT_RESERVED_DIRECTIVES):
+        raise FormatError(
+            path=path,
+            message=f'{MATCH_DICT_RESERVED_DIRECTIVES} allowed only in "match: dict" sections',
+            data=data,
+            rule=rule,
+            parent=parent,
+        )
+
 
 def round_trip_load(stream, version=None, preserve_quotes=None, allow_duplicate_keys=False):
     """
@@ -79,6 +92,8 @@ def check_match_type(match, data, data_type, path, rule, parent=None):
 
 
 def match_none(data, rules, rule, path, parent=None):  # pylint: disable=unused-argument
+    _check_match_dict_reserved(data=data, rules=rules, rule=rule, path=path, parent=parent)
+
     if data is not None:
         msg = "Object should be empty"
         if path:
@@ -92,7 +107,9 @@ def match_any(data, rules, rule, path, parent=None):  # pylint: disable=unused-a
 
 
 def match_list(data, rules, rule, path, parent=None):
+    _check_match_dict_reserved(data=data, rules=rules, rule=rule, path=path, parent=parent)
     check_match_type("match_list", data, list, path, rule, parent)
+
     for i, item in enumerate(data):
         process_rule(item, rules, rules[rule]["item"], path + [("Value of list index", i)], parent)
 
@@ -102,8 +119,8 @@ def match_list(data, rules, rule, path, parent=None):
 def match_dict(data, rules, rule, path, parent=None):
     check_match_type("match_dict", data, dict, path, rule, parent)
 
-    if "required_items" in rules[rule]:
-        for i in rules[rule]["required_items"]:
+    if "required_items" in rules[rule] or "invisible_items" in rules[rule]:
+        for i in rules[rule].get("required_items", []) + rules[rule].get("invisible_items", []):
             if i not in data:
                 raise FormatError(path, f'There is no required key "{i}" in map.', data, rule)
 
@@ -121,7 +138,9 @@ def match_dict(data, rules, rule, path, parent=None):
 
 
 def match_dict_key_selection(data, rules, rule, path, parent=None):
+    _check_match_dict_reserved(data=data, rules=rules, rule=rule, path=path, parent=parent)
     check_match_type("dict_key_selection", data, dict, path, rule, parent)
+
     key = rules[rule]["selector"]
     if key not in data:
         msg = f'There is no key "{key}" in map.'
@@ -137,6 +156,8 @@ def match_dict_key_selection(data, rules, rule, path, parent=None):
 
 
 def match_one_of(data, rules, rule, path, parent=None):
+    _check_match_dict_reserved(data=data, rules=rules, rule=rule, path=path, parent=parent)
+
     errors = []
     sub_errors = []
     for obj in rules[rule]["variants"]:
@@ -153,6 +174,8 @@ def match_one_of(data, rules, rule, path, parent=None):
 
 
 def match_set(data, rules, rule, path, parent=None):  # pylint: disable=unused-argument
+    _check_match_dict_reserved(data=data, rules=rules, rule=rule, path=path, parent=parent)
+
     if data not in rules[rule]["variants"]:
         msg = f'Value "{data}" not in set {rules[rule]["variants"]}'
         raise FormatError(path, msg, data, rule, parent=parent)
@@ -160,6 +183,7 @@ def match_set(data, rules, rule, path, parent=None):  # pylint: disable=unused-a
 
 def match_simple_type(obj_type):
     def match(data, rules, rule, path, parent=None):  # pylint: disable=unused-argument
+        _check_match_dict_reserved(data=data, rules=rules, rule=rule, path=path, parent=parent)
         check_type(data, obj_type, path, rule, parent=parent)
 
     return match

@@ -12,7 +12,7 @@
 
 from datetime import timedelta
 
-from cm.models import ADCM, Action, ActionType, JobLog, TaskLog
+from cm.models import ADCM, Action, ActionType, JobLog, LogStorage, TaskLog
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils import timezone
@@ -53,6 +53,12 @@ class TestJob(BaseTestCase):
             task=self.task,
             pid=self.job_1.pid + 1,
         )
+        self.log_1 = LogStorage.objects.create(
+            job=self.job_1,
+            name="ansible",
+            type="stderr",
+            format="txt",
+        )
 
     def test_job_list_success(self):
         response: Response = self.client.get(path=reverse(viewname="v2:joblog-list"))
@@ -74,4 +80,17 @@ class TestJob(BaseTestCase):
 
     def test_job_log_list_success(self):
         response: Response = self.client.get(path=reverse(viewname="v2:log-list", kwargs={"job_pk": self.job_1.pk}))
+        self.assertEqual(response.json()["count"], 1)
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_job_log_download_success(self):
+        response: Response = self.client.post(
+            path=reverse(viewname="v2:log-download", kwargs={"job_pk": self.job_1.pk, "log_pk": self.log_1.pk})
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_job_log_not_found_download_fail(self):
+        response: Response = self.client.post(
+            path=reverse(viewname="v2:log-download", kwargs={"job_pk": self.job_1.pk, "log_pk": self.log_1.pk + 10})
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)

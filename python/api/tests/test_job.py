@@ -199,7 +199,7 @@ class TestJobAPI(BaseTestCase):
 
         role = Role.objects.get(name="Cluster Administrator")
         policy = Policy.objects.create(name="test_policy", role=role)
-        policy.user.add(self.no_rights_user)
+        policy.group.add(self.no_rights_user_group)
         policy.add_object(cluster)
         policy.apply()
 

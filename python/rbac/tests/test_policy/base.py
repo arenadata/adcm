@@ -12,6 +12,7 @@
 
 from cm.models import Bundle, ClusterObject, Host, ObjectType, Prototype
 from django.conf import settings
+from rbac.models import Group
 
 from adcm.tests.base import BaseTestCase
 
@@ -21,7 +22,11 @@ class PolicyBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-att
         super().setUp()
 
         self.new_user_password = "new_user_password"
-        self.new_user = self.get_new_user(username="new_user", password=self.new_user_password)
+        self.new_user_group = Group.objects.create(name="new_group")
+        self.new_user = self.get_new_user(
+            username="new_user", password=self.new_user_password, group_pk=self.new_user_group.pk
+        )
+
         bundle = self.upload_and_load_bundle(
             path=(
                 settings.BASE_DIR / "python" / "rbac" / "tests" / "files" / "test_cluster_for_cluster_admin_role.tar"

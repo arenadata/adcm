@@ -59,7 +59,9 @@ class ActionModule(ActionBase):
         service = self._task.args.get("service", None)
         if service:
             msg = "You can delete service by name only in cluster context"
-            cluster_id = get_object_id_from_context(task_vars, "cluster_id", "cluster", err_msg=msg)
+            cluster_id = get_object_id_from_context(
+                task_vars=task_vars, id_type="cluster_id", context_types=("cluster",), err_msg=msg
+            )
             logger.info('ansible module adcm_delete_service: service "%s"', service)
             try:
                 cm.api.delete_service_by_name(service, cluster_id)
@@ -67,7 +69,9 @@ class ActionModule(ActionBase):
                 raise AnsibleError(e.code + ":" + e.msg) from e
         else:
             msg = "You can delete service only in service context"
-            service_id = get_object_id_from_context(task_vars, "service_id", "service", err_msg=msg)
+            service_id = get_object_id_from_context(
+                task_vars=task_vars, id_type="service_id", context_types=("service",), err_msg=msg
+            )
             logger.info("ansible module adcm_delete_service: service #%s", service_id)
             try:
                 cm.api.delete_service_by_pk(service_id)

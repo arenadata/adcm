@@ -12,11 +12,11 @@
 
 from typing import Any, Mapping
 
-import yspec.checker
 from cm.adcm_config.utils import config_is_ro, group_keys_to_flat, proto_ref
+from cm.checker import FormatError, SchemaError, process_rule
 from cm.errors import raise_adcm_ex
 from cm.logger import logger
-from cm.models import Action, ADCMEntity, GroupConfig, Prototype
+from cm.models import Action, ADCMEntity, GroupConfig, Prototype, StagePrototype
 from django.conf import settings
 
 
@@ -211,7 +211,7 @@ def _check_str(value: Any, idx: Any, key: str, subkey: str, ref: str, label: str
 
 
 def check_config_type(  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
-    proto: Prototype,
+    prototype: StagePrototype | Prototype,
     key: str,
     subkey: str,
     spec: dict,
@@ -219,7 +219,7 @@ def check_config_type(  # pylint: disable=too-many-branches,too-many-statements,
     default: bool = False,
     inactive: bool = False,
 ) -> None:
-    ref = proto_ref(prototype=proto)
+    ref = proto_ref(prototype=prototype)
     if default:
         label = "Default value"
     else:
@@ -288,11 +288,11 @@ def check_config_type(  # pylint: disable=too-many-branches,too-many-statements,
     if spec["type"] == "structure":
         schema = spec["limits"]["yspec"]
         try:
-            yspec.checker.process_rule(data=value, rules=schema, name="root")
-        except yspec.checker.FormatError as e:
+            process_rule(data=value, rules=schema, name="root")
+        except FormatError as e:
             msg = tmpl1.format(f"yspec error: {str(e)} at block {e.data}")
             raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=msg)
-        except yspec.checker.SchemaError as e:
+        except SchemaError as e:
             raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=f"yspec error: {str(e)}")
 
     if spec["type"] == "boolean" and not isinstance(value, bool):

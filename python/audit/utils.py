@@ -25,6 +25,7 @@ from audit.models import (
     AuditLogOperationType,
     AuditObject,
     AuditOperation,
+    AuditUser,
 )
 from cm.errors import AdcmEx
 from cm.models import (
@@ -92,7 +93,10 @@ def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs) -> Model | 
             if view.queryset.count() == 1:
                 deleted_obj = view.queryset.all()[0]
             elif "pk" in view.kwargs:
-                deleted_obj = view.queryset.get(pk=view.kwargs["pk"])
+                try:
+                    deleted_obj = view.queryset.get(pk=int(view.kwargs["pk"]))
+                except ValueError:
+                    deleted_obj = None
             else:
                 deleted_obj = None
         except TypeError:
@@ -102,7 +106,7 @@ def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs) -> Model | 
                 deleted_obj = None
         except (IndexError, ObjectDoesNotExist):
             deleted_obj = None
-    except KeyError:
+    except (KeyError, ValueError):
         deleted_obj = None
     except PermissionDenied:
         if "cluster_id" in kwargs:
@@ -195,8 +199,12 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
 
     if serializer_class:
         model = view.get_queryset().model
-        current_obj = model.objects.filter(pk=pk).first()
-        prev_data = serializer_class(model.objects.filter(pk=pk).first()).data
+        try:
+            current_obj = model.objects.filter(pk=pk).first()
+            prev_data = serializer_class(model.objects.filter(pk=pk).first()).data
+        except ValueError:
+            current_obj = None
+            prev_data = None
 
         if current_obj:
             prev_data = serializer_class(current_obj).data
@@ -329,16 +337,16 @@ def audit(func):
                 operation_result = AuditLogOperationResult.FAIL
 
             if isinstance(view.request.user, DjangoUser):
-                user = view.request.user
+                audit_user = AuditUser.objects.filter(username=view.request.user.username).order_by("-pk").first()
             else:
-                user = None
+                audit_user = None
 
             auditlog = AuditLog.objects.create(
                 audit_object=audit_object,
                 operation_name=operation_name,
                 operation_type=audit_operation.operation_type,
                 operation_result=operation_result,
-                user=user,
+                user=audit_user,
                 object_changes=object_changes,
             )
             cef_logger(audit_instance=auditlog, signature_id=resolve(request.path).route)
@@ -368,12 +376,11 @@ def make_audit_log(operation_type, result, operation_status):
         },
     }
     operation_name = operation_type_map[operation_type]["name"] + " " + operation_status
-    system_user = User.objects.get(username="system")
     audit_log = AuditLog.objects.create(
         audit_object=None,
         operation_name=operation_name,
         operation_type=operation_type_map[operation_type]["type"],
         operation_result=result,
-        user=system_user,
+        user=AuditUser.objects.get(username="system"),
     )
     cef_logger(audit_instance=audit_log, signature_id="Background operation", empty_resource=True)

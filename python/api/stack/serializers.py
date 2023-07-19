@@ -61,6 +61,7 @@ class BundleSerializer(HyperlinkedModelSerializer):
             "license_url",
             "update",
             "url",
+            "signature_status",
         )
         read_only_fields = fields
         extra_kwargs = {"url": {"lookup_url_kwarg": "bundle_pk"}}

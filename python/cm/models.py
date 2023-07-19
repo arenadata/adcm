@@ -58,6 +58,11 @@ class MaintenanceMode(models.TextChoices):
     CHANGING = "CHANGING", "CHANGING"
 
 
+class SignatureState(models.TextChoices):
+    VERIFIED = "verified", "verified"
+    NOT_VERIFIED = "not verified", "not verified"
+
+
 LICENSE_STATE = (
     ("absent", "absent"),
     ("accepted", "accepted"),
@@ -182,6 +187,9 @@ class Bundle(ADCMModel):
     description = models.TextField(blank=True)
     date = models.DateTimeField(auto_now=True)
     category = models.ForeignKey("ProductCategory", on_delete=models.RESTRICT, null=True)
+    signature_status = models.CharField(
+        max_length=100, choices=SignatureState.choices, default=SignatureState.NOT_VERIFIED
+    )
 
     __error_code__ = "BUNDLE_NOT_FOUND"
 
@@ -255,6 +263,7 @@ class Prototype(ADCMModel):
     config_group_customization = models.BooleanField(default=False)
     venv = models.CharField(default="default", max_length=1000, blank=False)
     allow_maintenance_mode = models.BooleanField(default=False)
+    allow_flags = models.BooleanField(default=False)
 
     __error_code__ = "PROTOTYPE_NOT_FOUND"
 
@@ -502,6 +511,10 @@ class ADCMEntity(ADCMModel):
         return ContentType.objects.get(app_label="cm", model=model_name)
 
     def delete(self, using=None, keep_parents=False):
+        for concern in self.concerns.filter(owner_type=self.content_type, owner_id=self.id):
+            logger.debug("Delete %s", str(concern))
+            concern.delete()
+
         super().delete(using, keep_parents)
         if self.config is not None and not isinstance(self, ServiceComponent):
             self.config.delete()
@@ -1699,6 +1712,7 @@ class StagePrototype(ADCMModel):
     config_group_customization = models.BooleanField(default=False)
     venv = models.CharField(default="default", max_length=1000, blank=False)
     allow_maintenance_mode = models.BooleanField(default=False)
+    allow_flags = models.BooleanField(default=False)
 
     __error_code__ = "PROTOTYPE_NOT_FOUND"
 
@@ -1780,6 +1794,7 @@ class KnownNames(Enum):
     REQUIRED_IMPORT_ISSUE = "required import issue"  # kwargs=(source, )
     HOST_COMPONENT_ISSUE = "host component issue"  # kwargs=(source, )
     UNSATISFIED_REQUIREMENT_ISSUE = "unsatisfied service requirement"  # kwargs=(source, )
+    CONFIG_FLAG = "outdated configuration flag"  # kwargs=(source, )
 
 
 class PlaceHolderType(Enum):
