@@ -22,13 +22,15 @@ from api_v2.cluster.serializers import (
 from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.host.serializers import HostMappingSerializer
 from cm.api import add_cluster
+from cm.issue import update_hierarchy_issues
 from cm.models import Cluster, HostComponent, ObjectType, Prototype
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.mixins import CreateModelMixin, ListModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from adcm.permissions import (
@@ -67,6 +69,21 @@ class ClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=too-m
         )
 
         return Response(data=ClusterSerializer(cluster).data, status=HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        valid_data = serializer.validated_data
+        instance = self.get_object()
+
+        if valid_data.get("name") and valid_data.get("name") != instance.name and instance.state != "created":
+            raise ValidationError("Name change is available only in the 'created' state")
+
+        instance.name = valid_data.get("name", instance.name)
+        instance.save(update_fields=["name"])
+        update_hierarchy_issues(obj=instance)
+
+        return Response(status=HTTP_200_OK, data=ClusterSerializer(instance).data)
 
     @action(methods=["get"], detail=True)
     def service_prototypes(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument

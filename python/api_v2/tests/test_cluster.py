@@ -21,6 +21,7 @@ from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
 )
 
@@ -119,6 +120,27 @@ class TestCluster(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_update_failed(self):
+        wrong_cluster_name = "__new_test_cluster_name"
+        correct_cluster_name = "new_test_cluster_name"
+
+        response: Response = self.client.patch(
+            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
+            data={"name": wrong_cluster_name},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.cluster_1.state = "not_created"
+        self.cluster_1.save(update_fields=["state"])
+
+        response: Response = self.client.patch(
+            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
+            data={"name": correct_cluster_name},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
     def test_update_success(self):
         new_test_cluster_name = "new_test_cluster_name"

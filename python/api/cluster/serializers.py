@@ -25,7 +25,7 @@ from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 from cm.schemas import RequiresUISchema
 from cm.status_api import get_cluster_status, get_hc_status
 from cm.upgrade import get_upgrade
-from cm.validators import StartMidEndValidator
+from cm.validators import ClusterUniqueValidator, StartMidEndValidator
 from django.conf import settings
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
@@ -39,7 +39,6 @@ from rest_framework.serializers import (
     Serializer,
     SerializerMethodField,
 )
-from rest_framework.validators import UniqueValidator
 
 from adcm.serializers import EmptySerializer
 from adcm.utils import filter_actions, get_requires
@@ -50,14 +49,6 @@ def get_cluster_id(obj):
         return obj.obj_ref.clusterobject.cluster.id
     else:
         return obj.obj_ref.cluster.id
-
-
-class ClusterUniqueValidator(UniqueValidator):
-    def __call__(self, value, serializer_field):
-        try:
-            super().__call__(value, serializer_field)
-        except ValidationError as e:
-            raise AdcmEx("CLUSTER_CONFLICT", f'Cluster with name "{value}" already exists') from e
 
 
 class ClusterSerializer(Serializer):

@@ -13,14 +13,22 @@ from api_v2.bundle.filters import BundleFilter
 from api_v2.bundle.serializers import BundleListSerializer, UploadBundleSerializer
 from cm.bundle import delete_bundle, load_bundle, upload_file
 from cm.models import Bundle
+from rest_framework.mixins import (
+    CreateModelMixin,
+    DestroyModelMixin,
+    ListModelMixin,
+    RetrieveModelMixin,
+)
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import GenericViewSet
 
 from adcm.permissions import VIEW_ACTION_PERM, DjangoModelPermissionsAudit
 
 
-class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
+class BundleViewSet(
+    CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, ListModelMixin, GenericViewSet
+):  # pylint: disable=too-many-ancestors
     queryset = Bundle.objects.exclude(name="ADCM").prefetch_related("prototype_set")
     serializer_class = BundleListSerializer
     permission_classes = [DjangoModelPermissionsAudit]
@@ -33,9 +41,9 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         file_path = upload_file(file=request.data["file"])
-        load_bundle(bundle_file=str(file_path))
+        bundle = load_bundle(bundle_file=str(file_path))
 
-        return Response(status=HTTP_201_CREATED)
+        return Response(status=HTTP_201_CREATED, data=BundleListSerializer(bundle).data)
 
     def destroy(self, request, *args, **kwargs) -> Response:
         bundle = self.get_object()

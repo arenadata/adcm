@@ -18,6 +18,9 @@ from cm.adcm_config.config import get_main_info
 from cm.models import Cluster, HostComponent, Prototype
 from cm.status_api import get_obj_status
 from cm.upgrade import get_upgrade
+from cm.validators import ClusterUniqueValidator, StartMidEndValidator
+from django.conf import settings
+from rest_framework.fields import CharField
 from rest_framework.serializers import (
     BooleanField,
     ModelSerializer,
@@ -69,6 +72,22 @@ class ClusterCreateSerializer(ModelSerializer):
 
 
 class ClusterUpdateSerializer(ModelSerializer):
+    name = CharField(
+        max_length=80,
+        validators=[
+            ClusterUniqueValidator(queryset=Cluster.objects.all()),
+            StartMidEndValidator(
+                start=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                mid=settings.ALLOWED_CLUSTER_NAME_MID_CHARS,
+                end=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                err_code="BAD_REQUEST",
+                err_msg="Wrong cluster name.",
+            ),
+        ],
+        required=False,
+        help_text="Cluster name",
+    )
+
     class Meta:
         model = Cluster
         fields = ["name"]

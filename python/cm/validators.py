@@ -25,6 +25,14 @@ class HostUniqueValidator(UniqueValidator):
             raise AdcmEx("HOST_CONFLICT", "duplicate host") from e
 
 
+class ClusterUniqueValidator(UniqueValidator):
+    def __call__(self, value, serializer_field):
+        try:
+            super().__call__(value, serializer_field)
+        except ValidationError as e:
+            raise AdcmEx("CLUSTER_CONFLICT", f'Cluster with name "{value}" already exists') from e
+
+
 class RegexValidator:
     def __init__(self, regex: str, code: str, msg: str):
         self._regex = re.compile(regex)
