@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.flag import create_flag, get_flag_name, remove_flag, update_flags
+from cm.flag import create_flag, get_flag_name, remove_flag, update_object_flag
 from cm.hierarchy import Tree
 from cm.models import ConcernCause, ConcernItem, ConcernType
 from cm.tests.utils import generate_hierarchy
@@ -46,7 +46,7 @@ class FlagTest(BaseTestCase):
         self.assertEqual(flag.cause, ConcernCause.CONFIG)
 
     def test_update_flags(self):
-        update_flags(obj=self.cluster)
+        update_object_flag(obj=self.cluster)
         for node in self.tree.get_directly_affected(self.tree.built_from):
             concerns = node.value.concerns.all()
             self.assertEqual(concerns.count(), 1)
@@ -54,13 +54,13 @@ class FlagTest(BaseTestCase):
 
     def test_unique_flag_name(self):
         msg = "Test message"
-        update_flags(obj=self.cluster)
-        update_flags(obj=self.cluster, msg=msg)
+        update_object_flag(obj=self.cluster)
+        update_object_flag(obj=self.cluster, msg=msg)
         concerns = self.cluster.concerns.all()
         self.assertEqual(concerns.count(), 2)
 
         # test what flag with the same name will not create and not apply second time
-        update_flags(obj=self.cluster)
+        update_object_flag(obj=self.cluster)
         for node in self.tree.get_directly_affected(self.tree.built_from):
             concerns = node.value.concerns.all()
             self.assertEqual(concerns.count(), 2)
@@ -68,8 +68,8 @@ class FlagTest(BaseTestCase):
 
     def test_delete_flag_success(self):
         msg = "Test message"
-        update_flags(obj=self.cluster)
-        update_flags(obj=self.cluster, msg=msg)
+        update_object_flag(obj=self.cluster)
+        update_object_flag(obj=self.cluster, msg=msg)
 
         remove_flag(obj=self.cluster)
         for node in self.tree.get_directly_affected(self.tree.built_from):

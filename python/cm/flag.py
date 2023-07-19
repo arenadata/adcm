@@ -59,15 +59,38 @@ def get_own_flag(owner: ADCMEntity, msg: str) -> ConcernItem:
     ).first()
 
 
-def update_flags(obj: ADCMEntity, msg: str = "") -> None:
+def update_hierarchy(concern: ConcernItem) -> None:
+    tree = Tree(obj=concern.owner)
+
+    related = set(concern.related_objects)
+    affected = {node.value for node in tree.get_directly_affected(node=tree.built_from)}
+
+    if related == affected:
+        return
+
+    for object_moved_out_hierarchy in related.difference(affected):
+        object_moved_out_hierarchy.remove_from_concerns(item=concern)
+
+    for new_object in affected.difference(related):
+        new_object.add_to_concerns(item=concern)
+
+
+def update_flags() -> None:
+    for flag in ConcernItem.objects.filter(type=ConcernType.FLAG):
+        if flag.owner is None:
+            flag.delete()
+            continue
+
+        update_hierarchy(concern=flag)
+
+
+def update_object_flag(obj: ADCMEntity, msg: str = "") -> None:
     if not obj.prototype.allow_flags:
         return
 
     flag = get_own_flag(owner=obj, msg=msg)
+
     if not flag:
         flag = create_flag(obj=obj, msg=msg)
 
-    tree = Tree(obj)
-    affected_nodes = tree.get_directly_affected(node=tree.built_from)
-    for node in affected_nodes:
-        node.value.add_to_concerns(item=flag)
+    update_hierarchy(concern=flag)

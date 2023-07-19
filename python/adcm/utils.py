@@ -14,6 +14,7 @@ from typing import Any, Iterable
 
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import load_mm_objects
+from cm.flag import update_flags
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
 from cm.job import start_task
 from cm.models import (
@@ -68,6 +69,7 @@ def _update_mm_hierarchy_issues(obj: Host | ClusterObject | ServiceComponent) ->
 
     update_hierarchy_issues(obj.cluster)
     update_issue_after_deleting()
+    update_flags()
     load_mm_objects()
 
 

@@ -23,7 +23,7 @@ from cm.adcm_config.config import (
 from cm.adcm_config.utils import proto_ref
 from cm.api_context import CTX
 from cm.errors import raise_adcm_ex
-from cm.flag import update_flags
+from cm.flag import update_object_flag
 from cm.issue import (
     check_bound_components,
     check_component_constraint,
@@ -563,7 +563,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
     with atomic():
         config_log = save_obj_config(obj_conf=obj_conf, conf=new_conf, attr=attr, desc=description)
         update_hierarchy_issues(obj=obj)
-        update_flags(obj=obj)
+        update_object_flag(obj=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
     if group is not None:

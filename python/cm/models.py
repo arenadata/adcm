@@ -511,6 +511,10 @@ class ADCMEntity(ADCMModel):
         return ContentType.objects.get(app_label="cm", model=model_name)
 
     def delete(self, using=None, keep_parents=False):
+        for concern in self.concerns.filter(owner_type=self.content_type, owner_id=self.id):
+            logger.debug("Delete %s", str(concern))
+            concern.delete()
+
         super().delete(using, keep_parents)
         if self.config is not None and not isinstance(self, ServiceComponent):
             self.config.delete()
