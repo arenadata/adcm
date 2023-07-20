@@ -68,7 +68,8 @@ sys.path.append("/adcm/python")
 import adcm.init_django  # pylint: disable=unused-import
 
 from cm.ansible_plugin import get_context_object, check_context_type
-from cm.flag import remove_flag, update_object_flag
+from cm.logger import logger
+from cm.flag import update_object_flag, remove_flag
 from cm.models import ClusterObject, ServiceComponent, get_object_cluster, HostProvider, Host, ADCMEntity
 
 cluster_context_type = ("cluster", "service", "component")
@@ -160,7 +161,8 @@ class ActionModule(ActionBase):
                 obj = context_obj
 
             if not obj:
-                raise AnsibleError("'Objects' item must contain some objects in list")
+                logger.error("Object %s not found", item)
+                continue
 
             objects.append(obj)
 
