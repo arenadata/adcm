@@ -1,14 +1,13 @@
 import React from 'react';
 import Dialog from '@uikit/Dialog/Dialog';
 import { useDispatch, useStore } from '@hooks';
-import { deleteWithUpdateBundles } from '@store/adcm/bundles/bundlesSlice';
-import { setDeletableId } from '@store/adcm/bundles/bundlesTableSlice';
+import { deleteWithUpdateBundles, setDeletableId } from '@store/adcm/bundles/bundlesSlice';
 
 const BundleItemDeleteDialog: React.FC = () => {
   const dispatch = useDispatch();
 
   const bundles = useStore(({ adcm }) => adcm.bundles.bundles);
-  const deletableId = useStore(({ adcm }) => adcm.bundlesTable.itemsForActions.deletableId);
+  const deletableId = useStore(({ adcm }) => adcm.bundles.itemsForActions.deletableId);
 
   const isOpen = deletableId !== null;
 

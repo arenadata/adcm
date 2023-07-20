@@ -4,11 +4,11 @@ import { bundleSignatureStatusesMap, columns } from './BundlesTable.constants';
 import { Checkbox, IconButton, Table, TableCell, TableRow } from '@uikit';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import { orElseGet } from '@utils/checkUtils';
-import { useSelectedRows } from '@uikit/Table/useSelectedRows';
+import { useSelectedItems } from '@uikit/hooks/useSelectedItems';
 import { AdcmBundle } from '@models/adcm/bundle';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
 import { getStatusLabel } from '@utils/humanizationUtils';
-import { setDeletableId, setSelectedItemsIds as setSelectedBundlesIds } from '@store/adcm/bundles/bundlesTableSlice';
+import { setDeletableId, setSelectedItemsIds as setSelectedBundlesIds } from '@store/adcm/bundles/bundlesSlice';
 
 const getBundleUniqKey = ({ id }: AdcmBundle) => id;
 
@@ -17,7 +17,7 @@ const BundlesTable: React.FC = () => {
 
   const bundles = useStore(({ adcm }) => adcm.bundles.bundles);
   const isLoading = useStore(({ adcm }) => adcm.bundles.isLoading);
-  const selectedItemsIds = useStore(({ adcm }) => adcm.bundlesTable.selectedItemsIds);
+  const selectedItemsIds = useStore(({ adcm }) => adcm.bundles.selectedItemsIds);
 
   const setSelectedItemsIds = useCallback<Dispatch<SetStateAction<number[]>>>(
     (arg) => {
@@ -27,7 +27,7 @@ const BundlesTable: React.FC = () => {
     [dispatch, selectedItemsIds],
   );
 
-  const { isAllItemsSelected, toggleSelectedAllItems, getHandleSelectedItem, isItemSelected } = useSelectedRows(
+  const { isAllItemsSelected, toggleSelectedAllItems, getHandlerSelectedItem, isItemSelected } = useSelectedItems(
     bundles,
     getBundleUniqKey,
     selectedItemsIds,
@@ -51,7 +51,7 @@ const BundlesTable: React.FC = () => {
         return (
           <TableRow key={bundle.id}>
             <TableCell>
-              <Checkbox checked={isItemSelected(bundle)} onChange={getHandleSelectedItem(bundle)} />
+              <Checkbox checked={isItemSelected(bundle)} onChange={getHandlerSelectedItem(bundle)} />
             </TableCell>
             <TableCell>{bundle.displayName}</TableCell>
             <TableCell>{bundle.version}</TableCell>
