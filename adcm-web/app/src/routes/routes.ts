@@ -10,7 +10,7 @@ const routes: RoutesConfigs = {
       },
     ],
   },
-  '/clusters/:clusterName/overview': {
+  '/clusters/:clusterId/overview': {
     pageTitle: 'Clusters',
     breadcrumbs: [
       {
@@ -18,11 +18,91 @@ const routes: RoutesConfigs = {
         label: 'Clusters',
       },
       {
-        href: '/clusters/:clusterName',
-        label: ':clusterName',
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
       },
       {
         label: 'Overview',
+      },
+    ],
+  },
+  '/clusters/:clusterId/services': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        label: 'Services',
+      },
+    ],
+  },
+  '/clusters/:clusterId/hosts': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        label: 'Hosts',
+      },
+    ],
+  },
+  '/clusters/:clusterId/mapping': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        label: 'Mapping',
+      },
+    ],
+  },
+  '/clusters/:clusterId/configuration': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        label: 'Configuration',
+      },
+    ],
+  },
+  '/clusters/:clusterId/import': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        label: 'Import',
       },
     ],
   },

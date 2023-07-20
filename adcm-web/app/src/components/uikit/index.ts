@@ -23,6 +23,8 @@ import Icon from './Icon/Icon';
 import type { IconsNames } from './Icon/sprite';
 import IconButton from './IconButton/IconButton';
 import LabeledField from './LabeledField/LabeledField';
+import Tab from '@uikit/Tabs/Tab';
+import TabsBlock from '@uikit/Tabs/TabsBlock';
 
 export {
   Button,
@@ -50,4 +52,6 @@ export {
   TableCell,
   TableCellProps,
   TableColumn,
+  Tab,
+  TabsBlock,
 };

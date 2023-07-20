@@ -48,3 +48,8 @@ body {
 .hidden {
   display: none !important;
 }
+
+.ignore-page-padding {
+  margin-left: calc(-1 * var(--page-padding-h));
+  margin-right: calc(-1 * var(--page-padding-h));
+}

@@ -1,15 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { buildBreadcrumbs } from '@utils/breadcrumbsUtils';
-import { BreadcrumbsItemConfig, Route } from '@routes/routes.types';
+import { Route } from '@routes/routes.types';
 
 export const useBreadcrumbs = (currentRoute?: Route) => {
-  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbsItemConfig[]>([]);
-
-  useEffect(() => {
+  const breadcrumbs = useMemo(() => {
     if (currentRoute) {
-      const newBreadcrumbs = buildBreadcrumbs(currentRoute);
-      setBreadcrumbs(newBreadcrumbs);
+      return buildBreadcrumbs(currentRoute);
     }
+    return [];
   }, [currentRoute]);
 
   return breadcrumbs;

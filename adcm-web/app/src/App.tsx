@@ -15,8 +15,17 @@ import PrivateResource from '@commonComponents/PrivateResource/PrivateResource';
 import MainLayout from '@layouts/MainLayout/MainLayout';
 import ProfilePage from '@pages/ProfilePage/ProfilePage';
 import SettingsPage from '@pages/SettingsPage/SettingsPage';
-import ClusterOverview from '@pages/ClustersPage/ClusterOverview/ClusterOverview';
 import UserSession from '@commonComponents/UserSession/UserSession';
+import ClusterPageLayout from '@layouts/ClusterPageLayout/ClusterPageLayout';
+
+import {
+  ClusterConfiguration,
+  ClusterHosts,
+  ClusterImport,
+  ClusterMapping,
+  ClusterOverview,
+  ClusterServices,
+} from '@pages/cluster';
 
 function App() {
   return (
@@ -39,9 +48,14 @@ function App() {
 
               <Route path="/clusters">
                 <Route index element={<ClustersPage />} />
-                <Route path="/clusters/:clusterName">
+                <Route path="/clusters/:clusterId" element={<ClusterPageLayout />}>
                   <Route index element={<Navigate to="overview" replace />} />
-                  <Route path="/clusters/:clusterName/overview" element={<ClusterOverview />} />
+                  <Route path="/clusters/:clusterId/overview" element={<ClusterOverview />} />
+                  <Route path="/clusters/:clusterId/services" element={<ClusterServices />} />
+                  <Route path="/clusters/:clusterId/hosts" element={<ClusterHosts />} />
+                  <Route path="/clusters/:clusterId/mapping" element={<ClusterMapping />} />
+                  <Route path="/clusters/:clusterId/configuration" element={<ClusterConfiguration />} />
+                  <Route path="/clusters/:clusterId/import" element={<ClusterImport />} />
                 </Route>
               </Route>
 

@@ -3,7 +3,7 @@ import cn from 'classnames';
 import s from './Tabs.module.scss';
 
 export interface TabsBlockProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant: 'primary' | 'secondary';
+  variant?: 'primary' | 'secondary';
 }
 
 const TabsBlock: React.FC<TabsBlockProps> = ({ children, className, variant = 'primary', ...props }) => {
