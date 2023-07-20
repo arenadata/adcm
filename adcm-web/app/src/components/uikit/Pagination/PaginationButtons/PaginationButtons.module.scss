@@ -19,7 +19,6 @@
     --pagination-btn-text-color-selected: var(--color-xdark);
 
     --pagination-dots-color: var(--color-xgray-light);
-
   }
 }
 
@@ -43,20 +42,27 @@
   align-items: center;
   line-height: 20px;
 
+  &:disabled {
+    background: var(--icon-button-background-disabled);
+    color: var(--icon-button-color-disabled);
+    cursor: not-allowed;
+  }
+
+  &:active:not(&:disabled),
+  &_selected {
+    background: var(--pagination-btn-background-color-selected);
+    color: var(--pagination-btn-text-color-selected);
+    border-color: transparent;
+  }
+
+  &:not(&_selected, &:disabled):hover {
+    background: var(--pagination-btn-background-color-selected);
+  }
+
   &_dots {
     color: var(--pagination-dots-color);
     padding-bottom: 2px;
   }
-}
-
-.paginationButton:not(.paginationButton_selected):hover {
-  background: var(--pagination-btn-background-color-selected);
-}
-.paginationButton:active,
-.paginationButton_selected {
-  background: var(--pagination-btn-background-color-selected);
-  color: var(--pagination-btn-text-color-selected);
-  border-color: transparent;
 }
 
 .paginationButtonArrowSingle_prev,
