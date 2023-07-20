@@ -25,6 +25,6 @@
   &__mainContent {
     min-width: 0;
     flex: 1;
-    padding: 20px 40px;
+    padding: var(--page-padding-v) var(--page-padding-h);
   }
 }
