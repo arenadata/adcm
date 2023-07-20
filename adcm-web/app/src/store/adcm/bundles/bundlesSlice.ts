@@ -13,6 +13,10 @@ type AdcmBundlesState = {
   totalCount: number;
   isLoading: boolean;
   isUploading: boolean;
+  itemsForActions: {
+    deletableId: number | null;
+  };
+  selectedItemsIds: number[];
 };
 
 const loadBundles = createAsyncThunk('adcm/bundles/loadBundles', async (arg, thunkAPI) => {
@@ -116,6 +120,10 @@ const createInitialState = (): AdcmBundlesState => ({
   totalCount: 0,
   isLoading: false,
   isUploading: false,
+  itemsForActions: {
+    deletableId: null,
+  },
+  selectedItemsIds: [],
 });
 
 const bundlesSlice = createSlice({
@@ -131,6 +139,15 @@ const bundlesSlice = createSlice({
     cleanupBundles() {
       return createInitialState();
     },
+    cleanupItemsForActions(state) {
+      state.itemsForActions = createInitialState().itemsForActions;
+    },
+    setSelectedItemsIds(state, action) {
+      state.selectedItemsIds = action.payload;
+    },
+    setDeletableId(state, action) {
+      state.itemsForActions.deletableId = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(loadBundles.fulfilled, (state, action) => {
@@ -140,10 +157,30 @@ const bundlesSlice = createSlice({
     builder.addCase(loadBundles.rejected, (state) => {
       state.bundles = [];
     });
+
+    builder.addCase(deleteBundles.pending, (state) => {
+      // hide dialog, when
+      state.itemsForActions.deletableId = null;
+    });
+    builder.addCase(getBundles.pending, (state) => {
+      // hide dialogs, when load new bundles list (not silent refresh)
+      bundlesSlice.caseReducers.cleanupItemsForActions(state);
+    });
+    // brake selected rows after full update
+    builder.addCase(getBundles.fulfilled, (state) => {
+      state.selectedItemsIds = [];
+    });
   },
 });
 
-const { setIsLoading, cleanupBundles, setIsUploading } = bundlesSlice.actions;
-export { getBundles, refreshBundles, deleteBundles, cleanupBundles, deleteWithUpdateBundles, uploadWithUpdateBundles };
+export const {
+  setIsLoading,
+  cleanupBundles,
+  setIsUploading,
+  setDeletableId,
+  cleanupItemsForActions,
+  setSelectedItemsIds,
+} = bundlesSlice.actions;
+export { getBundles, refreshBundles, deleteBundles, deleteWithUpdateBundles, uploadWithUpdateBundles };
 
 export default bundlesSlice.reducer;

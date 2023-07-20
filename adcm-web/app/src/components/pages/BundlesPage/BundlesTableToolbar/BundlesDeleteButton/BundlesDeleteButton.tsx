@@ -5,7 +5,7 @@ import { deleteWithUpdateBundles } from '@store/adcm/bundles/bundlesSlice';
 
 const BundlesDeleteButton: React.FC = () => {
   const dispatch = useDispatch();
-  const selectedItemsIds = useStore(({ adcm }) => adcm.bundlesTable.selectedItemsIds);
+  const selectedItemsIds = useStore(({ adcm }) => adcm.bundles.selectedItemsIds);
 
   const isSelectedSomeRows = selectedItemsIds.length > 0;
   const [isOpenDeleteConfirm, setIsOpenDeleteConfirm] = useState(false);
