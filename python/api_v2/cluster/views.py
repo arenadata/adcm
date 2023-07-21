@@ -46,6 +46,7 @@ class ClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=too-m
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_CLUSTER_PERM]
     filterset_class = ClusterFilter
+    http_method_names = ["get", "post", "patch", "delete"]
 
     def get_serializer_class(self):
         if self.action == "create":

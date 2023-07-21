@@ -43,7 +43,7 @@ class TestHost(BaseAPITestCase):
         )
         data = {
             "id": self.host.pk,
-            "fqdn": "test_host",
+            "name": "test_host",
             "state": "created",
             "status": 32,
             "provider": {"id": 1, "name": "provider", "display_name": "provider"},
@@ -53,7 +53,7 @@ class TestHost(BaseAPITestCase):
         }
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["id"], data["id"])
-        self.assertEqual(response.data["fqdn"], data["fqdn"])
+        self.assertEqual(response.data["name"], data["name"])
         self.assertEqual(response.data["state"], data["state"])
         self.assertDictEqual(response.data["provider"], data["provider"])
         self.assertEqual(response.data["concerns"], data["concerns"])
@@ -65,7 +65,7 @@ class TestHost(BaseAPITestCase):
             path=reverse(viewname="v2:host-list"),
             data={
                 "provider": self.provider.pk,
-                "fqdn": "new-test-host",
+                "name": "new-test-host",
             },
         )
 
@@ -76,7 +76,7 @@ class TestHost(BaseAPITestCase):
 
         data = {
             "id": 2,
-            "fqdn": "new-test-host",
+            "name": "new-test-host",
             "state": "created",
             "status": 32,
             "provider": {"id": 1, "name": "provider", "display_name": "provider"},
@@ -86,17 +86,24 @@ class TestHost(BaseAPITestCase):
         }
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["id"], data["id"])
-        self.assertEqual(response.data["fqdn"], data["fqdn"])
+        self.assertEqual(response.data["name"], data["name"])
         self.assertEqual(response.data["state"], data["state"])
         self.assertDictEqual(response.data["provider"], data["provider"])
         self.assertEqual(response.data["concerns"], data["concerns"])
         self.assertEqual(response.data["is_maintenance_mode_available"], data["is_maintenance_mode_available"])
         self.assertEqual(response.data["maintenance_mode"], data["maintenance_mode"])
 
+    def test_create_failed_wrong_provider(self):
+        response: Response = self.client.post(
+            path=reverse(viewname="v2:host-list"), data={"hostprovider_id": self.provider.pk, "name": "woohoo"}
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
     def test_create_with_cluster_success(self):
         response: Response = self.client.post(
             path=reverse(viewname="v2:host-list"),
-            data={"provider": self.provider.pk, "fqdn": "new-test-host", "cluster": self.cluster_1.pk},
+            data={"provider": self.provider.pk, "name": "new-test-host", "cluster": self.cluster_1.pk},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -109,7 +116,7 @@ class TestHost(BaseAPITestCase):
             path=reverse(viewname="v2:host-list"),
             data={
                 "provider": self.provider.pk,
-                "fqdn": "new_test_host",
+                "name": "new_test_host",
             },
         )
 
@@ -120,7 +127,7 @@ class TestHost(BaseAPITestCase):
         new_test_host_fqdn = "new-fqdn"
         response: Response = self.client.patch(
             path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host.pk}),
-            data={"fqdn": new_test_host_fqdn},
+            data={"name": new_test_host_fqdn},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

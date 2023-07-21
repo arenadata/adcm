@@ -34,7 +34,7 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from adcm.utils import get_maintenance_mode_response
+from adcm.utils import delete_service_from_api, get_maintenance_mode_response
 
 
 class ServiceViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
@@ -70,11 +70,15 @@ class ServiceViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        add_service_to_cluster(
+        service = add_service_to_cluster(
             cluster=Cluster.objects.get(pk=kwargs["cluster_pk"]), proto=serializer.validated_data["prototype"]
         )
 
-        return Response(status=HTTP_201_CREATED)
+        return Response(status=HTTP_201_CREATED, data=ServiceRetrieveSerializer(instance=service).data)
+
+    def destroy(self, request: Request, *args, **kwargs):
+        instance = self.get_object()
+        return delete_service_from_api(service=instance)
 
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode")

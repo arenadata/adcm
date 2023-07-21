@@ -248,7 +248,7 @@ class TestServiceAPI(BaseTestCase):
     def test_delete_with_action(self):
         action = Action.objects.create(prototype=self.service.prototype, name=settings.ADCM_DELETE_SERVICE_ACTION_NAME)
 
-        with patch("api.service.views.delete_service"), patch("api.service.views.start_task") as start_task_mock:
+        with patch("adcm.utils.delete_service"), patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
@@ -279,7 +279,7 @@ class TestServiceAPI(BaseTestCase):
             component=service_component,
         )
 
-        with patch("api.service.views.delete_service"), patch("api.service.views.start_task") as start_task_mock:
+        with patch("adcm.utils.delete_service"), patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
@@ -300,7 +300,7 @@ class TestServiceAPI(BaseTestCase):
         self.service.state = "not created"
         self.service.save(update_fields=["state"])
 
-        with patch("api.service.views.delete_service"), patch("api.service.views.start_task") as start_task_mock:
+        with patch("adcm.utils.delete_service"), patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
@@ -365,7 +365,7 @@ class TestServiceAPI(BaseTestCase):
         self.service.prototype.required = True
         self.service.prototype.save(update_fields=["required"])
 
-        with patch("api.service.views.delete_service"):
+        with patch("adcm.utils.delete_service"):
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
@@ -382,7 +382,7 @@ class TestServiceAPI(BaseTestCase):
             source_service=self.service,
         )
 
-        with patch("api.service.views.delete_service"):
+        with patch("adcm.utils.delete_service"):
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
@@ -399,7 +399,7 @@ class TestServiceAPI(BaseTestCase):
             source_service=service_2,
         )
 
-        with patch("api.service.views.delete_service"):
+        with patch("adcm.utils.delete_service"):
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )

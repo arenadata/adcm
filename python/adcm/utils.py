@@ -13,7 +13,8 @@
 from typing import Any, Iterable
 
 from cm.adcm_config.ansible import ansible_decrypt
-from cm.api import load_mm_objects
+from cm.api import cancel_locking_tasks, delete_service, load_mm_objects
+from cm.errors import raise_adcm_ex
 from cm.flag import update_flags
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
 from cm.job import start_task
@@ -21,20 +22,27 @@ from cm.models import (
     ADCM,
     Action,
     ADCMEntity,
+    ClusterBind,
     ClusterObject,
     ConcernType,
     ConfigLog,
     Host,
     HostComponent,
+    JobStatus,
     MaintenanceMode,
     Prototype,
     PrototypeConfig,
     ServiceComponent,
+    TaskLog,
 )
 from django.conf import settings
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
-from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
+from rest_framework.status import (
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_409_CONFLICT,
+)
 
 
 def _change_mm_via_action(
@@ -310,6 +318,66 @@ def get_maintenance_mode_response(
         data={"error": f'Unknown {obj_name} maintenance mode "{obj.maintenance_mode}"'},
         status=HTTP_400_BAD_REQUEST,
     )
+
+
+def delete_service_from_api(service: ClusterObject) -> Response:  # pylint: disable=too-many-branches
+    delete_action = Action.objects.filter(
+        prototype=service.prototype,
+        name=settings.ADCM_DELETE_SERVICE_ACTION_NAME,
+    ).first()
+    host_components_exists = HostComponent.objects.filter(cluster=service.cluster, service=service).exists()
+
+    if not delete_action:
+        if service.state != "created":
+            raise_adcm_ex("SERVICE_DELETE_ERROR")
+
+        if host_components_exists:
+            raise_adcm_ex("SERVICE_CONFLICT", f"Service #{service.id} has component(s) on host(s)")
+
+    cluster = service.cluster
+
+    if cluster.state == "upgrading" and service.prototype.name in cluster.before_upgrade["services"]:
+        return raise_adcm_ex(code="SERVICE_CONFLICT", msg="It is forbidden to delete service in upgrade mode")
+
+    if ClusterBind.objects.filter(source_service=service).exists():
+        raise_adcm_ex("SERVICE_CONFLICT", f"Service #{service.id} has exports(s)")
+
+    if service.prototype.required:
+        raise_adcm_ex("SERVICE_CONFLICT", f"Service #{service.id} is required")
+
+    if TaskLog.objects.filter(action=delete_action, status=JobStatus.RUNNING).exists():
+        raise_adcm_ex("SERVICE_DELETE_ERROR", "Service is deleting now")
+
+    for component in ServiceComponent.objects.filter(cluster=service.cluster).exclude(service=service):
+        if component.requires_service_name(service_name=service.name):
+            raise_adcm_ex(
+                code="SERVICE_CONFLICT",
+                msg=f"Component {component.name} of service {component.service.display_name}"
+                f" requires this service or its component",
+            )
+
+    for another_service in ClusterObject.objects.filter(cluster=service.cluster):
+        if another_service.requires_service_name(service_name=service.name):
+            raise_adcm_ex(
+                code="SERVICE_CONFLICT",
+                msg=f"Service {another_service.display_name} requires this service or its component",
+            )
+
+    cancel_locking_tasks(obj=service, obj_deletion=True)
+    if delete_action and (host_components_exists or service.state != "created"):
+        start_task(
+            action=delete_action,
+            obj=service,
+            conf={},
+            attr={},
+            hostcomponent=[],
+            hosts=[],
+            verbose=False,
+        )
+    else:
+        delete_service(service=service)
+
+    return Response(status=HTTP_204_NO_CONTENT)
 
 
 def filter_actions(obj: ADCMEntity, actions: Iterable[Action]):
