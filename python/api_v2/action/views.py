@@ -17,6 +17,7 @@ from api_v2.action.serializers import (
     ActionRunSerializer,
 )
 from api_v2.action.utils import check_run_perms, filter_actions_by_user_perm
+from api_v2.task.serializers import TaskListSerializer
 from cm.job import start_task
 from cm.models import Action
 from guardian.mixins import PermissionListMixin
@@ -25,7 +26,7 @@ from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_403_FORBIDDEN
+from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
 from rest_framework.viewsets import GenericViewSet
 
 from adcm.mixins import GetParentObjectMixin
@@ -104,7 +105,7 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        start_task(
+        task = start_task(
             action=target_action,
             obj=parent_object,
             conf=serializer.validated_data["config"],
@@ -114,4 +115,4 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
             verbose=serializer.validated_data["is_verbose"],
         )
 
-        return Response()
+        return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)

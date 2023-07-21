@@ -113,7 +113,7 @@ class HostViewSet(PermissionListMixin, ModelViewSet):
             update_hierarchy_issues(host.provider)
             update_issue_after_deleting()
 
-        return Response(status=HTTP_200_OK)
+        return Response(status=HTTP_200_OK, data=HostSerializer(host).data)
 
     def partial_update(self, request, *args, **kwargs):
         return self._host_update(request, *args, partial=True, **kwargs)

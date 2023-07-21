@@ -117,8 +117,6 @@ class TaskSerializer(ModelSerializer):
 
 
 class TaskListSerializer(TaskSerializer):
-    # pylint: disable=import-outside-toplevel, cyclic-import
-
     child_jobs = JobListSerializer(many=True, source="joblog_set", read_only=True)
 
     class Meta:

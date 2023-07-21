@@ -45,6 +45,7 @@ class HostProviderViewSet(ModelViewSet):  # pylint:disable=too-many-ancestors
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=HTTP_409_CONFLICT)
+
         host_provider = add_host_provider(
             prototype=serializer.validated_data["prototype"],
             name=serializer.validated_data["name"],

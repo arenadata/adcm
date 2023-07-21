@@ -65,7 +65,7 @@ class HostSerializer(ModelSerializer):
     provider = HostProviderSerializer()
     prototype = PrototypeRelatedSerializer(read_only=True)
     concerns = ConcernSerializer(many=True)
-    fqdn = CharField(
+    name = CharField(
         max_length=253,
         help_text="fully qualified domain name",
         validators=[
@@ -78,13 +78,14 @@ class HostSerializer(ModelSerializer):
                 err_msg="Wrong FQDN.",
             ),
         ],
+        source="fqdn",
     )
 
     class Meta:
         model = Host
         fields = [
             "id",
-            "fqdn",
+            "name",
             "state",
             "status",
             "provider",
@@ -100,7 +101,7 @@ class HostSerializer(ModelSerializer):
 
 
 class HostUpdateSerializer(ModelSerializer):
-    fqdn = CharField(
+    name = CharField(
         max_length=253,
         help_text="fully qualified domain name",
         required=False,
@@ -114,11 +115,12 @@ class HostUpdateSerializer(ModelSerializer):
                 err_msg="Wrong FQDN.",
             ),
         ],
+        source="fqdn",
     )
 
     class Meta:
         model = Host
-        fields = ["fqdn", "cluster"]
+        fields = ["name", "cluster"]
         extra_kwargs = {"cluster": {"required": False}}
 
     def validate_cluster(self, cluster):
@@ -127,6 +129,7 @@ class HostUpdateSerializer(ModelSerializer):
 
         if not self.context["request"].user.has_perm(perm=VIEW_CLUSTER_PERM, obj=cluster):
             raise ValidationError("Current user has no permission to view this cluster")
+
         if not self.context["request"].user.has_perm(perm="cm.map_host_to_cluster", obj=cluster):
             raise ValidationError("Current user has no permission to map host to this cluster")
 
@@ -136,8 +139,8 @@ class HostUpdateSerializer(ModelSerializer):
 class HostCreateSerializer(HostUpdateSerializer):
     class Meta:
         model = Host
-        fields = ["provider", "fqdn", "cluster"]
-        extra_kwargs = {"fqdn": {"allow_null": False}}
+        fields = ["provider", "name", "cluster"]
+        extra_kwargs = {"name": {"allow_null": False, "required": True}, "provider": {"required": True}}
 
     def validate_provider(self, provider):
         if not provider:

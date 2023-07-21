@@ -27,28 +27,9 @@ from api.service.serializers import (
 from api.stack.serializers import ImportSerializer
 from api.utils import check_obj, create
 from audit.utils import audit
-from cm.api import (
-    cancel_locking_tasks,
-    delete_service,
-    get_import,
-    unbind,
-    update_mm_objects,
-)
-from cm.errors import raise_adcm_ex
-from cm.job import start_task
-from cm.models import (
-    Action,
-    Cluster,
-    ClusterBind,
-    ClusterObject,
-    HostComponent,
-    JobStatus,
-    Prototype,
-    ServiceComponent,
-    TaskLog,
-)
+from cm.api import get_import, unbind, update_mm_objects
+from cm.models import Cluster, ClusterBind, ClusterObject, HostComponent, Prototype
 from cm.status_api import make_ui_service_status
-from django.conf import settings
 from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
 from rest_framework import permissions
@@ -57,7 +38,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
 
 from adcm.permissions import check_custom_perm, get_object_for_user
-from adcm.utils import get_maintenance_mode_response
+from adcm.utils import delete_service_from_api, get_maintenance_mode_response
 
 
 class ServiceListView(PermissionListMixin, PaginatedView):
@@ -115,64 +96,9 @@ class ServiceDetailView(PermissionListMixin, DetailView):
         return queryset
 
     @audit
-    def delete(self, request, *args, **kwargs):  # pylint: disable=unused-argument, too-many-branches
+    def delete(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         instance: ClusterObject = self.get_object()
-        delete_action = Action.objects.filter(
-            prototype=instance.prototype,
-            name=settings.ADCM_DELETE_SERVICE_ACTION_NAME,
-        ).first()
-        host_components_exists = HostComponent.objects.filter(cluster=instance.cluster, service=instance).exists()
-
-        if not delete_action:
-            if instance.state != "created":
-                raise_adcm_ex("SERVICE_DELETE_ERROR")
-
-            if host_components_exists:
-                raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} has component(s) on host(s)")
-
-        cluster = instance.cluster
-        if cluster.state == "upgrading" and instance.prototype.name in cluster.before_upgrade["services"]:
-            return raise_adcm_ex(code="SERVICE_CONFLICT", msg="It is forbidden to delete service in upgrade mode")
-
-        if ClusterBind.objects.filter(source_service=instance).exists():
-            raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} has exports(s)")
-
-        if instance.prototype.required:
-            raise_adcm_ex("SERVICE_CONFLICT", f"Service #{instance.id} is required")
-
-        if TaskLog.objects.filter(action=delete_action, status=JobStatus.RUNNING).exists():
-            raise_adcm_ex("SERVICE_DELETE_ERROR", "Service is deleting now")
-
-        for component in ServiceComponent.objects.filter(cluster=instance.cluster).exclude(service=instance):
-            if component.requires_service_name(service_name=instance.name):
-                raise_adcm_ex(
-                    code="SERVICE_CONFLICT",
-                    msg=f"Component {component.name} of service {component.service.display_name}"
-                    f" requires this service or its component",
-                )
-
-        for service in ClusterObject.objects.filter(cluster=instance.cluster):
-            if service.requires_service_name(service_name=instance.name):
-                raise_adcm_ex(
-                    code="SERVICE_CONFLICT",
-                    msg=f"Service {service.display_name} requires this service or its component",
-                )
-
-        cancel_locking_tasks(obj=instance, obj_deletion=True)
-        if delete_action and (host_components_exists or instance.state != "created"):
-            start_task(
-                action=delete_action,
-                obj=instance,
-                conf={},
-                attr={},
-                hostcomponent=[],
-                hosts=[],
-                verbose=False,
-            )
-        else:
-            delete_service(service=instance)
-
-        return Response(status=HTTP_204_NO_CONTENT)
+        return delete_service_from_api(service=instance)
 
 
 class ServiceMaintenanceModeView(GenericUIView):
