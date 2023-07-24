@@ -21,15 +21,23 @@ class TestMapping(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
+        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_1")
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
+
+        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_2")
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
+
         self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
         self.component_1 = ServiceComponent.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
         )
-        self.hostcomponent_map = self.add_hostcomponent_map(
+        self.component_2 = ServiceComponent.objects.get(
+            cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
+        )
+
+        self.add_hostcomponent_map(
             cluster=self.cluster_1,
-            hc_map=[{"host_id": self.host.pk, "service_id": self.service_1.pk, "component_id": self.component_1.pk}],
+            hc_map=[{"host_id": self.host_1.pk, "service_id": self.service_1.pk, "component_id": self.component_1.pk}],
         )
 
     def test_list_mapping_success(self):
@@ -41,15 +49,15 @@ class TestMapping(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 1)
 
     def test_create_mapping_success(self):
-        host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_2")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=host_2)
+        host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_3")
+        self.add_host_to_cluster(cluster=self.cluster_1, host=host_3)
         component_2 = ServiceComponent.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
         )
 
         response: Response = self.client.post(
             path=reverse(viewname="v2:mapping-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data={"service": self.service_1.pk, "host": host_2.pk, "component": component_2.pk},
+            data={"service": self.service_1.pk, "host": host_3.pk, "component": component_2.pk},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -61,8 +69,8 @@ class TestMapping(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 1)
-        self.assertEqual(response.json()[0]["id"], self.host.pk)
+        self.assertEqual(len(response.json()), 2)
+        self.assertEqual({host["id"] for host in response.json()}, {self.host_1.pk, self.host_2.pk})
 
     def test_mapping_components_success(self):
         response: Response = self.client.get(
@@ -70,5 +78,5 @@ class TestMapping(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 1)
-        self.assertEqual(response.json()[0]["id"], self.component_1.pk)
+        self.assertEqual(len(response.json()), 2)
+        self.assertEqual({component["id"] for component in response.json()}, {self.component_1.pk, self.component_2.pk})
