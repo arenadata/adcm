@@ -15,6 +15,7 @@ import {
   editColumnValues,
   NameEditColumnComponent
 } from "@app/components/columns/name-edit-column/name-edit-column.component";
+import { SignatureColumnComponent } from "@app/components/columns/signature-column/signature-column.component";
 
 export type NameEditColumn = IComponentColumn<any> & { column_rules: editColumnValues; };
 
@@ -89,6 +90,17 @@ export class ListFactory {
           .pipe(listDirective.takeUntil())
           .subscribe((data: StatusData<any>) => listDirective.gotoStatus(data));
       }
+    };
+  }
+
+  static signatureStatusColumn(): IComponentColumn<any> {
+    return {
+      label: 'Signature',
+      sort: 'signatureStatus',
+      type: 'component',
+      className: 'width100',
+      headerClassName: 'width100',
+      component: SignatureColumnComponent,
     };
   }
 
