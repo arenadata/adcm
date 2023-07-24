@@ -10,18 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.routers import APIRootView
+from api_v2.rbac.users.urls import user_router
+from api_v2.rbac.views import RBACRoot
+from django.urls import path
 
-
-class APIRoot(APIRootView):
-    api_root_dict = {
-        "clusters": "cluster-list",
-        "audit": "audit:root",
-        "bundles": "bundle-list",
-        "hosts": "host-list",
-        "hostproviders": "hostprovider-list",
-        "prototypes": "prototype-list",
-        "jobs": "joblog-list",
-        "tasks": "tasklog-list",
-        "rbac": "rbac:root",
-    }
+urlpatterns = [
+    path("", RBACRoot.as_view(), name="root"),
+    *user_router.urls,
+]

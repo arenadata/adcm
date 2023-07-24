@@ -12,7 +12,7 @@
 
 
 from rbac.models import Group, User
-from rbac.services.user import create, update
+from rbac.services.user import create_user, update_user
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.fields import (
     BooleanField,
@@ -92,7 +92,7 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
     def update(self, instance, validated_data):
         context_user = self.context["request"].user
 
-        return update(
+        return update_user(
             user=instance,
             context_user=context_user,
             partial=self.partial,
@@ -101,7 +101,7 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
         )
 
     def create(self, validated_data):
-        return create(**validated_data)
+        return create_user(**validated_data)
 
 
 class UserAuditSerializer(ModelSerializer):

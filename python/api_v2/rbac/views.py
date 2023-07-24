@@ -13,15 +13,7 @@
 from rest_framework.routers import APIRootView
 
 
-class APIRoot(APIRootView):
+class RBACRoot(APIRootView):
     api_root_dict = {
-        "clusters": "cluster-list",
-        "audit": "audit:root",
-        "bundles": "bundle-list",
-        "hosts": "host-list",
-        "hostproviders": "hostprovider-list",
-        "prototypes": "prototype-list",
-        "jobs": "joblog-list",
-        "tasks": "tasklog-list",
-        "rbac": "rbac:root",
+        "users": "user-list",
     }

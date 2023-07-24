@@ -40,6 +40,8 @@ from cm.models import (
 )
 from django.conf import settings
 from init_db import init
+from rbac.models import User
+from rbac.services.user import create_user
 from rbac.upgrade.role import init_roles
 from rest_framework.test import APITestCase
 
@@ -142,8 +144,21 @@ class BaseAPITestCase(APITestCase):  # pylint: disable=too-many-instance-attribu
         return add_hc(cluster=cluster, hc_in=hc_map)
 
     @staticmethod
-    def get_non_existent_pk(model: type[ADCMEntity] | type[ADCMModel]):
+    def get_non_existent_pk(model: type[ADCMEntity] | type[ADCMModel] | type[User]):
         try:
             return model.objects.order_by("-pk").first().pk + 1
         except model.DoesNotExist:
             return 1
+
+    def create_user(self, user_data: dict | None = None) -> User:
+        if user_data is None:
+            user_data = {
+                "username": "test_user_username",
+                "password": "test_user_password",
+                "email": "testuser@mail.ru",
+                "first_name": "test_user_first_name",
+                "last_name": "test_user_last_name",
+                "profile": "",
+            }
+
+        return create_user(**user_data)

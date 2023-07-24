@@ -25,7 +25,7 @@ from adcm.permissions import DjangoModelPermissionsAudit
 
 
 class UserViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = User.objects.all()
+    queryset = User.objects.prefetch_related("groups").all()
     serializer_class = UserSerializer
     permission_classes = (DjangoModelPermissionsAudit,)
     permission_required = ["rbac.view_user"]

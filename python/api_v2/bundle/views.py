@@ -20,7 +20,7 @@ from rest_framework.viewsets import ModelViewSet
 from adcm.permissions import VIEW_ACTION_PERM, DjangoModelPermissionsAudit
 
 
-class BundleViewSet(ModelViewSet):
+class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
     queryset = Bundle.objects.exclude(name="ADCM").prefetch_related("prototype_set")
     serializer_class = BundleListSerializer
     permission_classes = [DjangoModelPermissionsAudit]

@@ -230,6 +230,7 @@ ERRORS = {
         ERR,
     ),
     "BAD_REQUEST": ("Bad request", HTTP_400_BAD_REQUEST, ERR),
+    "INVALID_ORDERING": ("Invalid ordering parameters", HTTP_400_BAD_REQUEST, ERR),
 }
 
 
