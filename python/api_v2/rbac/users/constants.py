@@ -10,18 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.routers import APIRootView
+from django.db.models import TextChoices
 
 
-class APIRoot(APIRootView):
-    api_root_dict = {
-        "clusters": "cluster-list",
-        "audit": "audit:root",
-        "bundles": "bundle-list",
-        "hosts": "host-list",
-        "hostproviders": "hostprovider-list",
-        "prototypes": "prototype-list",
-        "jobs": "joblog-list",
-        "tasks": "tasklog-list",
-        "rbac": "rbac:root",
-    }
+class UserStatusChoices(TextChoices):
+    ACTIVE = "ACTIVE", "ACTIVE"
+    BLOCKED = "BLOCKED", "BLOCKED"
+
+
+class UserTypeChoices(TextChoices):
+    LOCAL = "LOCAL", "LOCAL"
+    LDAP = "LDAP", "LDAP"

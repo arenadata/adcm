@@ -10,18 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.routers import APIRootView
+from api_v2.rbac.users.views import UserViewSet
+from rest_framework.routers import SimpleRouter
 
-
-class APIRoot(APIRootView):
-    api_root_dict = {
-        "clusters": "cluster-list",
-        "audit": "audit:root",
-        "bundles": "bundle-list",
-        "hosts": "host-list",
-        "hostproviders": "hostprovider-list",
-        "prototypes": "prototype-list",
-        "jobs": "joblog-list",
-        "tasks": "tasklog-list",
-        "rbac": "rbac:root",
-    }
+user_router = SimpleRouter()
+user_router.register(prefix="users", viewset=UserViewSet)
