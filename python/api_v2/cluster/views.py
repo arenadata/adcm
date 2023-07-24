@@ -23,7 +23,14 @@ from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.host.serializers import HostMappingSerializer
 from cm.api import add_cluster
 from cm.issue import update_hierarchy_issues
-from cm.models import Cluster, HostComponent, ObjectType, Prototype
+from cm.models import (
+    Cluster,
+    Host,
+    HostComponent,
+    ObjectType,
+    Prototype,
+    ServiceComponent,
+)
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -139,10 +146,7 @@ class MappingViewSet(  # pylint:disable=too-many-ancestors
         if not cluster:
             return Response(data=f'Cluster with pk "{kwargs["cluster_pk"]}" not found', status=HTTP_404_NOT_FOUND)
 
-        serializer = HostMappingSerializer(
-            instance=[service_component.host for service_component in self.queryset.filter(cluster_id=cluster.pk)],
-            many=True,
-        )
+        serializer = HostMappingSerializer(instance=Host.objects.filter(cluster=cluster), many=True)
 
         return Response(data=serializer.data)
 
@@ -152,9 +156,6 @@ class MappingViewSet(  # pylint:disable=too-many-ancestors
         if not cluster:
             return Response(data=f'Cluster with pk "{kwargs["cluster_pk"]}" not found', status=HTTP_404_NOT_FOUND)
 
-        serializer = ComponentMappingSerializer(
-            instance=[service_component.component for service_component in self.queryset.filter(cluster_id=cluster.pk)],
-            many=True,
-        )
+        serializer = ComponentMappingSerializer(instance=ServiceComponent.objects.filter(cluster=cluster), many=True)
 
         return Response(data=serializer.data)

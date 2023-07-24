@@ -109,7 +109,7 @@ class ServicePrototypeSerializer(ModelSerializer):
 class HostComponentListSerializer(ModelSerializer):
     class Meta:
         model = HostComponent
-        fields = ["service", "host", "component", "cluster"]
+        fields = ["id", "host_id", "component_id"]
 
 
 class HostComponentPostSerializer(ModelSerializer):
