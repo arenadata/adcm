@@ -3,6 +3,7 @@ import { Table, TableRow, TableCell } from '@uikit';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import { useStore } from '@hooks';
 import { columns, clusterStatusesMap } from './ClustersTable.constants';
+import Concern from '@commonComponents/Concern/Concern';
 
 const ClustersTable = () => {
   const { clusters } = useStore((s) => s.adcm.clusters);
@@ -19,6 +20,9 @@ const ClustersTable = () => {
             <TableCell>{cluster.prototypeName}</TableCell>
             <TableCell>{cluster.prototypeVersion}</TableCell>
             <TableCell>{cluster.description}</TableCell>
+            <TableCell>
+              <Concern concerns={cluster.concerns} />
+            </TableCell>
           </TableRow>
         );
       })}

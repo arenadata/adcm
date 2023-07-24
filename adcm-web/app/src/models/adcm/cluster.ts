@@ -1,28 +1,8 @@
+import { AdcmConcerns } from './concern';
+
 export enum AdcmClusterStatus {
   Up = 'UP',
   Down = 'DOWN',
-}
-
-export interface AdcmClusterConcernReason {
-  message: string;
-  placeholder: {
-    source: {
-      id: number;
-      name: string;
-      type: string;
-    };
-    target: {
-      id: number;
-      name: string;
-      type: string;
-    };
-  };
-}
-
-export interface AdcmClusterConcern {
-  id: number;
-  reason: AdcmClusterConcernReason;
-  isBlocking: boolean;
 }
 
 export interface AdcmCluster {
@@ -34,7 +14,7 @@ export interface AdcmCluster {
   prototypeName: string;
   prototypeVersion: string;
   description: string;
-  concerns: AdcmClusterConcern[];
+  concerns: AdcmConcerns[];
   isUpgradable: boolean;
   mainInfo: string;
 }
