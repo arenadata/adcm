@@ -23,6 +23,7 @@ const item: IYField = {
   path: ['test'],
   controlType: 'textbox',
   validator: {},
+  isInvisible: false
 };
 
 describe('RootComponent', () => {

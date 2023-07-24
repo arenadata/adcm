@@ -33,12 +33,13 @@ describe('ItemComponent', () => {
     const item: IControl = {
       name: 'test',
       type: 'string',
-      rules: { name: 'test', type: 'string', path: ['test'], validator: {}, controlType: 'textbox' },
+      rules: { name: 'test', type: 'string', path: ['test'], validator: {}, controlType: 'textbox', isInvisible: false },
       form: new FormGroup({ test: new FormControl() }),
       parent: 'dict',
       value: {},
     };
     component.item = item;
+    component.invisibleItems = ['field'];
     fixture.detectChanges();
   });
 

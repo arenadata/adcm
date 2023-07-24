@@ -26,6 +26,7 @@ export class RootComponent implements OnInit {
   @Input() options: IYContainer | IYField;
   @Input() value: TValue;
   @Input() isReadOnly = false;
+  @Input() invisibleItems: string[];
 
   controls: IControl[] = [];
 
