@@ -37,7 +37,7 @@ from adcm.utils import get_maintenance_mode_response
 
 
 class ComponentViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = ServiceComponent.objects.all()
+    queryset = ServiceComponent.objects.select_related("cluster", "service").all()
     serializer_class = ComponentSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_COMPONENT_PERM]

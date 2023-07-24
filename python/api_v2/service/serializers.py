@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from api_v2.cluster.serializers import ClusterRelatedSerializer
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from cm.adcm_config.config import get_main_info
@@ -24,6 +24,7 @@ from rest_framework.serializers import (
 
 class ServiceRetrieveSerializer(ModelSerializer):
     prototype = PrototypeRelatedSerializer(read_only=True)
+    cluster = ClusterRelatedSerializer(read_only=True)
     status = SerializerMethodField()
     concerns = ConcernSerializer(read_only=True, many=True)
     main_info = SerializerMethodField()
@@ -35,8 +36,10 @@ class ServiceRetrieveSerializer(ModelSerializer):
             "name",
             "display_name",
             "prototype",
+            "cluster",
             "status",
             "state",
+            "multi_state",
             "concerns",
             "is_maintenance_mode_available",
             "maintenance_mode",
@@ -48,6 +51,12 @@ class ServiceRetrieveSerializer(ModelSerializer):
 
     def get_main_info(self, instance: ClusterObject) -> str | None:
         return get_main_info(obj=instance)
+
+
+class ServiceRelatedSerializer(ModelSerializer):
+    class Meta:
+        model = ClusterObject
+        fields = ["id", "name", "display_name"]
 
 
 class ServiceCreateSerializer(ModelSerializer):
