@@ -65,6 +65,12 @@ class ClusterSerializer(ModelSerializer):
         return get_main_info(obj=cluster)
 
 
+class ClusterRelatedSerializer(ModelSerializer):
+    class Meta:
+        model = Cluster
+        fields = ["id", "name"]
+
+
 class ClusterCreateSerializer(ModelSerializer):
     class Meta:
         model = Cluster

@@ -38,7 +38,7 @@ from adcm.utils import delete_service_from_api, get_maintenance_mode_response
 
 
 class ServiceViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = ClusterObject.objects.all()
+    queryset = ClusterObject.objects.select_related("cluster").all()
     serializer_class = ServiceRetrieveSerializer
     filterset_class = ServiceFilter
     permission_classes = [DjangoModelPermissionsAudit]
