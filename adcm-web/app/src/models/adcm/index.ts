@@ -1,5 +1,6 @@
 export * from './cluster';
 export * from './prototype';
+export * from './concern';
 
 export interface Batch<T> {
   results: T[];

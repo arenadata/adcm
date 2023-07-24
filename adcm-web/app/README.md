@@ -8,6 +8,12 @@ This is documentation for ADCM Frontend project part
 1. Node > v18.16.x (recommend use [NVM](https://github.com/nvm-sh/nvm))
 2. yarn > v3.5.x   ([yarn v3 install](https://yarnpkg.com/getting-started/install))
 
+### Start local Backend
+```
+docker pull hub.adsw.io/adcm/adcm:develop
+docker run --rm -d -p 8000:8000 hub.adsw.io/adcm/adcm:develop
+```
+
 ### Start dev version
 ```
 cd ./adcm-web/app
@@ -27,6 +33,13 @@ yarn build
 cd ./adcm-web/app
 yarn install
 yarn test
+```
+
+### Start Storybook
+```
+cd ./adcm-web/app
+yarn install
+yarn storybook
 ```
 
 ### Code

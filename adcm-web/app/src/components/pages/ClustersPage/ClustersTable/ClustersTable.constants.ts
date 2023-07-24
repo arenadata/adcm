@@ -27,6 +27,11 @@ export const columns: TableColumn[] = [
     name: 'description',
     isSortable: false,
   },
+  {
+    label: 'Concerns',
+    name: 'concerns',
+    isSortable: false,
+  },
 ];
 
 export const clusterStatusesMap: { [key in AdcmClusterStatus]: BaseStatus } = {
