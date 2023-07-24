@@ -20,13 +20,14 @@ from cm.status_api import get_obj_status
 from cm.upgrade import get_upgrade
 from cm.validators import ClusterUniqueValidator, StartMidEndValidator
 from django.conf import settings
-from rest_framework.fields import CharField
+from rest_framework.fields import CharField, IntegerField
 from rest_framework.serializers import (
     BooleanField,
     ModelSerializer,
     SerializerMethodField,
 )
 
+from adcm.serializers import EmptySerializer
 from adcm.utils import get_requires
 
 
@@ -118,7 +119,6 @@ class HostComponentListSerializer(ModelSerializer):
         fields = ["id", "host_id", "component_id"]
 
 
-class HostComponentPostSerializer(ModelSerializer):
-    class Meta:
-        model = HostComponent
-        fields = ["service", "host", "component", "cluster"]
+class HostComponentPostSerializer(EmptySerializer):
+    host_id = IntegerField()
+    component_id = IntegerField()

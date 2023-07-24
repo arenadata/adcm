@@ -80,6 +80,7 @@ class HostSerializer(ModelSerializer):
         ],
         source="fqdn",
     )
+    cluster = HostClusterSerializer(read_only=True)
 
     class Meta:
         model = Host
@@ -93,6 +94,8 @@ class HostSerializer(ModelSerializer):
             "concerns",
             "is_maintenance_mode_available",
             "maintenance_mode",
+            "multi_state",
+            "cluster",
         ]
 
     @staticmethod
