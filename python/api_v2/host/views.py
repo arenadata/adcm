@@ -50,7 +50,7 @@ from adcm.permissions import (
 
 # pylint:disable-next=too-many-ancestors
 class HostViewSet(PermissionListMixin, ModelViewSet):
-    queryset = Host.objects.prefetch_related("provider", "concerns").all()
+    queryset = Host.objects.prefetch_related("provider", "concerns", "cluster").all()
     serializer_class = HostSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_HOST_PERM]
@@ -142,7 +142,7 @@ class HostClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=t
         return self.serializer_class
 
     def get_queryset(self, *args, **kwargs):  # pylint: disable=unused-argument
-        return Host.objects.filter(cluster=self.kwargs["cluster_pk"])
+        return Host.objects.filter(cluster=self.kwargs["cluster_pk"]).select_related("cluster")
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

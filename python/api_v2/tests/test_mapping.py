@@ -57,11 +57,20 @@ class TestMapping(BaseAPITestCase):
 
         response: Response = self.client.post(
             path=reverse(viewname="v2:mapping-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data={"service": self.service_1.pk, "host": host_3.pk, "component": component_2.pk},
+            data=[
+                {"host_id": host_3.pk, "component_id": component_2.pk},
+                {"host_id": self.host_1.pk, "component_id": self.component_1.pk},
+            ],
         )
-
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(HostComponent.objects.count(), 2)
+
+        response: Response = self.client.post(
+            path=reverse(viewname="v2:mapping-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data=[],
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_mapping_hosts_success(self):
         response: Response = self.client.get(

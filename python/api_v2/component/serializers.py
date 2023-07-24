@@ -23,7 +23,6 @@ from cm.models import (
     Host,
     HostComponent,
     MaintenanceMode,
-    Prototype,
     ServiceComponent,
 )
 from cm.status_api import get_obj_status
@@ -55,8 +54,8 @@ class ComponentMappingSerializer(ModelSerializer):
         ]
 
     @staticmethod
-    def get_depend_on(prototype: Prototype) -> list[dict[str, list[dict[str, Any]] | Any]] | None:
-        return get_requires(prototype=prototype)
+    def get_depend_on(instance: ServiceComponent) -> list[dict[str, list[dict[str, Any]] | Any]] | None:
+        return get_requires(prototype=instance.prototype)
 
 
 class ComponentSerializer(ModelSerializer):

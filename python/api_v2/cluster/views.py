@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import List
+
 from api_v2.cluster.filters import ClusterFilter
 from api_v2.cluster.serializers import (
     ClusterCreateSerializer,
@@ -21,7 +23,7 @@ from api_v2.cluster.serializers import (
 )
 from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.host.serializers import HostMappingSerializer
-from cm.api import add_cluster
+from cm.api import add_cluster, add_hc
 from cm.issue import update_hierarchy_issues
 from cm.models import (
     Cluster,
@@ -44,6 +46,8 @@ from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HC_PERM,
     DjangoModelPermissionsAudit,
+    check_custom_perm,
+    get_object_for_user,
 )
 
 
@@ -132,13 +136,19 @@ class MappingViewSet(  # pylint:disable=too-many-ancestors
         return super().list(request, *args, **kwargs)
 
     def create(self, request: Request, *args, **kwargs) -> Response:
-        cluster = Cluster.objects.filter(pk=kwargs["cluster_pk"]).first()
-        if not cluster:
-            return Response(data=f'Cluster with pk "{kwargs["cluster_pk"]}" not found', status=HTTP_404_NOT_FOUND)
+        cluster = get_object_for_user(
+            user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["cluster_pk"]
+        )
+        check_custom_perm(
+            user=request.user, action_type="edit_host_components_of", model=Cluster.__name__.lower(), obj=cluster
+        )
 
-        request.data["cluster"] = cluster.pk
+        serializer = self.get_serializer(data=request.data, many=True)
+        serializer.is_valid(raise_exception=True)
 
-        return super().create(request, *args, **kwargs)
+        hc_list = add_hc(cluster=cluster, hc_in=self._insert_servece_ids(hc_create_data=serializer.validated_data))
+
+        return Response(data=self.serializer_class(instance=hc_list, many=True).data, status=HTTP_201_CREATED)
 
     @action(methods=["get"], detail=False)
     def hosts(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
@@ -159,3 +169,15 @@ class MappingViewSet(  # pylint:disable=too-many-ancestors
         serializer = ComponentMappingSerializer(instance=ServiceComponent.objects.filter(cluster=cluster), many=True)
 
         return Response(data=serializer.data)
+
+    @staticmethod
+    def _insert_servece_ids(hc_create_data: List[dict]) -> List[dict]:
+        component_ids = {single_hc["component_id"] for single_hc in hc_create_data}
+        component_service_map = {
+            component.pk: component.service_id for component in ServiceComponent.objects.filter(pk__in=component_ids)
+        }
+
+        for single_hc in hc_create_data:
+            single_hc["service_id"] = component_service_map[single_hc["component_id"]]
+
+        return hc_create_data
