@@ -1549,6 +1549,8 @@ class TaskLog(ADCMModel):
             obj.add_to_concerns(item=self.lock)
 
     def unlock_affected(self) -> None:
+        self.refresh_from_db()
+
         if not self.lock:
             return
 
