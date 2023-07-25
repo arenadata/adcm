@@ -1,12 +1,18 @@
 import { Link } from 'react-router-dom';
-import { Table, TableRow, TableCell } from '@uikit';
+import { Table, TableRow, TableCell, IconButton } from '@uikit';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
-import { useStore } from '@hooks';
+import { useDispatch, useStore } from '@hooks';
 import { columns, clusterStatusesMap } from './ClustersTable.constants';
+import { setDeletableId } from '@store/adcm/clusters/clustersSlice';
 import Concern from '@commonComponents/Concern/Concern';
 
 const ClustersTable = () => {
+  const dispatch = useDispatch();
   const { clusters } = useStore((s) => s.adcm.clusters);
+
+  const getHandleDeleteClick = (clusterId: number) => () => {
+    dispatch(setDeletableId(clusterId));
+  };
 
   return (
     <Table columns={columns}>
@@ -22,6 +28,9 @@ const ClustersTable = () => {
             <TableCell>{cluster.description}</TableCell>
             <TableCell>
               <Concern concerns={cluster.concerns} />
+            </TableCell>
+            <TableCell hasIconOnly align="center">
+              <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(cluster.id)} title="Delete" />
             </TableCell>
           </TableRow>
         );
