@@ -49,7 +49,6 @@ class ActionRetrieveSerializer(ModelSerializer):
 class ActionRunSerializer(EmptySerializer):
     host_component_map = JSONField()
     config = JSONField()
-    attr = JSONField()
     is_verbose = BooleanField()
 
 
