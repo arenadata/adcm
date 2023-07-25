@@ -105,11 +105,13 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        provided_config = serializer.validated_data["config"]
+
         task = start_task(
             action=target_action,
             obj=parent_object,
-            conf=serializer.validated_data["config"],
-            attr=serializer.validated_data["attr"],
+            conf=provided_config.get("config", {}),
+            attr=provided_config.get("attr", {}),
             hostcomponent=serializer.validated_data["host_component_map"],
             hosts=[],
             verbose=serializer.validated_data["is_verbose"],

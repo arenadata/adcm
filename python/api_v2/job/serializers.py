@@ -12,12 +12,14 @@
 
 from api_v2.task.serializers import JobListSerializer, TaskRetrieveByJobSerializer
 from cm.models import JobLog, LogStorage
-from rest_framework.fields import SerializerMethodField
+from rest_framework.fields import DateTimeField, SerializerMethodField
 
 
 class JobRetrieveSerializer(JobListSerializer):
     parent_task = TaskRetrieveByJobSerializer(source="task", allow_null=True)
     log_files = SerializerMethodField()
+    start_time = DateTimeField(source="start_date")
+    end_time = DateTimeField(source="finish_date")
 
     class Meta:
         model = JobLog
@@ -27,11 +29,12 @@ class JobRetrieveSerializer(JobListSerializer):
             "display_name",
             "parent_task",
             "status",
-            "start_date",
-            "finish_date",
+            "start_time",
+            "end_time",
             "duration",
             "task_id",
             "log_files",
+            "is_terminatable",
         )
 
     def get_log_files(self, obj: JobLog) -> list[dict[str, str]]:
