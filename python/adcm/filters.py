@@ -21,6 +21,7 @@ class BaseOrderingFilter(OrderingFilter):
     ordering_param = "sortColumn"
     direction_param = "sortDirection"
     allowed_sort_column_names = {"id"}
+    column_names_map = {}  # {<request_field>: <model_field>}
 
     def get_ordering(self, request, queryset, view) -> Sequence[str] | None:
         ordering = super().get_ordering(request=request, queryset=queryset, view=view)
@@ -31,6 +32,9 @@ class BaseOrderingFilter(OrderingFilter):
         if set(ordering).difference(self.allowed_sort_column_names):
             allowed_repr = ", ".join(self.allowed_sort_column_names)
             raise AdcmEx(code="INVALID_ORDERING", msg=f"Allowed sortColumn: {allowed_repr}")
+
+        if self.column_names_map:
+            ordering = [self.column_names_map.get(column, column) for column in ordering]
 
         sort_direction = self._get_sort_direction(request=request)
         if sort_direction:
