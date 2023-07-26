@@ -7,5 +7,5 @@ export const formatConcernMessage = (reason: AdcmConcernReason | undefined): str
 
   return reason.message
     .replace('${source}', reason.placeholder.source.name)
-    .replace('${target}', reason.placeholder.target.name);
+    .replace('${target}', reason.placeholder.target?.name || '');
 };
