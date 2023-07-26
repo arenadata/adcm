@@ -93,4 +93,12 @@
       }
     }
   }
+
+  &_startJustify {
+    justify-content: flex-start;
+  }
+
+  &_endJustify {
+    justify-content: flex-end;
+  }
 }

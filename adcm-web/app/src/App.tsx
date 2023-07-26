@@ -8,8 +8,10 @@ import ClustersPage from '@pages/ClustersPage/ClustersPage';
 import HostProvidersPage from '@pages/HostProvidersPage/HostProvidersPage';
 import HostsPage from '@pages/HostsPage/HostsPage';
 import JobsPage from '@pages/JobsPage/JobsPage';
-import AccessManagerPage from '@pages/AccessManagerPage/AccessManagerPage';
-import AuditPage from '@pages/AuditPage/AuditPage';
+import AccessManagerPage from '@pages/audi/AccessManagerPage/AccessManagerPage';
+import AuditPageLayout from '@layouts/AuditPageLayout/AuditPageLayout';
+import AuditOperationsPage from '@pages/AuditOperationsPage/AuditOperationsPage';
+import AuditLoginsPage from '@pages/audi/AuditLoginsPage/AuditLoginsPage';
 import BundlesPage from '@pages/BundlesPage/BundlesPage';
 import PrivateResource from '@commonComponents/PrivateResource/PrivateResource';
 import MainLayout from '@layouts/MainLayout/MainLayout';
@@ -63,7 +65,11 @@ function App() {
               <Route path="/hosts" element={<HostsPage />} />
               <Route path="/jobs" element={<JobsPage />} />
               <Route path="/access-manager" element={<AccessManagerPage />} />
-              <Route path="/audit" element={<AuditPage />} />
+              <Route path="/audit" element={<AuditPageLayout />}>
+                <Route index element={<Navigate to="/audit/operations" replace />} />
+                <Route path="/audit/operations" element={<AuditOperationsPage />} />
+                <Route path="/audit/logins" element={<AuditLoginsPage />} />
+              </Route>
               <Route path="/bundles" element={<BundlesPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/settings" element={<SettingsPage />} />
