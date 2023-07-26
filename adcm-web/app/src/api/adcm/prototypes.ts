@@ -27,15 +27,15 @@ export class AdcmPrototypesApi {
 
   public static async getPrototypes(
     filter: AdcmPrototypesFilter,
-    sortParams: SortParams,
-    paginationParams: PaginationParams,
+    sortParams?: SortParams,
+    paginationParams?: PaginationParams,
   ) {
     const queryParams = {
       type: filter.type || undefined,
-      sortColumn: sortParams.sortBy,
-      sortDirection: sortParams.sortDirection,
-      offset: paginationParams.pageNumber * paginationParams.perPage,
-      limit: paginationParams.perPage,
+      sortColumn: sortParams?.sortBy,
+      sortDirection: sortParams?.sortDirection,
+      offset: paginationParams ? paginationParams.pageNumber * paginationParams.perPage : undefined,
+      limit: paginationParams?.perPage,
     };
 
     const query = qs.stringify(queryParams);
