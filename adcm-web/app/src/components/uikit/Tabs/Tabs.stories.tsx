@@ -65,6 +65,10 @@ export default {
         disable: true,
       },
     },
+    justify: {
+      default: 'start',
+      description: 'can be start or end',
+    },
   },
 } as Meta<typeof TabsBlock>;
 
@@ -88,6 +92,7 @@ export const PrimaryTabs: Story = {
   },
   args: {
     variant: 'primary',
+    justify: 'start',
   },
   render: (args) => {
     return <EasyTabsExample {...args} />;

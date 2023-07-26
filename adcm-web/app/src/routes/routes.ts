@@ -156,6 +156,28 @@ const routes: RoutesConfigs = {
       },
     ],
   },
+  '/audit/operations': {
+    pageTitle: 'Audit',
+    breadcrumbs: [
+      {
+        label: 'Audit',
+      },
+      {
+        label: 'Operations',
+      },
+    ],
+  },
+  '/audit/logins': {
+    pageTitle: 'Audit',
+    breadcrumbs: [
+      {
+        label: 'Audit',
+      },
+      {
+        label: 'Logins',
+      },
+    ],
+  },
 
   // Bundles
   '/bundles': {
