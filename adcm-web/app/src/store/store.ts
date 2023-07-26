@@ -8,6 +8,7 @@ import bundlesSlice from '@store/adcm/bundles/bundlesSlice';
 import bundlesTableSlice from '@store/adcm/bundles/bundlesTableSlice';
 import hostProvidersSlice from '@store/adcm/hostProviders/hostProvidersSlice';
 import hostProvidersTableSlice from '@store/adcm/hostProviders/hostProvidersTableSlice';
+import createHostProviderDialogSlice from '@store/adcm/hostProviders/dialogs/createHostProviderDialogSlice';
 import hostsTableSlice from '@store/adcm/hosts/hostsTableSlice.tsx';
 import hostsSlice from '@store/adcm/hosts/hostsSlice.tsx';
 
@@ -24,6 +25,7 @@ const rootReducer = combineReducers({
     bundlesTable: bundlesTableSlice,
     hostProviders: hostProvidersSlice,
     hostProvidersTable: hostProvidersTableSlice,
+    createHostProviderDialog: createHostProviderDialogSlice,
     hosts: hostsSlice,
     hostsTable: hostsTableSlice,
     // createHostDialog: createHostDialogSlice,

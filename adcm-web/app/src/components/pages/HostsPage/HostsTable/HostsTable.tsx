@@ -28,7 +28,7 @@ const HostsTable: React.FC = () => {
           <TableRow key={host.id}>
             <StatusableCell status={hostStatusesMap['done']}>{host.name}</StatusableCell>
             <TableCell>{host.state}</TableCell>
-            <TableCell>{host.provider?.displayName}</TableCell>
+            <TableCell>{host.provider?.name}</TableCell>
             <TableCell>{host.cluster?.name}</TableCell>
             <TableCell>{'-'}</TableCell>
             <TableCell hasIconOnly align="center">

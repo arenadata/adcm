@@ -8,7 +8,7 @@ export enum AdcmClusterStatus {
 export interface AdcmClusterPrototype {
   id: number;
   name: string;
-  display_name: string;
+  displayName: string;
   type: string;
   version: string;
 }
