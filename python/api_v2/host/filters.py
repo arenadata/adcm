@@ -9,19 +9,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from cm.models import HostProvider
+
+from cm.models import Host
 from django_filters.rest_framework import CharFilter, FilterSet
 
+from adcm.filters import BaseOrderingFilter
 
-class HostProviderFilter(FilterSet):
-    name = CharFilter(field_name="name", label="Hostprovider name", lookup_expr="icontains")
-    prototype_name = CharFilter(field_name="prototype__name", label="Hostprovider type")
-    state = CharFilter(field_name="state", label="Hostprovider state")
+
+class HostFilter(FilterSet):
+    name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
+    hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name")
+    cluster_name = CharFilter(label="Cluster name", field_name="cluster__name")
 
     class Meta:
-        model = HostProvider
-        fields = [
-            "name",
-            "state",
-            "prototype_name",
-        ]
+        model = Host
+        fields = ["name", "hostprovider_name", "cluster_name"]
+
+
+class HostOrderingFilter(BaseOrderingFilter):
+    allowed_sort_column_names = {"id", "name"}
+    column_names_map = {"name": "fqdn"}

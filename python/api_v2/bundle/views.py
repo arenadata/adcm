@@ -9,10 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.bundle.filters import BundleFilter
+
+from api_v2.bundle.filters import BundleFilter, BundleOrderingFilter
 from api_v2.bundle.serializers import BundleListSerializer, UploadBundleSerializer
 from cm.bundle import delete_bundle, load_bundle, upload_file
 from cm.models import Bundle
+from django_filters.rest_framework.backends import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 from rest_framework.viewsets import ModelViewSet
@@ -26,8 +28,11 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_ACTION_PERM]
     filterset_class = BundleFilter
-    ordering_fields = ("id", "name", "display_name", "edition", "version", "upload_time")
-    ordering = ["-date"]
+    filter_backends = (
+        DjangoFilterBackend,
+        BundleOrderingFilter,
+    )
+    ordering = ["id"]
     http_method_names = ["get", "post", "delete"]
 
     def create(self, request, *args, **kwargs) -> Response:
