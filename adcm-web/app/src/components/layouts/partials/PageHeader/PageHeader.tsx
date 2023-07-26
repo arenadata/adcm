@@ -1,12 +1,16 @@
 import React from 'react';
 import Text from '@uikit/Text/Text';
 import Breadcrumbs from '@layouts/partials/Breadcrumbs/Breadcrumbs';
-import { usePageRouteInfo } from '@hooks';
+import { usePageRouteInfo, useStore } from '@hooks';
 
 import s from './PageHeader.module.scss';
 
 const PageHeader: React.FC = () => {
-  const { pageTitle, breadcrumbs } = usePageRouteInfo();
+  const { breadcrumbs: breadcrumbsStore } = useStore((s) => s.adcm.breadcrumbs);
+  const { pageTitle, breadcrumbs: breadcrumbsRoute } = usePageRouteInfo();
+
+  const breadcrumbs = breadcrumbsStore.length ? breadcrumbsStore : breadcrumbsRoute;
+
   return (
     <>
       <div className={s.pageHeader}>

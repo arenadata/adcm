@@ -6,6 +6,7 @@ import clustersTableSlice from '@store/adcm/clusters/clustersTableSlice';
 import createClusterDialogSlice from '@store/adcm/clusters/dialogs/createClusterDialogSlice';
 import bundlesSlice from '@store/adcm/bundles/bundlesSlice';
 import bundlesTableSlice from '@store/adcm/bundles/bundlesTableSlice';
+import breadcrumbsSlice from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import hostProvidersSlice from '@store/adcm/hostProviders/hostProvidersSlice';
 import hostProvidersTableSlice from '@store/adcm/hostProviders/hostProvidersTableSlice';
 import createHostProviderDialogSlice from '@store/adcm/hostProviders/dialogs/createHostProviderDialogSlice';
@@ -13,16 +14,19 @@ import hostsTableSlice from '@store/adcm/hosts/hostsTableSlice.tsx';
 import hostsSlice from '@store/adcm/hosts/hostsSlice.tsx';
 
 import { apiMiddleware } from './middlewares/apiMiddleware';
+import clusterSlice from './adcm/clusters/clusterSlice';
 
 const rootReducer = combineReducers({
   user: userSlice,
   notifications: notificationsSlice,
   adcm: combineReducers({
+    cluster: clusterSlice,
     clusters: clustersSlice,
     clustersTable: clustersTableSlice,
     createClusterDialog: createClusterDialogSlice,
     bundles: bundlesSlice,
     bundlesTable: bundlesTableSlice,
+    breadcrumbs: breadcrumbsSlice,
     hostProviders: hostProvidersSlice,
     hostProvidersTable: hostProvidersTableSlice,
     createHostProviderDialog: createHostProviderDialogSlice,
