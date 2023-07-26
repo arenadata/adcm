@@ -35,4 +35,4 @@ class TaskViewSet(
         check_custom_perm(request.user, "change", TaskLog, task)
         cancel_task(task)
 
-        return Response(status=HTTP_200_OK)
+        return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)

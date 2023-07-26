@@ -14,7 +14,7 @@ from datetime import timedelta
 
 from api_v2.action.serializers import ActionNameSerializer
 from cm.models import Action, JobLog, JobStatus, SubAction, TaskLog
-from rest_framework.fields import CharField, SerializerMethodField
+from rest_framework.fields import CharField, DateTimeField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
 
@@ -23,6 +23,8 @@ class JobListSerializer(ModelSerializer):
     name = SerializerMethodField()
     display_name = SerializerMethodField()
     is_terminatable = SerializerMethodField()
+    start_time = DateTimeField(source="start_date")
+    end_time = DateTimeField(source="finish_date")
 
     class Meta:
         model = JobLog
@@ -31,8 +33,8 @@ class JobListSerializer(ModelSerializer):
             "name",
             "display_name",
             "status",
-            "start_date",
-            "finish_date",
+            "start_time",
+            "end_time",
             "duration",
             "is_terminatable",
         )
@@ -75,6 +77,8 @@ class TaskSerializer(ModelSerializer):
     duration = SerializerMethodField()
     action = ActionNameSerializer(read_only=True, allow_null=True)
     object = SerializerMethodField()
+    start_time = DateTimeField(source="start_date")
+    end_time = DateTimeField(source="finish_date")
 
     class Meta:
         model = TaskLog
@@ -84,8 +88,8 @@ class TaskSerializer(ModelSerializer):
             "display_name",
             "action",
             "status",
-            "start_date",
-            "finish_date",
+            "start_time",
+            "end_time",
             "duration",
             "is_terminatable",
             "child_jobs",
@@ -117,8 +121,6 @@ class TaskSerializer(ModelSerializer):
 
 
 class TaskListSerializer(TaskSerializer):
-    # pylint: disable=import-outside-toplevel, cyclic-import
-
     child_jobs = JobListSerializer(many=True, source="joblog_set", read_only=True)
 
     class Meta:
@@ -131,6 +133,8 @@ class TaskListSerializer(TaskSerializer):
 
 class TaskRetrieveByJobSerializer(TaskSerializer):
     action = ActionNameSerializer(read_only=True, allow_null=True)
+    start_time = DateTimeField(source="start_date")
+    end_time = DateTimeField(source="finish_date")
 
     class Meta:
         model = TaskLog
@@ -140,8 +144,8 @@ class TaskRetrieveByJobSerializer(TaskSerializer):
             "display_name",
             "action",
             "status",
-            "start_date",
-            "finish_date",
+            "start_time",
+            "end_time",
             "duration",
             "object",
             "is_terminatable",

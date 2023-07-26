@@ -18,12 +18,16 @@ from cm.adcm_config.config import get_main_info
 from cm.models import Cluster, HostComponent, Prototype
 from cm.status_api import get_obj_status
 from cm.upgrade import get_upgrade
+from cm.validators import ClusterUniqueValidator, StartMidEndValidator
+from django.conf import settings
+from rest_framework.fields import CharField, IntegerField
 from rest_framework.serializers import (
     BooleanField,
     ModelSerializer,
     SerializerMethodField,
 )
 
+from adcm.serializers import EmptySerializer
 from adcm.utils import get_requires
 
 
@@ -62,6 +66,12 @@ class ClusterSerializer(ModelSerializer):
         return get_main_info(obj=cluster)
 
 
+class ClusterRelatedSerializer(ModelSerializer):
+    class Meta:
+        model = Cluster
+        fields = ["id", "name"]
+
+
 class ClusterCreateSerializer(ModelSerializer):
     class Meta:
         model = Cluster
@@ -69,6 +79,22 @@ class ClusterCreateSerializer(ModelSerializer):
 
 
 class ClusterUpdateSerializer(ModelSerializer):
+    name = CharField(
+        max_length=80,
+        validators=[
+            ClusterUniqueValidator(queryset=Cluster.objects.all()),
+            StartMidEndValidator(
+                start=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                mid=settings.ALLOWED_CLUSTER_NAME_MID_CHARS,
+                end=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                err_code="BAD_REQUEST",
+                err_msg="Wrong cluster name.",
+            ),
+        ],
+        required=False,
+        help_text="Cluster name",
+    )
+
     class Meta:
         model = Cluster
         fields = ["name"]
@@ -90,10 +116,9 @@ class ServicePrototypeSerializer(ModelSerializer):
 class HostComponentListSerializer(ModelSerializer):
     class Meta:
         model = HostComponent
-        fields = ["service", "host", "component", "cluster"]
+        fields = ["id", "host_id", "component_id"]
 
 
-class HostComponentPostSerializer(ModelSerializer):
-    class Meta:
-        model = HostComponent
-        fields = ["service", "host", "component", "cluster"]
+class HostComponentPostSerializer(EmptySerializer):
+    host_id = IntegerField()
+    component_id = IntegerField()

@@ -48,6 +48,7 @@ VIEW_CLUSTER_BIND = "view_clusterbind"
 VIEW_TASKLOG_PERMISSION = "cm.view_tasklog"
 VIEW_JOBLOG_PERMISSION = "cm.view_joblog"
 VIEW_LOGSTORAGE_PERMISSION = "cm.view_logstorage"
+VIEW_USER_PERMISSION = "rbac.view_user"
 
 
 class DjangoObjectPermissionsAudit(DjangoObjectPermissions):

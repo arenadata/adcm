@@ -30,13 +30,13 @@ import { IControl } from './scheme.service';
       </ng-container>
 
       <ng-template #other>
-        <div class="chbox-field" *ngIf="controlType === 'boolean'">
+        <div class="chbox-field" *ngIf="controlType === 'boolean' && !invisibleItems.includes(item.name)">
           <mat-checkbox [formControlName]="item.name">{{ item.name }}</mat-checkbox>
           <mat-error *ngIf="!isValid">
             <mat-error *ngIf="hasError('required')">Field [{{ item.name }}] is required!</mat-error>
           </mat-error>
         </div>
-        <mat-form-field *ngIf="controlType === 'textbox'">
+        <mat-form-field *ngIf="controlType === 'textbox' && !invisibleItems.includes(item.name)">
           <mat-label>{{ item.name }}</mat-label>
           <input matInput [formControlName]="item.name" [readonly]="isReadOnly" />
           <mat-error *ngIf="!isValid">
@@ -53,6 +53,7 @@ import { IControl } from './scheme.service';
 })
 export class ItemComponent implements OnInit {
   @Input() item: IControl;
+  @Input() invisibleItems: string[];
   @Input() index: number;
   @Input() isReadOnly = false;
   @Output() remove = new EventEmitter<string>();

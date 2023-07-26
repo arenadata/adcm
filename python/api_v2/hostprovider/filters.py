@@ -14,14 +14,14 @@ from django_filters.rest_framework import CharFilter, FilterSet
 
 
 class HostProviderFilter(FilterSet):
-    hostprovider_name = CharFilter(field_name="name", label="Hostprovider name")
-    type = CharFilter(field_name="prototype__type", label="Hostprovider type")
+    name = CharFilter(field_name="name", label="Hostprovider name", lookup_expr="icontains")
+    prototype_name = CharFilter(field_name="prototype__name", label="Hostprovider type")
     state = CharFilter(field_name="state", label="Hostprovider state")
 
     class Meta:
         model = HostProvider
         fields = [
-            "hostprovider_name",
+            "name",
             "state",
-            "type",
+            "prototype_name",
         ]

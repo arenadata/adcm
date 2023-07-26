@@ -18,7 +18,8 @@ from django_filters.rest_framework import CharFilter, ChoiceFilter, FilterSet
 
 class ClusterFilter(FilterSet):
     status = ChoiceFilter(label="Cluster status", choices=ADCMEntityStatus.choices, method="filter_status")
-    prototype_name = CharFilter(label="Cluster prototype name", method="filter_prototype_name")
+    prototype_name = CharFilter(label="Cluster prototype name", field_name="prototype__name")
+    name = CharFilter(label="Cluster name", lookup_expr="icontains")
 
     class Meta:
         model = Cluster
@@ -32,7 +33,3 @@ class ClusterFilter(FilterSet):
             exclude_pks = {cluster.pk for cluster in queryset if get_cluster_status(cluster=cluster) == 0}
 
         return queryset.exclude(pk__in=exclude_pks)
-
-    @staticmethod
-    def filter_prototype_name(queryset: QuerySet, name: str, value: str) -> QuerySet:  # pylint: disable=unused-argument
-        return queryset.filter(prototype__name=value)

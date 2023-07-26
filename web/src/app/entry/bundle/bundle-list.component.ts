@@ -70,6 +70,7 @@ export class BundleListComponent extends AdwpListDirective<IBundle> {
       }
     },
     ListFactory.descriptionColumn(),
+    ListFactory.signatureStatusColumn(),
     ListFactory.deleteColumn(this),
   ] as IColumns<IBundle>;
 

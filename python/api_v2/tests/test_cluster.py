@@ -14,13 +14,16 @@ from typing import Callable
 from unittest.mock import patch
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.models import Action, ADCMEntityStatus, Cluster
+from cm.models import Action, ADCMEntityStatus, Cluster, TaskLog
+from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
 )
 
@@ -120,6 +123,27 @@ class TestCluster(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
+    def test_update_failed(self):
+        wrong_cluster_name = "__new_test_cluster_name"
+        correct_cluster_name = "new_test_cluster_name"
+
+        response: Response = self.client.patch(
+            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
+            data={"name": wrong_cluster_name},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.cluster_1.state = "not_created"
+        self.cluster_1.save(update_fields=["state"])
+
+        response: Response = self.client.patch(
+            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
+            data={"name": correct_cluster_name},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
     def test_update_success(self):
         new_test_cluster_name = "new_test_cluster_name"
         response: Response = self.client.patch(
@@ -192,7 +216,15 @@ class TestClusterActions(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_run_cluster_action_success(self):
-        with patch("api_v2.action.views.start_task"):
+        tasklog = TaskLog.objects.create(
+            object_id=self.cluster_1.pk,
+            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+            action=self.cluster_action,
+        )
+
+        with patch("api_v2.action.views.start_task", return_value=tasklog):
             response: Response = self.client.post(
                 path=reverse(
                     viewname="v2:cluster-action-run",

@@ -23,4 +23,5 @@ class APIRoot(APIRootView):
         "prototypes": "prototype-list",
         "jobs": "joblog-list",
         "tasks": "tasklog-list",
+        "rbac": "rbac:root",
     }

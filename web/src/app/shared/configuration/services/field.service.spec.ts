@@ -392,6 +392,7 @@ describe('Configuration fields service', () => {
               pattern: null,
               required: true,
             },
+            isInvisible: false
           },
           {
             controlType: 'textbox',
@@ -399,9 +400,10 @@ describe('Configuration fields service', () => {
             path: ['port', 'listener'],
             type: 'int',
             validator: { required: true, pattern: /^[-]?\d+$/ },
+            isInvisible: false
           },
-          { name: 'ssl enable', type: 'bool', path: [], controlType: 'boolean', validator: {} },
-          { name: 'sasl protocol', type: 'string', path: [], controlType: 'textbox', validator: {} },
+          { name: 'ssl enable', type: 'bool', path: [], controlType: 'boolean', validator: {}, isInvisible: false },
+          { name: 'sasl protocol', type: 'string', path: [], controlType: 'textbox', validator: {}, isInvisible: false },
         ],
       },
     };

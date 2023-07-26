@@ -12,17 +12,17 @@
 
 from typing import Any
 
+from api_v2.cluster.serializers import ClusterRelatedSerializer
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.host.serializers import HostShortSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
-from api_v2.service.serializers import ServiceNameSerializer
+from api_v2.service.serializers import ServiceNameSerializer, ServiceRelatedSerializer
 from cm.adcm_config.config import get_main_info
 from cm.models import (
     ConcernItem,
     Host,
     HostComponent,
     MaintenanceMode,
-    Prototype,
     ServiceComponent,
 )
 from cm.status_api import get_obj_status
@@ -54,14 +54,16 @@ class ComponentMappingSerializer(ModelSerializer):
         ]
 
     @staticmethod
-    def get_depend_on(prototype: Prototype) -> list[dict[str, list[dict[str, Any]] | Any]] | None:
-        return get_requires(prototype=prototype)
+    def get_depend_on(instance: ServiceComponent) -> list[dict[str, list[dict[str, Any]] | Any]] | None:
+        return get_requires(prototype=instance.prototype)
 
 
 class ComponentSerializer(ModelSerializer):
     status = SerializerMethodField()
     hosts = SerializerMethodField()
     prototype = PrototypeRelatedSerializer(read_only=True)
+    cluster = ClusterRelatedSerializer(read_only=True)
+    service = ServiceRelatedSerializer(read_only=True)
     concerns = SerializerMethodField()
     main_info = SerializerMethodField()
 
@@ -72,8 +74,12 @@ class ComponentSerializer(ModelSerializer):
             "name",
             "display_name",
             "status",
+            "state",
+            "multi_state",
             "hosts",
             "prototype",
+            "cluster",
+            "service",
             "concerns",
             "is_maintenance_mode_available",
             "maintenance_mode",

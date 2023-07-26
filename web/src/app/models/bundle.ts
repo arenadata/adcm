@@ -14,4 +14,6 @@ export interface IBundle extends AdcmEntity {
   update: string;
   url: string;
   version: string;
+  signature_status: string;
+
 }

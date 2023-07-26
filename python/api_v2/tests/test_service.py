@@ -24,7 +24,12 @@ from cm.models import (
 )
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_409_CONFLICT,
+)
 
 
 class TestServiceAPI(BaseAPITestCase):
@@ -71,6 +76,19 @@ class TestServiceAPI(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.assertFalse(ClusterObject.objects.filter(pk=self.service_2.pk).exists())
+
+    def test_delete_failed(self):
+        self.service_2.state = "non_created"
+        self.service_2.save(update_fields=["state"])
+
+        response: Response = self.client.delete(
+            path=reverse(
+                viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk}
+            ),
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertTrue(ClusterObject.objects.filter(pk=self.service_2.pk).exists())
 
     def test_create_success(self):
         manual_add_service_proto = Prototype.objects.get(type=ObjectType.SERVICE, name="service_3_manual_add")
