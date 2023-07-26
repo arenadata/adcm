@@ -20,7 +20,7 @@ const ClustersTable = () => {
         return (
           <TableRow key={cluster.id}>
             <StatusableCell status={clusterStatusesMap[cluster.status]}>
-              <Link to={`/clusters/${cluster.name}`}>{cluster.name}</Link>
+              <Link to={`/clusters/${cluster.id}`}>{cluster.name}</Link>
             </StatusableCell>
             <TableCell>{cluster.state}</TableCell>
             <TableCell>{cluster.prototypeName}</TableCell>
