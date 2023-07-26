@@ -1,6 +1,7 @@
 export * from './cluster';
 export * from './prototype';
 export * from './concern';
+export * from './hostProvider';
 
 export interface Batch<T> {
   results: T[];

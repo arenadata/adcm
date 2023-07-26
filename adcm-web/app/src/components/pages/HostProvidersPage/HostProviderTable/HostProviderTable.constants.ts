@@ -1,26 +1,25 @@
-import { TableColumn, BaseStatus } from '@uikit';
-import { AdcmClusterStatus } from '@models/adcm';
+import { TableColumn } from '@uikit';
 
 export const columns: TableColumn[] = [
   {
     label: 'Name',
     name: 'name',
-    isSortable: false,
+    isSortable: true,
   },
   {
-    label: 'State',
-    name: 'state',
-    isSortable: false,
-  },
-  {
-    label: 'Product',
-    name: 'product',
-    isSortable: false,
+    label: 'Type',
+    name: 'type',
+    isSortable: true,
   },
   {
     label: 'Version',
     name: 'version',
-    isSortable: false,
+    isSortable: true,
+  },
+  {
+    label: 'State',
+    name: 'state',
+    isSortable: true,
   },
   {
     label: 'Description',
@@ -40,8 +39,3 @@ export const columns: TableColumn[] = [
     width: '100px',
   },
 ];
-
-export const clusterStatusesMap: { [key in AdcmClusterStatus]: BaseStatus } = {
-  UP: 'done',
-  DOWN: 'unknown',
-};

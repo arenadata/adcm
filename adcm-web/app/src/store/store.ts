@@ -6,6 +6,8 @@ import clustersTableSlice from '@store/adcm/clusters/clustersTableSlice';
 import createClusterDialogSlice from '@store/adcm/clusters/dialogs/createClusterDialogSlice';
 import bundlesSlice from '@store/adcm/bundles/bundlesSlice';
 import bundlesTableSlice from '@store/adcm/bundles/bundlesTableSlice';
+import hostProvidersSlice from '@store/adcm/hostProviders/hostProvidersSlice';
+import hostProvidersTableSlice from '@store/adcm/hostProviders/hostProvidersTableSlice';
 
 import { apiMiddleware } from './middlewares/apiMiddleware';
 
@@ -18,6 +20,8 @@ const rootReducer = combineReducers({
     createClusterDialog: createClusterDialogSlice,
     bundles: bundlesSlice,
     bundlesTable: bundlesTableSlice,
+    hostProviders: hostProvidersSlice,
+    hostProvidersTable: hostProvidersTableSlice,
   }),
 });
 

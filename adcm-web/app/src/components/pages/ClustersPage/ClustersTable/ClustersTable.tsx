@@ -26,7 +26,7 @@ const ClustersTable = () => {
             <TableCell>{cluster.prototypeName}</TableCell>
             <TableCell>{cluster.prototypeVersion}</TableCell>
             <TableCell>{cluster.description}</TableCell>
-            <TableCell>
+            <TableCell hasIconOnly>
               <Concern concerns={cluster.concerns} />
             </TableCell>
             <TableCell hasIconOnly align="center">
