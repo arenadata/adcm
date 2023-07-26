@@ -1,4 +1,5 @@
 export * from './cluster';
+export * from './host';
 export * from './prototype';
 export * from './concern';
 export * from './hostProvider';

@@ -5,14 +5,21 @@ export enum AdcmClusterStatus {
   Down = 'DOWN',
 }
 
+export interface AdcmClusterPrototype {
+  id: number;
+  name: string;
+  display_name: string;
+  type: string;
+  version: string;
+}
+
 export interface AdcmCluster {
   id: number;
   name: string;
   state: string;
   multiState: string[];
   status: AdcmClusterStatus;
-  prototypeName: string;
-  prototypeVersion: string;
+  prototype: AdcmClusterPrototype;
   description: string;
   concerns: AdcmConcerns[];
   isUpgradable: boolean;

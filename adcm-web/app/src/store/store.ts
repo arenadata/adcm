@@ -8,6 +8,8 @@ import bundlesSlice from '@store/adcm/bundles/bundlesSlice';
 import bundlesTableSlice from '@store/adcm/bundles/bundlesTableSlice';
 import hostProvidersSlice from '@store/adcm/hostProviders/hostProvidersSlice';
 import hostProvidersTableSlice from '@store/adcm/hostProviders/hostProvidersTableSlice';
+import hostsTableSlice from '@store/adcm/hosts/hostsTableSlice.tsx';
+import hostsSlice from '@store/adcm/hosts/hostsSlice.tsx';
 
 import { apiMiddleware } from './middlewares/apiMiddleware';
 
@@ -22,6 +24,9 @@ const rootReducer = combineReducers({
     bundlesTable: bundlesTableSlice,
     hostProviders: hostProvidersSlice,
     hostProvidersTable: hostProvidersTableSlice,
+    hosts: hostsSlice,
+    hostsTable: hostsTableSlice,
+    // createHostDialog: createHostDialogSlice,
   }),
 });
 
