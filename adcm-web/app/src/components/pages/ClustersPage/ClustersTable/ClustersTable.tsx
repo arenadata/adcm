@@ -23,8 +23,8 @@ const ClustersTable = () => {
               <Link to={`/clusters/${cluster.name}`}>{cluster.name}</Link>
             </StatusableCell>
             <TableCell>{cluster.state}</TableCell>
-            <TableCell>{cluster.prototypeName}</TableCell>
-            <TableCell>{cluster.prototypeVersion}</TableCell>
+            <TableCell>{cluster.prototype.displayName}</TableCell>
+            <TableCell>{cluster.prototype.version}</TableCell>
             <TableCell>{cluster.description}</TableCell>
             <TableCell hasIconOnly>
               <Concern concerns={cluster.concerns} />

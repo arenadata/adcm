@@ -48,3 +48,9 @@ export interface AdcmHostProviderFilter {
   hostproviderName?: string;
   prototype?: string;
 }
+
+export interface AdcmHostProviderPayload {
+  name: string;
+  prototypeId: number;
+  description: string;
+}

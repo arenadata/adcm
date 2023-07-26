@@ -3,8 +3,6 @@ import { useStore, useDispatch } from '@hooks';
 import { Button, LabeledField, SearchInput, Select } from '@uikit';
 import TableFilters from '@commonComponents/Table/TableFilters/TableFilters';
 import { resetFilter, setFilter } from '@store/adcm/hosts/hostsTableSlice';
-import { getOptionsFromArray } from '@uikit/Select/Select.utils';
-import { AdcmCluster, AdcmHostProvider } from '@models/adcm';
 
 const HostsTableFilters = () => {
   const dispatch = useDispatch();
