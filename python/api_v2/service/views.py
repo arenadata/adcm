@@ -17,7 +17,7 @@ from api_v2.service.serializers import (
     ServiceRetrieveSerializer,
 )
 from cm.api import add_service_to_cluster, update_mm_objects
-from cm.models import Cluster, ClusterObject
+from cm.models import Cluster, ClusterObject, ObjectType, Prototype
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -67,14 +67,24 @@ class ServiceViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-
         )
         check_custom_perm(user=request.user, action_type=ADD_SERVICE_PERM, model=Cluster.__name__.lower(), obj=cluster)
 
-        serializer = self.get_serializer_class()(data=request.data)
+        serializer = self.get_serializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
 
-        service = add_service_to_cluster(
-            cluster=Cluster.objects.get(pk=kwargs["cluster_pk"]), proto=serializer.validated_data["prototype"]
-        )
+        added_services = []
+        for service_prototype in Prototype.objects.filter(
+            pk__in=[prototype_data["prototype_id"] for prototype_data in serializer.validated_data],
+            type=ObjectType.SERVICE,
+        ):
+            added_services.append(
+                add_service_to_cluster(
+                    cluster=cluster,
+                    proto=service_prototype,
+                )
+            )
 
-        return Response(status=HTTP_201_CREATED, data=ServiceRetrieveSerializer(instance=service).data)
+        return Response(
+            status=HTTP_201_CREATED, data=ServiceRetrieveSerializer(instance=added_services, many=True).data
+        )
 
     def destroy(self, request: Request, *args, **kwargs):
         instance = self.get_object()

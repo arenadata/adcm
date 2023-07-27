@@ -119,6 +119,7 @@ class MappingViewSet(  # pylint:disable=too-many-ancestors
     serializer_class = HostComponentListSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_HC_PERM]
+    pagination_class = None
 
     def get_serializer_class(self):
         if self.action == "create":

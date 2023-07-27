@@ -25,13 +25,15 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     CharField,
     ChoiceField,
+    IntegerField,
     ModelSerializer,
     PrimaryKeyRelatedField,
     SerializerMethodField,
 )
 
 from adcm import settings
-from adcm.permissions import VIEW_CLUSTER_PERM, VIEW_PROVIDER_PERM
+from adcm.permissions import VIEW_CLUSTER_PERM
+from adcm.serializers import EmptySerializer
 
 
 class HostProviderSerializer(ModelSerializer):
@@ -139,20 +141,26 @@ class HostUpdateSerializer(ModelSerializer):
         return cluster
 
 
-class HostCreateSerializer(HostUpdateSerializer):
-    class Meta:
-        model = Host
-        fields = ["provider", "name", "cluster"]
-        extra_kwargs = {"name": {"allow_null": False, "required": True}, "provider": {"required": True}}
-
-    def validate_provider(self, provider):
-        if not provider:
-            raise ValidationError("Missing required field provider")
-
-        if not self.context["request"].user.has_perm(perm=VIEW_PROVIDER_PERM, obj=provider):
-            raise ValidationError("Current user has no permission to view this provider")
-
-        return provider
+class HostCreateSerializer(EmptySerializer):
+    name = CharField(
+        allow_null=False,
+        required=True,
+        max_length=253,
+        help_text="fully qualified domain name",
+        validators=[
+            HostUniqueValidator(queryset=Host.objects.all()),
+            StartMidEndValidator(
+                start=settings.ALLOWED_HOST_FQDN_START_CHARS,
+                mid=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                end=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                err_code="BAD_REQUEST",
+                err_msg="Wrong FQDN.",
+            ),
+        ],
+        source="fqdn",
+    )
+    hostprovider_id = IntegerField(required=True)
+    cluster_id = IntegerField(required=False)
 
 
 class ClusterHostSerializer(HostSerializer):
