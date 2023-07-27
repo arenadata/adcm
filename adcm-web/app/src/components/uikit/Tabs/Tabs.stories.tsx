@@ -34,6 +34,7 @@ const easyTabsPages = [
 ];
 
 type Story = StoryObj<typeof TabsBlock>;
+
 export default {
   title: 'uikit/Tabs',
   component: TabsBlock,

@@ -35,15 +35,15 @@ export class AdcmClustersApi {
   }
 
   public static async getCluster(clusterId: number) {
-    const response = await httpClient.get<AdcmCluster>(`/api/v2/clusters/${clusterId}`);
+    const response = await httpClient.get<AdcmCluster>(`/api/v2/clusters/${clusterId}/`);
     return response.data;
   }
 
   public static async patchCluster(clusterId: number, payload: UpdateAdcmClusterPayload) {
-    await httpClient.patch(`/api/v2/clusters/${clusterId}`, payload);
+    await httpClient.patch(`/api/v2/clusters/${clusterId}/`, payload);
   }
 
   public static async deleteCluster(clusterId: number) {
-    await httpClient.delete(`/api/v2/clusters/${clusterId}`);
+    await httpClient.delete(`/api/v2/clusters/${clusterId}/`);
   }
 }

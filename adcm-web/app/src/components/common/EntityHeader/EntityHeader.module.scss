@@ -1,0 +1,38 @@
+:global {
+  body.theme-dark {
+    --entity-header-border: var(--color-xdark);
+    --entity-header-title-color: var(--color-xwhite-off);
+  }
+  body.theme-light {
+    --entity-header-border: var(--color-stroke-light);
+    --entity-header-title-color: var(--color-xdark);
+  }
+}
+
+.entityHeader {
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--entity-header-border);
+  padding: 18px var(--page-padding-h);
+
+  &__title {
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 21px;
+    color: var(--entity-header-title-color);
+  }
+
+  &__subtitle {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+  }
+
+  &__central {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+  }
+}
