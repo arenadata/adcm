@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Iterable
+
 from api_v2.host.filters import HostFilter, HostOrderingFilter
 from api_v2.host.serializers import (
     ClusterHostCreateSerializer,
@@ -27,10 +29,12 @@ from api_v2.host.utils import (
 from cm.api import add_host_to_cluster, delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
-from cm.models import Cluster, Host
+from cm.models import Cluster, Host, HostProvider
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
+from rbac.models import User
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -44,6 +48,7 @@ from rest_framework.viewsets import ModelViewSet
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HOST_PERM,
+    VIEW_PROVIDER_PERM,
     DjangoModelPermissionsAudit,
     check_custom_perm,
     get_object_for_user,
@@ -74,15 +79,43 @@ class HostViewSet(PermissionListMixin, ModelViewSet):
         return self.serializer_class
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
         valid = serializer.validated_data
 
-        host = add_new_host_and_map_it(
-            provider=valid.get("provider"), fqdn=valid.get("fqdn"), cluster=valid.get("cluster")
+        request_hostproviders = {
+            provider.pk: provider
+            for provider in HostProvider.objects.filter(
+                pk__in=[request_data["hostprovider_id"] for request_data in valid]
+            )
+        }
+        request_clusters = {
+            cluster.pk: cluster
+            for cluster in Cluster.objects.filter(pk__in=[request_data.get("cluster_id") for request_data in valid])
+        }
+
+        self._check_permissions(
+            user=request.user,
+            permission=VIEW_PROVIDER_PERM,
+            objects=request_hostproviders.values(),
+            err_msg="Current user has no permission to view this hostprovider",
+        )
+        self._check_permissions(
+            user=request.user,
+            permission=VIEW_CLUSTER_PERM,
+            objects=request_clusters.values(),
+            err_msg="Current user has no permission to view this cluster",
         )
 
-        return Response(data=HostSerializer(host).data, status=HTTP_201_CREATED)
+        added_hosts = []
+        for request_data in valid:
+            hostprovider = request_hostproviders[request_data["hostprovider_id"]]
+            cluster = request_clusters.get(request_data.get("cluster_id"))
+            added_hosts.append(
+                add_new_host_and_map_it(provider=hostprovider, fqdn=request_data["fqdn"], cluster=cluster)
+            )
+
+        return Response(data=HostSerializer(instance=added_hosts, many=True).data, status=HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         host = self.get_object()
@@ -130,6 +163,11 @@ class HostViewSet(PermissionListMixin, ModelViewSet):
     @action(methods=["post"], detail=True, url_path="maintenance-mode")
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         return maintenance_mode(request=request, **kwargs)
+
+    @staticmethod
+    def _check_permissions(user: User, permission: str, objects: Iterable, err_msg: str):
+        if not all(user.has_perm(perm=permission, obj=adcm_object) for adcm_object in objects):
+            raise PermissionDenied(err_msg)
 
 
 class HostClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=too-many-ancestors

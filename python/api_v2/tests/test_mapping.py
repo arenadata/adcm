@@ -46,7 +46,7 @@ class TestMapping(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(len(response.json()), 1)
 
     def test_create_mapping_success(self):
         host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_3")

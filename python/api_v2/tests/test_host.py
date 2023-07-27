@@ -63,10 +63,12 @@ class TestHost(BaseAPITestCase):
     def test_create_without_cluster_success(self):
         response: Response = self.client.post(
             path=reverse(viewname="v2:host-list"),
-            data={
-                "provider": self.provider.pk,
-                "name": "new-test-host",
-            },
+            data=[
+                {
+                    "hostprovider_id": self.provider.pk,
+                    "name": "new-test-host",
+                }
+            ],
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -103,9 +105,8 @@ class TestHost(BaseAPITestCase):
     def test_create_with_cluster_success(self):
         response: Response = self.client.post(
             path=reverse(viewname="v2:host-list"),
-            data={"provider": self.provider.pk, "name": "new-test-host", "cluster": self.cluster_1.pk},
+            data=[{"hostprovider_id": self.provider.pk, "name": "new-test-host", "cluster_id": self.cluster_1.pk}],
         )
-
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         host_2 = Host.objects.get(fqdn="new-test-host")
@@ -114,10 +115,12 @@ class TestHost(BaseAPITestCase):
     def test_fqdn_validation_create_failed(self):
         response: Response = self.client.post(
             path=reverse(viewname="v2:host-list"),
-            data={
-                "provider": self.provider.pk,
-                "name": "new_test_host",
-            },
+            data=[
+                {
+                    "hostprovider_id": self.provider.pk,
+                    "name": "new_test_host",
+                }
+            ],
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)

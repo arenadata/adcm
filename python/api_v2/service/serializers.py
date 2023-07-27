@@ -17,9 +17,12 @@ from cm.models import ClusterObject, MaintenanceMode
 from cm.status_api import get_obj_status
 from rest_framework.serializers import (
     ChoiceField,
+    IntegerField,
     ModelSerializer,
     SerializerMethodField,
 )
+
+from adcm.serializers import EmptySerializer
 
 
 class ServiceRetrieveSerializer(ModelSerializer):
@@ -59,10 +62,8 @@ class ServiceRelatedSerializer(ModelSerializer):
         fields = ["id", "name", "display_name"]
 
 
-class ServiceCreateSerializer(ModelSerializer):
-    class Meta:
-        model = ClusterObject
-        fields = ["prototype"]
+class ServiceCreateSerializer(EmptySerializer):
+    prototype_id = IntegerField()
 
 
 class ServiceMaintenanceModeSerializer(ModelSerializer):
