@@ -8,7 +8,6 @@ export const usePageRouteInfo = () => {
   const breadcrumbs = useBreadcrumbs(currentRoute);
 
   return {
-    currentRoute,
     pageTitle,
     breadcrumbs,
   };

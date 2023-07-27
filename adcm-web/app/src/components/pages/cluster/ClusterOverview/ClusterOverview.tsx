@@ -4,8 +4,8 @@ import React, { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 
 const ClusterOverview: React.FC = () => {
-  const { cluster } = useStore((s) => s.adcm.cluster);
   const dispatch = useDispatch();
+  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
 
   useEffect(() => {
     if (cluster) {

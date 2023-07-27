@@ -12,6 +12,7 @@ import hostProvidersTableSlice from '@store/adcm/hostProviders/hostProvidersTabl
 import createHostProviderDialogSlice from '@store/adcm/hostProviders/dialogs/createHostProviderDialogSlice';
 import hostsTableSlice from '@store/adcm/hosts/hostsTableSlice.tsx';
 import hostsSlice from '@store/adcm/hosts/hostsSlice.tsx';
+import serviceSlice from '@store/adcm/services/serviceSlice';
 
 import { apiMiddleware } from './middlewares/apiMiddleware';
 import clusterSlice from './adcm/clusters/clusterSlice';
@@ -32,6 +33,7 @@ const rootReducer = combineReducers({
     createHostProviderDialog: createHostProviderDialogSlice,
     hosts: hostsSlice,
     hostsTable: hostsTableSlice,
+    service: serviceSlice,
     // createHostDialog: createHostDialogSlice,
   }),
 });

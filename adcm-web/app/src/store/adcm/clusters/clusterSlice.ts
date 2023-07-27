@@ -6,12 +6,12 @@ import { AdcmCluster } from '@models/adcm';
 import { createSlice } from '@reduxjs/toolkit';
 
 interface AdcmClusterState {
-  cluster: AdcmCluster | undefined;
+  cluster?: AdcmCluster;
   isLoading: boolean;
 }
 
 const loadClusterFromBackend = createAsyncThunk(
-  'adcm/clusters/loadClusterFromBackend',
+  'adcm/cluster/loadClusterFromBackend',
   async (arg: number, thunkAPI) => {
     try {
       const cluster = await AdcmClustersApi.getCluster(arg);
@@ -22,7 +22,7 @@ const loadClusterFromBackend = createAsyncThunk(
   },
 );
 
-const getCluster = createAsyncThunk('adcm/clusters/getCluster', async (arg: number, thunkAPI) => {
+const getCluster = createAsyncThunk('adcm/cluster/getCluster', async (arg: number, thunkAPI) => {
   thunkAPI.dispatch(setIsLoading(true));
   const startDate = new Date();
 

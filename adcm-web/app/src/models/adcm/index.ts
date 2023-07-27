@@ -3,6 +3,8 @@ export * from './host';
 export * from './prototype';
 export * from './concern';
 export * from './hostProvider';
+export * from './service';
+export * from './maintenanceMode';
 
 export interface Batch<T> {
   results: T[];

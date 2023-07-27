@@ -4,8 +4,8 @@ export const orElseGet = <T, R>(
   data: T | undefined | null,
   callback?: GetCallback<T, R> | null,
   placeholder: R = '-' as R,
-): R | T => {
+): R => {
   if (Number.isNaN(data) || typeof data === 'undefined' || data === null) return placeholder as R;
 
-  return callback ? callback(data) : data;
+  return (callback ? callback(data) : data) as R;
 };

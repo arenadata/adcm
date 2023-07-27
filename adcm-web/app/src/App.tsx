@@ -28,6 +28,13 @@ import {
   ClusterOverview,
   ClusterServices,
 } from '@pages/cluster';
+import ClusterServiceLayout from '@layouts/ClusterServiceLayout/ClusterServiceLayout';
+import {
+  ServiceComponents,
+  ServiceConfigurationGroups,
+  ServiceInfo,
+  ServicePrimaryConfiguration,
+} from '@pages/cluster/service';
 
 function App() {
   return (
@@ -53,7 +60,25 @@ function App() {
                 <Route path="/clusters/:clusterId" element={<ClusterPageLayout />}>
                   <Route index element={<Navigate to="overview" replace />} />
                   <Route path="/clusters/:clusterId/overview" element={<ClusterOverview />} />
-                  <Route path="/clusters/:clusterId/services" element={<ClusterServices />} />
+                  <Route path="/clusters/:clusterId/services">
+                    <Route index element={<ClusterServices />} />
+                    <Route path="/clusters/:clusterId/services/:serviceId" element={<ClusterServiceLayout />}>
+                      <Route index element={<Navigate to="primary-configuration" replace />} />
+                      <Route
+                        path="/clusters/:clusterId/services/:serviceId/primary-configuration"
+                        element={<ServicePrimaryConfiguration />}
+                      />
+                      <Route
+                        path="/clusters/:clusterId/services/:serviceId/configuration-groups"
+                        element={<ServiceConfigurationGroups />}
+                      />
+                      <Route
+                        path="/clusters/:clusterId/services/:serviceId/components"
+                        element={<ServiceComponents />}
+                      />
+                      <Route path="/clusters/:clusterId/services/:serviceId/info" element={<ServiceInfo />} />
+                    </Route>
+                  </Route>
                   <Route path="/clusters/:clusterId/hosts" element={<ClusterHosts />} />
                   <Route path="/clusters/:clusterId/mapping" element={<ClusterMapping />} />
                   <Route path="/clusters/:clusterId/configuration" element={<ClusterConfiguration />} />
