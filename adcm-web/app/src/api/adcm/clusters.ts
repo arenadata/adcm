@@ -1,5 +1,5 @@
 import { httpClient } from '@api/httpClient';
-import { PaginationParams } from '@models/table';
+import { PaginationParams, SortParams } from '@models/table';
 import {
   Batch,
   AdcmClustersFilter,
@@ -8,16 +8,15 @@ import {
   UpdateAdcmClusterPayload,
 } from '@models/adcm';
 import qs from 'qs';
+import { prepareQueryParams } from '@utils/apiUtils';
 
 export class AdcmClustersApi {
-  public static async getClusters(filter: AdcmClustersFilter, paginationParams: PaginationParams) {
-    const queryParams = {
-      name: filter.clusterName || undefined,
-      status: filter.clusterStatus || undefined,
-      prototypeName: filter.prototypeName || undefined,
-      offset: paginationParams.pageNumber * paginationParams.perPage,
-      limit: paginationParams.perPage,
-    };
+  public static async getClusters(
+    filter: AdcmClustersFilter,
+    sortParams?: SortParams,
+    paginationParams?: PaginationParams,
+  ) {
+    const queryParams = prepareQueryParams(filter, sortParams, paginationParams);
 
     const query = qs.stringify(queryParams);
     const response = await httpClient.get<Batch<AdcmCluster>>(`/api/v2/clusters/?${query}`);

@@ -4,20 +4,15 @@ import { httpClient } from '@api/httpClient';
 import { AdcmHostProvider, AdcmHostProviderFilter } from '@models/adcm/hostProvider';
 import { PaginationParams, SortParams } from '@models/table';
 import { AdcmHostProviderPayload } from '@models/adcm';
+import { prepareQueryParams } from '@utils/apiUtils';
 
 export class AdcmHostProvidersApi {
   public static async getHostProviders(
     filter: AdcmHostProviderFilter,
-    sortParams: SortParams,
-    paginationParams: PaginationParams,
+    sortParams?: SortParams,
+    paginationParams?: PaginationParams,
   ) {
-    const queryParams = {
-      hostproviderName: filter.hostproviderName || undefined,
-      prototype: filter.prototype || undefined,
-      offset: paginationParams.pageNumber * paginationParams.perPage,
-      limit: paginationParams.perPage,
-      ordering: sortParams.sortBy,
-    };
+    const queryParams = prepareQueryParams(filter, sortParams, paginationParams);
 
     const query = qs.stringify(queryParams);
     const response = await httpClient.get<Batch<AdcmHostProvider>>(`/api/v2/hostproviders/?${query}`);

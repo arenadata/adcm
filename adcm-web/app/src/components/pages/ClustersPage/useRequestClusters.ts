@@ -6,7 +6,9 @@ import { defaultDebounceDelay } from '@constants';
 
 export const useRequestClusters = () => {
   const dispatch = useDispatch();
-  const { filter, paginationParams } = useStore((s) => s.adcm.clustersTable);
+  const filter = useStore((s) => s.adcm.clustersTable.filter);
+  const sortParams = useStore((s) => s.adcm.clustersTable.sortParams);
+  const paginationParams = useStore((s) => s.adcm.clustersTable.paginationParams);
 
   useEffect(() => {
     dispatch(loadRelatedData());
@@ -25,5 +27,5 @@ export const useRequestClusters = () => {
     dispatch(refreshClusters());
   }, defaultDebounceDelay);
 
-  useRequestTimer(debounceGetClusters, debounceRefreshClusters, 0, [filter, paginationParams]);
+  useRequestTimer(debounceGetClusters, debounceRefreshClusters, 0, [filter, sortParams, paginationParams]);
 };

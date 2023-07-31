@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useStore, useDispatch } from '@hooks';
-import { setFilter, resetFilter } from '@store/adcm/clusters/clustersTableSlice';
-import { Button, SearchInput, Select } from '@uikit';
+import { setFilter, resetFilter, resetSortParams } from '@store/adcm/clusters/clustersTableSlice';
+import { Button, LabeledField, SearchInput, Select } from '@uikit';
 import TableFilters from '@commonComponents/Table/TableFilters/TableFilters';
 import { AdcmClusterStatus } from '@models/adcm';
 import { getOptionsFromEnum, getOptionsFromArray } from '@uikit/Select/Select.utils';
@@ -26,6 +26,7 @@ const ClustersTableFilters = () => {
 
   const handleResetFiltersClick = () => {
     dispatch(resetFilter());
+    dispatch(resetSortParams());
   };
 
   const handleStatusChange = (value: AdcmClusterStatus | null) => {
@@ -44,22 +45,26 @@ const ClustersTableFilters = () => {
         variant="primary"
         onChange={handleClusterNameChange}
       />
-      <Select
-        placeholder="Select cluster status"
-        value={filter.clusterStatus ?? null}
-        onChange={handleStatusChange}
-        options={statusOptions}
-        noneLabel="All"
-      />
-      <Select
-        isSearchable={true}
-        maxHeight={200}
-        placeholder="Select product"
-        value={filter.prototypeName ?? null}
-        onChange={handleProductChange}
-        options={prototypeNamesOptions}
-        noneLabel="All"
-      />
+      <LabeledField label="Status" direction="row">
+        <Select
+          placeholder="All"
+          value={filter.clusterStatus ?? null}
+          onChange={handleStatusChange}
+          options={statusOptions}
+          noneLabel="All"
+        />
+      </LabeledField>
+      <LabeledField label="Product" direction="row">
+        <Select
+          isSearchable={true}
+          maxHeight={200}
+          placeholder="All"
+          value={filter.prototypeName ?? null}
+          onChange={handleProductChange}
+          options={prototypeNamesOptions}
+          noneLabel="All"
+        />
+      </LabeledField>
       <Button variant="secondary" iconLeft="g1-return" onClick={handleResetFiltersClick} />
     </TableFilters>
   );

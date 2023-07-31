@@ -30,6 +30,7 @@
           "adcm",
           "api",
           "arenadata",
+          "authed",
           "axios",
           "cancelable",
           "cancelled",

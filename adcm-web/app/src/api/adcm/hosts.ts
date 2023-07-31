@@ -3,16 +3,11 @@ import type { Batch } from '@models/adcm';
 import { PaginationParams, SortParams } from '@models/table';
 import { httpClient } from '@api/httpClient';
 import { AdcmHost, AdcmHostsFilter } from '@models/adcm/host';
+import { prepareQueryParams } from '@utils/apiUtils';
 
 export class AdcmHostsApi {
   public static async getHosts(filter: AdcmHostsFilter, sortParams: SortParams, paginationParams: PaginationParams) {
-    const queryParams = {
-      hostName: filter.hostName || undefined,
-      hostProvider: filter.hostProvider || undefined,
-      clusterName: filter.clusterName || undefined,
-      offset: paginationParams.pageNumber * paginationParams.perPage,
-      limit: paginationParams.perPage,
-    };
+    const queryParams = prepareQueryParams(filter, sortParams, paginationParams);
 
     const query = qs.stringify(queryParams);
     const response = await httpClient.get<Batch<AdcmHost>>(`/api/v2/hosts/?${query}`);

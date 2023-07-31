@@ -58,7 +58,15 @@ const clustersTableSlice = createListSlice({
   },
 });
 
-export const { setPaginationParams, setRequestFrequency, cleanupList, setFilter, resetFilter, cleanupRelatedData } =
-  clustersTableSlice.actions;
+export const {
+  setPaginationParams,
+  setRequestFrequency,
+  cleanupList,
+  setFilter,
+  resetFilter,
+  cleanupRelatedData,
+  setSortParams,
+  resetSortParams,
+} = clustersTableSlice.actions;
 export { loadRelatedData };
 export default clustersTableSlice.reducer;

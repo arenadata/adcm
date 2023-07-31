@@ -5,7 +5,7 @@ export const columns: TableColumn[] = [
   {
     label: 'Name',
     name: 'name',
-    isSortable: false,
+    isSortable: true,
   },
   {
     label: 'State',
@@ -14,8 +14,8 @@ export const columns: TableColumn[] = [
   },
   {
     label: 'Product',
-    name: 'product',
-    isSortable: false,
+    name: 'prototype',
+    isSortable: true,
   },
   {
     label: 'Version',

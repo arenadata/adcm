@@ -9,9 +9,9 @@ type LoginActionPayload = {
 };
 
 export enum AUTH_STATE {
-  CHECKING = -1,
-  NOT_AUTH = 0,
-  AUTHED = 1,
+  CHECKING = 'checking',
+  NOT_AUTH = 'not_auth',
+  AUTHED = 'authed',
 }
 export type AuthState = AUTH_STATE.NOT_AUTH | AUTH_STATE.CHECKING | AUTH_STATE.AUTHED;
 

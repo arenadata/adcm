@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useStore, useDispatch } from '@hooks';
-import { setFilter, resetFilter } from '@store/adcm/bundles/bundlesTableSlice';
+import { setFilter, resetFilter, resetSortParams } from '@store/adcm/bundles/bundlesTableSlice';
 import { Button, LabeledField, SearchInput, Select } from '@uikit';
 import TableFilters from '@commonComponents/Table/TableFilters/TableFilters';
 
@@ -21,8 +21,9 @@ const BundlesTableFilters = () => {
     dispatch(setFilter({ displayName: event.target.value }));
   };
 
-  const handleResetFiltersClick = () => {
+  const handleResetClick = () => {
     dispatch(resetFilter());
+    dispatch(resetSortParams());
   };
   const handleProductChange = (value: string | null) => {
     dispatch(setFilter({ product: value ?? undefined }));
@@ -47,7 +48,7 @@ const BundlesTableFilters = () => {
           noneLabel="All"
         />
       </LabeledField>
-      <Button variant="secondary" iconLeft="g1-return" onClick={handleResetFiltersClick} />
+      <Button variant="secondary" iconLeft="g1-return" onClick={handleResetClick} />
     </TableFilters>
   );
 };

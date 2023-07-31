@@ -4,7 +4,8 @@ import { useStore } from '@hooks';
 import { AUTH_STATE } from '@store/userSlice';
 
 const PrivateResource: React.FC<React.PropsWithChildren> = ({ children }) => {
-  const { needCheckSession, authState } = useStore((s) => s.user);
+  const needCheckSession = useStore((s) => s.user.needCheckSession);
+  const authState = useStore((s) => s.user.authState);
   const location = useLocation();
 
   if (needCheckSession) {

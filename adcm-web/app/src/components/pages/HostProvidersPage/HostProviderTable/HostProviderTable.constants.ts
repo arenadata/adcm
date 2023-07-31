@@ -9,12 +9,10 @@ export const columns: TableColumn[] = [
   {
     label: 'Type',
     name: 'type',
-    isSortable: true,
   },
   {
     label: 'Version',
     name: 'version',
-    isSortable: true,
   },
   {
     label: 'State',
@@ -24,17 +22,14 @@ export const columns: TableColumn[] = [
   {
     label: 'Description',
     name: 'description',
-    isSortable: false,
   },
   {
     label: 'Concerns',
     name: 'concerns',
-    isSortable: false,
   },
   {
     label: 'Actions',
     name: 'actions',
-    isSortable: false,
     headerAlign: 'center',
     width: '100px',
   },

@@ -14,27 +14,23 @@ export const columns: TableColumn[] = [
   {
     label: 'Version',
     name: 'version',
-    isSortable: false,
   },
   {
     label: 'Edition',
     name: 'edition',
-    isSortable: false,
   },
   {
     label: 'Date upload',
     name: 'uploadTime',
-    isSortable: false,
+    isSortable: true,
   },
   {
     label: 'Signature',
     name: 'signatureStatus',
-    isSortable: false,
   },
   {
     label: 'Actions',
     name: 'actions',
-    isSortable: false,
     headerAlign: 'center',
     width: '100px',
   },
