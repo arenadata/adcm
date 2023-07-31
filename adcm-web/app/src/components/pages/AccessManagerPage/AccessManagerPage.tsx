@@ -1,9 +1,12 @@
 import React from 'react';
+import AccessManagerHeader from './AccessManagerHeader';
+import { Outlet } from 'react-router-dom';
 
 const AccessManagerPage: React.FC = () => {
   return (
     <div>
-      <h1>Access Manager page</h1>
+      <AccessManagerHeader />
+      <Outlet />
     </div>
   );
 };

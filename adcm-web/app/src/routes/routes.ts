@@ -146,6 +146,54 @@ const routes: RoutesConfigs = {
       },
     ],
   },
+  '/access-manager/users': {
+    pageTitle: 'Users',
+    breadcrumbs: [
+      {
+        href: '/access-manager',
+        label: 'Access Manager',
+      },
+      {
+        label: 'Users',
+      },
+    ],
+  },
+  '/access-manager/groups': {
+    pageTitle: 'Groups',
+    breadcrumbs: [
+      {
+        href: '/access-manager',
+        label: 'Access Manager',
+      },
+      {
+        label: 'Groups',
+      },
+    ],
+  },
+  '/access-manager/roles': {
+    pageTitle: 'Roles',
+    breadcrumbs: [
+      {
+        href: '/access-manager',
+        label: 'Access Manager',
+      },
+      {
+        label: 'Roles',
+      },
+    ],
+  },
+  '/access-manager/policy': {
+    pageTitle: 'Policy',
+    breadcrumbs: [
+      {
+        href: '/access-manager',
+        label: 'Access Manager',
+      },
+      {
+        label: 'Policy',
+      },
+    ],
+  },
 
   // Audit
   '/audit': {

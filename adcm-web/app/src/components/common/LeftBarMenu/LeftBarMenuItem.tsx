@@ -4,7 +4,7 @@ import { To, useLocation } from 'react-router-dom';
 import { IconsNames } from '@uikit/Icon/sprite';
 import Icon from '@uikit/Icon/Icon';
 import LinkOrEmpty from '@uikit/LinkOrEmpty/LinkOrEmpty';
-import { isCurrentPathname } from '@uikit/utils/urlUtils';
+import { isCurrentParentPage } from '@uikit/utils/urlUtils';
 import ConditionalWrapper from '@uikit/ConditionalWrapper/ConditionalWrapper';
 import Tooltip from '@uikit/Tooltip/Tooltip';
 
@@ -26,7 +26,7 @@ const LeftBarMenuItem: React.FC<LeftBarMenuItemProps> = ({
   ...props
 }) => {
   const { pathname } = useLocation();
-  const isActive = to ? isCurrentPathname(pathname, to) : false;
+  const isActive = to ? isCurrentParentPage(pathname, to) : false;
   return (
     <li className={cn(s.leftBarMenuItem, className, { 'is-active': isActive })} {...props}>
       <LinkOrEmpty to={to}>
