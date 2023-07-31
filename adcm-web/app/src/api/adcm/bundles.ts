@@ -3,6 +3,7 @@ import type { Batch } from '@models/adcm';
 import { PaginationParams, SortParams } from '@models/table';
 import { httpClient } from '@api/httpClient';
 import { AdcmBundle, AdcmBundlesFilter } from '@models/adcm/bundle';
+import { prepareQueryParams } from '@utils/apiUtils';
 
 export class AdcmBundlesApi {
   public static async getBundles(
@@ -10,12 +11,7 @@ export class AdcmBundlesApi {
     sortParams: SortParams,
     paginationParams: PaginationParams,
   ) {
-    const queryParams = {
-      product: filter.product || undefined,
-      displayName: filter.displayName || undefined,
-      offset: paginationParams.pageNumber * paginationParams.perPage,
-      limit: paginationParams.perPage,
-    };
+    const queryParams = prepareQueryParams(filter, sortParams, paginationParams);
 
     const query = qs.stringify(queryParams);
     const response = await httpClient.get<Batch<AdcmBundle>>(`/api/v2/bundles/?${query}`);

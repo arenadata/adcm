@@ -5,17 +5,25 @@ import { useDispatch, useStore } from '@hooks';
 import { columns, clusterStatusesMap } from './ClustersTable.constants';
 import { setDeletableId } from '@store/adcm/clusters/clustersSlice';
 import Concern from '@commonComponents/Concern/Concern';
+import { setSortParams } from '@store/adcm/clusters/clustersTableSlice';
+import { SortParams } from '@uikit/types/list.types';
 
 const ClustersTable = () => {
   const dispatch = useDispatch();
-  const { clusters } = useStore((s) => s.adcm.clusters);
+  const clusters = useStore((s) => s.adcm.clusters.clusters);
+  const isLoading = useStore((s) => s.adcm.clusters.isLoading);
+  const sortParams = useStore((s) => s.adcm.clustersTable.sortParams);
 
   const getHandleDeleteClick = (clusterId: number) => () => {
     dispatch(setDeletableId(clusterId));
   };
 
+  const handleSorting = (sortParams: SortParams) => {
+    dispatch(setSortParams(sortParams));
+  };
+
   return (
-    <Table columns={columns}>
+    <Table isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
       {clusters.map((cluster) => {
         return (
           <TableRow key={cluster.id}>

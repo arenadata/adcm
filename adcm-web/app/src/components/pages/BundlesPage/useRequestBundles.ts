@@ -9,6 +9,7 @@ export const useRequestBundles = () => {
   const filter = useStore(({ adcm }) => adcm.bundlesTable.filter);
   const paginationParams = useStore(({ adcm }) => adcm.bundlesTable.paginationParams);
   const requestFrequency = useStore(({ adcm }) => adcm.bundlesTable.requestFrequency);
+  const sortParams = useStore(({ adcm }) => adcm.bundlesTable.sortParams);
 
   useEffect(() => {
     dispatch(loadRelatedData());
@@ -27,5 +28,5 @@ export const useRequestBundles = () => {
     dispatch(refreshBundles());
   }, defaultDebounceDelay);
 
-  useRequestTimer(debounceGetBundles, debounceRefreshBundles, requestFrequency, [filter, paginationParams]);
+  useRequestTimer(debounceGetBundles, debounceRefreshBundles, requestFrequency, [filter, sortParams, paginationParams]);
 };

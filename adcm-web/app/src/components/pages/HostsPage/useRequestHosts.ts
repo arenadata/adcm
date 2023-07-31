@@ -9,6 +9,7 @@ export const useRequestHosts = () => {
   const filter = useStore(({ adcm }) => adcm.hostsTable.filter);
   const paginationParams = useStore(({ adcm }) => adcm.hostsTable.paginationParams);
   const requestFrequency = useStore(({ adcm }) => adcm.hostsTable.requestFrequency);
+  const sortParams = useStore(({ adcm }) => adcm.hostsTable.sortParams);
 
   useEffect(() => {
     dispatch(loadRelatedData());
@@ -27,5 +28,5 @@ export const useRequestHosts = () => {
     dispatch(refreshHosts());
   }, defaultDebounceDelay);
 
-  useRequestTimer(debounceGetHosts, debounceRefreshHosts, requestFrequency, [filter, paginationParams]);
+  useRequestTimer(debounceGetHosts, debounceRefreshHosts, requestFrequency, [filter, sortParams, paginationParams]);
 };

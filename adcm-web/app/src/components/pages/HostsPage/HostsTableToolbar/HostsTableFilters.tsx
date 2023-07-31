@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { useStore, useDispatch } from '@hooks';
 import { Button, LabeledField, SearchInput, Select } from '@uikit';
 import TableFilters from '@commonComponents/Table/TableFilters/TableFilters';
-import { resetFilter, setFilter } from '@store/adcm/hosts/hostsTableSlice';
+import { resetFilter, resetSortParams, setFilter } from '@store/adcm/hosts/hostsTableSlice';
+import { getStatusLabel } from '@utils/humanizationUtils';
 
 const HostsTableFilters = () => {
   const dispatch = useDispatch();
@@ -14,19 +15,20 @@ const HostsTableFilters = () => {
   const clusterOptions = useMemo(() => {
     return clusters.map(({ name }) => ({
       value: name,
-      label: name,
+      label: getStatusLabel(name),
     }));
   }, [clusters]);
 
   const hostProviderOptions = useMemo(() => {
     return hostProviders.map(({ name }) => ({
       value: name,
-      label: name,
+      label: getStatusLabel(name),
     }));
   }, [hostProviders]);
 
-  const handleResetFiltersClick = () => {
+  const handleResetClick = () => {
     dispatch(resetFilter());
+    dispatch(resetSortParams());
   };
 
   const handleHostNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,7 +71,7 @@ const HostsTableFilters = () => {
           noneLabel="All"
         />
       </LabeledField>
-      <Button variant="secondary" iconLeft="g1-return" onClick={handleResetFiltersClick} />
+      <Button variant="secondary" iconLeft="g1-return" onClick={handleResetClick} />
     </TableFilters>
   );
 };

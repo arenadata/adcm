@@ -5,12 +5,16 @@ import { columns, hostStatusesMap } from '@pages/HostsPage/HostsTable/HostsTable
 import { useDispatch, useStore } from '@hooks';
 import { AdcmHost } from '@models/adcm/host';
 import { setDeletableId } from '@store/adcm/hosts/hostsSlice';
+import { SortParams } from '@uikit/types/list.types';
+import { setSortParams } from '@store/adcm/hosts/hostsTableSlice';
+import { orElseGet } from '@utils/checkUtils';
 
 const HostsTable: React.FC = () => {
   const dispatch = useDispatch();
 
   const hosts = useStore(({ adcm }) => adcm.hosts.hosts);
   const isLoading = useStore(({ adcm }) => adcm.hosts.isLoading);
+  const sortParams = useStore((s) => s.adcm.hostsTable.sortParams);
 
   const dummyHandler = () => () => {
     console.info('Add proper action handlers');
@@ -21,15 +25,19 @@ const HostsTable: React.FC = () => {
     dispatch(setDeletableId(hostId));
   };
 
+  const handleSorting = (sortParams: SortParams) => {
+    dispatch(setSortParams(sortParams));
+  };
+
   return (
-    <Table isLoading={isLoading} columns={columns}>
+    <Table isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
       {hosts.map((host: AdcmHost) => {
         return (
           <TableRow key={host.id}>
             <StatusableCell status={hostStatusesMap['done']}>{host.name}</StatusableCell>
             <TableCell>{host.state}</TableCell>
-            <TableCell>{host.provider?.name}</TableCell>
-            <TableCell>{host.cluster?.name}</TableCell>
+            <TableCell>{host.provider.name}</TableCell>
+            <TableCell>{orElseGet(host.cluster?.name)}</TableCell>
             <TableCell>{'-'}</TableCell>
             <TableCell hasIconOnly align="center">
               <IconButton icon="g1-actions" size={32} onClick={dummyHandler()} title="Actions" />

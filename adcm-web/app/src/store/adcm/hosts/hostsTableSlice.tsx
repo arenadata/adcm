@@ -34,10 +34,8 @@ const createInitialState = (): AdcmHostsTableState => ({
 const loadClusters = createAsyncThunk('adcm/hostsTable/loadClusters', async (arg, thunkAPI) => {
   try {
     const emptyFilter = {};
-    const defaultPaginationParams = { perPage: 999, pageNumber: 0 };
-
-    const clusters = await AdcmClustersApi.getClusters(emptyFilter, defaultPaginationParams);
-    return clusters;
+    const clusters = await AdcmClustersApi.getClusters(emptyFilter);
+    return clusters.results;
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
@@ -47,14 +45,9 @@ const loadHostProviders = createAsyncThunk('adcm/hostsTable/HostProviders', asyn
   try {
     const emptyFilter = {};
     const defaultSortParams: SortParams = { sortBy: 'name', sortDirection: 'asc' };
-    const defaultPaginationParams = { perPage: 999, pageNumber: 0 };
 
-    const hostProviders = await AdcmHostProvidersApi.getHostProviders(
-      emptyFilter,
-      defaultSortParams,
-      defaultPaginationParams,
-    );
-    return hostProviders;
+    const hostProviders = await AdcmHostProvidersApi.getHostProviders(emptyFilter, defaultSortParams);
+    return hostProviders.results;
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
@@ -75,15 +68,23 @@ const hostsTableSlice = createListSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(loadClusters.fulfilled, (state, action) => {
-      state.relatedData.clusters = action.payload.results;
+      state.relatedData.clusters = action.payload;
     });
     builder.addCase(loadHostProviders.fulfilled, (state, action) => {
-      state.relatedData.hostProviders = action.payload.results;
+      state.relatedData.hostProviders = action.payload;
     });
   },
 });
 
-export const { setPaginationParams, setRequestFrequency, cleanupList, cleanupRelatedData, setFilter, resetFilter } =
-  hostsTableSlice.actions;
+export const {
+  setPaginationParams,
+  setRequestFrequency,
+  cleanupList,
+  cleanupRelatedData,
+  setFilter,
+  resetFilter,
+  setSortParams,
+  resetSortParams,
+} = hostsTableSlice.actions;
 export { loadRelatedData };
 export default hostsTableSlice.reducer;

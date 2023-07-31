@@ -57,7 +57,15 @@ const bundlesTableSlice = createListSlice({
   },
 });
 
-export const { setPaginationParams, setRequestFrequency, cleanupList, cleanupRelatedData, setFilter, resetFilter } =
-  bundlesTableSlice.actions;
+export const {
+  setPaginationParams,
+  setRequestFrequency,
+  cleanupList,
+  cleanupRelatedData,
+  setFilter,
+  resetFilter,
+  setSortParams,
+  resetSortParams,
+} = bundlesTableSlice.actions;
 export { loadRelatedData };
 export default bundlesTableSlice.reducer;

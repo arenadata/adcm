@@ -19,12 +19,12 @@ type AdcmClustersState = {
 const loadClustersFromBackend = createAsyncThunk('adcm/clusters/loadClustersFromBackend', async (arg, thunkAPI) => {
   const {
     adcm: {
-      clustersTable: { filter, paginationParams },
+      clustersTable: { filter, paginationParams, sortParams },
     },
   } = thunkAPI.getState();
 
   try {
-    const batch = await AdcmClustersApi.getClusters(filter, paginationParams);
+    const batch = await AdcmClustersApi.getClusters(filter, sortParams, paginationParams);
     return batch;
   } catch (error) {
     return thunkAPI.rejectWithValue(error);

@@ -9,6 +9,8 @@ import { AdcmBundle } from '@models/adcm/bundle';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
 import { getStatusLabel } from '@utils/humanizationUtils';
 import { setDeletableId, setSelectedItemsIds as setSelectedBundlesIds } from '@store/adcm/bundles/bundlesSlice';
+import { SortParams } from '@uikit/types/list.types';
+import { setSortParams } from '@store/adcm/bundles/bundlesTableSlice';
 
 const getBundleUniqKey = ({ id }: AdcmBundle) => id;
 
@@ -18,6 +20,7 @@ const BundlesTable: React.FC = () => {
   const bundles = useStore(({ adcm }) => adcm.bundles.bundles);
   const isLoading = useStore(({ adcm }) => adcm.bundles.isLoading);
   const selectedItemsIds = useStore(({ adcm }) => adcm.bundles.selectedItemsIds);
+  const sortParams = useStore((s) => s.adcm.bundlesTable.sortParams);
 
   const setSelectedItemsIds = useCallback<Dispatch<SetStateAction<number[]>>>(
     (arg) => {
@@ -39,11 +42,17 @@ const BundlesTable: React.FC = () => {
     dispatch(setDeletableId(bundleId));
   };
 
+  const handleSorting = (sortParams: SortParams) => {
+    dispatch(setSortParams(sortParams));
+  };
+
   return (
     <Table
       isLoading={isLoading}
       columns={columns}
       variant="tertiary"
+      sortParams={sortParams}
+      onSorting={handleSorting}
       isAllSelected={isAllItemsSelected}
       toggleSelectedAll={toggleSelectedAllItems}
     >

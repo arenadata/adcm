@@ -5,8 +5,8 @@ import { Pagination, PaginationData } from '@uikit';
 const ClustersTableFooter = () => {
   const dispatch = useDispatch();
 
-  const { totalCount } = useStore((s) => s.adcm.clusters);
-  const { paginationParams } = useStore((s) => s.adcm.clustersTable);
+  const totalCount = useStore((s) => s.adcm.clusters.totalCount);
+  const paginationParams = useStore((s) => s.adcm.clustersTable.paginationParams);
 
   const handlePaginationChange = (params: PaginationData) => {
     dispatch(setPaginationParams(params));
