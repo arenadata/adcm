@@ -35,6 +35,10 @@ import {
   ServiceInfo,
   ServicePrimaryConfiguration,
 } from '@pages/cluster/service';
+import AccessManagerUsersPage from '@pages/AccessManagerPage/AccessManagerUsersPage/AccessManagerUsersPage';
+import AccessManagerGroupsPage from '@pages/AccessManagerPage/AccessManagerGroupsPage copy/AccessManagerGroupsPage';
+import AccessManagerRolesPage from '@pages/AccessManagerPage/AccessManagerRolesPage copy/AccessManagerRolesPage';
+import AccessManagerPolicyPage from '@pages/AccessManagerPage/AccessManagerPolicyPage copy/AccessManagerPolicyPage';
 
 function App() {
   return (
@@ -89,7 +93,13 @@ function App() {
               <Route path="/hostproviders" element={<HostProvidersPage />} />
               <Route path="/hosts" element={<HostsPage />} />
               <Route path="/jobs" element={<JobsPage />} />
-              <Route path="/access-manager" element={<AccessManagerPage />} />
+              <Route path="/access-manager" element={<AccessManagerPage />}>
+                <Route index element={<Navigate to="/access-manager/users" replace />} />
+                <Route path="/access-manager/users" element={<AccessManagerUsersPage />} />
+                <Route path="/access-manager/groups" element={<AccessManagerGroupsPage />} />
+                <Route path="/access-manager/roles" element={<AccessManagerRolesPage />} />
+                <Route path="/access-manager/policy" element={<AccessManagerPolicyPage />} />
+              </Route>
               <Route path="/audit" element={<AuditPageLayout />}>
                 <Route index element={<Navigate to="/audit/operations" replace />} />
                 <Route path="/audit/operations" element={<AuditOperationsPage />} />

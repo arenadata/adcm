@@ -1,5 +1,6 @@
 import { matchPath, To } from 'react-router-dom';
-export const isCurrentPathname = (pathname: string, to: To, subPattern?: string) => {
+
+export const isCurrentPathname = (pathname: string, to: To | string, subPattern?: string) => {
   if (matchPath(subPattern || '', pathname)) return true;
 
   const toString = typeof to === 'string' ? to : to.pathname || '';
@@ -11,4 +12,15 @@ export const isCurrentPathname = (pathname: string, to: To, subPattern?: string)
 
   // if `to` - is relative link, check with end of pathname
   return pathname.endsWith(toString);
+};
+
+export const isCurrentParentPage = (pathname: string, subPage: To | string) => {
+  const toString = typeof subPage === 'string' ? subPage : subPage.pathname || '';
+  const [, firstPart] = pathname.split('/');
+
+  if (firstPart) {
+    return toString === `/${firstPart}`;
+  }
+
+  return false;
 };
