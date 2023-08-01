@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.models import Action, Cluster, Host, MaintenanceMode
+from cm.models import Action, Cluster, Host, HostProvider, MaintenanceMode
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -19,6 +19,7 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
+    HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
 
@@ -46,7 +47,7 @@ class TestHost(BaseAPITestCase):
             "name": "test_host",
             "state": "created",
             "status": 32,
-            "provider": {"id": 1, "name": "provider", "display_name": "provider"},
+            "hostprovider": {"id": 1, "name": "provider", "display_name": "provider"},
             "concerns": [],
             "is_maintenance_mode_available": False,
             "maintenance_mode": "OFF",
@@ -55,7 +56,7 @@ class TestHost(BaseAPITestCase):
         self.assertEqual(response.data["id"], data["id"])
         self.assertEqual(response.data["name"], data["name"])
         self.assertEqual(response.data["state"], data["state"])
-        self.assertDictEqual(response.data["provider"], data["provider"])
+        self.assertDictEqual(response.data["hostprovider"], data["hostprovider"])
         self.assertEqual(response.data["concerns"], data["concerns"])
         self.assertEqual(response.data["is_maintenance_mode_available"], data["is_maintenance_mode_available"])
         self.assertEqual(response.data["maintenance_mode"], data["maintenance_mode"])
@@ -63,12 +64,10 @@ class TestHost(BaseAPITestCase):
     def test_create_without_cluster_success(self):
         response: Response = self.client.post(
             path=reverse(viewname="v2:host-list"),
-            data=[
-                {
-                    "hostprovider_id": self.provider.pk,
-                    "name": "new-test-host",
-                }
-            ],
+            data={
+                "hostprovider_id": self.provider.pk,
+                "name": "new-test-host",
+            },
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -81,7 +80,7 @@ class TestHost(BaseAPITestCase):
             "name": "new-test-host",
             "state": "created",
             "status": 32,
-            "provider": {"id": 1, "name": "provider", "display_name": "provider"},
+            "hostprovider": {"id": 1, "name": "provider", "display_name": "provider"},
             "concerns": [],
             "is_maintenance_mode_available": False,
             "maintenance_mode": "OFF",
@@ -90,22 +89,23 @@ class TestHost(BaseAPITestCase):
         self.assertEqual(response.data["id"], data["id"])
         self.assertEqual(response.data["name"], data["name"])
         self.assertEqual(response.data["state"], data["state"])
-        self.assertDictEqual(response.data["provider"], data["provider"])
+        self.assertDictEqual(response.data["hostprovider"], data["hostprovider"])
         self.assertEqual(response.data["concerns"], data["concerns"])
         self.assertEqual(response.data["is_maintenance_mode_available"], data["is_maintenance_mode_available"])
         self.assertEqual(response.data["maintenance_mode"], data["maintenance_mode"])
 
     def test_create_failed_wrong_provider(self):
         response: Response = self.client.post(
-            path=reverse(viewname="v2:host-list"), data={"hostprovider_id": self.provider.pk, "name": "woohoo"}
+            path=reverse(viewname="v2:host-list"),
+            data={"hostprovider_id": self.get_non_existent_pk(model=HostProvider), "name": "woohoo"},
         )
 
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_create_with_cluster_success(self):
         response: Response = self.client.post(
             path=reverse(viewname="v2:host-list"),
-            data=[{"hostprovider_id": self.provider.pk, "name": "new-test-host", "cluster_id": self.cluster_1.pk}],
+            data={"hostprovider_id": self.provider.pk, "name": "new-test-host", "cluster_id": self.cluster_1.pk},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -115,12 +115,10 @@ class TestHost(BaseAPITestCase):
     def test_fqdn_validation_create_failed(self):
         response: Response = self.client.post(
             path=reverse(viewname="v2:host-list"),
-            data=[
-                {
-                    "hostprovider_id": self.provider.pk,
-                    "name": "new_test_host",
-                }
-            ],
+            data={
+                "hostprovider_id": self.provider.pk,
+                "name": "new_test_host",
+            },
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -206,7 +204,7 @@ class TestClusterHost(BaseAPITestCase):
         host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_second")
         response: Response = self.client.post(
             path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data={"hosts": [self.host.pk, host_2.pk]},
+            data=[{"host_id": self.host.pk}, {"host_id": host_2.pk}],
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)

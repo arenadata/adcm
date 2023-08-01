@@ -115,7 +115,7 @@ class TestCluster(BaseAPITestCase):
         response: Response = self.client.post(
             path=reverse(viewname="v2:cluster-list"),
             data={
-                "prototype": self.cluster_1.prototype.pk,
+                "prototype_id": self.cluster_1.prototype.pk,
                 "name": "new_test_cluster",
                 "description": "Test cluster description",
             },

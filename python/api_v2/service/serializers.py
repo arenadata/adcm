@@ -47,6 +47,7 @@ class ServiceRetrieveSerializer(ModelSerializer):
             "is_maintenance_mode_available",
             "maintenance_mode",
             "main_info",
+            "multi_state",
         ]
 
     def get_status(self, instance: ClusterObject) -> str:

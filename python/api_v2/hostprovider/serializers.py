@@ -15,7 +15,14 @@ from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from cm.adcm_config.config import get_main_info
 from cm.models import HostProvider
 from cm.upgrade import get_upgrade
-from rest_framework.serializers import CharField, ModelSerializer, SerializerMethodField
+from rest_framework.serializers import (
+    CharField,
+    IntegerField,
+    ModelSerializer,
+    SerializerMethodField,
+)
+
+from adcm.serializers import EmptySerializer
 
 
 class HostProviderSerializer(ModelSerializer):
@@ -51,10 +58,10 @@ class HostProviderSerializer(ModelSerializer):
         return get_main_info(obj=host_provider)
 
 
-class HostProviderCreateSerializer(ModelSerializer):
-    class Meta:
-        model = HostProvider
-        fields = ["prototype", "name", "description"]
+class HostProviderCreateSerializer(EmptySerializer):
+    prototype_id = IntegerField()
+    name = CharField()
+    description = CharField(required=False, allow_blank=True)
 
 
 class HostProviderSerializerForHosts(ModelSerializer):
