@@ -90,7 +90,10 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
         # check permissions
         get_object_for_user(user=request.user, perms=VIEW_ACTION_PERM, klass=Action, pk=kwargs["pk"])
 
-        return super().retrieve(request, *args, **kwargs)
+        action_ = self.get_object()
+        serializer = self.get_serializer_class()(instance=action_, context={"obj": parent_object})
+
+        return Response(data=serializer.data)
 
     @action(methods=["post"], detail=True, url_path="run")
     def run(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
