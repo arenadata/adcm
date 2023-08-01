@@ -10,12 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable
 
 from api_v2.host.filters import HostFilter, HostOrderingFilter
 from api_v2.host.serializers import (
     ClusterHostCreateSerializer,
-    ClusterHostSerializer,
     HostChangeMaintenanceModeSerializer,
     HostCreateSerializer,
     HostSerializer,
@@ -32,9 +30,7 @@ from cm.issue import update_hierarchy_issues, update_issue_after_deleting
 from cm.models import Cluster, Host, HostProvider
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
-from rbac.models import User
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -57,7 +53,9 @@ from adcm.permissions import (
 
 # pylint:disable-next=too-many-ancestors
 class HostViewSet(PermissionListMixin, ModelViewSet):
-    queryset = Host.objects.select_related("provider", "cluster").prefetch_related("concerns").all()
+    queryset = (
+        Host.objects.select_related("provider", "cluster").prefetch_related("concerns", "hostcomponent_set").all()
+    )
     serializer_class = HostSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_HOST_PERM]
@@ -79,43 +77,26 @@ class HostViewSet(PermissionListMixin, ModelViewSet):
         return self.serializer_class
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data, many=True)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        valid = serializer.validated_data
 
-        request_hostproviders = {
-            provider.pk: provider
-            for provider in HostProvider.objects.filter(
-                pk__in=[request_data["hostprovider_id"] for request_data in valid]
-            )
-        }
-        request_clusters = {
-            cluster.pk: cluster
-            for cluster in Cluster.objects.filter(pk__in=[request_data.get("cluster_id") for request_data in valid])
-        }
-
-        self._check_permissions(
+        request_hostprovider = get_object_for_user(
             user=request.user,
-            permission=VIEW_PROVIDER_PERM,
-            objects=request_hostproviders.values(),
-            err_msg="Current user has no permission to view this hostprovider",
+            perms=VIEW_PROVIDER_PERM,
+            klass=HostProvider,
+            id=serializer.validated_data["hostprovider_id"],
         )
-        self._check_permissions(
-            user=request.user,
-            permission=VIEW_CLUSTER_PERM,
-            objects=request_clusters.values(),
-            err_msg="Current user has no permission to view this cluster",
-        )
-
-        added_hosts = []
-        for request_data in valid:
-            hostprovider = request_hostproviders[request_data["hostprovider_id"]]
-            cluster = request_clusters.get(request_data.get("cluster_id"))
-            added_hosts.append(
-                add_new_host_and_map_it(provider=hostprovider, fqdn=request_data["fqdn"], cluster=cluster)
+        request_cluster = None
+        if serializer.validated_data.get("cluster_id"):
+            request_cluster = get_object_for_user(
+                user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=serializer.validated_data["cluster_id"]
             )
 
-        return Response(data=HostSerializer(instance=added_hosts, many=True).data, status=HTTP_201_CREATED)
+        host = add_new_host_and_map_it(
+            provider=request_hostprovider, fqdn=serializer.validated_data["fqdn"], cluster=request_cluster
+        )
+
+        return Response(data=HostSerializer(instance=host).data, status=HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         host = self.get_object()
@@ -164,14 +145,9 @@ class HostViewSet(PermissionListMixin, ModelViewSet):
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         return maintenance_mode(request=request, **kwargs)
 
-    @staticmethod
-    def _check_permissions(user: User, permission: str, objects: Iterable, err_msg: str):
-        if not all(user.has_perm(perm=permission, obj=adcm_object) for adcm_object in objects):
-            raise PermissionDenied(err_msg)
-
 
 class HostClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=too-many-ancestors
-    serializer_class = ClusterHostSerializer
+    serializer_class = HostSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_HOST_PERM]
     filterset_fields = ["provider__name", "state", "fqdn"]
@@ -186,10 +162,14 @@ class HostClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=t
         return self.serializer_class
 
     def get_queryset(self, *args, **kwargs):  # pylint: disable=unused-argument
-        return Host.objects.filter(cluster=self.kwargs["cluster_pk"]).select_related("cluster")
+        return (
+            Host.objects.filter(cluster=self.kwargs["cluster_pk"])
+            .select_related("cluster")
+            .prefetch_related("hostcomponent_set")
+        )
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
 
         cluster = get_object_for_user(
@@ -200,10 +180,11 @@ class HostClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=t
 
         check_custom_perm(request.user, "map_host_to", "cluster", cluster)
 
-        map_list_of_hosts(hosts=serializer.validated_data["hosts"], cluster=cluster)
+        target_hosts = Host.objects.filter(pk__in=[host_data["host_id"] for host_data in serializer.validated_data])
+        map_list_of_hosts(hosts=target_hosts, cluster=cluster)
 
         return Response(
-            data=ClusterHostSerializer(
+            data=HostSerializer(
                 instance=Host.objects.prefetch_related("hostcomponent_set").filter(cluster=cluster),
                 many=True,
             ).data,

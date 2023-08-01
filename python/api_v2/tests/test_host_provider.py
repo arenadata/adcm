@@ -58,7 +58,7 @@ class TestHostProvider(BaseAPITestCase):
         response = self.client.post(
             path=reverse(viewname="v2:hostprovider-list"),
             data={
-                "prototype": self.host_provider_bundle.pk,
+                "prototype_id": self.host_provider_bundle.pk,
                 "name": self.host_provider.name + " new",
                 "description": "newly created host provider",
             },
