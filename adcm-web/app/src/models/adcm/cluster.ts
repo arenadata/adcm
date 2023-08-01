@@ -42,3 +42,31 @@ export interface CreateAdcmClusterPayload {
 export interface UpdateAdcmClusterPayload {
   name: string;
 }
+
+export interface AdcmClusterUpgrade {
+  id: number;
+  name: string;
+  displayName: string;
+  isLicenseAccepted: boolean;
+}
+
+export interface AdcmClusterActionDetails {
+  isAllowToTerminate: boolean;
+  hostComponentMapRules: object[];
+  disclaimer: string;
+  config: {
+    config: object[];
+    attr: object;
+  };
+}
+
+export interface AdcmClusterActionPayload {
+  hostComponentMap: {
+    id: number;
+    hostId: number;
+    componentId: number;
+    serviceId: number;
+  }[];
+  config: unknown;
+  isVerbose: boolean;
+}

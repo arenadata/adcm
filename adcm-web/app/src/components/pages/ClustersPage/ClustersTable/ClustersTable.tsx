@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
+import { AdcmCluster } from '@models/adcm';
 import { Table, TableRow, TableCell, IconButton } from '@uikit';
+import Concern from '@commonComponents/Concern/Concern';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import { useDispatch, useStore } from '@hooks';
 import { columns, clusterStatusesMap } from './ClustersTable.constants';
 import { setDeletableId } from '@store/adcm/clusters/clustersSlice';
-import Concern from '@commonComponents/Concern/Concern';
+import { open as openUpgradeClusterDialog } from '@store/adcm/clusters/dialogs/upgradeClusterDialogSlice';
 import { setSortParams } from '@store/adcm/clusters/clustersTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 
@@ -13,6 +15,10 @@ const ClustersTable = () => {
   const clusters = useStore((s) => s.adcm.clusters.clusters);
   const isLoading = useStore((s) => s.adcm.clusters.isLoading);
   const sortParams = useStore((s) => s.adcm.clustersTable.sortParams);
+
+  const handleUpgradeClick = (cluster: AdcmCluster) => {
+    dispatch(openUpgradeClusterDialog({ cluster }));
+  };
 
   const getHandleDeleteClick = (clusterId: number) => () => {
     dispatch(setDeletableId(clusterId));
@@ -38,6 +44,12 @@ const ClustersTable = () => {
               <Concern concerns={cluster.concerns} />
             </TableCell>
             <TableCell hasIconOnly align="center">
+              <IconButton
+                icon="g1-upgrade"
+                size={32}
+                disabled={!cluster.isUpgradable}
+                onClick={() => handleUpgradeClick(cluster)}
+              />
               <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(cluster.id)} title="Delete" />
             </TableCell>
           </TableRow>
