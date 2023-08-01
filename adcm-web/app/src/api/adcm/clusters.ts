@@ -6,6 +6,9 @@ import {
   AdcmCluster,
   CreateAdcmClusterPayload,
   UpdateAdcmClusterPayload,
+  AdcmClusterUpgrade,
+  AdcmClusterActionDetails,
+  AdcmClusterActionPayload,
 } from '@models/adcm';
 import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
@@ -44,5 +47,21 @@ export class AdcmClustersApi {
 
   public static async deleteCluster(clusterId: number) {
     await httpClient.delete(`/api/v2/clusters/${clusterId}/`);
+  }
+
+  public static async getClusterUpgrades(clusterId: number) {
+    const response = await httpClient.get<AdcmClusterUpgrade[]>(`/api/v2/clusters/${clusterId}/upgrades/`);
+    return response.data;
+  }
+
+  public static async getClusterUpgrade(clusterId: number, upgradeId: number) {
+    const response = await httpClient.get<AdcmClusterActionDetails>(
+      `/api/v2/clusters/${clusterId}/upgrades/${upgradeId}/`,
+    );
+    return response.data;
+  }
+
+  public static async postClusterUpgradeRun(clusterId: number, upgradeId: number, action: AdcmClusterActionPayload) {
+    await httpClient.post(`/api/v2/clusters/${clusterId}/upgrades/${upgradeId}/run`, action);
   }
 }

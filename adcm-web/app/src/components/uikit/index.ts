@@ -5,6 +5,7 @@ import Dialog from '@uikit/Dialog/Dialog';
 import DialogDefaultControls from '@uikit/Dialog/DialogDefaultControls';
 import type { DialogDefaultControlsProps } from '@uikit/Dialog/DialogDefaultControls';
 import Input from '@uikit/Input/Input';
+import type { FieldProps } from './Field/Field.types';
 import FormField from '@uikit/FormField/FormField';
 import FormFieldsContainer from '@uikit/FormField/FormFieldsContainer';
 import Pagination from '@uikit/Pagination/Pagination';
@@ -33,6 +34,7 @@ export {
   Dialog,
   DialogDefaultControls,
   DialogDefaultControlsProps,
+  FieldProps,
   FormField,
   FormFieldsContainer,
   Icon,

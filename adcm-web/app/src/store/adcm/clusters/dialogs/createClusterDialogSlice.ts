@@ -4,7 +4,7 @@ import { CreateAdcmClusterPayload, AdcmPrototypeVersions, AdcmPrototypeType } fr
 import { AdcmClustersApi, AdcmPrototypesApi } from '@api';
 import { refreshClusters } from '../clustersSlice';
 
-type AdcmClustersState = {
+type AdcmCreateClusterDialogState = {
   isOpen: boolean;
   relatedData: {
     prototypeVersions: AdcmPrototypeVersions[];
@@ -12,7 +12,7 @@ type AdcmClustersState = {
   };
 };
 
-const createInitialState = (): AdcmClustersState => ({
+const createInitialState = (): AdcmCreateClusterDialogState => ({
   isOpen: false,
   relatedData: {
     prototypeVersions: [],
