@@ -1,8 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { CreateAdcmClusterPayload, AdcmPrototypeVersions, AdcmPrototypeType } from '@models/adcm';
-import { AdcmClustersApi, AdcmPrototypesApi } from '@api';
+import { AdcmClustersApi, AdcmPrototypesApi, RequestError } from '@api';
 import { refreshClusters } from '../clustersSlice';
+import { showError } from '@store/notificationsSlice';
+import { getErrorMessage } from '@utils/httpResponseUtils';
 
 type AdcmCreateClusterDialogState = {
   isOpen: boolean;
@@ -31,6 +33,7 @@ const createCluster = createAsyncThunk(
       const cluster = await AdcmClustersApi.postCluster(arg);
       return cluster;
     } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
     } finally {
       thunkAPI.dispatch(refreshClusters());

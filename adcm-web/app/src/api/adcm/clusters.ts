@@ -30,7 +30,7 @@ export class AdcmClustersApi {
     const mockPayload = {
       name: payload.name,
       description: payload.description,
-      prototype: payload.prototypeId,
+      prototypeId: payload.prototypeId,
     };
 
     await httpClient.post('/api/v2/clusters/', mockPayload);

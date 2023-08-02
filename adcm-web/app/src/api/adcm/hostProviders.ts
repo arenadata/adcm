@@ -22,7 +22,7 @@ export class AdcmHostProvidersApi {
   public static async postHostProviders(payload: AdcmHostProviderPayload) {
     const mockPayload = {
       name: payload.name,
-      prototype: payload.prototypeId,
+      prototypeId: payload.prototypeId,
       description: payload.description,
     };
 

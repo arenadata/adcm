@@ -1,8 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { AdcmPrototypeType, AdcmPrototypeVersions, AdcmHostProviderPayload } from '@models/adcm';
-import { AdcmHostProvidersApi, AdcmPrototypesApi } from '@api';
+import { AdcmHostProvidersApi, AdcmPrototypesApi, RequestError } from '@api';
 import { refreshHostProviders } from '../hostProvidersSlice';
+import { showError } from '@store/notificationsSlice';
+import { getErrorMessage } from '@utils/httpResponseUtils';
 
 type AdcmClustersState = {
   isOpen: boolean;
@@ -26,6 +28,7 @@ const createHostProvider = createAsyncThunk(
     try {
       await AdcmHostProvidersApi.postHostProviders(arg);
     } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
     } finally {
       thunkAPI.dispatch(refreshHostProviders());
