@@ -1,0 +1,37 @@
+.serviceMapping {
+
+  &__title {
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    &_valid {
+      color: var(--component-container-valid-color);
+    }
+
+    &_error {
+      color: var(--component-container-error-color);
+    }
+
+    &_warning {
+      color: var(--component-container-warning-color);
+    }
+  }
+
+  &:not(:last-child) {
+    margin-bottom: 24px;
+  }
+}
+
+.componentsMapping {
+  &__toolbar {
+    margin-bottom: 24px;
+  }
+
+  &__content {
+    display: grid;
+    grid-template-columns: 4fr 1fr;
+    gap: 20px;
+  }
+}

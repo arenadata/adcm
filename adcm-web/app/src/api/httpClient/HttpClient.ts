@@ -14,14 +14,15 @@ export interface Response<T> {
 export interface HttpClient {
   get<T>(url: string, options: RequestOptions): Promise<Response<T>>;
   post<T>(url: string, payload: object, options: RequestOptions): Promise<Response<T>>;
+  patch<T>(url: string, payload: object, options: RequestOptions): Promise<Response<T>>;
   put<T>(url: string, payload: object, options: RequestOptions): Promise<Response<T>>;
   delete<T>(url: string, options: RequestOptions): Promise<Response<T>>;
 }
 
-export class RequestError extends Error {
-  public response?: Response<unknown>;
+export class RequestError<T = unknown> extends Error {
+  public response?: Response<T>;
 
-  constructor(message: string, response?: Response<unknown>) {
+  constructor(message: string, response?: Response<T>) {
     super(message);
     this.response = response;
   }

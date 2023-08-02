@@ -1,0 +1,22 @@
+:global {
+  body.theme-dark {
+    --component-container-valid-color: var(--color-xgreen-saturated);
+    --component-container-warning-color: var(--color-yellow-light);
+    --component-container-error-color: var(--color-xred);
+  }
+
+  body.theme-light {
+    --component-container-valid-color: var(--color-xgreen-saturated);
+    --component-container-warning-color: var(--color-json-orange);
+    --component-container-error-color: var(--color-xred-light);
+  }
+}
+
+.clusterMapping {
+  margin-top: 40px;
+  margin-bottom: 40px;
+
+  &__tabBlocks {
+    margin-bottom: 24px;
+  }
+}

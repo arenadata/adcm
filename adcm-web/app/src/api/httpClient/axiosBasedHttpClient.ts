@@ -5,8 +5,9 @@ import { apiHost } from '@constants';
 import '@utils/objectUtils';
 import { camelToSnakeCase, snakeToCamelCase } from '@utils/stringUtils';
 import { structureTraversal } from '@utils/objectUtils';
+import type { HttpClient } from './HttpClient';
 
-export class AxiosBasedHttpClient {
+export class AxiosBasedHttpClient implements HttpClient {
   protected axiosInstance: AxiosInstance;
 
   constructor() {
@@ -22,16 +23,18 @@ export class AxiosBasedHttpClient {
 
     // TODO: temporary solutions, while backend can't get normal camelCase
     this.axiosInstance.interceptors.request.use((req) => {
-      if (!req.url) return req;
+      if (req.url) {
+        const [url, query] = req.url.split('?');
+        if (query) {
+          const camelCaseQueryParams = qs.parse(query);
+          const snakeCaseQueryParams = structureTraversal(camelCaseQueryParams, undefined, camelToSnakeCase);
+          req.url = url + '?' + qs.stringify(snakeCaseQueryParams);
+        }
+      }
 
-      const [url, query] = req.url.split('?');
-      if (!query) return req;
-
-      const camelCaseQueryParams = qs.parse(query);
-
-      const snakeCaseQueryParams = structureTraversal(camelCaseQueryParams, undefined, camelToSnakeCase);
-
-      req.url = url + '?' + qs.stringify(snakeCaseQueryParams);
+      if (req.data) {
+        req.data = structureTraversal(req.data, undefined, camelToSnakeCase);
+      }
 
       return req;
     });

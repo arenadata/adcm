@@ -1,0 +1,39 @@
+:global {
+  body.theme-dark {
+    --mapping-error-tooltip-color: var(--color-xwhite-off);
+    --mapping-error-tooltip-border: var(--color-xdark);
+    --mapping-error-tooltip-error-background: var(--color-xred-dark);
+    --mapping-error-tooltip-error-shadow:  rgba(2, 1, 17, 0.20);
+  }
+
+  body.theme-light {
+    --mapping-error-tooltip-color: var(--color-xdark);
+    --mapping-error-tooltip-border: var(--color-stroke-light);
+    --mapping-error-tooltip-error-background: var(--color-red-30);
+    --mapping-error-tooltip-warning-background: rgba(199, 196, 226, 0.20);
+  }
+}
+
+.mappingError {
+  &__message {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+
+    &_error {
+      color: var(--component-container-error-color);
+    }
+  }
+
+  &__tooltip {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--mapping-error-tooltip-border);
+
+    &_error {
+      color: var(--mapping-error-tooltip-color);
+      background: var(--mapping-error-tooltip-error-background);
+      box-shadow: 0px 20px 20px 0px var(--mapping-error-tooltip-error-shadow); 
+    }
+  }
+}

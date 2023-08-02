@@ -14,6 +14,10 @@ const typesSettings: Record<MarkerIconType, MarkerSettings> = {
     className: s.markerIcon_alert,
     icon: 'marker-alert',
   },
+  warning: {
+    className: s.markerIcon_warning,
+    icon: 'marker-alert',
+  },
   check: {
     className: s.markerIcon_check,
     icon: 'marker-check',
