@@ -36,7 +36,7 @@ export interface AdcmComponent {
   maintenanceMode: AdcmMaintenanceMode;
   constraint: AdcmComponentConstraint;
   service: AdcmComponentService;
-  dependOn?: AdcmComponentDependency[];
+  dependOn: AdcmComponentDependency[] | null;
 }
 
 export interface CreateMappingPayload {
