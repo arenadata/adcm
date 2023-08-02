@@ -1,8 +1,8 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { BaseFormDirective } from '../../../../shared/add-component';
+import { BaseFormDirective } from '@app/shared/add-component';
 import { FormGroup } from '@angular/forms';
 import { ADWP_DEFAULT_MATCHER, AdwpIdentityMatcher, AdwpMatcher } from '@app/adwp';
-import { RbacRoleModel } from '../../../../models/rbac/rbac-role.model';
+import { RbacRoleModel } from '@app/models/rbac/rbac-role.model';
 
 @Component({
   selector: 'app-rbac-policy-form-step-one',
@@ -11,7 +11,6 @@ import { RbacRoleModel } from '../../../../models/rbac/rbac-role.model';
 })
 export class RbacPolicyFormStepOneComponent extends BaseFormDirective {
   roleFilter = '';
-  userFilter = '';
   groupFilter = '';
 
   matcher: AdwpMatcher<any> = ADWP_DEFAULT_MATCHER;
@@ -29,7 +28,7 @@ export class RbacPolicyFormStepOneComponent extends BaseFormDirective {
     return f.invalid && (f.dirty || f.touched);
   }
 
-  hasError(error: string): boolean {
-    return this.form.hasError(error);
+  hasError(error: string, path): boolean {
+    return this.form.hasError(error, path);
   }
 }

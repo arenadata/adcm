@@ -74,10 +74,12 @@ class ClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=too-m
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        valid = serializer.validated_data
+
         cluster = add_cluster(
-            prototype=serializer.validated_data["prototype"],
-            name=serializer.validated_data["name"],
-            description=serializer.validated_data["description"],
+            prototype=Prototype.objects.get(pk=valid["prototype_id"], type=ObjectType.CLUSTER),
+            name=valid["name"],
+            description=valid["description"],
         )
 
         return Response(data=ClusterSerializer(cluster).data, status=HTTP_201_CREATED)
@@ -119,6 +121,7 @@ class MappingViewSet(  # pylint:disable=too-many-ancestors
     serializer_class = HostComponentListSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_HC_PERM]
+    pagination_class = None
 
     def get_serializer_class(self):
         if self.action == "create":

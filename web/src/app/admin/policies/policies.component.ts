@@ -10,12 +10,11 @@ import { RbacEntityListDirective } from '@app/abstract-directives/rbac-entity-li
 import { ListService } from '@app/shared/components/list/list.service';
 import { SocketState } from '@app/core/store';
 import { RbacPolicyService } from '@app/services/rbac-policy.service';
-import { ADD_SERVICE_PROVIDER } from '../../shared/add-component/add-service-model';
-import { AddButtonComponent } from '../../shared/add-component';
-import { RbacPolicyFormComponent } from '../../components/rbac/policy-form/rbac-policy-form.component';
-import { RbacRoleModel } from '../../models/rbac/rbac-role.model';
-import { RbacUserModel } from '../../models/rbac/rbac-user.model';
-import { RbacGroupModel } from '../../models/rbac/rbac-group.model';
+import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-model';
+import { AddButtonComponent } from '@app/shared/add-component';
+import { RbacPolicyFormComponent } from '@app/components/rbac/policy-form/rbac-policy-form.component';
+import { RbacRoleModel } from '@app/models/rbac/rbac-role.model';
+import { RbacGroupModel } from '@app/models/rbac/rbac-group.model';
 
 @Component({
   selector: 'app-policies',
@@ -48,11 +47,6 @@ export class PoliciesComponent extends RbacEntityListDirective<RbacPolicyModel> 
     {
       label: 'Role',
       value: (row) => (row.role && (row.role as any as RbacRoleModel).display_name) ?? '',
-    },
-    {
-      label: 'Users',
-      value: (row) => row.user.map((user: RbacUserModel) => user.username).join(', '),
-      className: 'one-line-string',
     },
     {
       label: 'Groups',

@@ -4,15 +4,14 @@ import { RbacFormDirective } from '@app/shared/add-component/rbac-form.directive
 import { RbacPolicyModel } from '@app/models/rbac/rbac-policy.model';
 import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-model';
 import { RbacPolicyService } from '@app/services/rbac-policy.service';
-import { atLeastOne } from '@app/components/rbac/policy-form/rbac-policy-form-step-one/validators/user-or-group-required';
 import {
   IRbacObjectCandidateClusterModel,
   IRbacObjectCandidateHostModel,
   IRbacObjectCandidateProviderModel,
   IRbacObjectCandidateServiceModel
-} from '../../../models/rbac/rbac-object-candidate';
+} from '@app/models/rbac/rbac-object-candidate';
 import { rbacPolicyObjectValidator } from './validators/object-validator';
-import { CustomValidators } from '../../../shared/validators/custom-validators';
+import { CustomValidators } from '@app/shared/validators/custom-validators';
 
 const INITIAL_OBJECT = {
   cluster: [],
@@ -81,7 +80,6 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
             name: value.name,
             description: value.description || '',
             role: value.role,
-            user: value.user,
             group: value.group
           },
           {
@@ -112,10 +110,7 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
           ]),
           description: new FormControl(null),
           role: roleControl,
-          user: new FormControl([]),
-          group: new FormControl([])
-        }, {
-          validators: [atLeastOne('user', 'group')]
+          group: new FormControl([], [CustomValidators.required])
         }),
         new FormGroup({
           object: new FormGroup({

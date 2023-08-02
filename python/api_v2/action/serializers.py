@@ -32,18 +32,26 @@ class ActionListSerializer(ModelSerializer):
         return action.get_start_impossible_reason(obj=self.context["obj"])
 
 
-class ActionRetrieveSerializer(ModelSerializer):
+class ActionRetrieveSerializer(ActionListSerializer):
     is_allow_to_terminate = BooleanField(source="allow_to_terminate")
     host_component_map_rules = JSONField(source="hostcomponentmap")
     disclaimer = SerializerMethodField()
 
     class Meta:
         model = Action
-        fields = ["is_allow_to_terminate", "host_component_map_rules", "disclaimer"]
+        fields = [
+            "id",
+            "name",
+            "display_name",
+            "start_impossible_reason",
+            "is_allow_to_terminate",
+            "host_component_map_rules",
+            "disclaimer",
+        ]
 
     @staticmethod
     def get_disclaimer(action: Action) -> str:
-        return action.ui_options.get("disclaimer") or ""
+        return action.ui_options.get("disclaimer", "")
 
 
 class ActionRunSerializer(EmptySerializer):

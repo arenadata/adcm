@@ -72,10 +72,10 @@ class ClusterRelatedSerializer(ModelSerializer):
         fields = ["id", "name"]
 
 
-class ClusterCreateSerializer(ModelSerializer):
-    class Meta:
-        model = Cluster
-        fields = ["prototype", "name", "description"]
+class ClusterCreateSerializer(EmptySerializer):
+    prototype_id = IntegerField()
+    name = CharField()
+    description = CharField(required=False, allow_blank=True)
 
 
 class ClusterUpdateSerializer(ModelSerializer):

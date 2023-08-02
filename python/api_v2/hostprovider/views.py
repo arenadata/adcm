@@ -9,13 +9,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from api_v2.hostprovider.filters import HostProviderFilter
 from api_v2.hostprovider.serializers import (
     HostProviderCreateSerializer,
     HostProviderSerializer,
 )
 from cm.api import add_host_provider, delete_host_provider
-from cm.models import HostProvider
+from cm.models import HostProvider, ObjectType, Prototype
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_201_CREATED,
@@ -47,7 +48,7 @@ class HostProviderViewSet(ModelViewSet):  # pylint:disable=too-many-ancestors
             return Response(serializer.errors, status=HTTP_409_CONFLICT)
 
         host_provider = add_host_provider(
-            prototype=serializer.validated_data["prototype"],
+            prototype=Prototype.objects.get(pk=serializer.validated_data["prototype_id"], type=ObjectType.PROVIDER),
             name=serializer.validated_data["name"],
             description=serializer.validated_data["description"],
         )

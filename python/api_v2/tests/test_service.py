@@ -91,13 +91,16 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertTrue(ClusterObject.objects.filter(pk=self.service_2.pk).exists())
 
     def test_create_success(self):
+        initial_service_count = ClusterObject.objects.count()
         manual_add_service_proto = Prototype.objects.get(type=ObjectType.SERVICE, name="service_3_manual_add")
+
         response: Response = self.client.post(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data={"prototype": manual_add_service_proto.pk},
+            data=[{"prototype_id": manual_add_service_proto.pk}],
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(ClusterObject.objects.count(), initial_service_count + 1)
 
     def test_filter_by_name_success(self):
         response: Response = self.client.get(
