@@ -3,6 +3,7 @@ import type { AnchorBarItem } from './AnchorBar/AnchorBar';
 import Button from '@uikit/Button/Button';
 import ButtonGroup from './ButtonGroup/ButtonGroup';
 import Checkbox from './Checkbox/Checkbox';
+import DatePicker from '@uikit/DatePicker/DatePicker';
 import Dialog from '@uikit/Dialog/Dialog';
 import DialogDefaultControls from '@uikit/Dialog/DialogDefaultControls';
 import type { DialogDefaultControlsProps } from '@uikit/Dialog/DialogDefaultControls';
@@ -11,6 +12,7 @@ import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import type { MarkerIconType } from '@uikit/MarkerIcon/MarkerIcon.types';
 import MultiSelectPanel from '@uikit/Select/MultiSelect/MultiSelectPanel/MultiSelectPanel';
 import type { FieldProps } from './Field/Field.types';
+import ExpandableRowComponent from '@uikit/Table/TableRow/ExpandableRow';
 import FormField from '@uikit/FormField/FormField';
 import FormFieldsContainer from '@uikit/FormField/FormFieldsContainer';
 import Pagination from '@uikit/Pagination/Pagination';
@@ -44,9 +46,11 @@ export {
   Button,
   ButtonGroup,
   Checkbox,
+  DatePicker,
   Dialog,
   DialogDefaultControls,
   DialogDefaultControlsProps,
+  ExpandableRowComponent,
   FieldProps,
   FormField,
   FormFieldsContainer,

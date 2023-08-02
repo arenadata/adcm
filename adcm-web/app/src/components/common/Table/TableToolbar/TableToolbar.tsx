@@ -1,5 +1,12 @@
 import s from './TableToolbar.module.scss';
+import cn from 'classnames';
 
-const TableToolbar = ({ children }: React.PropsWithChildren) => <div className={s.tableToolbar}>{children}</div>;
+interface TableToolbarProps extends React.PropsWithChildren {
+  direction?: 'column' | 'row';
+}
+
+const TableToolbar = ({ children, direction = 'row' }: TableToolbarProps) => (
+  <div className={cn(s.tableToolbar, { [s.tableToolbar_column]: direction === 'column' })}>{children}</div>
+);
 
 export default TableToolbar;

@@ -11,3 +11,5 @@ export const dateToString = (date: Date, options: DateToStringOptions = {}) => {
   const d1 = toUtc ? localDateToUtc(date) : date;
   return format(d1, formatStr);
 };
+
+export const localDateToServerDate = (date: Date) => format(date, 'yyyy-MM-dd HH:mm:ss.ms');

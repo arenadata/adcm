@@ -6,12 +6,12 @@
   body.theme-light {
     --table-expandable-row-background: var(--color-xgray-alt);
     --table-expandable-row-content-background: var(--color-xwhite-50);
-    
+
   }
 }
 
 tr.expandableRowMain {
-  
+
   &.expanded {
     background: var(--table-expandable-row-background);
     border-bottom: 0!important;
@@ -22,7 +22,7 @@ tr.expandableRowMain {
   }
 }
 
-tr.expandableRowContent td {
+tr.expandableRowContent > td {
   height: auto;
   padding-top: 0;
   padding-right: 0;
@@ -32,7 +32,5 @@ tr.expandableRowContent td {
 }
 
 .expandableRowContent_wrapper {
-  margin: 0px 20px var(--base-margin-v);
-  background-color: var(--table-expandable-row-content-background);
-  border-radius: 10px;
+  margin: 0 20px 12px;
 }

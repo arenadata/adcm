@@ -6,6 +6,7 @@ import {
   getMonth,
   getYear,
   startOfDay,
+  endOfDay,
   getDate,
   addDays,
   eachDayOfInterval,
@@ -15,6 +16,7 @@ import {
   isMonday,
   startOfMonth,
 } from 'date-fns';
+import { isEqual } from '@utils/date/index';
 
 const getToday = () => {
   const localToday = new Date();
@@ -23,9 +25,20 @@ const getToday = () => {
   return localDateToUtc(localToday);
 };
 
+const getStartDayEndDay = (startDateTime = new Date(), endDateTime = new Date()): [number, number] => {
+  return [startOfDay(localDateToUtc(startDateTime)).getTime(), endOfDay(localDateToUtc(endDateTime)).getTime()];
+};
+
 const isDateLessThan = (date: Date, minDate?: Date) => !!minDate && compareAsc(minDate, date) === 1;
 
 const isDateBiggerThan = (date: Date, maxDate?: Date) => !!maxDate && compareAsc(date, maxDate) === 1;
+
+const isDateInRange = (date: Date, minDate?: Date, maxDate?: Date) => {
+  const isBiggerThenStart = minDate ? isDateBiggerThan(date, minDate) || isEqual(date, minDate) : true;
+  const isLesThenEnd = maxDate ? isDateLessThan(date, maxDate) || isEqual(date, maxDate) : true;
+
+  return isBiggerThenStart && isLesThenEnd;
+};
 
 export {
   compareAsc,
@@ -33,6 +46,7 @@ export {
   getMonth,
   getYear,
   startOfDay,
+  endOfDay,
   getDate,
   addDays,
   eachDayOfInterval,
@@ -42,6 +56,8 @@ export {
   isMonday,
   startOfMonth,
   getToday,
+  getStartDayEndDay,
   isDateLessThan,
   isDateBiggerThan,
+  isDateInRange,
 };
