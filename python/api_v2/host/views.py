@@ -11,7 +11,7 @@
 # limitations under the License.
 
 
-from api_v2.host.filters import HostFilter, HostOrderingFilter
+from api_v2.host.filters import HostFilter
 from api_v2.host.serializers import (
     ClusterHostCreateSerializer,
     HostChangeMaintenanceModeSerializer,
@@ -54,17 +54,15 @@ from adcm.permissions import (
 # pylint:disable-next=too-many-ancestors
 class HostViewSet(PermissionListMixin, ModelViewSet):
     queryset = (
-        Host.objects.select_related("provider", "cluster").prefetch_related("concerns", "hostcomponent_set").all()
+        Host.objects.select_related("provider", "cluster")
+        .prefetch_related("concerns", "hostcomponent_set")
+        .order_by("fqdn")
     )
     serializer_class = HostSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_HOST_PERM]
     filterset_class = HostFilter
-    filter_backends = (
-        DjangoFilterBackend,
-        HostOrderingFilter,
-    )
-    ordering_fields = ["id", "name"]
+    filter_backends = (DjangoFilterBackend,)
 
     def get_serializer_class(self):
         if self.action == "create":

@@ -11,21 +11,15 @@
 # limitations under the License.
 
 from cm.models import Host
-from django_filters.rest_framework import CharFilter, FilterSet
-
-from adcm.filters import BaseOrderingFilter
+from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
 
 
 class HostFilter(FilterSet):
     name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
-    hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name")
-    cluster_name = CharFilter(label="Cluster name", field_name="cluster__name")
+    hostproviderName = CharFilter(label="Hostprovider name", field_name="provider__name")
+    clusterName = CharFilter(label="Cluster name", field_name="cluster__name")
+    ordering = OrderingFilter(fields={"fqdn": "name"}, field_labels={"name": "name"}, label="ordering")
 
     class Meta:
         model = Host
-        fields = ["name", "hostprovider_name", "cluster_name"]
-
-
-class HostOrderingFilter(BaseOrderingFilter):
-    allowed_sort_column_names = {"id", "name"}
-    column_names_map = {"name": "fqdn"}
+        fields = ["name", "hostproviderName", "clusterName"]

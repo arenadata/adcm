@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.rbac.users.filters import UserFilterSet, UserOrderingFilter
+from api_v2.rbac.users.filters import UserFilterSet
 from api_v2.rbac.users.serializers import (
     UserCreateSerializer,
     UserSerializer,
@@ -32,13 +32,9 @@ from adcm.permissions import VIEW_USER_PERMISSION
 
 
 class UserViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = User.objects.prefetch_related("groups").all()
+    queryset = User.objects.prefetch_related("groups").order_by("username")
     serializer_class = UserSerializer
-    filter_backends = (
-        DjangoFilterBackend,
-        UserOrderingFilter,
-    )
-    ordering = ("id",)
+    filter_backends = (DjangoFilterBackend,)
     filterset_class = UserFilterSet
     permission_classes = (DjangoModelPermissions,)
     permission_required = [VIEW_USER_PERMISSION]
