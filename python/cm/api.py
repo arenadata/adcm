@@ -13,6 +13,7 @@
 
 import json
 from functools import partial, wraps
+from typing import Literal
 
 from cm.adcm_config.config import (
     init_object_config,
@@ -22,7 +23,7 @@ from cm.adcm_config.config import (
 )
 from cm.adcm_config.utils import proto_ref
 from cm.api_context import CTX
-from cm.errors import raise_adcm_ex
+from cm.errors import AdcmEx, raise_adcm_ex
 from cm.flag import update_object_flag
 from cm.issue import (
     check_bound_components,
@@ -54,7 +55,7 @@ from cm.models import (
     TaskLog,
 )
 from cm.status_api import api_request, post_event
-from cm.utils import obj_ref
+from cm.utils import build_id_object_mapping, obj_ref
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
 from django.db.transaction import atomic, on_commit
@@ -641,6 +642,49 @@ def check_sub_key(hc_in):
             raise_adcm_ex("INVALID_INPUT", f"duplicate ({item}) in host service list")
 
 
+def retrieve_host_component_objects(
+    cluster: Cluster, plain_hc: list[dict[Literal["host_id", "component_id"], int]]
+) -> list[tuple[ClusterObject, Host, ServiceComponent]]:
+    host_ids: set[int] = set()
+    component_ids: set[int] = set()
+    for record in plain_hc:
+        host_ids.add(record["host_id"])
+        component_ids.add(record["component_id"])
+
+    hosts_in_hc: dict[int, Host] = build_id_object_mapping(
+        objects=Host.objects.select_related("cluster").filter(pk__in=host_ids)
+    )
+    if len(hosts_in_hc) != len(host_ids):
+        message = f"hosts not found: {host_ids.difference(hosts_in_hc.keys())}"
+        raise AdcmEx(code="HOST_NOT_FOUND", msg=message)
+
+    components_in_hc: dict[int, ServiceComponent] = build_id_object_mapping(
+        objects=ServiceComponent.objects.select_related("service").filter(pk__in=component_ids, cluster=cluster)
+    )
+    if len(components_in_hc) != len(component_ids):
+        message = f"components not found: {component_ids.difference(components_in_hc.keys())}"
+        raise AdcmEx(code="COMPONENT_NOT_FOUND", msg=message)
+
+    host_component_objects = []
+
+    for record in plain_hc:
+        host: Host = hosts_in_hc[record["host_id"]]
+
+        if not host.cluster:
+            message = f"host #{host.pk} {host.fqdn} does not belong to any cluster"
+            raise AdcmEx(code="FOREIGN_HOST", msg=message)
+
+        if host.cluster.pk != cluster.pk:
+            message = f"host {host.fqdn} (cluster #{host.cluster.pk}) does not belong to cluster #{cluster.pk}"
+            raise AdcmEx(code="FOREIGN_HOST", msg=message)
+
+        component: ServiceComponent = components_in_hc[record["component_id"]]
+
+        host_component_objects.append((component.service, host, component))
+
+    return host_component_objects
+
+
 def make_host_comp_list(cluster: Cluster, hc_in: list[dict]) -> list[tuple[ClusterObject, Host, ServiceComponent]]:
     host_comp_list = []
     for item in hc_in:
@@ -775,6 +819,36 @@ def save_hc(
     return host_component_list
 
 
+def set_host_component(
+    cluster: Cluster, host_component_objects: list[tuple[ClusterObject, Host, ServiceComponent]]
+) -> list[HostComponent]:
+    """
+    Save given hosts-components mapping if all sanity checks pass
+    """
+
+    check_hc_requires(shc_list=host_component_objects)
+
+    check_bound_components(shc_list=host_component_objects)
+
+    for service in ClusterObject.objects.select_related("prototype").filter(cluster=cluster):
+        check_component_constraint(
+            cluster=cluster,
+            service_prototype=service.prototype,
+            hc_in=[i for i in host_component_objects if i[0] == service],
+        )
+        check_service_requires(cluster=cluster, proto=service.prototype)
+
+    check_maintenance_mode(cluster=cluster, host_comp_list=host_component_objects)
+
+    with atomic():
+        on_commit(
+            func=partial(post_event, event="change_hostcomponentmap", object_id=cluster.pk, object_type="cluster")
+        )
+        new_host_component = save_hc(cluster=cluster, host_comp_list=host_component_objects)
+
+    return new_host_component
+
+
 def add_hc(cluster: Cluster, hc_in: list[dict]) -> list[HostComponent]:
     host_comp_list = check_hc(cluster=cluster, hc_in=hc_in)
 
@@ -782,9 +856,9 @@ def add_hc(cluster: Cluster, hc_in: list[dict]) -> list[HostComponent]:
         on_commit(
             func=partial(post_event, event="change_hostcomponentmap", object_id=cluster.pk, object_type="cluster")
         )
-        new_hc = save_hc(cluster=cluster, host_comp_list=host_comp_list)
+        new_host_component = save_hc(cluster=cluster, host_comp_list=host_comp_list)
 
-    return new_hc
+    return new_host_component
 
 
 def get_bind(

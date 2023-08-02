@@ -34,6 +34,7 @@ class PrototypeListSerializer(ModelSerializer):
             "type",
             "bundle",
             "license",
+            "version",
         )
 
     def get_license(self, obj: Prototype) -> Dict:

@@ -37,58 +37,43 @@ class TestHC(BaseTestCase):
         bundle_2 = cook_provider_bundle("1.0")
         provider = cook_provider(bundle_2, "DF01")
         host_1 = Host.objects.get(provider=provider, fqdn="server01.inter.net")
+
         action = Action(name="run")
         hc_list, _ = check_hostcomponentmap(cluster, action, [])
-
         self.assertEqual(hc_list, None)
 
-        try:
-            action = Action(name="run", hostcomponentmap="qwe")
+        with self.assertRaises(AdcmEx) as e:
+            action = Action(name="run", hostcomponentmap=["qwe"])
             hc_list, _ = check_hostcomponentmap(cluster, action, [])
-
-            self.assertNotEqual(hc_list, None)
-        except AdcmEx as e:
-            self.assertEqual(e.code, "TASK_ERROR")
-            self.assertEqual(e.msg, "hc is required")
+        self.assertEqual(e.exception.code, "TASK_ERROR")
+        self.assertEqual(e.exception.msg, "hc is required")
 
         service = ClusterObject.objects.get(cluster=cluster, prototype__name="hadoop")
         sc1 = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name="server")
-        try:
-            action = Action(name="run", hostcomponentmap="qwe")
+        with self.assertRaises(AdcmEx) as e:
+            action = Action(name="run", hostcomponentmap=["qwe"])
             hostcomponent = [{"service_id": service.id, "component_id": sc1.id, "host_id": 500}]
             hc_list, _ = check_hostcomponentmap(cluster, action, hostcomponent)
+        self.assertEqual(e.exception.code, "HOST_NOT_FOUND")
 
-            self.assertNotEqual(hc_list, None)
-        except AdcmEx as e:
-            self.assertEqual(e.code, "HOST_NOT_FOUND")
-
-        try:
-            action = Action(name="run", hostcomponentmap="qwe")
+        with self.assertRaises(AdcmEx) as e:
+            action = Action(name="run", hostcomponentmap=["qwe"])
             hostcomponent = [{"service_id": service.id, "component_id": sc1.id, "host_id": host_1.id}]
             hc_list, _ = check_hostcomponentmap(cluster, action, hostcomponent)
-
-            self.assertNotEqual(hc_list, None)
-        except AdcmEx as e:
-            self.assertEqual(e.code, "FOREIGN_HOST")
+        self.assertEqual(e.exception.code, "FOREIGN_HOST")
 
         add_host_to_cluster(cluster, host_1)
-        try:
+        with self.assertRaises(AdcmEx) as e:
             action = Action(name="run", hostcomponentmap="qwe")
             hostcomponent = [{"service_id": 500, "component_id": sc1.id, "host_id": host_1.id}]
             hc_list, _ = check_hostcomponentmap(cluster, action, hostcomponent)
+        self.assertEqual(e.exception.code, "CLUSTER_SERVICE_NOT_FOUND")
 
-            self.assertNotEqual(hc_list, None)
-        except AdcmEx as e:
-            self.assertEqual(e.code, "CLUSTER_SERVICE_NOT_FOUND")
-
-        try:
-            action = Action(name="run", hostcomponentmap="qwe")
+        with self.assertRaises(AdcmEx) as e:
+            action = Action(name="run", hostcomponentmap=["qwe"])
             hostcomponent = [{"service_id": service.id, "component_id": 500, "host_id": host_1.id}]
             hc_list, _ = check_hostcomponentmap(cluster, action, hostcomponent)
-
-            self.assertNotEqual(hc_list, None)
-        except AdcmEx as e:
-            self.assertEqual(e.code, "COMPONENT_NOT_FOUND")
+        self.assertEqual(e.exception.code, "COMPONENT_NOT_FOUND")
 
     def test_action_hc(self):  # pylint: disable=too-many-locals
         bundle_1 = cook_cluster_bundle("1.0")

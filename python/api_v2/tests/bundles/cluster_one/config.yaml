@@ -26,6 +26,37 @@
       states:
         available: any
 
+    with_config:
+      <<: *action
+      config:
+        - name: simple
+          type: string
+          required: false
+        - name: grouped
+          type: group
+          subs:
+            - name: simple
+              type: integer
+              default: 4
+            - name: second
+              type: float
+              default: 4.3
+        - name: after
+          type: list
+          default:
+            - "1"
+            - "woohoo"
+
+    with_hc:
+      <<: *action
+      hc_acl:
+        - action: add
+          service: service_1
+          component: component_1
+        - action: remove
+          service: service_1
+          component: component_2
+
 - name: service_1
   type: service
   version: *version
