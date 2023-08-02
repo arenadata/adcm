@@ -1,6 +1,5 @@
 :global {
   body.theme-dark {
-    --date-picker-calendar-date: #3C3F47;
     --date-picker-calendar-date-hover: var(--color-xwhite-off);
     --date-picker-calendar-date-bg-hover: transparent;
     --date-picker-calendar-date-border-color-hover: var(--color-xwhite-off);
@@ -11,10 +10,12 @@
     --date-picker-calendar-selected-date: var(--color-xdark);
 
     --date-picker-calendar-today-color: var(--color-xwhite-off);
+
+    --date-picker-calendar-unavailable-color: var(--colo-all-new-black);
+    --date-picker-calendar-disabled-color: var(--colo-new-black);
   }
 
   body.theme-light {
-    --date-picker-calendar-date: #CACFE5;
     --date-picker-calendar-date-hover: var(--color-xdark);
     --date-picker-calendar-date-bg-hover: var(--color-popup-light);
     --date-picker-calendar-date-border-color-hover: var(--color-xdark);
@@ -25,6 +26,9 @@
     --date-picker-calendar-selected-date: var(--color-xwhite);
 
     --date-picker-calendar-today-color: var(--color-xdark);
+
+    --date-picker-calendar-unavailable-color: var(--color-xgray-lighter);
+    --date-picker-calendar-disabled-color: var(--color-popup-light);
   }
 }
 
@@ -38,22 +42,19 @@
   border: 1px solid transparent;
   font-size: 14px;
   font-weight: 500;
-  cursor: pointer;
   transition: color 250ms, border-color 250ms, background-color 250ms;
+  background: none;
 
-  &__date {
-    background: none;
-    color: var(--date-picker-calendar-date);
-  }
-
-  &__date:not(.calendarCell__selectedDate):hover {
-    border: 1px solid var(--date-picker-calendar-date-border-color-hover);
-    background: var(--date-picker-calendar-date-bg-hover);
-    color: var(--date-picker-calendar-date-hover);
-  }
 
   &__thisMonth {
     color: var(--date-picker-calendar-this-month-day);
+    cursor: pointer;
+
+    &:hover {
+      border: 1px solid var(--date-picker-calendar-date-border-color-hover);
+      background: var(--date-picker-calendar-date-bg-hover);
+      color: var(--date-picker-calendar-date-hover);
+    }
   }
 
   &__selectedDate {
@@ -63,10 +64,13 @@
 
   &__today {
     color: var(--date-picker-calendar-today-color);
+  }
 
-    &_selected {
-      border-color: transparent;
-      color: var(--date-picker-calendar-selected-date);
-    }
+  &__unavailable {
+    color: var(--date-picker-calendar-unavailable-color);
+  }
+
+  &__disabled {
+    color: var(--date-picker-calendar-disabled-color);
   }
 }

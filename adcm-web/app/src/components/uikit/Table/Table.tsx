@@ -10,7 +10,7 @@ import { TableColumn, TableSelectedAllOptions } from '@uikit/Table/Table.types';
 import s from './Table.module.scss';
 import { TableContext } from '@uikit/Table/TableContext';
 
-type TableVariants = 'primary' | 'secondary' | 'tertiary';
+type TableVariants = 'primary' | 'secondary' | 'tertiary' | 'quaternary';
 
 export interface TableProps
   extends React.HTMLAttributes<HTMLDivElement>,
@@ -22,6 +22,7 @@ export interface TableProps
   isLoading?: boolean;
   spinner?: React.ReactNode;
   noData?: React.ReactNode;
+  width?: string;
 }
 
 const Table: React.FC<TableProps> = ({
@@ -36,6 +37,7 @@ const Table: React.FC<TableProps> = ({
   variant = 'primary',
   spinner = <Spinner />,
   noData = <TableNoData />,
+  width,
   ...props
 }) => {
   const tableClasses = cn(s.table, s[`table_${variant}`]);
@@ -46,7 +48,7 @@ const Table: React.FC<TableProps> = ({
   return (
     <div className={cn(className, s.tableWrapper, 'scroll')} {...props}>
       <TableContext.Provider value={contextData}>
-        <table className={tableClasses}>
+        <table className={tableClasses} style={{ width: width }}>
           <TableHead columns={columns} />
           <TableBody>
             {isLoading && <EmptyRow columnCount={columns.length}>{spinner}</EmptyRow>}

@@ -73,6 +73,7 @@
           "perf",
           "pid",
           "qs",
+          "quaternary",
           "queueing",
           "rbac",
           "readonly",

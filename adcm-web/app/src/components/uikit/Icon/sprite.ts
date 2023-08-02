@@ -5,6 +5,7 @@ export const allowIconsNames = [
   'check',
   'chevron',
   'chevron-double',
+  'dots',
   'eye',
   'eye-crossed',
   'g1-actions',

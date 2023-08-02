@@ -46,6 +46,10 @@
     --table-tr-background-selected-tertiary: var(--color-xdark-new-full);
     --table-tr-color-selected-tertiary: var(--color-xwhite);
 
+    // quaternary
+    --table-tr-border-quaternary: var(--color-xdark);
+    --table-tr-background-quaternary: var(--color-xdark-new);
+    --table-td-color-quaternary: var(--color-xgray-lighter);
   }
 
   body.theme-light {
@@ -93,6 +97,11 @@
     --table-tr-border-selected-tertiary: var(--color-stroke-light);
     --table-tr-background-selected-tertiary: var(--color-xgray-alt);
     --table-tr-color-selected-tertiary: var(--color-xdark);
+
+    // quaternary
+    --table-tr-border-quaternary: var(--color-stroke-light);
+    --table-tr-background-quaternary: var(--color-xwhite-50);
+    --table-td-color-quaternary: var(--color-xgray-darker);
   }
 }
 
@@ -269,6 +278,37 @@
     td {
       // work as min-height for table cell
       height: 44px;
+    }
+  }
+
+  &_quaternary {
+    border-collapse: collapse;
+    --table-border-radius: 8px;
+    font-size: 14px;
+    border-radius: 8px;
+    border-bottom: 0;
+
+    th, td {
+      --table-cell-padding: 6px 20px;
+      height: 36px;
+      font-weight: 400;
+    }
+
+    th:not(:first-of-type),
+    td:not(:first-of-type) {
+      border-left: 1px solid var(--table-tr-border-quaternary);
+    }
+
+    td {
+      color: var(--table-td-color-quaternary);
+    }
+
+    tr {
+      background: var(--table-tr-background-quaternary);
+
+      &:not(:last-of-type) {
+        border-bottom: 1px solid var(--table-tr-border-quaternary);
+      }
     }
   }
 }

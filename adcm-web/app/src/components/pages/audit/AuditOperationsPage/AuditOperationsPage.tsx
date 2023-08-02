@@ -1,10 +1,19 @@
 import React from 'react';
+import { useRequestAuditOperations } from './useRequestAuditOperations';
+import TableContainer from '@commonComponents/Table/TableContainer/TableContainer';
+import AuditOperationsTable from '@pages/audit/AuditOperationsPage/AuditOperationsTable/AuditOperationsTable';
+import AuditOperationsTableToolbar from '@pages/audit/AuditOperationsPage/HostProviderTableToolbar/AuditOperationsTableToolbar';
+import AuditOperationsTableFooter from '@pages/audit/AuditOperationsPage/AuditOperationsTableFooter/AuditOperationsTableFooter';
 
 const AuditOperationsPage = () => {
+  useRequestAuditOperations();
+
   return (
-    <div>
-      <p>Audit Operations</p>
-    </div>
+    <TableContainer variant="easy">
+      <AuditOperationsTableToolbar />
+      <AuditOperationsTable />
+      <AuditOperationsTableFooter />
+    </TableContainer>
   );
 };
 
