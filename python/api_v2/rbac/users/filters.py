@@ -12,23 +12,24 @@
 
 from api_v2.rbac.users.constants import UserStatusChoices, UserTypeChoices
 from django.db.models import QuerySet
-from django_filters.rest_framework import ChoiceFilter, FilterSet
+from django_filters.rest_framework import (
+    CharFilter,
+    ChoiceFilter,
+    FilterSet,
+    OrderingFilter,
+)
 from rbac.models import User
-
-from adcm.filters import BaseOrderingFilter
-
-
-class UserOrderingFilter(BaseOrderingFilter):
-    allowed_sort_column_names = {"id", "username"}
 
 
 class UserFilterSet(FilterSet):
-    status = ChoiceFilter(choices=UserStatusChoices.choices, method="filter_status")
-    userType = ChoiceFilter(choices=UserTypeChoices.choices, method="filter_type")
+    username = CharFilter(field_name="username", label="username", lookup_expr="icontains")
+    status = ChoiceFilter(choices=UserStatusChoices.choices, method="filter_status", label="status")
+    type = ChoiceFilter(choices=UserTypeChoices.choices, method="filter_type", label="type")
+    ordering = OrderingFilter(fields={"username": "username"}, field_labels={"username": "username"}, label="ordering")
 
     class Meta:
         model = User
-        fields = ["username", "status", "userType"]
+        fields = ["username", "status", "type"]
 
     @staticmethod
     def filter_status(queryset: QuerySet, name: str, value: str) -> QuerySet:  # pylint: disable=unused-argument

@@ -11,19 +11,14 @@
 # limitations under the License.
 
 from cm.models import Bundle
-from django_filters.rest_framework import CharFilter, FilterSet
-
-from adcm.filters import BaseOrderingFilter
+from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
 
 
 class BundleFilter(FilterSet):
-    display_name = CharFilter(label="Display name", field_name="prototype__display_name", lookup_expr="icontains")
-    product = CharFilter(label="Product name", field_name="name", lookup_expr="iexact")
+    displayName = CharFilter(label="Display name", field_name="name", lookup_expr="icontains")
+    product = CharFilter(label="Product name", field_name="prototype__display_name", lookup_expr="iexact")
+    ordering = OrderingFilter(fields={"name": "displayName"}, field_labels={"name": "Display name"}, label="ordering")
 
     class Meta:
         model = Bundle
-        fields = ["display_name", "product"]
-
-
-class BundleOrderingFilter(BaseOrderingFilter):
-    pass
+        fields = ["displayName", "product"]
