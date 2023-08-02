@@ -12,6 +12,7 @@ export const MarkerIconsExamples: Story = {
     return (
       <div style={{ display: 'flex', gap: '40px' }}>
         <MarkerIcon type="alert" />
+        <MarkerIcon type="warning" />
         <MarkerIcon type="check" />
         <MarkerIcon type="info" />
       </div>

@@ -2,15 +2,17 @@ import React, { HTMLAttributes, useEffect, useState } from 'react';
 import cn from 'classnames';
 import s from './AnchorBar.module.scss';
 
-type AnchorBarItem = {
+export type AnchorBarItem = {
   label: string;
   id: string;
   activeColorClass?: string;
 };
+
 export interface AnchorBarProps {
   items: AnchorBarItem[];
   className?: string;
 }
+
 export const AnchorList = ({ items, className = '' }: AnchorBarProps) => {
   const [activeItems, setActiveItems] = useState(new Set<string>());
   useEffect(() => {
@@ -76,6 +78,7 @@ const AnchorBar = ({ className, children, ...props }: HTMLAttributes<HTMLDivElem
     </aside>
   );
 };
+
 export default AnchorBar;
 
 const scrollTo = (id: string) => {

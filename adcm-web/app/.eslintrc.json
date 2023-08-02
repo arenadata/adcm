@@ -97,6 +97,7 @@
           "tooltip",
           "ttl",
           "unlink",
+          "unmap",
           "unmount",
           "upgradable",
           "uri",

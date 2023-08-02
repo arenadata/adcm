@@ -13,11 +13,16 @@ export const getOptionsFromEnum = <T extends string, TEnumValue extends string>(
 };
 
 type LabelAccessor<T> = (item: T) => string;
+type ValueAccessor<T, V> = (item: T) => V;
 
-export const getOptionsFromArray = <T>(s: T[], labelAccessor: LabelAccessor<T>): SelectOption<T>[] => {
-  const options = s.map((item) => ({
+export const getOptionsFromArray = <T, V = T>(
+  items: T[],
+  labelAccessor: LabelAccessor<T>,
+  valueAccessor?: ValueAccessor<T, V>,
+): SelectOption<T | V>[] => {
+  const options = items.map((item) => ({
     label: getStatusLabel(labelAccessor(item)),
-    value: item,
+    value: valueAccessor ? valueAccessor(item) : item,
   }));
 
   return options;

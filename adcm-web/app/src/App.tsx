@@ -25,6 +25,8 @@ import {
   ClusterHosts,
   ClusterImport,
   ClusterMapping,
+  ClusterHostsMapping,
+  ClusterComponentsMapping,
   ClusterOverview,
   ClusterServices,
 } from '@pages/cluster';
@@ -84,7 +86,11 @@ function App() {
                     </Route>
                   </Route>
                   <Route path="/clusters/:clusterId/hosts" element={<ClusterHosts />} />
-                  <Route path="/clusters/:clusterId/mapping" element={<ClusterMapping />} />
+                  <Route path="/clusters/:clusterId/mapping" element={<ClusterMapping />}>
+                    <Route index element={<Navigate to="hosts" replace />} />
+                    <Route path="/clusters/:clusterId/mapping/hosts" element={<ClusterHostsMapping />} />
+                    <Route path="/clusters/:clusterId/mapping/components" element={<ClusterComponentsMapping />} />
+                  </Route>
                   <Route path="/clusters/:clusterId/configuration" element={<ClusterConfiguration />} />
                   <Route path="/clusters/:clusterId/import" element={<ClusterImport />} />
                 </Route>

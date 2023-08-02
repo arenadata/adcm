@@ -3,6 +3,9 @@
     --marker-alert-background: var(--color-xred);
     --marker-alert-color: var(--color-xwhite-off);
 
+    --marker-warning-background: var(--color-yellow-light);
+    --marker-warning-color: var(--color-xdark);
+
     --marker-check-background: var(--color-xgreen-saturated);
     --marker-check-color: var(--color-xdark);
 
@@ -13,6 +16,9 @@
   body.theme-light {
     --marker-alert-background: var(--color-xred-light);
     --marker-alert-color: var(--color-xwhite);
+
+    --marker-warning-background: var(--color-json-orange);
+    --marker-warning-color: var(--color-xdark);
 
     --marker-check-background: var(--color-presson-light);
     --marker-check-color: var(--color-xdark);
@@ -33,6 +39,11 @@
   &_alert {
     --marker-background: var(--marker-alert-background);
     --marker-color: var(--marker-alert-color);
+  }
+
+  &_warning {
+    --marker-background: var(--marker-warning-background);
+    --marker-color: var(--marker-warning-color);
   }
 
   &_check {
