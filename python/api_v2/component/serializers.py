@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
 
 from api_v2.cluster.serializers import ClusterRelatedSerializer
 from api_v2.concern.serializers import ConcernSerializer
@@ -29,6 +28,7 @@ from cm.status_api import get_obj_status
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.serializers import (
     ChoiceField,
+    JSONField,
     ModelSerializer,
     SerializerMethodField,
 )
@@ -39,6 +39,7 @@ from adcm.utils import get_requires
 class ComponentMappingSerializer(ModelSerializer):
     service = ServiceNameSerializer(read_only=True)
     depend_on = SerializerMethodField()
+    constraints = JSONField(source="constraint")
 
     class Meta:
         model = ServiceComponent
@@ -48,14 +49,31 @@ class ComponentMappingSerializer(ModelSerializer):
             "display_name",
             "is_maintenance_mode_available",
             "maintenance_mode",
-            "constraint",
+            "constraints",
             "depend_on",
             "service",
         ]
 
     @staticmethod
-    def get_depend_on(instance: ServiceComponent) -> list[dict[str, list[dict[str, Any]] | Any]] | None:
-        return get_requires(prototype=instance.prototype)
+    def get_depend_on(instance: ServiceComponent) -> list[dict] | None:
+        requires_data = get_requires(prototype=instance.prototype)
+        if requires_data is None:
+            return None
+
+        out = []
+        for req_dict in requires_data:
+            for req_component in req_dict.get("components", []):
+                out.append(
+                    {
+                        "prototype": {
+                            "id": req_component["prototype_id"],
+                            "name": req_component["name"],
+                            "display_name": req_component["display_name"],
+                        }
+                    }
+                )
+
+        return out
 
 
 class ComponentSerializer(ModelSerializer):
