@@ -14,7 +14,7 @@ from api_v2.imports.serializers import ImportPostSerializer
 from api_v2.imports.utils import cook_data_for_multibind, get_imports
 from api_v2.views import CamelCaseReadOnlyModelViewSet
 from cm.api import multi_bind
-from cm.models import Cluster, ClusterObject
+from cm.models import Cluster, ClusterObject, PrototypeImport
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -32,29 +32,43 @@ from adcm.permissions import (
 
 
 class ImportViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
+    queryset = PrototypeImport.objects.all()
     permission_classes = [IsAuthenticated]
     ordering = ["id"]
     filter_backends = []
+    serializer_class = ImportPostSerializer
 
-    def get_serializer_class(self):
-        if self.action == "create":
-            return ImportPostSerializer
+    def get_object_and_check_perm(self, request) -> Cluster | ClusterObject:
+        if "cluster_pk" in self.kwargs and "service_pk" in self.kwargs:
+            kwargs_get = {"perms": VIEW_SERVICE_PERM, "klass": ClusterObject, "id": self.kwargs["service_pk"]}
+            kwargs_check = {
+                "action_type": VIEW_IMPORT_PERM,
+                "model": ClusterObject.__class__.__name__.lower(),
+                "second_perm": VIEW_CLUSTER_BIND,
+            }
+        else:
+            kwargs_get = {"perms": VIEW_CLUSTER_PERM, "klass": Cluster, "id": self.kwargs["cluster_pk"]}
+            kwargs_check = {
+                "action_type": VIEW_IMPORT_PERM,
+                "model": Cluster.__class__.__name__.lower(),
+                "second_perm": VIEW_CLUSTER_BIND,
+            }
 
-        return self.serializer_class
+        obj = get_object_for_user(user=request.user, **kwargs_get)
+        check_custom_perm(user=request.user, obj=obj, **kwargs_check)
 
-    def get_object_and_check_perm(self, request, **kwargs):
-        raise NotImplementedError
+        return obj
 
     def list(self, request: Request, *args, **kwargs) -> Response:
-        obj = self.get_object_and_check_perm(request=request, **kwargs)
-        res = get_imports(obj=obj)
+        obj = self.get_object_and_check_perm(request=request)
 
-        return Response(data=res)
+        return Response(data=get_imports(obj=obj))
 
     def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
-        obj = self.get_object_and_check_perm(request=request, **kwargs)
+        obj = self.get_object_and_check_perm(request=request)
         check_custom_perm(request.user, CHANGE_IMPORT_PERM, "cluster", obj)
-        serializer = self.get_serializer(data=request.data, context={"request": request, "cluster": obj})
+        serializer = self.get_serializer(data=request.data, many=True, context={"request": request, "cluster": obj})
+
         if serializer.is_valid():
             bind_data = cook_data_for_multibind(validated_data=serializer.validated_data, obj=obj)
 
@@ -66,17 +80,3 @@ class ImportViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-
             return Response(get_imports(obj=obj), status=HTTP_200_OK)
 
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
-
-
-class ClusterImportViewSet(ImportViewSet):  # pylint: disable=too-many-ancestors
-    def get_object_and_check_perm(self, request, **kwargs):
-        cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_pk"])
-        check_custom_perm(request.user, VIEW_IMPORT_PERM, "cluster", cluster, VIEW_CLUSTER_BIND)
-        return cluster
-
-
-class ServiceImportViewSet(ImportViewSet):  # pylint: disable=too-many-ancestors
-    def get_object_and_check_perm(self, request, **kwargs):
-        service = get_object_for_user(request.user, VIEW_SERVICE_PERM, ClusterObject, id=kwargs["clusterobject_pk"])
-        check_custom_perm(request.user, VIEW_IMPORT_PERM, "clusterobject", service, VIEW_CLUSTER_BIND)
-        return service
