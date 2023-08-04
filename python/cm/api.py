@@ -71,19 +71,19 @@ def check_license(prototype: Prototype) -> None:
         )
 
 
-def version_in(version: str, ver: PrototypeImport) -> bool:
-    if ver.min_strict:
-        if rpm.compare_versions(version, ver.min_version) <= 0:
+def is_version_suitable(version: str, prototype_import: PrototypeImport) -> bool:
+    if prototype_import.min_strict:
+        if rpm.compare_versions(version, prototype_import.min_version) <= 0:
             return False
-    elif ver.min_version:
-        if rpm.compare_versions(version, ver.min_version) < 0:
+    elif prototype_import.min_version:
+        if rpm.compare_versions(version, prototype_import.min_version) < 0:
             return False
 
-    if ver.max_strict:
-        if rpm.compare_versions(version, ver.max_version) >= 0:
+    if prototype_import.max_strict:
+        if rpm.compare_versions(version, prototype_import.max_version) >= 0:
             return False
-    elif ver.max_version:
-        if rpm.compare_versions(version, ver.max_version) > 0:
+    elif prototype_import.max_version:
+        if rpm.compare_versions(version, prototype_import.max_version) > 0:
             return False
 
     return True
@@ -810,7 +810,7 @@ def get_export(cluster: Cluster, service: ClusterObject | None, proto_import: Pr
             continue
 
         export_proto[prototype_export.prototype.pk] = True
-        if not version_in(version=prototype_export.prototype.version, ver=proto_import):
+        if not is_version_suitable(version=prototype_export.prototype.version, prototype_import=proto_import):
             continue
 
         if prototype_export.prototype.type == "cluster":
@@ -976,7 +976,7 @@ def multi_bind(cluster: Cluster, service: ClusterObject | None, bind_list: list[
                 f'Export {obj_ref(obj=export_obj)} does not match import name "{prototype_import.name}"',
             )
 
-        if not version_in(version=export_obj.prototype.version, ver=prototype_import):
+        if not is_version_suitable(version=export_obj.prototype.version, prototype_import=prototype_import):
             raise_adcm_ex(
                 "BIND_ERROR",
                 f'Import "{export_obj.prototype.name}" of { proto_ref(prototype=prototype_import.prototype)} '

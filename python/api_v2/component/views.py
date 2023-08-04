@@ -10,19 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api_v2.component.filters import ComponentFilter
 from api_v2.component.serializers import (
     ComponentMaintenanceModeSerializer,
     ComponentSerializer,
 )
+from api_v2.views import CamelCaseReadOnlyModelViewSet
 from cm.api import update_mm_objects
 from cm.models import Cluster, ClusterObject, ServiceComponent
+from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
-from rest_framework.filters import OrderingFilter
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
-from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import (
     CHANGE_MM_PERM,
@@ -36,13 +37,13 @@ from adcm.permissions import (
 from adcm.utils import get_maintenance_mode_response
 
 
-class ComponentViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = ServiceComponent.objects.select_related("cluster", "service").all()
+class ComponentViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
+    queryset = ServiceComponent.objects.select_related("cluster", "service").order_by("pk")
     serializer_class = ComponentSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_COMPONENT_PERM]
-    filter_backends = [OrderingFilter]
-    ordering_fields = ["id"]
+    filterset_class = ComponentFilter
+    filter_backends = [DjangoFilterBackend]
 
     def get_queryset(self, *args, **kwargs):
         cluster = get_object_for_user(

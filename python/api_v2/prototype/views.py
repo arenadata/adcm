@@ -15,25 +15,23 @@ from api_v2.prototype.serializers import (
     PrototypeTypeSerializer,
 )
 from api_v2.prototype.utils import accept_license
+from api_v2.views import CamelCaseReadOnlyModelViewSet
 from cm.models import Prototype
 from django.db.models import QuerySet
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
-from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import VIEW_CLUSTER_PERM, DjangoModelPermissionsAudit
 
 
-class PrototypeViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = Prototype.objects.exclude(type="adcm").select_related("bundle")
+class PrototypeViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
+    queryset = Prototype.objects.exclude(type="adcm").select_related("bundle").order_by("name")
     serializer_class = PrototypeListSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_CLUSTER_PERM]
     filterset_class = PrototypeFilter
-    ordering_fields = ["name", "bundle"]
-    ordering = ["name"]
 
     def get_serializer_class(self):
         if self.action == "versions":

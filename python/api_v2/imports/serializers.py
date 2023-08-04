@@ -10,22 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.errors import raise_adcm_ex
-from rest_framework.fields import JSONField
+from cm.models import ObjectType
+from rest_framework.fields import ChoiceField, IntegerField
 
 from adcm.serializers import EmptySerializer
 
 
+class SourceSerializer(EmptySerializer):
+    id = IntegerField()
+    type = ChoiceField(choices=[ObjectType.CLUSTER, ObjectType.SERVICE])
+
+
 class ImportPostSerializer(EmptySerializer):
-    bind = JSONField()
-
-    @staticmethod
-    def validate_bind(bind):
-        if not isinstance(bind, list):
-            raise_adcm_ex(code="INVALID_INPUT", msg="bind field should be a list")
-
-        for item in bind:
-            if "cluster_id" not in item:
-                raise_adcm_ex(code="INVALID_INPUT", msg="'cluster_id' sub-field is required")
-
-        return bind
+    source = SourceSerializer()

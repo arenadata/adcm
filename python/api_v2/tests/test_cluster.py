@@ -95,7 +95,7 @@ class TestCluster(BaseAPITestCase):
     def test_filter_by_prototype_name_success(self):
         response: Response = self.client.get(
             path=reverse(viewname="v2:cluster-list"),
-            data={"prototype_name": self.cluster_1.prototype.name},
+            data={"prototypeDisplayName": self.cluster_1.prototype.name},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -105,7 +105,7 @@ class TestCluster(BaseAPITestCase):
     def test_filter_by_wrong_prototype_name_success(self):
         response: Response = self.client.get(
             path=reverse(viewname="v2:cluster-list"),
-            data={"prototype_name": "wrong"},
+            data={"prototypeDisplayName": "wrong"},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

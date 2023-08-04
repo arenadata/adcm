@@ -66,11 +66,11 @@ class TestUserAPI(BaseAPITestCase):
         data = {
             "username": "test_user_username",
             "password": "test_user_password",
-            "first_name": "test_user_first_name",
-            "last_name": "test_user_last_name",
+            "firstName": "test_user_first_name",
+            "lastName": "test_user_last_name",
             "groups": [{"id": self.group.pk}],
             "email": "testuser@mail.ru",
-            "is_superuser": False,
+            "isSuperuser": False,
         }
         response: Response = self._create_user(user_data=data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -121,10 +121,10 @@ class TestUserAPI(BaseAPITestCase):
         user = self.create_user(user_data=user_data)
         data = {
             "password": "newtestpassword",
-            "first_name": "newtestfn",
-            "last_name": "newtestln",
+            "firstName": "newtestfn",
+            "lastName": "newtestln",
             "email": "newtest@mail.ru",
-            "is_superuser": True,
+            "isSuperuser": True,
             "groups": [{"id": new_group.pk}],
         }
 
@@ -316,9 +316,7 @@ class TestUserAPI(BaseAPITestCase):
         for data in user_data:
             self.create_user(user_data=data)
 
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:rbac:user-list"), data={"sortColumn": "username", "sortDirection": "desc"}
-        )
+        response: Response = self.client.get(path=reverse(viewname="v2:rbac:user-list"), data={"ordering": "-username"})
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response_usernames = [user["username"] for user in response.json()["results"]]
@@ -326,14 +324,7 @@ class TestUserAPI(BaseAPITestCase):
         self.assertListEqual(response_usernames, db_usernames)
 
     def test_ordering_wrong_params_fail(self):
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:rbac:user-list"), data={"sortColumn": "type", "sortDirection": "desc"}
-        )
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:rbac:user-list"), data={"sortColumn": "username", "sortDirection": "ascending"}
-        )
+        response: Response = self.client.get(path=reverse(viewname="v2:rbac:user-list"), data={"ordering": "param"})
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
     def test_filtering_by_username_success(self):
@@ -423,7 +414,7 @@ class TestUserAPI(BaseAPITestCase):
         target_user.save(update_fields=["type"])
 
         response: Response = self.client.get(
-            path=reverse(viewname="v2:rbac:user-list"), data={"userType": UserTypeChoices.LDAP.value}
+            path=reverse(viewname="v2:rbac:user-list"), data={"type": UserTypeChoices.LDAP.value}
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["results"]), 1)

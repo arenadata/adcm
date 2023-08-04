@@ -23,6 +23,7 @@ from api_v2.cluster.serializers import (
 )
 from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.host.serializers import HostMappingSerializer
+from api_v2.views import CamelCaseGenericViewSet, CamelCaseModelViewSet
 from cm.api import add_cluster, add_hc
 from cm.issue import update_hierarchy_issues
 from cm.models import (
@@ -33,6 +34,7 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -40,7 +42,6 @@ from rest_framework.mixins import CreateModelMixin, ListModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND
-from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
@@ -51,12 +52,13 @@ from adcm.permissions import (
 )
 
 
-class ClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=too-many-ancestors
-    queryset = Cluster.objects.all()
+class ClusterViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint:disable=too-many-ancestors
+    queryset = Cluster.objects.prefetch_related("prototype", "concerns").order_by("name")
     serializer_class = ClusterSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_CLUSTER_PERM]
     filterset_class = ClusterFilter
+    filter_backends = (DjangoFilterBackend,)
     http_method_names = ["get", "post", "patch", "delete"]
 
     def get_serializer_class(self):
@@ -112,16 +114,16 @@ class ClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=too-m
 
 
 class MappingViewSet(  # pylint:disable=too-many-ancestors
-    PermissionListMixin,
-    GenericViewSet,
-    ListModelMixin,
-    CreateModelMixin,
+    PermissionListMixin, ListModelMixin, CreateModelMixin, CamelCaseGenericViewSet
 ):
-    queryset = HostComponent.objects.select_related("service", "host", "component", "cluster").all()
+    queryset = HostComponent.objects.select_related("service", "host", "component", "cluster").order_by(
+        "component__prototype__display_name"
+    )
     serializer_class = HostComponentListSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_HC_PERM]
     pagination_class = None
+    filter_backends = []
 
     def get_serializer_class(self):
         if self.action == "create":

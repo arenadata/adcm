@@ -30,10 +30,10 @@ class TestClusterConfig(BaseAPITestCase):
         )
 
         data = {
-            "creation_time": self.cluster_1_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.cluster_1_config.date.isoformat().replace("+00:00", "Z"),
             "description": self.cluster_1_config.description,
             "id": self.cluster_1_config.pk,
-            "is_current": True,
+            "isCurrent": True,
         }
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
@@ -51,10 +51,10 @@ class TestClusterConfig(BaseAPITestCase):
         data = {
             "attr": self.cluster_1_config.attr,
             "config": self.cluster_1_config.config,
-            "creation_time": self.cluster_1_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.cluster_1_config.date.isoformat().replace("+00:00", "Z"),
             "description": self.cluster_1_config.description,
             "id": self.cluster_1_config.pk,
-            "is_current": True,
+            "isCurrent": True,
         }
         self.assertDictEqual(response.json(), data)
 
@@ -74,7 +74,7 @@ class TestClusterConfig(BaseAPITestCase):
         self.assertDictEqual(response_data["config"], data["config"])
         self.assertDictEqual(response_data["attr"], data["attr"])
         self.assertEqual(response_data["description"], data["description"])
-        self.assertEqual(response_data["is_current"], True)
+        self.assertEqual(response_data["isCurrent"], True)
 
     def test_schema_success(self):
         response: Response = self.client.get(
@@ -187,7 +187,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
         self.assertDictEqual(response_data["config"], data["config"])
         self.assertDictEqual(response_data["attr"], data["attr"])
         self.assertEqual(response_data["description"], data["description"])
-        self.assertEqual(response_data["is_current"], True)
+        self.assertEqual(response_data["isCurrent"], True)
 
 
 class TestServiceConfig(BaseAPITestCase):
@@ -206,10 +206,10 @@ class TestServiceConfig(BaseAPITestCase):
         )
 
         data = {
-            "creation_time": self.service_1_initial_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.service_1_initial_config.date.isoformat().replace("+00:00", "Z"),
             "description": self.service_1_initial_config.description,
             "id": self.service_1_initial_config.pk,
-            "is_current": True,
+            "isCurrent": True,
         }
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
@@ -231,10 +231,10 @@ class TestServiceConfig(BaseAPITestCase):
         data = {
             "attr": self.service_1_initial_config.attr,
             "config": self.service_1_initial_config.config,
-            "creation_time": self.service_1_initial_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.service_1_initial_config.date.isoformat().replace("+00:00", "Z"),
             "description": self.service_1_initial_config.description,
             "id": self.service_1_initial_config.pk,
-            "is_current": True,
+            "isCurrent": True,
         }
         self.assertDictEqual(response.json(), data)
 
@@ -257,7 +257,7 @@ class TestServiceConfig(BaseAPITestCase):
         self.assertDictEqual(response_data["config"], data["config"])
         self.assertDictEqual(response_data["attr"], data["attr"])
         self.assertEqual(response_data["description"], data["description"])
-        self.assertEqual(response_data["is_current"], True)
+        self.assertEqual(response_data["isCurrent"], True)
 
         response: Response = self.client.get(
             path=reverse(
@@ -291,10 +291,10 @@ class TestComponentConfig(BaseAPITestCase):
         )
 
         data = {
-            "creation_time": self.component_1_initial_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.component_1_initial_config.date.isoformat().replace("+00:00", "Z"),
             "description": self.component_1_initial_config.description,
             "id": self.component_1_initial_config.pk,
-            "is_current": True,
+            "isCurrent": True,
         }
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
@@ -317,10 +317,10 @@ class TestComponentConfig(BaseAPITestCase):
         data = {
             "attr": self.component_1_initial_config.attr,
             "config": self.component_1_initial_config.config,
-            "creation_time": self.component_1_initial_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.component_1_initial_config.date.isoformat().replace("+00:00", "Z"),
             "description": self.component_1_initial_config.description,
             "id": self.component_1_initial_config.pk,
-            "is_current": True,
+            "isCurrent": True,
         }
         self.assertDictEqual(response.json(), data)
 
@@ -347,7 +347,7 @@ class TestComponentConfig(BaseAPITestCase):
         self.assertDictEqual(response_data["config"], data["config"])
         self.assertDictEqual(response_data["attr"], data["attr"])
         self.assertEqual(response_data["description"], data["description"])
-        self.assertEqual(response_data["is_current"], True)
+        self.assertEqual(response_data["isCurrent"], True)
 
         response: Response = self.client.get(
             path=reverse(
@@ -379,10 +379,10 @@ class TestProviderConfig(BaseAPITestCase):
         )
 
         data = {
-            "creation_time": self.provider_initial_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.provider_initial_config.date.isoformat().replace("+00:00", "Z"),
             "description": self.provider_initial_config.description,
             "id": self.provider_initial_config.pk,
-            "is_current": True,
+            "isCurrent": True,
         }
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
@@ -403,10 +403,10 @@ class TestProviderConfig(BaseAPITestCase):
         data = {
             "attr": self.provider_initial_config.attr,
             "config": self.provider_initial_config.config,
-            "creation_time": self.provider_initial_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.provider_initial_config.date.isoformat().replace("+00:00", "Z"),
             "description": self.provider_initial_config.description,
             "id": self.provider_initial_config.pk,
-            "is_current": True,
+            "isCurrent": True,
         }
         self.assertDictEqual(response.json(), data)
 
@@ -455,7 +455,7 @@ class TestProviderConfig(BaseAPITestCase):
         self.assertDictEqual(response_data["config"], data["config"])
         self.assertDictEqual(response_data["attr"], data["attr"])
         self.assertEqual(response_data["description"], data["description"])
-        self.assertEqual(response_data["is_current"], True)
+        self.assertEqual(response_data["isCurrent"], True)
 
         response: Response = self.client.get(
             path=reverse(
@@ -482,10 +482,10 @@ class TestHostConfig(BaseAPITestCase):
         )
 
         data = {
-            "creation_time": self.host_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.host_config.date.isoformat().replace("+00:00", "Z"),
             "description": self.host_config.description,
             "id": self.host_config.pk,
-            "is_current": True,
+            "isCurrent": True,
         }
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
@@ -500,10 +500,10 @@ class TestHostConfig(BaseAPITestCase):
         data = {
             "attr": self.host_config.attr,
             "config": self.host_config.config,
-            "creation_time": self.host_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.host_config.date.isoformat().replace("+00:00", "Z"),
             "description": self.host_config.description,
             "id": self.host_config.pk,
-            "is_current": True,
+            "isCurrent": True,
         }
         self.assertDictEqual(response.json(), data)
 
@@ -523,7 +523,7 @@ class TestHostConfig(BaseAPITestCase):
         self.assertDictEqual(response_data["config"], data["config"])
         self.assertDictEqual(response_data["attr"], data["attr"])
         self.assertEqual(response_data["description"], data["description"])
-        self.assertEqual(response_data["is_current"], True)
+        self.assertEqual(response_data["isCurrent"], True)
 
         response: Response = self.client.get(
             path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host.pk})

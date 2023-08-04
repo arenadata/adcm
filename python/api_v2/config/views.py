@@ -12,6 +12,7 @@
 
 from api_v2.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
 from api_v2.config.utils import get_config_schema
+from api_v2.views import CamelCaseGenericViewSet
 from cm.api import update_obj_config
 from cm.models import ConfigLog
 from django.contrib.contenttypes.models import ContentType
@@ -21,19 +22,23 @@ from rest_framework.exceptions import NotFound
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
-from rest_framework.viewsets import GenericViewSet
 
 from adcm.mixins import GetParentObjectMixin
 from adcm.permissions import VIEW_CONFIG_PERM, check_config_perm
 
 
 class ConfigLogViewSet(
-    PermissionListMixin, ListModelMixin, CreateModelMixin, RetrieveModelMixin, GenericViewSet, GetParentObjectMixin
+    PermissionListMixin,
+    ListModelMixin,
+    CreateModelMixin,
+    RetrieveModelMixin,
+    GetParentObjectMixin,
+    CamelCaseGenericViewSet,
 ):  # pylint: disable=too-many-ancestors
-    queryset = ConfigLog.objects.select_related("obj_ref").all()
+    queryset = ConfigLog.objects.select_related("obj_ref").order_by("-pk")
     serializer_class = ConfigLogSerializer
     permission_required = [VIEW_CONFIG_PERM]
-    ordering = ["-id"]
+    filter_backends = []
 
     def get_queryset(self, *args, **kwargs):
         parent_object = self.get_parent_object()

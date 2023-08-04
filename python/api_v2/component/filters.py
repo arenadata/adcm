@@ -10,13 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Action
-from django_filters.rest_framework import CharFilter, FilterSet
+from cm.models import ServiceComponent
+from django_filters.rest_framework import FilterSet
 
 
-class ActionFilter(FilterSet):
-    name = CharFilter(label="Action name", field_name="name", lookup_expr="icontains")
-
+class ComponentFilter(FilterSet):
     class Meta:
-        model = Action
-        fields = ["id", "name"]
+        model = ServiceComponent
+        fields = ["id"]

@@ -16,9 +16,9 @@ import re
 import tarfile
 from pathlib import Path
 
-from api.base_view import GenericUIViewSet
 from api.job.views import VIEW_LOGSTORAGE_PERMISSION
 from api_v2.log_storage.serializers import LogStorageSerializer
+from api_v2.views import CamelCaseGenericViewSet
 from cm.models import ActionType, JobLog, LogStorage, TaskLog
 from django.http import HttpResponse
 from rest_framework.decorators import action
@@ -121,11 +121,10 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
 
 
 # pylint:disable-next=too-many-ancestors
-class LogStorageViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
-    queryset = LogStorage.objects.all()
+class LogStorageViewSet(ListModelMixin, RetrieveModelMixin, CamelCaseGenericViewSet):
+    queryset = LogStorage.objects.order_by("pk")
     serializer_class = LogStorageSerializer
-    filterset_fields = ("name", "type", "format")
-    ordering_fields = ("id", "name")
+    filter_backends = []
     permission_required = ["cm.view_logstorage"]
     lookup_url_kwarg = "log_pk"
 

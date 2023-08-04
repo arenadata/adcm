@@ -15,26 +15,27 @@ from api_v2.hostprovider.serializers import (
     HostProviderCreateSerializer,
     HostProviderSerializer,
 )
+from api_v2.views import CamelCaseReadOnlyModelViewSet
 from cm.api import add_host_provider, delete_host_provider
 from cm.models import HostProvider, ObjectType, Prototype
+from django_filters.rest_framework.backends import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_409_CONFLICT,
 )
-from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import VIEW_HOST_PERM, DjangoModelPermissionsAudit
 
 
-class HostProviderViewSet(ModelViewSet):  # pylint:disable=too-many-ancestors
-    queryset = HostProvider.objects.select_related("prototype").all()
+class HostProviderViewSet(CamelCaseReadOnlyModelViewSet):  # pylint:disable=too-many-ancestors
+    queryset = HostProvider.objects.select_related("prototype").order_by("name")
     serializer_class = HostProviderSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_HOST_PERM]
     filterset_class = HostProviderFilter
-    ordering_fields = ("id", "name", "state", "prototype__display_name", "prototype__version")
+    filter_backends = (DjangoFilterBackend,)
 
     def get_serializer_class(self):
         if self.action == "create":

@@ -18,8 +18,10 @@ from api_v2.action.serializers import (
 )
 from api_v2.action.utils import check_run_perms, filter_actions_by_user_perm
 from api_v2.task.serializers import TaskListSerializer
+from api_v2.views import CamelCaseGenericViewSet
 from cm.job import start_task
 from cm.models import Action
+from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
@@ -27,7 +29,6 @@ from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
-from rest_framework.viewsets import GenericViewSet
 
 from adcm.mixins import GetParentObjectMixin
 from adcm.permissions import (
@@ -39,12 +40,13 @@ from adcm.utils import filter_actions
 
 
 class ActionViewSet(  # pylint: disable=too-many-ancestors
-    PermissionListMixin, GenericViewSet, ListModelMixin, RetrieveModelMixin, GetParentObjectMixin
+    PermissionListMixin, ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, CamelCaseGenericViewSet
 ):
-    queryset = Action.objects.all()
+    queryset = Action.objects.order_by("pk")
     serializer_class = ActionListSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_ACTION_PERM]
+    filter_backends = (DjangoFilterBackend,)
     filterset_class = ActionFilter
 
     def get_serializer_class(

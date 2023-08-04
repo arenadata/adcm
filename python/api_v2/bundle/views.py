@@ -10,29 +10,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.bundle.filters import BundleFilter, BundleOrderingFilter
+from api_v2.bundle.filters import BundleFilter
 from api_v2.bundle.serializers import BundleListSerializer, UploadBundleSerializer
+from api_v2.views import CamelCaseReadOnlyModelViewSet
 from cm.bundle import delete_bundle, load_bundle, upload_file
 from cm.models import Bundle
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
-from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import VIEW_ACTION_PERM, DjangoModelPermissionsAudit
 
 
-class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = Bundle.objects.exclude(name="ADCM").prefetch_related("prototype_set")
+class BundleViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
+    queryset = Bundle.objects.exclude(name="ADCM").prefetch_related("prototype_set").order_by("name")
     serializer_class = BundleListSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_ACTION_PERM]
     filterset_class = BundleFilter
-    filter_backends = (
-        DjangoFilterBackend,
-        BundleOrderingFilter,
-    )
-    ordering = ["id"]
+    filter_backends = (DjangoFilterBackend,)
     http_method_names = ["get", "post", "delete"]
 
     def create(self, request, *args, **kwargs) -> Response:
