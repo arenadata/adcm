@@ -24,6 +24,7 @@ from api_v2.host.utils import (
     maintenance_mode,
     map_list_of_hosts,
 )
+from api_v2.views import CamelCaseReadOnlyModelViewSet
 from cm.api import add_host_to_cluster, delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
@@ -39,7 +40,6 @@ from rest_framework.status import (
     HTTP_204_NO_CONTENT,
     HTTP_404_NOT_FOUND,
 )
-from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
@@ -52,7 +52,7 @@ from adcm.permissions import (
 
 
 # pylint:disable-next=too-many-ancestors
-class HostViewSet(PermissionListMixin, ModelViewSet):
+class HostViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):
     queryset = (
         Host.objects.select_related("provider", "cluster")
         .prefetch_related("concerns", "hostcomponent_set")
@@ -144,7 +144,7 @@ class HostViewSet(PermissionListMixin, ModelViewSet):
         return maintenance_mode(request=request, **kwargs)
 
 
-class HostClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=too-many-ancestors
+class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pylint:disable=too-many-ancestors
     serializer_class = HostSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_HOST_PERM]

@@ -26,7 +26,6 @@ from adcm.serializers import EmptySerializer
 
 
 class HostProviderSerializer(ModelSerializer):
-    type = CharField(source="prototype.type")
     state = CharField(read_only=True)
     prototype = PrototypeRelatedSerializer(read_only=True)
     description = CharField(required=False)
@@ -41,7 +40,6 @@ class HostProviderSerializer(ModelSerializer):
             "name",
             "state",
             "multi_state",
-            "type",
             "prototype",
             "description",
             "concerns",

@@ -121,7 +121,7 @@ class TaskSerializer(ModelSerializer):
 
 
 class TaskListSerializer(TaskSerializer):
-    child_jobs = JobListSerializer(many=True, source="joblog_set", read_only=True)
+    child_jobs = SerializerMethodField()
 
     class Meta:
         model = TaskLog
@@ -129,6 +129,10 @@ class TaskListSerializer(TaskSerializer):
             *TaskSerializer.Meta.fields,
             "child_jobs",
         )
+
+    @staticmethod
+    def get_child_jobs(obj: TaskLog) -> list:
+        return JobListSerializer(instance=obj.joblog_set.order_by("pk"), many=True, read_only=True).data
 
 
 class TaskRetrieveByJobSerializer(TaskSerializer):

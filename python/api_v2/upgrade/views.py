@@ -17,6 +17,7 @@ from api_v2.upgrade.serializers import (
     UpgradeRetrieveSerializer,
     UpgradeRunSerializer,
 )
+from api_v2.views import CamelCaseGenericViewSet
 from cm.issue import update_hierarchy_issues
 from cm.models import Cluster, HostProvider, Upgrade
 from cm.upgrade import do_upgrade, get_upgrade
@@ -31,7 +32,6 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-from rest_framework.viewsets import GenericViewSet
 
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
@@ -42,9 +42,10 @@ from adcm.permissions import (
 )
 
 
-class UpgradeViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
-    queryset = Upgrade.objects.all().select_related("action")
+class UpgradeViewSet(ListModelMixin, RetrieveModelMixin, CamelCaseGenericViewSet):
+    queryset = Upgrade.objects.all().select_related("action").order_by("pk")
     permission_classes = [DjangoModelPermissionsAudit]
+    filter_backends = []
 
     base_for_upgrade = {
         "cluster_pk": {"perms": VIEW_CLUSTER_PERM, "klass": Cluster, "list_serializer": ClusterUpgradeListSerializer},

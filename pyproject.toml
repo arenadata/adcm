@@ -43,6 +43,7 @@ uwsgi = "*"
 version-utils = "*"
 six = "*"
 django-cors-headers = "*"
+djangorestframework-camel-case = "^1.4.2"
 
 [tool.poetry.group.lint]
 optional = true

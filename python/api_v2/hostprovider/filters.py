@@ -10,18 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from cm.models import HostProvider
-from django_filters.rest_framework import CharFilter, FilterSet
+from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
 
 
 class HostProviderFilter(FilterSet):
     name = CharFilter(field_name="name", label="Hostprovider name", lookup_expr="icontains")
-    prototype_name = CharFilter(field_name="prototype__name", label="Hostprovider type")
+    prototypeDisplayName = CharFilter(field_name="prototype__display_name", label="Hostprovider prototype display name")
     state = CharFilter(field_name="state", label="Hostprovider state")
+    ordering = OrderingFilter(fields={"name": "name"}, field_labels={"name": "Name"}, label="ordering")
 
     class Meta:
         model = HostProvider
-        fields = [
-            "name",
-            "state",
-            "prototype_name",
-        ]
+        fields = ["name", "state", "prototypeDisplayName", "ordering"]

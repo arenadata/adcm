@@ -9,11 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api.base_view import GenericUIViewSet
 from api.job.views import VIEW_TASKLOG_PERMISSION
+from api_v2.task.filters import TaskFilter
 from api_v2.task.serializers import TaskListSerializer
+from api_v2.views import CamelCaseGenericViewSet
 from cm.job import cancel_task
 from cm.models import TaskLog
+from django_filters.rest_framework.backends import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
@@ -24,10 +26,12 @@ from adcm.permissions import check_custom_perm, get_object_for_user
 
 
 class TaskViewSet(
-    ListModelMixin, RetrieveModelMixin, CreateModelMixin, GenericUIViewSet
+    ListModelMixin, RetrieveModelMixin, CreateModelMixin, CamelCaseGenericViewSet
 ):  # pylint: disable=too-many-ancestors
-    queryset = TaskLog.objects.select_related("action").all()
+    queryset = TaskLog.objects.select_related("action").order_by("-pk")
     serializer_class = TaskListSerializer
+    filterset_class = TaskFilter
+    filter_backends = (DjangoFilterBackend,)
 
     @action(methods=["post"], detail=True)
     def terminate(self, request: Request, pk: int) -> Response:

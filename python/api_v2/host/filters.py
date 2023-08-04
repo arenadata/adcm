@@ -18,7 +18,7 @@ class HostFilter(FilterSet):
     name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
     hostproviderName = CharFilter(label="Hostprovider name", field_name="provider__name")
     clusterName = CharFilter(label="Cluster name", field_name="cluster__name")
-    ordering = OrderingFilter(fields={"fqdn": "name"}, field_labels={"name": "name"}, label="ordering")
+    ordering = OrderingFilter(fields={"fqdn": "name"}, field_labels={"name": "Name"}, label="ordering")
 
     class Meta:
         model = Host

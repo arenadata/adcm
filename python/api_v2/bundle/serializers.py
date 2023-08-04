@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from cm.models import Bundle
-from rest_framework.fields import DateTimeField, FileField, SerializerMethodField
+from rest_framework.fields import DateTimeField, FileField
 from rest_framework.serializers import ModelSerializer
 
 from adcm.serializers import EmptySerializer
@@ -24,16 +24,11 @@ class BundleIdSerializer(ModelSerializer):
 
 
 class BundleListSerializer(ModelSerializer):
-    display_name = SerializerMethodField()
     upload_time = DateTimeField(read_only=True, source="date")
 
     class Meta:
         model = Bundle
-        fields = ("id", "name", "display_name", "version", "edition", "upload_time", "category", "signature_status")
-
-    def get_display_name(self, instance) -> str | None:
-        prototype = instance.prototype_set.filter(type__in=["adcm", "cluster", "provider"]).first()
-        return prototype.display_name
+        fields = ("id", "name", "version", "edition", "upload_time", "category", "signature_status")
 
 
 class UploadBundleSerializer(EmptySerializer):
