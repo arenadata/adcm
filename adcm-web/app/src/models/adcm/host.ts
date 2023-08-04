@@ -25,7 +25,7 @@ export interface AdcmHost {
   name: string;
   state: string;
   status: number;
-  provider: AdcmHostProvider;
+  hostprovider: AdcmHostProvider;
   prototype: AdcmHostPrototype;
   concerns: AdcmConcerns[];
   isMaintenanceModeAvailable: boolean;
@@ -37,7 +37,7 @@ export interface AdcmHost {
 }
 
 export interface CreateAdcmHostPayload {
-  clusterName: string;
-  hostProvider: string;
-  hostName: string;
+  clusterId?: number | null;
+  hostproviderId: number | null;
+  name: string;
 }

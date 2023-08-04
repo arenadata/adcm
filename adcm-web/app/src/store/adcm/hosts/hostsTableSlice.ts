@@ -22,7 +22,7 @@ const createInitialState = (): AdcmHostsTableState => ({
   },
   requestFrequency: 0,
   sortParams: {
-    sortBy: '',
+    sortBy: 'name',
     sortDirection: 'asc',
   },
   relatedData: {
@@ -41,7 +41,7 @@ const loadClusters = createAsyncThunk('adcm/hostsTable/loadClusters', async (arg
   }
 });
 
-const loadHostProviders = createAsyncThunk('adcm/hostsTable/HostProviders', async (arg, thunkAPI) => {
+const loadHostProviders = createAsyncThunk('adcm/hostsTable/hostProviders', async (arg, thunkAPI) => {
   try {
     const emptyFilter = {};
     const defaultSortParams: SortParams = { sortBy: 'name', sortDirection: 'asc' };

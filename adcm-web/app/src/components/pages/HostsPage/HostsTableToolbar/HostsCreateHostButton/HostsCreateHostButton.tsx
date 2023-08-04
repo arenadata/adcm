@@ -1,11 +1,13 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { Button } from '@uikit';
+import { useDispatch } from '@hooks';
+import { openCreateDialog } from '@store/adcm/hosts/hostsActionsSlice';
 
 const HostsCreateHostButton: React.FC = () => {
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const dispatch = useDispatch();
 
   const handleClick = () => {
-    inputRef.current?.click();
+    dispatch(openCreateDialog());
   };
 
   return (
