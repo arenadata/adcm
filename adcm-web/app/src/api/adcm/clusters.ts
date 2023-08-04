@@ -15,7 +15,7 @@ import { prepareQueryParams } from '@utils/apiUtils';
 
 export class AdcmClustersApi {
   public static async getClusters(
-    filter: AdcmClustersFilter,
+    filter?: AdcmClustersFilter,
     sortParams?: SortParams,
     paginationParams?: PaginationParams,
   ) {
@@ -63,5 +63,17 @@ export class AdcmClustersApi {
 
   public static async postClusterUpgradeRun(clusterId: number, upgradeId: number, action: AdcmClusterActionPayload) {
     await httpClient.post(`/api/v2/clusters/${clusterId}/upgrades/${upgradeId}/run`, action);
+  }
+
+  public static async linkHost(clusterId: number, hostId: number) {
+    await httpClient.post(`/api/v2/clusters/${clusterId}/hosts/`, [
+      {
+        hostId,
+      },
+    ]);
+  }
+
+  public static async unlinkHost(clusterId: number, hostId: number) {
+    await httpClient.delete(`/api/v2/clusters/${clusterId}/hosts/${hostId}`);
   }
 }

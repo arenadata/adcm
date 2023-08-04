@@ -12,8 +12,9 @@ import breadcrumbsSlice from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import hostProvidersSlice from '@store/adcm/hostProviders/hostProvidersSlice';
 import hostProvidersTableSlice from '@store/adcm/hostProviders/hostProvidersTableSlice';
 import createHostProviderDialogSlice from '@store/adcm/hostProviders/dialogs/createHostProviderDialogSlice';
-import hostsTableSlice from '@store/adcm/hosts/hostsTableSlice.tsx';
-import hostsSlice from '@store/adcm/hosts/hostsSlice.tsx';
+import hostsTableSlice from '@store/adcm/hosts/hostsTableSlice';
+import hostsSlice from '@store/adcm/hosts/hostsSlice';
+import hostsActionsSlice from '@store/adcm/hosts/hostsActionsSlice';
 import serviceSlice from '@store/adcm/services/serviceSlice';
 import auditOperationsSlice from '@store/adcm/audit/auditOperations/auditOperationsSlice';
 import auditOperationsTableSlice from '@store/adcm/audit/auditOperations/auditOperationsTableSlice';
@@ -39,10 +40,10 @@ const rootReducer = combineReducers({
     createHostProviderDialog: createHostProviderDialogSlice,
     hosts: hostsSlice,
     hostsTable: hostsTableSlice,
+    hostsActions: hostsActionsSlice,
     service: serviceSlice,
     auditOperations: auditOperationsSlice,
     auditOperationsTable: auditOperationsTableSlice,
-    // createHostDialog: createHostDialogSlice,
   }),
 });
 

@@ -4,10 +4,11 @@ import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import { columns, hostStatusesMap } from '@pages/HostsPage/HostsTable/HostsTable.constants';
 import { useDispatch, useStore } from '@hooks';
 import { AdcmHost } from '@models/adcm/host';
-import { setDeletableId } from '@store/adcm/hosts/hostsSlice';
+import UnlinkHostToggleButton from '@pages/HostsPage/HostsTable/Buttons/UnlinkHostToggleButton/UnlinkHostToggleButton';
 import { SortParams } from '@uikit/types/list.types';
 import { setSortParams } from '@store/adcm/hosts/hostsTableSlice';
 import { orElseGet } from '@utils/checkUtils';
+import { openDeleteDialog } from '@store/adcm/hosts/hostsActionsSlice';
 
 const HostsTable: React.FC = () => {
   const dispatch = useDispatch();
@@ -22,7 +23,7 @@ const HostsTable: React.FC = () => {
 
   const getHandleDeleteClick = (hostId: number) => () => {
     // set deletable id for show Delete Confirm Dialog
-    dispatch(setDeletableId(hostId));
+    dispatch(openDeleteDialog(hostId));
   };
 
   const handleSorting = (sortParams: SortParams) => {
@@ -36,13 +37,13 @@ const HostsTable: React.FC = () => {
           <TableRow key={host.id}>
             <StatusableCell status={hostStatusesMap['done']}>{host.name}</StatusableCell>
             <TableCell>{host.state}</TableCell>
-            <TableCell>{host.provider.name}</TableCell>
+            <TableCell>{host.hostprovider.name}</TableCell>
             <TableCell>{orElseGet(host.cluster?.name)}</TableCell>
             <TableCell>{'-'}</TableCell>
             <TableCell hasIconOnly align="center">
               <IconButton icon="g1-actions" size={32} onClick={dummyHandler()} title="Actions" />
               <IconButton icon="g1-maintenance" size={32} onClick={dummyHandler()} title="Maintenance mode" />
-              <IconButton icon="g1-unlink" size={32} onClick={dummyHandler()} title="Unlink" />
+              <UnlinkHostToggleButton host={host} />
               <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(host.id)} title="Delete" />
             </TableCell>
           </TableRow>

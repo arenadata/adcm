@@ -21,7 +21,7 @@ const createInitialState = (): AdcmClustersTableState => ({
   },
   requestFrequency: 5,
   sortParams: {
-    sortBy: '',
+    sortBy: 'name',
     sortDirection: 'asc',
   },
   relatedData: {
