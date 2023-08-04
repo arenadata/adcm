@@ -66,11 +66,11 @@ class TestUserAPI(BaseAPITestCase):
         data = {
             "username": "test_user_username",
             "password": "test_user_password",
-            "first_name": "test_user_first_name",
-            "last_name": "test_user_last_name",
+            "firstName": "test_user_first_name",
+            "lastName": "test_user_last_name",
             "groups": [{"id": self.group.pk}],
             "email": "testuser@mail.ru",
-            "is_superuser": False,
+            "isSuperuser": False,
         }
         response: Response = self._create_user(user_data=data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -121,10 +121,10 @@ class TestUserAPI(BaseAPITestCase):
         user = self.create_user(user_data=user_data)
         data = {
             "password": "newtestpassword",
-            "first_name": "newtestfn",
-            "last_name": "newtestln",
+            "firstName": "newtestfn",
+            "lastName": "newtestln",
             "email": "newtest@mail.ru",
-            "is_superuser": True,
+            "isSuperuser": True,
             "groups": [{"id": new_group.pk}],
         }
 

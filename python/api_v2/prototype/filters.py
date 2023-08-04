@@ -16,10 +16,8 @@ from django_filters.rest_framework import FilterSet
 
 
 class PrototypeFilter(FilterSet):
-    type = ChoiceFilter(choices=ObjectType.choices)
+    type = ChoiceFilter(choices=ObjectType.choices, label="Type")
 
     class Meta:
         model = Prototype
-        fields = [
-            "type",
-        ]
+        fields = ["id", "type"]

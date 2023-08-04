@@ -12,6 +12,7 @@
 
 from api_v2.group_config.serializers import GroupConfigSerializer
 from api_v2.host.serializers import HostGroupConfigSerializer
+from api_v2.views import CamelCaseModelViewSet
 from cm.models import GroupConfig
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
@@ -20,17 +21,18 @@ from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
-from rest_framework.viewsets import ModelViewSet
 
 from adcm.mixins import GetParentObjectMixin
 from adcm.permissions import VIEW_GROUP_CONFIG_PERM, check_config_perm
 
 
-class GroupConfigViewSet(PermissionListMixin, ModelViewSet, GetParentObjectMixin):  # pylint: disable=too-many-ancestors
-    queryset = GroupConfig.objects.all()
+class GroupConfigViewSet(
+    PermissionListMixin, GetParentObjectMixin, CamelCaseModelViewSet
+):  # pylint: disable=too-many-ancestors
+    queryset = GroupConfig.objects.order_by("name")
     serializer_class = GroupConfigSerializer
     permission_required = [VIEW_GROUP_CONFIG_PERM]
-    ordering = ["id"]
+    filter_backends = []
 
     def get_queryset(self, *args, **kwargs):
         parent_object = self.get_parent_object()
@@ -75,7 +77,7 @@ class GroupConfigViewSet(PermissionListMixin, ModelViewSet, GetParentObjectMixin
 
             return Response(data=HostGroupConfigSerializer(hosts, many=True).data, status=HTTP_201_CREATED)
 
-        queryset = group_config.hosts.order_by("id")
+        queryset = group_config.hosts.order_by("fqdn")
         serializer = HostGroupConfigSerializer(self.paginate_queryset(queryset=queryset), many=True)
 
         return self.get_paginated_response(data=serializer.data)

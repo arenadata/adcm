@@ -16,6 +16,7 @@ from api_v2.rbac.users.serializers import (
     UserSerializer,
     UserUpdateSerializer,
 )
+from api_v2.views import CamelCaseModelViewSet
 from django.utils.timezone import now
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
@@ -26,12 +27,11 @@ from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
-from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import VIEW_USER_PERMISSION
 
 
-class UserViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
+class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disable=too-many-ancestors
     queryset = User.objects.prefetch_related("groups").order_by("username")
     serializer_class = UserSerializer
     filter_backends = (DjangoFilterBackend,)

@@ -12,13 +12,13 @@
 
 from api_v2.imports.serializers import ImportPostSerializer
 from api_v2.imports.utils import cook_data_for_multibind, get_imports
+from api_v2.views import CamelCaseReadOnlyModelViewSet
 from cm.api import multi_bind
 from cm.models import Cluster, ClusterObject
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
-from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import (
     CHANGE_IMPORT_PERM,
@@ -31,9 +31,10 @@ from adcm.permissions import (
 )
 
 
-class ImportViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
+class ImportViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
     permission_classes = [IsAuthenticated]
     ordering = ["id"]
+    filter_backends = []
 
     def get_serializer_class(self):
         if self.action == "create":

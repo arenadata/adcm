@@ -12,17 +12,17 @@
 
 from api_v2.bundle.filters import BundleFilter
 from api_v2.bundle.serializers import BundleListSerializer, UploadBundleSerializer
+from api_v2.views import CamelCaseReadOnlyModelViewSet
 from cm.bundle import delete_bundle, load_bundle, upload_file
 from cm.models import Bundle
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
-from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import VIEW_ACTION_PERM, DjangoModelPermissionsAudit
 
 
-class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
+class BundleViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
     queryset = Bundle.objects.exclude(name="ADCM").prefetch_related("prototype_set").order_by("name")
     serializer_class = BundleListSerializer
     permission_classes = [DjangoModelPermissionsAudit]

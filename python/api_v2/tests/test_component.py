@@ -14,7 +14,7 @@ from api_v2.tests.base import BaseAPITestCase
 from cm.models import Action, MaintenanceMode, ServiceComponent
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
+from rest_framework.status import HTTP_200_OK, HTTP_405_METHOD_NOT_ALLOWED
 
 
 class TestComponentAPI(BaseAPITestCase):
@@ -68,8 +68,7 @@ class TestComponentAPI(BaseAPITestCase):
             ),
         )
 
-        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-        self.assertFalse(ServiceComponent.objects.filter(pk=self.component_1.pk).exists())
+        self.assertEqual(response.status_code, HTTP_405_METHOD_NOT_ALLOWED)
 
     def test_action_list_success(self):
         response: Response = self.client.get(
