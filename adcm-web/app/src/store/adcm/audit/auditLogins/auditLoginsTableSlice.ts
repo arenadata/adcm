@@ -1,19 +1,16 @@
-import { AdcmAuditOperationFilter } from '@models/adcm';
+import { AdcmAuditLoginFilter } from '@models/adcm';
 import { createListSlice } from '@store/redux';
 import { ListState } from '@models/table';
 import { getStartDayEndDay } from '@utils/date/calendarUtils';
 
-type AdcmAuditOperationsTableState = ListState<AdcmAuditOperationFilter>;
+type AdcmAuditLoginsTableState = ListState<AdcmAuditLoginFilter>;
 
-const createInitialState = (): AdcmAuditOperationsTableState => {
+const createInitialState = (): AdcmAuditLoginsTableState => {
   const [timeFrom, timeTo] = getStartDayEndDay();
 
   return {
     filter: {
-      operationType: undefined,
-      operationResult: undefined,
-      objectName: undefined,
-      objectType: undefined,
+      loginResult: undefined,
       username: undefined,
       timeFrom,
       timeTo,
@@ -30,12 +27,12 @@ const createInitialState = (): AdcmAuditOperationsTableState => {
   };
 };
 
-const auditOperationsTableStateSlice = createListSlice({
-  name: 'adcm/auditOperationsTable',
+const auditLoginsTableStateSlice = createListSlice({
+  name: 'adcm/auditLoginsTable',
   createInitialState,
   reducers: {},
 });
 
 export const { setPaginationParams, setSortParams, setRequestFrequency, setFilter, resetFilter } =
-  auditOperationsTableStateSlice.actions;
-export default auditOperationsTableStateSlice.reducer;
+  auditLoginsTableStateSlice.actions;
+export default auditLoginsTableStateSlice.reducer;

@@ -21,8 +21,8 @@ const loadAuditOperations = createAsyncThunk('adcm/auditOperations/loadAuditOper
 
   const prepFilter = {
     ...filter,
-    operationTimeAfter: localDateToServerDate(new Date(filter.operationTimeAfter)),
-    operationTimeBefore: localDateToServerDate(new Date(filter.operationTimeBefore)),
+    timeFrom: localDateToServerDate(new Date(filter.timeFrom)),
+    timeTo: localDateToServerDate(new Date(filter.timeTo)),
   };
 
   try {

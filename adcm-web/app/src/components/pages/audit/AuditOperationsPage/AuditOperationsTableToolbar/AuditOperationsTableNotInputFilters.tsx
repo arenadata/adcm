@@ -15,8 +15,8 @@ const AuditOperationsTableNotInputFilters = () => {
 
   const filter = useStore(({ adcm }) => adcm.auditOperationsTable.filter);
 
-  const startDate = useMemo(() => new Date(filter.operationTimeAfter), [filter.operationTimeAfter]);
-  const endDate = useMemo(() => new Date(filter.operationTimeBefore), [filter.operationTimeBefore]);
+  const startDate = useMemo(() => new Date(filter.timeFrom), [filter.timeFrom]);
+  const endDate = useMemo(() => new Date(filter.timeTo), [filter.timeTo]);
 
   const handleObjectTypeChange = (value: AdcmAuditOperationObjectType | null) => {
     dispatch(setFilter({ objectType: value ?? undefined }));
@@ -30,14 +30,14 @@ const AuditOperationsTableNotInputFilters = () => {
     dispatch(setFilter({ operationResult: value ?? undefined }));
   };
 
-  const handleOperationTimeAfter = (newDate?: Date) => {
+  const handleTimeFrom = (newDate?: Date) => {
     if (!newDate) return;
-    dispatch(setFilter({ operationTimeAfter: newDate.getTime() }));
+    dispatch(setFilter({ timeFrom: newDate.getTime() }));
   };
 
-  const handleOperationTimeBefore = (newDate?: Date) => {
+  const handleTimeTo = (newDate?: Date) => {
     if (!newDate) return;
-    dispatch(setFilter({ operationTimeBefore: newDate.getTime() }));
+    dispatch(setFilter({ timeTo: newDate.getTime() }));
   };
 
   const handleResetFiltersClick = () => {
@@ -77,10 +77,10 @@ const AuditOperationsTableNotInputFilters = () => {
         />
       </LabeledField>
       <LabeledField label="Time since" direction="row">
-        <DatePicker value={startDate} onSubmit={handleOperationTimeAfter} maxDate={endDate} />
+        <DatePicker value={startDate} onSubmit={handleTimeFrom} maxDate={endDate} />
       </LabeledField>
       <LabeledField label="to" direction="row">
-        <DatePicker value={endDate} onSubmit={handleOperationTimeBefore} minDate={startDate} />
+        <DatePicker value={endDate} onSubmit={handleTimeTo} minDate={startDate} />
       </LabeledField>
       <Button variant="secondary" iconLeft="g1-return" onClick={handleResetFiltersClick} />
     </TableFilters>

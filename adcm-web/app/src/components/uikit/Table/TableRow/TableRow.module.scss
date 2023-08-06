@@ -1,0 +1,22 @@
+:global {
+  body.theme-dark {
+    --table-row-inactive-color: var(--color-xgray-light);
+    --table-row-inactive-hover-color: var(--color-xgray-lighter);
+  }
+  body.theme-light {
+    --table-row-inactive-color: var(--color-xgray-lighter);
+    --table-row-inactive-hover-color: var(--color-xgray-darker);
+  }
+}
+
+tr.tableRow_inactive {
+
+  & > td {
+    color: var(--table-row-inactive-color);
+  }
+
+  &:hover > td,
+  &:global(.is-active) > td {
+    color: var(--table-row-inactive-hover-color);
+  }
+}
