@@ -11,6 +11,7 @@ export interface ExpandableRowProps extends React.PropsWithChildren {
   expandedContent?: React.ReactNode;
   colSpan: number;
   className?: string;
+  isInactive?: boolean;
 }
 
 const ExpandableRow = ({
@@ -19,6 +20,7 @@ const ExpandableRow = ({
   expandedContent = undefined,
   colSpan,
   className = '',
+  isInactive = false,
 }: ExpandableRowProps) => {
   const [isMainHovered, setIsMainHovered] = useState(false);
   const [isExpandHovered, setIsExpandHovered] = useState(false);
@@ -28,6 +30,7 @@ const ExpandableRow = ({
   const rowClasses = cn(className, s.expandableRowMain, {
     [tableStyles.hovered]: isMainHovered || isExpandHovered,
     [s.expanded]: isExpanded,
+    [s.expandableRowMain_inactive]: isInactive,
   });
 
   const expandedRowClasses = cn(s.expandableRowContent, { [tableStyles.hovered]: isMainHovered || isExpandHovered });
@@ -57,7 +60,7 @@ const ExpandableRow = ({
 
   return (
     <>
-      <TableRow ref={refRow} className={rowClasses}>
+      <TableRow isInactive={isInactive} ref={refRow} className={rowClasses}>
         {children}
       </TableRow>
       {expandedContent && (

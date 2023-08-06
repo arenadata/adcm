@@ -2,10 +2,14 @@
   body.theme-dark {
     --table-expandable-row-background: var(--color-xdark-new-full);
     --table-expandable-row-content-background: var(--color-xdark-new);
+
+    --table-expandable-row-inactive-color: var(--color-xgray-lighter);
   }
   body.theme-light {
     --table-expandable-row-background: var(--color-xgray-alt);
     --table-expandable-row-content-background: var(--color-xwhite-50);
+
+    --table-expandable-row-inactive-color: var(--color-xgray-darker);
 
   }
 }
@@ -15,6 +19,10 @@ tr.expandableRowMain {
   &.expanded {
     background: var(--table-expandable-row-background);
     border-bottom: 0!important;
+
+    &.expandableRowMain_inactive > td {
+      color: var(--table-expandable-row-inactive-color);
+    }
   }
 
   td {

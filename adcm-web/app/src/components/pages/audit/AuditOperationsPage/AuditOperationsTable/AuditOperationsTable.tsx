@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { columns } from '@pages/audit/AuditOperationsPage/AuditOperationsTable/AuditOperations.constants';
+import {
+  columns,
+  operationAuditInactiveResults,
+} from '@pages/audit/AuditOperationsPage/AuditOperationsTable/AuditOperations.constants';
 import { Button, Table, TableCell, ExpandableRowComponent } from '@uikit';
 import { setSortParams } from '@store/adcm/audit/auditOperations/auditOperationsTableSlice';
 import { SortParams } from '@models/table';
@@ -35,6 +38,7 @@ const AuditOperationsTable = () => {
           key={auditOperation.id}
           colSpan={columns.length}
           isExpanded={expandableRows[auditOperation.id] || false}
+          isInactive={operationAuditInactiveResults.includes(auditOperation.result)}
           expandedContent={<AuditOperationsTableExpandedContent objectChanges={auditOperation.objectChanges} />}
         >
           <TableCell>{orElseGet(auditOperation.object?.type)}</TableCell>

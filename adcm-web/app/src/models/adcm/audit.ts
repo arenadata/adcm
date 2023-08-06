@@ -1,3 +1,5 @@
+// Audit Operations
+
 export enum AdcmAuditOperationType {
   create = 'create',
   update = 'update',
@@ -56,14 +58,43 @@ export interface AdcmAuditOperationFilter {
   objectName?: string;
   objectType?: AdcmAuditOperationObjectType;
   username?: string;
-  operationTimeAfter: number;
-  operationTimeBefore: number;
+  timeFrom: number;
+  timeTo: number;
 }
 
-export type AdcmAuditOperationRequestParam = Omit<
-  AdcmAuditOperationFilter,
-  'operationTimeAfter' | 'operationTimeBefore'
-> & {
-  operationTimeAfter: string;
-  operationTimeBefore: string;
+export type AdcmAuditOperationRequestParam = Omit<AdcmAuditOperationFilter, 'timeFrom' | 'timeTo'> & {
+  timeFrom: string;
+  timeTo: string;
+};
+
+// Audit Logins
+
+export interface AdcmAuditLogin {
+  id: number;
+  user: AdcmAuditLoginUser;
+  result: AdcmAuditLoginResultType;
+  time: string;
+}
+
+export enum AdcmAuditLoginResultType {
+  success = 'success',
+  wrongPassword = 'wrong password',
+  userNotFound = 'user not found',
+  accountDisabled = 'account disabled',
+}
+
+export interface AdcmAuditLoginUser {
+  name: string;
+}
+
+export interface AdcmAuditLoginFilter {
+  username?: string;
+  loginResult?: AdcmAuditLoginResultType;
+  timeFrom: number;
+  timeTo: number;
+}
+
+export type AdcmAuditLoginRequestParam = Omit<AdcmAuditLoginFilter, 'timeFrom' | 'timeTo'> & {
+  timeFrom: string;
+  timeTo: string;
 };
