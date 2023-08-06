@@ -1,10 +1,20 @@
-import React from 'react';
+import TableContainer from '@commonComponents/Table/TableContainer/TableContainer';
+import AccessManagerUsersTableHeader from './AccessManagerUsersTableToolbar/AccessManagerUsersTableToolbar';
+import AccessManagerUsersTable from './AccessManagerUsersTable/AccessManagerUsersTable';
+import AccessManagerUsersTableFooter from './AccessManagerUsersTableFooter/AccessManagerUsersTableFooter';
+import { useRequestAccessManagerUsers } from './useRequestAccessManagerUsers';
+import AccessManagerUsersDialogs from './Dialogs';
 
 const AccessManagerUsersPage = () => {
+  useRequestAccessManagerUsers();
+
   return (
-    <div>
-      <h1>Access Manager Users</h1>
-    </div>
+    <TableContainer variant="easy">
+      <AccessManagerUsersTableHeader />
+      <AccessManagerUsersTable />
+      <AccessManagerUsersTableFooter />
+      <AccessManagerUsersDialogs />
+    </TableContainer>
   );
 };
 

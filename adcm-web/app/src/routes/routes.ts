@@ -147,7 +147,7 @@ const routes: RoutesConfigs = {
     ],
   },
   '/access-manager/users': {
-    pageTitle: 'Users',
+    pageTitle: 'Access Manager',
     breadcrumbs: [
       {
         href: '/access-manager',

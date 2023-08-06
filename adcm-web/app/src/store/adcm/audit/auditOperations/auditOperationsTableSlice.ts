@@ -24,7 +24,7 @@ const createInitialState = (): AdcmAuditOperationsTableState => {
     },
     requestFrequency: 0,
     sortParams: {
-      sortBy: 'name',
+      sortBy: '',
       sortDirection: 'asc',
     },
   };

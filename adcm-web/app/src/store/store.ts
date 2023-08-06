@@ -21,6 +21,8 @@ import auditOperationsTableSlice from '@store/adcm/audit/auditOperations/auditOp
 
 import { apiMiddleware } from './middlewares/apiMiddleware';
 import clusterSlice from './adcm/clusters/clusterSlice';
+import usersSlice from './adcm/users/usersSlice';
+import usersTableSlice from './adcm/users/usersTableSlice';
 
 const rootReducer = combineReducers({
   user: userSlice,
@@ -44,6 +46,9 @@ const rootReducer = combineReducers({
     service: serviceSlice,
     auditOperations: auditOperationsSlice,
     auditOperationsTable: auditOperationsTableSlice,
+    // createHostDialog: createHostDialogSlice,
+    users: usersSlice,
+    usersTable: usersTableSlice,
   }),
 });
 
