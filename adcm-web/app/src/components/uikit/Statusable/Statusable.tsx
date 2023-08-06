@@ -8,6 +8,7 @@ interface StatusableProps extends React.HTMLAttributes<HTMLDivElement> {
   status: BaseStatus;
   size?: Size;
 }
+
 const Statusable: React.FC<StatusableProps> = ({ children, className, status, size = 'small', ...props }) => {
   const classes = cn(className, s.statusable, s[`statusable_${size}`], s[`statusable_${status.toLowerCase()}`]);
   return (
@@ -16,4 +17,5 @@ const Statusable: React.FC<StatusableProps> = ({ children, className, status, si
     </div>
   );
 };
+
 export default Statusable;

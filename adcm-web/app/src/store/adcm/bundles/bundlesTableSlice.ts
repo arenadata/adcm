@@ -21,7 +21,7 @@ const createInitialState = (): AdcmBundlesTableState => ({
   },
   requestFrequency: 0,
   sortParams: {
-    sortBy: 'displayName',
+    sortBy: 'name',
     sortDirection: 'asc',
   },
   relatedData: {

@@ -38,9 +38,9 @@ import {
   ServicePrimaryConfiguration,
 } from '@pages/cluster/service';
 import AccessManagerUsersPage from '@pages/AccessManagerPage/AccessManagerUsersPage/AccessManagerUsersPage';
-import AccessManagerGroupsPage from '@pages/AccessManagerPage/AccessManagerGroupsPage copy/AccessManagerGroupsPage';
-import AccessManagerRolesPage from '@pages/AccessManagerPage/AccessManagerRolesPage copy/AccessManagerRolesPage';
-import AccessManagerPolicyPage from '@pages/AccessManagerPage/AccessManagerPolicyPage copy/AccessManagerPolicyPage';
+import AccessManagerGroupsPage from '@pages/AccessManagerPage/AccessManagerGroupsPage/AccessManagerGroupsPage';
+import AccessManagerRolesPage from '@pages/AccessManagerPage/AccessManagerRolesPage/AccessManagerRolesPage';
+import AccessManagerPolicyPage from '@pages/AccessManagerPage/AccessManagerPolicyPage/AccessManagerPolicyPage';
 
 function App() {
   return (

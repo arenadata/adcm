@@ -6,6 +6,7 @@ export * from './concern';
 export * from './hostProvider';
 export * from './service';
 export * from './maintenanceMode';
+export * from './users';
 export * from './audit';
 
 export interface Batch<T> {

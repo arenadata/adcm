@@ -3,7 +3,7 @@ import qs from 'qs';
 import { RequestOptions, Response, RequestError } from './HttpClient';
 import { apiHost } from '@constants';
 import '@utils/objectUtils';
-import { camelToSnakeCase, snakeToCamelCase } from '@utils/stringUtils';
+import { camelToSnakeCase } from '@utils/stringUtils';
 import { structureTraversal } from '@utils/objectUtils';
 import type { HttpClient } from './HttpClient';
 
@@ -39,6 +39,7 @@ export class AxiosBasedHttpClient implements HttpClient {
       return req;
     });
 
+    /*
     // TODO: temporary solutions, while backend can't send normal camelCase
     this.axiosInstance.interceptors.response.use((res) => {
       const { data } = res;
@@ -49,6 +50,7 @@ export class AxiosBasedHttpClient implements HttpClient {
 
       return res;
     });
+    */
   }
 
   public async get<T>(url: string, options?: RequestOptions): Promise<Response<T>> {
