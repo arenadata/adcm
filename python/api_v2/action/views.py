@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import List, Literal
+
 from api_v2.action.filters import ActionFilter
 from api_v2.action.serializers import (
     ActionListSerializer,
@@ -17,10 +19,11 @@ from api_v2.action.serializers import (
     ActionRunSerializer,
 )
 from api_v2.action.utils import check_run_perms, filter_actions_by_user_perm
+from api_v2.config.utils import get_config_schema
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import CamelCaseGenericViewSet
 from cm.job import start_task
-from cm.models import Action
+from cm.models import Action, ServiceComponent
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
@@ -42,7 +45,7 @@ from adcm.utils import filter_actions
 class ActionViewSet(  # pylint: disable=too-many-ancestors
     PermissionListMixin, ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, CamelCaseGenericViewSet
 ):
-    queryset = Action.objects.order_by("pk")
+    queryset = Action.objects.select_related("prototype").order_by("pk")
     serializer_class = ActionListSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_ACTION_PERM]
@@ -93,7 +96,10 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
         get_object_for_user(user=request.user, perms=VIEW_ACTION_PERM, klass=Action, pk=kwargs["pk"])
 
         action_ = self.get_object()
-        serializer = self.get_serializer_class()(instance=action_, context={"obj": parent_object})
+        schema = {"fields": get_config_schema(parent_object=parent_object, action=action_)}
+        serializer = self.get_serializer_class()(
+            instance=action_, context={"obj": parent_object, "config_schema": schema}
+        )
 
         return Response(data=serializer.data)
 
@@ -115,11 +121,25 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
         task = start_task(
             action=target_action,
             obj=parent_object,
-            conf=provided_config.get("config", {}),
-            attr=provided_config.get("attr", {}),
-            hostcomponent=serializer.validated_data["host_component_map"],
+            conf=provided_config,
+            attr=serializer.validated_data.get("attr", {}),
+            hostcomponent=self._insert_service_ids(hc_create_data=serializer.validated_data["host_component_map"]),
             hosts=[],
             verbose=serializer.validated_data["is_verbose"],
         )
 
         return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)
+
+    @staticmethod
+    def _insert_service_ids(
+        hc_create_data: List[dict[Literal["host_id", "component_id"], int]]
+    ) -> List[dict[Literal["host_id", "component_id", "service_id"], int]]:
+        component_ids = {single_hc["component_id"] for single_hc in hc_create_data}
+        component_service_map = {
+            component.pk: component.service_id for component in ServiceComponent.objects.filter(pk__in=component_ids)
+        }
+
+        for single_hc in hc_create_data:
+            single_hc["service_id"] = component_service_map[single_hc["component_id"]]
+
+        return hc_create_data
