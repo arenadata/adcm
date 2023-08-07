@@ -18,7 +18,7 @@ from collections.abc import Hashable
 from configparser import ConfigParser
 from functools import partial
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
@@ -116,7 +116,7 @@ def start_task(
     return task
 
 
-def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster | None, hosts: list[Host]) -> None:
+def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster | None, hosts: list[int]) -> None:
     provider = None
     if obj.prototype.type == "provider":
         provider = obj
@@ -148,7 +148,7 @@ def prepare_task(
     conf: dict,
     attr: dict,
     hostcomponent: list[dict],
-    hosts: list[Host],
+    hosts: list[int],
     verbose: bool,
 ) -> TaskLog:  # pylint: disable=too-many-locals
     cluster = get_object_cluster(obj=obj)
@@ -570,8 +570,10 @@ def prepare_job(
     prepare_ansible_config(job_id, action, sub_action)
 
 
-def get_selector(obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host, action: Action) -> dict:
-    selector = {obj.prototype.type: {"id": obj.pk, "name": obj.name, "display_name": obj.display_name}}
+def get_selector(
+    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host, action: Action
+) -> dict[str | ObjectType, dict[Literal["id", "name"], int | str]]:
+    selector = {obj.prototype.type: {"id": obj.pk, "name": obj.display_name}}
 
     if obj.prototype.type == ObjectType.SERVICE:
         selector[ObjectType.CLUSTER] = {"id": obj.cluster.pk, "name": obj.cluster.display_name}
@@ -718,7 +720,7 @@ def create_task(
     conf: dict,
     attr: dict,
     hostcomponent: list[dict],
-    hosts: list[Host],
+    hosts: list[int],
     verbose: bool,
     post_upgrade_hc: list[dict],
 ) -> TaskLog:

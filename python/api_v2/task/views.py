@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from api.job.views import VIEW_TASKLOG_PERMISSION
 from api_v2.task.filters import TaskFilter
 from api_v2.task.serializers import TaskListSerializer

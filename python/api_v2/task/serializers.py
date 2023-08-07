@@ -76,7 +76,7 @@ class TaskSerializer(ModelSerializer):
     is_terminatable = SerializerMethodField()
     duration = SerializerMethodField()
     action = ActionNameSerializer(read_only=True, allow_null=True)
-    object = SerializerMethodField()
+    objects = SerializerMethodField()
     start_time = DateTimeField(source="start_date")
     end_time = DateTimeField(source="finish_date")
 
@@ -93,7 +93,7 @@ class TaskSerializer(ModelSerializer):
             "duration",
             "is_terminatable",
             "child_jobs",
-            "object",
+            "objects",
         )
 
     @staticmethod
@@ -108,16 +108,13 @@ class TaskSerializer(ModelSerializer):
 
         return False
 
-    # pylint: disable=redefined-builtin
-    @staticmethod
-    def get_object(obj: TaskLog) -> dict:
-        object = next(({"type": k, **v} for k, v in obj.selector.items()), None)
-
-        return object
-
     @staticmethod
     def get_duration(obj: JobLog) -> timedelta:
         return obj.finish_date - obj.start_date
+
+    @staticmethod
+    def get_objects(obj: TaskLog) -> list[dict[str, int | str]]:
+        return [{"type": k, **v} for k, v in obj.selector.items()]
 
 
 class TaskListSerializer(TaskSerializer):
@@ -151,6 +148,6 @@ class TaskRetrieveByJobSerializer(TaskSerializer):
             "start_time",
             "end_time",
             "duration",
-            "object",
+            "objects",
             "is_terminatable",
         )
