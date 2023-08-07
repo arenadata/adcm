@@ -157,20 +157,6 @@ REST_FRAMEWORK = {
     "DEFAULT_VERSION": "v1",
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
     "JSON_UNDERSCOREIZE": {
-        "ignore_keys": (
-            "clusterName",
-            "hostproviderName",
-            "jobName",
-            "loginResult",
-            "objectName",
-            "objectType",
-            "operationResult",
-            "operationType",
-            "prototypeDisplayName",
-            "timeFrom",
-            "timeTo",
-            "uploadTime",
-        ),
         "ignore_fields": ("config", "attr"),
     },
 }
