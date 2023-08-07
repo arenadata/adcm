@@ -30,10 +30,10 @@ from django_filters.rest_framework.filterset import FilterSet
 
 
 class TaskFilter(FilterSet):
-    jobName = CharFilter(
+    job_name = CharFilter(
         label="Job name", field_name="joblog__action__display_name", lookup_expr="icontains", distinct=True
     )
-    objectName = CharFilter(label="Object name", method="filter_object_name")
+    object_name = CharFilter(label="Object name", method="filter_object_name")
     status = ChoiceFilter(field_name="status", choices=JobStatus.choices, label="Task status")
     ordering = OrderingFilter(
         fields={"id": "id", "action__prototype__name": "name", "start_date": "startTime", "finish_date": "endTime"},
@@ -66,4 +66,4 @@ class TaskFilter(FilterSet):
 
     class Meta:
         model = TaskLog
-        fields = ["id", "jobName", "objectName", "status", "ordering"]
+        fields = ["id", "job_name", "object_name", "status", "ordering"]

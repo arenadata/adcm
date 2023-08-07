@@ -29,20 +29,20 @@ from django_filters.rest_framework import (
 
 
 class AuditLogFilterSet(FilterSet):
-    objectName = CharFilter(field_name="audit_object__object_name", label="Object name", lookup_expr="icontains")
-    objectType = ChoiceFilter(
+    object_name = CharFilter(field_name="audit_object__object_name", label="Object name", lookup_expr="icontains")
+    object_type = ChoiceFilter(
         field_name="audit_object__object_type",
         choices=AuditObjectType.choices,
         label="Object type",
     )
-    operationResult = ChoiceFilter(
+    operation_result = ChoiceFilter(
         field_name="operation_result", label="Operation result", choices=AuditLogOperationResult.choices
     )
-    operationType = ChoiceFilter(
+    operation_type = ChoiceFilter(
         field_name="operation_type", label="Operation type", choices=AuditLogOperationType.choices
     )
-    timeFrom = DateTimeFilter(field_name="operation_time", lookup_expr="gte")
-    timeTo = DateTimeFilter(field_name="operation_time", lookup_expr="lte")
+    time_from = DateTimeFilter(field_name="operation_time", lookup_expr="gte")
+    time_to = DateTimeFilter(field_name="operation_time", lookup_expr="lte")
     username = CharFilter(field_name="user__username", label="Username", lookup_expr="icontains")
     ordering = OrderingFilter(
         fields={"operation_time": "time"}, field_labels={"operation_time": "Time"}, label="ordering"
@@ -52,12 +52,12 @@ class AuditLogFilterSet(FilterSet):
         model = AuditLog
         fields = [
             "id",
-            "objectName",
-            "objectType",
-            "operationResult",
-            "operationType",
-            "timeFrom",
-            "timeTo",
+            "object_name",
+            "object_type",
+            "operation_result",
+            "operation_type",
+            "time_from",
+            "time_to",
             "username",
             "ordering",
         ]
@@ -65,13 +65,15 @@ class AuditLogFilterSet(FilterSet):
 
 class AuditSessionFilterSet(FilterSet):
     login = CharFilter(field_name="user__username", label="Login", lookup_expr="icontains")
-    loginResult = ChoiceFilter(field_name="login_result", label="Login result", choices=AuditSessionLoginResult.choices)
-    timeFrom = DateTimeFilter(field_name="login_time", lookup_expr="gte", label="Time from")
-    timeTo = DateTimeFilter(field_name="login_time", lookup_expr="lte", label="Time to")
+    login_result = ChoiceFilter(
+        field_name="login_result", label="Login result", choices=AuditSessionLoginResult.choices
+    )
+    time_from = DateTimeFilter(field_name="login_time", lookup_expr="gte", label="Time from")
+    time_to = DateTimeFilter(field_name="login_time", lookup_expr="lte", label="Time to")
     ordering = OrderingFilter(
         fields={"login_time": "loginTime"}, field_labels={"login_time": "Login time"}, label="ordering"
     )
 
     class Meta:
         model = AuditSession
-        fields = ["id", "login", "loginResult", "timeFrom", "timeTo", "ordering"]
+        fields = ["id", "login", "login_result", "time_from", "time_to", "ordering"]
