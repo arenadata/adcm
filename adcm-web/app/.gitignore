@@ -27,6 +27,7 @@ dist-ssr
 .pnp.*
 
 !.env.development
+!.env.testing
 !.eslintrc.json
 !.eslintrc.cjs
 !.prettierrc.json
