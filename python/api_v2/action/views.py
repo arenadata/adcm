@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from itertools import chain
 from typing import List, Literal
 
 from api_v2.action.filters import ActionFilter
@@ -23,7 +24,7 @@ from api_v2.config.utils import get_config_schema
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import CamelCaseGenericViewSet
 from cm.job import start_task
-from cm.models import Action, ServiceComponent
+from cm.models import Action, Host, HostComponent, ServiceComponent
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
@@ -68,7 +69,26 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
         if parent_object is None:
             raise NotFound("Can't find action's parent object")
 
-        return super().get_queryset(*args, **kwargs).filter(prototype=parent_object.prototype)
+        basic_queryset = super().get_queryset(*args, **kwargs)
+        queryset = basic_queryset.filter(prototype=parent_object.prototype)
+
+        if not isinstance(parent_object, Host):
+            return queryset.filter(host_action=False)
+
+        cluster = parent_object.cluster
+        if not cluster:
+            return queryset
+
+        host_related_prototypes: set[int] = {cluster.prototype.pk}
+        host_related_prototypes |= set(
+            chain.from_iterable(
+                HostComponent.objects.filter(cluster=cluster, host=parent_object)
+                .select_related("service", "component")
+                .values_list("service__prototype_id", "component__prototype_id")
+            )
+        )
+
+        return queryset | basic_queryset.filter(prototype_id__in=host_related_prototypes, host_action=True)
 
     def list(self, request: Request, *args, **kwargs) -> Response:
         parent_object = self.get_parent_object()
