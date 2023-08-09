@@ -8,3 +8,12 @@ export const fulfilledFilter = <T>(list: PromiseSettledResult<T>[]) =>
 
 export const rejectedFilter = <T>(list: PromiseSettledResult<T>[]) =>
   list.filter(isPromiseRejected).map(({ reason }) => reason);
+
+export const arePromisesResolved = <T>(promises: PromiseSettledResult<T>[]): boolean => {
+  const responsesList = rejectedFilter(promises);
+  if (responsesList.length > 0) {
+    throw responsesList[0];
+  }
+
+  return true;
+};

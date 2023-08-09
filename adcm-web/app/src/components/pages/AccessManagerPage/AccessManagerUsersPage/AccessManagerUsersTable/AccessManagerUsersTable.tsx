@@ -3,19 +3,24 @@ import { Link, generatePath } from 'react-router-dom';
 import { Table, TableRow, TableCell, IconButton, Checkbox } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { columns } from './AccessManagerUsersTable.constants';
-import { setDeletableId, setSelectedItemsIds as setSelectedUsersIds } from '@store/adcm/users/usersSlice';
+import {
+  blockUsers,
+  setSelectedItemsIds as setSelectedUsersIds,
+  unblockUsers,
+} from '@store/adcm/users/usersActionsSlice';
 import { setSortParams } from '@store/adcm/users/usersTableSlice';
 import { SortParams } from '@uikit/types/list.types';
-import { AdcmUser } from '@models/adcm';
+import { AdcmUser, AdcmUserStatus } from '@models/adcm';
 import { useSelectedItems } from '@uikit/hooks/useSelectedItems';
 import { ACCESS_MANAGER_PAGE_URLS } from '@pages/AccessManagerPage/AccessManagerPage.constants';
+import { openDeleteDialog } from '@store/adcm/users/usersActionsSlice';
 
 const AccessManagerUsersTable = () => {
   const dispatch = useDispatch();
   const users = useStore((s) => s.adcm.users.users);
   const isLoading = useStore((s) => s.adcm.users.isLoading);
   const sortParams = useStore((s) => s.adcm.usersTable.sortParams);
-  const selectedItemsIds = useStore(({ adcm }) => adcm.users.selectedItemsIds);
+  const selectedItemsIds = useStore(({ adcm }) => adcm.usersActions.selectedItemsIds);
 
   const setSelectedItemsIds = useCallback<Dispatch<SetStateAction<number[]>>>(
     (arg) => {
@@ -33,12 +38,20 @@ const AccessManagerUsersTable = () => {
     setSelectedItemsIds,
   );
 
-  const getHandleDeleteClick = (id: number) => () => {
-    dispatch(setDeletableId(id));
+  const handleDeleteClick = (id: number) => () => {
+    dispatch(openDeleteDialog(id));
   };
 
   const handleSorting = (sortParams: SortParams) => {
     dispatch(setSortParams(sortParams));
+  };
+
+  const handleBlockClick = (id: number) => () => {
+    dispatch(blockUsers([id]));
+  };
+
+  const handleUnblockClick = (id: number) => () => {
+    dispatch(unblockUsers([id]));
   };
 
   return (
@@ -65,8 +78,13 @@ const AccessManagerUsersTable = () => {
             <TableCell>{user.type}</TableCell>
             <TableCell hasIconOnly align="center">
               <IconButton icon="g1-edit" size={32} title="Edit" />
-              <IconButton icon="g1-block" size={32} title="Block" />
-              <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(user.id)} title="Delete" />
+              {user.status === AdcmUserStatus.ACTIVE && (
+                <IconButton icon="g1-block" size={32} title="Block" onClick={handleBlockClick(user.id)} />
+              )}
+              {user.status === AdcmUserStatus.BLOCKED && (
+                <IconButton icon="g1-unblock" size={32} title="Unblock" onClick={handleUnblockClick(user.id)} />
+              )}
+              <IconButton icon="g1-delete" size={32} onClick={handleDeleteClick(user.id)} title="Delete" />
             </TableCell>
           </TableRow>
         );

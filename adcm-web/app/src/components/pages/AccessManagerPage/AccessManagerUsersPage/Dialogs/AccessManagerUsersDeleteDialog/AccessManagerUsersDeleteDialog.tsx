@@ -1,33 +1,44 @@
 import { useDispatch, useStore } from '@hooks';
-import { deleteUserWithUpdate, setDeletableId } from '@store/adcm/users/usersSlice';
+import { closeDeleteDialog, deleteUsersWithUpdate } from '@store/adcm/users/usersActionsSlice';
 import { Dialog } from '@uikit';
 import React from 'react';
 
 const AccessManagerUsersDeleteDialog: React.FC = () => {
   const dispatch = useDispatch();
 
-  const deletableId = useStore(({ adcm }) => adcm.users.itemsForActions.deletableId);
-  const users = useStore(({ adcm }) => adcm.users.users);
+  const deletableUser = useStore(
+    ({
+      adcm: {
+        users: { users },
+        usersActions: {
+          deleteDialog: { id: deletableId },
+        },
+      },
+    }) => {
+      if (!deletableId) return null;
+      return users.find(({ id }) => id === deletableId) ?? null;
+    },
+  );
 
-  const isOpen = deletableId !== null;
-  const userName = users.find(({ id }) => id === deletableId)?.username;
+  const isOpenDeleteDialog = !!deletableUser;
+  const userName = deletableUser?.username;
 
   const handleCloseConfirm = () => {
-    dispatch(setDeletableId(null));
+    dispatch(closeDeleteDialog());
   };
 
   const handleConfirmDialog = () => {
-    if (deletableId === null) return;
+    if (!deletableUser?.id) return;
 
-    dispatch(deleteUserWithUpdate(deletableId));
+    dispatch(deleteUsersWithUpdate([deletableUser.id]));
   };
 
   return (
     <>
       <Dialog
-        isOpen={isOpen}
+        isOpen={isOpenDeleteDialog}
         onOpenChange={handleCloseConfirm}
-        title={`Delete user "${userName}"`}
+        title={`Delete users "${userName}"`}
         onAction={handleConfirmDialog}
         actionButtonLabel="Delete"
       >
