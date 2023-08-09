@@ -13,10 +13,9 @@ export class AdcmUsersApi {
     return response.data;
   }
 
-  public static async postUser(payload: CreateAdcmUserPayload) {
+  public static async createUser(payload: CreateAdcmUserPayload) {
     const mockPayload = {
       name: payload.name,
-      description: payload.description,
     };
 
     await httpClient.post('/api/v2/rbac/users/', mockPayload);
@@ -27,7 +26,7 @@ export class AdcmUsersApi {
     return response.data;
   }
 
-  public static async patchUser(id: number, payload: UpdateAdcmUserPayload) {
+  public static async updateUser(id: number, payload: UpdateAdcmUserPayload) {
     await httpClient.patch(`/api/v2/rbac/users/${id}/`, payload);
   }
 
@@ -35,8 +34,11 @@ export class AdcmUsersApi {
     await httpClient.delete(`/api/v2/rbac/users/${id}/`);
   }
 
-  public static async deleteUsers(ids: number[]) {
-    const mockPayload = ids.map((id) => ({ id }));
-    await httpClient.post('/api/v2/rbac/users/delete/', mockPayload);
+  public static async blockUser(id: number) {
+    await httpClient.post(`/api/v2/rbac/users/${id}/block/`);
+  }
+
+  public static async unblockUser(id: number) {
+    await httpClient.post(`/api/v2/rbac/users/${id}/unblock/`);
   }
 }

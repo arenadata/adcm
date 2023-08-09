@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Button, Dialog } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
-import { deleteUsersWithUpdate } from '@store/adcm/users/usersSlice';
+import { deleteUsersWithUpdate } from '@store/adcm/users/usersActionsSlice';
 
 const AccessManagerUsersDeleteButton: React.FC = () => {
   const dispatch = useDispatch();
 
-  const selectedItemsIds = useStore(({ adcm }) => adcm.users.selectedItemsIds);
+  const selectedItemsIds = useStore(({ adcm }) => adcm.usersActions.selectedItemsIds);
   const isSelectedSomeRows = selectedItemsIds.length > 0;
 
   const [isOpenDeleteConfirm, setIsOpenDeleteConfirm] = useState(false);

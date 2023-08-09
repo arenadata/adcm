@@ -25,6 +25,7 @@ import { apiMiddleware } from './middlewares/apiMiddleware';
 import clusterSlice from './adcm/clusters/clusterSlice';
 import usersSlice from './adcm/users/usersSlice';
 import usersTableSlice from './adcm/users/usersTableSlice';
+import usersActionsSlice from './adcm/users/usersActionsSlice';
 
 const rootReducer = combineReducers({
   user: userSlice,
@@ -53,6 +54,7 @@ const rootReducer = combineReducers({
     // createHostDialog: createHostDialogSlice,
     users: usersSlice,
     usersTable: usersTableSlice,
+    usersActions: usersActionsSlice,
   }),
 });
 
