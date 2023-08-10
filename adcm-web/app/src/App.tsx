@@ -60,9 +60,13 @@ function App() {
                 </PrivateResource>
               }
             >
-              <Route index element={<Navigate to="/clusters" replace />} />
-
-              <Route path="/clusters">
+              <Route index element={<Navigate to="/clusters/" replace />} />
+              {/**
+                URLs in old design have template `/entity` but in new design - `/entities`.
+                And some Main Info (which write in bundles) have links with old URLs on inner pages
+               */}
+              <Route path="/cluster/" element={<Navigate to="/clusters/" replace />} />
+              <Route path="/clusters/">
                 <Route index element={<ClustersPage />} />
                 <Route path="/clusters/:clusterId" element={<ClusterPageLayout />}>
                   <Route index element={<Navigate to="overview" replace />} />

@@ -1,11 +1,11 @@
 import React from 'react';
+import { useStore } from '@hooks';
+import MainInfoPanel from '@commonComponents/MainInfoPanel/MainInfoPanel';
 
 const ServiceInfo: React.FC = () => {
-  return (
-    <div>
-      <h2>ServiceInfo</h2>
-    </div>
-  );
+  const service = useStore(({ adcm }) => adcm.service.service);
+
+  return <MainInfoPanel mainInfo={service?.mainInfo} />;
 };
 
 export default ServiceInfo;
