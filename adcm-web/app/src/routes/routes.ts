@@ -236,6 +236,19 @@ const routes: RoutesConfigs = {
       },
     ],
   },
+  '/bundles/:bundleId': {
+    pageTitle: 'Bundles',
+    breadcrumbs: [
+      {
+        href: '/bundles',
+        label: 'Bundles',
+      },
+      {
+        href: '/bundles/:bundleId',
+        label: ':bundleId',
+      },
+    ],
+  },
 
   // Profile
   '/profile': {

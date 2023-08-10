@@ -1,0 +1,18 @@
+:global {
+  body.theme-dark {
+    --accept-panel-background: var(--color-xdark-new-20);
+  }
+
+  body.theme-light {
+    --accept-panel-background: var(--color-xgray-alt-30);
+  }
+}
+
+.acceptPanel {
+  display: flex;
+  justify-content: space-between;
+  margin: 32px 0;
+  border-radius: 12px;
+  background-color: var(--accept-panel-background);
+  padding: 8px 12px;
+}

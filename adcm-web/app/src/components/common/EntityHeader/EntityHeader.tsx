@@ -4,9 +4,9 @@ import cn from 'classnames';
 
 interface EntityHeaderProps {
   title: React.ReactNode;
-  subtitle: React.ReactNode;
-  central: React.ReactNode;
-  actions: React.ReactNode;
+  subtitle?: React.ReactNode;
+  central?: React.ReactNode;
+  actions?: React.ReactNode;
   className?: string;
 }
 

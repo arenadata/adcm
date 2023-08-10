@@ -1,0 +1,22 @@
+:global {
+  body.theme-dark {
+    --link-hover-color: var(--color-xgreen-saturated);
+  }
+
+  body.theme-light {
+    --link-hover-color: var(--color-xgreen);
+  }
+}
+
+.bundleOverviewTable {
+  td {
+    a {
+      color: var(--color-xblue);
+      text-decoration: underline;
+
+      &:hover {
+        color: var(--link-hover-color);
+      }
+    }
+  }
+}
