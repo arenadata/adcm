@@ -41,6 +41,7 @@ import AccessManagerUsersPage from '@pages/AccessManagerPage/AccessManagerUsersP
 import AccessManagerGroupsPage from '@pages/AccessManagerPage/AccessManagerGroupsPage/AccessManagerGroupsPage';
 import AccessManagerRolesPage from '@pages/AccessManagerPage/AccessManagerRolesPage/AccessManagerRolesPage';
 import AccessManagerPolicyPage from '@pages/AccessManagerPage/AccessManagerPolicyPage/AccessManagerPolicyPage';
+import BundleOverviewPage from '@pages/BundleOverviewPage/BundleOverviewPage';
 
 function App() {
   return (
@@ -112,6 +113,7 @@ function App() {
                 <Route path="/audit/logins" element={<AuditLoginsPage />} />
               </Route>
               <Route path="/bundles" element={<BundlesPage />} />
+              <Route path="/bundles/:bundleId" element={<BundleOverviewPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>

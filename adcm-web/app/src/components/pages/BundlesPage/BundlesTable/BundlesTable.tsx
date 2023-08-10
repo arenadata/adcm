@@ -11,6 +11,7 @@ import { getStatusLabel } from '@utils/humanizationUtils';
 import { setDeletableId, setSelectedItemsIds as setSelectedBundlesIds } from '@store/adcm/bundles/bundlesSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { setSortParams } from '@store/adcm/bundles/bundlesTableSlice';
+import { Link } from 'react-router-dom';
 
 const getBundleUniqKey = ({ id }: AdcmBundle) => id;
 
@@ -62,7 +63,9 @@ const BundlesTable: React.FC = () => {
             <TableCell>
               <Checkbox checked={isItemSelected(bundle)} onChange={getHandlerSelectedItem(bundle)} />
             </TableCell>
-            <TableCell>{bundle.displayName}</TableCell>
+            <TableCell>
+              <Link to={`/bundles/${bundle.id}`}>{bundle.name}</Link>
+            </TableCell>
             <TableCell>{bundle.version}</TableCell>
             <TableCell>{orElseGet(bundle.edition)}</TableCell>
             <DateTimeCell value={bundle.uploadTime} />

@@ -18,6 +18,11 @@ export class AdcmBundlesApi {
     return response.data;
   }
 
+  public static async getBundle(id: number) {
+    const response = await httpClient.get<AdcmBundle>(`/api/v2/bundles/${id}/`);
+    return response.data;
+  }
+
   public static async deleteBundle(id: number) {
     const response = await httpClient.delete(`/api/v2/bundles/${id}/`);
     return response.data;

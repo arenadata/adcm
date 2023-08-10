@@ -27,6 +27,7 @@ export enum AdcmPrototypeType {
 }
 
 export interface AdcmPrototypesFilter {
+  bundleId?: number;
   type?: AdcmPrototypeType;
 }
 

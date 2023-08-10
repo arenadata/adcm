@@ -32,6 +32,7 @@ export class AdcmPrototypesApi {
   ) {
     const queryParams = {
       type: filter.type || undefined,
+      bundleId: filter.bundleId || undefined,
       sortColumn: sortParams?.sortBy,
       sortDirection: sortParams?.sortDirection,
       offset: paginationParams ? paginationParams.pageNumber * paginationParams.perPage : undefined,
