@@ -1,4 +1,4 @@
-@import "./common/scroll";
+@import './common/scroll';
 
 body {
   font-size: 14px;
@@ -9,24 +9,25 @@ body {
   color: var(--text-default-color);
 
   &.theme-dark {
-    --body-background: var(--color-xblack)
+    --body-background: var(--color-xblack);
   }
   &.theme-light {
-    --body-background: var(--color-xwhite-off)
+    --body-background: var(--color-xwhite-off);
   }
 }
 
 .text-link {
   transition: color 250ms;
   font-weight: 500;
+  color: var(--color-xblue);
   &:hover {
-    color: var(--text-link) !important;
+    color: var(--text-link-hover) !important;
   }
   body.theme-dark & {
-    --text-link: var(--color-xgreen-saturated)
+    --text-link-hover: var(--color-xgreen-saturated);
   }
   body.theme-light & {
-    --text-link: var(--color-xgreen)
+    --text-link-hover: var(--color-xgreen);
   }
 }
 
@@ -35,7 +36,7 @@ body {
     color: var(--color-xgreen-saturated);
   }
   body.theme-light & {
-    color: var(--color-xgreen)
+    color: var(--color-xgreen);
   }
 }
 
