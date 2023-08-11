@@ -27,6 +27,8 @@ import clusterSlice from './adcm/clusters/clusterSlice';
 import usersSlice from './adcm/users/usersSlice';
 import usersTableSlice from './adcm/users/usersTableSlice';
 import usersActionsSlice from './adcm/users/usersActionsSlice';
+import groupsSlice from './adcm/groups/groupsSlice';
+import groupsTableSlice from './adcm/groups/groupsTableSlice';
 
 const rootReducer = combineReducers({
   user: userSlice,
@@ -57,6 +59,8 @@ const rootReducer = combineReducers({
     users: usersSlice,
     usersTable: usersTableSlice,
     usersActions: usersActionsSlice,
+    groups: groupsSlice,
+    groupsTable: groupsTableSlice,
   }),
 });
 
