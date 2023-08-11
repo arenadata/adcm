@@ -1,24 +1,24 @@
 import { useEffect } from 'react';
 import { useStore, useDispatch, useRequestTimer, useDebounce } from '@hooks';
 import { defaultDebounceDelay } from '@constants';
-import { cleanupUsers, getUsers, refreshUsers } from '@store/adcm/users/usersSlice';
+import { cleanupGroups, getGroups, refreshGroups } from '@store/adcm/groups/groupsSlice';
 
-export const useRequestAccessManagerUsers = () => {
+export const useRequestAccessManagerGroups = () => {
   const dispatch = useDispatch();
-  const { filter, sortParams, paginationParams } = useStore((s) => s.adcm.usersTable);
+  const { filter, sortParams, paginationParams } = useStore((s) => s.adcm.groupsTable);
 
   useEffect(() => {
     return () => {
-      dispatch(cleanupUsers());
+      dispatch(cleanupGroups());
     };
   }, [dispatch]);
 
   const debounceGetData = useDebounce(() => {
-    dispatch(getUsers());
+    dispatch(getGroups());
   }, defaultDebounceDelay);
 
   const debounceRefreshData = useDebounce(() => {
-    dispatch(refreshUsers());
+    dispatch(refreshGroups());
   }, defaultDebounceDelay);
 
   useRequestTimer(debounceGetData, debounceRefreshData, 0, [filter, sortParams, paginationParams]);

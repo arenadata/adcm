@@ -9,3 +9,4 @@ export { AdcmHostProvidersApi } from './adcm/hostProviders';
 export { AdcmHostsApi } from './adcm/hosts';
 export { AdcmServicesApi } from './adcm/services';
 export { AdcmUsersApi } from './adcm/users';
+export { AdcmGroupsApi } from './adcm/groups';
