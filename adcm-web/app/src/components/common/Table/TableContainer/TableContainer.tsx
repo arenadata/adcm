@@ -3,8 +3,10 @@ import cn from 'classnames';
 
 import s from './TableContainer.module.scss';
 
+type variant = 'easy' | 'subPage';
+
 interface TableContainerProps extends HTMLAttributes<HTMLDivElement> {
-  variant?: 'easy';
+  variant?: variant;
 }
 
 const TableContainer: React.FC<TableContainerProps> = ({ className, children, variant = 'easy' }) => {
