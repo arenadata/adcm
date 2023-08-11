@@ -1,6 +1,12 @@
 import React, { useEffect } from 'react';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import { useDispatch, useStore } from '@hooks';
+import { useRequestClusterServices } from './useRequestClusterServices';
+import TableContainer from '@commonComponents/Table/TableContainer/TableContainer';
+import ClusterServicesTable from './ClusterServicesTable/ClusterServicesTable';
+import ClusterServicesTableFooter from './ClusterServicesFooter/ClusterServicesTableFooter';
+import ClusterServicesTableToolbar from './ClusterServicesToolbar/ClusterServicesTableToolbar';
+import ClusterServiceActionsDialogs from './ClusterServiceActionsDialogs/ClusterServiceActionsDialogs';
 
 const ClusterServices: React.FC = () => {
   const dispatch = useDispatch();
@@ -17,11 +23,15 @@ const ClusterServices: React.FC = () => {
       );
     }
   }, [cluster, dispatch]);
+  useRequestClusterServices();
 
   return (
-    <div>
-      <h1>Cluster Services</h1>
-    </div>
+    <TableContainer variant="easy">
+      <ClusterServicesTableToolbar />
+      <ClusterServicesTable />
+      <ClusterServicesTableFooter />
+      <ClusterServiceActionsDialogs />
+    </TableContainer>
   );
 };
 

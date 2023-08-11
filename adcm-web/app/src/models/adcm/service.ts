@@ -13,6 +13,7 @@ export interface AdcmService {
   displayName: string;
   prototype: AdcmServicePrototype;
   status: AdcmServiceStatus;
+  state: string;
   concerns: AdcmConcerns[];
   isMaintenanceModeAvailable: boolean;
   maintenanceMode: AdcmMaintenanceMode;
@@ -29,4 +30,8 @@ export interface AdcmServicePrototype {
   displayName: string;
   type: AdcmPrototypeType.Service;
   version: string;
+}
+
+export interface AdcmServicesFilter {
+  serviceName?: string;
 }
