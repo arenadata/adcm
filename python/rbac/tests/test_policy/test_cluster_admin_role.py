@@ -12,7 +12,7 @@
 
 from unittest.mock import patch
 
-from cm.models import Action, Host, MaintenanceMode
+from cm.models import Action, Host
 from django.urls import reverse
 from rbac.tests.test_policy.base import PolicyBaseTestCase
 from rest_framework.response import Response
@@ -292,7 +292,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         response = self.client.post(
             path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.last_service_pk}),
             data={
-                "maintenance_mode": MaintenanceMode.ON,
+                "maintenance_mode": "ON",
             },
             content_type=APPLICATION_JSON,
         )
@@ -302,7 +302,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         response = self.client.post(
             path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.last_component_pk}),
             data={
-                "maintenance_mode": MaintenanceMode.ON,
+                "maintenance_mode": "ON",
             },
             content_type=APPLICATION_JSON,
         )
@@ -312,7 +312,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         response = self.client.post(
             path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.last_host_pk}),
             data={
-                "maintenance_mode": MaintenanceMode.ON,
+                "maintenance_mode": "ON",
             },
             content_type=APPLICATION_JSON,
         )
@@ -322,7 +322,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         response = self.client.post(
             path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.last_host_pk}),
             data={
-                "maintenance_mode": MaintenanceMode.OFF,
+                "maintenance_mode": "OFF",
             },
             content_type=APPLICATION_JSON,
         )

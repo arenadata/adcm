@@ -102,13 +102,13 @@ class TestServiceAPI(BaseTestCase):
     def test_change_maintenance_mode_on_no_action_success(self):
         response: Response = self.client.post(
             path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         self.service.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.ON)
+        self.assertEqual(response.data["maintenance_mode"], "ON")
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.ON)
 
     def test_change_maintenance_mode_on_with_action_success(self):
@@ -123,13 +123,13 @@ class TestServiceAPI(BaseTestCase):
         with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-                data={"maintenance_mode": MaintenanceMode.ON},
+                data={"maintenance_mode": "ON"},
             )
 
         self.service.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
+        self.assertEqual(response.data["maintenance_mode"], "CHANGING")
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
             action=action,
@@ -148,7 +148,7 @@ class TestServiceAPI(BaseTestCase):
         with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-                data={"maintenance_mode": MaintenanceMode.ON},
+                data={"maintenance_mode": "ON"},
             )
 
         self.service.refresh_from_db()
@@ -163,13 +163,13 @@ class TestServiceAPI(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-            data={"maintenance_mode": MaintenanceMode.OFF},
+            data={"maintenance_mode": "OFF"},
         )
 
         self.service.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.OFF)
+        self.assertEqual(response.data["maintenance_mode"], "OFF")
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.OFF)
 
     def test_change_maintenance_mode_off_with_action_success(self):
@@ -186,13 +186,13 @@ class TestServiceAPI(BaseTestCase):
         with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-                data={"maintenance_mode": MaintenanceMode.OFF},
+                data={"maintenance_mode": "OFF"},
             )
 
         self.service.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
+        self.assertEqual(response.data["maintenance_mode"], "CHANGING")
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
             action=action,
@@ -211,7 +211,7 @@ class TestServiceAPI(BaseTestCase):
         with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-                data={"maintenance_mode": MaintenanceMode.OFF},
+                data={"maintenance_mode": "OFF"},
             )
 
         self.service.refresh_from_db()
@@ -226,14 +226,14 @@ class TestServiceAPI(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
         response: Response = self.client.post(
             path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-            data={"maintenance_mode": MaintenanceMode.OFF},
+            data={"maintenance_mode": "OFF"},
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)

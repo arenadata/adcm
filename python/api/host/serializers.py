@@ -17,7 +17,14 @@ from api.utils import CommonAPIURL, ObjectURL, check_obj
 from cm.adcm_config.config import get_main_info
 from cm.api import add_host
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
-from cm.models import Action, Host, HostProvider, MaintenanceMode, Prototype
+from cm.models import (
+    MAINTENANCE_MODE_BOTH_CASES_CHOICES,
+    Action,
+    Host,
+    HostProvider,
+    MaintenanceMode,
+    Prototype,
+)
 from cm.status_api import get_host_status
 from cm.validators import HostUniqueValidator, StartMidEndValidator
 from django.conf import settings
@@ -61,6 +68,10 @@ class HostSerializer(EmptySerializer):
     url = ObjectURL(read_only=True, view_name="v1:host-details")
 
     @staticmethod
+    def validate_maintenance_mode(value: str) -> str:
+        return value.lower()
+
+    @staticmethod
     def validate_prototype_id(prototype_id):
         return check_obj(Prototype, {"id": prototype_id, "type": "host"})
 
@@ -75,6 +86,12 @@ class HostSerializer(EmptySerializer):
             validated_data.get("fqdn"),
             validated_data.get("description", ""),
         )
+
+    def to_representation(self, instance) -> dict:
+        data = super().to_representation(instance=instance)
+        data["maintenance_mode"] = data["maintenance_mode"].upper()
+
+        return data
 
 
 class HostDetailSerializer(HostSerializer):
@@ -121,13 +138,29 @@ class HostAuditSerializer(ModelSerializer):
             "maintenance_mode",
         )
 
+    def to_representation(self, instance) -> dict:
+        data = super().to_representation(instance=instance)
+        data["maintenance_mode"] = data["maintenance_mode"].upper()
+
+        return data
+
 
 class HostChangeMaintenanceModeSerializer(ModelSerializer):
-    maintenance_mode = ChoiceField(choices=(MaintenanceMode.ON.value, MaintenanceMode.OFF.value))
+    maintenance_mode = ChoiceField(choices=MAINTENANCE_MODE_BOTH_CASES_CHOICES)
 
     class Meta:
         model = Host
         fields = ("maintenance_mode",)
+
+    @staticmethod
+    def validate_maintenance_mode(value: str) -> str:
+        return value.lower()
+
+    def to_representation(self, instance: Host):
+        data = super().to_representation(instance=instance)
+        data["maintenance_mode"] = data["maintenance_mode"].upper()
+
+        return data
 
 
 class ClusterHostSerializer(HostSerializer):

@@ -23,10 +23,10 @@ from cm.adcm_config.config import get_main_info
 from cm.api import add_service_to_cluster, bind, multi_bind
 from cm.errors import AdcmEx
 from cm.models import (
+    MAINTENANCE_MODE_BOTH_CASES_CHOICES,
     Action,
     Cluster,
     ClusterObject,
-    MaintenanceMode,
     Prototype,
     ServiceComponent,
 )
@@ -59,6 +59,12 @@ class ServiceSerializer(EmptySerializer):
     url = ObjectURL(read_only=True, view_name="v1:service-details")
     maintenance_mode = CharField(read_only=True)
     is_maintenance_mode_available = BooleanField(read_only=True)
+
+    def to_representation(self, instance: ClusterObject) -> dict:
+        data = super().to_representation(instance=instance)
+        data["maintenance_mode"] = data["maintenance_mode"].upper()
+
+        return data
 
     @staticmethod
     def validate_prototype_id(prototype_id):
@@ -220,14 +226,30 @@ class ServiceStatusSerializer(EmptySerializer):
 
 
 class ServiceChangeMaintenanceModeSerializer(ModelSerializer):
-    maintenance_mode = ChoiceField(choices=(MaintenanceMode.ON.value, MaintenanceMode.OFF.value))
+    maintenance_mode = ChoiceField(choices=MAINTENANCE_MODE_BOTH_CASES_CHOICES)
 
     class Meta:
         model = ClusterObject
         fields = ("maintenance_mode",)
+
+    @staticmethod
+    def validate_maintenance_mode(value: str) -> str:
+        return value.lower()
+
+    def to_representation(self, instance: ClusterObject) -> dict:
+        data = super().to_representation(instance=instance)
+        data["maintenance_mode"] = data["maintenance_mode"].upper()
+
+        return data
 
 
 class ServiceAuditSerializer(ModelSerializer):
     class Meta:
         model = ClusterObject
         fields = ("maintenance_mode",)
+
+    def to_representation(self, instance) -> dict:
+        data = super().to_representation(instance=instance)
+        data["maintenance_mode"] = data["maintenance_mode"].upper()
+
+        return data

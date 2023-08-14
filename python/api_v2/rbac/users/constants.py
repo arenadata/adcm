@@ -14,10 +14,10 @@ from django.db.models import TextChoices
 
 
 class UserStatusChoices(TextChoices):
-    ACTIVE = "ACTIVE", "ACTIVE"
-    BLOCKED = "BLOCKED", "BLOCKED"
+    ACTIVE = "active", "active"
+    BLOCKED = "blocked", "blocked"
 
 
 class UserTypeChoices(TextChoices):
-    LOCAL = "LOCAL", "LOCAL"
-    LDAP = "LDAP", "LDAP"
+    LOCAL = "local", "local"
+    LDAP = "ldap", "ldap"

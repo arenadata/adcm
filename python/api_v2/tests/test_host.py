@@ -17,7 +17,6 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
-    MaintenanceMode,
     ServiceComponent,
 )
 from django.urls import reverse
@@ -58,7 +57,7 @@ class TestHost(BaseAPITestCase):
             "hostprovider": {"id": 1, "name": "provider", "display_name": "provider"},
             "concerns": [],
             "is_maintenance_mode_available": False,
-            "maintenance_mode": "OFF",
+            "maintenance_mode": "off",
         }
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["id"], data["id"])
@@ -91,7 +90,7 @@ class TestHost(BaseAPITestCase):
             "hostprovider": {"id": 1, "name": "provider", "display_name": "provider"},
             "concerns": [],
             "is_maintenance_mode_available": False,
-            "maintenance_mode": "OFF",
+            "maintenance_mode": "off",
         }
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["id"], data["id"])
@@ -168,7 +167,7 @@ class TestHost(BaseAPITestCase):
     def test_maintenance_mode(self):
         response: Response = self.client.post(
             path=reverse(viewname="v2:host-maintenance-mode", kwargs={"pk": self.host.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "on"},
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -177,9 +176,10 @@ class TestHost(BaseAPITestCase):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         response: Response = self.client.post(
             path=reverse(viewname="v2:host-maintenance-mode", kwargs={"pk": self.host.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "on"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.data["maintenance_mode"], "on")
 
 
 class TestClusterHost(BaseAPITestCase):
@@ -229,10 +229,11 @@ class TestClusterHost(BaseAPITestCase):
                 viewname="v2:host-cluster-maintenance-mode",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host.pk},
             ),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "on"},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.data["maintenance_mode"], "on")
 
 
 class TestHostActions(BaseAPITestCase):

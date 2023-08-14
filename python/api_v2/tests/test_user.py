@@ -12,7 +12,7 @@
 
 from copy import deepcopy
 
-from api_v2.rbac.users.constants import UserStatusChoices, UserTypeChoices
+from api_v2.rbac.users.constants import UserTypeChoices
 from api_v2.tests.base import BaseAPITestCase
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
@@ -265,7 +265,7 @@ class TestUserAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response: Response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}))
-        self.assertEqual(response.json()["status"], "BLOCKED")
+        self.assertEqual(response.json()["status"], "blocked")
 
         user.refresh_from_db()
         self.assertIsNotNone(user.blocked_at)
@@ -281,7 +281,7 @@ class TestUserAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response: Response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}))
-        self.assertEqual(response.json()["status"], "ACTIVE")
+        self.assertEqual(response.json()["status"], "active")
 
         user.refresh_from_db()
         self.assertIsNone(user.blocked_at)
@@ -380,9 +380,7 @@ class TestUserAPI(BaseAPITestCase):
         target_user.blocked_at = now()
         target_user.save(update_fields=["blocked_at"])
 
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:rbac:user-list"), data={"status": UserStatusChoices.BLOCKED.value}
-        )
+        response: Response = self.client.get(path=reverse(viewname="v2:rbac:user-list"), data={"status": "blocked"})
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["results"]), 1)
         self.assertEqual(response.json()["results"][0]["username"], target_user.username)
