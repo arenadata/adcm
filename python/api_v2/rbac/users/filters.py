@@ -45,8 +45,8 @@ class UserFilterSet(FilterSet):
     def filter_type(queryset: QuerySet, name: str, value: str) -> QuerySet:  # pylint: disable=unused-argument
         match value:
             case UserTypeChoices.LOCAL:
-                filter_value = UserTypeChoices.LOCAL.value.lower()
+                filter_value = UserTypeChoices.LOCAL.value
             case UserTypeChoices.LDAP:
-                filter_value = UserTypeChoices.LDAP.value.lower()
+                filter_value = UserTypeChoices.LDAP.value
 
         return queryset.filter(type=filter_value)

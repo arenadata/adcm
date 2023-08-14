@@ -53,9 +53,17 @@ class ObjectType(models.TextChoices):
 
 
 class MaintenanceMode(models.TextChoices):
-    ON = "ON", "ON"
-    OFF = "OFF", "OFF"
-    CHANGING = "CHANGING", "CHANGING"
+    ON = "on", "on"
+    OFF = "off", "off"
+    CHANGING = "changing", "changing"
+
+
+MAINTENANCE_MODE_BOTH_CASES_CHOICES = (
+    ("on", "on"),
+    ("off", "off"),
+    ("ON", "ON"),
+    ("OFF", "OFF"),
+)
 
 
 class SignatureState(models.TextChoices):
@@ -1992,5 +2000,5 @@ class ConcernItem(ADCMModel):
 
 
 class ADCMEntityStatus(models.TextChoices):
-    UP = "UP", "UP"
-    DOWN = "DOWN", "DOWN"
+    UP = "up", "up"
+    DOWN = "down", "down"

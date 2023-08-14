@@ -172,6 +172,12 @@ class GroupConfigHostSerializer(serializers.ModelSerializer):
             "locked",
         )
 
+    def to_representation(self, instance: Host) -> dict:
+        data = super().to_representation(instance=instance)
+        data["maintenance_mode"] = data["maintenance_mode"].upper()
+
+        return data
+
 
 class GroupConfigHostCandidateSerializer(GroupConfigHostSerializer):
     """Serializer for host candidate"""

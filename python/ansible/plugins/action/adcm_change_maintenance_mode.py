@@ -90,7 +90,7 @@ class ActionModule(ActionBase):
         if obj_type == "host":
             context_type = "cluster"
 
-        obj_value = "ON" if self._task.args["value"] else "OFF"
+        obj_value = "on" if self._task.args["value"] else "off"
         obj_pk = get_object_id_from_context(
             task_vars=task_vars,
             id_type=f"{obj_type}_id",
@@ -102,8 +102,8 @@ class ActionModule(ActionBase):
         if not obj:
             raise AnsibleActionFail(f'Object of type "{obj_type}" with PK "{obj_pk}" does not exist')
 
-        if obj.maintenance_mode != "CHANGING":
-            raise AnsibleActionFail('Only "CHANGING" state of object maintenance mode can be changed')
+        if obj.maintenance_mode != "changing":
+            raise AnsibleActionFail('Only "changing" state of object maintenance mode can be changed')
 
         obj.maintenance_mode = obj_value
         obj.save()
