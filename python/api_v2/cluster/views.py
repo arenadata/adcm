@@ -100,7 +100,7 @@ class ClusterViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint:disa
 
         return Response(status=HTTP_200_OK, data=ClusterSerializer(instance).data)
 
-    @action(methods=["get"], detail=True)
+    @action(methods=["get"], detail=True, url_path="service-prototypes")
     def service_prototypes(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         cluster = Cluster.objects.filter(pk=kwargs["pk"]).first()
         if not cluster:
