@@ -1,8 +1,8 @@
 import { AdcmClusterStatus } from '@models/adcm/cluster';
 
 export enum AdcmClusterImportPayloadType {
-  cluster = 'cluster',
-  service = 'service',
+  Cluster = 'cluster',
+  Service = 'service',
 }
 
 export interface AdcmClusterImportService {

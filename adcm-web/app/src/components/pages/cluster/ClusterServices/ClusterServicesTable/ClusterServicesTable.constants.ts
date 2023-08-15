@@ -28,6 +28,6 @@ export const columns: TableColumn[] = [
 ];
 
 export const servicesStatusesMap: { [key in AdcmServiceStatus]: BaseStatus } = {
-  UP: 'done',
-  DOWN: 'unknown',
+  [AdcmServiceStatus.Up]: 'done',
+  [AdcmServiceStatus.Down]: 'unknown',
 };

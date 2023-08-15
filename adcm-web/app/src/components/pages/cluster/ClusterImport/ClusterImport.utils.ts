@@ -26,7 +26,7 @@ export const getUncheckServiceList = ({ services, selectedImports }: PrepService
 export const formatForSelectedToggleHandlerData = (services: AdcmClusterImportService[]) =>
   services.map((service) => ({
     id: service.id,
-    type: AdcmClusterImportPayloadType.service,
+    type: AdcmClusterImportPayloadType.Service,
     name: service.name,
     isMultiBind: service.isMultiBind,
   }));
@@ -110,7 +110,7 @@ export const getLoadableData = (
     if (clusterImport.binds.length === 0) return;
 
     clusterImport.binds.forEach((bind) => {
-      if (bind.source.type === AdcmClusterImportPayloadType.service) {
+      if (bind.source.type === AdcmClusterImportPayloadType.Service) {
         if (!clusterImport.importServices) return;
 
         const foundService = clusterImport.importServices.find((service) => service.id === bind.source.id);
@@ -118,7 +118,7 @@ export const getLoadableData = (
 
         loadedImports.services.set(foundService.id, {
           id: foundService.id,
-          type: AdcmClusterImportPayloadType.service,
+          type: AdcmClusterImportPayloadType.Service,
           name: foundService.name,
         });
 
@@ -128,7 +128,7 @@ export const getLoadableData = (
       } else {
         loadedImports.clusters.set(clusterImport.cluster.id, {
           id: clusterImport.cluster.id,
-          type: AdcmClusterImportPayloadType.cluster,
+          type: AdcmClusterImportPayloadType.Cluster,
           name: clusterImport.cluster.name,
         });
 
@@ -161,7 +161,7 @@ export const prepToggleSelectedSingleBindData = (
   };
 
   selectedImports.forEach(({ type, name, isMultiBind }) => {
-    const keyName = type === AdcmClusterImportPayloadType.cluster ? 'clusters' : 'services';
+    const keyName = type === AdcmClusterImportPayloadType.Cluster ? 'clusters' : 'services';
 
     if (isMultiBind) return;
 
@@ -185,7 +185,7 @@ export const prepToggleSelectedImportsData = (
   };
 
   newSelectedData.forEach(({ id, type, name }) => {
-    const keyName = type === AdcmClusterImportPayloadType.cluster ? 'clusters' : 'services';
+    const keyName = type === AdcmClusterImportPayloadType.Cluster ? 'clusters' : 'services';
     if (curItems[keyName].has(id)) {
       curItems[keyName].delete(id);
     } else {

@@ -49,4 +49,4 @@ export const objectTypeOptions = getOptionsFromEnum(AdcmAuditOperationObjectType
 export const operationTypeOptions = getOptionsFromEnum(AdcmAuditOperationType);
 export const operationResultOptions = getOptionsFromEnum(AdcmAuditOperationResult);
 
-export const operationAuditInactiveResults = [AdcmAuditOperationResult.denied, AdcmAuditOperationResult.fail];
+export const operationAuditInactiveResults = [AdcmAuditOperationResult.Denied, AdcmAuditOperationResult.Fail];

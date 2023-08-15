@@ -13,7 +13,7 @@ const ClusterImportCardServiceItem = ({
     onCheckHandler([
       {
         id: service.id,
-        type: AdcmClusterImportPayloadType.service,
+        type: AdcmClusterImportPayloadType.Service,
         name: service.name,
         isMultiBind: service.isMultiBind,
       },

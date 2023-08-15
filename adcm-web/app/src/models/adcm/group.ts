@@ -1,6 +1,6 @@
 export enum AdcmGroupType {
-  LOCAL = 'LOCAL',
-  LDAP = 'LDAP',
+  Local = 'local',
+  Ldap = 'ldap',
 }
 
 interface AdcmGroupUser {

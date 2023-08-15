@@ -19,7 +19,7 @@ const LoginPage: React.FC = () => {
   const location = useLocation();
   const from = (location.state as RedirectLocationState)?.from || '/';
 
-  if (authState === AUTH_STATE.AUTHED) {
+  if (authState === AUTH_STATE.Authed) {
     return <Navigate to={from} replace />;
   }
 

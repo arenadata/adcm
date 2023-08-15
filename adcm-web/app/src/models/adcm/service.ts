@@ -3,8 +3,8 @@ import { AdcmMaintenanceMode } from '@models/adcm/maintenanceMode';
 import { AdcmPrototypeType } from '@models/adcm/prototype';
 
 export enum AdcmServiceStatus {
-  Up = 'UP',
-  Down = 'DOWN',
+  Up = 'up',
+  Down = 'down',
 }
 
 export interface AdcmService {

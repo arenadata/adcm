@@ -5,13 +5,13 @@ import Icon from '@uikit/Icon/Icon';
 import cn from 'classnames';
 
 enum THEME {
-  DARK = 'dark',
-  LIGHT = 'light',
+  Dark = 'dark',
+  Light = 'light',
 }
 
 const THEMES_CLASS = {
-  [THEME.DARK]: 'theme-dark',
-  [THEME.LIGHT]: 'theme-light',
+  [THEME.Dark]: 'theme-dark',
+  [THEME.Light]: 'theme-light',
 };
 
 const THEME_STORAGE_KEY = 'css_theme_name';
@@ -26,17 +26,17 @@ const ThemeSwitcher: React.FC = () => {
   const [theme, saveThemeToStorage] = useLocalStorage({ key: THEME_STORAGE_KEY });
 
   const darkOn = () => {
-    saveThemeToStorage(THEME.DARK);
-    switchToTheme(THEME.DARK);
+    saveThemeToStorage(THEME.Dark);
+    switchToTheme(THEME.Dark);
   };
   const lightOn = () => {
-    saveThemeToStorage(THEME.LIGHT);
-    switchToTheme(THEME.LIGHT);
+    saveThemeToStorage(THEME.Light);
+    switchToTheme(THEME.Light);
   };
 
   // save theme to storage for first connect to page
   useEffect(() => {
-    if (theme === THEME.LIGHT) {
+    if (theme === THEME.Light) {
       lightOn();
     } else {
       darkOn();
@@ -47,16 +47,16 @@ const ThemeSwitcher: React.FC = () => {
   return (
     <div className={s.themeSwitcher}>
       <button
-        className={cn(s.themeSwitcher__btn, { 'is-active': theme === THEME.LIGHT })}
+        className={cn(s.themeSwitcher__btn, { 'is-active': theme === THEME.Light })}
         onClick={lightOn}
-        title={theme === THEME.DARK ? 'Switch to light theme' : undefined}
+        title={theme === THEME.Dark ? 'Switch to light theme' : undefined}
       >
         <Icon name="g2-sun" size={24} />
       </button>
       <button
-        className={cn(s.themeSwitcher__btn, { 'is-active': theme === THEME.DARK })}
+        className={cn(s.themeSwitcher__btn, { 'is-active': theme === THEME.Dark })}
         onClick={darkOn}
-        title={theme === THEME.LIGHT ? 'Switch to dark theme' : undefined}
+        title={theme === THEME.Light ? 'Switch to dark theme' : undefined}
       >
         <Icon name="g2-moon" size={24} />
       </button>

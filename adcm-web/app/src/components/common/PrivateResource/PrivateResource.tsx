@@ -12,7 +12,7 @@ const PrivateResource: React.FC<React.PropsWithChildren> = ({ children }) => {
     return null;
   }
 
-  if (authState === AUTH_STATE.NOT_AUTH) {
+  if (authState === AUTH_STATE.NotAuth) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
