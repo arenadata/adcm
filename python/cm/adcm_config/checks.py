@@ -155,7 +155,6 @@ def check_value_unselected_field(
     :param spec: Config specification
     :param obj: Parent object (Cluster, Service, Component Provider or Host)
     """
-    # pylint: disable=too-many-boolean-expressions
 
     for group_key, group_value in group_keys.items():
         if isinstance(group_value, Mapping):

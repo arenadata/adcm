@@ -215,8 +215,6 @@ class TestInventory(BaseTestCase):
     @patch("json.dump")
     @patch("cm.inventory.open")
     def test_prepare_job_inventory(self, mock_open, mock_dump):
-        # pylint: disable=too-many-locals
-
         host2 = Host.objects.create(prototype=self.host_pt, fqdn="h2", cluster=self.cluster, provider=self.provider)
         action = Action.objects.create(prototype=self.cluster_pt)
         job = JobLog.objects.create(action=action, start_date=timezone.now(), finish_date=timezone.now())

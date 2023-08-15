@@ -503,7 +503,7 @@ class TestUpgrade(BaseTestCase):
 
         self.assertEqual(len(host_components), 0)
 
-    def test_component(self):  # pylint: disable=too-many-locals
+    def test_component(self):
         bundle_1 = cook_cluster_bundle("1.0")
         bundle_2 = cook_cluster_bundle("2.0")
         service_prototype = Prototype.objects.get(bundle=bundle_2, type="service", name="hadoop")

@@ -206,7 +206,7 @@ class Policy(Model):
     model_perm = ManyToManyField(PolicyPermission, blank=True)
     group_object_perm = ManyToManyField(GroupObjectPermission, blank=True)
 
-    def remove_permissions(self):  # pylint: disable=too-many-branches,too-many-statements
+    def remove_permissions(self):
         # Placeholder in some places not used because we need to support Postgres and SQLite and I didn't find a way
         # to use placeholder for list of multiple values for SQLite so used string formatting
         group_pks = self.group.values_list("pk", flat=True)

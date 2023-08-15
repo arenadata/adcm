@@ -428,7 +428,7 @@ def update_issue_after_deleting() -> None:
     for concern in ConcernItem.objects.filter(type=ConcernType.ISSUE):
         tree = Tree(obj=concern.owner)
         affected = {node.value for node in tree.get_directly_affected(node=tree.built_from)}
-        related = set(concern.related_objects)  # pylint: disable=consider-using-set-comprehension
+        related = set(concern.related_objects)
         if concern.owner is None:
             concern_str = str(concern)
             concern.delete()

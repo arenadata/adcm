@@ -102,7 +102,7 @@ class TestTask(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
 
-class TestTaskObjects(BaseAPITestCase):
+class TestTaskObjects(BaseAPITestCase):  # pylint: disable=too-many-instance-attributes
     def setUp(self) -> None:
         super().setUp()
 

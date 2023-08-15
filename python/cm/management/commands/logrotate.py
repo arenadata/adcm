@@ -238,7 +238,7 @@ class Command(BaseCommand):
                         JobLog.objects.filter(task__isnull=True).delete()
 
                 self.__log("db JobLog rotated", "info")
-            if days_delta_fs > 0:  # pylint: disable=too-many-nested-blocks
+            if days_delta_fs > 0:
                 for name in os.listdir(settings.RUN_DIR):
                     if not name.startswith("."):  # a line of code is used for development
                         path = settings.RUN_DIR / name

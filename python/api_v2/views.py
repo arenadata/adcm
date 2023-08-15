@@ -44,7 +44,7 @@ class APIRoot(APIRootView):
     }
 
 
-class CamelCaseGenericViewSet(GenericViewSet):  # pylint: disable=too-many-ancestors
+class CamelCaseGenericViewSet(GenericViewSet):
     parser_classes = [CamelCaseJSONParser, CamelCaseMultiPartParser, CamelCaseFormParser]
     renderer_classes = [CamelCaseJSONRenderer, CamelCaseBrowsableAPIRenderer]
 

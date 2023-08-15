@@ -173,7 +173,7 @@ class TestAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-    def test_cluster(self):  # pylint: disable=too-many-statements
+    def test_cluster(self):
         cluster_name = "test-cluster"
         cluster_url = reverse(viewname="v1:cluster")
         self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
