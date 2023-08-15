@@ -1,9 +1,9 @@
 import React from 'react';
-import { useDispatch } from '@hooks';
+//import { useDispatch } from '@hooks';
 import { Button } from '@uikit';
 
 const ClusterHostsAddHostsButton: React.FC = () => {
-  const dispatch = useDispatch();
+  //const dispatch = useDispatch();
 
   const handleClick = () => {
     console.info('add hosts');

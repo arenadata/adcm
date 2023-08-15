@@ -1,6 +1,8 @@
 import ClusterConfiguration from './ClusterConfiguration/ClusterConfiguration';
 import ClusterHosts from './ClusterHosts/ClusterHosts';
 import ClusterImport from './ClusterImport/ClusterImport';
+import ClusterImportsCluster from './ClusterImport/ClusterImportsCluster/ClusterImportsCluster';
+import ClusterImportsService from './ClusterImport/ClusterImportServices/ClusterImportsService';
 import ClusterMapping from './ClusterMapping/ClusterMapping';
 import ClusterHostsMapping from './ClusterMapping/HostsMapping/HostsMapping';
 import ClusterComponentsMapping from './ClusterMapping/ComponentsMapping/ComponentsMapping';
@@ -16,4 +18,6 @@ export {
   ClusterComponentsMapping,
   ClusterOverview,
   ClusterServices,
+  ClusterImportsCluster,
+  ClusterImportsService,
 };

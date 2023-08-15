@@ -20,7 +20,7 @@ const prepareSorting = ({ sortBy: fieldName, sortDirection }: SortParams) => {
   };
 };
 
-const prepareLimitOffset = (paginationParams: PaginationParams) => {
+export const prepareLimitOffset = (paginationParams: PaginationParams) => {
   return {
     offset: paginationParams.pageNumber * paginationParams.perPage,
     limit: paginationParams.perPage,
