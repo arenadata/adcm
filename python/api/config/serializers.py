@@ -18,8 +18,6 @@ from cm.adcm_config.utils import group_is_activatable
 from cm.api import update_obj_config
 from cm.errors import raise_adcm_ex
 from cm.models import ConfigLog, PrototypeConfig
-
-# pylint: disable=redefined-builtin
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (

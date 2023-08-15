@@ -263,7 +263,6 @@ class ProtoActionViewSet(RetrieveModelMixin, GenericUIViewSet):
         return Response(serializer.data)
 
 
-#  pylint:disable-next=too-many-ancestors
 class ServicePrototypeViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
     queryset = Prototype.objects.filter(type="service")
     serializer_class = ServicePrototypeSerializer

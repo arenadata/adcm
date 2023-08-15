@@ -1023,8 +1023,6 @@ def get_prototype_import(import_pk: int, import_obj: Cluster | ClusterObject) ->
 
 
 def multi_bind(cluster: Cluster, service: ClusterObject | None, bind_list: list[dict]):
-    # pylint: disable=too-many-locals,too-many-statements
-
     check_bind_post(bind_list=bind_list)
     import_obj = get_bind_obj(cluster=cluster, service=service)
     old_bind = {}
@@ -1099,8 +1097,6 @@ def multi_bind(cluster: Cluster, service: ClusterObject | None, bind_list: list[
 def bind(
     cluster: Cluster, service: ClusterObject | None, export_cluster: Cluster, export_service_pk: int | None
 ) -> dict:
-    # pylint: disable=too-many-branches
-
     """
     Adapter between old and new bind interface
     /api/.../bind/ -> /api/.../import/

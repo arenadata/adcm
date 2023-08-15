@@ -74,7 +74,7 @@ class HostViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):
 
         return self.serializer_class
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -159,14 +159,14 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  #
 
         return self.serializer_class
 
-    def get_queryset(self, *args, **kwargs):  # pylint: disable=unused-argument
+    def get_queryset(self, *args, **kwargs):
         return (
             Host.objects.filter(cluster=self.kwargs["cluster_pk"])
             .select_related("cluster")
             .prefetch_related("hostcomponent_set")
         )
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         serializer = self.get_serializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
 
@@ -189,7 +189,7 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  #
             status=HTTP_201_CREATED,
         )
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         host = self.get_object()
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_pk"])
         if host.cluster != cluster:

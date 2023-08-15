@@ -867,7 +867,7 @@ def copy_stage(bundle_hash: str, bundle_proto, verified: bool = False) -> Bundle
 
 def update_bundle_from_stage(
     bundle,
-):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+):  # pylint: disable=too-many-locals,too-many-statements
     for stage_prototype in StagePrototype.objects.order_by("id"):
         try:
             prototype = Prototype.objects.get(

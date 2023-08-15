@@ -150,7 +150,7 @@ def prepare_task(
     hostcomponent: list[dict],
     hosts: list[int],
     verbose: bool,
-) -> TaskLog:  # pylint: disable=too-many-locals
+) -> TaskLog:
     cluster = get_object_cluster(obj=obj)
     check_action_state(action=action, task_object=obj, cluster=cluster)
     _, spec, flat_spec = check_action_config(action=action, obj=obj, conf=conf, attr=attr)
@@ -170,7 +170,6 @@ def prepare_task(
         attr = {}
 
     with atomic():
-        # pylint: disable=too-many-locals
         if cluster:
             on_commit(
                 func=partial(post_event, event="change_hostcomponentmap", object_id=cluster.pk, object_type="cluster")

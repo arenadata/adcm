@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=line-too-long
-
 import fcntl
 import json
 from collections import defaultdict
@@ -91,7 +89,7 @@ def job_lock(job_id):
         encoding=settings.ENCODING_UTF_8,
     )
     try:
-        fcntl.flock(file_descriptor.fileno(), fcntl.LOCK_EX)  # pylint: disable=I1101
+        fcntl.flock(file_descriptor.fileno(), fcntl.LOCK_EX)
 
         return file_descriptor
     except OSError as e:
@@ -191,7 +189,7 @@ class ContextActionModule(ActionBase):
     def _do_host_from_provider(self, task_vars, context):
         raise NotImplementedError
 
-    def run(self, tmp=None, task_vars=None):  # pylint: disable=too-many-branches
+    def run(self, tmp=None, task_vars=None):
         self._check_mandatory()
         obj_type = self._task.args["type"]
         job_id = task_vars["job"]["id"]
@@ -357,7 +355,7 @@ def set_host_multi_state(host_id, multi_state):
     return _set_object_multi_state(obj, multi_state)
 
 
-def change_hc(job_id, cluster_id, operations):  # pylint: disable=too-many-branches
+def change_hc(job_id, cluster_id, operations):
     """
     For use in ansible plugin adcm_hc
     """
