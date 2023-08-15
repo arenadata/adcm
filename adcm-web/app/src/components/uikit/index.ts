@@ -38,6 +38,7 @@ import IconButton from './IconButton/IconButton';
 import LabeledField from './LabeledField/LabeledField';
 import Tab from '@uikit/Tabs/Tab';
 import TabsBlock from '@uikit/Tabs/TabsBlock';
+import Spinner from '@uikit/Spinner/Spinner';
 
 export {
   AnchorBar,
@@ -69,6 +70,7 @@ export {
   SearchInput,
   Select,
   SelectOption,
+  Spinner,
   Statusable,
   BaseStatus,
   Table,

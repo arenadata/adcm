@@ -3,7 +3,6 @@ import { useDispatch, useStore } from '@hooks';
 import { IconButton, Table, TableCell, TableRow } from '@uikit';
 import { columns, hostStatusesMap } from '@pages/cluster/ClusterHosts/ClusterHostsTable/ClusterHostsTable.constant';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
-import { orElseGet } from '@utils/checkUtils.ts';
 import UnlinkHostToggleButton from '@pages/HostsPage/HostsTable/Buttons/UnlinkHostToggleButton/UnlinkHostToggleButton';
 import { setSortParams } from '@store/adcm/cluster/hosts/hostsTableSlice';
 import { SortParams } from '@models/table';

@@ -9,6 +9,7 @@ export * from './maintenanceMode';
 export * from './users';
 export * from './group';
 export * from './audit';
+export * from './clusterImports';
 
 export interface Batch<T> {
   results: T[];

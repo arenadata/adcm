@@ -1,0 +1,95 @@
+:global {
+  body.theme-dark {
+    --cluster-import-item-bg-color: var(--color-xdark-new-20);
+    --cluster-import-item-border-color: var(--color-xdark);
+
+    --cluster-import-item-title-color: var(--color-xwhite-off);
+
+    --cluster-import-item-bg-hover-color: var(--color-xdark-new-50);
+
+    --cluster-import-item-bg-active-color: var(--color-xdark-new);
+    --cluster-import-item-border-active-color: var(--color-xgreen-saturated);
+
+    --cluster-import-item-require-color: var(--color-yellow-light);
+  }
+
+  body.theme-light {
+    --cluster-import-item-bg-color: var(--color-xgray-alt-30);
+    --cluster-import-item-border-color: var(--color-xgray-lighter);
+
+    --cluster-import-item-title-color: var(--color-xdark);
+
+    --cluster-import-item-bg-hover-color: var(--color-xgray-alt-50);
+
+    --cluster-import-item-bg-active-color: var(--color-xgray-alt);
+    --cluster-import-item-border-active-color: var(--color-xgreen-saturated);
+
+    --cluster-import-item-require-color: var(--color-json-orange);
+  }
+}
+
+.clusterImportItem {
+  display: grid;
+  background-color: var(--cluster-import-item-bg-color);
+  border: 1px solid var(--cluster-import-item-border-color);
+  border-radius: 8px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  overflow: hidden;
+  padding: 16px;
+
+
+  &:hover {
+    background-color: var(--cluster-import-item-bg-hover-color);
+  }
+
+  &:not(:first-of-type) {
+    margin-top: 10px;
+  }
+
+  &__block {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0 18px;
+    overflow-wrap: anywhere;
+
+    &:first-of-type {
+      padding-left: 0;
+    }
+
+    &:not(:first-of-type) {
+      border-left: 1px solid var(--cluster-import-item-border-color);
+    }
+  }
+
+  &__title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--cluster-import-item-title-color);
+  }
+
+  &__checkbox:not(:first-of-type) {
+    margin-top: 10px;
+  }
+
+  &_active {
+    background-color: var(--cluster-import-item-bg-active-color);
+    border-color: var(--cluster-import-item-border-active-color);
+  }
+
+  &_require {
+    border-color: var(--cluster-import-item-require-color);
+  }
+
+  &_empty {
+    text-align: center;
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  &__requireBlock {
+    color: var(--cluster-import-item-require-color);
+    margin-top: 12px;
+  }
+}

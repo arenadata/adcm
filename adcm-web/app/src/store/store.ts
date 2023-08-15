@@ -23,6 +23,10 @@ import auditOperationsSlice from '@store/adcm/audit/auditOperations/auditOperati
 import auditOperationsTableSlice from '@store/adcm/audit/auditOperations/auditOperationsTableSlice';
 import auditLoginsSlice from '@store/adcm/audit/auditLogins/auditLoginsSlice';
 import auditLoginsTableSlice from '@store/adcm/audit/auditLogins/auditLoginsTableSlice';
+import clusterImportsSlice from '@store/adcm/cluster/imports/cluster/clusterImportsSlice';
+import clusterImportsFilterSlice from '@store/adcm/cluster/imports/cluster/clusterImportsFilterSlice';
+import clusterImportsServiceSlice from '@store/adcm/cluster/imports/service/clusterImportsServiceSlice';
+import clusterImportsServiceFilterSlice from '@store/adcm/cluster/imports/service/clusterImportsServiceFilterSlice';
 
 import { apiMiddleware } from './middlewares/apiMiddleware';
 import clusterSlice from './adcm/clusters/clusterSlice';
@@ -65,6 +69,10 @@ const rootReducer = combineReducers({
     auditOperationsTable: auditOperationsTableSlice,
     auditLogins: auditLoginsSlice,
     auditLoginsTable: auditLoginsTableSlice,
+    clusterImports: clusterImportsSlice,
+    clusterImportsFilter: clusterImportsFilterSlice,
+    clusterImportsService: clusterImportsServiceSlice,
+    clusterImportsServiceFilter: clusterImportsServiceFilterSlice,
     // createHostDialog: createHostDialogSlice,
     users: usersSlice,
     usersTable: usersTableSlice,
