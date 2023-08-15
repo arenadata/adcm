@@ -70,7 +70,7 @@ const AccessManagerUsersTable = () => {
               <Checkbox checked={isItemSelected(user)} onChange={getHandlerSelectedItem(user)} />
             </TableCell>
             <TableCell>
-              <Link to={generatePath(ACCESS_MANAGER_PAGE_URLS.USER, { userId: user.id + '' })}>{user.username}</Link>
+              <Link to={generatePath(ACCESS_MANAGER_PAGE_URLS.User, { userId: user.id + '' })}>{user.username}</Link>
             </TableCell>
             <TableCell>{user.status}</TableCell>
             <TableCell>{user.email}</TableCell>
@@ -78,10 +78,10 @@ const AccessManagerUsersTable = () => {
             <TableCell>{user.type}</TableCell>
             <TableCell hasIconOnly align="center">
               <IconButton icon="g1-edit" size={32} title="Edit" />
-              {user.status === AdcmUserStatus.ACTIVE && (
+              {user.status === AdcmUserStatus.Active && (
                 <IconButton icon="g1-block" size={32} title="Block" onClick={handleBlockClick(user.id)} />
               )}
-              {user.status === AdcmUserStatus.BLOCKED && (
+              {user.status === AdcmUserStatus.Blocked && (
                 <IconButton icon="g1-unblock" size={32} title="Unblock" onClick={handleUnblockClick(user.id)} />
               )}
               <IconButton icon="g1-delete" size={32} onClick={handleDeleteClick(user.id)} title="Delete" />

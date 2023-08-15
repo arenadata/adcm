@@ -9,11 +9,11 @@ type LoginActionPayload = {
 };
 
 export enum AUTH_STATE {
-  CHECKING = 'checking',
-  NOT_AUTH = 'not_auth',
-  AUTHED = 'authed',
+  Checking = 'checking',
+  NotAuth = 'not_auth',
+  Authed = 'authed',
 }
-export type AuthState = AUTH_STATE.NOT_AUTH | AUTH_STATE.CHECKING | AUTH_STATE.AUTHED;
+export type AuthState = AUTH_STATE.NotAuth | AUTH_STATE.Checking | AUTH_STATE.Authed;
 
 type UserState = {
   username: string;
@@ -52,7 +52,7 @@ const createInitialState = (): UserState => ({
   username: '',
   needCheckSession: true,
   hasError: false,
-  authState: AUTH_STATE.NOT_AUTH,
+  authState: AUTH_STATE.NotAuth,
   message: '',
 });
 
@@ -69,7 +69,7 @@ const userSlice = createSlice({
       state.message = '';
       state.hasError = false;
       state.needCheckSession = false;
-      state.authState = AUTH_STATE.CHECKING;
+      state.authState = AUTH_STATE.Checking;
     });
     builder.addCase(login.fulfilled, (state, action) => {
       state.username = action.payload.username;
@@ -77,7 +77,7 @@ const userSlice = createSlice({
       state.message = '';
       state.hasError = false;
       state.needCheckSession = false;
-      state.authState = AUTH_STATE.AUTHED;
+      state.authState = AUTH_STATE.Authed;
     });
     builder.addCase(login.rejected, (_, action) => {
       const error = action.payload as RequestError;
@@ -86,7 +86,7 @@ const userSlice = createSlice({
         message: getErrorMessage(error),
         hasError: true,
         needCheckSession: false,
-        authState: AUTH_STATE.NOT_AUTH,
+        authState: AUTH_STATE.NotAuth,
       };
     });
 
@@ -95,26 +95,26 @@ const userSlice = createSlice({
         ...createInitialState(),
         hasError: false,
         needCheckSession: false,
-        authState: AUTH_STATE.NOT_AUTH,
+        authState: AUTH_STATE.NotAuth,
       };
     });
     builder.addCase(logout.rejected, () => createInitialState());
 
     builder.addCase(checkSession.pending, (state) => {
       state.hasError = false;
-      state.authState = AUTH_STATE.CHECKING;
+      state.authState = AUTH_STATE.Checking;
     });
     builder.addCase(checkSession.fulfilled, (state, action) => {
       state.username = action.payload.username;
 
       state.hasError = false;
       state.needCheckSession = false;
-      state.authState = AUTH_STATE.AUTHED;
+      state.authState = AUTH_STATE.Authed;
     });
     builder.addCase(checkSession.rejected, (state) => {
       state.hasError = false;
       state.needCheckSession = false;
-      state.authState = AUTH_STATE.NOT_AUTH;
+      state.authState = AUTH_STATE.NotAuth;
     });
   },
 });

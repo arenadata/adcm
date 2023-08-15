@@ -55,7 +55,7 @@ const AccessManagerGroupsTable = () => {
               <Checkbox checked={isItemSelected(group)} onChange={getHandlerSelectedItem(group)} />
             </TableCell>
             <TableCell>
-              <Link to={generatePath(ACCESS_MANAGER_PAGE_URLS.GROUP, { groupId: group.id + '' })}>{group.name}</Link>
+              <Link to={generatePath(ACCESS_MANAGER_PAGE_URLS.Group, { groupId: group.id + '' })}>{group.name}</Link>
             </TableCell>
             <TableCell>{group.description}</TableCell>
             <TableCell>{group.users.map((user) => user.name).join(', ')}</TableCell>

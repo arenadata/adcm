@@ -42,6 +42,6 @@ export const columns: TableColumn[] = [
 ];
 
 export const clusterStatusesMap: { [key in AdcmClusterStatus]: BaseStatus } = {
-  UP: 'done',
-  DOWN: 'unknown',
+  [AdcmClusterStatus.Up]: 'done',
+  [AdcmClusterStatus.Down]: 'unknown',
 };

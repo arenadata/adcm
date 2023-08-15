@@ -1,29 +1,29 @@
 // Audit Operations
 
 export enum AdcmAuditOperationType {
-  create = 'create',
-  update = 'update',
-  delete = 'delete',
+  Create = 'create',
+  Update = 'update',
+  Delete = 'delete',
 }
 
 export enum AdcmAuditOperationResult {
-  success = 'success',
-  fail = 'fail',
-  denied = 'denied',
+  Success = 'success',
+  Fail = 'fail',
+  Denied = 'denied',
 }
 
 export enum AdcmAuditOperationObjectType {
-  cluster = 'cluster',
-  service = 'service',
-  component = 'component',
-  host = 'host',
-  provider = 'provider',
-  bundle = 'bundle',
-  user = 'user',
-  group = 'group',
-  policy = 'policy',
-  adcm = 'adcm',
-  role = 'role',
+  Cluster = 'cluster',
+  Service = 'service',
+  Component = 'component',
+  Host = 'host',
+  Provider = 'provider',
+  Bundle = 'bundle',
+  User = 'user',
+  Group = 'group',
+  Policy = 'policy',
+  Adcm = 'adcm',
+  Role = 'role',
 }
 
 export interface AdcmAuditOperationObject {
@@ -77,10 +77,10 @@ export interface AdcmAuditLogin {
 }
 
 export enum AdcmAuditLoginResultType {
-  success = 'success',
-  wrongPassword = 'wrong password',
-  userNotFound = 'user not found',
-  accountDisabled = 'account disabled',
+  Success = 'success',
+  WrongPassword = 'wrong password',
+  UserNotFound = 'user not found',
+  AccountDisabled = 'account disabled',
 }
 
 export interface AdcmAuditLoginUser {

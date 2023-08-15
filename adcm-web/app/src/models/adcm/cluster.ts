@@ -1,8 +1,8 @@
 import { AdcmConcerns } from './concern';
 
 export enum AdcmClusterStatus {
-  Up = 'UP',
-  Down = 'DOWN',
+  Up = 'up',
+  Down = 'down',
 }
 
 export interface AdcmClusterPrototype {

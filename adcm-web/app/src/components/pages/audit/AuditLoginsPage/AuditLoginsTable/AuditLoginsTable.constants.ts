@@ -23,6 +23,6 @@ export const columns: TableColumn[] = [
 export const loginsResultOptions = getOptionsFromEnum(AdcmAuditLoginResultType);
 
 export const loginsAuditInactiveResults = [
-  AdcmAuditLoginResultType.userNotFound,
-  AdcmAuditLoginResultType.wrongPassword,
+  AdcmAuditLoginResultType.UserNotFound,
+  AdcmAuditLoginResultType.WrongPassword,
 ];

@@ -60,6 +60,7 @@
           "href",
           "io",
           "linkable",
+          "ldap",
           "maintenance",
           "mouseenter",
           "mouseleave",

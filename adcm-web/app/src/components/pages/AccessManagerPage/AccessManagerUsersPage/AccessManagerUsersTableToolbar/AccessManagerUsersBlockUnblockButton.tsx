@@ -10,10 +10,10 @@ const AccessManagerUsersBlockUnblockButtons: React.FC = () => {
   const users = useStore((s) => s.adcm.users.users);
   const selectedItemsIds = useStore(({ adcm }) => adcm.usersActions.selectedItemsIds);
   const isSelectedSomeActiveUsers = users.some(
-    (user) => selectedItemsIds.includes(user.id) && user.status === AdcmUserStatus.ACTIVE,
+    (user) => selectedItemsIds.includes(user.id) && user.status === AdcmUserStatus.Active,
   );
   const isSelectedSomeBlockedUsers = users.some(
-    (user) => selectedItemsIds.includes(user.id) && user.status === AdcmUserStatus.BLOCKED,
+    (user) => selectedItemsIds.includes(user.id) && user.status === AdcmUserStatus.Blocked,
   );
 
   const handleBlockClick = () => () => {

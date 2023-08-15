@@ -77,7 +77,7 @@ const ClusterImportCard = ({
     onCheckHandler([
       {
         id: clusterImport.importCluster.id,
-        type: AdcmClusterImportPayloadType.cluster,
+        type: AdcmClusterImportPayloadType.Cluster,
         name: clusterImport.cluster.name,
         isMultiBind: clusterImport.importCluster.isMultiBind,
       },
@@ -102,7 +102,7 @@ const ClusterImportCard = ({
       <div className={clusterImportItemClasses}>
         <div className={s.clusterImportItem__block}>
           <Statusable
-            status={clusterImport.cluster.status === 'UP' ? 'running' : 'unknown'}
+            status={clusterImport.cluster.status === 'up' ? 'running' : 'unknown'}
             size="medium"
             className={s.clusterImportItem__title}
           >

@@ -1,11 +1,11 @@
 export enum AdcmUserStatus {
-  ACTIVE = 'ACTIVE',
-  BLOCKED = 'BLOCKED',
+  Active = 'active',
+  Blocked = 'blocked',
 }
 
 export enum AdcmUserType {
-  LOCAL = 'LOCAL',
-  LDAP = 'LDAP',
+  Local = 'local',
+  Ldap = 'ldap',
 }
 
 interface AdcmUserGroup {

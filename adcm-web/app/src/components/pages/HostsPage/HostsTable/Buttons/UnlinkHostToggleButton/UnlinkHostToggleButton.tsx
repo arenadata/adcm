@@ -6,8 +6,8 @@ import { AdcmHost } from '@models/adcm';
 import { openLinkDialog, openUnlinkDialog } from '@store/adcm/hosts/hostsActionsSlice';
 
 enum linkIcons {
-  link = 'g1-link',
-  unlink = 'g1-unlink',
+  Link = 'g1-link',
+  Unlink = 'g1-unlink',
 }
 
 interface LinkHostProps {
@@ -16,7 +16,7 @@ interface LinkHostProps {
 
 const UnlinkHostToggleButton: React.FC<LinkHostProps> = ({ host }) => {
   const dispatch = useDispatch();
-  const linkMode = host.cluster?.id ? 'unlink' : 'link';
+  const linkMode = host.cluster?.id ? 'Unlink' : 'Link';
 
   const handleLinkClick = () => {
     if (host.cluster?.id) {
