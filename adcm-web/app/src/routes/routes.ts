@@ -182,15 +182,15 @@ const routes: RoutesConfigs = {
       },
     ],
   },
-  '/access-manager/policy': {
-    pageTitle: 'Policy',
+  '/access-manager/policies': {
+    pageTitle: 'Policies',
     breadcrumbs: [
       {
         href: '/access-manager',
         label: 'Access Manager',
       },
       {
-        label: 'Policy',
+        label: 'Policies',
       },
     ],
   },

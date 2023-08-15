@@ -6,7 +6,7 @@ const AccessManagerHeader = () => (
     <Tab to="/access-manager/users">Users</Tab>
     <Tab to="/access-manager/groups">Groups</Tab>
     <Tab to="/access-manager/roles">Roles</Tab>
-    <Tab to="/access-manager/policy">Policy</Tab>
+    <Tab to="/access-manager/policies">Policies</Tab>
   </TabsBlock>
 );
 

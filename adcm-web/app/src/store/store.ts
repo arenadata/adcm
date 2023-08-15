@@ -38,6 +38,9 @@ import servicesActionsSlice from './adcm/cluster/services/servicesActionsSlice';
 import usersActionsSlice from './adcm/users/usersActionsSlice';
 import groupsSlice from './adcm/groups/groupsSlice';
 import groupsTableSlice from './adcm/groups/groupsTableSlice';
+import policiesTableSlice from './adcm/policies/policiesTableSlice';
+import policiesSlice from './adcm/policies/policiesSlice';
+import policiesActionsSlice from './adcm/policies/policiesActionsSlice';
 
 const rootReducer = combineReducers({
   user: userSlice,
@@ -79,6 +82,9 @@ const rootReducer = combineReducers({
     usersActions: usersActionsSlice,
     groups: groupsSlice,
     groupsTable: groupsTableSlice,
+    policies: policiesSlice,
+    policiesActions: policiesActionsSlice,
+    policiesTable: policiesTableSlice,
   }),
 });
 
