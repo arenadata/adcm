@@ -15,10 +15,12 @@ from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
 
 class HostProviderFilter(FilterSet):
     name = CharFilter(field_name="name", label="Hostprovider name", lookup_expr="icontains")
-    prototypeDisplayName = CharFilter(field_name="prototype__display_name", label="Hostprovider prototype display name")
+    prototype_display_name = CharFilter(
+        field_name="prototype__display_name", label="Hostprovider prototype display name"
+    )
     state = CharFilter(field_name="state", label="Hostprovider state")
     ordering = OrderingFilter(fields={"name": "name"}, field_labels={"name": "Name"}, label="ordering")
 
     class Meta:
         model = HostProvider
-        fields = ["name", "state", "prototypeDisplayName", "ordering"]
+        fields = ["name", "state", "prototype_display_name", "ordering"]

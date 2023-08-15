@@ -42,7 +42,7 @@ from adcm.permissions import (
 )
 
 
-class UpgradeViewSet(ListModelMixin, RetrieveModelMixin, CamelCaseGenericViewSet):
+class UpgradeViewSet(ListModelMixin, RetrieveModelMixin, CamelCaseGenericViewSet):  # pylint: disable=too-many-ancestors
     queryset = Upgrade.objects.all().select_related("action").order_by("pk")
     permission_classes = [DjangoModelPermissionsAudit]
     filter_backends = []
@@ -136,7 +136,7 @@ class UpgradeViewSet(ListModelMixin, RetrieveModelMixin, CamelCaseGenericViewSet
         return Response(serializer.data)
 
     @action(methods=["post"], detail=True)
-    def run(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def run(self, request: Request, *args, **kwargs) -> Response:
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 

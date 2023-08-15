@@ -27,7 +27,6 @@ from cm.models import (
     ClusterBind,
     ClusterObject,
     ConfigLog,
-    MaintenanceMode,
     ObjectConfig,
     Prototype,
     PrototypeExport,
@@ -642,7 +641,7 @@ class TestServiceAudit(BaseTestCase):
     def test_change_maintenance_mode(self):
         self.client.post(
             path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -656,7 +655,10 @@ class TestServiceAudit(BaseTestCase):
             operation_type=AuditLogOperationType.UPDATE,
             operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
-            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
+            object_changes={
+                "current": {"maintenance_mode": "ON"},
+                "previous": {"maintenance_mode": "OFF"},
+            },
         )
 
     def test_change_maintenance_mode_via_cluster(self):
@@ -665,7 +667,7 @@ class TestServiceAudit(BaseTestCase):
                 viewname="v1:service-maintenance-mode",
                 kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
             ),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -679,13 +681,16 @@ class TestServiceAudit(BaseTestCase):
             operation_type=AuditLogOperationType.UPDATE,
             operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
-            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
+            object_changes={
+                "current": {"maintenance_mode": "ON"},
+                "previous": {"maintenance_mode": "OFF"},
+            },
         )
 
     def test_change_maintenance_mode_failed(self):
         self.client.post(
             path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-            data={"maintenance_mode": MaintenanceMode.CHANGING},
+            data={"maintenance_mode": "CHANGING"},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -705,7 +710,7 @@ class TestServiceAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-                data={"maintenance_mode": MaintenanceMode.ON},
+                data={"maintenance_mode": "ON"},
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

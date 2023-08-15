@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-lines
-
 import copy
 import json
 from collections import OrderedDict
@@ -557,7 +555,7 @@ def check_config_spec(
     conf: dict,
     attr: dict = None,
 ) -> None:
-    # pylint: disable=too-many-branches,too-many-statements
+    # pylint: disable=too-many-branches
     ref = proto_ref(proto)
     if isinstance(conf, (float, int)):
         raise_adcm_ex(code="JSON_ERROR", msg="config should not be just one int or float")

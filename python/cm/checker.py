@@ -91,7 +91,7 @@ def check_match_type(match, data, data_type, path, rule, parent=None):
         raise FormatError(path, msg, data, rule, parent)
 
 
-def match_none(data, rules, rule, path, parent=None):  # pylint: disable=unused-argument
+def match_none(data, rules, rule, path, parent=None):
     _check_match_dict_reserved(data=data, rules=rules, rule=rule, path=path, parent=parent)
 
     if data is not None:
@@ -173,7 +173,7 @@ def match_one_of(data, rules, rule, path, parent=None):
         raise FormatError(path, msg, data, rule, parent, caused_by=errors)
 
 
-def match_set(data, rules, rule, path, parent=None):  # pylint: disable=unused-argument
+def match_set(data, rules, rule, path, parent=None):
     _check_match_dict_reserved(data=data, rules=rules, rule=rule, path=path, parent=parent)
 
     if data not in rules[rule]["variants"]:
@@ -182,7 +182,7 @@ def match_set(data, rules, rule, path, parent=None):  # pylint: disable=unused-a
 
 
 def match_simple_type(obj_type):
-    def match(data, rules, rule, path, parent=None):  # pylint: disable=unused-argument
+    def match(data, rules, rule, path, parent=None):
         _check_match_dict_reserved(data=data, rules=rules, rule=rule, path=path, parent=parent)
         check_type(data, obj_type, path, rule, parent=parent)
 

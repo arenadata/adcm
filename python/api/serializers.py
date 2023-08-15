@@ -141,7 +141,7 @@ class MultiHyperlinkedIdentityField(HyperlinkedIdentityField):
         self.url_args = args
         super().__init__(view_name=view_name, **kwargs)
 
-    def get_url(self, obj, view_name, request, _format):  # pylint: disable=redefined-builtin
+    def get_url(self, obj, view_name, request, _format):
         kwargs = {}
         for url_arg in self.url_args:
             if url_arg.startswith(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX):
@@ -163,7 +163,7 @@ class MultiHyperlinkedRelatedField(HyperlinkedRelatedField):
         self.url_args = args
         super().__init__(view_name, **kwargs)
 
-    def get_url(self, obj, view_name, request, _format):  # pylint: disable=redefined-builtin
+    def get_url(self, obj, view_name, request, _format):
         kwargs = {}
         for url_arg in self.url_args:
             if url_arg.startswith(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX):

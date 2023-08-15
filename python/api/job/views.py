@@ -259,7 +259,7 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
 
     @audit
     @action(methods=["get"], detail=True)
-    def download(self, request: Request, job_pk: int, log_pk: int):  # pylint: disable=unused-argument
+    def download(self, request: Request, job_pk: int, log_pk: int):
         # self is necessary for audit
         log_storage = get_object_for_user(
             user=request.user, perms=VIEW_LOGSTORAGE_PERMISSION, klass=LogStorage, id=log_pk, job__id=job_pk

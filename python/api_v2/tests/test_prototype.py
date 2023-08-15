@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-lines
 
 from api_v2.tests.base import BaseAPITestCase
 from cm.models import ObjectType, Prototype
@@ -78,3 +77,11 @@ class TestPrototype(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+    def test_filter_by_bundle_id_and_type_cluster(self):
+        response = self.client.get(
+            path=reverse(viewname="v2:prototype-list"), data={"bundleId": self.bundle_1.id, "type": "cluster"}
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)

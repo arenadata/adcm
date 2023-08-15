@@ -29,7 +29,7 @@ from rest_framework.status import (
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
-class TestHostAPI(BaseTestCase):  # pylint: disable=too-many-public-methods
+class TestHostAPI(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 

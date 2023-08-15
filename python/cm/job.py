@@ -18,7 +18,7 @@ from collections.abc import Hashable
 from configparser import ConfigParser
 from functools import partial
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
@@ -116,7 +116,7 @@ def start_task(
     return task
 
 
-def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster | None, hosts: list[Host]) -> None:
+def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster | None, hosts: list[int]) -> None:
     provider = None
     if obj.prototype.type == "provider":
         provider = obj
@@ -148,9 +148,9 @@ def prepare_task(
     conf: dict,
     attr: dict,
     hostcomponent: list[dict],
-    hosts: list[Host],
+    hosts: list[int],
     verbose: bool,
-) -> TaskLog:  # pylint: disable=too-many-locals
+) -> TaskLog:
     cluster = get_object_cluster(obj=obj)
     check_action_state(action=action, task_object=obj, cluster=cluster)
     _, spec, flat_spec = check_action_config(action=action, obj=obj, conf=conf, attr=attr)
@@ -170,7 +170,6 @@ def prepare_task(
         attr = {}
 
     with atomic():
-        # pylint: disable=too-many-locals
         if cluster:
             on_commit(
                 func=partial(post_event, event="change_hostcomponentmap", object_id=cluster.pk, object_type="cluster")
@@ -358,8 +357,8 @@ def check_hostcomponentmap(
     if not cluster:
         raise_adcm_ex(code="TASK_ERROR", msg="Only cluster objects can have action with hostcomponentmap")
 
-    for host_comp in new_hc:
-        if not hasattr(action, "upgrade"):
+    if not hasattr(action, "upgrade"):
+        for host_comp in new_hc:
             host = Host.obj.get(id=host_comp.get("host_id", 0))
             if host.concerns.filter(type=ConcernType.LOCK).exists():
                 raise_adcm_ex(code="LOCK_ERROR", msg=f"object {host} is locked")
@@ -570,8 +569,10 @@ def prepare_job(
     prepare_ansible_config(job_id, action, sub_action)
 
 
-def get_selector(obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host, action: Action) -> dict:
-    selector = {obj.prototype.type: {"id": obj.pk, "name": obj.name, "display_name": obj.display_name}}
+def get_selector(
+    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host, action: Action
+) -> dict[str | ObjectType, dict[Literal["id", "name"], int | str]]:
+    selector = {obj.prototype.type: {"id": obj.pk, "name": obj.display_name}}
 
     if obj.prototype.type == ObjectType.SERVICE:
         selector[ObjectType.CLUSTER] = {"id": obj.cluster.pk, "name": obj.cluster.display_name}
@@ -718,7 +719,7 @@ def create_task(
     conf: dict,
     attr: dict,
     hostcomponent: list[dict],
-    hosts: list[Host],
+    hosts: list[int],
     verbose: bool,
     post_upgrade_hc: list[dict],
 ) -> TaskLog:

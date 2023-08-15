@@ -16,8 +16,9 @@ from api_v2.rbac.users.serializers import (
     UserSerializer,
     UserUpdateSerializer,
 )
+from api_v2.rbac.users.utils import block_user, unblock_user
 from api_v2.views import CamelCaseModelViewSet
-from django.utils.timezone import now
+from cm.errors import AdcmEx
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rbac.models import User
@@ -38,7 +39,6 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
     filterset_class = UserFilterSet
     permission_classes = (DjangoModelPermissions,)
     permission_required = [VIEW_USER_PERMISSION]
-    http_method_names = ["get", "post", "patch"]
 
     def get_serializer_class(self) -> type[UserSerializer] | type[UserUpdateSerializer] | type[UserCreateSerializer]:
         if self.action in ("update", "partial_update"):
@@ -75,20 +75,19 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
 
     @action(methods=["post"], detail=True)
     def block(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        user = self.get_object()
-        user.blocked_at = now()
-        user.save(update_fields=["blocked_at"])
+        block_user(user=self.get_object())
 
-        return Response()
+        return Response(status=HTTP_200_OK)
 
     @action(methods=["post"], detail=True)
     def unblock(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        unblock_user(user=self.get_object())
+
+        return Response(status=HTTP_200_OK)
+
+    def destroy(self, request: Request, *args, **kwargs) -> Response:
         user = self.get_object()
-        user.blocked_at = None
-        user.save(update_fields=["blocked_at"])
+        if user.built_in:
+            raise AdcmEx(code="USER_DELETE_ERROR")
 
-        return Response()
-
-    @action(methods=["post"], detail=True)
-    def delete(self, request: Request, *args, **kwargs) -> Response:
         return super().destroy(request=request, *args, **kwargs)

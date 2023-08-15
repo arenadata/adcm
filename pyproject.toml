@@ -70,6 +70,8 @@ skip = ["python/init_db.py", "python/task_runner.py", "python/backupdb.py", "pyt
 
 [tool.pylint.master]
 ignore = ["migrations"]
+enable = ["useless-suppression"]
+fail-on = ["useless-suppression"]
 
 [tool.pylint."messages control"]
 disable = ["missing-docstring", "missing-timeout", "no-else-return", "no-member", "too-few-public-methods",

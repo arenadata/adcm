@@ -52,7 +52,7 @@ class HostComponentMapDictType(TypedDict):
     component_id: int
 
 
-class BaseAPITestCase(APITestCase):  # pylint: disable=too-many-instance-attributes
+class BaseAPITestCase(APITestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()

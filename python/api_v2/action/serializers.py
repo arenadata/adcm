@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from cm.models import Action
 from rest_framework.serializers import (
     BooleanField,
@@ -36,6 +37,7 @@ class ActionRetrieveSerializer(ActionListSerializer):
     is_allow_to_terminate = BooleanField(source="allow_to_terminate")
     host_component_map_rules = JSONField(source="hostcomponentmap")
     disclaimer = SerializerMethodField()
+    config_schema = SerializerMethodField()
 
     class Meta:
         model = Action
@@ -47,11 +49,15 @@ class ActionRetrieveSerializer(ActionListSerializer):
             "is_allow_to_terminate",
             "host_component_map_rules",
             "disclaimer",
+            "config_schema",
         ]
 
     @staticmethod
     def get_disclaimer(action: Action) -> str:
         return action.ui_options.get("disclaimer", "")
+
+    def get_config_schema(self, _: Action) -> dict:
+        return self.context["config_schema"]
 
 
 class ActionRunSerializer(EmptySerializer):

@@ -179,6 +179,8 @@ class TestClusterActions(BaseAPITestCase):
         super().setUp()
 
         self.cluster_action = Action.objects.get(prototype=self.cluster_1.prototype, name="action")
+        self.cluster_action_with_config = Action.objects.get(prototype=self.cluster_1.prototype, name="with_config")
+        self.cluster_action_with_hc = Action.objects.get(prototype=self.cluster_1.prototype, name="with_hc")
 
     def test_list_cluster_actions_success(self):
         response: Response = self.client.get(
@@ -186,7 +188,7 @@ class TestClusterActions(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(len(response.json()), 3)
 
     def test_list_cluster_actions_no_actions_cluster_success(self):
         response: Response = self.client.get(
@@ -234,3 +236,58 @@ class TestClusterActions(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_retrieve_action_with_config_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:cluster-action-detail",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action_with_config.pk},
+            )
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        attributes = response.json()["configSchema"]["fields"]
+        self.assertEqual(len(attributes), 3)
+        self.assertEqual([attr["name"] for attr in attributes], ["simple", "grouped", "after"])
+        self.assertEqual([attr["name"] for attr in attributes[1]["children"]], ["simple", "second"])
+        self.assertEqual(attributes[0]["default"], None)
+        self.assertEqual(attributes[1]["children"][0]["default"], 4)
+
+    def test_run_action_with_config_success(self):
+        tasklog = TaskLog.objects.create(
+            object_id=self.cluster_1.pk,
+            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+            action=self.cluster_action_with_config,
+        )
+
+        config = {"simple": "kuku", "grouped": {"simple": 5, "second": 4.3}, "after": ["something"]}
+
+        with patch("cm.job.start_task", return_value=tasklog):
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="v2:cluster-action-run",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action_with_config.pk},
+                ),
+                data={"host_component_map": {}, "config": config, "attr": {}, "is_verbose": False},
+            )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_retrieve_action_with_hc_success(self):
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:cluster-action-detail",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action_with_hc.pk},
+            )
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        hc_map = response.json()["hostComponentMapRules"]
+        self.assertEqual(len(hc_map), 2)
+        add, remove = sorted(hc_map, key=lambda rec: rec["action"])
+        self.assertDictEqual(add, {"action": "add", "component": "component_1", "service": "service_1"})
+        self.assertDictEqual(remove, {"action": "remove", "component": "component_2", "service": "service_1"})

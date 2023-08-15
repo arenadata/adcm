@@ -159,7 +159,7 @@ def _get_import_candidates(prototype: Prototype) -> list[ClusterImportCandidate]
         else:
             cluster_data["services"].append(service_data)
 
-    return [cluster_candidates[cluster_pk] for cluster_pk in cluster_candidates.keys()]
+    return [cluster_data for cluster_data in cluster_candidates.values()]
 
 
 def get_imports(obj: Cluster | ClusterObject) -> list[UIObjectImport]:

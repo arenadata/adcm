@@ -10,15 +10,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ObjectType, Prototype
-from django_filters import ChoiceFilter, NumberFilter
-from django_filters.rest_framework import FilterSet
+from cm.errors import AdcmEx
+from django.utils.timezone import now
+from rbac.models import User
 
 
-class PrototypeFilter(FilterSet):
-    bundle_id = NumberFilter(field_name="bundle__id", label="Bundle ID")
-    type = ChoiceFilter(choices=ObjectType.choices, label="Type")
+def block_user(user: User) -> None:
+    if user.built_in:
+        raise AdcmEx(code="USER_BLOCK_ERROR")
 
-    class Meta:
-        model = Prototype
-        fields = ["id", "type", "bundle_id"]
+    user.blocked_at = now()
+    user.save(update_fields=["blocked_at"])
+
+
+def unblock_user(user: User) -> None:
+    if user.built_in:
+        raise AdcmEx(code="USER_BLOCK_ERROR")
+
+    user.blocked_at = None
+    user.save(update_fields=["blocked_at"])

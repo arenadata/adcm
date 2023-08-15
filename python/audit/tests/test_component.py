@@ -25,7 +25,6 @@ from cm.models import (
     Cluster,
     ClusterObject,
     ConfigLog,
-    MaintenanceMode,
     ObjectConfig,
     Prototype,
     ServiceComponent,
@@ -287,7 +286,7 @@ class TestComponentAudit(BaseTestCase):
     def test_change_maintenance_mode(self):
         self.client.post(
             path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -295,7 +294,10 @@ class TestComponentAudit(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Component updated",
-            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
+            object_changes={
+                "current": {"maintenance_mode": "ON"},
+                "previous": {"maintenance_mode": "OFF"},
+            },
         )
 
     def test_change_maintenance_mode_via_service(self):
@@ -304,7 +306,7 @@ class TestComponentAudit(BaseTestCase):
                 viewname="v1:component-maintenance-mode",
                 kwargs={"service_id": self.service.pk, "component_id": self.component.pk},
             ),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -312,7 +314,10 @@ class TestComponentAudit(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Component updated",
-            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
+            object_changes={
+                "current": {"maintenance_mode": "ON"},
+                "previous": {"maintenance_mode": "OFF"},
+            },
         )
 
     def test_change_maintenance_mode_via_cluster(self):
@@ -325,7 +330,7 @@ class TestComponentAudit(BaseTestCase):
                     "component_id": self.component.pk,
                 },
             ),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -333,13 +338,16 @@ class TestComponentAudit(BaseTestCase):
         self.check_log(
             log=log,
             operation_name="Component updated",
-            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
+            object_changes={
+                "current": {"maintenance_mode": "ON"},
+                "previous": {"maintenance_mode": "OFF"},
+            },
         )
 
     def test_change_maintenance_mode_failed(self):
         self.client.post(
             path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
-            data={"maintenance_mode": MaintenanceMode.CHANGING},
+            data={"maintenance_mode": "CHANGING"},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -354,7 +362,7 @@ class TestComponentAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             self.client.post(
                 path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
-                data={"maintenance_mode": MaintenanceMode.ON},
+                data={"maintenance_mode": "ON"},
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

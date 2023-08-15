@@ -26,7 +26,6 @@ from cm.models import (
     ConfigLog,
     Host,
     HostProvider,
-    MaintenanceMode,
     ObjectConfig,
     Prototype,
 )
@@ -600,7 +599,7 @@ class TestHostAudit(BaseTestCase):
 
         self.client.post(
             path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -608,7 +607,10 @@ class TestHostAudit(BaseTestCase):
         self.check_host_updated_log(
             log=log,
             operation_name="Host updated",
-            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
+            object_changes={
+                "current": {"maintenance_mode": "ON"},
+                "previous": {"maintenance_mode": "OFF"},
+            },
         )
 
     def test_change_maintenance_mode_via_cluster(self):
@@ -620,7 +622,7 @@ class TestHostAudit(BaseTestCase):
                 viewname="v1:host-maintenance-mode",
                 kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
             ),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -628,7 +630,10 @@ class TestHostAudit(BaseTestCase):
         self.check_host_updated_log(
             log=log,
             operation_name="Host updated",
-            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
+            object_changes={
+                "current": {"maintenance_mode": "ON"},
+                "previous": {"maintenance_mode": "OFF"},
+            },
         )
 
     def test_change_maintenance_mode_via_provider(self):
@@ -640,7 +645,7 @@ class TestHostAudit(BaseTestCase):
                 viewname="v1:host-maintenance-mode",
                 kwargs={"provider_id": self.provider.pk, "host_id": self.host.pk},
             ),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -648,13 +653,16 @@ class TestHostAudit(BaseTestCase):
         self.check_host_updated_log(
             log=log,
             operation_name="Host updated",
-            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
+            object_changes={
+                "current": {"maintenance_mode": "ON"},
+                "previous": {"maintenance_mode": "OFF"},
+            },
         )
 
     def test_change_maintenance_mode_failed(self):
         self.client.post(
             path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-            data={"maintenance_mode": MaintenanceMode.CHANGING},
+            data={"maintenance_mode": "CHANGING"},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -672,7 +680,7 @@ class TestHostAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-                data={"maintenance_mode": MaintenanceMode.ON},
+                data={"maintenance_mode": "ON"},
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -689,7 +697,7 @@ class TestHostAudit(BaseTestCase):
                 path=reverse(
                     viewname="v1:host-maintenance-mode", kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk}
                 ),
-                data={"maintenance_mode": MaintenanceMode.ON},
+                data={"maintenance_mode": "ON"},
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

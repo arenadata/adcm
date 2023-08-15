@@ -790,7 +790,7 @@ def get_yspec(prototype: StagePrototype | Prototype, bundle_hash: str, conf: dic
     return schema
 
 
-def check_variant(config: dict) -> dict:  # pylint: disable=unused-argument
+def check_variant(config: dict) -> dict:
     vtype = config["source"]["type"]
     source = {"type": vtype, "args": None}
 
@@ -908,7 +908,7 @@ def save_prototype_config(
     proto_conf: dict,
     bundle_hash: str,
     action: StageAction | None = None,
-) -> None:  # pylint: disable=too-many-statements,too-many-locals
+) -> None:
     if not in_dict(dictionary=proto_conf, key="config"):
         return
 

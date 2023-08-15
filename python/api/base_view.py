@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=not-callable, unused-import, too-many-locals
-
 import rest_framework.pagination
 from api.utils import AdcmFilterBackend, AdcmOrderingFilter, getlist_from_querydict
 from audit.utils import audit

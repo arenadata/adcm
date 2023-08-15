@@ -11,7 +11,14 @@
 # limitations under the License.
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.models import Action, Cluster, Host, HostProvider, MaintenanceMode
+from cm.models import (
+    Action,
+    Cluster,
+    Host,
+    HostComponent,
+    HostProvider,
+    ServiceComponent,
+)
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -50,7 +57,7 @@ class TestHost(BaseAPITestCase):
             "hostprovider": {"id": 1, "name": "provider", "display_name": "provider"},
             "concerns": [],
             "is_maintenance_mode_available": False,
-            "maintenance_mode": "OFF",
+            "maintenance_mode": "off",
         }
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["id"], data["id"])
@@ -83,7 +90,7 @@ class TestHost(BaseAPITestCase):
             "hostprovider": {"id": 1, "name": "provider", "display_name": "provider"},
             "concerns": [],
             "is_maintenance_mode_available": False,
-            "maintenance_mode": "OFF",
+            "maintenance_mode": "off",
         }
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["id"], data["id"])
@@ -160,7 +167,7 @@ class TestHost(BaseAPITestCase):
     def test_maintenance_mode(self):
         response: Response = self.client.post(
             path=reverse(viewname="v2:host-maintenance-mode", kwargs={"pk": self.host.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "on"},
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -169,9 +176,10 @@ class TestHost(BaseAPITestCase):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         response: Response = self.client.post(
             path=reverse(viewname="v2:host-maintenance-mode", kwargs={"pk": self.host.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "on"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.data["maintenance_mode"], "on")
 
 
 class TestClusterHost(BaseAPITestCase):
@@ -221,10 +229,11 @@ class TestClusterHost(BaseAPITestCase):
                 viewname="v2:host-cluster-maintenance-mode",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host.pk},
             ),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "on"},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.data["maintenance_mode"], "on")
 
 
 class TestHostActions(BaseAPITestCase):
@@ -235,6 +244,9 @@ class TestHostActions(BaseAPITestCase):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         self.action = Action.objects.get(name="host_action", prototype=self.host.prototype)
 
+        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.component_1 = ServiceComponent.objects.get(prototype__name="component_1", service=self.service_1)
+
     def test_host_cluster_list_success(self):
         response: Response = self.client.get(
             path=reverse(
@@ -244,7 +256,7 @@ class TestHostActions(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(len(response.json()), 2)
 
     def test_host_cluster_retrieve_success(self):
         response: Response = self.client.get(
@@ -282,7 +294,7 @@ class TestHostActions(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(len(response.json()), 2)
 
     def test_host_retrieve_success(self):
         response: Response = self.client.get(
@@ -296,6 +308,34 @@ class TestHostActions(BaseAPITestCase):
         response: Response = self.client.post(
             path=reverse("v2:host-action-run", kwargs={"host_pk": self.host.pk, "pk": self.action.pk}),
             data={"host_component_map": {}, "config": {}, "attr": {}, "is_verbose": False},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_host_mapped_list_success(self) -> None:
+        HostComponent.objects.create(
+            cluster=self.cluster_1, service=self.service_1, component=self.component_1, host=self.host
+        )
+        response: Response = self.client.get(
+            path=reverse(
+                "v2:host-action-list",
+                kwargs={"host_pk": self.host.pk},
+            ),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()), 4)
+
+    def test_host_mapped_retrieve_success(self) -> None:
+        HostComponent.objects.create(
+            cluster=self.cluster_1, service=self.service_1, component=self.component_1, host=self.host
+        )
+        action = Action.objects.filter(prototype=self.service_1.prototype, host_action=True).first()
+        response: Response = self.client.get(
+            path=reverse(
+                "v2:host-action-detail",
+                kwargs={"host_pk": self.host.pk, "pk": action.pk},
+            ),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

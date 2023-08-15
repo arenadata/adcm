@@ -737,6 +737,7 @@ common_action:
     config: config_obj
     venv: string
     allow_in_maintenance_mode: boolean
+    config_jinja: string
 
 ## Task action
 action_task_dict:
@@ -774,7 +775,6 @@ action_job_dict:
     <<: *common_action_items
     script_type: action_script_type
     script: string
-    config_jinja: string
   required_items:
     - type
     - script_type

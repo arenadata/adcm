@@ -12,7 +12,7 @@
 
 from copy import deepcopy
 
-from api_v2.rbac.users.constants import UserStatusChoices, UserTypeChoices
+from api_v2.rbac.users.constants import UserTypeChoices
 from api_v2.tests.base import BaseAPITestCase
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
@@ -26,6 +26,7 @@ from rest_framework.status import (
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
 )
 
 
@@ -248,13 +249,24 @@ class TestUserAPI(BaseAPITestCase):
     def test_delete_success(self):
         user = self.create_user()
 
-        response: Response = self.client.post(
-            path=reverse(viewname="v2:rbac:user-delete", kwargs={"pk": user.pk}),
+        response: Response = self.client.delete(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
         )
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.assertIsNone(response.data)
 
         with self.assertRaises(User.DoesNotExist):
             User.objects.get(pk=user.pk)
+
+    def test_delete_built_in_fail(self):
+        user = self.create_user()
+        user.built_in = True
+        user.save(update_fields=["built_in"])
+
+        response: Response = self.client.delete(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
     def test_block_success(self):
         user = self.create_user()
@@ -263,12 +275,23 @@ class TestUserAPI(BaseAPITestCase):
             path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": user.pk}),
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertIsNone(response.data)
 
         response: Response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}))
-        self.assertEqual(response.json()["status"], "BLOCKED")
+        self.assertEqual(response.json()["status"], "blocked")
 
         user.refresh_from_db()
         self.assertIsNotNone(user.blocked_at)
+
+    def test_block_built_in_fail(self):
+        user = self.create_user()
+        user.built_in = True
+        user.save(update_fields=["built_in"])
+
+        response: Response = self.client.post(
+            path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": user.pk}),
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
     def test_unblock_success(self):
         user = self.create_user()
@@ -279,12 +302,23 @@ class TestUserAPI(BaseAPITestCase):
             path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": user.pk}),
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertIsNone(response.data)
 
         response: Response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}))
-        self.assertEqual(response.json()["status"], "ACTIVE")
+        self.assertEqual(response.json()["status"], "active")
 
         user.refresh_from_db()
         self.assertIsNone(user.blocked_at)
+
+    def test_unblock_built_in_fail(self):
+        user = self.create_user()
+        user.built_in = True
+        user.save(update_fields=["built_in"])
+
+        response: Response = self.client.post(
+            path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": user.pk}),
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
     def test_ordering_success(self):
         user_data = [
@@ -380,9 +414,7 @@ class TestUserAPI(BaseAPITestCase):
         target_user.blocked_at = now()
         target_user.save(update_fields=["blocked_at"])
 
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:rbac:user-list"), data={"status": UserStatusChoices.BLOCKED.value}
-        )
+        response: Response = self.client.get(path=reverse(viewname="v2:rbac:user-list"), data={"status": "blocked"})
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["results"]), 1)
         self.assertEqual(response.json()["results"][0]["username"], target_user.username)

@@ -10,15 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-builtin
-
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.serializers import StringListSerializer
 from api.utils import CommonAPIURL, ObjectURL
 from cm.adcm_config.config import get_main_info
-from cm.models import Action, MaintenanceMode, ServiceComponent
+from cm.models import MAINTENANCE_MODE_BOTH_CASES_CHOICES, Action, ServiceComponent
 from cm.status_api import get_component_status
 from rest_framework.serializers import (
     BooleanField,
@@ -47,6 +45,12 @@ class ComponentSerializer(EmptySerializer):
     url = ObjectURL(read_only=True, view_name="v1:component-details")
     maintenance_mode = CharField(read_only=True)
     is_maintenance_mode_available = BooleanField(read_only=True)
+
+    def to_representation(self, instance: ServiceComponent) -> dict:
+        data = super().to_representation(instance=instance)
+        data["maintenance_mode"] = data["maintenance_mode"].upper()
+
+        return data
 
 
 class ComponentUISerializer(ComponentSerializer):
@@ -142,14 +146,30 @@ class ComponentDetailUISerializer(ComponentDetailSerializer):
 
 
 class ComponentChangeMaintenanceModeSerializer(ModelSerializer):
-    maintenance_mode = ChoiceField(choices=(MaintenanceMode.ON.value, MaintenanceMode.OFF.value))
+    maintenance_mode = ChoiceField(choices=MAINTENANCE_MODE_BOTH_CASES_CHOICES)
 
     class Meta:
         model = ServiceComponent
         fields = ("maintenance_mode",)
+
+    @staticmethod
+    def validate_maintenance_mode(value: str) -> str:
+        return value.lower()
+
+    def to_representation(self, instance: ServiceComponent) -> dict:
+        data = super().to_representation(instance=instance)
+        data["maintenance_mode"] = data["maintenance_mode"].upper()
+
+        return data
 
 
 class ComponentAuditSerializer(ModelSerializer):
     class Meta:
         model = ServiceComponent
         fields = ("maintenance_mode",)
+
+    def to_representation(self, instance: ServiceComponent) -> dict:
+        data = super().to_representation(instance=instance)
+        data["maintenance_mode"] = data["maintenance_mode"].upper()
+
+        return data
