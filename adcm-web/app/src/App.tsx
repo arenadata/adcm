@@ -42,7 +42,7 @@ import {
 import AccessManagerUsersPage from '@pages/AccessManagerPage/AccessManagerUsersPage/AccessManagerUsersPage';
 import AccessManagerGroupsPage from '@pages/AccessManagerPage/AccessManagerGroupsPage/AccessManagerGroupsPage';
 import AccessManagerRolesPage from '@pages/AccessManagerPage/AccessManagerRolesPage/AccessManagerRolesPage';
-import AccessManagerPolicyPage from '@pages/AccessManagerPage/AccessManagerPolicyPage/AccessManagerPolicyPage';
+import AccessManagerPolicyPage from '@pages/AccessManagerPage/AccessManagerPoliciesPage/AccessManagerPoliciesPage';
 import BundleOverviewPage from '@pages/BundleOverviewPage/BundleOverviewPage';
 
 function App() {
@@ -115,7 +115,7 @@ function App() {
                 <Route path="/access-manager/users" element={<AccessManagerUsersPage />} />
                 <Route path="/access-manager/groups" element={<AccessManagerGroupsPage />} />
                 <Route path="/access-manager/roles" element={<AccessManagerRolesPage />} />
-                <Route path="/access-manager/policy" element={<AccessManagerPolicyPage />} />
+                <Route path="/access-manager/policies" element={<AccessManagerPolicyPage />} />
               </Route>
               <Route path="/audit" element={<AuditPageLayout />}>
                 <Route index element={<Navigate to="/audit/operations" replace />} />
