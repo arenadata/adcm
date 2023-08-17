@@ -10,14 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.permissions import AllowAny
-from rest_framework.routers import APIRootView
+from django_filters import CharFilter, OrderingFilter
+from django_filters.rest_framework import FilterSet
+from rbac.models import Role
 
 
-class RbacRoot(APIRootView):
-    permission_classes = (AllowAny,)
-    api_root_dict = {
-        "roles": "role-list",
-        "users": "user-list",
-        "groups": "group-list",
-    }
+class RoleFilter(FilterSet):
+    display_name = CharFilter(field_name="display_name", label="Role name", lookup_expr="icontains")
+    ordering = OrderingFilter(fields={"display_name": "display_name"}, field_labels={"display_name": "Display name"})
+
+    class Meta:
+        model = Role
+        fields = ("display_name",)
