@@ -103,7 +103,7 @@ class TestProviderActions(BaseAPITestCase):
         response: Response = self.client.get(
             path=reverse(
                 viewname="v2:provider-action-list",
-                kwargs={"provider_pk": self.provider.pk},
+                kwargs={"hostprovider_pk": self.provider.pk},
             ),
         )
 
@@ -115,7 +115,7 @@ class TestProviderActions(BaseAPITestCase):
             path=reverse(
                 viewname="v2:provider-action-detail",
                 kwargs={
-                    "provider_pk": self.provider.pk,
+                    "hostprovider_pk": self.provider.pk,
                     "pk": self.action.pk,
                 },
             ),
@@ -129,11 +129,11 @@ class TestProviderActions(BaseAPITestCase):
             path=reverse(
                 viewname="v2:provider-action-run",
                 kwargs={
-                    "provider_pk": self.provider.pk,
+                    "hostprovider_pk": self.provider.pk,
                     "pk": self.action.pk,
                 },
             ),
-            data={"host_component_map": {}, "config": {}, "attr": {}, "is_verbose": False},
+            data={"host_component_map": [], "config": {}, "attr": {}, "is_verbose": False},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

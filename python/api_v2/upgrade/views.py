@@ -9,166 +9,114 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Tuple
-
-from api_v2.upgrade.serializers import (
-    ClusterUpgradeListSerializer,
-    HostProviderUpgradeListSerializer,
-    UpgradeRetrieveSerializer,
-    UpgradeRunSerializer,
-)
+from api_v2.action.serializers import ActionRunSerializer
+from api_v2.action.utils import insert_service_ids
+from api_v2.config.utils import get_config_schema
+from api_v2.task.serializers import TaskListSerializer
+from api_v2.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
 from api_v2.views import CamelCaseGenericViewSet
-from cm.issue import update_hierarchy_issues
-from cm.models import Cluster, HostProvider, Upgrade
-from cm.upgrade import do_upgrade, get_upgrade
-from guardian.shortcuts import get_objects_for_user
+from cm.errors import AdcmEx
+from cm.models import Cluster, HostProvider, TaskLog, Upgrade
+from cm.upgrade import check_upgrade, do_upgrade, get_upgrade
+from rbac.models import User
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import (
-    HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
-    HTTP_409_CONFLICT,
-)
+from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 
+from adcm.mixins import GetParentObjectMixin
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_CLUSTER_UPGRADE_PERM,
     VIEW_PROVIDER_PERM,
     VIEW_PROVIDER_UPGRADE_PERM,
     DjangoModelPermissionsAudit,
+    get_object_for_user,
 )
 
 
-class UpgradeViewSet(ListModelMixin, RetrieveModelMixin, CamelCaseGenericViewSet):  # pylint: disable=too-many-ancestors
-    queryset = Upgrade.objects.all().select_related("action").order_by("pk")
+class UpgradeViewSet(
+    ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, CamelCaseGenericViewSet
+):  # pylint: disable=too-many-ancestors
+    queryset = Upgrade.objects.select_related("action", "bundle", "action__prototype").order_by("pk")
     permission_classes = [DjangoModelPermissionsAudit]
     filter_backends = []
 
-    base_for_upgrade = {
-        "cluster_pk": {"perms": VIEW_CLUSTER_PERM, "klass": Cluster, "list_serializer": ClusterUpgradeListSerializer},
-        "hostprovider_pk": {
-            "perms": VIEW_PROVIDER_PERM,
-            "klass": HostProvider,
-            "list_serializer": HostProviderUpgradeListSerializer,
-        },
-    }
-
-    def get_serializer_class(
-        self,
-    ) -> type[ClusterUpgradeListSerializer] | type[UpgradeRunSerializer] | type[UpgradeRetrieveSerializer]:
+    def get_serializer_class(self) -> type[UpgradeListSerializer | ActionRunSerializer | UpgradeRetrieveSerializer]:
         if self.action == "retrieve":
             return UpgradeRetrieveSerializer
 
         if self.action == "run":
-            return UpgradeRunSerializer
+            return ActionRunSerializer
 
-        return self.base_for_upgrade[list(self.kwargs.keys()).pop()]["list_serializer"]
+        return UpgradeListSerializer
 
-    def _has_perm(self, request: Request, **kwargs) -> Cluster | HostProvider | None:
-        if "hostprovider_pk" in kwargs:
-            pk_name, pk_value = "hostprovider_pk", kwargs["hostprovider_pk"]
-        else:
-            pk_name, pk_value = "cluster_pk", kwargs["cluster_pk"]
-        perms, klass, _ = self.base_for_upgrade[pk_name].values()
-        object_queryset = get_objects_for_user(user=request.user, perms=perms, klass=klass)
-        object_to_upgrade = object_queryset.filter(pk=pk_value).first()
-        if not object_to_upgrade:
-            raise NotFound
-        object_premissions_for_uprgade = {HostProvider: VIEW_PROVIDER_UPGRADE_PERM, Cluster: VIEW_CLUSTER_UPGRADE_PERM}
+    def get_parent_object_for_user(self, user: User) -> Cluster | HostProvider:
+        parent: Cluster | HostProvider | None = self.get_parent_object()
+        if parent is None or not isinstance(parent, (Cluster, HostProvider)):
+            message = "Can't find upgrade's parent object"
+            raise NotFound(message)
 
-        if not request.user.has_perm(
-            perm=object_premissions_for_uprgade[type(object_to_upgrade)], obj=object_to_upgrade
-        ):
-            return None
+        if isinstance(parent, Cluster):
+            return get_object_for_user(
+                user=user, perms=(VIEW_CLUSTER_PERM, VIEW_CLUSTER_UPGRADE_PERM), klass=Cluster, id=parent.pk
+            )
 
-        return object_to_upgrade
-
-    def _get_error_message_403(self, **kwargs):
-        if "hostprovider_pk" in kwargs:
-            pk_name, pk_value = "host provider", kwargs["hostprovider_pk"]
-        else:
-            pk_name, pk_value = "cluster", kwargs["cluster_pk"]
-        return (
-            f"Current user has no permission to upgrade {pk_name} with pk '{pk_value}' "
-            f"by upgrade with pk '{kwargs['pk']}'",
+        return get_object_for_user(
+            user=user, perms=(VIEW_PROVIDER_PERM, VIEW_PROVIDER_UPGRADE_PERM), klass=HostProvider, id=parent.pk
         )
 
-    # pylint: disable=unused-argument
-    def get_upgrade_list(
-        self, request: Request, *args, **kwargs
-    ) -> Tuple[HostProvider | Cluster, list[Upgrade]] | None:
-        object_to_upgrade = self._has_perm(request=request, **kwargs)
-        if not object_to_upgrade:
-            return None
-        update_hierarchy_issues(obj=object_to_upgrade)
-        return object_to_upgrade, get_upgrade(obj=object_to_upgrade)
+    def get_upgrade(self, parent: Cluster | HostProvider):
+        upgrade = self.get_object()
+        if upgrade.bundle.name != parent.prototype.bundle.name:
+            raise AdcmEx(code="UPGRADE_NOT_FOUND")
+
+        upgrade_is_allowed, error = check_upgrade(obj=parent, upgrade=upgrade)
+        if not upgrade_is_allowed:
+            raise AdcmEx(code="UPGRADE_NOT_FOUND", msg=error)
+
+        return upgrade
 
     def list(self, request: Request, *args, **kwargs) -> Response:
-        object_to_upgrade, upgrade_list = self.get_upgrade_list(request, *args, **kwargs)
-        if not object_to_upgrade:
-            Response(
-                data=self._get_error_message_403(**kwargs),
-                status=HTTP_403_FORBIDDEN,
-            )
-        serializer = self.get_serializer(instance=upgrade_list, many=True)
+        parent: Cluster | HostProvider = self.get_parent_object_for_user(user=request.user)
+        upgrades = get_upgrade(obj=parent)
+        serializer = self.get_serializer_class()(instance=upgrades, many=True)
         return Response(data=serializer.data)
 
     def retrieve(self, request: Request, *args, **kwargs) -> Response:
-        object_to_upgrade, upgrade_list = self.get_upgrade_list(request, *args, **kwargs)
-        if not object_to_upgrade:
-            Response(
-                data=self._get_error_message_403(**kwargs),
-                status=HTTP_403_FORBIDDEN,
-            )
-        instance = self.get_object()
-        if instance not in upgrade_list:
-            return Response(
-                data=f"The upgrade "
-                f"{instance.name} with pk '{instance.pk}' "
-                f"has not allowable to instance with pk {kwargs['pk']}",
-                status=HTTP_404_NOT_FOUND,
-            )
-        serializer = self.get_serializer(instance)
+        parent: Cluster | HostProvider = self.get_parent_object_for_user(user=request.user)
+
+        upgrade = self.get_upgrade(parent=parent)
+
+        if upgrade.action:
+            schema = {"fields": get_config_schema(parent_object=parent, action=upgrade.action)}
+        else:
+            schema = None
+
+        serializer = self.get_serializer_class()(instance=upgrade, context={"parent": parent, "config_schema": schema})
 
         return Response(serializer.data)
 
     @action(methods=["post"], detail=True)
-    def run(self, request: Request, *args, **kwargs) -> Response:
+    def run(self, request: Request, *_, **__) -> Response:
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        object_to_upgrade = self._has_perm(request, **kwargs)
-        if not object_to_upgrade:
-            return Response(
-                data=self._get_error_message_403(**kwargs),
-                status=HTTP_403_FORBIDDEN,
-            )
+        parent: Cluster | HostProvider = self.get_parent_object_for_user(user=request.user)
 
-        object_to_upgrade, allowable_upgrades = self.get_upgrade_list(request, *args, **kwargs)
-        if not object_to_upgrade:
-            Response(
-                data=self._get_error_message_403(**kwargs),
-                status=HTTP_403_FORBIDDEN,
-            )
-        if not Upgrade.objects.filter(pk=kwargs["pk"]).first():
-            return Response(data=f"Upgrade with pk '{kwargs['pk']}' not found", status=HTTP_404_NOT_FOUND)
+        upgrade = self.get_upgrade(parent=parent)
 
-        matching_upgrades = [u for u in allowable_upgrades if u.pk == int(kwargs["pk"])]
-        if not matching_upgrades:
-            return Response(
-                data=f"Upgrade with pk '{kwargs['pk']}' is not allowable for '{object_to_upgrade.pk}'",
-                status=HTTP_409_CONFLICT,
-            )
-
-        do_upgrade(
-            obj=object_to_upgrade,
-            upgrade=matching_upgrades.pop(),
-            config=serializer.validated_data.get("config", {}),
+        result = do_upgrade(
+            obj=parent,
+            upgrade=upgrade,
+            config=serializer.validated_data["config"],
             attr=serializer.validated_data.get("attr", {}),
-            hostcomponent=serializer.validated_data.get("host_component_map", []),
+            hostcomponent=insert_service_ids(hc_create_data=serializer.validated_data["host_component_map"]),
         )
 
-        return Response()
+        if (task_id := result["task_id"]) is None:
+            return Response(status=HTTP_204_NO_CONTENT)
+
+        return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=TaskLog.objects.get(pk=task_id)).data)

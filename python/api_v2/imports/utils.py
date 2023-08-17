@@ -102,7 +102,7 @@ def _get_import_candidates_of_single_prototype_export(
     return out
 
 
-def _get_import_candidates(prototype: Prototype) -> list[ClusterImportCandidate]:
+def _get_import_candidates(prototype: Prototype) -> tuple[ClusterImportCandidate, ...]:
     cluster_candidates: dict[int, ClusterImportCandidate] = {}
     service_candidates: list[ServiceImportCandidate] = []
 
@@ -159,7 +159,7 @@ def _get_import_candidates(prototype: Prototype) -> list[ClusterImportCandidate]
         else:
             cluster_data["services"].append(service_data)
 
-    return [cluster_data for cluster_data in cluster_candidates.values()]
+    return tuple(cluster_candidates.values())
 
 
 def get_imports(obj: Cluster | ClusterObject) -> list[UIObjectImport]:
