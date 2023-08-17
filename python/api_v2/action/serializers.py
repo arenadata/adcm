@@ -9,12 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
 from cm.models import Action
+from rest_framework.fields import IntegerField
 from rest_framework.serializers import (
     BooleanField,
     JSONField,
+    ListSerializer,
     ModelSerializer,
     SerializerMethodField,
 )
@@ -60,8 +60,13 @@ class ActionRetrieveSerializer(ActionListSerializer):
         return self.context["config_schema"]
 
 
+class HostComponentEntry(EmptySerializer):
+    host_id = IntegerField()
+    component_id = IntegerField()
+
+
 class ActionRunSerializer(EmptySerializer):
-    host_component_map = JSONField()
+    host_component_map = ListSerializer(child=HostComponentEntry())
     config = JSONField()
     is_verbose = BooleanField()
 

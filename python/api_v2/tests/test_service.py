@@ -178,7 +178,7 @@ class TestServiceAPI(BaseAPITestCase):
                     "pk": self.action.pk,
                 },
             ),
-            data={"host_component_map": {}, "config": {}, "attr": {}, "is_verbose": False},
+            data={"host_component_map": [], "config": {}, "attr": {}, "is_verbose": False},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

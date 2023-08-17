@@ -40,19 +40,22 @@ def get_item_schema(field: PrototypeConfig, parent_object: ADCMEntity) -> dict:
 
 def get_config_schema(parent_object: ADCMEntity, action: Action | None = None) -> list:
     schema = []
-    top_fields = PrototypeConfig.objects.filter(prototype=parent_object.prototype, action=action, subname="").order_by(
-        "id"
-    )
+
+    if action:
+        # if action is provided, it's enough to find config prototypes
+        # and for upgrade's actions it is important to not operate with parent object,
+        # because action is from bundle, not "created object" like cluster/provider
+        config_prototypes = PrototypeConfig.objects.filter(action=action)
+    else:
+        config_prototypes = PrototypeConfig.objects.filter(prototype=parent_object.prototype, action=action)
+
+    top_fields = config_prototypes.filter(subname="").order_by("id")
 
     for field in top_fields:
         item = get_item_schema(field=field, parent_object=parent_object)
 
         if field.type == "group":
-            child_fields = (
-                PrototypeConfig.objects.filter(prototype=parent_object.prototype, action=action, name=field.name)
-                .exclude(type="group")
-                .order_by("id")
-            )
+            child_fields = config_prototypes.filter(name=field.name).exclude(type="group").order_by("id")
 
             for child_field in child_fields:
                 item["children"].append(get_item_schema(field=child_field, parent_object=parent_object))

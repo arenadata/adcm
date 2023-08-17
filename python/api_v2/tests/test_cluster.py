@@ -232,7 +232,7 @@ class TestClusterActions(BaseAPITestCase):
                     viewname="v2:cluster-action-run",
                     kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action.pk},
                 ),
-                data={"host_component_map": {}, "config": {}, "attr": {}, "is_verbose": False},
+                data={"host_component_map": [], "config": {}, "attr": {}, "is_verbose": False},
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -271,7 +271,7 @@ class TestClusterActions(BaseAPITestCase):
                     viewname="v2:cluster-action-run",
                     kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action_with_config.pk},
                 ),
-                data={"host_component_map": {}, "config": config, "attr": {}, "is_verbose": False},
+                data={"host_component_map": [], "config": config, "attr": {}, "is_verbose": False},
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
