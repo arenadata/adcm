@@ -58,6 +58,7 @@ export const allowIconsNames = [
   'g2-user',
   'g2-users',
   'lamp',
+  'marker',
   'marker-alert',
   'marker-check',
   'marker-info',
