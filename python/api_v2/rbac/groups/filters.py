@@ -10,13 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.rbac.groups.urls import group_router
-from api_v2.rbac.users.urls import user_router
-from api_v2.rbac.views import RBACRoot
-from django.urls import path
+from django_filters.rest_framework import (
+    CharFilter,
+    ChoiceFilter,
+    FilterSet,
+    OrderingFilter,
+)
+from rbac.models import OriginType
 
-urlpatterns = [
-    path("", RBACRoot.as_view(), name="root"),
-    *user_router.urls,
-    *group_router.urls,
-]
+
+class GroupFilter(FilterSet):
+    display_name = CharFilter(lookup_expr="icontains")
+    type = ChoiceFilter(choices=OriginType.choices)
+    ordering = OrderingFilter(
+        fields={"display_name": "displayName"},
+        field_labels={"display_name": "Display name"},
+    )

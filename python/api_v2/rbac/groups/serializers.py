@@ -10,22 +10,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.contrib.auth.models import Group as AuthGroup
-from rbac.models import Group
-from rest_framework.fields import SerializerMethodField
+from rbac.models import Group, User
+from rest_framework.fields import CharField
 from rest_framework.serializers import ModelSerializer
 
+from adcm.serializers import EmptySerializer, IdSerializer
 
-class GroupNameSerializer(ModelSerializer):
-    display_name = SerializerMethodField()
+
+class RelatedUserSerializer(ModelSerializer):
+    username = CharField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = ["id", "username"]
+
+
+class GroupSerializer(ModelSerializer):
+    users = RelatedUserSerializer(source="user_set", many=True)
 
     class Meta:
         model = Group
-        fields = ["id", "name", "display_name"]
+        fields = ["id", "name", "display_name", "description", "users", "type"]
 
-    @staticmethod
-    def get_display_name(instance: AuthGroup | Group) -> str:
-        if isinstance(instance, AuthGroup):
-            return Group.objects.get(group_ptr=instance).display_name
 
-        return instance.display_name
+class GroupCreateSerializer(EmptySerializer):
+    name = CharField()
+    description = CharField(allow_blank=True)
+    users = IdSerializer(many=True, required=False)
+
+    def validate(self, data: dict) -> dict:
+        data["name_to_display"] = data.pop("name")
+
+        if (users := data.pop("users", None)) is not None:
+            data["user_set"] = users
+
+        return data
+
+
+class GroupUpdateSerializer(EmptySerializer):
+    display_name = CharField(required=False)
+    description = CharField(required=False, allow_blank=True)
+    users = IdSerializer(many=True, required=False)
+
+    def validate(self, data: dict) -> dict:
+        if (display_name := data.pop("display_name", None)) is not None:
+            data["name_to_display"] = display_name
+
+        if (users := data.pop("users", None)) is not None:
+            data["user_set"] = users
+
+        return data
