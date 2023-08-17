@@ -100,6 +100,7 @@ ERRORS = {
     "DEFINITION_KEY_ERROR": ("config key error", HTTP_409_CONFLICT, ERR),
     "DEFINITION_TYPE_ERROR": ("config type error", HTTP_409_CONFLICT, ERR),
     "UPGRADE_ERROR": ("upgrade error", HTTP_409_CONFLICT, ERR),
+    "UPGRADE_NOT_FOUND_ERROR": ("upgrade error", HTTP_404_NOT_FOUND, ERR),
     "ACTION_ERROR": ("action error", HTTP_409_CONFLICT, ERR),
     "TASK_ERROR": ("task error", HTTP_409_CONFLICT, ERR),
     "TASK_IS_FAILED": ("task is failed", HTTP_409_CONFLICT, ERR),
@@ -210,6 +211,7 @@ ERRORS = {
         HTTP_409_CONFLICT,
         ERR,
     ),
+    "ROLE_DELETE_ERROR": ("Error during process of role deleting", HTTP_409_CONFLICT, ERR),
     "GROUP_CREATE_ERROR": ("Error during process of group creating", HTTP_409_CONFLICT, ERR),
     "GROUP_UPDATE_ERROR": ("Error during process of group updating", HTTP_400_BAD_REQUEST, ERR),
     "GROUP_DELETE_ERROR": ("Built-in group could not be deleted", HTTP_409_CONFLICT, ERR),
@@ -232,6 +234,7 @@ ERRORS = {
     ),
     "BAD_REQUEST": ("Bad request", HTTP_400_BAD_REQUEST, ERR),
     "INVALID_ORDERING": ("Invalid ordering parameters", HTTP_400_BAD_REQUEST, ERR),
+    "HOSTPROVIDER_CREATE_ERROR": ("Error during process of host provider creating", HTTP_409_CONFLICT, ERR),
 }
 
 

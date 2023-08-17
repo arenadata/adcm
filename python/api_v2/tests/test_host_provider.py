@@ -54,7 +54,7 @@ class TestHostProvider(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-    def test_host_provider_create_success(self):
+    def test_create_success(self):
         response = self.client.post(
             path=reverse(viewname="v2:hostprovider-list"),
             data={
