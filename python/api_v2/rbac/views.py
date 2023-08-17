@@ -16,4 +16,5 @@ from rest_framework.routers import APIRootView
 class RBACRoot(APIRootView):
     api_root_dict = {
         "users": "user-list",
+        "groups": "group-list",
     }

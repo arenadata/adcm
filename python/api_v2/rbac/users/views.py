@@ -19,6 +19,8 @@ from api_v2.rbac.users.serializers import (
 from api_v2.rbac.users.utils import block_user, unblock_user
 from api_v2.views import CamelCaseModelViewSet
 from cm.errors import AdcmEx
+from django.contrib.auth.models import Group as AuthGroup
+from django.db.models import Prefetch
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rbac.models import User
@@ -33,7 +35,9 @@ from adcm.permissions import VIEW_USER_PERMISSION
 
 
 class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = User.objects.prefetch_related("groups").order_by("username")
+    queryset = User.objects.prefetch_related(
+        Prefetch(lookup="groups", queryset=AuthGroup.objects.select_related("group"))
+    ).order_by("username")
     serializer_class = UserSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_class = UserFilterSet

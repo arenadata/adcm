@@ -49,6 +49,7 @@ VIEW_TASKLOG_PERMISSION = "cm.view_tasklog"
 VIEW_JOBLOG_PERMISSION = "cm.view_joblog"
 VIEW_LOGSTORAGE_PERMISSION = "cm.view_logstorage"
 VIEW_USER_PERMISSION = "rbac.view_user"
+VIEW_GROUP_PERMISSION = "rbac.view_group"
 
 
 class DjangoObjectPermissionsAudit(DjangoObjectPermissions):

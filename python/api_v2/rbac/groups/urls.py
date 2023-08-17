@@ -10,13 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.rbac.groups.urls import group_router
-from api_v2.rbac.users.urls import user_router
-from api_v2.rbac.views import RBACRoot
-from django.urls import path
+from api_v2.rbac.groups.views import GroupViewSet
+from rest_framework.routers import SimpleRouter
 
-urlpatterns = [
-    path("", RBACRoot.as_view(), name="root"),
-    *user_router.urls,
-    *group_router.urls,
-]
+group_router = SimpleRouter()
+group_router.register(prefix="groups", viewset=GroupViewSet)
