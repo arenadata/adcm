@@ -63,7 +63,7 @@ class ServiceViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pyl
 
         return self.serializer_class
 
-    def create(self, request: Request, *args, **kwargs):  # pylint: disable=unused-argument
+    def create(self, request: Request, *args, **kwargs):
         cluster = get_object_for_user(
             user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, pk=kwargs["cluster_pk"]
         )
@@ -88,7 +88,7 @@ class ServiceViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pyl
             status=HTTP_201_CREATED, data=ServiceRetrieveSerializer(instance=added_services, many=True).data
         )
 
-    def destroy(self, request: Request, *args, **kwargs):  # pylint: disable=unused-argument
+    def destroy(self, request: Request, *args, **kwargs):
         instance = self.get_object()
         return delete_service_from_api(service=instance)
 
