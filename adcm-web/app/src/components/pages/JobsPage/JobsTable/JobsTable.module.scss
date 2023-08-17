@@ -1,0 +1,38 @@
+:global {
+  body.theme-dark {
+    --job-name-color: var(--color-xwhite-off);
+  }
+
+  body.theme-light {
+    --job-name-color: var(--color-xdark);
+  }
+}
+
+.jobRow {
+  &__jobName {
+    &:after {
+      content: '\A';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-xred);
+      display: inline-block;
+      margin: 0 10px;
+    }
+
+    &_active {
+      font-weight: 500;
+      color: var(--job-name-color) !important;
+
+      &:after {
+        background: var(--color-xgreen-saturated);
+      }
+    }
+  }
+
+  &__jobObjects {
+    a {
+      color: var(--color-xblue);
+    }
+  }
+}

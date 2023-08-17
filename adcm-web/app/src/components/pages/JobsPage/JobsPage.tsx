@@ -1,11 +1,21 @@
-import React from 'react';
+import TableContainer from '@commonComponents/Table/TableContainer/TableContainer';
+import JobsTableToolbar from './JobsTableToolbar/JobsTableToolbar';
+import JobsTable from './JobsTable/JobsTable';
+import JobsTableFooter from './JobsTableFooter/JobsTableFooter';
+import { useRequestJobs } from './useRequestJobs';
+import JobsDialogs from './Dialogs';
 
-const JobsPage: React.FC = () => {
+const AccessManagerUsersPage = () => {
+  useRequestJobs();
+
   return (
-    <div>
-      <h1>Jobs page</h1>
-    </div>
+    <TableContainer variant="easy">
+      <JobsTableToolbar />
+      <JobsTable />
+      <JobsTableFooter />
+      <JobsDialogs />
+    </TableContainer>
   );
 };
 
-export default JobsPage;
+export default AccessManagerUsersPage;

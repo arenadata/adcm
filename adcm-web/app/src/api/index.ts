@@ -10,6 +10,7 @@ export { AdcmHostProvidersApi } from './adcm/hostProviders';
 export { AdcmHostsApi } from './adcm/hosts';
 export { AdcmServicesApi } from './adcm/services';
 export { AdcmUsersApi } from './adcm/users';
+export { AdcmJobsApi } from './adcm/jobs';
 export { AdcmGroupsApi } from './adcm/groups';
 export { AdcmPoliciesApi } from './adcm/policies';
 export { AdcmClusterImportsApi } from './adcm/clusterImports';
