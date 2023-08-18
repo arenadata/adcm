@@ -1,9 +1,8 @@
-/* eslint-disable spellcheck/spell-checker */
 import { AdcmHostShortView, AdcmComponent, AdcmMaintenanceMode, AdcmMapping } from '@models/adcm';
 import { HostMapping, ServiceMapping, ServiceMappingFilter, HostMappingFilter } from './ClusterMapping.types';
 import { getHostsMapping, getServicesMapping, mapComponentsToHost, mapHostsToComponent } from './ClusterMapping.utils';
 import { arrayToHash } from '@utils/arrayUtils';
-import { validateConstraint } from './ClusterMapping.utils';
+import { validateConstraints } from './ClusterMapping.utils';
 
 const emptyMapping: AdcmMapping[] = [];
 
@@ -54,7 +53,7 @@ const components: AdcmComponent[] = [
     displayName: 'Component 1',
     isMaintenanceModeAvailable: false,
     maintenanceMode: AdcmMaintenanceMode.Off,
-    constraint: [0, 1],
+    constraints: [0, 1],
     dependOn: null,
     service: services[0],
   },
@@ -64,7 +63,7 @@ const components: AdcmComponent[] = [
     displayName: 'Component 2',
     isMaintenanceModeAvailable: false,
     maintenanceMode: AdcmMaintenanceMode.Off,
-    constraint: [0, 1],
+    constraints: [0, 1],
     dependOn: null,
     service: services[0],
   },
@@ -74,7 +73,7 @@ const components: AdcmComponent[] = [
     displayName: 'Service 3',
     isMaintenanceModeAvailable: false,
     maintenanceMode: AdcmMaintenanceMode.Off,
-    constraint: [0, 1],
+    constraints: [0, 1],
     dependOn: null,
     service: services[1],
   },
@@ -250,53 +249,53 @@ describe('Cluster mapping utils', () => {
     expect(newMapping).toEqual(expect.arrayContaining(expected));
   });
 
-  test('test validateConstraint', () => {
-    // Check all hosts constraint
-    expect(validateConstraint(['+'], 2, 0)).toEqual({
+  test('test validateConstraints', () => {
+    // Check all hosts constraints
+    expect(validateConstraints(['+'], 2, 0)).toEqual({
       isValid: false,
       error: 'Component should be installed on all hosts of cluster.',
     });
-    expect(validateConstraint(['+'], 2, 1)).toEqual({
+    expect(validateConstraints(['+'], 2, 1)).toEqual({
       isValid: false,
       error: 'Component should be installed on all hosts of cluster.',
     });
-    expect(validateConstraint(['+'], 2, 2)).toEqual({ isValid: true });
+    expect(validateConstraints(['+'], 2, 2)).toEqual({ isValid: true });
 
-    // Check range constraint
-    expect(validateConstraint([0, 1], 2, 0)).toEqual({ isValid: true });
-    expect(validateConstraint([0, 1], 2, 1)).toEqual({ isValid: true });
-    expect(validateConstraint([0, 1], 2, 2)).toEqual({
+    // Check range constraints
+    expect(validateConstraints([0, 1], 2, 0)).toEqual({ isValid: true });
+    expect(validateConstraints([0, 1], 2, 1)).toEqual({ isValid: true });
+    expect(validateConstraints([0, 1], 2, 2)).toEqual({
       isValid: false,
       error: 'Must be installed at least 0 and no more 1 components.',
     });
-    expect(validateConstraint([3, 10], 5, 5)).toEqual({ isValid: true });
+    expect(validateConstraints([3, 10], 5, 5)).toEqual({ isValid: true });
 
-    expect(validateConstraint([0, '+'], 5, 0)).toEqual({ isValid: true });
-    expect(validateConstraint([1, '+'], 5, 0)).toEqual({
+    expect(validateConstraints([0, '+'], 5, 0)).toEqual({ isValid: true });
+    expect(validateConstraints([1, '+'], 5, 0)).toEqual({
       isValid: false,
       error: 'Must be installed at least 1 components.',
     });
-    expect(validateConstraint([2, '+'], 5, 1)).toEqual({
+    expect(validateConstraints([2, '+'], 5, 1)).toEqual({
       isValid: false,
       error: 'Must be installed at least 2 components.',
     });
 
-    // Check exact contraint
-    expect(validateConstraint([1], 2, 0)).toEqual({
+    // Check exact constraints
+    expect(validateConstraints([1], 2, 0)).toEqual({
       isValid: false,
       error: 'Exactly 1 component should be installed',
     });
-    expect(validateConstraint([1], 2, 1)).toEqual({ isValid: true });
-    expect(validateConstraint([2], 2, 2)).toEqual({ isValid: true });
-    expect(validateConstraint([1], 2, 2)).toEqual({
+    expect(validateConstraints([1], 2, 1)).toEqual({ isValid: true });
+    expect(validateConstraints([2], 2, 2)).toEqual({ isValid: true });
+    expect(validateConstraints([1], 2, 2)).toEqual({
       isValid: false,
       error: 'Exactly 1 component should be installed',
     });
 
-    // Check odd constraint
-    expect(validateConstraint(['odd'], 4, 3)).toEqual({ isValid: true });
-    expect(validateConstraint([1, 'odd'], 4, 3)).toEqual({ isValid: true });
-    expect(validateConstraint([1, 'odd'], 4, 2)).toEqual({
+    // Check odd constraints
+    expect(validateConstraints(['odd'], 4, 3)).toEqual({ isValid: true });
+    expect(validateConstraints([1, 'odd'], 4, 3)).toEqual({ isValid: true });
+    expect(validateConstraints([1, 'odd'], 4, 2)).toEqual({
       isValid: false,
       error: 'Must be installed at least 1 components. Total amount should be odd.',
     });

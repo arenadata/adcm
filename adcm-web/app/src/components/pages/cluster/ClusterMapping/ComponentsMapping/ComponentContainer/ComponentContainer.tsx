@@ -7,7 +7,7 @@ import AddMappingButton from '../../AddMappingButton/AddMappingButton';
 import MappingError from '../../MappingError/MappingError';
 import { AdcmHostShortView, AdcmComponent } from '@models/adcm';
 import { ComponentMapping } from '../../ClusterMapping.types';
-import { getConstraintLimit } from '../../ClusterMapping.utils';
+import { getConstraintsLimit } from '../../ClusterMapping.utils';
 import s from './ComponentContainer.module.scss';
 import cn from 'classnames';
 
@@ -43,7 +43,7 @@ const ComponentContainer = ({ componentMapping, allHosts, onUnmap, onMap }: Comp
     s[`componentContainerHeader__title_${validationSummary}`],
   );
 
-  const limit = getConstraintLimit(component.constraint);
+  const limit = getConstraintsLimit(component.constraints);
 
   return (
     <>
