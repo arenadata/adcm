@@ -3,24 +3,24 @@ import { TableColumn } from '@uikit';
 export const columns: TableColumn[] = [
   {
     label: 'Name',
-    name: 'policyName',
+    name: 'name',
     isSortable: true,
   },
   {
     label: 'Description',
-    name: 'policyDescription',
+    name: 'description',
   },
   {
     label: 'Role',
-    name: 'policyRole',
+    name: 'role',
   },
   {
     label: 'Group',
-    name: 'policyGroup',
+    name: 'group',
   },
   {
     label: 'Actions',
-    name: 'policyActions',
+    name: 'actions',
     headerAlign: 'center',
     width: '100px',
   },
