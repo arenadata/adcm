@@ -20,7 +20,7 @@ export interface AdcmComponentDependency {
   components?: AdcmComponentDependency[];
 }
 
-export type AdcmComponentConstraint = (number | string)[];
+export type AdcmComponentConstraint = number | string;
 
 export interface AdcmComponentService {
   id: number;
@@ -34,7 +34,7 @@ export interface AdcmComponent {
   displayName: string;
   isMaintenanceModeAvailable: boolean;
   maintenanceMode: AdcmMaintenanceMode;
-  constraint: AdcmComponentConstraint;
+  constraints: AdcmComponentConstraint[];
   service: AdcmComponentService;
   dependOn: AdcmComponentDependency[] | null;
 }

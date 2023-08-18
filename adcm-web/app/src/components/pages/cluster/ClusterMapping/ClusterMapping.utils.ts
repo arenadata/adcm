@@ -77,7 +77,7 @@ export const getServicesMapping = (
     }
 
     const componentHosts = componentHostsDictionary[c.id] ?? [];
-    const constraintsValidationResult = validateConstraint(c.constraint, allHostsCount, componentHosts.length);
+    const constraintsValidationResult = validateConstraints(c.constraints, allHostsCount, componentHosts.length);
     const requireValidationResults = validateRequire();
     const componentValidationSummary = getComponentValidationSummary(
       constraintsValidationResult.isValid,
@@ -153,19 +153,19 @@ export const mapHostsToComponent = (
   return result;
 };
 
-export const validateConstraint = (
-  constraint: AdcmComponentConstraint,
+export const validateConstraints = (
+  constraints: AdcmComponentConstraint[],
   hostsCount: number,
   componentHostsCount: number,
 ): ValidationResult => {
-  const [c1, c2] = constraint;
-  if (constraint.length == 2 && typeof c1 === 'number' && typeof c2 === 'number') {
+  const [c1, c2] = constraints;
+  if (constraints.length == 2 && typeof c1 === 'number' && typeof c2 === 'number') {
     return c1 <= componentHostsCount && componentHostsCount <= c2
       ? { isValid: true }
       : { isValid: false, error: `Must be installed at least ${c1} and no more ${c2} components.` };
   }
 
-  if (constraint.length == 2 && typeof c1 === 'number' && typeof c2 === 'string') {
+  if (constraints.length == 2 && typeof c1 === 'number' && typeof c2 === 'string') {
     switch (c2) {
       case 'odd':
         return ((c1 === 0 && componentHostsCount === 0) || componentHostsCount % 2) && componentHostsCount >= c1
@@ -179,13 +179,13 @@ export const validateConstraint = (
     }
   }
 
-  if (constraint.length == 1 && typeof c1 === 'number') {
+  if (constraints.length == 1 && typeof c1 === 'number') {
     return componentHostsCount === c1
       ? { isValid: true }
       : { isValid: false, error: `Exactly ${c1} component should be installed` };
   }
 
-  if (constraint.length == 1 && typeof c1 === 'string') {
+  if (constraints.length == 1 && typeof c1 === 'string') {
     switch (c1) {
       case '+':
         return componentHostsCount === hostsCount
@@ -198,11 +198,11 @@ export const validateConstraint = (
     }
   }
 
-  return { isValid: false, error: 'Unknown constraint' };
+  return { isValid: false, error: 'Unknown constraints' };
 };
 
-export const getConstraintLimit = (constraint: AdcmComponentConstraint) => {
-  const [c1, c2] = constraint;
+export const getConstraintsLimit = (constraints: AdcmComponentConstraint[]) => {
+  const [c1, c2] = constraints;
   const limit = typeof c2 === 'number' ? c2 : c1 === 'odd' ? 1 : c1;
   return limit;
 };
