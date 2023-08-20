@@ -21,7 +21,7 @@ import { getSelected, TakeService } from '../take.service';
 import { CompTile, HostTile, IRawHosComponent, Post, StatePost, Tile } from '../types';
 import { ApiService } from "@app/core/api";
 import { Observable } from "rxjs";
-import { IServiceComponent } from '@app/models/service-component';
+import { ClusterService } from '@app/core/services/cluster.service';
 
 @Component({
   selector: 'app-service-host',
@@ -87,7 +87,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
     return this.Components.find((component) => component.isSelected);
   }
 
-  constructor(public service: TakeService, private channel: ChannelService, socket: Store<SocketState>, private api: ApiService) {
+  constructor(public service: TakeService, private channel: ChannelService, socket: Store<SocketState>, private api: ApiService, private clusterService: ClusterService) {
     super(socket);
   }
 
@@ -110,7 +110,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   }
 
   getAddedServices(): Observable<any> {
-    return this.api.get(`api/v1/cluster/${this.cluster.id}/service/`);
+    return this.api.get(`api/v1/cluster/${this.clusterService.Cluster.id}/service/`);
   }
 
   socketListener(m: EventMessage) {
