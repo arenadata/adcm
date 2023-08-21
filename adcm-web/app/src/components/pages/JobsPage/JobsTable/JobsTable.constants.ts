@@ -1,4 +1,5 @@
-import { TableColumn } from '@uikit';
+import { AdcmJobObjectType, AdcmJobStatus } from '@models/adcm';
+import { BaseStatus, TableColumn } from '@uikit';
 
 export const columns: TableColumn[] = [
   {
@@ -44,3 +45,21 @@ export const columns: TableColumn[] = [
     width: '100px',
   },
 ];
+
+export const jobStatusesMap: { [key in AdcmJobStatus]: BaseStatus } = {
+  [AdcmJobStatus.CREATED]: 'created',
+  [AdcmJobStatus.SUCCESS]: 'success',
+  [AdcmJobStatus.FAILED]: 'failed',
+  [AdcmJobStatus.RUNNING]: 'running',
+  [AdcmJobStatus.LOCKED]: 'locked',
+  [AdcmJobStatus.ABORTED]: 'aborted',
+};
+
+export const linkByObjectTypeMap: { [key in AdcmJobObjectType]: string } = {
+  [AdcmJobObjectType.ADCM]: '',
+  [AdcmJobObjectType.CLUSTER]: 'clusters',
+  [AdcmJobObjectType.SERVICE]: 'services',
+  [AdcmJobObjectType.PROVIDER]: 'hostproviders',
+  [AdcmJobObjectType.HOST]: 'hosts',
+  [AdcmJobObjectType.COMPONENT]: 'clusters',
+};
