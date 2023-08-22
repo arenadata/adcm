@@ -6,6 +6,7 @@
     --statusable-circle-background-aborted: var(--color-xgray-light);
     --statusable-circle-background-running: var(--color-xblue);
     --statusable-circle-background-created: var(--color-xwhite-off);
+    --statusable-color-name: var(--color-xwhite-off);
   }
   body.theme-light {
     --statusable-circle-background-done: var(--color-xgreen);
@@ -14,6 +15,7 @@
     --statusable-circle-background-aborted: var(--color-xgray-light);
     --statusable-circle-background-running: var(--color-xblue);
     --statusable-circle-background-created: var(--color-xdark);
+    --statusable-color-name: var(--color-xdark);
   }
 }
 
@@ -28,7 +30,9 @@
     --statusable-circle-size: 10px;
   }
 
-  &_done {
+  &_done, &_success {
+    color: var(--statusable-color-name);
+    font-weight: 500;
     --statusable-circle-background: var(--statusable-circle-background-done)
   }
   &_unknown {
@@ -37,7 +41,7 @@
   &_failed {
     --statusable-circle-background: var(--statusable-circle-background-failed)
   }
-  &_aborted {
+  &_aborted, &_locked {
     --statusable-circle-background: var(--statusable-circle-background-aborted)
   }
   &_running {

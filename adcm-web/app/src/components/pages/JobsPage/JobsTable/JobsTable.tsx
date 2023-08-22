@@ -1,8 +1,7 @@
 import { Link, generatePath } from 'react-router-dom';
-import cn from 'classnames';
 import { Table, TableRow, TableCell, IconButton } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
-import { columns } from './JobsTable.constants';
+import { columns, jobStatusesMap, linkByObjectTypeMap } from './JobsTable.constants';
 import { setSortParams } from '@store/adcm/jobs/jobsTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { openRestartDialog } from '@store/adcm/jobs/jobsActionsSlice';
@@ -10,6 +9,7 @@ import { AdcmJobStatus } from '@models/adcm';
 import s from './JobsTable.module.scss';
 import { dateToString } from '@utils/date/dateConvertUtils';
 import { secondsToTime } from '@utils/time/timeConvertUtils';
+import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 
 const JobsTable = () => {
   const dispatch = useDispatch();
@@ -31,24 +31,21 @@ const JobsTable = () => {
         return (
           <TableRow key={job.id} className={s.jobRow}>
             <TableCell>{job.id}</TableCell>
-            <TableCell className={cn({ [s.jobRow_active]: job.status === AdcmJobStatus.SUCCESS })}>
-              <Link
-                to={generatePath('/jobs/:jobId', { jobId: job.id + '' })}
-                className={cn(s.jobRow__jobName, { [s.jobRow__jobName_active]: job.status === AdcmJobStatus.SUCCESS })}
-              >
+            <StatusableCell status={jobStatusesMap[job.status]} size="medium">
+              <Link to={generatePath('/jobs/:jobId', { jobId: job.id + '' })} className={s.jobRow__jobName}>
                 {job.name}
               </Link>
-            </TableCell>
+            </StatusableCell>
             <TableCell>{job.status}</TableCell>
             <TableCell className={s.jobRow__jobObjects}>
               {job.objects?.map((object, i) => {
                 return (
-                  <>
+                  <span key={i}>
                     {i > 0 && ' / '}
-                    <Link to={`/${object.type}/${object.id}/`} key={object.id}>
+                    <Link to={`/${linkByObjectTypeMap[object.type]}/${object.id}/`} key={object.id}>
                       {object.name}
                     </Link>
-                  </>
+                  </span>
                 );
               })}
             </TableCell>
