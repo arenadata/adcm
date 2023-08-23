@@ -12,6 +12,7 @@ import {
 } from '@models/adcm';
 import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
+import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 
 export class AdcmClustersApi {
   public static async getClusters(
@@ -58,6 +59,28 @@ export class AdcmClustersApi {
     const response = await httpClient.get<AdcmClusterActionDetails>(
       `/api/v2/clusters/${clusterId}/upgrades/${upgradeId}/`,
     );
+    return response.data;
+  }
+
+  public static async getClusterActions(clusterId: number) {
+    const response = await httpClient.get<AdcmDynamicAction[]>(`/api/v2/clusters/${clusterId}/actions/`);
+    return response.data;
+  }
+
+  public static async getClusterActionDetails(clusterId: number, actionId: number) {
+    const response = await httpClient.get<AdcmDynamicActionDetails>(
+      `/api/v2/clusters/${clusterId}/actions/${actionId}/`,
+    );
+    return response.data;
+  }
+
+  public static async runClusterAction(
+    clusterId: number,
+    actionId: number,
+    actionRunConfig: AdcmDynamicActionRunConfig,
+  ) {
+    const response = await httpClient.post(`/api/v2/clusters/${clusterId}/actions/${actionId}/run/`, actionRunConfig);
+
     return response.data;
   }
 

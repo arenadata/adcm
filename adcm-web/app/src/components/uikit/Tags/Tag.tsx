@@ -5,9 +5,10 @@ import { TagOptions } from '@uikit/Tags/Tag.types';
 
 type TagProps = TagOptions & HTMLAttributes<HTMLDivElement>;
 
-const Tag: React.FC<TagProps> = ({ className, children, startAdornment, endAdornment, ...props }) => {
+const Tag: React.FC<TagProps> = ({ className, isDisabled, children, startAdornment, endAdornment, ...props }) => {
+  const classes = cn(className, s.tag, { [s.tag_disabled]: isDisabled });
   return (
-    <div className={cn(className, s.tag)} {...props}>
+    <div className={classes} {...props}>
       {startAdornment}
       {children}
       {endAdornment}

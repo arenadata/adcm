@@ -7,16 +7,18 @@ export interface AddMappingButtonProps {
   className?: string;
   label: string;
   onAddClick: () => void;
+  isDisabled?: boolean;
 }
 
 const AddMappingButton = forwardRef<HTMLButtonElement, AddMappingButtonProps>(
-  ({ className = '', label, onAddClick }: AddMappingButtonProps, ref) => (
+  ({ className = '', label, onAddClick, isDisabled = false }: AddMappingButtonProps, ref) => (
     <Button
       variant="clear"
       className={cn(s.addMappingButton, className)}
       onClick={onAddClick}
       ref={ref}
       iconRight="g1-add"
+      disabled={isDisabled}
     >
       {label}
     </Button>

@@ -2,6 +2,7 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import userSlice from '@store/userSlice';
 import notificationsSlice from '@store/notificationsSlice';
 import clustersSlice from '@store/adcm/clusters/clustersSlice';
+import clustersDynamicActionsSlice from '@store/adcm/clusters/clustersDynamicActionsSlice';
 import clusterHostsSlice from '@store/adcm/cluster/hosts/hostsSlice';
 import clusterHostsTableSlice from '@store/adcm/cluster/hosts/hostsTableSlice';
 import clustersTableSlice from '@store/adcm/clusters/clustersTableSlice';
@@ -51,6 +52,7 @@ const rootReducer = combineReducers({
   adcm: combineReducers({
     cluster: clusterSlice,
     clusters: clustersSlice,
+    clustersDynamicActions: clustersDynamicActionsSlice,
     clustersTable: clustersTableSlice,
     clusterHosts: clusterHostsSlice,
     clusterHostsTable: clusterHostsTableSlice,

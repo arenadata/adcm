@@ -35,7 +35,7 @@
   color: var(--tag-color);
   border-radius: 5px;
 
-  &:hover {
+  &:hover:not(&_disabled) {
     background: var(--tag-background-hover);
     color: var(--tag-color-hover);
   }

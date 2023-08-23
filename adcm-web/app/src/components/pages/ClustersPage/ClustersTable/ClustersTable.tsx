@@ -9,6 +9,7 @@ import { setDeletableId } from '@store/adcm/clusters/clustersSlice';
 import { open as openUpgradeClusterDialog } from '@store/adcm/clusters/dialogs/upgradeClusterDialogSlice';
 import { setSortParams } from '@store/adcm/clusters/clustersTableSlice';
 import { SortParams } from '@uikit/types/list.types';
+import ClusterDynamicActionsIcon from '@pages/ClustersPage/ClustersTable/ClusterDynamicActionsIcon/ClusterDynamicActionsIcon';
 
 const ClustersTable = () => {
   const dispatch = useDispatch();
@@ -44,6 +45,7 @@ const ClustersTable = () => {
               <Concern concerns={cluster.concerns} />
             </TableCell>
             <TableCell hasIconOnly align="center">
+              <ClusterDynamicActionsIcon cluster={cluster} />
               <IconButton
                 icon="g1-upgrade"
                 size={32}

@@ -3,12 +3,8 @@ import { NavLink, useLocation } from 'react-router-dom';
 import s from './Tabs.module.scss';
 import cn from 'classnames';
 import { isCurrentPathname } from '@uikit/utils/urlUtils';
+import { TabProps } from '@uikit/Tabs/Tab.types';
 
-interface TabProps extends React.HTMLAttributes<HTMLAnchorElement> {
-  to: string;
-  subPattern?: string;
-  disabled?: boolean;
-}
 const Tab: React.FC<TabProps> = ({ children, to, subPattern, disabled = false }) => {
   const { pathname } = useLocation();
 

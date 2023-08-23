@@ -2,9 +2,18 @@ import { useClusterMapping } from '../useClusterMapping';
 import HostContainer from './HostContainer/HostContainer';
 import ClusterMappingToolbar from '../ClusterMappingToolbar/ClusterMappingToolbar';
 import s from './HostsMapping.module.scss';
+import { useParams } from 'react-router-dom';
+import { saveMapping } from '@store/adcm/cluster/mapping/mappingSlice';
+import { useDispatch } from '@hooks';
 
 const HostsMapping = () => {
+  const dispatch = useDispatch();
+
+  const { clusterId: clusterIdFromUrl } = useParams();
+  const clusterId = Number(clusterIdFromUrl);
+
   const {
+    hostComponentMapping,
     components,
     hostsMapping,
     hostsMappingFilter,
@@ -14,12 +23,15 @@ const HostsMapping = () => {
     hasSaveError,
     handleMapComponentsToHost,
     handleUnmap,
-    handleSave,
     handleRevert,
-  } = useClusterMapping();
+  } = useClusterMapping(clusterId);
 
   const handleFilterChange = (componentDisplayName: string) => {
     handleHostsMappingFilterChange({ componentDisplayName });
+  };
+
+  const handleSave = () => {
+    dispatch(saveMapping({ clusterId, mapping: hostComponentMapping }));
   };
 
   return (
