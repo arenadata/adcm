@@ -39,7 +39,7 @@ class FlagTest(BaseTestCase):
         reason = {
             "message": "${source} has an outdated configuration",
             "placeholder": {
-                "source": {"type": "cluster", "name": self.cluster.name, "ids": {"cluster": self.cluster.id}}
+                "source": {"type": "cluster", "name": self.cluster.name, "params": {"cluster_id": self.cluster.id}}
             },
         }
         self.assertEqual(flag.reason, reason)
