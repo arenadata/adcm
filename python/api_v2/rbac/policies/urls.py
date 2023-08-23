@@ -10,15 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.permissions import AllowAny
-from rest_framework.routers import APIRootView
+from api_v2.rbac.policies.views import PolicyViewSet
+from rest_framework.routers import SimpleRouter
 
-
-class RbacRoot(APIRootView):
-    permission_classes = (AllowAny,)
-    api_root_dict = {
-        "roles": "role-list",
-        "users": "user-list",
-        "groups": "group-list",
-        "policies": "policy-list",
-    }
+policy_router = SimpleRouter()
+policy_router.register(prefix="policies", viewset=PolicyViewSet)

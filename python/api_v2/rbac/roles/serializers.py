@@ -10,15 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.permissions import AllowAny
-from rest_framework.routers import APIRootView
+from rbac.models import Role
+from rest_framework.serializers import ModelSerializer
 
 
-class RbacRoot(APIRootView):
-    permission_classes = (AllowAny,)
-    api_root_dict = {
-        "roles": "role-list",
-        "users": "user-list",
-        "groups": "group-list",
-        "policies": "policy-list",
-    }
+class RoleNameSerializer(ModelSerializer):
+    class Meta:
+        model = Role
+        fields = ["id", "name", "display_name"]

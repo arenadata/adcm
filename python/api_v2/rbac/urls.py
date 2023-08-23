@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from api_v2.rbac.groups.urls import group_router
+from api_v2.rbac.policies.urls import policy_router
 from api_v2.rbac.role.views import RoleViewSet
 from api_v2.rbac.users.urls import user_router
 from api_v2.rbac.views import RbacRoot
@@ -24,4 +25,5 @@ urlpatterns = [
     *role_router.urls,
     *user_router.urls,
     *group_router.urls,
+    *policy_router.urls,
 ]
