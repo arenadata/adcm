@@ -26,9 +26,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref,
   ) => {
+    const hasIcon = !!(iconLeft || iconRight);
     const buttonClasses = cn(className, s.button, s[`button_${variant}`], {
       [s.button_error]: hasError,
-      [s.button_hasIcon]: !!(iconLeft || iconRight),
+      [s.button_hasIcon]: hasIcon,
+      [s.button_hasIconOnly]: !children,
     });
     return (
       <button

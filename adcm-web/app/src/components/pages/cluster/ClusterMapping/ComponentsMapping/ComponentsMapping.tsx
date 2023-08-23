@@ -6,11 +6,20 @@ import ClusterMappingToolbar from '../ClusterMappingToolbar/ClusterMappingToolba
 import { serviceMarkerIcons } from './ComponentsMapping.constants';
 import s from './ComponentsMapping.module.scss';
 import cn from 'classnames';
+import { useParams } from 'react-router-dom';
+import { saveMapping } from '@store/adcm/cluster/mapping/mappingSlice';
+import { useDispatch } from '@hooks';
 
 const buildServiceAnchorId = (id: number) => `anchor_${id}`;
 
 const ComponentsMapping = () => {
+  const dispatch = useDispatch();
+
+  const { clusterId: clusterIdFromUrl } = useParams();
+  const clusterId = Number(clusterIdFromUrl);
+
   const {
+    hostComponentMapping,
     hosts,
     servicesMapping,
     servicesMappingFilter,
@@ -20,9 +29,8 @@ const ComponentsMapping = () => {
     hasSaveError,
     handleMapHostsToComponent,
     handleUnmap,
-    handleSave,
     handleRevert,
-  } = useClusterMapping();
+  } = useClusterMapping(clusterId);
 
   const anchorItems: AnchorBarItem[] = useMemo(
     () =>
@@ -35,6 +43,10 @@ const ComponentsMapping = () => {
 
   const handleFilterChange = (hostName: string) => {
     handleServicesMappingFilterChange({ hostName });
+  };
+
+  const handleSave = () => {
+    dispatch(saveMapping({ clusterId, mapping: hostComponentMapping }));
   };
 
   return (

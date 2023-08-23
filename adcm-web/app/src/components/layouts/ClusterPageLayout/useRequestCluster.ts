@@ -1,9 +1,13 @@
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDispatch, useRequestTimer, useDebounce } from '@hooks';
-import { getCluster } from '@store/adcm/clusters/clusterSlice';
+import { cleanupCluster, getCluster } from '@store/adcm/clusters/clusterSlice';
 import { defaultDebounceDelay } from '@constants';
 import { cleanupBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
+import {
+  cleanupClusterDynamicActions,
+  loadClustersDynamicActions,
+} from '@store/adcm/clusters/clustersDynamicActionsSlice';
 
 export const useRequestCluster = () => {
   const dispatch = useDispatch();
@@ -13,8 +17,16 @@ export const useRequestCluster = () => {
   useEffect(() => {
     return () => {
       dispatch(cleanupBreadcrumbs());
+      dispatch(cleanupCluster());
+      dispatch(cleanupClusterDynamicActions());
     };
   }, [dispatch]);
+
+  useEffect(() => {
+    if (!Number.isNaN(clusterId)) {
+      dispatch(loadClustersDynamicActions([clusterId]));
+    }
+  }, [dispatch, clusterId]);
 
   const debounceGetCluster = useDebounce(() => {
     if (clusterId) {

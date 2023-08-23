@@ -1,5 +1,5 @@
 .addMappingButton {
-  &:hover {
-    color: var(--color-xgreen-saturated);
+  &:hover:not(:disabled) {
+    color: var(--text-green-color);
   }
 }

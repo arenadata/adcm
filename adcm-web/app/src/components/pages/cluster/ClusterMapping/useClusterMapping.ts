@@ -1,22 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import { useDispatch, useStore } from '@hooks';
-import { getMappings, saveMapping, cleanupMappings } from '@store/adcm/cluster/mapping/mappingSlice';
+import { getMappings, cleanupMappings } from '@store/adcm/cluster/mapping/mappingSlice';
 import { AdcmComponent, AdcmHostShortView, AdcmMapping } from '@models/adcm';
 import { arrayToHash } from '@utils/arrayUtils';
 import { getHostsMapping, getServicesMapping, mapComponentsToHost, mapHostsToComponent } from './ClusterMapping.utils';
 import { HostMappingFilter, HostMapping, ServiceMappingFilter, ServiceMapping } from './ClusterMapping.types';
 
-export const useClusterMapping = () => {
+export const useClusterMapping = (clusterId: number) => {
   const dispatch = useDispatch();
-  const { clusterId: clusterIdFromUrl } = useParams();
-  const clusterId = Number(clusterIdFromUrl);
 
   const {
     hosts,
     components,
     mapping: originalMapping,
     isLoaded,
+    isLoading,
     hasSaveError,
   } = useStore(({ adcm }) => adcm.clusterMapping);
 
@@ -30,11 +28,13 @@ export const useClusterMapping = () => {
   const [servicesMappingFilter, setServicesMappingFilter] = useState<ServiceMappingFilter>({ hostName: '' });
 
   useEffect(() => {
-    if (!isNaN(clusterId)) {
+    if (!Number.isNaN(clusterId)) {
       dispatch(getMappings({ clusterId }));
     }
 
     return () => {
+      // TODO: should think about next case: open action with hostMapping on page ClusterMapping.
+      // cleanupMappings will run after close action dialog and clear data from page too
       dispatch(cleanupMappings());
     };
   }, [clusterId, dispatch]);
@@ -101,11 +101,10 @@ export const useClusterMapping = () => {
     setIsMappingChanged(false);
   }, [originalMapping]);
 
-  const handleSave = useCallback(() => {
-    dispatch(saveMapping({ clusterId, mapping: localMapping }));
-  }, [dispatch, clusterId, localMapping]);
-
   return {
+    hostComponentMapping: localMapping,
+    isLoading,
+    isLoaded,
     hosts,
     hostsMapping,
     hostsMappingFilter,
@@ -121,6 +120,5 @@ export const useClusterMapping = () => {
     handleMapComponentsToHost,
     handleUnmap,
     handleRevert,
-    handleSave,
   };
 };

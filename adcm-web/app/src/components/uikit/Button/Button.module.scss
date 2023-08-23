@@ -130,7 +130,7 @@
   }
 
   &.button_clear {
-    --button-background: transparent;
+    background: transparent;
     --button-color: inherit;
     --button-border: transparent;
     border: none;
@@ -170,10 +170,12 @@
   &_hasIcon {
     padding: 1px 8px;
     column-gap: 8px;
-    min-width: 0;
 
     & > :global(.icon) {
       margin: 0 -7px;
     }
+  }
+  &_hasIconOnly {
+    min-width: 0;
   }
 }

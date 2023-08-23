@@ -10,9 +10,13 @@ body {
 
   &.theme-dark {
     --body-background: var(--color-xblack);
+
+    --text-green-color: var(--color-xgreen-saturated);
   }
   &.theme-light {
     --body-background: var(--color-xwhite-off);
+
+    --text-green-color: var(--color-xgreen);
   }
 }
 
@@ -21,23 +25,12 @@ body {
   font-weight: 500;
   color: var(--color-xblue);
   &:hover {
-    color: var(--text-link-hover) !important;
-  }
-  body.theme-dark & {
-    --text-link-hover: var(--color-xgreen-saturated);
-  }
-  body.theme-light & {
-    --text-link-hover: var(--color-xgreen);
+    color: var(--text-green-color) !important;
   }
 }
 
 .green-text {
-  body.theme-dark & {
-    color: var(--color-xgreen-saturated);
-  }
-  body.theme-light & {
-    color: var(--color-xgreen);
-  }
+  color: var(--text-green-color);
 }
 
 @keyframes spin {

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Meta, StoryObj } from '@storybook/react';
 import Select from '@uikit/Select/SingleSelect/Select/Select';
-import SelectAction from '@uikit/Select/SingleSelect/SelectAction/SelectAction';
 import Dialog from '@uikit/Dialog/Dialog';
+import ActionMenu from '@uikit/ActionMenu/ActionMenu';
+import { IconButton } from '@uikit';
 
 type Story = StoryObj<typeof Select>;
 export default {
@@ -103,7 +104,9 @@ const SingleSelectActionExample: React.FC = () => {
 
   return (
     <div style={{ padding: 30, display: 'flex', alignItems: 'center' }}>
-      <SelectAction icon="g1-actions" size={34} value={null} onChange={handleSelectActions} options={actionsOptions} />
+      <ActionMenu options={actionsOptions} value={null} onChange={handleSelectActions}>
+        <IconButton icon="g1-actions" size={34} />
+      </ActionMenu>
       <Dialog
         isOpen={isOpenStart}
         onOpenChange={setIsOpenStart}

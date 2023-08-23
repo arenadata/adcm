@@ -10,15 +10,27 @@ import { ComponentMapping } from '../../ClusterMapping.types';
 import { getConstraintsLimit } from '../../ClusterMapping.utils';
 import s from './ComponentContainer.module.scss';
 import cn from 'classnames';
+import { AdcmHostComponentMapRuleAction } from '@models/adcm/dynamicAction';
 
 export interface ComponentContainerProps {
   componentMapping: ComponentMapping;
   allHosts: AdcmHostShortView[];
   onMap: (hosts: AdcmHostShortView[], component: AdcmComponent) => void;
   onUnmap: (hostId: number, componentId: number) => void;
+  isDisabled?: boolean;
+  allowActions?: AdcmHostComponentMapRuleAction[];
 }
 
-const ComponentContainer = ({ componentMapping, allHosts, onUnmap, onMap }: ComponentContainerProps) => {
+const defaultAllowActions = [AdcmHostComponentMapRuleAction.Add, AdcmHostComponentMapRuleAction.Remove];
+
+const ComponentContainer = ({
+  componentMapping,
+  allHosts,
+  onUnmap,
+  onMap,
+  isDisabled = false,
+  allowActions = defaultAllowActions,
+}: ComponentContainerProps) => {
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const addIconRef = useRef(null);
   const hostsOptions = useMemo(() => getOptionsFromArray(allHosts, (h) => h.name), [allHosts]);
@@ -37,7 +49,10 @@ const ComponentContainer = ({ componentMapping, allHosts, onUnmap, onMap }: Comp
     onMap(hosts, component);
   };
 
-  const containerClassName = cn(s.componentContainer, s[`componentContainer_${validationSummary}`]);
+  const containerClassName = cn(s.componentContainer, s[`componentContainer_${validationSummary}`], {
+    [s.componentContainer_disabled]: isDisabled,
+  });
+
   const titleClassName = cn(
     s.componentContainerHeader__title,
     s[`componentContainerHeader__title_${validationSummary}`],
@@ -64,12 +79,19 @@ const ComponentContainer = ({ componentMapping, allHosts, onUnmap, onMap }: Comp
             ref={addIconRef}
             label="Add hosts"
             onAddClick={handleAddClick}
+            isDisabled={isDisabled || !allowActions.includes(AdcmHostComponentMapRuleAction.Add)}
           />
         </div>
         {visibleHosts.length > 0 && (
           <Tags className={s.componentContainer__hosts}>
             {visibleHosts.map((host) => (
-              <MappingItemTag key={host.id} id={host.id} label={host.name} onDeleteClick={handleDelete} />
+              <MappingItemTag
+                key={host.id}
+                id={host.id}
+                label={host.name}
+                onDeleteClick={handleDelete}
+                isDisabled={isDisabled || !allowActions.includes(AdcmHostComponentMapRuleAction.Remove)}
+              />
             ))}
           </Tags>
         )}

@@ -6,7 +6,7 @@ import { AdcmHost, AdcmHostsFilter } from '@models/adcm/host';
 import { prepareQueryParams } from '@utils/apiUtils';
 
 export class AdcmHostsApi {
-  public static async getHosts(filter: AdcmHostsFilter, sortParams: SortParams, paginationParams: PaginationParams) {
+  public static async getHosts(filter?: AdcmHostsFilter, sortParams?: SortParams, paginationParams?: PaginationParams) {
     const queryParams = prepareQueryParams(filter, sortParams, paginationParams);
 
     const query = qs.stringify(queryParams);

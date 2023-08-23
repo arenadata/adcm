@@ -37,6 +37,10 @@
   &__hosts {
     margin-top: 8px;
   }
+
+  &_disabled {
+    border-color: var(--component-container-disabled-color);
+  }
 }
 
 .componentContainerHeader {
@@ -52,11 +56,11 @@
     &_valid {
       color: var(--component-container-valid-color);
     }
-  
+
     &_warning {
       color: var(--component-container-warning-color);
     }
-  
+
     &_error {
       color: var(--component-container-error-color);
     }

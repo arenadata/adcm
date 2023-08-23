@@ -1,13 +1,16 @@
+import React from 'react';
 import { Tag, IconButton } from '@uikit';
 
 export interface MappingItemTagProps {
   id: number;
   label: string;
   onDeleteClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  isDisabled?: boolean;
 }
 
-const MappingItemTag = ({ id, label, onDeleteClick }: MappingItemTagProps) => (
+const MappingItemTag = ({ id, label, onDeleteClick, isDisabled = false }: MappingItemTagProps) => (
   <Tag
+    isDisabled={isDisabled}
     endAdornment={
       <IconButton
         //
@@ -17,6 +20,7 @@ const MappingItemTag = ({ id, label, onDeleteClick }: MappingItemTagProps) => (
         size={20}
         onClick={onDeleteClick}
         title="Remove"
+        disabled={isDisabled}
       />
     }
   >
