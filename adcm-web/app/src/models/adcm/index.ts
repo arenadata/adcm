@@ -12,6 +12,7 @@ export * from './audit';
 export * from './jobs';
 export * from './policy';
 export * from './clusterImports';
+export * from './clusterServiceComponent';
 
 export interface Batch<T> {
   results: T[];

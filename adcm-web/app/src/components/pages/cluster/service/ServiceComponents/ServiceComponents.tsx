@@ -1,10 +1,16 @@
 import React from 'react';
+import { useRequestServiceComponents } from './useRequestServiceComponents';
+import ServiceComponentsTable from './ServiceComponentsTable/ServiceComponentsTable';
+import ServiceComponentsDialogs from './Dialogs';
 
 const ServiceComponents: React.FC = () => {
+  useRequestServiceComponents();
+
   return (
-    <div>
-      <h2>ServiceComponents</h2>
-    </div>
+    <>
+      <ServiceComponentsTable />
+      <ServiceComponentsDialogs />
+    </>
   );
 };
 

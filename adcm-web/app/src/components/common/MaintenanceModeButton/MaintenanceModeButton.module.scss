@@ -1,0 +1,34 @@
+:global {
+  body.theme-dark {
+    --maintenanceModeButton-on: var(--color-xred);
+    --maintenanceModeButton-pending: var(--color-orangex);
+    --maintenanceModeButton-unavailable: var(--icon-button-color-disabled-primary);
+  }
+
+  body.theme-light {
+    --maintenanceModeButton-on: var(--color-xred-light);
+    --maintenanceModeButton-pending: var(--color-json-orange);
+    --maintenanceModeButton-unavailable: var(--icon-button-color-disabled-primary);
+  }
+}
+
+.maintenanceModeButton {
+  &_on {
+    svg {
+      color: var(--maintenanceModeButton-on);
+    }
+  }
+
+  &_pending {
+    svg {
+      color: var(--maintenanceModeButton-pending);
+    }
+  }
+
+  &_unavailable {
+    cursor: not-allowed;
+    svg {
+      color: var(--maintenanceModeButton-unavailable);
+    }
+  }
+}

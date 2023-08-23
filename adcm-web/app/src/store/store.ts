@@ -35,6 +35,8 @@ import usersTableSlice from './adcm/users/usersTableSlice';
 import servicesSlice from './adcm/cluster/services/servicesSlice';
 import servicesTableSlice from './adcm/cluster/services/servicesTableSlice';
 import servicesActionsSlice from './adcm/cluster/services/servicesActionsSlice';
+import serviceComponentsSlice from './adcm/cluster/services/serviceComponents/serviceComponentsSlice';
+import serviceComponentsTableSlice from './adcm/cluster/services/serviceComponents/serviceComponentsTableSlice';
 import usersActionsSlice from './adcm/users/usersActionsSlice';
 import jobsSlice from './adcm/jobs/jobsSlice';
 import jobsTableSlice from './adcm/jobs/jobsTableSlice';
@@ -44,6 +46,7 @@ import groupsTableSlice from './adcm/groups/groupsTableSlice';
 import policiesTableSlice from './adcm/policies/policiesTableSlice';
 import policiesSlice from './adcm/policies/policiesSlice';
 import policiesActionsSlice from './adcm/policies/policiesActionsSlice';
+import serviceComponentsActionsSlice from './adcm/cluster/services/serviceComponents/serviceComponentsActionsSlice';
 
 const rootReducer = combineReducers({
   user: userSlice,
@@ -71,6 +74,9 @@ const rootReducer = combineReducers({
     services: servicesSlice,
     servicesTable: servicesTableSlice,
     servicesActions: servicesActionsSlice,
+    serviceComponents: serviceComponentsSlice,
+    serviceComponentsTable: serviceComponentsTableSlice,
+    serviceComponentsActions: serviceComponentsActionsSlice,
     auditOperations: auditOperationsSlice,
     auditOperationsTable: auditOperationsTableSlice,
     auditLogins: auditLoginsSlice,
