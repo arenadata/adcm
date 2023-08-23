@@ -53,7 +53,7 @@ class HostProviderViewSet(CamelCaseReadOnlyModelViewSet):  # pylint:disable=too-
 
         return Response(data=HostProviderSerializer(host_provider).data, status=HTTP_201_CREATED)
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         host_provider = self.get_object()
         delete_host_provider(host_provider)
         return Response(status=HTTP_204_NO_CONTENT)

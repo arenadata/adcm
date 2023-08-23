@@ -218,6 +218,7 @@ ERRORS = {
     "POLICY_INTEGRITY_ERROR": ("Incorrect role or user list of policy", HTTP_400_BAD_REQUEST, ERR),
     "POLICY_CREATE_ERROR": ("Error during process of policy creating", HTTP_409_CONFLICT, ERR),
     "POLICY_UPDATE_ERROR": ("Error during process of policy updating", HTTP_409_CONFLICT, ERR),
+    "POLICY_DELETE_ERROR": ("Error during process of policy deleting", HTTP_409_CONFLICT, ERR),
     "USER_CREATE_ERROR": ("Error during process of user creating", HTTP_409_CONFLICT, ERR),
     "USER_UPDATE_ERROR": ("Error during process of user updating", HTTP_400_BAD_REQUEST, ERR),
     "USER_DELETE_ERROR": ("Built-in user could not be deleted", HTTP_409_CONFLICT, ERR),

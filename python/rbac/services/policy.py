@@ -9,13 +9,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Tuple
 
 from cm.errors import raise_adcm_ex
 from cm.models import ADCMEntity
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
 from django.db.transaction import atomic
-from rbac.models import Policy, PolicyObject, Role
+from rbac.models import Group, Policy, PolicyObject, Role
+
+
+def _extract_policy_objects(**kwargs) -> Tuple[Role, list, list]:
+    role = kwargs.get("role", None)
+    if "v2" in kwargs:
+        groupd_ids = kwargs.get("group", [])
+        objects_ids = kwargs.get("object", [])
+        role_id = role["id"]
+        groups = Group.objects.filter(id__in=[g["id"] for g in groupd_ids])
+        objects = PolicyObject.objects.filter(id__in=[g["id"] for g in objects_ids])
+        role = Role.objects.filter(id=role_id).last()
+    else:
+        groups = kwargs.get("group", [])
+        objects = kwargs.get("object", [])
+    return role, groups, objects
 
 
 def _check_objects(role: Role, objects: list[ADCMEntity]) -> None:
@@ -43,15 +59,16 @@ def _check_objects(role: Role, objects: list[ADCMEntity]) -> None:
 
 
 @atomic
-def policy_create(name: str, role: Role, built_in: bool = False, **kwargs) -> Policy | None:
-    groups = kwargs.get("group", [])
+def policy_create(name: str, role: Role | dict, built_in: bool = False, **kwargs) -> Policy | None:
+    kwargs["role"] = role
+    role, groups, objects = _extract_policy_objects(**kwargs)
+
     if not groups:
         raise_adcm_ex(
             "POLICY_INTEGRITY_ERROR",
             msg="Policy should contain at least one group",
         )
 
-    objects = kwargs.get("object", [])
     _check_objects(role, objects)
     description = kwargs.get("description", "")
 
@@ -75,15 +92,13 @@ def policy_create(name: str, role: Role, built_in: bool = False, **kwargs) -> Po
 
 @atomic
 def policy_update(policy: Policy, **kwargs) -> Policy:
-    groups = kwargs.get("group")
-    if groups is not None and not groups:
+    role, groups, objects = _extract_policy_objects(**kwargs)
+    if groups != [] and not groups:
         raise_adcm_ex(
             "POLICY_INTEGRITY_ERROR",
             msg="Policy should contain at least one group",
         )
 
-    role = kwargs.get("role")
-    objects = kwargs.get("object")
     policy_old_objects = [po.object for po in policy.object.all()]
     _check_objects(role or policy.role, objects if objects is not None else policy_old_objects)
 

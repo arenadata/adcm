@@ -24,6 +24,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_404_NO
 from rest_framework.test import APIClient, APITestCase
 
 
+# pylint: disable=too-many-public-methods
 class TestUpgrade(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()

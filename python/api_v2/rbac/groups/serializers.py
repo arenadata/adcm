@@ -33,18 +33,22 @@ class GroupSerializer(ModelSerializer):
         fields = ["id", "name", "display_name", "description", "users", "type"]
 
 
+class GroupNameSerializer(EmptySerializer):
+    name = CharField()
+
+
 class GroupCreateSerializer(EmptySerializer):
     name = CharField()
     description = CharField(allow_blank=True)
     users = IdSerializer(many=True, required=False)
 
-    def validate(self, data: dict) -> dict:
-        data["name_to_display"] = data.pop("name")
+    def validate(self, attrs: dict) -> dict:
+        attrs["name_to_display"] = attrs.pop("name")
 
-        if (users := data.pop("users", None)) is not None:
-            data["user_set"] = users
+        if (users := attrs.pop("users", None)) is not None:
+            attrs["user_set"] = users
 
-        return data
+        return attrs
 
 
 class GroupUpdateSerializer(EmptySerializer):
@@ -52,11 +56,11 @@ class GroupUpdateSerializer(EmptySerializer):
     description = CharField(required=False, allow_blank=True)
     users = IdSerializer(many=True, required=False)
 
-    def validate(self, data: dict) -> dict:
-        if (display_name := data.pop("display_name", None)) is not None:
-            data["name_to_display"] = display_name
+    def validate(self, attrs: dict) -> dict:
+        if (display_name := attrs.pop("display_name", None)) is not None:
+            attrs["name_to_display"] = display_name
 
-        if (users := data.pop("users", None)) is not None:
-            data["user_set"] = users
+        if (users := attrs.pop("users", None)) is not None:
+            attrs["user_set"] = users
 
-        return data
+        return attrs
