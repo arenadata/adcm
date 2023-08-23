@@ -31,7 +31,7 @@ class BundleViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-
     filter_backends = (DjangoFilterBackend,)
     http_method_names = ["get", "post", "delete"]
 
-    def create(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def create(self, request, *args, **kwargs) -> Response:  # pylint:disable=unused-argument
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         file_path = upload_file(file=request.data["file"])
@@ -39,7 +39,7 @@ class BundleViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-
 
         return Response(status=HTTP_201_CREATED, data=BundleListSerializer(bundle).data)
 
-    def destroy(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def destroy(self, request, *args, **kwargs) -> Response:  # pylint:disable=unused-argument
         bundle = self.get_object()
         delete_bundle(bundle=bundle)
 

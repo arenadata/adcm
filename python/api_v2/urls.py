@@ -24,5 +24,4 @@ urlpatterns = [
     path("audit/", include(("api_v2.audit.urls", "audit"))),
     path("jobs/", include("api_v2.job.urls")),
     path("tasks/", include("api_v2.task.urls")),
-    path("rbac/", include(("api_v2.rbac.urls", "rbac"))),
 ]

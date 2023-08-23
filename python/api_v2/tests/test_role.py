@@ -108,3 +108,35 @@ class TestRole(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.assertIsNone(Role.objects.filter(pk=self.mm_role_host.pk).last())
+
+    def test_ordering_success(self):
+        limit = 10
+
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:rbac:role-list",
+            ),
+            data={"ordering": "-name", "limit": limit},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        response_names = [role_data["displayName"] for role_data in response.json()["results"]]
+        db_names = [role.display_name for role in Role.objects.order_by("-display_name")[:limit]]
+        self.assertListEqual(response_names, db_names)
+
+    def test_filtering_success(self):
+        filter_name = "cReAtE"
+
+        response: Response = self.client.get(
+            path=reverse(
+                viewname="v2:rbac:role-list",
+            ),
+            data={"name": filter_name},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        response_pks = [role_data["id"] for role_data in response.json()["results"]]
+        db_pks = [role.pk for role in Role.objects.filter(display_name__icontains=filter_name)]
+        self.assertListEqual(response_pks, db_pks)
