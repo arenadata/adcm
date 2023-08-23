@@ -9,3 +9,8 @@ export interface AdcmClusterHostsFilter {
   name?: string;
   hostprovider?: string;
 }
+
+export interface AddClusterHostsPayload {
+  clusterId?: number | null;
+  hostIds: number[];
+}

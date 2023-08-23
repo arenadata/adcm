@@ -39,6 +39,7 @@ import LabeledField from './LabeledField/LabeledField';
 import Tab from '@uikit/Tabs/Tab';
 import TabsBlock from '@uikit/Tabs/TabsBlock';
 import Spinner from '@uikit/Spinner/Spinner';
+import Tooltip from '@uikit/Tooltip/Tooltip';
 
 export {
   AnchorBar,
@@ -83,4 +84,5 @@ export {
   Tag,
   Tags,
   Text,
+  Tooltip,
 };

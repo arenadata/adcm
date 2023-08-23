@@ -1,12 +1,13 @@
 import React from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { IconButton, Table, TableCell, TableRow } from '@uikit';
+import { IconButton, Table, TableCell, TableRow, Tooltip } from '@uikit';
 import { columns, hostStatusesMap } from '@pages/cluster/ClusterHosts/ClusterHostsTable/ClusterHostsTable.constant';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
-import UnlinkHostToggleButton from '@pages/HostsPage/HostsTable/Buttons/UnlinkHostToggleButton/UnlinkHostToggleButton';
+import UnlinkHostToggleButton from '@pages/cluster/ClusterHosts/ClusterHostsTable/Buttons/UnlinkHostToggleButton/UnlinkHostToggleButton';
 import { setSortParams } from '@store/adcm/cluster/hosts/hostsTableSlice';
 import { SortParams } from '@models/table';
 import { AdcmClusterHost } from '@models/adcm/clusterHosts';
+import MaintenanceModeClusterHostsToggleButton from '@pages/cluster/ClusterHosts/ClusterHostsTable/Buttons/MaintenanceModeClusterHostsToggleButton/MaintenanceModeClusterHostsToggleButton';
 
 const ClusterHostsTable: React.FC = () => {
   const dispatch = useDispatch();
@@ -34,8 +35,10 @@ const ClusterHostsTable: React.FC = () => {
             <TableCell>{`${clusterHost.components.length} components`}</TableCell>
             <TableCell>{'-'}</TableCell>
             <TableCell hasIconOnly align="center">
-              <IconButton icon="g1-actions" size={32} onClick={dummyHandler()} title="Actions" />
-              <IconButton icon="g1-maintenance" size={32} onClick={dummyHandler()} title="Maintenance mode" />
+              <Tooltip label="Actions">
+                <IconButton icon="g1-actions" size={32} onClick={dummyHandler()} />
+              </Tooltip>
+              <MaintenanceModeClusterHostsToggleButton host={clusterHost} />
               <UnlinkHostToggleButton host={clusterHost} />
             </TableCell>
           </TableRow>

@@ -13,6 +13,7 @@ export * from './jobs';
 export * from './policy';
 export * from './clusterImports';
 export * from './clusterServiceComponent';
+export * from './clusterHosts';
 
 export interface Batch<T> {
   results: T[];

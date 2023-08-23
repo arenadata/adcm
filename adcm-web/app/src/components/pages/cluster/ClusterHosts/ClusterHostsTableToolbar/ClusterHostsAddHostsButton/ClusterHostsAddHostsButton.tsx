@@ -1,13 +1,13 @@
 import React from 'react';
-//import { useDispatch } from '@hooks';
+import { useDispatch } from '@hooks';
 import { Button } from '@uikit';
+import { openAddDialog } from '@store/adcm/cluster/hosts/hostsActionsSlice';
 
 const ClusterHostsAddHostsButton: React.FC = () => {
-  //const dispatch = useDispatch();
+  const dispatch = useDispatch();
 
   const handleClick = () => {
-    console.info('add hosts');
-    // dispatch(openAddDialog());
+    dispatch(openAddDialog());
   };
 
   return (
