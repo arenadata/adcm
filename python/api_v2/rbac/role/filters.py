@@ -12,13 +12,8 @@
 
 from django_filters import CharFilter, OrderingFilter
 from django_filters.rest_framework import FilterSet
-from rbac.models import Role
 
 
 class RoleFilter(FilterSet):
-    display_name = CharFilter(field_name="display_name", label="Role name", lookup_expr="icontains")
-    ordering = OrderingFilter(fields={"display_name": "display_name"}, field_labels={"display_name": "Display name"})
-
-    class Meta:
-        model = Role
-        fields = ("display_name",)
+    name = CharFilter(field_name="display_name", label="Role name", lookup_expr="icontains")
+    ordering = OrderingFilter(fields={"display_name": "name"}, field_labels={"display_name": "Display name"})

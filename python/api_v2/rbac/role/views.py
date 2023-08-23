@@ -30,7 +30,6 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
     permission_classes = (DjangoModelPermissionsAudit,)
     permission_required = ["rbac.view_role"]
     filterset_class = RoleFilter
-    ordering_fields = ("id", "name", "display_name", "built_in", "type")
 
     def get_queryset(self, *args, **kwargs):
         return get_objects_for_user(**self.get_get_objects_for_user_kwargs(Role.objects.all()))

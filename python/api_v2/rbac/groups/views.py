@@ -30,7 +30,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from adcm.permissions import VIEW_GROUP_PERMISSION
 
 
-class GroupViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disable=too-many-ancestors
+class GroupViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint:disable=too-many-ancestors
     queryset = Group.objects.order_by("display_name").prefetch_related("user_set")
     serializer_class = GroupSerializer
     filterset_class = GroupFilter
