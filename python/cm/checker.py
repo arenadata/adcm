@@ -77,7 +77,7 @@ class DataError(Exception):
 
 
 def check_type(data, data_type, path, rule=None, parent=None):
-    if not isinstance(data, data_type):
+    if not isinstance(data, data_type) or (isinstance(data, bool) and data_type is int):
         msg = f"Object should be a {str(data_type)}"
         if path:
             last = path[-1]

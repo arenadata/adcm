@@ -235,6 +235,7 @@ ERRORS = {
     ),
     "BAD_REQUEST": ("Bad request", HTTP_400_BAD_REQUEST, ERR),
     "HOSTPROVIDER_CREATE_ERROR": ("Error during process of host provider creating", HTTP_409_CONFLICT, ERR),
+    "CONFIG_OPTION_ERROR": ("error in config option type", HTTP_409_CONFLICT, ERR),
 }
 
 

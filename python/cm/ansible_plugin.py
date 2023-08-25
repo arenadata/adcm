@@ -14,6 +14,7 @@ import fcntl
 import json
 from collections import defaultdict
 from copy import deepcopy
+from typing import Any
 
 # isort: off
 from ansible.errors import AnsibleError
@@ -21,6 +22,8 @@ from ansible.utils.vars import merge_hash
 from ansible.plugins.action import ActionBase
 
 # isort: on
+
+from cm.adcm_config.config import get_option_value
 from cm.api import add_hc, get_hc, set_object_config_with_plugin
 from cm.api_context import CTX
 from cm.errors import AdcmEx
@@ -395,6 +398,21 @@ def change_hc(job_id, cluster_id, operations):
     file_descriptor.close()
 
 
+def cast_to_type(field_type: str, value: Any, limits: dict) -> Any:
+    try:
+        match field_type:
+            case "float":
+                return float(value)
+            case "integer":
+                return int(value)
+            case "option":
+                return get_option_value(value=value, limits=limits)
+            case _:
+                return value
+    except ValueError as error:
+        raise AnsibleError(f"Could not convert '{value}' to '{field_type}'") from error
+
+
 def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> dict | int | str:
     config_log = ConfigLog.objects.get(id=obj.config.current)
     new_config = deepcopy(config_log.config)
@@ -408,12 +426,26 @@ def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> dict | int | str:
             subkey = keys_list[1]
 
         if subkey:
-            new_config[key][subkey] = value
+            try:
+                prototype_conf = PrototypeConfig.objects.get(
+                    name=key, subname=subkey, prototype=obj.prototype, action=None
+                )
+            except PrototypeConfig.DoesNotExist as error:
+                raise AnsibleError(f"Config parameter '{key}/{subkey}' does not exist") from error
+            new_config[key][subkey] = cast_to_type(
+                field_type=prototype_conf.type, value=value, limits=prototype_conf.limits
+            )
         else:
-            new_config[key] = value
+            try:
+                prototype_conf = PrototypeConfig.objects.get(name=key, subname="", prototype=obj.prototype, action=None)
+            except PrototypeConfig.DoesNotExist as error:
+                raise AnsibleError(f"Config parameter '{key}' does not exist") from error
+            new_config[key] = cast_to_type(field_type=prototype_conf.type, value=value, limits=prototype_conf.limits)
 
         if key in attr:
-            prototype_conf = PrototypeConfig.objects.filter(name=key, prototype=obj.prototype, type="group")
+            prototype_conf = PrototypeConfig.objects.filter(
+                name=key, prototype=obj.prototype, type="group", action=None
+            )
 
             if not prototype_conf or "activatable" not in prototype_conf.first().limits:
                 raise AnsibleError("'active' key should be used only with activatable group")

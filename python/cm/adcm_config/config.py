@@ -12,6 +12,7 @@
 
 import copy
 import json
+import re
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any
@@ -641,6 +642,17 @@ def get_adcm_config(section=None):
     return current_configlog.attr.get(section, None), current_configlog.config.get(section, None)
 
 
+def get_option_value(value: str, limits: dict) -> str | int | float:
+    if value in limits["option"].values():
+        return value
+    elif re.match(r"^\d+$", value):
+        return int(value)
+    elif re.match(r"^\d+\.\d+$", value):
+        return float(value)
+
+    return raise_adcm_ex("CONFIG_OPTION_ERROR")
+
+
 def get_default(  # pylint: disable=too-many-branches
     conf: PrototypeConfig,
     prototype: Prototype | None = None,
@@ -670,20 +682,7 @@ def get_default(  # pylint: disable=too-many-branches
         else:
             value = bool(conf.default.lower() in {"true", "yes"})
     elif conf.type == "option":
-        if conf.default in conf.limits["option"]:
-            value = conf.limits["option"][conf.default]
-
-        for option in conf.limits["option"].values():
-            if not isinstance(option, type(value)):
-                if isinstance(option, bool):
-                    value = bool(value)
-                elif isinstance(option, int):
-                    value = int(value)
-                elif isinstance(option, float):
-                    value = float(value)
-                elif isinstance(option, str):
-                    value = str(value)
-
+        value = get_option_value(value=value, limits=conf.limits)
     elif conf.type == "file":
         if prototype:
             if conf.default:
