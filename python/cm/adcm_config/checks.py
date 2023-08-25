@@ -315,16 +315,9 @@ def check_config_type(  # pylint: disable=too-many-branches,too-many-statements,
 
     if spec["type"] == "option":
         option = spec["limits"]["option"]
-        check = False
 
-        for _value in option.values():
-            if _value == value:
-                check = True
-
-                break
-
-        if not check:
-            msg = f'not in option list: "{option}"'
+        if value not in option.values():
+            msg = f'not in option list: "{option.values()}"'
             raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl2.format(msg))
 
     if spec["type"] == "variant":
