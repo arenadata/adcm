@@ -234,7 +234,6 @@ ERRORS = {
         ERR,
     ),
     "BAD_REQUEST": ("Bad request", HTTP_400_BAD_REQUEST, ERR),
-    "INVALID_ORDERING": ("Invalid ordering parameters", HTTP_400_BAD_REQUEST, ERR),
     "HOSTPROVIDER_CREATE_ERROR": ("Error during process of host provider creating", HTTP_409_CONFLICT, ERR),
 }
 
