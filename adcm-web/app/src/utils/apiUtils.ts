@@ -13,7 +13,7 @@ const clearFilter = <F extends EmptyTableFilter>(filter: F) => {
   }, {} as Record<keyof F, unknown>);
 };
 
-const prepareSorting = ({ sortBy: fieldName, sortDirection }: SortParams) => {
+export const prepareSorting = ({ sortBy: fieldName, sortDirection }: SortParams) => {
   const sign = sortDirection === 'desc' ? '-' : '';
   return {
     [queryParamSortBy]: `${sign}${fieldName}`,

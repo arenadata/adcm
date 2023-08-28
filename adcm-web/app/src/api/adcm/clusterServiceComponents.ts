@@ -1,17 +1,12 @@
 import { httpClient } from '@api/httpClient';
 import { AdcmServiceComponent, Batch } from '@models/adcm';
-import { PaginationParams, SortParams } from '@models/table';
-import { prepareQueryParams } from '@utils/apiUtils';
+import { SortParams } from '@models/table';
+import { prepareSorting } from '@utils/apiUtils';
 import qs from 'qs';
 
 export class AdcmClusterServiceComponentsApi {
-  public static async getServiceComponents(
-    clusterId: number,
-    serviceId: number,
-    sortParams: SortParams,
-    paginationParams: PaginationParams,
-  ) {
-    const queryParams = prepareQueryParams(paginationParams, sortParams);
+  public static async getServiceComponents(clusterId: number, serviceId: number, sortParams: SortParams) {
+    const queryParams = prepareSorting(sortParams);
 
     const query = qs.stringify(queryParams);
     const response = await httpClient.get<Batch<AdcmServiceComponent>>(
