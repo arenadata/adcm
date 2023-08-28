@@ -1,0 +1,155 @@
+- type: provider
+  name: provider_with_actions
+  version: 3
+
+  actions: &actions
+    # simple
+
+    state_any: &simple_action
+      type: job
+      script: ./actions.yaml
+      script_type: ansible
+      states:
+        available: any
+
+    state_created:
+      <<: *simple_action
+      states:
+        available:
+          - created
+
+    state_installed:
+      <<: *simple_action
+      states:
+        available:
+          - installed
+
+    # masking
+
+    state_created_masking: &action
+      type: job
+      script: ./actions.yaml
+      script_type: ansible
+      masking:
+        state:
+          available:
+            - created
+
+    state_installed_masking:
+      <<: *action
+      masking:
+        state:
+          available:
+            - installed
+
+    state_created_unavailable:
+      <<: *action
+      masking:
+        state:
+          unavailable:
+            - created
+
+    # multi state masking
+
+    multi_flag_masking:
+      <<: *action
+      masking:
+        multi_state:
+          available:
+            - flag
+
+    multi_flag_unavailable:
+      <<: *action
+      masking:
+        multi_state:
+          unavailable:
+            - flag
+
+    # state + multi
+
+    state_created_available_multi_bag_available:
+      <<: *action
+      masking:
+        state:
+          available:
+            - created
+        multi_state:
+          available:
+            - bag
+
+    state_created_available_multi_bag_unavailable:
+      <<: *action
+      masking:
+        state:
+          available:
+            - created
+        multi_state:
+          unavailable:
+            - bag
+
+    state_created_unavailable_multi_bag_available:
+      <<: *action
+      masking:
+        state:
+          unavailable:
+            - created
+        multi_state:
+          available:
+            - bag
+
+    state_created_unavailable_multi_bag_unavailable:
+      <<: *action
+      masking:
+        state:
+          unavailable:
+            - created
+        multi_state:
+          unavailable:
+            - bag
+
+    # host_action: true
+
+    host_action_any:
+      <<: *simple_action
+      display_name: "from provider any"
+      host_action: true
+      states:
+        available: any
+
+    host_action_installed: &host_action_masking
+      <<: *action
+      display_name: "from provider installed"
+      host_action: true
+      masking:
+        state:
+          available:
+            - installed
+
+    host_action_multi_flag:
+      <<: *host_action_masking
+      display_name: "from provider multi flag"
+      masking:
+        state:
+          unavailable:
+            - created
+        multi_state:
+          available:
+            - flag
+
+- type: host
+  version: 2
+  name: host_with_actions
+
+  actions:
+    <<: *actions
+
+    host_action_any: &never_action
+      <<: *simple_action
+      host_action: false
+      states:
+        available:
+          - never
+
+    host_action_installed: *never_action
+
+    host_action_multi_flag: *never_action
