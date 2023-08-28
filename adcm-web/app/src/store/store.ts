@@ -49,6 +49,7 @@ import policiesTableSlice from './adcm/policies/policiesTableSlice';
 import policiesSlice from './adcm/policies/policiesSlice';
 import policiesActionsSlice from './adcm/policies/policiesActionsSlice';
 import serviceComponentsActionsSlice from './adcm/cluster/services/serviceComponents/serviceComponentsActionsSlice';
+import clustersActionsSlice from './adcm/clusters/clustersActionsSlice';
 
 const rootReducer = combineReducers({
   user: userSlice,
@@ -56,6 +57,7 @@ const rootReducer = combineReducers({
   adcm: combineReducers({
     cluster: clusterSlice,
     clusters: clustersSlice,
+    clustersActions: clustersActionsSlice,
     clustersDynamicActions: clustersDynamicActionsSlice,
     clustersTable: clustersTableSlice,
     clusterHosts: clusterHostsSlice,

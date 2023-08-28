@@ -1,18 +1,13 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmClustersApi, RequestError } from '@api';
+import { AdcmClustersApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { AdcmCluster } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
-import { showError, showInfo } from '@store/notificationsSlice';
-import { getErrorMessage } from '@utils/httpResponseUtils';
 
 type AdcmClustersState = {
   clusters: AdcmCluster[];
   totalCount: number;
-  itemsForActions: {
-    deletableId: number | null;
-  };
   isLoading: boolean;
 };
 
@@ -49,23 +44,9 @@ const refreshClusters = createAsyncThunk('adcm/clusters/refreshClusters', async 
   thunkAPI.dispatch(loadClustersFromBackend());
 });
 
-const deleteClusterWithUpdate = createAsyncThunk('adcm/clusters/removeCluster', async (clusterId: number, thunkAPI) => {
-  try {
-    await AdcmClustersApi.deleteCluster(clusterId);
-    await thunkAPI.dispatch(refreshClusters());
-    thunkAPI.dispatch(showInfo({ message: 'The cluster has been removed' }));
-  } catch (error) {
-    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-    return error;
-  }
-});
-
 const createInitialState = (): AdcmClustersState => ({
   clusters: [],
   totalCount: 0,
-  itemsForActions: {
-    deletableId: null,
-  },
   isLoading: false,
 });
 
@@ -79,12 +60,6 @@ const clustersSlice = createSlice({
     cleanupClusters() {
       return createInitialState();
     },
-    cleanupItemsForActions(state) {
-      state.itemsForActions = createInitialState().itemsForActions;
-    },
-    setDeletableId(state, action) {
-      state.itemsForActions.deletableId = action.payload;
-    },
   },
   extraReducers: (builder) => {
     builder.addCase(loadClustersFromBackend.fulfilled, (state, action) => {
@@ -94,15 +69,9 @@ const clustersSlice = createSlice({
     builder.addCase(loadClustersFromBackend.rejected, (state) => {
       state.clusters = [];
     });
-    builder.addCase(deleteClusterWithUpdate.pending, (state) => {
-      state.itemsForActions.deletableId = null;
-    });
-    builder.addCase(getClusters.pending, (state) => {
-      clustersSlice.caseReducers.cleanupItemsForActions(state);
-    });
   },
 });
 
-const { setIsLoading, cleanupClusters, setDeletableId } = clustersSlice.actions;
-export { getClusters, refreshClusters, deleteClusterWithUpdate, cleanupClusters, setDeletableId };
+const { setIsLoading, cleanupClusters } = clustersSlice.actions;
+export { getClusters, refreshClusters, cleanupClusters };
 export default clustersSlice.reducer;
