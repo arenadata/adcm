@@ -5,11 +5,11 @@ import Concern from '@commonComponents/Concern/Concern';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import { useDispatch, useStore } from '@hooks';
 import { columns, clusterStatusesMap } from './ClustersTable.constants';
-import { setDeletableId } from '@store/adcm/clusters/clustersSlice';
 import { open as openUpgradeClusterDialog } from '@store/adcm/clusters/dialogs/upgradeClusterDialogSlice';
 import { setSortParams } from '@store/adcm/clusters/clustersTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import ClusterDynamicActionsIcon from '@pages/ClustersPage/ClustersTable/ClusterDynamicActionsIcon/ClusterDynamicActionsIcon';
+import { openClusterDeleteDialog } from '@store/adcm/clusters/clustersActionsSlice';
 
 const ClustersTable = () => {
   const dispatch = useDispatch();
@@ -22,7 +22,7 @@ const ClustersTable = () => {
   };
 
   const getHandleDeleteClick = (clusterId: number) => () => {
-    dispatch(setDeletableId(clusterId));
+    dispatch(openClusterDeleteDialog(clusterId));
   };
 
   const handleSorting = (sortParams: SortParams) => {
