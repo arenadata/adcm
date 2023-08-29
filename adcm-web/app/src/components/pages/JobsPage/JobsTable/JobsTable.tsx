@@ -1,7 +1,7 @@
 import { Link, generatePath } from 'react-router-dom';
 import { Table, TableRow, TableCell, IconButton } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
-import { columns, jobStatusesMap, linkByObjectTypeMap } from './JobsTable.constants';
+import { columns, linkByObjectTypeMap } from './JobsTable.constants';
 import { setSortParams } from '@store/adcm/jobs/jobsTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { openRestartDialog } from '@store/adcm/jobs/jobsActionsSlice';
@@ -9,7 +9,7 @@ import { AdcmJobStatus } from '@models/adcm';
 import s from './JobsTable.module.scss';
 import { dateToString } from '@utils/date/dateConvertUtils';
 import { secondsToTime } from '@utils/time/timeConvertUtils';
-import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
+import JobsStatusCell from '../../../common/Table/Cells/JobsStatusCell/JobsStatusCell';
 
 const JobsTable = () => {
   const dispatch = useDispatch();
@@ -31,11 +31,11 @@ const JobsTable = () => {
         return (
           <TableRow key={job.id} className={s.jobRow}>
             <TableCell>{job.id}</TableCell>
-            <StatusableCell status={jobStatusesMap[job.status]} size="medium">
+            <JobsStatusCell status={job.status}>
               <Link to={generatePath('/jobs/:jobId', { jobId: job.id + '' })} className={s.jobRow__jobName}>
                 {job.name}
               </Link>
-            </StatusableCell>
+            </JobsStatusCell>
             <TableCell>{job.status}</TableCell>
             <TableCell className={s.jobRow__jobObjects}>
               {job.objects?.map((object, i) => {
