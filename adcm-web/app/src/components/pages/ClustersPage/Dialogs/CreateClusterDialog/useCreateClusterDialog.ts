@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useStore, useDispatch } from '@hooks';
 import { AdcmPrototypeVersions, AdcmPrototypeVersion } from '@models/adcm';
-import { close, createCluster } from '@store/adcm/clusters/dialogs/createClusterDialogSlice';
+import { cleanupClustersActions, createCluster } from '@store/adcm/clusters/clustersActionsSlice';
 
 interface CreateClusterFormData {
   product: AdcmPrototypeVersions | null;
@@ -25,10 +25,10 @@ export const useCreateClusterDialog = () => {
   const [formData, setFormData] = useState<CreateClusterFormData>(initialFormData);
 
   const {
-    isOpen,
+    isCreateClusterDialogOpen: isOpen,
     relatedData,
     relatedData: { isLoaded: isRelatedDataLoaded },
-  } = useStore((s) => s.adcm.createClusterDialog);
+  } = useStore((s) => s.adcm.clustersActions);
 
   useEffect(() => {
     setFormData(initialFormData);
@@ -39,7 +39,7 @@ export const useCreateClusterDialog = () => {
   }, [formData]);
 
   const handleClose = () => {
-    dispatch(close());
+    dispatch(cleanupClustersActions());
   };
 
   const handleCreate = () => {

@@ -7,8 +7,6 @@ import clusterHostsSlice from '@store/adcm/cluster/hosts/hostsSlice';
 import clusterHostsTableSlice from '@store/adcm/cluster/hosts/hostsTableSlice';
 import clusterHostsActionsSlice from '@store/adcm/cluster/hosts/hostsActionsSlice';
 import clustersTableSlice from '@store/adcm/clusters/clustersTableSlice';
-import createClusterDialogSlice from '@store/adcm/clusters/dialogs/createClusterDialogSlice';
-import upgradeClusterDialogSlice from '@store/adcm/clusters/dialogs/upgradeClusterDialogSlice';
 import bundlesSlice from '@store/adcm/bundles/bundlesSlice';
 import bundleSlice from '@store/adcm/bundle/bundleSlice';
 import bundlesTableSlice from '@store/adcm/bundles/bundlesTableSlice';
@@ -63,9 +61,7 @@ const rootReducer = combineReducers({
     clusterHosts: clusterHostsSlice,
     clusterHostsActions: clusterHostsActionsSlice,
     clusterHostsTable: clusterHostsTableSlice,
-    createClusterDialog: createClusterDialogSlice,
     clusterMapping: clusterMappingSlice,
-    upgradeClusterDialog: upgradeClusterDialogSlice,
     bundle: bundleSlice,
     bundles: bundlesSlice,
     bundlesTable: bundlesTableSlice,

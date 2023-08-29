@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useStore, useDispatch } from '@hooks';
 import { AdcmClusterUpgrade } from '@models/adcm';
-import { close, loadClusterUpgradeActionDetails } from '@store/adcm/clusters/dialogs/upgradeClusterDialogSlice';
+import { cleanupClustersActions, loadClusterUpgradeActionDetails } from '@store/adcm/clusters/clustersActionsSlice';
 
 interface UpgradeClusterFormData {
   upgrade: AdcmClusterUpgrade | null;
@@ -18,9 +18,9 @@ export const useUpgradeClusterDialog = () => {
 
   const [formData, setFormData] = useState<UpgradeClusterFormData>(initialFormData);
 
-  const isOpen = useStore(({ adcm }) => adcm.upgradeClusterDialog.isOpen);
-  const cluster = useStore(({ adcm }) => adcm.upgradeClusterDialog.cluster);
-  const relatedData = useStore(({ adcm }) => adcm.upgradeClusterDialog.relatedData);
+  const isOpen = useStore(({ adcm }) => adcm.clustersActions.isUpgradeClusterDialogOpen);
+  const cluster = useStore(({ adcm }) => adcm.clustersActions.cluster);
+  const relatedData = useStore(({ adcm }) => adcm.clustersActions.relatedData);
 
   useEffect(() => {
     setFormData(initialFormData);
@@ -31,7 +31,7 @@ export const useUpgradeClusterDialog = () => {
   }, [formData]);
 
   const handleClose = () => {
-    dispatch(close());
+    dispatch(cleanupClustersActions());
   };
 
   const handleUpgrade = () => {
