@@ -568,7 +568,7 @@ class TestGroupConfigOperationName(BaseTestCase):
     def create_cluster_from_bundle(self):
         test_bundle_filename = "group-config.tar"
         test_bundle_path = Path(
-            settings.BASE_DIR,
+            self.base_dir,
             "python/audit/tests/files",
             test_bundle_filename,
         )

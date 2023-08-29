@@ -64,7 +64,7 @@ class TestServiceAPI(BaseTestCase):
 
     def get_host(self, bundle_path: str):
         provider_bundle = self.upload_and_load_bundle(
-            path=Path(settings.BASE_DIR, bundle_path),
+            path=Path(self.base_dir, bundle_path),
         )
         provider_prototype = Prototype.objects.get(bundle=provider_bundle, type="provider")
         provider_response: Response = self.client.post(
@@ -81,7 +81,7 @@ class TestServiceAPI(BaseTestCase):
         return Host.objects.get(pk=host_response.data["id"])
 
     def get_cluster(self, bundle_path: str):
-        cluster_bundle = self.upload_and_load_bundle(path=Path(settings.BASE_DIR, bundle_path))
+        cluster_bundle = self.upload_and_load_bundle(path=Path(self.base_dir, bundle_path))
         cluster_prototype = Prototype.objects.get(bundle_id=cluster_bundle.pk, type="cluster")
         cluster_response: Response = self.client.post(
             path=reverse(viewname="v1:cluster"),
@@ -317,7 +317,7 @@ class TestServiceAPI(BaseTestCase):
         )
 
     def test_upload_with_cyclic_requires(self):
-        self.upload_and_load_bundle(path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_cluster_requires.tar"))
+        self.upload_and_load_bundle(path=Path(self.base_dir, "python/api/tests/files/bundle_cluster_requires.tar"))
 
     def test_delete_service_with_requires_fail(self):
         host = self.get_host(bundle_path="python/api/tests/files/bundle_test_provider_concern.tar")

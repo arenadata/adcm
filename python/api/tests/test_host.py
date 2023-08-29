@@ -211,14 +211,14 @@ class TestHostAPI(BaseTestCase):
     def test_cluster_clear_issue_success(self):
         provider_bundle = self.upload_and_load_bundle(
             path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/api/tests/files/bundle_test_provider_concern.tar",
             ),
         )
 
         cluster_bundle = self.upload_and_load_bundle(
             path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/api/tests/files/bundle_test_cluster_with_mm.tar",
             ),
         )
@@ -301,7 +301,7 @@ class TestHostAPI(BaseTestCase):
     def test_change_maintenance_mode_on_with_action_via_bundle_success(self):
         bundle = self.upload_and_load_bundle(
             path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/api/tests/files/cluster_using_plugin.tar",
             ),
         )

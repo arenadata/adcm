@@ -83,7 +83,7 @@ class TestComponentAPI(BaseTestCase):
     def test_change_maintenance_mode_on_no_service_issue_success(self):
         bundle = self.upload_and_load_bundle(
             path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/api/tests/files/bundle_issue_component.tar",
             ),
         )

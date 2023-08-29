@@ -52,7 +52,7 @@ class TestBundleAudit(BaseTestCase):
 
         self.test_bundle_filename = "test_bundle.tar"
         self.test_bundle_path = Path(
-            settings.BASE_DIR,
+            self.base_dir,
             "python/audit/tests/files",
             self.test_bundle_filename,
         )

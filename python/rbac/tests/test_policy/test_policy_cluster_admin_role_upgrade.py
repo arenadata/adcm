@@ -13,7 +13,6 @@
 from unittest.mock import patch
 
 from cm.models import ServiceComponent, Upgrade
-from django.conf import settings
 from django.urls import reverse
 from rbac.tests.test_policy.base import PolicyBaseTestCase
 from rest_framework.response import Response
@@ -34,7 +33,7 @@ class PolicyWithClusterAdminRoleUpgradeTestCase(PolicyBaseTestCase):
     def upgrade_cluster(self):
         self.upload_and_load_bundle(
             path=(
-                settings.BASE_DIR
+                self.base_dir
                 / "python"
                 / "rbac"
                 / "tests"

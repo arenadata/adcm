@@ -45,6 +45,8 @@ from rbac.services.user import create_user
 from rbac.upgrade.role import init_roles
 from rest_framework.test import APITestCase
 
+from adcm.tests.base import ParallelReadyTestCase
+
 
 class HostComponentMapDictType(TypedDict):
     host_id: int
@@ -52,10 +54,13 @@ class HostComponentMapDictType(TypedDict):
     component_id: int
 
 
-class BaseAPITestCase(APITestCase):
+class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+
+        cls.test_bundles_dir = Path(__file__).parent / "bundles"
+
         init_roles()
         init()
 
@@ -67,9 +72,9 @@ class BaseAPITestCase(APITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 
-        cluster_bundle_1_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_one"
-        cluster_bundle_2_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_two"
-        provider_bundle_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "provider"
+        cluster_bundle_1_path = self.test_bundles_dir / "cluster_one"
+        cluster_bundle_2_path = self.test_bundles_dir / "cluster_two"
+        provider_bundle_path = self.test_bundles_dir / "provider"
 
         self.bundle_1 = self.add_bundle(source_dir=cluster_bundle_1_path)
         self.bundle_2 = self.add_bundle(source_dir=cluster_bundle_2_path)

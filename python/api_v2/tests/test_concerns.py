@@ -12,7 +12,6 @@
 
 from api_v2.tests.base import BaseAPITestCase
 from cm.models import KnownNames, MessageTemplate, ObjectType, Prototype
-from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
@@ -22,24 +21,22 @@ class TestConcernsResponse(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        bundle_dir = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_with_required_service"
+        bundle_dir = self.test_bundles_dir / "cluster_with_required_service"
         self.required_service_bundle = self.add_bundle(source_dir=bundle_dir)
 
-        bundle_dir = (
-            settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_with_required_config_field"
-        )
+        bundle_dir = self.test_bundles_dir / "cluster_with_required_config_field"
         self.required_config_bundle = self.add_bundle(source_dir=bundle_dir)
 
-        bundle_dir = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_with_required_import"
+        bundle_dir = self.test_bundles_dir / "cluster_with_required_import"
         self.required_import_bundle = self.add_bundle(source_dir=bundle_dir)
 
-        bundle_dir = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_with_required_hc"
+        bundle_dir = self.test_bundles_dir / "cluster_with_required_hc"
         self.required_hc_bundle = self.add_bundle(source_dir=bundle_dir)
 
-        bundle_dir = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_with_allowed_flags"
+        bundle_dir = self.test_bundles_dir / "cluster_with_allowed_flags"
         self.config_flag_bundle = self.add_bundle(source_dir=bundle_dir)
 
-        bundle_dir = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_with_service_requirements"
+        bundle_dir = self.test_bundles_dir / "cluster_with_service_requirements"
         self.service_requirements_bundle = self.add_bundle(source_dir=bundle_dir)
 
     def test_required_service_concern(self):

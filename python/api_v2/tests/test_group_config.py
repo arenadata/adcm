@@ -40,7 +40,7 @@ class BaseClusterGroupConfigTestCase(BaseAPITestCase):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.new_host)
 
 
-class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):
+class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):  # pylint: disable=too-many-ancestors
     def setUp(self) -> None:
         super().setUp()
 
@@ -71,7 +71,7 @@ class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):
         )
 
 
-class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):
+class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):  # pylint: disable=too-many-ancestors
     def test_list_success(self):
         response: Response = self.client.get(
             path=reverse(viewname="v2:cluster-config-group-list", kwargs={"cluster_pk": self.cluster_1.pk})

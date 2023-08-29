@@ -1694,6 +1694,17 @@ doc = ["sphinx"]
 test = ["pytest", "pytest-cov"]
 
 [[package]]
+name = "tblib"
+version = "2.0.0"
+description = "Traceback serialization library."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "tblib-2.0.0-py3-none-any.whl", hash = "sha256:9100bfa016b047d5b980d66e7efed952fbd20bd85b56110aaf473cb97d18709a"},
+    {file = "tblib-2.0.0.tar.gz", hash = "sha256:a6df30f272c08bf8be66e0775fad862005d950a6b8449b94f7c788731d70ecd7"},
+]
+
+[[package]]
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
@@ -1862,4 +1873,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "85a7f810246df8a4a73351b49971f54be800c29aabe6b1e158e677be1e2df7db"
+content-hash = "99ffaffe9d49bee2ec42d4a2a5f2ed5631769de3eafded05f44ee6e4ef137147"

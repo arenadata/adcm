@@ -339,7 +339,7 @@ class TestServiceAudit(BaseTestCase):
         role = Role.objects.get(name="View service configurations")
         bundle_filename = "import.tar"
         with open(
-            Path(settings.BASE_DIR, "python/audit/tests/files", bundle_filename),
+            Path(self.base_dir, "python/audit/tests/files", bundle_filename),
             encoding=settings.ENCODING_UTF_8,
         ) as f:
             self.client.post(

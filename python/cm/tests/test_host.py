@@ -14,7 +14,6 @@ import string
 from pathlib import Path
 
 from cm.models import Bundle, Cluster, Host, HostProvider, MaintenanceMode, Prototype
-from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -49,7 +48,7 @@ class TestHostAPI(BaseTestCase):
             "Contain-Hyphen.Dot",
         }
 
-        self.upload_and_load_bundle(path=Path(settings.BASE_DIR, "python", "cm", "tests", "files", "ssh.1.0.tar"))
+        self.upload_and_load_bundle(path=Path(self.base_dir, "python", "cm", "tests", "files", "ssh.1.0.tar"))
         self.provider = HostProvider.objects.create(
             name="test_provider",
             prototype=Prototype.objects.filter(type="provider").first(),

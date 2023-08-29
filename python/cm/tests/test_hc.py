@@ -123,7 +123,7 @@ class TestHC(BaseTestCase):
     def test_empty_hostcomponent(self):
         test_bundle_filename = "min-3199.tar"
         test_bundle_path = Path(
-            settings.BASE_DIR,
+            self.base_dir,
             "python/cm/tests/files",
             test_bundle_filename,
         )
