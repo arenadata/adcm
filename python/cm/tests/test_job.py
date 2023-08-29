@@ -72,7 +72,7 @@ class TestJob(BaseTestCase):
     def setUp(self):
         super().setUp()
 
-        self.files_dir = settings.BASE_DIR / "python" / "cm" / "tests" / "files"
+        self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
         self.multijob_bundle = "multijob_cluster.tar"
         self.multijob_cluster_name = "multijob_cluster"
         self.test_user_username = "admin"
@@ -85,7 +85,7 @@ class TestJob(BaseTestCase):
         init()
 
     def create_multijob_cluster(self) -> Response:
-        bundle_id = self.upload_and_load_bundle(path=Path(self.files_dir, self.multijob_bundle)).pk
+        bundle_id = self.upload_and_load_bundle(path=Path(self.test_files_dir, self.multijob_bundle)).pk
 
         return self.client.post(
             path=reverse(viewname="v1:cluster"),

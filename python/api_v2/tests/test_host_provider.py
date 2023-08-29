@@ -12,7 +12,6 @@
 
 from api_v2.tests.base import BaseAPITestCase
 from cm.models import Action, HostProvider
-from django.conf import settings
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.status import (
@@ -28,7 +27,7 @@ class TestHostProvider(BaseAPITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 
-        host_provider_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "provider"
+        host_provider_path = self.test_bundles_dir / "provider"
 
         self.host_provider_bundle = self.add_bundle(source_dir=host_provider_path)
         self.host_provider = self.add_provider(self.host_provider_bundle, "test host provider")

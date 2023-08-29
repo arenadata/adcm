@@ -13,7 +13,6 @@
 from pathlib import Path
 
 from cm.models import HostComponent, ObjectType, Prototype, ServiceComponent
-from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
@@ -24,10 +23,10 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 class TestHostComponentOrdering(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.files_dir = settings.BASE_DIR / "python" / "api" / "tests" / "files"
+        self.test_files_dir = self.base_dir / "python" / "api" / "tests" / "files"
 
         self.cluster_pk = self.create_adcm_entity(
-            bundle_filepath=self.files_dir / "test_cluster_many_components.tar", entity_type=ObjectType.CLUSTER
+            bundle_filepath=self.test_files_dir / "test_cluster_many_components.tar", entity_type=ObjectType.CLUSTER
         )
 
         self.create_hc()
@@ -73,7 +72,7 @@ class TestHostComponentOrdering(BaseTestCase):
 
     def create_hosts(self, count: int) -> list[int]:
         provider_pk = self.create_adcm_entity(
-            bundle_filepath=self.files_dir / "provider.tar", entity_type=ObjectType.PROVIDER
+            bundle_filepath=self.test_files_dir / "provider.tar", entity_type=ObjectType.PROVIDER
         )
 
         host_pks = []

@@ -28,11 +28,11 @@ class TestBundle(BaseAPITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 
-        cluster_bundle_1_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_one"
+        cluster_bundle_1_path = self.test_bundles_dir / "cluster_one"
 
         self.bundle_1 = self.add_bundle(source_dir=cluster_bundle_1_path)
 
-        cluster_new_bundle_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_two"
+        cluster_new_bundle_path = self.test_bundles_dir / "cluster_two"
         self.new_bundle_file = self.prepare_bundle_file(source_dir=cluster_new_bundle_path)
 
     def test_list_success(self):

@@ -15,6 +15,7 @@ import string
 from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
+from tempfile import mkdtemp
 
 from cm.models import (
     ADCM,
@@ -30,7 +31,7 @@ from cm.models import (
     ServiceComponent,
 )
 from django.conf import settings
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from init_db import init
 from rbac.models import Group, Role, RoleTypes, User
@@ -41,7 +42,38 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 APPLICATION_JSON = "application/json"
 
 
-class BaseTestCase(TestCase):
+class ParallelReadyTestCase:
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        directories = cls._prepare_temporal_directories_for_adcm()
+        override_settings(**directories)(cls)
+
+    @staticmethod
+    def _prepare_temporal_directories_for_adcm() -> dict:
+        base = Path(mkdtemp())
+        stack = Path(mkdtemp())
+        data = base / "data"
+
+        temporary_directories = {
+            "BASE_DIR": base,
+            "STACK_DIR": stack,
+            "BUNDLE_DIR": stack / "data" / "bundle",
+            "DOWNLOAD_DIR": Path(stack, "data", "download"),
+            "DATA_DIR": data,
+            "RUN_DIR": data / "run",
+            "FILE_DIR": stack / "data" / "file",
+            "LOG_DIR": data / "log",
+            "VAR_DIR": data / "var",
+        }
+
+        for directory in temporary_directories.values():
+            directory.mkdir(exist_ok=True, parents=True)
+
+        return temporary_directories
+
+
+class BaseTestCase(TestCase, ParallelReadyTestCase):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
     def setUp(self) -> None:
@@ -71,6 +103,8 @@ class BaseTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+
+        cls.base_dir = Path(__file__).parent.parent.parent.parent
 
         init_roles()
         init()

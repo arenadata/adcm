@@ -15,7 +15,6 @@ from pathlib import Path
 
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.models import ADCM, ConfigLog
-from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST
@@ -28,7 +27,7 @@ class TestConfigPasswordAPI(BaseTestCase):
         super().setUp()
 
         _, self.cluster, self.config_log = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_password.tar"),
+            bundle_path=Path(self.base_dir, "python/api/tests/files/bundle_test_password.tar"),
         )
 
     def test_post_same_password_success(self):
@@ -83,7 +82,7 @@ class TestConfigSecrettextAPI(BaseTestCase):
         super().setUp()
 
         _, self.cluster, self.config_log = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_secrettext.tar"),
+            bundle_path=Path(self.base_dir, "python/api/tests/files/bundle_test_secrettext.tar"),
         )
 
     def test_post_same_secrettext_success(self):
@@ -138,7 +137,7 @@ class TestConfigSecretfileAPI(BaseTestCase):
         super().setUp()
 
         _, self.cluster, self.config_log = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_secretfile.tar"),
+            bundle_path=Path(self.base_dir, "python/api/tests/files/bundle_test_secretfile.tar"),
         )
 
     def test_post_same_secretfile_success(self):
@@ -193,7 +192,7 @@ class TestConfigSecretmapAPI(BaseTestCase):
         super().setUp()
 
         _, self.cluster, self.config_log = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_test_secretmap.tar"),
+            bundle_path=Path(self.base_dir, "python/api/tests/files/bundle_test_secretmap.tar"),
         )
 
     def test_post_same_secretmap_success(self):
@@ -378,7 +377,7 @@ class ADCMSettingsTestCase(BaseTestCase):
         self.login()
         self.upload_bundle_create_cluster_config_log(
             bundle_path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/api/tests/files/bundle_test_password.tar",
             ),
         )

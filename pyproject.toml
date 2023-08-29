@@ -55,6 +55,12 @@ flake8 = "*"
 isort = "*"
 pylint = "*"
 
+[tool.poetry.group.unittests]
+optional = true
+
+[tool.poetry.group.unittests.dependencies]
+tblib = "^2.0.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

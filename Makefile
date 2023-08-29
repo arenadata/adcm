@@ -25,14 +25,14 @@ build_base:
 build: describe buildss buildjs build_base
 
 unittests_sqlite: describe
-	poetry install --no-root
-	poetry run python/manage.py test python -v 2
+	poetry install --no-root --with unittests
+	poetry run python/manage.py test python -v 2 --parallel
 
 unittests_postgresql: describe
 	docker run -d --rm -e POSTGRES_PASSWORD="postgres" --name postgres -p 5500:5432 postgres:14
 	export DB_HOST="localhost" DB_PORT="5500" DB_NAME="postgres" DB_PASS="postgres" DB_USER="postgres"
-	poetry install --no-root
-	poetry run python/manage.py test python -v 2
+	poetry install --no-root --with unittests
+	poetry run python/manage.py test python -v 2 --parallel
 	docker stop postgres
 
 ng_tests:

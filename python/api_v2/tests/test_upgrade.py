@@ -9,11 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from pathlib import Path
 from unittest.mock import patch
 
 from api_v2.tests.base import BaseAPITestCase
 from cm.models import ADCM, ConfigLog, HostComponent, ServiceComponent, TaskLog, Upgrade
-from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils import timezone
@@ -28,12 +29,8 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
     def setUp(self) -> None:
         super().setUp()
 
-        cluster_bundle_1_upgrade_path = (
-            settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_one_upgrade"
-        )
-        provider_bundle_upgrade_path = (
-            settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "provider_upgrade"
-        )
+        cluster_bundle_1_upgrade_path = self.test_bundles_dir / "cluster_one_upgrade"
+        provider_bundle_upgrade_path = self.test_bundles_dir / "provider_upgrade"
         cluster_bundle_upgrade = self.add_bundle(source_dir=cluster_bundle_1_upgrade_path)
         provider_bundle_upgrade = self.add_bundle(source_dir=provider_bundle_upgrade_path)
 
@@ -402,15 +399,7 @@ class TestAdcmUpgrade(APITestCase):
     def setUpClass(cls):
         super().setUpClass()
         init_roles()
-        init(
-            adcm_conf_file=settings.BASE_DIR
-            / "python"
-            / "api_v2"
-            / "tests"
-            / "bundles"
-            / "adcm_configs"
-            / "config.yaml"
-        )
+        init(adcm_conf_file=Path(__file__).parent / "bundles" / "adcm_configs" / "config.yaml")
 
     def setUp(self) -> None:
         super().setUp()

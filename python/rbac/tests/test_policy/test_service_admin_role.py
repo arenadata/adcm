@@ -17,7 +17,6 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
-from django.conf import settings
 from django.urls import reverse
 from rbac.models import Group
 from rest_framework.response import Response
@@ -37,7 +36,7 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase):
         )
 
         self.cluster_bundle = self.upload_and_load_bundle(
-            path=settings.BASE_DIR / "python" / "rbac" / "tests" / "files" / "service_admin_cluster.tar"
+            path=self.base_dir / "python" / "rbac" / "tests" / "files" / "service_admin_cluster.tar"
         )
         self.cluster_pk = self.get_cluster_pk()
         self.host_pk = self.get_host_pk()
@@ -51,7 +50,7 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase):
 
     def get_provider_pk(self):
         provider_bundle = self.upload_and_load_bundle(
-            path=settings.BASE_DIR / "python" / "rbac" / "tests" / "files" / "service_admin_provider.tar"
+            path=self.base_dir / "python" / "rbac" / "tests" / "files" / "service_admin_provider.tar"
         )
         response: Response = self.client.post(
             path=reverse(viewname="v1:provider"),

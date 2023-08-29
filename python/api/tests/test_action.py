@@ -78,7 +78,7 @@ class TestActionAPI(BaseTestCase):
 
     def test_jinja_conf_success(self):
         path = Path(
-            settings.BASE_DIR,
+            self.base_dir,
             "python/api/tests/files/bundle_test_action_with_jinja_conf.tar",
         )
         with open(file=path, encoding=settings.ENCODING_UTF_8) as f:
@@ -99,7 +99,7 @@ class TestActionAPI(BaseTestCase):
 
     def test_jinja_wrong_conf_fail(self):
         path = Path(
-            settings.BASE_DIR,
+            self.base_dir,
             "python/api/tests/files/bundle_test_action_with_jinja_wrong_conf.tar",
         )
         with open(file=path, encoding=settings.ENCODING_UTF_8) as f:
@@ -119,7 +119,7 @@ class TestActionAPI(BaseTestCase):
 
     def test_jinja_wrong_conf_path_fail(self):
         path = Path(
-            settings.BASE_DIR,
+            self.base_dir,
             "python/api/tests/files/bundle_test_action_with_jinja_wrong_conf_path.tar",
         )
         with open(file=path, encoding=settings.ENCODING_UTF_8) as f:
@@ -140,7 +140,7 @@ class TestActionAPI(BaseTestCase):
     def test_jinja_conf_serialize_success(self):
         bundle = self.upload_and_load_bundle(
             path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/api/tests/files/test_actions_data.tar",
             ),
         )

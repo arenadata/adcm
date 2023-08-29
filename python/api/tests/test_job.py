@@ -15,7 +15,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 from cm.models import ADCM, Action, ActionType, Cluster, JobLog, Prototype, TaskLog
-from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils import timezone
@@ -161,7 +160,7 @@ class TestJobAPI(BaseTestCase):
     def test_log_files(self):
         bundle = self.upload_and_load_bundle(
             path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/api/tests/files/no-log-files.tar",
             ),
         )
@@ -188,7 +187,7 @@ class TestJobAPI(BaseTestCase):
     def test_task_permissions(self):
         bundle = self.upload_and_load_bundle(
             path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/api/tests/files/no-log-files.tar",
             ),
         )

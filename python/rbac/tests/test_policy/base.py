@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from cm.models import Bundle, ClusterObject, Host, ObjectType, Prototype
-from django.conf import settings
 from rbac.models import Group
 
 from adcm.tests.base import BaseTestCase
@@ -28,13 +27,11 @@ class PolicyBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-att
         )
 
         bundle = self.upload_and_load_bundle(
-            path=(
-                settings.BASE_DIR / "python" / "rbac" / "tests" / "files" / "test_cluster_for_cluster_admin_role.tar"
-            ),
+            path=(self.base_dir / "python" / "rbac" / "tests" / "files" / "test_cluster_for_cluster_admin_role.tar"),
         )
         self.cluster = self.create_cluster(bundle_pk=bundle.pk, name="Test Cluster")
         self.provider = self.create_provider(
-            bundle_path=settings.BASE_DIR / "python" / "rbac" / "tests" / "files" / "provider.tar",
+            bundle_path=self.base_dir / "python" / "rbac" / "tests" / "files" / "provider.tar",
             name="Test Provider",
         )
         host_pks = self.create_hosts()

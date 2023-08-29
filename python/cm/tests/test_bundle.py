@@ -43,11 +43,11 @@ class TestBundle(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.files_dir = settings.BASE_DIR / "python" / "cm" / "tests" / "files"
+        self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
 
     def test_bundle_upload_duplicate_upgrade_fail(self):
         with self.assertRaises(TransactionManagementError) as raises_context:
-            self.upload_and_load_bundle(path=Path(self.files_dir, "test_upgrade_duplicated.tar"))
+            self.upload_and_load_bundle(path=Path(self.test_files_dir, "test_upgrade_duplicated.tar"))
 
         # we expect here IntegrityError, but unittest do not raise it directly,
         # so check context of TransactionManagementError
@@ -55,27 +55,27 @@ class TestBundle(BaseTestCase):
         self.assertIsInstance(raises_context.exception.__context__, IntegrityError)
 
     def test_bundle_upload_upgrade_different_upgrade_name_success(self):
-        self.upload_and_load_bundle(path=Path(self.files_dir, "test_upgrade_different_name.tar"))
+        self.upload_and_load_bundle(path=Path(self.test_files_dir, "test_upgrade_different_name.tar"))
 
     def test_bundle_upload_upgrade_different_from_edition_success(self):
-        self.upload_and_load_bundle(path=Path(self.files_dir, "test_upgrade_different_from_edition.tar"))
+        self.upload_and_load_bundle(path=Path(self.test_files_dir, "test_upgrade_different_from_edition.tar"))
 
     def test_bundle_upload_upgrade_different_min_version_success(self):
-        self.upload_and_load_bundle(path=Path(self.files_dir, "test_upgrade_different_min_version.tar"))
+        self.upload_and_load_bundle(path=Path(self.test_files_dir, "test_upgrade_different_min_version.tar"))
 
     def test_bundle_upload_upgrade_different_max_strict_success(self):
-        self.upload_and_load_bundle(path=Path(self.files_dir, "test_upgrade_different_max_strict.tar"))
+        self.upload_and_load_bundle(path=Path(self.test_files_dir, "test_upgrade_different_max_strict.tar"))
 
     def test_bundle_upload_upgrade_different_state_available_success(self):
-        self.upload_and_load_bundle(path=Path(self.files_dir, "test_upgrade_different_state_available.tar"))
+        self.upload_and_load_bundle(path=Path(self.test_files_dir, "test_upgrade_different_state_available.tar"))
 
     def test_bundle_upload_upgrade_different_state_on_success_success(self):
-        self.upload_and_load_bundle(path=Path(self.files_dir, "test_upgrade_different_state_on_success.tar"))
+        self.upload_and_load_bundle(path=Path(self.test_files_dir, "test_upgrade_different_state_on_success.tar"))
 
     def test_secretfile(self):
         bundle, cluster, config_log = self.upload_bundle_create_cluster_config_log(
             bundle_path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/cm/tests/files/config_cluster_secretfile_secretmap.tar",
             ),
         )
@@ -110,7 +110,7 @@ class TestBundle(BaseTestCase):
     def test_secretfile_update_config(self):
         _, cluster, _ = self.upload_bundle_create_cluster_config_log(
             bundle_path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/cm/tests/files/test_secretfile_update_config.tar",
             ),
         )
@@ -162,7 +162,7 @@ class TestBundle(BaseTestCase):
     def test_secretmap(self):
         _, cluster, config_log = self.upload_bundle_create_cluster_config_log(
             bundle_path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/cm/tests/files/config_cluster_secretfile_secretmap.tar",
             ),
         )
@@ -188,7 +188,7 @@ class TestBundle(BaseTestCase):
     def test_secretmap_no_default(self):
         self.upload_bundle_create_cluster_config_log(
             bundle_path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/cm/tests/files/test_secret_config_v10_community.tar",
             ),
         )
@@ -196,7 +196,7 @@ class TestBundle(BaseTestCase):
     def test_secretmap_no_default1(self):
         self.upload_bundle_create_cluster_config_log(
             bundle_path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/cm/tests/files/test_secret_config_v12_community.tar",
             ),
         )
@@ -223,7 +223,7 @@ class TestBundle(BaseTestCase):
             self.assertEqual(e.code, "PROVIDER_CONFLICT")
 
     def test_duplicate_component_name_fail(self):
-        path = Path(self.files_dir, "test_duplicate_component_name.tar")
+        path = Path(self.test_files_dir, "test_duplicate_component_name.tar")
         self.upload_bundle(path=path)
 
         response: Response = self.client.post(
@@ -239,7 +239,7 @@ class TestBundle(BaseTestCase):
         )
 
     def test_upload_hc_acl_cluster_action_without_service_fail(self):
-        path = Path(self.files_dir, "test_cluster_hc_acl_without_service.tar")
+        path = Path(self.test_files_dir, "test_cluster_hc_acl_without_service.tar")
         self.upload_bundle(path=path)
 
         response = self.client.post(path=reverse(viewname="v1:load-bundle"), data={"bundle_file": path.name})
@@ -253,7 +253,7 @@ class TestBundle(BaseTestCase):
         )
 
     def test_upload_hc_acl_service_action_without_service_success(self):
-        path = Path(self.files_dir, "test_service_hc_acl_without_service.tar")
+        path = Path(self.test_files_dir, "test_service_hc_acl_without_service.tar")
         self.upload_bundle(path=path)
 
         response = self.client.post(path=reverse(viewname="v1:load-bundle"), data={"bundle_file": path.name})
@@ -261,7 +261,7 @@ class TestBundle(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_upload_hc_acl_component_action_without_service_fail(self):
-        path = Path(self.files_dir, "test_component_hc_acl_without_service.tar")
+        path = Path(self.test_files_dir, "test_component_hc_acl_without_service.tar")
         self.upload_bundle(path=path)
 
         response = self.client.post(path=reverse(viewname="v1:load-bundle"), data={"bundle_file": path.name})

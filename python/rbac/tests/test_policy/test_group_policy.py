@@ -13,7 +13,6 @@
 from pathlib import Path
 
 from cm.models import Action, ConfigLog, ObjectType, ServiceComponent
-from django.conf import settings
 from django.urls import reverse
 from rbac.models import Group
 from rest_framework.response import Response
@@ -54,7 +53,7 @@ class GroupPolicyTestCase(BaseTestCase):
         )
 
         provider = self.create_provider(
-            bundle_path=settings.BASE_DIR / "python" / "rbac" / "tests" / "files" / "provider.tar",
+            bundle_path=self.base_dir / "python" / "rbac" / "tests" / "files" / "provider.tar",
             name="Test Provider",
         )
         host_1 = self.create_host_in_cluster(provider_pk=provider.pk, name="host-1", cluster_pk=cluster.pk)
@@ -78,7 +77,7 @@ class GroupPolicyTestCase(BaseTestCase):
     def get_cluster(self):
         cluster_bundle = self.upload_and_load_bundle(
             path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/rbac/tests/files/bundle_10.tar",
             ),
         )
@@ -141,7 +140,7 @@ class DeleteServicePolicyTestCase(BaseTestCase):
     def get_cluster(self):
         cluster_bundle = self.upload_and_load_bundle(
             path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/rbac/tests/files/bundle_10.tar",
             ),
         )
@@ -202,7 +201,7 @@ class ActionsPolicyTestCase(BaseTestCase):
         component = ServiceComponent.objects.get(prototype__name="single_component")
 
         provider = self.create_provider(
-            bundle_path=settings.BASE_DIR / "python" / "rbac" / "tests" / "files" / "provider.tar",
+            bundle_path=self.base_dir / "python" / "rbac" / "tests" / "files" / "provider.tar",
             name="Test Provider",
         )
         self.host_1 = self.create_host_in_cluster(provider_pk=provider.pk, name="host-1", cluster_pk=cluster.pk)
@@ -233,7 +232,7 @@ class ActionsPolicyTestCase(BaseTestCase):
     def get_cluster(self):
         cluster_bundle = self.upload_and_load_bundle(
             path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/rbac/tests/files/case3.tar",
             ),
         )

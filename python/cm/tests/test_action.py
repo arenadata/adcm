@@ -21,7 +21,6 @@ from cm.tests.utils import (
     gen_prototype,
     gen_provider,
 )
-from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
@@ -142,10 +141,10 @@ class ActionAllowTest(BaseTestCase):
     # pylint: disable=too-many-instance-attributes
     def setUp(self) -> None:
         super().setUp()
-        self.files_dir = settings.BASE_DIR / "python" / "cm" / "tests" / "files"
+        self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
 
         _, self.cluster, _ = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(self.files_dir, "cluster_test_host_actions_mm.tar"), cluster_name="test-cluster-1"
+            bundle_path=Path(self.test_files_dir, "cluster_test_host_actions_mm.tar"), cluster_name="test-cluster-1"
         )
         service = add_service_to_cluster(
             cluster=self.cluster,
@@ -188,7 +187,7 @@ class ActionAllowTest(BaseTestCase):
         )
 
         _, self.cluster_2, _ = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(self.files_dir, "cluster_with_various_actions.tar"), cluster_name="test-cluster-2"
+            bundle_path=Path(self.test_files_dir, "cluster_with_various_actions.tar"), cluster_name="test-cluster-2"
         )
         self.service_2_robot = add_service_to_cluster(
             cluster=self.cluster_2,
