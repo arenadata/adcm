@@ -44,6 +44,9 @@ import AccessManagerGroupsPage from '@pages/AccessManagerPage/AccessManagerGroup
 import AccessManagerRolesPage from '@pages/AccessManagerPage/AccessManagerRolesPage/AccessManagerRolesPage';
 import AccessManagerPolicyPage from '@pages/AccessManagerPage/AccessManagerPoliciesPage/AccessManagerPoliciesPage';
 import BundleOverviewPage from '@pages/BundleOverviewPage/BundleOverviewPage';
+import ServiceComponent from '@pages/cluster/service/component/ServiceComponent';
+import ComponentPrimaryConfiguration from '@pages/cluster/service/component/ComponentPrimaryConfiguration/ComponentPrimaryConfiguration';
+import ComponentConfigurationGroups from '@pages/cluster/service/component/ComponentConfigurationGroups/ComponentConfigurationGroups';
 
 function App() {
   return (
@@ -89,6 +92,20 @@ function App() {
                         path="/clusters/:clusterId/services/:serviceId/components"
                         element={<ServiceComponents />}
                       />
+                      <Route
+                        path="/clusters/:clusterId/services/:serviceId/components/:componentId"
+                        element={<ServiceComponent />}
+                      >
+                        <Route index element={<Navigate to="primary-configuration" replace />} />
+                        <Route
+                          path="/clusters/:clusterId/services/:serviceId/components/:componentId/primary-configuration"
+                          element={<ComponentPrimaryConfiguration />}
+                        />
+                        <Route
+                          path="/clusters/:clusterId/services/:serviceId/components/:componentId/configuration-groups"
+                          element={<ComponentConfigurationGroups />}
+                        />
+                      </Route>
                       <Route path="/clusters/:clusterId/services/:serviceId/info" element={<ServiceInfo />} />
                     </Route>
                   </Route>
