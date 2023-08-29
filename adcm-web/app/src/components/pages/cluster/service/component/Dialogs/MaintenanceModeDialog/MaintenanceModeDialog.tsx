@@ -1,33 +1,34 @@
 import React from 'react';
 import { useDispatch, useStore } from '@hooks';
+
+import { Dialog } from '@uikit';
+import { useParams } from 'react-router-dom';
 import {
   closeMaintenanceModeDialog,
   toggleMaintenanceModeWithUpdate,
-} from '@store/adcm/cluster/services/serviceComponents/serviceComponentsActionsSlice';
-import { Dialog } from '@uikit';
-import { useParams } from 'react-router-dom';
+} from '@store/adcm/cluster/services/serviceComponents/serviceComponent/serviceComponentActionsSlice';
 
 const MaintenanceModeDialog: React.FC = () => {
   const dispatch = useDispatch();
-  const { clusterId: clusterIdFromUrl, serviceId: serviceIdFromUrl } = useParams();
+  const { clusterId: clusterIdFromUrl, serviceId: serviceIdFromUrl, componentId: componentIdFromUrl } = useParams();
   const clusterId = Number(clusterIdFromUrl);
   const serviceId = Number(serviceIdFromUrl);
+  const componentId = Number(componentIdFromUrl);
 
-  const componentId = useStore(({ adcm }) => adcm.serviceComponentsActions.maintenanceModeDialog.id);
-  const components = useStore(({ adcm }) => adcm.serviceComponents.serviceComponents);
-  const component = components.find(({ id }) => id === componentId);
+  const component = useStore(({ adcm }) => adcm.serviceComponent.serviceComponent);
+  const maintenanceModeDialogId = useStore(({ adcm }) => adcm.serviceComponentActions.maintenanceModeDialog.id);
   const componentName = component?.displayName;
   const statusLabel = component?.maintenanceMode === 'off' ? 'Enable' : 'Disable';
   const maintenanceMode = component?.maintenanceMode === 'off' ? 'on' : 'off';
 
-  const isOpen = componentId !== null;
+  const isOpen = maintenanceModeDialogId !== null;
 
   const handleCloseConfirm = () => {
     dispatch(closeMaintenanceModeDialog());
   };
 
   const handleConfirmDialog = () => {
-    if (componentId === null) return;
+    if (maintenanceModeDialogId === null) return;
 
     dispatch(toggleMaintenanceModeWithUpdate({ clusterId, serviceId, componentId, maintenanceMode }));
   };

@@ -54,6 +54,7 @@ export const allowIconsNames = [
   'g2-profile',
   'g2-provider',
   'g2-query',
+  'g2-back',
   'g2-saved',
   'g2-sun',
   'g2-user',
