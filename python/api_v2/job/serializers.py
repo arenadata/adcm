@@ -11,15 +11,15 @@
 # limitations under the License.
 
 from api_v2.task.serializers import JobListSerializer, TaskRetrieveByJobSerializer
-from cm.models import JobLog, LogStorage
-from rest_framework.fields import DateTimeField, SerializerMethodField
+from cm.models import JobLog
+from rest_framework.fields import DateTimeField, DurationField
 
 
 class JobRetrieveSerializer(JobListSerializer):
     parent_task = TaskRetrieveByJobSerializer(source="task", allow_null=True)
-    log_files = SerializerMethodField()
     start_time = DateTimeField(source="start_date")
     end_time = DateTimeField(source="finish_date")
+    duration = DurationField()
 
     class Meta:
         model = JobLog
@@ -33,20 +33,5 @@ class JobRetrieveSerializer(JobListSerializer):
             "end_time",
             "duration",
             "task_id",
-            "log_files",
             "is_terminatable",
         )
-
-    def get_log_files(self, obj: JobLog) -> list[dict[str, str]]:
-        logs = []
-        for log_storage in LogStorage.objects.filter(job=obj):
-            logs.append(
-                {
-                    "name": log_storage.name,
-                    "type": log_storage.type,
-                    "format": log_storage.format,
-                    "id": log_storage.pk,
-                },
-            )
-
-        return logs

@@ -10,21 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import timedelta
-
 from api_v2.action.serializers import ActionNameSerializer
 from cm.models import Action, JobLog, JobStatus, SubAction, TaskLog
-from rest_framework.fields import CharField, DateTimeField, SerializerMethodField
+from rest_framework.fields import (
+    CharField,
+    DateTimeField,
+    DurationField,
+    SerializerMethodField,
+)
 from rest_framework.serializers import ModelSerializer
 
 
 class JobListSerializer(ModelSerializer):
-    duration = SerializerMethodField()
     name = SerializerMethodField()
     display_name = SerializerMethodField()
     is_terminatable = SerializerMethodField()
     start_time = DateTimeField(source="start_date")
     end_time = DateTimeField(source="finish_date")
+    duration = DurationField()
 
     class Meta:
         model = JobLog
@@ -38,10 +41,6 @@ class JobListSerializer(ModelSerializer):
             "duration",
             "is_terminatable",
         )
-
-    @staticmethod
-    def get_duration(obj: JobLog) -> timedelta:
-        return obj.finish_date - obj.start_date
 
     @classmethod
     def get_display_name(cls, obj: JobLog) -> str | None:
@@ -71,10 +70,10 @@ class JobListSerializer(ModelSerializer):
 
 
 class TaskSerializer(ModelSerializer):
-    name = CharField(source="action.name")
-    display_name = CharField(source="action.display_name")
+    name = CharField(source="action.name", allow_null=True)
+    display_name = CharField(source="action.display_name", allow_null=True)
     is_terminatable = SerializerMethodField()
-    duration = SerializerMethodField()
+    duration = DurationField()
     action = ActionNameSerializer(read_only=True, allow_null=True)
     objects = SerializerMethodField()
     start_time = DateTimeField(source="start_date")
@@ -109,10 +108,6 @@ class TaskSerializer(ModelSerializer):
         return False
 
     @staticmethod
-    def get_duration(obj: JobLog) -> timedelta:
-        return obj.finish_date - obj.start_date
-
-    @staticmethod
     def get_objects(obj: TaskLog) -> list[dict[str, int | str]]:
         return [{"type": k, **v} for k, v in obj.selector.items()]
 
@@ -136,6 +131,7 @@ class TaskRetrieveByJobSerializer(TaskSerializer):
     action = ActionNameSerializer(read_only=True, allow_null=True)
     start_time = DateTimeField(source="start_date")
     end_time = DateTimeField(source="finish_date")
+    duration = DurationField()
 
     class Meta:
         model = TaskLog
