@@ -12,14 +12,15 @@
 
 from api_v2.tests.base import BaseAPITestCase
 from django.urls import reverse
-from rbac.models import Role, RoleTypes
+from rbac.models import Role
 from rbac.services.role import role_create
-from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
 )
 
 
@@ -27,96 +28,150 @@ class TestRole(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.mm_role_host = role_create(
-            name="mm role host",
-            display_name="mm role host",
-            child=[Role.objects.get(name="Manage Maintenance mode")],
-        )
-        self.mm_role_cluster = role_create(
-            name="mm role cluster",
-            display_name="mm role cluster",
-            child=[Role.objects.get(name="Manage cluster Maintenance mode")],
-        )
-        self.child = Role.objects.create(
-            name="test_child_role",
-            display_name="test_child_role",
-            type=RoleTypes.BUSINESS,
-        )
-        self.child_2 = Role.objects.create(
-            name="test_child_role_2",
-            display_name="test_child_role_2",
-            type=RoleTypes.BUSINESS,
+        self.view_cluster_config_role = Role.objects.get(name="View cluster configurations", built_in=True)
+        self.edit_cluster_config_role = Role.objects.get(name="Edit cluster configurations", built_in=True)
+
+        self.cluster_config_role = role_create(
+            name="Change cluster config",
+            display_name="Change cluster config",
+            child=[self.view_cluster_config_role],
         )
 
     def test_retrieve_not_found_fail(self):
-        response: Response = self.client.get(
-            path=reverse(
-                viewname="v2:rbac:role-detail",
-                kwargs={"pk": self.mm_role_cluster.pk + 10},
-            ),
+        response = self.client.get(
+            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.cluster_config_role.pk + 10})
         )
+
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_retrieve_success(self):
-        response: Response = self.client.get(
-            path=reverse(
-                viewname="v2:rbac:role-detail",
-                kwargs={"pk": self.mm_role_cluster.pk},
-            ),
+        response = self.client.get(
+            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.cluster_config_role.pk})
         )
+
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["id"], self.mm_role_cluster.pk)
+        self.assertEqual(response.json()["id"], self.cluster_config_role.pk)
 
     def test_list_success(self):
-        response: Response = self.client.get(
-            path=reverse(
-                viewname="v2:rbac:role-list",
-            ),
-        )
+        response = self.client.get(path=reverse(viewname="v2:rbac:role-list"))
+
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertGreater(len(response.json()["results"]), 1)
 
     def test_create_success(self):
-        response: Response = self.client.post(
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:role-list"),
+            data={"display_name": "Edit cluster configuration", "children": [self.edit_cluster_config_role.pk]},
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertTrue(Role.objects.filter(id=response.json()["id"]).exists())
+
+    def test_create_required_field_failed(self):
+        response = self.client.post(path=reverse(viewname="v2:rbac:role-list"), data={"display_name": "test"})
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(), {"code": "BAD_REQUEST", "desc": "children - This field is required.;", "level": "error"}
+        )
+
+    def test_create_already_exists_failed(self):
+        response = self.client.post(
             path=reverse(viewname="v2:rbac:role-list"),
             data={
-                "name": "test",
-                "display_name": "test",
-                "children": [{"id": self.child.pk}],
+                "display_name": "Change cluster config",
+                "children": [self.view_cluster_config_role.pk],
             },
         )
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-    def test_update_success(self):
-        response: Response = self.client.patch(
-            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.mm_role_host.pk}),
-            data={
-                "name": self.mm_role_host.name + "__changed",
-                "display_name": "new name",
-                "children": [{"id": self.child_2.pk}],
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "ROLE_CREATE_ERROR",
+                "desc": "A role with this name already exists",
+                "level": "error",
             },
         )
-        updated_role = Role.objects.filter(pk=self.mm_role_host.pk).last()
+
+    def test_update_required_filed_success(self):
+        response = self.client.put(
+            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.cluster_config_role.pk}),
+            data={
+                "display_name": "New change cluster config",
+                "children": [self.edit_cluster_config_role.pk],
+            },
+        )
+
+        self.cluster_config_role.refresh_from_db()
+
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(updated_role.display_name, "new name")
-        self.assertEqual(updated_role.name, self.mm_role_host.name)
-        self.assertEqual(list(updated_role.child.all()), list(Role.objects.filter(pk=self.child_2.pk)))
+        self.assertEqual("New change cluster config", self.cluster_config_role.display_name)
+        self.assertEqual([self.edit_cluster_config_role], list(self.cluster_config_role.child.all()))
+
+    def test_update_required_filed_failed(self):
+        response = self.client.put(
+            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.cluster_config_role.pk}),
+            data={"display_name": "New change cluster config"},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(), {"code": "BAD_REQUEST", "desc": "children - This field is required.;", "level": "error"}
+        )
+
+    def test_partial_update_success(self):
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.cluster_config_role.pk}),
+            data={"display_name": "New change cluster config"},
+        )
+
+        self.cluster_config_role.refresh_from_db()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual("New change cluster config", self.cluster_config_role.display_name)
+
+    def test_update_built_in_failed(self):
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.view_cluster_config_role.pk}),
+            data={"built_in": False},
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "ROLE_UPDATE_ERROR",
+                "desc": "Can't modify role View cluster configurations as it is auto created",
+                "level": "error",
+            },
+        )
 
     def test_delete_success(self):
-        response: Response = self.client.delete(
-            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.mm_role_host.pk}),
+        response = self.client.delete(
+            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.cluster_config_role.pk})
         )
+
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-        self.assertIsNone(Role.objects.filter(pk=self.mm_role_host.pk).last())
+        self.assertFalse(Role.objects.filter(pk=self.cluster_config_role.pk).exists())
+
+    def test_delete_failed(self):
+        built_in_role = Role.objects.filter(built_in=True).first()
+
+        response = self.client.delete(path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": built_in_role.pk}))
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {"code": "ROLE_DELETE_ERROR", "desc": "It is forbidden to remove the built-in role.", "level": "error"},
+        )
 
     def test_ordering_success(self):
         limit = 10
 
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(
                 viewname="v2:rbac:role-list",
             ),
-            data={"ordering": "-name", "limit": limit},
+            data={"ordering": "-displayName", "limit": limit},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -125,18 +180,19 @@ class TestRole(BaseAPITestCase):
         db_names = [role.display_name for role in Role.objects.order_by("-display_name")[:limit]]
         self.assertListEqual(response_names, db_names)
 
-    def test_filtering_success(self):
+    def test_filtering_by_display_name_success(self):
         filter_name = "cReAtE"
 
-        response: Response = self.client.get(
-            path=reverse(
-                viewname="v2:rbac:role-list",
-            ),
-            data={"name": filter_name},
-        )
+        response = self.client.get(path=reverse(viewname="v2:rbac:role-list"), data={"displayName": filter_name})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response_pks = [role_data["id"] for role_data in response.json()["results"]]
         db_pks = [role.pk for role in Role.objects.filter(display_name__icontains=filter_name)]
         self.assertListEqual(response_pks, db_pks)
+
+    def test_filtering_by_categories_success(self):
+        response = self.client.get(path=reverse(viewname="v2:rbac:role-list"), data={"categories": "cluster_one"})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 42)

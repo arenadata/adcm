@@ -9,8 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.rbac.policies.filters import PolicyFilter
-from api_v2.rbac.policies.serializers import PolicyCreateSerializer, PolicySerializer
+from api_v2.rbac.policy.filters import PolicyFilter
+from api_v2.rbac.policy.serializers import PolicyCreateSerializer, PolicySerializer
 from api_v2.views import CamelCaseModelViewSet
 from cm.errors import raise_adcm_ex
 from django_filters.rest_framework.backends import DjangoFilterBackend

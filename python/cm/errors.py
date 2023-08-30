@@ -204,7 +204,7 @@ ERRORS = {
     "ROLE_MODULE_ERROR": ("No role module with this name", HTTP_409_CONFLICT, ERR),
     "ROLE_CLASS_ERROR": ("No matching class in this module", HTTP_409_CONFLICT, ERR),
     "ROLE_FILTER_ERROR": ("Incorrect filter in role", HTTP_409_CONFLICT, ERR),
-    "ROLE_CREATE_ERROR": ("Error during process of role creating", HTTP_409_CONFLICT, ERR),
+    "ROLE_CREATE_ERROR": ("A role with this name already exists", HTTP_409_CONFLICT, ERR),
     "ROLE_UPDATE_ERROR": ("Error during process of role updating", HTTP_409_CONFLICT, ERR),
     "ROLE_CONFLICT": (
         "Combination of cluster/service/component and provider permissions is not allowed",

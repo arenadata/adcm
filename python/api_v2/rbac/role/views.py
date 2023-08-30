@@ -11,13 +11,15 @@
 # limitations under the License.
 
 from api_v2.rbac.role.filters import RoleFilter
-from api_v2.rbac.role.serializers import RoleSerializer
+from api_v2.rbac.role.serializers import RoleCreateUpdateSerializer, RoleSerializer
 from api_v2.views import CamelCaseModelViewSet
 from cm.errors import raise_adcm_ex
+from cm.models import ProductCategory
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
 from rbac.models import Role
 from rbac.services.role import role_create, role_update
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
@@ -26,7 +28,6 @@ from adcm.permissions import DjangoModelPermissionsAudit
 
 class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disable=too-many-ancestors
     queryset = Role.objects.prefetch_related("child", "category").order_by("display_name")
-    serializer_class = RoleSerializer
     permission_classes = (DjangoModelPermissionsAudit,)
     permission_required = ["rbac.view_role"]
     filterset_class = RoleFilter
@@ -34,13 +35,18 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
     def get_queryset(self, *args, **kwargs):
         return get_objects_for_user(**self.get_get_objects_for_user_kwargs(Role.objects.all()))
 
+    def get_serializer_class(self):
+        if self.action in ("create", "update", "partial_update"):
+            return RoleCreateUpdateSerializer
+
+        return RoleSerializer
+
     def create(self, request, *args, **kwargs):
-        children_roles = Role.objects.filter(id__in=[ids["id"] for ids in request.data["children"]])
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.validated_data["child"] = children_roles
-        role_create(**serializer.validated_data)
-        return Response(data=serializer.data, status=HTTP_201_CREATED)
+        role = role_create(**serializer.validated_data)
+
+        return Response(data=RoleSerializer(instance=role).data, status=HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
@@ -51,13 +57,18 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
 
         serializer = self.get_serializer(data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        children_roles = Role.objects.filter(id__in=[ids["id"] for ids in request.data["children"]])
-        serializer.validated_data["child"] = children_roles
-        role = role_update(instance, partial, **serializer.validated_data)
-        return Response(self.get_serializer(role).data, status=HTTP_200_OK)
+        role = role_update(role=instance, partial=partial, **serializer.validated_data)
+
+        return Response(data=RoleSerializer(instance=role).data, status=HTTP_200_OK)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+
         if instance.built_in:
-            raise_adcm_ex(code="ROLE_DELETE_ERROR")
+            raise_adcm_ex(code="ROLE_DELETE_ERROR", msg="It is forbidden to remove the built-in role.")
+
         return super().destroy(request, *args, **kwargs)
+
+    @action(methods=["get"], detail=False)
+    def categories(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+        return Response(data=sorted(category.value for category in ProductCategory.objects.all()), status=HTTP_200_OK)

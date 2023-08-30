@@ -10,10 +10,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.db.models import Q, QuerySet
 from django_filters import CharFilter, OrderingFilter
 from django_filters.rest_framework import FilterSet
+from rbac.models import Role
 
 
 class RoleFilter(FilterSet):
-    name = CharFilter(field_name="display_name", label="Role name", lookup_expr="icontains")
-    ordering = OrderingFilter(fields={"display_name": "name"}, field_labels={"display_name": "Display name"})
+    display_name = CharFilter(field_name="display_name", label="Role name", lookup_expr="icontains")
+    categories = CharFilter(label="Categories", method="filter_category")
+    ordering = OrderingFilter(fields={"display_name": "displayName"}, field_labels={"display_name": "Display name"})
+
+    @staticmethod
+    def filter_category(queryset: QuerySet, name: str, value: str):  # pylint: disable=unused-argument
+        return queryset.filter(Q(category__value=value) | Q(any_category=True))
+
+    class Meta:
+        model = Role
+        fields = ["type"]

@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.rbac.groups.serializers import GroupNameSerializer
-from api_v2.rbac.roles.serializers import RoleNameSerializer
+from api_v2.rbac.group.serializers import GroupRelatedSerializer
+from api_v2.rbac.role.serializers import RoleRelatedSerializer
 from rbac.endpoints.policy.serializers import ObjectField
 from rbac.models import Policy
 from rest_framework.fields import BooleanField, IntegerField
@@ -22,9 +22,9 @@ from adcm.serializers import EmptySerializer
 
 class PolicySerializer(ModelSerializer):
     is_built_in = BooleanField(read_only=True, source="built_in")
-    groups = GroupNameSerializer(many=True, source="group")
+    groups = GroupRelatedSerializer(many=True, source="group")
     objects = ObjectField(required=True, source="object")
-    role = RoleNameSerializer()
+    role = RoleRelatedSerializer(read_only=True)
 
     class Meta:
         model = Policy
