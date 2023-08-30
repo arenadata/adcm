@@ -53,25 +53,23 @@ class TestGroupAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 0)
 
-    def test_create_only_mandatory_fields_success(self):
-        create_data = {"name": "new group name", "description": ""}
-
+    def test_create_required_fields_success(self):
         response: Response = self.client.post(
             path=reverse(viewname="v2:rbac:group-list"),
-            data=create_data,
+            data={"display_name": "new group name"},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(Group.objects.count(), 3)
 
         group = Group.objects.order_by("pk").last()
-        self.assertEqual(group.display_name, create_data["name"])
-        self.assertEqual(group.description, create_data["description"])
+        self.assertEqual(group.display_name, "new group name")
+        self.assertEqual(group.description, "")
         self.assertListEqual(list(group.user_set.all()), [])
 
     def test_create_with_user_success(self):
         new_user = self.create_user()
-        create_data = {"name": "new group name", "description": "new group description", "users": [{"id": new_user.pk}]}
+        create_data = {"display_name": "new group name", "description": "new group description", "users": [new_user.pk]}
 
         response: Response = self.client.post(
             path=reverse(viewname="v2:rbac:group-list"),
@@ -87,7 +85,7 @@ class TestGroupAPI(BaseAPITestCase):
         update_data = {
             "display_name": "new display name",
             "description": "new description",
-            "users": [{"id": new_user.pk}],
+            "users": [new_user.pk],
         }
 
         response: Response = self.client.patch(
@@ -99,7 +97,7 @@ class TestGroupAPI(BaseAPITestCase):
         self.group_local.refresh_from_db()
         self.assertEqual(self.group_local.display_name, update_data["display_name"])
         self.assertEqual(self.group_local.description, update_data["description"])
-        self.assertEqual(set(self.group_local.user_set.values_list("id", flat=True)), {update_data["users"][0]["id"]})
+        self.assertListEqual(list(self.group_local.user_set.values_list("id", flat=True)), update_data["users"])
 
     def test_delete_success(self):
         group_ldap_pk = self.group_ldap.pk

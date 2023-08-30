@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.rbac.users.views import UserViewSet
+from api_v2.rbac.group.views import GroupViewSet
 from rest_framework.routers import SimpleRouter
 
-user_router = SimpleRouter()
-user_router.register(prefix="users", viewset=UserViewSet)
+group_router = SimpleRouter()
+group_router.register(prefix="groups", viewset=GroupViewSet)

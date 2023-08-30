@@ -11,15 +11,19 @@
 # limitations under the License.
 
 from rbac.models import Role
-from rest_framework.fields import BooleanField, CharField, SerializerMethodField
-from rest_framework.serializers import ModelSerializer
+from rest_framework.fields import BooleanField
+from rest_framework.serializers import (
+    ManyRelatedField,
+    ModelSerializer,
+    PrimaryKeyRelatedField,
+    SlugRelatedField,
+)
 
 
 class RoleChildSerializer(ModelSerializer):
-    is_built_in = BooleanField(source="built_in", default=False)
-    is_any_category = BooleanField(source="any_category", default=False)
-    categories = SerializerMethodField(read_only=True)
-    name = CharField(max_length=1000, default="", source="category")
+    is_built_in = BooleanField(source="built_in", default=False, read_only=True)
+    is_any_category = BooleanField(source="any_category", default=False, read_only=True)
+    categories = SlugRelatedField(read_only=True, many=True, slug_field="value", source="category")
 
     class Meta:
         model = Role
@@ -32,17 +36,11 @@ class RoleChildSerializer(ModelSerializer):
             "categories",
             "type",
         )
-
-    @staticmethod
-    def get_categories(obj) -> list:
-        if hasattr(obj, "category"):
-            return [c.value for c in obj.category.all()]
-        return []
+        extra_kwargs = {"name": {"read_only": True}, "type": {"read_only": True}}
 
 
 class RoleSerializer(RoleChildSerializer):
-    children = RoleChildSerializer(many=True, source="child")
-    name = CharField(max_length=1000)
+    children = RoleChildSerializer(many=True, source="child", read_only=True)
 
     class Meta:
         model = Role
@@ -51,3 +49,19 @@ class RoleSerializer(RoleChildSerializer):
             "description",
             "children",
         )
+        extra_kwargs = {"name": {"read_only": True}, "type": {"read_only": True}}
+
+
+class RoleCreateUpdateSerializer(ModelSerializer):
+    children = ManyRelatedField(child_relation=PrimaryKeyRelatedField(queryset=Role.objects.all()), source="child")
+
+    class Meta:
+        model = Role
+        fields = ("display_name", "description", "children")
+        extra_kwargs = {"display_name": {"required": True}, "children": {"required": True}}
+
+
+class RoleRelatedSerializer(ModelSerializer):
+    class Meta:
+        model = Role
+        fields = ["id", "name", "display_name"]

@@ -10,10 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.rbac.groups.urls import group_router
-from api_v2.rbac.policies.urls import policy_router
+from api_v2.rbac.group.urls import group_router
+from api_v2.rbac.policy.urls import policy_router
 from api_v2.rbac.role.views import RoleViewSet
-from api_v2.rbac.users.urls import user_router
+from api_v2.rbac.user.urls import user_router
 from api_v2.rbac.views import RbacRoot
 from django.urls import path
 from rest_framework.routers import SimpleRouter

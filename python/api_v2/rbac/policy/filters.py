@@ -10,11 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rbac.models import Role
-from rest_framework.serializers import ModelSerializer
+from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
+from rbac.models import Policy
 
 
-class RoleNameSerializer(ModelSerializer):
+class PolicyFilter(FilterSet):
+    name = CharFilter(label="Name", field_name="name", lookup_expr="icontains")
+    ordering = OrderingFilter(
+        fields={"name": "name"},
+        field_labels={"name": "Name"},
+        label="ordering",
+    )
+
     class Meta:
-        model = Role
-        fields = ["id", "name", "display_name"]
+        model = Policy
+        fields = ["id"]

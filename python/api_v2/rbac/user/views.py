@@ -10,13 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.rbac.users.filters import UserFilterSet
-from api_v2.rbac.users.serializers import (
+from api_v2.rbac.user.filters import UserFilterSet
+from api_v2.rbac.user.serializers import (
     UserCreateSerializer,
     UserSerializer,
     UserUpdateSerializer,
 )
-from api_v2.rbac.users.utils import block_user, unblock_user
+from api_v2.rbac.user.utils import block_user, unblock_user
 from api_v2.views import CamelCaseModelViewSet
 from cm.errors import AdcmEx
 from django.contrib.auth.models import Group as AuthGroup
@@ -38,7 +38,6 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
     queryset = User.objects.prefetch_related(
         Prefetch(lookup="groups", queryset=AuthGroup.objects.select_related("group"))
     ).order_by("username")
-    serializer_class = UserSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_class = UserFilterSet
     permission_classes = (DjangoModelPermissions,)
@@ -51,13 +50,14 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
         if self.action == "create":
             return UserCreateSerializer
 
-        return self.serializer_class
+        return UserSerializer
 
     def create(self, request: Request, *args, **kwargs) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user: User = create_user(**serializer.validated_data)
+        groups = [{"id": group.pk} for group in serializer.validated_data.pop("groups", [])]
+        user: User = create_user(groups=groups, **serializer.validated_data)
 
         return Response(data=UserSerializer(instance=user).data, status=HTTP_201_CREATED)
 
@@ -66,12 +66,14 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
         serializer = self.get_serializer(instance=instance, data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        groups = [{"id": group.pk} for group in serializer.validated_data.pop("groups", [])]
         user: User = update_user(
             user=serializer.instance,
             context_user=request.user,
             partial=True,
             need_current_password=not request.user.is_superuser,
             api_v2_behaviour=True,
+            groups=groups,
             **serializer.validated_data,
         )
 

@@ -66,8 +66,8 @@ def role_create(built_in=False, type_of_role=RoleTypes.ROLE, **kwargs) -> Role |
         role.child.add(*child)
 
         return role
-    except IntegrityError as e:
-        raise_adcm_ex("ROLE_CREATE_ERROR", msg=f"Role creation failed with error {e}")
+    except IntegrityError:
+        raise_adcm_ex("ROLE_CREATE_ERROR")
 
     return None
 

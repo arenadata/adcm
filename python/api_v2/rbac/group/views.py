@@ -10,12 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.rbac.groups.filters import GroupFilter
-from api_v2.rbac.groups.serializers import (
-    GroupCreateSerializer,
-    GroupSerializer,
-    GroupUpdateSerializer,
-)
+from api_v2.rbac.group.filters import GroupFilter
+from api_v2.rbac.group.serializers import GroupCreateUpdateSerializer, GroupSerializer
 from api_v2.views import CamelCaseModelViewSet
 from cm.errors import AdcmEx
 from guardian.mixins import PermissionListMixin
@@ -32,39 +28,43 @@ from adcm.permissions import VIEW_GROUP_PERMISSION
 
 class GroupViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint:disable=too-many-ancestors
     queryset = Group.objects.order_by("display_name").prefetch_related("user_set")
-    serializer_class = GroupSerializer
     filterset_class = GroupFilter
     permission_classes = (DjangoModelPermissions,)
     permission_required = [VIEW_GROUP_PERMISSION]
 
-    def get_serializer_class(self) -> type[GroupSerializer | GroupCreateSerializer | GroupUpdateSerializer]:
-        match self.action:
-            case "create":
-                return GroupCreateSerializer
-            case "update" | "partial_update":
-                return GroupUpdateSerializer
-            case _:
-                return self.serializer_class
+    def get_serializer_class(self) -> type[GroupSerializer | GroupCreateUpdateSerializer]:
+        if self.action in ("create", "update", "partial_update"):
+            return GroupCreateUpdateSerializer
+
+        return GroupSerializer
 
     def create(self, request: Request, *args, **kwargs) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        group = create_group(**serializer.validated_data)
+        users = [{"id": user.pk} for user in serializer.validated_data.pop("user_set", [])]
+        group = create_group(
+            name_to_display=serializer.validated_data["display_name"],
+            description=serializer.validated_data.get("description", ""),
+            user_set=users,
+        )
 
-        return Response(data=self.serializer_class(instance=group).data, status=HTTP_201_CREATED)
+        return Response(data=GroupSerializer(instance=group).data, status=HTTP_201_CREATED)
 
     def update(self, request: Request, *args, **kwargs) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        users = [{"id": user.pk} for user in serializer.validated_data.pop("user_set", [])]
         group = update_group(
             group=self.get_object(),
             partial=kwargs.pop("partial", False),
-            **serializer.validated_data,
+            name_to_display=serializer.validated_data["display_name"],
+            description=serializer.validated_data.get("description", ""),
+            user_set=users,
         )
 
-        return Response(data=self.serializer_class(instance=group).data, status=HTTP_200_OK)
+        return Response(data=GroupSerializer(instance=group).data, status=HTTP_200_OK)
 
     def destroy(self, request: Request, *args, **kwargs) -> Response:
         instance: Group = self.get_object()
