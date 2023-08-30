@@ -18,23 +18,31 @@ from api_v2.cluster.serializers import (
     ClusterUpdateSerializer,
     HostComponentListSerializer,
     HostComponentPostSerializer,
+    RelatedHostsStatusesSerializer,
+    RelatedServicesStatusesSerializer,
     ServicePrototypeSerializer,
 )
 from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.host.serializers import HostMappingSerializer
 from api_v2.views import CamelCaseGenericViewSet, CamelCaseModelViewSet
 from cm.api import add_cluster, retrieve_host_component_objects, set_host_component
+from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues
 from cm.models import (
+    ADCMEntityStatus,
     Cluster,
+    ClusterObject,
     Host,
     HostComponent,
     ObjectType,
     Prototype,
     ServiceComponent,
 )
+from cm.status_api import get_obj_status
+from django.db.models import QuerySet
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
+from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.mixins import CreateModelMixin, ListModelMixin
@@ -45,6 +53,8 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FO
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HC_PERM,
+    VIEW_HOST_PERM,
+    VIEW_SERVICE_PERM,
     DjangoModelPermissionsAudit,
     check_custom_perm,
     get_object_for_user,
@@ -110,6 +120,47 @@ class ClusterViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint:disa
         serializer = self.get_serializer_class()(instance=prototypes, many=True)
 
         return Response(data=serializer.data)
+
+    @action(methods=["get"], detail=True, url_path="statuses/services")
+    def services_statuses(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
+        queryset = get_objects_for_user(user=request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject).filter(
+            cluster=cluster
+        )
+        queryset = self.filter_queryset(queryset=queryset, request=request)
+
+        return self.get_paginated_response(
+            data=RelatedServicesStatusesSerializer(instance=self.paginate_queryset(queryset=queryset), many=True).data
+        )
+
+    @action(methods=["get"], detail=True, url_path="statuses/hosts")
+    def hosts_statuses(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
+        queryset = get_objects_for_user(user=request.user, perms=VIEW_HOST_PERM, klass=Host).filter(cluster=cluster)
+        queryset = self.filter_queryset(queryset=queryset, request=request)
+
+        return self.get_paginated_response(
+            data=RelatedHostsStatusesSerializer(instance=self.paginate_queryset(queryset=queryset), many=True).data
+        )
+
+    def filter_queryset(self, queryset: QuerySet, **kwargs) -> QuerySet | list:
+        if self.action in {"services_statuses", "hosts_statuses"}:
+            return self._filter_by_status(queryset=queryset, **kwargs)
+
+        return super().filter_queryset(queryset=queryset)
+
+    @staticmethod
+    def _filter_by_status(request: Request, queryset: QuerySet) -> QuerySet | list:
+        status_value = request.query_params.get("status", default=None)
+        if status_value is None:
+            return queryset
+
+        status_choices = {choice[0] for choice in ADCMEntityStatus.choices}
+        if status_value not in status_choices:
+            status_choices_repr = ", ".join(status_choices)
+            raise AdcmEx(code="BAD_REQUEST", msg=f"Status choices: {status_choices_repr}")
+
+        return [obj for obj in queryset if get_obj_status(obj=obj) == status_value]
 
 
 class MappingViewSet(  # pylint:disable=too-many-ancestors
