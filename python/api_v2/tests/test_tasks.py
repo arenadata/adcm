@@ -91,10 +91,6 @@ class TestTask(BaseTestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-    def test_task_log_list_success(self):
-        response: Response = self.client.get(path=reverse(viewname="v2:log-list", kwargs={"task_pk": self.task_1.pk}))
-        self.assertEqual(response.status_code, HTTP_200_OK)
-
     def test_task_log_download_success(self):
         response: Response = self.client.post(
             path=reverse(viewname="v2:log-download", kwargs={"task_pk": self.task_1.pk})

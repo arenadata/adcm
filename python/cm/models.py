@@ -1608,6 +1608,10 @@ class TaskLog(ADCMModel):
         except OSError as e:
             raise AdcmEx("NOT_ALLOWED_TERMINATION", f"Failed to terminate process: {e}") from e
 
+    @property
+    def duration(self):
+        return self.finish_date - self.start_date
+
 
 class JobLog(ADCMModel):
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
@@ -1652,6 +1656,10 @@ class JobLog(ADCMModel):
 
         if event_queue:
             event_queue.send_state()
+
+    @property
+    def duration(self):
+        return self.finish_date - self.start_date
 
 
 class GroupCheckLog(ADCMModel):
