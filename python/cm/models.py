@@ -281,10 +281,6 @@ class Prototype(ADCMModel):
     class Meta:
         unique_together = (("bundle", "type", "parent", "name", "version"),)
 
-    @property
-    def is_license_accepted(self) -> bool:
-        return self.license == LICENSE_STATE[1][0]
-
 
 class ObjectConfig(ADCMModel):
     current = models.PositiveIntegerField()

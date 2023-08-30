@@ -17,15 +17,15 @@ from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
 
 class UpgradeListSerializer(ModelSerializer):
-    is_license_accepted = SerializerMethodField()
+    license_status = SerializerMethodField()
 
     class Meta:
         model = Upgrade
-        fields = ["id", "name", "display_name", "is_license_accepted"]
+        fields = ["id", "name", "display_name", "license_status"]
 
     @classmethod
-    def get_is_license_accepted(cls, upgrade: Upgrade) -> bool:
-        return upgrade.bundle.prototype_set.filter(type__in=("cluster", "provider")).first().is_license_accepted
+    def get_license_status(cls, upgrade: Upgrade) -> bool:
+        return upgrade.bundle.prototype_set.filter(type__in=("cluster", "provider")).first().license
 
 
 class UpgradeRetrieveSerializer(UpgradeListSerializer):
@@ -41,7 +41,7 @@ class UpgradeRetrieveSerializer(UpgradeListSerializer):
             "name",
             "display_name",
             "is_allow_to_terminate",
-            "is_license_accepted",
+            "license_status",
             "host_component_map_rules",
             "config_schema",
             "disclaimer",
