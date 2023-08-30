@@ -103,10 +103,11 @@ class ClusterUpdateSerializer(ModelSerializer):
 class ServicePrototypeSerializer(ModelSerializer):
     is_required = BooleanField(source="required")
     depend_on = SerializerMethodField()
+    license_status = CharField(source="license")
 
     class Meta:
         model = Prototype
-        fields = ["id", "name", "display_name", "version", "is_required", "depend_on", "is_license_accepted"]
+        fields = ["id", "name", "display_name", "version", "is_required", "depend_on", "license_status"]
 
     @staticmethod
     def get_depend_on(prototype: Prototype) -> list[dict[str, list[dict[str, Any]] | Any]] | None:
