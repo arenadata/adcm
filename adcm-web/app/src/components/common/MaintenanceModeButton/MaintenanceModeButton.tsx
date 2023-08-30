@@ -3,23 +3,24 @@ import { IconButton } from '@uikit';
 import Tooltip from '@uikit/Tooltip/Tooltip';
 import s from './MaintenanceModeButton.module.scss';
 import cn from 'classnames';
+import { AdcmMaintenanceMode } from '@models/adcm';
 
 interface MaintenanceModeButtonProps {
   isMaintenanceModeAvailable: boolean;
-  maintenanceModeStatus: string;
+  maintenanceModeStatus: AdcmMaintenanceMode;
   onClick: () => void;
 }
 
-const getTooltipLabel = (status: string) => {
+const getTooltipLabel = (status: AdcmMaintenanceMode) => {
   let label = 'Maintenance mode: ';
   switch (status) {
-    case 'on':
-      label += 'on';
+    case AdcmMaintenanceMode.On:
+      label += AdcmMaintenanceMode.Off;
       break;
-    case 'off':
-      label += 'off';
+    case AdcmMaintenanceMode.Off:
+      label += AdcmMaintenanceMode.On;
       break;
-    case 'pending':
+    case AdcmMaintenanceMode.Pending:
       label += 'in progress';
       break;
     default:
@@ -35,8 +36,8 @@ const MaintenanceModeButton: React.FC<MaintenanceModeButtonProps> = ({
   onClick,
 }) => {
   const className = cn(s.maintenanceModeButton, {
-    [s.maintenanceModeButton_on]: maintenanceModeStatus === 'on',
-    [s.maintenanceModeButton_pending]: maintenanceModeStatus === 'pending',
+    [s.maintenanceModeButton_on]: maintenanceModeStatus === AdcmMaintenanceMode.On,
+    [s.maintenanceModeButton_pending]: maintenanceModeStatus === AdcmMaintenanceMode.Pending,
     [s.maintenanceModeButton_unavailable]: !isMaintenanceModeAvailable,
   });
 
