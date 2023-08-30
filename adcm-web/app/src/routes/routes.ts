@@ -42,6 +42,75 @@ const routes: RoutesConfigs = {
       },
     ],
   },
+  '/clusters/:clusterId/services/:serviceId/primary-configuration': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        href: '/clusters/:clusterId/services',
+        label: 'Services',
+      },
+    ],
+  },
+  '/clusters/:clusterId/services/:serviceId/configuration-groups': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        href: '/clusters/:clusterId/services',
+        label: 'Services',
+      },
+    ],
+  },
+  '/clusters/:clusterId/services/:serviceId/components': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        href: '/clusters/:clusterId/services',
+        label: 'Services',
+      },
+    ],
+  },
+  '/clusters/:clusterId/services/:serviceId/info': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        href: '/clusters/:clusterId/services',
+        label: 'Services',
+      },
+    ],
+  },
+
   '/clusters/:clusterId/hosts': {
     pageTitle: 'Clusters',
     breadcrumbs: [
@@ -58,7 +127,23 @@ const routes: RoutesConfigs = {
       },
     ],
   },
-  '/clusters/:clusterId/mapping': {
+  '/clusters/:clusterId/mapping/hosts': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        label: 'Mapping',
+      },
+    ],
+  },
+  '/clusters/:clusterId/mapping/components': {
     pageTitle: 'Clusters',
     breadcrumbs: [
       {
@@ -90,7 +175,23 @@ const routes: RoutesConfigs = {
       },
     ],
   },
-  '/clusters/:clusterId/import': {
+  '/clusters/:clusterId/import/cluster': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        label: 'Import',
+      },
+    ],
+  },
+  '/clusters/:clusterId/import/services': {
     pageTitle: 'Clusters',
     breadcrumbs: [
       {
