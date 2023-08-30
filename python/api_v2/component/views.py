@@ -14,6 +14,7 @@ from api_v2.component.filters import ComponentFilter
 from api_v2.component.serializers import (
     ComponentMaintenanceModeSerializer,
     ComponentSerializer,
+    ComponentStatusSerializer,
 )
 from api_v2.views import CamelCaseReadOnlyModelViewSet
 from cm.api import update_mm_objects
@@ -80,3 +81,11 @@ class ComponentViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # p
             response.data = serializer.data
 
         return response
+
+    @action(methods=["get"], detail=True, url_path="statuses")
+    def statuses(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        component = get_object_for_user(
+            user=request.user, perms=VIEW_COMPONENT_PERM, klass=ServiceComponent, id=kwargs["pk"]
+        )
+
+        return Response(data=ComponentStatusSerializer(instance=component).data)

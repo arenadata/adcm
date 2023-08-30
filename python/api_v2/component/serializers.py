@@ -27,7 +27,9 @@ from cm.models import (
 from cm.status_api import get_obj_status
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.serializers import (
+    CharField,
     ChoiceField,
+    IntegerField,
     JSONField,
     ModelSerializer,
     SerializerMethodField,
@@ -132,3 +134,25 @@ class ComponentMaintenanceModeSerializer(ModelSerializer):
     class Meta:
         model = ServiceComponent
         fields = ["maintenance_mode"]
+
+
+class RelatedHostComponentsStatusSerializer(ModelSerializer):
+    id = IntegerField(source="host.id")
+    name = CharField(source="host.name")
+    status = SerializerMethodField()
+
+    class Meta:
+        model = HostComponent
+        fields = ["id", "name", "status"]
+
+    @staticmethod
+    def get_status(instance: HostComponent) -> str:
+        return get_obj_status(obj=instance)
+
+
+class ComponentStatusSerializer(ModelSerializer):
+    host_components = RelatedHostComponentsStatusSerializer(many=True, source="hostcomponent_set")
+
+    class Meta:
+        model = ServiceComponent
+        fields = ["host_components"]

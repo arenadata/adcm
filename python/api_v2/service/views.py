@@ -15,6 +15,7 @@ from api_v2.service.serializers import (
     ServiceCreateSerializer,
     ServiceMaintenanceModeSerializer,
     ServiceRetrieveSerializer,
+    ServiceStatusSerializer,
 )
 from api_v2.views import CamelCaseReadOnlyModelViewSet
 from cm.api import add_service_to_cluster, update_mm_objects
@@ -108,3 +109,9 @@ class ServiceViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pyl
             response.data = serializer.data
 
         return response
+
+    @action(methods=["get"], detail=True, url_path="statuses")
+    def statuses(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        service = get_object_for_user(user=request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject, id=kwargs["pk"])
+
+        return Response(data=ServiceStatusSerializer(instance=service).data)

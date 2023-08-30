@@ -218,8 +218,11 @@ def get_obj_status(obj: Cluster | ClusterObject | Host | HostComponent | Service
             url = f"host/{obj.pk}/"
         case HostComponent.__name__:
             url = f"host/{obj.host_id}/component/{obj.component_id}/"
+            obj = obj.component
         case ServiceComponent.__name__:
             url = f"component/{obj.pk}/"
+        case _:
+            raise ValueError("Wrong obj type")
 
     int_status = get_status(obj=obj, url=url)
 
