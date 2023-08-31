@@ -8,6 +8,7 @@ import { setSortParams } from '@store/adcm/cluster/services/serviceComponents/se
 import { SortParams } from '@uikit/types/list.types';
 import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/MaintenanceModeButton';
 import { openMaintenanceModeDialog } from '@store/adcm/cluster/services/serviceComponents/serviceComponentsActionsSlice';
+import { AdcmServiceComponent } from '@models/adcm';
 
 const ServiceComponentsTable = () => {
   const dispatch = useDispatch();
@@ -19,9 +20,9 @@ const ServiceComponentsTable = () => {
     dispatch(setSortParams(sortParams));
   };
 
-  const handleClickMaintenanceMode = (componentId: number, itemId: number) => () => {
-    if (components[itemId].isMaintenanceModeAvailable) {
-      dispatch(openMaintenanceModeDialog(componentId));
+  const handleClickMaintenanceMode = (component: AdcmServiceComponent) => () => {
+    if (component.isMaintenanceModeAvailable) {
+      dispatch(openMaintenanceModeDialog(component.id));
     }
   };
 
@@ -31,7 +32,7 @@ const ServiceComponentsTable = () => {
 
   return (
     <Table isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
-      {components.map((component, index) => {
+      {components.map((component) => {
         return (
           <TableRow key={component.id}>
             <StatusableCell status={serviceComponentsStatusMap[component.status]}>
@@ -55,7 +56,7 @@ const ServiceComponentsTable = () => {
               <MaintenanceModeButton
                 isMaintenanceModeAvailable={component.isMaintenanceModeAvailable}
                 maintenanceModeStatus={component.maintenanceMode}
-                onClick={handleClickMaintenanceMode(component.id, index)}
+                onClick={handleClickMaintenanceMode(component)}
               />
             </TableCell>
           </TableRow>

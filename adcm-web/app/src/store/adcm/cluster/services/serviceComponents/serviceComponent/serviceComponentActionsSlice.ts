@@ -2,7 +2,8 @@ import { AdcmClusterServiceComponentsApi, RequestError } from '@api';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { loadClusterServiceComponentFromBackend } from './serviceComponentSlice';
+import { getServiceComponent } from './serviceComponentSlice';
+import { AdcmMaintenanceMode } from '@models/adcm';
 
 interface AdcmServiceComponentActionsState {
   maintenanceModeDialog: {
@@ -14,7 +15,7 @@ interface toggleMaintenanceModePayload {
   clusterId: number;
   serviceId: number;
   componentId: number;
-  maintenanceMode: string;
+  maintenanceMode: AdcmMaintenanceMode;
 }
 
 const toggleMaintenanceModeWithUpdate = createAsyncThunk(
@@ -22,8 +23,8 @@ const toggleMaintenanceModeWithUpdate = createAsyncThunk(
   async ({ clusterId, serviceId, componentId, maintenanceMode }: toggleMaintenanceModePayload, thunkAPI) => {
     try {
       await AdcmClusterServiceComponentsApi.toggleMaintenanceMode(clusterId, serviceId, componentId, maintenanceMode);
-      await thunkAPI.dispatch(loadClusterServiceComponentFromBackend({ clusterId, serviceId, componentId }));
-      const maintenanceModeStatus = maintenanceMode === 'off' ? 'disabled' : 'enabled';
+      await thunkAPI.dispatch(getServiceComponent({ clusterId, serviceId, componentId }));
+      const maintenanceModeStatus = maintenanceMode === AdcmMaintenanceMode.Off ? 'disabled' : 'enabled';
       thunkAPI.dispatch(showInfo({ message: `The maintenance mode has been ${maintenanceModeStatus}` }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));

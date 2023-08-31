@@ -7,6 +7,7 @@ import {
   closeMaintenanceModeDialog,
   toggleMaintenanceModeWithUpdate,
 } from '@store/adcm/cluster/services/serviceComponents/serviceComponent/serviceComponentActionsSlice';
+import { AdcmMaintenanceMode } from '@models/adcm';
 
 const MaintenanceModeDialog: React.FC = () => {
   const dispatch = useDispatch();
@@ -18,8 +19,9 @@ const MaintenanceModeDialog: React.FC = () => {
   const component = useStore(({ adcm }) => adcm.serviceComponent.serviceComponent);
   const maintenanceModeDialogId = useStore(({ adcm }) => adcm.serviceComponentActions.maintenanceModeDialog.id);
   const componentName = component?.displayName;
-  const statusLabel = component?.maintenanceMode === 'off' ? 'Enable' : 'Disable';
-  const maintenanceMode = component?.maintenanceMode === 'off' ? 'on' : 'off';
+  const statusLabel = component?.maintenanceMode === AdcmMaintenanceMode.Off ? 'Enable' : 'Disable';
+  const maintenanceMode =
+    component?.maintenanceMode === AdcmMaintenanceMode.Off ? AdcmMaintenanceMode.On : AdcmMaintenanceMode.Off;
 
   const isOpen = maintenanceModeDialogId !== null;
 

@@ -6,6 +6,7 @@ import {
 } from '@store/adcm/cluster/services/serviceComponents/serviceComponentsActionsSlice';
 import { Dialog } from '@uikit';
 import { useParams } from 'react-router-dom';
+import { AdcmMaintenanceMode } from '@models/adcm';
 
 const MaintenanceModeDialog: React.FC = () => {
   const dispatch = useDispatch();
@@ -17,8 +18,9 @@ const MaintenanceModeDialog: React.FC = () => {
   const components = useStore(({ adcm }) => adcm.serviceComponents.serviceComponents);
   const component = components.find(({ id }) => id === componentId);
   const componentName = component?.displayName;
-  const statusLabel = component?.maintenanceMode === 'off' ? 'Enable' : 'Disable';
-  const maintenanceMode = component?.maintenanceMode === 'off' ? 'on' : 'off';
+  const statusLabel = component?.maintenanceMode === AdcmMaintenanceMode.Off ? 'Enable' : 'Disable';
+  const maintenanceMode =
+    component?.maintenanceMode === AdcmMaintenanceMode.Off ? AdcmMaintenanceMode.On : AdcmMaintenanceMode.Off;
 
   const isOpen = componentId !== null;
 

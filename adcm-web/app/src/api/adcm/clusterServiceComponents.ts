@@ -1,5 +1,5 @@
 import { httpClient } from '@api/httpClient';
-import { AdcmServiceComponent, Batch } from '@models/adcm';
+import { AdcmMaintenanceMode, AdcmServiceComponent, Batch } from '@models/adcm';
 import { SortParams } from '@models/table';
 import { prepareSorting } from '@utils/apiUtils';
 import qs from 'qs';
@@ -28,7 +28,7 @@ export class AdcmClusterServiceComponentsApi {
     clusterId: number,
     serviceId: number,
     componentId: number,
-    maintenanceMode: string,
+    maintenanceMode: AdcmMaintenanceMode,
   ) {
     const response = await httpClient.post(
       `/api/v2/clusters/${clusterId}/services/${serviceId}/components/${componentId}/maintenance-mode/`,
