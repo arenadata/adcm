@@ -1,8 +1,8 @@
 import { useDispatch, useStore } from '@hooks';
 import { Dialog, FormFieldsContainer } from '@uikit';
 import { closeAddDialog } from '@store/adcm/cluster/hosts/hostsActionsSlice';
-import MultiSelectPanel from '@uikit/Select/MultiSelect/MultiSelectPanel/MultiSelectPanel.tsx';
-import { useCreateClusterHostsForm } from '@pages/cluster/ClusterHosts/ClusterHostsActionsDialogs/AddClusterHostsDialog/useAddClusterHostsDialog.tsx';
+import MultiSelectPanel from '@uikit/Select/MultiSelect/MultiSelectPanel/MultiSelectPanel';
+import { useCreateClusterHostsForm } from '@pages/cluster/ClusterHosts/ClusterHostsActionsDialogs/AddClusterHostsDialog/useAddClusterHostsDialog';
 import { useEffect } from 'react';
 
 const AddClusterHostsDialog = () => {
@@ -55,6 +55,7 @@ const AddClusterHostsDialog = () => {
             isSearchable={true}
           />
         )}
+        {hostsOptions.length == 0 && <div>No available hosts found</div>}
       </FormFieldsContainer>
     </Dialog>
   );

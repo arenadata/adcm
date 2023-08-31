@@ -7,7 +7,8 @@ import UnlinkHostToggleButton from '@pages/cluster/ClusterHosts/ClusterHostsTabl
 import { setSortParams } from '@store/adcm/cluster/hosts/hostsTableSlice';
 import { SortParams } from '@models/table';
 import { AdcmClusterHost } from '@models/adcm/clusterHosts';
-import MaintenanceModeClusterHostsToggleButton from '@pages/cluster/ClusterHosts/ClusterHostsTable/Buttons/MaintenanceModeClusterHostsToggleButton/MaintenanceModeClusterHostsToggleButton';
+import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/MaintenanceModeButton';
+import { openMaintenanceModeDialog } from '@store/adcm/cluster/hosts/hostsActionsSlice';
 
 const ClusterHostsTable: React.FC = () => {
   const dispatch = useDispatch();
@@ -23,10 +24,15 @@ const ClusterHostsTable: React.FC = () => {
   const handleSorting = (sortParams: SortParams) => {
     dispatch(setSortParams(sortParams));
   };
+  const handleClickMaintenanceMode = (host: AdcmClusterHost) => () => {
+    if (host.isMaintenanceModeAvailable) {
+      dispatch(openMaintenanceModeDialog(host));
+    }
+  };
 
   return (
     <Table isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
-      {clusterHosts.map((clusterHost: AdcmClusterHost) => {
+      {clusterHosts.map((clusterHost: AdcmClusterHost, index) => {
         return (
           <TableRow key={clusterHost.id}>
             <StatusableCell status={hostStatusesMap['done']}>{clusterHost.name}</StatusableCell>
@@ -38,7 +44,11 @@ const ClusterHostsTable: React.FC = () => {
               <Tooltip label="Actions">
                 <IconButton icon="g1-actions" size={32} onClick={dummyHandler()} />
               </Tooltip>
-              <MaintenanceModeClusterHostsToggleButton host={clusterHost} />
+              <MaintenanceModeButton
+                isMaintenanceModeAvailable={clusterHost.isMaintenanceModeAvailable}
+                maintenanceModeStatus={clusterHost.maintenanceMode}
+                onClick={handleClickMaintenanceMode(clusterHost)}
+              />
               <UnlinkHostToggleButton host={clusterHost} />
             </TableCell>
           </TableRow>

@@ -1,9 +1,9 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { AdcmClusterHostsApi, AdcmClustersApi, AdcmHostsApi, RequestError } from '@api';
-import { showError } from '@store/notificationsSlice.ts';
-import { getErrorMessage } from '@utils/httpResponseUtils.ts';
-import { getHosts } from '@store/adcm/hosts/hostsSlice.ts';
-import { AdcmHost } from '@models/adcm';
+import { showError, showInfo } from '@store/notificationsSlice';
+import { getErrorMessage } from '@utils/httpResponseUtils';
+import { getHosts } from '@store/adcm/hosts/hostsSlice';
+import { AdcmHost, AdcmMaintenanceMode } from '@models/adcm';
 import { AddClusterHostsPayload } from '@models/adcm';
 
 const loadHosts = createAsyncThunk('adcm/clusterHostsActions/loadHosts', async (arg, thunkAPI) => {
@@ -18,6 +18,12 @@ const loadHosts = createAsyncThunk('adcm/clusterHostsActions/loadHosts', async (
 interface UnlinkHostTogglePayload {
   hostId: number;
   clusterId: number;
+}
+
+interface toggleMaintenanceModePayload {
+  hostId: number;
+  clusterId: number;
+  maintenanceMode: AdcmMaintenanceMode;
 }
 
 const unlinkHost = createAsyncThunk(
@@ -46,6 +52,20 @@ const addClusterHosts = createAsyncThunk(
       return thunkAPI.rejectWithValue(error);
     } finally {
       thunkAPI.dispatch(getHosts());
+    }
+  },
+);
+
+const toggleMaintenanceModeWithUpdate = createAsyncThunk(
+  'adcm/clusterHostsActions/toggleMaintenanceModeWithUpdate',
+  async ({ clusterId, hostId, maintenanceMode }: toggleMaintenanceModePayload, thunkAPI) => {
+    try {
+      await AdcmClusterHostsApi.toggleMaintenanceMode(clusterId, hostId, maintenanceMode);
+      await thunkAPI.dispatch(loadHosts());
+      const maintenanceModeStatus = maintenanceMode === AdcmMaintenanceMode.Off ? 'disabled' : 'enabled';
+      thunkAPI.dispatch(showInfo({ message: `The maintenance mode has been ${maintenanceModeStatus}` }));
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
     }
   },
 );
@@ -108,6 +128,7 @@ const clusterHostsActionsSlice = createSlice({
     },
     closeAddDialog(state) {
       state.addDialog.isOpen = false;
+      state.relatedData.hosts = [];
     },
   },
   extraReducers: (builder) => {
@@ -127,6 +148,9 @@ const clusterHostsActionsSlice = createSlice({
     builder.addCase(loadHosts.rejected, (state) => {
       state.relatedData.hosts = [];
     });
+    builder.addCase(toggleMaintenanceModeWithUpdate.pending, (state) => {
+      clusterHostsActionsSlice.caseReducers.closeMaintenanceModeDialog(state);
+    });
   },
 });
 
@@ -139,6 +163,6 @@ export const {
   closeMaintenanceModeDialog,
 } = clusterHostsActionsSlice.actions;
 
-export { unlinkHost, loadHosts, addClusterHosts };
+export { unlinkHost, loadHosts, addClusterHosts, toggleMaintenanceModeWithUpdate };
 
 export default clusterHostsActionsSlice.reducer;

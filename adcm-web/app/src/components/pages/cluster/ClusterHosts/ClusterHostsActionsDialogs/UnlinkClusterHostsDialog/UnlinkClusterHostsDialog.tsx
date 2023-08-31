@@ -1,7 +1,7 @@
 import React from 'react';
 import { Dialog } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
-import { closeUnlinkDialog, unlinkHost } from '@store/adcm/cluster/hosts/hostsActionsSlice.ts';
+import { closeUnlinkDialog, unlinkHost } from '@store/adcm/cluster/hosts/hostsActionsSlice';
 
 const UnlinkClusterHostsDialog: React.FC = () => {
   const dispatch = useDispatch();
