@@ -1,10 +1,20 @@
-import React from 'react';
+import TableContainer from '@commonComponents/Table/TableContainer/TableContainer';
+import AccessManagerRolesTableToolbar from './AccessManagerRolesTableToolbar/AccessManagerRolesTableToolbar';
+import AccessManagerRolesTable from './AccessManagerRolesTable/AccessManagerRolesTable';
+import AccessManagerRolesTableFooter from './AccessManagerRolesTableFooter/AccessManagerRolesTableFooter';
+import { useRequestAccessManagerRoles } from './useRequestAccessManagerRoles';
+import AccessManagerRolesDialogs from './Dialogs';
 
 const AccessManagerRolesPage = () => {
+  useRequestAccessManagerRoles();
+
   return (
-    <div>
-      <h1>Access Manager Roles</h1>
-    </div>
+    <TableContainer variant="easy">
+      <AccessManagerRolesTableToolbar />
+      <AccessManagerRolesTable />
+      <AccessManagerRolesTableFooter />
+      <AccessManagerRolesDialogs />
+    </TableContainer>
   );
 };
 

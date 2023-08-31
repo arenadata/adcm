@@ -46,6 +46,9 @@ import groupsTableSlice from './adcm/groups/groupsTableSlice';
 import policiesTableSlice from './adcm/policies/policiesTableSlice';
 import policiesSlice from './adcm/policies/policiesSlice';
 import policiesActionsSlice from './adcm/policies/policiesActionsSlice';
+import rolesSlice from './adcm/roles/rolesSlice';
+import rolesTableSlice from './adcm/roles/rolesTableSlice';
+import rolesActionsSlice from './adcm/roles/rolesActionsSlice';
 import serviceComponentsActionsSlice from './adcm/cluster/services/serviceComponents/serviceComponentsActionsSlice';
 import serviceComponentSlice from './adcm/cluster/services/serviceComponents/serviceComponent/serviceComponentSlice';
 import serviceComponentActionsSlice from './adcm/cluster/services/serviceComponents/serviceComponent/serviceComponentActionsSlice';
@@ -103,6 +106,9 @@ const rootReducer = combineReducers({
     policies: policiesSlice,
     policiesActions: policiesActionsSlice,
     policiesTable: policiesTableSlice,
+    roles: rolesSlice,
+    rolesTable: rolesTableSlice,
+    rolesActions: rolesActionsSlice,
   }),
 });
 

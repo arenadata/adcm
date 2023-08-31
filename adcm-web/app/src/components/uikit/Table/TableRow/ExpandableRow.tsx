@@ -11,6 +11,7 @@ export interface ExpandableRowProps extends React.PropsWithChildren {
   expandedContent?: React.ReactNode;
   colSpan: number;
   className?: string;
+  expandedClassName?: string;
   isInactive?: boolean;
 }
 
@@ -20,6 +21,7 @@ const ExpandableRow = ({
   expandedContent = undefined,
   colSpan,
   className = '',
+  expandedClassName = '',
   isInactive = false,
 }: ExpandableRowProps) => {
   const [isMainHovered, setIsMainHovered] = useState(false);
@@ -33,7 +35,9 @@ const ExpandableRow = ({
     [s.expandableRowMain_inactive]: isInactive,
   });
 
-  const expandedRowClasses = cn(s.expandableRowContent, { [tableStyles.hovered]: isMainHovered || isExpandHovered });
+  const expandedRowClasses = cn(s.expandableRowContent, expandedClassName, {
+    [tableStyles.hovered]: isMainHovered || isExpandHovered,
+  });
 
   const onMainMouseEnterHandler = () => setIsMainHovered(true);
   const onMainMouseLeaveHandler = () => setIsMainHovered(false);
@@ -63,7 +67,7 @@ const ExpandableRow = ({
       <TableRow isInactive={isInactive} ref={refRow} className={rowClasses}>
         {children}
       </TableRow>
-      {expandedContent && (
+      {expandedContent && isExpanded && (
         <tr
           className={expandedRowClasses}
           onMouseEnter={() => setIsExpandHovered(true)}
@@ -71,7 +75,7 @@ const ExpandableRow = ({
         >
           <td colSpan={colSpan}>
             <div style={{ width: `${rowWidth}px` }}>
-              <Collapse isExpanded={isExpanded}>
+              <Collapse isExpanded={true}>
                 <div className={s.expandableRowContent_wrapper}>{expandedContent}</div>
               </Collapse>
             </div>

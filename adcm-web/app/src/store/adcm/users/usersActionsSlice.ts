@@ -60,7 +60,7 @@ const createInitialState = (): AdcmUsersActionState => ({
   selectedItemsIds: [],
 });
 
-const usersSlice = createSlice({
+const usersActionsSlice = createSlice({
   name: 'adcm/usersActions',
   initialState: createInitialState(),
   reducers: {
@@ -80,7 +80,7 @@ const usersSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(deleteUsersWithUpdate.pending, (state) => {
-        usersSlice.caseReducers.closeDeleteDialog(state);
+        usersActionsSlice.caseReducers.closeDeleteDialog(state);
       })
       .addCase(blockUsers.fulfilled, (state) => {
         state.selectedItemsIds = [];
@@ -91,6 +91,6 @@ const usersSlice = createSlice({
   },
 });
 
-const { setSelectedItemsIds, openDeleteDialog, closeDeleteDialog } = usersSlice.actions;
+const { setSelectedItemsIds, openDeleteDialog, closeDeleteDialog } = usersActionsSlice.actions;
 export { deleteUsersWithUpdate, setSelectedItemsIds, openDeleteDialog, closeDeleteDialog, blockUsers, unblockUsers };
-export default usersSlice.reducer;
+export default usersActionsSlice.reducer;
