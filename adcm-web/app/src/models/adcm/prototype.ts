@@ -37,6 +37,7 @@ export interface AdcmPrototype {
   displayName: string;
   description?: string;
   type: AdcmPrototypeType;
+  version: string;
   bundleId: number;
   license: AdcmLicense;
 }

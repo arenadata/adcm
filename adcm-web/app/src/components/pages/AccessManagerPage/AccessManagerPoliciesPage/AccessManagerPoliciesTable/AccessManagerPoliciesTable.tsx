@@ -29,8 +29,8 @@ const AccessManagerPoliciesTable: React.FC = () => {
           <TableRow key={policy.id}>
             <TableCell>{policy.name}</TableCell>
             <TableCell>{orElseGet(policy.description)}</TableCell>
-            <TableCell>{policy.role.name}</TableCell>
-            <TableCell>{policy.groups.map((group) => group.name).join(', ')}</TableCell>
+            <TableCell>{policy.role.displayName}</TableCell>
+            <TableCell>{policy.groups.map((group) => group.displayName).join(', ')}</TableCell>
             <TableCell hasIconOnly align="center">
               <IconButton icon="g1-edit" size={32} title="Edit" />
               <IconButton icon="g1-delete" size={32} onClick={handleDeleteClick(policy.id)} title="Delete" />

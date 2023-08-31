@@ -6,10 +6,10 @@ import EntityHeader from '@commonComponents/EntityHeader/EntityHeader';
 import BundleDeleteButton from './BundleDeleteButton/BundleDeleteButton';
 
 const BundleOverviewHeader: React.FC = () => {
-  const bundle = useStore(({ adcm }) => adcm.bundle.bundle);
+  const prototype = useStore(({ adcm }) => adcm.bundle.relatedData.prototype);
   return (
     <div className={s.bundleOverviewHeader}>
-      <EntityHeader title={orElseGet(bundle?.name)} actions={<BundleDeleteButton />} />
+      <EntityHeader title={orElseGet(prototype?.displayName)} actions={<BundleDeleteButton />} />
     </div>
   );
 };
