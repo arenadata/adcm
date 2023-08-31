@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useStore, useDispatch } from '@hooks';
-import { addClusterHosts, loadHosts } from '@store/adcm/cluster/hosts/hostsActionsSlice.ts';
+import { addClusterHosts, loadHosts } from '@store/adcm/cluster/hosts/hostsActionsSlice';
 import { useParams } from 'react-router-dom';
 
 interface CreateClusterHostsFormData {
@@ -28,7 +28,7 @@ export const useCreateClusterHostsForm = () => {
 
   const isValid = useMemo(() => {
     const { hostIds } = formData;
-    return !!hostIds;
+    return hostIds.length > 0;
   }, [formData]);
 
   const resetForm = useCallback(() => {
