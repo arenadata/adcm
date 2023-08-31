@@ -1,0 +1,86 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from api_v2.adcm.serializers import LoginSerializer
+from cm.adcm_config.config import get_adcm_config
+from cm.errors import AdcmEx
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
+from djangorestframework_camel_case.parser import (
+    CamelCaseFormParser,
+    CamelCaseJSONParser,
+    CamelCaseMultiPartParser,
+)
+from djangorestframework_camel_case.render import (
+    CamelCaseBrowsableAPIRenderer,
+    CamelCaseJSONRenderer,
+)
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.authtoken.models import Token
+from rest_framework.generics import GenericAPIView
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.status import HTTP_204_NO_CONTENT
+
+from adcm.serializers import EmptySerializer
+
+
+class BaseLoginView(GenericAPIView):
+    permission_classes = (AllowAny,)
+    serializer_class = LoginSerializer
+    renderer_classes = [CamelCaseJSONRenderer, CamelCaseBrowsableAPIRenderer]
+    parser_classes = [CamelCaseJSONParser, CamelCaseMultiPartParser, CamelCaseFormParser]
+    http_method_names = ["post"]
+
+    def perform_login(self, request: Request) -> User:
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = authenticate(request=request, **serializer.validated_data)
+        if user is None:
+            raise AdcmEx(code="AUTH_ERROR")
+
+        login(request=request, user=user, backend="django.contrib.auth.backends.ModelBackend")
+
+        return user
+
+
+class LoginView(BaseLoginView):
+    def post(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        self.perform_login(request=request)
+        _, adcm_auth_config = get_adcm_config(section="auth_policy")
+
+        return Response(data={"auth_settings": adcm_auth_config})
+
+
+class LogoutView(GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = EmptySerializer
+    http_method_names = ["post"]
+    parser_classes = [CamelCaseJSONParser, CamelCaseMultiPartParser, CamelCaseFormParser]
+    renderer_classes = [CamelCaseJSONRenderer, CamelCaseBrowsableAPIRenderer]
+
+    def post(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        logout(request)
+
+        return Response(status=HTTP_204_NO_CONTENT)
+
+
+class TokenView(BaseLoginView):
+    authentication_classes = (TokenAuthentication,)
+
+    def post(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        user = self.perform_login(request=request)
+        token, _ = Token.objects.get_or_create(user=user)
+
+        return Response({"token": token.key})
