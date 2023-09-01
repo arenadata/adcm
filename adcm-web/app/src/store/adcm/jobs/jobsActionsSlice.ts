@@ -10,6 +10,9 @@ interface AdcmJobsActionState {
   restartDialog: {
     id: number | null;
   };
+  stopDialog: {
+    id: number | null;
+  };
 }
 
 const restartJobWithUpdate = createAsyncThunk('adcm/jobs/restartJob', async (id: number, thunkAPI) => {
@@ -23,8 +26,31 @@ const restartJobWithUpdate = createAsyncThunk('adcm/jobs/restartJob', async (id:
   }
 });
 
+const stopJobWithUpdate = createAsyncThunk('adcm/jobs/stopJob', async (id: number, thunkAPI) => {
+  try {
+    AdcmJobsApi.stopJob(id);
+    thunkAPI.dispatch(showInfo({ message: 'Job has been stopped' }));
+    await thunkAPI.dispatch(refreshJobs());
+  } catch (error) {
+    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+    return error;
+  }
+});
+
+const downloadTaskLog = createAsyncThunk('adcm/jobs/downloadTaskLog', async (id: number, thunkAPI) => {
+  try {
+    AdcmJobsApi.downloadTaskLog(id);
+  } catch (error) {
+    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+    return error;
+  }
+});
+
 const createInitialState = (): AdcmJobsActionState => ({
   restartDialog: {
+    id: null,
+  },
+  stopDialog: {
     id: null,
   },
 });
@@ -42,14 +68,32 @@ const jobsSlice = createSlice({
     closeRestartDialog(state) {
       state.restartDialog.id = null;
     },
+    openStopDialog(state, action) {
+      state.stopDialog.id = action.payload;
+    },
+    closeStopDialog(state) {
+      state.stopDialog.id = null;
+    },
   },
   extraReducers: (builder) => {
-    builder.addCase(restartJobWithUpdate.pending, (state) => {
-      jobsSlice.caseReducers.closeRestartDialog(state);
-    });
+    builder
+      .addCase(restartJobWithUpdate.pending, (state) => {
+        jobsSlice.caseReducers.closeRestartDialog(state);
+      })
+      .addCase(stopJobWithUpdate.pending, (state) => {
+        jobsSlice.caseReducers.closeStopDialog(state);
+      });
   },
 });
 
-const { openRestartDialog, closeRestartDialog } = jobsSlice.actions;
-export { restartJobWithUpdate, openRestartDialog, closeRestartDialog };
+const { openRestartDialog, closeRestartDialog, openStopDialog, closeStopDialog } = jobsSlice.actions;
+export {
+  restartJobWithUpdate,
+  stopJobWithUpdate,
+  openRestartDialog,
+  closeRestartDialog,
+  openStopDialog,
+  closeStopDialog,
+  downloadTaskLog,
+};
 export default jobsSlice.reducer;

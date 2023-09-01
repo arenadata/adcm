@@ -1,4 +1,3 @@
-import React from 'react';
 import { Provider } from 'react-redux';
 import './scss/app.scss';
 import { store } from '@store';
@@ -44,6 +43,7 @@ import AccessManagerGroupsPage from '@pages/AccessManagerPage/AccessManagerGroup
 import AccessManagerRolesPage from '@pages/AccessManagerPage/AccessManagerRolesPage/AccessManagerRolesPage';
 import AccessManagerPolicyPage from '@pages/AccessManagerPage/AccessManagerPoliciesPage/AccessManagerPoliciesPage';
 import BundleOverviewPage from '@pages/BundleOverviewPage/BundleOverviewPage';
+import JobPage from '@pages/JobsPage/JobPage/JobPage';
 import ServiceComponent from '@pages/cluster/service/component/ServiceComponent';
 import ComponentPrimaryConfiguration from '@pages/cluster/service/component/ComponentPrimaryConfiguration/ComponentPrimaryConfiguration';
 import ComponentConfigurationGroups from '@pages/cluster/service/component/ComponentConfigurationGroups/ComponentConfigurationGroups';
@@ -126,7 +126,13 @@ function App() {
 
               <Route path="/hostproviders" element={<HostProvidersPage />} />
               <Route path="/hosts" element={<HostsPage />} />
-              <Route path="/jobs" element={<JobsPage />} />
+              <Route path="/jobs">
+                <Route index element={<JobsPage />} />
+                <Route path="/jobs/:jobId">
+                  <Route index element={<Navigate to="stdout" replace />} />
+                  <Route path="/jobs/:jobId/*" element={<JobPage />} />
+                </Route>
+              </Route>
               <Route path="/access-manager" element={<AccessManagerPage />}>
                 <Route index element={<Navigate to="/access-manager/users" replace />} />
                 <Route path="/access-manager/users" element={<AccessManagerUsersPage />} />

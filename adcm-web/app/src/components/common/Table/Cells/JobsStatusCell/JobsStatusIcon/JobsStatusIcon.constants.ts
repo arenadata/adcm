@@ -2,10 +2,10 @@ import { AdcmJobStatus } from '@models/adcm';
 import { IconsNames } from '@uikit';
 
 export const jobStatusesIconsMap: { [key in AdcmJobStatus]: IconsNames } = {
-  [AdcmJobStatus.CREATED]: 'g2-created-10x10',
-  [AdcmJobStatus.SUCCESS]: 'g2-success-10x10',
-  [AdcmJobStatus.FAILED]: 'g2-failed-10x10',
-  [AdcmJobStatus.RUNNING]: 'g2-running-10x10',
-  [AdcmJobStatus.LOCKED]: 'g2-locked-10x10',
-  [AdcmJobStatus.ABORTED]: 'g2-aborted-10x10',
+  [AdcmJobStatus.Created]: 'g2-created-10x10',
+  [AdcmJobStatus.Success]: 'g2-success-10x10',
+  [AdcmJobStatus.Failed]: 'g2-failed-10x10',
+  [AdcmJobStatus.Running]: 'g2-running-10x10',
+  [AdcmJobStatus.Locked]: 'g2-locked-10x10',
+  [AdcmJobStatus.Aborted]: 'g2-aborted-10x10',
 };

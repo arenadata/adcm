@@ -1,6 +1,6 @@
 import { matchPath, To } from 'react-router-dom';
 
-export const isCurrentPathname = (pathname: string, to: To | string, subPattern?: string) => {
+export const isCurrentPathname = (pathname: string, to: To | string, subPattern?: string): boolean => {
   if (matchPath(subPattern || '', pathname)) return true;
 
   const toString = typeof to === 'string' ? to : to.pathname || '';
@@ -14,7 +14,7 @@ export const isCurrentPathname = (pathname: string, to: To | string, subPattern?
   return pathname.endsWith(toString);
 };
 
-export const isCurrentParentPage = (pathname: string, subPage: To | string) => {
+export const isCurrentParentPage = (pathname: string, subPage: To | string): boolean => {
   const toString = typeof subPage === 'string' ? subPage : subPage.pathname || '';
   const [, firstPart] = pathname.split('/');
 

@@ -4,7 +4,7 @@ import { useDispatch, useStore } from '@hooks';
 import { columns, linkByObjectTypeMap } from './JobsTable.constants';
 import { setSortParams } from '@store/adcm/jobs/jobsTableSlice';
 import { SortParams } from '@uikit/types/list.types';
-import { openRestartDialog } from '@store/adcm/jobs/jobsActionsSlice';
+import { openRestartDialog, openStopDialog } from '@store/adcm/jobs/jobsActionsSlice';
 import { AdcmJobStatus } from '@models/adcm';
 import s from './JobsTable.module.scss';
 import { dateToString } from '@utils/date/dateConvertUtils';
@@ -19,6 +19,10 @@ const JobsTable = () => {
 
   const handleRestartClick = (id: number) => () => {
     dispatch(openRestartDialog(id));
+  };
+
+  const handleStopClick = (id: number) => () => {
+    dispatch(openStopDialog(id));
   };
 
   const handleSorting = (sortParams: SortParams) => {
@@ -53,10 +57,12 @@ const JobsTable = () => {
             <TableCell>{dateToString(new Date(job.startTime))}</TableCell>
             <TableCell>{dateToString(new Date(job.endTime))}</TableCell>
             <TableCell hasIconOnly align="center">
-              {job.status !== AdcmJobStatus.SUCCESS && (
+              {job.status !== AdcmJobStatus.Success && (
                 <IconButton icon="g1-return" size={32} title="Restart job" onClick={handleRestartClick(job.id)} />
               )}
-              {job.status === AdcmJobStatus.SUCCESS && <IconButton icon="g1-stop" size={32} />}
+              {job.status === AdcmJobStatus.Success && (
+                <IconButton icon="g1-stop" title="Stop the job" size={32} onClick={handleStopClick(job.id)} />
+              )}
             </TableCell>
           </TableRow>
         );
