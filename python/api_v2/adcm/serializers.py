@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.serializers import CharField
+from rbac.models import User
+from rest_framework.serializers import BooleanField, CharField, ModelSerializer
 
 from adcm.serializers import EmptySerializer
 
@@ -18,3 +19,14 @@ from adcm.serializers import EmptySerializer
 class LoginSerializer(EmptySerializer):
     username = CharField(write_only=True)
     password = CharField(style={"input_type": "password"}, trim_whitespace=False, write_only=True)
+
+
+class ProfileSerializer(ModelSerializer):
+    password = CharField(trim_whitespace=False, required=False, write_only=True)
+    current_password = CharField(trim_whitespace=False, required=False, write_only=True)
+    is_super_user = BooleanField(source="is_superuser", read_only=True)
+
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "first_name", "last_name", "is_super_user", "password", "current_password"]
+        read_only_fields = ["username", "email", "first_name", "last_name", "is_super_user"]

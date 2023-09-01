@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.adcm.serializers import LoginSerializer
+from api_v2.adcm.serializers import LoginSerializer, ProfileSerializer
 from cm.adcm_config.config import get_adcm_config
 from cm.errors import AdcmEx
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User as AuthUser
 from djangorestframework_camel_case.parser import (
     CamelCaseFormParser,
     CamelCaseJSONParser,
@@ -24,9 +24,11 @@ from djangorestframework_camel_case.render import (
     CamelCaseBrowsableAPIRenderer,
     CamelCaseJSONRenderer,
 )
+from rbac.models import User
+from rbac.services.user import update_user
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -42,7 +44,7 @@ class BaseLoginView(GenericAPIView):
     parser_classes = [CamelCaseJSONParser, CamelCaseMultiPartParser, CamelCaseFormParser]
     http_method_names = ["post"]
 
-    def perform_login(self, request: Request) -> User:
+    def perform_login(self, request: Request) -> AuthUser:
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -84,3 +86,23 @@ class TokenView(BaseLoginView):
         token, _ = Token.objects.get_or_create(user=user)
 
         return Response({"token": token.key})
+
+
+class ProfileView(RetrieveUpdateAPIView):
+    permission_classes = (IsAuthenticated,)
+    queryset = User.objects.all()
+    serializer_class = ProfileSerializer
+    renderer_classes = [CamelCaseJSONRenderer, CamelCaseBrowsableAPIRenderer]
+    parser_classes = [CamelCaseJSONParser, CamelCaseMultiPartParser, CamelCaseFormParser]
+
+    def get_object(self) -> User:
+        return User.objects.get(user_ptr=self.request.user)
+
+    def perform_update(self, serializer: ProfileSerializer) -> None:
+        update_user(
+            user=serializer.instance,
+            context_user=self.request.user,
+            partial=True,
+            api_v2_behaviour=True,
+            **serializer.validated_data
+        )
