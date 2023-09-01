@@ -91,7 +91,7 @@
         --tab-color: var(--tab-color-hover-secondary);
       }
 
-      &:global(.active) {
+      &:global(.active), &_active {
         --tab-color: var(--tab-color-active-secondary);
         --tab-background: var(--tab-background-active-secondary);
         --tab-border: var(--tab-border-active-secondary);

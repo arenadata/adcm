@@ -5,13 +5,14 @@ import cn from 'classnames';
 import { isCurrentPathname } from '@uikit/utils/urlUtils';
 import { TabProps } from '@uikit/Tabs/Tab.types';
 
-const Tab: React.FC<TabProps> = ({ children, to, subPattern, disabled = false }) => {
+const Tab: React.FC<TabProps> = ({ children, to, subPattern, disabled = false, isActive = false }) => {
   const { pathname } = useLocation();
 
   const tabClasses = cn(s.tab, {
-    [s.tab_active]: isCurrentPathname(pathname, to, subPattern),
+    [s.tab_active]: isCurrentPathname(pathname, to, subPattern) || isActive,
     [s.tab_disabled]: disabled,
   });
+
   return disabled ? (
     <div className={tabClasses}>{children}</div>
   ) : (
@@ -20,4 +21,5 @@ const Tab: React.FC<TabProps> = ({ children, to, subPattern, disabled = false })
     </NavLink>
   );
 };
+
 export default Tab;

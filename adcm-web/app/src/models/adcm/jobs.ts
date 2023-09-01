@@ -1,19 +1,19 @@
 export enum AdcmJobStatus {
-  CREATED = 'created',
-  SUCCESS = 'success',
-  FAILED = 'failed',
-  RUNNING = 'running',
-  LOCKED = 'locked',
-  ABORTED = 'aborted',
+  Created = 'created',
+  Success = 'success',
+  Failed = 'failed',
+  Running = 'running',
+  Locked = 'locked',
+  Aborted = 'aborted',
 }
 
 export enum AdcmJobObjectType {
-  ADCM = 'adcm',
-  CLUSTER = 'cluster',
-  SERVICE = 'service',
-  PROVIDER = 'provider',
-  HOST = 'host',
-  COMPONENT = 'component',
+  Adcm = 'adcm',
+  Cluster = 'cluster',
+  Service = 'service',
+  Provider = 'provider',
+  Host = 'host',
+  Component = 'component',
 }
 
 interface AdcmJobObject {
@@ -33,7 +33,15 @@ export interface AdcmJob {
   startTime: string;
   endTime: string;
   isTerminatable: boolean;
-  childJobs?: [];
+  childJobs?: AdcmJob[];
+}
+
+export interface AdcmJobLog {
+  id: number;
+  name: string;
+  type: string;
+  format: string;
+  content: string;
 }
 
 export interface AdcmJobsFilter {
@@ -44,4 +52,17 @@ export interface AdcmJobsFilter {
 
 export interface AdcmRestartJobPayload {
   id: number;
+}
+
+export interface AdcmTask {
+  id: number;
+  name: string;
+  displayName: string;
+  status: AdcmJobStatus;
+  objects: AdcmJobObject[];
+  duration: string;
+  startTime: string;
+  endTime: string;
+  isTerminatable: boolean;
+  childJobs?: AdcmJob[];
 }

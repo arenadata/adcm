@@ -228,12 +228,24 @@ const routes: RoutesConfigs = {
     ],
   },
 
-  // Hosts
+  // Jobs
   '/jobs': {
     pageTitle: 'Jobs',
     breadcrumbs: [
       {
         label: 'Jobs',
+      },
+    ],
+  },
+  '/jobs/:jobId': {
+    pageTitle: 'Jobs',
+    breadcrumbs: [
+      {
+        href: '/jobs',
+        label: 'Jobs',
+      },
+      {
+        label: ':jobId',
       },
     ],
   },
