@@ -1,5 +1,5 @@
 import qs from 'qs';
-import type { Batch, CreateAdcmHostPayload } from '@models/adcm';
+import type { AdcmMaintenanceMode, Batch, CreateAdcmHostPayload } from '@models/adcm';
 import { PaginationParams, SortParams } from '@models/table';
 import { httpClient } from '@api/httpClient';
 import { AdcmHost, AdcmHostsFilter } from '@models/adcm/host';
@@ -12,6 +12,10 @@ export class AdcmHostsApi {
     const query = qs.stringify(queryParams);
     const response = await httpClient.get<Batch<AdcmHost>>(`/api/v2/hosts/?${query}`);
     return response.data;
+  }
+
+  public static async toggleMaintenanceMode(hostId: number, maintenanceMode: AdcmMaintenanceMode) {
+    await httpClient.post(`/api/v2/hosts/${hostId}/maintenance-mode/`, { maintenanceMode });
   }
 
   public static async deleteHost(id: number) {
