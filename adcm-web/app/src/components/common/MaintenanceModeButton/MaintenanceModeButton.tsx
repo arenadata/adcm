@@ -7,11 +7,11 @@ import { AdcmMaintenanceMode } from '@models/adcm';
 
 interface MaintenanceModeButtonProps {
   isMaintenanceModeAvailable: boolean;
-  maintenanceModeStatus: AdcmMaintenanceMode;
+  maintenanceModeStatus: string;
   onClick: () => void;
 }
 
-const getTooltipLabel = (status: AdcmMaintenanceMode) => {
+const getTooltipLabel = (status: string) => {
   let label = 'Maintenance mode: ';
   switch (status) {
     case AdcmMaintenanceMode.On:

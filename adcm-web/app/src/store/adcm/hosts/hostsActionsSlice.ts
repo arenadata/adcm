@@ -4,7 +4,7 @@ import { getHosts } from '@store/adcm/hosts/hostsSlice';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmClustersApi, AdcmHostProvidersApi, AdcmHostsApi, RequestError } from '@api';
-import { AdcmCluster, AdcmHostProvider, CreateAdcmHostPayload } from '@models/adcm';
+import { AdcmCluster, AdcmHostProvider, AdcmMaintenanceMode, CreateAdcmHostPayload } from '@models/adcm';
 import { SortParams } from '@models/table';
 import { rejectedFilter } from '@utils/promiseUtils';
 
@@ -78,6 +78,26 @@ const createHost = createAsyncThunk(
   },
 );
 
+interface toggleMaintenanceModePayload {
+  hostId: number;
+  maintenanceMode: AdcmMaintenanceMode;
+}
+
+const toggleMaintenanceModeWithUpdate = createAsyncThunk(
+  'adcm/hostsActions/toggleMaintenanceMode',
+  async ({ hostId, maintenanceMode }: toggleMaintenanceModePayload, thunkAPI) => {
+    try {
+      await AdcmHostsApi.toggleMaintenanceMode(hostId, maintenanceMode);
+      await thunkAPI.dispatch(getHosts());
+      const maintenanceModeStatus = maintenanceMode === AdcmMaintenanceMode.Off ? 'disabled' : 'enabled';
+      thunkAPI.dispatch(showInfo({ message: `The maintenance mode has been ${maintenanceModeStatus}` }));
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
 const deleteHosts = createAsyncThunk('adcm/hostsActions/deleteHosts', async (ids: number[], thunkAPI) => {
   try {
     const deletePromises = await Promise.allSettled(ids.map((id) => AdcmHostsApi.deleteHost(id)));
@@ -97,6 +117,9 @@ const deleteHosts = createAsyncThunk('adcm/hostsActions/deleteHosts', async (ids
 });
 
 interface AdcmHostsActionsState {
+  maintenanceModeDialog: {
+    id: number | null;
+  };
   deleteDialog: {
     id: number | null;
   };
@@ -116,6 +139,9 @@ interface AdcmHostsActionsState {
 }
 
 const createInitialState = (): AdcmHostsActionsState => ({
+  maintenanceModeDialog: {
+    id: null,
+  },
   deleteDialog: {
     id: null,
   },
@@ -140,6 +166,12 @@ const hostsActionsSlice = createSlice({
   reducers: {
     cleanupActions() {
       return createInitialState();
+    },
+    openMaintenanceModeDialog(state, action) {
+      state.maintenanceModeDialog.id = action.payload;
+    },
+    closeMaintenanceModeDialog(state) {
+      state.maintenanceModeDialog.id = null;
     },
     openDeleteDialog(state, action) {
       state.deleteDialog.id = action.payload;
@@ -167,6 +199,9 @@ const hostsActionsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    builder.addCase(toggleMaintenanceModeWithUpdate.pending, (state) => {
+      hostsActionsSlice.caseReducers.closeMaintenanceModeDialog(state);
+    });
     builder.addCase(unlinkHost.pending, (state) => {
       hostsActionsSlice.caseReducers.closeUnlinkDialog(state);
     });
@@ -196,6 +231,8 @@ const hostsActionsSlice = createSlice({
 });
 
 export const {
+  openMaintenanceModeDialog,
+  closeMaintenanceModeDialog,
   openDeleteDialog,
   closeDeleteDialog,
   openCreateDialog,
@@ -206,6 +243,14 @@ export const {
   closeUnlinkDialog,
 } = hostsActionsSlice.actions;
 
-export { unlinkHost, linkHost, loadClusters, loadHostProviders, createHost, deleteHosts };
+export {
+  unlinkHost,
+  linkHost,
+  loadClusters,
+  loadHostProviders,
+  createHost,
+  deleteHosts,
+  toggleMaintenanceModeWithUpdate,
+};
 
 export default hostsActionsSlice.reducer;

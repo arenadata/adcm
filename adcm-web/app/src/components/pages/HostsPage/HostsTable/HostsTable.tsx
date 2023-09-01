@@ -8,7 +8,8 @@ import UnlinkHostToggleButton from '@pages/HostsPage/HostsTable/Buttons/UnlinkHo
 import { SortParams } from '@uikit/types/list.types';
 import { setSortParams } from '@store/adcm/hosts/hostsTableSlice';
 import { orElseGet } from '@utils/checkUtils';
-import { openDeleteDialog } from '@store/adcm/hosts/hostsActionsSlice';
+import { openDeleteDialog, openMaintenanceModeDialog } from '@store/adcm/hosts/hostsActionsSlice';
+import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/MaintenanceModeButton';
 
 const HostsTable: React.FC = () => {
   const dispatch = useDispatch();
@@ -19,6 +20,12 @@ const HostsTable: React.FC = () => {
 
   const dummyHandler = () => () => {
     console.info('Add proper action handlers');
+  };
+
+  const handleClickMaintenanceMode = (host: AdcmHost) => () => {
+    if (host.isMaintenanceModeAvailable) {
+      dispatch(openMaintenanceModeDialog(host.id));
+    }
   };
 
   const getHandleDeleteClick = (hostId: number) => () => {
@@ -42,7 +49,11 @@ const HostsTable: React.FC = () => {
             <TableCell>{'-'}</TableCell>
             <TableCell hasIconOnly align="center">
               <IconButton icon="g1-actions" size={32} onClick={dummyHandler()} title="Actions" />
-              <IconButton icon="g1-maintenance" size={32} onClick={dummyHandler()} title="Maintenance mode" />
+              <MaintenanceModeButton
+                isMaintenanceModeAvailable={host.isMaintenanceModeAvailable}
+                maintenanceModeStatus={host.maintenanceMode}
+                onClick={handleClickMaintenanceMode(host)}
+              />
               <UnlinkHostToggleButton host={host} />
               <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(host.id)} title="Delete" />
             </TableCell>
