@@ -2,7 +2,7 @@ import React from 'react';
 import cn from 'classnames';
 import s from './CodeHighlighter.module.scss';
 import './Themes/CodeHighlighter.module.themes.scss';
-import SyntaxHighlighter from 'react-syntax-highlighter';
+import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/default-highlight';
 import customTheme from './Themes/customTheme';
 import CopyButton from './CopyButton/CopyButton';
 
