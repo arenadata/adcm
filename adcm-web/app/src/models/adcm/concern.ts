@@ -5,53 +5,77 @@ export enum AdcmConcernType {
   Host = 'host',
   Provider = 'provider',
   Job = 'job',
+  Prototype = 'prototype',
 }
 
-export interface AdcmConcernReasonPlaceholderInfo {
-  clusterId?: number;
-  serviceId?: number;
-  componentId?: number;
-  hostId?: number;
-  hostproviderId?: number;
+export interface AdcmConcernCommonPlaceholder {
   name: string;
-  type: AdcmConcernType;
 }
 
-export interface AdcmConcernReasonV2 {
-  message: string;
-  placeholder: {
-    // TO_DO: mark source and target as optional and fix the concern component because of inevitable errors
-    source: AdcmConcernReasonPlaceholderInfo;
-    target: AdcmConcernReasonPlaceholderInfo;
-    job?: {
-      jobId?: number;
-      name: string;
-      type: AdcmConcernType.Job;
-    };
+export interface AdcmConcernClusterPlaceholder extends AdcmConcernCommonPlaceholder {
+  type: AdcmConcernType.Cluster;
+  params: {
+    clusterId: number;
   };
 }
 
-export interface AdcmConcernsV2 {
-  id: number;
-  reason: AdcmConcernReasonV2;
-  isBlocking: boolean;
+export interface AdcmConcernServicePlaceholder extends AdcmConcernCommonPlaceholder {
+  type: AdcmConcernType.Service;
+  params: {
+    clusterId: number;
+    serviceId: number;
+  };
 }
 
-// TODO: remove these interfaces below and use the new ones above once the backend team fixes the format
+export interface AdcmConcernComponentPlaceholder extends AdcmConcernCommonPlaceholder {
+  type: AdcmConcernType.Component;
+  params: {
+    clusterId: number;
+    serviceId: number;
+    componentId: number;
+  };
+}
+
+export interface AdcmConcernHostPlaceholder extends AdcmConcernCommonPlaceholder {
+  type: AdcmConcernType.Host;
+  params: {
+    hostId: number;
+  };
+}
+
+export interface AdcmConcernHostProviderPlaceholder extends AdcmConcernCommonPlaceholder {
+  type: AdcmConcernType.Provider;
+  params: {
+    providerId: number;
+  };
+}
+
+export interface AdcmConcernJobPlaceholder extends AdcmConcernCommonPlaceholder {
+  type: AdcmConcernType.Job;
+  params: {
+    jobId: number;
+  };
+}
+
+export interface AdcmConcernPrototypePlaceholder extends AdcmConcernCommonPlaceholder {
+  type: AdcmConcernType.Prototype;
+  params: {
+    prototypeId: number;
+  };
+}
+
+export type AdcmConcernPlaceholder =
+  | AdcmConcernClusterPlaceholder
+  | AdcmConcernServicePlaceholder
+  | AdcmConcernComponentPlaceholder
+  | AdcmConcernHostPlaceholder
+  | AdcmConcernHostProviderPlaceholder
+  | AdcmConcernJobPlaceholder
+  | AdcmConcernPrototypePlaceholder;
+
 export interface AdcmConcernReason {
   message: string;
-  placeholder: {
-    source: {
-      id?: number;
-      name: string;
-      type: string;
-    };
-    target: {
-      id?: number;
-      name: string;
-      type: string;
-    };
-  };
+  placeholder: Record<string, AdcmConcernPlaceholder>;
 }
 
 export interface AdcmConcerns {

@@ -1,4 +1,4 @@
-import { AdcmConcernsV2, AdcmMaintenanceMode, AdcmPrototypeType, AdcmServicePrototype } from '.';
+import { AdcmConcerns, AdcmMaintenanceMode, AdcmPrototypeType, AdcmServicePrototype } from '.';
 
 export enum AdcmServiceComponentStatus {
   Up = 'up',
@@ -40,7 +40,7 @@ export interface AdcmServiceComponent {
     name: string;
     displayName: string;
   };
-  concerns: AdcmConcernsV2[];
+  concerns: AdcmConcerns[];
   isMaintenanceModeAvailable: boolean;
   maintenanceMode: AdcmMaintenanceMode;
   mainInfo: string;

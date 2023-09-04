@@ -45,7 +45,7 @@ export const useCreateClusterHostsForm = () => {
         }),
       );
     }
-  }, [formData, dispatch]);
+  }, [formData, dispatch, clusterId]);
 
   const loadRelatedData = useCallback(() => {
     dispatch(loadHosts());

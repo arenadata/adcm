@@ -26,6 +26,7 @@ interface TooltipProps {
   offset?: OffsetOptions;
   children: ChildWithRef;
   className?: string;
+  closeDelay?: number;
 }
 const Tooltip: React.FC<TooltipProps> = ({
   children,
@@ -33,6 +34,7 @@ const Tooltip: React.FC<TooltipProps> = ({
   className,
   placement = 'top' as Placement,
   offset: offsetValue = 10,
+  closeDelay = 0,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -51,7 +53,13 @@ const Tooltip: React.FC<TooltipProps> = ({
     ],
   });
 
-  const hover = useHover(context, { move: false });
+  const hover = useHover(context, {
+    move: false,
+    delay: {
+      open: 0,
+      close: closeDelay,
+    },
+  });
   const click = useClick(context);
   const focus = useFocus(context);
   const dismiss = useDismiss(context);
