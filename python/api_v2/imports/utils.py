@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Sequence
-
 from api_v2.imports.types import (
     ClusterImportCandidate,
     CommonImportCandidate,
@@ -38,7 +36,7 @@ from cm.status_api import get_obj_status
 from django.db.models import QuerySet
 
 
-def _format_binds(binds: Sequence[ClusterBind]) -> list[UIBind]:
+def _format_binds(binds: QuerySet[ClusterBind]) -> list[UIBind]:
     binds_data = []
 
     for bind in binds:
@@ -69,7 +67,7 @@ def _format_import_services(service_candidates: list[ServiceImportCandidate]) ->
         return None
 
     out = []
-    for service_data in service_candidates:
+    for service_data in sorted(service_candidates, key=lambda service_dandidate: service_dandidate["obj"].display_name):
         service: ClusterObject = service_data["obj"]
         prototype_import: PrototypeImport = service_data["prototype_import"]
 
@@ -159,7 +157,7 @@ def _get_import_candidates(prototype: Prototype) -> list[ClusterImportCandidate]
         else:
             cluster_data["services"].append(service_data)
 
-    return [cluster_data for cluster_data in cluster_candidates.values()]
+    return list(cluster_candidates.values())
 
 
 def get_imports(obj: Cluster | ClusterObject) -> list[UIObjectImport]:
@@ -174,9 +172,11 @@ def get_imports(obj: Cluster | ClusterObject) -> list[UIObjectImport]:
 
     out_data = []
     import_candidates = _get_import_candidates(prototype=obj.prototype)
-    binds = ClusterBind.objects.filter(cluster=cluster, service=service)
+    binds = ClusterBind.objects.filter(cluster=cluster, service=service).select_related(
+        "source_cluster", "source_service", "source_cluster__prototype", "source_service__prototype"
+    )
 
-    for import_candidate in import_candidates:
+    for import_candidate in sorted(import_candidates, key=lambda candidate: candidate["obj"].name):
         out_data.append(
             UIObjectImport(
                 cluster=_format_cluster(cluster=import_candidate["obj"]),
@@ -184,7 +184,7 @@ def get_imports(obj: Cluster | ClusterObject) -> list[UIObjectImport]:
                     cluster=import_candidate["obj"], prototype_import=import_candidate["prototype_import"]
                 ),
                 import_services=_format_import_services(service_candidates=import_candidate["services"]),
-                binds=_format_binds(binds=binds.filter(source_cluster=import_candidate["obj"])),
+                binds=_format_binds(binds=binds.filter(source_cluster=import_candidate["obj"]).order_by("pk")),
             )
         )
 

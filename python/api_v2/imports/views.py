@@ -61,8 +61,7 @@ class ImportViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-
 
     def list(self, request: Request, *args, **kwargs) -> Response:
         obj = self.get_object_and_check_perm(request=request)
-
-        return Response(data=get_imports(obj=obj))
+        return self.get_paginated_response(data=self.paginate_queryset(queryset=get_imports(obj=obj)))
 
     def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         obj = self.get_object_and_check_perm(request=request)

@@ -19,13 +19,12 @@ from pathlib import Path
 from api.job.views import VIEW_LOGSTORAGE_PERMISSION
 from api_v2.log_storage.serializers import LogStorageSerializer
 from api_v2.views import CamelCaseGenericViewSet
+from cm.errors import raise_adcm_ex
 from cm.models import ActionType, JobLog, LogStorage, TaskLog
 from django.http import HttpResponse
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.status import HTTP_405_METHOD_NOT_ALLOWED
 
 from adcm import settings
 from adcm.permissions import VIEW_TASKLOG_PERMISSION, get_object_for_user
@@ -125,8 +124,19 @@ class LogStorageViewSet(ListModelMixin, RetrieveModelMixin, CamelCaseGenericView
     queryset = LogStorage.objects.order_by("pk")
     serializer_class = LogStorageSerializer
     filter_backends = []
+    pagination_class = None
     permission_required = ["cm.view_logstorage"]
     lookup_url_kwarg = "log_pk"
+
+    def list(self, request, *args, **kwargs):
+        if "task_pk" in self.request.parser_context["kwargs"]:
+            raise_adcm_ex("LOG_FOR_TASK_VIEW_NOT_ALLOWED", "The task view does not allow to read logs")
+        return super().list(request, *args, **kwargs)
+
+    def retrieve(self, request, *args, **kwargs):
+        if "task_pk" in self.request.parser_context["kwargs"]:
+            raise_adcm_ex("LOG_FOR_TASK_VIEW_NOT_ALLOWED", "The task view does not allow to read logs")
+        return super().retrieve(request, *args, **kwargs)
 
     def get_queryset(self, *args, **kwargs):  # pylint: disable=unused-argument
         if "task_pk" in self.request.parser_context["kwargs"]:
@@ -155,8 +165,6 @@ class LogStorageTaskViewSet(LogStorageViewSet):
 class LogStorageJobViewSet(LogStorageViewSet):
     @action(methods=["post"], detail=True)
     def download(self, request: Request, **kwargs) -> HttpResponse:
-        if "task_pk" in kwargs:
-            return Response(status=HTTP_405_METHOD_NOT_ALLOWED)
         job_pk, log_pk = kwargs["job_pk"], kwargs["log_pk"]
         log_storage = get_object_for_user(
             user=request.user, perms=VIEW_LOGSTORAGE_PERMISSION, klass=LogStorage, id=log_pk, job__id=job_pk

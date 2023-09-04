@@ -282,7 +282,7 @@ class TestClusterAudit(BaseTestCase):
         provider_bundle_filename = "test_provider_bundle.tar"
 
         with open(
-            Path(settings.BASE_DIR, "python/audit/tests/files", cluster_bundle_filename),
+            Path(self.base_dir, "python/audit/tests/files", cluster_bundle_filename),
             encoding=settings.ENCODING_UTF_8,
         ) as f:
             self.client.post(
@@ -296,7 +296,7 @@ class TestClusterAudit(BaseTestCase):
         )
 
         with open(
-            Path(settings.BASE_DIR, "python/audit/tests/files", provider_bundle_filename),
+            Path(self.base_dir, "python/audit/tests/files", provider_bundle_filename),
             encoding=settings.ENCODING_UTF_8,
         ) as f:
             self.client.post(

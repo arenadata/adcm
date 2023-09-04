@@ -429,10 +429,11 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         super().setUp()
         init_adcm()
 
-        self.files_dir = settings.BASE_DIR / "python" / "cm" / "tests" / "files"
+        self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
 
         _, self.cluster_hc_acl, _ = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(self.files_dir, "test_inventory_remove_group_mm_hosts.tar"), cluster_name="cluster_hc_acl"
+            bundle_path=Path(self.test_files_dir, "test_inventory_remove_group_mm_hosts.tar"),
+            cluster_name="cluster_hc_acl",
         )
 
         self.provider = gen_provider(name="test_provider")
@@ -493,7 +494,7 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         self.action_hc_acl = Action.objects.get(name="cluster_action_hc_acl", allow_in_maintenance_mode=True)
 
         _, self.cluster_target_group, _ = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(self.files_dir, "cluster_mm_host_target_group.tar"),
+            bundle_path=Path(self.test_files_dir, "cluster_mm_host_target_group.tar"),
             cluster_name="cluster_target_group",
         )
 

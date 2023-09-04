@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.rbac.groups.serializers import GroupNameSerializer
-from api_v2.rbac.users.constants import UserStatusChoices
+from api_v2.rbac.user.constants import UserStatusChoices
+from django.contrib.auth.models import Group as AuthGroup
 from rbac.models import User
 from rest_framework.fields import (
     BooleanField,
@@ -23,13 +23,23 @@ from rest_framework.fields import (
 )
 from rest_framework.serializers import ModelSerializer
 
-from adcm.serializers import IdSerializer
+
+class RelatedGroupSerializer(ModelSerializer):
+    display_name = SerializerMethodField()
+
+    class Meta:
+        model = AuthGroup
+        fields = ["id", "name", "display_name"]
+
+    @staticmethod
+    def get_display_name(instance: AuthGroup) -> str:
+        return instance.group.display_name
 
 
 class UserSerializer(ModelSerializer):
     status = SerializerMethodField()
     is_built_in = BooleanField(read_only=True, source="built_in")
-    groups = GroupNameSerializer(many=True)
+    groups = RelatedGroupSerializer(many=True)
 
     class Meta:
         model = User
@@ -59,7 +69,6 @@ class UserUpdateSerializer(ModelSerializer):
     current_password = CharField(trim_whitespace=False, write_only=True, required=False)
     first_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False, default="")
     last_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False, default="")
-    groups = IdSerializer(many=True, required=False)
     email = EmailField(allow_blank=True, required=False, default="")
     is_superuser = BooleanField(required=False)
 
@@ -73,7 +82,6 @@ class UserCreateSerializer(UserUpdateSerializer):
     password = CharField(trim_whitespace=False, write_only=True)
     first_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, default="")
     last_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, default="")
-    groups = IdSerializer(many=True, allow_null=True, required=False)
     email = EmailField(allow_blank=True, default="")
     is_superuser = BooleanField(default=False)
     profile = JSONField(required=False, default="")

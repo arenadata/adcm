@@ -12,9 +12,9 @@
 
 from hashlib import sha256
 from itertools import compress
-from typing import Iterable, Iterator
+from typing import Iterable, Iterator, List, Literal
 
-from cm.models import Action, ADCMEntity
+from cm.models import Action, ADCMEntity, ServiceComponent
 from django.conf import settings
 from rbac.models import User
 
@@ -40,3 +40,17 @@ def check_run_perms(user: User, action: Action, obj: ADCMEntity) -> bool:
         return True
 
     return user.has_perm(perm=get_run_actions_permissions(actions=[action])[0], obj=obj)
+
+
+def insert_service_ids(
+    hc_create_data: List[dict[Literal["host_id", "component_id"], int]]
+) -> List[dict[Literal["host_id", "component_id", "service_id"], int]]:
+    component_ids = {single_hc["component_id"] for single_hc in hc_create_data}
+    component_service_map = {
+        component.pk: component.service_id for component in ServiceComponent.objects.filter(pk__in=component_ids)
+    }
+
+    for single_hc in hc_create_data:
+        single_hc["service_id"] = component_service_map[single_hc["component_id"]]
+
+    return hc_create_data

@@ -12,7 +12,6 @@
 
 from api_v2.tests.base import BaseAPITestCase
 from cm.models import Action, HostProvider
-from django.conf import settings
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.status import (
@@ -28,7 +27,7 @@ class TestHostProvider(BaseAPITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 
-        host_provider_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "provider"
+        host_provider_path = self.test_bundles_dir / "provider"
 
         self.host_provider_bundle = self.add_bundle(source_dir=host_provider_path)
         self.host_provider = self.add_provider(self.host_provider_bundle, "test host provider")
@@ -54,7 +53,7 @@ class TestHostProvider(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-    def test_host_provider_create_success(self):
+    def test_create_success(self):
         response = self.client.post(
             path=reverse(viewname="v2:hostprovider-list"),
             data={
@@ -103,7 +102,7 @@ class TestProviderActions(BaseAPITestCase):
         response: Response = self.client.get(
             path=reverse(
                 viewname="v2:provider-action-list",
-                kwargs={"provider_pk": self.provider.pk},
+                kwargs={"hostprovider_pk": self.provider.pk},
             ),
         )
 
@@ -115,7 +114,7 @@ class TestProviderActions(BaseAPITestCase):
             path=reverse(
                 viewname="v2:provider-action-detail",
                 kwargs={
-                    "provider_pk": self.provider.pk,
+                    "hostprovider_pk": self.provider.pk,
                     "pk": self.action.pk,
                 },
             ),
@@ -129,11 +128,11 @@ class TestProviderActions(BaseAPITestCase):
             path=reverse(
                 viewname="v2:provider-action-run",
                 kwargs={
-                    "provider_pk": self.provider.pk,
+                    "hostprovider_pk": self.provider.pk,
                     "pk": self.action.pk,
                 },
             ),
-            data={"host_component_map": {}, "config": {}, "attr": {}, "is_verbose": False},
+            data={"host_component_map": [], "config": {}, "attr": {}, "is_verbose": False},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

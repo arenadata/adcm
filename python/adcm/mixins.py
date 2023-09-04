@@ -25,7 +25,11 @@ from django.db.models import ObjectDoesNotExist
 
 
 class GetParentObjectMixin:
-    def get_parent_object(self) -> GroupConfig | Cluster | ClusterObject | ServiceComponent | Host | None:
+    kwargs: dict
+
+    def get_parent_object(
+        self,
+    ) -> GroupConfig | Cluster | ClusterObject | ServiceComponent | HostProvider | Host | None:
         parent_object = None
 
         with suppress(ObjectDoesNotExist):
@@ -50,8 +54,8 @@ class GetParentObjectMixin:
             elif "cluster_pk" in self.kwargs:
                 parent_object = Cluster.objects.get(pk=self.kwargs["cluster_pk"])
 
-            elif "provider_pk" in self.kwargs:
-                parent_object = HostProvider.objects.get(pk=self.kwargs["provider_pk"])
+            elif "hostprovider_pk" in self.kwargs:
+                parent_object = HostProvider.objects.get(pk=self.kwargs["hostprovider_pk"])
 
             if "config_group_pk" in self.kwargs:
                 parent_object = GroupConfig.objects.get(

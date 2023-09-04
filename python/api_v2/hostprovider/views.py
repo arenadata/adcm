@@ -17,14 +17,11 @@ from api_v2.hostprovider.serializers import (
 )
 from api_v2.views import CamelCaseReadOnlyModelViewSet
 from cm.api import add_host_provider, delete_host_provider
+from cm.errors import raise_adcm_ex
 from cm.models import HostProvider, ObjectType, Prototype
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from rest_framework.response import Response
-from rest_framework.status import (
-    HTTP_201_CREATED,
-    HTTP_204_NO_CONTENT,
-    HTTP_409_CONFLICT,
-)
+from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from adcm.permissions import VIEW_HOST_PERM, DjangoModelPermissionsAudit
 
@@ -46,7 +43,7 @@ class HostProviderViewSet(CamelCaseReadOnlyModelViewSet):  # pylint:disable=too-
     def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
-            return Response(serializer.errors, status=HTTP_409_CONFLICT)
+            return raise_adcm_ex(code="HOSTPROVIDER_CREATE_ERROR")
 
         host_provider = add_host_provider(
             prototype=Prototype.objects.get(pk=serializer.validated_data["prototype_id"], type=ObjectType.PROVIDER),
@@ -56,7 +53,7 @@ class HostProviderViewSet(CamelCaseReadOnlyModelViewSet):  # pylint:disable=too-
 
         return Response(data=HostProviderSerializer(host_provider).data, status=HTTP_201_CREATED)
 
-    def destroy(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def destroy(self, request, *args, **kwargs):  # pylint:disable=unused-argument
         host_provider = self.get_object()
         delete_host_provider(host_provider)
         return Response(status=HTTP_204_NO_CONTENT)

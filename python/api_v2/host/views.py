@@ -11,7 +11,7 @@
 # limitations under the License.
 
 
-from api_v2.host.filters import HostFilter
+from api_v2.host.filters import HostClusterFilter, HostFilter
 from api_v2.host.serializers import (
     ClusterHostCreateSerializer,
     HostChangeMaintenanceModeSerializer,
@@ -74,7 +74,7 @@ class HostViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):
 
         return self.serializer_class
 
-    def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def create(self, request, *args, **kwargs):  # pylint:disable=unused-argument
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -148,8 +148,7 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  #
     serializer_class = HostSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_HOST_PERM]
-    filterset_fields = ["provider__name", "state", "fqdn"]
-    ordering_fields = ["fqdn"]
+    filterset_class = HostClusterFilter
 
     def get_serializer_class(self):
         if self.action == "maintenance_mode":
@@ -166,7 +165,7 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  #
             .prefetch_related("hostcomponent_set")
         )
 
-    def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def create(self, request, *args, **kwargs):  # pylint:disable=unused-argument
         serializer = self.get_serializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
 
@@ -189,7 +188,7 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  #
             status=HTTP_201_CREATED,
         )
 
-    def destroy(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def destroy(self, request, *args, **kwargs):  # pylint:disable=unused-argument
         host = self.get_object()
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_pk"])
         if host.cluster != cluster:

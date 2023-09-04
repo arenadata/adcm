@@ -14,6 +14,7 @@ from api_v2.config.serializers import ConfigLogListSerializer, ConfigLogSerializ
 from api_v2.config.utils import get_config_schema
 from api_v2.views import CamelCaseGenericViewSet
 from cm.api import update_obj_config
+from cm.errors import AdcmEx
 from cm.models import ConfigLog
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
@@ -58,6 +59,13 @@ class ConfigLogViewSet(
 
     def create(self, request, *args, **kwargs):
         parent_object = self.get_parent_object()
+
+        if parent_object is None:
+            raise NotFound("Can't find config's parent object")
+
+        if parent_object.config is None:
+            raise AdcmEx(code="CONFIG_NOT_FOUND", msg="This object has no config")
+
         check_config_perm(
             user=request.user,
             action_type="change",
@@ -71,7 +79,7 @@ class ConfigLogViewSet(
             obj_conf=parent_object.config,
             config=initial_data["config"],
             attr=initial_data["attr"],
-            description=initial_data["description"],
+            description=initial_data.get("description", ""),
         )
 
         return Response(data=self.get_serializer(config_log).data, status=HTTP_201_CREATED)

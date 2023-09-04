@@ -1,0 +1,15 @@
+- type: cluster
+  name: cluster_with_service_requirements
+  version: &version '1.0'
+  edition: community
+
+- name: service_1
+  type: service
+  version: *version
+  requires:
+    - service: some_other_service
+
+- name: some_other_service
+  type: service
+  version: *version
+

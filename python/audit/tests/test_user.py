@@ -23,7 +23,6 @@ from audit.models import (
     AuditUser,
 )
 from cm.models import ObjectType, Prototype
-from django.conf import settings
 from django.urls import reverse
 from rbac.models import User
 from rest_framework.response import Response
@@ -331,7 +330,7 @@ class TestUserAudit(BaseTestCase):
         initial_audit_users_count = AuditUser.objects.count()
         with self.another_user_logged_in(username="admin", password="admin"):
             bundle = self.upload_and_load_bundle(
-                path=Path(settings.BASE_DIR, "python/audit/tests/files/test_cluster_bundle.tar")
+                path=Path(self.base_dir, "python/audit/tests/files/test_cluster_bundle.tar")
             )
 
         username, password = "test_user_recreate_username", token_hex(10)

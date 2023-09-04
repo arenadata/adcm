@@ -10,16 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from copy import deepcopy
 
-from api_v2.rbac.users.constants import UserTypeChoices
+from api_v2.rbac.user.constants import UserTypeChoices
 from api_v2.tests.base import BaseAPITestCase
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils.timezone import now
 from rbac.models import Group, OriginType, User
-from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -30,26 +28,11 @@ from rest_framework.status import (
 )
 
 
-class TestUserAPI(BaseAPITestCase):
+class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
     def setUp(self) -> None:
         super().setUp()
 
         self.group = Group.objects.create(name="test_group")
-
-    def _create_user(self, user_data: dict | None = None) -> Response:
-        if user_data is None:
-            user_data = {
-                "username": "test_user_username",
-                "password": "test_user_password",
-                "email": "testuser@mail.ru",
-            }
-
-        response: Response = self.client.post(
-            path=reverse(viewname="v2:rbac:user-list"),
-            data=user_data,
-        )
-
-        return response
 
     def _grant_permissions(self, user: User) -> None:
         view_user_permission, _ = Permission.objects.get_or_create(
@@ -64,87 +47,89 @@ class TestUserAPI(BaseAPITestCase):
         user.user_permissions.add(*(view_user_permission, change_user_permission))
 
     def test_create_success(self):
-        data = {
-            "username": "test_user_username",
-            "password": "test_user_password",
-            "firstName": "test_user_first_name",
-            "lastName": "test_user_last_name",
-            "groups": [{"id": self.group.pk}],
-            "email": "testuser@mail.ru",
-            "isSuperuser": False,
-        }
-        response: Response = self._create_user(user_data=data)
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:user-list"),
+            data={
+                "username": "test_user_username",
+                "password": "test_user_password",
+                "firstName": "test_user_first_name",
+                "lastName": "test_user_last_name",
+                "groups": [self.group.pk],
+                "email": "testuser@mail.ru",
+                "isSuperuser": False,
+            },
+        )
+
         self.assertEqual(response.status_code, HTTP_201_CREATED)
+        user = User.objects.filter(username="test_user_username").first()
+        self.assertIsNotNone(user)
+        self.assertEqual(response.json()["firstName"], "test_user_first_name")
+        self.assertEqual(response.json()["lastName"], "test_user_last_name")
+        self.assertFalse(response.json()["isSuperuser"])
+        self.assertEqual(user.groups.count(), 1)
 
-        del data["password"]
-        actual_data = {field: response.json()[field] for field in data}
-        actual_data["groups"] = [{"id": group["id"]} for group in response.json()["groups"]]
-        self.assertDictEqual(actual_data, data)
+    def test_create_required_fields_success(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:user-list"),
+            data={"username": "test_user_username_1", "password": "test_user_password_1"},
+        )
 
-        only_required_data = {
-            "username": "test_user_username_1",
-            "password": "test_user_password_1",
-        }
-        response: Response = self._create_user(user_data=only_required_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertTrue(User.objects.filter(username="test_user_username_1").exists())
 
-    def test_create_wrong_data_fail(self):
-        required_data = {
-            "username": "test_user_username",
-            "password": "test_user_password",
-        }
-        for field in required_data:
-            wrong_data = deepcopy(required_data)
-            del wrong_data[field]
-            response: Response = self._create_user(user_data=wrong_data)
-            self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+    def test_create_required_fields_failed(self):
+        response = self.client.post(path=reverse(viewname="v2:rbac:user-list"), data={"username": "test_user_username"})
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(), {"code": "BAD_REQUEST", "desc": "password - This field is required.;", "level": "error"}
+        )
 
     def test_retrieve_success(self):
         user = self.create_user()
-        response: Response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}))
-        self.assertEqual(response.status_code, HTTP_200_OK)
 
-    def test_retrieve_not_exists_fail(self):
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertIn("id", response.json())
+        self.assertEqual(response.json()["id"], user.pk)
+
+    def test_retrieve_not_found_failed(self):
         wrong_pk = self.get_non_existent_pk(model=User)
-        response: Response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": wrong_pk}))
+
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": wrong_pk}))
+
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-    def test_update_by_superuser_success(self):
+    def test_update_password_by_superuser_success(self):
         new_group = Group.objects.create(name="new_group")
-        user_data = {
-            "username": "test_user",
-            "password": "test_user_password",
-            "email": "test_user@mail.ru",
-            "first_name": "test_user_first_name",
-            "last_name": "test_user_last_name",
-            "profile": "",
-        }
-        user = self.create_user(user_data=user_data)
-        data = {
-            "password": "newtestpassword",
-            "firstName": "newtestfn",
-            "lastName": "newtestln",
-            "email": "newtest@mail.ru",
-            "isSuperuser": True,
-            "groups": [{"id": new_group.pk}],
-        }
-
-        response: Response = self.client.patch(
-            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
-            data=data,
+        user = self.create_user(
+            user_data={
+                "username": "test_user",
+                "password": "test_user_password",
+                "email": "test_user@mail.ru",
+                "first_name": "test_user_first_name",
+                "last_name": "test_user_last_name",
+                "profile": "",
+            }
         )
+
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
+            data={
+                "password": "newtestpassword",
+                "firstName": "newtestfn",
+                "lastName": "newtestln",
+                "email": "newtest@mail.ru",
+                "isSuperuser": True,
+                "groups": [new_group.pk],
+            },
+        )
+        user.refresh_from_db()
+
         self.assertEqual(response.status_code, HTTP_200_OK)
-        patch_response = response.json()
-
-        new_password = data["password"]
-        del data["password"]
-        actual_data = {field: patch_response[field] for field in data}
-        actual_data["groups"] = [{"id": group["id"]} for group in patch_response["groups"]]
-        self.assertDictEqual(data, actual_data)
-
-        user = User.objects.get(pk=user.pk)
-        self.assertFalse(user.check_password(raw_password=user_data["password"]))
-        self.assertTrue(user.check_password(raw_password=new_password))
+        self.assertFalse(user.check_password(raw_password="test_user_password"))
+        self.assertTrue(user.check_password(raw_password="newtestpassword"))
 
     def test_update_self_by_regular_user_success(self):
         user_data = {
@@ -164,13 +149,14 @@ class TestUserAPI(BaseAPITestCase):
         }
 
         self.client.login(**user_data)
-        response: Response = self.client.patch(
+
+        response = self.client.patch(
             path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
             data=data,
         )
-        self.assertEqual(response.status_code, HTTP_200_OK)
-
         user.refresh_from_db()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertFalse(user.check_password(raw_password=user_data["password"]))
         self.assertTrue(user.check_password(raw_password=data["password"]))
 
@@ -207,7 +193,7 @@ class TestUserAPI(BaseAPITestCase):
         }
 
         self.client.login(**user_datas[0])
-        response: Response = self.client.patch(
+        response = self.client.patch(
             path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": second_user.pk}),
             data=data,
         )
@@ -240,7 +226,7 @@ class TestUserAPI(BaseAPITestCase):
         }
 
         self.client.login(**user_data)
-        response: Response = self.client.patch(
+        response = self.client.patch(
             path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
             data=wrong_data_no_current_password,
         )
@@ -249,7 +235,7 @@ class TestUserAPI(BaseAPITestCase):
     def test_delete_success(self):
         user = self.create_user()
 
-        response: Response = self.client.delete(
+        response = self.client.delete(
             path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
         )
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
@@ -263,7 +249,7 @@ class TestUserAPI(BaseAPITestCase):
         user.built_in = True
         user.save(update_fields=["built_in"])
 
-        response: Response = self.client.delete(
+        response = self.client.delete(
             path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -271,13 +257,13 @@ class TestUserAPI(BaseAPITestCase):
     def test_block_success(self):
         user = self.create_user()
 
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": user.pk}),
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertIsNone(response.data)
 
-        response: Response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}))
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}))
         self.assertEqual(response.json()["status"], "blocked")
 
         user.refresh_from_db()
@@ -288,7 +274,7 @@ class TestUserAPI(BaseAPITestCase):
         user.built_in = True
         user.save(update_fields=["built_in"])
 
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": user.pk}),
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -298,13 +284,13 @@ class TestUserAPI(BaseAPITestCase):
         user.blocked_at = now()
         user.save(update_fields=["blocked_at"])
 
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": user.pk}),
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertIsNone(response.data)
 
-        response: Response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}))
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}))
         self.assertEqual(response.json()["status"], "active")
 
         user.refresh_from_db()
@@ -315,7 +301,7 @@ class TestUserAPI(BaseAPITestCase):
         user.built_in = True
         user.save(update_fields=["built_in"])
 
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": user.pk}),
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -350,7 +336,7 @@ class TestUserAPI(BaseAPITestCase):
         for data in user_data:
             self.create_user(user_data=data)
 
-        response: Response = self.client.get(path=reverse(viewname="v2:rbac:user-list"), data={"ordering": "-username"})
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-list"), data={"ordering": "-username"})
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response_usernames = [user["username"] for user in response.json()["results"]]
@@ -358,7 +344,7 @@ class TestUserAPI(BaseAPITestCase):
         self.assertListEqual(response_usernames, db_usernames)
 
     def test_ordering_wrong_params_fail(self):
-        response: Response = self.client.get(path=reverse(viewname="v2:rbac:user-list"), data={"ordering": "param"})
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-list"), data={"ordering": "param"})
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
     def test_filtering_by_username_success(self):
@@ -383,7 +369,7 @@ class TestUserAPI(BaseAPITestCase):
         for data in user_data:
             self.create_user(user_data=data)
 
-        response: Response = self.client.get(path=reverse(viewname="v2:rbac:user-list"), data={"username": "username1"})
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-list"), data={"username": "username1"})
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["results"]), 1)
         self.assertEqual(response.json()["results"][0]["username"], "username1")
@@ -414,7 +400,7 @@ class TestUserAPI(BaseAPITestCase):
         target_user.blocked_at = now()
         target_user.save(update_fields=["blocked_at"])
 
-        response: Response = self.client.get(path=reverse(viewname="v2:rbac:user-list"), data={"status": "blocked"})
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-list"), data={"status": "blocked"})
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["results"]), 1)
         self.assertEqual(response.json()["results"][0]["username"], target_user.username)
@@ -445,7 +431,7 @@ class TestUserAPI(BaseAPITestCase):
         target_user.type = OriginType.LDAP
         target_user.save(update_fields=["type"])
 
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:rbac:user-list"), data={"type": UserTypeChoices.LDAP.value}
         )
         self.assertEqual(response.status_code, HTTP_200_OK)

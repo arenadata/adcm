@@ -10,11 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.rbac.users.urls import user_router
-from api_v2.rbac.views import RBACRoot
+from api_v2.rbac.group.urls import group_router
+from api_v2.rbac.policy.urls import policy_router
+from api_v2.rbac.role.views import RoleViewSet
+from api_v2.rbac.user.urls import user_router
+from api_v2.rbac.views import RbacRoot
 from django.urls import path
+from rest_framework.routers import SimpleRouter
 
+role_router = SimpleRouter()
+role_router.register("roles", RoleViewSet)
 urlpatterns = [
-    path("", RBACRoot.as_view(), name="root"),
+    path("", RbacRoot.as_view(), name="root"),
+    *role_router.urls,
     *user_router.urls,
+    *group_router.urls,
+    *policy_router.urls,
 ]

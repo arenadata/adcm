@@ -4,20 +4,73 @@
   version: &version '2.0'
   edition: community
   config_group_customization: true
-  license: EULA.txt
+  license: ./EULA.txt
   upgrade:
     - name: upgrade
-      versions:
+      versions: &correct_versions
         min: '1.0'
         max: '2.0'
-      states:
+      states: &always_available
         available: any
-    - name: upgrade_via_action
+
+    - name: upgrade_via_action_simple
+      versions: *correct_versions
+      states: *always_available
+      scripts: &upgrade_scripts
+        - name: pre
+          script: ./playbook.yaml
+          script_type: ansible
+        - name: switch
+          script: bundle_switch
+          script_type: internal
+        - name: post
+          script: ./playbook.yaml
+          script_type: ansible
+
+    - name: upgrade_via_action_complex
+      versions: *correct_versions
+      states: *always_available
+      scripts: *upgrade_scripts
+      config:
+        - name: simple
+          type: string
+          required: false
+        - name: grouped
+          type: group
+          subs:
+            - name: simple
+              type: integer
+              default: 4
+            - name: second
+              type: float
+              default: 4.3
+        - name: after
+          type: list
+          default:
+            - "1"
+            - "woohoo"
+      hc_acl:
+        - action: add
+          service: service_1
+          component: component_1
+        - action: remove
+          service: service_1
+          component: component_2
+      ui_options:
+        disclaimer: "Cool upgrade"
+
+    - name: unfit_version
       versions:
-        min: '1.0'
-        max: '2.0'
+        min_strict: '0'
+        max: '0.3'
+      states: *always_available
+
+    - name: unfit_state
+      versions: *correct_versions
       states:
-        available: any
+        available:
+          - doesnotexist
+
   config: &config
     - name: string
       type: string

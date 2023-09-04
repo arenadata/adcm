@@ -281,10 +281,6 @@ class Prototype(ADCMModel):
     class Meta:
         unique_together = (("bundle", "type", "parent", "name", "version"),)
 
-    @property
-    def is_license_accepted(self) -> bool:
-        return self.license == LICENSE_STATE[1][0]
-
 
 class ObjectConfig(ADCMModel):
     current = models.PositiveIntegerField()
@@ -469,14 +465,14 @@ class ADCMEntity(ADCMModel):
     def get_id_chain(self) -> dict:
         """
         Get object ID chain for front-end URL generation in message templates
-        result looks like {'cluster': 12, 'service': 34, 'component': 45}
+        result looks like {'cluster_id': 12, 'service_id': 34, 'component_id': 45}
         """
         ids = {}
-        ids[self.prototype.type] = self.pk
-        for attr in ["cluster", "service", "provider"]:
+        ids[f"{self.prototype.type}_id"] = self.pk
+        for attr in ["cluster_id", "service_id", "provider_id"]:
             value = getattr(self, attr, None)
-            if value:
-                ids[attr] = value.pk
+            if value is not None:
+                ids[attr] = value
 
         return ids
 
@@ -1274,11 +1270,11 @@ class Action(AbstractAction):
 
     def get_id_chain(self, target_ids: dict) -> dict:
         """Get action ID chain for front-end URL generation in message templates"""
-        target_ids["action"] = self.pk
+        target_ids["action_id"] = self.pk
         result = {
-            "type": self.prototype.type + "_action_run",
+            "type": f"{self.prototype.type}_action_run",
             "name": self.display_name or self.name,
-            "ids": target_ids,
+            "params": target_ids,
         }
         return result
 
@@ -1608,6 +1604,10 @@ class TaskLog(ADCMModel):
         except OSError as e:
             raise AdcmEx("NOT_ALLOWED_TERMINATION", f"Failed to terminate process: {e}") from e
 
+    @property
+    def duration(self):
+        return self.finish_date - self.start_date
+
 
 class JobLog(ADCMModel):
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
@@ -1652,6 +1652,10 @@ class JobLog(ADCMModel):
 
         if event_queue:
             event_queue.send_state()
+
+    @property
+    def duration(self):
+        return self.finish_date - self.start_date
 
 
 class GroupCheckLog(ADCMModel):
@@ -1892,11 +1896,11 @@ class MessageTemplate(ADCMModel):
             return {}
 
         ids = target.get_id_chain()
-        ids["action"] = action.pk
+        ids["action_id"] = action.pk
         return {
             "type": PlaceHolderType.ACTION.value,
             "name": action.display_name,
-            "ids": ids,
+            "params": ids,
         }
 
     @classmethod
@@ -1905,7 +1909,7 @@ class MessageTemplate(ADCMModel):
 
         if proto:
             return {
-                "id": proto.id,
+                "params": {"prototype_id": proto.id},
                 "type": "prototype",
                 "name": proto.display_name or proto.name,
             }
@@ -1921,7 +1925,7 @@ class MessageTemplate(ADCMModel):
         return {
             "type": obj.prototype.type,
             "name": obj.display_name,
-            "ids": obj.get_id_chain(),
+            "params": obj.get_id_chain(),
         }
 
     @classmethod
@@ -1935,7 +1939,7 @@ class MessageTemplate(ADCMModel):
         return {
             "type": PlaceHolderType.JOB.value,
             "name": action.display_name or action.name,
-            "ids": job.id,
+            "params": {"job_id": job.id},
         }
 
 

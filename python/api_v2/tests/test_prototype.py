@@ -12,7 +12,6 @@
 
 from api_v2.tests.base import BaseAPITestCase
 from cm.models import ObjectType, Prototype
-from django.conf import settings
 from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 
@@ -21,8 +20,8 @@ class TestPrototype(BaseAPITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 
-        cluster_bundle_1_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_one"
-        cluster_bundle_2_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_one_upgrade"
+        cluster_bundle_1_path = self.test_bundles_dir / "cluster_one"
+        cluster_bundle_2_path = self.test_bundles_dir / "cluster_one_upgrade"
 
         self.bundle_1 = self.add_bundle(source_dir=cluster_bundle_1_path)
         self.bundle_2 = self.add_bundle(source_dir=cluster_bundle_2_path)

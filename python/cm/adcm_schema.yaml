@@ -372,7 +372,7 @@ config_dict_sub_option:
   items:
     <<: *config_dict_sub_items
     option: map_string_any
-    default: base_type
+    default: option_type
   required_items:
     - option
 
@@ -502,7 +502,7 @@ config_list_option:
   items:
     <<: *config_list_items
     option: map_string_any
-    default: base_type
+    default: option_type
   required_items:
     - option
 
@@ -878,7 +878,7 @@ map_string_string:
 
 map_string_any:
   match: dict
-  default_item: base_type
+  default_item: option_type
 
 boolean:
   match: bool
@@ -928,6 +928,13 @@ base_type:
   match: one_of
   variants:
     - boolean
+    - string
+    - integer
+    - float
+
+option_type:
+  match: one_of
+  variants:
     - string
     - integer
     - float

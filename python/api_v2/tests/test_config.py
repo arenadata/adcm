@@ -373,7 +373,7 @@ class TestProviderConfig(BaseAPITestCase):
             path=reverse(
                 viewname="v2:provider-config-list",
                 kwargs={
-                    "provider_pk": self.provider.pk,
+                    "hostprovider_pk": self.provider.pk,
                 },
             )
         )
@@ -393,7 +393,7 @@ class TestProviderConfig(BaseAPITestCase):
             path=reverse(
                 viewname="v2:provider-config-detail",
                 kwargs={
-                    "provider_pk": self.provider.pk,
+                    "hostprovider_pk": self.provider.pk,
                     "pk": self.provider_initial_config.pk,
                 },
             )
@@ -415,7 +415,7 @@ class TestProviderConfig(BaseAPITestCase):
             path=reverse(
                 viewname="v2:provider-config-detail",
                 kwargs={
-                    "provider_pk": self.provider.pk,
+                    "hostprovider_pk": self.provider.pk,
                     "pk": self.get_non_existent_pk(model=ConfigLog),
                 },
             )
@@ -427,7 +427,7 @@ class TestProviderConfig(BaseAPITestCase):
             path=reverse(
                 viewname="v2:provider-config-detail",
                 kwargs={
-                    "provider_pk": self.get_non_existent_pk(model=HostProvider),
+                    "hostprovider_pk": self.get_non_existent_pk(model=HostProvider),
                     "pk": self.provider_initial_config.pk,
                 },
             )
@@ -444,7 +444,7 @@ class TestProviderConfig(BaseAPITestCase):
             path=reverse(
                 viewname="v2:provider-config-list",
                 kwargs={
-                    "provider_pk": self.provider.pk,
+                    "hostprovider_pk": self.provider.pk,
                 },
             ),
             data=data,
@@ -461,7 +461,7 @@ class TestProviderConfig(BaseAPITestCase):
             path=reverse(
                 viewname="v2:provider-config-list",
                 kwargs={
-                    "provider_pk": self.provider.pk,
+                    "hostprovider_pk": self.provider.pk,
                 },
             )
         )

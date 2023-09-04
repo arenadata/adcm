@@ -9,11 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from api_v2.cluster.serializers import ClusterRelatedSerializer
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from cm.adcm_config.config import get_main_info
-from cm.models import ClusterObject, MaintenanceMode
+from cm.models import ClusterObject, MaintenanceMode, ServiceComponent
 from cm.status_api import get_obj_status
 from rest_framework.serializers import (
     ChoiceField,
@@ -79,3 +80,23 @@ class ServiceNameSerializer(ModelSerializer):
     class Meta:
         model = ClusterObject
         fields = ["id", "name", "display_name"]
+
+
+class RelatedComponentsStatusesSerializer(ModelSerializer):
+    status = SerializerMethodField()
+
+    @staticmethod
+    def get_status(instance: ClusterObject) -> str:
+        return get_obj_status(obj=instance)
+
+    class Meta:
+        model = ServiceComponent
+        fields = ["id", "name", "display_name", "status"]
+
+
+class ServiceStatusSerializer(ModelSerializer):
+    components = RelatedComponentsStatusesSerializer(many=True, source="servicecomponent_set")
+
+    class Meta:
+        model = ClusterObject
+        fields = ["components"]

@@ -14,7 +14,14 @@ from typing import Callable
 from unittest.mock import patch
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.models import Action, ADCMEntityStatus, Cluster, TaskLog
+from cm.models import (
+    Action,
+    ADCMEntityStatus,
+    Cluster,
+    ClusterObject,
+    Prototype,
+    TaskLog,
+)
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils import timezone
@@ -173,6 +180,16 @@ class TestCluster(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 3)
 
+    def test_service_create_success(self):
+        service_prototype = Prototype.objects.filter(type="service").first()
+        response: Response = self.client.post(
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data=[{"prototype_id": service_prototype.pk}],
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(response.json()[0]["name"], service_prototype.name)
+        self.assertEqual(ClusterObject.objects.get(cluster_id=self.cluster_1.pk).name, "service_1")
+
 
 class TestClusterActions(BaseAPITestCase):
     def setUp(self) -> None:
@@ -232,7 +249,7 @@ class TestClusterActions(BaseAPITestCase):
                     viewname="v2:cluster-action-run",
                     kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action.pk},
                 ),
-                data={"host_component_map": {}, "config": {}, "attr": {}, "is_verbose": False},
+                data={"host_component_map": [], "config": {}, "attr": {}, "is_verbose": False},
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -271,7 +288,7 @@ class TestClusterActions(BaseAPITestCase):
                     viewname="v2:cluster-action-run",
                     kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action_with_config.pk},
                 ),
-                data={"host_component_map": {}, "config": config, "attr": {}, "is_verbose": False},
+                data={"host_component_map": [], "config": config, "attr": {}, "is_verbose": False},
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
