@@ -1,14 +1,27 @@
 import React from 'react';
+import { ConcernLinksData } from '@utils/concernUtils';
+import { Link } from 'react-router-dom';
+import s from './ConcernMeassages.module.scss';
 
 interface ConcernMessagesProps {
-  messages: string[];
+  concernsData: Array<ConcernLinksData[]>;
 }
 
-const ConcernMessages: React.FC<ConcernMessagesProps> = ({ messages }) => {
+const ConcernMessages: React.FC<ConcernMessagesProps> = ({ concernsData }) => {
   return (
     <>
-      {messages.map((message, index) => (
-        <div key={index}>{message}</div>
+      {concernsData.map((concernData, index) => (
+        <div key={index} className={s.concernMessage}>
+          {concernData.map((messagePart, messageIndex) =>
+            messagePart.linkPath ? (
+              <Link key={messageIndex} to={messagePart.linkPath} className="text-link">
+                {messagePart.text}
+              </Link>
+            ) : (
+              messagePart.text
+            ),
+          )}
+        </div>
       ))}
     </>
   );

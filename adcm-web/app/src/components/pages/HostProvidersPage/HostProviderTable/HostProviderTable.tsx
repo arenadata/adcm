@@ -6,6 +6,7 @@ import { orElseGet } from '@utils/checkUtils';
 import { setDeletableId } from '@store/adcm/hostProviders/hostProvidersSlice';
 import { setSortParams } from '@store/adcm/hostProviders/hostProvidersTableSlice';
 import { SortParams } from '@models/table';
+import Concern from '@commonComponents/Concern/Concern';
 
 const HostProviderTable = () => {
   const dispatch = useDispatch();
@@ -31,7 +32,9 @@ const HostProviderTable = () => {
           <TableCell>{hostProvider.prototype.version}</TableCell>
           <TableCell>{hostProvider.state}</TableCell>
           <TableCell>{orElseGet(hostProvider.description)}</TableCell>
-          <TableCell>-</TableCell>
+          <TableCell>
+            <Concern concerns={hostProvider.concerns} />
+          </TableCell>
           <TableCell hasIconOnly align="center">
             <IconButton
               disabled={!hostProvider.isUpgradable}
