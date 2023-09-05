@@ -7,9 +7,9 @@ import { SortParams } from '@uikit/types/list.types';
 import { openStopDialog } from '@store/adcm/jobs/jobsActionsSlice';
 import { AdcmJobStatus } from '@models/adcm';
 import s from './JobPageChildJobsTable.module.scss';
-import { secondsToTime } from '@utils/time/timeConvertUtils';
 import { getJobLog } from '@store/adcm/jobs/jobsSlice';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
+import { secondsToDuration } from '@utils/date/timeConvertUtils';
 
 const JobPageChildJobsTable = () => {
   const dispatch = useDispatch();
@@ -39,7 +39,7 @@ const JobPageChildJobsTable = () => {
               </Link>
             </TableCell>
             <TableCell>{job.status}</TableCell>
-            <TableCell>{secondsToTime(Math.round(+job.duration))}</TableCell>
+            <TableCell>{secondsToDuration(job.duration)}</TableCell>
             <DateTimeCell value={job.startTime} />
             <DateTimeCell value={job.endTime} />
             <TableCell hasIconOnly align="center">

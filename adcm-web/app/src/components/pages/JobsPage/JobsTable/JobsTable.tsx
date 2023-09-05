@@ -8,8 +8,8 @@ import { openRestartDialog, openStopDialog } from '@store/adcm/jobs/jobsActionsS
 import { AdcmJobStatus } from '@models/adcm';
 import s from './JobsTable.module.scss';
 import { dateToString } from '@utils/date/dateConvertUtils';
-import { secondsToTime } from '@utils/time/timeConvertUtils';
 import JobsStatusCell from '../../../common/Table/Cells/JobsStatusCell/JobsStatusCell';
+import { secondsToDuration } from '@utils/date/timeConvertUtils';
 
 const JobsTable = () => {
   const dispatch = useDispatch();
@@ -53,7 +53,7 @@ const JobsTable = () => {
                 );
               })}
             </TableCell>
-            <TableCell>{secondsToTime(Math.round(+job.duration))}</TableCell>
+            <TableCell>{secondsToDuration(job.duration)}</TableCell>
             <TableCell>{dateToString(new Date(job.startTime))}</TableCell>
             <TableCell>{dateToString(new Date(job.endTime))}</TableCell>
             <TableCell hasIconOnly align="center">
