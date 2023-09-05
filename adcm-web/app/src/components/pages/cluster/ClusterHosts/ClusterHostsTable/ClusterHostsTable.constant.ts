@@ -1,5 +1,5 @@
-import { BaseStatus, TableColumn } from '@uikit';
-import { AdcmHostStatus } from '@models/adcm/host';
+import { TableColumn } from '@uikit';
+export { hostStatusesMap } from '@pages/HostsPage/HostsTable/HostsTable.constants';
 
 export const columns: TableColumn[] = [
   {
@@ -30,8 +30,3 @@ export const columns: TableColumn[] = [
     width: '100px',
   },
 ];
-
-export const hostStatusesMap: { [key in AdcmHostStatus]: BaseStatus } = {
-  [AdcmHostStatus.On]: 'done',
-  [AdcmHostStatus.Off]: 'failed',
-};

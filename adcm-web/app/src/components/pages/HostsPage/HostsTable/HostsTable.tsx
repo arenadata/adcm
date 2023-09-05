@@ -42,7 +42,7 @@ const HostsTable: React.FC = () => {
       {hosts.map((host: AdcmHost) => {
         return (
           <TableRow key={host.id}>
-            <StatusableCell status={hostStatusesMap['done']}>{host.name}</StatusableCell>
+            <StatusableCell status={hostStatusesMap[host.status]}>{host.name}</StatusableCell>
             <TableCell>{host.state}</TableCell>
             <TableCell>{host.hostprovider.name}</TableCell>
             <TableCell>{orElseGet(host.cluster?.name)}</TableCell>
