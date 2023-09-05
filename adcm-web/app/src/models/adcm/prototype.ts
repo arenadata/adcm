@@ -1,9 +1,9 @@
-import { AdcmLicense } from '@models/adcm/license';
+import { AdcmLicense, AdcmLicenseStatus } from '@models/adcm/license';
 
 export interface AdcmPrototypeVersion {
   id: number;
   version: string;
-  isLicenseAccepted: boolean;
+  licenseStatus: AdcmLicenseStatus;
   bundleId: number;
 }
 

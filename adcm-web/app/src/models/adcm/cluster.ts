@@ -1,4 +1,5 @@
 import { AdcmConcerns } from './concern';
+import { AdcmLicenseStatus } from '@models/adcm/license';
 
 export enum AdcmClusterStatus {
   Up = 'up',
@@ -33,7 +34,6 @@ export interface AdcmClustersFilter {
 }
 
 export interface CreateAdcmClusterPayload {
-  isLicenseAccepted: boolean;
   prototypeId: number;
   name: string;
   description: string;
@@ -47,10 +47,10 @@ export interface AdcmClusterUpgrade {
   id: number;
   name: string;
   displayName: string;
-  isLicenseAccepted: boolean;
+  licenseStatus: AdcmLicenseStatus;
 }
 
-export interface AdcmClusterActionDetails {
+export interface AdcmClusterActionDetails extends AdcmClusterUpgrade {
   isAllowToTerminate: boolean;
   hostComponentMapRules: object[];
   disclaimer: string;

@@ -32,10 +32,10 @@ const ClusterHostsTable: React.FC = () => {
 
   return (
     <Table isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
-      {clusterHosts.map((clusterHost: AdcmClusterHost, index) => {
+      {clusterHosts.map((clusterHost: AdcmClusterHost) => {
         return (
           <TableRow key={clusterHost.id}>
-            <StatusableCell status={hostStatusesMap['done']}>{clusterHost.name}</StatusableCell>
+            <StatusableCell status={hostStatusesMap[clusterHost.status]}>{clusterHost.name}</StatusableCell>
             <TableCell>{clusterHost.state}</TableCell>
             <TableCell>{clusterHost.hostprovider.name}</TableCell>
             <TableCell>{`${clusterHost.components.length} components`}</TableCell>

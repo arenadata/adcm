@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useStore, useDispatch } from '@hooks';
 import { AdcmClusterUpgrade } from '@models/adcm';
 import { cleanupClustersActions, loadClusterUpgradeActionDetails } from '@store/adcm/clusters/clustersActionsSlice';
+import { AdcmLicenseStatus } from '@models/adcm/license';
 
 interface UpgradeClusterFormData {
   upgrade: AdcmClusterUpgrade | null;
@@ -27,7 +28,10 @@ export const useUpgradeClusterDialog = () => {
   }, [isOpen]);
 
   const isValid = useMemo(() => {
-    return formData.upgrade && formData.isUserAcceptedLicense;
+    return (
+      formData.upgrade &&
+      (formData.upgrade.licenseStatus === AdcmLicenseStatus.Absent || formData.isUserAcceptedLicense)
+    );
   }, [formData]);
 
   const handleClose = () => {

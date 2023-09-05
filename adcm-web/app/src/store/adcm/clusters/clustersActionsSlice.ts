@@ -41,11 +41,15 @@ type LoadAdcmClusterUpgradeActionDetailsArgs = {
   upgradeId: number;
 };
 
+type CreateAdcmClusterWithLicensePayload = CreateAdcmClusterPayload & {
+  isNeedAcceptLicense: boolean;
+};
+
 const createCluster = createAsyncThunk(
   'adcm/clustersActions/createCluster',
-  async (arg: CreateAdcmClusterPayload, thunkAPI) => {
+  async ({ isNeedAcceptLicense, ...arg }: CreateAdcmClusterWithLicensePayload, thunkAPI) => {
     try {
-      if (!arg.isLicenseAccepted) {
+      if (isNeedAcceptLicense) {
         await AdcmPrototypesApi.postAcceptLicense(arg.prototypeId);
       }
 
