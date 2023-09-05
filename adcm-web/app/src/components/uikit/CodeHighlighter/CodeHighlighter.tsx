@@ -20,8 +20,13 @@ type LineNumbersProps = {
   lineCount: number;
 };
 
-export const LinesWrapper = ({ children }: LinesWrapperProps) => {
-  return <div className={cn(s['code-wrapper__code-lines'])}>{children}</div>;
+export const LinesWrapper = ({ children, subComponent }: LinesWrapperProps) => {
+  return (
+    <div className={cn(s['code-wrapper__code-lines'])}>
+      {children}
+      {subComponent}
+    </div>
+  );
 };
 
 export const LineNumbers = ({ lineCount }: LineNumbersProps) => (
