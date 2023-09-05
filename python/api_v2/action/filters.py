@@ -10,13 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Action
-from django_filters.rest_framework import CharFilter, FilterSet
+from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
 
 
 class ActionFilter(FilterSet):
     name = CharFilter(label="Action name", field_name="name", lookup_expr="icontains")
-
-    class Meta:
-        model = Action
-        fields = ["id", "name"]
+    ordering = OrderingFilter(fields={"id": "id"}, field_labels={"id": "ID"}, label="ordering")
