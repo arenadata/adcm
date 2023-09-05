@@ -8,6 +8,8 @@ import ServiceName from '@commonComponents/service/ServiceName/ServiceName';
 
 const ClusterServiceHeader: React.FC = () => {
   const service = useStore(({ adcm }) => adcm.service.service);
+  const successfulComponentsCount = useStore(({ adcm }) => adcm.service.relatedData.successfulComponentsCount);
+  const totalComponentsCount = useStore(({ adcm }) => adcm.service.relatedData.totalComponentsCount);
 
   return (
     <EntityHeader
@@ -15,7 +17,11 @@ const ClusterServiceHeader: React.FC = () => {
         <ServiceName service={service} />
       ))}
       subtitle={orElseGet(service?.prototype.version)}
-      central={<div>2/2 successful components</div>}
+      central={
+        <div>
+          {successfulComponentsCount} / {totalComponentsCount} successful components
+        </div>
+      }
       actions={
         <ButtonGroup>
           <Button iconLeft="g1-actions" variant="secondary">

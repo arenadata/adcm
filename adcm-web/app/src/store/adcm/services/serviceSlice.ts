@@ -2,7 +2,7 @@ import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmService } from '@models/adcm';
+import { AdcmRelatedServiceComponentsState, AdcmService, AdcmServiceStatus } from '@models/adcm';
 import { AdcmServicesApi, RequestError } from '@api';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
@@ -10,6 +10,10 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 interface AdcmServiceState {
   service?: AdcmService;
   isLoading: boolean;
+  relatedData: {
+    successfulComponentsCount: number;
+    totalComponentsCount: number;
+  };
 }
 
 interface LoadServicePayload {
@@ -58,9 +62,25 @@ const deleteService = createAsyncThunk(
   },
 );
 
+const getRelatedServiceComponentsStatuses = createAsyncThunk(
+  'adcm/cluster/services/serviceComponents/getServiceComponentsStatuses',
+  async ({ clusterId, serviceId }: LoadServicePayload, thunkAPI) => {
+    try {
+      const componentsStatuses = await AdcmServicesApi.getRelatedServiceComponentsStatuses(clusterId, serviceId);
+      return componentsStatuses;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
 const createInitialState = (): AdcmServiceState => ({
   service: undefined,
   isLoading: false,
+  relatedData: {
+    successfulComponentsCount: 0,
+    totalComponentsCount: 0,
+  },
 });
 
 const serviceSlice = createSlice({
@@ -81,9 +101,19 @@ const serviceSlice = createSlice({
     builder.addCase(loadService.rejected, (state) => {
       state.service = undefined;
     });
+    builder.addCase(getRelatedServiceComponentsStatuses.fulfilled, (state, action) => {
+      state.relatedData.successfulComponentsCount = action.payload.components.filter(
+        ({ status }: AdcmRelatedServiceComponentsState) => status === AdcmServiceStatus.Up,
+      ).length;
+      state.relatedData.totalComponentsCount = action.payload.components.length;
+    });
+    builder.addCase(getRelatedServiceComponentsStatuses.rejected, (state) => {
+      state.relatedData.successfulComponentsCount = 0;
+      state.relatedData.totalComponentsCount = 0;
+    });
   },
 });
 
 const { setIsLoading, cleanupService } = serviceSlice.actions;
-export { getService, cleanupService, deleteService };
+export { getService, cleanupService, deleteService, getRelatedServiceComponentsStatuses };
 export default serviceSlice.reducer;

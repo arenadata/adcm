@@ -1,4 +1,4 @@
-import type { AdcmService, Batch } from '@models/adcm';
+import type { AdcmService, AdcmRelatedServiceComponentsStates, Batch } from '@models/adcm';
 import { httpClient } from '@api/httpClient';
 
 export class AdcmServicesApi {
@@ -14,5 +14,12 @@ export class AdcmServicesApi {
 
   public static async deleteService(clusterId: number, serviceId: number) {
     await httpClient.delete(`/api/v2/clusters/${clusterId}/services/${serviceId}/`);
+  }
+
+  public static async getRelatedServiceComponentsStatuses(clusterId: number, serviceId: number) {
+    const response = await httpClient.get<AdcmRelatedServiceComponentsStates>(
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/statuses/`,
+    );
+    return response.data;
   }
 }

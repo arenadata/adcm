@@ -35,3 +35,14 @@ export interface AdcmServicePrototype {
 export interface AdcmServicesFilter {
   serviceName?: string;
 }
+
+export interface AdcmRelatedServiceComponentsState {
+  id: number;
+  name: string;
+  displayName?: string;
+  status: AdcmServiceStatus;
+}
+
+export interface AdcmRelatedServiceComponentsStates {
+  components: AdcmRelatedServiceComponentsState[];
+}
