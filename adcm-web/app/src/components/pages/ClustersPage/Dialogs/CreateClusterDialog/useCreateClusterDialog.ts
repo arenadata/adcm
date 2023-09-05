@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useStore, useDispatch } from '@hooks';
 import { AdcmPrototypeVersions, AdcmPrototypeVersion } from '@models/adcm';
 import { cleanupClustersActions, createCluster } from '@store/adcm/clusters/clustersActionsSlice';
+import { AdcmLicenseStatus } from '@models/adcm/license';
 
 interface CreateClusterFormData {
   product: AdcmPrototypeVersions | null;
@@ -35,7 +36,11 @@ export const useCreateClusterDialog = () => {
   }, [isOpen]);
 
   const isValid = useMemo(() => {
-    return formData.productVersion !== null && formData.name && formData.isUserAcceptedLicense;
+    return (
+      formData.productVersion !== null &&
+      formData.name &&
+      (formData.productVersion.licenseStatus === AdcmLicenseStatus.Absent || formData.isUserAcceptedLicense)
+    );
   }, [formData]);
 
   const handleClose = () => {
@@ -49,7 +54,7 @@ export const useCreateClusterDialog = () => {
           name: formData.name,
           description: formData.description,
           prototypeId: formData.productVersion.id,
-          isLicenseAccepted: formData.productVersion?.isLicenseAccepted ?? false,
+          isNeedAcceptLicense: formData.productVersion.licenseStatus === AdcmLicenseStatus.Unaccepted,
         }),
       );
     }

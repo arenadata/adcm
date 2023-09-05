@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
-import { Checkbox, Dialog, FormFieldsContainer, FormField, Input, Select } from '@uikit';
+import { Checkbox, Dialog, FormField, FormFieldsContainer, Input, Select } from '@uikit';
 import { getOptionsFromArray } from '@uikit/Select/Select.utils';
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
-import { AdcmPrototypeVersions, AdcmPrototypeVersion } from '@models/adcm';
+import { AdcmPrototypeVersion, AdcmPrototypeVersions } from '@models/adcm';
 import { useCreateClusterDialog } from './useCreateClusterDialog';
+import { AdcmLicenseStatus } from '@models/adcm/license';
 
 const CreateClusterDialog = () => {
   const { isOpen, relatedData, formData, isValid, onCreate, onClose, onChangeFormData } = useCreateClusterDialog();
@@ -24,7 +25,10 @@ const CreateClusterDialog = () => {
 
   const handleProductVersionChange = (value: AdcmPrototypeVersion | null) => {
     if (value) {
-      onChangeFormData({ productVersion: value, isUserAcceptedLicense: value.isLicenseAccepted });
+      onChangeFormData({
+        productVersion: value,
+        isUserAcceptedLicense: value.licenseStatus === AdcmLicenseStatus.Accepted,
+      });
     }
   };
 
@@ -42,12 +46,14 @@ const CreateClusterDialog = () => {
 
   const dialogControls = (
     <CustomDialogControls actionButtonLabel="Create" onCancel={onClose} onAction={onCreate} isActionDisabled={!isValid}>
-      <Checkbox
-        label="I accept Terms of Agreement"
-        checked={formData.isUserAcceptedLicense}
-        disabled={formData.productVersion?.isLicenseAccepted}
-        onChange={handleTermsOfAgreementChange}
-      />
+      {formData.productVersion?.licenseStatus !== AdcmLicenseStatus.Absent && (
+        <Checkbox
+          label="I accept Terms of Agreement"
+          checked={formData.isUserAcceptedLicense}
+          disabled={formData.productVersion?.licenseStatus === AdcmLicenseStatus.Accepted}
+          onChange={handleTermsOfAgreementChange}
+        />
+      )}
     </CustomDialogControls>
   );
 
