@@ -2,8 +2,8 @@ import { AdcmConcerns } from '@models/adcm/concern';
 import { AdcmHostProvider } from '@models/adcm';
 
 export enum AdcmHostStatus {
-  On = 'done',
-  Off = 'failed',
+  Up = 'up',
+  Down = 'down',
 }
 
 export interface AdcmHostsFilter {

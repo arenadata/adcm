@@ -32,6 +32,6 @@ export const columns: TableColumn[] = [
 ];
 
 export const hostStatusesMap: { [key in AdcmHostStatus]: BaseStatus } = {
-  [AdcmHostStatus.On]: 'done',
-  [AdcmHostStatus.Off]: 'failed',
+  [AdcmHostStatus.Up]: 'done',
+  [AdcmHostStatus.Down]: 'unknown',
 };
