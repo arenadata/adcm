@@ -3,6 +3,7 @@ import type { AnchorBarItem } from './AnchorBar/AnchorBar';
 import Button from '@uikit/Button/Button';
 import ButtonGroup from './ButtonGroup/ButtonGroup';
 import Checkbox from './Checkbox/Checkbox';
+import CodeEditor from './CodeEditor/CodeEditor';
 import DatePicker from '@uikit/DatePicker/DatePicker';
 import Dialog from '@uikit/Dialog/Dialog';
 import DialogDefaultControls from '@uikit/Dialog/DialogDefaultControls';
@@ -47,6 +48,7 @@ export {
   AnchorList,
   Button,
   ButtonGroup,
+  CodeEditor,
   Checkbox,
   DatePicker,
   Dialog,
