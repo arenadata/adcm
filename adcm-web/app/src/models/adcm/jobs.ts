@@ -29,7 +29,7 @@ export interface AdcmJob {
   displayName: string;
   status: AdcmJobStatus;
   objects: AdcmJobObject[];
-  duration: string;
+  duration: number;
   startTime: string;
   endTime: string;
   isTerminatable: boolean;
@@ -60,7 +60,7 @@ export interface AdcmTask {
   displayName: string;
   status: AdcmJobStatus;
   objects: AdcmJobObject[];
-  duration: string;
+  duration: number;
   startTime: string;
   endTime: string;
   isTerminatable: boolean;

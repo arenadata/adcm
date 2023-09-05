@@ -3,9 +3,9 @@ import { Table, TableRow, TableCell } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { columns } from './JobPageTable.constants';
 import { downloadTaskLog } from '@store/adcm/jobs/jobsActionsSlice';
-import { secondsToTime } from '@utils/time/timeConvertUtils';
 import { linkByObjectTypeMap } from '@pages/JobsPage/JobsTable/JobsTable.constants';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
+import { secondsToDuration } from '@utils/date/timeConvertUtils';
 
 const JobPageTable = () => {
   const dispatch = useDispatch();
@@ -24,7 +24,7 @@ const JobPageTable = () => {
             <TableCell>
               <Link to={`/${linkByObjectTypeMap[object.type]}/${object.id}/`}>{object.name}</Link>
             </TableCell>
-            <TableCell>{secondsToTime(Math.round(+task.duration))}</TableCell>
+            <TableCell>{secondsToDuration(task.duration)}</TableCell>
             <DateTimeCell value={task.startTime} />
             <DateTimeCell value={task.startTime} />
             <TableCell hasIconOnly align="center">
