@@ -1,7 +1,8 @@
 import AccessManagerGroupsTableFilters from './AccessManagerGroupsTableFilters';
-import { Button, ButtonGroup } from '@uikit';
+import { ButtonGroup } from '@uikit';
 import TableToolbar from '@commonComponents/Table/TableToolbar/TableToolbar';
 import AccessManagerGroupsDeleteButton from './AccessManagerGroupsDeleteButton/AccessManagerGroupsDeleteButton';
+import RbacGroupCreateButton from './RbacGroupCreateButton/RbacGroupCreateButton';
 
 const AccessManagerGroupsTableToolbar = () => {
   return (
@@ -9,7 +10,7 @@ const AccessManagerGroupsTableToolbar = () => {
       <AccessManagerGroupsTableFilters />
       <ButtonGroup>
         <AccessManagerGroupsDeleteButton />
-        <Button>Create group</Button>
+        <RbacGroupCreateButton />
       </ButtonGroup>
     </TableToolbar>
   );

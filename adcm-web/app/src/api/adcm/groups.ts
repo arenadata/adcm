@@ -14,12 +14,7 @@ export class AdcmGroupsApi {
   }
 
   public static async createGroup(payload: CreateAdcmGroupPayload) {
-    const mockPayload = {
-      name: payload.name,
-      description: payload.description,
-    };
-
-    await httpClient.post('/api/v2/rbac/groups/', mockPayload);
+    await httpClient.post('/api/v2/rbac/groups/', payload);
   }
 
   public static async getGroup(id: number) {

@@ -5,7 +5,7 @@ export enum AdcmGroupType {
 
 interface AdcmGroupUser {
   id: number;
-  name: string;
+  username: string;
 }
 
 export interface AdcmGroup {
@@ -22,14 +22,15 @@ export interface AdcmGroupFilter {
   type?: string;
 }
 
-interface AdcmGroupUserPayload {
+export interface AdcmGroupUserPayload {
   id: number;
 }
 
 export interface CreateAdcmGroupPayload {
   name: string;
   description: string;
-  users: AdcmGroupUserPayload[];
+  displayName: string;
+  users: number[];
 }
 
 export interface UpdateAdcmGroupPayload {
