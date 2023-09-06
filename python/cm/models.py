@@ -1605,8 +1605,8 @@ class TaskLog(ADCMModel):
             raise AdcmEx("NOT_ALLOWED_TERMINATION", f"Failed to terminate process: {e}") from e
 
     @property
-    def duration(self):
-        return self.finish_date - self.start_date
+    def duration(self) -> float:
+        return (self.finish_date - self.start_date).total_seconds()
 
 
 class JobLog(ADCMModel):
@@ -1654,8 +1654,8 @@ class JobLog(ADCMModel):
             event_queue.send_state()
 
     @property
-    def duration(self):
-        return self.finish_date - self.start_date
+    def duration(self) -> float:
+        return (self.finish_date - self.start_date).total_seconds()
 
 
 class GroupCheckLog(ADCMModel):
