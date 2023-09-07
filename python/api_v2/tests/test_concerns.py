@@ -11,7 +11,13 @@
 # limitations under the License.
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.models import KnownNames, MessageTemplate, ObjectType, Prototype
+from cm.models import (
+    KnownNames,
+    MessageTemplate,
+    ObjectType,
+    Prototype,
+    PrototypeImport,
+)
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
@@ -153,6 +159,14 @@ class TestConcernsResponse(BaseAPITestCase):
         self.assertEqual(len(response.json()["concerns"]), 1)
         self.assertDictEqual(response.json()["concerns"][0]["reason"], expected_concern_reason)
 
+
+class TestConcernsLogic(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        bundle_dir = self.test_bundles_dir / "cluster_with_required_import"
+        self.required_import_bundle = self.add_bundle(source_dir=bundle_dir)
+
     def test_import_concern_resolved_after_saving_import(self):
         import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
         export_cluster = self.cluster_1
@@ -173,3 +187,12 @@ class TestConcernsResponse(BaseAPITestCase):
         )
         self.assertEqual(len(response.json()["concerns"]), 0)
         self.assertEqual(import_cluster.concerns.count(), 0)
+
+    def test_non_required_import_do_not_raises_concern(self):
+        self.assertGreater(PrototypeImport.objects.filter(prototype=self.cluster_2.prototype).count(), 0)
+
+        response: Response = self.client.get(
+            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_2.pk})
+        )
+        self.assertEqual(len(response.json()["concerns"]), 0)
+        self.assertEqual(self.cluster_2.concerns.count(), 0)
