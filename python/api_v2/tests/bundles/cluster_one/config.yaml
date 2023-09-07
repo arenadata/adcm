@@ -61,6 +61,9 @@
       <<: *action
       host_action: true
 
+  export:
+    - string
+
 - name: service_1
   type: service
   version: *version

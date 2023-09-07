@@ -140,7 +140,7 @@ def do_check_import(cluster: Cluster, service: ClusterObject | None = None) -> t
     if not any(prototype_imports.values_list("required", flat=True)):
         return True, "NOT_REQUIRED"
 
-    for prototype_import in prototype_imports:
+    for prototype_import in prototype_imports.filter(required=True):
         import_exist = (False, None)
         for cluster_bind in ClusterBind.objects.filter(cluster=cluster):
             if cluster_bind.source_cluster and cluster_bind.source_cluster.prototype.name == prototype_import.name:
