@@ -152,3 +152,24 @@ class TestConcernsResponse(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["concerns"]), 1)
         self.assertDictEqual(response.json()["concerns"][0]["reason"], expected_concern_reason)
+
+    def test_import_concern_resolved_after_saving_import(self):
+        import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
+        export_cluster = self.cluster_1
+
+        response: Response = self.client.get(
+            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": import_cluster.pk})
+        )
+        self.assertEqual(len(response.json()["concerns"]), 1)
+        self.assertEqual(import_cluster.concerns.count(), 1)
+
+        self.client.post(
+            path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": import_cluster.pk}),
+            data=[{"source": {"id": export_cluster.pk, "type": ObjectType.CLUSTER}}],
+        )
+
+        response: Response = self.client.get(
+            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": import_cluster.pk})
+        )
+        self.assertEqual(len(response.json()["concerns"]), 0)
+        self.assertEqual(import_cluster.concerns.count(), 0)
