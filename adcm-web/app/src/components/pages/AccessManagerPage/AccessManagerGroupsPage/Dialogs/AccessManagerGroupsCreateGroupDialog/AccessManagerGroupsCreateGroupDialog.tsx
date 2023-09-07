@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Dialog, FormFieldsContainer, FormField, Input } from '@uikit';
-import { useCreateGgoupForm } from './useCreateGroupForm';
+import { useCreateGroupForm } from './useCreateGroupForm';
 import { useDispatch, useStore } from '@hooks';
 import { closeCreateDialog } from '@store/adcm/groups/groupActionsSlice';
 import MultiSelect from '@uikit/Select/MultiSelect/MultiSelect';
@@ -18,7 +18,7 @@ const AccessManagerGroupsCreateDialog = () => {
     loadRelatedData,
     relatedData: { usersOptions },
     isValid,
-  } = useCreateGgoupForm();
+  } = useCreateGroupForm();
 
   useEffect(() => {
     resetForm();

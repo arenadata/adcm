@@ -26,8 +26,3 @@ export const columns: TableColumn[] = [
     width: '100px',
   },
 ];
-
-const enum RoleType {
-  ROLE = 'role',
-  BUSINESS = 'business',
-}

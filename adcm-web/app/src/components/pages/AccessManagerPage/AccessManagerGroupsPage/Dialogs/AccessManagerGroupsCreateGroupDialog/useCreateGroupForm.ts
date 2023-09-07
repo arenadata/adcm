@@ -2,7 +2,6 @@ import { useState, useMemo, useCallback } from 'react';
 import { useStore, useDispatch } from '@hooks';
 import { getUsers } from '@store/adcm/users/usersSlice';
 import { createGroup } from '@store/adcm/groups/groupActionsSlice';
-import { AdcmGroupUserPayload } from '@models/adcm';
 
 interface CreateGroupFormData {
   name: string;
@@ -16,7 +15,7 @@ const initialFormData: CreateGroupFormData = {
   usersIds: [],
 };
 
-export const useCreateGgoupForm = () => {
+export const useCreateGroupForm = () => {
   const dispatch = useDispatch();
 
   const users = useStore(({ adcm }) => adcm.users.users);

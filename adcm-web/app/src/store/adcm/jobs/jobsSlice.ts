@@ -82,7 +82,7 @@ const createInitialState = (): AdcmJobsState => ({
     displayName: '',
     status: AdcmJobStatus.Created,
     objects: [],
-    duration: '',
+    duration: 0,
     startTime: '',
     endTime: '',
     isTerminatable: false,
