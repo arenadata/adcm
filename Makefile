@@ -40,18 +40,16 @@ ng_tests:
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64 ./ng_test.sh
 
 pretty:
+	poetry install --no-root --with lint
 	black license_checker.py python
 	autoflake -r -i --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python
 	isort license_checker.py python
 	python license_checker.py --fix --folders python go
 
 lint:
-	black --check license_checker.py python
-	autoflake --check --quiet -r --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python
-	isort --check license_checker.py python
+	poetry install --no-root --with lint
+	poetry run black --check license_checker.py python
+	poetry run autoflake --check --quiet -r --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python
+	poetry run isort --check license_checker.py python
 	python license_checker.py --folders python go
-	pylint --rcfile pyproject.toml --recursive y python
-
-lint_docker:
-	docker run -i --rm -e DJANGO_SETTINGS_MODULE=adcm.settings $(APP_IMAGE):$(APP_TAG) \
-	sh -c "cd /adcm && poetry install --no-root --with lint && apk add make && make lint"
+	poetry run pylint --rcfile pyproject.toml --recursive y python
