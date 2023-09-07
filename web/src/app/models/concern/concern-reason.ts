@@ -21,14 +21,17 @@ export enum IMPlaceholderItemType {
   Service = 'service',
   Component = 'component',
   HostProvider = 'provider',
+  Flag = 'flag',
   Host = 'host',
   Job = 'job',
 }
 
 export interface IMPlaceholderItem {
-  type?: IMPlaceholderItemType;
   name: string;
-  ids: { [id: string]: number } | number;
+  params: {
+    [id: string]: number;
+  };
+  type?: IMPlaceholderItemType;
 }
 
 export interface IMPlaceholderActionRun extends IMPlaceholderItem {

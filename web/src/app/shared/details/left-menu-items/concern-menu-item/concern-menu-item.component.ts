@@ -15,9 +15,7 @@ import { environment } from '@env/environment';
     >
       <span>{{ label }}</span>&nbsp;
       <ng-container *ngIf="concernsPresent">
-        <mat-icon color="warn">
-          priority_hight
-        </mat-icon>
+        <app-concern-list-ref [concerns]="concerns"></app-concern-list-ref>
       </ng-container>
     </a>
   `,
@@ -26,6 +24,7 @@ import { environment } from '@env/environment';
 export class ConcernMenuItemComponent extends MenuItemAbstractDirective<BaseEntity> implements OnInit {
 
   concernsPresent = false;
+  concerns = null;
 
   @Input() set entity(entity: BaseEntity) {
     this._entity = entity;
@@ -57,6 +56,9 @@ export class ConcernMenuItemComponent extends MenuItemAbstractDirective<BaseEnti
     };
 
     this.api.get(`${environment.apiRoot}/concern`, params)
-      .subscribe((concerns: any[]) => this.concernsPresent = !!concerns?.length);
+      .subscribe((concerns: any[]) => {
+        this.concerns = concerns;
+        this.concernsPresent = !!concerns?.length
+      });
   }
 }
