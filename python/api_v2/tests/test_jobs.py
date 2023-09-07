@@ -98,13 +98,13 @@ class TestJob(BaseTestCase):
         self.assertEqual(len(response.json()), 1)
 
     def test_job_log_download_success(self):
-        response: Response = self.client.post(
+        response: Response = self.client.get(
             path=reverse(viewname="v2:log-download", kwargs={"job_pk": self.job_1.pk, "log_pk": self.log_1.pk})
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_job_log_not_found_download_fail(self):
-        response: Response = self.client.post(
+        response: Response = self.client.get(
             path=reverse(viewname="v2:log-download", kwargs={"job_pk": self.job_1.pk, "log_pk": self.log_1.pk + 10})
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
