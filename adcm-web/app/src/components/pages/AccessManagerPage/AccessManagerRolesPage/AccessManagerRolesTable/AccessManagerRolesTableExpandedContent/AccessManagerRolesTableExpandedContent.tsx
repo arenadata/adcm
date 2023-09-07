@@ -1,7 +1,6 @@
-import { Checkbox, SearchInput, Tags } from '@uikit';
+import { Checkbox, SearchInput, Tag, Tags } from '@uikit';
 import s from './AccessManagerRolesTableExpandedContent.module.scss';
 import { AdcmRole } from '@models/adcm';
-import MappingItemTag from '@pages/cluster/ClusterMapping/MappingItemTag/MappingItemTag';
 import { useStore } from '@hooks';
 
 export interface AccessManagerRolesTableExpandedContentProps {
@@ -29,7 +28,7 @@ const AccessManagerRolesTableExpandedContent = ({ children }: AccessManagerRoles
       {children.length > 0 && (
         <Tags className={s.content__tags}>
           {children.map((c) => (
-            <MappingItemTag key={c.id} id={c.id} label={c.displayName} />
+            <Tag key={c.id} children={c.displayName} />
           ))}
         </Tags>
       )}
