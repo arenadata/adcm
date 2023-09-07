@@ -370,6 +370,9 @@ const routes: RoutesConfigs = {
       {
         label: 'Profile',
       },
+      {
+        label: 'General',
+      },
     ],
   },
 

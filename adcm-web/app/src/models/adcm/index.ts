@@ -15,6 +15,7 @@ export * from './clusterImports';
 export * from './roles';
 export * from './clusterServiceComponent';
 export * from './clusterHosts';
+export * from './profile';
 
 export interface Batch<T> {
   results: T[];

@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { RequestError, UserApi } from '@api';
 import { createAsyncThunk } from './redux';
 import { getErrorMessage } from '@utils/httpResponseUtils';
+import { UserRBAC } from '@models/RBAC';
 
 type LoginActionPayload = {
   username: string;
@@ -21,6 +22,7 @@ type UserState = {
   hasError: boolean;
   authState: AuthState;
   message: string;
+  profile: UserRBAC;
 };
 
 const login = createAsyncThunk('user/login', async (arg: LoginActionPayload, thunkAPI) => {
@@ -54,6 +56,7 @@ const createInitialState = (): UserState => ({
   hasError: false,
   authState: AUTH_STATE.NotAuth,
   message: '',
+  profile: {} as UserRBAC,
 });
 
 const userSlice = createSlice({
@@ -73,7 +76,7 @@ const userSlice = createSlice({
     });
     builder.addCase(login.fulfilled, (state, action) => {
       state.username = action.payload.username;
-
+      state.profile = action.payload;
       state.message = '';
       state.hasError = false;
       state.needCheckSession = false;
@@ -106,7 +109,7 @@ const userSlice = createSlice({
     });
     builder.addCase(checkSession.fulfilled, (state, action) => {
       state.username = action.payload.username;
-
+      state.profile = action.payload;
       state.hasError = false;
       state.needCheckSession = false;
       state.authState = AUTH_STATE.Authed;
