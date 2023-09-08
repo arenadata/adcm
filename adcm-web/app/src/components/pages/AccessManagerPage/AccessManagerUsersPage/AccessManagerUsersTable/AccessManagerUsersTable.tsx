@@ -64,6 +64,8 @@ const AccessManagerUsersTable = () => {
       toggleSelectedAll={toggleSelectedAllItems}
     >
       {users.map((user) => {
+        const userGroupsNames = user.groups.map((group) => group.displayName).join(', ');
+
         return (
           <TableRow key={user.id}>
             <TableCell>
@@ -74,7 +76,7 @@ const AccessManagerUsersTable = () => {
             </TableCell>
             <TableCell>{user.status}</TableCell>
             <TableCell>{user.email}</TableCell>
-            <TableCell>{user.groups.join(', ')}</TableCell>
+            <TableCell>{userGroupsNames}</TableCell>
             <TableCell>{user.type}</TableCell>
             <TableCell hasIconOnly align="center">
               <IconButton icon="g1-edit" size={32} title="Edit" />

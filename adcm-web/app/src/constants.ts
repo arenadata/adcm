@@ -13,3 +13,5 @@ export const defaultDebounceDelay = 300;
 export const defaultSpinnerDelay = 300;
 
 export const queryParamSortBy = 'ordering';
+
+export const emailRegexp = new RegExp(/^[^@ ]+@[^@ ]+\.[a-zA-Z]+$/);

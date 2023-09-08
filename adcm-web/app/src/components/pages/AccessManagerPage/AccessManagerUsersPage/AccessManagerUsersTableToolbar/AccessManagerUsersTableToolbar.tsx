@@ -1,8 +1,9 @@
 import AccessManagerUsersTableFilters from './AccessManagerUsersTableFilters';
-import { Button, ButtonGroup } from '@uikit';
+import { ButtonGroup } from '@uikit';
 import TableToolbar from '@commonComponents/Table/TableToolbar/TableToolbar';
 import AccessManagerUsersDeleteButton from './AccessManagerUsersDeleteButton/AccessManagerUsersDeleteButton';
 import AccessManagerUsersBlockUnblockButtons from './AccessManagerUsersBlockUnblockButton';
+import AccessManagerUsersCreateButton from './AccessManagerUsersCreateButton';
 
 const AccessManagerUsersTableToolbar = () => {
   return (
@@ -11,7 +12,7 @@ const AccessManagerUsersTableToolbar = () => {
       <ButtonGroup>
         <AccessManagerUsersBlockUnblockButtons />
         <AccessManagerUsersDeleteButton />
-        <Button>Create user</Button>
+        <AccessManagerUsersCreateButton />
       </ButtonGroup>
     </TableToolbar>
   );

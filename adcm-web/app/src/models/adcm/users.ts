@@ -10,6 +10,8 @@ export enum AdcmUserType {
 
 interface AdcmUserGroup {
   id: number;
+  name: string;
+  displayName: string;
 }
 
 export interface AdcmUser {
@@ -31,9 +33,14 @@ export interface AdcmUsersFilter {
   type?: string;
 }
 
-export interface CreateAdcmUserPayload {
-  name: string;
-  description: string;
+export interface AdcmCreateUserPayload {
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  groups: number[];
+  password: string;
+  isSuperUser: boolean;
 }
 
 export interface UpdateAdcmUserPayload {
