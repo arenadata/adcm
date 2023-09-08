@@ -60,7 +60,9 @@ const deleteBundles = createAsyncThunk('adcm/bundles/deleteBundles', async (sele
     if (responsesList.length > 0) {
       throw responsesList[0];
     }
-    thunkAPI.dispatch(showInfo({ message: 'All selected bundles was deleted' }));
+    const message =
+      selectedBundlesIds.length > 1 ? 'All selected bundles have been deleted' : 'The bundle has been deleted';
+    thunkAPI.dispatch(showInfo({ message }));
     return [];
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
