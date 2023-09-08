@@ -1,5 +1,7 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-cd adcm-web/app && yarn lint && yarn tsc
+cd adcm-web/app
+yarn lint
+yarn tsc
 echo "lint"
