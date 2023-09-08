@@ -47,6 +47,9 @@ import JobPage from '@pages/JobsPage/JobPage/JobPage';
 import ServiceComponent from '@pages/cluster/service/component/ServiceComponent';
 import ComponentPrimaryConfiguration from '@pages/cluster/service/component/ComponentPrimaryConfiguration/ComponentPrimaryConfiguration';
 import ComponentConfigurationGroups from '@pages/cluster/service/component/ComponentConfigurationGroups/ComponentConfigurationGroups';
+import ClusterHostLayout from '@layouts/ClusterHostLayout/ClusterHostLayout';
+import HostPrimaryConfiguration from '@pages/cluster/host/HostPrimaryConfiguration/HostPrimaryConfiguration';
+import HostComponents from '@pages/cluster/host/HostComponents/HostComponents';
 
 function App() {
   return (
@@ -110,6 +113,14 @@ function App() {
                     </Route>
                   </Route>
                   <Route path="/clusters/:clusterId/hosts" element={<ClusterHosts />} />
+                  <Route path="/clusters/:clusterId/hosts/:hostId" element={<ClusterHostLayout />}>
+                    <Route index element={<Navigate to="host-components" replace />} />
+                    <Route path="/clusters/:clusterId/hosts/:hostId/host-components" element={<HostComponents />} />
+                    <Route
+                      path="/clusters/:clusterId/hosts/:hostId/primary-configuration"
+                      element={<HostPrimaryConfiguration />}
+                    />
+                  </Route>
                   <Route path="/clusters/:clusterId/mapping" element={<ClusterMapping />}>
                     <Route index element={<Navigate to="hosts" replace />} />
                     <Route path="/clusters/:clusterId/mapping/hosts" element={<ClusterHostsMapping />} />

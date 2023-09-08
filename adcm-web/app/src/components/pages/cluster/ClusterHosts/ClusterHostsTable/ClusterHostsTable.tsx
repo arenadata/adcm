@@ -9,6 +9,7 @@ import { SortParams } from '@models/table';
 import { AdcmClusterHost } from '@models/adcm/clusterHosts';
 import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/MaintenanceModeButton';
 import { openMaintenanceModeDialog } from '@store/adcm/cluster/hosts/hostsActionsSlice';
+import { Link, generatePath } from 'react-router-dom';
 
 const ClusterHostsTable: React.FC = () => {
   const dispatch = useDispatch();
@@ -35,10 +36,34 @@ const ClusterHostsTable: React.FC = () => {
       {clusterHosts.map((clusterHost: AdcmClusterHost) => {
         return (
           <TableRow key={clusterHost.id}>
-            <StatusableCell status={hostStatusesMap[clusterHost.status]}>{clusterHost.name}</StatusableCell>
+            <StatusableCell status={hostStatusesMap[clusterHost.status]}>
+              <Link
+                className="text-link"
+                to={generatePath('/clusters/:clusterId/hosts/:hostId', {
+                  clusterId: `${clusterHost.cluster.id}`,
+                  hostId: `${clusterHost.id}`,
+                })}
+              >
+                {clusterHost.name}
+              </Link>
+            </StatusableCell>
             <TableCell>{clusterHost.state}</TableCell>
-            <TableCell>{clusterHost.hostprovider.name}</TableCell>
-            <TableCell>{`${clusterHost.components.length} components`}</TableCell>
+            <TableCell>
+              <Link className="text-link" to={`/hostproviders/${clusterHost.hostprovider.id}`}>
+                {clusterHost.hostprovider.name}
+              </Link>
+            </TableCell>
+            <TableCell>
+              <Link
+                className="text-link"
+                to={generatePath('/clusters/:clusterId/hosts/:hostId', {
+                  clusterId: `${clusterHost.cluster.id}`,
+                  hostId: `${clusterHost.id}`,
+                })}
+              >
+                {clusterHost.components.length} {clusterHost.components.length === 1 ? 'component' : 'components'}
+              </Link>
+            </TableCell>
             <TableCell>{'-'}</TableCell>
             <TableCell hasIconOnly align="center">
               <Tooltip label="Actions">
