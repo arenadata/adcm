@@ -1,6 +1,6 @@
 import { httpClient } from '@api/httpClient';
 import { PaginationParams, SortParams } from '@models/table';
-import { Batch, AdcmUsersFilter, CreateAdcmUserPayload, UpdateAdcmUserPayload, AdcmUser } from '@models/adcm';
+import { Batch, AdcmUsersFilter, AdcmCreateUserPayload, UpdateAdcmUserPayload, AdcmUser } from '@models/adcm';
 import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
 
@@ -13,12 +13,9 @@ export class AdcmUsersApi {
     return response.data;
   }
 
-  public static async createUser(payload: CreateAdcmUserPayload) {
-    const mockPayload = {
-      name: payload.name,
-    };
-
-    await httpClient.post('/api/v2/rbac/users/', mockPayload);
+  public static async createUser(payload: AdcmCreateUserPayload) {
+    const response = await httpClient.post('/api/v2/rbac/users/', payload);
+    return response.data;
   }
 
   public static async getUser(id: number) {
