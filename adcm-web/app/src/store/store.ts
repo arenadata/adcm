@@ -54,6 +54,8 @@ import serviceComponentsActionsSlice from './adcm/cluster/services/serviceCompon
 import serviceComponentSlice from './adcm/cluster/services/serviceComponents/serviceComponent/serviceComponentSlice';
 import serviceComponentActionsSlice from './adcm/cluster/services/serviceComponents/serviceComponent/serviceComponentActionsSlice';
 import clustersActionsSlice from './adcm/clusters/clustersActionsSlice';
+import clusterHostSlice from './adcm/cluster/hosts/host/clusterHostSlice';
+import clusterHostTableSlice from './adcm/cluster/hosts/host/clusterHostTableSlice';
 import profileSlice from './adcm/profile/profileSlice';
 
 const rootReducer = combineReducers({
@@ -66,6 +68,8 @@ const rootReducer = combineReducers({
     clustersDynamicActions: clustersDynamicActionsSlice,
     clustersTable: clustersTableSlice,
     clusterHosts: clusterHostsSlice,
+    clusterHost: clusterHostSlice,
+    clusterHostTable: clusterHostTableSlice,
     clusterHostsActions: clusterHostsActionsSlice,
     clusterHostsTable: clusterHostsTableSlice,
     clusterMapping: clusterMappingSlice,

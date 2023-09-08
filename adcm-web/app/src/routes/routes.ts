@@ -127,6 +127,46 @@ const routes: RoutesConfigs = {
       },
     ],
   },
+  '/clusters/:clusterId/hosts/:hostId/host-components': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        href: '/clusters/:clusterId/hosts',
+        label: 'Hosts',
+      },
+      {
+        label: 'host-components',
+      },
+    ],
+  },
+  '/clusters/:clusterId/hosts/:hostId/primary-configuration': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        href: '/clusters/:clusterId/hosts',
+        label: 'Hosts',
+      },
+      {
+        label: 'primary-configuration',
+      },
+    ],
+  },
   '/clusters/:clusterId/mapping/hosts': {
     pageTitle: 'Clusters',
     breadcrumbs: [
