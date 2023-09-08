@@ -8,7 +8,7 @@
     "build": "tsc && vite build",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "tsc": "tsc --noEmit",
-    "postinstall": "[ -z \"`git --version`\" ] && echo \"git dont install\" || (frontSubDir=$(pwd) && cd $(git rev-parse --show-toplevel) && husky install \"$frontSubDir/.husky\")",
+    "postinstall": "[ -z \"`git --version`\" ] && echo \"git dont install\" || (frontSubDir=$(pwd) && cd $(git rev-parse --show-toplevel) && npx husky install \"$frontSubDir/.husky\")",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
