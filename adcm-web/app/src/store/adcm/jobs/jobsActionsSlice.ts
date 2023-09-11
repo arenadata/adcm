@@ -37,15 +37,6 @@ const stopJobWithUpdate = createAsyncThunk('adcm/jobs/stopJob', async (id: numbe
   }
 });
 
-const downloadTaskLog = createAsyncThunk('adcm/jobs/downloadTaskLog', async (id: number, thunkAPI) => {
-  try {
-    AdcmJobsApi.downloadTaskLog(id);
-  } catch (error) {
-    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-    return error;
-  }
-});
-
 const createInitialState = (): AdcmJobsActionState => ({
   restartDialog: {
     id: null,
@@ -94,6 +85,5 @@ export {
   closeRestartDialog,
   openStopDialog,
   closeStopDialog,
-  downloadTaskLog,
 };
 export default jobsSlice.reducer;

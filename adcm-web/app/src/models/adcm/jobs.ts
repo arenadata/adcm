@@ -34,6 +34,7 @@ export interface AdcmJob {
   endTime: string;
   isTerminatable: boolean;
   childJobs?: AdcmJob[];
+  logs?: AdcmJobLog[];
 }
 
 export interface AdcmJobLog {
@@ -64,5 +65,5 @@ export interface AdcmTask {
   startTime: string;
   endTime: string;
   isTerminatable: boolean;
-  childJobs?: AdcmJob[];
+  childJobs: AdcmJob[];
 }
