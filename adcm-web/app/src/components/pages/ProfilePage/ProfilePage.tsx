@@ -1,21 +1,19 @@
 import PageSection from '@commonComponents/PageSection/PageSection';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import s from './ProfilePage.module.scss';
-import { Button, FormField, FormFieldsContainer, Input, LabeledField, Text } from '@uikit';
+import { Button, FormField, FormFieldsContainer, LabeledField, Text } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { getProfile } from '@store/adcm/profile/profileSlice';
 import { useChangePasswordForm } from './useChangePasswordForm';
 import InputPassword from '@uikit/InputPassword/InputPassword';
-import { useNavigate } from 'react-router-dom';
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
 
   const profile = useStore(({ adcm }) => adcm.profile.profile);
   useEffect(() => {
     dispatch(getProfile());
-  }, []);
+  }, [dispatch]);
 
   const { formData, submitForm, onChangeFormData, isValid } = useChangePasswordForm();
 

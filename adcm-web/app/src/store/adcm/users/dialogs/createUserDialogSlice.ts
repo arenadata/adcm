@@ -37,8 +37,14 @@ const createUser = createAsyncThunk(
 );
 
 const loadGroups = createAsyncThunk('adcm/user/createUserDialog/loadGroups', async (arg, thunkAPI) => {
+  const {
+    adcm: {
+      usersTable: { filter, paginationParams, sortParams },
+    },
+  } = thunkAPI.getState();
+
   try {
-    const groups = await AdcmGroupsApi.getGroups();
+    const groups = await AdcmGroupsApi.getGroups(filter, sortParams, paginationParams);
     return groups;
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
