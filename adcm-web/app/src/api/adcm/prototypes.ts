@@ -44,4 +44,9 @@ export class AdcmPrototypesApi {
     const response = await httpClient.get<Batch<AdcmPrototype>>(`/api/v2/prototypes/?${query}`);
     return response.data;
   }
+
+  public static async getPrototype(prototypeId: number) {
+    const response = await httpClient.get<AdcmPrototype>(`/api/v2/prototypes/${prototypeId}/`);
+    return response.data;
+  }
 }

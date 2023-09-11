@@ -3,9 +3,8 @@ import { Checkbox, Dialog, FormFieldsContainer, FormField, Select } from '@uikit
 import { getOptionsFromArray } from '@uikit/Select/Select.utils';
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
 import TextFormField from '@commonComponents/Forms/TextFormField/TextFormField';
-import { AdcmClusterUpgrade } from '@models/adcm';
+import { AdcmClusterUpgrade, AdcmLicenseStatus } from '@models/adcm';
 import { useUpgradeClusterDialog } from './useUpgradeClusterDialog';
-import { AdcmLicenseStatus } from '@models/adcm/license';
 
 const UpgradeClusterDialog = () => {
   const {

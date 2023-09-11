@@ -1,4 +1,4 @@
-import { AdcmLicense, AdcmLicenseStatus } from '@models/adcm/license';
+import { AdcmLicense, AdcmLicenseStatus } from '@models/adcm';
 
 export interface AdcmPrototypeVersion {
   id: number;

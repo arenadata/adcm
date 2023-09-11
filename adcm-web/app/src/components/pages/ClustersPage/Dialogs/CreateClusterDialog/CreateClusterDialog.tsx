@@ -2,9 +2,8 @@ import { useMemo } from 'react';
 import { Checkbox, Dialog, FormField, FormFieldsContainer, Input, Select } from '@uikit';
 import { getOptionsFromArray } from '@uikit/Select/Select.utils';
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
-import { AdcmPrototypeVersion, AdcmPrototypeVersions } from '@models/adcm';
+import { AdcmPrototypeVersion, AdcmPrototypeVersions, AdcmLicenseStatus } from '@models/adcm';
 import { useCreateClusterDialog } from './useCreateClusterDialog';
-import { AdcmLicenseStatus } from '@models/adcm/license';
 
 const CreateClusterDialog = () => {
   const { isOpen, relatedData, formData, isValid, onCreate, onClose, onChangeFormData } = useCreateClusterDialog();

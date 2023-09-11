@@ -1,4 +1,4 @@
-import type { AdcmService, Batch, AdcmServicesFilter } from '@models/adcm';
+import type { AdcmService, Batch, AdcmServicesFilter, AdcmServicePrototype } from '@models/adcm';
 import { httpClient } from '@api/httpClient';
 import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
@@ -16,6 +16,16 @@ export class AdcmClusterServicesApi {
     const query = qs.stringify(queryParams);
     const response = await httpClient.get<Batch<AdcmService>>(`/api/v2/clusters/${clusterId}/services?${query}`);
     return response.data;
+  }
+
+  public static async getClusterServicePrototypes(clusterId: number) {
+    const response = await httpClient.get<AdcmServicePrototype[]>(`/api/v2/clusters/${clusterId}/service-prototypes/`);
+    return response.data;
+  }
+
+  public static async addClusterService(clusterId: number, serviceIds: number[]) {
+    const prototypeIds = serviceIds.map((id) => ({ prototypeId: id }));
+    await httpClient.post(`/api/v2/clusters/${clusterId}/services/`, prototypeIds);
   }
 
   public static async deleteClusterService(clusterId: number, servicesId: number) {
