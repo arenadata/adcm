@@ -9,8 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from rbac.models import Group, User
+from rest_framework.fields import IntegerField
 from rest_framework.serializers import (
     CharField,
     ManyRelatedField,
@@ -38,7 +38,9 @@ class GroupSerializer(ModelSerializer):
 
 
 class GroupRelatedSerializer(EmptySerializer):
+    id = IntegerField()
     name = CharField()
+    display_name = CharField()
 
 
 class GroupCreateUpdateSerializer(ModelSerializer):

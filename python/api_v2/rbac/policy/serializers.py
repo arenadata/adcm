@@ -13,11 +13,11 @@
 from api_v2.rbac.group.serializers import GroupRelatedSerializer
 from api_v2.rbac.role.serializers import RoleRelatedSerializer
 from rbac.endpoints.policy.serializers import ObjectField
-from rbac.models import Policy
-from rest_framework.fields import BooleanField, IntegerField
+from rbac.endpoints.serializers import BaseRelatedSerializer
+from rbac.models import Group, Policy, Role
+from rest_framework.fields import BooleanField
+from rest_framework.relations import ManyRelatedField, PrimaryKeyRelatedField
 from rest_framework.serializers import ModelSerializer
-
-from adcm.serializers import EmptySerializer
 
 
 class PolicySerializer(ModelSerializer):
@@ -39,20 +39,12 @@ class PolicySerializer(ModelSerializer):
         ]
 
 
-class PolicyRoleCreateSerializer(EmptySerializer):
-    id = IntegerField()
-
-
-class PolicyGroupCreateSerializer(EmptySerializer):
-    id = IntegerField()
-
-
-class PolicyObjectCreateSerializer(EmptySerializer):
-    id = IntegerField()
+class PolicyRoleCreateSerializer(BaseRelatedSerializer):
+    id = PrimaryKeyRelatedField(queryset=Role.objects.all())
 
 
 class PolicyCreateSerializer(ModelSerializer):
-    groups = PolicyGroupCreateSerializer(many=True, source="group")
+    groups = ManyRelatedField(child_relation=PrimaryKeyRelatedField(queryset=Group.objects.all()), source="group")
     objects = ObjectField(required=True, source="object")
     role = PolicyRoleCreateSerializer()
 

@@ -37,12 +37,9 @@ class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-m
     @audit
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            policy = policy_create(**serializer.validated_data)
-
-            return Response(data=self.get_serializer(policy).data, status=HTTP_201_CREATED)
-        else:
-            return Response(data=serializer.errors, status=HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        policy = policy_create(**serializer.validated_data)
+        return Response(data=self.get_serializer(policy).data, status=HTTP_201_CREATED)
 
     @audit
     def update(self, request, *args, **kwargs):

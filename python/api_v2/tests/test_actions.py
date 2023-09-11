@@ -28,7 +28,7 @@ from rest_framework.status import HTTP_200_OK
 ObjectWithActions: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
 
 
-class TestActionsFiltering(BaseAPITestCase):
+class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instance-attributes
     def setUp(self) -> None:
         super().setUp()
 
