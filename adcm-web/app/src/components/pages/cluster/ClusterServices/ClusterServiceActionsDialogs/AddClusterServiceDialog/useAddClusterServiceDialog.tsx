@@ -7,7 +7,7 @@ import {
   closeAddDialog,
   openServiceAddDialog,
 } from '@store/adcm/cluster/services/servicesActionsSlice';
-import { AdcmLicenseStatus, AdcmPrototype } from '@models/adcm';
+import { AdcmLicenseStatus, AdcmPrototype, AdcmServiceDependOnService } from '@models/adcm';
 import { acceptServiceLicense as acceptLicense, getServicesLicenses } from '@store/adcm/cluster/services/servicesSlice';
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
 
@@ -62,10 +62,13 @@ export const useAddClusterServiceForm = () => {
     return nonAppendedServices
       .filter((service) => serviceIds.includes(service.id) && service.dependOn && service.dependOn.length > 0)
       .flatMap((service) =>
-        service?.dependOn?.map((dependOnService) => ({ ...dependOnService, dependableService: service.name })),
+        (service.dependOn as AdcmServiceDependOnService[]).map((dependOnService) => ({
+          ...dependOnService,
+          dependableService: service.name,
+        })),
       )
       .filter(
-        (service) => !servicesInTableIds.includes(service!.prototypeId) && !serviceIds.includes(service!.prototypeId),
+        (service) => !servicesInTableIds.includes(service.prototypeId) && !serviceIds.includes(service.prototypeId),
       );
   }, [formData, nonAppendedServices, servicesInTableIds]);
 
