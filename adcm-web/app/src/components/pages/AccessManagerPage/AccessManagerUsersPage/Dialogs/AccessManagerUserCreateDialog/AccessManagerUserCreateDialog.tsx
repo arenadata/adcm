@@ -1,8 +1,7 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Dialog, Checkbox, FormField, FormFieldsContainer, Input } from '@uikit';
 import InputPassword from '@uikit/InputPassword/InputPassword';
 import MultiSelect from '@uikit/Select/MultiSelect/MultiSelect';
-import { getOptionsFromArray } from '@uikit/Select/Select.utils';
 import { useAccessManagerUserCreateDialog } from './useAccessManagerUserCreateDialog';
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
 import s from './AccessManagerUserCreateDialog.module.scss';
@@ -11,15 +10,9 @@ const AccessManagerUserCreateDialog = () => {
   const { isOpen, relatedData, formData, isValid, errorMessages, onCreate, onClose, onChangeFormData } =
     useAccessManagerUserCreateDialog();
 
-  const groupOptions = useMemo(
-    () =>
-      getOptionsFromArray(
-        relatedData.groups,
-        (x) => x.displayName,
-        (x) => x.id,
-      ),
-    [relatedData.groups],
-  );
+  const groupOptions = useMemo(() => {
+    return relatedData.groups.map(({ displayName, id }) => ({ value: id, label: displayName }));
+  }, [relatedData.groups]);
 
   const dialogControls = (
     <CustomDialogControls
