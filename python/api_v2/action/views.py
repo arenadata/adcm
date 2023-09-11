@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from itertools import chain
+from itertools import compress
 
 from api_v2.action.filters import ActionFilter
 from api_v2.action.serializers import (
@@ -27,7 +27,9 @@ from api_v2.config.utils import get_config_schema
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import CamelCaseGenericViewSet
 from cm.job import start_task
-from cm.models import Action, Host, HostComponent
+from cm.models import Action, ConcernType, Host, HostComponent
+from django.conf import settings
+from django.db.models import Q
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
@@ -43,14 +45,17 @@ from adcm.permissions import (
     DjangoModelPermissionsAudit,
     get_object_for_user,
 )
-from adcm.utils import filter_actions
 
 
 class ActionViewSet(  # pylint: disable=too-many-ancestors
     PermissionListMixin, ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, CamelCaseGenericViewSet
 ):
-    queryset = Action.objects.select_related("prototype").order_by("pk")
-    serializer_class = ActionListSerializer
+    queryset = (
+        Action.objects.select_related("prototype")
+        .filter(upgrade__isnull=True)
+        .exclude(name__in=settings.ADCM_SERVICE_ACTION_NAMES_SET)
+        .order_by("pk")
+    )
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_ACTION_PERM]
     filter_backends = (DjangoFilterBackend,)
@@ -65,48 +70,41 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
         if self.action == "run":
             return ActionRunSerializer
 
-        return self.serializer_class
-
-    def get_queryset(self, *args, **kwargs):
-        parent_object = self.get_parent_object()
-        if parent_object is None:
-            raise NotFound("Can't find action's parent object")
-
-        basic_queryset = super().get_queryset(*args, **kwargs)
-        queryset = basic_queryset.filter(prototype=parent_object.prototype)
-
-        if not isinstance(parent_object, Host):
-            return queryset.filter(host_action=False)
-
-        cluster = parent_object.cluster
-        if not cluster:
-            return queryset
-
-        host_related_prototypes: set[int] = {cluster.prototype.pk}
-        host_related_prototypes |= set(
-            chain.from_iterable(
-                HostComponent.objects.filter(cluster=cluster, host=parent_object)
-                .select_related("service", "component")
-                .values_list("service__prototype_id", "component__prototype_id")
-            )
-        )
-
-        return queryset | basic_queryset.filter(prototype_id__in=host_related_prototypes, host_action=True)
+        return ActionListSerializer
 
     def list(self, request: Request, *args, **kwargs) -> Response:
         parent_object = self.get_parent_object()
+
         if parent_object is None:
             raise NotFound("Can't find action's parent object")
 
-        allowed_actions = filter_actions(
-            obj=parent_object,
-            actions=filter_actions_by_user_perm(
-                user=request.user,
-                obj=parent_object,
-                actions=self.filter_queryset(queryset=self.get_queryset()),
-            ),
+        if parent_object.concerns.filter(type=ConcernType.LOCK).exists():
+            return Response(data=[])
+
+        prototype_object = {}
+
+        if isinstance(parent_object, Host) and parent_object.cluster:
+            prototype_object[parent_object.cluster.prototype] = parent_object.cluster
+
+            for hc_item in HostComponent.objects.filter(host=parent_object).select_related(
+                "service__prototype", "component__prototype"
+            ):
+                prototype_object[hc_item.service.prototype] = hc_item.service
+                prototype_object[hc_item.component.prototype] = hc_item.component
+
+        actions = self.filter_queryset(
+            self.get_queryset().filter(
+                Q(prototype=parent_object.prototype, host_action=False)
+                | Q(prototype__in=prototype_object.keys(), host_action=True)
+            )
         )
-        serializer = self.get_serializer_class()(instance=allowed_actions, many=True, context={"obj": parent_object})
+        prototype_object[parent_object.prototype] = parent_object
+
+        allowed_actions_mask = [act.allowed(prototype_object[act.prototype]) for act in actions]
+        actions = list(compress(actions, allowed_actions_mask))
+        actions = filter_actions_by_user_perm(user=request.user, obj=parent_object, actions=actions)
+
+        serializer = self.get_serializer_class()(instance=actions, many=True, context={"obj": parent_object})
 
         return Response(data=serializer.data)
 

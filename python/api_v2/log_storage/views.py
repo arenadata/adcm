@@ -149,7 +149,7 @@ class LogStorageViewSet(ListModelMixin, RetrieveModelMixin, CamelCaseGenericView
 
 # pylint:disable-next=too-many-ancestors
 class LogStorageTaskViewSet(LogStorageViewSet):
-    @action(methods=["post"], detail=False)
+    @action(methods=["get"], detail=False)
     def download(self, request: Request, task_pk: int) -> HttpResponse:
         task = get_object_for_user(request.user, VIEW_TASKLOG_PERMISSION, TaskLog, id=task_pk)
         response = HttpResponse(
@@ -163,7 +163,7 @@ class LogStorageTaskViewSet(LogStorageViewSet):
 
 # pylint:disable-next=too-many-ancestors
 class LogStorageJobViewSet(LogStorageViewSet):
-    @action(methods=["post"], detail=True)
+    @action(methods=["get"], detail=True)
     def download(self, request: Request, **kwargs) -> HttpResponse:
         job_pk, log_pk = kwargs["job_pk"], kwargs["log_pk"]
         log_storage = get_object_for_user(

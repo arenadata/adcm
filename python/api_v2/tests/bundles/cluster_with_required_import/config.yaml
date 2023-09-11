@@ -2,8 +2,19 @@
   name: cluster_with_required_import
   version: 1.0
   import:
-    some_other_cluster:
+    cluster_one:
       required: true
       versions:
         min: 1.0
         max: 2.0
+    not_exist:
+      default:
+        - something
+
+  config:
+    - name: something
+      type: group
+      subs:
+        - name: string_congig
+          type: string
+          default: string_value

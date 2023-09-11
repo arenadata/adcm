@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 2.7
+  version: 2.8
 
   actions:
     run_ldap_sync:
@@ -34,6 +34,12 @@
             We have to know ADCM's Url to send information from host. We try to guess that information from url you enter in browser.
             But if your network has more complicated structure and we guess wrong, please fix that here.
           type: string
+        - name: "verification_public_key"
+          display_name: "Bundle verification public key"
+          description: |
+            Bundle verification GPG public key to verify the signature of the bundle (*.sig file) when uploading the bundle to ADCM.
+          type: file
+          default: "gpg_key.pub"
     - name: "google_oauth"
       display_name: "Google Auth"
       type: "group"

@@ -42,7 +42,6 @@ VAR_DIR = DATA_DIR / "var"
 LOG_FILE = LOG_DIR / "adcm.log"
 SECRETS_FILE = VAR_DIR / "secrets.json"
 ADCM_TOKEN_FILE = VAR_DIR / "adcm_token"
-GPG_PUBLIC_KEY = VAR_DIR / "gpg_key.pub"
 PYTHON_SITE_PACKAGES = Path(
     sys.exec_prefix,
     f"lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages",

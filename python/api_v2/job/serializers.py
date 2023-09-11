@@ -12,14 +12,13 @@
 
 from api_v2.task.serializers import JobListSerializer, TaskRetrieveByJobSerializer
 from cm.models import JobLog
-from rest_framework.fields import DateTimeField, DurationField
+from rest_framework.fields import DateTimeField
 
 
 class JobRetrieveSerializer(JobListSerializer):
     parent_task = TaskRetrieveByJobSerializer(source="task", allow_null=True)
     start_time = DateTimeField(source="start_date")
     end_time = DateTimeField(source="finish_date")
-    duration = DurationField()
 
     class Meta:
         model = JobLog

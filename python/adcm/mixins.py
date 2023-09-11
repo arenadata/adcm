@@ -34,28 +34,34 @@ class GetParentObjectMixin:
 
         with suppress(ObjectDoesNotExist):
             if all(lookup in self.kwargs for lookup in ("component_pk", "service_pk", "cluster_pk")):
-                parent_object = ServiceComponent.objects.get(
+                parent_object = ServiceComponent.objects.select_related(
+                    "prototype", "cluster__prototype", "service__prototype"
+                ).get(
                     pk=self.kwargs["component_pk"],
                     cluster_id=self.kwargs["cluster_pk"],
                     service_id=self.kwargs["service_pk"],
                 )
 
             elif "cluster_pk" in self.kwargs and "service_pk" in self.kwargs:
-                parent_object = ClusterObject.objects.get(
+                parent_object = ClusterObject.objects.select_related("prototype", "cluster__prototype").get(
                     pk=self.kwargs["service_pk"], cluster_id=self.kwargs["cluster_pk"]
                 )
 
             elif "cluster_pk" in self.kwargs and "host_pk" in self.kwargs:
-                parent_object = Host.objects.get(pk=self.kwargs["host_pk"], cluster_id=self.kwargs["cluster_pk"])
+                parent_object = Host.objects.select_related(
+                    "prototype", "cluster__prototype", "provider__prototype"
+                ).get(pk=self.kwargs["host_pk"], cluster_id=self.kwargs["cluster_pk"])
 
             elif "host_pk" in self.kwargs:
-                parent_object = Host.objects.get(pk=self.kwargs["host_pk"])
+                parent_object = Host.objects.select_related(
+                    "prototype", "cluster__prototype", "provider__prototype"
+                ).get(pk=self.kwargs["host_pk"])
 
             elif "cluster_pk" in self.kwargs:
-                parent_object = Cluster.objects.get(pk=self.kwargs["cluster_pk"])
+                parent_object = Cluster.objects.select_related("prototype").get(pk=self.kwargs["cluster_pk"])
 
             elif "hostprovider_pk" in self.kwargs:
-                parent_object = HostProvider.objects.get(pk=self.kwargs["hostprovider_pk"])
+                parent_object = HostProvider.objects.select_related("prototype").get(pk=self.kwargs["hostprovider_pk"])
 
             if "config_group_pk" in self.kwargs:
                 parent_object = GroupConfig.objects.get(
