@@ -21,8 +21,8 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from cm.adcm_config.config import init_object_config, switch_config
-from cm.adcm_config.utils import proto_ref
-from cm.errors import raise_adcm_ex
+from cm.adcm_config.utils import cook_file_type_name, proto_ref
+from cm.errors import AdcmEx, raise_adcm_ex
 from cm.logger import logger
 from cm.models import (
     ADCM,
@@ -36,7 +36,7 @@ from cm.models import (
     PrototypeConfig,
     PrototypeExport,
     PrototypeImport,
-    SignatureState,
+    SignatureStatus,
     StageAction,
     StagePrototype,
     StagePrototypeConfig,
@@ -51,7 +51,7 @@ from cm.stack import get_config_files, read_definition, save_definition
 from cm.status_api import post_event
 from django.conf import settings
 from django.db import IntegrityError, transaction
-from gnupg import GPG
+from gnupg import GPG, ImportResult
 from rbac.models import Role
 from rbac.upgrade.role import prepare_action_roles
 from version_utils import rpm
@@ -66,7 +66,9 @@ STAGE = (
 )
 
 
-def prepare_bundle(bundle_file: str, bundle_hash: str, path: Path, verified: bool = False) -> Bundle:
+def prepare_bundle(
+    bundle_file: str, bundle_hash: str, path: Path, verification_status: SignatureStatus = SignatureStatus.ABSENT
+) -> Bundle:
     try:
         check_stage()
         process_bundle(path=path, bundle_hash=bundle_hash)
@@ -78,7 +80,7 @@ def prepare_bundle(bundle_file: str, bundle_hash: str, path: Path, verified: boo
         raise
 
     try:
-        bundle = copy_stage(bundle_hash=bundle_hash, bundle_proto=bundle_proto, verified=verified)
+        bundle = copy_stage(bundle_hash=bundle_hash, bundle_proto=bundle_proto, verification_status=verification_status)
         order_versions()
         clear_stage()
         ProductCategory.re_collect()
@@ -95,46 +97,71 @@ def prepare_bundle(bundle_file: str, bundle_hash: str, path: Path, verified: boo
 def load_bundle(bundle_file: str) -> Bundle:
     logger.info('loading bundle file "%s" ...', bundle_file)
     bundle_hash, path = process_file(bundle_file=bundle_file)
-    verified = check_gpg(bundle_hash=bundle_hash, path=path)
-    return prepare_bundle(bundle_file=bundle_file, bundle_hash=bundle_hash, path=path, verified=verified)
+
+    bundle_archive, signature_file = get_bundle_and_signature_paths(path=path)
+    verification_status = get_verification_status(bundle_archive=bundle_archive, signature_file=signature_file)
+    untar_and_cleanup(bundle_archive=bundle_archive, signature_file=signature_file, bundle_hash=bundle_hash)
+
+    return prepare_bundle(
+        bundle_file=bundle_file, bundle_hash=bundle_hash, path=path, verification_status=verification_status
+    )
 
 
-def check_gpg(bundle_hash: str, path: Path) -> bool:
-    verified = False
-    tarf, previous_dir, sign = None, None, None
+def get_bundle_and_signature_paths(path: Path) -> tuple[Path | None, Path | None]:
+    """
+    Search for tarfile (actual bundle archive), `.sig` file (detached signature file)
+    This paths can be None when processing old style bundles
+    """
 
-    for item in path.rglob("*"):
+    bundle_archive, signature_file = None, None
+
+    for item in path.glob("*"):
         if item.match("*.sig"):
-            sign = item
+            if signature_file is not None:
+                raise AdcmEx(code="BUNDLE_ERROR", msg='More than one ".sig" file found')
+            signature_file = item.absolute()
             continue
 
         if item.is_file() and tarfile.is_tarfile(item):
-            tarf = item
+            if bundle_archive is not None:
+                raise AdcmEx(code="BUNDLE_ERROR", msg="More than one tar file found")
+            bundle_archive = item.absolute()
+            continue
 
-        if item.is_dir() and item.parent == path:
-            previous_dir = item
+    return bundle_archive, signature_file
 
-    if sign and tarf:
-        gpg = GPG(gpgbinary=os.popen("which gpg").read().strip())
-        gpg.encoding = "utf-8"
 
-        try:
-            gpg.import_keys_file(settings.GPG_PUBLIC_KEY)
-        except FileNotFoundError:
-            raise_adcm_ex(code="NO_GPG_PUBLIC_KEY")
+def untar_and_cleanup(bundle_archive: Path | None, signature_file: Path | None, bundle_hash: str) -> None:
+    if bundle_archive is not None:
+        untar_safe(bundle_hash=bundle_hash, path=bundle_archive)
+        bundle_archive.unlink()
+    if signature_file is not None:
+        signature_file.unlink()
 
-        with open(sign, mode="rb") as sign_stream:
-            verified = bool(gpg.verify_file(fileobj_or_path=sign_stream, data_filename=tarf))
 
-        untar_safe(bundle_hash=bundle_hash, path=tarf)
+def get_verification_status(bundle_archive: Path | None, signature_file: Path | None) -> SignatureStatus:
+    if bundle_archive is None or signature_file is None:
+        return SignatureStatus.ABSENT
 
-        if previous_dir:
-            shutil.rmtree(path=previous_dir)
+    gpg = GPG(gpgbinary=os.popen("which gpg").read().strip())
+    gpg.encoding = settings.ENCODING_UTF_8
+    key_filepath = cook_file_type_name(obj=ADCM.objects.get(), key="global", sub_key="verification_public_key")
+
+    try:
+        res: ImportResult = gpg.import_keys_file(key_path=key_filepath)
+    except (PermissionError, FileNotFoundError):
+        logger.warning("Can't read public key file: %s", key_filepath)
+        return SignatureStatus.INVALID
+
+    if res.returncode != 0:
+        logger.warning("Bad gpg key: %s", res.stderr)
+        return SignatureStatus.INVALID
+
+    with open(signature_file, mode="rb") as sign_stream:
+        if bool(gpg.verify_file(fileobj_or_path=sign_stream, data_filename=bundle_archive)):
+            return SignatureStatus.VALID
         else:
-            sign.unlink()
-            tarf.unlink()
-
-    return verified
+            return SignatureStatus.INVALID
 
 
 def upload_file(file) -> Path:
@@ -814,15 +841,14 @@ def check_license(proto):
     return Prototype.objects.filter(license_hash=proto.license_hash, license="accepted").exists()
 
 
-def copy_stage(bundle_hash: str, bundle_proto, verified: bool = False) -> Bundle:
+def copy_stage(bundle_hash: str, bundle_proto, verification_status: SignatureStatus = SignatureStatus.ABSENT) -> Bundle:
     bundle = copy_obj(
         bundle_proto,
         Bundle,
         ("name", "version", "edition", "description"),
     )
     bundle.hash = bundle_hash
-    if verified:
-        bundle.signature_status = SignatureState.VERIFIED
+    bundle.signature_status = verification_status
 
     try:
         bundle.save()
