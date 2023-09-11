@@ -1,5 +1,5 @@
 import { AdcmConcerns } from './concern';
-import { AdcmLicenseStatus } from '@models/adcm/license';
+import { AdcmLicenseStatus } from '@models/adcm';
 
 export enum AdcmClusterStatus {
   Up = 'up',

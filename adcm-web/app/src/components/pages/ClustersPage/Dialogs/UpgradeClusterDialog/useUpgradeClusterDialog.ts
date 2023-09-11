@@ -1,8 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useStore, useDispatch } from '@hooks';
-import { AdcmClusterUpgrade } from '@models/adcm';
+import { AdcmClusterUpgrade, AdcmLicenseStatus } from '@models/adcm';
 import { cleanupClustersActions, loadClusterUpgradeActionDetails } from '@store/adcm/clusters/clustersActionsSlice';
-import { AdcmLicenseStatus } from '@models/adcm/license';
 
 interface UpgradeClusterFormData {
   upgrade: AdcmClusterUpgrade | null;

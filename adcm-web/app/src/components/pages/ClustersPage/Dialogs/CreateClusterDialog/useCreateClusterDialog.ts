@@ -1,8 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useStore, useDispatch } from '@hooks';
-import { AdcmPrototypeVersions, AdcmPrototypeVersion } from '@models/adcm';
+import { AdcmPrototypeVersions, AdcmPrototypeVersion, AdcmLicenseStatus } from '@models/adcm';
 import { cleanupClustersActions, createCluster } from '@store/adcm/clusters/clustersActionsSlice';
-import { AdcmLicenseStatus } from '@models/adcm/license';
 
 interface CreateClusterFormData {
   product: AdcmPrototypeVersions | null;
