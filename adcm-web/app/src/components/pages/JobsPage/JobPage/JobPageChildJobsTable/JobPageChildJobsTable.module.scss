@@ -10,8 +10,7 @@
 
 .jobRow {
   &__jobName {
-    a {
-      color: var(--job-page-table-childjobs-name-color);
-    }
+    color: var(--job-page-table-childjobs-name-color) !important;
+    font-weight: 500;
   }
 }

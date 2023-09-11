@@ -9,4 +9,5 @@ export interface TabProps extends React.HTMLAttributes<HTMLAnchorElement> {
   subPattern?: string;
   disabled?: boolean;
   isActive?: boolean;
+  onClick?: () => void;
 }

@@ -8,3 +8,4 @@ export { useDispatch } from './useDispatch';
 export { useCheckSession } from './useCheckSession';
 export { useDebounce } from './useDebounce';
 export { useRequestTimer } from './useRequestTimer';
+export { useDownloadFile } from './useDownloadFile';

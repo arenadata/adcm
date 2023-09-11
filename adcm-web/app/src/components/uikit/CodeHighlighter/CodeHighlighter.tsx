@@ -56,6 +56,7 @@ export type CodeHighlighterProps = {
   code: string;
   language: string;
   notCopy?: boolean;
+  className?: string;
   CodeTagComponent?: React.ComponentType<DefaultCodeTagProps>;
 };
 
@@ -63,10 +64,11 @@ const CodeHighlighter = ({
   code,
   language,
   notCopy = false,
+  className,
   CodeTagComponent = DefaultCodeTag,
 }: CodeHighlighterProps) => {
   return (
-    <div className={s.copyCodeWrapper}>
+    <div className={cn(s.copyCodeWrapper, className)}>
       {!notCopy && <CopyButton code={code} className={s.codeHighlighter__copyBtn} />}
       <SyntaxHighlighter
         language={language}

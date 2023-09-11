@@ -1,20 +1,17 @@
-import { Link, generatePath } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Table, TableRow, TableCell } from '@uikit';
-import { useDispatch, useStore } from '@hooks';
+import { useStore } from '@hooks';
 import { columns } from './JobPageTable.constants';
-import { downloadTaskLog } from '@store/adcm/jobs/jobsActionsSlice';
 import { linkByObjectTypeMap } from '@pages/JobsPage/JobsTable/JobsTable.constants';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
 import { secondsToDuration } from '@utils/date/timeConvertUtils';
+import { apiHost } from '@constants';
 
 const JobPageTable = () => {
-  const dispatch = useDispatch();
   const task = useStore((s) => s.adcm.jobs.task);
   const isLoading = useStore((s) => s.adcm.jobs.isLoading);
 
-  const handleDownloadClick = (id: number) => () => {
-    dispatch(downloadTaskLog(id));
-  };
+  const downloadLink = `${apiHost}/api/v2/tasks/${task.id}/logs/download/`;
 
   return (
     <Table variant="quaternary" isLoading={isLoading} columns={columns}>
@@ -28,7 +25,7 @@ const JobPageTable = () => {
             <DateTimeCell value={task.startTime} />
             <DateTimeCell value={task.startTime} />
             <TableCell hasIconOnly align="center">
-              <Link to={generatePath('/jobs/:jobId', { jobId: task.id + '' })} onClick={handleDownloadClick(task.id)}>
+              <Link to={downloadLink} download="download">
                 Download
               </Link>
             </TableCell>

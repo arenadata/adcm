@@ -140,7 +140,7 @@ function App() {
               <Route path="/jobs">
                 <Route index element={<JobsPage />} />
                 <Route path="/jobs/:jobId">
-                  <Route index element={<Navigate to="stdout" replace />} />
+                  <Route index element={<JobPage />} />
                   <Route path="/jobs/:jobId/*" element={<JobPage />} />
                 </Route>
               </Route>

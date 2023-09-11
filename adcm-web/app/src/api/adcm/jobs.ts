@@ -1,6 +1,6 @@
 import { httpClient } from '@api/httpClient';
 import { PaginationParams, SortParams } from '@models/table';
-import { Batch, AdcmJobsFilter, AdcmJob, AdcmJobLog } from '@models/adcm';
+import { Batch, AdcmJobsFilter, AdcmJob, AdcmJobLog, AdcmTask } from '@models/adcm';
 import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
 
@@ -19,17 +19,12 @@ export class AdcmJobsApi {
   }
 
   public static async getJobLog(id: number) {
-    const response = await httpClient.get<Batch<AdcmJobLog>>(`/api/v2/jobs/${id}/logs/`);
+    const response = await httpClient.get<AdcmJobLog[]>(`/api/v2/jobs/${id}/logs/`);
     return response.data;
   }
 
   public static async getTask(id: number) {
-    const response = await httpClient.get<AdcmJob>(`/api/v2/tasks/${id}/`);
-    return response.data;
-  }
-
-  public static async downloadTaskLog(id: number) {
-    const response = await httpClient.post<AdcmJob>(`/api/v2/tasks/${id}/logs/download/`);
+    const response = await httpClient.get<AdcmTask>(`/api/v2/tasks/${id}/`);
     return response.data;
   }
 

@@ -124,7 +124,10 @@ const jobsSlice = createSlice({
         state.task.childJobs = [];
       })
       .addCase(getJobLog.fulfilled, (state, action) => {
-        state.logs = action.payload.results;
+        const childJob = state.task.childJobs.find((job) => job.id === action.meta.arg);
+        if (childJob) {
+          childJob.logs = action.payload;
+        }
       })
       .addCase(getJobLog.rejected, (state) => {
         state.logs = [];
