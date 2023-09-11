@@ -42,6 +42,7 @@ from cm.models import (
     ConfigLog,
     GroupConfig,
     ObjectConfig,
+    ObjectType,
     Prototype,
     PrototypeConfig,
     StagePrototype,
@@ -58,7 +59,9 @@ def read_bundle_file(proto: Prototype | StagePrototype, fname: str, bundle_hash:
 
     file_descriptor = None
 
-    if fname[0:2] == "./":
+    if proto.type == ObjectType.ADCM:
+        path = settings.BASE_DIR / "conf/adcm" / fname
+    elif fname.startswith("./"):
         path = Path(settings.BUNDLE_DIR, bundle_hash, proto.path, fname)
     else:
         path = Path(settings.BUNDLE_DIR, bundle_hash, fname)
@@ -634,7 +637,7 @@ def process_config_spec(obj: ADCMEntity, spec: dict, new_config: dict, current_c
 
 
 def get_adcm_config(section=None):
-    adcm_object = ADCM.objects.last()
+    adcm_object = ADCM.objects.get()
     current_configlog = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
     if not section:
         return current_configlog.attr, current_configlog.config

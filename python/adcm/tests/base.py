@@ -51,12 +51,10 @@ class ParallelReadyTestCase:
 
     @staticmethod
     def _prepare_temporal_directories_for_adcm() -> dict:
-        base = Path(mkdtemp())
         stack = Path(mkdtemp())
-        data = base / "data"
+        data = Path(mkdtemp()) / "data"
 
         temporary_directories = {
-            "BASE_DIR": base,
             "STACK_DIR": stack,
             "BUNDLE_DIR": stack / "data" / "bundle",
             "DOWNLOAD_DIR": Path(stack, "data", "download"),

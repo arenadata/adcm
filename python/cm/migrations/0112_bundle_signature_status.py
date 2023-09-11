@@ -25,9 +25,9 @@ class Migration(migrations.Migration):
             model_name="bundle",
             name="signature_status",
             field=models.CharField(
-                choices=[("verified", "verified"), ("not verified", "not verified")],
-                default="not verified",
-                max_length=100,
+                choices=[("valid", "valid"), ("invalid", "invalid"), ("absent", "absent")],
+                default="absent",
+                max_length=10,
             ),
         ),
     ]
