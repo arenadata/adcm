@@ -1,6 +1,6 @@
 export enum AdcmRoleType {
-  ROLE = 'ROLE',
-  BUSINESS = 'BUSINESS',
+  Role = 'role',
+  Business = 'business',
 }
 
 export interface AdcmRole {
@@ -16,6 +16,7 @@ export interface AdcmRole {
 }
 
 export interface AdcmRolesFilter {
+  type: string;
   name?: string;
 }
 

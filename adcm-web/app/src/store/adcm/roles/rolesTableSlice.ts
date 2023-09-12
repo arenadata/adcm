@@ -1,10 +1,11 @@
 import { createListSlice } from '@store/redux';
 import { ListState } from '@models/table';
-import { AdcmRolesFilter } from '@models/adcm';
+import { AdcmRoleType, AdcmRolesFilter } from '@models/adcm';
 
 const createInitialState = (): ListState<AdcmRolesFilter> => ({
   filter: {
     name: undefined,
+    type: AdcmRoleType.Role,
   },
   paginationParams: {
     perPage: 10,
