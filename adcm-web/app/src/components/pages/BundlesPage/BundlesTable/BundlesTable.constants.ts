@@ -37,6 +37,7 @@ export const columns: TableColumn[] = [
 ];
 
 export const bundleSignatureStatusesMap: { [key in AdcmBundleSignatureStatus]: BaseStatus } = {
-  [AdcmBundleSignatureStatus.Verified]: 'done',
-  [AdcmBundleSignatureStatus.NotVerified]: 'failed',
+  [AdcmBundleSignatureStatus.Valid]: 'done',
+  [AdcmBundleSignatureStatus.Invalid]: 'failed',
+  [AdcmBundleSignatureStatus.Absent]: 'created',
 };

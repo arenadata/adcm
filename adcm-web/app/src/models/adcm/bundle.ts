@@ -1,6 +1,7 @@
 export enum AdcmBundleSignatureStatus {
-  Verified = 'verified',
-  NotVerified = 'not verified',
+  Valid = 'valid',
+  Invalid = 'invalid',
+  Absent = 'absent',
 }
 
 export interface AdcmBundlesFilter {
