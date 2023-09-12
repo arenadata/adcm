@@ -12,7 +12,7 @@ const ClusterHostsAddHostsButton: React.FC = () => {
 
   return (
     <>
-      <Button onClick={handleClick}>Create host</Button>
+      <Button onClick={handleClick}>Add hosts</Button>
     </>
   );
 };
