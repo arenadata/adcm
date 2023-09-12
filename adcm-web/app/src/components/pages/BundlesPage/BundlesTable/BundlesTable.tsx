@@ -64,7 +64,7 @@ const BundlesTable: React.FC = () => {
               <Checkbox checked={isItemSelected(bundle)} onChange={getHandlerSelectedItem(bundle)} />
             </TableCell>
             <TableCell>
-              <Link to={`/bundles/${bundle.id}`}>{bundle.name}</Link>
+              <Link to={`/bundles/${bundle.id}`}>{bundle.displayName || bundle.name}</Link>
             </TableCell>
             <TableCell>{bundle.version}</TableCell>
             <TableCell>{orElseGet(bundle.edition)}</TableCell>
