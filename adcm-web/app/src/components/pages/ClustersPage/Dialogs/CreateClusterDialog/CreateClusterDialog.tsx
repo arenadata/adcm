@@ -45,7 +45,7 @@ const CreateClusterDialog = () => {
 
   const dialogControls = (
     <CustomDialogControls actionButtonLabel="Create" onCancel={onClose} onAction={onCreate} isActionDisabled={!isValid}>
-      {formData.productVersion?.licenseStatus !== AdcmLicenseStatus.Absent && (
+      {formData.productVersion && formData.productVersion.licenseStatus !== AdcmLicenseStatus.Absent && (
         <Checkbox
           label="I accept Terms of Agreement"
           checked={formData.isUserAcceptedLicense}

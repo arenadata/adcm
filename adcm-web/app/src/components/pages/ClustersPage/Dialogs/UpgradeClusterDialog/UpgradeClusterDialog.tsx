@@ -25,7 +25,11 @@ const UpgradeClusterDialog = () => {
   );
 
   const handleUpgradeChange = (value: AdcmClusterUpgrade | null) => {
-    onChangeFormData({ upgrade: value });
+    onChangeFormData({
+      upgrade: value,
+      isUserAcceptedLicense: value?.licenseStatus === AdcmLicenseStatus.Accepted,
+    });
+
     if (value) {
       onLoadUpgradeActionDetails(value?.id);
     }
@@ -42,7 +46,7 @@ const UpgradeClusterDialog = () => {
       onAction={onUpgrade}
       isActionDisabled={!isValid}
     >
-      {formData.upgrade?.licenseStatus !== AdcmLicenseStatus.Absent && (
+      {formData.upgrade && formData.upgrade.licenseStatus !== AdcmLicenseStatus.Absent && (
         <Checkbox
           label="I accept Terms of Agreement"
           checked={formData.isUserAcceptedLicense}
