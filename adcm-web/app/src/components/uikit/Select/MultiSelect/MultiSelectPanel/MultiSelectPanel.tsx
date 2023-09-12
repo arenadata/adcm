@@ -8,6 +8,7 @@ import MultiSelectSearchFilter from '../MultiSelectSearchFilter/MultiSelectSearc
 
 import s from './MultiSelectPanel.module.scss';
 import MultiSelectFullCheckAll from '@uikit/Select/MultiSelect/MultiSelectFullCheckAll/MultiSelectFullCheckAll';
+import cn from 'classnames';
 
 const MultiSelectPanel = <T,>(props: MultiSelectOptions<T>) => {
   return (
@@ -22,17 +23,25 @@ const MultiSelectPanel = <T,>(props: MultiSelectOptions<T>) => {
 export default MultiSelectPanel;
 
 const MultiSelectContent = <T,>() => {
-  const { isSearchable, options, checkAllLabel } = useMultiSelectContext<T>();
+  const { isSearchable, options, checkAllLabel, compactMode } = useMultiSelectContext<T>();
   const isShowOptions = options.length > 0;
   const hasCheckAll = !!checkAllLabel;
   return (
     <>
       {hasCheckAll && (
-        <div className={s.multiSelectPanel__section}>
+        <div
+          className={cn(s.multiSelectPanel__section, {
+            [s.multiSelectPanel__section_compactMode]: compactMode,
+          })}
+        >
           <MultiSelectFullCheckAll />
         </div>
       )}
-      <div className={s.multiSelectPanel__section}>
+      <div
+        className={cn(s.multiSelectPanel__section, {
+          [s.multiSelectPanel__section_compactMode]: compactMode,
+        })}
+      >
         {isSearchable && <MultiSelectSearchFilter />}
         {isShowOptions ? <MultiSelectList /> : <CommonSelectNoResult />}
       </div>

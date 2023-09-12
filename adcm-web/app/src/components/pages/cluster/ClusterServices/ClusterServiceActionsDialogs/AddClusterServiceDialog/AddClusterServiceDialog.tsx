@@ -51,6 +51,7 @@ const AddClusterServiceDialog: React.FC = () => {
               checkAllLabel="All services"
               searchPlaceholder="Search services"
               isSearchable={true}
+              compactMode={true}
             />
           )}
         </FormFieldsContainer>
