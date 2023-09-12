@@ -27,8 +27,8 @@ export const useCreateGroupForm = () => {
   const [formData, setFormData] = useState<CreateGroupFormData>(initialFormData);
 
   const isValid = useMemo(() => {
-    const { usersIds } = formData;
-    return usersIds.length > 0;
+    const { name } = formData;
+    return !!name;
   }, [formData]);
 
   const resetForm = useCallback(() => {
@@ -37,7 +37,7 @@ export const useCreateGroupForm = () => {
 
   const submitForm = useCallback(() => {
     const { usersIds, description, name } = formData;
-    if (usersIds.length > 0) {
+    if (name) {
       dispatch(
         createGroup({
           name,
