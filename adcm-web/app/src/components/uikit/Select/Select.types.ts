@@ -29,5 +29,6 @@ export interface MultiPropsParams<T> {
 }
 
 export interface MultiSelectOptions<T> extends MultiPropsParams<T>, CommonSelectParams {
+  compactMode?: boolean;
   checkAllLabel?: string;
 }
