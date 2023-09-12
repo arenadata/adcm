@@ -4,24 +4,6 @@ import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
 import { Batch, AdcmCreateRolePayload, AdcmRole, AdcmRolesFilter, AdcmUpdateRolePayload } from '@models/adcm';
 
-const productsMock = {
-  count: 3,
-  results: [
-    {
-      id: 1,
-      name: 'ADQM',
-    },
-    {
-      id: 2,
-      name: 'ADS',
-    },
-    {
-      id: 3,
-      name: 'ADH',
-    },
-  ],
-};
-
 export class AdcmRolesApi {
   public static async createRole(payload: AdcmCreateRolePayload) {
     await httpClient.post('/api/v2/rbac/roles/', payload);
@@ -44,9 +26,8 @@ export class AdcmRolesApi {
   }
 
   public static async getProducts() {
-    // const response = await httpClient.get<Batch<[]>>(`/api/v2/rbac/roles/products/`);
-    // return response.data;
-    return productsMock;
+    const response = await httpClient.get<string[]>('/api/v2/rbac/roles/categories/');
+    return response.data;
   }
 
   public static async updateRole(id: number, payload: AdcmUpdateRolePayload) {

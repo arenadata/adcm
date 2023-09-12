@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import CheckAll from '@uikit/CheckAll/CheckAll';
 import { useMultiSelectContext } from '../MultiSelectContext/MultiSelect.context';
 

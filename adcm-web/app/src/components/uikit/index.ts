@@ -2,7 +2,9 @@ import AnchorBar, { AnchorList } from './AnchorBar/AnchorBar';
 import type { AnchorBarItem } from './AnchorBar/AnchorBar';
 import Button from '@uikit/Button/Button';
 import ButtonGroup from './ButtonGroup/ButtonGroup';
+import CheckAll from '@uikit/CheckAll/CheckAll';
 import Checkbox from './Checkbox/Checkbox';
+import CommonSelectSearchFilter from '@uikit/Select/CommonSelect/CommonSelectSearchFilter/CommonSelectSearchFilter';
 import CodeEditor from './CodeEditor/CodeEditor';
 import DatePicker from '@uikit/DatePicker/DatePicker';
 import Dialog from '@uikit/Dialog/Dialog';
@@ -11,6 +13,7 @@ import type { DialogDefaultControlsProps } from '@uikit/Dialog/DialogDefaultCont
 import Input from '@uikit/Input/Input';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import type { MarkerIconType } from '@uikit/MarkerIcon/MarkerIcon.types';
+import MultiSelectList from '@uikit/Select/MultiSelect/MultiSelectList/MultiSelectList';
 import MultiSelectPanel from '@uikit/Select/MultiSelect/MultiSelectPanel/MultiSelectPanel';
 import type { FieldProps } from './Field/Field.types';
 import ExpandableRowComponent from '@uikit/Table/TableRow/ExpandableRow';
@@ -49,7 +52,9 @@ export {
   Button,
   ButtonGroup,
   CodeEditor,
+  CheckAll,
   Checkbox,
+  CommonSelectSearchFilter,
   DatePicker,
   Dialog,
   DialogDefaultControls,
@@ -64,6 +69,7 @@ export {
   LabeledField,
   MarkerIcon,
   MarkerIconType,
+  MultiSelectList,
   MultiSelectPanel,
   Input,
   Pagination,

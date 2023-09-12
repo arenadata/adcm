@@ -2,14 +2,16 @@ import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
-import { AdcmRole, AdcmRoleProduct } from '@models/adcm';
+import { AdcmRole } from '@models/adcm';
 import { AdcmRolesApi } from '@api';
 
 interface AdcmRolesState {
   roles: AdcmRole[];
   totalCount: number;
   isLoading: boolean;
-  products: AdcmRoleProduct[];
+  relatedData: {
+    categories: string[];
+  };
 }
 
 const loadFromBackend = createAsyncThunk('adcm/roles/loadFromBackend', async (arg, thunkAPI) => {
@@ -57,7 +59,9 @@ const createInitialState = (): AdcmRolesState => ({
   roles: [],
   totalCount: 0,
   isLoading: false,
-  products: [],
+  relatedData: {
+    categories: [],
+  },
 });
 
 const rolesSlice = createSlice({
@@ -81,7 +85,10 @@ const rolesSlice = createSlice({
         state.roles = [];
       })
       .addCase(getProducts.fulfilled, (state, action) => {
-        state.products = action.payload.results;
+        state.relatedData.categories = action.payload;
+      })
+      .addCase(getProducts.rejected, (state) => {
+        state.relatedData.categories = [];
       });
   },
 });

@@ -51,7 +51,7 @@ const AccessManagerRolesTable = () => {
             colSpan={columns.length}
             isExpanded={expandableRows[role.id] || false}
             isInactive={!role.children?.length}
-            expandedContent={<AccessManagerRolesTableExpandedContent children={role.children} />}
+            expandedContent={<AccessManagerRolesTableExpandedContent children={role.children || []} />}
             className={cn(s.rolesTable__roleRow, { [s.expandedRow]: expandableRows[role.id] })}
             expandedClassName={s.rolesTable__expandedRoleRow}
           >
