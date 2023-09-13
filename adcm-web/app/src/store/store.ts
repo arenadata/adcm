@@ -53,7 +53,6 @@ import rolesTableSlice from './adcm/roles/rolesTableSlice';
 import rolesActionsSlice from './adcm/roles/rolesActionsSlice';
 import serviceComponentsActionsSlice from './adcm/cluster/services/serviceComponents/serviceComponentsActionsSlice';
 import serviceComponentSlice from './adcm/cluster/services/serviceComponents/serviceComponent/serviceComponentSlice';
-import serviceComponentActionsSlice from './adcm/cluster/services/serviceComponents/serviceComponent/serviceComponentActionsSlice';
 import clustersActionsSlice from './adcm/clusters/clustersActionsSlice';
 import clusterHostSlice from './adcm/cluster/hosts/host/clusterHostSlice';
 import clusterHostTableSlice from './adcm/cluster/hosts/host/clusterHostTableSlice';
@@ -92,7 +91,6 @@ const rootReducer = combineReducers({
     serviceComponentsTable: serviceComponentsTableSlice,
     serviceComponentsActions: serviceComponentsActionsSlice,
     serviceComponent: serviceComponentSlice,
-    serviceComponentActions: serviceComponentActionsSlice,
     auditOperations: auditOperationsSlice,
     auditOperationsTable: auditOperationsTableSlice,
     auditLogins: auditLoginsSlice,

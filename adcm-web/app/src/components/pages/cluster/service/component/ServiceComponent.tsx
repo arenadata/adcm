@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useRequestServiceComponent } from './useRequestServiceComponent';
 import ServiceComponentTable from './ServiceComponentTable/ServiceComponentTable';
-import ServiceComponentDialogs from './Dialogs';
 import ComponentConfigurationsNavigation from './ComponentConfigurationsNavigation/ComponentConfigurationsNavigation';
 import { useStore } from '@hooks';
 import { useNavigate } from 'react-router-dom';
@@ -31,7 +30,6 @@ const ServiceComponent: React.FC = () => {
         onClick={handleClickReturn}
       />
       {isConfigShown && <ComponentConfigurationsNavigation />}
-      <ServiceComponentDialogs />
     </>
   );
 };

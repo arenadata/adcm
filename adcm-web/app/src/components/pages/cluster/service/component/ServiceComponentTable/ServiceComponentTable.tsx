@@ -2,10 +2,9 @@ import { Link } from 'react-router-dom';
 import { Table, TableRow, TableCell, IconButton, Button } from '@uikit';
 import Concern from '@commonComponents/Concern/Concern';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
-import { useDispatch, useStore } from '@hooks';
+import { useStore } from '@hooks';
 import { columns, serviceComponentStatusMap } from './ServiceComponentTable.constants';
-import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/MaintenanceModeButton';
-import { openMaintenanceModeDialog } from '@store/adcm/cluster/services/serviceComponents/serviceComponent/serviceComponentActionsSlice';
+import ServiceComponentMaintenanceModeButton from './ServiceComponentMaintenanceModeButton/ServiceComponentMaintenanceModeButton';
 
 interface ServiceComponentTableProps {
   onClick: () => void;
@@ -14,15 +13,8 @@ interface ServiceComponentTableProps {
 }
 
 const ServiceComponentTable: React.FC<ServiceComponentTableProps> = ({ onClick, showConfig, isConfigShown }) => {
-  const dispatch = useDispatch();
   const serviceComponent = useStore(({ adcm }) => adcm.serviceComponent.serviceComponent);
   const isLoading = useStore(({ adcm }) => adcm.serviceComponent.isLoading);
-
-  const handleClickMaintenanceMode = (componentId: number) => () => {
-    if (serviceComponent?.isMaintenanceModeAvailable) {
-      dispatch(openMaintenanceModeDialog(componentId));
-    }
-  };
 
   const dummyHandler = () => {
     console.info('implement actions please!');
@@ -47,11 +39,7 @@ const ServiceComponentTable: React.FC<ServiceComponentTableProps> = ({ onClick, 
           </TableCell>
           <TableCell hasIconOnly align="center">
             <IconButton icon="g1-actions" size={32} onClick={() => dummyHandler()} title="Actions" />
-            <MaintenanceModeButton
-              isMaintenanceModeAvailable={serviceComponent.isMaintenanceModeAvailable}
-              maintenanceModeStatus={serviceComponent?.maintenanceMode}
-              onClick={handleClickMaintenanceMode(serviceComponent.id)}
-            />
+            <ServiceComponentMaintenanceModeButton />
           </TableCell>
           <TableCell>
             <Button iconRight="g2-back" onClick={onClick} disabled={!isConfigShown} variant="secondary" />
