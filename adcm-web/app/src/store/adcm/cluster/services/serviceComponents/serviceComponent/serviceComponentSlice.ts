@@ -1,8 +1,8 @@
 import { AdcmClusterServiceComponentsApi, RequestError } from '@api';
-import { AdcmServiceComponent } from '@models/adcm';
+import { AdcmMaintenanceMode, AdcmServiceComponent } from '@models/adcm';
 import { createAsyncThunk } from '@store/redux';
 import { createSlice } from '@reduxjs/toolkit';
-import { showError } from '@store/notificationsSlice';
+import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
@@ -49,6 +49,24 @@ const getServiceComponent = createAsyncThunk(
   },
 );
 
+interface toggleMaintenanceModePayload extends LoadClusterServiceComponentPayload {
+  maintenanceMode: AdcmMaintenanceMode;
+}
+
+const toggleMaintenanceModeWithUpdate = createAsyncThunk(
+  'adcm/cluster/services/serviceComponents/serviceComponent/toggleMaintenanceModeWithUpdate',
+  async ({ clusterId, serviceId, componentId, maintenanceMode }: toggleMaintenanceModePayload, thunkAPI) => {
+    try {
+      await AdcmClusterServiceComponentsApi.toggleMaintenanceMode(clusterId, serviceId, componentId, maintenanceMode);
+      await thunkAPI.dispatch(getServiceComponent({ clusterId, serviceId, componentId }));
+      const maintenanceModeStatus = maintenanceMode === AdcmMaintenanceMode.Off ? 'disabled' : 'enabled';
+      thunkAPI.dispatch(showInfo({ message: `The maintenance mode has been ${maintenanceModeStatus}` }));
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+    }
+  },
+);
+
 const createInitialState = (): AdcmServiceComponentState => ({
   serviceComponent: undefined,
   isLoading: false,
@@ -76,5 +94,10 @@ const serviceComponentSlice = createSlice({
 });
 
 const { cleanupServiceComponent, setIsLoading } = serviceComponentSlice.actions;
-export { cleanupServiceComponent, loadClusterServiceComponentFromBackend, getServiceComponent };
+export {
+  cleanupServiceComponent,
+  loadClusterServiceComponentFromBackend,
+  getServiceComponent,
+  toggleMaintenanceModeWithUpdate,
+};
 export default serviceComponentSlice.reducer;

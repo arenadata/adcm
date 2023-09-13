@@ -1,10 +1,10 @@
 import React from 'react';
-import MaintenanceModeDialog from './MaintenanceModeDialog/MaintenanceModeDialog';
+import ServiceComponentsMaintenanceModeDialog from './ServiceComponentsMaintenanceModeDialog/ServiceComponentsMaintenanceMode';
 
 const ServiceComponentsDialogs: React.FC = () => {
   return (
     <>
-      <MaintenanceModeDialog />
+      <ServiceComponentsMaintenanceModeDialog />
     </>
   );
 };
