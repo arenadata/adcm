@@ -1,11 +1,11 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useStore } from '@hooks';
-import { AUTH_STATE } from '@store/userSlice';
+import { AUTH_STATE } from '@store/authSlice';
 
 const PrivateResource: React.FC<React.PropsWithChildren> = ({ children }) => {
-  const needCheckSession = useStore((s) => s.user.needCheckSession);
-  const authState = useStore((s) => s.user.authState);
+  const needCheckSession = useStore((s) => s.auth.needCheckSession);
+  const authState = useStore((s) => s.auth.authState);
   const location = useLocation();
 
   if (needCheckSession) {

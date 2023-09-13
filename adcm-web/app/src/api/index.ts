@@ -1,6 +1,6 @@
 export type { RequestError } from './httpClient';
 
-export { UserApi } from './user';
+export { AuthApi } from './auth';
 export { AdcmClustersApi } from './adcm/clusters';
 export { AdcmPrototypesApi } from './adcm/prototypes';
 export { AdcmBundlesApi } from './adcm/bundles';

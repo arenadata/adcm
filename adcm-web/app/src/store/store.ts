@@ -1,5 +1,5 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
-import userSlice from '@store/userSlice';
+import authSlice from '@store/authSlice';
 import notificationsSlice from '@store/notificationsSlice';
 import clustersSlice from '@store/adcm/clusters/clustersSlice';
 import clustersDynamicActionsSlice from '@store/adcm/clusters/clustersDynamicActionsSlice';
@@ -60,7 +60,7 @@ import clusterHostTableSlice from './adcm/cluster/hosts/host/clusterHostTableSli
 import profileSlice from './adcm/profile/profileSlice';
 
 const rootReducer = combineReducers({
-  user: userSlice,
+  auth: authSlice,
   notifications: notificationsSlice,
   adcm: combineReducers({
     cluster: clusterSlice,

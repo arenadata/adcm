@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { clearError, login } from '@store/userSlice';
+import { clearError, login } from '@store/authSlice';
 import Input from '@uikit/Input/Input';
 import InputPassword from '@uikit/InputPassword/InputPassword';
 import Button from '@uikit/Button/Button';
@@ -11,7 +11,7 @@ import FormFieldsContainer from '@uikit/FormField/FormFieldsContainer';
 
 const LoginForm: React.FC = () => {
   const dispatch = useDispatch();
-  const { hasError, message } = useStore((s) => s.user);
+  const { hasError, message } = useStore((s) => s.auth);
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');

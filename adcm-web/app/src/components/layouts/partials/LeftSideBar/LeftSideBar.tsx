@@ -7,7 +7,7 @@ import { useMediaQuery } from '@uikit/hooks/useMediaQuery';
 
 import s from './LeftSideBar.module.scss';
 import { useDispatch } from '@hooks';
-import { logout } from '@store/userSlice';
+import { logout } from '@store/authSlice';
 
 const LeftSideBar: React.FC<HTMLAttributes<HTMLDivElement>> = ({ className }) => {
   const [isSlim, setIsSlim] = useState(false);
