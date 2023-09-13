@@ -4,7 +4,7 @@ import { AdcmProfileChangePassword, AdcmProfileUser } from '@models/adcm/profile
 import { createSlice } from '@reduxjs/toolkit';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { createAsyncThunk } from '@store/redux';
-import { logout } from '@store/userSlice';
+import { logout } from '@store/authSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 
 interface AdcmProfileState {

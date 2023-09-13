@@ -3,7 +3,7 @@ import NonAuthLayout from '@layouts/NonAuthLayout/NonAuthLayout';
 import { useStore } from '@hooks';
 import LoginForm from '@pages/LoginPage/LoginForm/LoginForm';
 import { Navigate, useLocation } from 'react-router-dom';
-import { AUTH_STATE } from '@store/userSlice';
+import { AUTH_STATE } from '@store/authSlice';
 
 import s from './LoginPage.module.scss';
 import Text from '@uikit/Text/Text';
@@ -14,7 +14,7 @@ type RedirectLocationState = {
 };
 
 const LoginPage: React.FC = () => {
-  const { authState } = useStore((s) => s.user);
+  const { authState } = useStore((s) => s.auth);
 
   const location = useLocation();
   const from = (location.state as RedirectLocationState)?.from || '/';

@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { RequestError, UserApi } from '@api';
+import { RequestError, AuthApi, AdcmProfileApi } from '@api';
 import { createAsyncThunk } from './redux';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { UserRBAC } from '@models/RBAC';
@@ -25,26 +25,26 @@ type UserState = {
   profile: UserRBAC;
 };
 
-const login = createAsyncThunk('user/login', async (arg: LoginActionPayload, thunkAPI) => {
+const login = createAsyncThunk('auth/login', async (arg: LoginActionPayload, thunkAPI) => {
   try {
-    await UserApi.login(arg.username, arg.password);
-    return UserApi.getCurrentUser();
+    await AuthApi.login(arg.username, arg.password);
+    return AdcmProfileApi.getProfile();
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
 });
 
-const logout = createAsyncThunk('user/logout', async (_, thunkAPI) => {
+const logout = createAsyncThunk('auth/logout', async (_, thunkAPI) => {
   try {
-    return UserApi.logout();
+    return AuthApi.logout();
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
 });
 
-const checkSession = createAsyncThunk('user/checkSession', async (_, thunkAPI) => {
+const checkSession = createAsyncThunk('auth/checkSession', async (_, thunkAPI) => {
   try {
-    return UserApi.getCurrentUser();
+    return AdcmProfileApi.getProfile();
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
@@ -59,8 +59,8 @@ const createInitialState = (): UserState => ({
   profile: {} as UserRBAC,
 });
 
-const userSlice = createSlice({
-  name: 'user',
+const authSlice = createSlice({
+  name: 'auth',
   initialState: createInitialState(),
   reducers: {
     clearError(state) {
@@ -122,6 +122,6 @@ const userSlice = createSlice({
   },
 });
 
-export const { clearError } = userSlice.actions;
+export const { clearError } = authSlice.actions;
 export { login, logout, checkSession };
-export default userSlice.reducer;
+export default authSlice.reducer;
