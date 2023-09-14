@@ -3,6 +3,7 @@ import { httpClient } from '@api/httpClient';
 import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
 import { PaginationParams, SortParams } from '@models/table';
+import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 
 export class AdcmClusterServicesApi {
   public static async getClusterServices(
@@ -30,5 +31,33 @@ export class AdcmClusterServicesApi {
 
   public static async deleteClusterService(clusterId: number, servicesId: number) {
     await httpClient.delete(`/api/v2/clusters/${clusterId}/services/${servicesId}`);
+  }
+
+  public static async getClusterServiceActions(clusterId: number, serviceId: number) {
+    const response = await httpClient.get<AdcmDynamicAction[]>(
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/actions/`,
+    );
+    return response.data;
+  }
+
+  public static async getClusterServiceActionDetails(clusterId: number, serviceId: number, actionId: number) {
+    const response = await httpClient.get<AdcmDynamicActionDetails>(
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/actions/${actionId}/`,
+    );
+    return response.data;
+  }
+
+  public static async runClusterServiceAction(
+    clusterId: number,
+    serviceId: number,
+    actionId: number,
+    actionRunConfig: AdcmDynamicActionRunConfig,
+  ) {
+    const response = await httpClient.post(
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/actions/${actionId}/run/`,
+      actionRunConfig,
+    );
+
+    return response.data;
   }
 }

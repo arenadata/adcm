@@ -36,6 +36,7 @@ import createUserDialogSlice from './adcm/users/dialogs/createUserDialogSlice';
 import servicesSlice from './adcm/cluster/services/servicesSlice';
 import servicesTableSlice from './adcm/cluster/services/servicesTableSlice';
 import servicesActionsSlice from './adcm/cluster/services/servicesActionsSlice';
+import servicesDynamicActionsSlice from './adcm/cluster/services/servicesDynamicActionsSlice';
 import serviceComponentsSlice from './adcm/cluster/services/serviceComponents/serviceComponentsSlice';
 import serviceComponentsTableSlice from './adcm/cluster/services/serviceComponents/serviceComponentsTableSlice';
 import usersActionsSlice from './adcm/users/usersActionsSlice';
@@ -87,6 +88,7 @@ const rootReducer = combineReducers({
     services: servicesSlice,
     servicesTable: servicesTableSlice,
     servicesActions: servicesActionsSlice,
+    servicesDynamicActions: servicesDynamicActionsSlice,
     serviceComponents: serviceComponentsSlice,
     serviceComponentsTable: serviceComponentsTableSlice,
     serviceComponentsActions: serviceComponentsActionsSlice,

@@ -4,6 +4,10 @@ import { useParams } from 'react-router-dom';
 import { cleanupService, getService } from '@store/adcm/services/serviceSlice';
 import { getRelatedServiceComponentsStatuses } from '@store/adcm/services/serviceSlice';
 import { useEffect } from 'react';
+import {
+  cleanupClusterServiceDynamicActions,
+  loadClusterServicesDynamicActions,
+} from '@store/adcm/cluster/services/servicesDynamicActionsSlice';
 
 export const useRequestService = () => {
   const dispatch = useDispatch();
@@ -14,8 +18,15 @@ export const useRequestService = () => {
   useEffect(() => {
     return () => {
       dispatch(cleanupService());
+      dispatch(cleanupClusterServiceDynamicActions());
     };
   }, [dispatch]);
+
+  useEffect(() => {
+    if (!Number.isNaN(clusterId) && !Number.isNaN(serviceId)) {
+      dispatch(loadClusterServicesDynamicActions({ clusterId, servicesIds: [serviceId] }));
+    }
+  }, [dispatch, clusterId, serviceId]);
 
   const debounceGetCluster = useDebounce(() => {
     if (clusterId && serviceId) {

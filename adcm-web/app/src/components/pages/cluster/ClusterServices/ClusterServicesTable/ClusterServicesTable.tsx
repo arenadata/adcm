@@ -7,6 +7,7 @@ import { columns, servicesStatusesMap } from './ClusterServicesTable.constants';
 import { setSortParams } from '@store/adcm/clusters/clustersTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { openDeleteDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
+import ClusterServiceDynamicActionsButton from '@pages/cluster/ClusterServices/ClusterServiceDynamicActionsButton/ClusterServiceDynamicActionsButton';
 
 const ClusterServicesTable = () => {
   const dispatch = useDispatch();
@@ -15,6 +16,7 @@ const ClusterServicesTable = () => {
   const services = useStore((s) => s.adcm.services.services);
   const isLoading = useStore((s) => s.adcm.services.isLoading);
   const sortParams = useStore((s) => s.adcm.servicesTable.sortParams);
+  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
 
   const getHandleDeleteClick = (serviceId: number) => () => {
     dispatch(openDeleteDialog(serviceId));
@@ -38,6 +40,7 @@ const ClusterServicesTable = () => {
               <Concern concerns={service.concerns} />
             </TableCell>
             <TableCell hasIconOnly align="center">
+              {cluster && <ClusterServiceDynamicActionsButton cluster={cluster} service={service} type="icon" />}
               <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(service.id)} title="Delete" />
             </TableCell>
           </TableRow>
