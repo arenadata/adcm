@@ -51,6 +51,9 @@ export interface AdcmClusterUpgrade {
 }
 
 export interface AdcmClusterActionDetails extends AdcmClusterUpgrade {
+  bundle: {
+    id: number;
+  };
   isAllowToTerminate: boolean;
   hostComponentMapRules: object[];
   disclaimer: string;

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useStore, useDispatch } from '@hooks';
-import { AdcmPrototypeVersions, AdcmPrototypeVersion } from '@models/adcm';
+import { AdcmPrototypeVersions, AdcmPrototypeVersion, AdcmLicenseStatus } from '@models/adcm';
 import { close, createHostProvider } from '@store/adcm/hostProviders/dialogs/createHostProviderDialogSlice';
 
 interface CreateHostProviderFormData {
@@ -8,6 +8,7 @@ interface CreateHostProviderFormData {
   prototypeVersion: AdcmPrototypeVersion | null;
   name: string;
   description: string;
+  isUserAcceptedLicense: boolean;
 }
 
 const initialFormData: CreateHostProviderFormData = {
@@ -15,6 +16,7 @@ const initialFormData: CreateHostProviderFormData = {
   prototypeVersion: null,
   name: '',
   description: '',
+  isUserAcceptedLicense: false,
 };
 
 export const useCreateHostProviderDialog = () => {
@@ -33,7 +35,11 @@ export const useCreateHostProviderDialog = () => {
   }, [isOpen]);
 
   const isValid = useMemo(() => {
-    return formData.prototypeVersion !== null && formData.name;
+    return (
+      formData.prototypeVersion !== null &&
+      formData.name &&
+      (formData.prototypeVersion.licenseStatus === AdcmLicenseStatus.Absent || formData.isUserAcceptedLicense)
+    );
   }, [formData]);
 
   const handleClose = () => {
@@ -47,6 +53,7 @@ export const useCreateHostProviderDialog = () => {
           name: formData.name,
           prototypeId: formData.prototypeVersion.id,
           description: formData.description,
+          isNeededLicenseAcceptance: formData.prototypeVersion.licenseStatus === AdcmLicenseStatus.Unaccepted,
         }),
       );
     }

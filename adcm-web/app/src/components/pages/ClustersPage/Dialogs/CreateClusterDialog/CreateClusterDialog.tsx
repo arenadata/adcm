@@ -4,6 +4,7 @@ import { getOptionsFromArray } from '@uikit/Select/Select.utils';
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
 import { AdcmPrototypeVersion, AdcmPrototypeVersions, AdcmLicenseStatus } from '@models/adcm';
 import { useCreateClusterDialog } from './useCreateClusterDialog';
+import LinkToLicenseText from '@commonComponents/LinkToLicenseText/LinkToLicenseText';
 
 const CreateClusterDialog = () => {
   const { isOpen, relatedData, formData, isValid, onCreate, onClose, onChangeFormData } = useCreateClusterDialog();
@@ -47,9 +48,13 @@ const CreateClusterDialog = () => {
     <CustomDialogControls actionButtonLabel="Create" onCancel={onClose} onAction={onCreate} isActionDisabled={!isValid}>
       {formData.productVersion && formData.productVersion.licenseStatus !== AdcmLicenseStatus.Absent && (
         <Checkbox
-          label="I accept Terms of Agreement"
+          label={
+            <>
+              I accept <LinkToLicenseText bundleId={formData.productVersion.bundle.id} />
+            </>
+          }
           checked={formData.isUserAcceptedLicense}
-          disabled={formData.productVersion?.licenseStatus === AdcmLicenseStatus.Accepted}
+          disabled={formData.productVersion.licenseStatus === AdcmLicenseStatus.Accepted}
           onChange={handleTermsOfAgreementChange}
         />
       )}

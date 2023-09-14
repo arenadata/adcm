@@ -4,7 +4,9 @@ export interface AdcmPrototypeVersion {
   id: number;
   version: string;
   licenseStatus: AdcmLicenseStatus;
-  bundleId: number;
+  bundle: {
+    id: number;
+  };
 }
 
 export interface AdcmPrototypeVersionsFilter {
