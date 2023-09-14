@@ -22,10 +22,17 @@ const createInitialState = (): AdcmClustersState => ({
   },
 });
 
+type CreateAdcmHostproviderWithLicensePayload = AdcmHostProviderPayload & {
+  isNeededLicenseAcceptance: boolean;
+};
+
 const createHostProvider = createAsyncThunk(
   'adcm/hostProviders/createHostProviderDialog/createHostProvider',
-  async (arg: AdcmHostProviderPayload, thunkAPI) => {
+  async ({ isNeededLicenseAcceptance, ...arg }: CreateAdcmHostproviderWithLicensePayload, thunkAPI) => {
     try {
+      if (isNeededLicenseAcceptance) {
+        await AdcmPrototypesApi.postAcceptLicense(arg.prototypeId);
+      }
       await AdcmHostProvidersApi.postHostProviders(arg);
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));

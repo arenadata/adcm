@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
-import { Dialog, FormFieldsContainer, FormField, Input, Select } from '@uikit';
+import { Dialog, FormFieldsContainer, FormField, Input, Select, Checkbox } from '@uikit';
 import { getOptionsFromArray } from '@uikit/Select/Select.utils';
-import { AdcmPrototypeVersions, AdcmPrototypeVersion } from '@models/adcm';
+import { AdcmPrototypeVersions, AdcmPrototypeVersion, AdcmLicenseStatus } from '@models/adcm';
 import { useCreateHostProviderDialog } from './useCreateHostProviderDialog';
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
+import LinkToLicenseText from '@commonComponents/LinkToLicenseText/LinkToLicenseText';
 
 const CreateHostProviderDialog = () => {
   const { isOpen, relatedData, formData, isValid, onCreate, onClose, onChangeFormData } = useCreateHostProviderDialog();
@@ -24,7 +25,10 @@ const CreateHostProviderDialog = () => {
 
   const handlePrototypeVersionChange = (value: AdcmPrototypeVersion | null) => {
     if (value) {
-      onChangeFormData({ prototypeVersion: value });
+      onChangeFormData({
+        prototypeVersion: value,
+        isUserAcceptedLicense: value.licenseStatus === AdcmLicenseStatus.Accepted,
+      });
     }
   };
 
@@ -36,13 +40,25 @@ const CreateHostProviderDialog = () => {
     onChangeFormData({ description: event.target.value });
   };
 
+  const handleTermsOfAgreementChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onChangeFormData({ isUserAcceptedLicense: event.target.checked });
+  };
+
   const dialogControls = (
-    <CustomDialogControls
-      actionButtonLabel="Create"
-      onCancel={onClose}
-      onAction={onCreate}
-      isActionDisabled={!isValid}
-    />
+    <CustomDialogControls actionButtonLabel="Create" onCancel={onClose} onAction={onCreate} isActionDisabled={!isValid}>
+      {formData.prototypeVersion && formData.prototypeVersion.licenseStatus !== AdcmLicenseStatus.Absent && (
+        <Checkbox
+          label={
+            <>
+              I accept <LinkToLicenseText bundleId={formData.prototypeVersion.bundle.id} />
+            </>
+          }
+          checked={formData.isUserAcceptedLicense}
+          disabled={formData.prototypeVersion.licenseStatus === AdcmLicenseStatus.Accepted}
+          onChange={handleTermsOfAgreementChange}
+        />
+      )}
+    </CustomDialogControls>
   );
 
   return (

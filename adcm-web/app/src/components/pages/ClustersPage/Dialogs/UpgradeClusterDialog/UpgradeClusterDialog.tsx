@@ -5,6 +5,7 @@ import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/
 import TextFormField from '@commonComponents/Forms/TextFormField/TextFormField';
 import { AdcmClusterUpgrade, AdcmLicenseStatus } from '@models/adcm';
 import { useUpgradeClusterDialog } from './useUpgradeClusterDialog';
+import LinkToLicenseText from '@commonComponents/LinkToLicenseText/LinkToLicenseText';
 
 const UpgradeClusterDialog = () => {
   const {
@@ -46,13 +47,20 @@ const UpgradeClusterDialog = () => {
       onAction={onUpgrade}
       isActionDisabled={!isValid}
     >
-      {formData.upgrade && formData.upgrade.licenseStatus !== AdcmLicenseStatus.Absent && (
-        <Checkbox
-          label="I accept Terms of Agreement"
-          checked={formData.isUserAcceptedLicense}
-          onChange={handleTermsOfAgreementChange}
-        />
-      )}
+      {relatedData?.upgradeActionDetails &&
+        formData.upgrade &&
+        formData.upgrade.licenseStatus !== AdcmLicenseStatus.Absent && (
+          <Checkbox
+            label={
+              <>
+                I accept <LinkToLicenseText bundleId={relatedData.upgradeActionDetails.bundle.id} />
+              </>
+            }
+            checked={formData.isUserAcceptedLicense}
+            disabled={formData.upgrade.licenseStatus === AdcmLicenseStatus.Accepted}
+            onChange={handleTermsOfAgreementChange}
+          />
+        )}
     </CustomDialogControls>
   );
 

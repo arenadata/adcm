@@ -15,8 +15,9 @@
     // --checkbox-label-color-error: var(--color-gray);
 
     // disabled
-    --checkbox-border-disabled: var(--color-xgray-reading);
+    --checkbox-border-disabled: var(--color-xgray-dark);
     --checkbox-label-color-disabled: var(--color-xgray-reading);
+    --checkbox-mark-color-disabled: var(--color-all-new-black);
 
     // readonly
     --checkbox-border-readonly: var(--color-xgray-reading);
@@ -38,8 +39,9 @@
     --checkbox-border-error: var(--color-xred);
 
     // disabled
-    --checkbox-border-disabled: var(--color-xgray-lighter);
+    --checkbox-border-disabled: var(--color-xgray-light-new);
     --checkbox-label-color-disabled: var(--color-xgray-lighter);
+    --checkbox-mark-color-disabled: var(--color-xgray-lighter);
 
     // readonly
     --checkbox-border-readonly: var(--color-xgray-lighter);
@@ -109,6 +111,10 @@
 
     .checkbox__square {
       background-color: var(--checkbox-border);
+    }
+
+    .checkbox__mark {
+      color: var(--checkbox-mark-color-disabled);
     }
   }
 
