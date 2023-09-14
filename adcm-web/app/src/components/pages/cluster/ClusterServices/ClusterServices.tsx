@@ -6,7 +6,7 @@ import TableContainer from '@commonComponents/Table/TableContainer/TableContaine
 import ClusterServicesTable from './ClusterServicesTable/ClusterServicesTable';
 import ClusterServicesTableFooter from './ClusterServicesFooter/ClusterServicesTableFooter';
 import ClusterServicesTableToolbar from './ClusterServicesToolbar/ClusterServicesTableToolbar';
-import ClusterServiceActionsDialogs from './ClusterServiceActionsDialogs/ClusterServiceActionsDialogs';
+import ClusterServicesDialogs from './ClusterServicesDialogs/ClusterServicesDialogs';
 
 const ClusterServices: React.FC = () => {
   const dispatch = useDispatch();
@@ -23,6 +23,7 @@ const ClusterServices: React.FC = () => {
       );
     }
   }, [cluster, dispatch]);
+
   useRequestClusterServices();
 
   return (
@@ -30,7 +31,7 @@ const ClusterServices: React.FC = () => {
       <ClusterServicesTableToolbar />
       <ClusterServicesTable />
       <ClusterServicesTableFooter />
-      <ClusterServiceActionsDialogs />
+      <ClusterServicesDialogs />
     </TableContainer>
   );
 };

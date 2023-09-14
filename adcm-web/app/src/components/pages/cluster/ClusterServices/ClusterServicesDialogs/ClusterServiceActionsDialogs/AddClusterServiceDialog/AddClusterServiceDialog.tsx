@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Dialog, FormFieldsContainer, MultiSelectPanel } from '@uikit';
 import s from './AddClusterServiceDialog.module.scss';
 import WarningMessage from '@uikit/WarningMessage/WarningMessage';
-import { useAddClusterServiceForm } from '@pages/cluster/ClusterServices/ClusterServiceActionsDialogs/AddClusterServiceDialog/useAddClusterServiceDialog';
+import { useAddClusterServiceForm } from '@pages/cluster/ClusterServices/ClusterServicesDialogs/ClusterServiceActionsDialogs/AddClusterServiceDialog/useAddClusterServiceDialog';
 import LicenseAcceptanceDialog from '@commonComponents/Dialog/LicenseAcceptanceDialog/LicenseAcceptanceDialog';
 
 const AddClusterServiceDialog: React.FC = () => {

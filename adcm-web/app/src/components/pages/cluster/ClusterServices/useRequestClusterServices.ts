@@ -4,6 +4,7 @@ import { getServices, refreshServices } from '@store/adcm/cluster/services/servi
 import { cleanupRelatedData, loadRelatedData } from '@store/adcm/cluster/services/servicesTableSlice';
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { loadClusterServicesDynamicActions } from '@store/adcm/cluster/services/servicesDynamicActionsSlice';
 
 export const useRequestClusterServices = () => {
   const dispatch = useDispatch();
@@ -14,6 +15,8 @@ export const useRequestClusterServices = () => {
   const sortParams = useStore((s) => s.adcm.servicesTable.sortParams);
   const paginationParams = useStore((s) => s.adcm.servicesTable.paginationParams);
 
+  const services = useStore((s) => s.adcm.services.services);
+
   useEffect(() => {
     dispatch(loadRelatedData(clusterId));
 
@@ -21,6 +24,13 @@ export const useRequestClusterServices = () => {
       dispatch(cleanupRelatedData());
     };
   }, [dispatch, clusterId]);
+
+  useEffect(() => {
+    if (services.length) {
+      const servicesIds = services.map(({ id }) => id);
+      dispatch(loadClusterServicesDynamicActions({ clusterId, servicesIds }));
+    }
+  }, [dispatch, clusterId, services]);
 
   const debounceGetClusters = useDebounce(() => {
     dispatch(getServices({ clusterId }));
