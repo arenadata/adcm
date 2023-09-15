@@ -12,6 +12,7 @@ export * from './audit';
 export * from './jobs';
 export * from './policy';
 export * from './clusterImports';
+export * from './clusterOverview';
 export * from './roles';
 export * from './clusterServiceComponent';
 export * from './clusterHosts';

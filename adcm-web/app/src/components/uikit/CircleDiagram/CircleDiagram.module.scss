@@ -13,13 +13,12 @@
 .circleDiagram {
   align-items: center;
   display: flex;
-  height: 228px;
   justify-content: center;
   font-weight: 500;
   font-size: 18px;
   position: relative;
-  width: 228px;
-
+  height: 199px;
+  width: 199px;
   --circle-diagram-fill-color: currentColor;
 
   svg {

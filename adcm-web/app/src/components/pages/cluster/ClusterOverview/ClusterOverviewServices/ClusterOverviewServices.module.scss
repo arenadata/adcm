@@ -1,0 +1,53 @@
+:global {
+  body.theme-dark {
+    --cluster-overview-loading-background-color: var(--color-xdark-new-20);
+  }
+
+  body.theme-light {
+    --cluster-overview-loading-background-color: var(--color-xgray-alt-30);
+  }
+}
+
+.clusterOverviewServices {
+  &__wrapper {
+    display: flex;
+    min-height: 326px;
+  }
+
+  &__services {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(156px, 280px));
+    grid-template-rows: 81px;
+    grid-column-gap: 12px;
+    grid-row-gap: 12px;
+    justify-items: start;
+    align-items: start;
+  }
+
+  &__servicesContainer {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    margin-left: 12px;
+
+    & > div:last-of-type {
+      align-items: flex-end;
+      flex: 1;
+    }
+  }
+
+  &__spinnerWrapper {
+    text-align: center;
+    width: 100%;
+    background: var(--cluster-overview-loading-background-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 5;
+    border-radius: 15px;
+  }
+}
+
+

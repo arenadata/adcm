@@ -16,7 +16,7 @@ export interface TableProps
   extends React.HTMLAttributes<HTMLDivElement>,
     Partial<SortingProps>,
     TableSelectedAllOptions {
-  columns: TableColumn[];
+  columns?: TableColumn[];
   children: React.ReactNode;
   variant?: TableVariants;
   isLoading?: boolean;
@@ -24,6 +24,8 @@ export interface TableProps
   noData?: React.ReactNode;
   width?: string;
 }
+
+const defaultEmptyRowLength = 100;
 
 const Table: React.FC<TableProps> = ({
   className,
@@ -49,12 +51,12 @@ const Table: React.FC<TableProps> = ({
     <div className={cn(className, s.tableWrapper, 'scroll')} {...props}>
       <TableContext.Provider value={contextData}>
         <table className={tableClasses} style={{ width: width }}>
-          <TableHead columns={columns} />
+          {columns?.length && <TableHead columns={columns} />}
           <TableBody>
-            {isLoading && <EmptyRow columnCount={columns.length}>{spinner}</EmptyRow>}
+            {isLoading && <EmptyRow columnCount={columns?.length || defaultEmptyRowLength}>{spinner}</EmptyRow>}
             {!isLoading && children}
             {!isLoading && (
-              <EmptyRow columnCount={columns.length} className={s.table__row_noData}>
+              <EmptyRow columnCount={columns?.length || defaultEmptyRowLength} className={s.table__row_noData}>
                 {noData}
               </EmptyRow>
             )}

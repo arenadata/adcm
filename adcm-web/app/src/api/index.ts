@@ -18,3 +18,4 @@ export { AdcmClusterServiceImportsApi } from './adcm/clusterServiceImports';
 export { AdcmRolesApi } from './adcm/roles';
 export { AdcmClusterServiceComponentsApi } from './adcm/clusterServiceComponents';
 export { AdcmProfileApi } from './adcm/profile';
+export { AdcmClusterOverviewApi } from './adcm/clusterOverview';
