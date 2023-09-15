@@ -9,15 +9,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from collections import defaultdict
 
 from api_v2.rbac.role.filters import RoleFilter
 from api_v2.rbac.role.serializers import RoleCreateUpdateSerializer, RoleSerializer
 from api_v2.views import CamelCaseModelViewSet
 from cm.errors import raise_adcm_ex
-from cm.models import ProductCategory
+from cm.models import Cluster, ClusterObject, Host, HostProvider, ProductCategory
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
-from rbac.models import Role
+from rbac.models import ObjectType as RBACObjectType
+from rbac.models import Role, RoleTypes
 from rbac.services.role import role_create, role_update
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -72,3 +74,71 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
     @action(methods=["get"], detail=False)
     def categories(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         return Response(data=sorted(category.value for category in ProductCategory.objects.all()), status=HTTP_200_OK)
+
+    @action(methods=["get"], detail=True, url_path="object-candidates", url_name="object-candidates")
+    def object_candidates(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+        role = self.get_object()
+        if role.type != RoleTypes.ROLE:
+            return Response({"cluster": [], "provider": [], "service": [], "host": []})
+
+        clusters = []
+        providers = []
+        services = []
+        hosts = []
+
+        if RBACObjectType.CLUSTER.value in role.parametrized_by_type:
+            for cluster in Cluster.objects.all():
+                clusters.append(
+                    {
+                        "name": cluster.display_name,
+                        "id": cluster.id,
+                    },
+                )
+
+        if RBACObjectType.PROVIDER.value in role.parametrized_by_type:
+            for provider in HostProvider.objects.all():
+                providers.append(
+                    {
+                        "name": provider.display_name,
+                        "id": provider.id,
+                    },
+                )
+
+        if RBACObjectType.HOST.value in role.parametrized_by_type:
+            for host in Host.objects.all():
+                hosts.append(
+                    {
+                        "name": host.display_name,
+                        "id": host.id,
+                    },
+                )
+
+        if (
+            RBACObjectType.SERVICE.value in role.parametrized_by_type
+            or RBACObjectType.COMPONENT.value in role.parametrized_by_type
+        ):
+            _services = defaultdict(list)
+            for service in ClusterObject.objects.all():
+                _services[service].append(
+                    {
+                        "name": service.cluster.name,
+                        "id": service.id,
+                    },
+                )
+            for service, clusters_info in _services.items():
+                services.append(
+                    {
+                        "name": service.name,
+                        "display_name": service.display_name,
+                        "clusters": sorted(clusters_info, key=lambda x: x["name"]),
+                    },
+                )
+
+        return Response(
+            {
+                "cluster": sorted(clusters, key=lambda x: x["name"]),
+                "provider": sorted(providers, key=lambda x: x["name"]),
+                "service": sorted(services, key=lambda x: x["name"]),
+                "host": sorted(hosts, key=lambda x: x["name"]),
+            },
+        )

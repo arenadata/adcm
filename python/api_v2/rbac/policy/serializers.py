@@ -20,10 +20,26 @@ from rest_framework.relations import ManyRelatedField, PrimaryKeyRelatedField
 from rest_framework.serializers import ModelSerializer
 
 
+class PolicyObjectField(ObjectField):
+    def to_representation(self, value):
+        data = []
+        for obj in value.all():
+            data.append(
+                {
+                    "id": obj.object_id,
+                    "type": obj.object.prototype.type,
+                    "name": obj.object.name,
+                    "display_name": obj.object.display_name,
+                },
+            )
+
+        return super(ObjectField, self).to_representation(data)
+
+
 class PolicySerializer(ModelSerializer):
     is_built_in = BooleanField(read_only=True, source="built_in")
     groups = GroupRelatedSerializer(many=True, source="group")
-    objects = ObjectField(required=True, source="object")
+    objects = PolicyObjectField(required=True, source="object")
     role = RoleRelatedSerializer(read_only=True)
 
     class Meta:
