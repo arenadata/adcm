@@ -4,6 +4,7 @@ import CreateHostDialog from './CreateHostDialog/CreateHostDialog';
 import LinkHostDialog from './LinkHostDialog/LinkHostDialog';
 import UnlinkHostDialog from './UnlinkHostDialog/UnlinkHostDialog';
 import MaintenanceModeDialog from './HostMaintenanceModeDialog/HostMaintenanceModeDialog';
+import HostDynamicActionDialog from './HostDynamicActionDialog/HostDynamicActionDialog';
 
 const HostsActionsDialogs: React.FC = () => {
   return (
@@ -13,6 +14,7 @@ const HostsActionsDialogs: React.FC = () => {
       <LinkHostDialog />
       <UnlinkHostDialog />
       <MaintenanceModeDialog />
+      <HostDynamicActionDialog />
     </>
   );
 };

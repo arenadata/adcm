@@ -4,6 +4,7 @@ import { PaginationParams, SortParams } from '@models/table';
 import { httpClient } from '@api/httpClient';
 import { AdcmHost, AdcmHostsFilter } from '@models/adcm/host';
 import { prepareQueryParams } from '@utils/apiUtils';
+import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 
 export class AdcmHostsApi {
   public static async getHosts(filter?: AdcmHostsFilter, sortParams?: SortParams, paginationParams?: PaginationParams) {
@@ -24,5 +25,21 @@ export class AdcmHostsApi {
 
   public static async createHost(payload: CreateAdcmHostPayload) {
     await httpClient.post('/api/v2/hosts/', payload);
+  }
+
+  public static async getHostActions(hostId: number) {
+    const response = await httpClient.get<AdcmDynamicAction[]>(`/api/v2/hosts/${hostId}/actions/`);
+    return response.data;
+  }
+
+  public static async getHostActionsDetails(hostId: number, actionId: number) {
+    const response = await httpClient.get<AdcmDynamicActionDetails>(`/api/v2/hosts/${hostId}/actions/${actionId}/`);
+    return response.data;
+  }
+
+  public static async runHostAction(hostId: number, actionId: number, actionRunConfig: AdcmDynamicActionRunConfig) {
+    const response = await httpClient.post(`/api/v2/hosts/${hostId}/actions/${actionId}/run/`, actionRunConfig);
+
+    return response.data;
   }
 }

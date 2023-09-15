@@ -10,6 +10,7 @@ import { setSortParams } from '@store/adcm/hosts/hostsTableSlice';
 import { orElseGet } from '@utils/checkUtils';
 import { openDeleteDialog, openMaintenanceModeDialog } from '@store/adcm/hosts/hostsActionsSlice';
 import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/MaintenanceModeButton';
+import HostDynamicActionsIcon from '../HostDynamicActionsIcon/HostDynamicActionsIcon';
 
 const HostsTable: React.FC = () => {
   const dispatch = useDispatch();
@@ -17,10 +18,6 @@ const HostsTable: React.FC = () => {
   const hosts = useStore(({ adcm }) => adcm.hosts.hosts);
   const isLoading = useStore(({ adcm }) => adcm.hosts.isLoading);
   const sortParams = useStore((s) => s.adcm.hostsTable.sortParams);
-
-  const dummyHandler = () => () => {
-    console.info('Add proper action handlers');
-  };
 
   const handleClickMaintenanceMode = (host: AdcmHost) => () => {
     if (host.isMaintenanceModeAvailable) {
@@ -48,7 +45,7 @@ const HostsTable: React.FC = () => {
             <TableCell>{orElseGet(host.cluster?.name)}</TableCell>
             <TableCell>{'-'}</TableCell>
             <TableCell hasIconOnly align="center">
-              <IconButton icon="g1-actions" size={32} onClick={dummyHandler()} title="Actions" />
+              <HostDynamicActionsIcon host={host} />
               <MaintenanceModeButton
                 isMaintenanceModeAvailable={host.isMaintenanceModeAvailable}
                 maintenanceModeStatus={host.maintenanceMode}
