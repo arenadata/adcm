@@ -117,7 +117,7 @@ class ActionList(PermissionListMixin, GenericUIView):
         serializer = self.get_serializer(
             allowed_actions,
             many=True,
-            context={"request": request, "objects": objects, "obj": obj},
+            context={"request": request, "objects": objects, "obj": obj, "prototype": obj.prototype},
         )
 
         return Response(serializer.data)
