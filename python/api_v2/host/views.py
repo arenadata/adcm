@@ -14,6 +14,7 @@
 from api_v2.host.filters import HostClusterFilter, HostFilter
 from api_v2.host.serializers import (
     ClusterHostCreateSerializer,
+    ClusterHostStatusSerializer,
     HostChangeMaintenanceModeSerializer,
     HostCreateSerializer,
     HostSerializer,
@@ -192,9 +193,8 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  #
         host = self.get_object()
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_pk"])
         if host.cluster != cluster:
-            msg = f"Host #{host.id} doesn't belong to cluster #{cluster.id}"
+            raise AdcmEx(code="FOREIGN_HOST", msg=f"Host #{host.id} doesn't belong to cluster #{cluster.id}")
 
-            raise AdcmEx("FOREIGN_HOST", msg)
         check_custom_perm(request.user, "unmap_host_from", "cluster", cluster)
         remove_host_from_cluster(host=host)
         return Response(status=HTTP_204_NO_CONTENT)
@@ -202,3 +202,12 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  #
     @action(methods=["post"], detail=True, url_path="maintenance-mode")
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         return maintenance_mode(request=request, **kwargs)
+
+    @action(methods=["get"], detail=True, url_path="statuses")
+    def statuses(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        host = self.get_object()
+        cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_pk"])
+        if host.cluster != cluster:
+            raise AdcmEx(code="FOREIGN_HOST", msg=f"Host #{host.id} doesn't belong to cluster #{cluster.id}")
+
+        return Response(data=ClusterHostStatusSerializer(instance=host).data)
