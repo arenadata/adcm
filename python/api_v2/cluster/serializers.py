@@ -15,7 +15,14 @@ from typing import Any
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from cm.adcm_config.config import get_main_info
-from cm.models import Cluster, ClusterObject, Host, HostComponent, Prototype
+from cm.models import (
+    Cluster,
+    ClusterObject,
+    Host,
+    HostComponent,
+    Prototype,
+    ServiceComponent,
+)
 from cm.status_api import get_obj_status
 from cm.upgrade import get_upgrade
 from cm.validators import ClusterUniqueValidator, StartMidEndValidator
@@ -125,8 +132,21 @@ class HostComponentPostSerializer(EmptySerializer):
     component_id = IntegerField()
 
 
+class RelatedComponentStatusSerializer(ModelSerializer):
+    status = SerializerMethodField()
+
+    class Meta:
+        model = ServiceComponent
+        fields = ["id", "name", "display_name", "status"]
+
+    @staticmethod
+    def get_status(instance: ServiceComponent) -> str:
+        return get_obj_status(obj=instance)
+
+
 class RelatedServicesStatusesSerializer(ModelSerializer):
     status = SerializerMethodField()
+    components = RelatedComponentStatusSerializer(many=True, source="servicecomponent_set")
 
     @staticmethod
     def get_status(instance: ClusterObject) -> str:
@@ -134,7 +154,7 @@ class RelatedServicesStatusesSerializer(ModelSerializer):
 
     class Meta:
         model = ClusterObject
-        fields = ["id", "name", "display_name", "status"]
+        fields = ["id", "name", "display_name", "status", "components"]
 
 
 class RelatedHostsStatusesSerializer(ModelSerializer):
