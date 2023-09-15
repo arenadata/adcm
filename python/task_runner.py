@@ -20,6 +20,7 @@ import time
 
 import adcm.init_django  # pylint: disable=unused-import
 
+from logging import getLogger
 from cm.errors import AdcmEx
 from cm.job import finish_task, re_prepare_job
 from cm.logger import logger
@@ -29,6 +30,8 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
+
+error_logger = getLogger("task_runner_err")
 TASK_ID = 0
 
 
@@ -101,7 +104,7 @@ def set_log_body(job):
         LogStorage.objects.filter(job=job, name=log_storage.name, type=log_storage.type).update(body=body)
 
 
-def run_task(task_id: int, args: str | None = None) -> None:  # pylint: disable=too-many-statements
+def run_task(task_id: int, args: str | None = None) -> None:  # pylint: disable=too-many-statements,too-many-branches
     logger.debug("task_runner.py called as: %s", sys.argv)
     try:
         task = TaskLog.objects.get(id=task_id)
@@ -133,33 +136,38 @@ def run_task(task_id: int, args: str | None = None) -> None:  # pylint: disable=
     count = 0
     res = 0
     for job in jobs:
-        job.refresh_from_db()
-        if args == "restart" and job.status == JobStatus.SUCCESS:
-            logger.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
-            continue
-
-        task.refresh_from_db()
-        re_prepare_job(task, job)
-        job.start_date = timezone.now()
-        job.save()
-        res = run_job(task.id, job.id, err_file)
-        set_log_body(job)
-
-        # For multi jobs task object state and/or config can be changed by adcm plugins
-        if task.task_object is not None:
-            try:
-                task.task_object.refresh_from_db()
-            except ObjectDoesNotExist:
-                task.object_id = 0
-                task.object_type = None
-
-        job.refresh_from_db()
-        count += 1
-        if res != 0:
-            task.refresh_from_db()
-            if job.status == JobStatus.ABORTED and task.status != JobStatus.ABORTED:
+        try:
+            job.refresh_from_db()
+            if args == "restart" and job.status == JobStatus.SUCCESS:
+                logger.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
                 continue
 
+            task.refresh_from_db()
+            re_prepare_job(task, job)
+            job.start_date = timezone.now()
+            job.save()
+            res = run_job(task.id, job.id, err_file)
+            set_log_body(job)
+
+            # For multi jobs task object state and/or config can be changed by adcm plugins
+            if task.task_object is not None:
+                try:
+                    task.task_object.refresh_from_db()
+                except ObjectDoesNotExist:
+                    task.object_id = 0
+                    task.object_type = None
+
+            job.refresh_from_db()
+            count += 1
+            if res != 0:
+                task.refresh_from_db()
+                if job.status == JobStatus.ABORTED and task.status != JobStatus.ABORTED:
+                    continue
+
+                break
+        except Exception:  # pylint: disable=broad-exception-caught
+            error_logger.exception("Task #%s: Error processing job #%s", task_id, job.pk)
+            res = 1
             break
 
     if job is not None:

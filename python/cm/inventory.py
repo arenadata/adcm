@@ -28,6 +28,7 @@ from cm.models import (
     HostComponent,
     HostProvider,
     MaintenanceMode,
+    ObjectType,
     Prototype,
     PrototypeExport,
     PrototypeImport,
@@ -180,15 +181,28 @@ def get_before_upgrade(obj: ADCMEntity, host: Host | None) -> dict:
             bundle_id = obj.cluster.before_upgrade["bundle_id"]
         else:
             bundle_id = obj.before_upgrade["bundle_id"]
-        old_proto = Prototype.objects.filter(name=obj.prototype.name, bundle_id=bundle_id).first()
-        old_spec, old_flat_spec, _, _ = get_prototype_config(prototype=old_proto)
-        config = process_config_and_attr(
-            obj=group_object or obj,
-            conf=config_log.config,
-            attr=config_log.attr,
-            spec=old_spec,
-            flat_spec=old_flat_spec,
-        )
+
+        obj_prototype = obj.prototype
+        try:
+            if obj_prototype.type == ObjectType.COMPONENT:
+                old_proto = Prototype.objects.get(
+                    name=obj_prototype.name, parent__name=obj_prototype.parent.name, bundle_id=bundle_id
+                )
+            else:
+                old_proto = Prototype.objects.get(name=obj_prototype.name, bundle_id=bundle_id)
+
+        except Prototype.DoesNotExist:
+            logger.info("Can't get old proto for %s. Old bundle id: %s", obj, bundle_id)
+
+        else:
+            old_spec, old_flat_spec, _, _ = get_prototype_config(prototype=old_proto)
+            config = process_config_and_attr(
+                obj=group_object or obj,
+                conf=config_log.config,
+                attr=config_log.attr,
+                spec=old_spec,
+                flat_spec=old_flat_spec,
+            )
 
     return {"state": obj.before_upgrade.get("state"), "config": config}
 
