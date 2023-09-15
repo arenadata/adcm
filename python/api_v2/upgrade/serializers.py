@@ -12,6 +12,7 @@
 
 from typing import Any
 
+from api_v2.bundle.serializers import BundleRelatedSerializer
 from cm.models import Upgrade
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
@@ -33,6 +34,7 @@ class UpgradeRetrieveSerializer(UpgradeListSerializer):
     host_component_map_rules = SerializerMethodField()
     disclaimer = SerializerMethodField()
     config_schema = SerializerMethodField()
+    bundle = BundleRelatedSerializer()
 
     class Meta:
         model = Upgrade
@@ -45,6 +47,7 @@ class UpgradeRetrieveSerializer(UpgradeListSerializer):
             "host_component_map_rules",
             "config_schema",
             "disclaimer",
+            "bundle",
         )
 
     @staticmethod
