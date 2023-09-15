@@ -48,7 +48,7 @@ class HostProviderViewSet(CamelCaseReadOnlyModelViewSet):  # pylint:disable=too-
         host_provider = add_host_provider(
             prototype=Prototype.objects.get(pk=serializer.validated_data["prototype_id"], type=ObjectType.PROVIDER),
             name=serializer.validated_data["name"],
-            description=serializer.validated_data["description"],
+            description=serializer.validated_data.get("description", ""),
         )
 
         return Response(data=HostProviderSerializer(host_provider).data, status=HTTP_201_CREATED)

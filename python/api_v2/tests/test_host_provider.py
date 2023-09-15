@@ -65,6 +65,17 @@ class TestHostProvider(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(response.json()["name"], self.host_provider.name + " new")
 
+    def test_create_no_description_success(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:hostprovider-list"),
+            data={
+                "prototype_id": self.host_provider_bundle.pk,
+                "name": self.host_provider.name + " new",
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(response.json()["name"], self.host_provider.name + " new")
+
     def test_host_provider_duplicate_fail(self):
         response = self.client.post(
             path=reverse(viewname="v2:hostprovider-list"),
