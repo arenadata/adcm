@@ -100,14 +100,20 @@ class ProfileView(RetrieveUpdateAPIView):
     def get_object(self) -> User:
         return User.objects.get(user_ptr=self.request.user)
 
-    def perform_update(self, serializer: ProfileSerializer) -> None:
-        update_user(
-            user=serializer.instance,
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        user = update_user(
+            user=instance,
             context_user=self.request.user,
             partial=True,
             api_v2_behaviour=True,
             **serializer.validated_data,
         )
+
+        return Response(data=self.get_serializer(instance=user).data)
 
 
 class ADCMConfigView(ConfigLogViewSet):  # pylint: disable=too-many-ancestors

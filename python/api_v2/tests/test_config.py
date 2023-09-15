@@ -853,7 +853,7 @@ class TestADCMConfig(BaseAPITestCase):
     def test_create_success(self):
         data = {
             "config": {
-                "global": {"adcm_url": "http://127.0.0.1:8000"},
+                "global": {"adcm_url": "http://127.0.0.1:8000", "verification_public_key": "\n"},
                 "google_oauth": {"client_id": None, "secret": None},
                 "yandex_oauth": {"client_id": None, "secret": None},
                 "ansible_settings": {"forks": 5},
