@@ -318,6 +318,11 @@ def check_component_constraint(proto, name, conf):
             code="INVALID_COMPONENT_DEFINITION",
             msg=f'constraint of component "{name}" in {proto_ref(prototype=proto)} should have only 1 or 2 elements',
         )
+    if not conf["constraint"]:
+        raise_adcm_ex(
+            code="INVALID_COMPONENT_DEFINITION",
+            msg=f'constraint of component "{name}" in {proto_ref(prototype=proto)} should not be empty',
+        )
 
 
 def save_components(proto: StagePrototype, conf: dict, bundle_hash: str) -> None:
