@@ -33,3 +33,9 @@ class BundleListSerializer(ModelSerializer):
 
 class UploadBundleSerializer(EmptySerializer):
     file = FileField(help_text="bundle file for upload")
+
+
+class BundleRelatedSerializer(ModelSerializer):
+    class Meta:
+        model = Bundle
+        fields = ["id"]
