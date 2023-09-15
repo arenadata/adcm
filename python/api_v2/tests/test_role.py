@@ -196,3 +196,13 @@ class TestRole(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 42)
+
+    def test_list_object_candidates_success(self):
+        response = self.client.get(
+            path=reverse(viewname="v2:rbac:role-object-candidates", kwargs={"pk": self.cluster_config_role.pk})
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()["cluster"]), 2)
+        self.assertEqual(response.json()["cluster"][0]["name"], self.cluster_1.name)
+        self.assertEqual(response.json()["cluster"][1]["name"], self.cluster_2.name)

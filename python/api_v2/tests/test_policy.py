@@ -101,7 +101,17 @@ class TestPolicy(BaseAPITestCase):
         data = response.json()
         self.assertTrue(set(data).issuperset({"id", "objects", "groups"}))
         self.assertTrue(Policy.objects.filter(pk=data["id"]).exists())
-        self.assertEqual(data["objects"], [{"id": self.provider.pk, "type": "provider", "name": self.provider.name}])
+        self.assertEqual(
+            data["objects"],
+            [
+                {
+                    "id": self.provider.pk,
+                    "type": "provider",
+                    "name": self.provider.name,
+                    "displayName": self.provider.display_name,
+                }
+            ],
+        )
         self.assertEqual(
             data["groups"],
             [{"id": self.group_1.pk, "name": self.group_1.name, "displayName": self.group_1.display_name}],
