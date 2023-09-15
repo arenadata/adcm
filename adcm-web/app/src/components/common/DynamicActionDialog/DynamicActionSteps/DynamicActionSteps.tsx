@@ -23,7 +23,7 @@ const steps = [
 ] as WizardStep[];
 
 interface DynamicActionsStepsProps extends DynamicActionCommonOptions {
-  clusterId: number;
+  clusterId: number | null;
   actionSteps: DynamicActionType[];
 }
 
@@ -70,7 +70,7 @@ const DynamicActionSteps: React.FC<DynamicActionsStepsProps> = ({
           submitLabel="Next"
         />
       )}
-      {currentStep === DynamicActionType.HostComponentMapping && (
+      {currentStep === DynamicActionType.HostComponentMapping && clusterId && (
         <DynamicActionHostMapping
           clusterId={clusterId}
           actionDetails={actionDetails}

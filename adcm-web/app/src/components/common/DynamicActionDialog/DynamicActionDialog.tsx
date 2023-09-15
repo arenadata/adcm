@@ -12,7 +12,7 @@ import DynamicActionConfirm from '@commonComponents/DynamicActionDialog/DynamicA
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
 
 interface DynamicActionDialogProps extends Omit<DynamicActionCommonOptions, 'onSubmit'> {
-  clusterId: number;
+  clusterId: number | null;
   onSubmit: (data: AdcmDynamicActionRunConfig) => void;
 }
 
