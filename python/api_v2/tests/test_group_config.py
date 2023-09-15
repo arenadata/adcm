@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.models import GroupConfig, ServiceComponent
+from cm.models import GroupConfig, Host, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -111,24 +111,24 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):  # pylint: disable
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-    def test_list_hosts(self):
+    def test_list_hosts_success(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:cluster-config-group-hosts",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_group_config.pk},
+                viewname="v2:cluster-config-group-hosts-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
             )
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
 
-    def test_add_hosts(self):
+    def test_add_hosts_success(self):
         response: Response = self.client.post(
             path=reverse(
-                "v2:cluster-config-group-hosts",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_group_config.pk},
+                "v2:cluster-config-group-hosts-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
             ),
-            data=[{"id": self.new_host.pk}],
+            data={"id": [self.new_host.pk]},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -146,6 +146,22 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):  # pylint: disable
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
         self.assertEqual(response.json()["results"][0]["name"], self.new_host.name)
+
+    def test_delete_host_success(self):
+        response: Response = self.client.delete(
+            path=reverse(
+                "v2:cluster-config-group-hosts-detail",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "group_config_pk": self.cluster_1_group_config.pk,
+                    "pk": self.host.pk,
+                },
+            ),
+        )
+
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.assertEqual(self.host, Host.objects.get(id=self.host.pk))
+        self.assertNotIn(self.host, self.cluster_1_group_config.hosts.all())
 
 
 class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable=too-many-ancestors
@@ -213,14 +229,14 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-    def test_list_hosts(self):
+    def test_list_hosts_success(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:service-config-group-hosts",
+                viewname="v2:service-config-group-hosts-list",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
-                    "pk": self.service_1_group_config.pk,
+                    "group_config_pk": self.service_1_group_config.pk,
                 },
             )
         )
@@ -229,24 +245,42 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
         self.assertEqual(response.json()["count"], 1)
         self.assertEqual(response.json()["results"][0]["name"], self.host.name)
 
-    def test_add_hosts(self):
+    def test_add_hosts_success(self):
         response: Response = self.client.post(
             path=reverse(
-                viewname="v2:service-config-group-hosts",
+                viewname="v2:service-config-group-hosts-list",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
-                    "pk": self.service_1_group_config.pk,
+                    "group_config_pk": self.service_1_group_config.pk,
                 },
             ),
-            data=[{"id": self.host_for_service.pk}],
+            data={"id": [self.host_for_service.pk]},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(len(response.json()), 1)
         self.assertEqual(response.json()[0]["name"], self.host_for_service.name)
 
-    def test_host_candidates(self):
+    def test_delete_host_success(self):
+        response: Response = self.client.delete(
+            path=reverse(
+                "v2:service-config-group-hosts-detail",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "group_config_pk": self.service_1_group_config.pk,
+                    "pk": self.host.pk,
+                },
+            ),
+        )
+
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.assertEqual(self.host, Host.objects.get(id=self.host.pk))
+        self.assertIn(self.host, self.cluster_1_group_config.hosts.all())
+        self.assertNotIn(self.host, self.service_1_group_config.hosts.all())
+
+    def test_host_candidates_success(self):
         response: Response = self.client.get(
             path=reverse(
                 viewname="v2:service-config-group-host-candidates",
@@ -367,12 +401,12 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
     def test_list_hosts(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:component-config-group-hosts",
+                viewname="v2:component-config-group-hosts-list",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
                     "component_pk": self.component_1.pk,
-                    "pk": self.component_1_group_config.pk,
+                    "group_config_pk": self.component_1_group_config.pk,
                 },
             )
         )
@@ -381,25 +415,41 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
         self.assertEqual(response.json()["count"], 1)
         self.assertEqual(response.json()["results"][0]["name"], self.host.name)
 
-    def test_add_hosts(self):
+    def test_add_hosts_group_config_not_found_fail(self):
         response: Response = self.client.post(
             path=reverse(
-                viewname="v2:component-config-group-hosts",
+                viewname="v2:component-config-group-hosts-list",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
                     "component_pk": self.component_1.pk,
-                    "pk": self.component_1_group_config.pk,
+                    "group_config_pk": self.component_1_group_config.pk + 1000,
                 },
             ),
-            data=[{"id": self.host_for_component.pk}],
+            data={"id": [self.host_for_component.pk]},
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_add_hosts_success(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:component-config-group-hosts-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                    "group_config_pk": self.component_1_group_config.pk,
+                },
+            ),
+            data={"id": [self.host_for_component.pk]},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(len(response.json()), 1)
         self.assertEqual(response.json()[0]["name"], self.host_for_component.name)
 
-    def test_host_candidates(self):
+    def test_list_host_candidates_success(self):
         response: Response = self.client.get(
             path=reverse(
                 viewname="v2:component-config-group-host-candidates",
@@ -415,3 +465,23 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
         self.assertEqual(response.json()["results"][0]["name"], self.host_for_component.name)
+
+    def test_delete_host_success(self):
+        response: Response = self.client.delete(
+            path=reverse(
+                "v2:component-config-group-hosts-detail",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                    "group_config_pk": self.component_1_group_config.pk,
+                    "pk": self.host.pk,
+                },
+            ),
+        )
+
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.assertEqual(self.host, Host.objects.get(id=self.host.pk))
+        self.assertIn(self.host, self.cluster_1_group_config.hosts.all())
+        self.assertIn(self.host, self.service_1_group_config.hosts.all())
+        self.assertNotIn(self.host, self.component_1_group_config.hosts.all())

@@ -43,6 +43,7 @@ ERRORS = {
     "BIND_NOT_FOUND": ("bind doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "PROVIDER_NOT_FOUND": ("provider doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "HOST_NOT_FOUND": ("host doesn't exist", HTTP_404_NOT_FOUND, ERR),
+    "HOST_GROUP_CONFIG_NOT_FOUND": ("group config doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "HOST_TYPE_NOT_FOUND": ("host type doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "PROTOTYPE_NOT_FOUND": ("prototype doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "HOSTSERVICE_NOT_FOUND": ("map host <-> component doesn't exist", HTTP_404_NOT_FOUND, ERR),

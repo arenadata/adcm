@@ -17,6 +17,8 @@ from api_v2.host.serializers import (
     ClusterHostStatusSerializer,
     HostChangeMaintenanceModeSerializer,
     HostCreateSerializer,
+    HostGroupConfigSerializer,
+    HostListIdCreateSerializer,
     HostSerializer,
     HostUpdateSerializer,
 )
@@ -29,7 +31,7 @@ from api_v2.views import CamelCaseReadOnlyModelViewSet
 from cm.api import add_host_to_cluster, delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
-from cm.models import Cluster, Host, HostProvider
+from cm.models import Cluster, GroupConfig, Host, HostProvider
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
@@ -211,3 +213,51 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  #
             raise AdcmEx(code="FOREIGN_HOST", msg=f"Host #{host.id} doesn't belong to cluster #{cluster.id}")
 
         return Response(data=ClusterHostStatusSerializer(instance=host).data)
+
+
+class HostGroupConfigViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
+    queryset = (
+        Host.objects.select_related("provider", "cluster")
+        .prefetch_related("concerns", "hostcomponent_set")
+        .order_by("fqdn")
+    )
+    permission_classes = [DjangoModelPermissionsAudit]
+    permission_required = [VIEW_HOST_PERM]
+    filterset_class = HostClusterFilter
+    filter_backends = (DjangoFilterBackend,)
+
+    def get_queryset(self, *args, **kwargs):
+        return self.queryset.filter(group_config__id=self.kwargs["group_config_pk"])
+
+    def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+        serializer = self.get_serializer_class()(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        host_ids = serializer.validated_data["id"]
+        group_config = GroupConfig.objects.filter(id=self.kwargs["group_config_pk"]).first()
+
+        if not group_config:
+            raise AdcmEx(code="HOST_GROUP_CONFIG_NOT_FOUND")
+
+        group_config.check_host_candidate(host_ids)
+        group_config.hosts.add(*host_ids)
+
+        return Response(
+            data=HostGroupConfigSerializer(group_config.hosts.filter(id__in=host_ids), many=True).data,
+            status=HTTP_201_CREATED,
+        )
+
+    def destroy(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+        group_config = GroupConfig.objects.filter(id=self.kwargs["group_config_pk"]).first()
+
+        if not group_config:
+            raise AdcmEx(code="HOST_GROUP_CONFIG_NOT_FOUND")
+
+        host: Host = self.get_object()
+        group_config.hosts.remove(host)
+        return Response(status=HTTP_204_NO_CONTENT)
+
+    def get_serializer_class(self) -> type[HostGroupConfigSerializer | HostListIdCreateSerializer]:
+        if self.action in ("create", "update", "partial_update"):
+            return HostListIdCreateSerializer
+
+        return HostGroupConfigSerializer
