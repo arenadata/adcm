@@ -25,7 +25,6 @@ from cm.models import (
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils import timezone
-from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -46,13 +45,13 @@ class TestCluster(BaseAPITestCase):
         return inner
 
     def test_list_success(self):
-        response: Response = self.client.get(path=reverse(viewname="v2:cluster-list"))
+        response = self.client.get(path=reverse(viewname="v2:cluster-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 2)
 
     def test_retrieve_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
         )
 
@@ -60,7 +59,7 @@ class TestCluster(BaseAPITestCase):
         self.assertEqual(response.json()["id"], self.cluster_1.pk)
 
     def test_filter_by_name_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:cluster-list"),
             data={"name": self.cluster_1.name},
         )
@@ -69,7 +68,7 @@ class TestCluster(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 1)
 
     def test_filter_by_wrong_name_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:cluster-list"),
             data={"name": "wrong"},
         )
@@ -79,7 +78,7 @@ class TestCluster(BaseAPITestCase):
 
     def test_filter_by_status_up_success(self):
         with patch("api_v2.cluster.filters.get_cluster_status", new_callable=self.get_cluster_status_mock):
-            response: Response = self.client.get(
+            response = self.client.get(
                 path=reverse(viewname="v2:cluster-list"),
                 data={"status": ADCMEntityStatus.UP},
             )
@@ -90,7 +89,7 @@ class TestCluster(BaseAPITestCase):
 
     def test_filter_by_status_down_success(self):
         with patch("api_v2.cluster.filters.get_cluster_status", new_callable=self.get_cluster_status_mock):
-            response: Response = self.client.get(
+            response = self.client.get(
                 path=reverse(viewname="v2:cluster-list"),
                 data={"status": ADCMEntityStatus.DOWN},
             )
@@ -100,7 +99,7 @@ class TestCluster(BaseAPITestCase):
             self.assertEqual(response.json()["results"][0]["id"], self.cluster_2.pk)
 
     def test_filter_by_prototype_name_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:cluster-list"),
             data={"prototypeDisplayName": self.cluster_1.prototype.name},
         )
@@ -110,7 +109,7 @@ class TestCluster(BaseAPITestCase):
         self.assertEqual(response.json()["results"][0]["id"], self.cluster_1.pk)
 
     def test_filter_by_wrong_prototype_name_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:cluster-list"),
             data={"prototypeDisplayName": "wrong"},
         )
@@ -119,7 +118,7 @@ class TestCluster(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 0)
 
     def test_create_success(self):
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v2:cluster-list"),
             data={
                 "prototype_id": self.cluster_1.prototype.pk,
@@ -134,7 +133,7 @@ class TestCluster(BaseAPITestCase):
         wrong_cluster_name = "__new_test_cluster_name"
         correct_cluster_name = "new_test_cluster_name"
 
-        response: Response = self.client.patch(
+        response = self.client.patch(
             path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
             data={"name": wrong_cluster_name},
         )
@@ -144,7 +143,7 @@ class TestCluster(BaseAPITestCase):
         self.cluster_1.state = "not_created"
         self.cluster_1.save(update_fields=["state"])
 
-        response: Response = self.client.patch(
+        response = self.client.patch(
             path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
             data={"name": correct_cluster_name},
         )
@@ -153,7 +152,7 @@ class TestCluster(BaseAPITestCase):
 
     def test_update_success(self):
         new_test_cluster_name = "new_test_cluster_name"
-        response: Response = self.client.patch(
+        response = self.client.patch(
             path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
             data={"name": new_test_cluster_name},
         )
@@ -165,7 +164,7 @@ class TestCluster(BaseAPITestCase):
         self.assertEqual(self.cluster_1.name, new_test_cluster_name)
 
     def test_delete_success(self):
-        response: Response = self.client.delete(
+        response = self.client.delete(
             path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
         )
 
@@ -173,7 +172,7 @@ class TestCluster(BaseAPITestCase):
         self.assertFalse(Cluster.objects.filter(pk=self.cluster_1.pk).exists())
 
     def test_service_prototypes_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:cluster-service-prototypes", kwargs={"pk": self.cluster_1.pk}),
         )
 
@@ -182,7 +181,7 @@ class TestCluster(BaseAPITestCase):
 
     def test_service_create_success(self):
         service_prototype = Prototype.objects.filter(type="service").first()
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
             data=[{"prototype_id": service_prototype.pk}],
         )
@@ -200,7 +199,7 @@ class TestClusterActions(BaseAPITestCase):
         self.cluster_action_with_hc = Action.objects.get(prototype=self.cluster_1.prototype, name="with_hc")
 
     def test_list_cluster_actions_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:cluster-action-list", kwargs={"cluster_pk": self.cluster_1.pk}),
         )
 
@@ -208,7 +207,7 @@ class TestClusterActions(BaseAPITestCase):
         self.assertEqual(len(response.json()), 3)
 
     def test_list_cluster_actions_no_actions_cluster_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:cluster-action-list", kwargs={"cluster_pk": self.cluster_2.pk}),
         )
 
@@ -216,7 +215,7 @@ class TestClusterActions(BaseAPITestCase):
         self.assertListEqual(response.json(), [])
 
     def test_list_cluster_actions_wrong_cluster_fail(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(
                 viewname="v2:cluster-action-list", kwargs={"cluster_pk": self.get_non_existent_pk(model=Cluster)}
             ),
@@ -225,7 +224,7 @@ class TestClusterActions(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_retrieve_cluster_action_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(
                 viewname="v2:cluster-action-detail",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action.pk},
@@ -244,7 +243,7 @@ class TestClusterActions(BaseAPITestCase):
         )
 
         with patch("api_v2.action.views.start_task", return_value=tasklog):
-            response: Response = self.client.post(
+            response = self.client.post(
                 path=reverse(
                     viewname="v2:cluster-action-run",
                     kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action.pk},
@@ -255,7 +254,7 @@ class TestClusterActions(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_retrieve_action_with_config_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(
                 viewname="v2:cluster-action-detail",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action_with_config.pk},
@@ -283,7 +282,7 @@ class TestClusterActions(BaseAPITestCase):
         config = {"simple": "kuku", "grouped": {"simple": 5, "second": 4.3}, "after": ["something"]}
 
         with patch("cm.job.start_task", return_value=tasklog):
-            response: Response = self.client.post(
+            response = self.client.post(
                 path=reverse(
                     viewname="v2:cluster-action-run",
                     kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action_with_config.pk},
@@ -294,7 +293,7 @@ class TestClusterActions(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_retrieve_action_with_hc_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(
                 viewname="v2:cluster-action-detail",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action_with_hc.pk},

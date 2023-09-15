@@ -118,7 +118,7 @@ class TestConcernsResponse(BaseAPITestCase):
 
         response: Response = self.client.post(
             path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": cluster.pk}),
-            data={"config": {"string": "new_string"}, "attr": {}, "description": ""},
+            data={"config": {"string": "new_string"}, "adcmMeta": {}, "description": ""},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 

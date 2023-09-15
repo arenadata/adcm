@@ -10,7 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.adcm.views import LoginView, LogoutView, ProfileView, TokenView
+from api_v2.adcm.views import (
+    ADCMConfigView,
+    LoginView,
+    LogoutView,
+    ProfileView,
+    TokenView,
+)
 from django.urls import path
 
 urlpatterns = [
@@ -18,4 +24,6 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path("token/", TokenView.as_view(), name="token"),
     path("profile/", ProfileView.as_view(), name="profile"),
+    path("configs/", ADCMConfigView.as_view({"get": "list", "post": "create"}), name="adcm-config-list"),
+    path("configs/<int:pk>/", ADCMConfigView.as_view({"get": "retrieve"}), name="adcm-config-detail"),
 ]

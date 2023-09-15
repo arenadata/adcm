@@ -65,7 +65,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
         init()
 
         adcm = ADCM.objects.first()
-        config_log = ConfigLog.objects.get(obj_ref=adcm.config)
+        config_log = ConfigLog.objects.get(id=adcm.config.current)
         config_log.config["auth_policy"]["max_password_length"] = 20
         config_log.save(update_fields=["config"])
 
