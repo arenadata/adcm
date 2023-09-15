@@ -11,7 +11,11 @@
 # limitations under the License.
 
 from api_v2.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
-from api_v2.config.utils import get_config_schema
+from api_v2.config.utils import (
+    convert_adcm_meta_to_attr,
+    convert_attr_to_adcm_meta,
+    get_config_schema,
+)
 from api_v2.views import CamelCaseGenericViewSet
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
@@ -36,8 +40,13 @@ class ConfigLogViewSet(
     GetParentObjectMixin,
     CamelCaseGenericViewSet,
 ):  # pylint: disable=too-many-ancestors
-    queryset = ConfigLog.objects.select_related("obj_ref").order_by("-pk")
-    serializer_class = ConfigLogSerializer
+    queryset = ConfigLog.objects.select_related(
+        "obj_ref__cluster__prototype",
+        "obj_ref__clusterobject__prototype",
+        "obj_ref__servicecomponent__prototype",
+        "obj_ref__hostprovider__prototype",
+        "obj_ref__host__prototype",
+    ).order_by("-pk")
     permission_required = [VIEW_CONFIG_PERM]
     filter_backends = []
 
@@ -47,7 +56,7 @@ class ConfigLogViewSet(
             raise NotFound
 
         if not parent_object.config:
-            return self.queryset.none()
+            return ConfigLog.objects.none()
 
         return super().get_queryset(*args, **kwargs).filter(obj_ref=parent_object.config)
 
@@ -55,9 +64,9 @@ class ConfigLogViewSet(
         if self.action == "list":
             return ConfigLogListSerializer
 
-        return self.serializer_class
+        return ConfigLogSerializer
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs) -> Response:
         parent_object = self.get_parent_object()
 
         if parent_object is None:
@@ -74,15 +83,24 @@ class ConfigLogViewSet(
         )
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        initial_data = serializer.initial_data
+
         config_log = update_obj_config(
             obj_conf=parent_object.config,
-            config=initial_data["config"],
-            attr=initial_data["attr"],
-            description=initial_data.get("description", ""),
+            config=serializer.validated_data["config"],
+            attr=convert_adcm_meta_to_attr(adcm_meta=serializer.validated_data["attr"]),
+            description=serializer.validated_data.get("description", ""),
         )
 
+        config_log.attr = convert_attr_to_adcm_meta(attr=config_log.attr)
+
         return Response(data=self.get_serializer(config_log).data, status=HTTP_201_CREATED)
+
+    def retrieve(self, request, *args, **kwargs) -> Response:
+        instance = self.get_object()
+        instance.attr = convert_attr_to_adcm_meta(attr=instance.attr)
+        serializer = self.get_serializer(instance)
+
+        return Response(data=serializer.data, status=HTTP_200_OK)
 
     @action(methods=["get"], detail=True, url_path="schema", url_name="schema")
     def config_schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument

@@ -38,6 +38,7 @@ class ActionRetrieveSerializer(ActionListSerializer):
     host_component_map_rules = JSONField(source="hostcomponentmap")
     disclaimer = SerializerMethodField()
     config_schema = SerializerMethodField()
+    adcm_meta = SerializerMethodField()
 
     class Meta:
         model = Action
@@ -50,6 +51,7 @@ class ActionRetrieveSerializer(ActionListSerializer):
             "host_component_map_rules",
             "disclaimer",
             "config_schema",
+            "adcm_meta",
         ]
 
     @staticmethod
@@ -59,6 +61,9 @@ class ActionRetrieveSerializer(ActionListSerializer):
     def get_config_schema(self, _: Action) -> dict:
         return self.context["config_schema"]
 
+    def get_adcm_meta(self, _: Action) -> dict:
+        return self.context["adcm_meta"]
+
 
 class HostComponentEntry(EmptySerializer):
     host_id = IntegerField()
@@ -66,9 +71,10 @@ class HostComponentEntry(EmptySerializer):
 
 
 class ActionRunSerializer(EmptySerializer):
-    host_component_map = ListSerializer(child=HostComponentEntry())
-    config = JSONField()
-    is_verbose = BooleanField()
+    host_component_map = ListSerializer(child=HostComponentEntry(), required=False, default=[])
+    config = JSONField(required=False, default={})
+    adcm_meta = JSONField(required=False, default={})
+    is_verbose = BooleanField(required=False, default=False)
 
 
 class ActionNameSerializer(ModelSerializer):

@@ -11,13 +11,58 @@
       type: string
       required: false
       default: string
+    - name: list
+      type: list
+      required: false
+      default:
+        - value1
+        - value2
+        - value3
+    - name: boolean
+      type: boolean
+      required: false
+      default: true
     - name: group
       type: group
       subs:
-        - name: string
-          type: string
+        - name: float
+          type: float
           required: false
-          default: string
+          default: 0.1
+        - name: map
+          type: map
+          required: false
+          default:
+            integer_key: '10'
+            string_key: string
+        - name: text
+          type: text
+          required: false
+          default: text
+    - name: activatable_group
+      type: group
+      activatable: True
+      active: True
+      subs:
+        - name: integer
+          type: integer
+          required: false
+          default: 10
+        - name: json
+          type: json
+          required: false
+          default:
+            key: value
+        - name: structure
+          type: structure
+          required: false
+          yspec: ./schema.yaml
+          default:
+            - integer: 1
+              string: string1
+            - integer: 2
+              string: string2
+
   actions:
     action: &action
       type: job

@@ -11,8 +11,10 @@
 # limitations under the License.
 
 from api_v2.adcm.serializers import LoginSerializer, ProfileSerializer
+from api_v2.config.views import ConfigLogViewSet
 from cm.adcm_config.config import get_adcm_config
 from cm.errors import AdcmEx
+from cm.models import ADCM, ConfigLog
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User as AuthUser
 from djangorestframework_camel_case.parser import (
@@ -104,5 +106,17 @@ class ProfileView(RetrieveUpdateAPIView):
             context_user=self.request.user,
             partial=True,
             api_v2_behaviour=True,
-            **serializer.validated_data
+            **serializer.validated_data,
         )
+
+
+class ADCMConfigView(ConfigLogViewSet):  # pylint: disable=too-many-ancestors
+    def get_queryset(self, *args, **kwargs):
+        return (
+            ConfigLog.objects.select_related("obj_ref__adcm__prototype")
+            .filter(obj_ref__adcm__isnull=False)
+            .order_by("-pk")
+        )
+
+    def get_parent_object(self) -> ADCM | None:
+        return ADCM.objects.first()
