@@ -17,7 +17,6 @@ from rest_framework.fields import (
     BooleanField,
     CharField,
     EmailField,
-    JSONField,
     RegexField,
     SerializerMethodField,
 )
@@ -40,6 +39,7 @@ class UserSerializer(ModelSerializer):
     status = SerializerMethodField()
     is_built_in = BooleanField(read_only=True, source="built_in")
     groups = RelatedGroupSerializer(many=True)
+    is_super_user = BooleanField(read_only=True, source="is_superuser")
 
     class Meta:
         model = User
@@ -52,7 +52,7 @@ class UserSerializer(ModelSerializer):
             "email",
             "type",
             "is_built_in",
-            "is_superuser",
+            "is_super_user",
             "groups",
         ]
 
@@ -66,15 +66,14 @@ class UserSerializer(ModelSerializer):
 
 class UserUpdateSerializer(ModelSerializer):
     password = CharField(trim_whitespace=False, write_only=True, required=False)
-    current_password = CharField(trim_whitespace=False, write_only=True, required=False)
     first_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False, default="")
     last_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False, default="")
     email = EmailField(allow_blank=True, required=False, default="")
-    is_superuser = BooleanField(required=False)
+    is_super_user = BooleanField(source="is_superuser", default=False)
 
     class Meta:
         model = User
-        fields = ["id", "password", "current_password", "first_name", "last_name", "groups", "email", "is_superuser"]
+        fields = ["id", "password", "first_name", "last_name", "groups", "email", "is_super_user"]
 
 
 class UserCreateSerializer(UserUpdateSerializer):
@@ -83,9 +82,8 @@ class UserCreateSerializer(UserUpdateSerializer):
     first_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, default="")
     last_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, default="")
     email = EmailField(allow_blank=True, default="")
-    is_superuser = BooleanField(default=False)
-    profile = JSONField(required=False, default="")
+    is_super_user = BooleanField(source="is_superuser", default=False)
 
     class Meta:
         model = User
-        fields = ["id", "username", "password", "first_name", "last_name", "groups", "email", "is_superuser", "profile"]
+        fields = ["username", "password", "first_name", "last_name", "groups", "email", "is_super_user"]

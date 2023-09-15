@@ -11,21 +11,13 @@
 # limitations under the License.
 
 from cm.errors import AdcmEx
-from django.utils.timezone import now
 from rbac.models import User
-
-
-def block_user(user: User) -> None:
-    if user.built_in:
-        raise AdcmEx(code="USER_BLOCK_ERROR")
-
-    user.blocked_at = now()
-    user.save(update_fields=["blocked_at"])
 
 
 def unblock_user(user: User) -> None:
     if user.built_in:
         raise AdcmEx(code="USER_BLOCK_ERROR")
 
+    user.failed_login_attempts = 0
     user.blocked_at = None
-    user.save(update_fields=["blocked_at"])
+    user.save(update_fields=["failed_login_attempts", "blocked_at"])
