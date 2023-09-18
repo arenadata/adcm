@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import WizardSteps from '@uikit/WizardSteps/WizardSteps';
-import { WizardStep } from '@uikit/WizardSteps/WizardSteps.types';
 import DynamicActionConfigSchema from '@commonComponents/DynamicActionDialog/DynamicActionConfigSchema/DynamicActionConfigSchema';
 import {
   DynamicActionCommonOptions,
@@ -11,16 +10,11 @@ import { AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import s from '../DynamicActionDialog.module.scss';
 import { getNextStep, isLastStep } from '@uikit/WizardSteps/WizardSteps.utils';
 
-const steps = [
-  {
-    title: 'Configuration',
-    key: DynamicActionType.ConfigSchema as string,
-  },
-  {
-    title: 'Host - Component',
-    key: DynamicActionType.HostComponentMapping as string,
-  },
-] as WizardStep[];
+const stepsTitles: Record<DynamicActionType, string> = {
+  [DynamicActionType.ConfigSchema]: 'Configuration',
+  [DynamicActionType.HostComponentMapping]: 'Host - Component',
+  [DynamicActionType.Confirm]: 'Confirm',
+};
 
 interface DynamicActionsStepsProps extends DynamicActionCommonOptions {
   clusterId: number | null;
@@ -40,23 +34,32 @@ const DynamicActionSteps: React.FC<DynamicActionsStepsProps> = ({
 
   const [currentStep, setCurrentStep] = useState<string>(actionSteps[0]);
 
+  const wizardStepsOptions = useMemo(() => {
+    return actionSteps.map((step) => ({
+      title: stepsTitles[step],
+      key: step,
+    }));
+  }, [actionSteps]);
+
   const handleSubmit = (data: Partial<AdcmDynamicActionRunConfig>) => {
     const newActionRunConfig = { ...localActionRunConfig, ...data };
     setLocalActionRunConfig(newActionRunConfig);
 
-    if (isLastStep(currentStep, steps)) {
+    if (isLastStep(currentStep, wizardStepsOptions)) {
       // if submit of last step - call full submit
       onSubmit(newActionRunConfig);
     } else {
-      setCurrentStep(getNextStep(currentStep, steps));
+      setCurrentStep(getNextStep(currentStep, wizardStepsOptions));
     }
   };
 
+  const isFewSteps = actionSteps.length > 1;
+
   return (
     <div>
-      {actionSteps.length > 1 && (
+      {isFewSteps && (
         <WizardSteps
-          steps={steps}
+          steps={wizardStepsOptions}
           currentStep={currentStep}
           onChangeStep={setCurrentStep}
           className={s.dynamicActionDialog__tabs}
@@ -67,7 +70,7 @@ const DynamicActionSteps: React.FC<DynamicActionsStepsProps> = ({
           actionDetails={actionDetails}
           onSubmit={handleSubmit}
           onCancel={onCancel}
-          submitLabel="Next"
+          submitLabel={isFewSteps ? 'Next' : 'Run'}
         />
       )}
       {currentStep === DynamicActionType.HostComponentMapping && clusterId && (
