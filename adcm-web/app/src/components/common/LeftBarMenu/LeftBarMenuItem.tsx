@@ -5,10 +5,10 @@ import { IconsNames } from '@uikit/Icon/sprite';
 import Icon from '@uikit/Icon/Icon';
 import LinkOrEmpty from '@uikit/LinkOrEmpty/LinkOrEmpty';
 import { isCurrentParentPage } from '@uikit/utils/urlUtils';
-import ConditionalWrapper from '@uikit/ConditionalWrapper/ConditionalWrapper';
 import Tooltip from '@uikit/Tooltip/Tooltip';
 
 import s from './LeftBarMenuItem.module.scss';
+import { ConditionalWrapper } from '@uikit';
 
 interface LeftBarMenuItemProps extends HTMLAttributes<HTMLLIElement> {
   icon: IconsNames;

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { AdcmCluster } from '@models/adcm';
-import { Table, TableRow, TableCell, IconButton } from '@uikit';
+import { Table, TableRow, TableCell, IconButton, ConditionalWrapper, Tooltip } from '@uikit';
 import Concern from '@commonComponents/Concern/Concern';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import { useDispatch, useStore } from '@hooks';
@@ -36,7 +36,19 @@ const ClustersTable = () => {
             <StatusableCell status={clusterStatusesMap[cluster.status]}>
               <Link to={`/clusters/${cluster.id}`}>{cluster.name}</Link>
             </StatusableCell>
-            <TableCell>{cluster.state}</TableCell>
+            <TableCell>
+              <ConditionalWrapper
+                Component={Tooltip}
+                isWrap={!!cluster.multiState.length}
+                label={cluster.multiState?.map((state) => (
+                  <div key={state}>{state}</div>
+                ))}
+                placement="top-start"
+                closeDelay={100}
+              >
+                <div>{cluster.state}</div>
+              </ConditionalWrapper>
+            </TableCell>
             <TableCell>{cluster.prototype.displayName}</TableCell>
             <TableCell>{cluster.prototype.version}</TableCell>
             <TableCell>{cluster.description}</TableCell>

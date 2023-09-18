@@ -5,6 +5,7 @@ import ButtonGroup from './ButtonGroup/ButtonGroup';
 import CheckAll from '@uikit/CheckAll/CheckAll';
 import Checkbox from './Checkbox/Checkbox';
 import CommonSelectSearchFilter from '@uikit/Select/CommonSelect/CommonSelectSearchFilter/CommonSelectSearchFilter';
+import ConditionalWrapper from './ConditionalWrapper/ConditionalWrapper';
 import CodeEditor from './CodeEditor/CodeEditor';
 import DatePicker from '@uikit/DatePicker/DatePicker';
 import Dialog from '@uikit/Dialog/Dialog';
@@ -55,6 +56,7 @@ export {
   CheckAll,
   Checkbox,
   CommonSelectSearchFilter,
+  ConditionalWrapper,
   DatePicker,
   Dialog,
   DialogDefaultControls,

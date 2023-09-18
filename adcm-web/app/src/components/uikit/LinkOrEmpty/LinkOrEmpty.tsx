@@ -1,6 +1,6 @@
+import { ConditionalWrapper } from '@uikit';
 import React from 'react';
 import { NavLink, To } from 'react-router-dom';
-import ConditionalWrapper from '@uikit/ConditionalWrapper/ConditionalWrapper';
 
 interface LinkOrEmptyProps extends React.PropsWithChildren {
   to?: To;
