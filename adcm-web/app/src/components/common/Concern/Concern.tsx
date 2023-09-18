@@ -3,10 +3,10 @@ import ConcernMessages from './ConcernMessages/ConcernMessages';
 import Tooltip from '@uikit/Tooltip/Tooltip';
 import Icon from '@uikit/Icon/Icon';
 import s from './Concern.module.scss';
-import ConditionalWrapper from '@uikit/ConditionalWrapper/ConditionalWrapper';
 import { AdcmConcerns } from '@models/adcm';
 import { getConcernLinksDataArray } from '@utils/concernUtils';
 import cn from 'classnames';
+import { ConditionalWrapper } from '@uikit';
 
 interface ConcernProps {
   concerns: AdcmConcerns[];
