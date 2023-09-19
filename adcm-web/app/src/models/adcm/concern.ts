@@ -1,3 +1,12 @@
+export enum AdcmConcernCause {
+  Config = 'config',
+  HostComponent = 'host-component',
+  Import = 'import',
+  Service = 'service',
+  Requirement = 'requirement',
+  Job = 'job',
+}
+
 export enum AdcmConcernType {
   Cluster = 'cluster',
   Service = 'service',
@@ -82,4 +91,5 @@ export interface AdcmConcerns {
   id: number;
   reason: AdcmConcernReason;
   isBlocking: boolean;
+  cause: AdcmConcernCause;
 }
