@@ -12,8 +12,10 @@
 
 from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from api_v2.tests.base import BaseAPITestCase
+from cm.inventory import get_obj_config
 from cm.models import ADCM, ConfigLog, GroupConfig, Host, HostProvider, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
+from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -169,6 +171,17 @@ class TestClusterConfig(BaseAPITestCase):
                 "children": [],
             },
             {
+                "children": [],
+                "default": None,
+                "displayName": "map_not_required",
+                "isActive": False,
+                "isReadOnly": False,
+                "name": "map_not_required",
+                "options": [],
+                "type": "map",
+                "validation": {"isRequired": False, "maxValue": None, "minValue": None},
+            },
+            {
                 "name": "list",
                 "displayName": "list",
                 "type": "list",
@@ -284,6 +297,24 @@ class TestClusterConfig(BaseAPITestCase):
         self.assertListEqual(response.json(), data)
 
 
+class TestMapTypeConfig(BaseAPITestCase):
+    def test_absent_not_required_map_config_processing_success(self):
+        new_config = {"string": "new string value"}
+        response: Response = self.client.post(
+            path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"config": new_config, "attr": {}, "adcmMeta": {"/activatable_group": {"isActive": False}}},
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        self.cluster_1.refresh_from_db()
+        processed_config = get_obj_config(obj=self.cluster_1)
+        self.assertDictEqual(processed_config, {"activatable_group": None, **new_config})
+
+    def test_not_required_no_default_map_config_processing_success(self):
+        processed_config = get_obj_config(obj=self.cluster_1)
+        self.assertDictEqual(processed_config["map_not_required"], {})
+
+
 class TestClusterGroupConfig(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -328,6 +359,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
             "config": self.cluster_1_group_config_config.config,
             "adcmMeta": {
                 "/string": {"isSynchronized": False},
+                "/map_not_required": {"isSynchronized": False},
                 "/list": {"isSynchronized": False},
                 "/boolean": {"isSynchronized": False},
                 "/group/float": {"isSynchronized": False},
@@ -357,6 +389,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
             },
             "adcmMeta": {
                 "/string": {"isSynchronized": False},
+                "/map_not_required": {"isSynchronized": False},
                 "/list": {"isSynchronized": False},
                 "/boolean": {"isSynchronized": False},
                 "/group/float": {"isSynchronized": False},
