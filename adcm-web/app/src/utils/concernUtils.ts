@@ -16,7 +16,10 @@ export const getConcernLinksDataArray = (concerns: AdcmConcerns[] | undefined): 
     const separatedMessage = concern.reason.message.split(keyRegexp);
 
     Object.entries(concern.reason.placeholder).forEach(([key, placeHolderItem]) => {
-      const linkPath = getConcernLink(placeHolderItem) + getConcernTab(concern);
+      let linkPath = getConcernLink(placeHolderItem);
+      if (linkPath.length) {
+        linkPath += getConcernTab(concern);
+      }
       linksDataMap.set(key, {
         linkPath,
         text: placeHolderItem.name,
