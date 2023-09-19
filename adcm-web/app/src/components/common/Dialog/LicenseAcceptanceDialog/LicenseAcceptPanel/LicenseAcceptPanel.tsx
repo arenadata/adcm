@@ -37,7 +37,9 @@ const LicenseAcceptPanel: React.FC<LicenseAcceptanceDialogProps> = ({
           {isLicenseAccepted ? 'Accepted' : 'Accept'}
         </Button>
       </div>
-      <div className={cn(s.licenseField, 'scroll')}>{license.licenseText}</div>
+      <div className={cn(s.licenseField, 'scroll')}>
+        <pre>{license.licenseText}</pre>
+      </div>
     </div>
   );
 };

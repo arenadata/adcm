@@ -19,7 +19,12 @@ const AddClusterServiceDialog: React.FC = () => {
     onOpenLicenseAcceptanceDialog,
     onAcceptServiceLicense,
     onChangeFormData,
-    relatedData: { servicesWithDependencies, isServicesWithLicenseSelected, servicePrototypesOptions, serviceLicenses },
+    relatedData: {
+      servicesWithDependenciesList,
+      isServicesWithLicenseSelected,
+      servicePrototypesOptions,
+      serviceLicenses,
+    },
     isValid,
   } = useAddClusterServiceForm();
 
@@ -55,13 +60,14 @@ const AddClusterServiceDialog: React.FC = () => {
             />
           )}
         </FormFieldsContainer>
-        {servicesWithDependencies?.length > 0 && (
+        {servicesWithDependenciesList?.length > 0 && (
           <WarningMessage className={s.warning}>
-            {servicesWithDependencies.map((service) => {
+            {servicesWithDependenciesList.map((service) => {
               return (
-                <div key={`${service.prototypeId}_${service.dependableService}_${service.name}`}>
-                  {service.dependableService} requires installation of {service.name}
-                </div>
+                <p key={`${service.id}_${service.displayName}`}>
+                  {service.displayName} requires installation of{' '}
+                  {service.dependencies.map(({ displayName }) => displayName).join(', ')}
+                </p>
               );
             })}
           </WarningMessage>
