@@ -90,4 +90,8 @@
   &::-webkit-scrollbar-track-piece:start {
     margin-top: 24px;
   }
+
+  pre {
+    white-space: break-spaces;
+  }
 }

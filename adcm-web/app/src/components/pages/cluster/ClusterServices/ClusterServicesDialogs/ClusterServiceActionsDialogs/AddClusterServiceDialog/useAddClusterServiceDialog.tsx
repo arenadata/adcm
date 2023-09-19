@@ -44,6 +44,14 @@ export const useAddClusterServiceForm = () => {
     setFormData(initialFormData);
   }, [isOpen]);
 
+  const nonAppendedServicesWithDeps = useMemo(() => {
+    const { serviceIds } = formData;
+
+    return nonAppendedServices.filter(
+      (service) => serviceIds.includes(service.id) && service.dependOn && service.dependOn.length > 0,
+    );
+  }, [formData, nonAppendedServices]);
+
   const servicePrototypesOptions = useMemo(() => {
     return nonAppendedServices.map(({ name, id }) => ({ value: id, label: name }));
   }, [nonAppendedServices]);
@@ -59,8 +67,7 @@ export const useAddClusterServiceForm = () => {
   const servicesWithDependencies = useMemo(() => {
     const { serviceIds } = formData;
 
-    return nonAppendedServices
-      .filter((service) => serviceIds.includes(service.id) && service.dependOn && service.dependOn.length > 0)
+    return nonAppendedServicesWithDeps
       .flatMap((service) =>
         (service.dependOn as AdcmServiceDependOnService[]).map((dependOnService) => ({
           ...dependOnService,
@@ -70,7 +77,15 @@ export const useAddClusterServiceForm = () => {
       .filter(
         (service) => !servicesInTableIds.includes(service.prototypeId) && !serviceIds.includes(service.prototypeId),
       );
-  }, [formData, nonAppendedServices, servicesInTableIds]);
+  }, [formData, nonAppendedServicesWithDeps, servicesInTableIds]);
+
+  const servicesWithDependenciesList = useMemo(() => {
+    return nonAppendedServicesWithDeps.map((service) => ({
+      id: service.id,
+      displayName: service.displayName,
+      dependencies: servicesWithDependencies.filter(({ dependableService }) => service.name === dependableService),
+    }));
+  }, [servicesWithDependencies, nonAppendedServicesWithDeps]);
 
   const isServicesAndDependenciesChecked = useMemo(() => {
     const { serviceIds } = formData;
@@ -183,7 +198,7 @@ export const useAddClusterServiceForm = () => {
     onChangeFormData: handleChangeFormData,
     onAcceptServiceLicense: acceptServiceLicense,
     relatedData: {
-      servicesWithDependencies,
+      servicesWithDependenciesList,
       isServicesWithLicenseSelected,
       servicePrototypesOptions,
       serviceLicenses,
