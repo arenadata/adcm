@@ -53,6 +53,10 @@ def process_map(flat_spec: dict, config: dict) -> None:
         if prototype_config.type == "map":
             name = prototype_config.name
             sub_name = prototype_config.subname
+
+            if name not in config and not prototype_config.required:
+                continue
+
             if sub_name:
                 if config[name][sub_name] is None:
                     config[name][sub_name] = {}

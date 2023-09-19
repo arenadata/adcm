@@ -11,6 +11,9 @@
       type: string
       required: false
       default: string
+    - name: map_not_required
+      type: map
+      required: False
     - name: list
       type: list
       required: false
