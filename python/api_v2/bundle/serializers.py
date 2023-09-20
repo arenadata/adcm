@@ -31,8 +31,8 @@ class BundleListSerializer(ModelSerializer):
         model = Bundle
         fields = ("id", "name", "display_name", "version", "edition", "upload_time", "category", "signature_status")
 
-    @classmethod
-    def get_display_name(cls, bundle: Bundle) -> str:
+    @staticmethod
+    def get_display_name(bundle: Bundle) -> str:
         proto = bundle.prototype_set.filter(type__in=[ObjectType.CLUSTER, ObjectType.PROVIDER]).first()
         return proto.display_name
 
