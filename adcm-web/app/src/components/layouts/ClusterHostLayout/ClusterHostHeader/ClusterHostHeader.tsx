@@ -1,13 +1,15 @@
 import React from 'react';
-import { Button, ButtonGroup } from '@uikit';
+import { ButtonGroup } from '@uikit';
 import EntityHeader from '@commonComponents/EntityHeader/EntityHeader';
 import { useStore } from '@hooks';
 import { orElseGet } from '@utils/checkUtils';
 import HostName from '@commonComponents/Host/HostName/HostName';
 import { Link } from 'react-router-dom';
 import ClusterHostUnlinkButton from '../ClusterHostUnlinkButton/ClusterHostUnlinkButton';
+import ClusterHostsDynamicActionsButton from '@pages/cluster/ClusterHosts/ClusterHostsDynamicActionsButton/ClusterHostsDynamicActionsButton';
 
 const ClusterHostHeader: React.FC = () => {
+  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
   const clusterHost = useStore(({ adcm }) => adcm.clusterHost.clusterHost);
   const successfulHostComponentsCount = useStore(
     ({ adcm }) => adcm.clusterHost.hostComponentsCounters.successfulHostComponentsCount,
@@ -33,9 +35,7 @@ const ClusterHostHeader: React.FC = () => {
       }
       actions={
         <ButtonGroup>
-          <Button iconLeft="g1-actions" variant="secondary">
-            Actions
-          </Button>
+          {cluster && clusterHost && <ClusterHostsDynamicActionsButton cluster={cluster} host={clusterHost} />}
           <ClusterHostUnlinkButton />
         </ButtonGroup>
       }
