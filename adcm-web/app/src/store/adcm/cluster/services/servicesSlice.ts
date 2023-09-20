@@ -65,6 +65,8 @@ const getServicesLicenses = createAsyncThunk(
       },
     } = thunkAPI.getState();
 
+    thunkAPI.dispatch(cleanupServiceLicense());
+
     servicePrototypes
       .filter((service) => serviceIds.includes(service.id) && service.licenseStatus === AdcmLicenseStatus.Unaccepted)
       .map((service) => {
@@ -128,6 +130,9 @@ const servicesSlice = createSlice({
     cleanupServices() {
       return createInitialState();
     },
+    cleanupServiceLicense(state) {
+      state.serviceLicense = [];
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(loadClusterServiceFromBackend.fulfilled, (state, action) => {
@@ -159,7 +164,7 @@ const servicesSlice = createSlice({
   },
 });
 
-export const { setIsLoading, cleanupServices } = servicesSlice.actions;
+export const { setIsLoading, cleanupServices, cleanupServiceLicense } = servicesSlice.actions;
 export { getServices, refreshServices, getServicesLicenses, getServiceLicense, acceptServiceLicense };
 
 export default servicesSlice.reducer;

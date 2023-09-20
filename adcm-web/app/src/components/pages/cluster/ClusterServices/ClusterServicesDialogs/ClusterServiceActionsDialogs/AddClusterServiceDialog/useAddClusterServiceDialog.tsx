@@ -80,11 +80,13 @@ export const useAddClusterServiceForm = () => {
   }, [formData, nonAppendedServicesWithDeps, servicesInTableIds]);
 
   const servicesWithDependenciesList = useMemo(() => {
-    return nonAppendedServicesWithDeps.map((service) => ({
-      id: service.id,
-      displayName: service.displayName,
-      dependencies: servicesWithDependencies.filter(({ dependableService }) => service.name === dependableService),
-    }));
+    return nonAppendedServicesWithDeps
+      .map((service) => ({
+        id: service.id,
+        displayName: service.displayName,
+        dependencies: servicesWithDependencies.filter(({ dependableService }) => service.name === dependableService),
+      }))
+      .filter((service) => service.dependencies.length > 0);
   }, [servicesWithDependencies, nonAppendedServicesWithDeps]);
 
   const isServicesAndDependenciesChecked = useMemo(() => {
