@@ -38,6 +38,7 @@ const openServiceAddDialog = createAsyncThunk(
 const addService = createAsyncThunk(
   'adcm/servicesActions/addService',
   async ({ clusterId, serviceIds }: AddClusterServicePayload, thunkAPI) => {
+    thunkAPI.dispatch(setIsCreating(true));
     try {
       await AdcmClusterServicesApi.addClusterService(clusterId, serviceIds);
       thunkAPI.dispatch(showInfo({ message: 'Service was added' }));
@@ -45,6 +46,7 @@ const addService = createAsyncThunk(
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue([]);
     } finally {
+      thunkAPI.dispatch(setIsCreating(false));
       thunkAPI.dispatch(getServices({ clusterId }));
     }
   },
@@ -96,6 +98,7 @@ const getServicePrototypes = createAsyncThunk(
 
 interface AdcmClusterServicesActionsState {
   isAddServiceDialogOpen: boolean;
+  isCreating: boolean;
   deleteDialog: {
     serviceId: number | null;
   };
@@ -106,6 +109,7 @@ interface AdcmClusterServicesActionsState {
 
 const createInitialState = (): AdcmClusterServicesActionsState => ({
   isAddServiceDialogOpen: false,
+  isCreating: false,
   deleteDialog: {
     serviceId: null,
   },
@@ -130,6 +134,9 @@ const servicesActionsSlice = createSlice({
     closeDeleteDialog(state) {
       state.deleteDialog.serviceId = null;
     },
+    setIsCreating(state, action) {
+      state.isCreating = action.payload;
+    },
   },
   extraReducers(builder) {
     builder.addCase(openServiceAddDialog.fulfilled, (state) => {
@@ -144,7 +151,7 @@ const servicesActionsSlice = createSlice({
   },
 });
 
-export const { closeAddDialog, openDeleteDialog, closeDeleteDialog, cleanupServicesActions } =
+export const { closeAddDialog, openDeleteDialog, closeDeleteDialog, cleanupServicesActions, setIsCreating } =
   servicesActionsSlice.actions;
 
 export { openServiceAddDialog, addService, deleteService, getServicePrototypes };
