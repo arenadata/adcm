@@ -6,6 +6,7 @@ import clustersDynamicActionsSlice from '@store/adcm/clusters/clustersDynamicAct
 import clusterHostsSlice from '@store/adcm/cluster/hosts/hostsSlice';
 import clusterHostsTableSlice from '@store/adcm/cluster/hosts/hostsTableSlice';
 import clusterHostsActionsSlice from '@store/adcm/cluster/hosts/hostsActionsSlice';
+import clusterHostsDynamicActionsSlice from '@store/adcm/cluster/hosts/hostsDynamicActionsSlice';
 import clustersTableSlice from '@store/adcm/clusters/clustersTableSlice';
 import bundlesSlice from '@store/adcm/bundles/bundlesSlice';
 import bundleSlice from '@store/adcm/bundle/bundleSlice';
@@ -77,6 +78,7 @@ const rootReducer = combineReducers({
     clusterHost: clusterHostSlice,
     clusterHostTable: clusterHostTableSlice,
     clusterHostsActions: clusterHostsActionsSlice,
+    clusterHostsDynamicActions: clusterHostsDynamicActionsSlice,
     clusterHostsTable: clusterHostsTableSlice,
     clusterMapping: clusterMappingSlice,
     bundle: bundleSlice,

@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import ClusterHostHeader from './ClusterHostHeader/ClusterHostHeader';
 import ClusterHostNavigation from './ClusterHostNavigation/ClusterHostNavigation';
 import { useRequestClusterHost } from './useRequestHost';
+import ClusterHostsDynamicActionDialog from '@pages/cluster/ClusterHosts/ClusterHostsActionsDialogs/ClusterHostsDynamicActionDialog/ClusterHostsDynamicActionDialog';
 
 const ClusterHostLayout: React.FC = () => {
   useRequestClusterHost();
@@ -12,6 +13,7 @@ const ClusterHostLayout: React.FC = () => {
       <ClusterHostHeader />
       <ClusterHostNavigation />
       <Outlet />
+      <ClusterHostsDynamicActionDialog />
     </div>
   );
 };

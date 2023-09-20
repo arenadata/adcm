@@ -8,6 +8,7 @@ import {
   AdcmClusterHostsFilter,
   AddClusterHostsPayload,
 } from '@models/adcm';
+import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { PaginationParams, SortParams } from '@models/table';
 import { prepareQueryParams } from '@utils/apiUtils';
 import qs from 'qs';
@@ -69,6 +70,34 @@ export class AdcmClusterHostsApi {
     const response = await httpClient.get<AdcmClusterHostComponentsStates>(
       `/api/v2/clusters/${clusterId}/hosts/${hostId}/statuses/`,
     );
+    return response.data;
+  }
+
+  public static async getClusterHostActions(clusterId: number, hostId: number) {
+    const response = await httpClient.get<AdcmDynamicAction[]>(
+      `/api/v2/clusters/${clusterId}/hosts/${hostId}/actions/`,
+    );
+    return response.data;
+  }
+
+  public static async getClusterHostActionsDetails(clusterId: number, hostId: number, actionId: number) {
+    const response = await httpClient.get<AdcmDynamicActionDetails>(
+      `/api/v2/clusters/${clusterId}/hosts/${hostId}/actions/${actionId}/`,
+    );
+    return response.data;
+  }
+
+  public static async runClusterHostAction(
+    clusterId: number,
+    hostId: number,
+    actionId: number,
+    actionRunConfig: AdcmDynamicActionRunConfig,
+  ) {
+    const response = await httpClient.post(
+      `/api/v2/clusters/${clusterId}/hosts/${hostId}/actions/${actionId}/run/`,
+      actionRunConfig,
+    );
+
     return response.data;
   }
 }
