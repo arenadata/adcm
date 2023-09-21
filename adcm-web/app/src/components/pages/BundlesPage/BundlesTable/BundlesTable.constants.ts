@@ -8,7 +8,7 @@ export const columns: TableColumn[] = [
   },
   {
     label: 'Name',
-    name: 'name',
+    name: 'displayName',
     isSortable: true,
   },
   {
