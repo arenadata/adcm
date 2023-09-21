@@ -64,6 +64,8 @@ import clusterHostSlice from './adcm/cluster/hosts/host/clusterHostSlice';
 import clusterHostTableSlice from './adcm/cluster/hosts/host/clusterHostTableSlice';
 import profileSlice from './adcm/profile/profileSlice';
 import hostsDynamicActionsSlice from './adcm/hosts/hostsDynamicActionsSlice';
+import hostProviderSlice from './adcm/hostProviders/hostProviderSlice';
+import hostProvidersActionsSlice from './adcm/hostProviders/hostProvidersActionsSlice';
 
 const rootReducer = combineReducers({
   auth: authSlice,
@@ -85,7 +87,9 @@ const rootReducer = combineReducers({
     bundles: bundlesSlice,
     bundlesTable: bundlesTableSlice,
     breadcrumbs: breadcrumbsSlice,
+    hostProvider: hostProviderSlice,
     hostProviders: hostProvidersSlice,
+    hostProvidersActions: hostProvidersActionsSlice,
     hostProvidersTable: hostProvidersTableSlice,
     createHostProviderDialog: createHostProviderDialogSlice,
     hosts: hostsSlice,
