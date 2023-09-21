@@ -32,4 +32,9 @@ export class AdcmHostProvidersApi {
   public static async deleteHostProvider(id: number) {
     await httpClient.delete(`/api/v2/hostproviders/${id}/`);
   }
+
+  public static async getHostProvider(id: number) {
+    const response = await httpClient.get<AdcmHostProvider>(`/api/v2/hostproviders/${id}/`);
+    return response.data;
+  }
 }

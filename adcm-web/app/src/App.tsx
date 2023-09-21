@@ -50,6 +50,9 @@ import ComponentConfigurationGroups from '@pages/cluster/service/component/Compo
 import ClusterHostLayout from '@layouts/ClusterHostLayout/ClusterHostLayout';
 import HostPrimaryConfiguration from '@pages/cluster/host/HostPrimaryConfiguration/HostPrimaryConfiguration';
 import HostComponents from '@pages/cluster/host/HostComponents/HostComponents';
+import HostProviderPage from '@pages/HostProviderPage/HostProviderPage';
+import HostProviderPrimaryConfiguration from '@pages/HostProviderPage/HostProviderPrimaryConfiguration/HostProviderPrimaryConfiguration';
+import HostProviderConfigurationGroups from '@pages/HostProviderPage/HostProviderConfigurationGroups/HostProviderConfigurationGroups';
 
 function App() {
   return (
@@ -134,8 +137,20 @@ function App() {
                   </Route>
                 </Route>
               </Route>
-
-              <Route path="/hostproviders" element={<HostProvidersPage />} />
+              <Route path="/hostproviders">
+                <Route index element={<HostProvidersPage />} />
+                <Route path="/hostproviders/:hostproviderId" element={<HostProviderPage />}>
+                  <Route index element={<Navigate to="primary-configuration" replace />} />
+                  <Route
+                    path="/hostproviders/:hostproviderId/primary-configuration"
+                    element={<HostProviderPrimaryConfiguration />}
+                  />
+                  <Route
+                    path="/hostproviders/:hostproviderId/configuration-groups"
+                    element={<HostProviderConfigurationGroups />}
+                  />
+                </Route>
+              </Route>
               <Route path="/hosts" element={<HostsPage />} />
               <Route path="/jobs">
                 <Route index element={<JobsPage />} />

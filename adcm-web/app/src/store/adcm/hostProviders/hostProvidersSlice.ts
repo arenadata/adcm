@@ -1,20 +1,15 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { AdcmHostProvider } from '@models/adcm/hostProvider';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmHostProvidersApi, RequestError } from '@api';
+import { AdcmHostProvidersApi } from '@api';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
-import { showError, showInfo } from '@store/notificationsSlice';
-import { getErrorMessage } from '@utils/httpResponseUtils';
 
-type AdcmHostProviderState = {
+interface AdcmHostProvidersState {
   hostProviders: AdcmHostProvider[];
   totalCount: number;
   isLoading: boolean;
-  itemsForActions: {
-    deletableId: number | null;
-  };
-};
+}
 
 const loadHostProviders = createAsyncThunk('adcm/hostProviders/loadHostProviders', async (arg, thunkAPI) => {
   const {
@@ -50,36 +45,10 @@ const refreshHostProviders = createAsyncThunk('adcm/hostProviders/refreshHostPro
   thunkAPI.dispatch(loadHostProviders());
 });
 
-const deleteHostProvider = createAsyncThunk(
-  'adcm/hostProviders/deleteHostProvider',
-  async (deletableId: number, thunkAPI) => {
-    try {
-      await AdcmHostProvidersApi.deleteHostProvider(deletableId);
-      thunkAPI.dispatch(showInfo({ message: 'Hostprovider was deleted' }));
-      return [];
-    } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-      return thunkAPI.rejectWithValue([]);
-    }
-  },
-);
-
-const deleteWithUpdateHostProviders = createAsyncThunk(
-  'adcm/hostProviders/deleteWithUpdateHostProviders',
-  async (deletableId: number, thunkAPI) => {
-    thunkAPI.dispatch(setIsLoading(true));
-    await thunkAPI.dispatch(deleteHostProvider(deletableId));
-    await thunkAPI.dispatch(getHostProviders());
-  },
-);
-
-const createInitialState = (): AdcmHostProviderState => ({
+const createInitialState = (): AdcmHostProvidersState => ({
   hostProviders: [],
   totalCount: 0,
   isLoading: false,
-  itemsForActions: {
-    deletableId: null,
-  },
 });
 
 const hostProvidersSlice = createSlice({
@@ -92,17 +61,8 @@ const hostProvidersSlice = createSlice({
     cleanupHostProviders() {
       return createInitialState();
     },
-    setDeletableId(state, action) {
-      state.itemsForActions.deletableId = action.payload;
-    },
-    cleanupItemsForActions(state) {
-      state.itemsForActions = createInitialState().itemsForActions;
-    },
   },
   extraReducers: (builder) => {
-    builder.addCase(getHostProviders.pending, (state) => {
-      hostProvidersSlice.caseReducers.cleanupItemsForActions(state);
-    });
     builder.addCase(loadHostProviders.fulfilled, (state, action) => {
       state.hostProviders = action.payload.results;
       state.totalCount = action.payload.count;
@@ -110,13 +70,10 @@ const hostProvidersSlice = createSlice({
     builder.addCase(loadHostProviders.rejected, (state) => {
       state.hostProviders = [];
     });
-    builder.addCase(deleteHostProvider.pending, (state) => {
-      state.itemsForActions.deletableId = null;
-    });
   },
 });
 
-const { setIsLoading, cleanupHostProviders, setDeletableId } = hostProvidersSlice.actions;
-export { getHostProviders, cleanupHostProviders, refreshHostProviders, setDeletableId, deleteWithUpdateHostProviders };
+const { setIsLoading, cleanupHostProviders } = hostProvidersSlice.actions;
+export { getHostProviders, cleanupHostProviders, refreshHostProviders, setIsLoading };
 
 export default hostProvidersSlice.reducer;

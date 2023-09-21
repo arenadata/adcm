@@ -1,12 +1,12 @@
-import React from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { columns } from '@pages/HostProvidersPage/HostProviderTable/HostProviderTable.constants';
 import { IconButton, Table, TableCell, TableRow } from '@uikit';
 import { orElseGet } from '@utils/checkUtils';
-import { setDeletableId } from '@store/adcm/hostProviders/hostProvidersSlice';
+import { openDeleteDialog } from '@store/adcm/hostProviders/hostProvidersActionsSlice';
 import { setSortParams } from '@store/adcm/hostProviders/hostProvidersTableSlice';
 import { SortParams } from '@models/table';
 import Concern from '@commonComponents/Concern/Concern';
+import { Link } from 'react-router-dom';
 
 const HostProviderTable = () => {
   const dispatch = useDispatch();
@@ -16,7 +16,7 @@ const HostProviderTable = () => {
   const sortParams = useStore(({ adcm }) => adcm.hostProvidersTable.sortParams);
 
   const handleDeleteAction = (id: number) => {
-    dispatch(setDeletableId(id));
+    dispatch(openDeleteDialog(id));
   };
 
   const handleSorting = (sortParams: SortParams) => {
@@ -27,7 +27,9 @@ const HostProviderTable = () => {
     <Table isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
       {hostProviders.map((hostProvider) => (
         <TableRow key={hostProvider.id}>
-          <TableCell>{hostProvider.name}</TableCell>
+          <TableCell>
+            <Link to={`/hostproviders/${hostProvider.id}`}>{hostProvider.name}</Link>
+          </TableCell>
           <TableCell>{hostProvider.prototype.displayName}</TableCell>
           <TableCell>{hostProvider.prototype.version}</TableCell>
           <TableCell>{hostProvider.state}</TableCell>

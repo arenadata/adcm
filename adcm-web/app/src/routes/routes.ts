@@ -257,6 +257,18 @@ const routes: RoutesConfigs = {
       },
     ],
   },
+  '/hostproviders/:hostproviderId/*': {
+    pageTitle: 'Hostproviders',
+    breadcrumbs: [
+      {
+        href: '/hostproviders',
+        label: 'Hostproviders',
+      },
+      {
+        label: ':hostproviderId',
+      },
+    ],
+  },
 
   // Hosts
   '/hosts': {

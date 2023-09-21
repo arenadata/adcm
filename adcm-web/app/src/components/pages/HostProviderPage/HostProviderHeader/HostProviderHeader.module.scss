@@ -1,0 +1,10 @@
+.hostProviderHeader {
+  & > div:nth-child(2) {
+    flex-grow: 2;
+  }
+}
+
+.centralWrapper {
+  display: flex;
+  justify-content: space-around;
+}
