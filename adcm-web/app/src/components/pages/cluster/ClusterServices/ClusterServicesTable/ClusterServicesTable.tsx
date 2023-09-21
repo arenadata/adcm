@@ -8,6 +8,7 @@ import { setSortParams } from '@store/adcm/clusters/clustersTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { openDeleteDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
 import ClusterServiceDynamicActionsButton from '@pages/cluster/ClusterServices/ClusterServiceDynamicActionsButton/ClusterServiceDynamicActionsButton';
+import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 
 const ClusterServicesTable = () => {
   const dispatch = useDispatch();
@@ -35,7 +36,7 @@ const ClusterServicesTable = () => {
               <Link to={`/clusters/${clusterId}/services/${service.id}`}>{service.name}</Link>
             </StatusableCell>
             <TableCell>{service.prototype.version}</TableCell>
-            <TableCell>{service.state}</TableCell>
+            <MultiStateCell entity={service} />
             <TableCell hasIconOnly>
               <Concern concerns={service.concerns} />
             </TableCell>

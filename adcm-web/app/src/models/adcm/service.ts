@@ -25,6 +25,7 @@ export interface AdcmService {
   prototype: AdcmServicePrototype;
   status: AdcmServiceStatus;
   state: string;
+  multiState: string[];
   concerns: AdcmConcerns[];
   isMaintenanceModeAvailable: boolean;
   maintenanceMode: AdcmMaintenanceMode;

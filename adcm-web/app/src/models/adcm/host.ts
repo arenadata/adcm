@@ -24,6 +24,7 @@ export interface AdcmHost {
   id: number;
   name: string;
   state: string;
+  multiState: string[];
   status: AdcmHostStatus;
   hostprovider: AdcmHostProvider;
   prototype: AdcmHostPrototype;
