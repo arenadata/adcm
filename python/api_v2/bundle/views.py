@@ -13,7 +13,8 @@ from api_v2.bundle.filters import BundleFilter
 from api_v2.bundle.serializers import BundleListSerializer, UploadBundleSerializer
 from api_v2.views import CamelCaseGenericViewSet
 from cm.bundle import delete_bundle, load_bundle, upload_file
-from cm.models import Bundle
+from cm.models import Bundle, ObjectType
+from django.db.models import F
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from rest_framework.mixins import (
     CreateModelMixin,
@@ -30,7 +31,12 @@ from adcm.permissions import VIEW_ACTION_PERM, DjangoModelPermissionsAudit
 class BundleViewSet(
     ListModelMixin, RetrieveModelMixin, DestroyModelMixin, CreateModelMixin, CamelCaseGenericViewSet
 ):  # pylint: disable=too-many-ancestors
-    queryset = Bundle.objects.exclude(name="ADCM").prefetch_related("prototype_set").order_by("name")
+    queryset = (
+        Bundle.objects.exclude(name="ADCM")
+        .annotate(type=F("prototype__type"))
+        .filter(type__in=[ObjectType.CLUSTER, ObjectType.PROVIDER])
+        .order_by(F("prototype__display_name").asc())
+    )
     serializer_class = BundleListSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_ACTION_PERM]
