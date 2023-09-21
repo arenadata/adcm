@@ -11,6 +11,7 @@ import { orElseGet } from '@utils/checkUtils';
 import { openDeleteDialog, openMaintenanceModeDialog } from '@store/adcm/hosts/hostsActionsSlice';
 import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/MaintenanceModeButton';
 import HostDynamicActionsIcon from '../HostDynamicActionsIcon/HostDynamicActionsIcon';
+import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 
 const HostsTable: React.FC = () => {
   const dispatch = useDispatch();
@@ -40,7 +41,7 @@ const HostsTable: React.FC = () => {
         return (
           <TableRow key={host.id}>
             <StatusableCell status={hostStatusesMap[host.status]}>{host.name}</StatusableCell>
-            <TableCell>{host.state}</TableCell>
+            <MultiStateCell entity={host} />
             <TableCell>{host.hostprovider.name}</TableCell>
             <TableCell>{orElseGet(host.cluster?.name)}</TableCell>
             <TableCell>{'-'}</TableCell>

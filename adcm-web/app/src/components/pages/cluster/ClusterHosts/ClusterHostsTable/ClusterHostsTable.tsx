@@ -11,6 +11,7 @@ import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/Maint
 import { openMaintenanceModeDialog } from '@store/adcm/cluster/hosts/hostsActionsSlice';
 import { Link, generatePath } from 'react-router-dom';
 import ClusterHostsDynamicActionsButton from '../ClusterHostsDynamicActionsButton/ClusterHostsDynamicActionsButton';
+import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 
 const ClusterHostsTable: React.FC = () => {
   const dispatch = useDispatch();
@@ -45,7 +46,7 @@ const ClusterHostsTable: React.FC = () => {
                 {clusterHost.name}
               </Link>
             </StatusableCell>
-            <TableCell>{clusterHost.state}</TableCell>
+            <MultiStateCell entity={clusterHost} />
             <TableCell>
               <Link className="text-link" to={`/hostproviders/${clusterHost.hostprovider.id}`}>
                 {clusterHost.hostprovider.name}

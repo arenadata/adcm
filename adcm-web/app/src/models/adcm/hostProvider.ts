@@ -5,6 +5,7 @@ export interface AdcmHostProvider {
   name: string;
   prototype: AdcmHostProviderPrototype;
   state: string;
+  multiState: string[];
   description: string;
   concerns: AdcmConcerns[];
   isUpgradable: boolean;

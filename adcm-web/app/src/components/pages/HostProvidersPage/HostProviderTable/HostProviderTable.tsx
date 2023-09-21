@@ -7,6 +7,7 @@ import { setSortParams } from '@store/adcm/hostProviders/hostProvidersTableSlice
 import { SortParams } from '@models/table';
 import Concern from '@commonComponents/Concern/Concern';
 import { Link } from 'react-router-dom';
+import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 
 const HostProviderTable = () => {
   const dispatch = useDispatch();
@@ -32,7 +33,7 @@ const HostProviderTable = () => {
           </TableCell>
           <TableCell>{hostProvider.prototype.displayName}</TableCell>
           <TableCell>{hostProvider.prototype.version}</TableCell>
-          <TableCell>{hostProvider.state}</TableCell>
+          <MultiStateCell entity={hostProvider} />
           <TableCell>{orElseGet(hostProvider.description)}</TableCell>
           <TableCell>
             <Concern concerns={hostProvider.concerns} />
