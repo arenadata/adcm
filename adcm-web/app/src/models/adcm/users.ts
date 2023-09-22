@@ -43,6 +43,6 @@ export interface AdcmCreateUserPayload {
   isSuperUser: boolean;
 }
 
-export interface UpdateAdcmUserPayload {
-  name: string;
-}
+export type UpdateAdcmUserPayload = Omit<AdcmCreateUserPayload, 'username' | 'password'> & {
+  password?: string;
+};

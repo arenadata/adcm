@@ -5,7 +5,11 @@ import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
 
 export class AdcmGroupsApi {
-  public static async getGroups(filter: AdcmGroupFilter, sortParams?: SortParams, paginationParams?: PaginationParams) {
+  public static async getGroups(
+    filter?: AdcmGroupFilter,
+    sortParams?: SortParams,
+    paginationParams?: PaginationParams,
+  ) {
     const queryParams = prepareQueryParams(filter, sortParams, paginationParams);
 
     const query = qs.stringify(queryParams);

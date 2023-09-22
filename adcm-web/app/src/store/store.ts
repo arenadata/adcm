@@ -37,7 +37,6 @@ import { apiMiddleware } from './middlewares/apiMiddleware';
 import clusterSlice from './adcm/clusters/clusterSlice';
 import usersSlice from './adcm/users/usersSlice';
 import usersTableSlice from './adcm/users/usersTableSlice';
-import createUserDialogSlice from './adcm/users/dialogs/createUserDialogSlice';
 import servicesSlice from './adcm/cluster/services/servicesSlice';
 import servicesTableSlice from './adcm/cluster/services/servicesTableSlice';
 import servicesActionsSlice from './adcm/cluster/services/servicesActionsSlice';
@@ -121,7 +120,6 @@ const rootReducer = combineReducers({
     users: usersSlice,
     usersTable: usersTableSlice,
     usersActions: usersActionsSlice,
-    createUserDialog: createUserDialogSlice,
     jobs: jobsSlice,
     jobsTable: jobsTableSlice,
     jobsActions: jobsActionsSlice,

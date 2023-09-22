@@ -21,6 +21,7 @@ export interface PopoverProps extends PopoverOptions {
   onOpenChange: (isOpen: boolean) => void;
   triggerRef: React.RefObject<HTMLElement>;
   children: ChildWithRef;
+  initialFocus?: number | React.MutableRefObject<HTMLElement | null>;
 }
 const Popover: React.FC<PopoverProps> = ({
   isOpen,
@@ -30,6 +31,7 @@ const Popover: React.FC<PopoverProps> = ({
   placement = 'bottom-start',
   offset: offsetValue = 10,
   dependencyWidth,
+  initialFocus,
 }) => {
   const { refs, floatingStyles, context } = useFloating({
     placement,
@@ -60,7 +62,7 @@ const Popover: React.FC<PopoverProps> = ({
   return (
     <FloatingPortal>
       {isOpen && (
-        <FloatingFocusManager context={context}>
+        <FloatingFocusManager context={context} initialFocus={initialFocus}>
           {React.cloneElement(popoverPanel, { ref, ...children.props, style: panelStyle, ...getFloatingProps() })}
         </FloatingFocusManager>
       )}

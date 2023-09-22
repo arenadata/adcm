@@ -1,11 +1,13 @@
 import AccessManagerUsersDeleteDialog from './AccessManagerUsersDeleteDialog/AccessManagerUsersDeleteDialog';
-import AccessManagerUserCreateDialog from './AccessManagerUserCreateDialog/AccessManagerUserCreateDialog';
+import RbacUserCreateDialog from './RbacUserCreateDialog/RbacUserCreateDialog';
+import RbacUserUpdateDialog from './RbacUserUpdateDialog/RbacUserUpdateDialog';
 
 const AccessManagerUsersDialogs = () => {
   return (
     <>
       <AccessManagerUsersDeleteDialog />
-      <AccessManagerUserCreateDialog />
+      <RbacUserCreateDialog />
+      <RbacUserUpdateDialog />
     </>
   );
 };
