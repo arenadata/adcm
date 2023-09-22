@@ -125,10 +125,10 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):  # pylint: disable
     def test_add_hosts_success(self):
         response: Response = self.client.post(
             path=reverse(
-                "v2:cluster-config-group-hosts-list",
+                viewname="v2:cluster-config-group-hosts-list",
                 kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
             ),
-            data={"id": [self.new_host.pk]},
+            data=[self.new_host.pk],
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -255,7 +255,7 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
                     "group_config_pk": self.service_1_group_config.pk,
                 },
             ),
-            data={"id": [self.host_for_service.pk]},
+            data=[self.host_for_service.pk],
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -426,7 +426,7 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
                     "group_config_pk": self.component_1_group_config.pk + 1000,
                 },
             ),
-            data={"id": [self.host_for_component.pk]},
+            data=[self.host_for_component.pk],
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -442,7 +442,7 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
                     "group_config_pk": self.component_1_group_config.pk,
                 },
             ),
-            data={"id": [self.host_for_component.pk]},
+            data=[self.host_for_component.pk],
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)

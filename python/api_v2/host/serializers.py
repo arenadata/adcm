@@ -17,11 +17,11 @@ from cm.models import Cluster, Host, HostProvider, MaintenanceMode, ServiceCompo
 from cm.status_api import get_obj_status
 from cm.validators import HostUniqueValidator, StartMidEndValidator
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import ListField
 from rest_framework.serializers import (
     CharField,
     ChoiceField,
     IntegerField,
+    ListSerializer,
     ModelSerializer,
     PrimaryKeyRelatedField,
     SerializerMethodField,
@@ -163,8 +163,8 @@ class ClusterHostCreateSerializer(EmptySerializer):
     host_id = IntegerField()
 
 
-class HostListIdCreateSerializer(EmptySerializer):
-    id = ListField()
+class HostListIdCreateSerializer(ListSerializer):  # pylint: disable=abstract-method
+    child = IntegerField()
 
 
 class HostMappingSerializer(ModelSerializer):
