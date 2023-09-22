@@ -232,7 +232,7 @@ class HostGroupConfigViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet)
     def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
-        host_ids = serializer.validated_data["id"]
+        host_ids = serializer.validated_data
         group_config = GroupConfig.objects.filter(id=self.kwargs["group_config_pk"]).first()
 
         if not group_config:
@@ -257,7 +257,7 @@ class HostGroupConfigViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet)
         return Response(status=HTTP_204_NO_CONTENT)
 
     def get_serializer_class(self) -> type[HostGroupConfigSerializer | HostListIdCreateSerializer]:
-        if self.action in ("create", "update", "partial_update"):
+        if self.action == "create":
             return HostListIdCreateSerializer
 
         return HostGroupConfigSerializer
