@@ -5,6 +5,7 @@ import { useDispatch, useStore } from '@hooks';
 import { columns } from './AccessManagerUsersTable.constants';
 import {
   blockUsers,
+  openUserUpdateDialog,
   setSelectedItemsIds as setSelectedUsersIds,
   unblockUsers,
 } from '@store/adcm/users/usersActionsSlice';
@@ -54,6 +55,10 @@ const AccessManagerUsersTable = () => {
     dispatch(unblockUsers([id]));
   };
 
+  const handleEditUserClick = (user: AdcmUser) => () => {
+    dispatch(openUserUpdateDialog(user));
+  };
+
   return (
     <Table
       isLoading={isLoading}
@@ -79,7 +84,7 @@ const AccessManagerUsersTable = () => {
             <TableCell>{userGroupsNames}</TableCell>
             <TableCell>{user.type}</TableCell>
             <TableCell hasIconOnly align="center">
-              <IconButton icon="g1-edit" size={32} title="Edit" />
+              <IconButton icon="g1-edit" size={32} title="Edit" onClick={handleEditUserClick(user)} />
               {user.status === AdcmUserStatus.Active && (
                 <IconButton icon="g1-block" size={32} title="Block" onClick={handleBlockClick(user.id)} />
               )}

@@ -1,13 +1,13 @@
 import React from 'react';
 import { Button } from '@uikit';
 import { useDispatch } from '@hooks';
-import { open } from '@store/adcm/users/dialogs/createUserDialogSlice';
+import { openUserCreateDialog } from '@store/adcm/users/usersActionsSlice';
 
 const AccessManagerUsersCreateButton: React.FC = () => {
   const dispatch = useDispatch();
 
   const handleOpenDialog = () => {
-    dispatch(open());
+    dispatch(openUserCreateDialog());
   };
 
   return <Button onClick={handleOpenDialog}>Create user</Button>;

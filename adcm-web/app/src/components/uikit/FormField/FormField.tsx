@@ -70,6 +70,7 @@ const FormField: React.FC<FormFieldProps> = ({
           triggerRef={formFieldRef}
           dependencyWidth="min-parent"
           offset={6}
+          initialFocus={formFieldRef}
         >
           <FormFieldErrorPanel>{error}</FormFieldErrorPanel>
         </Popover>
