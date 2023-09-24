@@ -15,7 +15,12 @@ from django.urls import reverse
 from rbac.models import Group, Policy, Role
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+)
 
 
 class TestPolicy(BaseAPITestCase):
@@ -96,7 +101,17 @@ class TestPolicy(BaseAPITestCase):
         data = response.json()
         self.assertTrue(set(data).issuperset({"id", "objects", "groups"}))
         self.assertTrue(Policy.objects.filter(pk=data["id"]).exists())
-        self.assertEqual(data["objects"], [{"id": self.provider.pk, "type": "provider", "name": self.provider.name}])
+        self.assertEqual(
+            data["objects"],
+            [
+                {
+                    "id": self.provider.pk,
+                    "type": "provider",
+                    "name": self.provider.name,
+                    "displayName": self.provider.display_name,
+                }
+            ],
+        )
         self.assertEqual(
             data["groups"],
             [{"id": self.group_1.pk, "name": self.group_1.name, "displayName": self.group_1.display_name}],
@@ -131,3 +146,29 @@ class TestPolicy(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.assertFalse(Policy.objects.filter(pk=self.create_user_policy.pk).exists())
+
+    def test_create_policy_no_group_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:policy-list"),
+            data={
+                "name": "test_policy_new",
+                "description": "description",
+                "role": self.create_user_role.pk,
+                "objects": [{"type": "cluster", "id": self.cluster_1.pk}],
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_update_policy_no_operation_success(self):
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.create_user_policy.pk}),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_update_policy_wrong_object_fail(self):
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.create_user_policy.pk}),
+            data={"objects": [{"type": "role", "id": self.create_user_role.pk}]},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)

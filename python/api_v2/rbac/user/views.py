@@ -16,7 +16,7 @@ from api_v2.rbac.user.serializers import (
     UserSerializer,
     UserUpdateSerializer,
 )
-from api_v2.rbac.user.utils import block_user, unblock_user
+from api_v2.rbac.user.utils import unblock_user
 from api_v2.views import CamelCaseModelViewSet
 from cm.errors import AdcmEx
 from django.contrib.auth.models import Group as AuthGroup
@@ -71,7 +71,7 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
             user=serializer.instance,
             context_user=request.user,
             partial=True,
-            need_current_password=not request.user.is_superuser,
+            need_current_password=False,
             api_v2_behaviour=True,
             groups=groups,
             **serializer.validated_data,
@@ -80,13 +80,10 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
         return Response(data=UserSerializer(instance=user).data, status=HTTP_200_OK)
 
     @action(methods=["post"], detail=True)
-    def block(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        block_user(user=self.get_object())
-
-        return Response(status=HTTP_200_OK)
-
-    @action(methods=["post"], detail=True)
     def unblock(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        if not request.user.is_superuser:
+            raise AdcmEx(code="USER_UNBLOCK_ERROR")
+
         unblock_user(user=self.get_object())
 
         return Response(status=HTTP_200_OK)

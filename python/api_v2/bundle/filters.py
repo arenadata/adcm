@@ -15,14 +15,14 @@ from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
 
 
 class BundleFilter(FilterSet):
-    name = CharFilter(label="Name", field_name="name", lookup_expr="icontains")
+    display_name = CharFilter(label="Display name", field_name="prototype__display_name", lookup_expr="icontains")
     product = CharFilter(label="Product name", field_name="prototype__display_name", lookup_expr="iexact")
     ordering = OrderingFilter(
-        fields={"name": "name", "date": "uploadTime"},
-        field_labels={"name": "Name", "date": "Upload time"},
+        fields={"prototype__display_name": "displayName", "date": "uploadTime"},
+        field_labels={"prototype__display_name": "Display name", "date": "Upload time"},
         label="ordering",
     )
 
     class Meta:
         model = Bundle
-        fields = ["id", "name", "product", "ordering"]
+        fields = ["id"]

@@ -28,7 +28,7 @@ from rest_framework.status import (
 )
 
 
-class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
+class TestUserAPI(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -45,6 +45,29 @@ class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
 
         user.user_permissions.add(*(view_user_permission, change_user_permission))
+
+    def test_list_success(self):
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-list"))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 3)
+        self.assertListEqual(
+            sorted(response.json()["results"][0].keys()),
+            sorted(
+                [
+                    "id",
+                    "username",
+                    "firstName",
+                    "lastName",
+                    "status",
+                    "email",
+                    "type",
+                    "isBuiltIn",
+                    "isSuperUser",
+                    "groups",
+                ]
+            ),
+        )
 
     def test_create_success(self):
         response = self.client.post(
@@ -65,7 +88,7 @@ class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         self.assertIsNotNone(user)
         self.assertEqual(response.json()["firstName"], "test_user_first_name")
         self.assertEqual(response.json()["lastName"], "test_user_last_name")
-        self.assertFalse(response.json()["isSuperuser"])
+        self.assertFalse(response.json()["isSuperUser"])
         self.assertEqual(user.groups.count(), 1)
 
     def test_create_required_fields_success(self):
@@ -77,7 +100,7 @@ class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertTrue(User.objects.filter(username="test_user_username_1").exists())
 
-    def test_create_required_fields_failed(self):
+    def test_create_required_fields_fail(self):
         response = self.client.post(path=reverse(viewname="v2:rbac:user-list"), data={"username": "test_user_username"})
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -91,146 +114,164 @@ class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertIn("id", response.json())
+        self.assertListEqual(
+            sorted(response.json().keys()),
+            sorted(
+                [
+                    "id",
+                    "username",
+                    "firstName",
+                    "lastName",
+                    "status",
+                    "email",
+                    "type",
+                    "isBuiltIn",
+                    "isSuperUser",
+                    "groups",
+                ]
+            ),
+        )
+
         self.assertEqual(response.json()["id"], user.pk)
 
-    def test_retrieve_not_found_failed(self):
+    def test_retrieve_not_found_fail(self):
         wrong_pk = self.get_non_existent_pk(model=User)
 
         response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": wrong_pk}))
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-    def test_update_password_by_superuser_success(self):
-        new_group = Group.objects.create(name="new_group")
-        user = self.create_user(
-            user_data={
-                "username": "test_user",
-                "password": "test_user_password",
-                "email": "test_user@mail.ru",
-                "first_name": "test_user_first_name",
-                "last_name": "test_user_last_name",
-                "profile": "",
-            }
-        )
+    def test_update_by_superuser_success(self):
+        group = Group.objects.create(name="group")
+        user = self.create_user(user_data={"username": "test_user", "password": "test_user_password"})
 
         response = self.client.patch(
             path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
             data={
                 "password": "newtestpassword",
-                "firstName": "newtestfn",
-                "lastName": "newtestln",
-                "email": "newtest@mail.ru",
-                "isSuperuser": True,
-                "groups": [new_group.pk],
+                "email": "test_user@mail.ru",
+                "firstName": "test_user_first_name",
+                "lastName": "test_user_last_name",
+                "isSuperUser": True,
+                "groups": [group.pk],
             },
         )
+
         user.refresh_from_db()
+
+        data = response.json()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertFalse(user.check_password(raw_password="test_user_password"))
         self.assertTrue(user.check_password(raw_password="newtestpassword"))
+        self.assertEqual(data["email"], "test_user@mail.ru")
+        self.assertEqual(data["firstName"], "test_user_first_name")
+        self.assertEqual(data["lastName"], "test_user_last_name")
+        self.assertTrue(data["isSuperUser"])
+        self.assertEqual(len(data["groups"]), 1)
+        self.assertDictEqual(data["groups"][0], {"id": group.pk, "name": group.name, "displayName": group.display_name})
 
     def test_update_self_by_regular_user_success(self):
-        user_data = {
-            "username": "test_user",
-            "password": "test_user_password",
-            "email": "test_user@mail.ru",
-            "first_name": "test_user_first_name",
-            "last_name": "test_user_last_name",
-            "profile": "",
-        }
-        user = self.create_user(user_data=user_data)
+        """
+        According to business requirements, a user cannot make himself a super user and add himself to a group
+        """
+
+        group = Group.objects.create(name="group")
+        user = self.create_user(user_data={"username": "test_user", "password": "test_user_password"})
         self._grant_permissions(user=user)
-
-        data = {
-            "password": "newtestpassword",
-            "current_password": user_data["password"],
-        }
-
-        self.client.login(**user_data)
+        self.client.login(username="test_user", password="test_user_password")
 
         response = self.client.patch(
             path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
-            data=data,
+            data={
+                "password": "newtestpassword",
+                "email": "test_user@mail.ru",
+                "firstName": "test_user_first_name",
+                "lastName": "test_user_last_name",
+                "isSuperUser": True,
+                "groups": [group.pk],
+            },
         )
+
         user.refresh_from_db()
+        data = response.json()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertFalse(user.check_password(raw_password=user_data["password"]))
-        self.assertTrue(user.check_password(raw_password=data["password"]))
+        self.assertFalse(user.check_password(raw_password="test_user_password"))
+        self.assertTrue(user.check_password(raw_password="newtestpassword"))
+        self.assertEqual(data["email"], "test_user@mail.ru")
+        self.assertEqual(data["firstName"], "test_user_first_name")
+        self.assertEqual(data["lastName"], "test_user_last_name")
+        self.assertFalse(data["isSuperUser"])
+        self.assertEqual(len(data["groups"]), 0)
 
     def test_update_not_self_by_regular_user_fail(self):
-        user_datas = [
-            {
-                "username": "test_user",
-                "password": "test_user_password",
-                "email": "test_user@mail.ru",
-                "first_name": "test_user_first_name",
-                "last_name": "test_user_last_name",
-                "profile": "",
-            },
-            {
+        """According to business requirements, a non-superuser cannot modify another user"""
+
+        group = Group.objects.create(name="group")
+        first_user = self.create_user(user_data={"username": "test_user", "password": "test_user_password"})
+        second_user = self.create_user(
+            user_data={
                 "username": "test_user2",
                 "password": "test_user2_password",
                 "email": "test_user2@mail.ru",
                 "first_name": "test_user2_first_name",
                 "last_name": "test_user2_last_name",
-                "profile": "",
-            },
-        ]
-        for user_data in user_datas:
-            self.create_user(user_data=user_data)
-
-        first_user = User.objects.get(username=user_datas[0]["username"])
-        second_user = User.objects.get(username=user_datas[1]["username"])
-
+            }
+        )
         self._grant_permissions(user=first_user)
+        self.client.login(username="test_user", password="test_user_password")
 
-        data = {
-            "password": "new_test_user2_password",
-            "current_password": user_datas[1]["password"],
-        }
-
-        self.client.login(**user_datas[0])
         response = self.client.patch(
             path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": second_user.pk}),
-            data=data,
+            data={
+                "password": "new_test_user2_password",
+                "email": "new_test_user2@mail.ru",
+                "firstName": "new_test_user2_first_name",
+                "lastName": "new_test_user2_last_name",
+                "isSuperUser": True,
+                "groups": [group.pk],
+            },
         )
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-
         second_user.refresh_from_db()
-        self.assertFalse(second_user.check_password(raw_password=data["password"]))
-        self.assertTrue(second_user.check_password(raw_password=user_datas[1]["password"]))
 
-    def test_update_self_by_regular_user_wrong_data_fail(self):
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(), {"code": "USER_UPDATE_ERROR", "desc": "Can't update other user", "level": "error"}
+        )
+        self.assertFalse(second_user.check_password(raw_password="new_test_user2_password"))
+        self.assertTrue(second_user.check_password(raw_password="test_user2_password"))
+        self.assertEqual(second_user.email, "test_user2@mail.ru")
+        self.assertEqual(second_user.first_name, "test_user2_first_name")
+        self.assertEqual(second_user.last_name, "test_user2_last_name")
+        self.assertFalse(second_user.is_superuser)
+        self.assertEqual(second_user.groups.count(), 0)
+
+    def test_update_password_self_by_profile_fail(self):
         user_data = {
             "username": "test_user",
             "password": "test_user_password",
             "email": "test_user@mail.ru",
             "first_name": "test_user_first_name",
             "last_name": "test_user_last_name",
-            "profile": "",
         }
 
         user = self.create_user(user_data=user_data)
 
-        self._grant_permissions(user=User.objects.get(pk=user.pk))
+        self._grant_permissions(user=user)
 
-        wrong_data_no_current_password = {
-            "password": "newtestpassword",
-            "first_name": "newtestfn",
-            "last_name": "newtestln",
-            "email": "newtest@mail.ru",
-            "is_superuser": True,
-        }
+        self.client.login(username="test_user", password="test_user_password")
 
-        self.client.login(**user_data)
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
-            data=wrong_data_no_current_password,
-        )
+        response = self.client.put(path=reverse(viewname="v2:adcm:profile"), data={"newPassword": "newtestpassword"})
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "USER_PASSWORD_CURRENT_PASSWORD_REQUIRED_ERROR",
+                "desc": 'Field "current_password" should be filled and match user current password',
+                "level": "error",
+            },
+        )
 
     def test_delete_success(self):
         user = self.create_user()
@@ -253,48 +294,26 @@ class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-
-    def test_block_success(self):
-        user = self.create_user()
-
-        response = self.client.post(
-            path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": user.pk}),
+        self.assertDictEqual(
+            response.json(),
+            {"code": "USER_DELETE_ERROR", "desc": "Built-in user could not be deleted", "level": "error"},
         )
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertIsNone(response.data)
-
-        response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}))
-        self.assertEqual(response.json()["status"], "blocked")
-
-        user.refresh_from_db()
-        self.assertIsNotNone(user.blocked_at)
-
-    def test_block_built_in_fail(self):
-        user = self.create_user()
-        user.built_in = True
-        user.save(update_fields=["built_in"])
-
-        response = self.client.post(
-            path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": user.pk}),
-        )
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
     def test_unblock_success(self):
         user = self.create_user()
         user.blocked_at = now()
-        user.save(update_fields=["blocked_at"])
+        user.failed_login_attempts = 5
+        user.save(update_fields=["blocked_at", "failed_login_attempts"])
 
         response = self.client.post(
             path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": user.pk}),
         )
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertIsNone(response.data)
-
-        response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}))
-        self.assertEqual(response.json()["status"], "active")
 
         user.refresh_from_db()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertIsNone(response.data)
         self.assertIsNone(user.blocked_at)
+        self.assertEqual(user.failed_login_attempts, 0)
 
     def test_unblock_built_in_fail(self):
         user = self.create_user()
@@ -305,6 +324,10 @@ class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": user.pk}),
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {"code": "USER_BLOCK_ERROR", "desc": "Built-in user could not be blocked", "level": "error"},
+        )
 
     def test_ordering_success(self):
         user_data = [
@@ -314,7 +337,6 @@ class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                 "email": "username1@mail.ru",
                 "first_name": "username1_first_name",
                 "last_name": "username1_last_name",
-                "profile": "",
             },
             {
                 "username": "username2",
@@ -322,7 +344,6 @@ class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                 "email": "username2@mail.ru",
                 "first_name": "username2_first_name",
                 "last_name": "username2_last_name",
-                "profile": "",
             },
             {
                 "username": "username3",
@@ -330,7 +351,6 @@ class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                 "email": "username3@mail.ru",
                 "first_name": "username3_first_name",
                 "last_name": "username3_last_name",
-                "profile": "",
             },
         ]
         for data in user_data:
@@ -345,7 +365,16 @@ class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
 
     def test_ordering_wrong_params_fail(self):
         response = self.client.get(path=reverse(viewname="v2:rbac:user-list"), data={"ordering": "param"})
+
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "BAD_REQUEST",
+                "desc": "ordering - Select a valid choice. param is not one of the available choices.;",
+                "level": "error",
+            },
+        )
 
     def test_filtering_by_username_success(self):
         user_data = [
@@ -355,7 +384,6 @@ class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                 "email": "username1@mail.ru",
                 "first_name": "username1_first_name",
                 "last_name": "username1_last_name",
-                "profile": "",
             },
             {
                 "username": "username2",
@@ -363,7 +391,6 @@ class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                 "email": "username2@mail.ru",
                 "first_name": "username2_first_name",
                 "last_name": "username2_last_name",
-                "profile": "",
             },
         ]
         for data in user_data:
@@ -382,7 +409,6 @@ class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                 "email": "username1@mail.ru",
                 "first_name": "username1_first_name",
                 "last_name": "username1_last_name",
-                "profile": "",
             },
             {
                 "username": "username2",
@@ -390,7 +416,6 @@ class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                 "email": "username2@mail.ru",
                 "first_name": "username2_first_name",
                 "last_name": "username2_last_name",
-                "profile": "",
             },
         ]
         for data in user_data:
@@ -413,7 +438,6 @@ class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                 "email": "username1@mail.ru",
                 "first_name": "username1_first_name",
                 "last_name": "username1_last_name",
-                "profile": "",
             },
             {
                 "username": "username2",
@@ -421,7 +445,6 @@ class TestUserAPI(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                 "email": "username2@mail.ru",
                 "first_name": "username2_first_name",
                 "last_name": "username2_last_name",
-                "profile": "",
             },
         ]
         for data in user_data:

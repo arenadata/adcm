@@ -28,20 +28,18 @@ class UserFilterSet(FilterSet):
 
     @staticmethod
     def filter_status(queryset: QuerySet, name: str, value: str) -> QuerySet:  # pylint: disable=unused-argument
-        match value:
-            case UserStatusChoices.ACTIVE:
-                filter_value = True
-            case UserStatusChoices.BLOCKED:
-                filter_value = False
+        filter_value = False
+
+        if value == UserStatusChoices.ACTIVE:
+            filter_value = True
 
         return queryset.filter(blocked_at__isnull=filter_value)
 
     @staticmethod
     def filter_type(queryset: QuerySet, name: str, value: str) -> QuerySet:  # pylint: disable=unused-argument
-        match value:
-            case UserTypeChoices.LOCAL:
-                filter_value = UserTypeChoices.LOCAL.value
-            case UserTypeChoices.LDAP:
-                filter_value = UserTypeChoices.LDAP.value
+        filter_value = UserTypeChoices.LOCAL.value
+
+        if value == UserTypeChoices.LDAP:
+            filter_value = UserTypeChoices.LDAP.value
 
         return queryset.filter(type=filter_value)

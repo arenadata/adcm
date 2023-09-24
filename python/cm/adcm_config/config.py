@@ -34,7 +34,7 @@ from cm.adcm_config.utils import (
     sub_key_is_required,
     to_flat_dict,
 )
-from cm.errors import raise_adcm_ex
+from cm.errors import AdcmEx, raise_adcm_ex
 from cm.models import (
     ADCM,
     Action,
@@ -323,66 +323,6 @@ def process_file_type(obj: Any, spec: dict, conf: dict):
                     save_file_type(obj, key, subkey, value)
 
 
-def process_secret_params(spec, conf):
-    for key in conf:  # pylint: disable=too-many-nested-blocks
-        if "type" in spec[key]:
-            if spec[key]["type"] in {"password", "secrettext", "secretfile"} and conf[key]:
-                if conf[key].startswith(settings.ANSIBLE_VAULT_HEADER):
-                    try:
-                        ansible_decrypt(msg=conf[key])
-                    except AnsibleError:
-                        raise_adcm_ex(
-                            code="CONFIG_VALUE_ERROR",
-                            msg=f"Secret value must not starts with {settings.ANSIBLE_VAULT_HEADER}",
-                        )
-                else:
-                    conf[key] = ansible_encrypt_and_format(msg=conf[key])
-        else:
-            for subkey in conf[key]:
-                if spec[key][subkey]["type"] in {"password", "secrettext", "secretfile"} and conf[key][subkey]:
-                    if conf[key][subkey].startswith(settings.ANSIBLE_VAULT_HEADER):
-                        try:
-                            ansible_decrypt(msg=conf[key][subkey])
-                        except AnsibleError:
-                            raise_adcm_ex(
-                                code="CONFIG_VALUE_ERROR",
-                                msg=f"Secret value must not starts with {settings.ANSIBLE_VAULT_HEADER}",
-                            )
-                    else:
-                        conf[key][subkey] = ansible_encrypt_and_format(msg=conf[key][subkey])
-
-    return conf
-
-
-def process_secretmap(spec: dict, conf: dict) -> dict:
-    for key in conf:
-        if "type" not in spec[key]:
-            for _ in conf:
-                process_secretmap(spec[key], conf[key])
-
-        if spec[key].get("type") != "secretmap":
-            continue
-
-        if conf[key] is None:
-            continue
-
-        for conf_key, conf_value in conf[key].items():
-            if conf_value.startswith(settings.ANSIBLE_VAULT_HEADER):
-                try:
-                    ansible_decrypt(msg=conf_value)
-                except AnsibleError:
-                    raise_adcm_ex(
-                        code="CONFIG_VALUE_ERROR",
-                        msg=f"Secret value must not starts with {settings.ANSIBLE_VAULT_HEADER}",
-                    )
-
-                conf[key][conf_key] = conf_value
-            else:
-                conf[key][conf_key] = ansible_encrypt_and_format(msg=conf_value)
-
-    return conf
-
-
 def process_config(  # pylint: disable=too-many-branches
     obj: ADCMEntity,
     spec: dict,
@@ -625,15 +565,104 @@ def check_config_spec(
                         )
 
 
+def _process_secretfile(obj: ADCMEntity, key: str, subkey: str, value: Any) -> None:
+    if value is not None and value.startswith(settings.ANSIBLE_VAULT_HEADER):
+        try:
+            value = ansible_decrypt(msg=value)
+        except AnsibleError as e:
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg="Can't decrypt value") from e
+
+    save_file_type(obj=obj, key=key, subkey=subkey, value=value)
+
+
+def _process_secret_param(conf: dict, key: str, subkey: str) -> None:
+    value = conf[key]
+    if subkey:
+        value = conf[key][subkey]
+
+    if not value:
+        return
+
+    if value.startswith(settings.ANSIBLE_VAULT_HEADER):
+        try:
+            ansible_decrypt(msg=value)
+        except AnsibleError as e:
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg="Can't decrypt value") from e
+
+    else:
+        value = ansible_encrypt_and_format(msg=value)
+
+        if subkey:
+            conf[key][subkey] = value
+        else:
+            conf[key] = value
+
+
+def _process_secretmap(conf: dict, key: str, subkey: str) -> None:
+    value = conf[key]
+    if subkey:
+        value = conf[key][subkey]
+
+    if value is None:
+        return
+
+    for secretmap_key, secretmap_value in value.items():
+        if secretmap_value.startswith(settings.ANSIBLE_VAULT_HEADER):
+            try:
+                ansible_decrypt(msg=secretmap_value)
+            except AnsibleError as e:
+                raise AdcmEx(code="CONFIG_VALUE_ERROR", msg="Can't decrypt value") from e
+
+            if subkey:
+                conf[key][subkey][secretmap_key] = secretmap_value
+            else:
+                conf[key][secretmap_key] = secretmap_value
+
+        else:
+            if subkey:
+                conf[key][subkey][secretmap_key] = ansible_encrypt_and_format(msg=secretmap_value)
+            else:
+                conf[key][secretmap_key] = ansible_encrypt_and_format(msg=secretmap_value)
+
+
 def process_config_spec(obj: ADCMEntity, spec: dict, new_config: dict, current_config: dict = None) -> dict:
     if current_config:
         new_config = restore_read_only(obj=obj, spec=spec, conf=new_config, old_conf=current_config)
 
-    process_file_type(obj=obj, spec=spec, conf=new_config)
-    conf = process_secret_params(spec=spec, conf=new_config)
-    conf = process_secretmap(spec=spec, conf=conf)
+    for cfg_key, cfg_value in new_config.items():
+        spec_type = spec[cfg_key].get("type")
 
-    return conf
+        if spec_type == "file":
+            save_file_type(obj=obj, key=cfg_key, subkey="", value=cfg_value)
+
+        elif spec_type == "secretfile":
+            _process_secretfile(obj=obj, key=cfg_key, subkey="", value=cfg_value)
+            _process_secret_param(conf=new_config, key=cfg_key, subkey="")
+
+        elif spec_type in {"password", "secrettext"}:
+            _process_secret_param(conf=new_config, key=cfg_key, subkey="")
+
+        elif spec_type == "secretmap":
+            _process_secretmap(conf=new_config, key=cfg_key, subkey="")
+
+        elif spec_type is None and bool(cfg_value):
+            for sub_cfg_key, sub_cfg_value in cfg_value.items():
+                sub_spec_type = spec[cfg_key][sub_cfg_key]["type"]
+
+                if sub_spec_type == "file":
+                    save_file_type(obj=obj, key=cfg_key, subkey=sub_cfg_key, value=sub_cfg_value)
+
+                elif sub_spec_type == "secretfile":
+                    _process_secretfile(obj=obj, key=cfg_key, subkey=sub_cfg_key, value=sub_cfg_value)
+                    _process_secret_param(conf=new_config, key=cfg_key, subkey=sub_cfg_key)
+
+                elif sub_spec_type in {"password", "secrettext"}:
+                    _process_secret_param(conf=new_config, key=cfg_key, subkey=sub_cfg_key)
+
+                elif sub_spec_type == "secretmap":
+                    _process_secretmap(conf=new_config, key=cfg_key, subkey=sub_cfg_key)
+
+    return new_config
 
 
 def get_adcm_config(section=None):

@@ -64,24 +64,6 @@ class GroupConfigViewSet(
 
         return Response(data=self.get_serializer(group_config).data, status=HTTP_201_CREATED)
 
-    @action(methods=["get", "post"], detail=True)
-    def hosts(self, request: Request, *args, **kwargs):  # pylint: disable=unused-argument
-        group_config: GroupConfig = self.get_object()
-
-        if request.method == "POST":
-            serializer = HostGroupConfigSerializer(data=request.data, many=True)
-            serializer.is_valid(raise_exception=True)
-            hosts = [host_data["id"] for host_data in serializer.validated_data]
-            group_config.check_host_candidate([host.pk for host in hosts])
-            group_config.hosts.add(*hosts)
-
-            return Response(data=HostGroupConfigSerializer(hosts, many=True).data, status=HTTP_201_CREATED)
-
-        queryset = group_config.hosts.order_by("fqdn")
-        serializer = HostGroupConfigSerializer(self.paginate_queryset(queryset=queryset), many=True)
-
-        return self.get_paginated_response(data=serializer.data)
-
     @action(methods=["get"], detail=True, url_path="host-candidates", url_name="host-candidates")
     def host_candidates(self, request: Request, *args, **kwargs):  # pylint: disable=unused-argument
         group_config: GroupConfig = self.get_object()

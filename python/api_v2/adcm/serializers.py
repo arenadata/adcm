@@ -22,11 +22,20 @@ class LoginSerializer(EmptySerializer):
 
 
 class ProfileSerializer(ModelSerializer):
-    password = CharField(trim_whitespace=False, required=False, write_only=True)
+    new_password = CharField(trim_whitespace=False, required=False, write_only=True, source="password")
     current_password = CharField(trim_whitespace=False, required=False, write_only=True)
     is_super_user = BooleanField(source="is_superuser", read_only=True)
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "first_name", "last_name", "is_super_user", "password", "current_password"]
+        fields = [
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "is_super_user",
+            "new_password",
+            "current_password",
+        ]
         read_only_fields = ["username", "email", "first_name", "last_name", "is_super_user"]

@@ -9,6 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from api_v2.cluster.serializers import RelatedComponentStatusSerializer
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from cm.models import Cluster, Host, HostProvider, MaintenanceMode, ServiceComponent
@@ -19,6 +21,7 @@ from rest_framework.serializers import (
     CharField,
     ChoiceField,
     IntegerField,
+    ListSerializer,
     ModelSerializer,
     PrimaryKeyRelatedField,
     SerializerMethodField,
@@ -160,6 +163,10 @@ class ClusterHostCreateSerializer(EmptySerializer):
     host_id = IntegerField()
 
 
+class HostListIdCreateSerializer(ListSerializer):  # pylint: disable=abstract-method
+    child = IntegerField()
+
+
 class HostMappingSerializer(ModelSerializer):
     class Meta:
         model = Host
@@ -189,3 +196,16 @@ class HostGroupConfigSerializer(ModelSerializer):
         model = Host
         fields = ["id", "name"]
         extra_kwargs = {"name": {"read_only": True}}
+
+
+class ClusterHostStatusSerializer(EmptySerializer):
+    host_components = SerializerMethodField()
+
+    class Meta:
+        model = Host
+        fields = ["host_components"]
+
+    def get_host_components(self, instance: Host) -> list:
+        return RelatedComponentStatusSerializer(
+            instance=[hc.component for hc in instance.hostcomponent_set.select_related("component")], many=True
+        ).data
