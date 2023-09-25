@@ -1,13 +1,14 @@
 import AccessManagerRolesTableFilters from './AccessManagerRolesTableFilters';
-import { Button, ButtonGroup } from '@uikit';
+import { ButtonGroup } from '@uikit';
 import TableToolbar from '@commonComponents/Table/TableToolbar/TableToolbar';
+import AccessManagerRolesCreateButton from './AccessManagerRolesCreateButton';
 
 const AccessManagerRolesTableToolbar = () => {
   return (
     <TableToolbar>
       <AccessManagerRolesTableFilters />
       <ButtonGroup>
-        <Button>Create role</Button>
+        <AccessManagerRolesCreateButton />
       </ButtonGroup>
     </TableToolbar>
   );

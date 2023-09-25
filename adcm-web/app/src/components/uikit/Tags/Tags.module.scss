@@ -27,13 +27,21 @@
 
 .tag {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--tag-gap, 8px);
   padding: 6px;
   transition: 250ms background-color, 250ms color;
   background: var(--tag-background);
   color: var(--tag-color);
   border-radius: 5px;
+  width: fit-content;
+
+  &__secondary {
+    background: transparent;
+    border: var(--tag-background) 2px solid;
+    border-radius: 8px;
+    padding: 5px 32px;
+  }
 
   &:hover:not(&_disabled) {
     background: var(--tag-background-hover);

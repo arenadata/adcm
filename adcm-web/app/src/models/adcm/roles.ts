@@ -26,7 +26,9 @@ export interface AdcmRoleProduct {
 }
 
 export interface AdcmCreateRolePayload {
-  name: string;
+  displayName: string;
+  description: string;
+  children: number[];
 }
 
 export interface AdcmUpdateRolePayload {
