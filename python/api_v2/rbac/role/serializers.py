@@ -46,6 +46,7 @@ class RoleSerializer(RoleChildSerializer):
         model = Role
         fields = (
             *RoleChildSerializer.Meta.fields,
+            "parametrized_by_type",
             "description",
             "children",
         )
