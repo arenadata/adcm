@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
-import { Table, TableRow, TableCell, IconButton, Button } from '@uikit';
+import { Table, TableRow, TableCell, Button } from '@uikit';
 import Concern from '@commonComponents/Concern/Concern';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import { useStore } from '@hooks';
 import { columns, serviceComponentStatusMap } from './ServiceComponentTable.constants';
 import ServiceComponentMaintenanceModeButton from './ServiceComponentMaintenanceModeButton/ServiceComponentMaintenanceModeButton';
+import ServiceComponentsDynamicActionsIcon from '../../ServiceComponents/ServiceComponentsDynamicActionsIcon/ServiceComponentsDynamicActionsIcon';
 
 interface ServiceComponentTableProps {
   onClick: () => void;
@@ -13,12 +14,10 @@ interface ServiceComponentTableProps {
 }
 
 const ServiceComponentTable: React.FC<ServiceComponentTableProps> = ({ onClick, showConfig, isConfigShown }) => {
+  const cluster = useStore((s) => s.adcm.cluster.cluster);
+  const service = useStore((s) => s.adcm.service.service);
   const serviceComponent = useStore(({ adcm }) => adcm.serviceComponent.serviceComponent);
   const isLoading = useStore(({ adcm }) => adcm.serviceComponent.isLoading);
-
-  const dummyHandler = () => {
-    console.info('implement actions please!');
-  };
 
   return (
     <Table columns={columns} isLoading={isLoading}>
@@ -38,7 +37,9 @@ const ServiceComponentTable: React.FC<ServiceComponentTableProps> = ({ onClick, 
             <Concern concerns={serviceComponent.concerns} />
           </TableCell>
           <TableCell hasIconOnly align="center">
-            <IconButton icon="g1-actions" size={32} onClick={() => dummyHandler()} title="Actions" />
+            {cluster && service && serviceComponent && (
+              <ServiceComponentsDynamicActionsIcon cluster={cluster} service={service} component={serviceComponent} />
+            )}
             <ServiceComponentMaintenanceModeButton />
           </TableCell>
           <TableCell>

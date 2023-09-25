@@ -4,6 +4,7 @@ import ServiceComponentTable from './ServiceComponentTable/ServiceComponentTable
 import ComponentConfigurationsNavigation from './ComponentConfigurationsNavigation/ComponentConfigurationsNavigation';
 import { useStore } from '@hooks';
 import { useNavigate } from 'react-router-dom';
+import ServiceComponentsDynamicActionDialog from '../ServiceComponents/Dialogs/ServiceComponentsDynamicActionDialog/ServiceComponentsDynamicActionDialog';
 
 const ServiceComponent: React.FC = () => {
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ const ServiceComponent: React.FC = () => {
         onClick={handleClickReturn}
       />
       {isConfigShown && <ComponentConfigurationsNavigation />}
+      <ServiceComponentsDynamicActionDialog />
     </>
   );
 };

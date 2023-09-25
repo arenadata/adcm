@@ -1,5 +1,6 @@
 import { httpClient } from '@api/httpClient';
 import { AdcmMaintenanceMode, AdcmServiceComponent, Batch } from '@models/adcm';
+import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { SortParams } from '@models/table';
 import { prepareSorting } from '@utils/apiUtils';
 import qs from 'qs';
@@ -33,6 +34,40 @@ export class AdcmClusterServiceComponentsApi {
     const response = await httpClient.post(
       `/api/v2/clusters/${clusterId}/services/${serviceId}/components/${componentId}/maintenance-mode/`,
       { maintenanceMode },
+    );
+
+    return response.data;
+  }
+
+  public static async getClusterServiceComponentsActions(clusterId: number, serviceId: number, componentId: number) {
+    const response = await httpClient.get<AdcmDynamicAction[]>(
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/components/${componentId}/actions/`,
+    );
+    return response.data;
+  }
+
+  public static async getClusterServiceComponentActionDetails(
+    clusterId: number,
+    serviceId: number,
+    componentId: number,
+    actionId: number,
+  ) {
+    const response = await httpClient.get<AdcmDynamicActionDetails>(
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/components/${componentId}/actions/${actionId}/`,
+    );
+    return response.data;
+  }
+
+  public static async runClusterServiceComponentAction(
+    clusterId: number,
+    serviceId: number,
+    componentId: number,
+    actionId: number,
+    actionRunConfig: AdcmDynamicActionRunConfig,
+  ) {
+    const response = await httpClient.post(
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/components/${componentId}/actions/${actionId}/run/`,
+      actionRunConfig,
     );
 
     return response.data;
