@@ -10,7 +10,9 @@ export interface DialogProps extends ModalOptions, DialogDefaultControlsProps {
   children: React.ReactNode;
   title?: React.ReactNode;
   dialogControls?: React.ReactNode;
+  dialogControlsOnTop?: boolean;
   width?: string;
+  height?: string;
 }
 
 const Dialog: React.FC<DialogProps> = ({
@@ -20,12 +22,14 @@ const Dialog: React.FC<DialogProps> = ({
   children,
   title,
   dialogControls,
+  dialogControlsOnTop,
   cancelButtonLabel,
   actionButtonLabel,
   isActionDisabled,
   onAction,
   onCancel,
   width = '584px',
+  height = 'auto',
 }) => {
   const handleClose = () => {
     onOpenChange(false);
@@ -39,13 +43,23 @@ const Dialog: React.FC<DialogProps> = ({
     }
   };
 
+  const dialogControlsComponent = dialogControls || (
+    <DialogDefaultControls
+      cancelButtonLabel={cancelButtonLabel}
+      actionButtonLabel={actionButtonLabel}
+      isActionDisabled={isActionDisabled}
+      onAction={onAction}
+      onCancel={handleClose}
+    />
+  );
+
   return (
     <Modal
       isOpen={isOpen}
       onOpenChange={handleOpenChange}
       className={s.dialog}
       isDismissDisabled={isDismissDisabled}
-      style={{ width }}
+      style={{ width, height }}
     >
       <IconButton
         icon="g2-close"
@@ -60,16 +74,9 @@ const Dialog: React.FC<DialogProps> = ({
           {title}
         </Text>
       )}
+      {dialogControlsOnTop && dialogControlsComponent}
       <div className={s.dialog__body}>{children}</div>
-      {dialogControls ?? (
-        <DialogDefaultControls
-          cancelButtonLabel={cancelButtonLabel}
-          actionButtonLabel={actionButtonLabel}
-          isActionDisabled={isActionDisabled}
-          onAction={onAction}
-          onCancel={handleClose}
-        />
-      )}
+      {!dialogControlsOnTop && dialogControlsComponent}
     </Modal>
   );
 };

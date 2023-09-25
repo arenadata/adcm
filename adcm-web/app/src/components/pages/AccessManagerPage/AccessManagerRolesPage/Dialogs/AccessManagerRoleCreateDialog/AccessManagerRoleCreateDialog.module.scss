@@ -1,0 +1,67 @@
+:global {
+  body.theme-dark {
+    --role-permissions-list-bg-color: var(--color-xdark-new);
+    --role-all-permissions-title-color: var(--color-xgreen-saturated);
+    --role-selected-permissions-title-color: var(--color-xwhite-off);
+  }
+
+  body.theme-light {
+    --role-permissions-list-bg-color: var(--color-xgray-alt);
+    --role-all-permissions-title-color: var(--color-xgreen);
+    --role-selected-permissions-title-color: var(--color-xdark);
+  }
+}
+
+.roleCreateDialog {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 12px;
+  grid-template-areas:
+    "name description"
+    "products products"
+    "allPermissions selectedPermissions"
+    "groups groups";
+
+  &__firstName { grid-area: firstName; }
+  &__lastName { grid-area: lastName; }
+  &__products {
+    grid-area: products;
+
+    label {
+      color: var(--role-all-permissions-title-color);
+      font-weight: 500;
+    }
+  }
+
+  &__allPermissions, &__selectedPermissions {
+    &__list {
+      flex-direction: column;
+      flex-wrap: nowrap;
+      height: 50vh;
+      overflow-y: auto;
+    }
+
+    &__allFiltered {
+      margin: 20px 0;
+    }
+  }
+
+  &__allPermissions {
+    grid-area: allPermissions;
+
+    label {
+      color: var(--role-all-permissions-title-color);
+      font-weight: 500;
+    }
+  }
+
+  &__selectedPermissions {
+    grid-area: selectedPermissions;
+
+    label {
+      color: var(--role-selected-permissions-title-color);
+      font-weight: 500;
+    }
+  }
+  &__groups { grid-area: groups; }
+}

@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { CheckAll, Checkbox, SearchInput, Tag, Tags } from '@uikit';
+import { SearchInput, Tag, Tags } from '@uikit';
 import s from './AccessManagerRolesTableExpandedContent.module.scss';
 import { AdcmRole } from '@models/adcm';
 import { useStore } from '@hooks';
+import AccessManagerRolesTableProducts from '../AccessManagerRolesTableProducts/AccessManagerRolesTableProducts';
 
 export interface AccessManagerRolesTableExpandedContentProps {
   children: AdcmRole[];
@@ -26,12 +27,6 @@ const AccessManagerRolesTableExpandedContent = ({ children }: AccessManagerRoles
     setProductsSelected(value);
   };
 
-  const getHandlerProductsFilter = (name: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    setProductsSelected(
-      event.target.checked ? [...productsSelected, name] : productsSelected.filter((p) => p !== name),
-    );
-  };
-
   const handleRoleNameFilter = (event: React.ChangeEvent<HTMLInputElement>) => {
     setTextEntered(event.target.value);
   };
@@ -39,19 +34,7 @@ const AccessManagerRolesTableExpandedContent = ({ children }: AccessManagerRoles
   return (
     <div className={s.content}>
       <br />
-      {products.length > 0 && (
-        <div className={s.content__checkboxes}>
-          <CheckAll
-            allList={products}
-            selectedValues={productsSelected}
-            onChange={handleCheckAllClick}
-            label="All products"
-          />
-          {products.map((p, i) => (
-            <Checkbox key={i} label={p} checked={productsSelected.includes(p)} onChange={getHandlerProductsFilter(p)} />
-          ))}
-        </div>
-      )}
+      <AccessManagerRolesTableProducts onSelect={handleCheckAllClick} />
       <div className={s.content__title}>Permissions</div>
       <SearchInput placeholder="Search permissions" value={textEntered} onChange={handleRoleNameFilter} />
       {childrenFiltered.length > 0 && (
