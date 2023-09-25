@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Table, TableRow, TableCell, IconButton } from '@uikit';
+import { Table, TableRow, TableCell } from '@uikit';
 import Concern from '@commonComponents/Concern/Concern';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import { useDispatch, useStore } from '@hooks';
@@ -9,9 +9,12 @@ import { SortParams } from '@uikit/types/list.types';
 import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/MaintenanceModeButton';
 import { openMaintenanceModeDialog } from '@store/adcm/cluster/services/serviceComponents/serviceComponentsActionsSlice';
 import { AdcmServiceComponent } from '@models/adcm';
+import ClusterServiceComponentsDynamicActionsIcon from '../ServiceComponentsDynamicActionsIcon/ServiceComponentsDynamicActionsIcon';
 
 const ServiceComponentsTable = () => {
   const dispatch = useDispatch();
+  const cluster = useStore((s) => s.adcm.cluster.cluster);
+  const service = useStore((s) => s.adcm.service.service);
   const components = useStore((s) => s.adcm.serviceComponents.serviceComponents);
   const isLoading = useStore((s) => s.adcm.serviceComponents.isLoading);
   const sortParams = useStore((s) => s.adcm.serviceComponentsTable.sortParams);
@@ -24,10 +27,6 @@ const ServiceComponentsTable = () => {
     if (component.isMaintenanceModeAvailable) {
       dispatch(openMaintenanceModeDialog(component.id));
     }
-  };
-
-  const dummyHandler = () => {
-    console.info('implement actions please!');
   };
 
   return (
@@ -52,7 +51,9 @@ const ServiceComponentsTable = () => {
               <Concern concerns={component.concerns} />
             </TableCell>
             <TableCell hasIconOnly align="center">
-              <IconButton icon="g1-actions" size={32} onClick={() => dummyHandler()} title="Actions" />
+              {cluster && service && component && (
+                <ClusterServiceComponentsDynamicActionsIcon cluster={cluster} service={service} component={component} />
+              )}
               <MaintenanceModeButton
                 isMaintenanceModeAvailable={component.isMaintenanceModeAvailable}
                 maintenanceModeStatus={component.maintenanceMode}
