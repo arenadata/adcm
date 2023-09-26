@@ -9,6 +9,9 @@ import { SortParams } from '@uikit/types/list.types';
 import { openDeleteDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
 import ClusterServiceDynamicActionsButton from '@pages/cluster/ClusterServices/ClusterServiceDynamicActionsButton/ClusterServiceDynamicActionsButton';
 import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
+import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/MaintenanceModeButton';
+import { AdcmService } from '@models/adcm';
+import { openMaintenanceModeDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
 
 const ClusterServicesTable = () => {
   const dispatch = useDispatch();
@@ -21,6 +24,12 @@ const ClusterServicesTable = () => {
 
   const getHandleDeleteClick = (serviceId: number) => () => {
     dispatch(openDeleteDialog(serviceId));
+  };
+
+  const handleClickMaintenanceMode = (service: AdcmService) => () => {
+    if (service.isMaintenanceModeAvailable) {
+      dispatch(openMaintenanceModeDialog(service));
+    }
   };
 
   const handleSorting = (sortParams: SortParams) => {
@@ -42,6 +51,11 @@ const ClusterServicesTable = () => {
             </TableCell>
             <TableCell hasIconOnly align="center">
               {cluster && <ClusterServiceDynamicActionsButton cluster={cluster} service={service} type="icon" />}
+              <MaintenanceModeButton
+                isMaintenanceModeAvailable={service.isMaintenanceModeAvailable}
+                maintenanceModeStatus={service.maintenanceMode}
+                onClick={handleClickMaintenanceMode(service)}
+              />
               <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(service.id)} title="Delete" />
             </TableCell>
           </TableRow>

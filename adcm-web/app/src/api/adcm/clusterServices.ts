@@ -4,6 +4,7 @@ import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
 import { PaginationParams, SortParams } from '@models/table';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
+import { AdcmMaintenanceMode } from '@models/adcm';
 
 export class AdcmClusterServicesApi {
   public static async getClusterServices(
@@ -44,6 +45,18 @@ export class AdcmClusterServicesApi {
     const response = await httpClient.get<AdcmDynamicActionDetails>(
       `/api/v2/clusters/${clusterId}/services/${serviceId}/actions/${actionId}/`,
     );
+    return response.data;
+  }
+
+  public static async toggleMaintenanceMode(
+    clusterId: number,
+    serviceId: number,
+    maintenanceMode: AdcmMaintenanceMode,
+  ) {
+    const response = await httpClient.post(`/api/v2/clusters/${clusterId}/services/${serviceId}/maintenance-mode/`, {
+      maintenanceMode,
+    });
+
     return response.data;
   }
 

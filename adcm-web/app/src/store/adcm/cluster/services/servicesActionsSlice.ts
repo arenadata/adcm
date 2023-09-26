@@ -5,7 +5,7 @@ import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { RequestError } from '@api';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
-import { AdcmServicePrototype } from '@models/adcm';
+import { AdcmMaintenanceMode, AdcmService, AdcmServicePrototype } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 
@@ -21,6 +21,12 @@ interface DeleteClusterServicePayload {
 
 interface LoadClusterServicesPayload {
   clusterId: number;
+}
+
+interface toggleMaintenanceModePayload {
+  serviceId: number;
+  clusterId: number;
+  maintenanceMode: AdcmMaintenanceMode;
 }
 
 const openServiceAddDialog = createAsyncThunk(
@@ -96,8 +102,25 @@ const getServicePrototypes = createAsyncThunk(
   },
 );
 
+const toggleMaintenanceModeWithUpdate = createAsyncThunk(
+  'adcm/servicesActions/toggleMaintenanceModeWithUpdate',
+  async ({ clusterId, serviceId, maintenanceMode }: toggleMaintenanceModePayload, thunkAPI) => {
+    try {
+      await AdcmClusterServicesApi.toggleMaintenanceMode(clusterId, serviceId, maintenanceMode);
+      await thunkAPI.dispatch(getServices({ clusterId }));
+      const maintenanceModeStatus = maintenanceMode === AdcmMaintenanceMode.Off ? 'disabled' : 'enabled';
+      thunkAPI.dispatch(showInfo({ message: `The maintenance mode has been ${maintenanceModeStatus}` }));
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+    }
+  },
+);
+
 interface AdcmClusterServicesActionsState {
   isAddServiceDialogOpen: boolean;
+  maintenanceModeDialog: {
+    service: AdcmService | null;
+  };
   isCreating: boolean;
   deleteDialog: {
     serviceId: number | null;
@@ -109,6 +132,9 @@ interface AdcmClusterServicesActionsState {
 
 const createInitialState = (): AdcmClusterServicesActionsState => ({
   isAddServiceDialogOpen: false,
+  maintenanceModeDialog: {
+    service: null,
+  },
   isCreating: false,
   deleteDialog: {
     serviceId: null,
@@ -137,6 +163,12 @@ const servicesActionsSlice = createSlice({
     setIsCreating(state, action) {
       state.isCreating = action.payload;
     },
+    openMaintenanceModeDialog(state, action) {
+      state.maintenanceModeDialog.service = action.payload;
+    },
+    closeMaintenanceModeDialog(state) {
+      state.maintenanceModeDialog.service = null;
+    },
   },
   extraReducers(builder) {
     builder.addCase(openServiceAddDialog.fulfilled, (state) => {
@@ -148,12 +180,22 @@ const servicesActionsSlice = createSlice({
     builder.addCase(getServicePrototypesFromBackend.rejected, (state) => {
       state.relatedData.servicePrototypes = [];
     });
+    builder.addCase(toggleMaintenanceModeWithUpdate.pending, (state) => {
+      servicesActionsSlice.caseReducers.closeMaintenanceModeDialog(state);
+    });
   },
 });
 
-export const { closeAddDialog, openDeleteDialog, closeDeleteDialog, cleanupServicesActions, setIsCreating } =
-  servicesActionsSlice.actions;
+export const {
+  closeAddDialog,
+  openDeleteDialog,
+  closeDeleteDialog,
+  cleanupServicesActions,
+  setIsCreating,
+  openMaintenanceModeDialog,
+  closeMaintenanceModeDialog,
+} = servicesActionsSlice.actions;
 
-export { openServiceAddDialog, addService, deleteService, getServicePrototypes };
+export { openServiceAddDialog, addService, deleteService, getServicePrototypes, toggleMaintenanceModeWithUpdate };
 
 export default servicesActionsSlice.reducer;
