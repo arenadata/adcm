@@ -2,6 +2,7 @@ import { useDispatch, useRequestTimer, useDebounce } from '@hooks';
 import { defaultDebounceDelay } from '@constants';
 import { useParams } from 'react-router-dom';
 import { getHostProvider } from '@store/adcm/hostProviders/hostProviderSlice';
+import { loadHostProvidersDynamicActions } from '@store/adcm/hostProviders/hostProvidersDynamicActionsSlice';
 
 export const useRequestHostProviderPage = () => {
   const dispatch = useDispatch();
@@ -10,7 +11,11 @@ export const useRequestHostProviderPage = () => {
 
   const debounceGetData = useDebounce(() => {
     if (!hostproviderId) return;
-    dispatch(getHostProvider(hostproviderId));
+    dispatch(getHostProvider(hostproviderId))
+      .unwrap()
+      .then((provider) => {
+        dispatch(loadHostProvidersDynamicActions([provider]));
+      });
   }, defaultDebounceDelay);
 
   const debounceRefreshData = useDebounce(() => {

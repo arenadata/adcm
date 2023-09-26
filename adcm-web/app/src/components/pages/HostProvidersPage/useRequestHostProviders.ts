@@ -7,6 +7,10 @@ import {
 import { loadRelatedData, cleanupRelatedData } from '@store/adcm/hostProviders/hostProvidersTableSlice';
 import { defaultDebounceDelay } from '@constants';
 import { useEffect } from 'react';
+import {
+  cleanupHostProviderDynamicActions,
+  loadHostProvidersDynamicActions,
+} from '@store/adcm/hostProviders/hostProvidersDynamicActionsSlice';
 
 export const useRequestHostProviders = () => {
   const dispatch = useDispatch();
@@ -14,6 +18,7 @@ export const useRequestHostProviders = () => {
   const paginationParams = useStore(({ adcm }) => adcm.hostProvidersTable.paginationParams);
   const sortParams = useStore(({ adcm }) => adcm.hostProvidersTable.sortParams);
   const requestFrequency = useStore(({ adcm }) => adcm.hostProvidersTable.requestFrequency);
+  const hostProviders = useStore(({ adcm }) => adcm.hostProviders.hostProviders);
 
   useEffect(() => {
     dispatch(loadRelatedData());
@@ -23,6 +28,16 @@ export const useRequestHostProviders = () => {
       dispatch(cleanupRelatedData());
     };
   }, [dispatch]);
+
+  useEffect(() => {
+    if (hostProviders.length) {
+      dispatch(loadHostProvidersDynamicActions(hostProviders));
+    }
+
+    return () => {
+      dispatch(cleanupHostProviderDynamicActions());
+    };
+  }, [dispatch, hostProviders]);
 
   const debounceGetBundles = useDebounce(() => {
     dispatch(getHostProviders());

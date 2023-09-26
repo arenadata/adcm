@@ -65,6 +65,7 @@ import profileSlice from './adcm/profile/profileSlice';
 import hostsDynamicActionsSlice from './adcm/hosts/hostsDynamicActionsSlice';
 import hostProviderSlice from './adcm/hostProviders/hostProviderSlice';
 import hostProvidersActionsSlice from './adcm/hostProviders/hostProvidersActionsSlice';
+import hostProvidersDynamicActionsSlice from './adcm/hostProviders/hostProvidersDynamicActionsSlice';
 import serviceComponentsDynamicActionsSlice from './adcm/cluster/services/serviceComponents/serviceComponentsDynamicActionsSlice';
 
 const rootReducer = combineReducers({
@@ -91,11 +92,12 @@ const rootReducer = combineReducers({
     hostProviders: hostProvidersSlice,
     hostProvidersActions: hostProvidersActionsSlice,
     hostProvidersTable: hostProvidersTableSlice,
+    hostProvidersDynamicActions: hostProvidersDynamicActionsSlice,
+    hostsDynamicActions: hostsDynamicActionsSlice,
     createHostProviderDialog: createHostProviderDialogSlice,
     hosts: hostsSlice,
     hostsTable: hostsTableSlice,
     hostsActions: hostsActionsSlice,
-    hostsDynamicActions: hostsDynamicActionsSlice,
     service: serviceSlice,
     services: servicesSlice,
     servicesTable: servicesTableSlice,
