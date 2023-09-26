@@ -15,14 +15,12 @@ const getTooltipLabel = (status: string) => {
   let label = 'Maintenance mode: ';
   switch (status) {
     case AdcmMaintenanceMode.On:
-      label += AdcmMaintenanceMode.Off;
-      break;
-    case AdcmMaintenanceMode.Off:
       label += AdcmMaintenanceMode.On;
       break;
     case AdcmMaintenanceMode.Pending:
       label += 'in progress';
       break;
+    case AdcmMaintenanceMode.Off:
     default:
       label = 'Maintenance mode';
       break;
